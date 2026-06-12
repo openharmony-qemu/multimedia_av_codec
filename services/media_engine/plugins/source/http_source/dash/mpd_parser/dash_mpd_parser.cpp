@@ -15,6 +15,7 @@
 #define HST_LOG_TAG "DashMpdParser"
 
 #include <ctime>
+#include <stdexcept>
 #include "common/log.h"
 #include "securec.h"
 #include "dash_mpd_parser.h"
@@ -1124,9 +1125,17 @@ void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xm
         }
         size_t pos = 0;
         int32_t base = 10;
-        unsigned long value = std::stoul(val, &pos, base);
+        unsigned long value = 0;
+        if (!val.empty()) {
+            const char* start = val.c_str();
+            char* end = nullptr;
+            value = strtoul(start, &end, base);
+            pos = static_cast<size_t>(end - start);
+        }
+
         if (pos < val.length()) {
             MEDIA_LOG_E("audioChannelConfigurationNode out of range");
+            IDashMpdNode::DestroyNode(node);
             return;
         }
         if (isDigit && value < UINT32_MAX) {
@@ -1185,8 +1194,7 @@ void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, s
 }
 
 void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                 const std::string urlTypeName,
-                                 DashUrlType **urlTypeInfo)
+    const std::string urlTypeName, DashUrlType **urlTypeInfo)
 {
     if (urlTypeInfo == nullptr) {
         MEDIA_LOG_E("ParseUrlType urlTypeInfo == nullptr");
@@ -1204,13 +1212,16 @@ void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shar
     }
 
     IDashMpdNode *urlTypeNode = IDashMpdNode::CreateNode(urlTypeName);
-    if (urlTypeNode != nullptr) {
-        urlTypeNode->ParseNode(xmlParser, rootElement);
-        urlTypeNode->GetAttr("sourceURL", urlType->sourceUrl_);
-        urlTypeNode->GetAttr("range", urlType->range_);
-
-        IDashMpdNode::DestroyNode(urlTypeNode);
+    if (urlTypeNode == nullptr) {
+        MEDIA_LOG_W("ParseUrlType urlTypeNode is nullptr, name=" PUBLIC_LOG_S, urlTypeName.c_str());
+        delete urlType;
+        return;
     }
+    urlTypeNode->ParseNode(xmlParser, rootElement);
+    urlTypeNode->GetAttr("sourceURL", urlType->sourceUrl_);
+    urlTypeNode->GetAttr("range", urlType->range_);
+
+    IDashMpdNode::DestroyNode(urlTypeNode);
 
     *urlTypeInfo = urlType;
 }

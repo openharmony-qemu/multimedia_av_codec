@@ -62,6 +62,12 @@ Status TimedMetaTrack::Init(const std::shared_ptr<Meta> &trackDesc)
     srcTrackIds_->push_back(static_cast<uint32_t>(sourceTrackId));
     MEDIA_LOG_I("src track is track[%{public}d], src track id is:%{public}d", trackIndex, sourceTrackId);
     timeScale_ = tracks_[trackIndex]->GetTimeScale();  // use source track's time scale
+    auto mimeTypeOfSrcTrack = tracks_[trackIndex]->GetMimeType();
+    MEDIA_LOG_I("src track mime type:%{public}s", mimeTypeOfSrcTrack.c_str());
+    constexpr std::string_view AUDIO_PREFIX = "audio";
+    if (mimeTypeOfSrcTrack.compare(0, AUDIO_PREFIX.length(), AUDIO_PREFIX) == 0) {
+        hdlrName_ = "timed_audio_metadata";
+    }
 
     double tmpframeRate = 0;
     if (trackDesc->GetData(Tag::VIDEO_FRAME_RATE, tmpframeRate)) {  // video frame rate
@@ -92,8 +98,9 @@ Status TimedMetaTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::sh
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr,
         Status::ERROR_NULL_POINTER, "sample is null");
-    FALSE_RETURN_V_MSG_E(sample->pts_ >= lastTimestampUs_, Status::ERROR_INVALID_PARAMETER,
-        "pts: " PUBLIC_LOG_D64 " error, < " PUBLIC_LOG_D64, sample->pts_, lastTimestampUs_);
+    auto mpeg4Pts = ConvertTimeToMpeg4(sample->pts_, timeScale_);
+    FALSE_RETURN_V_MSG_E(mpeg4Pts > preDts_, Status::ERROR_INVALID_PARAMETER,
+        "[%{public}d] pts: " PUBLIC_LOG_D64 " error, <= " PUBLIC_LOG_D64, trackId_, sample->pts_, lastTimestampUs_);
     FALSE_RETURN_V_MSG_E(io != nullptr, Status::ERROR_INVALID_OPERATION, "io is null");
     FALSE_RETURN_V_MSG_E(stsz_ != nullptr, Status::ERROR_INVALID_OPERATION, "stsz box is empty");
     int64_t pos = io->GetPos();
@@ -103,13 +110,13 @@ Status TimedMetaTrack::WriteSample(std::shared_ptr<AVIOStream> io, const std::sh
         startTimestampUs_ = sample->pts_;
         MEDIA_LOG_I("timedMeta track:" PUBLIC_LOG_D32 ", start timestamp:" PUBLIC_LOG_D64, trackId_, startTimestampUs_);
     } else { // 先写上1帧的时间，最后少一帧stts数据，写tailer前添加
-        lastDuration_ = std::max(static_cast<int64_t>(frameSize_),
-            ConvertTimeToMpeg4(sample->pts_, timeScale_) - ConvertTimeToMpeg4(lastTimestampUs_, timeScale_));
+        lastDuration_ = std::max(static_cast<int64_t>(frameSize_), mpeg4Pts - preDts_);
         DisposeStts(lastDuration_, sample->pts_);
     }
     DisposeStco(pos);
     DisposeStsz(sample->memory_->GetSize());
     lastTimestampUs_ = sample->pts_;
+    preDts_ = mpeg4Pts;
     pos_ = io->GetPos();
     return Status::NO_ERROR;
 }
@@ -154,7 +161,7 @@ void TimedMetaTrack::DisposeDuration()
     durationUs_ = lastTimestampUs_ - startTimestampUs_ + ConvertTimeFromMpeg4(lastDuration_, timeScale_);
     auto durationUs = durationUs_;
     auto startTimestampUs = startTimestampUs_;
-    if (isAuxiliary_ && GetSrcTrackDurationUs(srcTrackDurationUs, srcStartTimeUs) && srcTrackDurationUs > 0) {
+    if (GetSrcTrackDurationUs(srcTrackDurationUs, srcStartTimeUs) && srcTrackDurationUs > 0) {
         durationUs = srcTrackDurationUs;
         startTimestampUs = srcStartTimeUs;
     }

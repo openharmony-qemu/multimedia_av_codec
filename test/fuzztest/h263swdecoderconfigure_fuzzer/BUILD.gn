@@ -39,6 +39,7 @@ ohos_fuzztest("H263SwdecoderConfigureFuzzTest") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

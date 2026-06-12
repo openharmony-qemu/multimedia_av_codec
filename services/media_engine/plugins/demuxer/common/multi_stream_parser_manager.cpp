@@ -34,8 +34,8 @@ std::map<VideoStreamType, DestroyFunc> MultiStreamParserManager::destroyFuncMap_
 
 StreamParser *CreateH264StreamParser()
 {
-    AvcParserImpl *avcParser = new AvcParserImpl();
-    return avcParser;
+    auto avcParser = std::make_unique<AvcParserImpl>();
+    return avcParser.release();
 }
 
 void DestroyH264StreamParser(StreamParser* avcParser)
@@ -63,11 +63,15 @@ Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType videoS
     if (!Init(videoStreamType)) {
         return Status::ERROR_UNKNOWN;
     }
-    StreamParser* streamParser = createFuncMap_[videoStreamType]();
+    auto createIt = createFuncMap_.find(videoStreamType);
+    auto destroyIt = destroyFuncMap_.find(videoStreamType);
+    FALSE_RETURN_V_MSG_E(createIt != createFuncMap_.end() && destroyIt != destroyFuncMap_.end(),
+        Status::ERROR_UNKNOWN, "Create or destroy func is invalid:" PUBLIC_LOG_D32, videoStreamType);
+    std::unique_ptr<StreamParser, DestroyFunc> streamParser(createIt->second(), destroyIt->second);
     FALSE_RETURN_V_MSG_E(streamParser != nullptr, Status::ERROR_UNKNOWN, "Create failed:" PUBLIC_LOG_D32,
         videoStreamType);
     streamMap_[trackId].type = videoStreamType;
-    streamMap_[trackId].parser = streamParser;
+    streamMap_[trackId].parser = streamParser.release();
     streamMap_[trackId].inited = false;
     return Status::OK;
 }
@@ -123,8 +127,8 @@ bool MultiStreamParserManager::CheckSymbol(void *handler, VideoStreamType videoS
         std::string destroyFuncName = "DestroyStreamParser";
         CreateFunc createFunc = nullptr;
         DestroyFunc destroyFunc = nullptr;
-        createFunc = (CreateFunc)(::dlsym(handler, createFuncName.c_str()));
-        destroyFunc = (DestroyFunc)(::dlsym(handler, destroyFuncName.c_str()));
+        createFunc = reinterpret_cast<CreateFunc>(::dlsym(handler, createFuncName.c_str()));
+        destroyFunc = reinterpret_cast<DestroyFunc>(::dlsym(handler, destroyFuncName.c_str()));
         if (createFunc && destroyFunc) {
             MEDIA_LOG_D("CreateFuncName %{public}s", createFuncName.c_str());
             MEDIA_LOG_D("DestroyFuncName %{public}s", destroyFuncName.c_str());
@@ -166,12 +170,6 @@ bool MultiStreamParserManager::IsHdr10Plus(uint32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
     return streamMap_[trackId].parser->IsHdr10Plus();
-}
-
-bool MultiStreamParserManager::IsHdr(uint32_t trackId)
-{
-    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
-    return streamMap_[trackId].parser->IsHdr();
 }
 
 bool MultiStreamParserManager::IsSyncFrame(uint32_t trackId, const uint8_t *sample, int32_t size)
@@ -227,6 +225,12 @@ uint32_t MultiStreamParserManager::GetPicWidInLumaSamples(uint32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), 0, "Stream parser is invalid");
     return streamMap_[trackId].parser->GetPicWidInLumaSamples();
+}
+
+double MultiStreamParserManager::GetSar(uint32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), 0, "Stream parser is invalid");
+    return streamMap_[trackId].parser->GetSar();
 }
 
 uint32_t MultiStreamParserManager::GetPicHetInLumaSamples(uint32_t trackId)
@@ -287,7 +291,6 @@ void MultiStreamParserManager::ParseMetadataInfo(uint32_t trackIndex,
     parse.chromaLocation = streamParsers->GetChromaLocation(trackIndex);
     parse.picWidInLumaSamples = streamParsers->GetPicWidInLumaSamples(trackIndex);
     parse.picHetInLumaSamples = streamParsers->GetPicHetInLumaSamples(trackIndex);
-    parse.isHdr = streamParsers->IsHdr(trackIndex);
 }
 } // namespace Plugins
 } // namespace Media

@@ -586,14 +586,19 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     streamInfoMap_[id].dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, id);
     streamInfoMap_[id].dataSource->SetIsDash(isDash_);
 
-    Status st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource);
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    if (isPlayerMode_) {
+        configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    }
+    
+    Status st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource, configs);
     if (st == Status::ERROR_NOT_ENOUGH_DATA) {
         int32_t offset = 0;
         int32_t size = 0;
         FALSE_RETURN_V(streamInfoMap_[id].plugin->GetProbeSize(offset, size), false);
         WaitForInitialBufferingEnd(streamDemuxer, offset, size);
         if (isInitialBufferingSucc_.load()) {
-            st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource);
+            st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource, configs);
         }
     }
     return st == Status::OK;
@@ -1184,6 +1189,11 @@ void DemuxerPluginManager::UpdateTempTrackMapByStreamId(int32_t oldTrackId, int3
     int32_t newInnerTrackId = -1;
     GetTrackInfoByStreamID(newStreamId, newTrackId, newInnerTrackId, type);
     UpdateTempTrackMapInfo(oldTrackId, newTrackId, newInnerTrackId);
+}
+
+void DemuxerPluginManager::SetPlayerMode(bool isPlayerMode)
+{
+    isPlayerMode_ = isPlayerMode;
 }
 } // namespace Media
 } // namespace OHOS

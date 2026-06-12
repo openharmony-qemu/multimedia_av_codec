@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -239,7 +239,12 @@ std::vector<uint8_t> VDecAPI11Sample::LoadHashFile()
         filesystem::path filePath = INP_DIR;
         std::string pixFmt = defualtPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
         std::string fileName = filePath.filename();
-        std::string hashValue = data[fileName.c_str()][pixFmt];
+        std::string hashValue = "";
+        if (enableDecodingOrder) {
+            hashValue = data[fileName.c_str()]["dec_order"];
+        } else {
+            hashValue = data[fileName.c_str()][pixFmt];
+        }
         std::stringstream ss(hashValue);
         std::string item;
         while (getline(ss, item, ',')) {
@@ -363,6 +368,32 @@ void VDecAPI11Sample::ConfigHDRMetadata(OH_AVFormat *format)
     }
 }
 
+void VDecAPI11Sample::ConfigureVideoDecoder2(OH_AVFormat *format)
+{
+    if (useHDRSource) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
+    }
+    if (setTransform) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_TRANSFORM_TYPE, DEFAULT_TRANSFORM);
+        cout << "config transform: " << DEFAULT_TRANSFORM << endl;
+    }
+    if (retentionModeSet) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE, defaultRetentionMode);
+    }
+    if (retentionRatioSet) {
+        (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO,
+                                         defaultRetentionRatio);
+    }
+    if (decoderSpeedSet) {
+        (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, defaultDecoderSpeed);
+    }
+    if (NV21_FLAG) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV21);
+    }
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enableSyncMode);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
+}
+
 int32_t VDecAPI11Sample::ConfigureVideoDecoder()
 {
     if (autoSwitchSurface && needAutoSwitch) {
@@ -388,18 +419,8 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defualtPixelFormat);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
-    if (useHDRSource) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
-    }
-    if (setTransform) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_TRANSFORM_TYPE, DEFAULT_TRANSFORM);
-        cout << "config transform: " << DEFAULT_TRANSFORM << endl;
-    }
-    if (NV21_FLAG) {
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV21);
-    }
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enableSyncMode);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, enableDecodingOrder);
+    ConfigureVideoDecoder2(format);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -990,7 +1011,9 @@ uint32_t VDecAPI11Sample::SendData(uint32_t bufferSize, uint32_t index, OH_AVBuf
         OH_AVBuffer_SetBufferAttr(buffer, &attr);
         OH_VideoDecoder_PushInputBuffer(vdec_, index) == AV_ERR_OK ? (0) : (errCount++);
         frameCount_ = frameCount_ + 1;
-        cout << "frameCount_" << frameCount_ << endl;
+        if (enableSetParameter) {
+            SetParameterForSpeedPlayer();
+        }
         SwitchSurfaceGetTransform();
     }
     delete[] fileBuffer;
@@ -1185,7 +1208,7 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         AutoSwitchSurface();
         SHA512_Final(g_md, &g_c);
         OPENSSL_cleanse(&g_c, sizeof(g_c));
-        if (!SF_OUTPUT) {
+        if (!SF_OUTPUT && enableHash) {
             if (!MdCompare(g_md)) {
                 errCount++;
             }
@@ -1667,4 +1690,49 @@ int32_t VDecAPI11Sample::InitReadFileNals()
     }
 
     return 0;
+}
+
+void VDecAPI11Sample::SetParameterForSpeedPlayer()
+{
+    if (setSpeedPlayerFlag == true) {
+        OH_AVFormat *format = OH_AVFormat_Create();
+        if (format == nullptr) {
+            return;
+        }
+        int32_t oneHundred = 100;
+        int32_t twoHundred = 200;
+        int32_t threeHundred = 300;
+        int32_t fourHundred = 400;
+        double paremeter1 = 0.5;
+        double paremeter2 = 0.75;
+        double paremeter3 = 1.25;
+        double paremeter4 = 1.5;
+        double paremeter5 = 2.0;
+        double paremeter6 = 1.0;
+        if (this->frameCount_ == oneHundred) {
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,
+                                          OH_FRAME_RETENTION_MODE_ADAPTIVE);
+            (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, paremeter3);
+        } else if (this->frameCount_ == twoHundred) {
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,
+                                          OH_FRAME_RETENTION_MODE_UNIFORM);
+            (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, paremeter1);
+            (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO,
+                                             paremeter4);
+        } else if (this->frameCount_ == threeHundred) {
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,
+                                          OH_FRAME_RETENTION_MODE_UNIFORM);
+            (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, paremeter2);
+            (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO,
+                                             paremeter5);
+        } else if (this->frameCount_ == fourHundred) {
+            (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE,
+                                          OH_FRAME_RETENTION_MODE_FULL);
+            (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_VIDEO_DECODER_SPEED, paremeter6);
+        } else {
+            cout << "Unknown frame count: " << this->frameCount_ << endl;
+        }
+        OH_VideoDecoder_SetParameter(vdec_, format);
+        OH_AVFormat_Destroy(format);
+    }
 }

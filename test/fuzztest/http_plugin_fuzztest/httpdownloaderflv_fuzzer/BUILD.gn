@@ -136,6 +136,7 @@ ohos_fuzztest("HttpDownloaderFlvFuzzTest") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",

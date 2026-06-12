@@ -14,6 +14,9 @@
  */
 #define HST_LOG_TAG "DemuxerDataReader"
 
+#include <chrono>
+#include <thread>
+#include "avcodec_trace.h"
 #include "common/log.h"
 #include "demuxer_data_reader.h"
 
@@ -37,6 +40,35 @@ Status DemuxerDataReader::SetDataReader(const std::shared_ptr<DataSource>& sourc
     return Status::OK;
 }
 
+Status DemuxerDataReader::SetReadTimeoutForInitSeek(int64_t timeoutMs)
+{
+    FALSE_RETURN_V_MSG_E(timeoutMs >= 0, Status::ERROR_INVALID_PARAMETER,
+        "Read timeout must be non-negative");
+    readTimeoutConfigured_ = true;
+    readTimeoutMs_ = timeoutMs;
+    readStartTimeMs_ = 0;
+    return Status::OK;
+}
+
+bool DemuxerDataReader::IsReadTimeoutExpired()
+{
+    if (!readTimeoutConfigured_ || readTimeoutMs_ <= 0) {
+        return false;
+    }
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    if (readStartTimeMs_ <= 0) {
+        readStartTimeMs_ = now;
+        return false;
+    }
+    if (now - readStartTimeMs_ > readTimeoutMs_) {
+        MEDIA_LOG_E("Read timeout, elapsed: " PUBLIC_LOG_D64 "ms, limit: " PUBLIC_LOG_D64 "ms",
+            now - readStartTimeMs_, readTimeoutMs_);
+        return true;
+    }
+    return false;
+}
+
 Status DemuxerDataReader::ReadUintData(int64_t offset, uint8_t* buffer, size_t size)
 {
     FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_INVALID_PARAMETER, "Buffer is nullptr");
@@ -44,22 +76,28 @@ Status DemuxerDataReader::ReadUintData(int64_t offset, uint8_t* buffer, size_t s
 
     auto bufferInfo = std::make_shared<Buffer>();
     FALSE_RETURN_V_MSG_E(bufferInfo != nullptr, Status::ERROR_NO_MEMORY, "bufferInfo is nullptr");
-    auto bufData = bufferInfo->WrapMemory(buffer, size, size);
-    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory() != nullptr, Status::ERROR_NO_MEMORY, "Alloc memory failed");
+    auto bufferMemory = bufferInfo->WrapMemory(buffer, size, size);
+    FALSE_RETURN_V_MSG_E(bufferMemory != nullptr, Status::ERROR_NO_MEMORY, "Alloc memory failed");
     
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
-    while (ret == Status::ERROR_AGAIN && count < READ_RETRY_TIMES) {
+    MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
+    while (ret == Status::ERROR_AGAIN &&
+        (readTimeoutConfigured_ || count < READ_RETRY_TIMES)) {
         ret = dataSource_->ReadAt(offset, bufferInfo, size);
-        if (bufferInfo->GetMemory()->GetSize() == size) {
+        if (ret == Status::OK && bufferMemory->GetSize() == size) {
+            readStartTimeMs_ = 0;
             break;
         }
-        count++;
-        usleep(READ_RETRY_SLEEP_TIME_US);
+        if (ret == Status::ERROR_AGAIN && IsReadTimeoutExpired()) {
+            return Status::ERROR_UNKNOWN;
+        }
+        ++count;
+        std::this_thread::sleep_for(std::chrono::microseconds(READ_RETRY_SLEEP_TIME_US));
     }
 
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
-    FALSE_RETURN_V_MSG_E(bufferInfo->GetMemory()->GetSize() > 0, Status::ERROR_AGAIN, "No enough data");
+    FALSE_RETURN_V_MSG_E(bufferMemory->GetSize() > 0, Status::ERROR_AGAIN, "No enough data");
 
     return Status::OK;
 }

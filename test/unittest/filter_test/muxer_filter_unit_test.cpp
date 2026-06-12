@@ -107,7 +107,7 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_DoStop_0100, TestSize.Level1)
     muxerFilter_->stopCount_ = 0;
     muxerFilter_->preFilterCount_ = 1;
     EXPECT_CALL(*mockMediaMuxer, Stop()).WillOnce(testing::Return(Status::ERROR_UNKNOWN));
-    EXPECT_EQ(muxerFilter_->DoStop(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(muxerFilter_->DoStop(), Status::ERROR_MUXER_STOP_FAILED);
 }
 
 /**

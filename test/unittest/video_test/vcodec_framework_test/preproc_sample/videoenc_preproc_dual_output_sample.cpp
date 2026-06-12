@@ -760,9 +760,57 @@ void VideoEncPreprocDualOutputSample::OnError(OH_AVCodec *codec, int32_t errorCo
 
 void VideoEncPreprocDualOutputSample::OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
-    (void)codec;
-    (void)format;
     (void)userData;
+
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t cropLeft = 0;
+    int32_t cropTop = 0;
+    int32_t cropRight = 0;
+    int32_t cropBottom = 0;
+    int32_t downsamplingWidth = 0;
+    int32_t downsamplingHeight = 0;
+    (void)OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &width);
+    (void)OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &height);
+    (void)OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, &cropLeft);
+    (void)OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, &cropTop);
+    (void)OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, &cropRight);
+    (void)OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, &cropBottom);
+    (void)OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, &downsamplingWidth);
+    (void)OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, &downsamplingHeight);
+
+    bool cropping = cropLeft != 0 || cropTop != 0 || cropRight != 0 || cropBottom != 0;
+    if (cropping) {
+        int32_t cropWidth = cropRight - cropLeft + 1;
+        int32_t cropHeight = cropBottom - cropTop + 1;
+        if (cropWidth >= width || cropHeight >= height) {
+            std::cout << "[OnStreamChanged] Turn off crop" << std::endl;
+            auto parameter = OH_AVFormat_Create();
+            (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, 0);
+            (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, 0);
+            (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, 0);
+            (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, 0);
+            auto ret = OH_VideoEncoder_SetParameter(codec, parameter);
+            if (ret != 0) {
+                std::cout << "[OnStreamChanged] SetParameter failed. ret=" << ret << std::endl;
+            }
+            OH_AVFormat_Destroy(parameter);
+            parameter = nullptr;
+        }
+    }
+
+    if (downsamplingWidth != 0 || downsamplingHeight != 0) {
+        std::cout << "[OnStreamChanged] Turn off downsampling" << std::endl;
+        auto parameter = OH_AVFormat_Create();
+        (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, 0);
+        (void)OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, 0);
+        auto ret = OH_VideoEncoder_SetParameter(codec, parameter);
+        if (ret != 0) {
+            std::cout << "[OnStreamChanged] SetParameter failed. ret=" << ret << std::endl;
+        }
+        OH_AVFormat_Destroy(parameter);
+        parameter = nullptr;
+    }
 }
 
 void VideoEncPreprocDualOutputSample::OnNeedOutputData(OH_AVCodec *codec, uint32_t index,

@@ -55,7 +55,7 @@ public:
     DemuxerPluginTypeTest();
     ~DemuxerPluginTypeTest();
     bool InitWithData(const uint8_t* data, size_t size);
-    void RunDemuxerInterfaceFuzz();
+    void RunDemuxerInterfaceFuzz(std::shared_ptr<Media::Meta> configs = nullptr);
     void DemuxerPlugintask(MediaInfo& mediaInfo, AVBufferWrapper& buffer);
     void CallbackThreadFun(uint32_t trackId, uint32_t bytes);
     void DemuxerPluginCallback(MediaInfo& mediaInfo);
@@ -76,6 +76,7 @@ private:
     
     int32_t fd_ = -1;
     size_t dataSize_ = 0;
+    std::shared_ptr<Media::Meta> configs_ = nullptr;
     std::shared_ptr<Plugins::Ffmpeg::FFmpegDemuxerPlugin> demuxerPlugin_ = nullptr;
 };
 

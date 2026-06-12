@@ -12,9 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #define HST_LOG_TAG "AppClient"
- 
+
 #include <fstream>
 #include <algorithm>
 #include <fcntl.h>
@@ -22,8 +22,7 @@
 #include "app_client.h"
 #include "avcodec_trace.h"
 #include "osal/task/task.h"
- 
- 
+
 namespace OHOS {
 namespace Media {
 namespace Plugins {
@@ -37,17 +36,17 @@ namespace {
     constexpr int RETRY_SLEEP_TIME = 500; // ms
     constexpr int FINISHLOADING_SLEEP_TIME = 10; // ms
 }
- 
+
 AppClient::AppClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
     : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam)
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " AppClient create", FAKE_POINTER(this));
 }
- 
+
 AppClient::~AppClient()
 {
 }
- 
+
 void AppClient::MapToString(std::map<std::string, std::string> httpHeader)
 {
     std::string headerStr = "";
@@ -59,19 +58,18 @@ void AppClient::MapToString(std::map<std::string, std::string> httpHeader)
     for (std::map<std::string, std::string>::iterator iter = httpHeaderTmp.begin();
         iter != httpHeaderTmp.end(); iter++) {
         headerStr = iter->first + " : " + iter->second;
-        char* headerTmp = (char*)headerStr.c_str();
-        MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S,
-            FAKE_POINTER(this), (char*)headerStr.c_str());
+        char* headerTmp = const_cast<char*>(headerStr.c_str());
+        MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S, FAKE_POINTER(this), headerTmp);
         void* buffer = reinterpret_cast<void*>(headerTmp);
-        rxHeader_(buffer, 1, 1, userParam_);
+        rxHeader_(buffer, 1, headerStr.size(), userParam_);
     }
 }
- 
+
 Status AppClient::Init()
 {
     return Status::OK;
 }
- 
+
 Status AppClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader,
     int32_t timeoutMs)
 {

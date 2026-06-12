@@ -116,7 +116,6 @@ protected:
     virtual void ConfigureHdrColorSpaceIno(const Format &format) {};
     virtual void ConfigureHdrStaticMetadata(const Format &format) {};
     void CallCallBack(AVCodecErrorType errType, AVCodecServiceErrCode serEcode) override;
-    std::atomic<bool> isInputSizeAssigned_ = false;
     int32_t inputBufferSize_ = 0;
     std::atomic<bool> isValidHdrSttMd_ = false;
 

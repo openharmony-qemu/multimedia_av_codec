@@ -59,6 +59,10 @@ public:
 private:
     std::string SniffMediaType();
 
+    Status ReadSniffData(std::shared_ptr<Buffer> &buffer, size_t expectSize, size_t &getDataSize);
+
+    void ReportDemuxerFormat(const std::string &pluginName);
+
     bool IsOffsetValid(int64_t offset) const;
 
     bool IsSniffNeeded(std::string uri);

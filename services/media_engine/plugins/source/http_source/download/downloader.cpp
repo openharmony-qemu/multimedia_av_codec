@@ -17,6 +17,8 @@
 #define HST_LOG_TAG "Downloader"
 
 #include "downloader.h"
+#include <cstdint>
+#include <limits>
 #include "avcodec_trace.h"
 #include "securec.h"
 #include "plugin/plugin_time.h"
@@ -48,6 +50,7 @@ constexpr int SLEEP_TEN_MICRO_SEC = 10; // 10ms
 constexpr int APP_OPEN_RETRY_TIMES = 10;
 constexpr int32_t REDIRECT_CODE = 302;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
+constexpr size_t MAX_HEADER_LINE_LEN = 16 * 1024;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -979,6 +982,10 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
 {
     FALSE_RETURN_V(userParam != nullptr, 0);
     auto mediaDownloader = static_cast<Downloader *>(userParam);
+    if (size != 0 && nitems > std::numeric_limits<size_t>::max() / size) {
+        MEDIA_LOG_E("RxBodyData: size overflow, size: " PUBLIC_LOG_ZU ", nitems: " PUBLIC_LOG_ZU, size, nitems);
+        return 0;
+    }
     size_t dataLen = size * nitems;
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
@@ -1007,6 +1014,15 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         mediaDownloader->currentRequest_->isDownloading_ = true;
     }
     UpdateDownloadInfo(mediaDownloader, dataLen);
+    size_t ret = SaveBodyData(mediaDownloader, buffer, dataLen);
+    if (ret == dataLen) {
+        mediaDownloader->currentRequest_->isDownloading_ = false;
+    }
+    return ret;
+}
+
+size_t Downloader::SaveBodyData(Downloader* mediaDownloader, void* buffer, size_t dataLen)
+{
     uint64_t keyIndex = mediaDownloader->currentRequest_->keyIndex_;
     uint32_t writeLen = (keyIndex > 0) ? mediaDownloader->currentRequest_->keySaveData_(static_cast<uint8_t *>(buffer),
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_, keyIndex) :
@@ -1027,8 +1043,6 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }
- 
-    mediaDownloader->currentRequest_->isDownloading_ = false;
     return dataLen;
 }
 
@@ -1057,11 +1071,18 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         char* strRange = StringTrim(token);
-        size_t start;
-        size_t end;
-        size_t fileLen;
-        FALSE_LOG_MSG(sscanf_s(strRange, "bytes %lu-%lu/%lu", &start, &end, &fileLen) != -1,
-            "sscanf get range failed");
+        size_t start = 0;
+        size_t end = 0;
+        size_t fileLen = 0;
+        int sret = sscanf_s(strRange, "bytes %zu-%zu/%zu", &start, &end, &fileLen);
+        if (sret != 3) { // 3: expected fields parsed from content-range
+            MEDIA_LOG_W("sscanf get range failed, parsed: " PUBLIC_LOG_D32, sret);
+            return false;
+        }
+        if (fileLen > SIZE_MAX) {
+            MEDIA_LOG_E("Content-Range fileLen exceeds upper bound: " PUBLIC_LOG_ZU, fileLen);
+            return false;
+        }
         if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
             MEDIA_LOG_E("FileContentLen doesn't equal to fileLen");
         }
@@ -1081,7 +1102,13 @@ bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size
         char* type = StringTrim(token);
         std::string headStr = (std::string)token;
         MEDIA_LOG_I("content-type: " PUBLIC_LOG_S, headStr.c_str());
-        NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
+        size_t typeLen = strlen(type);
+        size_t maxCopyLen = sizeof(info->contentType) - 1;
+        size_t copyLen = (typeLen < maxCopyLen) ? typeLen : maxCopyLen;
+        if (copyLen > 0) {
+            NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, copyLen));
+        }
+        info->contentType[copyLen] = '\0';
     }
     return true;
 }
@@ -1163,24 +1190,28 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     if (mediaDownloader->currentRequest_->isHeaderUpdated_) {
         return size * nitems;
     }
+    if (size != 0 && nitems > std::numeric_limits<size_t>::max() / size) {
+        MEDIA_LOG_E("RxHeaderData: size * nitems overflow");
+        return 0;
+    }
+    size_t totalLen = size * nitems;
+    if (totalLen == 0 || totalLen >= MAX_HEADER_LINE_LEN) {
+        MEDIA_LOG_W("RxHeaderData: invalid header line length " PUBLIC_LOG_ZU, totalLen);
+        return totalLen;
+    }
+    char headerBuf[MAX_HEADER_LINE_LEN] = {0};
+    if (memcpy_s(headerBuf, sizeof(headerBuf) - 1, buffer, totalLen) != EOK) {
+        return 0;
+    }
+    headerBuf[totalLen] = '\0';
     char* next = nullptr;
-    char* key = strtok_s(reinterpret_cast<char*>(buffer), ":", &next);
-    FALSE_RETURN_V(key != nullptr, size * nitems);
+    char* key = strtok_s(headerBuf, ":", &next);
+    FALSE_RETURN_V(key != nullptr, totalLen);
     ToLower(key);
 
     if (!strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
-        char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, size * nitems);
-        if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
-            !mediaDownloader->currentRequest_->IsM3u8Request()) {
-            info->isChunked = true;
-            if (mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos) {
-                info->contentLen = LIVE_CONTENT_LENGTH;
-            } else {
-                info->contentLen = 0;
-            }
-            std::string headStr = (std::string)token;
-            MEDIA_LOG_I("transfer-encoding: " PUBLIC_LOG_S, headStr.c_str());
+        if (!HandleTransferEncoding(info, key, next, mediaDownloader)) {
+            return size * nitems;
         }
     }
     if (!strncmp(key, "location", strlen("location"))) {
@@ -1199,6 +1230,26 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     }
 
     return size * nitems;
+}
+
+bool Downloader::HandleTransferEncoding(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader)
+{
+    (void)key;
+    FALSE_RETURN_V(mediaDownloader != nullptr && mediaDownloader->currentRequest_ != nullptr, false);
+    char* token = strtok_s(nullptr, ":", &next);
+    FALSE_RETURN_V(token != nullptr, false);
+    if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
+        !mediaDownloader->currentRequest_->IsM3u8Request()) {
+        info->isChunked = true;
+        if (mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos) {
+            info->contentLen = LIVE_CONTENT_LENGTH;
+        } else {
+            info->contentLen = 0;
+        }
+        std::string headStr = (std::string)token;
+        MEDIA_LOG_I("transfer-encoding: " PUBLIC_LOG_S, headStr.c_str());
+    }
+    return true;
 }
 
 void Downloader::PauseLoop(bool isAsync)

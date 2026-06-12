@@ -25,6 +25,26 @@ constexpr int32_t BLOCK_SIZE_MIN = 2;
 constexpr int32_t BASE_BLOCK_PER_FRAME = 99;
 constexpr int32_t BASE_BLOCK_PER_SECOND = 1485;
 constexpr int32_t MAX_PIC_SIDE = 15360; // 16K long side
+
+bool CheckVideoEncoderPreprocessingFeature(OHOS::MediaAVCodec::AVCapabilityFeature feature)
+{
+    return feature == OHOS::MediaAVCodec::AVCapabilityFeature::VIDEO_ENCODER_PREPROC_DOWNSAMPLING ||
+           feature == OHOS::MediaAVCodec::AVCapabilityFeature::VIDEO_ENCODER_PREPROC_CROP;
+}
+
+bool IsVideoEncoderPreprocessingFeatureSupported(const OHOS::MediaAVCodec::CapabilityData *data,
+                                                 OHOS::MediaAVCodec::AVCapabilityFeature feature)
+{
+    (void)feature;
+#ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
+    if (!data) {
+        return false;
+    }
+    return (data->codecType == static_cast<int32_t>(OHOS::MediaAVCodec::AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER));
+#else
+    return false;
+#endif
+}
 } // namespace
 namespace OHOS {
 namespace MediaAVCodec {
@@ -713,6 +733,9 @@ bool AVCodecInfo::IsFeatureSupported(AVCapabilityFeature feature)
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, false, "data is null");
     CHECK_AND_RETURN_RET_LOG(IsFeatureValid(feature), false,
         "Varified feature failed: feature %{public}d is invalid", feature);
+    if (CheckVideoEncoderPreprocessingFeature(feature)) {
+        return IsVideoEncoderPreprocessingFeatureSupported(data_, feature);
+    }
     return data_->featuresMap.count(static_cast<int32_t>(feature)) != 0;
 }
 
@@ -733,6 +756,5 @@ int32_t AVCodecInfo::GetMaxSupportedVersion()
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, AVCS_ERR_INVALID_VAL, "data is null");
     return data_->maxVersion;
 }
-
 } // namespace MediaAVCodec
 } // namespace OHOS

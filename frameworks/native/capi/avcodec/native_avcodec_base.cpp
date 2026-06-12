@@ -99,7 +99,6 @@ const char *OH_MD_KEY_RANGE_FLAG = "range_flag";
 const char *OH_MD_KEY_COLOR_PRIMARIES = "color_primaries";
 const char *OH_MD_KEY_TRANSFER_CHARACTERISTICS = "transfer_characteristics";
 const char *OH_MD_KEY_MATRIX_COEFFICIENTS = "matrix_coefficients";
-const char *OH_MD_KEY_HDR_TYPE = "video_hdr_type";
 const char *OH_MD_KEY_QUALITY = "quality";
 const char *OH_MD_KEY_SQR_FACTOR = "sqr_factor";
 const char *OH_MD_KEY_CHANNEL_LAYOUT = "channel_layout";
@@ -197,11 +196,17 @@ const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM = "video_encoder_preproc
 const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH = "video_encoder_preproc_downsampling_width";
 const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT = "video_encoder_preproc_downsampling_height";
 const char *OH_MD_KEY_VIDEO_ENCODER_PREPROC_DROP_TO_FRAME_RATE = "video_encoder_preproc_drop_to_frame_rate";
-const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT = "screen_capture_window_rect";
+const char *OH_MD_KEY_AUDIO_ENCODER_PTS_MODE = "audio_encode_pts_mode";
+const char *OH_MD_KEY_AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT = "audio_encoder_enable_sample_format_convert";
+const char *OH_MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE = "audio_max_input_buffer_size";
 
 const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE = "video_decoder_frame_retention_mode";
 const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO = "video_decoder_frame_retention_ratio";
 const char *OH_MD_KEY_VIDEO_DECODER_SPEED = "video_decoder_speed";
+const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER = "video_decoder_output_in_decoding_order";
+const char *OH_MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES = "video_encoder_number_of_pending_frames";
+const char *OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT = "video_encoder_max_frame_delay_count";
+const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES = "video_encoder_repeat_header_before_sync_frames";
 #ifdef __cplusplus
 }
 #endif

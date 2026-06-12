@@ -476,6 +476,54 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_07, TestSize.Level
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
 }
 
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_08, TestSize.Level1)
+{
+    ProceFunc();
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_INPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_OUTPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_BITRATE, 30000);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 0);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
+}
+
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_09, TestSize.Level1)
+{
+    ProceFunc();
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_INPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_OUTPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_BITRATE, 30000);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
+}
+
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_10, TestSize.Level1)
+{
+    ProceFunc();
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_INPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_OUTPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_BITRATE, 30000);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, -1);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
+}
+
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Configure_11, TestSize.Level1)
+{
+    ProceFunc();
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_INPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_MAX_OUTPUT_BUFFER_COUNT, 4);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_BITRATE, 30000);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 4);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
+}
+
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_Start_01, TestSize.Level1)
 {
     ProceFunc();
@@ -817,6 +865,86 @@ HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_06, TestSize.Leve
     }
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Flush(videoDec_));
     EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Reset(videoDec_));
+}
+
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_07, TestSize.Level1)
+{
+    ProceFunc();
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 0);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
+    isRunning_.store(true);
+
+    inputLoop_ = make_unique<thread>(&VideoCodeCapiDecoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+    outputLoop_ = make_unique<thread>(&VideoCodeCapiDecoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Start(videoDec_));
+    while (isRunning_.load()) {
+        sleep(1); // sleep 1s
+    }
+
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inCond_.notify_all();
+        lock.unlock();
+        inputLoop_->join();
+    }
+
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        unique_lock<mutex> lock(signal_->outMutex_);
+        signal_->outCond_.notify_all();
+        lock.unlock();
+        outputLoop_->join();
+    }
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Flush(videoDec_));
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Reset(videoDec_));
+}
+
+HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_08, TestSize.Level1)
+{
+    ProceFunc();
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
+    OH_AVFormat_SetIntValue(format_, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 0);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Configure(videoDec_, format_));
+
+    surface_ = GetSurface();
+    EXPECT_NE(nullptr, surface_);
+    OHNativeWindow *nativeWindow = CreateNativeWindowFromSurface(&surface_);
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_SetSurface(videoDec_, nativeWindow));
+
+    isRunning_.store(true);
+
+    inputLoop_ = make_unique<thread>(&VideoCodeCapiDecoderUnitTest::InputFunc, this);
+    EXPECT_NE(nullptr, inputLoop_);
+
+    outputLoop_ = make_unique<thread>(&VideoCodeCapiDecoderUnitTest::OutputFunc, this);
+    EXPECT_NE(nullptr, outputLoop_);
+
+    EXPECT_EQ(OH_AVErrCode::AV_ERR_OK, OH_VideoDecoder_Start(videoDec_));
+    while (isRunning_.load()) {
+        sleep(1); // sleep 1s
+    }
+
+    isRunning_.store(false);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        signal_->inCond_.notify_all();
+        lock.unlock();
+        inputLoop_->join();
+    }
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        unique_lock<mutex> lock(signal_->outMutex_);
+        signal_->outCond_.notify_all();
+        lock.unlock();
+        outputLoop_->join();
+    }
 }
 
 HWTEST_F(VideoCodeCapiDecoderUnitTest, videoDecoder_normalcase_formatchange, TestSize.Level1)

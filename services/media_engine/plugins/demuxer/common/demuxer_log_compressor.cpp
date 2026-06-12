@@ -109,7 +109,6 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::VIDEO_HDR_TYPE,                 "hdrType"},
     {Tag::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, "rawvideoInputPixFmt"},
     {Tag::MEDIA_ENCODER,                  "encoder"},
-    {Tag::VIDEO_HDR_COMPATIBILITY,         "hdrComp"},
     {Tag::VIDEO_STATIC_METADATA_CTA861,    "cta861"},
     {Tag::VIDEO_STATIC_METADATA_SMPT2086,  "smpt2086"},
 };
@@ -139,7 +138,6 @@ std::string DemuxerLogCompressor::FormatTagSerialize(Format& format)
     FALSE_RETURN_V_MSG_E(meta != nullptr, "", "Meta is nullptr");
     for (auto iter = meta->begin(); iter != meta->end(); ++iter) {
         if (g_formatToIndex.find(iter->first) == g_formatToIndex.end()) {
-            dumpStr << iter->first << "=" << AnyCast<std::string>(iter->second) << "|";
             continue;
         }
         switch (format.GetValueType(iter->first)) {

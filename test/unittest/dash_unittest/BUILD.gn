@@ -115,6 +115,7 @@ ohos_unittest("dash_segment_downloader_unittest") {
     "googletest:gmock",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",

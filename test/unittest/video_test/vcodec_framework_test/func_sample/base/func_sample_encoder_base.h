@@ -106,6 +106,19 @@ public:
     int32_t errorNum_ = 0;
     std::atomic<bool> isRunning_ = false;
     std::atomic<bool> isPreparing_ = true;
+
+    // For MAX_FRAME_DELAY_COUNT verification
+    std::atomic<int32_t> pendingInputCount_ = 0;
+    std::atomic<int32_t> maxPendingInputCount_ = 0;
+
+    // For REPEAT_HEADER_BEFORE_SYNC_FRAMES verification
+    std::atomic<int32_t> idrFrameCount_ = 0;
+    std::atomic<int32_t> idrWithImmediateXPSCount_ = 0;
+    std::atomic<bool> lastOutputWasXPS_ = false;
+    bool isAVCCodec_ = true;
+
+    // For NUMBER_OF_PENDING_FRAMES verification
+    std::atomic<int32_t> maxPendingFramesObserved_ = 0;
 };
 
 struct LtrParam {
@@ -140,6 +153,7 @@ public:
     bool input8BitTo10Bit_ = false;
 
 private:
+    void UpdateMaxPendingInputCount();
     std::shared_ptr<VEncSignal> signal_ = nullptr;
 };
 

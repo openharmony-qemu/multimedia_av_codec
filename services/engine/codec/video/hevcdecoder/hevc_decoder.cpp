@@ -638,9 +638,7 @@ void HevcDecoder::FlushAllFrames()
 
 void HevcDecoder::CalculateBufferSize(void)
 {
-    if (isInputSizeAssigned_.load()) {
-        AVCODEC_LOGI("Num %{public}u find setted max input size, value %{public}d", decInstanceID_, inputBufferSize_);
-    } else if ((static_cast<UINT32>(width_ * height_ * VIDEO_PIX_DEPTH_YUV) >> 1) <= VIDEO_MIN_BUFFER_SIZE) {
+    if ((static_cast<UINT32>(width_ * height_ * VIDEO_PIX_DEPTH_YUV) >> 1) <= VIDEO_MIN_BUFFER_SIZE) {
         inputBufferSize_ = VIDEO_MIN_BUFFER_SIZE;
     } else {
         inputBufferSize_ = VIDEO_MAX_BUFFER_SIZE;
@@ -737,6 +735,8 @@ int32_t HevcDecoder::GetCodecCapability(std::vector<CapabilityData> &capaArray)
         }
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(HEVC_PROFILE_MAIN), levels));
         capsData.profileLevelsMap.insert(std::make_pair(static_cast<int32_t>(HEVC_PROFILE_MAIN_10), levels));
+        capsData.featuresMap.insert(std::make_pair(
+            static_cast<int32_t>(AVCapabilityFeature::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER), Format()));
         capaArray.emplace_back(capsData);
     }
     return AVCS_ERR_OK;

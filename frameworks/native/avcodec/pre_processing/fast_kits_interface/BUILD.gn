@@ -31,7 +31,9 @@ ohos_source_set("fast_image_loader") {
   external_deps = [
     "c_utils:utils",
     "graphic_surface:surface",
+    "hilog:libhilog",
     "hitrace:hitrace_meter",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"

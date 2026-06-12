@@ -215,7 +215,7 @@ Status AudioDataSourceFilter::SendEos()
         AVBufferConfig avBufferConfig;
         ret = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
         if (ret != Status::OK) {
-            MEDIA_LOG_I("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
+            MEDIA_LOG_E("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
             return ret;
         }
         buffer->flag_ |= BUFFER_FLAG_EOS;
@@ -262,6 +262,7 @@ void AudioDataSourceFilter::ReadLoop()
         }
         return;
     }
+    FALSE_RETURN_MSG(buffer != nullptr && buffer->memory_ != nullptr, "buffer->memory_ is nullptr");
     buffer->memory_->SetSize(bufferSize);
     status = outputBufferQueue_->PushBuffer(buffer, true);
     if (status != Status::OK) {

@@ -30,12 +30,14 @@ namespace {
 constexpr uint8_t SENTINEL = 0xCC;
 constexpr int32_t SRC_WIDTH = 8;
 constexpr int32_t SRC_HEIGHT = 6;
+#ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
 constexpr int32_t CROP_LEFT = 2;
 constexpr int32_t CROP_TOP = 2;
 constexpr int32_t CROP_WIDTH = 4;
 constexpr int32_t CROP_HEIGHT = 2;
 constexpr int32_t DS_WIDTH = 4;
 constexpr int32_t DS_HEIGHT = 4;
+#endif
 constexpr int32_t BUFFER_STRIDE_ALIGNMENT = 64;
 constexpr int32_t BUFFER_REQUEST_TIMEOUT = 0;
 constexpr int32_t DEFAULT_PLANE_BYTES_PER_PIXEL = 1;
@@ -62,6 +64,7 @@ struct FormatParam {
     bool yuv420;
 };
 
+#ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
 const FormatParam FORMAT_PARAMS[] = {
     {"NV12", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, true},
     {"NV21", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, true},
@@ -71,6 +74,13 @@ const FormatParam FORMAT_PARAMS[] = {
     {"RGBA8888", GRAPHIC_PIXEL_FMT_RGBA_8888, false},
     {"RGBA1010102", GRAPHIC_PIXEL_FMT_RGBA_1010102, false},
 };
+#else
+const FormatParam FORMAT_PARAMS[] = {
+    {"NV12", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, true},
+    {"NV21", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, true},
+    {"YCBCR_420_P", GRAPHIC_PIXEL_FMT_YCBCR_420_P, true},
+};
+#endif
 
 struct Plane {
     size_t offset;
@@ -184,6 +194,7 @@ std::vector<uint8_t> ReadVisibleBytes(const sptr<SurfaceBuffer> &buffer)
     return data;
 }
 
+#ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
 std::vector<uint8_t> ExpectedCrop(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
                                   int32_t left, int32_t top)
 {
@@ -235,6 +246,7 @@ std::vector<uint8_t> ExpectedDownsample(const sptr<SurfaceBuffer> &input, const 
     }
     return data;
 }
+#endif
 
 void ExpectPaddingUntouched(const sptr<SurfaceBuffer> &buffer)
 {
@@ -253,6 +265,7 @@ void ExpectPaddingUntouched(const sptr<SurfaceBuffer> &buffer)
 
 class CpuImageProcessorTest : public testing::TestWithParam<FormatParam> {};
 
+#ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
 HWTEST_P(CpuImageProcessorTest, CropSuccess, TestSize.Level1)
 {
     const auto param = GetParam();
@@ -293,6 +306,7 @@ HWTEST_P(CpuImageProcessorTest, DownsampleSuccess, TestSize.Level1)
     EXPECT_EQ(ReadVisibleBytes(output), ExpectedDownsample(input, output));
     ExpectPaddingUntouched(output);
 }
+#endif
 
 HWTEST_P(CpuImageProcessorTest, CopySuccess, TestSize.Level1)
 {
@@ -354,11 +368,7 @@ HWTEST_P(CpuImageProcessorTest, OddGeometryPolicy, TestSize.Level1)
     request.crop = {ODD_CROP_LEFT, ODD_CROP_TOP, ODD_CROP_WIDTH, ODD_CROP_HEIGHT};
 
     int32_t ret = CpuImageProcessor::Process(request);
-    if (param.yuv420) {
-        EXPECT_NE(ret, AVCS_ERR_OK);
-    } else {
-        EXPECT_EQ(ret, AVCS_ERR_OK);
-    }
+    EXPECT_NE(ret, AVCS_ERR_OK);
 }
 
 INSTANTIATE_TEST_SUITE_P(SupportedFormats, CpuImageProcessorTest, testing::ValuesIn(FORMAT_PARAMS),

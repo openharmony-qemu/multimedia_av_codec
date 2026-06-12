@@ -32,7 +32,18 @@ class SourceCallback : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event) override
     {
-        (void)event;
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                if (hlsSegmentManager != nullptr) {
+                    hlsSegmentManager->SetDefaultStreamId(videoId, audioId, textId);
+                }
+                break;
+            }
+            default:break;
+        }
     }
 
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override
@@ -45,6 +56,13 @@ public:
     {
         return true;
     }
+
+    void SetDownload(std::shared_ptr<HlsSegmentManager> &manager)
+    {
+        hlsSegmentManager = manager;
+    }
+
+    std::shared_ptr<HlsSegmentManager> hlsSegmentManager = nullptr;
 };
 
 constexpr int BUFF_READ_SIZE = 5 * 1024 * 1024; // buf size 5MB
@@ -135,7 +153,7 @@ void Seek(std::shared_ptr<HlsSegmentManager> &hlsSegmentManager, FuzzedDataProvi
 }
 
 std::shared_ptr<HlsSegmentManager> CreateFuzzTestObj(bool useCase,
-    FuzzedDataProvider *fdp, std::shared_ptr<Plugins::Callback> &sourceCb)
+    FuzzedDataProvider *fdp, std::shared_ptr<SourceCallback> &sourceCb)
 {
     std::shared_ptr<HlsSegmentManager> hlsSegmentManager= nullptr;
     sourceCb = nullptr;
@@ -159,6 +177,7 @@ std::shared_ptr<HlsSegmentManager> CreateFuzzTestObj(bool useCase,
     hlsSegmentManager->SetStatusCallback(statusCallback);
 
     sourceCb = std::make_shared<SourceCallback>();
+    sourceCb->SetDownload(hlsSegmentManager);
     hlsSegmentManager->SetCallback(sourceCb);
     return hlsSegmentManager;
 }
@@ -167,7 +186,7 @@ bool StartFuzzTest(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdProvider(data, size);
     FuzzedDataProvider *fdp = &fdProvider;
-    std::shared_ptr<Plugins::Callback> sourceCb = nullptr;
+    std::shared_ptr<SourceCallback> sourceCb = nullptr;
     std::shared_ptr<HlsSegmentManager> hlsSegmentManager = CreateFuzzTestObj(true, nullptr, sourceCb);
     if (hlsSegmentManager == nullptr) {
         cout << "  Memory 1 apply failed." << endl;
@@ -224,7 +243,7 @@ bool StartFuzzTestRead(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdProvider(data, size);
     FuzzedDataProvider *fdp = &fdProvider;
-    std::shared_ptr<Plugins::Callback> sourceCb = nullptr;
+    std::shared_ptr<SourceCallback> sourceCb = nullptr;
     std::shared_ptr<HlsSegmentManager> hlsSegmentManager = CreateFuzzTestObj(true, fdp, sourceCb);
     if (hlsSegmentManager == nullptr) {
         cout << "  Memory 2 apply failed." << endl;
@@ -279,7 +298,7 @@ bool StartFuzzTestMultiUrl(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdProvider(data, size);
     FuzzedDataProvider *fdp = &fdProvider;
-    std::shared_ptr<Plugins::Callback> sourceCb = nullptr;
+    std::shared_ptr<SourceCallback> sourceCb = nullptr;
     std::shared_ptr<HlsSegmentManager> hlsSegmentManager = CreateFuzzTestObj(false, fdp, sourceCb);
     if (hlsSegmentManager == nullptr) {
         cout << "  Memory 3 apply failed." << endl;

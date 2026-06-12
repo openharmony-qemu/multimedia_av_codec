@@ -44,6 +44,7 @@ public:
     void OnSubmitEventInfo();
     void RegisterEventHook(StatisticsEventType eventType, EventHook hook);
     void RegisterSubmitEventTimer();
+    bool IsEventValid();
 
 private:
     std::shared_mutex mutex_;

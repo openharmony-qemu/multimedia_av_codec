@@ -40,6 +40,7 @@ string g_audioVividPath6 = TEST_FILE_PATH + string("5_1_4_24bit_48000Hz_704kbps.
 string g_audioVividPath7 = TEST_FILE_PATH + string("7_1_4_16bit_48000Hz_832kbps.mp4");
 string g_audioVividPath8 = TEST_FILE_PATH + string("hoa3_16bit_48000Hz_640kbps.mp4");
 string g_audioVividPath9 = TEST_FILE_PATH + string("stereo_16bit_48000Hz_32kbps.mp4");
+string g_flvAudioVividPath = TEST_FILE_PATH + string("native_mux_normal_av3a_h264_noCover.flv");
 string g_filePath;
 } // namespace
 
@@ -397,6 +398,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1208, TestSize.Level1)
     ASSERT_EQ(formatVal_.bitRate, 32250);
 }
 
+#ifndef USER_MPEG4_DEMUXER
 /**
  * @tc.name: AVSource_GetFormat_1209
  * @tc.desc: get format when the file is audio vivid (2obj_44100Hz_16bit_32k.mp4)
@@ -439,5 +441,61 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1209, TestSize.Level1)
     ASSERT_EQ(formatVal_.channelCount, 2);
     ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
     ASSERT_EQ(formatVal_.bitRate, 64082);
+}
+#endif
+
+/**
+ * @tc.name: AVSource_GetFormat_1210
+ * @tc.desc: get format when the file is audio vivid flv (native_mux_normal_av3a_h264_noCover.flv)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1210, TestSize.Level1)
+{
+    fd_ = OpenFile(g_flvAudioVividPath);
+    size_ = GetFileSize(g_flvAudioVividPath);
+    printf("---- %s ----\n", g_flvAudioVividPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_COUNT, formatVal_.trackCount));
+    ASSERT_EQ(formatVal_.trackCount, 2);
+#ifdef AVSOURCE_INNER_UNIT_TEST
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_FILE_TYPE, formatVal_.fileType));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
+    ASSERT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_AUDIO, formatVal_.hasAudio));
+    ASSERT_EQ(formatVal_.fileType, 104);
+    ASSERT_EQ(formatVal_.hasVideo, 1);
+    ASSERT_EQ(formatVal_.hasAudio, 1);
+#endif
+    bool hasAudioTrack = false;
+    for (trackIndex_ = 0; trackIndex_ < static_cast<uint32_t>(formatVal_.trackCount); trackIndex_++) {
+        format_ = source_->GetTrackFormat(trackIndex_);
+        ASSERT_NE(format_, nullptr);
+        printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+        ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_TRACK_TYPE, formatVal_.trackType));
+        if (formatVal_.trackType == MediaType::MEDIA_TYPE_VID) {
+            ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+            ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, formatVal_.width));
+            ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, formatVal_.height));
+            ASSERT_TRUE(format_->GetDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, formatVal_.frameRate));
+            ASSERT_EQ(formatVal_.codecMime, CodecMimeType::VIDEO_AVC);
+            ASSERT_EQ(formatVal_.width, 720);
+            ASSERT_EQ(formatVal_.height, 480);
+            ASSERT_DOUBLE_EQ(formatVal_.frameRate, 60.000000);
+        } else if (formatVal_.trackType == MediaType::MEDIA_TYPE_AUD) {
+            ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, formatVal_.sampleRate));
+            ASSERT_TRUE(format_->GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, formatVal_.channelCount));
+            ASSERT_TRUE(format_->GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, formatVal_.codecMime));
+            ASSERT_TRUE(format_->GetLongValue(MediaDescriptionKey::MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
+            ASSERT_EQ(formatVal_.sampleRate, 48000);
+            ASSERT_EQ(formatVal_.channelCount, 2);
+            ASSERT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_AVS3DA);
+            ASSERT_EQ(formatVal_.channelLayout, 3);
+            hasAudioTrack = true;
+        }
+    }
+    ASSERT_TRUE(hasAudioTrack);
 }
 } // namespace

@@ -112,6 +112,7 @@ ohos_unittest("dash_mpd_manager_unittest") {
     "googletest:gmock",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",

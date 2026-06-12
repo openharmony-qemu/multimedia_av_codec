@@ -19,6 +19,7 @@ pts_and_index_conversion_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/pts_index_conversion/pts_and_index_conversion.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",
   "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
+  "$av_codec_root_dir/test/unittest/common/statistics_event_reporter_mock.cpp",
 ]
 config("pts_and_index_conversio_unittest_cfg") {
   defines = [
@@ -56,6 +57,8 @@ config("pts_and_index_conversio_unittest_cfg") {
     "$av_codec_root_dir/services/media_engine/modules",
     "$av_codec_root_dir/services/media_engine/modules/demuxer",
     "$av_codec_root_dir/services/media_engine/modules/pts_index_conversion",
+    "$av_codec_root_dir/services/services/common/event_manager",
+    "$av_codec_root_dir/services/services/sa_avcodec/client",
     "$av_codec_root_dir/test/unittest/common",
   ]
 }
@@ -79,6 +82,7 @@ ohos_unittest("pts_and_index_conversion_unit_test") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "media_foundation:media_foundation",
   ]

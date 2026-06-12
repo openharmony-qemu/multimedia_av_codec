@@ -233,6 +233,7 @@ private:
     void HandleRetOK();
     void HandleResponseCb(int32_t clientCode, int32_t serverCode, const std::string &cb, Status& ret);
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
+    static size_t SaveBodyData(Downloader* mediaDownloader, void* buffer, size_t dataLen);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
     static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize,
@@ -240,6 +241,7 @@ private:
     static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
     static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleTransferEncoding(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);

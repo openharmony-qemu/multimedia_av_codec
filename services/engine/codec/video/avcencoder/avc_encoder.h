@@ -112,10 +112,10 @@ private:
     void GetColorAspects(const Format &format);
     void CheckIfEnableCb(const Format &format);
     int32_t SetupPort(const Format &format);
+    void GetIdrAppendXpsParam(const Format &format);
 
     void CheckBitRateSupport(int32_t &bitrate);
     void CheckFrameRateSupport(double &framerate);
-    void CheckIFrameIntervalTimeSupport(int32_t &interval);
 
     void AvcFuncMatch();
     void ReleaseHandle();
@@ -131,6 +131,9 @@ private:
 
     void InitAvcEncoderParams();
     void FillAvcInitParams(AVC_ENC_INIT_PARAM &param);
+
+    void WaitForFence(std::shared_ptr<FBuffer> &inputBuffer);
+    void ResetGopFrmIdx();
 
     struct InputFrame {
         uint8_t *buffer = nullptr;
@@ -165,6 +168,9 @@ private:
     int32_t Nv21ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &inArgs);
     int32_t CheckBufferSize(int32_t bufferSize, int32_t stride, int32_t height, VideoPixelFormat pixelFormat);
 
+    int32_t StoreHeaderInfo();
+    int32_t CopyHeaderInfoToOutArgs();
+    int32_t ProcessHeaderInfo();
     void EncoderAvcHeader();
     void EncoderAvcTailer();
     int32_t EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &outArgs);
@@ -208,6 +214,13 @@ private:
     AVC_ENC_INIT_PARAM initParams_;
     AVC_ENC_INARGS avcEncInputArgs_;
     AVC_ENC_OUTARGS avcEncOutputArgs_;
+    struct AVC_ENC_HEADER_ARGS {
+        uint32_t encodedFrameType;
+        void *streamBuf = nullptr;
+        uint32_t size;
+        uint32_t bytes;
+    };
+    AVC_ENC_HEADER_ARGS avcEncHeaderArgs_;
 
 private:
     std::string codecName_;
@@ -230,6 +243,7 @@ private:
     double encFrameRate_;
     bool encIdrRequest_ = false;
     bool enableSurfaceModeInputCb_ = false;
+    bool enableIdrAppendXps_ = false;
     uint8_t srcRange_ = 0;
     ColorPrimary srcPrimary_ = ColorPrimary::COLOR_PRIMARY_UNSPECIFIED;
     TransferCharacteristic srcTransfer_ = TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED;
@@ -240,6 +254,7 @@ private:
     int32_t avcQuality_ = 0;
     int32_t inputBufferSize_ = 0;
     int32_t outputBufferSize_ = 0;
+    int32_t gopFrmIdx_ = 0;
 
     VideoPixelFormat srcPixelFmt_ = VideoPixelFormat::UNKNOWN;
     std::vector<std::shared_ptr<FBuffer>> buffers_[2];

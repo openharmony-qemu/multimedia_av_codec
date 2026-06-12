@@ -60,11 +60,6 @@ ohos_static_library("av_codec_demo_muxer") {
   ]
   public_configs = [ ":av_codec_demo_muxer_config" ]
 
-  public_external_deps = [
-    "ffmpeg:libohosffmpeg",
-    "media_foundation:media_foundation",
-  ]
-
   defines = []
   defines += av_codec_defines
   deps = [
@@ -75,6 +70,7 @@ ohos_static_library("av_codec_demo_muxer") {
 
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "ipc:ipc_single",

@@ -119,6 +119,7 @@ public:
 
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
+    bool EnsureCacheBufferInited();
     uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     uint32_t SaveRingBufferData(uint8_t* data, uint32_t len);

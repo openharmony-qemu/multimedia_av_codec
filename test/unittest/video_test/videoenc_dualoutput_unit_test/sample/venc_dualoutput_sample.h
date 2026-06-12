@@ -38,8 +38,10 @@ enum class EncoderType { PRIMARY, SECONDARY };
 constexpr int32_t PARAM_CHANGE_START_FRAME = 3;
 constexpr int32_t RESIZE_WIDTH = 1920;
 constexpr int32_t RESIZE_HEIGHT = 1080;
-constexpr int32_t DEFAULT_WIDTH = 1280;
-constexpr int32_t DEFAULT_HEIGHT = 720;
+constexpr uint32_t DEFAULT_WIDTH = 1280;
+constexpr uint32_t DEFAULT_HEIGHT = 720;
+constexpr uint32_t FRAME_COUNT = 10;
+const std::string INPUT_FILE = "1280_720_nv.yuv";
 
 class VideoEncDualOutputSample : public NoCopyable, public VCodecSampleBase {
 public:
@@ -92,10 +94,10 @@ public:
     int32_t HandleOutputFrame(std::shared_ptr<CodecBufferInfo> bufferInfo) override;
     int32_t Operate() override;
 
-    uint32_t frameCount_ = 10;
+    uint32_t frameCount_ = FRAME_COUNT;
     std::string operation_ = "NULL";
     std::string mime_ = "";
-    std::string inPath_ = "1280_720_nv.yuv";
+    std::string inputFile_ = INPUT_FILE;
     std::string outPath_ = "";
     int32_t sampleWidth_ = DEFAULT_WIDTH;
     int32_t sampleHeight_ = DEFAULT_HEIGHT;

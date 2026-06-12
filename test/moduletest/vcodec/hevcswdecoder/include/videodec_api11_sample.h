@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -116,6 +116,7 @@ public:
     void SetEOS(uint32_t index, OH_AVBuffer *buffer);
     void WaitForEOS();
     int32_t ConfigureVideoDecoder();
+    void ConfigureVideoDecoder2(OH_AVFormat *format);
     void ConfigHDRMetadata(OH_AVFormat *format);
     int32_t StartVideoDecoder();
     int64_t GetSystemTimeUs();
@@ -155,6 +156,7 @@ public:
     void GetVideoSupportedPixelFormats();
     void GetFormatKey();
     void SwitchSurfaceGetTransform();
+    void SetParameterForSpeedPlayer();
     bool isGetVideoSupportedPixelFormats = false;
     bool isGetFormatKey = false;
     int isGetVideoSupportedPixelFormatsNum = 0;
@@ -193,6 +195,16 @@ public:
     bool outputCallbackStop = false;
     bool useHDRSource = false;
     bool isAPI = false;
+    bool enableSetParameter = false;
+    bool enableDecodingOrder = false;
+    bool setSpeedPlayerFlag = false;
+    bool retentionModeSet = false;
+    bool retentionRatioSet = false;
+    bool decoderSpeedSet = false;
+    bool enableHash = true;
+    double defaultDecoderSpeed = 0;
+    double defaultRetentionRatio = 0;
+    int32_t defaultRetentionMode = 0;
     int32_t DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
     int32_t DecodeSetSurface();
     int enbleBlankFrame = 0;

@@ -25,6 +25,7 @@ mpeg4_demuxer_plugin_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/converter.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/demuxer_data_reader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/demuxer_log_compressor.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/demuxer_utils.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/multi_stream_parser_manager.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/rbsp_context.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/reference_parser_manager.cpp",
@@ -40,10 +41,12 @@ mpeg4_demuxer_plugin_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_box_parser.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_demuxer_plugin.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_demuxer_thread.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_format_checker.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_reference_parser.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_sample_memory.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_sample_helper.cpp",
   "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+  "$av_codec_root_dir/test/unittest/common/statistics_event_reporter_mock.cpp",
 ]
 
 config("mpeg4_demuxer_plugin_test_cfg") {
@@ -83,6 +86,8 @@ config("mpeg4_demuxer_plugin_test_cfg") {
     "$av_codec_root_dir/services/media_engine/modules",
     "$av_codec_root_dir/services/media_engine/modules/demuxer",
     "$av_codec_root_dir/services/media_engine/modules/source",
+    "$av_codec_root_dir/services/services/common/event_manager",
+    "$av_codec_root_dir/services/services/sa_avcodec/client",
     "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/media_engine/plugins/common",
     "$av_codec_root_dir/services/media_engine/plugins/demuxer/common",
@@ -131,6 +136,7 @@ ohos_unittest("mpeg4_demuxer_plugin_unit_test") {
     "graphic_surface:surface",
     "hicollie:libhicollie",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
     "ipc:ipc_single",

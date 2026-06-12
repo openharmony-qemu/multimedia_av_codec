@@ -244,7 +244,7 @@ bool VideoEncDualOutputSample::InitFile(EncoderType type)
     auto &encoderContext = GetEncoderByEncoderType(type);
     if (encoderContext.signal->inFile_ == nullptr) {
         encoderContext.signal->inFile_ = make_unique<ifstream>();
-        std::string inPath = "/data/test/media/" + inPath_;
+        std::string inPath = "/data/test/media/" + inputFile_;
         encoderContext.signal->inFile_->open(inPath, ios::in | ios::binary);
         UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->inFile_ != nullptr, false, "create inFile_ failed");
         UNITTEST_CHECK_AND_RETURN_RET_LOG(encoderContext.signal->inFile_->is_open(), false, "can not open inFile_");

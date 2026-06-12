@@ -17,13 +17,40 @@
 #define FILTERS_AUDIO_ENCODER_FILTER_H
 
 #include <cstring>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+#include "buffer/avbuffer.h"
+#include "buffer/avallocator.h"
+#include "buffer/avbuffer_queue.h"
+#include "buffer/avbuffer_queue_producer.h"
+#include "buffer/avbuffer_queue_consumer.h"
 #include "filter/filter.h"
+#ifdef SUPPORT_AUDIO_CONVERT
+#include "audio_format_converter.h"
+#include "audio_suite_pcm_buffer.h"
+#include "audio_stream_info.h"
+
+constexpr int32_t BUFFER_IS_EOS = 1;
+#endif
 
 namespace OHOS {
 namespace Media {
 class MediaCodec;
 
 namespace Pipeline {
+struct AudioConfigure {
+    int32_t sampleRate = 0;
+    int32_t channelCount = 0;
+    int64_t bitrate = 0;
+    std::string mimeType = Plugins::MimeType::AUDIO_AAC;
+    Plugins::AudioChannelLayout channelLayout = Plugins::AudioChannelLayout::MONO;
+    Plugins::AudioSampleFormat sampleFormat = Plugins::AudioSampleFormat::SAMPLE_S16LE;
+};
+
+constexpr int32_t AVTRANSCODER_MAX_BUFFER_WAIT = 8;
+constexpr int32_t SAMPLE_FORMAT_16 = 16;
 class AudioEncoderFilter : public Filter, public std::enable_shared_from_this<AudioEncoderFilter> {
 public:
     explicit AudioEncoderFilter(std::string name, FilterType type);
@@ -54,6 +81,7 @@ public:
     void SetFaultEvent(const std::string &errMsg);
     void SetFaultEvent(const std::string &errMsg, int32_t ret);
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+    void NotifyProcessingThread();
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -64,6 +92,11 @@ protected:
 
 private:
     Status UpdateParameterToConfigure(const std::shared_ptr<Meta> &meta);
+    void GetAudioPCMConfigure(const std::shared_ptr<Meta> &meta, std::shared_ptr<AudioConfigure> &pcmConfig,
+        const std::string &inputMetaName = "Meta");
+    void AdjustAudioConfigure(std::shared_ptr<AudioConfigure> &adjustedConfig,
+        std::shared_ptr<AudioConfigure> &inputPCM, std::shared_ptr<AudioConfigure> &outputPCM);
+    void AddInternalBufferQueue();
     std::string name_;
     FilterType filterType_;
 
@@ -84,6 +117,49 @@ private:
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};
+
+    // 中间队列相关成员变量
+    std::shared_ptr<AVBufferQueue> intermediateBufferQueue_;
+    sptr<AVBufferQueueProducer> intermediateQueueProducer_;
+    sptr<AVBufferQueueConsumer> intermediateQueueConsumer_;
+    sptr<AVBufferQueueProducer> mediaCodecInputProducer;
+    std::mutex producerMutex_; // 保护 mediaCodecInputProducer 的互斥锁
+
+    // 独立处理线程相关成员变量
+    std::thread processingThread_;
+    std::mutex processingMutex_;
+    std::condition_variable processingCondVar_;
+    std::atomic<bool> isProcessingRunning_{false};
+    std::atomic<bool> hasPendingBuffer_{false};
+
+    // 处理方法
+    void ProcessIntermediateBuffer();
+    void ProcessingThreadFunc();
+    void StopProcessingThread();
+    Status AcquireIntermediateBuffer(std::shared_ptr<AVBuffer>& buffer);
+    Status RequestCodecBuffer(std::shared_ptr<AVBuffer>& buffer, const AVBufferConfig& config);
+    Status ConvertAudioData(const std::shared_ptr<AVBuffer>& srcBuffer, const std::shared_ptr<AVBuffer>& dstBuffer);
+    Status CopyAudioData(const std::shared_ptr<AVBuffer>& srcBuffer, const std::shared_ptr<AVBuffer>& dstBuffer);
+    void CopyBufferMetadata(const std::shared_ptr<AVBuffer>& srcBuffer, const std::shared_ptr<AVBuffer>& dstBuffer);
+    Status PushBufferToCodec(const std::shared_ptr<AVBuffer>& buffer);
+
+    // 声道转换相关
+#ifdef SUPPORT_AUDIO_CONVERT
+    class ConverterInputCallback : public AudioStandard::AudioSuite::FormatConverterDataCallback {
+    public:
+        explicit ConverterInputCallback(const std::shared_ptr<AVBuffer>& buffer);
+        ~ConverterInputCallback() override = default;
+        int32_t OnRequestData(const void** data, AudioStandard::AudioSuite::InputDataStatus* status) override;
+    private:
+        std::shared_ptr<AVBuffer> sourceBuffer_;
+        size_t readOffset_ = 0;
+    };
+
+    std::shared_ptr<AudioStandard::AudioSuite::AudioFormatConverter> channelConverter_;
+    AudioStandard::AudioSuite::PcmBufferFormat converterInputFormat_;
+    AudioStandard::AudioSuite::PcmBufferFormat converterOutputFormat_;
+#endif
+    std::atomic<bool> needChannelConvert_ {false};
 };
 } // namespace Pipeline
 } // namespace MEDIA

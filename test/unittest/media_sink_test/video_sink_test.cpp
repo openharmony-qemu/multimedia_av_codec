@@ -295,6 +295,60 @@ HWTEST_F(TestVideoSink, ReportPts_001, TestSize.Level0)
     EXPECT_EQ(videoSink_->lastPts_, lastPts);
     videoSink_->ReportPts(nowPts);
 }
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_001, TestSize.Level0)
+{
+    videoSink_->avSyncDetector_.CheckSync(300000, 0);
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 1);
+    EXPECT_EQ(totalSyncDurationMs, 0);
+}
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_002, TestSize.Level0)
+{
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.CheckSync(300000, 0);
+    videoSink_->avSyncDetector_.CheckSync(300000, 1);
+    videoSink_->avSyncDetector_.CheckSync(300000, 2000000);
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 1);
+    EXPECT_EQ(totalSyncDurationMs, 2000);
+}
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_003, TestSize.Level0)
+{
+    videoSink_->avSyncDetector_.CheckSync(300, 0);
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 0);
+    EXPECT_EQ(totalSyncDurationMs, 0);
+}
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_004, TestSize.Level0)
+{
+    videoSink_->avSyncDetector_.CheckSync(300000, 0);
+    videoSink_->avSyncDetector_.CheckSync(300, 1000);
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 1);
+    EXPECT_EQ(totalSyncDurationMs, 1);
+}
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_005, TestSize.Level0)
+{
+    videoSink_->avSyncDetector_.CheckSync(300000, 1000);
+    videoSink_->avSyncDetector_.CheckSync(300, 0);
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 1);
+    EXPECT_EQ(totalSyncDurationMs, 0);
+}
 }  // namespace Test
 }  // namespace Media
 }  // namespace OHOS

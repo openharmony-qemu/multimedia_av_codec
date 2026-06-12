@@ -57,6 +57,7 @@ declare_args() {
   av_codec_enable_demuxer_ass = false
   av_codec_enable_demuxer_dtshd = false
   av_codec_enable_demuxer_truehd = false
+  av_codec_enable_memc = false
   av_codec_support_camera_post_processor = false
   if (defined(global_parts_info) &&
       defined(global_parts_info.hdf_drivers_interface_camera_ext)) {
@@ -70,6 +71,11 @@ declare_args() {
   av_codec_enable_api_metrics = true
   if (defined(global_parts_info) && !defined(global_parts_info.hiviewdfx_api_metrics)) {
       av_codec_enable_api_metrics = false
+  }
+  av_codec_enable_audio_convert = false
+  av_codec_support_video_encoder_preprocessing = false
+  if (defined(global_parts_info) && defined(global_parts_info.UtilityApplication_FAST)) {
+    av_codec_support_video_encoder_preprocessing = true
   }
 }
 av_codec_sanitize = {
@@ -237,6 +243,10 @@ if (av_codec_enable_demuxer_ass) {
   av_codec_defines += [ "SUPPORT_DEMUXER_ASS" ]
 }
 
+if (av_codec_enable_memc) {
+  av_codec_defines += [ "SUPPORT_FPS_FOR_MEMC" ]
+}
+
 if (av_codec_enable_demuxer_eac3) {
   av_codec_defines += [ "SUPPORT_DEMUXER_EAC3" ]
 }
@@ -251,4 +261,12 @@ if (av_codec_enable_demuxer_truehd) {
 
 if (av_codec_support_10bit_test) {
   av_codec_defines += ["SUPPORT_10BIT_TEST"]
+}
+
+if (av_codec_enable_audio_convert) {
+  av_codec_defines += ["SUPPORT_AUDIO_CONVERT"]
+}
+
+if (av_codec_support_video_encoder_preprocessing) {
+  av_codec_defines += ["SUPPORT_VIDEO_ENCODER_PREPROCESSING"]
 }

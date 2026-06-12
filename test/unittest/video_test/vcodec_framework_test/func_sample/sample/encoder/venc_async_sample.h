@@ -47,6 +47,12 @@ public:
     int32_t PushInputParameter(uint32_t index);
     int32_t FreeOutputBuffer(uint32_t index);
     int32_t CreateInputSurface();
+    int32_t GetSurfaceQueueSize();
+    int32_t GetMaxPendingInputCount();
+    int32_t GetIDRFrameCount();
+    int32_t GetIDRWithImmediateXPSCount();
+    int32_t GetMaxPendingFramesObserved();
+    void SetIsAVCCodec(bool isAVC);
     bool IsValid();
     int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer);
 
@@ -90,6 +96,7 @@ private:
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
     void InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr);
+    void UpdateMaxPendingFramesObserved();
     void ReadFrameToBuffer(std::shared_ptr<AVBufferMock> buffer, struct OH_AVCodecBufferAttr &attr, bool isYUV);
     void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer);
     void InputLtrParam(std::shared_ptr<FormatMock> format, int32_t frameInputCount,
@@ -116,6 +123,7 @@ private:
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
     OHNativeWindow *nativeWindow_ = nullptr;
+    std::shared_ptr<SurfaceMock> surfaceMock_ = nullptr;
     LtrParam ltrParam;
 };
 } // namespace MediaAVCodec

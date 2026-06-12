@@ -20,7 +20,6 @@
 #include "native_avcodec_videoencoder.h"
 #include "native_avcodec_videodecoder.h"
 #include "native_avcapability.h"
-
 #include "avcodec_info.h"
 #include "avcodec_list.h"
 #include "avcodec_video_encoder.h"
@@ -1527,5 +1526,215 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_SCALING_MODE_VALID_TEST_1603, TestS
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_SCALING_MODE, INT32_MIN));
     OH_AVErrCode ret = OH_VideoDecoder_Configure(g_videoDec, g_format);
     ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: DECODE_KEY_OUTPUT_IN_DECODING_ORDER_INVALID_TEST_1701
+ * @tc.desc: decoder configure output in decoding order fails when not supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_INVALID_TEST_1701, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4, false);
+    if (capability != nullptr &&
+        OH_AVCapability_IsFeatureSupported(capability, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
+        std::cout << "Device supports VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER" << std::endl;
+        return;
+    }
+
+    OH_AVCodec *videoDec = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_MPEG4);
+    ASSERT_NE(nullptr, videoDec);
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, DECODER_PIXEL_FORMAT));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1));
+
+    OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
+    ASSERT_NE(AV_ERR_OK, ret);
+
+    OH_AVFormat_Destroy(format);
+    OH_VideoDecoder_Destroy(videoDec);
+}
+
+/**
+ * @tc.name: DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST_1702
+ * @tc.desc: decoder configure output in decoding order succeeds when supported
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST_1702, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
+    if (capability == nullptr ||
+        !OH_AVCapability_IsFeatureSupported(capability, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
+        std::cout << "Software decoder does not support VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER" << std::endl;
+        return;
+    }
+
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoDec = OH_VideoDecoder_CreateByName(codecName);
+    ASSERT_NE(nullptr, videoDec);
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    ASSERT_NE(nullptr, format);
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1));
+
+    OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
+    ASSERT_EQ(AV_ERR_OK, ret);
+
+    OH_AVFormat_Destroy(format);
+    OH_VideoDecoder_Destroy(videoDec);
+}
+
+/**
+ * @tc.name: ENCODE_KEY_MAX_FRAME_DELAY_COUNT_VALID_TEST_1801
+ * @tc.desc: HW AVC encoder configure with valid max frame delay count and verify it takes effect
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_VALID_TEST_1701, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(nullptr, videoEnc);
+
+    SetFormatBasicParam(false);
+    int32_t expectedValue = 5;
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_OK);
+
+    OH_AVFormat_Destroy(g_format);
+    g_format = OH_AVFormat_Create();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+}
+
+/**
+ * @tc.name: ENCODE_KEY_MAX_FRAME_DELAY_COUNT_INVALID_TEST_1802
+ * @tc.desc: HW encoder configure with invalid max frame delay count (zero)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_INVALID_TEST_1702, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(nullptr, videoEnc);
+
+    SetFormatBasicParam(false);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, 0));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+
+    OH_AVFormat_Destroy(g_format);
+    g_format = OH_AVFormat_Create();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+}
+
+/**
+ * @tc.name: ENCODE_KEY_MAX_FRAME_DELAY_COUNT_INVALID_TEST_1803
+ * @tc.desc: HW encoder configure with invalid max frame delay count (exceeds max 5)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_INVALID_TEST_1703, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(nullptr, videoEnc);
+
+    SetFormatBasicParam(false);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, 6));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+
+    OH_AVFormat_Destroy(g_format);
+    g_format = OH_AVFormat_Create();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+}
+
+/**
+ * @tc.name: ENCODE_KEY_MAX_FRAME_DELAY_COUNT_INVALID_TEST_1804
+ * @tc.desc: SW encoder configure with invalid max frame delay count (zero)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_INVALID_TEST_1804, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, SOFTWARE);
+    if (capability == nullptr) {
+        std::cout << "SOFTWARE encoder not available, skip test" << std::endl;
+        return;
+    }
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(nullptr, videoEnc);
+
+    SetFormatBasicParam(false);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, 0));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+
+    OH_AVFormat_Destroy(g_format);
+    g_format = OH_AVFormat_Create();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+}
+
+/**
+ * @tc.name: ENCODE_KEY_MAX_FRAME_DELAY_COUNT_VALID_TEST_1805
+ * @tc.desc: SW encoder configure with max frame delay count 5 should succeed
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_VALID_TEST_1805, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, SOFTWARE);
+    if (capability == nullptr) {
+        std::cout << "SOFTWARE encoder not available, skip test" << std::endl;
+        return;
+    }
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(nullptr, videoEnc);
+
+    SetFormatBasicParam(false);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, 5));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_OK);
+
+    OH_AVFormat_Destroy(g_format);
+    g_format = OH_AVFormat_Create();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+}
+
+/**
+ * @tc.name: ENCODE_KEY_MAX_FRAME_DELAY_COUNT_VALID_TEST_1806
+ * @tc.desc: SW encoder configure with max frame delay count 6 should succeed (SW allows > 5)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_VALID_TEST_1806, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, SOFTWARE);
+    if (capability == nullptr) {
+        std::cout << "SOFTWARE encoder not available, skip test" << std::endl;
+        return;
+    }
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(nullptr, videoEnc);
+
+    SetFormatBasicParam(false);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, 6));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(videoEnc, g_format);
+    ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
+
+    OH_AVFormat_Destroy(g_format);
+    g_format = OH_AVFormat_Create();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
 }

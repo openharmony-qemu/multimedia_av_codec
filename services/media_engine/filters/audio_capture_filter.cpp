@@ -190,7 +190,7 @@ Status AudioCaptureFilter::DoStart()
     if (audioCaptureModule_) {
         res = audioCaptureModule_->Start();
     }
-    FALSE_RETURN_V_MSG_E(res == Status::OK, res, "start audioCaptureModule failed");
+    FALSE_RETURN_V_MSG_E(res == Status::OK, res, "audioCaptureModule start failed");
     // start task secondly
     if (taskPtr_) {
         taskPtr_->Start();
@@ -211,6 +211,7 @@ Status AudioCaptureFilter::DoPause()
     }
     if (ret != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule stop fail");
+        ret = Status::ERROR_AUD_STOP_FAILED;
     }
 
     GetCurrentTime(pauseTime_);
@@ -257,7 +258,8 @@ Status AudioCaptureFilter::DoResume()
         ret = audioCaptureModule_->Start();
     }
     if (ret != Status::OK) {
-        MEDIA_LOG_E("audioCaptureModule start fail");
+        MEDIA_LOG_E("audioCapturer start failed");
+        ret = Status::ERROR_AUD_START_FAILED;
     }
     return ret;
 }
@@ -561,10 +563,8 @@ int32_t AudioCaptureFilter::FillLostFrameNum()
 
 void AudioCaptureFilter::RecordOneAudioFrame(uint64_t bufferSize)
 {
-    if (audioCaptureModule_ == nullptr) {
-        MEDIA_LOG_E("audioCaptureModule_ is nullptr, cannot RecordOneAudioFrame");
-        return;
-    }
+    FALSE_RETURN_MSG(audioCaptureModule_ != nullptr && outputBufferQueue_ != nullptr,
+        "audioCaptureModule_ or outputBufferQueue_ is nullptr, cannot RecordOneAudioFrame");
     std::shared_ptr<AVBuffer> buffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = static_cast<int32_t>(bufferSize);

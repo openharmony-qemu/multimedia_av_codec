@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -737,6 +737,176 @@ HWTEST_F(HttpSourcePluginUnitTest, MediaSeekTimeByStreamId_005, TestSize.Level1)
     httpSourcePlugin->downloader_ = mockDownloader;
     Status status = httpSourcePlugin->MediaSeekTimeByStreamId(1000, SeekMode::SEEK_NEXT_SYNC, 0);
     EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_http_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_https_001, TestSize.Level1)
+{
+    std::string url = "https://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_file_001, TestSize.Level1)
+{
+    std::string url = "file:///storage/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_file_002, TestSize.Level1)
+{
+    std::string url = "file://C:/Users/test/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_empty_001, TestSize.Level1)
+{
+    std::string url = "";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_relative_path_001, TestSize.Level1)
+{
+    std::string url = "/storage/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_relative_path_002, TestSize.Level1)
+{
+    std::string url = "video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_rtsp_001, TestSize.Level1)
+{
+    std::string url = "rtsp://example.com/stream";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_rtmp_001, TestSize.Level1)
+{
+    std::string url = "rtmp://example.com/stream";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_m3u8_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/video.m3u8";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_mpd_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/video.mpd";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_001, TestSize.Level1)
+{
+    std::string url = "FILE:///storage/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_002, TestSize.Level1)
+{
+    std::string url = "File:///storage/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_003, TestSize.Level1)
+{
+    std::string url = "fILE:///storage/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_004, TestSize.Level1)
+{
+    std::string url = "HTTP://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_005, TestSize.Level1)
+{
+    std::string url = "Https://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_006, TestSize.Level1)
+{
+    std::string url = "RTSP://example.com/stream";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_with_params_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/video.mp4?token=abc&expire=123";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_file_with_params_001, TestSize.Level1)
+{
+    std::string url = "file:///storage/video.mp4?param=value";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>("file:///storage/video.mp4");
+    Status status = httpSourcePlugin->SetSource(source);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>("FILE:///storage/video.mp4");
+    Status status = httpSourcePlugin->SetSource(source);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_003, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>("File:///storage/video.mp4");
+    Status status = httpSourcePlugin->SetSource(source);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_004, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>("file://C:/Users/test/video.mp4");
+    Status status = httpSourcePlugin->SetSource(source);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_005, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>("FILE://C:/Users/test/video.mp4");
+    Status status = httpSourcePlugin->SetSource(source);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_http_protocol_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    Status status = httpSourcePlugin->SetSource(source);
+    EXPECT_NE(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_http_protocol_002, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>("HTTP://127.0.0.1:46666/dewu.mp4");
+    Status status = httpSourcePlugin->SetSource(source);
+    EXPECT_NE(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_https_protocol_001, TestSize.Level1)
+{
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>("HTTPS://example.com/video.mp4");
+    Status status = httpSourcePlugin->SetSource(source);
+    EXPECT_NE(status, Status::ERROR_INVALID_OPERATION);
 }
 }
 }

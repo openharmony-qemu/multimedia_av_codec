@@ -40,7 +40,6 @@ public:
     virtual Status Start();
     virtual Status WriteSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
     virtual Status Stop();
-    virtual Status Reset();
     void OnEvent(const Plugins::PluginEvent &event) override;
 
 private:

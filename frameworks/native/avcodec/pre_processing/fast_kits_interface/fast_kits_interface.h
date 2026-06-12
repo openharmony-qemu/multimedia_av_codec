@@ -18,6 +18,7 @@
 
 #include <dlfcn.h>
 #include <shared_mutex>
+#include <unordered_set>
 
 #include "avcodec_errors.h"
 #include "avcodec_log_ex.h"
@@ -61,15 +62,16 @@ struct CropRect {
 class FastKitsInterface {
 public:
     static FastKitsInterface &GetInstance();
+    static bool IsFormatSupported(int32_t format);
 
     void Retain();
     void Release();
-    int32_t Init(uint32_t format, FastResizeAlgoType algo = FastResizeAlgoType::BICUBIC);
+    int32_t Init(uint32_t format, FastResizeAlgoType algo = FastResizeAlgoType::HARDWARE);
     bool IsLoaded() const;
 
     int32_t Crop(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output, const CropRect &rect);
     int32_t DownSample(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
-                       FastResizeAlgoType algo = FastResizeAlgoType::BICUBIC);
+                       FastResizeAlgoType algo = FastResizeAlgoType::HARDWARE);
 
 private:
     FastKitsInterface() = default;
@@ -89,6 +91,7 @@ private:
     mutable std::shared_mutex mutex_;
     int32_t refCount_ = 0;
     void *handle_ = nullptr;
+    std::unordered_set<uint32_t> initializedFormats_;
     FastScaleInitFunc initFunc_ = nullptr;
     FastScaleDownSampleFunc downSampleFunc_ = nullptr;
     FastScaleCropFunc cropFunc_ = nullptr;

@@ -30,6 +30,9 @@ ohos_source_set("adaptive_framerate_controller") {
     "decoding_behavior_analyzer.cpp",
   ]
 
+  defines = []
+  defines += av_codec_defines
+
   deps = [
     "../../../dfx:av_codec_service_dfx",
     "../event_manager:event_manager",
@@ -37,7 +40,9 @@ ohos_source_set("adaptive_framerate_controller") {
 
   external_deps = [
     "c_utils:utils",
+    "hilog:libhilog",
     "init:libbegetutil",
+    "media_foundation:media_foundation",
   ]
 
   subsystem_name = "multimedia"

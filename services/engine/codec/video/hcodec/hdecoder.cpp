@@ -27,11 +27,13 @@
 #include "OMX_VideoExt.h"
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
+#include "hcodec_list.h"
 #include "type_converter.h"
 #include "surface_buffer.h"
 #include "buffer_extra_data_impl.h"  // foundation/graphic/graphic_surface/surface/include/
 #include "surface_tools.h"
 #include "hcodec_utils.h"
+#include "event_type.h"
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 #include "algorithm_video.h"
 #endif
@@ -47,6 +49,7 @@ std::unordered_map<HDecoder*, HDecoder::DecoderInst> g_insts;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 std::mutex g_vpeLock;
 std::vector<std::string> g_vpeSupportList{};
+std::vector<std::string> g_srSupportList{};
 bool g_isVpeSupportListInit{false};
 #endif
 
@@ -74,7 +77,7 @@ bool HDecoder::DecideOutputBufMode()
 {
     isAlloc_ = false;
     isDynamic_ = false;
- 
+
     SupportBufferTypeV2 typeV2;
     InitOMXParamExt(typeV2);
     typeV2.portIndex = OMX_DirOutput;
@@ -110,16 +113,22 @@ bool HDecoder::DecideOutputBufMode()
 
 int32_t HDecoder::OnConfigure(const Format &format)
 {
+    currGeneration_ = 0;
+    currGenerationLayoutHasParsed_ = false;
+    currLayout_.reset();
     configFormat_ = make_shared<Format>(format);
-
     (void)SetProcessName();
-    (void)SetVrrEnable(format);
- 
+
     if (!DecideOutputBufMode()) {
         HLOGE("set output buffer type failed");
         return AVCS_ERR_UNKNOWN;
     }
-    int32_t ret = SetLowLatency(format);
+
+    int32_t ret  = SetDecOrder(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    ret = SetLowLatency(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -129,10 +138,35 @@ int32_t HDecoder::OnConfigure(const Format &format)
     SetContentLightLevelFromContainer(format);
 
     SaveTransform(format);
-    (void)SetProcessName();
+    SaveScaleMode(format);
     (void)SetFrameRateAdaptiveMode(format);
+    (void)SetVrrEnable(format);
     (void)SetIsMvUpload(format);
     return SetupPort(format);
+}
+
+int32_t HDecoder::SetDecOrder(const Format &format)
+{
+    int32_t enableDecOrder;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, enableDecOrder) ||
+        enableDecOrder == 0) {
+        return AVCS_ERR_OK;
+    }
+    CodecHDI::VideoFeature feature =
+        HCodecList::FindFeature(caps_.port.video.features, CodecHDI::VIDEO_FEATURE_LOW_LATENCY);
+    if (!feature.support) {
+        HLOGE("don't support dec order");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = OMX_TRUE;
+    if (!SetParameter(OMX_IndexParamLowLatency, param)) {
+        HLOGW("enable dec order failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    HLOGI("enable dec order succ");
+    return AVCS_ERR_OK;
 }
 
 int32_t HDecoder::SetupPort(const Format &format)
@@ -290,6 +324,9 @@ void HDecoder::UpdateColorAspects()
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, param.aspects.primaries);
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, param.aspects.transfer);
         outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, param.aspects.matrixCoeffs);
+        if (!currGenerationLayoutHasParsed_) {
+            return;
+        }
         HLOGI("output format changed: %s", outputFormat_->Stringify().c_str());
         callback_->OnOutputFormatChanged(*(outputFormat_.get()));
     }
@@ -478,7 +515,7 @@ void HDecoder::SetIsMvUpload(const Format &format)
     InitOMXParam(param);
     param.bEnabled = OMX_TRUE;
     if (!SetParameter(OMX_IndexParamIsMvUpload, param)) {
-        HLOGE("SetIsMvUpload SetParameter failed");
+        HLOGW("SetIsMvUpload SetParameter failed, ignore");
         return;
     }
     HLOGI("SetIsMvUpload SetParameter success");
@@ -653,6 +690,7 @@ bool HDecoder::ReadyToStart()
     } else {
         HLOGI("buffer mode");
     }
+
     uint64_t mode = GetModeUsage();
     uint64_t consumer = GetSurfaceConsumerUsage();
     if (isAlloc_) {
@@ -662,6 +700,7 @@ bool HDecoder::ReadyToStart()
             usageToVendor, mode, cfgedConsumerUsage_, consumer);
         (void)SetUsageToVendor(usageToVendor);
     }
+
     return true;
 }
 
@@ -687,7 +726,7 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
     }
     uint64_t mode = GetModeUsage();
     uint64_t consumer = GetSurfaceConsumerUsage();
- 
+
     if (isAlloc_) { // alloc by omx
         uint64_t usageToVendor = mode | cfgedConsumerUsage_ | consumer;
         HLOGI("usage to vendor(0x%" PRIx64 ") = mode(0x%" PRIx64 ") | "
@@ -703,13 +742,14 @@ int32_t HDecoder::AllocateBuffersOnPort(OMX_DIRTYPE portIndex)
         HLOGI("final usage(0x%" PRIx64 ") = vendor(0x%" PRIx64 ") | mode(0x%" PRIx64 ") | "
             "cfged(0x%" PRIx64 ") | consumer(0x%" PRIx64 ")",
             requestCfg_.usage, vendor, mode, cfgedConsumerUsage_, consumer);
- 
+
         if (isDynamic_) {  // use dynamic
             ret = AllocOutDynamicSurfaceBuf();
         } else {  // use preset
             ret = (currSurface_.surface_ ? AllocateOutputBuffersFromSurface() : AllocateAvSurfaceBuffers(portIndex));
         }
     }
+
     return ret;
 }
 
@@ -750,6 +790,7 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
         layout.byteStride = currLayout_->byteStride;
         layout.alignedHeight = currLayout_->alignedHeight;
     }
+
     using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
     vector<uint8_t> vec;
     GSError err = buffer->GetMetadata(ATTRKEY_CROP_REGION, vec);
@@ -765,6 +806,7 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
         layout.cropW = layout.handleW;
         layout.cropH = layout.handleH;
     }
+
     if (currLayout_ == nullptr) {
         currLayout_ = std::make_shared<SurfaceBufferLayout>(layout);
         HLOGI("buffer layout update: %s", layout.ToString().c_str());
@@ -775,6 +817,7 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
         HLOGI("buffer layout update: %s -> %s", currLayout_->ToString().c_str(), layout.ToString().c_str());
         *currLayout_ = layout;
     }
+    outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, layout.fmt.graphicFmt);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(layout.fmt.innerFmt));
     outputFormat_->PutStringValue("pixel_format_string", layout.fmt.strFmt);
     outputFormat_->PutIntValue(OHOS::Media::Tag::VIDEO_STRIDE, layout.byteStride);
@@ -873,7 +916,8 @@ uint64_t HDecoder::GetModeUsage()
 {
     return currSurface_.surface_ ? SURFACE_MODE_PRODUCER_USAGE : BUFFER_MODE_REQUEST_USAGE;
 }
- uint64_t HDecoder::GetVendorProducerUsage()
+
+uint64_t HDecoder::GetVendorProducerUsage()
 {
     GetBufferHandleUsageParams vendorUsage;
     InitOMXParamExt(vendorUsage);
@@ -923,7 +967,10 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
         if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_AIHDR_ENHANCER, g_vpeSupportList)) {
             HLOGE("get VPE list failed");
             dlclose(vpeHandle);
-            return;
+        }
+        if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_DETAIL_ENHANCER, g_srSupportList)) {
+            HLOGE("get sr list failed");
+            dlclose(vpeHandle);
         }
         g_isVpeSupportListInit = true;
         HLOGD("VPE init support list ok");
@@ -932,6 +979,11 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
     if (std::find(g_vpeSupportList.cbegin(), g_vpeSupportList.cend(), caller_.app.processName) !=
         g_vpeSupportList.cend()) {
         consumerUsage |= (BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VENDOR_PRI10);
+        HLOGI("VPE Aihdr update usage = 0x%" PRIx64 "", consumerUsage);
+    }
+    if (std::find(g_srSupportList.cbegin(), g_srSupportList.cend(), caller_.app.processName) !=
+        g_srSupportList.cend()) {
+        consumerUsage |= (BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
         HLOGI("VPE Aihdr update usage = 0x%" PRIx64 "", consumerUsage);
     }
 }
@@ -943,6 +995,9 @@ uint64_t HDecoder::GetSurfaceConsumerUsage()
         return 0;
     }
     uint64_t consumerUsage = currSurface_.surface_->GetDefaultUsage();
+    if (consumerUsage & BUFFER_USAGE_MEM_MMZ_CACHE) {
+        HLOGI("got cache flag from Surface::GetDefaultUsage(), consumer must deal with cache!");
+    }
     if (currSurface_.surface_->GetName().find("SurfaceImage") != string::npos) {
         consumerUsage |= BUFFER_USAGE_HW_COMPOSER;
 #ifdef USE_VIDEO_PROCESSING_ENGINE
@@ -1003,6 +1058,9 @@ int32_t HDecoder::AllocateOutputBuffersFromSurface()
         GSError err = surfaceBuffer->Alloc(requestCfg_);
         if (err != GSERROR_OK) {
             HLOGE("Alloc surfacebuffer %u failed, GSError=%d", i, err);
+            if (isSecure_ && !isEncoder_) {
+                ReportStatisticsEvent(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO);
+            }
             return err == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
         }
         shared_ptr<OmxCodecBuffer> omxBuffer = SurfaceBufferToOmxBuffer(surfaceBuffer);
@@ -1081,6 +1139,7 @@ int32_t HDecoder::AllocateOutputBuffersFromOmx()
         info.omxBuffer = outBuffer;
         info.bufferId = outBuffer->bufferId;
         info.attached = true;
+        info.needDealWithCache = (currSurface_.surface_ == nullptr);
         outputBufferPool_.push_back(info);
         HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, info.bufferId, surfaceBuffer->GetSeqNum());
     }
@@ -1288,7 +1347,7 @@ void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::v
     IF_TRUE_RETURN_VOID_WITH_MSG(avBuffer == nullptr || avBuffer->memory_ == nullptr, "CreateAVBuffer failed");
     nullSlot->avBuffer = avBuffer;
     if (currSurface_.surface_ == nullptr) {
-        nullSlot->needDealWithCache = (requestCfg_.usage & BUFFER_USAGE_MEM_MMZ_CACHE);
+        nullSlot->needDealWithCache = true;
     }
     SetCallerToBuffer(buffer->GetFileDescriptor(),
                       static_cast<uint32_t>(buffer->GetWidth()),
@@ -1631,6 +1690,7 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     currSurface_ = SurfaceItem(newSurface, compUniqueStr_, instanceId_);
     SetTransform();
     SetScaleMode();
+
     // if owned by old surface, we need to transfer them to new surface
     for (auto [flushTime, i] : ownedBySurfaceFlushTime2BufferIndex) {
         ChangeOwner(outputBufferPool_[i], BufferOwner::OWNED_BY_US);

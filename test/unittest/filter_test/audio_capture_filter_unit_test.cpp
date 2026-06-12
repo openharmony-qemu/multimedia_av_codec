@@ -69,12 +69,12 @@ HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_PrepareAudioCapture_001,
     auto audioCaptureModule = std::make_shared<AudioCaptureModule::AudioCaptureModule>();
     audioCaptureFilter_->audioCaptureModule_ = audioCaptureModule;
     Status result = audioCaptureFilter_->PrepareAudioCapture();
-    EXPECT_EQ(result, Status::ERROR_WRONG_STATE);
+    EXPECT_EQ(result, Status::ERROR_AUD_INIT_FAILED);
     audioCaptureFilter_->taskPtr_ = nullptr;
     auto mockAudioCaptureModule = std::make_shared<MockAudioCaptureModule>();
     audioCaptureFilter_->audioCaptureModule_ = mockAudioCaptureModule;
     result = audioCaptureFilter_->PrepareAudioCapture();
-    EXPECT_EQ(result, Status::ERROR_WRONG_STATE);
+    EXPECT_EQ(result, Status::ERROR_AUD_INIT_FAILED);
     EXPECT_NE(audioCaptureFilter_->taskPtr_, nullptr);
 }
 
@@ -136,7 +136,7 @@ HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_DoPause_001, TestSize.Le
     audioCaptureFilter_->taskPtr_ = taskPtr;
     audioCaptureFilter_->audioCaptureModule_ = nullptr;
     Status result = audioCaptureFilter_->DoPause();
-    EXPECT_EQ(result, Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(result, Status::ERROR_AUD_STOP_FAILED);
 }
 
 /**
@@ -148,13 +148,13 @@ HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_DoResume_001, TestSize.L
 {
     audioCaptureFilter_->audioCaptureModule_ = nullptr;
     Status result = audioCaptureFilter_->DoResume();
-    EXPECT_EQ(result, Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(result, Status::ERROR_AUD_START_FAILED);
     auto taskPtr = std::make_shared<Task>("DataReader");
     audioCaptureFilter_->taskPtr_ = taskPtr;
     auto mockAudioCaptureModule = std::make_shared<MockAudioCaptureModule>();
     audioCaptureFilter_->audioCaptureModule_ = mockAudioCaptureModule;
     result = audioCaptureFilter_->DoResume();
-    EXPECT_EQ(result, Status::ERROR_WRONG_STATE);
+    EXPECT_EQ(result, Status::ERROR_AUD_START_FAILED);
 }
 
 /**

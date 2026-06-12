@@ -18,6 +18,9 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
+#include "meta/meta_key.h"
+#include "native_avcodec_base.h"
+#include "preprocessor_format_utils.h"
 #ifdef BUILD_ENG_VERSION
 #include <fstream>
 #include <sys/stat.h>
@@ -70,10 +73,17 @@ void DumpSurfaceBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, const std:
     EnsureDumpDir();
     int32_t w = buffer->GetWidth();
     int32_t h = buffer->GetHeight();
+    int32_t stride = buffer->GetStride();
+    int32_t sliceH = h; // default: sliceHeight == height
+    OH_NativeBuffer_Planes *planes = nullptr;
+    if (buffer->GetPlanesInfo(reinterpret_cast<void **>(&planes)) == OHOS::GSERROR_OK &&
+        planes != nullptr && planes->planeCount > 1 && stride > 0) {
+        sliceH = static_cast<int32_t>(planes->planes[1].offset / static_cast<uint64_t>(stride));
+    }
     int32_t fmt = buffer->GetFormat();
     char name[256];
-    int ret = sprintf_s(name, sizeof(name), "%s/%s_%s_%dx%d_fmt%d_pts%" PRIu64 ".bin",
-                        DUMP_PATH, encoderId.c_str(), prefix.c_str(), w, h, fmt, pts);
+    int ret = sprintf_s(name, sizeof(name), "%s/%s_%s_%dx%d(%dx%d)_fmt%d_pts%" PRIu64 ".bin",
+                        DUMP_PATH, encoderId.c_str(), prefix.c_str(), w, h, stride, sliceH, fmt, pts);
     if (ret > 0) {
         std::ofstream ofs(name, std::ios::binary | std::ios::app);
         if (ofs.is_open()) {
@@ -95,6 +105,7 @@ void DumpBuffers(const OHOS::sptr<OHOS::SurfaceBuffer> &, const OHOS::sptr<OHOS:
                  const std::string &, uint64_t) {}
 #endif
 }
+
 namespace OHOS {
 namespace MediaAVCodec {
 
@@ -115,10 +126,13 @@ PreprocessorManager::~PreprocessorManager()
 }
 
 void PreprocessorManager::RegisterEncoder(std::string_view encoderId, std::shared_ptr<Preprocessor> preprocessor,
-                                          sptr<Surface> encoderSurface)
+                                          sptr<Surface> encoderSurface, OnStreamChangedCallback streamChangedCb,
+                                          OnPreprocessErrorCallback errorCb)
 {
     auto info = std::make_shared<EncoderInfo>(std::string(encoderId));
     info->Init(preprocessor, encoderSurface);
+    info->SetStreamChangedCallback(std::move(streamChangedCb));
+    info->SetPreprocessErrorCallback(std::move(errorCb));
 
     std::lock_guard<std::mutex> lock(mutex_);
     encoders_.emplace(std::string(encoderId), info);
@@ -311,6 +325,10 @@ int32_t PreprocessorManager::EncoderInfo::Start()
     }
     eosRequested_ = false;
     notifyEosTask_ = nullptr;
+    streamChangeNotified_ = false;
+    lastNotifiedWidth_ = 0;
+    lastNotifiedHeight_ = 0;
+    lastNotifiedFormat_ = static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT);
     CheckAndAllocateSurfaceBufferFromEncSurface();
     isRunning_ = true;
     processThread_ = std::thread(&EncoderInfo::EncoderThreadLoop, this);
@@ -511,17 +529,67 @@ bool PreprocessorManager::EncoderInfo::ProcessFrame(std::shared_ptr<SurfaceBuffe
                                                     std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
 {
     AVCODEC_SYNC_TRACE;
+
     if (preprocessor_->ShouldDropFrame(inputBuffer->timestamp)) {
         AVCODEC_LOGD("venc_%{public}s Frame dropped: pts=%{public}" PRId64, encoderId_.data(),
                      inputBuffer->timestamp);
         return false;
     }
-    if (preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp) == AV_ERR_OK) {
-        SetBufferFlushConfig(inputBuffer, outputBuffer);
-    } else {
+    CheckAndNotifyStreamChange(inputBuffer);
+    auto ret = preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp);
+    if (ret != static_cast<int32_t>(AVCS_ERR_OK)) {
+        ReportPreprocessError(ret);
         return false;
     }
+    SetBufferFlushConfig(inputBuffer, outputBuffer);
     return true;
+}
+
+void PreprocessorManager::EncoderInfo::SetStreamChangedCallback(OnStreamChangedCallback cb)
+{
+    onStreamChangedCallback_ = std::move(cb);
+}
+
+void PreprocessorManager::EncoderInfo::SetPreprocessErrorCallback(OnPreprocessErrorCallback cb)
+{
+    preprocessErrorCallback_ = std::move(cb);
+}
+
+void PreprocessorManager::EncoderInfo::CheckAndNotifyStreamChange(
+    const std::shared_ptr<SurfaceBufferWrapper>& inputBuffer)
+{
+    if (!onStreamChangedCallback_) {
+        AVCODEC_LOGW("OnStreamChangedCallback is not found.");
+        return;
+    }
+
+    bool shouldNotify = false;
+
+    if (!streamChangeNotified_) {
+        shouldNotify = true;
+        streamChangeNotified_ = true;
+    } else {
+        int32_t w = inputBuffer->buffer->GetWidth();
+        int32_t h = inputBuffer->buffer->GetHeight();
+        int32_t fmt = inputBuffer->buffer->GetFormat();
+        if (w != lastNotifiedWidth_ || h != lastNotifiedHeight_ || fmt != lastNotifiedFormat_) {
+            shouldNotify = true;
+        }
+    }
+    if (!shouldNotify) {
+        return;
+    }
+
+    int32_t inputW = inputBuffer->buffer->GetWidth();
+    int32_t inputH = inputBuffer->buffer->GetHeight();
+    int32_t inputFmt = inputBuffer->buffer->GetFormat();
+    int32_t inputStride = inputBuffer->buffer->GetStride();
+    Media::Format streamFormat = FillStreamDescription(inputW, inputH, inputFmt, inputStride);
+    lastNotifiedWidth_ = inputW;
+    lastNotifiedHeight_ = inputH;
+    lastNotifiedFormat_ = inputFmt;
+
+    onStreamChangedCallback_(streamFormat);
 }
 
 // === PreprocessorManager: Buffer data query for GetInputDescription ===
@@ -554,5 +622,42 @@ bool PreprocessorManager::EncoderInfo::PeekPendingBufferData(BufferDataInfo& out
     outInfo.stride = wrapper->buffer->GetStride();
     return true;
 }
+
+void PreprocessorManager::EncoderInfo::ReportPreprocessError(int32_t errorCode)
+{
+    if (preprocessErrorCallback_) {
+        preprocessErrorCallback_(errorCode);
+    }
+}
+
+Media::Format PreprocessorManager::EncoderInfo::FillStreamDescription(int32_t width, int32_t height,
+                                                                      int32_t pixelFormat, int32_t stride)
+{
+    Media::Format format;
+    format.PutIntValue(Media::Tag::VIDEO_WIDTH, width);
+    format.PutIntValue(Media::Tag::VIDEO_HEIGHT, height);
+    format.PutIntValue(Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, pixelFormat);
+    if (stride > 0) {
+        format.PutIntValue(Media::Tag::VIDEO_STRIDE, stride);
+    }
+
+    VideoPixelFormat mappedFmt;
+    if (GraphicPixelFmtToVideoPixelFmt(static_cast<GraphicPixelFormat>(pixelFormat), mappedFmt)) {
+        format.PutIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(mappedFmt));
+    }
+
+    if (preprocessor_->IsCropEnabled()) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, preprocessor_->GetCropLeft());
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, preprocessor_->GetCropRight());
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, preprocessor_->GetCropTop());
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, preprocessor_->GetCropBottom());
+    }
+    if (preprocessor_->IsDownsamplingEnabled()) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, preprocessor_->GetDownsamplingWidth());
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, preprocessor_->GetDownsamplingHeight());
+    }
+    return format;
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

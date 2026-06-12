@@ -193,6 +193,7 @@ ohos_unittest("http_media_downloader_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -226,6 +227,7 @@ ohos_unittest("downloader_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -258,6 +260,7 @@ ohos_unittest("http_source_plugin_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -290,6 +293,7 @@ ohos_unittest("http_source_plugin_unittest") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -322,6 +326,7 @@ ohos_unittest("app_client_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -353,6 +358,7 @@ ohos_unittest("media_cached_buffer_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -382,6 +388,7 @@ ohos_unittest("thread_safe_container_unit_test") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
   ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
@@ -403,6 +410,7 @@ ohos_unittest("aes_decryptor_unit_test") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "media_foundation:media_foundation",
     "openssl:libcrypto_shared",
   ]

@@ -104,6 +104,10 @@ int AVCodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Mess
         case static_cast<uint32_t>(AVCodecServiceInterfaceCode::GET_ACTIVE_SECURE_DECODER_PIDS):
             ret = OnGetActiveSecureDecoderPids(data, reply);
             break;
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::REPORT_STATISTICS_EVENT):
+            ret = AVCS_ERR_OK;
+            OnReportStatisticsEvent(data, reply);
+            break;
         default:
             AVCODEC_LOGW("AVCodecServiceStub: no member func supporting, applying default process");
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
@@ -215,6 +219,16 @@ int32_t AVCodecServiceStub::OnGetActiveSecureDecoderPids(MessageParcel &data, Me
     (void)reply.WriteInt32(ret);
 
     return AVCS_ERR_OK;
+}
+
+void AVCodecServiceStub::OnReportStatisticsEvent(MessageParcel &data, MessageParcel &reply)
+{
+    uint32_t eventType = 0;
+    CHECK_AND_RETURN_LOG(data.ReadUint32(eventType), "Read statistics event type failed");
+    Media::Meta meta;
+    CHECK_AND_RETURN_LOG(meta.FromParcel(data), "Read statistics event meta failed");
+
+    ReportStatisticsEvent(static_cast<StatisticsEventType>(eventType), meta);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

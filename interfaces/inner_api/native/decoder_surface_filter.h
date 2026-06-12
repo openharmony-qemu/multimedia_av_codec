@@ -133,6 +133,8 @@ public:
     void SetBuffering(bool isBuffering);
     void SetVideoOutput(sptr<Surface> surface);
     void GetVideoSample(int32_t &outputResult);
+    bool IsResolutionSupportSeekContinuous();
+    Status GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,

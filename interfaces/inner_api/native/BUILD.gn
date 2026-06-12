@@ -204,10 +204,6 @@ ohos_shared_library("av_codec_client") {
     ":av_codec_client_codec_config",
   ]
 
-  public_external_deps = [
-    "ffmpeg:libohosffmpeg",
-    "media_foundation:media_foundation",
-  ]
   sanitize = av_codec_sanitize
 
   configs = [
@@ -223,7 +219,6 @@ ohos_shared_library("av_codec_client") {
     "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/client/avcodec_client.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_listener_stub.cpp",
-    "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_parcel.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_service_proxy.cpp",
   ]
   if (av_codec_support_codec) {
@@ -300,6 +295,7 @@ ohos_shared_library("av_codec_client") {
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+    "$av_codec_root_dir/services/services/sa_avcodec/client:statistics_event_ipc",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/fast_kits_interface:fast_image_loader",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/frame_drop:frame_drop",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/cpu_image_processor:cpu_image_processor",
@@ -315,6 +311,11 @@ ohos_shared_library("av_codec_client") {
 
   deps += [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
 
+  public_external_deps = [
+    "media_foundation:media_foundation",
+    "ffmpeg:libohosffmpeg",
+  ]
+
   external_deps = [
     "bounds_checking_function:libsec_static",
     "bundle_framework:appexecfwk_base",
@@ -323,8 +324,8 @@ ohos_shared_library("av_codec_client") {
     "drivers_interface_codec:libcodec_proxy_4.0",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "ipc:ipc_single",
-    "media_foundation:media_foundation",
     "qos_manager:qos",
     "samgr:samgr_proxy",
   ]
@@ -353,7 +354,6 @@ ohos_shared_library("av_codec_suspend_client") {
     ":av_codec_client_codec_config",
   ]
 
-  public_external_deps = [ "media_foundation:media_foundation" ]
   sanitize = av_codec_sanitize
 
   configs = [
@@ -368,8 +368,6 @@ ohos_shared_library("av_codec_suspend_client") {
     "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/client/avcodec_client.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_listener_stub.cpp",
-    "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_parcel.cpp",
-    "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_service_proxy.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
@@ -377,6 +375,7 @@ ohos_shared_library("av_codec_suspend_client") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "samgr:samgr_proxy",

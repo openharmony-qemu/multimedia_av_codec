@@ -86,6 +86,7 @@ public:
         const std::shared_ptr<EncoderAdapterKeyFramePtsCallback> &encoderAdapterKeyFramePtsCallback);
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
+    Status SetWatermarkMode();
     sptr<Surface> GetInputSurface();
     Status Start();
     Status Stop();
@@ -116,6 +117,7 @@ private:
     void ConfigureEnableFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     bool CheckFrames(int64_t currentPts, int64_t &checkFramesPauseTime);
+    void HandlePtsMapping(int64_t currentPts, bool isDroppedFrames, std::shared_ptr<Format> &parameter);
     void GetCurrentTime(int64_t &currentTime);
     void AddStartPts(int64_t currentPts);
     void AddStopPts();
@@ -178,6 +180,7 @@ private:
     uint32_t stoppedVideoFrameCount_{0};
     bool hasBoostVideoFrameRate_ = false;
     bool isSupportBoostFrameRate_ = false;
+    bool isWatermarkMode_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -23,7 +23,7 @@
 #include "ffmpeg_utils.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
 
 constexpr uint8_t HEVC_NAL_TYPE_MASK = 0x7E; // NAL unit type mask (bits 1-6 of first byte)
 constexpr uint8_t HEVC_NAL_TYPE_SHIFT = 1;   // Right shift to get NAL type
@@ -129,14 +129,6 @@ int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base)
     MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
         PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, timestampUs, result);
     return result;
-}
-
-bool StartWith(const char* name, const char* chars)
-{
-    if (name == nullptr || chars == nullptr) {
-        return false;
-    }
-    return !strncmp(name, chars, strlen(chars));
 }
 
 uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough)
@@ -264,7 +256,7 @@ int64_t AvTime2Us(int64_t hTime)
 
 bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
 {
-    if (size < NAL_START_CODE_SIZE) {
+    if (sample == nullptr || size < NAL_START_CODE_SIZE) {
         return false;
     }
     bool hasShortStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 1); // 001

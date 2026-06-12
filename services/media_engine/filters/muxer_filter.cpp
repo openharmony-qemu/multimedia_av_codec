@@ -145,10 +145,11 @@ Status MuxerFilter::DoStart()
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Start");
     
     CHECK_AND_RETURN_RET_LOG(!isStarted, Status::OK, "MuxerFilter has started");
-    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
+    FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_FRAMEWORK_ERR, "MediaMuxer is nullptr.");
     Status ret = mediaMuxer_->Start();
     if (ret != Status::OK) {
         SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
+        return Status::ERROR_MUXER_START_FAILED;
     } else {
         isStarted = true;
         isReachMaxDuration_.store(false);
@@ -185,6 +186,7 @@ Status MuxerFilter::DoStop()
         } else if (ret == Status::ERROR_WRONG_STATE) {
             ret = Status::OK;
         } else {
+            ret = Status::ERROR_MUXER_STOP_FAILED;
             SetFaultEvent("MuxerFilter::DoStop error", (int32_t)ret);
         }
         return ret;
@@ -333,7 +335,8 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
         if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_.load() == false) {
             MEDIA_LOG_I("MuxerFilter::OnBufferFilled currentBufferPts > maxDuration_ start to stop");
             isReachMaxDuration_.store(true);
-            std::thread asyncThread(std::bind(&MuxerFilter::EventCompleteStopAsync, this));
+            std::shared_ptr<MuxerFilter> self = this->shared_from_this();
+            std::thread asyncThread(std::bind(&MuxerFilter::EventCompleteStopAsync, self));
             asyncThread.detach();
         }
         int64_t anotherBufferPts = 0;

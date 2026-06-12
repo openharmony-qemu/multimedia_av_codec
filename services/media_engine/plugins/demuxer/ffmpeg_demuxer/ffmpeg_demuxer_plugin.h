@@ -246,6 +246,7 @@ private:
     static int HandleReadEOS(IOContext* ioContext);
     static int HandleReadError(int result);
     static void UpdateInitDownloadData(IOContext* ioContext, int dataSize);
+    static void UpdateReadSizeCnt(IOContext* ioContext, int dataSize);
     static int AVWritePacket(void* opaque, const uint8_t* buf, int bufSize);
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags, IOContext *ioContext);
@@ -275,6 +276,10 @@ private:
         AVPacketWrapperPtr tempPktWrapper, uint32_t copySize, bool combined);
     Status ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuffer> sample,
         std::shared_ptr<SamplePacket> samplePacket, AVPacketWrapperPtr& tempPktWrapper);
+    Status SkipPacketAfterPacketConvertError(uint32_t trackId, const std::shared_ptr<SamplePacket>& samplePacket,
+        bool popSample, bool restoreCacheInfo);
+    Status ConvertPacketToAnnexbByCodec(std::shared_ptr<AVBuffer> sample, AVPacket& pkt,
+        std::shared_ptr<SamplePacket> dstSamplePacket, AVCodecID codecId);
     Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacketWrapperPtr avpacketWrapper,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status ConvertPacketToAnnexb(AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> samplePacket,
@@ -399,6 +404,8 @@ private:
     Status AccumulateXpsPkt(AVPacketWrapperPtr pkt);
     void AccumulateXpsPktRelease(uint32_t trackIndex);
     void AccumulateXpsPktReleaseAll();
+    Status AccumulateXpsPktLocked(AVPacketWrapperPtr pkt);
+    void AccumulateXpsPktReleaseLocked(uint32_t trackIndex);
     enum class AccumulateAction {
         ERROR,
         NOT_SUPPORT_TYPE,
@@ -407,6 +414,7 @@ private:
     };
     AccumulateAction ProcessAccumulateXpsPkt(AVPacketWrapperPtr& pktWrapper,
         int ffmpegRet, Status& status);
+    std::mutex accumulatePktMutex_ {};
     std::map<int32_t, AVPacketWrapperPtr> accumulatePktMap_ {};
     std::map<int32_t, bool> accumulatePktFinishMap_ {};
     bool VideoFirstFrameValid(uint32_t trackIndex);

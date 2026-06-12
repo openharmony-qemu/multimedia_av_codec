@@ -23,7 +23,6 @@
 #include "sync_fence.h"
 #include <thread>
 #include <queue>
-#include <deque>
 #include <map>
 #include <mutex>
 #include <condition_variable>
@@ -71,18 +70,29 @@ private:
         sptr<SyncFence> fence;
         int64_t timestamp;
     };
-    
+
     GSError OnProducerBufferReleased();
     bool GetConsumerAndProducerBuffer(SurfaceBufferInfo& srcBufferInfo, SurfaceBufferInfo& dstBufferInfo);
     bool ProcessBuffer(SurfaceBufferInfo& srcBufferInfo, SurfaceBufferInfo& dstBufferInfo);
     void OutputBuffer(const SurfaceBufferInfo& bufferInfo);
     Status RenderOutputBufferInner(uint32_t index, int64_t renderTimestamp, bool render);
+    bool FindBufferFromRenderQueue(uint32_t index, SurfaceBufferInfo& bufferInfo);
+    Status FlushBufferToProducer(SurfaceBufferInfo& bufferInfo, int64_t renderTimestamp);
     void ProcessBuffers();
     bool WaitTrigger();
     void ClearBufferQueues();
-    void CopyToSideSurface(SurfaceBufferInfo& srcBufferInfo);
     void PushBufferToConsumer(SurfaceBufferInfo& bufferInfo);
     void DealNotRenderBuffer(SurfaceBufferInfo& bufferInfo);
+    bool CopyBufferToSideSurface(sptr<SurfaceBuffer> srcBuffer, int64_t timestamp);
+    bool RequestSideBuffer(SurfaceBufferInfo& sideBufferInfo, sptr<Surface> sideSurface);
+    bool FlushSideBuffer(SurfaceBufferInfo& sideBufferInfo, int64_t timestamp, sptr<Surface> sideSurface);
+
+    bool UpdateRequestConfigFromBuffer(const SurfaceBufferInfo& bufferInfo);
+    void HandleResolutionChange();
+    bool HandleBufferSizeMismatch(SurfaceBufferInfo& srcBufferInfo, SurfaceBufferInfo& dstBufferInfo);
+    sptr<SurfaceBuffer> HandleRenderBufferOverflow();
+    void CancelOldBuffersOnResolutionChange(sptr<Surface> producerSurface);
+    void UpdateConfigIfZero(sptr<SurfaceBuffer> srcBuffer);
 
     sptr<Surface> consumerSurface_;
     sptr<Surface> producerSurface_;
@@ -91,8 +101,8 @@ private:
     std::queue<SurfaceBufferInfo> consumerBufferQueue_;
     std::queue<SurfaceBufferInfo> producerBufferQueue_;
     std::map<uint32_t, SurfaceBufferInfo> renderBufferQueue_;
-    std::queue<SurfaceBufferInfo> flushBufferQueue_;
-    std::deque<SurfaceBufferInfo> sideBufferQueue_;
+    sptr<SurfaceBuffer> pendingSideSrcBuffer_;
+    int64_t pendingSideTimestamp_ {0};
 
     std::mutex consumerBufferLock_;
     std::mutex bufferLock_;
@@ -110,7 +120,7 @@ private:
     std::atomic<bool> isBufferQueueReady_ {false};
     std::atomic<bool> needPrepareBuffers_ {false};
 
-    BufferRequestConfig requestCfg_;
+    BufferRequestConfig requestCfg_{};
 
     std::shared_ptr<PostProcessorCallback> callback_;
     std::shared_ptr<Pipeline::EventReceiver> eventReceiver_;
@@ -123,7 +133,7 @@ private:
     std::condition_variable sampleDoneCond_;
     std::atomic<bool> sampleDone_ {false};
     std::atomic<bool> sampleProcessing_ {false};
-    int32_t* sampleResultPtr_ {nullptr};
+    int32_t sampleResult_ {1};
     std::atomic<bool> isPaused_ {false};
 };
 

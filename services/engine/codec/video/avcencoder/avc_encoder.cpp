@@ -59,10 +59,9 @@ constexpr int32_t TIME_SEC_TO_MS = 1000;
 constexpr int32_t VIDEO_QP_MAX = 51;
 constexpr int32_t VIDEO_QP_MIN = 4;
 constexpr int32_t VIDEO_QP_DEFAULT = 20;
-constexpr int32_t VIDEO_IFRAME_INTERVAL_MIN_TIME = 1000;
-constexpr int32_t VIDEO_IFRAME_INTERVAL_MAX_TIME = 3600000;
-constexpr int32_t DEFAULT_VIDEO_INTERVAL_TIME = 2000;
 constexpr int32_t DEFAULT_VIDEO_IFRAME_INTERVAL = 60;
+constexpr int32_t MAX_VIDEO_IFRAME_INTERVAL = INT32_MAX;
+constexpr int32_t MAX_HEADER_SIZE = 1024;
 constexpr int32_t DEFAULT_VIDEO_BITRATE = 6000000;
 constexpr double DEFAULT_VIDEO_FRAMERATE = 30.0;
 constexpr int32_t VIDEO_ALIGN_SIZE = 16;
@@ -173,6 +172,11 @@ AvcEncoder::~AvcEncoder()
     ReleaseResource();
     ReleaseHandle();
     callback_ = nullptr;
+    if (avcEncHeaderArgs_.streamBuf) {
+        free(avcEncHeaderArgs_.streamBuf);
+        avcEncHeaderArgs_.streamBuf = nullptr;
+        avcEncHeaderArgs_.size = 0;
+    }
     if (encInstanceID_ < VIDEO_INSTANCE_SIZE) {
         std::lock_guard<std::mutex> lock(encoderCountMutex_);
         freeIDSet_.push_back(encInstanceID_);
@@ -284,6 +288,7 @@ void AvcEncoder::GetBufferFromSurface()
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
+    buffer->InvalidateCache();
 
     AVCODEC_LOGD("timestamp: %{public}" PRId64 ", dataSize: %{public}d", pts, buffer->GetSize());
     CHECK_AND_RETURN_LOG(!freeList_.empty(), "freeList_ is empty!");
@@ -474,6 +479,7 @@ int32_t AvcEncoder::ConfigureContext(const Format &format)
     GetColorAspects(format);
     CheckIfEnableCb(format);
     GetPixelFmtFromUser(format);
+    GetIdrAppendXpsParam(format);
     int32_t ret = SetupPort(format);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_VAL, "config format error");
     return AVCS_ERR_OK;
@@ -582,13 +588,17 @@ void AvcEncoder::GetBitRateModeFromUser(const Format &format)
 void AvcEncoder::GetIFrameIntervalFromUser(const Format &format)
 {
     int32_t interval;
-    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, interval) && interval > 0) {
-        CheckIFrameIntervalTimeSupport(interval);
+    if (!format.GetIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, interval)) {
+        AVCODEC_LOGI("user not set iframe interval, use default %{public}d", DEFAULT_VIDEO_IFRAME_INTERVAL);
+        return;
+    }
+    if (interval < 0) {
+        encIperiod_ = MAX_VIDEO_IFRAME_INTERVAL;
+    } else {
         encIperiod_ = interval * encFrameRate_ / TIME_SEC_TO_MS;
         AVCODEC_LOGI("user set iframe interval %{public}ds, transfer to %{public}dframes",
             interval / TIME_SEC_TO_MS, encIperiod_);
     }
-    return;
 }
 
 void AvcEncoder::GetRequestIDRFromUser(const Format &format)
@@ -661,17 +671,6 @@ void AvcEncoder::CheckFrameRateSupport(double &framerate)
     return;
 }
 
-void AvcEncoder::CheckIFrameIntervalTimeSupport(int32_t &interval)
-{
-    if (interval > VIDEO_IFRAME_INTERVAL_MAX_TIME || interval < VIDEO_IFRAME_INTERVAL_MIN_TIME) {
-        AVCODEC_LOGW("interval %{public}d not in [%{public}d, %{public}d], set default %{public}d",
-            interval, VIDEO_IFRAME_INTERVAL_MIN_TIME, VIDEO_IFRAME_INTERVAL_MAX_TIME,
-            DEFAULT_VIDEO_INTERVAL_TIME);
-        interval = DEFAULT_VIDEO_INTERVAL_TIME;
-    }
-    return;
-}
-
 int32_t AvcEncoder::SetupPort(const Format &format)
 {
     int32_t width;
@@ -694,6 +693,17 @@ int32_t AvcEncoder::SetupPort(const Format &format)
     encHeight_ = height;
     AVCODEC_LOGI("user set width %{public}d, height %{public}d", width, height);
     return AVCS_ERR_OK;
+}
+
+void AvcEncoder::GetIdrAppendXpsParam(const Format &format)
+{
+    int32_t enableIdrAppendXps;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, enableIdrAppendXps)) {
+        return;
+    }
+
+    enableIdrAppendXps_ = enableIdrAppendXps ? true : false;
+    AVCODEC_LOGI("user set enableIdrAppendXps %{public}d", enableIdrAppendXps);
 }
 
 int32_t AvcEncoder::SignalRequestIDRFrame()
@@ -859,6 +869,9 @@ void AvcEncoder::InitAvcEncoderParams()
     avcEncOutputArgs_.size = 0;
     avcEncOutputArgs_.bytes = 0;
     avcEncOutputArgs_.timestamp = 0;
+    avcEncHeaderArgs_.streamBuf = static_cast<uint8_t *>(malloc(MAX_HEADER_SIZE));
+    CHECK_AND_RETURN_LOG(avcEncHeaderArgs_.streamBuf != nullptr, "malloc header buffer failed");
+    avcEncHeaderArgs_.size = MAX_HEADER_SIZE;
 }
 
 void AvcEncoder::FillAvcInitParams(AVC_ENC_INIT_PARAM &param)
@@ -1541,7 +1554,9 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
 
     uint32_t codecIndex = codecAvailQue_->Front();
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][codecIndex];
+    CHECK_AND_RETURN_RET_LOG(outputBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output buffer nullptr");
     std::shared_ptr<AVBuffer> &outputAVBuffer = outputBuffer->avBuffer_;
+    CHECK_AND_RETURN_RET_LOG(outputAVBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output avbuffer nullptr");
 
     outArgs.streamBuf = outputAVBuffer->memory_->GetAddr();
     outArgs.size = static_cast<uint32_t>(outputAVBuffer->memory_->GetCapacity());
@@ -1569,10 +1584,71 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
 
 void AvcEncoder::EncoderAvcHeader()
 {
-    AVC_ENC_INARGS headerInArgs;
-    FillAvcEncoderInDefaultArgs(headerInArgs);
-    int32_t ret = EncoderAvcFrame(headerInArgs, avcEncOutputArgs_);
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Avc Encoder header error: %{public}d", ret);
+    int32_t ret = ProcessHeaderInfo();
+    if (ret != AVCS_ERR_OK) {
+        AVCODEC_LOGE("avc encode header error: %{public}d", ret);
+        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+        state_ = State::ERROR;
+    }
+}
+
+int32_t AvcEncoder::ProcessHeaderInfo()
+{
+    int32_t ret;
+    if (isFirstFrame_) {
+        AVC_ENC_INARGS headerInArgs;
+        FillAvcEncoderInDefaultArgs(headerInArgs);
+        ret = EncoderAvcFrame(headerInArgs, avcEncOutputArgs_);
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_VID_ENC_FAILED, "encode header info failed!");
+        if (enableIdrAppendXps_) {
+            ret = StoreHeaderInfo();
+            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_VID_ENC_FAILED, "store header info failed!");
+        }
+    } else {
+        ret = CopyHeaderInfoToOutArgs();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_VID_ENC_FAILED, "copy header info failed!");
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t AvcEncoder::StoreHeaderInfo()
+{
+    CHECK_AND_RETURN_RET_LOG(avcEncHeaderArgs_.streamBuf != nullptr, AVCS_ERR_NO_MEMORY,
+        "header buffer not allocated");
+    int32_t ret = memcpy_s(avcEncHeaderArgs_.streamBuf, avcEncHeaderArgs_.size,
+        avcEncOutputArgs_.streamBuf, avcEncOutputArgs_.bytes);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_VID_ENC_FAILED, "memcopy header info failed!");
+    avcEncHeaderArgs_.bytes = avcEncOutputArgs_.bytes;
+    avcEncHeaderArgs_.encodedFrameType = avcEncOutputArgs_.encodedFrameType;
+    return AVCS_ERR_OK;
+}
+
+int32_t AvcEncoder::CopyHeaderInfoToOutArgs()
+{
+    CHECK_AND_RETURN_RET_LOG(avcEncHeaderArgs_.streamBuf != nullptr, AVCS_ERR_NO_MEMORY,
+        "header buffer not allocated");
+    uint32_t codecIndex = codecAvailQue_->Front();
+    std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][codecIndex];
+    CHECK_AND_RETURN_RET_LOG(outputBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output buffer nullptr");
+    std::shared_ptr<AVBuffer> &outputAVBuffer = outputBuffer->avBuffer_;
+    CHECK_AND_RETURN_RET_LOG(outputAVBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output avbuffer nullptr");
+
+    avcEncOutputArgs_.streamBuf = outputAVBuffer->memory_->GetAddr();
+    avcEncOutputArgs_.size = static_cast<uint32_t>(outputAVBuffer->memory_->GetCapacity());
+
+    int32_t ret = memcpy_s(avcEncOutputArgs_.streamBuf, avcEncOutputArgs_.size,
+        avcEncHeaderArgs_.streamBuf, avcEncHeaderArgs_.bytes);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_VID_ENC_FAILED, "copy header info to outArgs failed!");
+    avcEncOutputArgs_.bytes = avcEncHeaderArgs_.bytes;
+    avcEncOutputArgs_.encodedFrameType = avcEncHeaderArgs_.encodedFrameType;
+
+    outputAVBuffer->memory_->SetSize(avcEncOutputArgs_.bytes);
+    outputAVBuffer->flag_ = AvcFrameTypeToBufferFlag(avcEncOutputArgs_.encodedFrameType);
+
+    outputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
+    codecAvailQue_->Pop();
+    NotifyUserToProcessBuffer(codecIndex, outputAVBuffer);
+    return AVCS_ERR_OK;
 }
 
 void AvcEncoder::EncoderAvcTailer()
@@ -1611,8 +1687,9 @@ void AvcEncoder::SendFrame()
     uint32_t index = inputAvailQue_->Front();
     CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
+    CHECK_AND_RETURN_LOG(inputBuffer != nullptr, "input buffer nullptr");
     std::shared_ptr<AVBuffer> inputAVBuffer = GetAvBuffer(inputBuffer);
-    CHECK_AND_RETURN_LOG(inputAVBuffer != nullptr, "input buffer nullptr");
+    CHECK_AND_RETURN_LOG(inputAVBuffer != nullptr, "input avbuffer nullptr");
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
         std::unique_lock<std::mutex> sendLock(sendMutex_);
         isSendEos_ = true;
@@ -1623,11 +1700,7 @@ void AvcEncoder::SendFrame()
         return;
     }
 
-    sptr<SyncFence> fence = inputBuffer->fence_;
-    if (fence != nullptr) {
-        constexpr uint32_t waitForEver = -1;
-        fence->Wait(waitForEver);
-    }
+    WaitForFence(inputBuffer);
     CHECK_AND_RETURN_LOG(inputAVBuffer->memory_ != nullptr, "input buffer memory nullptr");
     ret = FillAvcEncoderInArgs(inputAVBuffer, avcEncInputArgs_);
     if (ret != AVCS_ERR_OK) {
@@ -1637,7 +1710,8 @@ void AvcEncoder::SendFrame()
         return;
     }
 
-    if (isFirstFrame_) {
+    ResetGopFrmIdx();
+    if (isFirstFrame_ || (enableIdrAppendXps_ && (gopFrmIdx_ == 0))) {
         EncoderAvcHeader();
         isFirstFrame_ = false;
     }
@@ -1651,6 +1725,23 @@ void AvcEncoder::SendFrame()
         AVCODEC_LOGE("Cannot send frame to encodec: %{public}d", ret);
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
         state_ = State::ERROR;
+    }
+    gopFrmIdx_++;
+}
+
+void AvcEncoder::WaitForFence(std::shared_ptr<FBuffer> &inputBuffer)
+{
+    sptr<SyncFence> fence = inputBuffer->fence_;
+    if (fence != nullptr) {
+        constexpr uint32_t waitForEver = -1;
+        fence->Wait(waitForEver);
+    }
+}
+
+void AvcEncoder::ResetGopFrmIdx()
+{
+    if ((encIperiod_ == 0) || (gopFrmIdx_ == encIperiod_) || (avcEncInputArgs_.configArgs.idrRequest)) {
+        gopFrmIdx_ = 0;
     }
 }
 

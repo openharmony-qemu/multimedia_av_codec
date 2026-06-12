@@ -63,10 +63,18 @@ bool StorageUsageUtil::HasEnoughStorage()
         return false;
     }
     MEDIA_LOG_I("StorageUsageUtil freesize:" PUBLIC_LOG_D64 "; totalsize:" PUBLIC_LOG_D64, freesize, totalSize);
+    auto safeThreshold = [](int64_t total, double percent) -> int64_t {
+        double r = static_cast<double>(total) * percent;
+        constexpr double kInt64MaxAsDouble = 9.0e18;
+        if (r >= kInt64MaxAsDouble) {
+            return std::numeric_limits<int64_t>::max() - STORAGE_EXTRA_2G;
+        }
+        return static_cast<int64_t>(r);
+    };
     if (totalSize > STORAGE_THRESHOLD_500G) {
-        return freesize > (static_cast<long long>(totalSize * STORAGE_PERCENT_THRESHOLD_OVER_500G) + STORAGE_EXTRA_2G);
+        return freesize > (safeThreshold(totalSize, STORAGE_PERCENT_THRESHOLD_OVER_500G) + STORAGE_EXTRA_2G);
     }
-    return freesize > (static_cast<long long>(totalSize * STORAGE_PERCENT_THRESHOLD) + STORAGE_EXTRA_2G);
+    return freesize > (safeThreshold(totalSize, STORAGE_PERCENT_THRESHOLD) + STORAGE_EXTRA_2G);
 }
 } // namespace Media
 } // namespace OHOS

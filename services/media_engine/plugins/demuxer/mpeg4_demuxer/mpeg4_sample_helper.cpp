@@ -14,7 +14,9 @@
  */
 
 #define HST_LOG_TAG "MPEG4SampleHelper"
+#include <array>
 #include <algorithm>
+#include <limits>
 #include <regex>
 #include <iconv.h>
 #include <sstream>
@@ -39,11 +41,13 @@ constexpr int64_t NEXT_FRAME = 1;
 constexpr int64_t PREVIOUS_FRAME = 0;
 constexpr int64_t MAX_SAMPLES_PER_FRAME = 1024;
 constexpr size_t MIN_DATA_SIZE = 8;
+constexpr int64_t MIN_DATA_SIZE_INT = 8;
 constexpr int64_t MIN_DATA_OFFSET = 0;
 constexpr uint32_t STSZ_HEAD_LENGTH = 12;  // stsz头数据长度
 constexpr uint32_t HALF_BYTE_BITS = 4;
 constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
+constexpr uint32_t MAX_REORDER_DELAY = 16;
     
 int64_t GetClosestSync(int64_t prevTime, int64_t nextTime, int64_t reqTime)
 {
@@ -77,51 +81,129 @@ MPEG4SampleHelper::~MPEG4SampleHelper()
 {
 }
 
-Status MPEG4SampleHelper::FindWithSyncSamples(int64_t inputPTS, bool isBaseTrack, SeekMode flag, uint32_t &syncIndex)
+void MPEG4SampleHelper::SetEditListParams(const std::vector<EditListEntry>& editListEntries, int32_t movieTimeScale,
+    int32_t trackTimeScale)
 {
-    MEDIA_LOG_D("In");
-    auto& entry = stssEntry_;
-    auto it = std::lower_bound(entry.begin(), entry.end(), inputPTS,
-        [](const StssEntry& entry, int64_t pts) { return entry.pts < pts; });
-    syncIndex = std::distance(entry.begin(), it);
-    if (isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC && syncIndex == entry.size()) {
-        syncIndex--;
-    }
-    if (syncIndex == entry.size()) {
-        return Status::ERROR_UNKNOWN;
-    } else if (inputPTS == entry[syncIndex].pts ||
-        (inputPTS > entry[syncIndex].pts && flag == SeekMode::SEEK_PREVIOUS_SYNC) ||
-        (inputPTS < entry[syncIndex].pts && flag == SeekMode::SEEK_NEXT_SYNC)) {
-        return Status::OK;
-    }
-    return Status::ERROR_UNKNOWN;
+    editListEntries_ = editListEntries;
+    movieTimeScale_ = movieTimeScale;
+    trackTimeScale_ = trackTimeScale;
 }
 
-Status MPEG4SampleHelper::CheckSyncSample(int64_t inputPTS, bool isBaseTrack, SeekMode flag, int64_t &currentIndex)
+bool MPEG4SampleHelper::HasEditList() const
+{
+    return !editListEntries_.empty();
+}
+
+bool MPEG4SampleHelper::HasAppliedEditList() const
+{
+    return editListApplied_;
+}
+
+int64_t MPEG4SampleHelper::GetRawTotalSize() const
+{
+    return rawTotalSize_;
+}
+
+int64_t MPEG4SampleHelper::GetRawTotalDuration() const
+{
+    return rawTotalDuration_;
+}
+
+int64_t MPEG4SampleHelper::GetRawSampleCount() const
+{
+    return rawSampleCount_;
+}
+
+uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
+{
+    if (sampleIndexEntry_.empty()) {
+        return 0;
+    }
+    bool hasReorderedPts = std::any_of(sampleIndexEntry_.begin(), sampleIndexEntry_.end(),
+        [](const SampleIndexEntry& sample) {
+            return sample.pts != sample.dts;
+        });
+    if (!hasReorderedPts) {
+        return 0;
+    }
+
+    std::array<int64_t, MAX_REORDER_DELAY + 1> ptsBuffer;
+    ptsBuffer.fill(INT64_MIN);
+    uint32_t bufferStart = 0;
+    uint32_t videoDelay = 0;
+    for (const auto& sample : sampleIndexEntry_) {
+        uint32_t pos = bufferStart;
+        bufferStart = (bufferStart + 1) % ptsBuffer.size();
+        ptsBuffer[pos] = sample.pts;
+
+        uint32_t swaps = 0;
+        while (pos != bufferStart) {
+            int32_t previous = static_cast<int32_t>(pos) - 1;
+            if (previous < 0) {
+                previous = MAX_REORDER_DELAY;
+            }
+            if (ptsBuffer[pos] >= ptsBuffer[previous]) {
+                break;
+            }
+            std::swap(ptsBuffer[pos], ptsBuffer[previous]);
+            ++swaps;
+            pos = static_cast<uint32_t>(previous);
+        }
+        videoDelay = std::max(videoDelay, swaps);
+    }
+    return videoDelay;
+}
+
+Status MPEG4SampleHelper::FindWithSyncSamplesByPts(
+    int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t &syncIndex)
+{
+    MEDIA_LOG_D("In");
+    int64_t previousIndex = -1;
+    int64_t nextIndex = -1;
+    for (size_t i = 0; i < stssEntry_.size(); ++i) {
+        const int64_t syncPts = stssEntry_[i].syncPts;
+        if (syncPts <= inputPts && (previousIndex < 0 || syncPts > stssEntry_[previousIndex].syncPts)) {
+            previousIndex = static_cast<int64_t>(i);
+        }
+        if (syncPts >= inputPts && (nextIndex < 0 || syncPts < stssEntry_[nextIndex].syncPts)) {
+            nextIndex = static_cast<int64_t>(i);
+        }
+    }
+
+    int64_t selectedIndex = -1;
+    if (flag == SeekMode::SEEK_PREVIOUS_SYNC) {
+        selectedIndex = previousIndex;
+    } else if (flag == SeekMode::SEEK_NEXT_SYNC) {
+        selectedIndex = nextIndex;
+    } else if (previousIndex >= 0 && nextIndex >= 0) {
+        selectedIndex = GetClosestSync(stssEntry_[previousIndex].syncPts, stssEntry_[nextIndex].syncPts, inputPts) ?
+            nextIndex : previousIndex;
+    } else {
+        selectedIndex = (previousIndex >= 0) ? previousIndex : nextIndex;
+    }
+
+    if (selectedIndex < 0) {
+        if (isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC && !stssEntry_.empty() &&
+            inputPts > stssEntry_.back().syncPts) {
+            syncIndex = static_cast<uint32_t>(stssEntry_.size() - 1);
+            return Status::OK;
+        }
+        return Status::ERROR_UNKNOWN;
+    }
+    syncIndex = static_cast<uint32_t>(selectedIndex);
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::CheckSyncSampleByPts(
+    int64_t inputPts, bool isBaseTrack, SeekMode flag, int64_t &currentIndex)
 {
     MEDIA_LOG_D("In");
     const auto& entry = sampleIndexEntry_;
-    uint32_t numSamples = entry.size();
-
-    auto findPrevSync = [&entry, inputPTS](int64_t idx) -> int64_t {
-        while (idx >= 0 && (entry[idx].flag != Sample::SYNC_FRAME || entry[idx].pts > inputPTS)) {
-            --idx;
-        }
-        return idx;
-    };
-    auto findNextSync = [&entry, numSamples, inputPTS](int64_t idx) -> int64_t {
-        while (idx < static_cast<int64_t>(numSamples) && (entry[idx].flag != Sample::SYNC_FRAME ||
-            entry[idx].pts < inputPTS)) {
-            ++idx;
-        }
-        return idx;
-    };
-
     if (flag == SeekMode::SEEK_PREVIOUS_SYNC) {
-        currentIndex = findPrevSync(currentIndex - 1);
+        currentIndex = FindPrevSyncByPts(inputPts, currentIndex - 1);
         if (currentIndex < 0) {
             currentIndex = stssEntry_.empty() ? 0 : stssEntry_[0].index;
-            if (inputPTS < entry[currentIndex].pts && isBaseTrack) {
+            if (inputPts < entry[currentIndex].pts && isBaseTrack) {
                 return Status::ERROR_INVALID_PARAMETER;
             }
         }
@@ -129,71 +211,308 @@ Status MPEG4SampleHelper::CheckSyncSample(int64_t inputPTS, bool isBaseTrack, Se
     }
 
     if (flag == SeekMode::SEEK_NEXT_SYNC) {
-        currentIndex = findNextSync(currentIndex);
-        if (currentIndex == static_cast<int64_t>(numSamples) && isBaseTrack) {
+        currentIndex = FindNextSyncByPts(inputPts, currentIndex);
+        if (currentIndex == static_cast<int64_t>(entry.size()) && isBaseTrack) {
             return Status::ERROR_INVALID_PARAMETER;
         }
         return Status::OK;
     }
 
-    // SEEK_CLOSEST_SYNC
-    int64_t prevSync = findPrevSync(currentIndex);
-    int64_t nextSync = findNextSync(currentIndex);
-    if (prevSync >= 0 && nextSync < static_cast<int64_t>(numSamples)) {
-        currentIndex = GetClosestSync(entry[prevSync].pts, entry[nextSync].pts, inputPTS) ? nextSync : prevSync;
+    SelectClosestSyncByPts(inputPts, currentIndex);
+    return Status::OK;
+}
+
+int64_t MPEG4SampleHelper::FindPrevSyncByPts(int64_t inputPts, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    while (currentIndex >= 0 && (((entry[currentIndex].flag & Sample::SYNC_FRAME) == 0) ||
+        entry[currentIndex].pts > inputPts)) {
+        --currentIndex;
+    }
+    return currentIndex;
+}
+
+int64_t MPEG4SampleHelper::FindNextSyncByPts(int64_t inputPts, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    while (currentIndex < static_cast<int64_t>(entry.size()) &&
+        (((entry[currentIndex].flag & Sample::SYNC_FRAME) == 0) || entry[currentIndex].pts < inputPts)) {
+        ++currentIndex;
+    }
+    return currentIndex;
+}
+
+void MPEG4SampleHelper::SelectClosestSyncByPts(int64_t inputPts, int64_t& currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    int64_t prevSync = FindPrevSyncByPts(inputPts, currentIndex);
+    int64_t nextSync = FindNextSyncByPts(inputPts, currentIndex);
+    if (prevSync >= 0 && nextSync < static_cast<int64_t>(entry.size())) {
+        currentIndex = GetClosestSync(entry[prevSync].pts, entry[nextSync].pts, inputPts) ? nextSync : prevSync;
     } else if (prevSync < 0) {
         currentIndex = nextSync;
     } else {
         currentIndex = prevSync;
     }
-    return Status::OK;
 }
 
-Status MPEG4SampleHelper::FindSyncSampleAtTime(int64_t inputPTS, bool isBaseTrack, SeekMode flag, uint32_t &sampleIndex)
+int64_t MPEG4SampleHelper::FindIndexWithoutSyncSamples(int64_t inputPTS) const
 {
-    MEDIA_LOG_D("In");
-    if (inputPTS < 0) {
+    auto it = std::lower_bound(sampleIndexEntry_.begin(), sampleIndexEntry_.end(), inputPTS,
+        [](const SampleIndexEntry& entry, int64_t pts) { return entry.pts < pts; });
+    return std::distance(sampleIndexEntry_.begin(), it);
+}
+
+bool MPEG4SampleHelper::AssignSampleIndex(int64_t currentIndex, uint32_t& sampleIndex) const
+{
+    if (currentIndex < 0 ||
+        static_cast<uint64_t>(currentIndex) > static_cast<uint64_t>(std::numeric_limits<uint32_t>::max())) {
+        return false;
+    }
+    sampleIndex = static_cast<uint32_t>(currentIndex);
+    return true;
+}
+
+bool MPEG4SampleHelper::AssignSampleIndexFromSize(size_t currentIndex, uint32_t& sampleIndex) const
+{
+    if (currentIndex > static_cast<size_t>(std::numeric_limits<uint32_t>::max())) {
+        return false;
+    }
+    sampleIndex = static_cast<uint32_t>(currentIndex);
+    return true;
+}
+
+bool MPEG4SampleHelper::ResolveDirectSyncSampleByPts(int64_t inputPts, int64_t currentIndex,
+    uint32_t& sampleIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    if ((entry[currentIndex].flag & Sample::SYNC_FRAME) == 0 || inputPts != entry[currentIndex].pts) {
+        return false;
+    }
+    return AssignSampleIndex(currentIndex, sampleIndex);
+}
+
+bool MPEG4SampleHelper::ResolveNonBaseTrackEosByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    uint32_t& sampleIndex) const
+{
+    bool beyondLastSync =
+        !stssEntry_.empty() && inputPts > stssEntry_.back().syncPts && flag == SeekMode::SEEK_NEXT_SYNC;
+    if (!isBaseTrack && trackType_ == AUDIO_TYPE && flag == SeekMode::SEEK_NEXT_SYNC && inputPts >= lastPTS_) {
+        return AssignSampleIndexFromSize(sampleIndexEntry_.size(), sampleIndex);
+    }
+    if (isBaseTrack || (inputPts <= lastPTS_ && !beyondLastSync)) {
+        return false;
+    }
+    return AssignSampleIndexFromSize(sampleIndexEntry_.size(), sampleIndex);
+}
+
+bool MPEG4SampleHelper::ResolveTextWebVttSample(int64_t inputPTS, int64_t& currentIndex,
+    uint32_t& sampleIndex) const
+{
+    if (mimeType_ != MimeType::TEXT_WEBVTT) {
+        return false;
+    }
+    const auto& entry = sampleIndexEntry_;
+    if (!AssignSampleIndex(currentIndex, sampleIndex)) {
+        return false;
+    }
+    if (currentIndex > 0 && inputPTS < entry[currentIndex].pts) {
+        --currentIndex;
+        return AssignSampleIndex(currentIndex, sampleIndex);
+    }
+    if (inputPTS > totalDuration_) {
+        ++currentIndex;
+        return AssignSampleIndex(currentIndex, sampleIndex);
+    }
+    return true;
+}
+
+bool MPEG4SampleHelper::IsAudioSampleIndexInRange(int64_t currentIndex) const
+{
+    return trackType_ == AUDIO_TYPE && currentIndex > 0 &&
+        static_cast<size_t>(currentIndex) < sampleIndexEntry_.size();
+}
+
+bool MPEG4SampleHelper::IsInputCoveredByPreviousSample(int64_t inputPts, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return IsAudioSampleIndexInRange(currentIndex) &&
+        inputPts < entry[currentIndex - 1].pts + entry[currentIndex - 1].duration;
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForBaseAudioCoverage(int64_t inputPts, SeekMode flag, bool fromSyncSamples,
+    int64_t currentIndex) const
+{
+    if (!fromSyncSamples || !IsAudioSampleIndexInRange(currentIndex)) {
+        return false;
+    }
+    const auto& entry = sampleIndexEntry_;
+    bool allowCoverageBackStep = flag == SeekMode::SEEK_CLOSEST_SYNC ||
+        (flag == SeekMode::SEEK_NEXT_SYNC && static_cast<size_t>(currentIndex) == entry.size() - 1);
+    return entry[currentIndex].pts > inputPts && IsInputCoveredByPreviousSample(inputPts, currentIndex) &&
+        allowCoverageBackStep;
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForFirstNonBaseAudioSample(int64_t inputPts, bool isBaseTrack,
+    bool fromSyncSamples, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return fromSyncSamples && !isBaseTrack && currentIndex == 1 && !entry.empty() &&
+        inputPts <= entry[0].pts + entry[0].duration;
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForSyncPrerollSample(int64_t inputPts, bool isBaseTrack,
+    bool fromSyncSamples, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return fromSyncSamples && !isBaseTrack && IsAudioSampleIndexInRange(currentIndex) &&
+        entry[currentIndex].pts >= inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty();
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForShiftedAudioCoverage(int64_t inputPts, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return trackTimeScale_ > 0 && !entry.empty() && entry.front().pts >= trackTimeScale_ &&
+        IsAudioSampleIndexInRange(currentIndex) && inputPts < entry[currentIndex].pts &&
+        IsInputCoveredByPreviousSample(inputPts, currentIndex);
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForNoSyncPrerollSample(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    bool fromSyncSamples, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return !fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
+        IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts >= inputPts &&
+        entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty();
+}
+
+bool MPEG4SampleHelper::ShouldStepBackForExactPtsPrerollSample(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    bool fromSyncSamples, int64_t currentIndex) const
+{
+    const auto& entry = sampleIndexEntry_;
+    return fromSyncSamples && !isBaseTrack && flag == SeekMode::SEEK_PREVIOUS_SYNC &&
+        IsAudioSampleIndexInRange(currentIndex) && entry[currentIndex].pts == inputPts &&
+        entry[currentIndex - 1].pts < inputPts && !entry[currentIndex - 1].skipSamplesInfo.empty();
+}
+
+void MPEG4SampleHelper::AdjustAudioSeekSampleIndexByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    bool fromSyncSamples, int64_t& currentIndex) const
+{
+    if (trackType_ != AUDIO_TYPE) {
+        return;
+    }
+    // Only one back step is allowed; later checks must not re-evaluate a modified index.
+    // Step back when the selected audio sample starts after inputPts but the previous sample still covers it.
+    if (isBaseTrack && ShouldStepBackForBaseAudioCoverage(inputPts, flag, fromSyncSamples, currentIndex)) {
+        --currentIndex;
+        return;
+    }
+    // Keep the first audio sample if it covers the sync point for a non-base track.
+    if (ShouldStepBackForFirstNonBaseAudioSample(inputPts, isBaseTrack, fromSyncSamples, currentIndex)) {
+        --currentIndex;
+        return;
+    }
+    // Keep AAC priming/skip-sample metadata by seeking to the preroll sample before the target point.
+    if (ShouldStepBackForSyncPrerollSample(inputPts, isBaseTrack, fromSyncSamples, currentIndex)) {
+        --currentIndex;
+        return;
+    }
+    // Empty edits can shift audio PTS forward; use sample coverage instead of skipping the covered sample.
+    if (ShouldStepBackForShiftedAudioCoverage(inputPts, currentIndex)) {
+        --currentIndex;
+        return;
+    }
+    // Apply the same preroll rule on tracks without sync-sample entries.
+    if (ShouldStepBackForNoSyncPrerollSample(inputPts, isBaseTrack, flag, fromSyncSamples, currentIndex)) {
+        --currentIndex;
+        return;
+    }
+    // Exact PTS matches may still need the previous AAC preroll sample for correct decode trimming.
+    if (ShouldStepBackForExactPtsPrerollSample(inputPts, isBaseTrack, flag, fromSyncSamples, currentIndex)) {
+        --currentIndex;
+    }
+}
+
+Status MPEG4SampleHelper::ResolveEarlySeekSampleByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    uint32_t& sampleIndex, bool& resolved) const
+{
+    resolved = true;
+    const auto& entry = sampleIndexEntry_;
+    if (entry.empty()) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (inputPts < 0) {
         sampleIndex = stssEntry_.empty() ? 0 : stssEntry_[0].index;
         return Status::OK;
     }
+    if (trackType_ == AUDIO_TYPE && isBaseTrack && inputPts == 0 && entry.front().pts < 0 &&
+        entry.front().skipSamplesInfo.empty()) {
+        sampleIndex = 0;
+        return Status::OK;
+    }
+    if (trackType_ == AUDIO_TYPE && isBaseTrack && inputPts > lastPTS_) {
+        return AssignSampleIndex(entry.size() - 1, sampleIndex) ? Status::OK : Status::ERROR_INVALID_DATA;
+    }
+    if (!isBaseTrack && trackType_ == AUDIO_TYPE &&
+        (flag == SeekMode::SEEK_NEXT_SYNC || flag == SeekMode::SEEK_CLOSEST_SYNC) && inputPts >= lastPTS_) {
+        return AssignSampleIndexFromSize(entry.size(), sampleIndex) ? Status::OK : Status::ERROR_INVALID_DATA;
+    }
+    resolved = false;
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::FindIndexWithSyncSamplesByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
+    int64_t& currentIndex)
+{
+    uint32_t syncIndex = 0;
+    Status ret = FindWithSyncSamplesByPts(inputPts, isBaseTrack, flag, syncIndex);
+    currentIndex = syncIndex < stssEntry_.size() ? stssEntry_[syncIndex].index : stssEntry_.back().index;
+    if (ret == Status::OK) {
+        AdjustAudioSeekSampleIndexByPts(inputPts, isBaseTrack, flag, true, currentIndex);
+    }
+    return ret;
+}
+
+Status MPEG4SampleHelper::FindSyncSampleByPts(
+    int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t &sampleIndex)
+{
+    MEDIA_LOG_D("In");
+    const auto& entry = sampleIndexEntry_;
+    if (entry.empty()) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    bool resolved = false;
+    Status ret = ResolveEarlySeekSampleByPts(inputPts, isBaseTrack, flag, sampleIndex, resolved);
+    if (resolved) {
+        return ret;
+    }
 
     int64_t currentIndex = 0;
-    const auto& entry = sampleIndexEntry_;
-    Status ret = Status::OK;
     if (!stssEntry_.empty()) {
-        uint32_t syncIndex = 0;
-        ret = FindWithSyncSamples(inputPTS, isBaseTrack, flag, syncIndex);
-        currentIndex = syncIndex < stssEntry_.size() ? stssEntry_[syncIndex].index : stssEntry_.back().index;
+        ret = FindIndexWithSyncSamplesByPts(inputPts, isBaseTrack, flag, currentIndex);
         if (ret == Status::OK) {
-            sampleIndex = currentIndex;
-            return ret;
+            FALSE_RETURN_V_MSG_E(AssignSampleIndex(currentIndex, sampleIndex), Status::ERROR_INVALID_DATA,
+                "Invalid sample index");
+            return Status::OK;
         }
     } else {
-        auto it = std::lower_bound(entry.begin(), entry.end(), inputPTS,
-            [](const SampleIndexEntry& entry, int64_t pts) { return entry.pts < pts; });
-        currentIndex = std::distance(entry.begin(), it);
+        currentIndex = FindIndexWithoutSyncSamples(inputPts);
+        AdjustAudioSeekSampleIndexByPts(inputPts, isBaseTrack, flag, false, currentIndex);
     }
 
-    if (entry[currentIndex].flag == Sample::SYNC_FRAME && inputPTS == entry[currentIndex].pts) {
-        sampleIndex = static_cast<uint32_t>(currentIndex);
-        return Status::OK;
-    } else if (!isBaseTrack && (inputPTS > lastPTS_ || (!stssEntry_.empty() &&
-        inputPTS > stssEntry_.back().pts && flag == SeekMode::SEEK_NEXT_SYNC))) {
-        sampleIndex = sampleIndexEntry_.size();
-        return Status::OK;
-    } else if (mimeType_ == MimeType::TEXT_WEBVTT) {
-        if (currentIndex > 0 && inputPTS < entry[currentIndex].pts) {
-            sampleIndex = --currentIndex;
-        }
-        if (inputPTS > totalDuration_) {
-            sampleIndex = ++currentIndex;
-        }
+    if (currentIndex >= static_cast<int64_t>(entry.size())) {
+        currentIndex = static_cast<int64_t>(entry.size()) - 1;
+    }
+    if (ResolveDirectSyncSampleByPts(inputPts, currentIndex, sampleIndex) ||
+        ResolveNonBaseTrackEosByPts(inputPts, isBaseTrack, flag, sampleIndex) ||
+        ResolveTextWebVttSample(inputPts, currentIndex, sampleIndex)) {
         return Status::OK;
     }
 
-    ret = CheckSyncSample(inputPTS, isBaseTrack, flag, currentIndex);
+    ret = CheckSyncSampleByPts(inputPts, isBaseTrack, flag, currentIndex);
     if (ret == Status::OK) {
-        sampleIndex = currentIndex;
+        FALSE_RETURN_V_MSG_E(AssignSampleIndex(currentIndex, sampleIndex), Status::ERROR_INVALID_DATA,
+            "Invalid sample index");
         return Status::OK;
     } else {
         return ret;
@@ -210,7 +529,9 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     uint8_t header[8];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
-    if (GetU32Value(header)) {
+    uint8_t version = header[0];
+    uint32_t flags = GetU32Value(header) & 0x00FFFFFF;
+    if ((version != 0 && version != 1) || flags != 0) {
         return Status::ERROR_INVALID_DATA;
     }
 
@@ -231,8 +552,10 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     sttsEntry_.reserve(numSttsEntries);
 
     for (uint32_t i = 0; i < numSttsEntries; ++i) {
+        uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(SttsEntry));
+        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
         sttsEntry_.emplace_back(SttsEntry{
-            .count = GetU32Value(data.get() + i * sizeof(SttsEntry)),
+            .count = sampleCount,
             .delta = GetU32Value(data.get() + 4 + i * sizeof(SttsEntry))
         });
     }
@@ -253,7 +576,9 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
     uint8_t header[8];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
-    if (GetU32Value(header)) {
+    uint8_t version = header[0];
+    uint32_t flags = GetU32Value(header) & 0x00FFFFFF;
+    if ((version != 0 && version != 1) || flags != 0) {
         return Status::ERROR_INVALID_DATA;
     }
 
@@ -272,9 +597,10 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
     cttsEntry_.reserve(numCttsEntries);
 
     for (uint32_t i = 0; i < numCttsEntries; ++i) {
+        uint32_t rawDelta = GetU32Value(data.get() + 4 + i * sizeof(CttsEntry));
         cttsEntry_.emplace_back(CttsEntry {
             .count = GetU32Value(data.get() + i * sizeof(CttsEntry)),
-            .delta = static_cast<int32_t>(GetU32Value(data.get() + 4 + i * sizeof(CttsEntry)))
+            .delta = (version == 1) ? static_cast<int32_t>(rawDelta) : static_cast<int32_t>(rawDelta)
         });
     }
 
@@ -318,8 +644,9 @@ Status MPEG4SampleHelper::SetSyncSampleParams(int64_t dataOffset, size_t dataSiz
         uint32_t sampleIndex = GetU32Value(data.get() + i * sizeof(uint32_t));
         FALSE_RETURN_V_MSG_E(sampleIndex > 0, Status::ERROR_INVALID_DATA, "Invalid sample index");
         stssEntry_.emplace_back(StssEntry{
-            .pts = 0,
-            .index = sampleIndex - 1
+            .index = sampleIndex - 1,
+            .syncPts = 0,
+            .syncDts = 0
         });
     }
 
@@ -553,6 +880,33 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
     return Status::OK;
 }
 
+Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctxOffset, int64_t dataOffset, size_t dataSize)
+{
+    MEDIA_LOG_D("In");
+    sdtpEntry_.sdtpEntryCount = 0;
+    sdtpEntry_.sdtpData.clear();
+
+    const uint32_t versionAndFlagsOffset = 4;  // version + flags = 4Bytes
+    FALSE_RETURN_V_MSG_E(dataSize > versionAndFlagsOffset, Status::ERROR_INVALID_DATA, "dataSize is invalid");
+
+    // After removing type, size..., the starting offset of the actual data in the atom
+    int64_t currentOffset = dataOffset;
+    FALSE_RETURN_V_MSG_E(currentOffset >= MIN_DATA_OFFSET, Status::ERROR_INVALID_PARAMETER, "currentOffset is invalid");
+    for (uint32_t i = 0; i < dataSize && currentOffset < ctxOffset; ++i) {  // Each entry size is 1 Byte
+        if (i >= 0 && i < versionAndFlagsOffset) {  // skip version and flags
+            currentOffset++;
+            continue;
+        }
+        uint8_t sdtpEntry;
+        Status ret = dataReader_->ReadUintData(currentOffset, &sdtpEntry, sizeof(sdtpEntry));
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
+        sdtpEntry_.sdtpData.emplace_back(sdtpEntry);
+        currentOffset++;
+        sdtpEntry_.sdtpEntryCount++;
+    }
+    return Status::OK;
+}
+
 Status MPEG4SampleHelper::SetTrackExtendsParams(int64_t dataOffset, size_t dataSize)
 {
     MEDIA_LOG_D("In");
@@ -583,50 +937,68 @@ Status MPEG4SampleHelper::SetTrackExtendsParams(int64_t dataOffset, size_t dataS
     return Status::OK;
 }
 
+bool MPEG4SampleHelper::HasTfhdRemainingData(const TfhdParseContext& ctx, size_t fieldSize) const
+{
+    return ctx.dataOffset <= ctx.dataSize && fieldSize <= ctx.dataSize - ctx.dataOffset;
+}
+
+Status MPEG4SampleHelper::ParseTfhdBaseDataOffset(TfhdParseContext& ctx, int64_t moofOffset)
+{
+    if ((ctx.flag & TrackFragmentHeaderInfo::TFHD_BASE_DATA_OFFSET) && seekable_ == Seekable::SEEKABLE) {
+        FALSE_RETURN_V_MSG_E(HasTfhdRemainingData(ctx, sizeof(uint64_t)),
+            Status::ERROR_INVALID_DATA, "Invalid tfhd base data offset");
+        uint64_t baseDataOffset = GetU64Value(ctx.data + ctx.dataOffset);
+        FALSE_RETURN_V_MSG_E(baseDataOffset <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()),
+            Status::ERROR_INVALID_DATA, "Invalid tfhd base data offset");
+        tfhd_.baseDataOffset = static_cast<int64_t>(baseDataOffset);
+        ctx.dataOffset += sizeof(uint64_t);
+    } else {
+        FALSE_RETURN_V_MSG_E(moofOffset >= 0, Status::ERROR_INVALID_DATA, "Invalid moof offset");
+        tfhd_.baseDataOffset = moofOffset;
+    }
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::ParseTfhdOptionalUint32(TfhdParseContext& ctx, const TfhdOptionalUint32Field& field)
+{
+    FALSE_RETURN_V_MSG_E(field.output != nullptr, Status::ERROR_INVALID_PARAMETER, "Invalid tfhd output");
+    if (ctx.flag & field.flag) {
+        FALSE_RETURN_V_MSG_E(HasTfhdRemainingData(ctx, sizeof(uint32_t)),
+            Status::ERROR_INVALID_DATA, "Invalid tfhd optional field");
+        *field.output = GetU32Value(ctx.data + ctx.dataOffset);
+        ctx.dataOffset += sizeof(uint32_t);
+    } else {
+        *field.output = field.defaultValue;
+    }
+    return Status::OK;
+}
+
 Status MPEG4SampleHelper::SetTrackFragmentHeaderParams(int64_t dataOffset, int64_t dataSize, uint32_t flag,
     int64_t moofOffset)
 {
-    uint32_t tfhdFlag = flag;
-    uint32_t size = dataSize;
+    FALSE_RETURN_V_MSG_E(dataSize >= 0 &&
+        static_cast<uint64_t>(dataSize) <= static_cast<uint64_t>(std::numeric_limits<size_t>::max()),
+        Status::ERROR_INVALID_PARAMETER, "Invalid tfhd data size");
+    size_t size = static_cast<size_t>(dataSize);
     auto data = std::make_unique<uint8_t[]>(size);
     Status ret = dataReader_->ReadUintData(dataOffset, data.get(), size);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
 
-    uint32_t tfhdDataOffset = 0;
-    if ((tfhdFlag & TrackFragmentHeaderInfo::TFHD_BASE_DATA_OFFSET) && seekable_ == Seekable::SEEKABLE) {
-        tfhd_.baseDataOffset = GetU64Value(data.get());
-        tfhdDataOffset += sizeof(uint64_t);
-    } else {
-        tfhd_.baseDataOffset = moofOffset;
-    }
-
-    if (tfhdFlag & TrackFragmentHeaderInfo::TFHD_STSD_ID) {
-        tfhd_.sampleDescriptionIndex = GetU32Value(data.get() + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint32_t);
-    } else {
-        tfhd_.sampleDescriptionIndex = trex_.defaultSampleDescriptionIndex;
-    }
-    
-    if (tfhdFlag & TrackFragmentHeaderInfo::TFHD_DEFAULT_DURATION) {
-        tfhd_.defaultSampleDuration = GetU32Value(data.get() + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint32_t);
-    } else {
-        tfhd_.defaultSampleDuration = trex_.defaultSampleDuration;
-    }
-
-    if (tfhdFlag & TrackFragmentHeaderInfo::TFHD_DEFAULT_SIZE) {
-        tfhd_.defaultSampleSize = GetU32Value(data.get() + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint32_t);
-    } else {
-        tfhd_.defaultSampleSize = trex_.defaultSampleSize;
-    }
-
-    if (tfhdFlag & TrackFragmentHeaderInfo::TFHD_DEFAULT_FLAGS) {
-        tfhd_.flags = GetU32Value(data.get() + tfhdDataOffset);
-        tfhdDataOffset += sizeof(uint32_t);
-    } else {
-        tfhd_.flags = trex_.defaultSampleFlags;
-    }
+    TfhdParseContext ctx = {flag, data.get(), size, 0};
+    ret = ParseTfhdBaseDataOffset(ctx, moofOffset);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd base data offset failed");
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_STSD_ID, trex_.defaultSampleDescriptionIndex, &tfhd_.sampleDescriptionIndex});
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd sample description index failed");
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_DEFAULT_DURATION, trex_.defaultSampleDuration, &tfhd_.defaultSampleDuration});
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd default sample duration failed");
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_DEFAULT_SIZE, trex_.defaultSampleSize, &tfhd_.defaultSampleSize});
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd default sample size failed");
+    ret = ParseTfhdOptionalUint32(ctx,
+        {TrackFragmentHeaderInfo::TFHD_DEFAULT_FLAGS, trex_.defaultSampleFlags, &tfhd_.flags});
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse tfhd default sample flags failed");
     hasTfhd_ = true;
     return Status::OK;
 }
@@ -635,7 +1007,7 @@ Status MPEG4SampleHelper::SetTrackFragmentDecodeTimeParams(int64_t dataOffset, i
 {
     MEDIA_LOG_D("In");
     int64_t currentOffset = dataOffset;
-    if (currentOffset < MIN_DATA_OFFSET || dataSize < MIN_DATA_SIZE) {
+    if (currentOffset < MIN_DATA_OFFSET || dataSize < MIN_DATA_SIZE_INT) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     
@@ -662,7 +1034,7 @@ Status MPEG4SampleHelper::SetTrackFragmentDecodeTimeParams(int64_t dataOffset, i
     return ret;
 }
 
-Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint16_t trunFlag,
+Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
     uint8_t* data, uint32_t& firstSampleFlag)
 {
     if (trunFlag & TRUN_DATA_OFFSET) {
@@ -700,7 +1072,7 @@ Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, uint32_t& buffe
     return Status::OK;
 }
 
-void MPEG4SampleHelper::UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint16_t trunFlag,
+void MPEG4SampleHelper::UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
     uint8_t* data, uint32_t firstSampleFlag)
 {
     if (trunFlag & TRUN_SAMPLE_DURATION) {
@@ -734,8 +1106,8 @@ void MPEG4SampleHelper::InitMoofParam()
     }
 }
 
-void MPEG4SampleHelper::UpdateSampleEntryInfo(
-    SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap)
+MPEG4SampleHelper::SampleIndexEntry MPEG4SampleHelper::CreateSampleEntry(
+    const SampleInfo& sampleInfo, int64_t offset, int64_t currentDts, bool isOverlap) const
 {
     SampleIndexEntry sample;
     sample.pos = offset;
@@ -743,6 +1115,7 @@ void MPEG4SampleHelper::UpdateSampleEntryInfo(
     sample.pts = currentDts + sampleInfo.ctsDelta;
     sample.dts = currentDts;
     sample.duration = sampleInfo.duration;
+    sample.flag = Sample::SampleFlag::NONE;
     if (trackType_ == AUDIO_TYPE) {
         sample.flag |= Sample::SampleFlag::SYNC_FRAME;
     } else {
@@ -752,28 +1125,108 @@ void MPEG4SampleHelper::UpdateSampleEntryInfo(
     if (isOverlap) {
         sample.flag |= Sample::SampleFlag::DISCARD;
     }
+    return sample;
+}
 
+bool MPEG4SampleHelper::InsertSampleEntry(SampleIndexEntry&& sample, uint32_t duration)
+{
+    uint32_t sampleIndex = 0;
+    auto it = std::upper_bound(sampleIndexEntry_.begin(), sampleIndexEntry_.end(), sample,
+        [](const SampleIndexEntry& a, const SampleIndexEntry& b) { return a.pos < b.pos; });
+    if (!AssignSampleIndex(std::distance(sampleIndexEntry_.begin(), it), sampleIndex)) {
+        MEDIA_LOG_E("Invalid sample index");
+        return false;
+    }
+
+    const int64_t sttsIndex = static_cast<int64_t>(sampleIndex) - static_cast<int64_t>(numMoovSamples_) +
+        firstMoofSttsIndex_ - 1;
+    if (sttsIndex < 0 || static_cast<uint64_t>(sttsIndex) > static_cast<uint64_t>(sttsEntry_.size())) {
+        MEDIA_LOG_E("Invalid stts index");
+        return false;
+    }
+
+    lastPTS_ = std::max(lastPTS_, sample.pts);
+    rawTotalSize_ += sample.size;
+    sampleIndexEntry_.insert(sampleIndexEntry_.begin() + sampleIndex, std::move(sample));
+    const int64_t insertedDts = sampleIndexEntry_[sampleIndex].dts;
+    for (size_t i = static_cast<size_t>(sampleIndex) + 1; i < sampleIndexEntry_.size(); ++i) {
+        if (insertedDts < sampleIndexEntry_[i].dts) {
+            break;
+        }
+        sampleIndexEntry_[i].flag |= Sample::SampleFlag::DISCARD;
+    }
+
+    sttsEntry_.insert(sttsEntry_.begin() + static_cast<size_t>(sttsIndex), SttsEntry {
+        .count = 1,
+        .delta = duration
+    });
+    return true;
+}
+
+void MPEG4SampleHelper::UpdateSampleEntryInfo(
+    SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap)
+{
+    SampleIndexEntry sample = CreateSampleEntry(sampleInfo, offset, currentDts, isOverlap);
+    ++rawSampleCount_;
     if (sampleIndexEntry_.empty()) {
         lastPTS_ = sample.pts;
+        rawTotalSize_ += sample.size;
         sampleIndexEntry_.emplace_back(std::move(sample));
         sttsEntry_.emplace_back(SttsEntry {
             .count = 1,
             .delta = sampleInfo.duration
         });
-    } else {
-        uint32_t sampleIndex = 0;
-        auto it = std::upper_bound(sampleIndexEntry_.begin(), sampleIndexEntry_.end(), sample,
-            [](const SampleIndexEntry& a, const SampleIndexEntry& b) { return a.pos < b.pos; });
-        sampleIndex = std::distance(sampleIndexEntry_.begin(), it);
-        lastPTS_ = std::max(lastPTS_, sample.pts);
-        sampleIndexEntry_.insert(sampleIndexEntry_.begin() + sampleIndex, std::move(sample));
-
-        uint32_t sttsIndex = sampleIndex - numMoovSamples_ + firstMoofSttsIndex_ - 1;
-        sttsEntry_.insert(sttsEntry_.begin() + sttsIndex, SttsEntry {
-            .count = 1,
-            .delta = sampleInfo.duration
-        });
+        return;
     }
+    if (!InsertSampleEntry(std::move(sample), sampleInfo.duration)) {
+        return;
+    }
+}
+
+Status MPEG4SampleHelper::ReadTrunRunData(int64_t dataOffset, int64_t dataSize, uint32_t& trunFlag,
+    uint32_t& numSamples, std::unique_ptr<uint8_t[]>& data)
+{
+    constexpr uint32_t trunVersionIndex = 0;
+    constexpr uint32_t trunFlagsFirstIndex = 1;
+    constexpr uint32_t trunFlagsSecondIndex = 2;
+    constexpr uint32_t trunFlagsThirdIndex = 3;
+    constexpr uint32_t trunSampleCountOffset = 4;
+    constexpr uint32_t trunFlagFirstShift = 0x10;
+    constexpr uint32_t trunFlagSecondShift = 0x08;
+    uint8_t header[8];
+    auto ret = dataReader_->ReadUintData(dataOffset, header, sizeof(header));
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
+    FALSE_RETURN_V_MSG_E(header[trunVersionIndex] == 0, Status::ERROR_INVALID_DATA, "trun invalid version");
+    trunFlag = (static_cast<uint32_t>(header[trunFlagsFirstIndex]) << trunFlagFirstShift) |
+        (static_cast<uint32_t>(header[trunFlagsSecondIndex]) << trunFlagSecondShift) |
+        static_cast<uint32_t>(header[trunFlagsThirdIndex]);
+    if ((trunFlag & TRUN_FIRST_SAMPLE_FLAGS) && (trunFlag & TRUN_SAMPLE_FLAGS)) {
+        return Status::ERROR_INVALID_DATA;
+    }
+
+    numSamples = GetU32Value(&header[trunSampleCountOffset]);
+    data = std::make_unique<uint8_t[]>(dataSize - sizeof(header));
+    ret = dataReader_->ReadUintData(dataOffset + sizeof(uint64_t), data.get(), dataSize - sizeof(header));
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
+    return Status::OK;
+}
+
+bool MPEG4SampleHelper::IsValidTrunSampleData(int64_t dataSize, uint32_t bufferOffset, uint32_t byteLength,
+    uint32_t numSamples) const
+{
+    if (byteLength != 0) {
+        constexpr int64_t trunHeaderSize = sizeof(uint64_t);
+        if (dataSize < trunHeaderSize) {
+            return false;
+        }
+        int64_t dataBytes = dataSize - trunHeaderSize;
+        int64_t safeBufferOffset = static_cast<int64_t>(bufferOffset);
+        if (dataBytes < safeBufferOffset) {
+            return false;
+        }
+        return (dataBytes - safeBufferOffset) / static_cast<int64_t>(byteLength) >= static_cast<int64_t>(numSamples);
+    }
+    return static_cast<int64_t>(numSamples) <= MAX_TRUN_SAMPLES;
 }
 
 Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t dataSize, int64_t sidxDts,
@@ -781,37 +1234,28 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
 {
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(hasTfhd_, Status::ERROR_INVALID_DATA, "tfhd does not exist");
-    FALSE_RETURN_V_NOLOG(dataOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE, Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V_NOLOG(dataOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE_INT,
+        Status::ERROR_INVALID_PARAMETER);
 
-    uint8_t header[8];
-    auto ret = dataReader_->ReadUintData(dataOffset, header, sizeof(header));
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
-    FALSE_RETURN_V_MSG_E(header[0] == 0, Status::ERROR_INVALID_DATA, "trun invalid version");
-    uint16_t trunFlag = (header[1] << 0x10) + (header[2] << 0x08) + header[3];
-    if ((trunFlag & TRUN_FIRST_SAMPLE_FLAGS) && (trunFlag & TRUN_SAMPLE_FLAGS)) {
-        return Status::ERROR_INVALID_DATA;
-    }
+    uint32_t trunFlag = 0;
+    uint32_t numSamples = 0;
+    std::unique_ptr<uint8_t[]> data;
+    Status ret = ReadTrunRunData(dataOffset, dataSize, trunFlag, numSamples, data);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read trun run data failed");
 
-    uint32_t numSamples = GetU32Value(&header[4]);
-    auto data = std::make_unique<uint8_t[]>(dataSize - sizeof(header));
-    ret = dataReader_->ReadUintData(dataOffset + sizeof(uint64_t), data.get(), dataSize - sizeof(header));
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
-
-    SampleInfo sampleInfo { 0, 0, 0, 0, 0, 0 };
+    SampleInfo sampleInfo;
     uint32_t bufferOffset = 0;
     uint32_t firstSampleFlag = 0;
     ret = InitSampleInfo(sampleInfo, bufferOffset, trunFlag, data.get(), firstSampleFlag);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
 
-    if (sampleInfo.byteLength) {
-        if ((dataSize - sizeof(header) - bufferOffset) / sampleInfo.byteLength < numSamples) {
-            return Status::ERROR_INVALID_DATA;
-        }
-    } else if (numSamples > MAX_TRUN_SAMPLES) {
+    if (!IsValidTrunSampleData(dataSize, bufferOffset, sampleInfo.byteLength, numSamples)) {
         return Status::ERROR_INVALID_DATA;
     }
 
-    int64_t offset = tfhd_.baseDataOffset + sampleInfo.dataOffset;
+    FALSE_RETURN_V_MSG_E(tfhd_.baseDataOffset <= std::numeric_limits<int64_t>::max() -
+        static_cast<int64_t>(sampleInfo.dataOffset), Status::ERROR_INVALID_DATA, "Invalid trun data offset");
+    int64_t offset = tfhd_.baseDataOffset + static_cast<int64_t>(sampleInfo.dataOffset);
     int64_t currentDts = (tfdtDts_ != -1) ? tfdtDts_ : (sidxDts != -1) ? sidxDts : baseFragmentDts_;
     moofDts = currentDts;
     InitMoofParam();
@@ -831,6 +1275,7 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     totalTrunDuration_ = currentDts;
     baseFragmentDts_ = currentDts;
     totalDuration_ = (totalDuration_ < baseFragmentDts_) ? baseFragmentDts_ : totalDuration_;
+    rawTotalDuration_ = std::max(rawTotalDuration_, totalDuration_);
     return Status::OK;
 }
 
@@ -904,13 +1349,31 @@ bool MPEG4SampleHelper::GetSampleSize(uint32_t sampleIndex, uint32_t &samplesPer
     return true;
 }
 
+Status MPEG4SampleHelper::UpdateSampleDurationAndDts(uint32_t sttsDelta, uint32_t samplesPerFrame,
+    SampleIndexEntry& entry, int64_t& currentDts) const
+{
+    FALSE_RETURN_V_MSG_E(samplesPerFrame > 0, Status::ERROR_INVALID_DATA, "Invalid samples per frame");
+    int64_t delta = static_cast<int64_t>(sttsDelta);
+    int64_t frameCount = static_cast<int64_t>(samplesPerFrame);
+    FALSE_RETURN_V_MSG_E(delta <= std::numeric_limits<int64_t>::max() / frameCount,
+        Status::ERROR_INVALID_DATA, "Sample duration is too large");
+    int64_t duration = delta * frameCount;
+    FALSE_RETURN_V_MSG_E(currentDts <= std::numeric_limits<int64_t>::max() - duration,
+        Status::ERROR_INVALID_DATA, "Sample dts is too large");
+    entry.duration = duration;
+    currentDts += duration;
+    return Status::OK;
+}
+
 void MPEG4SampleHelper::GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry &entry, uint32_t &syncIndex)
 {
-    if (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE) {
+    if (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE ||
+        trackType_ == AUXILIARY_TYPE) {
         if (!stssEntry_.empty()) {
             if ((syncIndex < stssEntry_.size()) && (sampleIndex == stssEntry_[syncIndex].index)) {
                 entry.flag |= Sample::SampleFlag::SYNC_FRAME;
-                stssEntry_[syncIndex].pts = entry.pts;
+                stssEntry_[syncIndex].syncPts = entry.pts;
+                stssEntry_[syncIndex].syncDts = entry.dts;
                 ++syncIndex;
             } else {
                 entry.flag |= Sample::SampleFlag::NONE;
@@ -925,59 +1388,387 @@ void MPEG4SampleHelper::GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry &en
     }
 }
 
-Status MPEG4SampleHelper::BuildSampleIndexEntries()
+namespace {
+std::vector<uint8_t> MakeSkipSamplesInfo(int64_t skipSamples)
 {
-    FALSE_RETURN_V_MSG_E(PreBuildProcessAndCheck() == Status::OK, Status::ERROR_INVALID_DATA, "PreCheck failed");
-    int64_t currentOffset = chunkOffsets_[0];
-    uint32_t chunkIndex = 0;
-    uint32_t stscIndex = 0;
-    uint32_t sampleIndex = 0;
-    uint32_t syncIndex = 0;
-    int64_t currentDts = -timeOffset_ - dtsShift_;
-    uint32_t sampleInChunk = 0;
-    uint32_t samplesPerFrame = 1;
-    int64_t remainSamples = static_cast<int64_t>(stscEntry_[stscIndex].count);
+    constexpr size_t skipSamplesInfoSize = 10;
+    std::vector<uint8_t> info(skipSamplesInfoSize, 0);
+    uint32_t skip = skipSamples > UINT32_MAX ? UINT32_MAX : static_cast<uint32_t>(std::max<int64_t>(skipSamples, 0));
+    for (size_t i = 0; i < sizeof(uint32_t); ++i) {
+        info[i] = static_cast<uint8_t>((skip >> (BYTE_BITS * i)) & 0xFF);
+    }
+    return info;
+}
+}
 
-    for (const auto& sttsEntry : sttsEntry_) {  // 遍历sttsEntry
-        uint32_t sampleInSttsEntry = 0;
-        while (sampleInSttsEntry < sttsEntry.count) {  // 根据sttsEntry.count进行循环
-            int64_t ctsOffset = cttsEntry_.empty() ? 0 : cttsEntry_[sampleIndex].delta;
-            sampleIndexEntry_.emplace_back(SampleIndexEntry {
-                .dts = currentDts,
-                .pts = currentDts + dtsShift_ + ctsOffset,
-                .pos = currentOffset,
-                .flag = Sample::NONE,
-                .size = 0,
-                .duration = 0
+Status MPEG4SampleHelper::RebuildSyncSamples()
+{
+    stssEntry_.clear();
+    for (uint32_t i = 0; i < sampleIndexEntry_.size(); ++i) {
+        if (sampleIndexEntry_[i].flag & Sample::SampleFlag::SYNC_FRAME) {
+            stssEntry_.emplace_back(StssEntry {
+                .index = i,
+                .syncPts = sampleIndexEntry_[i].pts,
+                .syncDts = sampleIndexEntry_[i].dts
             });
-            FALSE_RETURN_V_MSG_E(GetSampleSize(sampleIndex, samplesPerFrame, sampleIndexEntry_.back(), remainSamples),
-                Status::ERROR_INVALID_DATA, "Sample size is too large");
-            sampleIndexEntry_.back().duration = static_cast<int64_t>(sttsEntry.delta) * samplesPerFrame;
-            GetSampleFlag(sampleIndex, sampleIndexEntry_.back(), syncIndex);
+        }
+    }
+    return Status::OK;
+}
 
-            lastPTS_ = std::max(lastPTS_, sampleIndexEntry_.back().pts);
-            currentDts += sttsEntry.delta * samplesPerFrame;
-            currentOffset += sampleIndexEntry_.back().size;
-            FALSE_RETURN_V_MSG_E(currentOffset >= 0, Status::ERROR_INVALID_DATA, "Sample Offset is negative");
-            ++sampleIndex;
-            sampleInSttsEntry += samplesPerFrame;
-            sampleInChunk += samplesPerFrame;
-            if (sampleInChunk >= stscEntry_[stscIndex].count) {
-                ++chunkIndex;
-                sampleInChunk = 0;
-                stscIndex = (chunkIndex == stscEntry_[stscIndex + 1].first && stscIndex < stscEntry_.size() - 1) ?
-                    stscIndex + 1 : stscIndex;
-                remainSamples = stscEntry_[stscIndex].count;
-                currentOffset = chunkOffsets_[chunkIndex];
+bool MPEG4SampleHelper::IsSyncSample(const SampleIndexEntry& entry) const
+{
+    return (entry.flag & Sample::SampleFlag::SYNC_FRAME) != 0;
+}
+
+int64_t MPEG4SampleHelper::GetCttsDelta(size_t index) const
+{
+    return index < cttsEntry_.size() ? cttsEntry_[index].delta : 0;
+}
+
+int64_t MPEG4SampleHelper::GetFrameDuration(const std::vector<SampleIndexEntry>& entries, size_t index,
+    int64_t editDuration) const
+{
+    if (index + 1 < entries.size()) {
+        int64_t duration = entries[index + 1].dts - entries[index].dts;
+        if (duration > 0) {
+            return duration;
+        }
+    }
+    return entries[index].duration > 0 ? entries[index].duration : editDuration;
+}
+
+int64_t MPEG4SampleHelper::FindPrevClosestIndex(const std::vector<SampleIndexEntry>& entries,
+    int64_t timestampPts, bool anyFrame) const
+{
+    if (dtsShift_ > 0) {
+        timestampPts -= dtsShift_;
+    }
+    int64_t found = -1;
+    for (size_t i = 0; i < entries.size(); ++i) {
+        if (entries[i].dts > timestampPts) {
+            break;
+        }
+        if (anyFrame || IsSyncSample(entries[i])) {
+            found = static_cast<int64_t>(i);
+        }
+    }
+    while (!cttsEntry_.empty() && found >= 0) {
+        const auto& entry = entries[found];
+        if ((entry.dts + GetCttsDelta(found)) <= timestampPts && IsSyncSample(entry)) {
+            break;
+        }
+        --found;
+    }
+    return found;
+}
+
+void MPEG4SampleHelper::FixLeadingDiscardTimestamps(std::vector<SampleIndexEntry>& entries, size_t endIndex,
+    int64_t endDts, const std::vector<int64_t>& leadingDurations) const
+{
+    for (size_t i = 0; i < leadingDurations.size(); ++i) {
+        endDts -= leadingDurations[leadingDurations.size() - 1 - i];
+        SampleIndexEntry& entry = entries[endIndex - 1 - i];
+        int64_t ptsDelta = entry.pts - entry.dts;
+        entry.dts = endDts;
+        entry.pts = endDts + ptsDelta;
+    }
+}
+
+Status MPEG4SampleHelper::ConvertEditDuration(const EditListEntry& edit, int64_t& editDuration) const
+{
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(edit.duration, trackTimeScale_, movieTimeScale_, &editDuration)
+        == Status::OK, Status::ERROR_INVALID_DATA, "Convert edit duration failed");
+    return editDuration < 0 ? Status::ERROR_INVALID_DATA : Status::OK;
+}
+
+Status MPEG4SampleHelper::PrepareEditListEntry(const EditListEntry& edit, EditListBuildContext& buildCtx,
+    EditListProcessContext& processCtx)
+{
+    processCtx = EditListProcessContext {};
+    processCtx.edit = &edit;
+    FALSE_RETURN_V_MSG_E(ConvertEditDuration(edit, processCtx.editDuration) == Status::OK,
+        Status::ERROR_INVALID_DATA, "Convert edit duration failed");
+    processCtx.dtsCounter = buildCtx.editListDtsEntryEnd;
+    if (__builtin_add_overflow(buildCtx.editListDtsEntryEnd, processCtx.editDuration,
+        &buildCtx.editListDtsEntryEnd)) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (!buildCtx.foundNonEmptyEdit && edit.mediaTime == -1) {
+        buildCtx.emptyEditsDuration += processCtx.editDuration;
+        processCtx.skipEntry = true;
+        return Status::OK;
+    }
+    buildCtx.foundNonEmptyEdit = true;
+    if (trackType_ == AUDIO_TYPE) {
+        buildCtx.firstNonZeroAudioEdit = buildCtx.firstNonZeroAudioEdit < 0 ? 1 : 0;
+    }
+
+    int64_t searchTimestamp = edit.mediaTime;
+    if (trackType_ == AUDIO_TYPE) {
+        searchTimestamp = std::max(searchTimestamp - trackTimeScale_, buildCtx.oldEntries.front().dts);
+    }
+    int64_t startIndex = FindPrevClosestIndex(buildCtx.oldEntries, searchTimestamp, false);
+    if (startIndex < 0) {
+        MEDIA_LOG_W("Missing key frame while searching edit timestamp: " PUBLIC_LOG_D64, searchTimestamp);
+        startIndex = FindPrevClosestIndex(buildCtx.oldEntries, searchTimestamp, true);
+    }
+    processCtx.startIndex = static_cast<size_t>(std::max<int64_t>(startIndex, 0));
+    FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(edit.mediaTime, processCtx.editDuration,
+        &processCtx.editEndTime), Status::ERROR_INVALID_DATA, "Edit end time overflow");
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::BuildEditListSampleEntry(const SampleIndexEntry& oldEntry, size_t index,
+    EditListBuildContext& buildCtx, EditListProcessContext& processCtx)
+{
+    const auto& edit = *processCtx.edit;
+    int64_t frameDuration = GetFrameDuration(buildCtx.oldEntries, index, processCtx.editDuration);
+    int64_t currCtts = GetCttsDelta(index);
+    int64_t currCts = 0;
+    int64_t shiftedDts = 0;
+    if (__builtin_add_overflow(oldEntry.dts, dtsShift_, &shiftedDts) ||
+        __builtin_add_overflow(shiftedDts, currCtts, &currCts)) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (__builtin_add_overflow(currCts, frameDuration, &processCtx.frameEndTime)) {
+        return Status::ERROR_INVALID_DATA;
+    }
+
+    processCtx.newEntry = oldEntry;
+    processCtx.newEntry.dts = processCtx.dtsCounter;
+    processCtx.newEntry.pts = processCtx.dtsCounter + dtsShift_ + currCtts;
+    processCtx.newEntry.duration = frameDuration;
+    processCtx.newEntry.skipSamplesInfo.clear();
+    bool outsideEdit = currCts < edit.mediaTime || currCts >= processCtx.editEndTime;
+    bool crossedAudioStart = trackType_ == AUDIO_TYPE && mimeType_ != MimeType::AUDIO_VORBIS &&
+        currCts < edit.mediaTime && processCtx.frameEndTime >= edit.mediaTime && buildCtx.firstNonZeroAudioEdit > 0;
+    if (outsideEdit && crossedAudioStart) {
+        int64_t packetSkipSamples = edit.mediaTime - currCts;
+        processCtx.newEntry.skipSamplesInfo = MakeSkipSamplesInfo(packetSkipSamples);
+        processCtx.newEntry.flag |= Sample::SampleFlag::DISCARD;
+        processCtx.dtsCounter -= packetSkipSamples;
+        processCtx.newEntry.dts = processCtx.dtsCounter;
+        processCtx.newEntry.pts = processCtx.dtsCounter + dtsShift_ + currCtts;
+    } else if (outsideEdit) {
+        processCtx.newEntry.flag |= Sample::SampleFlag::DISCARD;
+        if (!processCtx.editListStartEncountered) {
+            processCtx.leadingDurations.emplace_back(frameDuration);
+        }
+    } else {
+        int64_t correctedPts = processCtx.dtsCounter + currCtts + dtsShift_;
+        buildCtx.minCorrectedPts = buildCtx.minCorrectedPts < 0 ? correctedPts :
+            std::min(buildCtx.minCorrectedPts, correctedPts);
+    }
+
+    if (!outsideEdit || crossedAudioStart) {
+        processCtx.editListStartEncountered = true;
+        FixLeadingDiscardTimestamps(buildCtx.newEntries, buildCtx.newEntries.size(), processCtx.dtsCounter,
+            processCtx.leadingDurations);
+        processCtx.leadingDurations.clear();
+    }
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::AppendEditListSample(const SampleIndexEntry& oldEntry, size_t index,
+    EditListBuildContext& buildCtx, EditListProcessContext& processCtx)
+{
+    Status ret = BuildEditListSampleEntry(oldEntry, index, buildCtx, processCtx);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build edit list sample entry failed");
+    buildCtx.newEntries.emplace_back(std::move(processCtx.newEntry));
+    if (processCtx.editListStartEncountered) {
+        processCtx.dtsCounter += buildCtx.newEntries.back().duration;
+    }
+    if (processCtx.frameEndTime >= processCtx.editEndTime && (IsSyncSample(oldEntry) || trackType_ == AUDIO_TYPE)) {
+        if (!cttsEntry_.empty() && trackType_ != AUDIO_TYPE && !processCtx.foundKeyframeAfterEdit) {
+            processCtx.foundKeyframeAfterEdit = true;
+            processCtx.continueAfterEdit = true;
+        } else {
+            processCtx.shouldBreak = true;
+        }
+    }
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::AppendEditListSamples(EditListBuildContext& buildCtx,
+    EditListProcessContext& processCtx)
+{
+    for (size_t i = processCtx.startIndex; i < buildCtx.oldEntries.size(); ++i) {
+        const auto& oldEntry = buildCtx.oldEntries[i];
+        Status ret = AppendEditListSample(oldEntry, i, buildCtx, processCtx);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Append edit list sample failed");
+        if (processCtx.continueAfterEdit) {
+            processCtx.continueAfterEdit = false;
+            continue;
+        }
+        if (processCtx.shouldBreak) {
+            break;
+        }
+    }
+    return Status::OK;
+}
+
+void MPEG4SampleHelper::FinalizeAppliedEditList(EditListBuildContext& buildCtx)
+{
+    if (buildCtx.minCorrectedPts >= 0) {
+        buildCtx.minCorrectedPts -= buildCtx.emptyEditsDuration;
+        if (trackType_ == VIDEO_TYPE && buildCtx.minCorrectedPts > 0) {
+            for (auto& entry : buildCtx.newEntries) {
+                entry.dts -= buildCtx.minCorrectedPts;
+                entry.pts -= buildCtx.minCorrectedPts;
             }
         }
     }
 
+    sampleIndexEntry_ = std::move(buildCtx.newEntries);
+    totalDuration_ = buildCtx.editListDtsEntryEnd - buildCtx.startDts;
+    lastPTS_ = 0;
+    for (const auto& entry : sampleIndexEntry_) {
+        lastPTS_ = std::max(lastPTS_, entry.pts);
+    }
+    RebuildSyncSamples();
+    editListApplied_ = true;
+}
+
+Status MPEG4SampleHelper::ApplyEditList()
+{
+    if (editListEntries_.empty() || sampleIndexEntry_.empty()) {
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(movieTimeScale_ > 0 && trackTimeScale_ > 0, Status::ERROR_INVALID_DATA,
+        "Invalid edit list time scale");
+
+    const auto oldEntries = sampleIndexEntry_;
+    std::vector<SampleIndexEntry> newEntries;
+    newEntries.reserve(oldEntries.size());
+
+    int64_t editListDtsEntryEnd = dtsShift_ > 0 ? -dtsShift_ : 0;
+    int64_t startDts = editListDtsEntryEnd;
+    int64_t emptyEditsDuration = 0;
+    int64_t minCorrectedPts = -1;
+    bool foundNonEmptyEdit = false;
+    int32_t firstNonZeroAudioEdit = -1;
+    EditListBuildContext buildCtx {
+        oldEntries, newEntries, editListDtsEntryEnd, emptyEditsDuration, minCorrectedPts,
+        foundNonEmptyEdit, firstNonZeroAudioEdit, startDts
+    };
+
+    for (const auto& edit : editListEntries_) {
+        EditListProcessContext processCtx;
+        Status ret = PrepareEditListEntry(edit, buildCtx, processCtx);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare edit list entry failed");
+        if (processCtx.skipEntry) {
+            continue;
+        }
+        ret = AppendEditListSamples(buildCtx, processCtx);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Append edit list samples failed");
+    }
+
+    if (newEntries.empty()) {
+        return Status::OK;
+    }
+    FinalizeAppliedEditList(buildCtx);
+    return Status::OK;
+}
+
+uint64_t MPEG4SampleHelper::CountSttsSamples() const
+{
+    uint64_t totalSttsSamples = 0;
+    for (const auto& sttsEntry : sttsEntry_) {
+        totalSttsSamples += sttsEntry.count;
+    }
+    return totalSttsSamples;
+}
+
+MPEG4SampleHelper::SampleIndexBuildContext MPEG4SampleHelper::CreateSampleIndexBuildContext() const
+{
+    SampleIndexBuildContext buildCtx;
+    buildCtx.currentOffset = chunkOffsets_[0];
+    buildCtx.currentDts = editListEntries_.empty() ? -timeOffset_ - dtsShift_ : -dtsShift_;
+    buildCtx.remainSamples = static_cast<int64_t>(stscEntry_[buildCtx.stscIndex].count);
+    buildCtx.totalSttsSamples = CountSttsSamples();
+    return buildCtx;
+}
+
+Status MPEG4SampleHelper::AdvanceChunkIfNeeded(SampleIndexBuildContext& buildCtx)
+{
+    if (buildCtx.sampleInChunk < stscEntry_[buildCtx.stscIndex].count) {
+        return Status::OK;
+    }
+    ++buildCtx.chunkIndex;
+    buildCtx.sampleInChunk = 0;
+    if (buildCtx.processedSttsSamples >= buildCtx.totalSttsSamples) {
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(buildCtx.chunkIndex < chunkOffsets_.size(), Status::ERROR_INVALID_DATA,
+        "Chunk index is out of range");
+    buildCtx.stscIndex = (buildCtx.stscIndex < stscEntry_.size() - 1 &&
+        buildCtx.chunkIndex == stscEntry_[buildCtx.stscIndex + 1].first) ? buildCtx.stscIndex + 1 :
+        buildCtx.stscIndex;
+    buildCtx.remainSamples = stscEntry_[buildCtx.stscIndex].count;
+    buildCtx.currentOffset = chunkOffsets_[buildCtx.chunkIndex];
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::AppendSampleIndexEntry(const SttsEntry& sttsEntry, uint32_t& sampleInSttsEntry,
+    SampleIndexBuildContext& buildCtx)
+{
+    int64_t ctsOffset = cttsEntry_.empty() ? 0 : cttsEntry_[buildCtx.sampleIndex].delta;
+    sampleIndexEntry_.emplace_back(SampleIndexEntry {
+        .dts = buildCtx.currentDts,
+        .pts = buildCtx.currentDts + dtsShift_ + ctsOffset,
+        .pos = buildCtx.currentOffset,
+        .flag = Sample::NONE,
+        .size = 0,
+        .duration = 0
+    });
+    FALSE_RETURN_V_MSG_E(GetSampleSize(buildCtx.sampleIndex, buildCtx.samplesPerFrame,
+        sampleIndexEntry_.back(), buildCtx.remainSamples), Status::ERROR_INVALID_DATA, "Sample size is too large");
+    Status ret = UpdateSampleDurationAndDts(sttsEntry.delta, buildCtx.samplesPerFrame, sampleIndexEntry_.back(),
+        buildCtx.currentDts);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update sample duration failed");
+    GetSampleFlag(buildCtx.sampleIndex, sampleIndexEntry_.back(), buildCtx.syncIndex);
+    lastPTS_ = std::max(lastPTS_, sampleIndexEntry_.back().pts);
+    buildCtx.currentOffset += sampleIndexEntry_.back().size;
+    FALSE_RETURN_V_MSG_E(buildCtx.currentOffset >= 0, Status::ERROR_INVALID_DATA, "Sample Offset is negative");
+    ++buildCtx.sampleIndex;
+    sampleInSttsEntry += buildCtx.samplesPerFrame;
+    buildCtx.sampleInChunk += buildCtx.samplesPerFrame;
+    buildCtx.processedSttsSamples += buildCtx.samplesPerFrame;
+    return AdvanceChunkIfNeeded(buildCtx);
+}
+
+Status MPEG4SampleHelper::BuildSampleIndexEntries()
+{
+    FALSE_RETURN_V_MSG_E(PreBuildProcessAndCheck() == Status::OK, Status::ERROR_INVALID_DATA, "PreCheck failed");
+    SampleIndexBuildContext buildCtx = CreateSampleIndexBuildContext();
+    for (const auto& sttsEntry : sttsEntry_) {  // 遍历sttsEntry
+        uint32_t sampleInSttsEntry = 0;
+        while (sampleInSttsEntry < sttsEntry.count) {  // 根据sttsEntry.count进行循环
+            Status ret = AppendSampleIndexEntry(sttsEntry, sampleInSttsEntry, buildCtx);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Append sample index entry failed");
+        }
+    }
+
+    UpdateRawSampleStats();
+    Status ret = ApplyEditList();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Apply edit list failed");
+    return Status::OK;
+}
+
+void MPEG4SampleHelper::UpdateRawSampleStats()
+{
     totalDuration_ = 0;
+    rawSampleCount_ = 0;
+    rawTotalSize_ = 0;
     for (const auto& sttsEntry : sttsEntry_) {
         totalDuration_ += static_cast<int64_t>(sttsEntry.count) * static_cast<int64_t>(sttsEntry.delta);
+        rawSampleCount_ += sttsEntry.count;
     }
-    return Status::OK;
+    for (const auto& sample : sampleIndexEntry_) {
+        rawTotalSize_ += sample.size;
+    }
+    rawTotalDuration_ = totalDuration_;
 }
 
 Status MPEG4SampleHelper::GetSampleDuration(uint32_t index, uint32_t &duration)
@@ -988,14 +1779,20 @@ Status MPEG4SampleHelper::GetSampleDuration(uint32_t index, uint32_t &duration)
 
     if (firstMoofSampleIndex_ > 0) {
         if (index < firstMoofSampleIndex_) {
+            int64_t temp = index;
             uint32_t sttsIndex = 0;
-            while (index > 0 && sttsIndex < sttsEntry_.size()) {
-                index -= sttsEntry_[sttsIndex].count;
+            while (sttsIndex < sttsEntry_.size() - 1 &&
+                temp >= static_cast<int64_t>(sttsEntry_[sttsIndex].count)) {
+                temp -= sttsEntry_[sttsIndex].count;
                 ++sttsIndex;
             }
             duration = sttsEntry_[sttsIndex].delta;
         } else {
-            uint32_t sttsIndex = index - numMoovSamples_ + firstMoofSttsIndex_ - 1;
+            FALSE_RETURN_V_MSG_E(index >= numMoovSamples_ && firstMoofSttsIndex_ > 0,
+                Status::ERROR_INVALID_PARAMETER, "Invalid sample index");
+            uint64_t sttsIndex = static_cast<uint64_t>(index) - numMoovSamples_ + firstMoofSttsIndex_ - 1;
+            FALSE_RETURN_V_MSG_E(sttsIndex < sttsEntry_.size(), Status::ERROR_INVALID_PARAMETER,
+                "sttsIndex out of range");
             duration = sttsEntry_[sttsIndex].delta;
         }
         return Status::OK;
@@ -1027,6 +1824,86 @@ void MPEG4SampleHelper::CalculateDtsShift()
             dtsShift_ = std::max(dtsShift_, static_cast<int64_t>(-entry.delta));
         }
     }
+}
+
+uint32_t MPEG4SampleHelper::CalculateSampleCount()
+{
+    uint32_t sampleCount = 0;
+    for (const auto& entry : sttsEntry_) {
+        FALSE_RETURN_V_MSG_E(UINT32_MAX - entry.count >= sampleCount, 0, "sampleCount overflow");
+        sampleCount += entry.count;
+    }
+    MEDIA_LOG_I("sampleCount is " PUBLIC_LOG_U32, sampleCount);
+    return sampleCount;
+}
+
+uint32_t MPEG4SampleHelper::GetSttsEntryCount()
+{
+    return sttsEntry_.size();
+}
+
+uint32_t MPEG4SampleHelper::GetSampleCountOfSttsEntry(uint32_t sttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(sttsEntryIndex >= 0 && sttsEntryIndex < sttsEntry_.size(), 0,
+        "sttsEntryIndex(%{public}d) is invalid", sttsEntryIndex);
+    return sttsEntry_[sttsEntryIndex].count;
+}
+
+uint32_t MPEG4SampleHelper::GetSampleDeltaOfSttsEntry(uint32_t sttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(sttsEntryIndex >= 0 && sttsEntryIndex < sttsEntry_.size(), 0,
+        "sttsEntryIndex(%{public}d) is invalid", sttsEntryIndex);
+    return sttsEntry_[sttsEntryIndex].delta;
+}
+
+uint32_t MPEG4SampleHelper::GetCttsEntryCount()
+{
+    return cttsEntry_.size();
+}
+
+uint32_t MPEG4SampleHelper::GetSampleCountOfCttsEntry(uint32_t cttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(cttsEntryIndex >= 0 && cttsEntryIndex < cttsEntry_.size(), 0,
+        "cttsEntryIndex(%{public}d) is invalid", cttsEntryIndex);
+    return cttsEntry_[cttsEntryIndex].count;
+}
+
+int32_t MPEG4SampleHelper::GetSampleOffsetOfCttsEntry(uint32_t cttsEntryIndex)
+{
+    FALSE_RETURN_V_MSG_E(cttsEntryIndex >= 0 && cttsEntryIndex < cttsEntry_.size(), 0,
+        "cttsEntryIndex(%{public}d) is invalid", cttsEntryIndex);
+    return cttsEntry_[cttsEntryIndex].delta;
+}
+
+int32_t MPEG4SampleHelper::GetMinOffsetOfCttsEntry()
+{
+    int32_t minSampleOffsetOfCttsEntry = INT32_MAX;
+    for (uint32_t i = 0; i < cttsEntry_.size(); ++i) {
+        minSampleOffsetOfCttsEntry = minSampleOffsetOfCttsEntry < cttsEntry_[i].delta ? minSampleOffsetOfCttsEntry :
+            cttsEntry_[i].delta;
+    }
+    return std::min(0, minSampleOffsetOfCttsEntry);
+}
+
+std::vector<uint32_t> MPEG4SampleHelper::GetSyncSamplesIndexFromStssEntry()
+{
+    std::vector<uint32_t> syncSamplesIndex;
+    for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
+        syncSamplesIndex.emplace_back(stssEntry_[i].index);
+    }
+    return syncSamplesIndex;
+}
+
+MPEG4SampleHelper::SdtpEntry MPEG4SampleHelper::GetSdtpEntry()
+{
+    return sdtpEntry_;
+}
+
+Status MPEG4SampleHelper::GetPtsOfFirstSample(int64_t& startPtsBasedOnTimescale)
+{
+    FALSE_RETURN_V_MSG_E(!sampleIndexEntry_.empty(), Status::ERROR_INVALID_DATA, "sampleIndexEntry_ is empty");
+    startPtsBasedOnTimescale = sampleIndexEntry_[0].pts;  // pts based on track time scale
+    return Status::OK;
 }
 } // namespace MPEG4
 } // namespace Plugins

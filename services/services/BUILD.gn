@@ -180,16 +180,16 @@ ohos_shared_library("av_codec_service") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "json:nlohmann_json_static",
     "media_foundation:media_foundation",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
     "hiview:xperfservice_client",
     "qos_manager:qos"
   ]
-
-  public_external_deps = [ "json:nlohmann_json_static" ]
 
   if (av_codec_support_drm) {
     external_deps += [ "drm_framework:drm_framework" ]

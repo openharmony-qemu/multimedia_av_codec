@@ -17,6 +17,8 @@
 
 #include <vector>
 #include <algorithm>
+#include <limits>
+#include <new>
 #include <iconv.h>
 #include "avcodec_log.h"
 #include "common/log.h"
@@ -69,7 +71,9 @@ const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutM
     {AudioChannelLayout::MONO, 1},
     {AudioChannelLayout::STEREO, 2},
     {AudioChannelLayout::CH_4POINT0, 4},
+    {AudioChannelLayout::CH_5POINT0, 5},
     {AudioChannelLayout::CH_5POINT1, 6},
+    {AudioChannelLayout::CH_7POINT0, 7},
     {AudioChannelLayout::CH_7POINT1, 8},
     {AudioChannelLayout::CH_5POINT1POINT2, 8},
     {AudioChannelLayout::CH_5POINT1POINT4, 10},
@@ -83,7 +87,9 @@ const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutM
 const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaultMap = {
     {2, AudioChannelLayout::STEREO},             // 2: STEREO
     {4, AudioChannelLayout::CH_4POINT0},         // 4: CH_4POINT0
+    {5, AudioChannelLayout::CH_5POINT0},         // 5: CH_5POINT0
     {6, AudioChannelLayout::CH_5POINT1},         // 6: CH_5POINT1
+    {7, AudioChannelLayout::CH_7POINT0},         // 7: CH_7POINT0
     {8, AudioChannelLayout::CH_5POINT1POINT2},   // 8: CH_5POINT1POINT2
     {9, AudioChannelLayout::HOA_ORDER2_ACN_N3D}, // 9: HOA_ORDER2_ACN_N3D
     {10, AudioChannelLayout::CH_7POINT1POINT2},  // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?
@@ -455,13 +461,11 @@ void Converter::ParseHdrTypeInfo(HdrBoxInfo hdrBoxInfo, Meta &format, HevcParseF
         return;
     } else if (parse.isHdr10Plus) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
-        format.Set<Tag::VIDEO_HDR_COMPATIBILITY>(HDRType::HDR_10);
         return;
     }
 
     if (hdrBoxInfo.haveHdrDoblyVisionBox) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
-        format.Set<Tag::VIDEO_HDR_COMPATIBILITY>(HDRType::HDR_10);
         return;
     } else if (hdrBoxInfo.haveHdrVividBox) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_VIVID);
@@ -472,12 +476,7 @@ void Converter::ParseHdrTypeInfo(HdrBoxInfo hdrBoxInfo, Meta &format, HevcParseF
     format.Get<Tag::VIDEO_COLOR_TRC>(colorTrans);
     if (colorTrans == TransferCharacteristic::HLG) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HLG);
-    }
-    if (!hdrBoxInfo.isHdr && !parse.isHdr) {
-        return;
-    }
-    format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::OTHER);
-    if (colorTrans == TransferCharacteristic::PQ) {
+    } else if (colorTrans == TransferCharacteristic::PQ) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
     }
 }
@@ -541,15 +540,21 @@ std::string Converter::ConvertGBKToUTF8(const std::string &strGbk)
         MEDIA_LOG_D("Call iconv_open failed");
         return "";
     }
+    constexpr size_t maxUtf8BytesPerGbkChar = 4; // max for chinese character
     size_t inLen = strGbk.length();
-    size_t outLen = inLen * 4; // max for chinese character
+    if (inLen > std::numeric_limits<size_t>::max() / maxUtf8BytesPerGbkChar) {
+        MEDIA_LOG_D("Output buffer size overflow");
+        iconv_close(cd);
+        return "";
+    }
+    size_t outLen = inLen * maxUtf8BytesPerGbkChar;
     char* inBuf = const_cast<char*>(strGbk.c_str());
     if (inBuf == nullptr) {
         MEDIA_LOG_D("Get in buffer failed");
         iconv_close(cd);
         return "";
     }
-    char* outBuf = new char[outLen];
+    char* outBuf = new (std::nothrow) char[outLen];
     if (outBuf == nullptr) {
         MEDIA_LOG_D("Get out buffer failed");
         iconv_close(cd);

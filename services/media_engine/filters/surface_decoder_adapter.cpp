@@ -119,7 +119,6 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
     Format format;
     std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
-    callerInfo->SetData(Media::Tag::VIDEO_ENABLE_LOCAL_RELEASE, true);
     format.SetMeta(callerInfo);
     {
         std::unique_lock<std::shared_mutex> lock(codecServerMutex_);

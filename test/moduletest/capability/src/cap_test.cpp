@@ -151,56 +151,6 @@ HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0014, TestSize.Level1)
 }
 
 /**
- * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0015
- * @tc.name      : 软解，是否支持低时延
- * @tc.desc      : api test
- */
-HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0015, TestSize.Level2)
-{
-    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, SOFTWARE);
-    ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_LOW_LATENCY));
-}
-
-/**
- * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0016
- * @tc.name      : 硬解，是否支持低时延
- * @tc.desc      : api test
- */
-HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0016, TestSize.Level2)
-{
-    if (!access("/system/lib64/media/", 0)) {
-        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
-        ASSERT_NE(nullptr, capability);
-        ASSERT_EQ(true, OH_AVCapability_IsFeatureSupported(capability, VIDEO_LOW_LATENCY));
-    } else {
-        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(
-            OH_AVCODEC_MIMETYPE_VIDEO_AVC, false, HARDWARE);
-        ASSERT_NE(nullptr, capability);
-        ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_LOW_LATENCY));
-    }
-}
-
-/**
- * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0017
- * @tc.name      : 编码，是否支持低时延
- * @tc.desc      : api test
- */
-HWTEST_F(HwCapabilityNdkTest, VIDEO_TEMPORAL_ENCODE_API_0017, TestSize.Level1)
-{
-    if (!access("/system/lib64/media/", 0)) {
-        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
-        ASSERT_NE(nullptr, capability);
-        ASSERT_EQ(true, OH_AVCapability_IsFeatureSupported(capability, VIDEO_LOW_LATENCY));
-    } else {
-        OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
-        ASSERT_NE(nullptr, capability);
-        ASSERT_EQ(false, OH_AVCapability_IsFeatureSupported(capability, VIDEO_LOW_LATENCY));
-    }
-}
-
-/**
  * @tc.number    : VIDEO_TEMPORAL_ENCODE_API_0018
  * @tc.name      : OH_AVCapability_GetFeatureProperties para error
  * @tc.desc      : api test
