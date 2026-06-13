@@ -108,6 +108,7 @@ struct ReadSamplePacketContext {
     std::unordered_map<uint32_t, std::vector<int64_t>>& rawDtsPrefix;
     uint32_t sampleIndex = 0;
     int32_t trackTimeScale = 0;
+    int32_t movieTimeScale = 1;
     bool hasPlayableVideoTrack = false;
 };
 
@@ -209,8 +210,8 @@ bool GetCttsFrameRateDurationUs(
     return RescaleTrackTimeToUsRoundNearest(fallbackDurationTicks, trackTimeScale, durationUs) == Status::OK;
 }
 
-int64_t GetEffectiveStreamDurationTicks(const MediaInfo& mediaInfo,
-    const std::shared_ptr<MPEG4AtomParser::Track>& track, int32_t trackTimeScale)
+int64_t GetEffectiveStreamDurationTicks(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, int32_t trackTimeScale, int32_t movieTimeScale)
 {
     bool hasInitialEmptyEdit = track->codecParms.trackType == VIDEO_TYPE && !track->editListEntries.empty() &&
         track->editListEntries.front().mediaTime == -1;
@@ -230,10 +231,9 @@ int64_t GetEffectiveStreamDurationTicks(const MediaInfo& mediaInfo,
     // Initial empty edit shifts the visible video range; remove it from packet tail duration.
     if (streamDuration > 0 && track->codecParms.trackType == VIDEO_TYPE && !hasInitialEmptyEdit &&
         track->elstInitEmptyEdit > 0) {
-        int32_t movieTimeScale = 0;
         int64_t emptyEditDuration = 0;
         if (!track->editListEntries.empty() && track->editListEntries.front().mediaTime == -1 &&
-            mediaInfo.general.Get<Tag::MEDIA_TIME_SCALE>(movieTimeScale) && movieTimeScale > 0) {
+            movieTimeScale > 0) {
             (void)ConvertTimeScale(track->editListEntries.front().duration, trackTimeScale, movieTimeScale,
                 &emptyEditDuration);
         }
@@ -249,7 +249,7 @@ int64_t GetEffectiveStreamDurationTicks(const MediaInfo& mediaInfo,
 
 bool GetPacketDurationUs(
     const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
-    int32_t trackTimeScale, int64_t& durationUs)
+    int32_t trackTimeScale, int32_t movieTimeScale, int64_t& durationUs)
 {
     if (track == nullptr || track->sampleHelper == nullptr) {
         return false;
@@ -271,7 +271,7 @@ bool GetPacketDurationUs(
         }
     } else {
         // The final packet has no next DTS, so close it against the effective stream duration.
-        int64_t streamDuration = GetEffectiveStreamDurationTicks(mediaInfo, track, trackTimeScale);
+        int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, movieTimeScale);
         if (streamDuration < entries[sampleIndex].dts && entries[sampleIndex].duration != 0) {
             durationUs = 0;
             return true;
@@ -421,7 +421,7 @@ bool HasFutureWebVttCueSample(const std::shared_ptr<MPEG4AtomParser::Track>& tra
 
 bool UpdateWebVttTailDurationFromStream(const MediaInfo& mediaInfo,
     const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId, std::shared_ptr<Sample> sample,
-    uint32_t nextSampleIndex)
+    uint32_t nextSampleIndex, int32_t movieTimeScale)
 {
     if (track == nullptr || track->sampleHelper == nullptr || sample == nullptr ||
         track->sampleHelper->mimeType_ != MimeType::TEXT_WEBVTT || HasFutureWebVttCueSample(track, nextSampleIndex)) {
@@ -435,12 +435,11 @@ bool UpdateWebVttTailDurationFromStream(const MediaInfo& mediaInfo,
             return true;
         }
     }
-    int32_t trackTimeScale = 0;
-    if (trackId >= mediaInfo.tracks.size() ||
-        !mediaInfo.tracks[trackId].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale) || trackTimeScale <= 0) {
+    int32_t trackTimeScale = track->timeScale;
+    if (trackId >= mediaInfo.tracks.size() || trackTimeScale <= 0) {
         return false;
     }
-    int64_t trackDuration = GetEffectiveStreamDurationTicks(mediaInfo, track, trackTimeScale);
+    int64_t trackDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, movieTimeScale);
     int64_t trackDurationUs = 0;
     if (trackDuration <= 0 ||
         RescaleTrackTimeToUsRoundNearest(trackDuration, trackTimeScale, trackDurationUs) != Status::OK ||
@@ -510,7 +509,7 @@ bool GetTrailingZeroEditedAudioDurationUs(const ReadSampleEntryContext& context,
     if (previousDuration <= 0) {
         return false;
     }
-    int64_t streamDuration = GetEffectiveStreamDurationTicks(packet.mediaInfo, track, packet.trackTimeScale);
+    int64_t streamDuration = GetEffectiveStreamDurationTicks(track, packet.trackTimeScale, packet.movieTimeScale);
     int64_t tailDuration = streamDuration - currentSample.dts;
     if (tailDuration > 0 && tailDuration < previousDuration) {
         return RescaleTrackTimeToUsRoundNearest(tailDuration, packet.trackTimeScale, durationUs) == Status::OK;
@@ -630,7 +629,7 @@ bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>
 
 bool GetVideoTailDurationUs(
     const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
-    int32_t trackTimeScale,
+    int32_t trackTimeScale, int32_t movieTimeScale,
     int64_t& durationUs)
 {
     if (track == nullptr || track->codecParms.trackType != VIDEO_TYPE || track->sampleHelper == nullptr ||
@@ -643,7 +642,7 @@ bool GetVideoTailDurationUs(
     }
 
     const auto& currentSample = entries[sampleIndex];
-    int64_t streamDuration = GetEffectiveStreamDurationTicks(mediaInfo, track, trackTimeScale);
+    int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, movieTimeScale);
     if (GetNominalSttsFrameDurationUs(track, trackTimeScale, durationUs)) {
         return true;
     }
@@ -798,15 +797,14 @@ uint32_t GetPacketSampleFlag(const std::shared_ptr<MPEG4AtomParser::Track>& trac
     return flag;
 }
 
-bool GetMovEditTimelineOffsetTicks(const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track,
-    int32_t trackTimeScale, int64_t& timeOffset)
+bool GetMovEditTimelineOffsetTicks(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    int32_t trackTimeScale, int32_t movieTimeScale, int64_t& timeOffset)
 {
     timeOffset = 0;
     if (track == nullptr || track->editListEntries.empty() || trackTimeScale <= 0) {
         return true;
     }
-    int32_t movieTimeScale = 0;
-    if (!mediaInfo.general.Get<Tag::MEDIA_TIME_SCALE>(movieTimeScale) || movieTimeScale <= 0) {
+    if (movieTimeScale <= 0) {
         return false;
     }
 
@@ -879,7 +877,7 @@ Status SetPacketTimelineUs(const ReadSamplePacketContext& context, int64_t& dts,
     const auto& currentSample = entries[sampleIndex];
     int64_t timelineOffset = 0;
     if (ShouldApplyMovEditTimelineOffset(track)) {
-        FALSE_RETURN_V_MSG_E(GetMovEditTimelineOffsetTicks(context.mediaInfo, track, context.trackTimeScale,
+        FALSE_RETURN_V_MSG_E(GetMovEditTimelineOffsetTicks(track, context.trackTimeScale, context.movieTimeScale,
             timelineOffset),
             Status::ERROR_INVALID_DATA, "Get MOV edit-list time offset failed");
     }
@@ -917,8 +915,10 @@ bool UpdatePacketDurationUs(const ReadSamplePacketContext& context, ReadSamplePa
         GetMpegAudioFrameDurationUs(context.mediaInfo, track, track->trackIndex, sampleIndex, attr.durationUs) ||
         GetEditedAudioTailDurationUs(context, attr.durationUs) ||
         GetTimedMetaTailDurationUs(track, sampleIndex, attr.durationUs) ||
-        GetVideoTailDurationUs(context.mediaInfo, track, sampleIndex, trackTimeScale, attr.durationUs) ||
-        GetPacketDurationUs(context.mediaInfo, track, sampleIndex, trackTimeScale, attr.durationUs);
+        GetVideoTailDurationUs(context.mediaInfo, track, sampleIndex, trackTimeScale, context.movieTimeScale,
+            attr.durationUs) ||
+        GetPacketDurationUs(context.mediaInfo, track, sampleIndex, trackTimeScale, context.movieTimeScale,
+            attr.durationUs);
     if (!hasDuration && track->codecParms.trackType == VIDEO_TYPE && !track->sampleHelper->cttsEntry_.empty()) {
         hasDuration = GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale,
             attr.durationUs);
@@ -937,7 +937,7 @@ void UpdateMovEditTailDurationUs(const ReadSamplePacketContext& context, int64_t
     if (!ShouldApplyMovEditTimelineOffset(track) || context.sampleIndex + 1 != entries.size()) {
         return;
     }
-    int64_t streamDuration = GetEffectiveStreamDurationTicks(context.mediaInfo, track, context.trackTimeScale);
+    int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
     int64_t duration = streamDuration - dts;
     if (duration > 0) {
         (void)RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, attr.durationUs);
@@ -1131,6 +1131,7 @@ void MPEG4DemuxerPlugin::ResetParam()
     selectedTrackIds_.clear();
     trackMtx_.clear();
     mediaInfo_ = MediaInfo();
+    movieTimeScale_ = 1;
     readModeFlags_.store(0, std::memory_order_release);
     readLoopStatus_.store(Status::OK, std::memory_order_release);
     readToEnd_ = false;
@@ -1190,6 +1191,7 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
     
     mediaInfo_ = parser->GetMediaInfo();
+    movieTimeScale_ = parser->GetMovieTimeScale();
     firstTrack_ = parser->GetFirstTrack();
     userformat_ = parser->GetUserFormat();
     fragmentEntry_.clear();
@@ -1225,8 +1227,8 @@ Status MPEG4DemuxerPlugin::ConvertElstTimescaleToMs()
         MEDIA_LOG_W("This file has no track");
         return Status::OK;
     }
-    int32_t fileTimeScale;
-    if (!mediaInfo_.general.Get<Tag::MEDIA_TIME_SCALE>(fileTimeScale)) {
+    int32_t fileTimeScale = movieTimeScale_;
+    if (fileTimeScale <= 0) {
         MEDIA_LOG_E("Get mvhd timescale failed");
         return Status::ERROR_INVALID_DATA;
     }
@@ -1238,7 +1240,8 @@ Status MPEG4DemuxerPlugin::ConvertElstTimescaleToMs()
             track = track->next;
             continue;
         }
-        if (mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale)) {
+        trackTimeScale = track->timeScale;
+        if (trackTimeScale > 0) {
             int64_t tempEmptyEdit = 0;
             FALSE_RETURN_V_MSG_E(
                 ConvertTimeScale(track->elstInitEmptyEdit, 1000LL, fileTimeScale, &tempEmptyEdit) == Status::OK,
@@ -1309,8 +1312,7 @@ void MPEG4DemuxerPlugin::InitParser()
         mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TYPE>(trackType);
         if (trackType == MediaType::VIDEO && StartWith(mime.c_str(), "video/") && videoTrackCount == 0) {
             videoTrackCount++;
-            int32_t timeScale = 0;
-            mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale);
+            int32_t timeScale = track->timeScale;
             if (timeScale > 0) {
                 FALSE_RETURN_MSG(track->sampleHelper, "sampleHelper is nullptr");
                 int64_t startPtsBasedOnTimescale = 0;
@@ -1650,8 +1652,8 @@ Status MPEG4DemuxerPlugin::DynamicBaseTrackSelect(int64_t seekTime, int64_t &max
         auto track = FindTrackById(currentTrackId);
         FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
         FALSE_RETURN_V_MSG_E(track->sampleHelper != nullptr, Status::ERROR_NULL_POINTER, "sampleHelper is nullptr");
-        int32_t trackTimeBase;
-        if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeBase)) {
+        int32_t trackTimeBase = track->timeScale;
+        if (trackTimeBase <= 0) {
             return Status::ERROR_INVALID_PARAMETER;
         }
         bool editListApplied = track->sampleHelper != nullptr && track->sampleHelper->HasAppliedEditList();
@@ -1691,9 +1693,8 @@ Status MPEG4DemuxerPlugin::DynamicBaseTrackSelect(int64_t seekTime, int64_t &max
 Status MPEG4DemuxerPlugin::UpdateDynamicBaseTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     uint32_t trackId, int64_t timeDelayToPts, DynamicBaseTrackState& state)
 {
-    int32_t trackTimeBase = 0;
-    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeBase),
-        Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
+    int32_t trackTimeBase = track->timeScale;
+    FALSE_RETURN_V_MSG_E(trackTimeBase > 0, Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
     int64_t convertedMinPts = INT64_MAX;
     if (state.minPts != INT64_MAX) {
         FALSE_RETURN_V_MSG_E(ConvertTimeScale(state.minPts, static_cast<int64_t>(trackTimeBase),
@@ -1873,7 +1874,8 @@ Status MPEG4DemuxerPlugin::PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser
     } else {
         context.relativeSeekTime = seekTime - (track->elstInitEmptyEdit - minElstInitEmptyEdit_);
     }
-    if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(context.baseTrackTimeScale)) {
+    context.baseTrackTimeScale = track->timeScale;
+    if (context.baseTrackTimeScale <= 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
     Status ret = ValidateElstShiftStartTimeScale(track, context);
@@ -1988,8 +1990,8 @@ Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, 
         int64_t adjustSeekTime = 0;
         uint32_t otherSampleIndex = 0;
         adjustSeekTime = syncSeekTime - otherTrack->elstInitEmptyEdit;
-        int32_t otherTrackTimeScale;
-        if (!mediaInfo_.tracks[currentTrackId].Get<Tag::MEDIA_TIME_SCALE>(otherTrackTimeScale)) {
+        int32_t otherTrackTimeScale = otherTrack->timeScale;
+        if (otherTrackTimeScale <= 0) {
             return Status::ERROR_INVALID_PARAMETER;
         }
 
@@ -2202,13 +2204,13 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sam
     const uint32_t index = track->currentSampleIndex;
     auto entry = track->sampleHelper->sampleIndexEntry_.data();
     auto currentSample = entry[index];
-    int32_t trackTimeScale;
-    if (!mediaInfo_.tracks[trackId].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale)) {
+    int32_t trackTimeScale = track->timeScale;
+    if (trackTimeScale <= 0) {
         return Status::ERROR_INVALID_PARAMETER;
     }
 
     ReadSamplePacketAttr attr;
-    ReadSamplePacketContext context { mediaInfo_, track, rawDtsPrefix_, index, trackTimeScale,
+    ReadSamplePacketContext context { mediaInfo_, track, rawDtsPrefix_, index, trackTimeScale, movieTimeScale_,
         HasPlayableVideoTrack(firstTrack_) };
     Status ret = BuildReadSamplePacketAttr(context, attr);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build read sample packet attr failed");
@@ -2381,7 +2383,7 @@ Status MPEG4DemuxerPlugin::GetSampleByMimeType(const Seekable seekable, uint32_t
                 ret = AddSampleToCacheQueue(tempSample->sample, trackId);
                 FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
                 (void)UpdateWebVttTailDurationFromStream(mediaInfo_, track, trackId, tempSample->sample,
-                    track->currentSampleIndex + 1);
+                    track->currentSampleIndex + 1, movieTimeScale_);
                 track->currentSampleIndex++;
                 continue;
             }
@@ -2398,12 +2400,12 @@ Status MPEG4DemuxerPlugin::GetSampleByMimeType(const Seekable seekable, uint32_t
                 cacheSample->sample->duration = tempSample->sample->pts - cacheSample->sample->pts;
             }
             (void)UpdateWebVttTailDurationFromStream(mediaInfo_, track, trackId, cacheSample->sample,
-                track->currentSampleIndex + 1);
+                track->currentSampleIndex + 1, movieTimeScale_);
         } else if (cacheQueue_.HasCache(trackId)) {
             std::shared_ptr<MPEG4Sample> cacheSample = cacheQueue_.Back(trackId);
             if (cacheSample != nullptr) {
                 (void)UpdateWebVttTailDurationFromStream(mediaInfo_, track, trackId, cacheSample->sample,
-                    track->currentSampleIndex);
+                    track->currentSampleIndex, movieTimeScale_);
             }
         }
         break;

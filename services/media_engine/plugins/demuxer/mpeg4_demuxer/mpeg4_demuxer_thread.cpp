@@ -104,8 +104,8 @@ Status MPEG4DemuxerPlugin::PrepareSeekToFrameByDts(int32_t trackId, int64_t seek
     context.track = FindTrackById(trackId);
     FALSE_RETURN_V_MSG_E(context.track != nullptr && context.track->sampleHelper != nullptr,
         Status::ERROR_NULL_POINTER, "Track or sampleHelper is nullptr");
-    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[trackId].Get<Tag::MEDIA_TIME_SCALE>(context.trackTimeScale) &&
-        context.trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
+    context.trackTimeScale = context.track->timeScale;
+    FALSE_RETURN_V_MSG_E(context.trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
     int64_t targetDts = 0;
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(seekTime, static_cast<int64_t>(context.trackTimeScale), 1000LL,
         &targetDts) == Status::OK, Status::ERROR_INVALID_PARAMETER, "Convert seek time failed");
@@ -206,9 +206,8 @@ Status MPEG4DemuxerPlugin::SyncSelectedTracksByDts(int32_t baseTrackId, int64_t 
 {
     auto baseTrack = FindTrackById(baseTrackId);
     FALSE_RETURN_V_MSG_E(baseTrack != nullptr, Status::ERROR_NULL_POINTER, "Base track is nullptr");
-    int32_t baseTimeScale = 0;
-    FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[baseTrackId].Get<Tag::MEDIA_TIME_SCALE>(baseTimeScale) &&
-        baseTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get base time scale failed");
+    int32_t baseTimeScale = baseTrack->timeScale;
+    FALSE_RETURN_V_MSG_E(baseTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get base time scale failed");
 
     for (const auto& selectedTrackId : selectedTrackIds_) {
         int32_t currentTrackId = static_cast<int32_t>(selectedTrackId);
@@ -218,9 +217,8 @@ Status MPEG4DemuxerPlugin::SyncSelectedTracksByDts(int32_t baseTrackId, int64_t 
         auto track = FindTrackById(currentTrackId);
         FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr,
             Status::ERROR_NULL_POINTER, "Track or sampleHelper is nullptr");
-        int32_t trackTimeScale = 0;
-        FALSE_RETURN_V_MSG_E(mediaInfo_.tracks[currentTrackId].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale) &&
-            trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
+        int32_t trackTimeScale = track->timeScale;
+        FALSE_RETURN_V_MSG_E(trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER, "Get track time scale failed");
 
         int64_t targetDts = 0;
         FALSE_RETURN_V_MSG_E(ConvertTimeScale(baseDts, static_cast<int64_t>(trackTimeScale),
@@ -702,8 +700,10 @@ int64_t MPEG4DemuxerPlugin::GetWebVTTFlushEndPtsUs(
     }
 
     int64_t trackDuration = 0;
-    if (track != nullptr && mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale) &&
-        trackTimeScale > 0 &&
+    if (track != nullptr) {
+        trackTimeScale = track->timeScale;
+    }
+    if (track != nullptr && trackTimeScale > 0 &&
         ConvertTimeScale(track->duration, static_cast<int64_t>(S_TO_US), trackTimeScale, &trackDuration) ==
         Status::OK) {
         return trackDuration;

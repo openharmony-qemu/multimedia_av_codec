@@ -134,6 +134,7 @@ private:
     bool isIsom_ = false;
     bool hasSidxBox_ = false;
     bool hasMoofBox_ = false;
+    int32_t movieTimeScale_ = 1;
     int64_t minElstInitEmptyEdit_ = INT64_MAX;
     uint64_t relativeEndPts_ = 0;
     uint32_t currentFragment_ = 0;
