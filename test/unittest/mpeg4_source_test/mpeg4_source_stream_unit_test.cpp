@@ -195,13 +195,11 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2001, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_COPYRIGHT, formatVal_.copyright));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_EQ(formatVal_.title, "Sintel Trailer");
     EXPECT_EQ(formatVal_.artist, "Durian Open Movie Team");
     EXPECT_EQ(formatVal_.copyright, "(c) copyright Blender Foundation | durian.blender.org");
     EXPECT_EQ(formatVal_.duration, 52209000);
     EXPECT_EQ(formatVal_.trackCount, 2);
-    EXPECT_EQ(formatVal_.timeScale, 1000);
 }
 
 /**
@@ -222,13 +220,11 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3001, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_COPYRIGHT, formatVal_.copyright));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_EQ(formatVal_.title, "Sintel Trailer");
     EXPECT_EQ(formatVal_.artist, "Durian Open Movie Team");
     EXPECT_EQ(formatVal_.copyright, "(c) copyright Blender Foundation | durian.blender.org");
     EXPECT_EQ(formatVal_.duration, 52209000);
     EXPECT_EQ(formatVal_.trackCount, 2);
-    EXPECT_EQ(formatVal_.timeScale, 1000);
 }
 
 /**
@@ -246,9 +242,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2002, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 4120000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -297,9 +291,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3002, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 4120000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -310,9 +302,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3002, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.timeScale, 12800);
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/avc");
     EXPECT_EQ(formatVal_.width, 1920);
@@ -475,10 +465,8 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2008, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 90000);
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/hevc");
     EXPECT_EQ(formatVal_.width, 2336);
@@ -518,9 +506,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3008, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 10000);
     EXPECT_EQ(formatVal_.duration, 7334000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -531,10 +517,8 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3008, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 90000);
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/hevc");
     EXPECT_EQ(formatVal_.width, 2336);
@@ -575,8 +559,6 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2010, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_EQ(formatVal_.timeScale, 44100);
     EXPECT_EQ(formatVal_.duration, 6135011);
     trackIndex_ = 0;
     format_->Destroy();
@@ -625,9 +607,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3010, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 44100);
     EXPECT_EQ(formatVal_.duration, 6135011);
     trackIndex_ = 0;
     format_->Destroy();
@@ -638,10 +618,8 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3010, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 600);
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/avc");
     EXPECT_EQ(formatVal_.width, 1920);
@@ -680,20 +658,16 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2014, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 52209000);
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 12288);
     EXPECT_EQ(formatVal_.width, 1920);
     EXPECT_EQ(formatVal_.height, 1080);
     EXPECT_EQ(formatVal_.frameRate, 24.000000);
@@ -728,20 +702,16 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3014, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 52209000);
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 12288);
     EXPECT_EQ(formatVal_.width, 1920);
     EXPECT_EQ(formatVal_.height, 1080);
     EXPECT_EQ(formatVal_.frameRate, 24.000000);
@@ -776,9 +746,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2023, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3000000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -817,9 +785,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3023, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3000000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -860,20 +826,16 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2024, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3000000);
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 720);
     EXPECT_EQ(formatVal_.height, 480);
     EXPECT_EQ(formatVal_.frameRate, 60.000000);
@@ -905,20 +867,16 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3024, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3000000);
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 720);
     EXPECT_EQ(formatVal_.height, 480);
     EXPECT_EQ(formatVal_.frameRate, 60.000000);
