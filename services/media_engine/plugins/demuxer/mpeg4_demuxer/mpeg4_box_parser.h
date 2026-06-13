@@ -69,6 +69,8 @@ public:
         uint32_t vSpacing = 0;
         bool hasPasp = false;
         bool inferredTrackType = false;
+        uint16_t audioSampleEntryChannelCount = 0;
+        uint16_t audioSampleEntryBitsPerCodedSample = 0;
         CodecParams codecParms{};
 
         Track() = default;

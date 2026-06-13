@@ -1119,6 +1119,11 @@ void MPEG4AtomParser::CalculateVideoFrameRate(std::shared_ptr<Track> track)
         MEDIA_LOG_D("Track:" PUBLIC_LOG_U32 ", totalSamples=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64
             ", timeScale=" PUBLIC_LOG_D32 ", frameRate=" PUBLIC_LOG_F " fps", track->trackIndex, totalSamples,
             duration, timeScale, rawFrameRate);
+    } else if (timeScale > 0) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_FRAME_RATE>(
+            std::numeric_limits<double>::infinity());
+        MEDIA_LOG_D("Track:" PUBLIC_LOG_U32 ", totalSamples=" PUBLIC_LOG_D64
+            ", duration=" PUBLIC_LOG_D64 ", frameRate=inf", track->trackIndex, totalSamples, duration);
     }
 }
 
@@ -1190,12 +1195,12 @@ void MPEG4AtomParser::NormalizeAudioAttributes(std::shared_ptr<Track> track)
     std::string mime;
     FALSE_RETURN_MSG(mediaInfo_.tracks[track->trackIndex].Get<Tag::MIME_TYPE>(mime), "Audio track has no mime");
     bool keepSamplePerFrame = false;
+    if (mime != MimeType::AUDIO_AAC) {
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::AUDIO_AAC_IS_ADTS);
+    }
     if (mime == MimeType::AUDIO_AAC) {
         int32_t samplesPerFrame = 0;
-        constexpr int64_t minAacSamplesWithFrameSize = 5;
-        keepSamplePerFrame = track->sampleHelper != nullptr &&
-            track->sampleHelper->GetRawSampleCount() >= minAacSamplesWithFrameSize &&
-            mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
+        keepSamplePerFrame = mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
             samplesPerFrame == AUDIO_DEFAULT_SAMPLE_PER_FRAME;
     } else if (mime == MimeType::AUDIO_DTS) {
         constexpr int64_t dtsCoreBitrate = 1411200;
@@ -1214,6 +1219,14 @@ void MPEG4AtomParser::NormalizeAudioAttributes(std::shared_ptr<Track> track)
             mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
         }
         return;
+    } else if (mime == MimeType::AUDIO_MPEG && track->audioSampleEntryChannelCount > 0) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_CHANNEL_COUNT>(
+            static_cast<int32_t>(track->audioSampleEntryChannelCount));
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(
+            static_cast<int32_t>(track->audioSampleEntryChannelCount));
+        AudioChannelLayout layout = Converter::GetDefaultChannelLayout(track->audioSampleEntryChannelCount);
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
     }
     if (!keepSamplePerFrame) {
         mediaInfo_.tracks[track->trackIndex].Remove(Tag::AUDIO_SAMPLE_PER_FRAME);
@@ -2350,6 +2363,8 @@ Status MPEG4AtomParser::ParseAudioAttributes(MPEG4Atom currentAtom, ParseContext
     uint16_t version = GetU16Value(&sampleEntryInfo[0x08]);
     uint16_t channelCount = GetU16Value(&sampleEntryInfo[0x10]);
     uint16_t sampleSize = GetU16Value(&sampleEntryInfo[0x12]); // bits_per_coded_sample
+    lastTrack_->audioSampleEntryChannelCount = channelCount;
+    lastTrack_->audioSampleEntryBitsPerCodedSample = sampleSize;
     //skip unneed distribute
     uint32_t sampleRate = GetU32Value(&sampleEntryInfo[0x18]) / CONVERT_SCALE;
     ctx->offset = ctx->dataOffset + sizeof(sampleEntryInfo);
@@ -2947,6 +2962,8 @@ bool MPEG4AtomParser::ParseAACSpecificConfig(const uint8_t* data, uint32_t size)
             layout = audioParser->GetDefaultChannelLayout(channelCount);
         }
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<int32_t>(channels));
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
         return true;
     }
     
@@ -3283,7 +3300,10 @@ Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const A
     trackMeta.Set<Tag::MEDIA_BITRATE>(static_cast<int64_t>(bitrateKbps) * 1000);
     trackMeta.Set<Tag::AUDIO_SAMPLE_FORMAT>(AV3A_RESOLUTION_TABLE[resolutionIndex].sampleFormat);
     trackMeta.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AV3A_RESOLUTION_TABLE[resolutionIndex].bitsPerSample);
-    trackMeta.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(AV3A_RESOLUTION_TABLE[resolutionIndex].bitsPerSample);
+    if (lastTrack_->audioSampleEntryBitsPerCodedSample > 0) {
+        trackMeta.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(
+            static_cast<int32_t>(lastTrack_->audioSampleEntryBitsPerCodedSample));
+    }
     trackMeta.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AV3A_AUDIO_FRAME_SIZE);
     trackMeta.Set<Tag::AUDIO_OBJECT_NUMBER>(params.objectNumber);
     trackMeta.Set<Tag::AUDIO_SOUNDBED_CHANNELS_NUMBER>(params.soundbedChannels);
@@ -5139,6 +5159,11 @@ void MPEG4AtomParser::SetFileDuration()
         mediaInfo_.general.Get<Tag::MEDIA_DURATION>(fileDuration) && fileDuration > 0) {
         return; // 已经设置了有效的duration，直接返回
     }
+    bool isGltf = false;
+    if (!hasMoofBox_ && mediaInfo_.general.Get<Tag::IS_GLTF>(isGltf) && isGltf) {
+        MEDIA_LOG_D("Skip calculated file duration for glTF without valid mvhd duration");
+        return;
+    }
     if (!hasMoofBox_) {
         fileDuration = GetMpeg4FileDuration();
     } else {
@@ -5348,6 +5373,15 @@ void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, 
 {
     if (mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_START_TIME>(trackStartTime)) {
         MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " already has start time", track->trackIndex);
+        containerStartTimeForTrack = trackStartTime;
+        return;
+    }
+    bool isGltf = false;
+    int64_t fileDuration = 0;
+    if (mediaInfo_.general.Get<Tag::IS_GLTF>(isGltf) && isGltf &&
+        !mediaInfo_.general.Get<Tag::MEDIA_DURATION>(fileDuration)) {
+        trackStartTime = 0;
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::MEDIA_START_TIME>(trackStartTime);
         containerStartTimeForTrack = trackStartTime;
         return;
     }
