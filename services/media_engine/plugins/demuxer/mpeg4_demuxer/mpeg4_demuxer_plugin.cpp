@@ -2380,6 +2380,55 @@ Status MPEG4DemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> outBuffer)
     return Status::OK;
 }
 
+Status MPEG4DemuxerPlugin::UpdateWebVttCachedSampleDuration(const WebVttReadContext& context,
+    const std::shared_ptr<MPEG4Sample>& tempSample, uint32_t nextSampleIndex)
+{
+    if (!cacheQueue_.HasCache(context.trackId)) {
+        return Status::OK;
+    }
+    std::shared_ptr<MPEG4Sample> cacheSample = cacheQueue_.Back(context.trackId);
+    if (tempSample == nullptr && (cacheSample == nullptr || cacheSample->sample == nullptr)) {
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(cacheSample != nullptr && cacheSample->sample != nullptr,
+        Status::ERROR_NULL_POINTER, "Cache sample is nullptr");
+    if (tempSample != nullptr && tempSample->sample != nullptr && tempSample->sample->pts > cacheSample->sample->pts) {
+        cacheSample->sample->duration = tempSample->sample->pts - cacheSample->sample->pts;
+    }
+    WebVttTailDurationContext tailContext {
+        mediaInfo_, context.track, context.trackId, nextSampleIndex, movieTimeScale_
+    };
+    (void)UpdateWebVttTailDurationFromStream(tailContext, cacheSample->sample);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::ReadAndCacheWebVttSample(const WebVttReadContext& context, bool& continueRead)
+{
+    continueRead = false;
+    std::shared_ptr<MPEG4Sample> tempSample = std::make_shared<MPEG4Sample>();
+    Status ret = GetSampleBySeekableStatus(context.seekable, context.trackId, tempSample, context.outBuffer);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSampleBySeekableStatus failed");
+    if (context.outBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) {
+        return UpdateWebVttCachedSampleDuration(context, nullptr, context.track->currentSampleIndex);
+    }
+    ret = ProcessWebVTTSample(tempSample);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ProcessWebVTTSample failed");
+    if (tempSample->isVttc) {
+        ret = AddSampleToCacheQueue(tempSample->sample, context.trackId);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
+        WebVttTailDurationContext tailContext {
+            mediaInfo_, context.track, context.trackId, context.track->currentSampleIndex + 1, movieTimeScale_
+        };
+        (void)UpdateWebVttTailDurationFromStream(tailContext, tempSample->sample);
+    } else {
+        ret = UpdateWebVttCachedSampleDuration(context, tempSample, context.track->currentSampleIndex + 1);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update WebVTT cache duration failed");
+    }
+    continueRead = tempSample->isVttc || !cacheQueue_.HasCache(context.trackId);
+    context.track->currentSampleIndex += continueRead ? 1 : 0;
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::GetSampleByMimeType(const Seekable seekable, uint32_t trackId,
     std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer)
 {
@@ -2387,57 +2436,15 @@ Status MPEG4DemuxerPlugin::GetSampleByMimeType(const Seekable seekable, uint32_t
     if (track == nullptr || track->sampleHelper == nullptr || track->sampleHelper->mimeType_ != MimeType::TEXT_WEBVTT) {
         return GetSampleBySeekableStatus(seekable, trackId, mpeg4Sample, outBuffer);
     }
-
-    Status ret = Status::OK;
-    // get vttc+vtte
-    while (true) {
-        std::shared_ptr<MPEG4Sample> tempSample = std::make_shared<MPEG4Sample>();
-        ret = GetSampleBySeekableStatus(seekable, trackId, tempSample, outBuffer);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "GetSampleBySeekableStatus failed");
-        if (!(outBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS))) {
-            ret = ProcessWebVTTSample(tempSample);
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ProcessWebVTTSample failed");
-            // push all vttc to cache
-            if (tempSample->isVttc) {
-                ret = AddSampleToCacheQueue(tempSample->sample, trackId);
-                FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
-                WebVttTailDurationContext context {
-                    mediaInfo_, track, trackId, track->currentSampleIndex + 1, movieTimeScale_
-                };
-                (void)UpdateWebVttTailDurationFromStream(context, tempSample->sample);
-                track->currentSampleIndex++;
-                continue;
-            }
-            // single vtte
-            if (!cacheQueue_.HasCache(trackId)) {
-                track->currentSampleIndex++;
-                continue;
-            }
-            // compute vttc duration by vtte
-            std::shared_ptr<MPEG4Sample> cacheSample  = cacheQueue_.Back(trackId);
-            FALSE_RETURN_V_MSG_E(cacheSample != nullptr && cacheSample->sample != nullptr,
-                Status::ERROR_NULL_POINTER, "Cache sample is nullptr");
-            if (tempSample->sample->pts > cacheSample->sample->pts) {
-                cacheSample->sample->duration = tempSample->sample->pts - cacheSample->sample->pts;
-            }
-            WebVttTailDurationContext context {
-                mediaInfo_, track, trackId, track->currentSampleIndex + 1, movieTimeScale_
-            };
-            (void)UpdateWebVttTailDurationFromStream(context, cacheSample->sample);
-        } else if (cacheQueue_.HasCache(trackId)) {
-            std::shared_ptr<MPEG4Sample> cacheSample = cacheQueue_.Back(trackId);
-            if (cacheSample != nullptr) {
-                WebVttTailDurationContext context {
-                    mediaInfo_, track, trackId, track->currentSampleIndex, movieTimeScale_
-                };
-                (void)UpdateWebVttTailDurationFromStream(context, cacheSample->sample);
-            }
-        }
-        break;
-    }
+    WebVttReadContext context { seekable, trackId, track, outBuffer };
+    bool continueRead = false;
+    do {
+        Status ret = ReadAndCacheWebVttSample(context, continueRead);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read WebVTT sample failed");
+    } while (continueRead);
     mpeg4Sample = cacheQueue_.Front(trackId);
     cacheQueue_.Pop(trackId);
-    return ret;
+    return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::GetSampleBySeekableStatus(const Seekable seekable, uint32_t trackId,
