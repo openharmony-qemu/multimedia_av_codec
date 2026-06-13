@@ -105,7 +105,10 @@ void main()
     gl_FragColor = vec4(videoColor.rgb, 1.0);
 }
 )delimiter";
-
+/**
+ * @brief 片段着色器：将视频帧与合并后的水印纹理进行Alpha混合叠加
+ * 视频已通过glViewport缩放到目标尺寸，水印已在目标画布上合并，直接叠加即可
+ */
 // 顶点数据：位置坐标(x, y, z) + 纹理坐标(u, v)
 GLfloat vertices[] = {
     -1.0f, 1.0f,  0.0f,    1.0f, 1.0f,  // 左上角
