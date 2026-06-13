@@ -118,6 +118,14 @@ struct ReadSampleEntryContext {
     const MPEG4SampleHelper::SampleIndexEntry& currentSample;
 };
 
+struct WebVttTailDurationContext {
+    const MediaInfo& mediaInfo;
+    const std::shared_ptr<MPEG4AtomParser::Track>& track;
+    uint32_t trackId = 0;
+    uint32_t nextSampleIndex = 0;
+    int32_t movieTimeScale = 1;
+};
+
 bool SafeAddInt64(int64_t left, int64_t right, int64_t& result)
 {
     return !__builtin_add_overflow(left, right, &result);
@@ -247,10 +255,11 @@ int64_t GetEffectiveStreamDurationTicks(
     return streamDuration;
 }
 
-bool GetPacketDurationUs(
-    const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
-    int32_t trackTimeScale, int32_t movieTimeScale, int64_t& durationUs)
+bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
+    const auto& track = context.track;
+    uint32_t sampleIndex = context.sampleIndex;
+    int32_t trackTimeScale = context.trackTimeScale;
     if (track == nullptr || track->sampleHelper == nullptr) {
         return false;
     }
@@ -259,7 +268,7 @@ bool GetPacketDurationUs(
         return false;
     }
     if (NeedsCttsFrameRateDuration(track)) {
-        return GetCttsFrameRateDurationUs(mediaInfo, track->trackIndex, trackTimeScale, durationUs);
+        return GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale, durationUs);
     }
 
     int64_t duration = 0;
@@ -271,7 +280,7 @@ bool GetPacketDurationUs(
         }
     } else {
         // The final packet has no next DTS, so close it against the effective stream duration.
-        int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, movieTimeScale);
+        int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
         if (streamDuration < entries[sampleIndex].dts && entries[sampleIndex].duration != 0) {
             durationUs = 0;
             return true;
@@ -419,27 +428,29 @@ bool HasFutureWebVttCueSample(const std::shared_ptr<MPEG4AtomParser::Track>& tra
     return false;
 }
 
-bool UpdateWebVttTailDurationFromStream(const MediaInfo& mediaInfo,
-    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId, std::shared_ptr<Sample> sample,
-    uint32_t nextSampleIndex, int32_t movieTimeScale)
+bool TryUpdateWebVttTailDurationFromMedia(const WebVttTailDurationContext& context,
+    const std::shared_ptr<Sample>& sample)
 {
-    if (track == nullptr || track->sampleHelper == nullptr || sample == nullptr ||
-        track->sampleHelper->mimeType_ != MimeType::TEXT_WEBVTT || HasFutureWebVttCueSample(track, nextSampleIndex)) {
-        return false;
-    }
     int64_t mediaDurationUs = 0;
-    if (mediaInfo.general.Get<Tag::MEDIA_DURATION>(mediaDurationUs) && mediaDurationUs > sample->pts) {
+    if (context.mediaInfo.general.Get<Tag::MEDIA_DURATION>(mediaDurationUs) && mediaDurationUs > sample->pts) {
         int64_t tailDuration = mediaDurationUs - sample->pts;
         if (tailDuration > sample->duration) {
             sample->duration = tailDuration;
             return true;
         }
     }
+    return false;
+}
+
+bool TryUpdateWebVttTailDurationFromTrack(const WebVttTailDurationContext& context,
+    const std::shared_ptr<Sample>& sample)
+{
+    const auto& track = context.track;
     int32_t trackTimeScale = track->timeScale;
-    if (trackId >= mediaInfo.tracks.size() || trackTimeScale <= 0) {
+    if (context.trackId >= context.mediaInfo.tracks.size() || trackTimeScale <= 0) {
         return false;
     }
-    int64_t trackDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, movieTimeScale);
+    int64_t trackDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
     int64_t trackDurationUs = 0;
     if (trackDuration <= 0 ||
         RescaleTrackTimeToUsRoundNearest(trackDuration, trackTimeScale, trackDurationUs) != Status::OK ||
@@ -452,6 +463,18 @@ bool UpdateWebVttTailDurationFromStream(const MediaInfo& mediaInfo,
         return true;
     }
     return false;
+}
+
+bool UpdateWebVttTailDurationFromStream(const WebVttTailDurationContext& context, const std::shared_ptr<Sample>& sample)
+{
+    const auto& track = context.track;
+    if (track == nullptr || track->sampleHelper == nullptr || sample == nullptr ||
+        track->sampleHelper->mimeType_ != MimeType::TEXT_WEBVTT ||
+        HasFutureWebVttCueSample(track, context.nextSampleIndex)) {
+        return false;
+    }
+    return TryUpdateWebVttTailDurationFromMedia(context, sample) ||
+        TryUpdateWebVttTailDurationFromTrack(context, sample);
 }
 
 void UpdateWebVttFinalPacketDurationFromMedia(const MediaInfo& mediaInfo,
@@ -627,29 +650,27 @@ bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>
     return RescaleTrackTimeToUsRoundNearest(nominalDuration, timeScale, durationUs) == Status::OK;
 }
 
-bool GetVideoTailDurationUs(
-    const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
-    int32_t trackTimeScale, int32_t movieTimeScale,
-    int64_t& durationUs)
+bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
+    const auto& track = context.track;
     if (track == nullptr || track->codecParms.trackType != VIDEO_TYPE || track->sampleHelper == nullptr ||
         !track->sampleHelper->cttsEntry_.empty()) {
         return false;
     }
     const auto& entries = track->sampleHelper->sampleIndexEntry_;
+    uint32_t sampleIndex = context.sampleIndex;
     if (entries.size() < MIN_TAIL_PACKET_COUNT || sampleIndex + 1 != entries.size()) {
         return false;
     }
 
     const auto& currentSample = entries[sampleIndex];
-    int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, movieTimeScale);
-    if (GetNominalSttsFrameDurationUs(track, trackTimeScale, durationUs)) {
+    int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
+    if (GetNominalSttsFrameDurationUs(track, context.trackTimeScale, durationUs)) {
         return true;
     }
     if (currentSample.duration != 0 && streamDuration > currentSample.dts) {
         return false;
     }
-    (void)mediaInfo;
     int64_t duration = currentSample.duration;
     if (duration <= 0 || streamDuration <= currentSample.dts) {
         duration = currentSample.dts - entries[sampleIndex - 1].dts;
@@ -657,7 +678,7 @@ bool GetVideoTailDurationUs(
     if (duration <= 0) {
         return false;
     }
-    return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
+    return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
 }
 
 uint32_t ReadNalLength(const uint8_t* data, uint8_t nalLengthSize)
@@ -915,10 +936,8 @@ bool UpdatePacketDurationUs(const ReadSamplePacketContext& context, ReadSamplePa
         GetMpegAudioFrameDurationUs(context.mediaInfo, track, track->trackIndex, sampleIndex, attr.durationUs) ||
         GetEditedAudioTailDurationUs(context, attr.durationUs) ||
         GetTimedMetaTailDurationUs(track, sampleIndex, attr.durationUs) ||
-        GetVideoTailDurationUs(context.mediaInfo, track, sampleIndex, trackTimeScale, context.movieTimeScale,
-            attr.durationUs) ||
-        GetPacketDurationUs(context.mediaInfo, track, sampleIndex, trackTimeScale, context.movieTimeScale,
-            attr.durationUs);
+        GetVideoTailDurationUs(context, attr.durationUs) ||
+        GetPacketDurationUs(context, attr.durationUs);
     if (!hasDuration && track->codecParms.trackType == VIDEO_TYPE && !track->sampleHelper->cttsEntry_.empty()) {
         hasDuration = GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale,
             attr.durationUs);
@@ -2382,8 +2401,10 @@ Status MPEG4DemuxerPlugin::GetSampleByMimeType(const Seekable seekable, uint32_t
             if (tempSample->isVttc) {
                 ret = AddSampleToCacheQueue(tempSample->sample, trackId);
                 FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
-                (void)UpdateWebVttTailDurationFromStream(mediaInfo_, track, trackId, tempSample->sample,
-                    track->currentSampleIndex + 1, movieTimeScale_);
+                WebVttTailDurationContext context {
+                    mediaInfo_, track, trackId, track->currentSampleIndex + 1, movieTimeScale_
+                };
+                (void)UpdateWebVttTailDurationFromStream(context, tempSample->sample);
                 track->currentSampleIndex++;
                 continue;
             }
@@ -2399,13 +2420,17 @@ Status MPEG4DemuxerPlugin::GetSampleByMimeType(const Seekable seekable, uint32_t
             if (tempSample->sample->pts > cacheSample->sample->pts) {
                 cacheSample->sample->duration = tempSample->sample->pts - cacheSample->sample->pts;
             }
-            (void)UpdateWebVttTailDurationFromStream(mediaInfo_, track, trackId, cacheSample->sample,
-                track->currentSampleIndex + 1, movieTimeScale_);
+            WebVttTailDurationContext context {
+                mediaInfo_, track, trackId, track->currentSampleIndex + 1, movieTimeScale_
+            };
+            (void)UpdateWebVttTailDurationFromStream(context, cacheSample->sample);
         } else if (cacheQueue_.HasCache(trackId)) {
             std::shared_ptr<MPEG4Sample> cacheSample = cacheQueue_.Back(trackId);
             if (cacheSample != nullptr) {
-                (void)UpdateWebVttTailDurationFromStream(mediaInfo_, track, trackId, cacheSample->sample,
-                    track->currentSampleIndex, movieTimeScale_);
+                WebVttTailDurationContext context {
+                    mediaInfo_, track, trackId, track->currentSampleIndex, movieTimeScale_
+                };
+                (void)UpdateWebVttTailDurationFromStream(context, cacheSample->sample);
             }
         }
         break;

@@ -43,10 +43,19 @@ constexpr int32_t MPEG_AUDIO_LAYER_I_SAMPLES = 384;
 constexpr int32_t MPEG_AUDIO_LAYER_II_SAMPLES = 1152;
 constexpr int32_t MPEG_AUDIO_LAYER_III_MPEG1_SAMPLES = 1152;
 constexpr int32_t MPEG_AUDIO_LAYER_III_LSF_SAMPLES = 576;
+constexpr int32_t MPEG_AUDIO_MONO_CHANNELS = 1;
+constexpr int32_t MPEG_AUDIO_STEREO_CHANNELS = 2;
 constexpr uint8_t AAC_ELEMENT_TYPE_SCE = 0;
 constexpr uint8_t AAC_ELEMENT_TYPE_CPE = 1;
 constexpr uint8_t AAC_ELEMENT_TYPE_FIL = 6;
 constexpr uint8_t AAC_FIL_ESCAPE_COUNT = 15;
+constexpr uint8_t AAC_FILL_COUNT_BITS = 4;
+constexpr uint8_t AAC_FILL_BYTE_BITS = 8;
+constexpr uint8_t AAC_FILL_ESCAPE_ADJUSTMENT = 1;
+constexpr uint8_t AAC_ELEMENT_HEADER_BITS = 7;
+constexpr uint8_t AAC_ELEMENT_TYPE_BITS = 3;
+constexpr uint8_t AAC_ELEMENT_INSTANCE_TAG_BITS = 4;
+constexpr int32_t AAC_STEREO_CHANNELS = 2;
 
 struct MpegAudioFrameInfo {
     bool valid = false;
@@ -147,7 +156,7 @@ MpegAudioFrameInfo ParseMpegAudioFrameHeader(const uint8_t* data, uint32_t size)
     }
 
     info.valid = true;
-    info.channels = (channelMode == channelModeMono) ? 1 : 2;
+    info.channels = (channelMode == channelModeMono) ? MPEG_AUDIO_MONO_CHANNELS : MPEG_AUDIO_STEREO_CHANNELS;
     if (layer == MPEG_AUDIO_LAYER_I) {
         info.samplesPerFrame = MPEG_AUDIO_LAYER_I_SAMPLES;
         info.sampleFormat = AudioSampleFormat::SAMPLE_S16P;
@@ -164,15 +173,15 @@ MpegAudioFrameInfo ParseMpegAudioFrameHeader(const uint8_t* data, uint32_t size)
 
 bool SkipAacFillElementPayload(DemuxerBitReader& bitReader)
 {
-    FALSE_RETURN_V(bitReader.HasBits(4), false);
-    uint32_t fillBytes = bitReader.ReadBits(4);
+    FALSE_RETURN_V(bitReader.HasBits(AAC_FILL_COUNT_BITS), false);
+    uint32_t fillBytes = bitReader.ReadBits(AAC_FILL_COUNT_BITS);
     if (fillBytes == AAC_FIL_ESCAPE_COUNT) {
-        FALSE_RETURN_V(bitReader.HasBits(8), false);
-        fillBytes += bitReader.ReadBits(8) - 1;
+        FALSE_RETURN_V(bitReader.HasBits(AAC_FILL_BYTE_BITS), false);
+        fillBytes += bitReader.ReadBits(AAC_FILL_BYTE_BITS) - AAC_FILL_ESCAPE_ADJUSTMENT;
     }
     while (fillBytes > 0) {
-        FALSE_RETURN_V(bitReader.HasBits(8), false);
-        FALSE_RETURN_V(bitReader.SkipBits(8), false);
+        FALSE_RETURN_V(bitReader.HasBits(AAC_FILL_BYTE_BITS), false);
+        FALSE_RETURN_V(bitReader.SkipBits(AAC_FILL_BYTE_BITS), false);
         --fillBytes;
     }
     return true;
@@ -184,19 +193,19 @@ bool ParseAacRawDataBlockChannels(const uint8_t* data, uint32_t size, int32_t& c
         return false;
     }
     DemuxerBitReader bitReader(data, size);
-    while (bitReader.HasBits(7)) {
-        uint8_t elementType = bitReader.ReadBits(3);
+    while (bitReader.HasBits(AAC_ELEMENT_HEADER_BITS)) {
+        uint8_t elementType = bitReader.ReadBits(AAC_ELEMENT_TYPE_BITS);
         if (elementType == AAC_ELEMENT_TYPE_FIL) {
             FALSE_RETURN_V(SkipAacFillElementPayload(bitReader), false);
             continue;
         }
-        FALSE_RETURN_V(bitReader.HasBits(4), false);
-        bitReader.SkipBits(4);
+        FALSE_RETURN_V(bitReader.HasBits(AAC_ELEMENT_INSTANCE_TAG_BITS), false);
+        bitReader.SkipBits(AAC_ELEMENT_INSTANCE_TAG_BITS);
         if (elementType == AAC_ELEMENT_TYPE_SCE) {
             return false;
         }
         if (elementType == AAC_ELEMENT_TYPE_CPE) {
-            channels = 2;
+            channels = AAC_STEREO_CHANNELS;
             layout = AudioChannelLayout::STEREO;
             return true;
         }
