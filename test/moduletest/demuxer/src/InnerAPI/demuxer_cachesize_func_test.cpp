@@ -124,7 +124,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0030, TestSize.Le
         {1, 218, 0, 0},
         {2, 2, 2, 0},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/sub_video_audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
@@ -162,7 +161,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0040, TestSize.Le
         {1, 43671, 43453, 43453},
         {2, 8, 8, 6},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/sub_video_audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
@@ -200,7 +198,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0050, TestSize.Le
         {1, 80225, 80007, 80007},
         {2, 14, 14, 12},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/sub_video_audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
@@ -238,7 +235,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0060, TestSize.Le
         {1, 0, 0, 0},
         {2, 2, 2, 0},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/sub_video_audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
@@ -276,7 +272,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0070, TestSize.Le
         {1, 0, 0, 0},
         {2, 11, 11, 9},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/sub_video_audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
@@ -314,7 +309,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0080, TestSize.Le
         {1, 0, 0, 0},
         {2, 14, 14, 12},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/sub_video_audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
@@ -352,7 +346,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0090, TestSize.Le
         {1, 8214, 8214, 7996},
         {2, 0, 0, 0},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/sub_video_audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
@@ -390,7 +383,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0100, TestSize.Le
         {1, 59519, 59519, 59301},
         {2, 0, 0, 0},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/sub_video_audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
@@ -428,7 +420,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0110, TestSize.Le
         {1, 80412, 80412, 80194},
         {2, 0, 0, 0},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     int32_t readCount = 0;
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/sub_video_audio.mp4", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
@@ -1532,7 +1523,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0540, TestSize.Le
         {0, 0, 0},
         {1, 6912, 5184},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
     ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
@@ -1552,7 +1542,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0550, TestSize.Le
         {0, 0, 0},
         {1, 48384, 46656},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
     ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
@@ -1572,7 +1561,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0560, TestSize.Le
         {0, 0, 0},
         {1, 96768, 95040},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
     ASSERT_EQ(demuxerSample->ReadVideo(cacheCheckSteps), true);
@@ -1592,7 +1580,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0570, TestSize.Le
         {0, 68577, 5564},
         {1, 0, 0},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
     ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
@@ -1612,7 +1599,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0580, TestSize.Le
         {0, 206841, 143828},
         {1, 0, 0},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
     ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);
@@ -1632,7 +1618,6 @@ HWTEST_F(DemuxerCacheFuncNdkTest, DEMUXER_CACHESIZE_INNER_FUNC_0590, TestSize.Le
         {0, 354199, 291186},
         {1, 0, 0},
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     ASSERT_EQ(demuxerSample->InitWithFile("/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov", true), AVCS_ERR_OK);
     ASSERT_EQ(demuxerSample->CreateBuffer(), true);
     ASSERT_EQ(demuxerSample->ReadAudio(cacheCheckSteps), true);

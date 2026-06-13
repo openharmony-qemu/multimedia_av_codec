@@ -28,6 +28,7 @@ ohos_source_set("adaptive_framerate_controller") {
   sources = [
     "adaptive_framerate_controller.cpp",
     "decoding_behavior_analyzer.cpp",
+    "connect_adapter/rs_interface_adapter.cpp",
   ]
 
   defines = []
@@ -42,6 +43,9 @@ ohos_source_set("adaptive_framerate_controller") {
     "c_utils:utils",
     "hilog:libhilog",
     "init:libbegetutil",
+    "ipc:ipc_single",
+    "safwk:system_ability_fwk",
+    "samgr:samgr_proxy",
     "media_foundation:media_foundation",
   ]
 

@@ -48,6 +48,34 @@ constexpr uint32_t HALF_BYTE_BITS = 4;
 constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
 constexpr uint32_t MAX_REORDER_DELAY = 16;
+
+Status ConvertTimeScaleRoundNearest(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result)
+{
+    int64_t scaled = 0;
+    if (result == nullptr || timeScale <= 0) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    if (__builtin_mul_overflow(multiplicand, multiplier, &scaled)) {
+        return Status::ERROR_INVALID_DATA;
+    }
+    int64_t quotient = scaled / timeScale;
+    int64_t remainder = scaled % timeScale;
+    int64_t halfTimeScale = timeScale / 2;
+    int64_t roundThreshold = timeScale - halfTimeScale;
+    if (remainder > 0 && remainder >= roundThreshold) {
+        if (quotient == std::numeric_limits<int64_t>::max()) {
+            return Status::ERROR_INVALID_DATA;
+        }
+        ++quotient;
+    } else if (remainder < 0 && -remainder >= roundThreshold) {
+        if (quotient == std::numeric_limits<int64_t>::min()) {
+            return Status::ERROR_INVALID_DATA;
+        }
+        --quotient;
+    }
+    *result = quotient;
+    return Status::OK;
+}
     
 int64_t GetClosestSync(int64_t prevTime, int64_t nextTime, int64_t reqTime)
 {
@@ -112,6 +140,11 @@ int64_t MPEG4SampleHelper::GetRawTotalDuration() const
 int64_t MPEG4SampleHelper::GetRawSampleCount() const
 {
     return rawSampleCount_;
+}
+
+bool MPEG4SampleHelper::HasTrailingZeroSttsDuration() const
+{
+    return !sttsEntry_.empty() && sttsEntry_.back().delta == 0;
 }
 
 uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
@@ -1477,7 +1510,7 @@ void MPEG4SampleHelper::FixLeadingDiscardTimestamps(std::vector<SampleIndexEntry
 
 Status MPEG4SampleHelper::ConvertEditDuration(const EditListEntry& edit, int64_t& editDuration) const
 {
-    FALSE_RETURN_V_MSG_E(ConvertTimeScale(edit.duration, trackTimeScale_, movieTimeScale_, &editDuration)
+    FALSE_RETURN_V_MSG_E(ConvertTimeScaleRoundNearest(edit.duration, trackTimeScale_, movieTimeScale_, &editDuration)
         == Status::OK, Status::ERROR_INVALID_DATA, "Convert edit duration failed");
     return editDuration < 0 ? Status::ERROR_INVALID_DATA : Status::OK;
 }

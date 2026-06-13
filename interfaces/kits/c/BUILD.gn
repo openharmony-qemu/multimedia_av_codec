@@ -227,6 +227,7 @@ ohos_shared_library("native_media_codecbase") {
   install_enable = true
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avcodec/native_avcodec_base.cpp",
+    "$av_codec_root_dir/frameworks/native/capi/avcodec/native_avcodec_videobase.cpp",
   ]
   if (av_codec_support_codeclist) {
     sources += [ "$av_codec_root_dir/frameworks/native/capi/common/native_avcapability.cpp" ]

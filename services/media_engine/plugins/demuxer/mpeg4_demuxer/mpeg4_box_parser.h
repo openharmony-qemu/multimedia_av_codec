@@ -93,7 +93,6 @@ public:
     Status ParseMoof(const std::shared_ptr<Track>& track, int64_t offset);
     
 private:
-    bool formatDebug_ = false;
     std::shared_ptr<Track> firstTrack_;
     std::shared_ptr<Track> lastTrack_;
     std::shared_ptr<Track> currentTrack_;
@@ -335,7 +334,6 @@ private:
     Status ParseCtts(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseSdtp(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseFiel(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
-    Status ParseMvex(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseTrex(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseSidx(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseUserDataString(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);

@@ -566,17 +566,17 @@ bool DemuxerPluginManager::CreatePlugin(std::string pluginName, int32_t id)
     return true;
 }
 
-bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+Status DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
     const std::string& pluginName, int32_t id)
 {
     if (pluginName.empty()) {
-        return false;
+        return Status::ERROR_INVALID_PARAMETER;
     }
     if (streamInfoMap_[id].pluginName != pluginName) {
-        FALSE_RETURN_V(CreatePlugin(pluginName, id), false);
+        FALSE_RETURN_V(CreatePlugin(pluginName, id), Status::ERROR_INVALID_PARAMETER);
     } else {
         if (streamInfoMap_[id].plugin == nullptr || streamInfoMap_[id].plugin->Reset() != Status::OK) {
-            FALSE_RETURN_V(CreatePlugin(pluginName, id), false);
+            FALSE_RETURN_V(CreatePlugin(pluginName, id), Status::ERROR_INVALID_PARAMETER);
         }
     }
     MEDIA_LOG_D("InitPlugin, " PUBLIC_LOG_S " used, id " PUBLIC_LOG_D32, pluginName.c_str(), id);
@@ -595,13 +595,13 @@ bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamD
     if (st == Status::ERROR_NOT_ENOUGH_DATA) {
         int32_t offset = 0;
         int32_t size = 0;
-        FALSE_RETURN_V(streamInfoMap_[id].plugin->GetProbeSize(offset, size), false);
+        FALSE_RETURN_V(streamInfoMap_[id].plugin->GetProbeSize(offset, size), st);
         WaitForInitialBufferingEnd(streamDemuxer, offset, size);
         if (isInitialBufferingSucc_.load()) {
             st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource, configs);
         }
     }
-    return st == Status::OK;
+    return st;
 }
 
 void DemuxerPluginManager::WaitForInitialBufferingEnd(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
@@ -708,7 +708,14 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
     const std::string& pluginName, int32_t id)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerPluginManager::MediaTypeFound");
-    if (!InitPlugin(streamDemuxer, pluginName, id)) {
+    MEDIA_LOG_D("MediaTypeFound, pluginName: " PUBLIC_LOG_S ", id: " PUBLIC_LOG_D32, pluginName.c_str(), id);
+    Status st = InitPlugin(streamDemuxer, pluginName, id);
+    MEDIA_LOG_D("MediaTypeFound, InitPlugin ret: " PUBLIC_LOG_D32, static_cast<int32_t>(st));
+    if (st == Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT) {
+        MEDIA_LOG_I("MediaTypeFound, retry with avdemux_mov");
+        st = InitPlugin(streamDemuxer, "avdemux_mov,mp4,m4a,3gp,3g2,mj2", id);
+        FALSE_RETURN_MSG(st == Status::OK, "Init plugin error.");
+    } else if (st != Status::OK) {
         MEDIA_LOG_E("Init plugin error.");
     }
 }

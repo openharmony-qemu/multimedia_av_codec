@@ -96,6 +96,7 @@ ohos_unittest("surface_encoder_adapter_unittest") {
     "googletest:gmock",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
