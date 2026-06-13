@@ -134,6 +134,7 @@ private:
     bool isIsom_ = false;
     bool hasSidxBox_ = false;
     bool hasMoofBox_ = false;
+    int32_t movieTimeScale_ = 1;
     int64_t minElstInitEmptyEdit_ = INT64_MAX;
     uint64_t relativeEndPts_ = 0;
     uint32_t currentFragment_ = 0;
@@ -286,6 +287,15 @@ private:
         std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
     Status GetSampleByMimeType(const Seekable seekable, uint32_t trackId,
         std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
+    struct WebVttReadContext {
+        Seekable seekable;
+        uint32_t trackId = 0;
+        std::shared_ptr<MPEG4AtomParser::Track> track;
+        std::shared_ptr<AVBuffer> outBuffer;
+    };
+    Status ReadAndCacheWebVttSample(const WebVttReadContext& context, bool& continueRead);
+    Status UpdateWebVttCachedSampleDuration(const WebVttReadContext& context,
+        const std::shared_ptr<MPEG4Sample>& tempSample, uint32_t nextSampleIndex);
     uint32_t GetFlags(const std::shared_ptr<Sample> sample, bool memoryNotEnough);
     Status WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sample> sample);
     Status ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg4Sample);

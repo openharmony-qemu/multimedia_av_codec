@@ -54,6 +54,7 @@ public:
         bool hasDisplayMatrix = false;  // 是否有有效的display matrix
         uint32_t currentSampleIndex = 0;
         int64_t duration = 0; // track的duration，mdhd box中定义的
+        int32_t timeScale = 1; // mdhd timescale, kept internal and not exported to track meta
         int64_t totalElstDuration = 0; // elst box中所有entry的segment duration之和
         int64_t sidxDuration = 0; // sidx box的dts
         int64_t sidxReferencedSize = 0; // sum of referenced_size from sidx entries
@@ -68,6 +69,8 @@ public:
         uint32_t vSpacing = 0;
         bool hasPasp = false;
         bool inferredTrackType = false;
+        uint16_t audioSampleEntryChannelCount = 0;
+        uint16_t audioSampleEntryBitsPerCodedSample = 0;
         CodecParams codecParms{};
 
         Track() = default;
@@ -89,6 +92,7 @@ public:
     void SetSeekable(const Seekable seekable);
     bool GetHasSidx();
     bool GetHasMoof();
+    int32_t GetMovieTimeScale() const;
     Status MPEG4ParseHeader(const std::shared_ptr<DataSource>& source, Seekable seekable, int64_t readTimeoutMs = -1);
     Status ParseMoof(const std::shared_ptr<Track>& track, int64_t offset);
     
@@ -177,6 +181,7 @@ private:
     bool hasIncompleteSidxReference_;
     bool hasMoofBox_;
     bool moovFound_;
+    int32_t movieTimeScale_ = 1;
     MediaInfo mediaInfo_;
     Seekable seekable_;
     std::shared_ptr<Meta> userFormat_ = nullptr;

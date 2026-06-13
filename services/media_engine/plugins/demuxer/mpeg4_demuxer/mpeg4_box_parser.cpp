@@ -842,16 +842,16 @@ MPEG4AtomParser::MvhdInfo MPEG4AtomParser::ParseMvhdInfo(const uint8_t* headerIn
 
 void MPEG4AtomParser::SetMvhdMediaInfo(const MvhdInfo& mvhdInfo)
 {
+    movieTimeScale_ = static_cast<int32_t>(mvhdInfo.timeScale);
     std::string creationTimeStr;
     if (mvhdInfo.creationTime) {
         uint64_t creationTime = mvhdInfo.creationTime - QUICKTIME_EPOCH_OFFSET;
         creationTimeStr = FormatTimestamp(creationTime * CREATION_TIME_SCALE);
         mediaInfo_.general.Set<Tag::MEDIA_CREATION_TIME>(creationTimeStr);
     }
-    mediaInfo_.general.Set<Tag::MEDIA_TIME_SCALE>(static_cast<int32_t>(mvhdInfo.timeScale));
 
     int64_t durationUs = 0;
-    if (ConvertTimeScaleRound(mvhdInfo.duration, S_TO_US, mvhdInfo.timeScale, &durationUs) != Status::OK) {
+    if (ConvertTimeScaleRound(mvhdInfo.duration, S_TO_US, movieTimeScale_, &durationUs) != Status::OK) {
         MEDIA_LOG_E("Mul overflow");
     }
     if (durationUs > 0) {
@@ -892,13 +892,13 @@ Status MPEG4AtomParser::ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 int64_t MPEG4AtomParser::GetElstDuration(std::shared_ptr<Track> track)
 {
-    int32_t fileTimescale = 0;
-    if (!mediaInfo_.general.Get<Tag::MEDIA_TIME_SCALE>(fileTimescale)) {
+    int32_t fileTimescale = movieTimeScale_;
+    if (fileTimescale <= 0) {
         MEDIA_LOG_E("Invalid file time scale");
         return 0;
     }
-    int32_t trackTimescale = 0;
-    if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimescale)) {
+    int32_t trackTimescale = track->timeScale;
+    if (trackTimescale <= 0) {
         MEDIA_LOG_E("Invalid track time scale");
         return 0;
     }
@@ -986,8 +986,8 @@ void MPEG4AtomParser::CalculateTrackBitrates(std::shared_ptr<Track> track)
     if (!GetBitrateDurationAndSize(track, duration, totalSize)) {
         return;
     }
-    int32_t timeScale = 0;
-    if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale) || timeScale <= 0) {
+    int32_t timeScale = track->timeScale;
+    if (timeScale <= 0) {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " has invalid time scale", track->trackIndex);
         return;
     }
@@ -1097,8 +1097,8 @@ void MPEG4AtomParser::CalculateVideoFrameRate(std::shared_ptr<Track> track)
     FALSE_RETURN_MSG(track != nullptr && track->sampleHelper != nullptr, "Invalid track or sample helper");
     FALSE_RETURN_MSG(IsValidTrackIndex(mediaInfo_, track->trackIndex), "Invalid track index");
     // get track time scale and duration
-    int32_t timeScale = 0;
-    if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale) || timeScale <= 0) {
+    int32_t timeScale = track->timeScale;
+    if (timeScale <= 0) {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " has invalid time scale", track->trackIndex);
     }
 
@@ -1119,6 +1119,11 @@ void MPEG4AtomParser::CalculateVideoFrameRate(std::shared_ptr<Track> track)
         MEDIA_LOG_D("Track:" PUBLIC_LOG_U32 ", totalSamples=" PUBLIC_LOG_D64 ", duration=" PUBLIC_LOG_D64
             ", timeScale=" PUBLIC_LOG_D32 ", frameRate=" PUBLIC_LOG_F " fps", track->trackIndex, totalSamples,
             duration, timeScale, rawFrameRate);
+    } else if (timeScale > 0) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_FRAME_RATE>(
+            std::numeric_limits<double>::infinity());
+        MEDIA_LOG_D("Track:" PUBLIC_LOG_U32 ", totalSamples=" PUBLIC_LOG_D64
+            ", duration=" PUBLIC_LOG_D64 ", frameRate=inf", track->trackIndex, totalSamples, duration);
     }
 }
 
@@ -1190,12 +1195,12 @@ void MPEG4AtomParser::NormalizeAudioAttributes(std::shared_ptr<Track> track)
     std::string mime;
     FALSE_RETURN_MSG(mediaInfo_.tracks[track->trackIndex].Get<Tag::MIME_TYPE>(mime), "Audio track has no mime");
     bool keepSamplePerFrame = false;
+    if (mime != MimeType::AUDIO_AAC) {
+        mediaInfo_.tracks[track->trackIndex].Remove(Tag::AUDIO_AAC_IS_ADTS);
+    }
     if (mime == MimeType::AUDIO_AAC) {
         int32_t samplesPerFrame = 0;
-        constexpr int64_t minAacSamplesWithFrameSize = 5;
-        keepSamplePerFrame = track->sampleHelper != nullptr &&
-            track->sampleHelper->GetRawSampleCount() >= minAacSamplesWithFrameSize &&
-            mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
+        keepSamplePerFrame = mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
             samplesPerFrame == AUDIO_DEFAULT_SAMPLE_PER_FRAME;
     } else if (mime == MimeType::AUDIO_DTS) {
         constexpr int64_t dtsCoreBitrate = 1411200;
@@ -1214,6 +1219,14 @@ void MPEG4AtomParser::NormalizeAudioAttributes(std::shared_ptr<Track> track)
             mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
         }
         return;
+    } else if (mime == MimeType::AUDIO_MPEG && track->audioSampleEntryChannelCount > 0) {
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_CHANNEL_COUNT>(
+            static_cast<int32_t>(track->audioSampleEntryChannelCount));
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(
+            static_cast<int32_t>(track->audioSampleEntryChannelCount));
+        AudioChannelLayout layout = Converter::GetDefaultChannelLayout(track->audioSampleEntryChannelCount);
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
     }
     if (!keepSamplePerFrame) {
         mediaInfo_.tracks[track->trackIndex].Remove(Tag::AUDIO_SAMPLE_PER_FRAME);
@@ -1359,10 +1372,9 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
     if (lastTrack_->sampleHelper) {
         int32_t movieTimeScale = 0;
         int32_t trackTimeScale = 0;
-        if (!lastTrack_->editListEntries.empty() &&
-            mediaInfo_.general.Get<Tag::MEDIA_TIME_SCALE>(movieTimeScale) &&
-            IsValidTrackIndex(mediaInfo_, lastTrack_->trackIndex) &&
-            mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale)) {
+        if (!lastTrack_->editListEntries.empty()) {
+            movieTimeScale = movieTimeScale_;
+            trackTimeScale = lastTrack_->timeScale;
             lastTrack_->sampleHelper->SetEditListParams(
                 lastTrack_->editListEntries, movieTimeScale, trackTimeScale);
         }
@@ -1741,9 +1753,8 @@ uint16_t GetMdhdLanguageValue(const uint8_t* headerInfo, uint8_t version)
 
 void MPEG4AtomParser::UpdateMdhdTimeOffset(uint32_t timeScale)
 {
-    int32_t fileTimeScale = 0;
-    if (!mediaInfo_.general.GetData(Tag::MEDIA_TIME_SCALE, fileTimeScale) ||
-        fileTimeScale <= 0 || lastTrack_->sampleHelper == nullptr) {
+    int32_t fileTimeScale = movieTimeScale_;
+    if (fileTimeScale <= 0 || lastTrack_->sampleHelper == nullptr) {
         return;
     }
     if (!lastTrack_->editListEntries.empty()) {
@@ -1786,9 +1797,9 @@ Status MPEG4AtomParser::ParseMdhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         timeScale = 1;  // set default timescale to 1
     }
     lastTrack_->duration = GetMdhdDuration(headerInfo.get(), version);
+    lastTrack_->timeScale = static_cast<int32_t>(timeScale);
     FALSE_RETURN_V_MSG_E(IsValidTrackIndex(mediaInfo_, lastTrack_->trackIndex), Status::ERROR_INVALID_DATA,
         "Track index out of bounds: " PUBLIC_LOG_U32, lastTrack_->trackIndex);
-    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TIME_SCALE>(static_cast<int32_t>(timeScale));
     std::string langString = ConvertLanguageCode(GetMdhdLanguageValue(headerInfo.get(), version));
     if (langString.size() > 0) {
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_LANGUAGE>(langString);
@@ -2352,6 +2363,8 @@ Status MPEG4AtomParser::ParseAudioAttributes(MPEG4Atom currentAtom, ParseContext
     uint16_t version = GetU16Value(&sampleEntryInfo[0x08]);
     uint16_t channelCount = GetU16Value(&sampleEntryInfo[0x10]);
     uint16_t sampleSize = GetU16Value(&sampleEntryInfo[0x12]); // bits_per_coded_sample
+    lastTrack_->audioSampleEntryChannelCount = channelCount;
+    lastTrack_->audioSampleEntryBitsPerCodedSample = sampleSize;
     //skip unneed distribute
     uint32_t sampleRate = GetU32Value(&sampleEntryInfo[0x18]) / CONVERT_SCALE;
     ctx->offset = ctx->dataOffset + sizeof(sampleEntryInfo);
@@ -2421,9 +2434,8 @@ Status MPEG4AtomParser::SetVorbisAudioAttribute()
 Status MPEG4AtomParser::SetAudioAttribute()
 {
     int32_t sampleRate = 0;
-    int32_t timescale = 0;
+    int32_t timescale = lastTrack_->timeScale;
     mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
-    mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timescale);
     if (sampleRate == 0 && timescale > 0) {
         sampleRate = timescale;
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
@@ -2950,6 +2962,8 @@ bool MPEG4AtomParser::ParseAACSpecificConfig(const uint8_t* data, uint32_t size)
             layout = audioParser->GetDefaultChannelLayout(channelCount);
         }
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<int32_t>(channels));
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
         return true;
     }
     
@@ -3286,7 +3300,10 @@ Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const A
     trackMeta.Set<Tag::MEDIA_BITRATE>(static_cast<int64_t>(bitrateKbps) * 1000);
     trackMeta.Set<Tag::AUDIO_SAMPLE_FORMAT>(AV3A_RESOLUTION_TABLE[resolutionIndex].sampleFormat);
     trackMeta.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AV3A_RESOLUTION_TABLE[resolutionIndex].bitsPerSample);
-    trackMeta.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(AV3A_RESOLUTION_TABLE[resolutionIndex].bitsPerSample);
+    if (lastTrack_->audioSampleEntryBitsPerCodedSample > 0) {
+        trackMeta.Set<Tag::AUDIO_BITS_PER_CODED_SAMPLE>(
+            static_cast<int32_t>(lastTrack_->audioSampleEntryBitsPerCodedSample));
+    }
     trackMeta.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AV3A_AUDIO_FRAME_SIZE);
     trackMeta.Set<Tag::AUDIO_OBJECT_NUMBER>(params.objectNumber);
     trackMeta.Set<Tag::AUDIO_SOUNDBED_CHANNELS_NUMBER>(params.soundbedChannels);
@@ -5142,6 +5159,11 @@ void MPEG4AtomParser::SetFileDuration()
         mediaInfo_.general.Get<Tag::MEDIA_DURATION>(fileDuration) && fileDuration > 0) {
         return; // 已经设置了有效的duration，直接返回
     }
+    bool isGltf = false;
+    if (!hasMoofBox_ && mediaInfo_.general.Get<Tag::IS_GLTF>(isGltf) && isGltf) {
+        MEDIA_LOG_D("Skip calculated file duration for glTF without valid mvhd duration");
+        return;
+    }
     if (!hasMoofBox_) {
         fileDuration = GetMpeg4FileDuration();
     } else {
@@ -5182,8 +5204,8 @@ int64_t MPEG4AtomParser::GetMpeg4FileDuration()
         }
         int64_t trackDuration = GetTrackDuration(track);
         mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_START_TIME>(trackStartTime);
-        if (trackDuration <= 0 || !mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale) ||
-            trackTimeScale <= 0) {
+        trackTimeScale = track->timeScale;
+        if (trackDuration <= 0 || trackTimeScale <= 0) {
             continue;
         }
 
@@ -5214,10 +5236,10 @@ int64_t MPEG4AtomParser::GetSidxTrackStartTime(const std::shared_ptr<Track>& tra
     }
     int32_t timeScale = 0;
     if (track->elstInitEmptyEdit > 0) {
-        int32_t fileTimeScale = 0;
+        int32_t fileTimeScale = movieTimeScale_;
         int64_t emptyEditInTrackTime = 0;
-        if (mediaInfo_.general.Get<Tag::MEDIA_TIME_SCALE>(fileTimeScale) && fileTimeScale > 0 &&
-            mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale) && timeScale > 0 &&
+        timeScale = track->timeScale;
+        if (fileTimeScale > 0 && timeScale > 0 &&
             ConvertTimeScaleRoundToTimeBase(track->elstInitEmptyEdit, timeScale, fileTimeScale,
                 &emptyEditInTrackTime) == Status::OK) {
             int64_t trackStartTime = 0;
@@ -5227,9 +5249,10 @@ int64_t MPEG4AtomParser::GetSidxTrackStartTime(const std::shared_ptr<Track>& tra
         return 0;
     }
     if (track->sampleHelper == nullptr || track->sampleHelper->sampleIndexEntry_.empty() ||
-        !mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale) || timeScale <= 0) {
+        track->timeScale <= 0) {
         return 0;
     }
+    timeScale = track->timeScale;
     return static_cast<int64_t>(std::round(
         static_cast<double>(track->sampleHelper->sampleIndexEntry_.front().pts) * S_TO_US / timeScale));
 }
@@ -5281,9 +5304,8 @@ int64_t MPEG4AtomParser::FindMaxTrackDuration(int64_t& maxDuration, uint32_t& ma
         if (hasSidxBox_ && containerStartTime <= 0 && trackStartTime > 0) {
             ++trackEndTime;
         }
-        int32_t timeScale = 0;
-        if (hasSidxBox_ && containerStartTime <= 0 &&
-            mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale)) {
+        int32_t timeScale = track->timeScale;
+        if (hasSidxBox_ && containerStartTime <= 0 && timeScale > 0) {
             trackEndTime = std::max(trackEndTime, GetSidxSampleEndTime(track, timeScale));
         }
         if (trackEndTime > maxDuration) {
@@ -5300,8 +5322,8 @@ double MPEG4AtomParser::CalculateDuration(std::shared_ptr<Track> track, bool isR
     FALSE_RETURN_V_MSG_E(track->sampleHelper != nullptr, 0.0, "SampleHelper is null");
     FALSE_RETURN_V_MSG_E(!track->sampleHelper->sampleIndexEntry_.empty(), 0.0, "Sample data is empty");
     
-    int32_t timeScale = 0;
-    if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale) || timeScale <= 0) {
+    int32_t timeScale = track->timeScale;
+    if (timeScale <= 0) {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " has invalid time scale", track->trackIndex);
         return 0.0;
     }
@@ -5354,12 +5376,19 @@ void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, 
         containerStartTimeForTrack = trackStartTime;
         return;
     }
+    bool isGltf = false;
+    int64_t fileDuration = 0;
+    if (mediaInfo_.general.Get<Tag::IS_GLTF>(isGltf) && isGltf &&
+        !mediaInfo_.general.Get<Tag::MEDIA_DURATION>(fileDuration)) {
+        trackStartTime = 0;
+        mediaInfo_.tracks[track->trackIndex].Set<Tag::MEDIA_START_TIME>(trackStartTime);
+        containerStartTimeForTrack = trackStartTime;
+        return;
+    }
     if (track->elstInitEmptyEdit > 0) {
-        int32_t fileTimeScale = 0;
-        int32_t trackTimeScale = 0;
-        if (mediaInfo_.general.Get<Tag::MEDIA_TIME_SCALE>(fileTimeScale) && fileTimeScale > 0 &&
-            mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(trackTimeScale) &&
-            trackTimeScale > 0) {
+        int32_t fileTimeScale = movieTimeScale_;
+        int32_t trackTimeScale = track->timeScale;
+        if (fileTimeScale > 0 && trackTimeScale > 0) {
             int64_t emptyEditInTrackTime = 0;
             FALSE_RETURN_MSG(ConvertTimeScaleRoundToTimeBase(track->elstInitEmptyEdit, trackTimeScale,
                 fileTimeScale, &emptyEditInTrackTime) == Status::OK, "Mul overflow");
@@ -5374,8 +5403,8 @@ void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, 
         }
     } else if (track->sampleHelper && !track->sampleHelper->sampleIndexEntry_.empty()) {
         int64_t firstPts = track->sampleHelper->sampleIndexEntry_.front().pts;
-        int32_t timeScale = 0;
-        if (mediaInfo_.tracks[track->trackIndex].Get<Tag::MEDIA_TIME_SCALE>(timeScale) && timeScale > 0) {
+        int32_t timeScale = track->timeScale;
+        if (timeScale > 0) {
             FALSE_RETURN_MSG(ConvertTimeScaleRound(firstPts, S_TO_US, timeScale, &trackStartTime) == Status::OK,
                 "Mul overflow");
         }
@@ -5487,6 +5516,11 @@ bool MPEG4AtomParser::GetHasSidx()
 bool MPEG4AtomParser::GetHasMoof()
 {
     return hasMoofBox_;
+}
+
+int32_t MPEG4AtomParser::GetMovieTimeScale() const
+{
+    return movieTimeScale_;
 }
 
 constexpr std::array<std::string_view, 139> mdhd_language_map = {{

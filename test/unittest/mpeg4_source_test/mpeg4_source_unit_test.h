@@ -68,7 +68,6 @@ protected:
         std::string lyrics = "";
         int64_t duration = 0;
         int32_t trackCount = 0;
-        int32_t timeScale = 0;
         std::string author = "";
         std::string composer = "";
         int32_t hasVideo = -1;

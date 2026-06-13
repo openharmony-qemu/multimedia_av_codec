@@ -134,7 +134,6 @@ void Mpeg4SourceUnitTest::ResetFileFormatValue()
 void Mpeg4SourceUnitTest::ResetFormatValue()
 {
     ResetFileFormatValue();
-    formatVal_.timeScale = 0;
     formatVal_.codecMime = "";
     formatVal_.trackType = 0;
     formatVal_.width = 0;
@@ -187,9 +186,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_0001, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[source Format]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3367000);
 #ifdef MPEG4_SOURCE_INNER_UNIT_TEST
     EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
@@ -228,9 +225,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1001, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[source Format]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3367000);
 #ifdef MPEG4_SOURCE_INNER_UNIT_TEST
     EXPECT_TRUE(format_->GetIntValue(AVSourceFormat::SOURCE_HAS_VIDEO, formatVal_.hasVideo));
