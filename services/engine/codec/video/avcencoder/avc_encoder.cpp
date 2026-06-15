@@ -964,7 +964,7 @@ int32_t AvcEncoder::Stop()
     inputAvailQue_->SetActive(false, false);
     codecAvailQue_->SetActive(false, false);
     sendTask_->Stop();
-    ResetBuffers();
+    ReleaseBuffers();
     std::unique_lock<std::mutex> runLock(encRunMutex_);
     if (avcEncoder_ != nullptr && avcEncoderDeleteFunc_ != nullptr) {
         uint32_t ret = avcEncoderDeleteFunc_(avcEncoder_);
