@@ -45,7 +45,8 @@ BufferRequestConfig CONFIG = {
     .usage = (1ULL << 0) | (1ULL << 1) | (1ULL << 5),
     .timeout = 0,           // 0: timeout
 };
-static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+
+static void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
     (void)errorCode;
@@ -733,7 +734,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_002, TestSize.Level1)
 {
     int32_t errorCode = 0;
-    preprocessorEncoder_->asyncCallback_.onError = OnError;
+    preprocessorEncoder_->asyncCallback_.onError = OnErrorVoid;
     preprocessorEncoder_->OnPreprocessError(errorCode);
 }
 
