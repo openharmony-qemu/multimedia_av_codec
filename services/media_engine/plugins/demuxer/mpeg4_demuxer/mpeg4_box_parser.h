@@ -278,6 +278,7 @@ private:
     Status ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta);
+    Status SetMetadata(std::string& key, uint8_t* buffer, uint64_t size, uint32_t dataType);
     Status SetAlacAudioAttributes(const uint8_t* buffer);
     Status ParseAlacEntry(ParseContext& ctx);
     Status ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx);
