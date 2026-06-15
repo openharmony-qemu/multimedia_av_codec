@@ -4499,7 +4499,7 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
             break;
         }
         default: { // UTF-8 string
-            FALSE_RETURN_V_MSG_E(
+            FALSE_RETURN_V_MSG_D(
                 dataType <= 1 || dataType == SUPPORT_DATA_TYPE, Status::OK, "Unsupport meta %{public}d", dataType);
             std::string stringValue = std::string(reinterpret_cast<char*>(buffer), size);
             if (!stringValue.empty()) {
