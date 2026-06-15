@@ -42,7 +42,7 @@ av_codec_unittest_cflags = [
   "-Dprotected=public",
 ]
 
-public_include_dirs = [
+dualoutput_include_dirs = [
   "./sample",
   "./sample/callback",
   "$av_codec_root_dir/interfaces/kits/c",
@@ -84,7 +84,7 @@ ohos_unittest("videoenc_dualoutput_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
 
-  include_dirs = public_include_dirs
+  include_dirs = dualoutput_include_dirs
 
   cflags = av_codec_unittest_cflags
 
@@ -125,7 +125,7 @@ ohos_unittest("videoenc_dualoutput_coverage_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
 
-  include_dirs = public_include_dirs
+  include_dirs = dualoutput_include_dirs
   include_dirs += [
     "$av_codec_root_dir/frameworks/native/capi/avcodec",
     "$av_codec_root_dir/frameworks/native/avcodec/pre_processing/cpu_image_processor",
@@ -157,7 +157,6 @@ ohos_unittest("videoenc_dualoutput_coverage_test") {
     "c_utils:utils",
     "drivers_interface_display:libdisplay_commontype_proxy_1.0",
     "drivers_interface_display:libdisplay_commontype_proxy_2.2",
-    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
     "media_foundation:native_media_core",

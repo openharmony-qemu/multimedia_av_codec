@@ -13,7 +13,6 @@
  * limitations under the License.
  */
 
-#include <algorithm>
 #include <gtest/gtest.h>
 #include "common/native_mfmagic.h"
 #include "meta/meta_key.h"
