@@ -80,40 +80,6 @@ void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
     if (signal_ == nullptr) {
         return;
     }
-    struct OH_AVCodecBufferAttr attr;
-    data->GetBufferAttr(attr);
-    uint8_t *bufferAddr = data->GetAddr();
-    const uint8_t *nalAddr = GetNalTypeAddr(bufferAddr, attr.size);
-    if (nalAddr != nullptr) {
-        uint8_t nalType = 0;
-        bool isXPS = false;
-        bool isIDR = false;
-        if (signal_->isAVCCodec_) {
-            nalType = (*nalAddr) & 0x1F; // 0x1F: AVC NAL type mask
-            isXPS = (nalType == 7 || nalType == 8); // 7: SPS, 8: PPS
-            isIDR = (nalType == 5); // 5: IDR slice
-        } else {
-            nalType = ((*nalAddr) & 0x7E) >> 1; // 0x7E: HEVC NAL type mask, >> 1: shift to get type
-            isXPS = (nalType >= 32 && nalType <= 34); // 32: VPS, 33: SPS, 34: PPS
-            isIDR = (nalType == 19 || nalType == 20); // 19: IDR_W_RADL, 20: IDR_N_LP
-        }
-
-        if (isXPS) {
-            signal_->lastOutputWasXPS_.store(true);
-        }
-
-        if (isIDR) {
-            signal_->idrFrameCount_++;
-            if (signal_->lastOutputWasXPS_.load()) {
-                signal_->idrWithImmediateXPSCount_++;
-            }
-            signal_->lastOutputWasXPS_.store(false);
-        }
-
-        if (!isXPS && !isIDR) {
-            signal_->lastOutputWasXPS_.store(false);
-        }
-    }
 }
 
 VEncParamCallbackTest::VEncParamCallbackTest(std::shared_ptr<VEncSignal> signal) {}
@@ -642,6 +608,38 @@ int32_t VideoEncSyncSample::OutputLoopInnerExt()
 #ifdef ONLY_FOR_FLAGSHIP_CHIP
     CheckFormatKey(attr, buffer);
 #endif // ONLY_FOR_FLAGSHIP_CHIP
+
+    const uint8_t *nalAddr = GetNalTypeAddr(static_cast<const uint8_t *>bufferAddr, attr.size);
+    if (nalAddr != nullptr) {
+        uint8_t nalType = 0;
+        bool isXPS = false;
+        bool isIDR = false;
+        if (signal_->isAVCCodec_) {
+            nalType = (*nalAddr) & 0x1F; // 0x1F: AVC NAL type mask
+            isXPS = (nalType == 7 || nalType == 8); // 7: SPS, 8: PPS
+            isIDR = (nalType == 5); // 5: IDR slice
+        } else {
+            nalType = ((*nalAddr) & 0x7E) >> 1; // 0x7E: HEVC NAL type mask, >> 1: shift to get type
+            isXPS = (nalType >= 32 && nalType <= 34); // 32: VPS, 33: SPS, 34: PPS
+            isIDR = (nalType == 19 || nalType == 20); // 19: IDR_W_RADL, 20: IDR_N_LP
+        }
+
+        if (isXPS) {
+            signal_->lastOutputWasXPS_.store(true);
+        }
+
+        if (isIDR) {
+            signal_->idrFrameCount_++;
+            if (signal_->lastOutputWasXPS_.load()) {
+                signal_->idrWithImmediateXPSCount_++;
+            }
+            signal_->lastOutputWasXPS_.store(false);
+        }
+
+        if (!isXPS && !isIDR) {
+            signal_->lastOutputWasXPS_.store(false);
+        }
+    }
 
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
