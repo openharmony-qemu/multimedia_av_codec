@@ -17,6 +17,7 @@
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include <memory>
+#include "native_avcapability.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videoencoder.h"
 #include "sample_callback.h"
@@ -37,14 +38,15 @@ using namespace testing::ext;
 namespace {
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 enum CodecType : int32_t { AVC = 0, HEVC = 1 };
-static void OnError(OH_AVCodec *codec, int32_t errorCode, void *userData)
+
+static void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
     (void)errorCode;
     (void)userData;
 }
 
-static void OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+static void OnStreamChangedVoid(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
 {
     (void)codec;
     (void)format;
@@ -102,8 +104,8 @@ void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, En
                                 shared_ptr<VCodecSignal> &signal)
 {
     struct OH_AVCodecCallback cb = {};
-    cb.onError = OnErrorVoid;
-    cb.onStreamChanged = OnStreamChangedVoid;
+    cb.onError = OnError;
+    cb.onStreamChanged = OnStreamChanged;
     cb.onNeedInputBuffer = InBufferVoid;
     cb.onNewOutputBuffer = (type == EncoderType::SECONDARY) ? OutBufferHandleSecondary : OutBufferHandle;
     signal->isRunning_ = true;
@@ -121,13 +123,23 @@ public:
     void FullLifecycleSecondary();
     const char *GetCurMimeType() { return GetMimeType(GetParam()); }
 
+    static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, STRINGFY(TEST_SUIT)};
 protected:
     std::shared_ptr<VideoEncDualOutputSample> dualSample_;
 };
 
 INSTANTIATE_TEST_SUITE_P(, TEST_SUIT, testing::Values(AVC, HEVC));
 
-void TEST_SUIT::SetUpTestCase(void) {}
+void TEST_SUIT::SetUpTestCase(void)
+{
+    OH_AVCapability *encoderCapability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC,
+                                                                            true, HARDWARE);
+    EXPECT_NE(encoderCapability, nullptr);
+    if (!OH_AVCapability_IsFeatureSupported(encoderCapability, VIDEO_ENCODER_PREPROC_DOWNSAMPLING) ||
+        !OH_AVCapability_IsFeatureSupported(encoderCapability, VIDEO_ENCODER_PREPROC_CROP)) {
+            GTEST_SKIP() << "Unsupport preproc downsampling or preproc crop";
+    }
+}
 
 void TEST_SUIT::TearDownTestCase(void) {}
 
@@ -135,6 +147,10 @@ void TEST_SUIT::SetUp(void)
 {
     dualSample_ = make_shared<VideoEncDualOutputSample>();
     ASSERT_TRUE(dualSample_->CreatePrimary(GetCurMimeType()));
+
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string testCaseName = testInfo_->name();
+    AVCODEC_LOGI("%{public}s", testCaseName.c_str());
 }
 
 void TEST_SUIT::TearDown(void)
@@ -601,9 +617,9 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RecreateSecondaryEncoder_001, TestSize.Level1)
  */
 HWTEST_P(TEST_SUIT, VideoEncoder_CreateSecondaryFromPrimary_001, TestSize.Level1)
 {
-    VideoEncDualOutputSample localDual;
-    ASSERT_TRUE(localDual.CreatePrimary(GetCurMimeType()));
-    ASSERT_TRUE(localDual.CreateSecondary());
+    VideoEncDualOutputSample dualSample;
+    ASSERT_TRUE(dualSample.CreatePrimary(GetCurMimeType()));
+    ASSERT_TRUE(dualSample.CreateSecondary());
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
 }
 
@@ -614,7 +630,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_CreateSecondaryFromPrimary_001, TestSize.Level1
  */
 HWTEST_P(TEST_SUIT, Primary_SetCallback_Normal_001, TestSize.Level1)
 {
-    OH_AVCodecAsyncCallback cb = {OnError, OnStreamChanged, OnNeedInputData, OnNewOutputData};
+    OH_AVCodecAsyncCallback cb = {OnErrorVoid, OnStreamChangedVoid, OnNeedInputData, OnNewOutputData};
     ASSERT_EQ(AV_ERR_OPERATE_NOT_PERMIT, dualSample_->SetCallback(EncoderType::PRIMARY, cb, nullptr));
 }
 
@@ -821,7 +837,7 @@ HWTEST_P(TEST_SUIT, Primary_IsValid_Normal_001, TestSize.Level1)
 HWTEST_P(TEST_SUIT, Secondary_RegisterCallback_Normal_001, TestSize.Level1)
 {
     ASSERT_TRUE(dualSample_->CreateSecondary());
-    OH_AVCodecCallback cb = {OnError, OnStreamChanged, OnNeedInputBuffer, OnNewOutputBuffer};
+    OH_AVCodecCallback cb = {OnErrorVoid, OnStreamChangedVoid, OnNeedInputBuffer, OnNewOutputBuffer};
     ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, cb, nullptr));
 }
 
@@ -850,7 +866,7 @@ HWTEST_P(TEST_SUIT, Secondary_Prepare_Normal_001, TestSize.Level1)
                                 DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 
-    OH_AVCodecCallback cb = {OnError, OnStreamChanged, OnNeedInputBuffer, OnNewOutputBuffer};
+    OH_AVCodecCallback cb = {OnErrorVoid, OnStreamChangedVoid, OnNeedInputBuffer, OnNewOutputBuffer};
     ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, cb, nullptr));
 
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
@@ -901,7 +917,7 @@ HWTEST_P(TEST_SUIT, Secondary_GetOutputDescription_Normal_001, TestSize.Level1)
                                 DEFAULT_FRAME_RATE);
     ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
 
-    OH_AVCodecCallback cb = {OnError, OnStreamChanged, OnNeedInputBuffer, OnNewOutputBuffer};
+    OH_AVCodecCallback cb = {OnErrorVoid, OnStreamChangedVoid, OnNeedInputBuffer, OnNewOutputBuffer};
     ASSERT_EQ(AV_ERR_OK, dualSample_->RegisterCallback(EncoderType::SECONDARY, cb, nullptr));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 
@@ -1145,7 +1161,7 @@ HWTEST_P(TEST_SUIT, State_Machine_Secondary_Prepare_BeforeConfigure_001, TestSiz
     ASSERT_TRUE(dualSample_->CreateSecondary());
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
 }
-#ifdef ONLY_FOR_FLAGSHIP_CHIP
+
 void RunPreprocDualEncoding(int32_t codecType, const std::string &testName,
                             std::function<void(VideoEncDualOutputSample &)> setPrimaryPreproc,
                             std::function<void(VideoEncDualOutputSample &)> setSecondaryPreproc = nullptr)
@@ -1899,13 +1915,13 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_FlushSecondaryWhilePrimaryRunning_001, Te
  */
 HWTEST_P(TEST_SUIT, State_Machine_Dual_ReleasePrimary_DestroysSecondary_001, TestSize.Level1)
 {
-    VideoEncDualOutputSample localDual;
-    ASSERT_TRUE(localDual.CreatePrimary(GetCurMimeType()));
-    ASSERT_TRUE(localDual.CreateSecondary());
-    ASSERT_EQ(AV_ERR_OK, localDual.Release(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, localDual.Start(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, localDual.Stop(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_INVALID_VAL, localDual.Configure(EncoderType::SECONDARY));
+    VideoEncDualOutputSample dualSample;
+    ASSERT_TRUE(dualSample.CreatePrimary(GetCurMimeType()));
+    ASSERT_TRUE(dualSample.CreateSecondary());
+    ASSERT_EQ(AV_ERR_OK, dualSample.Release(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample.Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample.Stop(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample.Configure(EncoderType::SECONDARY));
 }
 
 /**
@@ -2058,7 +2074,116 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_StartOnlyPrimary_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Stop(EncoderType::PRIMARY));
 }
-#endif // ONLY_FOR_FLAGSHIP_CHIP
+
+/**
+ * @tc.name: State_Machine_Dual_8BitTo10Bit_001
+ * @tc.desc: Test 8-bit to 10-bit format conversion
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Dual_8BitTo10Bit_001, TestSize.Level1)
+{
+    std::shared_ptr<VideoEncDualOutputSample> dualSample = make_shared<VideoEncDualOutputSample>();
+    ASSERT_TRUE(dualSample->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_HEVC));
+    auto signal = make_shared<VCodecSignal>(dualSample);
+    dualSample->input8BitTo10Bit_ = true;
+    dualSample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                               DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample, EncoderType::PRIMARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample->Prepare(EncoderType::PRIMARY));
+
+    ASSERT_TRUE(dualSample->CreateSurface());
+    ASSERT_TRUE(dualSample->CreateSecondary());
+    auto secSignal = make_shared<VCodecSignal>(dualSample);
+    RegisterCallbackWithSignal(dualSample, EncoderType::SECONDARY, secSignal);
+    dualSample->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                               DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample->Prepare(EncoderType::SECONDARY));
+
+    ASSERT_EQ(AV_ERR_OK, dualSample->Start(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample->Start(EncoderType::SECONDARY));
+    ASSERT_TRUE(dualSample->WaitForEos(EncoderType::SECONDARY));
+    ASSERT_TRUE(dualSample->WaitForEos(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample->Release(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample->Release(EncoderType::PRIMARY));
+    dualSample.reset();
+}
+
+/**
+ * @tc.name: State_Machine_Dual_ResizeWidthHeight_001
+ * @tc.desc: Test resizing width and height
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Dual_ResizeWidthHeight_001, TestSize.Level1)
+{
+    auto signal = make_shared<VCodecSignal>(dualSample_);
+    dualSample_->inputResizeWidthHeight_ = 1;
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+
+    ASSERT_TRUE(dualSample_->CreateSurface());
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    auto secSignal = make_shared<VCodecSignal>(dualSample_);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
+
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::SECONDARY));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: State_Machine_Dual_SetParam_Crop_001
+ * @tc.desc: Test setting crop parameters
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_001, TestSize.Level1)
+{
+    auto signal = make_shared<VCodecSignal>(dualSample_);
+    dualSample_->inputSetParamCrop_ = true;
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, signal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+
+    ASSERT_TRUE(dualSample_->CreateSurface());
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    auto secSignal = make_shared<VCodecSignal>(dualSample_);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secSignal);
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
+
+    OH_AVFormat *format = OH_AVFormat_Create();
+    bool ret =
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, 10) &&
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, 10) &&
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, 629) &&
+        OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, 479);
+    ASSERT_TRUE(ret);
+
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->SetParameter(EncoderType::PRIMARY, format));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::SECONDARY));
+    ASSERT_TRUE(dualSample_->WaitForEos(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
+    OH_AVFormat_Destroy(format);
+}
+
 int main(int argc, char **argv)
 {
     testing::GTEST_FLAG(output) = "xml:./";

@@ -52,6 +52,24 @@ void VEncCallbackTest::OnError(int32_t errorCode)
 void VEncCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
+    int32_t picWidhth = 0;
+    int32_t picHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    int32_t width = 0;
+    int32_t height = 0;
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidhth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, picHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
+    std::cout << "OnStreamChanged: pic_width = " << picWidhth
+              << ", pic_height = " << picHeight
+              << ", stride = " << stride
+              << ", slice_height = " << sliceHeight
+              << ", width = " << width
+              << ", height = " << height << std::endl;
 }
 
 void VEncCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data)
@@ -100,6 +118,24 @@ void VEncCallbackTestExt::OnError(int32_t errorCode)
 void VEncCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
+    int32_t picWidhth = 0;
+    int32_t picHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    int32_t width = 0;
+    int32_t height = 0;
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidhth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, picHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
+    std::cout << "OnStreamChanged: pic_width = " << picWidhth
+              << ", pic_height = " << picHeight
+              << ", stride = " << stride
+              << ", slice_height = " << sliceHeight
+              << ", width = " << width
+              << ", height = " << height << std::endl;
 }
 
 void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
@@ -1167,14 +1203,29 @@ void VideoEncAsyncSample::ReadFrameToBuffer(
     }
 }
 
+int32_t VideoEncAsyncSample::ResetFrameParam()
+{
+    int32_t ret = AV_ERR_OK;
+    if (frameInputCount_ > PARAM_CHANGE_START_FRAME) {
+        if (input8BitTo10Bit_) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_P010);
+        } else if (inputResizeWidthHeight_) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
+                                                        RESIZE_WIDTH, RESIZE_HEIGHT);
+        }
+    }
+    return ret;
+}
+
 void VideoEncAsyncSample::InputFuncSurface()
 {
     while (signal_->isRunning_.load()) {
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
         UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
-
-        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
+        int32_t err = ResetFrameParam();
+        UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "ResetFrameParam failed, Error=%d", err);
+        err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
         UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "RequestBuffer failed, GSError=%d", err);
         if (fenceFd > 0) {
             close(fenceFd);

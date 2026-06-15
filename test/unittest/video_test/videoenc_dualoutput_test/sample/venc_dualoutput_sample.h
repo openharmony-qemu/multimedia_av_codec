@@ -27,14 +27,17 @@
 #include "native_averrors.h"
 #include "native_buffer_inner.h"
 #include "native_window.h"
-#include "window.h"
 #include "sample_callback.h"
 #include "vcodec_signal.h"
+#include "window.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 inline std::string FAST_IMAGE_PATH = "/system/lib64/ndk/libfast_image.so";
 enum class EncoderType { PRIMARY, SECONDARY };
+constexpr int32_t PARAM_CHANGE_START_FRAME = 3;
+constexpr int32_t RESIZE_WIDTH = 1920;
+constexpr int32_t RESIZE_HEIGHT = 1080;
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t FRAME_COUNT = 10;
@@ -99,6 +102,11 @@ public:
     int32_t sampleWidth_ = DEFAULT_WIDTH;
     int32_t sampleHeight_ = DEFAULT_HEIGHT;
     int32_t samplePixel_ = AV_PIXEL_FORMAT_NV12;
+    bool input8BitTo10Bit_ = false;
+    int32_t errorNum_ = 0;
+    int32_t inputResizeWidthHeight_ = 0; // 1: constant width and height;
+    bool inputSetParamCrop_ = false;
+    bool isCallFuncOnStreamChanged_ = false;
 
     static bool needDump_;
     static uint64_t sampleTimout_;
@@ -141,6 +149,7 @@ private:
     // Surface input
     OHNativeWindow *nativeWindow_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_;
+    int32_t ResetFrameParam();
     void InputFuncSurface();
     int32_t FlushSurface(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
     void *MapNativeBuffer(OH_NativeBuffer *nativeBuffer);

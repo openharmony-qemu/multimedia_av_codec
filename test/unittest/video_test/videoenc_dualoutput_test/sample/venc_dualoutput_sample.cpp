@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include "venc_dualoutput_sample.h"
 #include <gtest/gtest.h>
 #include "common/native_mfmagic.h"
 #include "meta/meta_key.h"
+#include "venc_dualoutput_sample.h"
 
 #define PRINT_HILOG
 #define TEST_ID primarySampleId_
@@ -456,6 +456,12 @@ bool VideoEncDualOutputSample::WaitForEos(EncoderType type)
     if (type == EncoderType::PRIMARY) {
         EXPECT_GE(encoderContext.frameOutputCount,
                   encoderContext.frameInputCount / 2); // 2: at least half of the input frame
+
+        if (input8BitTo10Bit_) {
+            EXPECT_LT(0, errorNum_);
+        } else if (inputResizeWidthHeight_ || inputSetParamCrop_) {
+            EXPECT_TRUE(isCallFuncOnStreamChanged_);
+        }
     }
 
     encoderContext.signal->isRunning_ = false;
@@ -749,6 +755,21 @@ bool VideoEncDualOutputSample::CreateSurface()
     return true;
 }
 
+int32_t VideoEncDualOutputSample::ResetFrameParam()
+{
+    int32_t ret = AV_ERR_OK;
+    if (primaryEncoder_.frameInputCount > PARAM_CHANGE_START_FRAME) {
+        if (input8BitTo10Bit_) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT,
+                                                        GRAPHIC_PIXEL_FMT_YCBCR_P010);
+        } else if (inputResizeWidthHeight_ == 1) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
+                                                        RESIZE_WIDTH, RESIZE_HEIGHT);
+        }
+    }
+    return ret;
+}
+
 void VideoEncDualOutputSample::InputFuncSurface()
 {
     UNITTEST_INFO_LOG("InputFuncSurface started, frameCount_: %d", frameCount_);
@@ -756,8 +777,9 @@ void VideoEncDualOutputSample::InputFuncSurface()
         OHNativeWindowBuffer *ohNativeWindowBuffer = nullptr;
         int fenceFd = -1;
         UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
-
-        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
+        int32_t err = ResetFrameParam();
+        UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "ResetFrameParam failed, Error=%d", err);
+        err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
         UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "RequestBuffer failed, GSError=%d", err);
         if (fenceFd > 0) {
             close(fenceFd);

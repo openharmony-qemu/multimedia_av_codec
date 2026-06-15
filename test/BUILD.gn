@@ -635,7 +635,7 @@ group("video_codec_unit_test") {
         "unittest/video_test/smart_fluency_decoding_test:smart_fluency_decoding_test",
         "unittest/video_test/vcodec_framework_test:vcodec_framework_test",
         "unittest/video_test/vcodec_server_test:codec_server_test",
-        "unittest/video_test/videoenc_dualoutput_unit_test:videoenc_dualoutput_test",
+        "unittest/video_test/videoenc_dualoutput_test:videoenc_dualoutput_test",
       ]
     }
   }
