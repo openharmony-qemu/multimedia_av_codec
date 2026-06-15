@@ -90,6 +90,7 @@ private:
     void UpdateMaxPendingFramesObserved();
     void UpdateMaxPendingInputCount();
     void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer);
+    void UpdateOutputNumOfXpsAndIdrframes(const char *bufferAddr, int32_t size);
     void InputLtrParam(OH_AVCodecBufferAttr &attr, int32_t frameInputCount, std::shared_ptr<AVBufferMock> buffer);
     void InputRoiParam(std::shared_ptr<AVBufferMock> buffer);
     void CheckSHA();
