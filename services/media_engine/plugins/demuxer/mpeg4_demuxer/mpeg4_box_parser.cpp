@@ -4341,9 +4341,9 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     return Status::OK;
 }
 
-int32_t ParseSignedInteger(uint8_t* data, uint64_t size)
+bool ParseSignedInteger(uint8_t* data, uint64_t size, int32_t& out)
 {
-    FALSE_RETURN_V_MSG_E(data != nullptr, 0, "ParseSignedInteger: data is null");
+    FALSE_RETURN_V_MSG_E(data != nullptr, false, "ParseSignedInteger: data is null");
     int32_t value = 0;
     switch (size) {
         case 0x01:
@@ -4362,10 +4362,37 @@ int32_t ParseSignedInteger(uint8_t* data, uint64_t size)
             value = static_cast<int32_t>(GetU32Value(data));
             break;
         default:
-            value = 0;
-            break;
+            return false;
     }
-    return value;
+    out = value;
+    return true;
+}
+
+bool ParseUnSignedInteger(uint8_t* data, uint64_t size, uint32_t& out)
+{
+    FALSE_RETURN_V_MSG_E(data != nullptr, false, "ParseUnSignedInteger: data is null");
+    uint32_t value = 0;
+    switch (size) {
+        case 0x01:
+            value = static_cast<uint8_t>(data[0]);
+            break;
+        case 0x02:
+            value = static_cast<uint16_t>(GetU16Value(data));
+            break;
+        case 0x03:
+            value = static_cast<uint32_t>((GetU32Value(data) & 0xFFFFFF00) >> 0x08);
+            if (value & 0x800000) {
+                value |= 0xFF000000;
+            }
+            break;
+        case 0x04:
+            value = static_cast<uint32_t>(GetU32Value(data));
+            break;
+        default:
+            return false;
+    }
+    out = value;
+    return true;
 }
 
 std::string DecodeMacString(const uint8_t* data, size_t size)
@@ -4453,7 +4480,17 @@ Status MPEG4AtomParser::ReadMetadataString(
         }
         case 0x15:
         case 0x43: { // BE signed integer
-            userFormat_->SetData(key, ParseSignedInteger(buffer.get(), size));
+            int32_t value = 0;
+            if (ParseSignedInteger(buffer.get(), size, value)) {
+                userFormat_->SetData(key, value);
+            }
+            break;
+        }
+        case 0x16: { // BE unsigned integer
+            uint32_t value = 0;
+            if (ParseUnSignedInteger(buffer.get(), size, value)) {
+                userFormat_->SetData(key, value);
+            }
             break;
         }
         case 0x17: { // BE float32
@@ -4472,6 +4509,7 @@ Status MPEG4AtomParser::ReadMetadataString(
             break;
         }
         default: { // UTF-8 string
+            FALSE_RETURN_V_MSG_E(dataType <= 1 || dataType == 4, Status::OK, "Unsupport meta %{public}d", dataType);
             std::string stringValue = std::string(reinterpret_cast<char*>(buffer.get()), size);
             if (!stringValue.empty()) {
                 userFormat_->SetData(key, stringValue);
