@@ -20,8 +20,23 @@
 #include <utility>
 
 #ifdef HMOS_TEST
-#include "v1_0/ihmi_interface.h"
-static auto g_hmi = OHOS::HDI::Hmi::V1_0::IHmiInterface::Get(false);
+#include <dlfcn.h>
+namespace {
+struct HmiSoHolder {
+    void *handle_ = nullptr;
+    HmiSoHolder()
+    {
+        handle_ = dlopen("libhmi_proxy_1.0.z.so", RTLD_NOW);
+    }
+    ~HmiSoHolder()
+    {
+        if (handle_) {
+            dlclose(handle_);
+        }
+    }
+};
+static HmiSoHolder g_hmiSo;
+} // namespace
 #endif
 
 using namespace OHOS;
