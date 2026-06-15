@@ -328,6 +328,7 @@ ohos_shared_library("av_codec_client") {
     "ipc:ipc_single",
     "qos_manager:qos",
     "samgr:samgr_proxy",
+    "ffmpeg:libohosffmpeg",
   ]
 
   if (av_codec_support_drm) {
