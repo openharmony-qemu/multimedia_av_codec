@@ -493,6 +493,10 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1170, TestSize.Level1)
         }
         list<int64_t> toPtsList = {0, 1500, 1000, 1740, 1970, 2100}; // ms
         vector<int32_t> videoVals = {60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60};
+        if (useMpeg4_) {
+            toPtsList = {0, 1500, 1000, 1740, 1970}; // ms
+            videoVals = {60, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 0};
+        }
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});
@@ -516,6 +520,10 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1171, TestSize.Level1)
         }
         list<int64_t> toPtsList = {0, 1500, 1000, 1740, 1970, 2100}; // ms
         vector<int32_t> videoVals = {60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60};
+        if (useMpeg4_) {
+            toPtsList = {0, 1500, 1000, 1740, 1970}; // ms
+            videoVals = {60, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 0};
+        }
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
         SeekTest(toPtsList, seekModes, {videoVals});

@@ -154,7 +154,7 @@ string g_mp4LargeTrefPath = TEST_FILE_PATH + string("large_tref.mp4");
 
 void AVSourceUnitTest::SetUpTestCase(void)
 {
-#ifdef USER_MPEG4_DEMUXER
+#ifdef USE_MPEG4_DEMUXER
     OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "1");
 #endif
     server = make_unique<FileServerDemo>();
@@ -164,7 +164,7 @@ void AVSourceUnitTest::SetUpTestCase(void)
 void AVSourceUnitTest::TearDownTestCase(void)
 {
     server->StopServer();
-#ifdef USER_MPEG4_DEMUXER
+#ifdef USE_MPEG4_DEMUXER
     OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "0");
 #endif
 }
