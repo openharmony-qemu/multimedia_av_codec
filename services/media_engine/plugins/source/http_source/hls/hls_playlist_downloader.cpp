@@ -120,10 +120,6 @@ HlsPlayListDownloader::~HlsPlayListDownloader()
         downloader_->Stop(false);
     }
     aesDecryptorManager_ = nullptr;
-    if (fd_ >= 0) {
-        close(fd_);
-        fd_ = -1;
-    }
     MEDIA_LOG_I("~HlsPlayListDownloader out");
     FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
     auto currentVariant = GetThreadSafeCurrentVariant();
@@ -178,13 +174,8 @@ void HlsPlayListDownloader::Clone(std::shared_ptr<PlayListDownloader> ptr)
 
     // statusCallback_ set after Init with callback in DownloadMonitor, decide whether to retry
     statusCallback_ = other->statusCallback_;
-    
+
     startedDownloadStatus_ = other->startedDownloadStatus_;
-    if (fd_ >= 0) {
-        close(fd_);
-        fd_ = -1;
-    }
-    fd_ = (other->fd_ >= 0) ? dup(other->fd_) : -1;
     offset_ = other->offset_;
     size_ = other->size_;
     fileSize_ = other->fileSize_;

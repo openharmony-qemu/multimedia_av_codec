@@ -18,8 +18,11 @@
 #include "http/http_media_downloader.h"
 #include "utils/media_cached_buffer.h"
 #include "download/network_client/http_curl_client.h"
+#include "download/app_client.h"
 #include "gtest/gtest.h"
 #include "utils/string_utils.h"
+#include <future>
+#include <thread>
 
 using namespace std;
 using namespace testing::ext;
@@ -355,16 +358,16 @@ HWTEST_F(DownloaderUnitTest, cachedMediaBuffer, TestSize.Level1)
     EXPECT_EQ(writeLen, cachedMediaBuffer.GetBufferSize(offset1));
     EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset1));
 
-    int64_t offset2 = (int64_t)writeLen * 3;
+    int64_t offset2 = static_cast<int64_t>(writeLen) * 3;
     ASSERT_EQ(writeLen, cachedMediaBuffer.Write(mp4Data.get(), offset2, writeLen));
     EXPECT_EQ(writeLen, cachedMediaBuffer.GetBufferSize(offset1));
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1));
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen - 3));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset1));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen - 3));
 
     cachedMediaBuffer.Dump(0);
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen));
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen + 1));
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset2 - 2));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen + 1));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset2 - 2));
 
     EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset2));
     EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset2 + writeLen));
@@ -2109,6 +2112,63 @@ HWTEST_F(DownloaderUnitTest, APP_CLIENT_001, TestSize.Level1)
             threadRequestData.join();
         }
     }
+}
+
+class MockCloseRetryClient : public NetworkClient {
+public:
+    std::atomic<int> closeCallCount_{0};
+    int closeFailTimes_{0};
+
+    MockCloseRetryClient() {}
+
+    Status Close(bool isAsync) override
+    {
+        closeCallCount_++;
+        if (closeCallCount_ <= closeFailTimes_) {
+            return Status::ERROR_CLIENT;
+        }
+        return Status::OK;
+    }
+    Status Init() override { return Status::OK; }
+    Status Open(const std::string&, const std::map<std::string, std::string>&, int32_t) override { return Status::OK; }
+    Status RequestData(long, int, const RequestInfo&, HandleResponseCbFunc) override { return Status::OK; }
+    Status Deinit() override { return Status::OK; }
+    Status GetIp(std::string&) override { return Status::OK; }
+    void SetAppUid(int32_t) override {}
+};
+
+HWTEST_F(DownloaderUnitTest, Pause_CloseRetry_Succeed, TestSize.Level0)
+{
+    auto mock = std::make_shared<MockCloseRetryClient>();
+    mock->closeFailTimes_ = 2;
+    downloader->client_ = mock;
+
+    auto future = std::async(std::launch::async, [&]() { downloader->Pause(); });
+    auto status = future.wait_for(std::chrono::seconds(5));
+    EXPECT_NE(status, std::future_status::timeout);
+    EXPECT_EQ(mock->closeCallCount_, 3);
+}
+
+HWTEST_F(DownloaderUnitTest, Pause_CloseRetry_AllFail, TestSize.Level0)
+{
+    auto mock = std::make_shared<MockCloseRetryClient>();
+    mock->closeFailTimes_ = 100;
+    downloader->client_ = mock;
+
+    auto future = std::async(std::launch::async, [&]() { downloader->Pause(); });
+    auto status = future.wait_for(std::chrono::seconds(30));
+    EXPECT_NE(status, std::future_status::timeout);
+    EXPECT_EQ(mock->closeCallCount_, 6);
+}
+
+HWTEST_F(DownloaderUnitTest, Pause_CloseNoRetry_Normal, TestSize.Level0)
+{
+    auto mock = std::make_shared<MockCloseRetryClient>();
+    mock->closeFailTimes_ = 0;
+    downloader->client_ = mock;
+
+    downloader->Pause();
+    EXPECT_EQ(mock->closeCallCount_, 1);
 }
 }
 }

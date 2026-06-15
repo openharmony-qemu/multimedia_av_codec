@@ -54,6 +54,26 @@ static const std::unordered_set<std::string> VIDEO_CODECS = {
     "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263"
 };
 
+using TagUpdater = void (M3U8::*)(std::shared_ptr<Tag>&, M3U8Info&);
+struct TagUpdaterEntry { HlsTag tag; TagUpdater updater; };
+
+static const TagUpdaterEntry TAG_UPDATER_TABLE[] = {
+    {HlsTag::EXTXPLAYLISTTYPE,          &M3U8::UpdatePlaylistType},
+    {HlsTag::EXTXTARGETDURATION,        &M3U8::UpdateTargetDuration},
+    {HlsTag::EXTXMEDIASEQUENCE,         &M3U8::UpdateMediaSequence},
+    {HlsTag::EXTXDISCONTINUITYSEQUENCE, &M3U8::UpdateDiscontSequence},
+    {HlsTag::EXTINF,                    &M3U8::UpdateExtInf},
+    {HlsTag::URI,                       &M3U8::UpdateUri},
+    {HlsTag::EXTXBYTERANGE,             &M3U8::UpdateByteRange},
+    {HlsTag::EXTXDISCONTINUITY,         &M3U8::UpdateDiscontinuity},
+    {HlsTag::EXTXKEY,                   &M3U8::UpdateKey},
+    {HlsTag::EXTXMAP,                   &M3U8::UpdateMap},
+    {HlsTag::EXTXSKIP,                  &M3U8::UpdateSkip},
+    {HlsTag::EXTXSTART,                 &M3U8::UpdateStart},
+    {HlsTag::EXTXPROGRAMDATETIME,       &M3U8::UpdateProgramDateTime},
+    {HlsTag::EXTXDATERANGE,             &M3U8::UpdateDateRange},
+};
+
 bool StrHasPrefix(const std::string &str, const std::string &prefix)
 {
     return str.find(prefix) == 0;
@@ -184,108 +204,159 @@ bool M3U8::Update(const std::string& playList, bool isNeedCleanFiles, uint64_t t
     return true;
 }
 
-void M3U8::InitTagUpdaters()
-{
-    tagUpdatersMap_[HlsTag::EXTXPLAYLISTTYPE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        bLive_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString() != "VOD";
-        if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
-            sourceLoader_->Close(-1);
-        }
-    };
-    tagUpdatersMap_[HlsTag::EXTXTARGETDURATION] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        std::ignore = info;
-        targetDuration_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().FloatingPoint();
-    };
-    tagUpdatersMap_[HlsTag::EXTXMEDIASEQUENCE] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        std::ignore = info;
-        sequence_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().Decimal();
-        initSequence_ = sequence_;
-    };
-    tagUpdatersMap_[HlsTag::EXTXDISCONTINUITYSEQUENCE] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        discontSequence_ = static_cast<int>(std::static_pointer_cast<SingleValueTag>(tag)->GetValue().Decimal());
-        info.discontinuity = true;
-    };
-    tagUpdatersMap_[HlsTag::EXTINF] = [this](const std::shared_ptr<Tag> &tag, M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        GetExtInf(tag, info.duration);
-    };
-    tagUpdatersMap_[HlsTag::URI] = [this](std::shared_ptr<Tag> &tag, M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        info.uri = UriJoin(uri_, std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString());
-    };
-    tagUpdatersMap_[HlsTag::EXTXBYTERANGE] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        std::ignore = info;
-        std::string value = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString();
-        std::shared_ptr<Attribute> attr = std::make_shared<Attribute>("BYTERANGE", value);
-        offset_ = attr->GetByteRange().first + 1; // 1
-        length_ = attr->GetByteRange().second;
-        if (!isHeaderReady_.load()) {
-            offset_ -= 1; // 1
-            isPureByteRange_.store(true);
-        }
-    };
-}
-
 void M3U8::InitTagUpdatersMap()
 {
-    InitTagUpdaters();
-    tagUpdatersMap_[HlsTag::EXTXDISCONTINUITY] = [this](const std::shared_ptr<Tag> &tag, M3U8Info &info) {
-        std::ignore = tag;
-        discontSequence_++;
-        info.discontinuity = true;
-    };
-    tagUpdatersMap_[HlsTag::EXTXKEY] = [this](std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        PrepareDecrptionKeys(tag);
-    };
-    tagUpdatersMap_[HlsTag::EXTXMAP] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        std::ignore = info;
-        ParseMap(std::static_pointer_cast<AttributesTag>(tag));
-    };
-    tagUpdatersMap_[HlsTag::EXTXSKIP] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        std::ignore = info;
-        auto item = std::static_pointer_cast<AttributesTag>(tag);
-        auto skipSegmentsNum = item->GetAttributeByName("SKIPPED-SEGMENTS");
-        if (skipSegmentsNum) {
-            skipSegmentsNum_ = skipSegmentsNum->Decimal();
-        }
-    };
-    tagUpdatersMap_[HlsTag::EXTXSTART] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        std::ignore = info;
-        auto item = std::static_pointer_cast<AttributesTag>(tag);
-        auto precise = item->GetAttributeByName("PRECISE");
-        if (precise) {
-            precise_ = (precise->QuotedString() == "YES") ? true : false;
-        }
-        auto timeOffset = item->GetAttributeByName("TIME-OFFSET");
-        if (timeOffset) {
-            timeOffset_ = timeOffset->FloatingPoint();
-        }
-        isStart_ = true;
-    };
-    tagUpdatersMap_[HlsTag::EXTXPROGRAMDATETIME] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        std::ignore = info;
-        currentProgramDateTime_ = std::static_pointer_cast<SingleValueTag>(tag)->GetValue().QuotedString();
-        MEDIA_LOG_I("currentProgramDateTime_: " PUBLIC_LOG_S, currentProgramDateTime_.c_str());
-    };
-    tagUpdatersMap_[HlsTag::EXTXDATERANGE] = [this](const std::shared_ptr<Tag> &tag, const M3U8Info &info) {
-        FALSE_RETURN(tag != nullptr);
-        std::ignore = info;
-        ParseDateRange(std::static_pointer_cast<AttributesTag>(tag));
-    };
+    for (const auto& entry : TAG_UPDATER_TABLE) {
+        auto updater = entry.updater;
+        tagUpdatersMap_[entry.tag] = [this, updater](std::shared_ptr<Tag>& tag, M3U8Info& info) {
+            (this->*updater)(tag, info);
+        };
+    }
+}
+
+void M3U8::UpdatePlaylistType(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    FALSE_RETURN(IsSingleValueSection(tag->GetType()));
+    auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
+    bLive_ = svTag->GetValue().QuotedString() != "VOD";
+    if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
+        sourceLoader_->Close(-1);
+    }
+}
+
+void M3U8::UpdateTargetDuration(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    std::ignore = info;
+    FALSE_RETURN(IsSingleValueSection(tag->GetType()));
+    auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
+    targetDuration_ = svTag->GetValue().FloatingPoint();
+}
+
+void M3U8::UpdateMediaSequence(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    std::ignore = info;
+    FALSE_RETURN(IsSingleValueSection(tag->GetType()));
+    auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
+    sequence_ = svTag->GetValue().Decimal();
+    initSequence_ = sequence_;
+}
+
+void M3U8::UpdateDiscontSequence(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    FALSE_RETURN(IsSingleValueSection(tag->GetType()));
+    auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
+    discontSequence_ = static_cast<int>(svTag->GetValue().Decimal());
+    info.discontinuity = true;
+}
+
+void M3U8::UpdateExtInf(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    GetExtInf(tag, info.duration);
+}
+
+void M3U8::UpdateUri(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    FALSE_RETURN(IsSingleValueSection(tag->GetType()));
+    auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
+    info.uri = UriJoin(uri_, svTag->GetValue().QuotedString());
+}
+
+void M3U8::UpdateByteRange(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    std::ignore = info;
+    FALSE_RETURN(IsSingleValueSection(tag->GetType()));
+    auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
+    std::string value = svTag->GetValue().QuotedString();
+    std::shared_ptr<Attribute> attr = std::make_shared<Attribute>("BYTERANGE", value);
+    offset_ = attr->GetByteRange().first + 1;
+    length_ = attr->GetByteRange().second;
+    if (!isHeaderReady_.load()) {
+        offset_ -= 1;
+        isPureByteRange_.store(true);
+    }
+}
+
+void M3U8::UpdateDiscontinuity(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    std::ignore = tag;
+    discontSequence_++;
+    info.discontinuity = true;
+}
+
+void M3U8::UpdateKey(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    std::ignore = info;
+    PrepareDecrptionKeys(tag);
+}
+
+void M3U8::UpdateMap(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    std::ignore = info;
+    FALSE_RETURN(IsAttributesSection(tag->GetType()));
+    auto attrTag = std::static_pointer_cast<AttributesTag>(tag);
+    ParseMap(attrTag);
+}
+
+void M3U8::UpdateSkip(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    std::ignore = info;
+    FALSE_RETURN(IsAttributesSection(tag->GetType()));
+    auto item = std::static_pointer_cast<AttributesTag>(tag);
+    auto skipSegmentsNum = item->GetAttributeByName("SKIPPED-SEGMENTS");
+    if (skipSegmentsNum) {
+        skipSegmentsNum_ = skipSegmentsNum->Decimal();
+    }
+}
+
+void M3U8::UpdateStart(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    std::ignore = info;
+    FALSE_RETURN(IsAttributesSection(tag->GetType()));
+    auto item = std::static_pointer_cast<AttributesTag>(tag);
+    auto precise = item->GetAttributeByName("PRECISE");
+    if (precise) {
+        precise_ = (precise->QuotedString() == "YES") ? true : false;
+    }
+    auto timeOffset = item->GetAttributeByName("TIME-OFFSET");
+    if (timeOffset) {
+        timeOffset_ = timeOffset->FloatingPoint();
+    }
+    isStart_ = true;
+}
+
+void M3U8::UpdateProgramDateTime(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    std::ignore = info;
+    FALSE_RETURN(IsSingleValueSection(tag->GetType()));
+    auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
+    currentProgramDateTime_ = svTag->GetValue().QuotedString();
+    MEDIA_LOG_I("currentProgramDateTime_: " PUBLIC_LOG_S, currentProgramDateTime_.c_str());
+}
+
+void M3U8::UpdateDateRange(std::shared_ptr<Tag>& tag, M3U8Info& info)
+{
+    FALSE_RETURN(tag != nullptr);
+    std::ignore = info;
+    FALSE_RETURN(IsAttributesSection(tag->GetType()));
+    auto attrTag = std::static_pointer_cast<AttributesTag>(tag);
+    ParseDateRange(attrTag);
 }
 
 void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
 {
     FALSE_RETURN(tag != nullptr);
+    FALSE_RETURN(IsAttributesSection(tag->GetType()));
     if (sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache()) {
         sourceLoader_->Close(-1);
     }
@@ -636,10 +707,8 @@ size_t M3U8::GetLiveUpdateGap() const
 
 void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
 {
+    FALSE_RETURN(tag != nullptr && IsValuesListSection(tag->GetType()));
     auto item = std::static_pointer_cast<ValuesListTag>(tag);
-    if (item == nullptr) {
-        return;
-    }
     auto durationAttr = item->GetAttributeByName("DURATION");
     if (durationAttr != nullptr) {
         duration = durationAttr->FloatingPoint();
@@ -952,6 +1021,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
 void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
 {
     FALSE_RETURN(sessionKeyIndex_ == 0);
+    FALSE_RETURN(tag != nullptr && IsAttributesSection(tag->GetType()));
     auto m3u8 = std::make_shared<M3U8>(uri_, "", tagMasterMap_, monitorStatusCallback_, sourceLoader_);
     FALSE_RETURN_NOLOG(m3u8 != nullptr);
     if (downloadCallback_ != nullptr) {
@@ -1038,6 +1108,7 @@ void M3U8MasterPlaylist::ProcessAllTags(std::list<std::shared_ptr<Tag>>& tags)
 void M3U8MasterPlaylist::CreateVariantStream(const std::shared_ptr<Tag>& tag)
 {
     FALSE_RETURN(tag != nullptr);
+    FALSE_RETURN(IsAttributesSection(tag->GetType()));
     auto item = std::static_pointer_cast<AttributesTag>(tag);
     auto uriAttribute = item->GetAttributeByName("URI");
     if (uriAttribute) {
@@ -1102,6 +1173,7 @@ void M3U8MasterPlaylist::ParseAttributes(const std::shared_ptr<AttributesTag>& i
 void M3U8MasterPlaylist::ParseMediaStreamInfo(std::shared_ptr<Tag> &tag)
 {
     FALSE_RETURN(tag != nullptr);
+    FALSE_RETURN(IsAttributesSection(tag->GetType()));
     auto item = std::static_pointer_cast<AttributesTag>(tag);
     auto uriAttribute = item->GetAttributeByName("URI");
     if (uriAttribute) {
@@ -1156,6 +1228,7 @@ void M3U8MasterPlaylist::ParseMediaStreamInfo(std::shared_ptr<Tag> &tag)
 void M3U8MasterPlaylist::ParseStart(std::shared_ptr<Tag> &tag)
 {
     FALSE_RETURN(tag != nullptr);
+    FALSE_RETURN(IsAttributesSection(tag->GetType()));
     auto item = std::static_pointer_cast<AttributesTag>(tag);
     auto timeOffset = item->GetAttributeByName("TIME-OFFSET");
     if (timeOffset) {

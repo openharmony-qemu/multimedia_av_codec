@@ -698,6 +698,9 @@ bool CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(FragmentIterat
         if (fragmentIterator == fragmentCacheBuffer_.end()) {
             return false;
         }
+        if (currWritePos == fragmentIterator) {
+            return false;
+        }
     }
     if (fragmentIterator != fragmentCacheBuffer_.end()) {
         freeChunks_.splice(freeChunks_.end(), fragmentIterator->chunks);
@@ -1120,6 +1123,7 @@ void CacheMediaChunkBufferImpl::Reset()
         bufferAddr_ = nullptr;
     }
     fragmentMaxNum_ = CACHE_FRAGMENT_MAX_NUM_DEFAULT;
+    lruCache_.Reset();
     lruCache_.ReCacheSize(CACHE_FRAGMENT_MAX_NUM_DEFAULT);
     isLargeOffsetSpan_ = false;
 }

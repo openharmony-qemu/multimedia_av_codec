@@ -130,7 +130,7 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
             MEDIA_LOG_E("Error format, should drop the representation");
             return -1;
         }
-        
+
         pos = segTmpltStr.find(segTmpltIdentifier);
     }
 

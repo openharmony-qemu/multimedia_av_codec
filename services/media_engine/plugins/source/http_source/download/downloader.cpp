@@ -34,6 +34,9 @@ constexpr int32_t PER_REQUEST_SIZE = 2 * 1024 * 1024;
 constexpr int32_t BITRATE_REQUEST_SIZE = 4;
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
 constexpr size_t RETRY_TIMES = 6000;  // Retry 6000 times
+constexpr int32_t CLIENT_RETRY_TIME_LIMIT = 4; // 3, 15, 75, 375
+constexpr int32_t CLIENT_RETRY_TIME_FACTOR = 5;
+constexpr int32_t CLIENT_RETRY_TIME = 3;
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
 constexpr long LIVE_CONTENT_LENGTH = 2147483646;
 constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
@@ -400,7 +403,20 @@ void Downloader::Pause(bool isAsync)
     requestQue_->SetActive(false, false);
     if (client_ != nullptr) {
         isClientClose_ = true;
-        client_->Close(isAsync);
+        int retryCount = 0;
+        int retryTime = CLIENT_RETRY_TIME;
+        while (client_->Close(isAsync) != Status::OK && retryCount < CLIENT_RETRY_TIME_LIMIT) {
+            MEDIA_LOG_W("client close failed, retry count: %{public}d, delay: %{public}d", retryCount, retryTime);
+            if (!isAsync) {
+                Task::SleepInTask(retryTime);
+            }
+            retryCount++;
+            retryTime *= CLIENT_RETRY_TIME_FACTOR;
+        }
+        if (retryCount == CLIENT_RETRY_TIME_LIMIT) {
+            MEDIA_LOG_E("client close failed, retry limited");
+            return;
+        }
     }
     PauseLoop(true);
     if (!isAsync) {
