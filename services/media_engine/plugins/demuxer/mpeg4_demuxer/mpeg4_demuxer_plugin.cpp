@@ -189,10 +189,18 @@ Status RescaleTrackTimeToUsRoundNearest(int64_t value, int64_t timeScale, int64_
     return Status::OK;
 }
 
+bool IsVideoLikeTrackForDuration(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    if (track == nullptr || track->sampleHelper == nullptr) {
+        return false;
+    }
+    return track->codecParms.trackType == VIDEO_TYPE ||
+        (track->codecParms.trackType == AUXILIARY_TYPE && IsVideoMimeType(track->sampleHelper->mimeType_));
+}
+
 bool NeedsCttsFrameRateDuration(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 {
-    return track != nullptr && track->sampleHelper != nullptr &&
-        track->codecParms.trackType == VIDEO_TYPE && !track->sampleHelper->cttsEntry_.empty();
+    return IsVideoLikeTrackForDuration(track) && !track->sampleHelper->cttsEntry_.empty();
 }
 
 bool GetCttsFrameRateDurationUs(
@@ -221,7 +229,8 @@ bool GetCttsFrameRateDurationUs(
 int64_t GetEffectiveStreamDurationTicks(
     const std::shared_ptr<MPEG4AtomParser::Track>& track, int32_t trackTimeScale, int32_t movieTimeScale)
 {
-    bool hasInitialEmptyEdit = track->codecParms.trackType == VIDEO_TYPE && !track->editListEntries.empty() &&
+    bool isVideoLikeTrack = IsVideoLikeTrackForDuration(track);
+    bool hasInitialEmptyEdit = isVideoLikeTrack && !track->editListEntries.empty() &&
         track->editListEntries.front().mediaTime == -1;
     int64_t streamDuration = 0;
     if (track->duration > 0) {
@@ -237,8 +246,7 @@ int64_t GetEffectiveStreamDurationTicks(
         streamDuration = streamDuration > 0 ? std::min(streamDuration, rawSampleDuration) : rawSampleDuration;
     }
     // Initial empty edit shifts the visible video range; remove it from packet tail duration.
-    if (streamDuration > 0 && track->codecParms.trackType == VIDEO_TYPE && !hasInitialEmptyEdit &&
-        track->elstInitEmptyEdit > 0) {
+    if (streamDuration > 0 && isVideoLikeTrack && !hasInitialEmptyEdit && track->elstInitEmptyEdit > 0) {
         int64_t emptyEditDuration = 0;
         if (!track->editListEntries.empty() && track->editListEntries.front().mediaTime == -1 &&
             movieTimeScale > 0) {
@@ -653,8 +661,7 @@ bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>
 bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
     const auto& track = context.track;
-    if (track == nullptr || track->codecParms.trackType != VIDEO_TYPE || track->sampleHelper == nullptr ||
-        !track->sampleHelper->cttsEntry_.empty()) {
+    if (!IsVideoLikeTrackForDuration(track) || !track->sampleHelper->cttsEntry_.empty()) {
         return false;
     }
     const auto& entries = track->sampleHelper->sampleIndexEntry_;
@@ -938,7 +945,7 @@ bool UpdatePacketDurationUs(const ReadSamplePacketContext& context, ReadSamplePa
         GetTimedMetaTailDurationUs(track, sampleIndex, attr.durationUs) ||
         GetVideoTailDurationUs(context, attr.durationUs) ||
         GetPacketDurationUs(context, attr.durationUs);
-    if (!hasDuration && track->codecParms.trackType == VIDEO_TYPE && !track->sampleHelper->cttsEntry_.empty()) {
+    if (!hasDuration && NeedsCttsFrameRateDuration(track)) {
         hasDuration = GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale,
             attr.durationUs);
     }
