@@ -869,4 +869,43 @@ if (vEncSample == NULL) {
     ASSERT_EQ(AV_ERR_OK, ret);
     vEncSample->WaitForEOS();
 }
+
+/**
+ * @tc.number    : VIDEO_ENCODE_STATE_4100
+ * @tc.name      : Sequential state transitions
+ * @tc.desc      : state test
+ */
+HWTEST_F(AvcSwEncStateNdkTest, VIDEO_ENCODE_STATE_4100, TestSize.Level2)
+{
+    if (vEncSample == NULL) {
+        return;
+    }
+    
+    for (int i = 0; i < 20; i++) {
+        int32_t ret = vEncSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        
+        ret = vEncSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        
+        ret = vEncSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        
+        ret = vEncSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        
+        ret = vEncSample->Start();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        
+        ret = vEncSample->Flush();
+        ASSERT_EQ(AV_ERR_OK, ret);
+        
+        ret = vEncSample->Stop();
+        ASSERT_EQ(AV_ERR_OK, ret);
+    }
+    
+    int32_t ret = vEncSample->Release();
+    ASSERT_EQ(AV_ERR_OK, ret);
+    cout << "Sequential state transitions test completed successfully" << endl;
+}
 } // namespace
