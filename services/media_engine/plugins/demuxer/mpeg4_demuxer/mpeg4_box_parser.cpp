@@ -73,6 +73,7 @@ constexpr uint64_t MAX_DATA_SIZE = 256;
 constexpr uint64_t MIN_COLOR_SIZE = 4;
 constexpr uint64_t MIN_COLOR_PARAM_SIZE = 6;
 constexpr uint64_t MIN_MVHD_SIZE = 32;
+constexpr uint64_t SUPPORT_DATA_TYPE = 4;
 Status ConvertTimeScaleRound(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result);
 Status ConvertTimeScaleRoundToTimeBase(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result);
 Status ConvertTrackTimeToUsByFFmpeg(int64_t trackTime, int64_t trackTimeScale, int64_t* result);
@@ -4310,9 +4311,9 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     return Status::OK;
 }
 
-int32_t ParseSignedInteger(uint8_t* data, uint64_t size)
+bool ParseSignedInteger(uint8_t* data, uint64_t size, int32_t& out)
 {
-    FALSE_RETURN_V_MSG_E(data != nullptr, 0, "ParseSignedInteger: data is null");
+    FALSE_RETURN_V_MSG_E(data != nullptr, false, "ParseSignedInteger: data is null");
     int32_t value = 0;
     switch (size) {
         case 0x01:
@@ -4331,10 +4332,37 @@ int32_t ParseSignedInteger(uint8_t* data, uint64_t size)
             value = static_cast<int32_t>(GetU32Value(data));
             break;
         default:
-            value = 0;
-            break;
+            return false;
     }
-    return value;
+    out = value;
+    return true;
+}
+
+bool ParseUnSignedInteger(uint8_t* data, uint64_t size, uint32_t& out)
+{
+    FALSE_RETURN_V_MSG_E(data != nullptr, false, "ParseUnSignedInteger: data is null");
+    uint32_t value = 0;
+    switch (size) {
+        case 0x01:
+            value = static_cast<uint8_t>(data[0]);
+            break;
+        case 0x02:
+            value = static_cast<uint16_t>(GetU16Value(data));
+            break;
+        case 0x03:
+            value = static_cast<uint32_t>((GetU32Value(data) & 0xFFFFFF00) >> 0x08);
+            if (value & 0x800000) {
+                value |= 0xFF000000;
+            }
+            break;
+        case 0x04:
+            value = static_cast<uint32_t>(GetU32Value(data));
+            break;
+        default:
+            return false;
+    }
+    out = value;
+    return true;
 }
 
 std::string DecodeMacString(const uint8_t* data, size_t size)
@@ -4400,6 +4428,58 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
     return false;
 }
 
+Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t size, uint32_t dataType)
+{
+    FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
+    switch (dataType) {
+        case 0x00: { // reserved buffer
+            std::vector<uint8_t> bufferValue(buffer, buffer + size);
+            userFormat_->SetData(key, bufferValue);
+            break;
+        }
+        case 0x15:
+        case 0x43: { // BE signed integer
+            int32_t value = 0;
+            if (ParseSignedInteger(buffer, size, value)) {
+                userFormat_->SetData(key, value);
+            }
+            break;
+        }
+        case 0x16: { // BE unsigned integer
+            uint32_t value = 0;
+            if (ParseUnSignedInteger(buffer, size, value)) {
+                userFormat_->SetData(key, value);
+            }
+            break;
+        }
+        case 0x17: { // BE float32
+            if (size >= MIN_FLOAT_SIZE) {
+                uint32_t uintValue = GetU32Value(buffer);
+                float floatValue = *reinterpret_cast<float*>(&uintValue);
+                userFormat_->SetData(key, floatValue);
+            }
+            break;
+        }
+        case 0x03: { // MAC encoded
+            std::string macStringValue = DecodeMacString(buffer, size);
+            if (!macStringValue.empty()) {
+                userFormat_->SetData(key, macStringValue);
+            }
+            break;
+        }
+        default: { // UTF-8 string
+            FALSE_RETURN_V_MSG_D(
+                dataType <= 1 || dataType == SUPPORT_DATA_TYPE, Status::OK, "Unsupport meta %{public}d", dataType);
+            std::string stringValue = std::string(reinterpret_cast<char*>(buffer), size);
+            if (!stringValue.empty()) {
+                userFormat_->SetData(key, stringValue);
+            }
+            break;
+        }
+    }
+    return Status::OK;
+}
+
 Status MPEG4AtomParser::ReadMetadataString(
     std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta)
 {
@@ -4413,43 +4493,7 @@ Status MPEG4AtomParser::ReadMetadataString(
     if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) && !isUserMeta) {
         return Status::OK;
     }
-    FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
-    switch (dataType) {
-        case 0x00: { // reserved buffer
-            std::vector<uint8_t> bufferValue(buffer.get(), buffer.get() + size);
-            userFormat_->SetData(key, bufferValue);
-            break;
-        }
-        case 0x15:
-        case 0x43: { // BE signed integer
-            userFormat_->SetData(key, ParseSignedInteger(buffer.get(), size));
-            break;
-        }
-        case 0x17: { // BE float32
-            if (size >= MIN_FLOAT_SIZE) {
-                uint32_t uintValue = GetU32Value(buffer.get());
-                float floatValue = *reinterpret_cast<float*>(&uintValue);
-                userFormat_->SetData(key, floatValue);
-            }
-            break;
-        }
-        case 0x03: { // MAC encoded
-            std::string macStringValue = DecodeMacString(buffer.get(), size);
-            if (!macStringValue.empty()) {
-                userFormat_->SetData(key, macStringValue);
-            }
-            break;
-        }
-        default: { // UTF-8 string
-            std::string stringValue = std::string(reinterpret_cast<char*>(buffer.get()), size);
-            if (!stringValue.empty()) {
-                userFormat_->SetData(key, stringValue);
-            }
-            break;
-        }
-    }
-    
-    return Status::OK;
+    return SetMetadata(key, buffer.get(), size, dataType);
 }
 
 Status MPEG4AtomParser::ParseMeta(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
