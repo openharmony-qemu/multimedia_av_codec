@@ -52,7 +52,6 @@ void VEncCallbackTest::OnError(int32_t errorCode)
 void VEncCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
-    int32_t picWidhth, picHeight, stride, sliceHeight, width, height;
     int32_t picWidhth = 0;
     int32_t picHeight = 0;
     int32_t stride = 0;
