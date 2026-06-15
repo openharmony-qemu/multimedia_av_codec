@@ -333,11 +333,9 @@ void AudioDecoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
     FALSE_RETURN_MSG(parameter != nullptr, "parameter is nullptr");
-    std::shared_ptr<Meta> decoderParam_ = std::make_shared<Meta>();
-    decoder_->GetOutputFormat(decoderParam_);
+    decoder_->GetOutputFormat(parameter);
     int32_t outputbuffersize = 0;
-    if (decoderParam_->GetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize)) {
-        parameter->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize);
+    if (parameter->GetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize)) {
         MEDIA_LOG_I("AUDIO_MAX_OUTPUT_SIZE is: " PUBLIC_LOG_D32,
             static_cast<int32_t>(outputbuffersize));
     } else {
