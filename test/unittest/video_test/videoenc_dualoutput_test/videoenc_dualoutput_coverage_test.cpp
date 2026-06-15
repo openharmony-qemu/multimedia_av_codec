@@ -1227,6 +1227,34 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetOutputDescription_ValidEncoder_001, T
 }
 
 /**
+ * @tc.name: PreprocessorEncoder_GetOutputDescription_NullVideoEncoder_001
+ * @tc.desc: Test GetOutputDescription when videoEncoderObject_ exists but videoEncoder_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_NullVideoEncoder_001, TestSize.Level1)
+{
+    preprocessorEncoder_->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
+    OH_AVFormat* result = preprocessorEncoder_->GetOutputDescription();
+    if (result != nullptr) {
+        OH_AVFormat_Destroy(result);
+    }
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_GetOutputDescription_NullVideoEncoderObject_001
+ * @tc.desc: Test GetOutputDescription when videoEncoderObject_ and videoEncoder_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetOutputDescription_NullVideoEncoderObject_001, TestSize.Level1)
+{
+    preprocessorEncoder_->videoEncoderObject_ = nullptr;
+    OH_AVFormat* result = preprocessorEncoder_->GetOutputDescription();
+    if (result != nullptr) {
+        OH_AVFormat_Destroy(result);
+    }
+}
+
+/**
  * @tc.name: PreprocessorEncoder_GetInputDescription_NullPreprocessor_001
  * @tc.desc: Test GetInputDescription when preprocessor is not available
  *           This tests the case where GetPreprocessor returns nullptr
