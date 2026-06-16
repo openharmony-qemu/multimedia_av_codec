@@ -23,27 +23,8 @@
 
 #define FUZZ_PROJECT_NAME "roistring_fuzzer"
 
-namespace OHOS {
-namespace RoiStringFuzzer {
-
-constexpr int32_t MAX_COORD = 10000;
-constexpr uint32_t MAX_PARSE_CAPACITY = 8;
-constexpr int32_t INVALID_COORD_MIN = -10;
-constexpr int32_t DEFAULT_VALID_COORD = 100;
-constexpr int32_t DQP_FUZZ_MIN = -60;
-constexpr int32_t DQP_FUZZ_MAX = 60;
-constexpr int32_t DQP_MIN_VAL = -51;
-constexpr int32_t DQP_MAX_VAL = 51;
-constexpr int32_t SLB_FUZZ_MIN = -2;
-constexpr int32_t SLB_FUZZ_MAX = 3;
-constexpr int32_t SLB_MIN_VAL = 0;
-constexpr int32_t SLB_MAX_VAL = 1;
-constexpr int32_t MIN_SEGMENT_COUNT = 1;
-constexpr int32_t MAX_SEGMENT_COUNT = 4;
-constexpr int32_t MIXED_COORD_MAX = 50;
 constexpr int32_t CATEGORY_MAX = 5;
 constexpr int32_t INVALID_TYPE_MAX = 6;
-constexpr int32_t COORD_INCREMENT = 1;
 
 enum FuzzCategory : int32_t {
     CAT_APPEND_ROI = 0,
@@ -63,6 +44,26 @@ enum InvalidType : int32_t {
     INV_OLD_FORMAT_OUT_OF_RANGE = 5,
     INV_DQP_DUPLICATE = 6,
 };
+
+namespace OHOS {
+namespace RoiStringFuzzer {
+
+constexpr int32_t MAX_COORD = 10000;
+constexpr int32_t MAX_PARSE_CAPACITY = 8;
+constexpr int32_t INVALID_COORD_MIN = -10;
+constexpr int32_t DEFAULT_VALID_COORD = 100;
+constexpr int32_t DQP_FUZZ_MIN = -60;
+constexpr int32_t DQP_FUZZ_MAX = 60;
+constexpr int32_t DQP_MIN_VAL = -51;
+constexpr int32_t DQP_MAX_VAL = 51;
+constexpr int32_t SLB_FUZZ_MIN = -2;
+constexpr int32_t SLB_FUZZ_MAX = 3;
+constexpr int32_t SLB_MIN_VAL = 0;
+constexpr int32_t SLB_MAX_VAL = 1;
+constexpr int32_t MIN_SEGMENT_COUNT = 1;
+constexpr int32_t MAX_SEGMENT_COUNT = 4;
+constexpr int32_t MIXED_COORD_MAX = 50;
+constexpr int32_t COORD_INCREMENT = 1;
 
 static void DestroyFormats(OH_AVFormat **formats, uint32_t count)
 {
