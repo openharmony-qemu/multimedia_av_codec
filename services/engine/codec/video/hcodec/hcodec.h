@@ -302,7 +302,8 @@ protected:
     virtual void OnGetBufferFromSurface(const ParamSP& param) = 0;
     uint32_t UserFlagToOmxFlag(AVCodecBufferFlag userFlag);
     AVCodecBufferFlag OmxFlagToUserFlag(uint32_t omxFlag);
-    bool WaitFence(const sptr<SyncFence>& fence);
+    static bool WaitFence(const sptr<SyncFence>& fence, uint32_t seq, const std::string& prefix, uint64_t& costUs);
+    bool WaitFence(const sptr<SyncFence>& fence, uint32_t seq);
     void WrapSurfaceBufferToSlot(BufferInfo &info,
         const sptr<SurfaceBuffer>& surfaceBuffer, int64_t pts, uint32_t flag);
 
