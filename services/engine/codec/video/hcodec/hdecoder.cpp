@@ -56,7 +56,7 @@ bool g_isVpeSupportListInit{false};
 HDecoder::HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
     : HCodec(caps, codingType, false)
 {
-    isReleaseWithSeq_ = OHOS::system::GetBoolParameter("hcodec.surfacemode.release_with_seq", true);
+
 }
 
 HDecoder::~HDecoder()
@@ -908,7 +908,6 @@ void HDecoder::OnClearBufferPool(OMX_DIRTYPE portIndex)
 {
     if ((portIndex == OMX_DirOutput) && currSurface_.surface_) {
         SurfaceTools::GetInstance().CleanCache(instanceId_, currSurface_.surface_, false);
-        freeList_.clear();
     }
 }
 
@@ -1152,38 +1151,23 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
     uint64_t surfaceId = surface->GetUniqueId();
     std::weak_ptr<MsgToken> weakThis = m_token;
     OHSurfaceSource sourceType = isLpp_ ? OH_SURFACE_SOURCE_LOWPOWERVIDEO : OH_SURFACE_SOURCE_VIDEO;
-    bool ret = false;
-    if (isReleaseWithSeq_) {
-        HLOGI("surface(%" PRIu64 "), register OnReleaseFuncWithSequenceAndFence", surfaceId);
-        ret = SurfaceTools::GetInstance().RegisterReleaseListener(instanceId_, surface,
-        [weakThis, surfaceId](uint32_t seq, const sptr<SyncFence>& fence) {
+    HLOGI("surface(%" PRIu64 "), register OnReleaseFuncWithSequenceAndFence", surfaceId);
+    bool ret = SurfaceTools::GetInstance().RegisterReleaseListener(instanceId_, surface,
+        [weakThis, surfaceId, prefix = compUniqueStr_](uint32_t seq, const sptr<SyncFence>& fence) {
             std::shared_ptr<MsgToken> codec = weakThis.lock();
             if (codec == nullptr) {
                 LOGD("decoder is gone");
                 return GSERROR_OK;
             }
+            uint64_t waitFenceCostUs = 0;
+            WaitFence(fence, seq, prefix, waitFenceCostUs);
             ParamSP param = make_shared<ParamBundle>();
             param->SetValue("surfaceId", surfaceId);
             param->SetValue("seqnum", seq);
-            param->SetValue("fence", fence);
+            param->SetValue("waitFenceCostUs", waitFenceCostUs);
             codec->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
             return GSERROR_OK;
         }, sourceType);
-    } else {
-        HLOGI("surface(%" PRIu64 "), register OnReleaseFunc", surfaceId);
-        ret = SurfaceTools::GetInstance().RegisterReleaseListener(instanceId_, surface,
-        [weakThis, surfaceId](sptr<SurfaceBuffer>&) {
-            std::shared_ptr<MsgToken> codec = weakThis.lock();
-            if (codec == nullptr) {
-                LOGD("decoder is gone");
-                return GSERROR_OK;
-            }
-            ParamSP param = make_shared<ParamBundle>();
-            param->SetValue("surfaceId", surfaceId);
-            codec->SendAsyncMsg(MsgWhat::GET_BUFFER_FROM_SURFACE, param);
-            return GSERROR_OK;
-        }, sourceType);
-    }
     if (!ret) {
         HLOGE("surface(%" PRIu64 "), RegisterReleaseListener failed", surfaceId);
         return AVCS_ERR_UNKNOWN;
@@ -1198,19 +1182,6 @@ int32_t HDecoder::RegisterListenerToSurface(const sptr<Surface> &surface)
     return AVCS_ERR_OK;
 }
 
-HDecoder::SurfaceBufferItem HDecoder::RequestBuffer()
-{
-    SurfaceBufferItem item{};
-    item.generation = currGeneration_;
-    GSError err = currSurface_.surface_->RequestBuffer(item.buffer, item.fence, requestCfg_);
-    if (err != GSERROR_OK || item.buffer == nullptr || item.buffer->GetBufferHandle() == nullptr) {
-        HLOGW("RequestBuffer failed, GSError=%d", err);
-        return {};
-    }
-    item.seqnum = item.buffer->GetSeqNum();
-    return item;
-}
-
 std::vector<HCodec::BufferInfo>::iterator HDecoder::FindBelongTo(uint32_t seqnum)
 {
     return std::find_if(outputBufferPool_.begin(), outputBufferPool_.end(), [seqnum](const BufferInfo& info) {
@@ -1219,14 +1190,6 @@ std::vector<HCodec::BufferInfo>::iterator HDecoder::FindBelongTo(uint32_t seqnum
     });
 }
 
-std::vector<HCodec::BufferInfo>::iterator HDecoder::FindBelongTo(sptr<SurfaceBuffer>& buffer)
-{
-    BufferHandle* handle = buffer->GetBufferHandle();
-    return std::find_if(outputBufferPool_.begin(), outputBufferPool_.end(), [handle](const BufferInfo& info) {
-        return (info.owner == BufferOwner::OWNED_BY_SURFACE) &&
-               info.surfaceBuffer && (info.surfaceBuffer->GetBufferHandle() == handle);
-    });
-}
 
 std::vector<HCodec::BufferInfo>::iterator HDecoder::FindNullSlotIfDynamicMode()
 {
@@ -1247,23 +1210,20 @@ void HDecoder::OnGetBufferFromSurface(const ParamSP& param)
         return;
     }
 
-    SurfaceBufferItem item{};
-    if (isReleaseWithSeq_) {
-        param->GetValue("seqnum", item.seqnum);
-        param->GetValue("fence", item.fence);
-    } else {
-        item = RequestBuffer();
-        if (item.buffer == nullptr) {
-            return;
-        }
+    uint32_t seqnum;
+    param->GetValue("seqnum", seqnum);
+    auto iter = FindBelongTo(seqnum);
+    if (iter == outputBufferPool_.end()) {
+    HLOGI("seq=%u dont belong to output set, ignore", seqnum);
+        return;
     }
 
-    HitraceMeterFmtScoped tracePoint(HITRACE_TAG_ZMEDIA, "requested: %u", item.seqnum);
-    freeList_.push_back(item); // push to list, retrive it later, to avoid wait fence too early
-    static constexpr size_t MAX_CACHE_CNT = 2;
-    if (item.fence == nullptr || !item.fence->IsValid() || freeList_.size() > MAX_CACHE_CNT) {
-        SurfaceModeSubmitBufferFromFreeList();
-    }
+    uint64_t waitFenceCostUs = 0;
+    param->GetValue("waitFenceCostUs", waitFenceCostUs);
+    record_[OMX_DirOutput].waitFenceCostUsInterval_ += waitFenceCostUs;
+ 
+    ChangeOwner(*iter, BufferOwner::OWNED_BY_US);
+    NotifyOmxToFillThisOutBuffer(*iter);
 }
 
 void HDecoder::DynamicModeSubmitBuffer()
@@ -1272,62 +1232,6 @@ void HDecoder::DynamicModeSubmitBuffer()
     if (nullSlot != outputBufferPool_.end()) {
         DynamicModeSubmitBufferToSlot(nullSlot);
     }
-}
-
-void HDecoder::SurfaceModeSubmitBuffer()
-{
-    auto nullSlot = FindNullSlotIfDynamicMode();
-    if (nullSlot != outputBufferPool_.end()) {
-        DynamicModeSubmitBufferToSlot(nullSlot);
-    } else {
-        SurfaceModeSubmitBufferFromFreeList();
-    }
-}
-
-void HDecoder::SurfaceModeSubmitBufferFromFreeList()
-{
-    while (!freeList_.empty()) {
-        SurfaceBufferItem item = freeList_.front();
-        freeList_.pop_front();
-        if (SurfaceModeSubmitOneItem(item)) {
-            return;
-        }
-    }
-}
-
-bool HDecoder::SurfaceModeSubmitOneItem(SurfaceBufferItem& item)
-{
-    SCOPED_TRACE_FMT("seq: %u", item.seqnum);
-    auto iter = outputBufferPool_.end();
-    if (isReleaseWithSeq_) {
-        iter = FindBelongTo(item.seqnum);
-        if (iter == outputBufferPool_.end()) {
-            HLOGI("seq=%u dont belong to output set, ignore", item.seqnum);
-            return false;
-        }
-    } else {
-        if (item.generation != currGeneration_) {
-            HLOGD("buffer generation %d != current generation %d, ignore", item.generation, currGeneration_);
-            return false;
-        }
-        iter = FindBelongTo(item.buffer);
-        if (iter == outputBufferPool_.end()) {
-            auto nullSlot = FindNullSlotIfDynamicMode();
-            if (nullSlot != outputBufferPool_.end()) {
-                HLOGI("seq=%u dont belong to output set, bind as dynamic", item.seqnum);
-                WaitFence(item.fence);
-                DynamicModeSubmitBufferToSlot(item.buffer, nullSlot);
-                nullSlot->attached = true;
-                return true;
-            }
-            HLOGI("seq=%u dont belong to output set, ignore", item.seqnum);
-            return false;
-        }
-    }
-    WaitFence(item.fence);
-    ChangeOwner(*iter, BufferOwner::OWNED_BY_US);
-    NotifyOmxToFillThisOutBuffer(*iter);
-    return true;
 }
 
 void HDecoder::DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator nullSlot)
@@ -1548,13 +1452,12 @@ void HDecoder::OnRenderOutputBuffer(const MsgInfo &msg, BufferOperationMode mode
     if (mode == FREE_BUFFER) {
         EraseBufferFromPool(OMX_DirOutput, idx.value());
     } else {
-        SurfaceModeSubmitBuffer();
+        DynamicModeSubmitBuffer();
     }
 }
 
 void HDecoder::OnEnterUninitializedState()
 {
-    freeList_.clear();
     currSurface_.Release();
     currGenerationLayoutHasParsed_ = false;
     currLayout_.reset();
@@ -1621,24 +1524,6 @@ void HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface,
     SwitchBetweenSurface(newSurface, msg, mode);
 }
 
-void HDecoder::ConsumeFreeList(BufferOperationMode mode)
-{
-    SCOPED_TRACE();
-    while (!freeList_.empty()) {
-        SurfaceBufferItem item = freeList_.front();
-        freeList_.pop_front();
-        auto iter = isReleaseWithSeq_ ? FindBelongTo(item.seqnum) : FindBelongTo(item.buffer);
-        if (iter == outputBufferPool_.end()) {
-            continue;
-        }
-        ChangeOwner(*iter, BufferOwner::OWNED_BY_US);
-        if (mode == RESUBMIT_BUFFER) {
-            WaitFence(item.fence);
-            NotifyOmxToFillThisOutBuffer(*iter);
-        }
-    }
-}
-
 void HDecoder::ClassifyOutputBufferOwners(vector<size_t>& ownedByUs,
                                           map<int64_t, size_t>& ownedBySurfaceFlushTime2BufferIndex)
 {
@@ -1681,7 +1566,6 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     }
     ReplyErrorCode(msg.id, AVCS_ERR_OK);
 
-    ConsumeFreeList(mode);
     map<int64_t, size_t> ownedBySurfaceFlushTime2BufferIndex;
     vector<size_t> ownedByUs;
     ClassifyOutputBufferOwners(ownedByUs, ownedBySurfaceFlushTime2BufferIndex);
