@@ -103,14 +103,6 @@ public:
     static void TearDownTestCase(void) {}
 };
 
-class VideoEncPreprocDualOutputLevel2Test : public testing::TestWithParam<ScenarioCase> {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-};
-
-class VideoEncPreprocDualOutputInfoTest : public testing::TestWithParam<ScenarioCase> {};
-
 const std::array<CodecDimension, 5> &CodecDimensions()
 {
     static const std::array<CodecDimension, 5> codecs = {{
