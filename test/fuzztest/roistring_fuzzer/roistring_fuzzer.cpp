@@ -28,6 +28,21 @@ namespace RoiStringFuzzer {
 
 constexpr int32_t MAX_COORD = 10000;
 constexpr uint32_t MAX_PARSE_CAPACITY = 8;
+constexpr int32_t INVALID_COORD_MIN = -10;
+constexpr int32_t DEFAULT_VALID_COORD = 100;
+constexpr int32_t DQP_FUZZ_MIN = -60;
+constexpr int32_t DQP_FUZZ_MAX = 60;
+constexpr int32_t DQP_MIN_VAL = -51;
+constexpr int32_t DQP_MAX_VAL = 51;
+constexpr int32_t SLB_FUZZ_MIN = -2;
+constexpr int32_t SLB_FUZZ_MAX = 3;
+constexpr int32_t SLB_MIN_VAL = 0;
+constexpr int32_t SLB_MAX_VAL = 1;
+constexpr int32_t MIN_SEGMENT_COUNT = 1;
+constexpr int32_t MAX_SEGMENT_COUNT = 4;
+constexpr int32_t MIXED_COORD_MAX = 50;
+constexpr int32_t CATEGORY_MAX = 5;
+constexpr int32_t INVALID_TYPE_MAX = 6;
 
 static void DestroyFormats(OH_AVFormat **formats, uint32_t count)
 {
@@ -45,8 +60,8 @@ bool AppendRoiStringFuzzTest(FuzzedDataProvider *provider)
     int32_t right = provider->ConsumeIntegralInRange<int32_t>(0, MAX_COORD);
     bool setDqp = provider->ConsumeBool();
     bool setSlb = provider->ConsumeBool();
-    int32_t dqpVal = provider->ConsumeIntegralInRange<int32_t>(-60, 60);
-    int32_t slbVal = provider->ConsumeIntegralInRange<int32_t>(-2, 3);
+    int32_t dqpVal = provider->ConsumeIntegralInRange<int32_t>(DQP_FUZZ_MIN, DQP_FUZZ_MAX);
+    int32_t slbVal = provider->ConsumeIntegralInRange<int32_t>(SLB_FUZZ_MIN, SLB_FUZZ_MAX);
     bool appendSecond = provider->ConsumeBool();
 
     OH_AVFormat *fmt = OH_AVFormat_Create();
@@ -95,10 +110,10 @@ bool AppendRoiStringFuzzTest(FuzzedDataProvider *provider)
 // Also test with invalid coords (negative, top>=bottom, left>=right)
 bool AppendRoiStringInvalidFuzzTest(FuzzedDataProvider *provider)
 {
-    int32_t top = provider->ConsumeIntegralInRange<int32_t>(-10, MAX_COORD);
-    int32_t left = provider->ConsumeIntegralInRange<int32_t>(-10, MAX_COORD);
-    int32_t bottom = provider->ConsumeIntegralInRange<int32_t>(-10, MAX_COORD);
-    int32_t right = provider->ConsumeIntegralInRange<int32_t>(-10, MAX_COORD);
+    int32_t top = provider->ConsumeIntegralInRange<int32_t>(INVALID_COORD_MIN, MAX_COORD);
+    int32_t left = provider->ConsumeIntegralInRange<int32_t>(INVALID_COORD_MIN, MAX_COORD);
+    int32_t bottom = provider->ConsumeIntegralInRange<int32_t>(INVALID_COORD_MIN, MAX_COORD);
+    int32_t right = provider->ConsumeIntegralInRange<int32_t>(INVALID_COORD_MIN, MAX_COORD);
 
     OH_AVFormat *fmt = OH_AVFormat_Create();
     if (fmt == nullptr) {
@@ -137,10 +152,10 @@ bool AppendRoiStringMissingKeysFuzzTest(FuzzedDataProvider *provider)
         OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_LEFT, 0);
     }
     if (!skipBottom) {
-        OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, 100);
+        OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_BOTTOM, DEFAULT_VALID_COORD);
     }
     if (!skipRight) {
-        OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, 100);
+        OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_RIGHT, DEFAULT_VALID_COORD);
     }
 
     char *roiStr = nullptr;
@@ -171,12 +186,12 @@ bool ParseRoiStringFuzzTest(const uint8_t *data, size_t size)
 bool ParseRoiStringMixedFuzzTest(FuzzedDataProvider *provider)
 {
     std::string baseStr;
-    int32_t segmentCount = provider->ConsumeIntegralInRange<int32_t>(1, 4);
+    int32_t segmentCount = provider->ConsumeIntegralInRange<int32_t>(MIN_SEGMENT_COUNT, MAX_SEGMENT_COUNT);
     for (int32_t i = 0; i < segmentCount; i++) {
-        int32_t top = provider->ConsumeIntegralInRange<int32_t>(0, 50);
-        int32_t left = provider->ConsumeIntegralInRange<int32_t>(0, 50);
-        int32_t bottom = provider->ConsumeIntegralInRange<int32_t>(top + 1, 100);
-        int32_t right = provider->ConsumeIntegralInRange<int32_t>(left + 1, 100);
+        int32_t top = provider->ConsumeIntegralInRange<int32_t>(0, MIXED_COORD_MAX);
+        int32_t left = provider->ConsumeIntegralInRange<int32_t>(0, MIXED_COORD_MAX);
+        int32_t bottom = provider->ConsumeIntegralInRange<int32_t>(top + 1, DEFAULT_VALID_COORD);
+        int32_t right = provider->ConsumeIntegralInRange<int32_t>(left + 1, DEFAULT_VALID_COORD);
         baseStr += std::to_string(top) + "," + std::to_string(left) + "-" +
                    std::to_string(bottom) + "," + std::to_string(right);
 
@@ -184,13 +199,13 @@ bool ParseRoiStringMixedFuzzTest(FuzzedDataProvider *provider)
         if (hasKv) {
             bool useNewFormat = provider->ConsumeBool();
             if (useNewFormat) {
-                baseStr += "=dqp:" + std::to_string(provider->ConsumeIntegralInRange<int32_t>(-51, 51));
+                baseStr += "=dqp:" + std::to_string(provider->ConsumeIntegralInRange<int32_t>(DQP_MIN_VAL, DQP_MAX_VAL));
                 bool alsoSlb = provider->ConsumeBool();
                 if (alsoSlb) {
-                    baseStr += ",slb:" + std::to_string(provider->ConsumeIntegralInRange<int32_t>(0, 1));
+                    baseStr += ",slb:" + std::to_string(provider->ConsumeIntegralInRange<int32_t>(SLB_MIN_VAL, SLB_MAX_VAL));
                 }
             } else {
-                baseStr += "=" + std::to_string(provider->ConsumeIntegralInRange<int32_t>(-51, 51));
+                baseStr += "=" + std::to_string(provider->ConsumeIntegralInRange<int32_t>(DQP_MIN_VAL, DQP_MAX_VAL));
             }
         }
         baseStr += ";";
@@ -210,7 +225,7 @@ bool ParseRoiStringMixedFuzzTest(FuzzedDataProvider *provider)
 // Test with intentionally invalid ROI strings
 bool ParseRoiStringInvalidFuzzTest(FuzzedDataProvider *provider)
 {
-    int32_t invalidType = provider->ConsumeIntegralInRange<int32_t>(0, 6);
+    int32_t invalidType = provider->ConsumeIntegralInRange<int32_t>(0, INVALID_TYPE_MAX);
     std::string invalidStr;
     switch (invalidType) {
         case 0:
@@ -307,7 +322,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         nullTestFlag = 1;
     }
 
-    int32_t category = fdp.ConsumeIntegralInRange<int32_t>(0, 5);
+    int32_t category = fdp.ConsumeIntegralInRange<int32_t>(0, CATEGORY_MAX);
     switch (category) {
         case 0:
             OHOS::RoiStringFuzzer::AppendRoiStringFuzzTest(&fdp);
