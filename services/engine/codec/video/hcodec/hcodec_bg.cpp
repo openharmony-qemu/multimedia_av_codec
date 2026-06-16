@@ -312,7 +312,7 @@ void HDecoder::SubmitBuffersToNextOwner()
             if (info.omxBuffer->filledLen != 0) {
                 NotifySurfaceToRenderOutputBuffer(info);
             }
-            SurfaceModeSubmitBuffer();
+            DynamicModeSubmitBuffer();
         }
         info.nextStepOwner = BufferOwner::OWNER_CNT;
     }
