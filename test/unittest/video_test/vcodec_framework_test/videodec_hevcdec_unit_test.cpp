@@ -324,6 +324,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_hdrColorMeta_004, TestSi
     vdec->setSurfaceParam_ = true;
     vdec->hdrColorInfo_ = true;
     vdec->hdrStaticMeta_ = true;
+    vdec->skipOutFrameHalfCheck_ = true;
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;

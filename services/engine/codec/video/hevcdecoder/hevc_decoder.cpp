@@ -438,7 +438,7 @@ void HevcDecoder::ConfigureHdrColorSpaceIno(const Format &format)
     colorSpaceInfo_.matrixCoeffs = static_cast<UINT32>(tmpValue);
 
     colorSpaceInfo_.colorDescriptionPresentFlag = 1;
-    AVCODEC_LOGD("Config hdr color space infor suc: range %{public}d prm %{public}d chrct %{public}d coeff %{public}d",
+    AVCODEC_LOGD("Config hdr color space infor suc: range %{public}u prm %{public}u chrct %{public}u coeff %{public}u",
         colorSpaceInfo_.fullRangeFlag, colorSpaceInfo_.colorPrimaries, colorSpaceInfo_.transferCharacteristic,
         colorSpaceInfo_.matrixCoeffs);
 }
