@@ -48,14 +48,6 @@ public:
     };
 
 private:
-    struct SurfaceBufferItem {
-        sptr<SyncFence> fence;
-        // release with seq
-        uint32_t seqnum = 0;
-        // release and request
-        sptr<SurfaceBuffer> buffer;
-        int32_t generation = 0;
-    };
 
     struct SurfaceBufferLayout {
         PixelFmt fmt;
@@ -146,13 +138,8 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     int32_t Attach(BufferInfo &info);
     void OnGetBufferFromSurface(const ParamSP& param) override;
-    SurfaceBufferItem RequestBuffer();
     std::vector<BufferInfo>::iterator FindBelongTo(uint32_t seqnum);
-    std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
     std::vector<BufferInfo>::iterator FindNullSlotIfDynamicMode();
-    void SurfaceModeSubmitBuffer();
-    void SurfaceModeSubmitBufferFromFreeList();
-    bool SurfaceModeSubmitOneItem(SurfaceBufferItem& item);
     void DynamicModeSubmitBuffer() override;
     void DynamicModeSubmitIfEos() override;
     void DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::vector<BufferInfo>::iterator nullSlot);
@@ -164,7 +151,6 @@ private:
         const MsgInfo &msg, BufferOperationMode mode);
     void SwitchBetweenSurface(const sptr<Surface> &newSurface,
         const MsgInfo &msg, BufferOperationMode mode);
-    void ConsumeFreeList(BufferOperationMode mode);
     void ClassifyOutputBufferOwners(std::vector<size_t>& ownedByUs,
                                     std::map<int64_t, size_t>& ownedBySurfaceFlushTime2BufferIndex);
 
@@ -242,13 +228,11 @@ private:
         int32_t instanceId_;
     } currSurface_;
 
-    std::list<SurfaceBufferItem> freeList_;
     int32_t currGeneration_ = 0;
     bool currGenerationLayoutHasParsed_ = false;
     std::shared_ptr<SurfaceBufferLayout> currLayout_;
     bool isAlloc_ = false;
     bool isDynamic_ = false;
-    bool isReleaseWithSeq_ = true;  // true: dont need to request, false: need to do request
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
