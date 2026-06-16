@@ -996,7 +996,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0010, TestSize.Level0)
     if (stat(g_aigcMp4Path.c_str(), &fileStatus) == 0) {
         size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::  (fd_, SOURCE_OFFSET, size_);
+    source = AVSourceFactory::(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format;
     int32_t ret = source->GetSourceFormat(format);
@@ -2016,7 +2016,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2100, TestSize.Le
  * @tc.name      : check encode from video
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2100, TestSize.Level0)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ENCODER_INNER_FUNC_0100, TestSize.Level0)
 {
     std::string codecName = "";
     if (!access("/system/lib64/media/", 0)) {
@@ -2025,13 +2025,13 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2100, TestSize.Le
         if (stat("/data/test/media/test_265_B_Gop25_4sec.mp4", &fileStatus) == 0) {
             size_ = static_cast<int64_t>(fileStatus.st_size);
         }
-        source = AVSouceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
+        source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
         ASSERT_NE(nullptr, source);
         Format format;
         int32_t ret = source->GetSourceFormat(format);
         ASSERT_EQ(AVCS_ERR_OK, ret);
         std::string encoder;
-        ASSERT_TRUE(format.GetStringValue(media::Tag::MEDIA_ENCODER, encoder));
+        ASSERT_TRUE(format.GetStringValue(Media::Tag::MEDIA_ENCODER, encoder));
         ASSERT_EQ(encoder, "lavf60.3.100");
         ret = source->GetTrackFormat(format, 1);
         ASSERT_EQ(AVCS_ERR_OK, ret);
