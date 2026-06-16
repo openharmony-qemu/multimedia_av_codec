@@ -17,6 +17,7 @@
 #include "avcodec_log_ex.h"
 #include "event_manager.h"
 #include "event_info_extented_key.h"
+#include "avcodec_server_manager.h"
 #include "connect_adapter/rs_interface_adapter.h"
 #include <map>
 #include <mutex>
@@ -58,10 +59,17 @@ const std::unordered_map<size_t, const std::string_view> SPEED_DEC_INFO_KEY_MAP 
 
 namespace OHOS {
 namespace MediaAVCodec {
-DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer()
+DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer(int32_t instanceId)
 {
     startTime_ = std::chrono::steady_clock::now();
+    auto instanceInfoOpt = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
+    CHECK_AND_RETURN_LOG(instanceInfoOpt != std::nullopt, "Can not find this instance, id:%{public}d", instanceId);
+    auto instanceInfo = instanceInfoOpt.value();
 
+#ifndef SUPPORT_FPS_FOR_MEMC
+    eventData_.insert(std::make_pair("pid", std::to_string(instanceInfo.caller.pid)));
+    eventData_.insert(std::make_pair("decRate", "0"));
+#endif
     eventData_.insert(std::make_pair("rate", "0"));
     eventData_.insert(std::make_pair("decSpeed", "100"));
 }
@@ -251,6 +259,9 @@ void DecodingBehaviorAnalyzer::OnStopped(bool isDecEnd)
     for (auto& element : speedCount_) {
         element = 0;
     }
+
+    eventData_["decRate"] = "0";
+    RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(eventData_);
 }
 
 size_t DecodingBehaviorAnalyzer::MatchAndUpdateSpeedStats(double decSpeed)
@@ -326,6 +337,7 @@ void DecodingBehaviorAnalyzer::ResetIntervalStats()
     renderCnt_ = 0;
     droppedCnt_ = 0;
     ptsWin_.clear();
+    hasSendPauseEvent_ = false;
     AVCODEC_LOGI("ResetIntervalStats");
 }
 
@@ -335,8 +347,17 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     uint32_t totalFrames = frameCnt_ + droppedCnt_;
     auto sysTimeIntvlMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         endSysTime_ - startSysTime_).count();
-    if (totalFrames < SRC_FRAME_CNT_MIN || sysTimeIntvlMs <= MIN_CAL_DURATION_MS ||
-        ptsWin_.size() < PTS_WINDOW_MIN_SIZE) {
+
+    if (totalFrames < PTS_WINDOW_MIN_SIZE) {
+        if (!hasSendPauseEvent_) {
+            eventData_["decRate"] = "0";
+            RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(eventData_);
+            hasSendPauseEvent_ = true;
+        }
+        return;
+    }
+
+    if (sysTimeIntvlMs <= MIN_CAL_DURATION_MS || ptsWin_.size() < PTS_WINDOW_MIN_SIZE) {
         return;
     }
     double decInFps = static_cast<double>(totalFrames - 1) / sysTimeIntvlMs * 1000; // 1000: ms to s
@@ -403,6 +424,8 @@ void DecodingBehaviorAnalyzer::ReportFpsIfSignificantChange(double decFps, doubl
                      reportRenderFps, reportDecFps, srcFps);
         lastReportedRenderFps_ = reportRenderFps;
         lastReportedFps_ = reportDecFps;
+        eventData_["decRate"] = std::to_string(static_cast<int>(reportDecFps));
+        RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(eventData_);
     }
 }
 

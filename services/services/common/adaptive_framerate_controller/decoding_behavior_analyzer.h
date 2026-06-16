@@ -54,7 +54,7 @@ using DecInfoCallBack = std::function<void(double srcFps, double speed)>;
 
 class DecodingBehaviorAnalyzer {
 public:
-    DecodingBehaviorAnalyzer();
+    explicit DecodingBehaviorAnalyzer(int32_t instanceId);
     void OnFrameConsumed(int64_t pts, bool render);
     void OnFrameDropped();
     void OnStopped(bool isDecEnd);
@@ -93,6 +93,7 @@ private:
     bool isSingleSpeed_{true};
     std::chrono::steady_clock::time_point lastConsumTime_;
 #endif
+    bool hasSendPauseEvent_{false};
     void ResetIntervalStats();
     double GetSrcFps();
     size_t MatchAndUpdateSpeedStats(double decSpeed);
