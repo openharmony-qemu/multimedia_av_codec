@@ -996,7 +996,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0010, TestSize.Level0)
     if (stat(g_aigcMp4Path.c_str(), &fileStatus) == 0) {
         size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::(fd_, SOURCE_OFFSET, size_);
+    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format;
     int32_t ret = source->GetSourceFormat(format);
