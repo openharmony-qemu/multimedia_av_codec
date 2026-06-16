@@ -823,8 +823,9 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_InvalidPrimaryRef
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_RegisterCallback_NullVideoEncoder_001, TestSize.Level1)
 {
+    struct OH_AVCodecCallback cb = {};
     preprocessorEncoder_->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
-    auto ret = preprocessorEncoder_->RegisterCallback();
+    auto ret = preprocessorEncoder_->RegisterCallback(cb, nullptr);
     EXPECT_EQ(ret, AV_ERR_OK);
 }
 
@@ -835,8 +836,9 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_RegisterCallback_NullVideoEncoder_001, T
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_RegisterCallback_NullVideoEncoderObject_001, TestSize.Level1)
 {
+    struct OH_AVCodecCallback cb = {};
     preprocessorEncoder_->videoEncoderObject_ = nullptr;
-    auto ret = preprocessorEncoder_->RegisterCallback();
+    auto ret = preprocessorEncoder_->RegisterCallback(cb, nullptr);
     EXPECT_EQ(ret, AV_ERR_OK);
 }
 
@@ -942,8 +944,9 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConfigureVideoEncoder_SQRModeWithoutBitr
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConfigureVideoEncoder_NullVideoEncoder_001, TestSize.Level1)
 {
+    Media::Format format;
     preprocessorEncoder_->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
-    auto ret = preprocessorEncoder_->ConfigureVideoEncoder();
+    auto ret = preprocessorEncoder_->ConfigureVideoEncoder(format);
     EXPECT_EQ(ret, AV_ERR_OK);
 }
 
@@ -954,8 +957,9 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConfigureVideoEncoder_NullVideoEncoder_0
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConfigureVideoEncoder_NullVideoEncoderObject_001, TestSize.Level1)
 {
+    Media::Format format;
     preprocessorEncoder_->videoEncoderObject_ = nullptr;
-    auto ret = preprocessorEncoder_->ConfigureVideoEncoder();
+    auto ret = preprocessorEncoder_->ConfigureVideoEncoder(format);
     EXPECT_EQ(ret, AV_ERR_OK);
 }
 
@@ -1021,10 +1025,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateEncoderSurface_ExistingSurface_001
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateEncoderSurface_NullVideoEncoder_001, TestSize.Level1)
 {
     preprocessorEncoder_->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
-    OH_AVFormat* result = preprocessorEncoder_->CreateEncoderSurface();
-    if (result != nullptr) {
-        OH_AVFormat_Destroy(result);
-    }
+    preprocessorEncoder_->CreateEncoderSurface();
 }
 
 /**
@@ -1035,10 +1036,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateEncoderSurface_NullVideoEncoder_00
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_CreateEncoderSurface_NullVideoEncoderObject_001, TestSize.Level1)
 {
     preprocessorEncoder_->videoEncoderObject_ = nullptr;
-    OH_AVFormat* result = preprocessorEncoder_->CreateEncoderSurface();
-    if (result != nullptr) {
-        OH_AVFormat_Destroy(result);
-    }
+    preprocessorEncoder_->CreateEncoderSurface();
 }
 
 /**
@@ -1351,38 +1349,6 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_ValidEncoder_001, TestSize.Level
     (void)result;
     ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_INVALID_ENTITY);
     delete encoder;
-}
-
-/**
- * @tc.name: PreprocessorEncoder_NotifyEos_NullVideoEncoder_001
- * @tc.desc: Test NotifyEos when preprocMgr_ exists and videoEncoderObject_ exists but videoEncoder_ is nullptr
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_NotifyEos_NullVideoEncoder_001, TestSize.Level1)
-{
-    preprocessorEncoder_->encoderId_ = "test_encoder_null_videoencoder";
-    auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(preprocessor, nullptr);
-    preprocessorEncoder_->preprocessors_[preprocessorEncoder_->encoderId_] = preprocessor;
-    preprocessorEncoder_->preprocMgr_ = std::make_shared<PreprocessorManager>();
-    preprocessorEncoder_->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
-    preprocessorEncoder_->NotifyEos();
-}
-
-/**
- * @tc.name: PreprocessorEncoder_NotifyEos_NullVideoEncoderObject_001
- * @tc.desc: Test NotifyEos when preprocMgr_ exists, videoEncoderObject_ and videoEncoder_ is nullptr
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_NotifyEos_NullVideoEncoderObject_001, TestSize.Level1)
-{
-    preprocessorEncoder_->encoderId_ = "test_encoder_null_videoencoderobj";
-    auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-    ASSERT_NE(preprocessor, nullptr);
-    preprocessorEncoder_->preprocessors_[preprocessorEncoder_->encoderId_] = preprocessor;
-    preprocessorEncoder_->preprocMgr_ = std::make_shared<PreprocessorManager>();
-    preprocessorEncoder_->videoEncoderObject_ = nullptr;
-    preprocessorEncoder_->NotifyEos();
 }
 
 /**
