@@ -774,7 +774,7 @@ Status FFmpegDemuxerPlugin::SkipPacketAfterPacketConvertError(uint32_t trackId,
     if (popSample) {
         cacheQueue_.Pop(trackId);
     }
-    return Status::ERROR_AGAIN;
+    return Status::ERROR_PACKET_CONVERT_FAILED;
 }
 
 Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbByCodec(std::shared_ptr<AVBuffer> sample, AVPacket& pkt,
@@ -826,7 +826,7 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> samp
                 formatContext_->pb->eof_reached = 0;
                 formatContext_->pb->error = 0;
             }
-            return SkipPacketAfterPacketConvertError(trackId, dstSamplePacket, true, true);
+            return ret;
         }
         if (firstPkt != nullptr) {
             if (cacheQueue_.SetInfo(dstSamplePacket) == false) {
