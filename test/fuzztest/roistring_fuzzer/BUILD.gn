@@ -51,6 +51,6 @@ group("fuzztest") {
   testonly = true
   deps = []
   deps += [
-    ":RoistringFuzzTest",
+    ":RoiStringFuzzTest",
   ]
 }
