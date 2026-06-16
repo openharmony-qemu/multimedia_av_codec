@@ -996,7 +996,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_AIGC_INNER_FUNC_0010, TestSize.Level0)
     if (stat(g_aigcMp4Path.c_str(), &fileStatus) == 0) {
         size_ = static_cast<int64_t>(fileStatus.st_size);
     }
-    source = AVSourceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
+    source = AVSourceFactory::  (fd_, SOURCE_OFFSET, size_);
     ASSERT_NE(nullptr, source);
     Format format;
     int32_t ret = source->GetSourceFormat(format);
@@ -1719,10 +1719,12 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0800, TestSize.Leve
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0100, TestSize.Level0)
 {
     std::string codecName = "";
-    GetCodecNameFromTrack("/data/test/media/mp3_h265.mkv", 0, codecName);
-    ASSERT_EQ(codecName, "hevc");
-    GetCodecNameFromTrack("/data/test/media/mp3_h265.mkv", 1, codecName);
-    ASSERT_EQ(codecName, "mp3");
+    if (!access("/system/lib64/media/", 0)) {
+        GetCodecNameFromTrack("/data/test/media/mp3_h265.mkv", 0, codecName);
+        ASSERT_EQ(codecName, "hevc");
+        GetCodecNameFromTrack("/data/test/media/mp3_h265.mkv", 1, codecName);
+        ASSERT_EQ(codecName, "mp3");
+    }
 }
 
 /**
@@ -1744,7 +1746,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0200, TestSize.Le
  * @tc.name      : check codename from mov
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0300, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0300, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/H264_base@5_1920_1080_30_AAC_48K_1.mov", 0, codecName);
@@ -1758,7 +1760,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0300, TestSize.Le
  * @tc.name      : check codename from m4v
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0400, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0400, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/m4v_h264_high@level31_1280_720_aac_2.m4v", 0, codecName);
@@ -1772,7 +1774,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0400, TestSize.Le
  * @tc.name      : check codename from m4a
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0500, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0500, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/ALAC_16bit_44100Hz.m4a", 0, codecName);
@@ -1784,7 +1786,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0500, TestSize.Le
  * @tc.name      : check codename from ts
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0600, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0600, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/h264_aac_1280.ts", 0, codecName);
@@ -1798,7 +1800,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0600, TestSize.Le
  * @tc.name      : check codename from avi
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0700, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0700, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/AVI_H264_high@level5.1_1920_1080_MP3_2.avi", 0, codecName);
@@ -1812,7 +1814,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0700, TestSize.Le
  * @tc.name      : check codename from asf
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0800, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0800, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/h264_aac.asf", 0, codecName);
@@ -1826,7 +1828,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0800, TestSize.Le
  * @tc.name      : check codename from webm
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0900, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0900, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/av1_vorbis_3s.webm", 0, codecName);
@@ -1840,7 +1842,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0900, TestSize.Le
  * @tc.name      : check codename from mpg
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1000, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1000, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg", 0, codecName);
@@ -1854,7 +1856,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1000, TestSize.Le
  * @tc.name      : check codename from 3gp
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1100, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1100, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/3gp_h264_high@level6__940_400_aac_2.3gp", 0, codecName);
@@ -1868,7 +1870,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1100, TestSize.Le
  * @tc.name      : check codename from 3g2
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1200, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1200, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/3g2_h264_720_480_mp4a_31.3g2", 0, codecName);
@@ -1882,7 +1884,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1200, TestSize.Le
  * @tc.name      : check codename from rm
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1300, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1300, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/rv30_cook.rm", 0, codecName);
@@ -1896,7 +1898,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1300, TestSize.Le
  * @tc.name      : check codename from rmvb
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1400, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1400, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/rv40_cook.rmvb", 0, codecName);
@@ -1910,7 +1912,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1400, TestSize.Le
  * @tc.name      : check codename from vob
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1500, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1500, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/vob_mpeg2_main@level6_960_400_mp3_2.vob", 0, codecName);
@@ -1924,7 +1926,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1500, TestSize.Le
  * @tc.name      : check codename from wmv
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1600, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1600, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/wmv_h264_wmav1.wmv", 0, codecName);
@@ -1938,7 +1940,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1600, TestSize.Le
  * @tc.name      : check codename from wav
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1700, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1700, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/adpcm_ima_wav.wav", 0, codecName);
@@ -1950,7 +1952,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1700, TestSize.Le
  * @tc.name      : check codename from m2ts
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1800, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1800, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/h264_aac.m2ts", 0, codecName);
@@ -1964,7 +1966,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1800, TestSize.Le
  * @tc.name      : check codename from mp4 with subtitle track
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1900, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1900, TestSize.Level0)
 {
     std::string codecName = "";
     GetCodecNameFromTrack("/data/test/media/aac_mpeg4_subtitle.mp4", 0, codecName);
@@ -1980,13 +1982,15 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1900, TestSize.Le
  * @tc.name      : check codename from mp4 with double hevc tracks
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2000, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2000, TestSize.Level0)
 {
     std::string codecName = "";
-    GetCodecNameFromTrack("/data/test/media/double_hevc.mp4", 0, codecName);
-    ASSERT_EQ(codecName, "hevc");
-    GetCodecNameFromTrack("/data/test/media/double_hevc.mp4", 1, codecName);
-    ASSERT_EQ(codecName, "aac");
+    if (!access("/system/lib64/media/", 0)) {
+        GetCodecNameFromTrack("/data/test/media/double_hevc.mp4", 0, codecName);
+        ASSERT_EQ(codecName, "hevc");
+        GetCodecNameFromTrack("/data/test/media/double_hevc.mp4", 1, codecName);
+        ASSERT_EQ(codecName, "aac");
+    }
 }
 
 /**
@@ -1994,15 +1998,46 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2000, TestSize.Le
  * @tc.name      : check codename from mp4 with 1 video and 9 audio tracks
  * @tc.desc      : func test
  */
-HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2100, TestSize.Level2)
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2100, TestSize.Level0)
 {
     std::string codecName = "";
-    GetCodecNameFromTrack("/data/test/media/video_9audio.mp4", 0, codecName);
-    ASSERT_EQ(codecName, "hevc");
-    for (int32_t i = 1; i <= 9; i++) {
-        GetCodecNameFromTrack("/data/test/media/video_9audio.mp4", i, codecName);
-        ASSERT_EQ(codecName, "aac");
+    if (!access("/system/lib64/media/", 0)) {
+        GetCodecNameFromTrack("/data/test/media/video_9audio.mp4", 0, codecName);
+        ASSERT_EQ(codecName, "hevc");
+        for (int32_t i = 1; i <= 9; i++) {
+            GetCodecNameFromTrack("/data/test/media/video_9audio.mp4", i, codecName);
+            ASSERT_EQ(codecName, "aac");
+        }
     }
 }
 
+/**
+ * @tc.number    : DEMUXER_ENCODER_INNER_FUNC_0100
+ * @tc.name      : check encode from video
+ * @tc.desc      : func test
+ */
+HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2100, TestSize.Level0)
+{
+    std::string codecName = "";
+    if (!access("/system/lib64/media/", 0)) {
+        fd_ = open("/data/test/media/test_265_B_Gop25_4sec.mp4", O_RDONLY);
+        struct stat fileStatus {};
+        if (stat("/data/test/media/test_265_B_Gop25_4sec.mp4", &fileStatus)) == 0 {
+            size_ = static_cast<int64_t>(fileStatus.st_size);
+        }
+        source = AVSouceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
+        ASSERT_NE(nullptr, source);
+        Format format;
+        int32_t ret = source->GetSourceFormat(format);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        std::string encoder;
+        ASSERT_TRUE(format.GetStringValue(media::Tag::MEDIA_ENCODER, encoder));
+        ASSERT_EQ(encoder, "lavf60.3.100");
+        ret = source->GetTrackFormat(format, 1);
+        ASSERT_EQ(AVCS_ERR_OK, ret);
+        int32_t blockAlign = 0;
+        ASSERT_TRUE(format.GetIntValue(Media::Tag::AUDIO_BLOCK_ALIGN, blockAlign));
+        ASSERT_EQ(blockAlign, 0);
+    }
+}
 } // namespace
