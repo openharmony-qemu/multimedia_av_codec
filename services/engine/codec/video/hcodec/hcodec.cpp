@@ -975,28 +975,35 @@ AVCodecBufferFlag HCodec::OmxFlagToUserFlag(uint32_t omxFlag)
     return static_cast<AVCodecBufferFlag>(flags);
 }
 
-bool HCodec::WaitFence(const sptr<SyncFence>& fence)
+bool HCodec::WaitFence(const sptr<SyncFence>& fence, uint32_t seq, const std::string& prefix, uint64_t& costUs)
 {
     if (fence == nullptr || !fence->IsValid()) {
         return true;
     }
-    SCOPED_TRACE();
-    uint64_t& waitFenceCostUs = isEncoder_ ?
-        record_[OMX_DirInput].waitFenceCostUsInterval_ : record_[OMX_DirOutput].waitFenceCostUsInterval_;
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "[hcodec][%s]WaitFence for seq=%u" , prefix.c_str(), seq);
     auto before = chrono::steady_clock::now();
     int waitRes = fence->Wait(WAIT_FENCE_MS);
     if (waitRes == 0) {
-        uint64_t costUs = static_cast<uint64_t>(
-            chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - before).count());
-        waitFenceCostUs += costUs;
+        costUs = static_cast<uint64_t>(
+        chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - before).count());
         return true;
     } else {
-        HLOGE("wait fence time out, cost more than %u ms", WAIT_FENCE_MS);
-        waitFenceCostUs += WAIT_FENCE_MS * TIME_RATIO_S_TO_MS;
+        LOGW("wait fence time out, cost more than %u ms", WAIT_FENCE_MS);
+        costUs = WAIT_FENCE_MS * TIME_RATIO_S_TO_MS;
         return false;
     }
 }
 
+bool HCodec::WaitFence(const sptr<SyncFence>& fence, uint32_t seq)
+{
+    uint64_t costUs = 0;
+    bool ret = WaitFence(fence, seq, compUniqueStr_, costUs);
+    uint64_t& waitFenceCostUs = isEncoder_ ?
+        record_[OMX_DirInput].waitFenceCostUsInterval_ : record_[OMX_DirOutput].waitFenceCostUsInterval_;
+    waitFenceCostUs += costUs;
+    return ret;
+}
+ 
 void HCodec::NotifyUserToFillThisInBuffer(BufferInfo &info)
 {
     SCOPED_TRACE_FMT("id: %u", info.bufferId);
