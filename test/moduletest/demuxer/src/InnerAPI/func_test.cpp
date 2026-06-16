@@ -2022,7 +2022,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2100, TestSize.Le
     if (!access("/system/lib64/media/", 0)) {
         fd_ = open("/data/test/media/test_265_B_Gop25_4sec.mp4", O_RDONLY);
         struct stat fileStatus {};
-        if (stat("/data/test/media/test_265_B_Gop25_4sec.mp4", &fileStatus)) == 0 {
+        if (stat("/data/test/media/test_265_B_Gop25_4sec.mp4", &fileStatus) == 0) {
             size_ = static_cast<int64_t>(fileStatus.st_size);
         }
         source = AVSouceFactory::CreateWithFD(fd_, SOURCE_OFFSET, size_);
