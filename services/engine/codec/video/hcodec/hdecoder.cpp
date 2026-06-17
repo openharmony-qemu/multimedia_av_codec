@@ -56,7 +56,6 @@ bool g_isVpeSupportListInit{false};
 HDecoder::HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
     : HCodec(caps, codingType, false)
 {
-
 }
 
 HDecoder::~HDecoder()
