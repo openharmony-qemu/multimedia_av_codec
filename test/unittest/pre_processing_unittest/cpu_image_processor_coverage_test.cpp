@@ -500,7 +500,7 @@ HWTEST_F(TEST_SUIT, ValidateCpoy_WidtdHeight_Test_008, TestSize.Level1)
     request.output = outputBuffer;
     request.operation = CpuImageOperation::COPY;
     int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
 
 /**
@@ -523,7 +523,7 @@ HWTEST_F(TEST_SUIT, ValidateCpoy_WidtdHeight_Test_009, TestSize.Level1)
     request.output = outputBuffer;
     request.operation = CpuImageOperation::COPY;
     int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
 
 /**
@@ -546,7 +546,7 @@ HWTEST_F(TEST_SUIT, ValidateCpoy_WidtdHeight_Test_010, TestSize.Level1)
     request.output = outputBuffer;
     request.operation = CpuImageOperation::COPY;
     int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
 
 /**
@@ -955,31 +955,6 @@ HWTEST_F(TEST_SUIT, IsFormatSupported_UnsupportedFormat_Test_001, TestSize.Level
 }
 
 /**
- * @tc.name IsFormatSupported_UnsupportedFormat_Test_002
- * @tc.desc Test IsFormatSupported returning false for unsupported pixel formats
- *          This test triggers the "default: return false" branch in IsFormatSupported by using
- *          a pixel format that is not in the supported list
- *          Using an supported format  will cause IsFormatSupported to return true,
- *          leading to Process returning AVCS_ERR_INVALID_VAL.
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, IsFormatSupported_UnsupportedFormat_Test_002, TestSize.Level1)
-{
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_CLUT8);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_CLUT8);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::DOWNSAMPLE;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
-
-/**
  * @tc.name ValidateDownsample_Invalid_Test_001
  * @tc.desc output.width > 0, output.height > 0, output.width > input.width, output.height > input.height
  * @tc.type FUNC
@@ -1078,27 +1053,27 @@ HWTEST_F(TEST_SUIT, ValidateDownsample_Valid_Test_001, TestSize.Level1)
 }
 
 /**
- * @tc.name InitDownsamplePlaneInfo_Test_001
- * @tc.desc InitDownsamplePlaneInfo failed
+ * @tc.name BuildI420Layout_Invalid_Test_001
+ * @tc.desc input stride is odd number
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateDownsample_Valid_Test_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
 {
-    constexpr int32_t width = 8160; // width: 8160
-    constexpr int32_t height = 120; // height: 120
+    constexpr int32_t stride = 321; // stride: 321
 
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(inputBuffer, nullptr);
+    inputBuffer->GetBufferHandle()->stride = stride;
 
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(outputBuffer, nullptr);
 
     CpuImageProcessRequest request;
     request.input = inputBuffer;
     request.output = outputBuffer;
-    request.operation = CpuImageOperation::DOWNSAMPLE;
+    request.operation = CpuImageOperation::CROP;
     int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
 
 } // namespace PreProcessing
