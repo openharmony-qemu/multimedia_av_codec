@@ -1762,7 +1762,8 @@ Status MPEG4DemuxerPlugin::FindBaseTrackAndCalcDelay(int64_t seekTime, SeekMode 
         Status::ERROR_INVALID_PARAMETER, "Find base track failed");
     relativeEndPts_ = maxPts;
     if (seekTime > static_cast<int64_t>(relativeEndPts_) && mode == SeekMode::SEEK_NEXT_SYNC) {
-        return Status::ERROR_INVALID_PARAMETER;
+        MEDIA_LOG_W("Seek time " PUBLIC_LOG_D64 " exceeds stream end " PUBLIC_LOG_U64
+            ", clamp to stream duration", seekTime, relativeEndPts_);
     }
     MEDIA_LOG_D("Find base track ID: " PUBLIC_LOG_D32 ", minElstInitEmptyEdit_=" PUBLIC_LOG_D64,
         baseTrackIndex, minElstInitEmptyEdit_);
