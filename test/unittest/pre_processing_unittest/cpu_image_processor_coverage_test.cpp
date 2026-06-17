@@ -1081,7 +1081,7 @@ HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
  * @tc.desc height is odd number
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, BuildPaneLayout_Invalid_Test_001, TestSize.Level1)
 {
     constexpr int32_t height = 481; // height: 481
 
@@ -1104,7 +1104,7 @@ HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
  * @tc.desc width is odd number
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_002, TestSize.Level1)
+HWTEST_F(TEST_SUIT, BuildPaneLayout_Invalid_Test_002, TestSize.Level1)
 {
     constexpr int32_t width = 641; // width: 641
 
@@ -1127,7 +1127,7 @@ HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_002, TestSize.Level1)
  * @tc.desc width and height is odd number
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, BuildPaneLayout_Invalid_Test_003, TestSize.Level1)
 {
     constexpr int32_t width = 641; // width: 641
     constexpr int32_t height = 481; // height: 481
