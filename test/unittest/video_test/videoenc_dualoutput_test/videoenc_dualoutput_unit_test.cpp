@@ -14,9 +14,11 @@
  */
 
 #include <avcodec_common.h>
+#include <cstring>
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include <memory>
+#include <string>
 #include "native_avcapability.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videoencoder.h"
@@ -37,6 +39,7 @@ using namespace testing::ext;
 
 namespace {
 constexpr double DEFAULT_FRAME_RATE = 30.0;
+constexpr size_t TOO_LONG_MIME_LENGTH = 256;
 enum CodecType : int32_t { AVC = 0, HEVC = 1 };
 
 static void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
@@ -98,6 +101,34 @@ static void OnNeedInputParameter(OH_AVCodec *codec, uint32_t index, OH_AVFormat 
 const char *GetMimeType(int32_t codecType)
 {
     return (codecType == HEVC) ? OH_AVCODEC_MIMETYPE_VIDEO_HEVC : OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+}
+
+bool IsDefaultPreprocMime(const std::string &mime)
+{
+    return mime == OH_AVCODEC_MIMETYPE_VIDEO_AVC || mime == OH_AVCODEC_MIMETYPE_VIDEO_HEVC;
+}
+
+std::string FindAdditionalVideoEncoderMime()
+{
+    uint32_t count = 0;
+    OH_AVCapability **capList = OH_AVCodec_GetCapabilityList(OH_AVCODEC_TYPE_VIDEO_ENCODER, &count);
+    if (capList == nullptr) {
+        return "";
+    }
+    for (uint32_t index = 0; index < count; ++index) {
+        if (capList[index] == nullptr) {
+            continue;
+        }
+        const char *mime = OH_AVCapability_GetMimeType(capList[index]);
+        if (mime == nullptr || strlen(mime) == 0) {
+            continue;
+        }
+        std::string mimeStr(mime);
+        if (!IsDefaultPreprocMime(mimeStr)) {
+            return mimeStr;
+        }
+    }
+    return "";
 }
 
 void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, EncoderType type,
@@ -226,6 +257,59 @@ HWTEST_P(TEST_SUIT, VideoEncoder_CreatePrimaryWithPreproc_InvalidParam_001, Test
 {
     VideoEncDualOutputSample sample;
     ASSERT_FALSE(sample.CreatePrimary("video/unsupported"));
+}
+
+/**
+ * @tc.name: VideoEncoder_CreatePrimaryWithPreproc_InvalidParam_002
+ * @tc.desc: Test creating primary encoder with empty or too long mime type
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_CreatePrimaryWithPreproc_InvalidParam_002, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    OH_AVErrCode ret = OH_VideoEncoder_CreatePrimaryWithPreproc("", &codec);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(nullptr, codec);
+
+    std::string tooLongMime(TOO_LONG_MIME_LENGTH, 'v');
+    ret = OH_VideoEncoder_CreatePrimaryWithPreproc(tooLongMime.c_str(), &codec);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(nullptr, codec);
+}
+
+/**
+ * @tc.name: VideoEncoder_CreatePrimaryWithPreproc_InvalidParam_003
+ * @tc.desc: Test creating primary encoder with supported audio encoder mime type
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_CreatePrimaryWithPreproc_InvalidParam_003, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    OH_AVErrCode ret = OH_VideoEncoder_CreatePrimaryWithPreproc(OH_AVCODEC_MIMETYPE_AUDIO_AAC, &codec);
+    ASSERT_EQ(AV_ERR_INVALID_VAL, ret);
+    ASSERT_EQ(nullptr, codec);
+}
+
+/**
+ * @tc.name: VideoEncoder_CreatePrimaryWithPreproc_CapabilityMime_001
+ * @tc.desc: Test creating primary encoder with a supported video encoder mime queried from capability list
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_CreatePrimaryWithPreproc_CapabilityMime_001, TestSize.Level1)
+{
+    if (GetParam() != AVC) {
+        GTEST_SKIP() << "Run capability mime discovery once";
+    }
+    std::string mime = FindAdditionalVideoEncoderMime();
+    if (mime.empty()) {
+        GTEST_SKIP() << "No additional video encoder mime found in capability list";
+    }
+
+    OH_AVCodec *codec = nullptr;
+    OH_AVErrCode ret = OH_VideoEncoder_CreatePrimaryWithPreproc(mime.c_str(), &codec);
+    ASSERT_EQ(AV_ERR_OK, ret);
+    ASSERT_NE(nullptr, codec);
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(codec));
 }
 
 /**

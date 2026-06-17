@@ -17,6 +17,7 @@
 #include <mutex>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "avcodeclist_impl.h"
 #include "media_core.h"
 #include "preprocessor_format_utils.h"
 #include "statistics_event_reporter.h"
@@ -58,7 +59,11 @@ bool PreprocessorEncoder::IsValidPreprocEncoderMime(const char *mime)
     size_t len = strnlen(mime, MAX_LENGTH);
     CHECK_AND_RETURN_RET_LOG(len > 0 && len <= MAX_LENGTH, false, "Mime is too long!");
     std::string mimeStr(mime);
-    return mimeStr == OH_AVCODEC_MIMETYPE_VIDEO_HEVC || mimeStr == OH_AVCODEC_MIMETYPE_VIDEO_AVC;
+    AVCodecListImpl codecList;
+    CHECK_AND_RETURN_RET_LOG(codecList.Init() == AVCS_ERR_OK, false, "Init AVCodecList failed!");
+    CapabilityData *cap = codecList.GetCapability(mimeStr, true, AVCodecCategory::AVCODEC_NONE);
+    CHECK_AND_RETURN_RET_LOG(cap != nullptr, false, "Video encoder capability is not found: %{public}s", mime);
+    return cap->codecType == static_cast<int32_t>(AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER) && cap->mimeType == mimeStr;
 }
 
 std::string PreprocessorEncoder::GenerateEncoderId(const std::string &prefix)
@@ -86,7 +91,7 @@ OH_AVErrCode PreprocessorEncoder::CreatePrimary(const char *mime, OH_AVCodec **c
     CHECK_AND_RETURN_RET_LOG(*codec == nullptr, AV_ERR_INVALID_VAL,
         "The pointer stored in codec is not nullptr! It must be nullptr!");
     CHECK_AND_RETURN_RET_LOG(IsValidPreprocEncoderMime(mime), AV_ERR_INVALID_VAL,
-        "Invalid mime, only hevc or avc encoder is supported!");
+        "Invalid or unsupported video encoder mime!");
     auto encoder = std::make_unique<PreprocessorEncoder>(AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER);
     CHECK_AND_RETURN_RET_LOG(encoder != nullptr, AV_ERR_NO_MEMORY, "PreprocessorEncoder create failed!");
 
