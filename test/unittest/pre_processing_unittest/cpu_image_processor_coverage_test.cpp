@@ -1061,11 +1061,11 @@ HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
 {
     constexpr int32_t stride = 321; // stride: 321
 
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
     ASSERT_NE(inputBuffer, nullptr);
     inputBuffer->GetBufferHandle()->stride = stride;
 
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
     ASSERT_NE(outputBuffer, nullptr);
 
     CpuImageProcessRequest request;
@@ -1076,6 +1076,75 @@ HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
 
+/**
+ * @tc.name BuildPaneLayout_Invalid_Test_001
+ * @tc.desc height is odd number
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
+{
+    constexpr int32_t height = 481; // height: 481
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(inputBuffer, nullptr);
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::CROP;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name BuildPaneLayout_Invalid_Test_002
+ * @tc.desc width is odd number
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_002, TestSize.Level1)
+{
+    constexpr int32_t width = 641; // width: 641
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(inputBuffer, nullptr);
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(width, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::CROP;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name BuildPaneLayout_Invalid_Test_003
+ * @tc.desc width and height is odd number
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_003, TestSize.Level1)
+{
+    constexpr int32_t width = 641; // width: 641
+    constexpr int32_t height = 481; // height: 481
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, height, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(inputBuffer, nullptr);
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(width, height, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::CROP;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+}
 } // namespace PreProcessing
 } // namespace MediaAVCodec
 } // namespace OHOS
