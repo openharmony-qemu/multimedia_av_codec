@@ -303,6 +303,7 @@ void AvcEncoder::GetBufferFromSurface()
     CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
     inputBuffer->avBuffer_->pts_ = pts;
     if (enableSurfaceModeInputCb_) {
+        inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
         callback_->OnInputBufferAvailable(index, inputBuffer->avBuffer_);
     } else {
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
@@ -567,7 +568,7 @@ void AvcEncoder::GetBitRateModeFromUser(const Format &format)
             format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) && quality >= 0) {
             avcQuality_ = quality;
             encQp_ = VIDEO_QP_MIN +
-                (VIDEO_QUALITY_MAX - quality) * ((VIDEO_QP_MAX - VIDEO_QP_MIN) / VIDEO_QUALITY_MAX);
+                (VIDEO_QUALITY_MAX - quality) * (VIDEO_QP_MAX - VIDEO_QP_MIN) / VIDEO_QUALITY_MAX;
             AVCODEC_LOGI("user set avc quality %{public}d  qp %{public}d", quality, encQp_);
         }
     }
@@ -1083,7 +1084,16 @@ int32_t AvcEncoder::Release()
 
 int32_t AvcEncoder::SetParameter(const Format &format)
 {
-    return ConfigureContext(format);
+    int64_t bitRateLong;
+    int32_t requestIdr;
+    if (!format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong) &&
+        !format.GetIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, requestIdr)) {
+        AVCODEC_LOGE("Only support dynamic set bitrate or IDR request!!!");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    GetBitRateFromUser(format);
+    GetRequestIDRFromUser(format);
+    return AVCS_ERR_OK;
 }
 
 int32_t AvcEncoder::GetInputFormat(Format &format)
