@@ -980,7 +980,7 @@ bool HCodec::WaitFence(const sptr<SyncFence>& fence, uint32_t seq, const std::st
     if (fence == nullptr || !fence->IsValid()) {
         return true;
     }
-    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "[hcodec][%s]WaitFence for seq=%u" , prefix.c_str(), seq);
+    HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, "[hcodec][%s]WaitFence for seq=%u", prefix.c_str(), seq);
     auto before = chrono::steady_clock::now();
     int waitRes = fence->Wait(WAIT_FENCE_MS);
     if (waitRes == 0) {
