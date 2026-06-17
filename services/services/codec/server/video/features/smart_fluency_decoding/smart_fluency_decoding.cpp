@@ -106,8 +106,19 @@ void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
 
 void SmartFluencyDecoding::OnDecInfoUpdate(double sourceFps, double speed)
 {
-    UpdatePlaybackSpeed(speed);
     std::lock_guard<std::mutex> lock(configMutex_);
+    if (!userConfiguredSpeed_.has_value() && strategy_) {
+        strategy_->UpdatePlaybackSpeed(speed);
+#ifdef SFD_DEBUG
+        if (dumper_) {
+            dumper_->UpdateSpeed(speed);
+        }
+#endif
+        AVCODEC_LOGI_WITH_TAG("SFD statistical speed updated to: %{public}.3f", speed);
+    } else if (strategy_) {
+        AVCODEC_LOGI_WITH_TAG("SFD statistical speed %{public}.3f ignored, user speed %{public}.3f in effect",
+            speed, userConfiguredSpeed_.value());
+    }
     if (strategy_) {
         strategy_->UpdateSourceFramerate(sourceFps);
     }
@@ -186,13 +197,18 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
     RetentionStrategyType newMode = config_.initMode;
     std::optional<double> newRatio = config_.retentionRatio;
     ParseRetentionConfig(format, newMode, newRatio);
-    double speed = DEFAULT_PLAYBACK_SPEED;
-    if (format.GetDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, speed)) {
-        AVCODEC_LOGD_WITH_TAG("UpdateDynamicConfig: Speed update detected: %{public}.3f", speed);
-        UpdatePlaybackSpeed(speed);
-    }
     if (newMode != config_.initMode || DoubleUtils::IsNotEqual(newRatio, config_.retentionRatio)) {
         ApplyNewStrategy(newMode, newRatio);
+    }
+    double speed = DEFAULT_PLAYBACK_SPEED;
+    bool hasUserSpeed = format.GetDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, speed);
+    if (hasUserSpeed) {
+        {
+            std::lock_guard<std::mutex> lock(configMutex_);
+            userConfiguredSpeed_ = speed;
+        }
+        UpdatePlaybackSpeed(speed);
+        AVCODEC_LOGI_WITH_TAG("UpdateDynamicConfig: User-configured speed: %{public}.3f", speed);
     }
     return AVCS_ERR_OK;
 }

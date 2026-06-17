@@ -124,6 +124,7 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
     std::shared_ptr<AVBuffer> csdBuffer_{nullptr};
     SFDConfig config_{};
+    std::optional<double> userConfiguredSpeed_{std::nullopt};
     bool isInitialized_{false};
     AsyncDropInputCallback asyncDropInputCb_{nullptr};
     AsyncDropOutputCallback asyncDropOutputCb_{nullptr};

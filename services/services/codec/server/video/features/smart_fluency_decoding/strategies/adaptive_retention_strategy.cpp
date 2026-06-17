@@ -21,8 +21,8 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AdaptiveStrategy"};
 constexpr double MIN_SPEED_FOR_DYNAMIC_DROP = 1.0;
 constexpr double ZERO_MOTION_RATIO_THRESHOLD = 0.85;
-constexpr double TARGET_SAFE_FPS = 45.0;
-constexpr double TARGET_EXTREME_FPS = 22.0;
+constexpr double TARGET_SAFE_FPS = 60.0;
+constexpr double TARGET_EXTREME_FPS = 30.0;
 constexpr double MIN_SOURCE_FPS_FOR_DROP = 24.0;
 constexpr double HIGH_RISK_TH = 0.8;
 constexpr double LOW_RISK_TH = 0.2;
@@ -35,6 +35,8 @@ constexpr double MAG_WEIGHT_MIN = 0.4;
 constexpr double MAG_WEIGHT_RANGE = 0.6;
 constexpr double MAG_WEIGHT_REDUCTION = 0.7;
 constexpr double SOURCE_FPS_DEFAULT = 30.0;
+constexpr double ACCUMULATOR_THRESHOLD = 1.0;
+constexpr double ACCUMULATOR_MAX = 10.0;
 } // namespace
 
 namespace OHOS {
@@ -76,7 +78,8 @@ double AdaptiveRetentionStrategy::CalculateTargetRatio(const FrameRetentionConte
     if (sourceFps_ <= 0.0) {
         return 1.0;
     }
-    double renderFps = sourceFps_ * currentSpeed_;
+    double effectiveSpeed = currentSpeed_;
+    double renderFps = sourceFps_ * effectiveSpeed;
     if (DoubleUtils::IsLessOrEqual(renderFps, MIN_SOURCE_FPS_FOR_DROP)) {
         return 1.0;
     }
@@ -105,8 +108,9 @@ double AdaptiveRetentionStrategy::CalculateTargetRatio(const FrameRetentionConte
 bool AdaptiveRetentionStrategy::ExecuteAccumulatorDecision(double dynamicRatio, uint32_t preDroppedCount)
 {
     accumulator_ += dynamicRatio + (preDroppedCount * dynamicRatio);
-    if (DoubleUtils::IsGreaterOrEqual(accumulator_, 1.0)) {
-        accumulator_ = 0.0;
+    accumulator_ = std::min(accumulator_, ACCUMULATOR_MAX);
+    if (DoubleUtils::IsGreaterOrEqual(accumulator_, ACCUMULATOR_THRESHOLD)) {
+        accumulator_ -= ACCUMULATOR_THRESHOLD;
         if (DoubleUtils::IsLess(currentSpeed_, MIN_SPEED_FOR_DYNAMIC_DROP)) {
             lastReason_ = SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED;
         } else {
