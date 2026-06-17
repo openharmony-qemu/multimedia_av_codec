@@ -1845,7 +1845,7 @@ void HEncoder::SubmitOneBuffer(InSurfaceBufferEntry& entry, BufferInfo &info)
         InBufUsToOmx(info);
         return;
     }
-    if (!WaitFence(entry.item->fence)) {
+    if (!WaitFence(entry.item->fence, entry.item->buffer->GetSeqNum())) {
         return;
     }
     ChangeOwner(info, BufferOwner::OWNED_BY_US);
