@@ -350,7 +350,7 @@ bool WaterMarkFilter::SetupShaderUniforms()
         shaderProgram_->SetInt("textTexture", 1);
     }
 
-    MEDIA_LOG_I("SetupShaderUniforms video: %{public}dx%{public}d -> target: %{public}dx%{public}d, watermark: %{public}s",
+    MEDIA_LOG_I("SetShaderUniform video: %{public}dx%{public}d -> target: %{public}dx%{public}d, watermark: %{public}s",
         videoWidth_.load(), videoHeight_.load(), targetWidth_, targetHeight_,
         watermarkList_.empty() ? "no" : "yes");
 
