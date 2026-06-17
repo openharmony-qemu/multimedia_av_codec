@@ -348,7 +348,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     auto sysTimeIntvlMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         endSysTime_ - startSysTime_).count();
 
-    if (totalFrames < PTS_WINDOW_MIN_SIZE) {
+    if (totalFrames < SRC_FRAME_CNT_MIN) {
         if (!hasSendPauseEvent_) {
             eventData_["decRate"] = "0";
             RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(eventData_);
