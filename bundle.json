@@ -43,6 +43,7 @@
         "av_codec_enable_codec_rv",
         "av_codec_enable_codec_eac3",
         "av_codec_enable_codec_opus",
+        "av_codec_enable_codec_amrnb",
         "av_codec_enable_codec_truehd",
         "av_codec_enable_codec_dts",
         "av_codec_enable_demuxer_lrc",
@@ -67,6 +68,7 @@
       ],
       "deps": {
         "components": [
+          "opus",
           "access_token",
           "netmanager_base",
           "bounds_checking_function",
@@ -95,6 +97,7 @@
           "drm_framework",
           "ffmpeg",
           "lame",
+          "opencore-amr",
           "libvpx",
           "libxml2",
           "video_processing_engine",

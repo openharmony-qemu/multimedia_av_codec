@@ -42,4 +42,15 @@ group("av_codec_media_engine_plugins") {
     deps +=
         [ "ffmpeg_adapter/audio_decoder/eac3:media_plugin_Eac3AudioDecoder" ]
   }
+  if (av_codec_enable_codec_opus) {
+    deps += [
+      "ffmpeg_adapter/audio_encoder/opus:media_plugin_OpusAudioEncoder",
+      "ffmpeg_adapter/audio_decoder/opus:media_plugin_OpusAudioDecoder",
+      "ffmpeg_adapter/audio_decoder/opus_base:av_codec_ext_base"
+    ]
+  }
+  if (av_codec_enable_codec_amrnb) {
+    deps +=
+        [ "ffmpeg_adapter/audio_encoder/amrnb:media_plugin_AmrNbAudioEncoder" ]
+  }
 }
