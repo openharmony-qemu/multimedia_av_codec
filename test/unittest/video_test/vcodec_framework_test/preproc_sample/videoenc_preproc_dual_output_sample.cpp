@@ -1223,9 +1223,6 @@ int32_t VideoEncPreprocDualOutputSample::SendFrames(const PreprocDualOutput::Sce
         }
         usleep(K_FRAME_INTERVAL_SLEEP_US);
     }
-#ifndef SUPPORT_VIDEO_ENCODER_PREPROCESSING
-    sleep(1);
-#endif
     if (notifyPrimary) {
         int32_t ret = NotifyPrimaryEos();
         if (ret != AV_ERR_OK) {
