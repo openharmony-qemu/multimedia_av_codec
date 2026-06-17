@@ -64,13 +64,14 @@ private:
     OH_AVCodecCallback cb_{};
     OH_AVCodecAsyncCallback asyncCb_{};
 
-    std::mutex primaryMutex_;
-    std::mutex secondaryMutex_;
+    std::recursive_mutex primaryMutex_;
+    std::recursive_mutex secondaryMutex_;
 
     std::atomic<bool> isRunning_{false};
     std::unique_ptr<std::thread> inputSurfaceLoop_;
 
-    std::unique_lock<std::mutex> LockTarget(int32_t target);
+    std::unique_lock<std::recursive_mutex> LockTarget(int32_t target);
+    void InvokeOp(int32_t op, int32_t target, FuzzedDataProvider &fdp);
     void StartInputLoop();
     void StopInloop();
     void InputFuncSurface();

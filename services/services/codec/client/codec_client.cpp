@@ -101,12 +101,18 @@ CodecClient::~CodecClient()
 
 void CodecClient::AVCodecServerDied()
 {
+    serviceDied_.store(true);
     {
         std::scoped_lock lock(mutex_, *syncMutex_);
         codecProxy_ = nullptr;
         listenerStub_ = nullptr;
     }
     OnError(AVCODEC_ERROR_INTERNAL, AVCS_ERR_SERVICE_DIED);
+}
+
+bool CodecClient::IsServiceDied() const
+{
+    return serviceDied_.load();
 }
 
 int32_t CodecClient::CreateListenerObject()

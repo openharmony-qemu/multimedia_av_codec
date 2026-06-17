@@ -72,6 +72,7 @@ public:
     int32_t NotifyMemoryExchange(const bool exchangeFlag) override;
 
     void AVCodecServerDied();
+    bool IsServiceDied() const override;
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Format &format) override;
@@ -111,6 +112,7 @@ private:
     std::shared_mutex mutex_;
     std::shared_ptr<std::recursive_mutex> syncMutex_ = nullptr;
     std::atomic<bool> needUpdateGeneration_ = true;
+    std::atomic<bool> serviceDied_ = false;
     Format codecInfo_;
 };
 } // namespace MediaAVCodec
