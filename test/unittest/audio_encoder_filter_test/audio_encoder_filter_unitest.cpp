@@ -217,6 +217,8 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_Init_0100, TestSize.Level
     std::shared_ptr<EventReceiver> receiver = std::make_shared<EventReceiverTest>();
     std::shared_ptr<FilterCallback> callback = std::make_shared<FilterCallbackTest>();
     audioEncoderFilter_->Init(receiver, callback);
+    EXPECT_EQ(audioEncoderFilter_->eventReceiver_, receiver);
+    EXPECT_EQ(audioEncoderFilter_->filterCallback_, callback);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_Configure_0100, TestSize.Level1)
@@ -340,13 +342,17 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetParameter_0100, TestSi
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
     ASSERT_NE(parameter, nullptr);
     audioEncoderFilter_->SetParameter(parameter);
+    EXPECT_CALL(*mediaCodecMock, SetParameter(parameter)).Times(1);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_GetParameter_0100, TestSize.Level1)
 {
+    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
     ASSERT_NE(parameter, nullptr);
     audioEncoderFilter_->GetParameter(parameter);
+    EXPECT_CALL(*mediaCodecMock, GetParameter(parameter)).Times(1);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_LinkNext_0100, TestSize.Level1)
@@ -433,20 +439,8 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_0100, Test
     ASSERT_NE(meta, nullptr);
     sptr<AVBufferQueueProducer> outputBufferQueue = nullptr;
     audioEncoderFilter_->OnLinkedResult(outputBufferQueue, meta);
-}
-
-HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUpdatedResult_0100, TestSize.Level1)
-{
-    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    ASSERT_NE(meta, nullptr);
-    audioEncoderFilter_->OnUpdatedResult(meta);
-}
-
-HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUnlinkedResult_0100, TestSize.Level1)
-{
-    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    ASSERT_NE(meta, nullptr);
-    audioEncoderFilter_->OnUnlinkedResult(meta);
+    EXPECT_CALL(*mediaCodecMock, SetOutputBufferQueue(outputBufferQueue)).Times(1);
+    EXPECT_CALL(*mediaCodecMock, Prepare()).Times(1);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetCallingInfo_0100, TestSize.Level1)

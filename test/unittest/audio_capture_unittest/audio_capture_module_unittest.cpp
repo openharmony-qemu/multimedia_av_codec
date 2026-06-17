@@ -103,7 +103,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, Reset_001, TestSize.Level1)
     EXPECT_CALL(*mockAudioCapturer_, Stop())
         .WillOnce(Return(true));
     audioCaptureModule_->audioCapturer_ = std::move(mockAudioCapturer_);
-    audioCaptureModule_->Reset();
+    Status ret = audioCaptureModule_->Reset();
+    EXPECT_EQ(ret, Status::OK);
     audioCaptureModule_->audioCapturer_.reset();
 }
 
@@ -117,7 +118,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, Start_001, TestSize.Level1)
     EXPECT_CALL(*mockAudioCapturer_, GetStatus())
         .WillOnce(Return(AudioStandard::CapturerState::CAPTURER_RUNNING));
     audioCaptureModule_->audioCapturer_ = std::move(mockAudioCapturer_);
-    audioCaptureModule_->Start();
+    Status ret = audioCaptureModule_->Start();
+    EXPECT_EQ(ret, Status::OK);
     audioCaptureModule_->audioCapturer_.reset();
 }
 
@@ -133,7 +135,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, Start_002, TestSize.Level1)
     EXPECT_CALL(*mockAudioCapturer_, Start())
         .WillOnce(Return(false));
     audioCaptureModule_->audioCapturer_ = std::move(mockAudioCapturer_);
-    audioCaptureModule_->Start();
+    Status ret = audioCaptureModule_->Start();
+    EXPECT_NE(ret, Status::OK);
     audioCaptureModule_->audioCapturer_.reset();
 }
 
@@ -149,7 +152,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, Stop_001, TestSize.Level1)
     EXPECT_CALL(*mockAudioCapturer_, Stop())
         .WillOnce(Return(false));
     audioCaptureModule_->audioCapturer_ = std::move(mockAudioCapturer_);
-    audioCaptureModule_->Stop();
+    Status ret = audioCaptureModule_->Stop();
+    EXPECT_NE(ret, Status::OK);
     audioCaptureModule_->audioCapturer_.reset();
 }
 
@@ -184,7 +188,8 @@ HWTEST_F(AudioCaptureModuleUnitTest, Read_002, TestSize.Level1)
     audioCaptureModule_->audioCapturer_ = std::move(mockAudioCapturer_);
     uint8_t *cacheAudioData = new uint8_t[EXPECTED_LEN];
     size_t expectedLen = EXPECTED_LEN;
-    audioCaptureModule_->Read(cacheAudioData, expectedLen);
+    Status ret = audioCaptureModule_->Read(cacheAudioData, expectedLen);
+    EXPECT_EQ(ret, Status::OK);
     audioCaptureModule_->audioCapturer_.reset();
 }
 

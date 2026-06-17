@@ -75,6 +75,8 @@ HWTEST_F(AudioEncoderFilterUnitest, OnLinkedResult_001, TestSize.Level0)
     linkCallback->OnLinkedResult(outputBufferQueue, meta);
     linkCallback->OnUnlinkedResult(meta);
     linkCallback->OnUpdatedResult(meta);
+    EXPECT_CALL(*(audioEncoderFilter_->mediaCodec_), SetOutputBufferQueue(_)).Times(1);
+    EXPECT_CALL(*(audioEncoderFilter_->mediaCodec_), Prepare()).Times(1);
     ptr->mediaCodec_ = nullptr;
     linkCallback = nullptr;
 }
@@ -89,9 +91,8 @@ HWTEST_F(AudioEncoderFilterUnitest, GetInputSurface_001, TestSize.Level0)
     ASSERT_NE(audioEncoderFilter_, nullptr);
     auto mediaCodec = std::make_shared<MediaCodec>();
     audioEncoderFilter_->mediaCodec_ = mediaCodec;
-    sptr<Surface> surface = nullptr;
     auto ret = audioEncoderFilter_->GetInputSurface();
-    EXPECT_EQ(ret, surface);
+    EXPECT_EQ(ret, mediaCodec->GetInputSurface());
 }
 
 /**
