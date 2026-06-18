@@ -61,6 +61,7 @@ public:
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
+    sptr<AVBufferQueueProducer> GetInputBufferQueue();
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,

@@ -15,7 +15,7 @@
 
 #ifndef FILTERS_SURFACE_DECODER_ADAPTER_H
 #define FILTERS_SURFACE_DECODER_ADAPTER_H
-
+1
 #include <cstring>
 #include <shared_mutex>
 #include "surface.h"

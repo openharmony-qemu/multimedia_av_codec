@@ -22,7 +22,7 @@
 #include "surface/native_buffer.h"
 #include "media_description.h"
 #include "av_common.h"
-
+1
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "SurfaceDecoderFilter" };
 }

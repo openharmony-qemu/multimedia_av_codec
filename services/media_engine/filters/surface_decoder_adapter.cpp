@@ -21,7 +21,7 @@
 #include "media_description.h"
 #include "avcodec_trace.h"
 #include "codec_capability_adapter.h"
-
+1
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER,
                                                 "SurfaceDecoderAdapter" };
