@@ -22,7 +22,7 @@
 #include "surface/native_buffer.h"
 #include "media_description.h"
 #include "av_common.h"
-1
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "SurfaceDecoderFilter" };
 }
@@ -141,6 +141,18 @@ void SurfaceDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     filterCallback_ = callback;
 }
 
+void SurfaceDecoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
+    // if (mediaCodec_) {
+    //     mediaCodec_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
+    // }
+}
+
 Status SurfaceDecoderFilter::ConfigureMediaCodecByMimeType(std::string codecMimeType, bool isHdrVivid)
 {
     FALSE_LOG_MSG_W(transcoderIsHdrVivid_ == isHdrVivid,
@@ -149,6 +161,7 @@ Status SurfaceDecoderFilter::ConfigureMediaCodecByMimeType(std::string codecMime
         static_cast<int32_t>(isHdrVivid));
     mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER, "mediaCodec is nullptr");
+    mediaCodec_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     Status ret = mediaCodec_->Init(codecMimeType);
     if (ret == Status::OK) {
         std::shared_ptr<DecoderAdapterCallback> decoderSurfaceCallback =
