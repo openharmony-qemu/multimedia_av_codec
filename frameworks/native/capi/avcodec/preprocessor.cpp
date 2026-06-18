@@ -295,38 +295,27 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format)
     bool hasRight = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, right);
     bool hasTop = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, top);
     bool hasBottom = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, bottom);
-
     bool hasAny = hasLeft || hasRight || hasTop || hasBottom;
     bool hasAll = hasLeft && hasRight && hasTop && hasBottom;
-
-    if (!hasAny) {          // If none of the crop values (left, right, top and bottom) is configured,
-        return AVCS_ERR_OK; // keep current status.
+    if (!hasAny) { // none of crop values configured, keep current status
+        return AVCS_ERR_OK;
     }
-    if (!IsAvailable()) {
-        AVCODEC_LOGE("Crop are not supported");
-        return AVCS_ERR_UNSUPPORT;
-    }
-    if (hasAny && !hasAll) {            // At least one crop value is not configured,
-        AVCODEC_LOGE("Incomplete crop parameters: hasLeft=%{public}d, hasRight=%{public}d, "
-                     "hasTop=%{public}d, hasBottom=%{public}d",
-                     hasLeft, hasRight, hasTop, hasBottom);
-        return AVCS_ERR_INVALID_VAL;    // it is not allowed.
-    }
-
-    // left, right, top and bottom are all configured 0, disable crop.
-    if (left == DISABLE_CROP_LEFT && top == DISABLE_CROP_TOP &&
-        right == DISABLE_CROP_RIGHT && bottom == DISABLE_CROP_BOTTOM) {
+    CHECK_AND_RETURN_RET_LOG(IsAvailable(), AVCS_ERR_UNSUPPORT, "Crop are not supported");
+    CHECK_AND_RETURN_RET_LOG(!hasAny || hasAll, AVCS_ERR_INVALID_VAL,
+                             "Incomplete crop parameters: hasLeft=%{public}d, hasRight=%{public}d, "
+                             "hasTop=%{public}d, hasBottom=%{public}d",
+                             hasLeft, hasRight, hasTop, hasBottom);
+    // all crop values are 0: disable crop
+    if (left == DISABLE_CROP_LEFT && top == DISABLE_CROP_TOP && right == DISABLE_CROP_RIGHT &&
+        bottom == DISABLE_CROP_BOTTOM) {
         cropParams_.result = ConfigResult::DISABLED;
         AVCODEC_LOGI("Crop disabled by zero crop parameters");
         return AVCS_ERR_OK;
     }
-
     Range encWidth;
     Range encHeight;
-    if (!GetEncoderRange(format, encWidth, encHeight)) {
-        AVCODEC_LOGE("Failed to get encoder capability for crop");
-        return AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(GetEncoderRange(format, encWidth, encHeight), AVCS_ERR_INVALID_VAL,
+                             "Failed to get encoder capability for crop");
     constexpr int32_t cropRectInclusiveOffset = 1;
     int32_t cropWidth = right - left + cropRectInclusiveOffset;
     int32_t cropHeight = bottom - top + cropRectInclusiveOffset;
