@@ -60,6 +60,9 @@ void VideoEncDualOutputSample::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t ind
 
 void VideoEncDualOutputSample::OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
+    if (codec == nullptr) {
+        return;
+    }
     OH_VideoEncoder_FreeOutputBuffer(codec, index);
 }
 
@@ -68,6 +71,9 @@ void VideoEncDualOutputSample::OnNeedInputData(OH_AVCodec *codec, uint32_t index
 void VideoEncDualOutputSample::OnNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
                                                OH_AVCodecBufferAttr *attr, void *userData)
 {
+    if (codec == nullptr) {
+        return;
+    }
     OH_VideoEncoder_FreeOutputData(codec, index);
 }
 
@@ -424,9 +430,6 @@ void VideoEncDualOutputSample::DoDestroy(int32_t target, OH_AVCodec *codec, Fuzz
         secondary_ = nullptr;
     } else if (target == 2) { // 2: invalid target
         OH_VideoEncoder_Destroy(nullptr);
-    } else {
-        auto lk = LockTarget(target);
-        OH_VideoEncoder_Destroy(codec);
     }
 }
 
@@ -527,7 +530,7 @@ const VideoEncDualOutputSample::OpFunc VideoEncDualOutputSample::opDispatch[24] 
 
 void VideoEncDualOutputSample::InvokeOp(int32_t op, int32_t target, FuzzedDataProvider &fdp)
 {
-    if (op == 0 || op == 1 || op == 14) { // 0/1/14: Create*/Destroy take their own locks (primary→secondary)
+    if (op == 0 || op == 1 || op == 14) { // 0/1/14: Create*/Destroy
         (this->*VideoEncDualOutputSample::opDispatch[op])(target, nullptr, fdp);
         return;
     }
@@ -599,8 +602,14 @@ void VideoEncDualOutputSample::RunFuzzLoop(FuzzedDataProvider &fdp)
             TaskItem task;
             {
                 std::unique_lock<std::mutex> lk(queueMutex);
-                queueCv.wait(lk, [&taskQueue, &producerDone] { return !taskQueue.empty() || producerDone.load(); });
+                bool ready = queueCv.wait_for(lk, WORKER_WAIT_TIMEOUT, [&taskQueue, &producerDone] {
+                    return !taskQueue.empty() || producerDone.load();
+                });
                 if (taskQueue.empty() && producerDone.load()) {
+                    running = false;
+                    continue;
+                }
+                if (!ready && taskQueue.empty()) {
                     running = false;
                     continue;
                 }

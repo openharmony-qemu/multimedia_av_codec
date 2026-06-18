@@ -183,11 +183,6 @@ bool Preprocessor::IsAvailable()
 
 int32_t Preprocessor::ValidateConfiguration(const Media::Format &format, bool configuring)
 {
-    if (!IsAvailable()) {
-        AVCODEC_LOGE("Crop and downsampling are not supported");
-        return AVCS_ERR_UNSUPPORT;
-    }
-
     CHECK_AND_RETURN_RET_LOG(UsingAsyncMode(format), AVCS_ERR_INVALID_VAL,
                              "Preprocessor encoder does not support synchronous mode!");
 
@@ -304,10 +299,13 @@ int32_t Preprocessor::ValidateCrop(const Media::Format &format)
     bool hasAny = hasLeft || hasRight || hasTop || hasBottom;
     bool hasAll = hasLeft && hasRight && hasTop && hasBottom;
 
-    if (!hasAny) {              // If none of the crop values (left, right, top and bottom) is configured,
-        return AVCS_ERR_OK;     // keep current status.
+    if (!hasAny) {          // If none of the crop values (left, right, top and bottom) is configured,
+        return AVCS_ERR_OK; // keep current status.
     }
-
+    if (!IsAvailable()) {
+        AVCODEC_LOGE("Crop are not supported");
+        return AVCS_ERR_UNSUPPORT;
+    }
     if (hasAny && !hasAll) {            // At least one crop value is not configured,
         AVCODEC_LOGE("Incomplete crop parameters: hasLeft=%{public}d, hasRight=%{public}d, "
                      "hasTop=%{public}d, hasBottom=%{public}d",
@@ -353,11 +351,15 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format)
     int32_t height{0};
     bool hasWidth = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, width);
     bool hasHeight = format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, height);
-    if (hasWidth != hasHeight) {
-        return AVCS_ERR_INVALID_VAL;
-    }
     if (!hasWidth && !hasHeight) {
         return AVCS_ERR_OK;
+    }
+    if (!IsAvailable()) {
+        AVCODEC_LOGE("Downsampling are not supported");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    if (hasWidth != hasHeight) {
+        return AVCS_ERR_INVALID_VAL;
     }
     if (width == DISABLE_DOWNSAMPLING_WIDTH && height == DISABLE_DOWNSAMPLING_HEIGHT) {
         downsamplingParams_.result = ConfigResult::DISABLED;

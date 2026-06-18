@@ -17,6 +17,7 @@
 #define VIDEO_ENC_DUAL_OUTPUT_SAMPLE_H
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <fuzzer/FuzzedDataProvider.h>
@@ -69,6 +70,7 @@ private:
 
     std::atomic<bool> isRunning_{false};
     std::unique_ptr<std::thread> inputSurfaceLoop_;
+    static constexpr auto WORKER_WAIT_TIMEOUT = std::chrono::seconds(10); // 10: worker wait_for fallback (s)
 
     std::unique_lock<std::recursive_mutex> LockTarget(int32_t target);
     void InvokeOp(int32_t op, int32_t target, FuzzedDataProvider &fdp);
