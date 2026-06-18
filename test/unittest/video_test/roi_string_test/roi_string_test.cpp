@@ -606,3 +606,217 @@ HWTEST_F(TEST_SUIT, RoiString_RoundTrip_ParseMixedThenReparse_033, TestSize.Leve
     DestroyFormats(parsed, parsedCount);
     DestroyFormats(reparsed, reparsedCount);
 }
+
+/**
+ * @tc.name: RoiString_ParseRoiString_DuplicateCoords_034
+ * @tc.desc: Test DedupFormats: identical coords and kv values are deduplicated
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_DuplicateCoords_034, TestSize.Level1)
+{
+    OH_AVFormat *formats[4] = {};
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(
+        "0,0-10,10=dqp:5;0,0-10,10=dqp:5;", formats, 4, &count));
+    EXPECT_EQ(count, 1);
+    DestroyFormats(formats, count);
+}
+
+/**
+ * @tc.name: RoiString_ParseRoiString_DuplicateCoordsNoKv_035
+ * @tc.desc: Test DedupFormats: identical coords without kv are deduplicated
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_DuplicateCoordsNoKv_035, TestSize.Level1)
+{
+    OH_AVFormat *formats[4] = {};
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(
+        "0,0-10,10;0,0-10,10;", formats, 4, &count));
+    EXPECT_EQ(count, 1);
+    DestroyFormats(formats, count);
+}
+
+/**
+ * @tc.name: RoiString_ParseRoiString_SameCoordsDifferentDqp_036
+ * @tc.desc: Test IsSameRoiFormat: same coords with different dqp are NOT deduplicated
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_SameCoordsDifferentDqp_036, TestSize.Level1)
+{
+    OH_AVFormat *formats[4] = {};
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(
+        "0,0-10,10=dqp:5;0,0-10,10=dqp:3;", formats, 4, &count));
+    ASSERT_EQ(count, 2);
+    int32_t val = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(formats[0], OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, &val));
+    EXPECT_EQ(val, 5);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(formats[1], OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, &val));
+    EXPECT_EQ(val, 3);
+    DestroyFormats(formats, count);
+}
+
+/**
+ * @tc.name: RoiString_ParseRoiString_SameCoordsOneWithDqp_037
+ * @tc.desc: Test IsSameRoiFormat: same coords, one has dqp the other doesn't → NOT deduplicated
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_SameCoordsOneWithDqp_037, TestSize.Level1)
+{
+    OH_AVFormat *formats[4] = {};
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(
+        "0,0-10,10=dqp:5;0,0-10,10;", formats, 4, &count));
+    ASSERT_EQ(count, 2);
+    DestroyFormats(formats, count);
+}
+
+/**
+ * @tc.name: RoiString_ParseRoiString_SameCoordsDifferentSlb_038
+ * @tc.desc: Test IsSameRoiFormat: same coords with different slb are NOT deduplicated
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_SameCoordsDifferentSlb_038, TestSize.Level1)
+{
+    OH_AVFormat *formats[4] = {};
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(
+        "0,0-10,10=slb:1;0,0-10,10=slb:0;", formats, 4, &count));
+    ASSERT_EQ(count, 2);
+    DestroyFormats(formats, count);
+}
+
+/**
+ * @tc.name: RoiString_ParseRoiString_SameCoordsOneWithSlb_039
+ * @tc.desc: Test IsSameRoiFormat: same coords, one has slb the other doesn't → NOT deduplicated
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_SameCoordsOneWithSlb_039, TestSize.Level1)
+{
+    OH_AVFormat *formats[4] = {};
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(
+        "0,0-10,10=slb:1;0,0-10,10;", formats, 4, &count));
+    ASSERT_EQ(count, 2);
+    DestroyFormats(formats, count);
+}
+
+/**
+ * @tc.name: RoiString_ParseRoiString_SlbOnly_040
+ * @tc.desc: Test ParseRoiString with slb only (no dqp) in new format
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_ParseRoiString_SlbOnly_040, TestSize.Level1)
+{
+    OH_AVFormat *formats[4] = {};
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_ParseRoiString(
+        "0,0-10,10=slb:1;", formats, 4, &count));
+    ASSERT_EQ(count, 1);
+    int32_t val = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(formats[0], OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, &val));
+    EXPECT_EQ(val, 1);
+    ASSERT_FALSE(OH_AVFormat_GetIntValue(formats[0], OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, &val));
+    DestroyFormats(formats, count);
+}
+
+/**
+ * @tc.name: RoiString_GetRoiCount_DqpOverRange_041
+ * @tc.desc: Test GetRoiCount rejects segment with dqp value over max range (>51)
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_DqpOverRange_041, TestSize.Level1)
+{
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=dqp:60;", &count));
+    EXPECT_EQ(count, 0);
+}
+
+/**
+ * @tc.name: RoiString_GetRoiCount_DqpUnderRange_042
+ * @tc.desc: Test GetRoiCount rejects segment with dqp value under min range (<-51)
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_DqpUnderRange_042, TestSize.Level1)
+{
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=dqp:-60;", &count));
+    EXPECT_EQ(count, 0);
+}
+
+/**
+ * @tc.name: RoiString_GetRoiCount_SlbOverRange_043
+ * @tc.desc: Test GetRoiCount rejects segment with slb value over max range (>1)
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_SlbOverRange_043, TestSize.Level1)
+{
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=slb:2;", &count));
+    EXPECT_EQ(count, 0);
+}
+
+/**
+ * @tc.name: RoiString_GetRoiCount_SlbUnderRange_044
+ * @tc.desc: Test GetRoiCount rejects segment with slb value under min range (<0)
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_SlbUnderRange_044, TestSize.Level1)
+{
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("1,2-3,4=slb:-1;", &count));
+    EXPECT_EQ(count, 0);
+}
+
+/**
+ * @tc.name: RoiString_GetRoiCount_OldFormatDqpOverRange_045
+ * @tc.desc: Test GetRoiCount rejects old format segment with dqp > 51
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_OldFormatDqpOverRange_045, TestSize.Level1)
+{
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("0,0-10,10=52;", &count));
+    EXPECT_EQ(count, 0);
+}
+
+/**
+ * @tc.name: RoiString_GetRoiCount_OldFormatDqpUnderRange_046
+ * @tc.desc: Test GetRoiCount rejects old format segment with dqp < -51
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_GetRoiCount_OldFormatDqpUnderRange_046, TestSize.Level1)
+{
+    uint32_t count = 0;
+    ASSERT_EQ(AV_ERR_OK, OH_VideoMetadata_GetRoiCount("0,0-10,10=-52;", &count));
+    EXPECT_EQ(count, 0);
+}
+
+/**
+ * @tc.name: RoiString_AppendRoiString_InvalidDqpOverRange_047
+ * @tc.desc: Test AppendRoiString rejects format with dqp value over range (>51)
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_InvalidDqpOverRange_047, TestSize.Level1)
+{
+    OH_AVFormat *fmt = CreateRoiFormat(0, 0, 10, 10);
+    OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_DELTA_QP, 60);
+    char *roiStr = nullptr;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(&roiStr, fmt));
+    OH_AVFormat_Destroy(fmt);
+}
+
+/**
+ * @tc.name: RoiString_AppendRoiString_InvalidSlbOverRange_048
+ * @tc.desc: Test AppendRoiString rejects format with slb value over range (>1)
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, RoiString_AppendRoiString_InvalidSlbOverRange_048, TestSize.Level1)
+{
+    OH_AVFormat *fmt = CreateRoiFormat(0, 0, 10, 10);
+    OH_AVFormat_SetIntValue(fmt, OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL, 2);
+    char *roiStr = nullptr;
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoMetadata_AppendRoiString(&roiStr, fmt));
+    OH_AVFormat_Destroy(fmt);
+}
