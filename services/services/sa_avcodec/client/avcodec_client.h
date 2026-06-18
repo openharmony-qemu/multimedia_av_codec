@@ -79,7 +79,7 @@ private:
     int32_t releaseTimerId_ = 0;
     static constexpr uint32_t RELEASE_DELAY_SECONDS = 180; // Delay before releasing resources (3 minutes)
 #endif
-    std::mutex mutex_;
+    std::recursive_mutex mutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

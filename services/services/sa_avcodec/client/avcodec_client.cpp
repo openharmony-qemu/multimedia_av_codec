@@ -89,7 +89,7 @@ int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCo
 
 int32_t AVCodecClient::SuspendFreeze(const std::vector<pid_t> &pidList)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     auto avCodecProxy = GetTemporaryAVCodecProxy();
     CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
     return avCodecProxy->SuspendFreeze(pidList);
@@ -97,7 +97,7 @@ int32_t AVCodecClient::SuspendFreeze(const std::vector<pid_t> &pidList)
 
 int32_t AVCodecClient::SuspendActive(const std::vector<pid_t> &pidList)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     auto avCodecProxy = GetTemporaryAVCodecProxy();
     CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
     return avCodecProxy->SuspendActive(pidList);
@@ -105,7 +105,7 @@ int32_t AVCodecClient::SuspendActive(const std::vector<pid_t> &pidList)
 
 int32_t AVCodecClient::SuspendActiveAll()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     auto avCodecProxy = GetTemporaryAVCodecProxy();
     CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
     return avCodecProxy->SuspendActiveAll();
@@ -113,7 +113,7 @@ int32_t AVCodecClient::SuspendActiveAll()
 
 int32_t AVCodecClient::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     auto avCodecProxy = GetTemporaryAVCodecProxy();
     CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
     return avCodecProxy->GetActiveSecureDecoderPids(pidList);
@@ -122,7 +122,7 @@ int32_t AVCodecClient::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
 #ifdef SUPPORT_CODEC
 int32_t AVCodecClient::CreateCodecService(std::shared_ptr<ICodecService> &codecClient)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     CancelTimer();
 
     sptr<IRemoteObject> object = nullptr;
@@ -141,7 +141,7 @@ int32_t AVCodecClient::CreateCodecService(std::shared_ptr<ICodecService> &codecC
 
 int32_t AVCodecClient::DestroyCodecService(std::shared_ptr<ICodecService> codecClient)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecClient != nullptr, AVCS_ERR_NO_MEMORY, "codec client is nullptr");
     codecClientList_.remove(codecClient);
     ScheduleReleaseResources();
@@ -151,7 +151,7 @@ int32_t AVCodecClient::DestroyCodecService(std::shared_ptr<ICodecService> codecC
 #ifdef SUPPORT_CODECLIST
 std::shared_ptr<ICodecListService> AVCodecClient::CreateCodecListService()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     sptr<IRemoteObject> object = nullptr;
     (void)CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, object);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Create codeclist proxy object failed");
@@ -170,7 +170,7 @@ std::shared_ptr<ICodecListService> AVCodecClient::CreateCodecListService()
 
 int32_t AVCodecClient::DestroyCodecListService(std::shared_ptr<ICodecListService> codecListClient)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(codecListClient != nullptr, AVCS_ERR_NO_MEMORY, "codeclist client is nullptr");
     codecListClientList_.remove(codecListClient);
     ScheduleReleaseResources();
@@ -179,7 +179,7 @@ int32_t AVCodecClient::DestroyCodecListService(std::shared_ptr<ICodecListService
 
 sptr<IStandardCodecListService> AVCodecClient::GetCodecListServiceProxy()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     sptr<IRemoteObject> object = nullptr;
     (void)CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCodecSystemAbility::AVCODEC_CODECLIST, object);
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "Get codeclist service proxy failed");
@@ -256,7 +256,7 @@ void AVCodecClient::AVCodecServerDied(pid_t pid)
 
 void AVCodecClient::DoAVCodecServerDied()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     CancelTimer();
     if (avCodecProxy_ != nullptr) {
         (void)avCodecProxy_->AsObject()->RemoveDeathRecipient(deathRecipient_);
@@ -272,6 +272,7 @@ void AVCodecClient::DoAVCodecServerDied()
             codecClient->AVCodecServerDied();
         }
     }
+    codecClientList_.clear();
 #endif
 #ifdef SUPPORT_CODECLIST
     for (auto &it : codecListClientList_) {
@@ -280,6 +281,7 @@ void AVCodecClient::DoAVCodecServerDied()
             codecListClient->AVCodecServerDied();
         }
     }
+    codecListClientList_.clear();
 #endif
 }
 
@@ -322,7 +324,7 @@ void AVCodecClient::ScheduleReleaseResources()
 
 void AVCodecClient::TryReleaseResources()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     // Check if all client lists are empty
     bool hasAnyClient = false;
 #ifdef SUPPORT_CODEC
