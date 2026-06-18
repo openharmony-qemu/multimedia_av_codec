@@ -21,7 +21,7 @@
 #include "media_description.h"
 #include "avcodec_trace.h"
 #include "codec_capability_adapter.h"
-1
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER,
                                                 "SurfaceDecoderAdapter" };
@@ -119,6 +119,9 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
     Format format;
     std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
+    callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, appPid_);
+    callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_UID, appUid_);
+    callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, bundleName_);
     format.SetMeta(callerInfo);
     {
         std::unique_lock<std::shared_mutex> lock(codecServerMutex_);
@@ -189,6 +192,15 @@ Status SurfaceDecoderAdapter::Configure(const Format &format)
 int64_t SurfaceDecoderAdapter::GetFrameNum()
 {
     return frameNum_.load();
+}
+
+void SurfaceDecoderAdapter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
 }
 
 int64_t SurfaceDecoderAdapter::GetLastBufferPts()
