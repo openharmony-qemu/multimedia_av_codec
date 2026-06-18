@@ -23,6 +23,7 @@ constexpr double MIN_SPEED_FOR_DYNAMIC_DROP = 1.0;
 constexpr double ZERO_MOTION_RATIO_THRESHOLD = 0.85;
 constexpr double TARGET_SAFE_FPS = 60.0;
 constexpr double TARGET_EXTREME_FPS = 30.0;
+constexpr double FALLBACK_SAFE_FPS = 45.0;
 constexpr double MIN_SOURCE_FPS_FOR_DROP = 24.0;
 constexpr double HIGH_RISK_TH = 0.8;
 constexpr double LOW_RISK_TH = 0.2;
@@ -84,6 +85,7 @@ double AdaptiveRetentionStrategy::CalculateTargetRatio(const FrameRetentionConte
         return 1.0;
     }
     double baseRatioCeiling = std::clamp(TARGET_SAFE_FPS / renderFps, 0.0, 1.0);
+    double fallbackRatioCeiling = std::clamp(FALLBACK_SAFE_FPS / renderFps, 0.0, 1.0);
     double maxDropFloor = std::clamp(TARGET_EXTREME_FPS / renderFps, 0.0, 1.0);
     if (!ctx.mvStats) {
         return baseRatioCeiling;
@@ -102,7 +104,7 @@ double AdaptiveRetentionStrategy::CalculateTargetRatio(const FrameRetentionConte
             return maxDropFloor + factor * (baseRatioCeiling - maxDropFloor);
         }
     }
-    return baseRatioCeiling;
+    return fallbackRatioCeiling;
 }
 
 bool AdaptiveRetentionStrategy::ExecuteAccumulatorDecision(double dynamicRatio, uint32_t preDroppedCount)
