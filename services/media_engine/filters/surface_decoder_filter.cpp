@@ -148,9 +148,6 @@ void SurfaceDecoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     appPid_ = appPid;
     bundleName_ = bundleName;
     instanceId_ = instanceId;
-    // if (mediaCodec_) {
-    //     mediaCodec_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
-    // }
 }
 
 Status SurfaceDecoderFilter::ConfigureMediaCodecByMimeType(std::string codecMimeType, bool isHdrVivid)
