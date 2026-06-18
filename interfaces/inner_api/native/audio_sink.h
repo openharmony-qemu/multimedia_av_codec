@@ -172,8 +172,9 @@ private:
     std::shared_ptr<AVBuffer> CopyBuffer(const std::shared_ptr<AVBuffer> buffer);
     Status MuteAudioBuffer(size_t size, AudioStandard::BufferDesc &bufferDesc, bool isEos);
     void HandleBypassOutput(const std::shared_ptr<AVBuffer> &buffer);
-    void HandlePostProcessingOutput(std::shared_ptr<AVBuffer> &buffer);
+    std::shared_ptr<AVBuffer> HandlePostProcessingOutput(const std::shared_ptr<AVBuffer> &buffer);
     std::shared_ptr<AVBuffer> CopyPcmBuffer(const std::shared_ptr<AVBuffer> buffer, int32_t minCapacity = 0);
+    Status ReleaseDecodedBuffer();
 
     class UnderrunDetector {
     public:
@@ -351,6 +352,7 @@ private:
     bool isPcmProcessorEnable_ {false};
     int32_t maxProcessedPcmLen_ {0};
     std::unique_ptr<Task> bypassTask_ {nullptr};
+    std::queue<std::shared_ptr<AVBuffer>> decodedBuffers_ {};
 };
 }
 }
