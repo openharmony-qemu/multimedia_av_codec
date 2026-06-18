@@ -307,13 +307,13 @@ HWTEST_F(TEST_SUIT, AddPlane_ValidPath_I420_Test_009, TestSize.Level1)
 }
 
 /**
- * @tc.name IsValidBuffer_NullBuffer_Test_011
+ * @tc.name IsValidBuffer_NullBuffer_Test_001
  * @tc.desc Test IsValidBuffer validation when buffer is nullptr
  *          This test triggers the !buffer validation branch by passing null pointer
  *          as input buffer to Process function.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, IsValidBuffer_NullBuffer_Test_011, TestSize.Level1)
+HWTEST_F(TEST_SUIT, IsValidBuffer_NullBuffer_Test_001, TestSize.Level1)
 {
     constexpr size_t bufferSize = static_cast<size_t>(DEFAULT_STRIDE * DEFAULT_HEIGHT * 3 / 2);
 
@@ -334,12 +334,12 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_NullBuffer_Test_011, TestSize.Level1)
 }
 
 /**
- * @tc.name IsValidBuffer_NullOutputBuffer_Test_012
+ * @tc.name IsValidBuffer_NullOutputBuffer_Test_002
  * @tc.desc Test IsValidBuffer validation when output buffer is nullptr
  *          This test triggers the !buffer validation branch for output buffer.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, IsValidBuffer_NullOutputBuffer_Test_012, TestSize.Level1)
+HWTEST_F(TEST_SUIT, IsValidBuffer_NullOutputBuffer_Test_002, TestSize.Level1)
 {
     constexpr size_t bufferSize = static_cast<size_t>(DEFAULT_STRIDE * DEFAULT_HEIGHT * 3 / 2);
 
@@ -359,12 +359,12 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_NullOutputBuffer_Test_012, TestSize.Level1)
 }
 
 /**
- * @tc.name IsValidBuffer_ZeroWidth_Test_013
+ * @tc.name IsValidBuffer_ZeroWidth_Test_003
  * @tc.desc Test IsValidBuffer validation when buffer width <= 0
  *          This test triggers the GetWidth() <= 0 validation branch.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, IsValidBuffer_ZeroWidth_Test_013, TestSize.Level1)
+HWTEST_F(TEST_SUIT, IsValidBuffer_ZeroWidth_Test_003, TestSize.Level1)
 {
     constexpr int32_t width = 0;
     sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
@@ -382,12 +382,12 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_ZeroWidth_Test_013, TestSize.Level1)
 }
 
 /**
- * @tc.name IsValidBuffer_NegativeWidth_Test_014
+ * @tc.name IsValidBuffer_NegativeWidth_Test_004
  * @tc.desc Test IsValidBuffer validation when buffer width is negative
  *          This test explicitly tests the GetWidth() <= 0 validation with negative value.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, IsValidBuffer_NegativeWidth_Test_014, TestSize.Level1)
+HWTEST_F(TEST_SUIT, IsValidBuffer_NegativeWidth_Test_004, TestSize.Level1)
 {
     constexpr int32_t width = -10; // width: -10
     sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
@@ -405,12 +405,12 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_NegativeWidth_Test_014, TestSize.Level1)
 }
 
 /**
- * @tc.name IsValidBuffer_ZeroHeight_Test_015
+ * @tc.name IsValidBuffer_ZeroHeight_Test_005
  * @tc.desc Test IsValidBuffer validation when buffer height <= 0
  *          This test triggers the GetHeight() <= 0 validation branch.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, IsValidBuffer_ZeroHeight_Test_015, TestSize.Level1)
+HWTEST_F(TEST_SUIT, IsValidBuffer_ZeroHeight_Test_005, TestSize.Level1)
 {
     constexpr int32_t height = 0;
     sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
@@ -428,12 +428,12 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_ZeroHeight_Test_015, TestSize.Level1)
 }
 
 /**
- * @tc.name IsValidBuffer_NegativeHeight_Test_016
+ * @tc.name IsValidBuffer_NegativeHeight_Test_006
  * @tc.desc Test IsValidBuffer validation when buffer height is negative
  *          This test explicitly tests the GetHeight() <= 0 validation with negative value.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, IsValidBuffer_NegativeHeight_Test_016, TestSize.Level1)
+HWTEST_F(TEST_SUIT, IsValidBuffer_NegativeHeight_Test_006, TestSize.Level1)
 {
     constexpr int32_t height = -10; // height: -10
     sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
@@ -451,13 +451,13 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_NegativeHeight_Test_016, TestSize.Level1)
 }
 
 /**
- * @tc.name IsValidBuffer_ValidBuffer_Test_019
+ * @tc.name IsValidBuffer_ValidBuffer_Test_007
  * @tc.desc Test IsValidBuffer successful path with valid buffer parameters
  *          This validates that IsValidBuffer returns true when all conditions are met,
  *          allowing Process to continue execution successfully.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, IsValidBuffer_ValidBuffer_Test_019, TestSize.Level1)
+HWTEST_F(TEST_SUIT, IsValidBuffer_ValidBuffer_Test_007, TestSize.Level1)
 {
     constexpr size_t bufferSize = static_cast<size_t>(DEFAULT_STRIDE * DEFAULT_HEIGHT * 3 / 2);
 
@@ -480,13 +480,83 @@ HWTEST_F(TEST_SUIT, IsValidBuffer_ValidBuffer_Test_019, TestSize.Level1)
 }
 
 /**
- * @tc.name ValidateCropRect_NegativeLeft_Test_020
+ * @tc.name ValidateCpoy_WidtdHeight_Test_008
+ * @tc.desc width of input is not equal to width of output and height of input is not equal to height of output
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, ValidateCpoy_WidtdHeight_Test_008, TestSize.Level1)
+{
+    constexpr int32_t width = 652; // width: 652
+    constexpr int32_t height = 492; // height: 492
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    ASSERT_NE(inputBuffer, nullptr);
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::COPY;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name ValidateCpoy_WidtdHeight_Test_009
+ * @tc.desc width of input is equal to width of output and height of input is not equal to height of output
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, ValidateCpoy_WidtdHeight_Test_009, TestSize.Level1)
+{
+    constexpr int32_t height = 492; // height: 492
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    ASSERT_NE(inputBuffer, nullptr);
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::COPY;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name ValidateCpoy_WidtdHeight_Test_010
+ * @tc.desc width of input is not equal to width of output and height of input is equal to height of output
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, ValidateCpoy_WidtdHeight_Test_010, TestSize.Level1)
+{
+    constexpr int32_t width = 652; // width: 652
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    ASSERT_NE(inputBuffer, nullptr);
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::COPY;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name ValidateCropRect_NegativeLeft_Test_001
  * @tc.desc Test ValidateCropRect validation when crop.left < 0
  *          This test triggers the left boundary validation branch by setting
  *          negative left value in crop rectangle.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeLeft_Test_020, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeLeft_Test_001, TestSize.Level1)
 {
     constexpr int32_t cropWidth = 320;  // cropWidth: 320
     constexpr int32_t cropHeight = 240; // cropHeight: 240
@@ -519,13 +589,13 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeLeft_Test_020, TestSize.Level1)
 }
 
 /**
- * @tc.name ValidateCropRect_NegativeTop_Test_021
+ * @tc.name ValidateCropRect_NegativeTop_Test_002
  * @tc.desc Test ValidateCropRect validation when crop.top < 0
  *          This test triggers the top boundary validation branch by setting
  *          negative top value in crop rectangle.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeTop_Test_021, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeTop_Test_002, TestSize.Level1)
 {
     constexpr int32_t cropWidth = 320;  // cropWidth:320
     constexpr int32_t cropHeight = 240; // cropHeight:320
@@ -559,13 +629,13 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeTop_Test_021, TestSize.Level1)
 }
 
 /**
- * @tc.name ValidateCropRect_ZeroWidth_Test_022
+ * @tc.name ValidateCropRect_ZeroWidth_Test_003
  * @tc.desc Test ValidateCropRect validation when crop.width == 0
  *          This test triggers the width boundary validation branch by setting
  *          width to 0 in crop rectangle.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroWidth_Test_022, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroWidth_Test_003, TestSize.Level1)
 {
     constexpr int32_t cropWidth = 320;  // cropWidth: 320
     constexpr int32_t cropHeight = 240; // cropHeight: 240
@@ -598,13 +668,13 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroWidth_Test_022, TestSize.Level1)
 }
 
 /**
- * @tc.name ValidateCropRect_ZeroHeight_Test_023
+ * @tc.name ValidateCropRect_ZeroHeight_Test_004
  * @tc.desc Test ValidateCropRect validation when crop.height == 0
  *          This test triggers the height boundary validation branch by setting
  *          height to 0 in crop rectangle.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroHeight_Test_023, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroHeight_Test_004, TestSize.Level1)
 {
     constexpr int32_t cropWidth = 320;  // cropWidth: 320
     constexpr int32_t cropHeight = 240; // cropHeight: 240
@@ -637,13 +707,13 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroHeight_Test_023, TestSize.Level1)
 }
 
 /**
- * @tc.name ValidateCropRect_OutsideWidth_Test_024
+ * @tc.name ValidateCropRect_OutsideWidth_Test_005
  * @tc.desc Test ValidateCropRect validation when crop.left + crop.width > input.width
  *          This test triggers the width boundary validation branch by setting
  *          left + width to be greater than input width in crop rectangle.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideWidth_Test_024, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideWidth_Test_005, TestSize.Level1)
 {
     constexpr int32_t cropWidth = 320;  // cropWidth: 320
     constexpr int32_t cropHeight = 240; // cropHeight: 240
@@ -676,13 +746,13 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideWidth_Test_024, TestSize.Level1)
 }
 
 /**
- * @tc.name ValidateCropRect_OutsideHeight_Test_025
+ * @tc.name ValidateCropRect_OutsideHeight_Test_006
  * @tc.desc Test ValidateCropRect validation when crop.top + crop.height > input.height
  *          This test triggers the height boundary validation branch by setting
  *          top + height to be greater than input height in crop rectangle.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideHeight_Test_025, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideHeight_Test_006, TestSize.Level1)
 {
     constexpr int32_t cropWidth = 320;  // cropWidth: 320
     constexpr int32_t cropHeight = 240; // cropHeight: 240
@@ -715,13 +785,13 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideHeight_Test_025, TestSize.Level1)
 }
 
 /**
- * @tc.name ValidateCropRect_ValidCropRect_Test_026
+ * @tc.name ValidateCropRect_ValidCropRect_Test_007
  * @tc.desc Test ValidateCropRect successful path with valid crop rectangle
  *          This validates that ValidateCropRect returns true when all conditions are met,
  *          allowing Process to continue execution successfully.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateCropRect_ValidCropRect_Test_026, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateCropRect_ValidCropRect_Test_007, TestSize.Level1)
 {
     constexpr int32_t cropWidth = 320;  // cropWidth: 320
     constexpr int32_t cropHeight = 240; // cropHeight: 240
@@ -754,13 +824,13 @@ HWTEST_F(TEST_SUIT, ValidateCropRect_ValidCropRect_Test_026, TestSize.Level1)
 }
 
 /**
- * @tc.name ValidateOperation_NegativeOperation_Test_038
+ * @tc.name ValidateOperation_NegativeOperation_Test_001
  * @tc.desc Test ValidateOperation validation when operation < 0
  *          This test triggers the operation boundary validation branch by setting
  *          negative operation value.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateOperation_NegativeOperation_Test_038, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateOperation_NegativeOperation_Test_001, TestSize.Level1)
 {
     sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(inputBuffer, nullptr);
@@ -785,13 +855,13 @@ HWTEST_F(TEST_SUIT, ValidateOperation_NegativeOperation_Test_038, TestSize.Level
 }
 
 /**
- * @tc.name ValidateOperation_ValidOperation_Test_039
+ * @tc.name ValidateOperation_ValidOperation_Test_002
  * @tc.desc Test ValidateOperation successful path with valid operation
  *          This validates that ValidateOperation returns true when all conditions are met,
  *          allowing Process to continue execution successfully.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateOperation_ValidOperation_Test_039, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateOperation_ValidOperation_Test_002, TestSize.Level1)
 {
     sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(inputBuffer, nullptr);
@@ -816,7 +886,7 @@ HWTEST_F(TEST_SUIT, ValidateOperation_ValidOperation_Test_039, TestSize.Level1)
 }
 
 /**
- * @tc.name ValidateOperation_UnsupportedOperation_Test_040
+ * @tc.name ValidateOperation_UnsupportedOperation_Test_003
  * @tc.desc Test ValidateOperation returning false for unsupported operations
  *          This test triggers the "default: return false" branch in ValidateOperation by using
  *          an operation that is not in the supported list
@@ -824,7 +894,7 @@ HWTEST_F(TEST_SUIT, ValidateOperation_ValidOperation_Test_039, TestSize.Level1)
  *          ValidateOperation to return false, leading to Process returning AVCS_ERR_INVALID_VAL
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, ValidateOperation_UnsupportedOperation_Test_040, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ValidateOperation_UnsupportedOperation_Test_003, TestSize.Level1)
 {
     sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
     ASSERT_NE(inputBuffer, nullptr);
@@ -849,7 +919,7 @@ HWTEST_F(TEST_SUIT, ValidateOperation_UnsupportedOperation_Test_040, TestSize.Le
 }
 
 /**
- * @tc.name IsFormatSupported_UnsupportedFormat_Test_047
+ * @tc.name IsFormatSupported_UnsupportedFormat_Test_001
  * @tc.desc Test IsFormatSupported returning false for unsupported pixel formats
  *          This test triggers the "default: return false" branch in IsFormatSupported by using
  *          a pixel format that is not in the supported list
@@ -857,7 +927,7 @@ HWTEST_F(TEST_SUIT, ValidateOperation_UnsupportedOperation_Test_040, TestSize.Le
  *          IsFormatSupported to return false, leading to Process returning AVCS_ERR_INVALID_VAL.
  * @tc.type FUNC
  */
-HWTEST_F(TEST_SUIT, IsFormatSupported_UnsupportedFormat_Test_047, TestSize.Level1)
+HWTEST_F(TEST_SUIT, IsFormatSupported_UnsupportedFormat_Test_001, TestSize.Level1)
 {
     constexpr int32_t stride = 640; // stride: 640
     constexpr size_t bufferSize = static_cast<size_t>(stride * DEFAULT_HEIGHT * 4);
@@ -980,6 +1050,100 @@ HWTEST_F(TEST_SUIT, ValidateDownsample_Valid_Test_001, TestSize.Level1)
     request.operation = CpuImageOperation::DOWNSAMPLE;
     int32_t ret = CpuImageProcessor::Process(request);
     EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name BuildI420Layout_Invalid_Test_001
+ * @tc.desc input stride is odd number
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
+{
+    constexpr int32_t stride = 321; // stride: 321
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(inputBuffer, nullptr);
+    inputBuffer->GetBufferHandle()->stride = stride;
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::CROP;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name BuildPaneLayout_Invalid_Test_001
+ * @tc.desc height is odd number
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, BuildPaneLayout_Invalid_Test_001, TestSize.Level1)
+{
+    constexpr int32_t height = 481; // height: 481
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(inputBuffer, nullptr);
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::CROP;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name BuildPaneLayout_Invalid_Test_002
+ * @tc.desc width is odd number
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, BuildPaneLayout_Invalid_Test_002, TestSize.Level1)
+{
+    constexpr int32_t width = 641; // width: 641
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(inputBuffer, nullptr);
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(width, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::CROP;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name BuildPaneLayout_Invalid_Test_003
+ * @tc.desc width and height is odd number
+ * @tc.type FUNC
+ */
+HWTEST_F(TEST_SUIT, BuildPaneLayout_Invalid_Test_003, TestSize.Level1)
+{
+    constexpr int32_t width = 641; // width: 641
+    constexpr int32_t height = 481; // height: 481
+
+    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, height, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(inputBuffer, nullptr);
+
+    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(width, height, GRAPHIC_PIXEL_FMT_YCBCR_420_P);
+    ASSERT_NE(outputBuffer, nullptr);
+
+    CpuImageProcessRequest request;
+    request.input = inputBuffer;
+    request.output = outputBuffer;
+    request.operation = CpuImageOperation::CROP;
+    int32_t ret = CpuImageProcessor::Process(request);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
 } // namespace PreProcessing
 } // namespace MediaAVCodec

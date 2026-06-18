@@ -52,19 +52,19 @@ void VEncCallbackTest::OnError(int32_t errorCode)
 void VEncCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
-    int32_t picWidhth = 0;
+    int32_t picWidth = 0;
     int32_t picHeight = 0;
     int32_t stride = 0;
     int32_t sliceHeight = 0;
     int32_t width = 0;
     int32_t height = 0;
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidhth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidth));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, picHeight));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
-    std::cout << "OnStreamChanged: pic_width = " << picWidhth
+    std::cout << "OnStreamChanged: pic_width = " << picWidth
               << ", pic_height = " << picHeight
               << ", stride = " << stride
               << ", slice_height = " << sliceHeight
@@ -118,19 +118,19 @@ void VEncCallbackTestExt::OnError(int32_t errorCode)
 void VEncCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
-    int32_t picWidhth = 0;
+    int32_t picWidth = 0;
     int32_t picHeight = 0;
     int32_t stride = 0;
     int32_t sliceHeight = 0;
     int32_t width = 0;
     int32_t height = 0;
-    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidhth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidth));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, picHeight));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
     EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
-    std::cout << "OnStreamChanged: pic_width = " << picWidhth
+    std::cout << "OnStreamChanged: pic_width = " << picWidth
               << ", pic_height = " << picHeight
               << ", stride = " << stride
               << ", slice_height = " << sliceHeight
