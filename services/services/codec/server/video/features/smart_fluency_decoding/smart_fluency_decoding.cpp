@@ -253,36 +253,50 @@ void SmartFluencyDecoding::SetCallbacks(AsyncDropInputCallback inCb, AsyncDropOu
     asyncDropOutputCb_ = outCb;
 }
 
-bool SmartFluencyDecoding::InitializeWithCsd(const std::vector<uint8_t>& csdData)
+bool SmartFluencyDecoding::InjectCsdData(const std::vector<uint8_t>& csdData)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(isInitialized_, false, "InitializeWithCsd skipped, not initialized");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!csdData.empty(), false, "InitializeWithCsd failed, csdData is empty");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(isInitialized_, false, "InjectCsdData skipped, not initialized");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!csdData.empty(), false, "InjectCsdData failed, csdData is empty");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(csdData.size() <= static_cast<size_t>(INT32_MAX), false,
-        "InitializeWithCsd failed, csdData size (=%{public}zu) exceeds INT32_MAX", csdData.size());
+        "InjectCsdData failed, csdData size (=%{public}zu) exceeds INT32_MAX", csdData.size());
+    std::lock_guard<std::mutex> lock(configMutex_);
+    pendingCsdData_ = csdData;
+    AVCODEC_LOGI_WITH_TAG("CSD data injected (size=%{public}zu), pending replay", csdData.size());
+    return true;
+}
+
+bool SmartFluencyDecoding::ReplayCsdToAnalyzer()
+{
+    std::unique_lock<std::mutex> lock(configMutex_);
+    if (!naluAnalyzerJustCreated_ || pendingCsdData_.empty()) {
+        return false;
+    }
+    auto csdCopy = pendingCsdData_;
+    lock.unlock();
+
     std::shared_ptr<Media::AVAllocator> allocator =
         Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(allocator != nullptr, false, "Failed to create shared allocator for replay");
-    auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(allocator != nullptr, false, "Failed to create shared allocator for CSD replay");
+    auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdCopy.size()));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(tmpBuffer != nullptr && tmpBuffer->memory_ != nullptr, false,
-        "Failed to create AVBuffer or memory is null");
+        "Failed to create AVBuffer for CSD replay");
     int32_t capacity = tmpBuffer->memory_->GetCapacity();
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(capacity >= static_cast<int32_t>(csdData.size()), false,
-        "Created buffer capacity (=%{public}d) is smaller than required (=%{public}zu)",
-        capacity, csdData.size());
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(capacity >= static_cast<int32_t>(csdCopy.size()), false,
+        "CSD replay buffer capacity (=%{public}d) insufficient (=%{public}zu)", capacity, csdCopy.size());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(memcpy_s(tmpBuffer->memory_->GetAddr(), capacity,
-        csdData.data(), csdData.size()) == EOK, false, "Failed to copy CSD data");
-    tmpBuffer->memory_->SetSize(csdData.size());
+        csdCopy.data(), csdCopy.size()) == EOK, false, "Failed to copy CSD data");
+    tmpBuffer->memory_->SetSize(csdCopy.size());
     tmpBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
-    csdBuffer_ = tmpBuffer;
-    if (naluAnalyzer_) {
-        (void)naluAnalyzer_->IsNonReferenceFrame(csdBuffer_);
-        AVCODEC_LOGI_WITH_TAG("SFD Mid-stream enabled: Replayed CSD data processed by NaluAnalyzer, size=%{public}zu",
-            csdData.size());
-        return true;
-    }
-    AVCODEC_LOGD_WITH_TAG("naluAnalyzer_ not instantiated yet, caching CSD buffer (size=%{public}zu).",
-        csdData.size());
-    return false;
+
+    (void)naluAnalyzer_->IsNonReferenceFrame(tmpBuffer);
+
+    lock.lock();
+    pendingCsdData_.clear();
+    naluAnalyzerJustCreated_ = false;
+    lock.unlock();
+
+    AVCODEC_LOGI_WITH_TAG("CSD replayed to newly created NaluAnalyzer (size=%{public}zu)", csdCopy.size());
+    return true;
 }
 
 void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer)
@@ -562,14 +576,7 @@ void SmartFluencyDecoding::EnsureNaluAnalyzer()
 #endif
     });
     naluAnalyzer_ = std::move(analyzer);
-    if (!csdBuffer_) {
-        AVCODEC_LOGD_WITH_TAG("No cached CSD buffer to replay.");
-        return;
-    }
-    AVCODEC_LOGI_WITH_TAG("Replaying cached CSD buffer to activate newly instantiated NaluAnalyzer");
-    auto cachedCsd = csdBuffer_;
-    lock.unlock();
-    (void)naluAnalyzer_->IsNonReferenceFrame(cachedCsd);
+    naluAnalyzerJustCreated_ = true;
 }
 
 void SmartFluencyDecoding::EnsureMvAnalyzer()

@@ -56,7 +56,8 @@ public:
     using AsyncDropInputCallback = std::function<void(uint32_t index, std::shared_ptr<AVBuffer> buffer)>;
     using AsyncDropOutputCallback = std::function<void(uint32_t index)>;
     void SetCallbacks(AsyncDropInputCallback inCb, AsyncDropOutputCallback outCb);
-    bool InitializeWithCsd(const std::vector<uint8_t>& csdData);
+    bool InjectCsdData(const std::vector<uint8_t>& csdData);
+    bool ReplayCsdToAnalyzer();
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer);
     void Flush();
@@ -120,9 +121,10 @@ private:
     MVStats lastValidMVStats_{};
     std::map<int64_t, bool> noRefFrameMap_;
     mutable std::mutex noRefFrameMapMutex_;
+    std::vector<uint8_t> pendingCsdData_;
+    bool naluAnalyzerJustCreated_{false};
     bool hasValidMVStats_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
-    std::shared_ptr<AVBuffer> csdBuffer_{nullptr};
     SFDConfig config_{};
     std::optional<double> userConfiguredSpeed_{std::nullopt};
     bool isInitialized_{false};

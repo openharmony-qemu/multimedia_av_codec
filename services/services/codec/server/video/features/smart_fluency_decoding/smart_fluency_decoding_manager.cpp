@@ -104,6 +104,10 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
     if (sfd_ != nullptr) {
         builder_->SetFromFormat(sfdFormat);
         sfd_->UpdateDynamicConfig(sfdFormat);
+        if (isCsdCached_ && !cachedCsdData_.empty()) {
+            sfd_->InjectCsdData(cachedCsdData_);
+            sfd_->ReplayCsdToAnalyzer();
+        }
         AVCODEC_LOGI_WITH_TAG("SFD dynamically updated via Configure.");
         return;
     }
@@ -116,9 +120,8 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
     auto sfd = builder_->Build();
     if (sfd) {
         if (isCsdCached_ && !cachedCsdData_.empty()) {
-            if (!sfd->InitializeWithCsd(cachedCsdData_)) {
-                AVCODEC_LOGW_WITH_TAG("CSD data injected to SFD, pending NaluAnalyzer instantiation");
-            }
+            sfd->InjectCsdData(cachedCsdData_);
+            sfd->ReplayCsdToAnalyzer();
         }
         sfd->SetTag(this->GetTag());
         sfd->SetCallbacks(inputCb_, outputCb_);
