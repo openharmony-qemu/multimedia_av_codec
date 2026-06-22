@@ -31,7 +31,6 @@
 #include "native_avcodec_base.h"
 #include "syspara/parameters.h"
 #include "v2_2/buffer_handle_meta_key_type.h"
-#include "securec.h"
 
 namespace {
 bool IsEvenNumber(int32_t value)
