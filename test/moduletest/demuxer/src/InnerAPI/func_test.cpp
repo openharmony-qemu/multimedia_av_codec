@@ -2032,7 +2032,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ENCODER_INNER_FUNC_0100, TestSize.Leve
         ASSERT_EQ(AVCS_ERR_OK, ret);
         std::string encoder;
         ASSERT_TRUE(format.GetStringValue(Media::Tag::MEDIA_ENCODER, encoder));
-        ASSERT_EQ(encoder, "lavf60.3.100");
+        ASSERT_EQ(encoder, "Lavf60.3.100");
         ret = source->GetTrackFormat(format, 1);
         ASSERT_EQ(AVCS_ERR_OK, ret);
         int32_t blockAlign = 0;
