@@ -70,6 +70,7 @@ public:
     void AcquireAvailableInputBuffer();
     int64_t GetFrameNum();
     int64_t GetLastBufferPts();
+    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
 
     std::shared_ptr<DecoderAdapterCallback> decoderAdapterCallback_;
 
@@ -91,6 +92,10 @@ private:
     std::atomic<int64_t> lastBufferPts_ = INT64_MIN;
     std::atomic<bool> isThreadExit_ = true;
     std::shared_mutex codecServerMutex_;
+    std::string bundleName_;
+    uint64_t instanceId_{0};
+    int32_t appUid_ {0};
+    int32_t appPid_ {0};
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
