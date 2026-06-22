@@ -436,8 +436,8 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilterOpt_SetParameter_0100, Tes
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilterOpt_GetParameter_0100, TestSize.Level1)
 {
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
-    parameter->SetData("key", "value");
     ASSERT_NE(parameter, nullptr);
+    parameter->SetData("key", "value");
     audioEncoderFilter_->GetParameter(parameter);
     std::string value;
     parameter->GetData("key", value);

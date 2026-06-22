@@ -488,10 +488,10 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_ConverterInputCallback_On
     std::shared_ptr<AVBuffer> buffer = nullptr;
     std::shared_ptr<AudioEncoderFilter::ConverterInputCallback> callback =
         std::make_shared<AudioEncoderFilter::ConverterInputCallback>(buffer);
-    uint8_t* data;
-    InputDataStatus status;
+    const void* data;
+    AudioStandard::AudioSuite::InputDataStatus status;
     EXPECT_EQ(callback->OnRequestData(&data, &status), 0);
-    EXPECT_EQ(status, InputDataStatus::DATA_FINISHED);
+    EXPECT_EQ(status, AudioStandard::AudioSuite::InputDataStatus::DATA_FINISHED);
 }
 
 }

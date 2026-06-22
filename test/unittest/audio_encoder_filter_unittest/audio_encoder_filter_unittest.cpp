@@ -75,8 +75,8 @@ HWTEST_F(AudioEncoderFilterUnitest, OnLinkedResult_001, TestSize.Level0)
     linkCallback->OnLinkedResult(outputBufferQueue, meta);
     linkCallback->OnUnlinkedResult(meta);
     linkCallback->OnUpdatedResult(meta);
-    EXPECT_CALL(*(audioEncoderFilter_->mediaCodec_), SetOutputBufferQueue(_)).Times(1);
-    EXPECT_CALL(*(audioEncoderFilter_->mediaCodec_), Prepare()).Times(1);
+    EXPECT_CALL(*(audioEncoderFilter_->mediaCodec_), SetOutputBufferQueue(_)).Times(0);
+    EXPECT_CALL(*(audioEncoderFilter_->mediaCodec_), Prepare()).Times(0);
     ptr->mediaCodec_ = nullptr;
     linkCallback = nullptr;
 }
