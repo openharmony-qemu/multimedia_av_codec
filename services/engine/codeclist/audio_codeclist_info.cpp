@@ -544,21 +544,6 @@ CapabilityData AudioCodeclistInfo::GetVividEncoderCapability()
     return audioVividCapability;
 }
 
-CapabilityData AudioCodeclistInfo::GetAmrnbEncoderCapability()
-{
-    CapabilityData audioAmrnbCapability;
-    audioAmrnbCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_AMRNB_NAME;
-    audioAmrnbCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
-    audioAmrnbCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB;
-    audioAmrnbCapability.isVendor = false;
-    audioAmrnbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRNB);
-    audioAmrnbCapability.channels = Range(1, 1);
-    audioAmrnbCapability.sampleRate = AUDIO_AMRNB_SAMPLE_RATE;
-    audioAmrnbCapability.sampleRateRanges = convertVectorToRange(AUDIO_AMRNB_SAMPLE_RATE);
-    audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
-    return audioAmrnbCapability;
-}
-
 CapabilityData AudioCodeclistInfo::GetAmrwbEncoderCapability()
 {
     CapabilityData audioAmrwbCapability;
@@ -715,6 +700,23 @@ CapabilityData AudioCodeclistInfo::GetOpusDecoderCapability()
     audioOpusCapability.sampleRateRanges = convertVectorToRange(AUDIO_OPUS_SAMPLE_RATE);
     audioOpusCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioOpusCapability;
+}
+#endif
+
+#ifdef SUPPORT_CODEC_AMRNB
+CapabilityData AudioCodeclistInfo::GetAmrnbEncoderCapability()
+{
+    CapabilityData audioAmrnbCapability;
+    audioAmrnbCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_AMRNB_NAME;
+    audioAmrnbCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioAmrnbCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB;
+    audioAmrnbCapability.isVendor = false;
+    audioAmrnbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRNB);
+    audioAmrnbCapability.channels = Range(1, 1);
+    audioAmrnbCapability.sampleRate = AUDIO_AMRNB_SAMPLE_RATE;
+    audioAmrnbCapability.sampleRateRanges = convertVectorToRange(AUDIO_AMRNB_SAMPLE_RATE);
+    audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioAmrnbCapability;
 }
 #endif
 
@@ -894,7 +896,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
-                          GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
+                          GetVividDecoderCapability(), GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
                           GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(), GetVividEncoderCapability(),
 #endif
@@ -908,6 +910,9 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetIlbcDecoderCapability(), GetTwinVQDecoderCapability(),
 #ifdef SUPPORT_CODEC_TRUEHD
                           GetTruehdDecoderCapability(),
+#endif
+#ifdef SUPPORT_CODEC_AMRNB
+                          GetAmrnbEncoderCapability(),
 #endif
 #ifdef SUPPORT_CODEC_OPUS
                           GetOpusDecoderCapability(), GetOpusEncoderCapability(),
