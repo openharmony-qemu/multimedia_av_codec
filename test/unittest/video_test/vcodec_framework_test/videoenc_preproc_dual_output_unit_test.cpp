@@ -97,20 +97,6 @@ public:
     static void TearDownTestCase(void) {}
 };
 
-class VideoEncPreprocDualOutputLevel1Test : public testing::TestWithParam<ScenarioCase> {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-};
-
-class VideoEncPreprocDualOutputLevel2Test : public testing::TestWithParam<ScenarioCase> {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-};
-
-class VideoEncPreprocDualOutputInfoTest : public testing::TestWithParam<ScenarioCase> {};
-
 const std::array<CodecDimension, 5> &CodecDimensions()
 {
     static const std::array<CodecDimension, 5> codecs = {{
@@ -592,9 +578,13 @@ void ApplyPreprocMode(ScenarioCase &scenario)
             scenario.secondary = MakeDropRate(K_PRIMARY_DROP_FRAME_RATE);
             break;
         case PreprocEnableMode::BOTH_SAME:
+#ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
             scenario.primary = MakeDownsampling(scenario.width / K_HALF_DIVISOR,
                                                 scenario.height / K_HALF_DIVISOR,
                                                 K_PRIMARY_DROP_FRAME_RATE);
+#else
+            scenario.primary = MakeDropRate(K_PRIMARY_DROP_FRAME_RATE);
+#endif
             scenario.secondary = scenario.primary;
             break;
         case PreprocEnableMode::BOTH_DIFFERENT:
@@ -776,101 +766,6 @@ std::vector<ScenarioCase> BuildLevel0Scenarios()
 const std::vector<ScenarioCase> &GetLevel0Scenarios()
 {
     static const std::vector<ScenarioCase> scenarios = BuildLevel0Scenarios();
-    return scenarios;
-}
-
-void AddBaseFormatScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
-{
-    for (const auto &scenario : GetSupportedScenarios()) {
-        if (ContainsScenarioName(level0, scenario.name)) {
-            continue;
-        }
-        if (IsBaseCodecResolutionFormat(scenario)) {
-            AddScenarioIfMissing(scenarios, scenario);
-        }
-    }
-}
-
-void AddCodecCoverageScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
-{
-    for (const auto &codec : CodecDimensions()) {
-        bool added = AddFirstScenarioMatching(scenarios, [&codec](const ScenarioCase &scenario) {
-            return scenario.codecLabel == codec.label && scenario.flow == FlowType::MIXED_PREPROC &&
-                   IsDualRuntimeNone(scenario);
-        }, &level0);
-        if (!added) {
-            (void)AddFirstScenarioMatching(scenarios, [&codec](const ScenarioCase &scenario) {
-                return scenario.codecLabel == codec.label && IsDualRuntimeNone(scenario);
-            }, &level0);
-        }
-    }
-}
-
-void AddNativeFormatCoverageScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
-{
-    for (const auto &format : NativeFormatDimensions()) {
-        bool added = AddFirstScenarioMatching(scenarios, [&format](const ScenarioCase &scenario) {
-            return scenario.nativeFormat == format.nativeFormat && scenario.flow == FlowType::MIXED_PREPROC &&
-                   IsDualRuntimeNone(scenario);
-        }, &level0);
-        if (!added) {
-            (void)AddFirstScenarioMatching(scenarios, [&format](const ScenarioCase &scenario) {
-                return scenario.nativeFormat == format.nativeFormat && IsDualRuntimeNone(scenario);
-            }, &level0);
-        }
-    }
-}
-
-void AddResolutionCoverageScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
-{
-    for (const auto &resolution : ResolutionDimensions()) {
-        bool added = AddFirstScenarioMatching(scenarios, [&resolution](const ScenarioCase &scenario) {
-            return scenario.width == resolution.width && scenario.height == resolution.height &&
-                   scenario.flow == FlowType::MIXED_PREPROC && IsDualRuntimeNone(scenario);
-        }, &level0);
-        if (!added) {
-            (void)AddFirstScenarioMatching(scenarios, [&resolution](const ScenarioCase &scenario) {
-                return scenario.width == resolution.width && scenario.height == resolution.height &&
-                       IsDualRuntimeNone(scenario);
-            }, &level0);
-        }
-    }
-}
-
-bool IsSpecialFlowScenario(const ScenarioCase &scenario)
-{
-    return scenario.flow == FlowType::INVALID_PARAMETER || scenario.flow == FlowType::INVALID_LIFECYCLE ||
-           scenario.flow == FlowType::DUPLICATE_SECONDARY || scenario.flow == FlowType::DROP_RATIO ||
-           scenario.flow == FlowType::DROP_FLUSH_STOP_RESET;
-}
-
-void AddSpecialFlowScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
-{
-    for (const auto &scenario : GetSupportedScenarios()) {
-        if (ContainsScenarioName(level0, scenario.name)) {
-            continue;
-        }
-        if (IsSpecialFlowScenario(scenario)) {
-            AddScenarioIfMissing(scenarios, scenario);
-        }
-    }
-}
-
-std::vector<ScenarioCase> BuildLevel1Scenarios()
-{
-    std::vector<ScenarioCase> scenarios;
-    const auto &level0 = GetLevel0Scenarios();
-    AddBaseFormatScenarios(scenarios, level0);
-    AddCodecCoverageScenarios(scenarios, level0);
-    AddNativeFormatCoverageScenarios(scenarios, level0);
-    AddResolutionCoverageScenarios(scenarios, level0);
-    AddSpecialFlowScenarios(scenarios, level0);
-    return scenarios;
-}
-
-const std::vector<ScenarioCase> &GetLevel1Scenarios()
-{
-    static const std::vector<ScenarioCase> scenarios = BuildLevel1Scenarios();
     return scenarios;
 }
 
@@ -1215,11 +1110,6 @@ INSTANTIATE_TEST_SUITE_P(Level0, VideoEncPreprocDualOutputLevel0Test, testing::V
                              return SanitizeName(info.param.name);
                          });
 
-INSTANTIATE_TEST_SUITE_P(Level1, VideoEncPreprocDualOutputLevel1Test, testing::ValuesIn(GetLevel1Scenarios()),
-                         [](const testing::TestParamInfo<ScenarioCase> &info) {
-                             return SanitizeName(info.param.name);
-                         });
-
 /**
  * @tc.name: Level0
  * @tc.desc: preproc dual-output smoke scenarios on primary surface input.
@@ -1230,6 +1120,114 @@ HWTEST_P(VideoEncPreprocDualOutputLevel0Test, Level0, TestSize.Level0)
     RunScenarioByFlow(GetParam());
 }
 
+#ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
+class VideoEncPreprocDualOutputLevel1Test : public testing::TestWithParam<ScenarioCase> {
+public:
+    static void SetUpTestCase(void) {}
+    static void TearDownTestCase(void) {}
+};
+
+void AddBaseFormatScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
+{
+    for (const auto &scenario : GetSupportedScenarios()) {
+        if (ContainsScenarioName(level0, scenario.name)) {
+            continue;
+        }
+        if (IsBaseCodecResolutionFormat(scenario)) {
+            AddScenarioIfMissing(scenarios, scenario);
+        }
+    }
+}
+
+void AddCodecCoverageScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
+{
+    for (const auto &codec : CodecDimensions()) {
+        bool added = AddFirstScenarioMatching(scenarios, [&codec](const ScenarioCase &scenario) {
+            return scenario.codecLabel == codec.label && scenario.flow == FlowType::MIXED_PREPROC &&
+                   IsDualRuntimeNone(scenario);
+        }, &level0);
+        if (!added) {
+            (void)AddFirstScenarioMatching(scenarios, [&codec](const ScenarioCase &scenario) {
+                return scenario.codecLabel == codec.label && IsDualRuntimeNone(scenario);
+            }, &level0);
+        }
+    }
+}
+
+void AddNativeFormatCoverageScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
+{
+    for (const auto &format : NativeFormatDimensions()) {
+        bool added = AddFirstScenarioMatching(scenarios, [&format](const ScenarioCase &scenario) {
+            return scenario.nativeFormat == format.nativeFormat && scenario.flow == FlowType::MIXED_PREPROC &&
+                   IsDualRuntimeNone(scenario);
+        }, &level0);
+        if (!added) {
+            (void)AddFirstScenarioMatching(scenarios, [&format](const ScenarioCase &scenario) {
+                return scenario.nativeFormat == format.nativeFormat && IsDualRuntimeNone(scenario);
+            }, &level0);
+        }
+    }
+}
+
+void AddResolutionCoverageScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
+{
+    for (const auto &resolution : ResolutionDimensions()) {
+        bool added = AddFirstScenarioMatching(scenarios, [&resolution](const ScenarioCase &scenario) {
+            return scenario.width == resolution.width && scenario.height == resolution.height &&
+                   scenario.flow == FlowType::MIXED_PREPROC && IsDualRuntimeNone(scenario);
+        }, &level0);
+        if (!added) {
+            (void)AddFirstScenarioMatching(scenarios, [&resolution](const ScenarioCase &scenario) {
+                return scenario.width == resolution.width && scenario.height == resolution.height &&
+                       IsDualRuntimeNone(scenario);
+            }, &level0);
+        }
+    }
+}
+
+bool IsSpecialFlowScenario(const ScenarioCase &scenario)
+{
+    return scenario.flow == FlowType::INVALID_PARAMETER || scenario.flow == FlowType::INVALID_LIFECYCLE ||
+           scenario.flow == FlowType::DUPLICATE_SECONDARY || scenario.flow == FlowType::DROP_RATIO ||
+           scenario.flow == FlowType::DROP_FLUSH_STOP_RESET;
+}
+
+void AddSpecialFlowScenarios(std::vector<ScenarioCase> &scenarios, const std::vector<ScenarioCase> &level0)
+{
+    for (const auto &scenario : GetSupportedScenarios()) {
+        if (ContainsScenarioName(level0, scenario.name)) {
+            continue;
+        }
+        if (IsSpecialFlowScenario(scenario)) {
+            AddScenarioIfMissing(scenarios, scenario);
+        }
+    }
+}
+
+std::vector<ScenarioCase> BuildLevel1Scenarios()
+{
+    std::vector<ScenarioCase> scenarios;
+    const auto &level0 = GetLevel0Scenarios();
+    AddBaseFormatScenarios(scenarios, level0);
+    AddCodecCoverageScenarios(scenarios, level0);
+    AddNativeFormatCoverageScenarios(scenarios, level0);
+    AddResolutionCoverageScenarios(scenarios, level0);
+    AddSpecialFlowScenarios(scenarios, level0);
+    return scenarios;
+}
+
+const std::vector<ScenarioCase> &GetLevel1Scenarios()
+{
+    static const std::vector<ScenarioCase> scenarios = BuildLevel1Scenarios();
+    return scenarios;
+}
+
+
+INSTANTIATE_TEST_SUITE_P(Level1, VideoEncPreprocDualOutputLevel1Test, testing::ValuesIn(GetLevel1Scenarios()),
+                         [](const testing::TestParamInfo<ScenarioCase> &info) {
+                             return SanitizeName(info.param.name);
+                         });
+
 /**
  * @tc.name: Level1
  * @tc.desc: preproc dual-output core matrix scenarios on primary surface input.
@@ -1239,3 +1237,4 @@ HWTEST_P(VideoEncPreprocDualOutputLevel1Test, Level1, TestSize.Level1)
 {
     RunScenarioByFlow(GetParam());
 }
+#endif
