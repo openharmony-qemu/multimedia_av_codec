@@ -307,7 +307,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureGetCurrentChangeInfo_0200, Test
     AudioStandard::AudioCapturerChangeInfo changeInfo;
     ret = audioCaptureModule_->GetCurrentCapturerChangeInfo(changeInfo);
     ASSERT_TRUE(ret == Status::OK);
-    Status ret = audioCaptureModule_->Deinit();
+    ret = audioCaptureModule_->Deinit();
     ASSERT_TRUE(ret == Status::OK);
 }
 

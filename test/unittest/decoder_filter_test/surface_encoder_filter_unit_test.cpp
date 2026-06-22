@@ -211,4 +211,12 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportKeyFramePts_001, TestSize.Level1)
     surfaceEncoder->SetCallingInfo(appUid, appPid, bundleName, instanceId);
     EXPECT_EQ(surfaceEncoder->instanceId_, 0);
 }
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, SetWatermarkMode_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VENC);
+    surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
+    EXPECT_EQ(Status::OK, surfaceEncoder->SetWatermarkMode());
+}
 }

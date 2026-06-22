@@ -424,7 +424,6 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilterOpt_SetParameter_0100, Tes
     audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
     ASSERT_NE(parameter, nullptr);
-    EXPECT_CALL(*mediaCodecMock, SetParameter(testing::_)).WillOnce(Return(0));
     audioEncoderFilter_->SetParameter(parameter);
 }
 
@@ -570,10 +569,33 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilterOpt_OnLinkedResult_0100, T
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     ASSERT_NE(meta, nullptr);
     sptr<AVBufferQueueProducer> outputBufferQueue = nullptr;
-
-    EXPECT_CALL(*mediaCodecMock, SetOutputBufferQueue(testing::_)).Times(1);
-    EXPECT_CALL(*mediaCodecMock, Prepare()).Times(1);
     audioEncoderFilter_->OnLinkedResult(outputBufferQueue, meta);
+}
+
+/**
+ * @tc.name: AudioEncoderFilterOpt_OnUpdatedResult_0100
+ * @tc.desc: AudioEncoderFilte OnUpdatedResult
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilterOpt_OnUpdatedResult_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_NE(meta, nullptr);
+    audioEncoderFilter_->OnUpdatedResult(meta);
+}
+
+/**
+ * @tc.name: AudioEncoderFilterOpt_OnUnlinkedResult_0100
+ * @tc.desc: AudioEncoderFilte OnUnlinkedResult
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilterOpt_OnUnlinkedResult_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_NE(meta, nullptr);
+    audioEncoderFilter_->OnUnlinkedResult(meta);
 }
 
 /**

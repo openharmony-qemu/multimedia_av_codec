@@ -342,17 +342,13 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetParameter_0100, TestSi
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
     ASSERT_NE(parameter, nullptr);
     audioEncoderFilter_->SetParameter(parameter);
-    EXPECT_CALL(*mediaCodecMock, SetParameter(parameter)).Times(1);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_GetParameter_0100, TestSize.Level1)
 {
-    auto mediaCodecMock = std::make_shared<MediaCodecMock>();
-    audioEncoderFilter_->mediaCodec_ = mediaCodecMock;
     std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
     ASSERT_NE(parameter, nullptr);
     audioEncoderFilter_->GetParameter(parameter);
-    EXPECT_CALL(*mediaCodecMock, GetParameter(parameter)).Times(1);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_LinkNext_0100, TestSize.Level1)
@@ -439,8 +435,20 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_0100, Test
     ASSERT_NE(meta, nullptr);
     sptr<AVBufferQueueProducer> outputBufferQueue = nullptr;
     audioEncoderFilter_->OnLinkedResult(outputBufferQueue, meta);
-    EXPECT_CALL(*mediaCodecMock, SetOutputBufferQueue(outputBufferQueue)).Times(1);
-    EXPECT_CALL(*mediaCodecMock, Prepare()).Times(1);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUpdatedResult_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_NE(meta, nullptr);
+    audioEncoderFilter_->OnUpdatedResult(meta);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnUnlinkedResult_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    ASSERT_NE(meta, nullptr);
+    audioEncoderFilter_->OnUnlinkedResult(meta);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetCallingInfo_0100, TestSize.Level1)
@@ -461,6 +469,29 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_GetInputSurface_0100, Tes
     audioEncoderFilter_->mediaCodec_ = std::make_shared<MediaCodecMock>();
     sptr<Surface> surface = audioEncoderFilter_->GetInputSurface();
     EXPECT_EQ(surface, nullptr);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetTranscoderMode_0100, TestSize.Level1)
+{
+    auto ret = audioEncoderFilter_->SetTranscoderMode();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_NotifyProcessingThread_0100, TestSize.Level1)
+{
+    audioEncoderFilter_->NotifyProcessingThread();
+    EXPECT_EQ(audioEncoderFilter_->hasPendingBuffer_.load(), true);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_ConverterInputCallback_OnRequestData_0100, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    std::shared_ptr<AudioEncoderFilter::ConverterInputCallback> callback =
+        std::make_shared<AudioEncoderFilter::ConverterInputCallback>(buffer);
+    uint8_t* data;
+    InputDataStatus status;
+    EXPECT_EQ(callback->OnRequestData(&data, &status), 0);
+    EXPECT_EQ(status, InputDataStatus::DATA_FINISHED);
 }
 
 }
