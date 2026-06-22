@@ -225,9 +225,9 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level0)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4_DumuxState, TestSize.Level0)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->SetDemuxerState(0);
@@ -540,9 +540,9 @@ HWTEST_F(HttpSourcePluginUnitTest, SetInterruptState2, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, SEEK_TO_TIME_BY_STREAMID_001, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
