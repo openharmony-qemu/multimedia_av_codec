@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <random>
 #include <gtest/gtest.h>
 #include "hisysevent.h"
 #include "hisysevent_manager_c.h"
@@ -27,6 +28,21 @@ using namespace OHOS::Media;
 using namespace OHOS::MediaAVCodec;
 using namespace testing;
 using namespace testing::ext;
+
+namespace {
+std::string GenerateRandomString(size_t length, std::string_view charset = "abcdefghijklmnopqrstuvwxyz")
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<size_t> dist(0, charset.size() - 1);
+    std::string result;
+    result.reserve(length);
+    for (size_t i = 0; i < length; ++i) {
+        result += charset[dist(gen)];
+    }
+    return result;
+}
+} // namespace
 
 class TEST_SUIT : public testing::Test {
 public:
@@ -1911,5 +1927,116 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Decoder_001, TestSize.Level1)
     meta_->SetData("HEIGHT", 1080);
     meta_->SetData("IS_ENCODER", false);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: GetIndexByMeta_Param_Test_001
+ * @tc.desc: only caller process param test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_001, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
+    std::string callerProcessName = "callerProcess";
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
+    std::string forwardProcessName = "forwardcallerProcess";
+    meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: GetIndexByMeta_Param_Test_002
+ * @tc.desc: only forward caller process param test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_002, TestSize.Level1)
+{
+    std::string forwardProcessName = "forwardcallerProcess";
+    meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: GetIndexByMeta_Param_Test_003
+ * @tc.desc: caller process and forward caller process param test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_003, TestSize.Level1)
+{
+    constexpr int32_t pid = 123;
+    const std::string callerProcessName = GenerateRandomString(237);
+    const std::string forwardProcessName = "forwardcallerProcess";
+
+    meta_->SetData(Tag::AV_CODEC_CALLER_PID, pid);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
+    meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: GetIndexByMeta_Param_Test_004
+ * @tc.desc: only forward caller process param test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_004, TestSize.Level1)
+{
+    constexpr int32_t pid = 123;
+    const std::string forwardProcessName = "forwardcallerProcess";
+    meta_->SetData(Tag::AV_CODEC_CALLER_PID, pid);
+    meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: BasicInfo_Submit_Test_001
+ * @tc.desc: OnSubmitEventInfo coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_001, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: BasicInfo_Submit_Test_002
+ * @tc.desc: OnSubmitEventInfo coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_002, TestSize.Level1)
+{
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
+    meta_->SetData(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+void AddSpecInfo(int32_t param)
+{
+    meta->SetData(EventInfoExtentedKey::WIDTH.data(), param);
+    meta->SetData(EventInfoExtentedKey::HEIGHT.data(), param);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
+}
+
+/**
+ * @tc.name: ResolveResolutionLevel_Test_001
+ * @tc.desc: ResolveResolutionLevel coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Test_001, TestSize.Level1)
+{
+    AddSpecInfo(360);
+    AddSpecInfo(500);
+    AddSpecInfo(700);
+    AddSpecInfo(800);
+    AddSpecInfo(1000);
+    AddSpecInfo(1500);
+    AddSpecInfo(2000);
+    AddSpecInfo(3000);
+    AddSpecInfo(6000);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
