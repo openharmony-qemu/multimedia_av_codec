@@ -56,7 +56,6 @@ string g_mp4TimedMetadataUri = TEST_URI_PATH + string("timed_metadata_track.mp4"
 
 void Mpeg4SourceUnitTest::SetUpTestCase(void)
 {
-    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "1");
     server = make_unique<FileServerDemo>();
     server->StartServer();
 }
@@ -64,7 +63,6 @@ void Mpeg4SourceUnitTest::SetUpTestCase(void)
 void Mpeg4SourceUnitTest::TearDownTestCase(void)
 {
     server->StopServer();
-    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "0");
 }
 
 void Mpeg4SourceUnitTest::SetUp(void) {}

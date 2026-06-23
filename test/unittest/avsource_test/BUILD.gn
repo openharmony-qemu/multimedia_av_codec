@@ -196,7 +196,6 @@ ohos_unittest("avsource_inner_unit_test_for_mpeg4") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "AVSOURCE_INNER_UNIT_TEST",
-    "USE_MPEG4_DEMUXER",
   ]
 
   cflags = avsource_unittest_cflags

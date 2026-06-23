@@ -74,7 +74,6 @@ string g_flvPath = TEST_FILE_PATH + string("h264.flv");
 
 void Mpeg4DemuxerUnitTest::SetUpTestCase(void)
 {
-    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "1");
     server = make_unique<FileServerDemo>();
     server->StartServer();
     cout << "start" << endl;
@@ -83,7 +82,6 @@ void Mpeg4DemuxerUnitTest::SetUpTestCase(void)
 void Mpeg4DemuxerUnitTest::TearDownTestCase(void)
 {
     server->StopServer();
-    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.enable", "0");
 }
 
 void Mpeg4DemuxerUnitTest::SetUp(void)
