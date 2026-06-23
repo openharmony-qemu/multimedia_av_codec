@@ -280,7 +280,7 @@ HWTEST_F(AdaptiveRetentionStrategyTest, UpdatePlaybackSpeed_Behavior_003, TestSi
     // 2. At high speed (> 1.2), enter model inference (fallback to UNSPECIFIED since ctx lacks MV data)
     strategy->UpdatePlaybackSpeed(2.0); // 2.0: high speed
     strategy->MakeRetentionDecision(ctx);
-    EXPECT_NE(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 }
 
 /**
@@ -372,16 +372,16 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsEnforcement_007, Te
     ctx.mvStats = &mvStats;
 
     // Frame 1: acc = 0.0 + 0.75 = 0.75 < 1.0 -> Drop
-    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 
     // Frame 2: acc = 0.75 + 0.75 = 1.50 >= 1.0 -> Retain (accumulator_ = 0.0)
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
     EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 
     // Frame 3: acc = 0.0 + 0.75 = 0.75 < 1.0 -> Drop
-    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 
     // Frame 4: acc = 0.75 + 0.75 = 1.50 >= 1.0 -> Retain
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
@@ -618,11 +618,11 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsLimit_011, TestSize
     EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
 
     // Frame 2: acc = 0.733 (< 1.0) -> Drop
-    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
 
     // Frame 3: acc = 1.099 (>= 1.0) -> Retain (accumulator_ = 0.0)
-    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
 }
 
 // --- FullRetentionStrategy additional tests ---

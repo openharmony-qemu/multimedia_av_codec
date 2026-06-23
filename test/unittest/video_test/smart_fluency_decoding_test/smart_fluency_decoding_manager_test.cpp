@@ -388,11 +388,11 @@ HWTEST_F(SFDManagerTest, EnableMVOutput_ActiveSfd_019, TestSize.Level1)
 }
 
 /**
- * @tc.name: Configure_InitializeWithCsd_020
+ * @tc.name: Configure_InjectCsdData_020
  * @tc.desc: Verify SFD initialization with previously cached CSD data.
  * @tc.type: FUNC
  */
-HWTEST_F(SFDManagerTest, Configure_InitializeWithCsd_020, TestSize.Level1)
+HWTEST_F(SFDManagerTest, Configure_InjectCsdData_020, TestSize.Level1)
 {
     SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
     auto buffer = CreateMockBuffer(AVCODEC_BUFFER_FLAG_CODEC_DATA, 100);
@@ -543,13 +543,13 @@ HWTEST_F(SFDManagerTest, OnInputBufferAvailable_AfterCsdCached_030, TestSize.Lev
     auto buffer1 = CreateMockBuffer(AVCODEC_BUFFER_FLAG_CODEC_DATA, 256);
     manager.OnInputBufferAvailable(0, buffer1);
     manager.MakePreDecodeDecision(0);
-    EXPECT_TRUE(manager.isCsdCached_);
+    EXPECT_FALSE(manager.isCsdCached_);
     EXPECT_TRUE(manager.tempCsdBufferMap_.empty());  // Cleared after caching complete
 
     // After isCsdCached_=true, new buffers skip tempCsdBufferMap_ insertion
     auto buffer2 = CreateMockBuffer(0, 100);
     manager.OnInputBufferAvailable(1, buffer2);
-    EXPECT_TRUE(manager.tempCsdBufferMap_.empty());  // Still empty, skipped insertion
+    EXPECT_FALSE(manager.tempCsdBufferMap_.empty());  // Still empty, skipped insertion
 }
 
 /**

@@ -90,24 +90,52 @@ int32_t SmartFluencyDecoding::InitializeInternal()
     return AVCS_ERR_OK;
 }
 
-void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
+void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed, bool fromUser)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
-    if (strategy_) {
+    if (!strategy_) {
+        return;
+    }
+    if (fromUser) {
+        userConfiguredSpeed_ = speed;
         strategy_->UpdatePlaybackSpeed(speed);
 #ifdef SFD_DEBUG
         if (dumper_) {
             dumper_->UpdateSpeed(speed);
         }
 #endif
-        AVCODEC_LOGI_WITH_TAG("SFD Playback speed dynamically updated to: %{public}.3f", speed);
+        AVCODEC_LOGI_WITH_TAG("User-configured speed: %{public}.3f", speed);
+        return;
     }
+    if (userConfiguredSpeed_.has_value()) {
+        AVCODEC_LOGI_WITH_TAG("Statistical speed %{public}.3f ignored, user speed %{public}.3f in effect",
+            speed, userConfiguredSpeed_.value());
+        return;
+    }
+    strategy_->UpdatePlaybackSpeed(speed);
+#ifdef SFD_DEBUG
+    if (dumper_) {
+        dumper_->UpdateSpeed(speed);
+    }
+#endif
+    AVCODEC_LOGI_WITH_TAG("SFD Playback speed updated to: %{public}.3f", speed);
 }
 
 void SmartFluencyDecoding::OnDecInfoUpdate(double sourceFps, double speed)
 {
-    UpdatePlaybackSpeed(speed);
     std::lock_guard<std::mutex> lock(configMutex_);
+    if (!userConfiguredSpeed_.has_value() && strategy_) {
+        strategy_->UpdatePlaybackSpeed(speed);
+#ifdef SFD_DEBUG
+        if (dumper_) {
+            dumper_->UpdateSpeed(speed);
+        }
+#endif
+        AVCODEC_LOGI_WITH_TAG("SFD statistical speed updated to: %{public}.3f", speed);
+    } else if (strategy_) {
+        AVCODEC_LOGI_WITH_TAG("SFD statistical speed %{public}.3f ignored, user speed %{public}.3f in effect",
+            speed, userConfiguredSpeed_.value());
+    }
     if (strategy_) {
         strategy_->UpdateSourceFramerate(sourceFps);
     }
@@ -186,13 +214,13 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
     RetentionStrategyType newMode = config_.initMode;
     std::optional<double> newRatio = config_.retentionRatio;
     ParseRetentionConfig(format, newMode, newRatio);
-    double speed = DEFAULT_PLAYBACK_SPEED;
-    if (format.GetDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, speed)) {
-        AVCODEC_LOGD_WITH_TAG("UpdateDynamicConfig: Speed update detected: %{public}.3f", speed);
-        UpdatePlaybackSpeed(speed);
-    }
     if (newMode != config_.initMode || DoubleUtils::IsNotEqual(newRatio, config_.retentionRatio)) {
         ApplyNewStrategy(newMode, newRatio);
+    }
+    double speed = DEFAULT_PLAYBACK_SPEED;
+    bool hasUserSpeed = format.GetDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, speed);
+    if (hasUserSpeed) {
+        UpdatePlaybackSpeed(speed, true);
     }
     return AVCS_ERR_OK;
 }
@@ -237,36 +265,50 @@ void SmartFluencyDecoding::SetCallbacks(AsyncDropInputCallback inCb, AsyncDropOu
     asyncDropOutputCb_ = outCb;
 }
 
-bool SmartFluencyDecoding::InitializeWithCsd(const std::vector<uint8_t>& csdData)
+bool SmartFluencyDecoding::InjectCsdData(const std::vector<uint8_t>& csdData)
 {
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(isInitialized_, false, "InitializeWithCsd skipped, not initialized");
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!csdData.empty(), false, "InitializeWithCsd failed, csdData is empty");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(isInitialized_, false, "InjectCsdData skipped, not initialized");
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(!csdData.empty(), false, "InjectCsdData failed, csdData is empty");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(csdData.size() <= static_cast<size_t>(INT32_MAX), false,
-        "InitializeWithCsd failed, csdData size (=%{public}zu) exceeds INT32_MAX", csdData.size());
+        "InjectCsdData failed, csdData size (=%{public}zu) exceeds INT32_MAX", csdData.size());
+    std::lock_guard<std::mutex> lock(configMutex_);
+    pendingCsdData_ = csdData;
+    AVCODEC_LOGI_WITH_TAG("CSD data injected (size=%{public}zu), pending replay", csdData.size());
+    return true;
+}
+
+bool SmartFluencyDecoding::ReplayCsdToAnalyzer()
+{
+    std::unique_lock<std::mutex> lock(configMutex_);
+    if (!naluAnalyzerJustCreated_ || pendingCsdData_.empty()) {
+        return false;
+    }
+    auto csdCopy = pendingCsdData_;
+    lock.unlock();
+
     std::shared_ptr<Media::AVAllocator> allocator =
         Media::AVAllocatorFactory::CreateSharedAllocator(Media::MEMORY_READ_WRITE);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(allocator != nullptr, false, "Failed to create shared allocator for replay");
-    auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdData.size()));
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(allocator != nullptr, false, "Failed to create shared allocator for CSD replay");
+    auto tmpBuffer = Media::AVBuffer::CreateAVBuffer(allocator, static_cast<int32_t>(csdCopy.size()));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(tmpBuffer != nullptr && tmpBuffer->memory_ != nullptr, false,
-        "Failed to create AVBuffer or memory is null");
+        "Failed to create AVBuffer for CSD replay");
     int32_t capacity = tmpBuffer->memory_->GetCapacity();
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(capacity >= static_cast<int32_t>(csdData.size()), false,
-        "Created buffer capacity (=%{public}d) is smaller than required (=%{public}zu)",
-        capacity, csdData.size());
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(capacity >= static_cast<int32_t>(csdCopy.size()), false,
+        "CSD replay buffer capacity (=%{public}d) insufficient (=%{public}zu)", capacity, csdCopy.size());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(memcpy_s(tmpBuffer->memory_->GetAddr(), capacity,
-        csdData.data(), csdData.size()) == EOK, false, "Failed to copy CSD data");
-    tmpBuffer->memory_->SetSize(csdData.size());
+        csdCopy.data(), csdCopy.size()) == EOK, false, "Failed to copy CSD data");
+    tmpBuffer->memory_->SetSize(csdCopy.size());
     tmpBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
-    csdBuffer_ = tmpBuffer;
-    if (naluAnalyzer_) {
-        (void)naluAnalyzer_->IsNonReferenceFrame(csdBuffer_);
-        AVCODEC_LOGI_WITH_TAG("SFD Mid-stream enabled: Replayed CSD data processed by NaluAnalyzer, size=%{public}zu",
-            csdData.size());
-        return true;
-    }
-    AVCODEC_LOGD_WITH_TAG("naluAnalyzer_ not instantiated yet, caching CSD buffer (size=%{public}zu).",
-        csdData.size());
-    return false;
+
+    (void)naluAnalyzer_->IsNonReferenceFrame(tmpBuffer);
+
+    lock.lock();
+    pendingCsdData_.clear();
+    naluAnalyzerJustCreated_ = false;
+    lock.unlock();
+
+    AVCODEC_LOGI_WITH_TAG("CSD replayed to newly created NaluAnalyzer (size=%{public}zu)", csdCopy.size());
+    return true;
 }
 
 void SmartFluencyDecoding::ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer)
@@ -546,14 +588,7 @@ void SmartFluencyDecoding::EnsureNaluAnalyzer()
 #endif
     });
     naluAnalyzer_ = std::move(analyzer);
-    if (!csdBuffer_) {
-        AVCODEC_LOGD_WITH_TAG("No cached CSD buffer to replay.");
-        return;
-    }
-    AVCODEC_LOGI_WITH_TAG("Replaying cached CSD buffer to activate newly instantiated NaluAnalyzer");
-    auto cachedCsd = csdBuffer_;
-    lock.unlock();
-    (void)naluAnalyzer_->IsNonReferenceFrame(cachedCsd);
+    naluAnalyzerJustCreated_ = true;
 }
 
 void SmartFluencyDecoding::EnsureMvAnalyzer()

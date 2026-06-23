@@ -152,16 +152,16 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_NoBuffer_007, TestSize.
 }
 
 /**
- * @tc.name: InitializeWithCsd_EmptyData_008
+ * @tc.name: InjectCsdData_EmptyData_008
  * @tc.desc: Handle empty CSD block gracefully.
  * @tc.type: FUNC
  */
-HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_EmptyData_008, TestSize.Level1)
+HWTEST_F(SmartFluencyDecodingTest, InjectCsdData_EmptyData_008, TestSize.Level1)
 {
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::AUTO_RATIO);
     sfd_->Initialize(cfg);
     std::vector<uint8_t> emptyCsd;
-    EXPECT_FALSE(sfd_->InitializeWithCsd(emptyCsd));
+    EXPECT_FALSE(sfd_->InjectCsdData(emptyCsd));
 }
 
 /**
@@ -211,14 +211,14 @@ HWTEST_F(SmartFluencyDecodingTest, UpdateDynamicConfig_ModeTransition_012, TestS
 }
 
 /**
- * @tc.name: InitializeWithCsd_NotInitialized_013
- * @tc.desc: Ensure InitializeWithCsd fails if the SFD instance is not yet initialized.
+ * @tc.name: InjectCsdData_NotInitialized_013
+ * @tc.desc: Ensure InjectCsdData fails if the SFD instance is not yet initialized.
  * @tc.type: FUNC
  */
-HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_NotInitialized_013, TestSize.Level1)
+HWTEST_F(SmartFluencyDecodingTest, InjectCsdData_NotInitialized_013, TestSize.Level1)
 {
     std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67};
-    EXPECT_FALSE(sfd_->InitializeWithCsd(csd));
+    EXPECT_FALSE(sfd_->InjectCsdData(csd));
 }
 
 /**
@@ -295,19 +295,20 @@ HWTEST_F(SmartFluencyDecodingTest, UpdateDynamicConfig_SpeedOnly_016, TestSize.L
 }
 
 /**
- * @tc.name: InitializeWithCsd_Success_017
- * @tc.desc: Test successful CSD initialization and processing by naluAnalyzer_.
+ * @tc.name: InjectCsdData_Success_017
+ * @tc.desc: Test successful CSD injection and replay by naluAnalyzer_.
  * @tc.type: FUNC
  */
-HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Success_017, TestSize.Level1)
+HWTEST_F(SmartFluencyDecodingTest, InjectCsdData_Success_017, TestSize.Level1)
 {
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
     sfd_->Initialize(cfg);
     sfd_->EnsureNaluAnalyzer();
 
     std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x0a};
-    EXPECT_TRUE(sfd_->InitializeWithCsd(csd));
-    EXPECT_NE(sfd_->csdBuffer_, nullptr);
+    EXPECT_TRUE(sfd_->InjectCsdData(csd));
+    EXPECT_FALSE(sfd_->ReplayCsdToAnalyzer());
+    EXPECT_FALSE(sfd_->pendingCsdData_.empty());
 }
 
 /**
@@ -419,11 +420,11 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_TargetFull_023, TestSiz
 }
 
 /**
- * @tc.name: InitializeWithCsd_Replay_024
- * @tc.desc: Test CSD replay logic when naluAnalyzer_ is created after CSD is cached.
+ * @tc.name: InjectCsdData_Replay_024
+ * @tc.desc: Test CSD replay logic when naluAnalyzer_ is created after CSD is injected.
  * @tc.type: FUNC
  */
-HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Replay_024, TestSize.Level1)
+HWTEST_F(SmartFluencyDecodingTest, InjectCsdData_Replay_024, TestSize.Level1)
 {
     // Clear pre-injected mock so FULL mode starts with naluAnalyzer_ == nullptr
     sfd_->naluAnalyzer_ = nullptr;
@@ -432,11 +433,11 @@ HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Replay_024, TestSize.Level1
     sfd_->Initialize(cfg);
     ASSERT_EQ(sfd_->naluAnalyzer_, nullptr);
 
-    // 2. Call InitializeWithCsd. It should cache the buffer because analyzer is null.
+    // 2. InjectCsdData stores CSD; ReplayCsdToAnalyzer returns false since naluAnalyzer_ is null.
     std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67};
-    bool immediateReplay = sfd_->InitializeWithCsd(csd);
-    EXPECT_FALSE(immediateReplay);
-    ASSERT_NE(sfd_->csdBuffer_, nullptr);
+    EXPECT_TRUE(sfd_->InjectCsdData(csd));
+    EXPECT_FALSE(sfd_->ReplayCsdToAnalyzer());
+    EXPECT_FALSE(sfd_->pendingCsdData_.empty());
 
     // 3. Switch to ADAPTIVE mode (which REQUIRES NALU analysis)
     OHOS::Media::Format format;
@@ -444,7 +445,7 @@ HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_Replay_024, TestSize.Level1
                        static_cast<int32_t>(OHOS::Media::Plugins::FrameRetentionMode::ADAPTIVE));
     sfd_->UpdateDynamicConfig(format);
 
-    // 4. Switching mode should have triggered EnsureNaluAnalyzer, which replays the CSD.
+    // 4. Switching mode should have triggered EnsureNaluAnalyzer.
     //    On platforms without .so files, inject mock if factory failed.
     if (!sfd_->naluAnalyzer_) {
         sfd_->naluAnalyzer_ = std::make_unique<MockNaluAnalyzer>(SFDCodecType::AVC);
@@ -743,19 +744,20 @@ HWTEST_F(SmartFluencyDecodingTest, ParseRetentionConfig_RatioOnlyNoMode_043, Tes
 }
 
 /**
- * @tc.name: InitializeWithCsd_VvcCodec_044
- * @tc.desc: Verify InitializeWithCsd works with VVC codec (different codec path).
+ * @tc.name: InjectCsdData_VvcCodec_044
+ * @tc.desc: Verify InjectCsdData works with VVC codec (different codec path).
  * @tc.type: FUNC
  */
-HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_VvcCodec_044, TestSize.Level1)
+HWTEST_F(SmartFluencyDecodingTest, InjectCsdData_VvcCodec_044, TestSize.Level1)
 {
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::VVC, RetentionStrategyType::ADAPTIVE);
     sfd_->Initialize(cfg);
     sfd_->EnsureNaluAnalyzer();
 
     std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x40, 0x01};
-    EXPECT_TRUE(sfd_->InitializeWithCsd(csd));
-    EXPECT_NE(sfd_->csdBuffer_, nullptr);
+    EXPECT_TRUE(sfd_->InjectCsdData(csd));
+    EXPECT_FALSE(sfd_->ReplayCsdToAnalyzer());
+    EXPECT_FALSE(sfd_->pendingCsdData_.empty());
 }
 
 /**
@@ -782,11 +784,11 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_NoNaluAnalyzer_045, Tes
 }
 
 /**
- * @tc.name: InitializeWithCsd_NaluAnalyzerNull_046
- * @tc.desc: Verify InitializeWithCsd caches CSD when naluAnalyzer_ is not instantiated.
+ * @tc.name: InjectCsdData_NaluAnalyzerNull_046
+ * @tc.desc: Verify InjectCsdData stores CSD when naluAnalyzer_ is not instantiated.
  * @tc.type: FUNC
  */
-HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_NaluAnalyzerNull_046, TestSize.Level1)
+HWTEST_F(SmartFluencyDecodingTest, InjectCsdData_NaluAnalyzerNull_046, TestSize.Level1)
 {
     // Clear pre-injected mock so FULL mode starts with naluAnalyzer_ == nullptr
     sfd_->naluAnalyzer_ = nullptr;
@@ -796,9 +798,9 @@ HWTEST_F(SmartFluencyDecodingTest, InitializeWithCsd_NaluAnalyzerNull_046, TestS
     ASSERT_EQ(sfd_->naluAnalyzer_, nullptr);
 
     std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67};
-    bool result = sfd_->InitializeWithCsd(csd);
-    EXPECT_FALSE(result);  // Returns false when naluAnalyzer_ is null
-    EXPECT_NE(sfd_->csdBuffer_, nullptr);  // But still caches
+    EXPECT_TRUE(sfd_->InjectCsdData(csd));  // InjectCsdData always stores data
+    EXPECT_FALSE(sfd_->ReplayCsdToAnalyzer());  // Replay returns false since naluAnalyzer_ is null
+    EXPECT_FALSE(sfd_->pendingCsdData_.empty());  // CSD data is cached for later replay
 }
 
 /**
