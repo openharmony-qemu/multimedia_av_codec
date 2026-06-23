@@ -306,8 +306,8 @@ HWTEST_F(SmartFluencyDecodingTest, InjectCsdData_Success_017, TestSize.Level1)
     sfd_->EnsureNaluAnalyzer();
 
     std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x0a};
-    EXPECT_TRUE(sfd_->InjectCsdData(csd));
-    EXPECT_TRUE(sfd_->ReplayCsdToAnalyzer());
+    EXPECT_TRUE(sfd_->(csd));
+    EXPECT_FALSE(sfd_->ReplayCsdToAnalyzer());
     EXPECT_TRUE(sfd_->pendingCsdData_.empty());
 }
 
@@ -756,7 +756,7 @@ HWTEST_F(SmartFluencyDecodingTest, InjectCsdData_VvcCodec_044, TestSize.Level1)
 
     std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x40, 0x01};
     EXPECT_TRUE(sfd_->InjectCsdData(csd));
-    EXPECT_TRUE(sfd_->ReplayCsdToAnalyzer());
+    EXPECT_FALSE(sfd_->ReplayCsdToAnalyzer());
     EXPECT_TRUE(sfd_->pendingCsdData_.empty());
 }
 

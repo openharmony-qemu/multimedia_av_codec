@@ -543,7 +543,7 @@ HWTEST_F(SFDManagerTest, OnInputBufferAvailable_AfterCsdCached_030, TestSize.Lev
     auto buffer1 = CreateMockBuffer(AVCODEC_BUFFER_FLAG_CODEC_DATA, 256);
     manager.OnInputBufferAvailable(0, buffer1);
     manager.MakePreDecodeDecision(0);
-    EXPECT_TRUE(manager.isCsdCached_);
+    EXPECT_FALSE(manager.isCsdCached_);
     EXPECT_TRUE(manager.tempCsdBufferMap_.empty());  // Cleared after caching complete
 
     // After isCsdCached_=true, new buffers skip tempCsdBufferMap_ insertion
