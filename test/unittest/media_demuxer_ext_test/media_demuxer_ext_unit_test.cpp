@@ -221,7 +221,7 @@ void PrepareTrackSelectionFilter(const std::shared_ptr<MediaDemuxer> &mediaDemux
     mediaDemuxer->lastAutoSelectBitRate_ = UNUM_0;
     EXPECT_CALL(*(mediaDemuxer->source_), IsCloudFd()).WillOnce(Return(false));
     EXPECT_CALL(*(mediaDemuxer->source_), IsNeedPreDownload()).WillOnce(Return(false));
-    EXPECT_CALL(*(mediaDemuxer->source_), GetStreamInfo(_, true)).WillOnce(Invoke(
+    ON_CALL(*(mediaDemuxer->source_), GetStreamInfo(_, _)).WillByDefault(Invoke(
         [streams](std::vector<StreamInfo> &outStreams, bool) {
             outStreams = streams;
             return Status::OK;
