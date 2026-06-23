@@ -90,18 +90,35 @@ int32_t SmartFluencyDecoding::InitializeInternal()
     return AVCS_ERR_OK;
 }
 
-void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed)
+void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed, bool fromUser)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
-    if (strategy_) {
+    if (!strategy_) {
+        return;
+    }
+    if (fromUser) {
+        userConfiguredSpeed_ = speed;
         strategy_->UpdatePlaybackSpeed(speed);
 #ifdef SFD_DEBUG
         if (dumper_) {
             dumper_->UpdateSpeed(speed);
         }
 #endif
-        AVCODEC_LOGI_WITH_TAG("SFD Playback speed dynamically updated to: %{public}.3f", speed);
+        AVCODEC_LOGI_WITH_TAG("User-configured speed: %{public}.3f", speed);
+        return;
     }
+    if (userConfiguredSpeed_.has_value()) {
+        AVCODEC_LOGI_WITH_TAG("Statistical speed %{public}.3f ignored, user speed %{public}.3f in effect",
+            speed, userConfiguredSpeed_.value());
+        return;
+    }
+    strategy_->UpdatePlaybackSpeed(speed);
+#ifdef SFD_DEBUG
+    if (dumper_) {
+        dumper_->UpdateSpeed(speed);
+    }
+#endif
+    AVCODEC_LOGI_WITH_TAG("SFD Playback speed updated to: %{public}.3f", speed);
 }
 
 void SmartFluencyDecoding::OnDecInfoUpdate(double sourceFps, double speed)
@@ -203,12 +220,7 @@ int32_t SmartFluencyDecoding::UpdateDynamicConfig(const Media::Format& format)
     double speed = DEFAULT_PLAYBACK_SPEED;
     bool hasUserSpeed = format.GetDoubleValue(Media::Tag::VIDEO_DECODER_SPEED, speed);
     if (hasUserSpeed) {
-        {
-            std::lock_guard<std::mutex> lock(configMutex_);
-            userConfiguredSpeed_ = speed;
-        }
-        UpdatePlaybackSpeed(speed);
-        AVCODEC_LOGI_WITH_TAG("UpdateDynamicConfig: User-configured speed: %{public}.3f", speed);
+        UpdatePlaybackSpeed(speed, true);
     }
     return AVCS_ERR_OK;
 }

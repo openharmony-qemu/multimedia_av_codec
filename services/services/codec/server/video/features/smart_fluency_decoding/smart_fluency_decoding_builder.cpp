@@ -107,7 +107,7 @@ std::unique_ptr<SmartFluencyDecoding> SmartFluencyDecodingBuilder::Build()
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Failed to initialize SmartFluencyDecoding"
         ",ret=%{public}d", ret);
     if (playbackSpeed_.has_value()) {
-        instance->UpdatePlaybackSpeed(playbackSpeed_.value());
+        instance->UpdatePlaybackSpeed(playbackSpeed_.value(), true);
     }
     AVCODEC_LOGI("SmartFluencyDecoding built successfully: %{public}dx%{public}d, mode=%{public}d",
         config_.width, config_.height, static_cast<int32_t>(config_.initMode));
