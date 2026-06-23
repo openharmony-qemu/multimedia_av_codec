@@ -1937,13 +1937,13 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Decoder_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_001, TestSize.Level1)
 {
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     std::string forwardProcessName = "forwardcallerProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -1956,7 +1956,7 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_002, TestSize.Level1)
 {
     std::string forwardProcessName = "forwardcallerProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -1972,11 +1972,11 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_003, TestSize.Level1)
     const std::string forwardProcessName = "forwardcallerProcess";
 
     meta_->SetData(Tag::AV_CODEC_CALLER_PID, pid);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -1991,7 +1991,7 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_004, TestSize.Level1)
     const std::string forwardProcessName = "forwardcallerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PID, pid);
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -2060,4 +2060,190 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Test_002, TestSize.Level1)
     AddSpecInfo(meta_, 3000); // 3000: less than resolution4320P
     AddSpecInfo(meta_, 6000); // 6000: greater than resolution4320P
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: CapUnsupportedInfo_AddEventInfo_Test_001
+ * @tc.desc: AddEventInfo coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, CapUnsupportedInfo_AddEventInfo_Test_001, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "invalid_type");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: CapUnsupportedInfo_AddEventInfo_Test_002
+ * @tc.desc: AddEventInfo coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, CapUnsupportedInfo_AddEventInfo_Test_002, TestSize.Level1)
+{
+    meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "invalid_type");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: CapUnsupportedInfo_AddEventInfo_Test_001
+ * @tc.desc: AddEventInfo coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, CapUnsupportedInfo_AddEventInfo_Test_001, TestSize.Level1)
+{
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "invalid_type");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: IsEventValid_NoValidData_ReturnsFalse_001
+ * @tc.desc: Test IsEventValid returns false when no BasicInfo data added.
+ *           eventInfoMap_ has 4 entries but none IsEventValid() returns true,
+ *           covers for-loop-exhausted-then-return-false branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, IsEventValid_NoValidData_ReturnsFalse_001, TestSize.Level1)
+{
+    ASSERT_FALSE(StatisticsEventInfo::GetInstance().IsEventValid());
+}
+
+/**
+ * @tc.name: IsEventValid_WithNonBasicEvent_ReturnsFalse_001
+ * @tc.desc: Test IsEventValid returns false with non-BasicInfo event.
+ *           CodecAbnormalInfo::IsEventValid() always returns false,
+ *           covers eventInfo!=nullptr but IsEventValid() returns false branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, IsEventValid_WithNonBasicEvent_ReturnsFalse_001, TestSize.Level1)
+{
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "is_event_valid_test");
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
+                   static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
+    meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
+    ASSERT_FALSE(StatisticsEventInfo::GetInstance().IsEventValid());
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: IsEventValid_WithBasicEvent_ReturnsTrue_001
+ * @tc.desc: Test IsEventValid returns true with BasicInfo event.
+ *           BASIC_QUERY_CAP_INFO increments queryCapTimes_,
+ *           covers eventInfo!=nullptr && IsEventValid() returns true branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, IsEventValid_WithBasicEvent_ReturnsTrue_001, TestSize.Level1)
+{
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "is_event_valid_test");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
+    ASSERT_TRUE(StatisticsEventInfo::GetInstance().IsEventValid());
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: IsEventValid_AfterSubmit_ReturnsFalse_001
+ * @tc.desc: Test IsEventValid returns false after OnSubmitEventInfo.
+ *           ResetEventInfo clears all counters, making BasicInfo::IsEventValid()
+ *           return false again, covers post-reset for-loop-exhausted branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, IsEventValid_AfterSubmit_ReturnsFalse_001, TestSize.Level1)
+{
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "is_event_valid_test");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
+    ASSERT_TRUE(StatisticsEventInfo::GetInstance().IsEventValid());
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    ASSERT_FALSE(StatisticsEventInfo::GetInstance().IsEventValid());
+}
+
+/**
+ * @tc.name: CapUnsupportedInfo_AddEventInfo_Test_002
+ * @tc.desc: AddEventInfo coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, CapUnsupportedInfo_AddEventInfo_Test_002, TestSize.Level1)
+{
+    meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "invalid_type");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: IsEventValid_NoValidData_ReturnsFalse_001
+ * @tc.desc: Test IsEventValid returns false when no BasicInfo data added.
+ *           eventInfoMap_ has 4 entries but none IsEventValid() returns true,
+ *           covers for-loop-exhausted-then-return-false branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, IsEventValid_NoValidData_ReturnsFalse_001, TestSize.Level1)
+{
+    ASSERT_FALSE(StatisticsEventInfo::GetInstance().IsEventValid());
+}
+
+/**
+ * @tc.name: IsEventValid_WithNonBasicEvent_ReturnsFalse_001
+ * @tc.desc: Test IsEventValid returns false with non-BasicInfo event.
+ *           CodecAbnormalInfo::IsEventValid() always returns false,
+ *           covers eventInfo!=nullptr but IsEventValid() returns false branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, IsEventValid_WithNonBasicEvent_ReturnsFalse_001, TestSize.Level1)
+{
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "is_event_valid_test");
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
+                   static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
+    meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
+    ASSERT_FALSE(StatisticsEventInfo::GetInstance().IsEventValid());
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: IsEventValid_WithBasicEvent_ReturnsTrue_001
+ * @tc.desc: Test IsEventValid returns true with BasicInfo event.
+ *           BASIC_QUERY_CAP_INFO increments queryCapTimes_,
+ *           covers eventInfo!=nullptr && IsEventValid() returns true branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, IsEventValid_WithBasicEvent_ReturnsTrue_001, TestSize.Level1)
+{
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "is_event_valid_test");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
+    ASSERT_TRUE(StatisticsEventInfo::GetInstance().IsEventValid());
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+/**
+ * @tc.name: IsEventValid_AfterSubmit_ReturnsFalse_001
+ * @tc.desc: Test IsEventValid returns false after OnSubmitEventInfo.
+ *           ResetEventInfo clears all counters, making BasicInfo::IsEventValid()
+ *           return false again, covers post-reset for-loop-exhausted branch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, IsEventValid_AfterSubmit_ReturnsFalse_001, TestSize.Level1)
+{
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "is_event_valid_test");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
+    ASSERT_TRUE(StatisticsEventInfo::GetInstance().IsEventValid());
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    ASSERT_FALSE(StatisticsEventInfo::GetInstance().IsEventValid());
 }
