@@ -1129,7 +1129,7 @@ public:
             }
             std::string key = typeIter->second + "_" + mimeType + "_Err_" +
                 AVCSErrorToEnumName(static_cast<AVCodecServiceErrCode>(errorCode));
-            cJSON_AddStringToObject(codecErrorRootObj, key.c_str(), std::to_string(count).c_str());
+            cJSON_AddNumberToObject(codecErrorRootObj, key.c_str(), count);
         }
 
         submitInfo.jsonObjects[CODEC_ERROR_INFO] = std::move(jsonObj);
