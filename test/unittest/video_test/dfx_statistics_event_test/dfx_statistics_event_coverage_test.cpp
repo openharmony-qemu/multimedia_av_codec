@@ -1998,7 +1998,9 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_004, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_001, TestSize.Level1)
 {
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_INFO, *meta_);
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
+    meta_->SetData(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -2009,17 +2011,32 @@ HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_002, TestSize.Level1)
 {
-    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
-    meta_->SetData(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
+    meta_->SetData(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC.data());
+    meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.avc.secure");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
-void AddSpecInfo(int32_t param)
+/**
+ * @tc.name: BasicInfo_Submit_Test_003
+ * @tc.desc: OnSubmitEventInfo coverage test
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_003, TestSize.Level1)
+{
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
+    meta_->SetData(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC.data());
+    meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.avc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
+void AddSpecInfo(std::shared_ptr<Media::Meta> meta, int32_t param)
 {
     meta->SetData(EventInfoExtentedKey::WIDTH.data(), param);
     meta->SetData(EventInfoExtentedKey::HEIGHT.data(), param);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta);
 }
 
 /**
@@ -2029,14 +2046,14 @@ void AddSpecInfo(int32_t param)
  */
 HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Test_001, TestSize.Level1)
 {
-    AddSpecInfo(360);
-    AddSpecInfo(500);
-    AddSpecInfo(700);
-    AddSpecInfo(800);
-    AddSpecInfo(1000);
-    AddSpecInfo(1500);
-    AddSpecInfo(2000);
-    AddSpecInfo(3000);
-    AddSpecInfo(6000);
+    AddSpecInfo(meta_, 360);  // 360: less than resolution360P
+    AddSpecInfo(meta_, 500);  // 500: less than resolution480P
+    AddSpecInfo(meta_, 700);  // 700: less than resolution576P
+    AddSpecInfo(meta_, 800);  // 800: less than resolution720P
+    AddSpecInfo(meta_, 1000); // 1000: less than resolution1080P
+    AddSpecInfo(meta_, 1500); // 1500: less than resolution1440P
+    AddSpecInfo(meta_, 2000); // 2000: less than resolution2160P
+    AddSpecInfo(meta_, 3000); // 3000: less than resolution4320P
+    AddSpecInfo(meta_, 6000); // 6000: greater than resolution4320P
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
