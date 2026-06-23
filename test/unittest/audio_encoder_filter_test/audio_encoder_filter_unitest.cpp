@@ -24,6 +24,9 @@
 #include "common/log.h"
 #include "parameters.h"
 #include "filter/filter.h"
+#ifdef SUPPORT_AUDIO_CONVERT
+#include "audio_format_converter.h"
+#endif
  
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -483,6 +486,7 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_NotifyProcessingThread_01
     EXPECT_EQ(audioEncoderFilter_->hasPendingBuffer_.load(), true);
 }
 
+#ifdef SUPPORT_AUDIO_CONVERT
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_ConverterInputCallback_OnRequestData_0100, TestSize.Level1)
 {
     std::shared_ptr<AVBuffer> buffer = nullptr;
@@ -493,6 +497,7 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_ConverterInputCallback_On
     EXPECT_EQ(callback->OnRequestData(&data, &status), 0);
     EXPECT_EQ(status, AudioStandard::AudioSuite::InputDataStatus::DATA_FINISHED);
 }
+#endif
 
 }
 }
