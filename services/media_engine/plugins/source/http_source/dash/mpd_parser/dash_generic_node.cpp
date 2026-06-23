@@ -186,8 +186,8 @@ void DashGenericNode::GetAttr(const std::string &attrName, uint64_t &val)
             auto ret = StringUtil::SafeStoInt64(vals_[i], tempVal);
             val = (ret && tempVal >= 0) ? static_cast<uint64_t>(tempVal) : 0;
             return;
-           }
- }
+        }
+    }
     for (size_t i = 0; i < commonAttrs_.size(); ++i) {
         if (commonAttrs_[i] == attrName && !commonVals_[i].empty()) {
             int64_t tempVal = 0;

@@ -53,7 +53,6 @@ public:
     MOCK_METHOD(Status, Reset, (), (override));
     MOCK_METHOD(void, SetLastVideoBufferAbsPts, (int64_t lastVideoBufferAbsPts), (override));
     MOCK_METHOD(int64_t, GetLastVideoBufferAbsPts, (), (const, override));
-
 };
 
 } // namespace Pipeline

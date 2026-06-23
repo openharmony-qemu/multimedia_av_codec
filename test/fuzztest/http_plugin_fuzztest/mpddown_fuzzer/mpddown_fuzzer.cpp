@@ -374,7 +374,8 @@ bool DashRepresentationNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Representation"), IDashMpdNode::DestroyNode);
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Representation"),
+                                                      IDashMpdNode::DestroyNode);
         std::string addr = "bandwidth";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
@@ -397,7 +398,8 @@ bool DashSegBaseNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("SegmentBase"), IDashMpdNode::DestroyNode);
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("SegmentBase"),
+                                                      IDashMpdNode::DestroyNode);
         std::string addr = "timescale";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
@@ -420,7 +422,8 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Initialization"), IDashMpdNode::DestroyNode);
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Initialization"),
+                                                      IDashMpdNode::DestroyNode);
         std::string addr = "sourceURL";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();

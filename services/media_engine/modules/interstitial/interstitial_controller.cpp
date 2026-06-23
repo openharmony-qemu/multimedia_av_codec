@@ -105,7 +105,7 @@ Status InterstitialController::AddAdsMediaSource(const std::shared_ptr<MediaSour
         for (const auto& kv : entries_) {
             if (kv.second.resourceUri == uri && kv.second.startMs == startMs) {
                 outId = kv.first;
-                MEDIA_LOG_I("AddAdsMediaSource: duplicate uri=" PUBLIC_LOG_S ", startMs=" PUBLIC_LOG_D64 
+                MEDIA_LOG_I("AddAdsMediaSource: duplicate uri=" PUBLIC_LOG_S ", startMs=" PUBLIC_LOG_D64
                     ", existing id=" PUBLIC_LOG_S, uri.c_str(), startMs, kv.first.c_str());
                 return Status::OK;
             }
