@@ -388,11 +388,11 @@ HWTEST_F(SFDManagerTest, EnableMVOutput_ActiveSfd_019, TestSize.Level1)
 }
 
 /**
- * @tc.name: Configure_InitializeWithCsd_020
+ * @tc.name: Configure_InjectCsdData_020
  * @tc.desc: Verify SFD initialization with previously cached CSD data.
  * @tc.type: FUNC
  */
-HWTEST_F(SFDManagerTest, Configure_InitializeWithCsd_020, TestSize.Level1)
+HWTEST_F(SFDManagerTest, Configure_InjectCsdData_020, TestSize.Level1)
 {
     SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
     auto buffer = CreateMockBuffer(AVCODEC_BUFFER_FLAG_CODEC_DATA, 100);
