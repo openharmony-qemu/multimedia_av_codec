@@ -34,6 +34,7 @@
         "av_codec_support_xcollie",
         "av_codec_support_bitstream_dump",
         "av_codec_enable_special_codec",
+        "av_codec_enable_codec_vivid",
         "av_codec_support_drm",
         "av_codec_support_video_processing_engine",
         "av_codec_support_software_codec",

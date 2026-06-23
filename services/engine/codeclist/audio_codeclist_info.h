@@ -59,9 +59,11 @@ public:
 #ifdef SUPPORT_CODEC_EAC3
     CapabilityData GetEac3DecoderCapability();
 #endif
-#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
+#ifdef SUPPORT_CODEC_AUDIO_VIVID
     CapabilityData GetVividDecoderCapability();
     CapabilityData GetVividEncoderCapability();
+#endif
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
     CapabilityData GetAmrwbEncoderCapability();
     CapabilityData GetL2hcEncoderCapability();
     CapabilityData GetL2hcDecoderCapability();
