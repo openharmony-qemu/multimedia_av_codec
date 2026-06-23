@@ -19,14 +19,8 @@
 #include <string>
 #include <thread>
 #include "dash_media_downloader.h"
-#include "dash_descriptor_node.h"
 #include "dash_adpt_set_manager.h"
 #include "dash_mpd_manager.h"
-#include "dash_mpd_node.h"
-#include "dash_period_node.h"
-#include "dash_representation_node.h"
-#include "dash_seg_base_node.h"
-#include "dash_url_type_node.h"
 #include <fuzzer/FuzzedDataProvider.h>
 #include "http_server_demo.h"
 #include "http_server_mock.h"
@@ -268,8 +262,8 @@ bool DashDescriptorNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashDescriptorNode> mpdMpddownload = std::make_shared<DashDescriptorNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Role"), IDashMpdNode::DestroyNode);
+        std::string addr = "schemeIdUri";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
@@ -315,8 +309,8 @@ bool DashMpdNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashMpdNode> mpdMpddownload = std::make_shared<DashMpdNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("MPD"), IDashMpdNode::DestroyNode);
+        std::string addr = "profiles";
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
         double dAttrVal = GetData<double>();
@@ -338,8 +332,8 @@ bool DashPeriodNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashPeriodNode> mpdMpddownload = std::make_shared<DashPeriodNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Period"), IDashMpdNode::DestroyNode);
+        std::string addr = "start";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
@@ -380,8 +374,8 @@ bool DashRepresentationNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashRepresentationNode> mpdMpddownload = std::make_shared<DashRepresentationNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Representation"), IDashMpdNode::DestroyNode);
+        std::string addr = "bandwidth";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
@@ -403,8 +397,8 @@ bool DashSegBaseNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashSegBaseNode> mpdMpddownload = std::make_shared<DashSegBaseNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("SegmentBase"), IDashMpdNode::DestroyNode);
+        std::string addr = "timescale";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
@@ -426,8 +420,8 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashUrlTypeNode> mpdMpddownload = std::make_shared<DashUrlTypeNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Initialization"), IDashMpdNode::DestroyNode);
+        std::string addr = "sourceURL";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();

@@ -51,6 +51,8 @@ namespace Media {
 class BaseStreamDemuxer;
 class DemuxerPluginManager;
 class Source;
+class InterstitialController;
+class InterstitialScheduler;
 
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
@@ -106,12 +108,16 @@ public:
     Status Flush();
     Status Preroll();
     Status PausePreroll();
+    void HandleForSourceSwitch();
+    Status ReselectTracks();
+    void ClearSampleQueues();
 
     Status StartTask(int32_t trackId);
     Status SelectTrack(uint32_t trackIndex); // Interface for AVDemuxer
     Status UnselectTrack(uint32_t trackIndex); // Interface for AVDemuxer
     Status ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample); // Interface for AVDemuxer
     Status GetBitRates(std::vector<uint32_t> &bitRates);
+    uint32_t GetCurrentBitRate() const;
     Status SelectStreamId(int32_t streamId, bool isAudioStream = true);
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false, bool isForceSelect = false);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
@@ -195,6 +201,10 @@ public:
     bool IsFlvLive();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
+    void SetInterstitialController(std::shared_ptr<InterstitialController> controller);
+    std::shared_ptr<InterstitialController> GetInterstitialController() const;
+    std::shared_ptr<InterstitialScheduler> SetInterstitialScheduler(std::shared_ptr<InterstitialScheduler> scheduler);
+    std::shared_ptr<InterstitialScheduler> GetInterstitialScheduler() const;
     bool HasVideo();
     bool HasAudio();
     bool IsSeekToTimeSupported();
@@ -450,12 +460,25 @@ private:
     void InitVideoAudioBasePtsDiff();
     void ReportMediaChangedEvent();
     void CheckPtsDiscontinuity(int32_t trackId, std::shared_ptr<AVBuffer> buffer);
+    bool HandleInterstitialEos(int32_t trackId, const std::shared_ptr<AVBuffer>& dstBuffer);
+    void DriveInterstitialTicks();
+    void PauseAllTasksForSwitch();
+    void StopSourceAndPlugin();
+    void HandleTimedMetadataEvent(const Plugins::PluginEvent& event);
+    Status PushDirectBuffer(int32_t trackId, std::shared_ptr<SampleQueue>& sampleQueue,
+        std::shared_ptr<AVBuffer>& dstBuffer, sptr<AVBufferQueueProducer>& bufferQueue);
+    Status PushBufferBySlices(int32_t trackId, std::shared_ptr<SampleQueue>& sampleQueue,
+        std::shared_ptr<AVBuffer>& dstBuffer, sptr<AVBufferQueueProducer>& bufferQueue);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
     uint64_t sourceCacheDuration_ = 0;
     int64_t lastClockTimeMs_ = 0;
     bool enableSampleQueue_ = true;
+    std::weak_ptr<InterstitialController> interstitialController_;
+    mutable std::mutex interstitialSchedulerMutex_;
+    std::shared_ptr<InterstitialScheduler> interstitialScheduler_;
+    std::atomic<int64_t> lastInterstitialCheckMs_{0};
 
     Mutex mapMutex_{};
     std::map<int32_t, std::shared_ptr<TrackWrapper>> trackMap_;

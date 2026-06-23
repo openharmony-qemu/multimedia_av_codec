@@ -13,70 +13,76 @@
  * limitations under the License.
  */
 
-#include <functional>
-#include <unordered_map>
 #include "i_dash_mpd_node.h"
-#include "dash_mpd_node.h"
-#include "dash_period_node.h"
-#include "dash_adpt_set_node.h"
-#include "dash_content_comp_node.h"
-#include "dash_representation_node.h"
-#include "dash_seg_base_node.h"
-#include "dash_mult_seg_base_node.h"
-#include "dash_seg_list_node.h"
-#include "dash_seg_template_node.h"
-#include "dash_url_type_node.h"
-#include "dash_seg_tmline_node.h"
-#include "dash_descriptor_node.h"
-#include "dash_seg_url_node.h"
-#include "dash_event_stream_node.h"
-#include "dash_event_node.h"
-#include "dash_splice_info_section_node.h"
-#include "dash_splice_insert_node.h"
-#include "dash_break_duration_node.h"
-
-namespace {
-    using namespace OHOS::Media::Plugins::HttpPlugin;
-    const std::unordered_map<std::string, std::function<IDashMpdNode *()>> DashMpdNodeGenerator = {
-        {"MPD", []() { return new DashMpdNode(); }},
-        {"Period", []() {return new DashPeriodNode(); }},
-        {"AdaptationSet", []() { return new DashAdptSetNode(); }},
-        {"ContentComponent", []() { return new DashContentCompNode(); }},
-        {"Representation", []() {return new DashRepresentationNode(); }},
-        {"SegmentBase", []() { return new DashSegBaseNode(); }},
-        {"MultipleSegmentBase", []() { return new DashMultSegBaseNode(); }},
-        {"SegmentList", []() { return new DashSegListNode(); }},
-        {"SegmentTemplate", []() { return new DashSegTemplateNode(); }},
-        {"Initialization", []() { return new DashUrlTypeNode(); }},
-        {"RepresentationIndex", []() { return new DashUrlTypeNode(); }},
-        {"BitstreamSwitching", []() { return new DashUrlTypeNode(); }},
-        {"SegmentTimeline", []() { return new DashSegTmlineNode(); }},
-        {"ContentProtection", []() { return new DashDescriptorNode(); }},
-        {"Role", []() { return new DashDescriptorNode(); }},
-        {"EssentialProperty", []() { return new DashDescriptorNode(); }},
-        {"AudioChannelConfiguration", []() { return new DashDescriptorNode(); }},
-        {"SegmentURL", []() { return new DashSegUrlNode(); }},
-        {"EventStream", []() {return new DashEventStreamNode(); }},
-        {"Event", []() {return new DashEventNode(); }},
-        {"SpliceInfoSection", []() {return new DashSpliceInfoSectionNode(); }},
-        {"SpliceInsert", []() {return new DashSpliceInsertNode(); }},
-        {"BreakDuration", []() {return new DashBreakDurationNode(); }},
-    };
-}
+#include "dash_generic_node.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-// ISO/IEC 23009-1 define MPD node
+
+static const std::vector<std::string> COMMON_ATTRS = {
+    "profiles", "width", "height", "sar", "frameRate", "audioSamplingRate",
+    "mimeType", "segmentProfiles", "codecs", "maximumSAPPeriod",
+    "startWithSAP", "maxPlayoutRate", "codingDependency", "scanType"
+};
+
+struct NodeConfig {
+    std::vector<std::string> attrs;
+    std::vector<std::string> commonAttrs;
+    std::vector<std::pair<std::string, std::string>> childNodes;
+};
+
+const std::unordered_map<std::string, NodeConfig>& GetNodeConfigMap()
+{
+    static const std::unordered_map<std::string, NodeConfig> configs = {
+        {"MPD", {{"id", "profiles", "type", "availabilityStartTime", "availabilityEndTime",
+                  "mediaPresentationDuration", "minimumUpdatePeriod", "minBufferTime",
+                  "timeShiftBufferDepth", "suggestedPresentationDelay", "maxSegmentDuration",
+                  "maxSubsegmentDuration", "mediaType", "hwTotalViewNumber", "hwDefaultViewIndex"}, {}, {}}},
+        {"Period", {{"id", "start", "duration", "bitstreamSwitching"}, {}, {}}},
+        {"AdaptationSet", {{"id", "group", "lang", "contentType", "par", "minBandwidth", "maxBandwidth",
+                            "minWidth", "maxWidth", "minHeight", "maxHeight", "minFrameRate", "maxFrameRate",
+                            "segmentAlignment", "bitstreamSwitching", "subsegmentAlignment",
+                            "subsegmentStartsWithSAP", "cameraIndex", "videoType"}, COMMON_ATTRS, {}}},
+        {"ContentComponent", {{"id", "lang", "contentType", "par"}, {}, {}}},
+        {"Representation", {{"id", "bandwidth", "qualityRanking", "dependencyId", "mediaStreamStructureId",
+                              "volumeAdjust_", "cuvvVersion", "channels"}, COMMON_ATTRS, {}}},
+        {"SegmentBase", {{"timescale", "presentationTimeOffset", "indexRange", "indexRangeExact"}, {}, {}}},
+        {"MultipleSegmentBase", {{"duration", "startNumber"}, {},
+                                 {{"inherit", "SegmentBase"}}}},
+        {"SegmentList", {{"media", "mediaRange", "index", "indexRange"}, {},
+                         {{"inherit", "MultipleSegmentBase"}}}},
+        {"SegmentTemplate", {{"media", "index", "initialization", "bitstreamSwitching"}, {},
+                             {{"inherit", "MultipleSegmentBase"}}}},
+        {"SegmentTimeline", {{"t", "d", "r"}, {}, {}}},
+        {"SegmentURL", {{"media", "mediaRange", "index", "indexRange"}, {}, {}}},
+        {"EventStream", {{"timescale", "value", "schemeIdUri", "presentationTimeOffset"}, {}, {}}},
+        {"Event", {{"id", "duration", "presentationTime", "value"}, {}, {}}},
+        {"Initialization", {{"sourceURL", "range"}, {}, {}}},
+        {"RepresentationIndex", {{"sourceURL", "range"}, {}, {}}},
+        {"BitstreamSwitching", {{"sourceURL", "range"}, {}, {}}},
+        {"ContentProtection", {{"schemeIdUri", "value", "default_KID"}, {}, {}}},
+        {"Role", {{"schemeIdUri", "value"}, {}, {}}},
+        {"EssentialProperty", {{"schemeIdUri", "value"}, {}, {}}},
+        {"AudioChannelConfiguration", {{"schemeIdUri", "value"}, {}, {}}},
+        {"ad", {{"messageData"}, {}, {}}},
+    };
+    return configs;
+}
+
 IDashMpdNode *IDashMpdNode::CreateNode(const std::string &nodeName)
 {
-    auto generator = DashMpdNodeGenerator.find(nodeName);
-    if (generator == DashMpdNodeGenerator.end()) {
-        return nullptr;
+    const auto& configMap = GetNodeConfigMap();
+    auto configIt = configMap.find(nodeName);
+    if (configIt != configMap.end()) {
+        if (!configIt->second.childNodes.empty()) {
+            return new DashGenericNode(configIt->second.attrs, configIt->second.commonAttrs,
+                                       configIt->second.childNodes);
+        }
+        return new DashGenericNode(configIt->second.attrs, configIt->second.commonAttrs);
     }
-
-    return generator->second();
+    return nullptr;
 }
 
 void IDashMpdNode::DestroyNode(IDashMpdNode *node)
@@ -85,7 +91,8 @@ void IDashMpdNode::DestroyNode(IDashMpdNode *node)
         delete node;
     }
 }
-} // namespace HttpPluginLite
+
+} // namespace HttpPlugin
 } // namespace Plugin
 } // namespace Media
 } // namespace OHOS

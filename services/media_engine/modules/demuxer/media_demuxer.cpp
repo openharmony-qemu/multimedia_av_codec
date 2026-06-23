@@ -55,6 +55,8 @@
 #include "scope_guard.h"
 #include "syspara/parameters.h"
 #include "avcodec_info.h"
+#include "interstitial_controller.h"
+#include "interstitial_scheduler.h"
 
 namespace {
 const std::string DUMP_PARAM = "a";
@@ -68,11 +70,12 @@ static constexpr int32_t SKIP_NEXT_OPEN_GOP_CNT = 2;
 constexpr uint32_t THREAD_PRIORITY_41 = 7;
 constexpr uint32_t MAX_VIDEO_LEAD_TIME_ON_MUTE_US = 10000000; // Maximum video frame advance time during video mute
 constexpr uint32_t SAMPLE_QUEUE_ADD_SIZE_ON_MUTE = 20; // When samplequeue is full on mute, samplequeue size add 20
-std::map<OHOS::Media::TrackType, OHOS::Media::StreamType> TRACK_TO_STREAM_MAP = {
-    {OHOS::Media::TrackType::TRACK_VIDEO, OHOS::Media::StreamType::VIDEO},
-    {OHOS::Media::TrackType::TRACK_AUDIO, OHOS::Media::StreamType::AUDIO},
-    {OHOS::Media::TrackType::TRACK_SUBTITLE, OHOS::Media::StreamType::SUBTITLE},
-    {OHOS::Media::TrackType::TRACK_INVALID, OHOS::Media::StreamType::MIXED}
+constexpr int64_t INTERSTITIAL_CHECK_INTERVAL_MS = 200;
+std::map<OHOS::Media::TrackType, OHOS::Media::Plugins::StreamType> TRACK_TO_STREAM_MAP = {
+    {OHOS::Media::TrackType::TRACK_VIDEO, OHOS::Media::Plugins::StreamType::VIDEO},
+    {OHOS::Media::TrackType::TRACK_AUDIO, OHOS::Media::Plugins::StreamType::AUDIO},
+    {OHOS::Media::TrackType::TRACK_SUBTITLE, OHOS::Media::Plugins::StreamType::SUBTITLE},
+    {OHOS::Media::TrackType::TRACK_INVALID, OHOS::Media::Plugins::StreamType::MIXED}
 };
 
 bool GetLocalLoadedRange(int64_t durationMs, OHOS::Media::Plugins::SeekRange &range)
@@ -114,8 +117,7 @@ constexpr int64_t READSAMPLE_AUIDO_WARNING_MS = 50;
 constexpr int64_t READSAMPLE_WARNING_MS = 100;
 constexpr int32_t CONVERT_PACKET_ERROR_MAX_COUNT = 30;
 constexpr int32_t DURATION_CHANGE_AMOUNT_MILLIONSECOND = 500;
-constexpr int64_t MAX_PRECENT = 100;
-constexpr int64_t TEMP_PRECENT = 100;
+constexpr int64_t MAX_PERCENT = 100;
 const std::unordered_map<PluginDfxEventType, std::pair<std::string, DfxEventType>> DFX_EVENT_MAP = {
     { PluginDfxEventType::PERF_SOURCE, { "SRC", DfxEventType::DFX_INFO_PERF_REPORT } },
     { PluginDfxEventType::PERF_LOADING_ERROR, { "LOADING_ERROR", DfxEventType::DFX_EVENT_LOADING_ERROR } }
@@ -543,6 +545,14 @@ Status MediaDemuxer::GetBitRates(std::vector<uint32_t> &bitRates)
 {
     FALSE_RETURN_V_MSG(source_ != nullptr, Status::ERROR_INVALID_OPERATION, "Source is nullptr");
     return source_->GetBitRates(bitRates);
+}
+
+uint32_t MediaDemuxer::GetCurrentBitRate() const
+{
+    if (demuxerPluginManager_ != nullptr) {
+        return demuxerPluginManager_->GetCurrentBitRate();
+    }
+    return 0;
 }
 
 Status MediaDemuxer::GetMediaKeySystemInfo(std::multimap<std::string, std::vector<uint8_t>> &infos)
@@ -2705,6 +2715,167 @@ Status MediaDemuxer::PausePreroll()
     return ret;
 }
 
+void MediaDemuxer::HandleForSourceSwitch()
+{
+    PauseAllTasksForSwitch();
+    StopSourceAndPlugin();
+    ClearSampleQueues();
+}
+
+void MediaDemuxer::PauseAllTasksForSwitch()
+{
+    PauseAllTaskAsync();
+    PauseAllTask();
+}
+
+void MediaDemuxer::ClearSampleQueues()
+{
+    MEDIA_LOG_I("ClearSampleQueues in");
+    AutoLock lock(mapMutex_);
+    for (auto& kv : sampleQueueMap_) {
+        if (kv.second != nullptr) {
+            kv.second->Clear();
+            MEDIA_LOG_I("ClearSampleQueues: cleared sampleQueue track %{public}d", kv.first);
+        }
+    }
+    for (auto& kv : bufferQueueMap_) {
+        if (kv.second != nullptr) {
+            kv.second->Clear();
+            MEDIA_LOG_I("ClearSampleQueues: cleared bufferQueue track %{public}d", kv.first);
+        }
+    }
+    MEDIA_LOG_I("ClearSampleQueues done");
+}
+
+void MediaDemuxer::StopSourceAndPlugin()
+{
+    {
+        std::unique_lock<std::mutex> stopLock(stopMutex_);
+        isThreadExit_ = true;
+        isStopped_ = false;
+    }
+    if (source_ != nullptr) {
+        source_->Stop();
+    }
+    if (streamDemuxer_) {
+        streamDemuxer_->Stop();
+    }
+    if (demuxerPluginManager_) {
+        demuxerPluginManager_->Stop();
+    }
+}
+
+Status MediaDemuxer::ReselectTracks()
+{
+    if (IsValidTrackId(videoTrackId_)) {
+        Status ret = InnerSelectTrack(videoTrackId_);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReselectTracks: video track %{public}d failed", videoTrackId_);
+    }
+    if (IsValidTrackId(audioTrackId_)) {
+        Status ret = InnerSelectTrack(audioTrackId_);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReselectTracks: audio track %{public}d failed", audioTrackId_);
+    }
+    if (IsValidTrackId(subtitleTrackId_)) {
+        InnerSelectTrack(subtitleTrackId_);
+    }
+    return Status::OK;
+}
+
+void MediaDemuxer::SetInterstitialController(std::shared_ptr<InterstitialController> controller)
+{
+    interstitialController_ = std::move(controller);
+}
+
+std::shared_ptr<InterstitialController> MediaDemuxer::GetInterstitialController() const
+{
+    return interstitialController_.lock();
+}
+
+std::shared_ptr<InterstitialScheduler> MediaDemuxer::GetInterstitialScheduler() const
+{
+    std::lock_guard<std::mutex> lock(interstitialSchedulerMutex_);
+    return interstitialScheduler_;
+}
+
+std::shared_ptr<InterstitialScheduler> MediaDemuxer::SetInterstitialScheduler(
+    std::shared_ptr<InterstitialScheduler> scheduler)
+{
+    std::lock_guard<std::mutex> lock(interstitialSchedulerMutex_);
+    if (!interstitialScheduler_) {
+        interstitialScheduler_ = std::move(scheduler);
+    }
+    return interstitialScheduler_;
+}
+
+void MediaDemuxer::DriveInterstitialTicks()
+{
+    auto scheduler = GetInterstitialScheduler();
+    if (interstitialController_.expired() && !scheduler) {
+        return;
+    }
+    auto controller = interstitialController_.lock();
+    if (controller && controller->IsAdsDisabled()) {
+        return;
+    }
+
+    int64_t nowMs = GetCurrentTimeMs();
+    int64_t lastCheck = lastInterstitialCheckMs_.load();
+    if (nowMs - lastCheck < INTERSTITIAL_CHECK_INTERVAL_MS) {
+        return;
+    }
+    if (!lastInterstitialCheckMs_.compare_exchange_strong(lastCheck, nowMs)) {
+        return;
+    }
+
+    if (scheduler) {
+        scheduler->OnPlaybackTick();
+    }
+
+    if (controller && !controller->IsPlayingInterstitial()) {
+        controller->OnPreloadTick();
+    }
+}
+
+void MediaDemuxer::HandleTimedMetadataEvent(const Plugins::PluginEvent& event)
+{
+    MEDIA_LOG_D("HandleTimedMetadataEvent");
+
+    auto controller = interstitialController_.lock();
+    if (controller && controller->IsPlayingInterstitial()) {
+        MEDIA_LOG_I("HandleTimedMetadataEvent: discard ad source event");
+        return;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(interstitialSchedulerMutex_);
+        if (!interstitialScheduler_) {
+            interstitialScheduler_ = std::make_shared<InterstitialScheduler>();
+            interstitialScheduler_->SetSyncCenter(syncCenter_);
+            std::weak_ptr<Pipeline::EventReceiver> weakReceiver = eventReceiver_;
+            interstitialScheduler_->SetNotifyCallback([weakReceiver](
+                const std::shared_ptr<MediaAVCodec::AVTimedMetaData>& metadata) {
+                auto receiver = weakReceiver.lock();
+                if (receiver && metadata) {
+                    receiver->OnEvent({"demuxer_filter", EventType::EVENT_TIMED_METADATA, Any(metadata)});
+                }
+            });
+            auto ctrl = interstitialController_.lock();
+            if (ctrl) {
+                auto strategy = ctrl->GetScheduleStrategy();
+                if (strategy) {
+                    interstitialScheduler_->SetScheduleStrategy(strategy);
+                }
+            }
+        }
+    }
+
+    auto scheduler = GetInterstitialScheduler();
+    auto metadata = AnyCast<std::shared_ptr<MediaAVCodec::AVTimedMetaData>>(event.param);
+    if (scheduler && metadata) {
+        scheduler->CollectEvent(metadata);
+    }
+}
+
 Status MediaDemuxer::Stop()
 {
     MEDIA_LOG_D("In");
@@ -3714,10 +3885,10 @@ void MediaDemuxer::BufferingStatus()
         int64_t percent = 0;
         uint64_t temDuration = sampleQueueController_->GetPlayBufferingDuration();
         if (temDuration > 0) {
-            percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * TEMP_PRECENT) /
-            temDuration);
+            percent = static_cast<int64_t>((sampleQueueMap_[mainTrackId]->NewGetCacheDuration() * MAX_PERCENT) /
+                temDuration);
         } else {
-            percent = MAX_PRECENT;
+            percent = MAX_PERCENT;
         }
             
         AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
@@ -4142,8 +4313,7 @@ void MediaDemuxer::DispatchPluginEvent(const Plugins::PluginEvent &event,
             break;
         }
         case PluginEventType::SOURCE_TIMED_METADATA: {
-            MEDIA_LOG_D("OnEvent source timed metadata on");
-            eventReceiver->OnEvent({"demuxer_filter", EventType::EVENT_TIMED_METADATA, event.param});
+            HandleTimedMetadataEvent(event);
             break;
         }
         default:
@@ -4760,25 +4930,12 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
         SetTrackNotifySampleConsumerFlag(trackId, false);
 
         if (static_cast<int32_t>(size) <= dstBuffer->memory_->GetCapacity()) {
-            status = sampleQueue->AcquireCopyToDstBuffer(dstBuffer);
-            status = HandlePushBuffer(trackId, dstBuffer, bufferQueue, status);
-            CHECK_AND_BREAK_LOG(status == Status::OK,
-                "HandlePushBuffer failed, trackId: %{public}d, status: %{public}d", trackId, status);
-            if (status == Status::OK) {
-                sampleQueueController_->ConsumeSpeed(trackId);
-            }
+            status = PushDirectBuffer(trackId, sampleQueue, dstBuffer, bufferQueue);
         } else {
-            std::shared_ptr<AVBuffer> srcBuffer;
-            status = sampleQueue->AcquireBuffer(srcBuffer);
-            CHECK_AND_BREAK_LOG_LIMIT_POW2(
-                status == Status::OK && srcBuffer && srcBuffer->memory_, SAMPLE_LOOP_ACQUIRE_FAILED_LOG_POW2,
-                "AcquireSrcBuffer failed, trackId: %{public}d, status: %{public}d", trackId, status);
-
-            status = CopyAndPushBufferBySlices(trackId, srcBuffer, dstBuffer);
-            CHECK_AND_BREAK_LOG(status == Status::OK,
-                "CopySrcBufferByMinSize failed, trackId: %{public}d, status: %{public}d", trackId, status);
+            status = PushBufferBySlices(trackId, sampleQueue, dstBuffer, bufferQueue);
         }
     } while (0);
+    DriveInterstitialTicks();
     float speed = speed_.load() < BASE_SPEED ? BASE_SPEED : speed_.load();
     return status == Status::OK ?
         static_cast<int64_t>(NEXT_DELAY_TIME_US / speed) : static_cast<int64_t>(SAMPLE_LOOP_DELAY_TIME_US / speed);
@@ -4835,6 +4992,61 @@ Status MediaDemuxer::CheckAndReleaseRemainBuffer(std::shared_ptr<AVBuffer> &srcB
         return status;
     }
     status = CopyAndPushBufferBySlices(trackId, srcBuffer, dstBuffer, remainSize);
+    return status;
+}
+
+bool MediaDemuxer::HandleInterstitialEos(int32_t trackId, const std::shared_ptr<AVBuffer>& dstBuffer)
+{
+    if (!(dstBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS))) {
+        return false;
+    }
+    if (trackId != videoTrackId_ && trackId != audioTrackId_) {
+        return false;
+    }
+    auto controller = GetInterstitialController();
+    if (!controller) {
+        return false;
+    }
+    if (controller->IsPlayingInterstitial()) {
+        MEDIA_LOG_I("SampleConsumerLoop: ad EOS detected, notifying controller, trackId=%{public}d", trackId);
+        controller->OnAdEos();
+        return true;
+    }
+    if (controller->HasPendingEvents()) {
+        MEDIA_LOG_I("SampleConsumerLoop: main EOS detected with pending ads, dropping, trackId=%{public}d", trackId);
+        return true;
+    }
+    return false;
+}
+
+Status MediaDemuxer::PushDirectBuffer(int32_t trackId, std::shared_ptr<SampleQueue>& sampleQueue,
+    std::shared_ptr<AVBuffer>& dstBuffer, sptr<AVBufferQueueProducer>& bufferQueue)
+{
+    auto status = sampleQueue->AcquireCopyToDstBuffer(dstBuffer);
+    if (status == Status::OK) {
+        bool isNeedDrop = HandleInterstitialEos(trackId, dstBuffer);
+        if (isNeedDrop) {
+            bufferQueue->PushBuffer(dstBuffer, false);
+            return Status::OK;
+        }
+    }
+    status = HandlePushBuffer(trackId, dstBuffer, bufferQueue, status);
+    CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "HandlePushBuffer failed");
+    sampleQueueController_->ConsumeSpeed(trackId);
+    return status;
+}
+
+Status MediaDemuxer::PushBufferBySlices(int32_t trackId, std::shared_ptr<SampleQueue>& sampleQueue,
+    std::shared_ptr<AVBuffer>& dstBuffer, sptr<AVBufferQueueProducer>& bufferQueue)
+{
+    std::shared_ptr<AVBuffer> srcBuffer;
+    auto status = sampleQueue->AcquireBuffer(srcBuffer);
+    CHECK_AND_RETURN_RET_LOG(status == Status::OK && srcBuffer && srcBuffer->memory_,
+        status, "AcquireSrcBuffer failed, trackId: %{public}d, status: %{public}d", trackId, status);
+
+    status = CopyAndPushBufferBySlices(trackId, srcBuffer, dstBuffer);
+    CHECK_AND_RETURN_RET_LOG(status == Status::OK, status,
+        "CopySrcBufferByMinSize failed, trackId: %{public}d, status: %{public}d", trackId, status);
     return status;
 }
 
