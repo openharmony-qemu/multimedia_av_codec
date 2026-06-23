@@ -45,7 +45,7 @@ const std::unordered_map<std::string, NodeConfig>& GetNodeConfigMap()
                             "minWidth", "maxWidth", "minHeight", "maxHeight", "minFrameRate", "maxFrameRate",
                             "segmentAlignment", "bitstreamSwitching", "subsegmentAlignment",
                             "subsegmentStartsWithSAP", "cameraIndex", "videoType"},
-                            COMMON_ATTRS, {}}},
+                           COMMON_ATTRS, {}}},
         {"ContentComponent", {{"id", "lang", "contentType", "par"}, {}, {}}},
         {"Representation", {{"id", "bandwidth", "qualityRanking", "dependencyId", "mediaStreamStructureId",
                              "volumeAdjust_", "cuvvVersion", "channels"},
