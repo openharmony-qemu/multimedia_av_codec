@@ -49,7 +49,7 @@ const std::unordered_map<std::string, NodeConfig>& GetNodeConfigMap()
         {"ContentComponent", {{"id", "lang", "contentType", "par"}, {}, {}}},
         {"Representation", {{"id", "bandwidth", "qualityRanking", "dependencyId", "mediaStreamStructureId",
                              "volumeAdjust_", "cuvvVersion", "channels"},
-                             COMMON_ATTRS, {}}},
+                            COMMON_ATTRS, {}}},
         {"SegmentBase", {{"timescale", "presentationTimeOffset", "indexRange", "indexRangeExact"}, {}, {}}},
         {"MultipleSegmentBase", {{"duration", "startNumber"}, {},
                                  {{"inherit", "SegmentBase"}}}},
