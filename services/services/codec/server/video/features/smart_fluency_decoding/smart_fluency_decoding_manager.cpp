@@ -32,7 +32,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SFDManager"};
 constexpr int32_t MIN_CSD_SIZE = 4;
-constexpr int32_t DEFAULT_CSD_COPY_SIZE = 256;
+constexpr int32_t DEFAULT_CSD_COPY_SIZE = 4096;
 
 #ifdef SFD_DEBUG
 constexpr const char* DEBUG_PARAM_MODE = "sfd.debug.mode";
