@@ -2369,7 +2369,7 @@ Status MPEG4DemuxerPlugin::ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> ds
         uint8_t* dataPtr = srcSample->data.get();
         PacketConvertInfo convertInfo {nullptr, 0, false};
         bool convertRet = streamParsers_->ConvertPacketToAnnexb(trackIndex, &dataPtr, srcSample->size, convertInfo);
-        if (mime == std::string("video/avc")){ // only avc will return ERROR_PACKET_CONVERT_FAILED
+        if (mime == std::string("video/avc")) { // only avc will return ERROR_PACKET_CONVERT_FAILED
             FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_PACKET_CONVERT_FAILED, "Convert packet to annexb failed");
         }
         if (dataPtr != srcSample->data.get()) {
