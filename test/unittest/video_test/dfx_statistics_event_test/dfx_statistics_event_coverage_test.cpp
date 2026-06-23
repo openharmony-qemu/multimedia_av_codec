@@ -1998,9 +1998,10 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_004, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_001, TestSize.Level1)
 {
-    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::DECODER_HARDWARE);
-    meta_->SetData(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.avc.secure");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -2012,23 +2013,22 @@ HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_002, TestSize.Level1)
 {
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
-    meta_->SetData(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC.data());
-    meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.avc.secure");
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.avc");
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
 /**
- * @tc.name: BasicInfo_Submit_Test_003
- * @tc.desc: OnSubmitEventInfo coverage test
+ * @tc.name: ResolveResolutionLevel_Test_001
+ * @tc.desc: ResolveResolutionLevel coverage test
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_003, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Test_001, TestSize.Level1)
 {
-    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
-    meta_->SetData(Tag::MIME_TYPE, CodecMimeType::VIDEO_AVC.data());
-    meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
+    meta_->SetData(EventInfoExtentedKey::RESOLUTION_LEVEL, "resolution_level");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -2040,11 +2040,11 @@ void AddSpecInfo(std::shared_ptr<Media::Meta> meta, int32_t param)
 }
 
 /**
- * @tc.name: ResolveResolutionLevel_Test_001
+ * @tc.name: ResolveResolutionLevel_Test_002
  * @tc.desc: ResolveResolutionLevel coverage test
  * @tc.type: FUNC
  */
-HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Test_001, TestSize.Level1)
+HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Test_002, TestSize.Level1)
 {
     AddSpecInfo(meta_, 360);  // 360: less than resolution360P
     AddSpecInfo(meta_, 500);  // 500: less than resolution480P
