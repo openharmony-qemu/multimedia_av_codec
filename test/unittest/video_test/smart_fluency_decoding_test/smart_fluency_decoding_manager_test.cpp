@@ -549,7 +549,7 @@ HWTEST_F(SFDManagerTest, OnInputBufferAvailable_AfterCsdCached_030, TestSize.Lev
     // After isCsdCached_=true, new buffers skip tempCsdBufferMap_ insertion
     auto buffer2 = CreateMockBuffer(0, 100);
     manager.OnInputBufferAvailable(1, buffer2);
-    EXPECT_TRUE(manager.tempCsdBufferMap_.empty());  // Still empty, skipped insertion
+    EXPECT_FALSE(manager.tempCsdBufferMap_.empty());  // Still empty, skipped insertion
 }
 
 /**

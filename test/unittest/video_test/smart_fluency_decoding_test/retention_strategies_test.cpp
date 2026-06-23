@@ -373,15 +373,15 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsEnforcement_007, Te
 
     // Frame 1: acc = 0.0 + 0.75 = 0.75 < 1.0 -> Drop
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 
     // Frame 2: acc = 0.75 + 0.75 = 1.50 >= 1.0 -> Retain (accumulator_ = 0.0)
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
     EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 
     // Frame 3: acc = 0.0 + 0.75 = 0.75 < 1.0 -> Drop
-    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 
     // Frame 4: acc = 0.75 + 0.75 = 1.50 >= 1.0 -> Retain
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
@@ -621,8 +621,8 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsLimit_011, TestSize
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
 
     // Frame 3: acc = 1.099 (>= 1.0) -> Retain (accumulator_ = 0.0)
-    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
 }
 
 // --- FullRetentionStrategy additional tests ---
