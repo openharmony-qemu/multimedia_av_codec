@@ -50,7 +50,7 @@ public:
     uint32_t GetPicHetInLumaSamples();
     void ResetXPSSendStatus();
     bool ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize);
-    void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
+    bool ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
         size_t sideDataSize, bool isExtradata);
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size);
     std::vector<uint8_t> GetLogInfo();

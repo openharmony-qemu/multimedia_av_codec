@@ -35,7 +35,7 @@ public:
         const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize) override { return; };
     bool ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize) override;
     bool ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, int32_t extraDataSize);
-    void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize,
+    bool ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize,
         bool isExtradata) override;
     bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) override { return false; };
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) override;
@@ -102,7 +102,7 @@ private:
     void AppendOutOfBandPs(std::vector<uint8_t> &vec, const std::vector<uint8_t> &ps);
     void AppendNalUnit(std::vector<uint8_t> &vec, const uint8_t *data, uint32_t size, PsSource ps);
     void ConvertExtradata(uint8_t **packet, int32_t &packetSize);
-    void ConvertPacketCore(uint8_t **packet, int32_t &packetSize);
+    bool ConvertPacketCore(uint8_t **packet, int32_t &packetSize);
     void FilterPsFromPacket(const uint8_t *packet, int32_t packetSize);
     bool ParseNalUnits(std::vector<NalUnitInfo> &nalUnits, const uint8_t *packet, int32_t packetSize);
     void SavePs(std::vector<uint8_t> &dst, const uint8_t *nal, uint32_t nalSize, bool first);

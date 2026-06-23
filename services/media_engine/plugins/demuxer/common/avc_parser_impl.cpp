@@ -689,33 +689,35 @@ void AvcParserImpl::HandleNal(NalUnitInfo nal)
     }
 }
 
-void AvcParserImpl::ConvertPacketCore(uint8_t **packet, int32_t &packetSize)
+bool AvcParserImpl::ConvertPacketCore(uint8_t **packet, int32_t &packetSize)
 {
     annexbFrameVec_.clear();
-    FALSE_RETURN_NOLOG(extradataParsed_);
+    FALSE_RETURN_V_NOLOG(extradataParsed_, false);
     FilterPsFromPacket(*packet, packetSize);
     std::vector<NalUnitInfo> nalUnits;
     bool ret = ParseNalUnits(nalUnits, *packet, packetSize);
-    FALSE_RETURN_MSG_W(ret, "ParseNalUnits failed");
+    FALSE_RETURN_V_MSG_W(ret, false, "ParseNalUnits failed");
     for (auto &nal : nalUnits) {
         HandleNal(nal);
     }
     *packet = annexbFrameVec_.data();
     packetSize = static_cast<int32_t>(annexbFrameVec_.size());
+    return true;
 }
 
-void AvcParserImpl::ConvertPacketToAnnexb(
+bool AvcParserImpl::ConvertPacketToAnnexb(
     uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize, bool isExtradata)
 {
     (void)sideData;
     (void)sideDataSize;
     if (!hvccPacket || !*hvccPacket) {
-        return;
+        return false;
     }
     if (isExtradata) {
         ConvertExtradata(hvccPacket, hvccPacketSize);
+        return true;
     } else {
-        ConvertPacketCore(hvccPacket, hvccPacketSize);
+        return ConvertPacketCore(hvccPacket, hvccPacketSize);
     }
 }
 

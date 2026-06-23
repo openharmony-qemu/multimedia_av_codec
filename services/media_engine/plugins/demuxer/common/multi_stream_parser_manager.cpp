@@ -256,11 +256,11 @@ bool MultiStreamParserManager::ConvertExtraDataToAnnexb(uint32_t trackId, uint8_
     return ret;
 }
 
-void MultiStreamParserManager::ConvertPacketToAnnexb(
+bool MultiStreamParserManager::ConvertPacketToAnnexb(
     uint32_t trackId, uint8_t **hvccPacket, int32_t &hvccPacketSize, const PacketConvertInfo &packetInfo)
 {
-    FALSE_RETURN_MSG(ParserIsInited(trackId), "Stream parser is invalid");
-    streamMap_[trackId].parser->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize, packetInfo.sideData,
+    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
+    return streamMap_[trackId].parser->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize, packetInfo.sideData,
         packetInfo.sideDataSize, packetInfo.isExtradata);
 }
 
