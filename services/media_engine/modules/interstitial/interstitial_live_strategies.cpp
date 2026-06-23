@@ -56,7 +56,7 @@ int64_t LiveScheduleStrategy::GetResumeSeekMs(int64_t resumePointMs,
     const std::shared_ptr<MediaDemuxer>& demuxer)
 {
     (void)resumePointMs;
-    FALSE_RETURN_V_MSG_E(demuxer, 0, "GetResumeSeekMs: demuxer is null")
+    FALSE_RETURN_V_MSG_E(demuxer, 0, "GetResumeSeekMs: demuxer is null");
     int64_t durationUs = 0;
     if (demuxer->GetDuration(durationUs) && durationUs > 0) {
         int64_t durationMs = durationUs / US_PER_MS;

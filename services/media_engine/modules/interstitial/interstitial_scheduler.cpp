@@ -81,7 +81,8 @@ void InterstitialScheduler::CollectEvent(const std::shared_ptr<MediaAVCodec::AVT
     if (immediateNotify && notifyCallback_) {
         notifyCallback_(metadata);
     }
-    MEDIA_LOG_I("collected event id=%{public}s, startMs=%{public}ld", metadata->id.c_str(), metadata->start);
+    MEDIA_LOG_I("collected event id=%{public}s, startMs=%{public}lld", metadata->id.c_str(),
+             static_cast<long long>(metadata->start));
 }
 
 void InterstitialScheduler::OnPlaybackTick()
