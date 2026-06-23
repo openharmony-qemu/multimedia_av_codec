@@ -1937,12 +1937,13 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Decoder_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_001, TestSize.Level1)
 {
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
     std::string callerProcessName = "callerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
     std::string forwardProcessName = "forwardcallerProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -1955,6 +1956,7 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_002, TestSize.Level1)
 {
     std::string forwardProcessName = "forwardcallerProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -1970,10 +1972,11 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_003, TestSize.Level1)
     const std::string forwardProcessName = "forwardcallerProcess";
 
     meta_->SetData(Tag::AV_CODEC_CALLER_PID, pid);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_INFO, *meta_);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -1988,6 +1991,7 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_004, TestSize.Level1)
     const std::string forwardProcessName = "forwardcallerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PID, pid);
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
 
@@ -2027,7 +2031,7 @@ HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_002, TestSize.Level1)
 HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Test_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    meta_->SetData(EventInfoExtentedKey::RESOLUTION_LEVEL, "resolution_level");
+    meta_->SetData(EventInfoExtentedKey::RESOLUTION_LEVEL.data(), "resolution_level");
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
 }
