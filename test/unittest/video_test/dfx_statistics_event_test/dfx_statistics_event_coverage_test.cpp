@@ -50,6 +50,7 @@ public:
     static void TearDownTestCase(void){};
     void SetUp(void);
     void TearDown(void);
+    void SubmitEventInfo(StatisticsEventType eventType);
 
     std::shared_ptr<Media::Meta> meta_ = nullptr;
     static constexpr HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK,
@@ -70,6 +71,12 @@ void TEST_SUIT::TearDown(void)
     meta_.reset();
 }
 
+void TEST_SUIT::SubmitEventInfo(StatisticsEventType eventType)
+{
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(eventType, *meta_);
+    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+}
+
 /**
  * @tc.name: GetIndexByMeta_EmptyAppName_001
  * @tc.desc: Test GetIndexByMeta with empty app name string.
@@ -80,8 +87,7 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_EmptyAppName_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "");
     meta_->SetData("ADVANCED_FEATURE", "TEST_FEATURE");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -125,8 +131,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_VideoCodecSpecInfo_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_spec_test");
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -140,8 +145,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_VideoCodecSpecInfo_Invalid_001, TestSize.
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "invalid_video_spec_test");
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::UNKNOWN));
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -155,8 +159,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_VideoCodecSpecInfo_EmptyMime_001, TestSiz
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "empty_mime_test");
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Tag::MIME_TYPE, "");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -170,8 +173,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_AudioCodecSpecInfo_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "audio_enc_test");
     meta_->SetData("CODEC_TYPE", std::to_string(AVCODEC_TYPE_AUDIO_ENCODER));
     meta_->SetData(Tag::MIME_TYPE, "audio/mp4a-latm");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -184,8 +186,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_AudioCodecSpecInfo_Decoder_001, TestSize.
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "audio_dec_test");
     meta_->SetData("CODEC_TYPE", std::to_string(AVCODEC_TYPE_AUDIO_DECODER));
     meta_->SetData(Tag::MIME_TYPE, "audio/mp4a-latm");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -198,8 +199,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_AudioCodecSpecInfo_NoMimeType_001, TestSi
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "audio_no_mime_test");
     meta_->SetData("CODEC_TYPE", std::to_string(AVCODEC_TYPE_AUDIO_ENCODER));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -214,8 +214,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_VideoCodecSpecInfo_Secure_001, TestSize.L
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.decoder.avc.secure");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -230,8 +229,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_VideoCodecSpecInfo_NonSecure_001, TestSiz
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
     meta_->SetData(Tag::MIME_TYPE, "video/hevc");
     meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.hevc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -245,8 +243,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_VideoCodecSpecInfo_CodecTypeEnd_001, Test
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "codec_type_end_test");
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::END));
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -260,8 +257,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_InvalidCodecType_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "invalid_codec_type_test");
     meta_->SetData("CODEC_TYPE", "999"); // invalid code type
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -275,8 +271,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_NoCodecType_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "no_codec_type_test");
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -287,19 +282,15 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_NoCodecType_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, OnSummateEventInfo_VideoCodecSpecInfo_AllTypes_001, TestSize.Level1)
 {
-    Media::Meta metaSoftwareDec;
-    metaSoftwareDec.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_sw_dec_test");
-    metaSoftwareDec.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_SOFTWARE));
-    metaSoftwareDec.SetData(Tag::MIME_TYPE, "video/av01");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO,
-                                                      metaSoftwareDec);
-    Media::Meta metaSoftwareEnc;
-    metaSoftwareEnc.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_sw_enc_test");
-    metaSoftwareEnc.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
-    metaSoftwareEnc.SetData(Tag::MIME_TYPE, "video/av01");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO,
-                                                      metaSoftwareEnc);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_sw_dec_test");
+    meta->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_SOFTWARE));
+    meta->SetData(Tag::MIME_TYPE, "video/av01");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta);
+
+    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_sw_enc_test");
+    meta->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
+    meta->SetData(Tag::MIME_TYPE, "video/av01");
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -312,8 +303,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_EmptyFeature_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "empty_feature_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -325,8 +315,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_EmptyFeature_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_NotSetFeature_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "not_set_feature_test");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -340,8 +329,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_RcMode_CBR_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "rc_mode_cbr_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(VideoEncodeBitrateMode::CBR));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -355,8 +343,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_RcMode_VBR_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "rc_mode_vbr_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(VideoEncodeBitrateMode::VBR));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -370,8 +357,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_RcMode_CQ_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "rc_mode_cq_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(VideoEncodeBitrateMode::CQ));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -385,8 +371,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_RcMode_SQR_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "rc_mode_sqr_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(VideoEncodeBitrateMode::SQR));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -401,8 +386,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_RcMode_CBR_HIGH_QUALITY_001, TestSize.Le
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(),
                    static_cast<int32_t>(VideoEncodeBitrateMode::CBR_HIGH_QUALITY));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -416,8 +400,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_RcMode_CBR_VIDEOCALL_001, TestSize.Level
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "rc_mode_cbr_videocall_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(VideoEncodeBitrateMode::CBR_VIDEOCALL));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -431,8 +414,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_RcMode_CRF_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "rc_mode_crf_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(VideoEncodeBitrateMode::CRF));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -446,8 +428,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_RcMode_Unknown_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "rc_mode_unknown_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(99)); // 99 is an unknown mode
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -460,8 +441,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_RcMode_NotSetRcMode_001, TestSize.Level1
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "rc_mode_not_set_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -475,8 +455,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_NonRcMode_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "non_rc_mode_test");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "SOME_OTHER_FEATURE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(VideoEncodeBitrateMode::CBR));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -490,8 +469,7 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_EmptyAppName_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "");
     meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "RC_MODE");
     meta_->SetData(EventInfoExtentedKey::RC_MODE.data(), static_cast<int32_t>(VideoEncodeBitrateMode::CBR));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
 }
 
 /**
@@ -567,8 +545,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_InstanceUsage_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "instance_usage_test");
     meta_->SetData("INSTANCE_ACTION", "create");
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_INSTANCE_USAGE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_INSTANCE_USAGE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_INSTANCE_USAGE_INFO);
 }
 
 /**
@@ -583,8 +560,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_InstanceUsage_Release_001, TestSize.Level
     meta_->SetData("INSTANCE_ACTION", "create");
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_INSTANCE_USAGE_INFO, *meta_);
     meta_->SetData("INSTANCE_ACTION", "release");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_INSTANCE_USAGE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_INSTANCE_USAGE_INFO);
 }
 
 /**
@@ -599,8 +575,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_ResolutionSpec_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 1920);
     meta_->SetData("HEIGHT", 1080);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -614,8 +589,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_ContainerFormat_Muxer_001, TestSize.Level
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "muxer_format_test");
     meta_->SetData("MUXER_FORMAT", "mp4");
     meta_->SetData("DEMUXER_FORMAT", "mkv");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CONTAINER_FORMAT_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CONTAINER_FORMAT_INFO);
 }
 
 /**
@@ -627,8 +601,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_ContainerFormat_Demuxer_001, TestSize.Lev
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "demuxer_format_test");
     meta_->SetData("DEMUXER_FORMAT", "mkv");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CONTAINER_FORMAT_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CONTAINER_FORMAT_INFO);
 }
 
 /**
@@ -643,8 +616,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_CodecMode_Encoder_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("CODEC_MODE", "HW");
     meta_->SetData("IS_ENCODER", true);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_MODE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_MODE_INFO);
 }
 
 /**
@@ -659,8 +631,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_CodecMode_Decoder_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("CODEC_MODE", "HW");
     meta_->SetData("IS_ENCODER", false);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_MODE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_MODE_INFO);
 }
 
 /**
@@ -675,8 +646,7 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_MultipleEventTypes_001, TestSize.Level1)
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_MODE_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_MODE_INFO);
 }
 
 /**
@@ -690,8 +660,7 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_AudioDecoder_NoMimeType_001, Test
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "audio_dec_no_mime_test");
     meta_->SetData("CODEC_TYPE", std::to_string(AVCODEC_TYPE_AUDIO_DECODER));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -706,8 +675,7 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_VideoCodec_InvalidType_001, TestS
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "invalid_video_codec_test");
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(-1));
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -720,29 +688,18 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_VideoCodec_InvalidType_001, TestS
 HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_AllValidVideoCodecTypes_001, TestSize.Level1)
 {
     Media::Meta meta1;
-    meta1.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "test_codec_types");
-    meta1.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
-    meta1.SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta1);
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "test_codec_types");
+    meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "video/av01");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
 
-    Media::Meta meta2;
-    meta2.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "test_codec_types");
-    meta2.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_SOFTWARE));
-    meta2.SetData(Tag::MIME_TYPE, "video/hevc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta2);
-
-    Media::Meta meta3;
-    meta3.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "test_codec_types");
-    meta3.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
-    meta3.SetData(Tag::MIME_TYPE, "video/av01");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta3);
-
-    Media::Meta meta4;
-    meta4.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "test_codec_types");
-    meta4.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
-    meta4.SetData(Tag::MIME_TYPE, "video/mp4v-es");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta4);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_SOFTWARE));
+    meta_->SetData(Tag::MIME_TYPE, "video/hevc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "video/mp4v-es");
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -753,18 +710,14 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_AllValidVideoCodecTypes_001, Test
  */
 HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_BoundaryValues_001, TestSize.Level1)
 {
-    Media::Meta meta1;
-    meta1.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "boundary_test");
-    meta1.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::UNKNOWN));
-    meta1.SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta1);
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "boundary_test");
+    meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::UNKNOWN));
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
 
-    Media::Meta meta2;
-    meta2.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "boundary_test");
-    meta2.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::END));
-    meta2.SetData(Tag::MIME_TYPE, "video/hevc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta2);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::END));
+    meta_->SetData(Tag::MIME_TYPE, "video/hevc");
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -794,8 +747,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeNotSet_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "no_mime_test");
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO);
 }
 
 /**
@@ -809,8 +761,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeEmpty_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "empty_mime_test");
     meta_->SetData(Media::Tag::MIME_TYPE, "");
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO);
 }
 
 /**
@@ -824,8 +775,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeTooShort_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "short_mime_test");
     meta_->SetData(Media::Tag::MIME_TYPE, "v/avc");
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO);
 }
 
 /**
@@ -844,8 +794,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeTooLong_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "long_mime_test");
     meta_->SetData(Media::Tag::MIME_TYPE, longMimeType);
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO);
 }
 
 /**
@@ -859,8 +808,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeNoSlash_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "no_slash_mime_test");
     meta_->SetData(Media::Tag::MIME_TYPE, "videoavc");
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO);
 }
 
 /**
@@ -874,8 +822,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeSlashAtStart_001, TestSize.Level1
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "slash_start_mime_test");
     meta_->SetData(Media::Tag::MIME_TYPE, "/avc");
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO);
 }
 
 /**
@@ -889,8 +836,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeSlashAtEnd_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "slash_end_mime_test");
     meta_->SetData(Media::Tag::MIME_TYPE, "video/");
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO);
 }
 
 /**
@@ -904,8 +850,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeInvalidPrefix_001, TestSize.Level
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "invalid_prefix_mime_test");
     meta_->SetData(Media::Tag::MIME_TYPE, "image/avc");
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO);
 }
 
 /**
@@ -919,8 +864,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeInvalidChars_001, TestSize.Level1
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "invalid_chars_mime_test");
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc#test");
     meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO);
 }
 
 /**
@@ -933,8 +877,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_IsEncoderNotSet_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "no_is_encoder_test");
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO);
 }
 
 /**
@@ -1021,18 +964,14 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_MimeTypeCaseInsensitive_001, TestSize.Lev
  */
 HWTEST_F(TEST_SUIT, CapUnsupportedInfo_BothEventTypes_001, TestSize.Level1)
 {
-    Media::Meta meta1;
-    meta1.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "both_events_test");
-    meta1.SetData(Media::Tag::MIME_TYPE, "video/avc");
-    meta1.SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, meta1);
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "both_events_test");
+    meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
+    meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), false);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_QUERY_CAP_INFO, *meta_);
 
-    Media::Meta meta2;
-    meta2.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "both_events_test");
-    meta2.SetData(Media::Tag::MIME_TYPE, "audio/mp4a-latm");
-    meta2.SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO, meta2);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    meta_->SetData(Media::Tag::MIME_TYPE, "audio/mp4a-latm");
+    meta_->SetData(EventInfoExtentedKey::IS_ENCODER.data(), true);
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_CREATE_CODEC_INFO);
 }
 
 /**
@@ -1043,22 +982,18 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_BothEventTypes_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_ValidCodecError_001, TestSize.Level1)
 {
-    Media::Meta meta1;
-    meta1.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "valid_codec_error_test");
-    meta1.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
-                  static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
-    meta1.SetData(Media::Tag::MIME_TYPE, "video/avc");
-    meta1.SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, meta1);
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "valid_codec_error_test");
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
+                   static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
+    meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
 
-    Media::Meta meta2;
-    meta2.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "valid_codec_error_test");
-    meta2.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
                   static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
-    meta2.SetData(Media::Tag::MIME_TYPE, "video/hevc");
-    meta2.SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1002));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, meta2);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    meta_->SetData(Media::Tag::MIME_TYPE, "video/hevc");
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1002));
+    SubmitEventInfo(StatisticsEventType::CODEC_ERROR_INFO);
 }
 
 /**
@@ -1073,8 +1008,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_VideoCodecTypeUnknown_001, TestSize
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), static_cast<int32_t>(VideoCodecType::UNKNOWN));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_ERROR_INFO);
 }
 
 /**
@@ -1089,8 +1023,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_VideoCodecTypeEnd_001, TestSize.Lev
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), static_cast<int32_t>(VideoCodecType::END));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_ERROR_INFO);
 }
 
 /**
@@ -1105,8 +1038,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_InvalidVideoCodecType_001, TestSize
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), static_cast<int32_t>(5)); // 5: invalid codec type
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_ERROR_INFO);
 }
 
 /**
@@ -1122,8 +1054,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_EmptyMimeType_001, TestSize.Level1)
                    static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_ERROR_INFO);
 }
 
 /**
@@ -1232,8 +1163,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_PositiveErrorCode_001, TestSize.Lev
                    static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/hevc");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(1001));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_ERROR_INFO);
 }
 
 /**
@@ -1249,8 +1179,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_ZeroErrorCode_001, TestSize.Level1)
                    static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/av01");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(0));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CODEC_ERROR_INFO);
 }
 
 /**
@@ -1261,22 +1190,18 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_ZeroErrorCode_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_MixedScenarios_001, TestSize.Level1)
 {
-    Media::Meta meta1;
-    meta1.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "mixed_scenarios_test");
-    meta1.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
-                  static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
-    meta1.SetData(Media::Tag::MIME_TYPE, "video/avc");
-    meta1.SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, meta1);
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "mixed_scenarios_test");
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
+                   static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
+    meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_->);
 
-    Media::Meta meta2;
-    meta2.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "mixed_scenarios_test");
-    meta2.SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
-                  static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
-    meta2.SetData(Media::Tag::MIME_TYPE, "video/hevc");
-    meta2.SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-2001));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, meta2);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
+                   static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
+    meta_->SetData(Media::Tag::MIME_TYPE, "video/hevc");
+    meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-2001));
+    SubmitEventInfo(StatisticsEventType::CODEC_ERROR_INFO);
 }
 
 
@@ -1292,8 +1217,7 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_VideoEncoder_Secure_001, TestSize
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
     meta_->SetData(Tag::MIME_TYPE, "video/hevc");
     meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.hevc.secure");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -1307,8 +1231,7 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_NoCodecName_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "no_codec_name_test");
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -1322,8 +1245,7 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_AudioEncoder_NoMimeType_001, Test
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "audio_enc_no_mime_test");
     meta_->SetData("CODEC_TYPE", std::to_string(AVCODEC_TYPE_AUDIO_ENCODER));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -1337,8 +1259,7 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_VideoCodec_NoMimeType_001, TestSi
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_no_mime_test");
     meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -1351,8 +1272,7 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_VideoCodec_NoVideoCodecType_001, 
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "no_video_codec_type_test");
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -1363,27 +1283,14 @@ HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_VideoCodec_NoVideoCodecType_001, 
  */
 HWTEST_F(TEST_SUIT, OnBasicCreateCodecSpecInfo_DifferentMimeTypes_001, TestSize.Level1)
 {
-    Media::Meta meta1;
-    meta1.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "different_mime_test");
-    meta1.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
-    meta1.SetData(Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(
-        StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta1);
-
-    Media::Meta meta2;
-    meta2.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "different_mime_test");
-    meta2.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
-    meta2.SetData(Tag::MIME_TYPE, "video/hevc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(
-        StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta2);
-
-    Media::Meta meta3;
-    meta3.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "different_mime_test");
-    meta3.SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
-    meta3.SetData(Tag::MIME_TYPE, "video/av01");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(
-        StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta3);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "different_mime_test");
+    meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "video/hevc");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
+    meta_->SetData(Tag::MIME_TYPE, "video/av01");
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -1397,8 +1304,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_InvalidWidth_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "invalid_width_test");
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("HEIGHT", 1080);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1412,8 +1318,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_InvalidHeight_001, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "invalid_height_test");
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 1920);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1428,8 +1333,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_NegativeWidth_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", -1920);
     meta_->SetData("HEIGHT", 1080);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1444,8 +1348,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_NegativeHeight_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 1920);
     meta_->SetData("HEIGHT", -1080);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1460,8 +1363,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_ZeroWidth_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 0);
     meta_->SetData("HEIGHT", 1080);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1476,8 +1378,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_ZeroHeight_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 1920);
     meta_->SetData("HEIGHT", 0);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1492,8 +1393,7 @@ HWTEST_F(TEST_SUIT, OnAddEventInfo_ExistingEventType_001, TestSize.Level1)
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
                    static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -1505,8 +1405,7 @@ HWTEST_F(TEST_SUIT, OnAddEventInfo_ExistingEventType_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, OnAddEventInfo_NonExistingEventType_001, TestSize.Level1)
 {
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "non_existing_event_type_test");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(0xFFFF), *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(static_cast<StatisticsEventType>(0xFFFF));
 }
 
 /**
@@ -1521,8 +1420,7 @@ HWTEST_F(TEST_SUIT, OnAddEventInfo_EventHookNotExist_001, TestSize.Level1)
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
                    static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -1696,8 +1594,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_360P_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 640);
     meta_->SetData("HEIGHT", 360);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1712,8 +1609,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_480P_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 854);
     meta_->SetData("HEIGHT", 480);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1728,8 +1624,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_576P_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 1024);
     meta_->SetData("HEIGHT", 576);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1744,8 +1639,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_720P_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 1280);
     meta_->SetData("HEIGHT", 720);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1760,8 +1654,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_1080P_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 1920);
     meta_->SetData("HEIGHT", 1080);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1776,8 +1669,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_1440P_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 2560);
     meta_->SetData("HEIGHT", 1440);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1792,8 +1684,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_2160P_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 3840);
     meta_->SetData("HEIGHT", 2160);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1808,8 +1699,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_4320P_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 7680);
     meta_->SetData("HEIGHT", 4320);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1824,8 +1714,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Exceeds4320P_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData("WIDTH", 15360);
     meta_->SetData("HEIGHT", 8640);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1836,30 +1725,17 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Exceeds4320P_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, ResolveResolutionLevel_BoundaryValues_001, TestSize.Level1)
 {
-    Media::Meta meta1;
-    meta1.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "boundary_test");
-    meta1.SetData(Tag::MIME_TYPE, "video/avc");
-    meta1.SetData("WIDTH", 640);
-    meta1.SetData("HEIGHT", 360);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(
-        StatisticsEventType::RESOLUTION_SPEC_INFO, meta1);
-
-    Media::Meta meta2;
-    meta2.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "boundary_test");
-    meta2.SetData(Tag::MIME_TYPE, "video/avc");
-    meta2.SetData("WIDTH", 1280);
-    meta2.SetData("HEIGHT", 720);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(
-        StatisticsEventType::RESOLUTION_SPEC_INFO, meta2);
-
-    Media::Meta meta3;
-    meta3.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "boundary_test");
-    meta3.SetData(Tag::MIME_TYPE, "video/avc");
-    meta3.SetData("WIDTH", 1920);
-    meta3.SetData("HEIGHT", 1080);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(
-        StatisticsEventType::RESOLUTION_SPEC_INFO, meta3);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "boundary_test");
+    meta_->SetData(Tag::MIME_TYPE, "video/avc");
+    meta_->SetData("WIDTH", 640);  // width: 640
+    meta_->SetData("HEIGHT", 360); // height: 360
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
+    meta_->SetData("WIDTH", 1280); // width: 1280
+    meta_->SetData("HEIGHT", 720); // height: 720
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
+    meta_->SetData("WIDTH", 1920);  // width: 1920
+    meta_->SetData("HEIGHT", 1080); // height: 1080
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1909,8 +1785,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Encoder_001, TestSize.Level1)
     meta_->SetData("WIDTH", 1920);
     meta_->SetData("HEIGHT", 1080);
     meta_->SetData("IS_ENCODER", true);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1926,8 +1801,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Decoder_001, TestSize.Level1)
     meta_->SetData("WIDTH", 1920);
     meta_->SetData("HEIGHT", 1080);
     meta_->SetData("IS_ENCODER", false);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 /**
@@ -1943,8 +1817,7 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_001, TestSize.Level1)
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     std::string forwardProcessName = "forwardcallerProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO);
 }
 
 /**
@@ -1956,8 +1829,7 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_002, TestSize.Level1)
 {
     std::string forwardProcessName = "forwardcallerProcess";
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO);
 }
 
 /**
@@ -1976,8 +1848,7 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_003, TestSize.Level1)
     meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO);
 }
 
 /**
@@ -1991,8 +1862,7 @@ HWTEST_F(TEST_SUIT, GetIndexByMeta_Param_Test_004, TestSize.Level1)
     const std::string forwardProcessName = "forwardcallerProcess";
     meta_->SetData(Tag::AV_CODEC_CALLER_PID, pid);
     meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName);
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO);
 }
 
 /**
@@ -2005,8 +1875,7 @@ HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_001, TestSize.Level1)
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.avc.secure");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -2019,8 +1888,7 @@ HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_002, TestSize.Level1)
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), VideoCodecType::ENCODER_HARDWARE);
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     meta_->SetData(Tag::MEDIA_CODEC_NAME, "OMX.hisi.video.encoder.avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -2036,8 +1904,7 @@ HWTEST_F(TEST_SUIT, BasicCreateCodecSpec_Test_001, TestSize.Level1)
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     meta_->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), std::to_string(AVCodecType::AVCODEC_TYPE_AUDIO_DECODER));
     meta_->SetData(Tag::MIME_TYPE, "audio/avc");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
 /**
@@ -2049,8 +1916,7 @@ HWTEST_F(TEST_SUIT, ResolveResolutionLevel_Test_001, TestSize.Level1)
 {
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
     meta_->SetData(EventInfoExtentedKey::RESOLUTION_LEVEL.data(), "resolution_level");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::RESOLUTION_SPEC_INFO);
 }
 
 void AddSpecInfo(std::shared_ptr<Media::Meta> meta, int32_t param)
@@ -2090,8 +1956,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_AddEventInfo_Test_001, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
     meta_->SetData(Tag::MIME_TYPE, "invalid_type");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO);
 }
 
 /**
@@ -2106,8 +1971,7 @@ HWTEST_F(TEST_SUIT, CapUnsupportedInfo_AddEventInfo_Test_002, TestSize.Level1)
     meta_->SetData(Tag::MIME_TYPE, "video/avc");
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
     meta_->SetData(Tag::MIME_TYPE, "invalid_type");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO, *meta_);
-    StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
+    SubmitEventInfo(StatisticsEventType::CAP_UNSUPPORTED_INFO);
 }
 
 /**
