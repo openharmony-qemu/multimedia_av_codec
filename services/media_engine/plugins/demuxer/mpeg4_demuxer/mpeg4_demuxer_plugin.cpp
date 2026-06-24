@@ -1957,6 +1957,10 @@ Status MPEG4DemuxerPlugin::DoSeekInternal(int32_t trackIndex, int64_t seekTime, 
     bool isVideo = IsVideoType(*track);
     SeekSampleIndexContext sampleContext {seekContext.syncSeekTime, seekContext.trackSeekTime, mode};
     ret = FindSeekSampleIndex(track, sampleContext);
+    if (isVideo && mode == SeekMode::SEEK_NEXT_SYNC && ret != Status::OK) {
+        MEDIA_LOG_E("Seek failed, err: Not next key frame");
+        return Status::ERROR_OUT_OF_RANGE;
+    }
 
     int64_t syncSeekTime = seekContext.syncSeekTime;
     if (isVideo) {
@@ -2364,8 +2368,10 @@ Status MPEG4DemuxerPlugin::ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> ds
         auto srcSample = dstMpeg4Sample->sample;
         uint8_t* dataPtr = srcSample->data.get();
         PacketConvertInfo convertInfo {nullptr, 0, false};
-        streamParsers_->ConvertPacketToAnnexb(trackIndex, &dataPtr, srcSample->size, convertInfo);
-        
+        bool convertRet = streamParsers_->ConvertPacketToAnnexb(trackIndex, &dataPtr, srcSample->size, convertInfo);
+        if (mime == MimeType::VIDEO_AVC) { // only avc will return ERROR_PACKET_CONVERT_FAILED
+            FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_PACKET_CONVERT_FAILED, "Convert packet to annexb failed");
+        }
         if (dataPtr != srcSample->data.get()) {
             std::unique_ptr<uint8_t[]> newData = std::make_unique<uint8_t[]>(srcSample->size);
             if (memcpy_s(newData.get(), srcSample->size, dataPtr, srcSample->size) != EOK) {
