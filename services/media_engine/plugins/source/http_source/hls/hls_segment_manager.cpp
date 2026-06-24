@@ -1578,11 +1578,8 @@ void HlsSegmentManager::PushPlayInfo(PlayInfo playInfo)
             AutoLock lock(tsStorageInfoMutex_);
             if (playlistDownloader_->IsLive()) {
                 tsStorageInfo_.clear();
-            } else if (tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end()) {
-                tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
             } else {
-                tsStorageInfo_[writeTsIndex_].first = 0;
-                tsStorageInfo_[writeTsIndex_].second = false;
+                tsStorageInfo_[writeTsIndex_] = std::make_pair(0, false);
             }
         }
         PutRequestIntoDownloader(playInfo);

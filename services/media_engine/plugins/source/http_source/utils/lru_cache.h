@@ -63,10 +63,12 @@ public:
     {
         auto it = itemMap_.find(keyOld);
         if (it == itemMap_.end()) {
+            Refer(keyNew, val);
             return;
         }
         auto listPos = it->second;
         if (listPos == itemList_.end()) {
+            Refer(keyNew, val);
             return;
         }
         listPos->first = keyNew;
@@ -101,6 +103,11 @@ public:
     {
         itemList_.clear();
         itemMap_.clear();
+    }
+
+    size_t Size() const
+    {
+        return itemMap_.size();
     }
 
     void Display(std::function<void(const KeyT& key, const ValueT& value)> showInfo)

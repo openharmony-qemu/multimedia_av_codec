@@ -81,8 +81,21 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
         std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {},
         std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~M3U8();
-    void InitTagUpdaters();
     void InitTagUpdatersMap();
+    void UpdatePlaylistType(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateTargetDuration(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateMediaSequence(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateDiscontSequence(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateExtInf(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateUri(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateByteRange(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateDiscontinuity(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateKey(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateMap(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateSkip(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateStart(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateProgramDateTime(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateDateRange(std::shared_ptr<Tag>& tag, M3U8Info& info);
     bool Update(const std::string& playList, bool isNeedCleanFiles, uint64_t totalKeyIndex = 0);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
     void AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration);

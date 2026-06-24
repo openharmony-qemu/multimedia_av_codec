@@ -418,7 +418,7 @@ static void ParseTag(std::list<std::shared_ptr<Tag>>& entriesList, std::shared_p
 static void ParseURI(std::list<std::shared_ptr<Tag>>& entriesList,
                      std::shared_ptr<Tag>& lastTag, const std::string& line)
 {
-    if (lastTag && lastTag->GetType() == HlsTag::EXTXSTREAMINF) {
+    if (lastTag && lastTag->GetType() == HlsTag::EXTXSTREAMINF && IsAttributesSection(lastTag->GetType())) {
         auto streaminftag = std::static_pointer_cast<AttributesTag>(lastTag);
         /* master playlist uri, merge as attribute */
         auto uriAttr = std::make_shared<Attribute>("URI", line);

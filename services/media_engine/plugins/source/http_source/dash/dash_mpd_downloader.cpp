@@ -1422,6 +1422,7 @@ void DashMpdDownloader::GetStreamsInfoInPeriod(DashPeriodInfo *periodInfo, unsig
 void DashMpdDownloader::GetStreamsInfoInAdptSet(DashAdptSetInfo *adptSetInfo, const std::string &periodBaseUrl,
                                                 DashStreamDescription &streamDesc)
 {
+    FALSE_RETURN(adptSetInfo != nullptr);
     streamDesc.width_ = adptSetInfo->commonAttrsAndElements_.width_;
     streamDesc.height_ = adptSetInfo->commonAttrsAndElements_.height_;
     streamDesc.lang_ = adptSetInfo->lang_;
@@ -1866,8 +1867,8 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
         return DASH_SEGMENT_INIT_FAILED;
     }
 
-    uint64_t segmentBaseDurationSum = 0; // the sum of segment duration(ms), not devide timescale
-    unsigned int accumulateDuration = 0; // add all segments dutation(ms) before current segment
+    uint64_t segmentBaseDurationSum = 0;
+    unsigned int accumulateDuration = 0;
     int64_t segmentSeq = -1;
 
     while (accumulateDuration < desc->duration_) {
