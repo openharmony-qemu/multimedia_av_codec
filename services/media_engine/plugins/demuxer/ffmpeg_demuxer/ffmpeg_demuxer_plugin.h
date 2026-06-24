@@ -449,7 +449,7 @@ private:
     int64_t dtsOffsetUs_ = 0;
     std::unordered_map<int32_t, int64_t> trackMinPtsMap_;
     std::unordered_map<int32_t, int64_t> trackMinDtsMap_;
-    std::mutex minTsMutex_; // 保护 trackMinTs 映射表的专用锁
+    std::mutex minTsMutex_;
     uint32_t ptsCnt_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
@@ -571,6 +571,7 @@ private:
     void InitMinTsPacketInfo(AVPacket *pkt);
     void UpdMinTsPacketInfo(AVPacket *pkt);
     void RecordTrackMinTs(AVPacket *pkt);
+    int64_t CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts);
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
     int RMSeekToStart();

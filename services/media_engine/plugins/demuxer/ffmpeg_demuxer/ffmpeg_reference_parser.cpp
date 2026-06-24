@@ -438,7 +438,6 @@ Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "formatContext_ is nullptr");
     auto avStream = formatContext_->streams[parserRefIdx_];
-    // Strip framework offset -> raw physical DTS for FFmpeg index lookup
     int64_t rawDtsUs = dts - dtsOffsetUs_;
     int64_t ffTimeDts = ConvertTimeToFFmpegByUs(rawDtsUs, avStream->time_base);
     int32_t tmpFrameId = av_index_search_timestamp(avStream, ffTimeDts,
@@ -482,30 +481,58 @@ Status FFmpegDemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
 
     auto bestIt = pts2DtsMap_.end();
     int64_t minDiff = INT64_MAX;
-    const int64_t MAX_ALLOWED_DIFF = 5000;
-    const int64_t EXACT_MATCH_THRESHOLD = 5;
+    const int64_t maxAllowedDiff = 5000;
+    const int64_t exactMatchThreshold = 5;
     for (auto current = pts2DtsMap_.begin(); current != pts2DtsMap_.end(); ++current) {
         int64_t diff = std::abs(current->second - frameworkDtsUs);
         if (diff < minDiff) {
             minDiff = diff;
             bestIt = current;
-            if (minDiff <= EXACT_MATCH_THRESHOLD) {
+            if (minDiff <= exactMatchThreshold) {
                 break;
             }
         }
     }
-    if (bestIt != pts2DtsMap_.end() && minDiff > MAX_ALLOWED_DIFF) {
+    if (bestIt != pts2DtsMap_.end() && minDiff > maxAllowedDiff) {
         MEDIA_LOG_W("Nearest DTS found but diff " PUBLIC_LOG_D64 " exceeds limit", minDiff);
         bestIt = pts2DtsMap_.end();
     }
 
     FALSE_RETURN_V_MSG_E(bestIt != pts2DtsMap_.end(), Status::ERROR_UNKNOWN, "find pts failed, frameId "
         PUBLIC_LOG_U32 ", rawDts " PUBLIC_LOG_D64 ", minDiff " PUBLIC_LOG_D64, frameId, rawDtsUs, minDiff);
-    // Internal absolute time -> external relative time
-    seekMs = (bestIt->first - minPts_) / 1000;
+    seekMs = (bestIt->first - minPts_) / 1000; // 1000 for ms to us
     MEDIA_LOG_D("frameId " PUBLIC_LOG_U32 ", rawDts " PUBLIC_LOG_D64 ", frameworkDts " PUBLIC_LOG_D64
         ", seekMs " PUBLIC_LOG_D64 ", minDiff " PUBLIC_LOG_D64, frameId, rawDtsUs, frameworkDtsUs, seekMs, minDiff);
     return Status::OK;
+}
+
+int64_t FFmpegDemuxerPlugin::CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts)
+{
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, 0, "avStream is nullptr");
+    int64_t globalOffset = 0;
+    bool mapHit = false;
+    int64_t mapMinPts = 0;
+    {
+        std::lock_guard<std::mutex> lock(minTsMutex_);
+        auto ptsIt = trackMinPtsMap_.find(avStream->index);
+        if (ptsIt != trackMinPtsMap_.end()) {
+            mapMinPts = ptsIt->second;
+            mapHit = true;
+        }
+    }
+
+    if (mapHit) {
+        globalOffset = mapMinPts - rawFirstPts;
+        MEDIA_LOG_I("globalOffset from trackMinPtsMap_: " PUBLIC_LOG_D64, globalOffset);
+    } else if (avStream->start_time != AV_NOPTS_VALUE) {
+        globalOffset = avStream->start_time - rawFirstPts;
+        MEDIA_LOG_I("globalOffset from start_time: " PUBLIC_LOG_D64, globalOffset);
+    } else {
+        MEDIA_LOG_I("globalOffset fallback to 0");
+    }
+
+    dtsOffsetUs_ = AvTime2Us(ConvertTimeFromFFmpeg(globalOffset, avStream->time_base));
+    return globalOffset;
 }
 
 void FFmpegDemuxerPlugin::RecordTrackMinTs(AVPacket *pkt)
@@ -514,9 +541,7 @@ void FFmpegDemuxerPlugin::RecordTrackMinTs(AVPacket *pkt)
         return;
     }
     int32_t trackId = pkt->stream_index;
-
     std::lock_guard<std::mutex> lock(minTsMutex_);
-
     if (pkt->pts != AV_NOPTS_VALUE) {
         if (trackMinPtsMap_.find(trackId) == trackMinPtsMap_.end() ||
             pkt->pts < trackMinPtsMap_[trackId]) {
