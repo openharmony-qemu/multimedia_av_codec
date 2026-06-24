@@ -146,6 +146,8 @@ public:
     void SetRangePos(int64_t startPos, int64_t endPos);
     void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
     int64_t GetNowTime();
+    int64_t GetDownloadStartTime() const { return downloadStartTime_; }
+    int64_t GetDownloadStartSteadyTime() const { return downloadStartSteadyTime_; }
     uint32_t GetBitRate() const;
     bool IsChunkedVod() const;
     bool IsM3u8Request() const;
@@ -153,6 +155,7 @@ public:
     void GetLocation(std::string& location) const;
     void SetRequestProtocolType(RequestProtocolType protocolType);
     void SetIsM3u8Request(bool isM3u8Request);
+    std::string GetDownloaderName() const;
     void SetBitRateToRequestSize(const int32_t videoBitrate);
     std::atomic<bool> isHeaderUpdated_ {false};
     std::atomic<bool> haveRedirectRetry_ {false};
@@ -182,6 +185,7 @@ private:
     bool shouldSaveData_ {true};
     int64_t downloadStartTime_ {0};
     int64_t downloadDoneTime_ {0};
+    int64_t downloadStartSteadyTime_ {0};  // steady_clock时间，用于DFX上报
     int64_t realRecvContentLen_ {0};
     friend class Downloader;
     std::string location_;
@@ -194,6 +198,7 @@ private:
     bool isIndexM3u8Request_ {false};
     bool isAuthRequest_ {false};
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
+    std::string downloaderName_;
     int32_t bitRateToRequestSize_ {0};
     uint64_t keyIndex_ {0};
 };

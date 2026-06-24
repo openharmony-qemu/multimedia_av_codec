@@ -20,6 +20,7 @@
 #include "filter/filter_factory.h"
 #include "common/log.h"
 #include "common/media_core.h"
+#include "common/event.h"
 #include "sink/audio_sampleformat.h"
 #include "avcodec_info.h"
 #include "avcodec_sysevent.h"
@@ -739,6 +740,24 @@ void AudioDecoderFilter::OnOutputFormatChanged(const Format& format)
     meta_->GetData(Tag::AUDIO_OUTPUT_CHANNELS, preChannels);
     meta_->GetData(Tag::AUDIO_SAMPLE_FORMAT, preSampleFormat);
     FALSE_RETURN_NOLOG(preSampleRate != sampleRate || preChannels != channels || preSampleFormat != sampleFormat);
+
+    if (eventReceiver_ != nullptr) {
+        MEDIA_LOG_I("Audio params discontinuity detected, sampleRate %d->%d, channels %d->%d, format %d->%d",
+            preSampleRate, sampleRate, preChannels, channels, preSampleFormat, sampleFormat);
+        MediaDiscontinueInfo discontinueInfo {
+            .streamType = 1,
+            .discontinueType = 1,
+            .ptsBefore = 0,
+            .ptsAfter = 0,
+            .sampleRateBefore = preSampleRate,
+            .sampleRateAfter = sampleRate,
+            .channelsBefore = preChannels,
+            .channelsAfter = channels,
+            .sampleFormatBefore = preSampleFormat,
+            .sampleFormatAfter = sampleFormat
+        };
+        eventReceiver_->OnDfxEvent({"AudioDecoder", DfxEventType::DFX_EVENT_MEDIA_DISCONTINUE, discontinueInfo});
+    }
 
     meta_->SetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
     meta_->SetData(Tag::AUDIO_OUTPUT_CHANNELS, channels);

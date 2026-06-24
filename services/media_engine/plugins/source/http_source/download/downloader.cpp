@@ -254,6 +254,11 @@ void DownloadRequest::SetRequestProtocolType(RequestProtocolType protocolType)
     protocolType_ = protocolType;
 }
 
+std::string DownloadRequest::GetDownloaderName() const
+{
+    return downloaderName_;
+}
+
 bool DownloadRequest::IsServerAcceptRange() const
 {
     if (headerInfo_.isChunked) {
@@ -608,6 +613,7 @@ std::string Downloader::GetCertIssuerNames()
 bool Downloader::BeginDownload()
 {
     MEDIA_LOG_I("BeginDownload %{public}s", name_.c_str());
+    currentRequest_->downloaderName_ = name_;
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
 
@@ -634,6 +640,8 @@ bool Downloader::BeginDownload()
     currentRequest_->isEos_ = false;
     currentRequest_->retryTimes_ = 0;
     currentRequest_->downloadStartTime_ = currentRequest_->GetNowTime();
+    currentRequest_->downloadStartSteadyTime_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
     MEDIA_LOG_I("End");
     return true;
 }

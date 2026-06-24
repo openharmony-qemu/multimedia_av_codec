@@ -19,6 +19,7 @@
 #include <shared_mutex>
 #include <vector>
 #include <deque>
+#include <map>
 #include "surface.h"
 #include "avcodec_video_decoder.h"
 #include "buffer/avbuffer.h"
@@ -77,6 +78,8 @@ private:
     int32_t ReleaseOutputBufferWithPerfRecord(uint32_t index, bool render);
     void GetInputBufferDts(std::shared_ptr<AVBuffer> &inputBuffer);
     void SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer);
+    void RecordMediaChangeMeta(const std::shared_ptr<AVBuffer> &inputBuffer);
+    void SetOutputBufferMediaChangeMeta(std::shared_ptr<AVBuffer> &outputBuffer);
 
     std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
     sptr<Media::AVBufferQueueProducer> inputBufferQueueProducer_;
@@ -100,6 +103,7 @@ private:
     PerfRecorder perfRecorder_ {};
     int32_t fileType_{0};
     std::deque<int64_t> inputBufferDtsQue_;
+    std::map<int64_t, std::pair<uint64_t, int32_t>> ptsToMediaChangeMetaMap_;
     std::atomic<bool> isRenderStarted_{false};
     sptr<Surface> producerSurface_{nullptr};
     sptr<Surface> consumerSurface_{nullptr};

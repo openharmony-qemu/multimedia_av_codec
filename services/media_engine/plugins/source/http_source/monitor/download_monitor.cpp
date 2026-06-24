@@ -16,6 +16,7 @@
 
 #include "monitor/download_monitor.h"
 #include "cpp_ext/algorithm_ext.h"
+#include "common/event.h"
 
 namespace OHOS {
 namespace Media {
@@ -147,6 +148,9 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     if (readDataInfo.isEos_ && ret == Status::END_OF_STREAM) {
         MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U64, haveReadData_);
     }
+    if (isFirstRequest_.load() && readDataInfo.realReadLength_ > 0) {
+        isFirstRequest_.store(false);
+    }
     return ret;
 }
 
@@ -243,6 +247,38 @@ bool DownloadMonitor::GetStartedStatus()
 }
 
 // Notify client and server error.
+void DownloadMonitor::ReportLoadingErrorEvent(const std::shared_ptr<DownloadRequest>& request,
+    int32_t clientErrorCode, int32_t serverErrorCode)
+{
+    auto callback = callback_.lock();
+    if (callback == nullptr) {
+        MEDIA_LOG_E("callback_ is nullptr, report loading error failed.");
+        return;
+    }
+    
+    int32_t requestStage = LoadingRequestStage::LOADING_STAGE_MEDIA_DATA;
+    if (isFirstRequest_.load()) {
+        requestStage = LoadingRequestStage::LOADING_STAGE_CONNECTION;
+    } else if (request != nullptr &&
+        (request->GetDownloaderName() == "hlsPlayList" || request->GetDownloaderName() == "dashMpd")) {
+        requestStage = LoadingRequestStage::LOADING_STAGE_PLAYLIST;
+    } else {
+        // do nothing
+    }
+    
+    int64_t requestTimestamp = 0;
+    if (request != nullptr) {
+        requestTimestamp = request->GetDownloadStartSteadyTime();
+    }
+    
+    int32_t errorCode = clientErrorCode != 0 ? clientErrorCode : serverErrorCode;
+    
+    callback->OnDfxEvent(PluginDfxEvent{DFX_EVENT_LOADING_ERROR,
+        std::make_tuple(requestStage, requestTimestamp, errorCode)});
+    MEDIA_LOG_I("ReportLoadingErrorEvent: stage=" PUBLIC_LOG_D32 ", timestamp=" PUBLIC_LOG_D64
+        ", errorCode=" PUBLIC_LOG_D32, requestStage, requestTimestamp, errorCode);
+}
+
 void DownloadMonitor::NotifyError(int32_t clientErrorCode, int32_t serverErrorCode)
 {
     auto callback = callback_.lock();
@@ -278,6 +314,27 @@ void DownloadMonitor::SetSourceStatisticsDfx(
     }
 }
 
+void DownloadMonitor::ReportErrorAndClose(const std::shared_ptr<DownloadRequest>& request,
+    int32_t clientError, int32_t serverError)
+{
+    ReportLoadingErrorEvent(request, clientError, serverError);
+    NotifyError(clientError, serverError);
+    if (downloader_ != nullptr) {
+        downloader_->SetDownloadErrorState();
+    }
+    request->Close();
+}
+
+bool DownloadMonitor::CheckRetryLimitReached(int32_t clientError, int32_t retryTimes)
+{
+    int retryTimesTmp = clientError == -1 ? APP_DOWNLOAD_RETRY_TIMES : RETRY_TIMES_TO_REPORT_ERROR;
+    if (retryTimes > retryTimesTmp) {
+        MEDIA_LOG_W("Retry times readches the upper limit.");
+        return true;
+    }
+    return false;
+}
+
 bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 {
     auto clientError = request->GetClientError();
@@ -285,46 +342,36 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     auto retryTimes = request->GetRetryTimes();
     isNeedClearBuffer_ = serverError == REDIRECT_CODE;
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
-        ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
+        ", retryTimes = " PUBLIC_LOG_D32, clientError, serverError, retryTimes);
+    
     if (CLIENT_NOT_RETRY_ERROR_CODES.find(static_cast<int32_t>(clientError)) != CLIENT_NOT_RETRY_ERROR_CODES.end()) {
         MEDIA_LOG_I("Client error code is 23 or 992, not retry.");
         return false;
     }
-
-    if (downloader_ != nullptr && downloader_->IsNotRetry(request)) { // flv living
-        ReportLoadingErrorEvent();
+    if (downloader_ != nullptr && downloader_->IsNotRetry(request)) {
+        ReportLoadingErrorEvent(request, clientError, serverError);
         NotifyError(clientError, serverError);
         downloader_->SetDownloadErrorState();
         return false;
     }
-
     if (clientError == 0 && serverError == 0) {
         return false;
     }
-    // -1: NOT_READY
-    if ((GetPlayable() && !GetReadTimeOut(clientError == -1)) && retryTimes <= RETRY_TIMES_TO_REPORT_ERROR) {
-        MEDIA_LOG_W("PlayableRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
-            ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
+    if ((GetPlayable() && !GetReadTimeOut(clientError == -1)) &&
+        retryTimes <= RETRY_TIMES_TO_REPORT_ERROR) {
+        MEDIA_LOG_W("PlayableRetry: clientError = " PUBLIC_LOG_D32 ", retryTimes = " PUBLIC_LOG_D32,
+            clientError, retryTimes);
         return true;
     }
-
     if (CLIENT_RETRY_ERROR_CODES.find(clientError) == CLIENT_RETRY_ERROR_CODES.end() ||
         SERVER_RETRY_ERROR_CODES.find(serverError) == SERVER_RETRY_ERROR_CODES.end() ||
         serverError > SERVER_ERROR_THRESHOLD) {
         MEDIA_LOG_W("error code dont't need to retry.");
-        ReportLoadingErrorEvent();
-        NotifyError(clientError, serverError);
-        if (downloader_ != nullptr) {
-            downloader_->SetDownloadErrorState();
-        }
-        request->Close();
+        ReportErrorAndClose(request, clientError, serverError);
         return false;
     }
-
-    int retryTimesTmp = clientError == -1 ? APP_DOWNLOAD_RETRY_TIMES : RETRY_TIMES_TO_REPORT_ERROR;
-    if (retryTimes > retryTimesTmp) { // Report error to upper layer
-        MEDIA_LOG_W("Retry times readches the upper limit.");
-        ReportLoadingErrorEvent();
+    if (CheckRetryLimitReached(clientError, retryTimes)) {
+        ReportLoadingErrorEvent(request, clientError, serverError);
         NotifyError(clientError, serverError);
         if (downloader_ != nullptr) {
             downloader_->SetDownloadErrorState();
@@ -332,16 +379,6 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         return false;
     }
     return true;
-}
-
-void DownloadMonitor::ReportLoadingErrorEvent()
-{
-    auto callback = callback_.lock();
-    if (callback == nullptr) {
-        MEDIA_LOG_E("callback_ is nullptr, report loading error failed");
-        return;
-    }
-    callback->OnDfxEvent({PluginDfxEventType::PERF_LOADING_ERROR, true});
 }
 
 void DownloadMonitor::OnDownloadStatus(std::shared_ptr<Downloader>& downloader,

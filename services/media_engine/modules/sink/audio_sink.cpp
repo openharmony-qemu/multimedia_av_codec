@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <cinttypes>
 #include "audio_sink.h"
 #include "avcodec_trace.h"
 #include "syspara/parameters.h"
@@ -21,8 +22,7 @@
 #include "calc_max_amplitude.h"
 #include "scoped_timer.h"
 #include "avcodec_info.h"
-
-#include <cinttypes>
+#include "common/event.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSink" };
@@ -43,6 +43,7 @@ constexpr int64_t OVERTIME_WARNING_MS = 50;
 constexpr int64_t FORMAT_CHANGE_MS = 100;
 constexpr int64_t BUFFER_CONSUME_MS = 50;
 constexpr int64_t FIX_DELAY_MS_AUDIO_VIVID = 80;
+constexpr int64_t PTS_DISCONTINUE_THRESHOLD_US = 1000000;
 }
 
 namespace OHOS {
@@ -400,6 +401,9 @@ Status AudioSink::Pause()
 Status AudioSink::Resume()
 {
     lagDetector_.Reset();
+    lastPtsForDiscontinuity_ = HST_TIME_NONE;
+    seekFlag_.store(false);
+    isFirstFrameAfterSeek_ = true;
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     Status ret = plugin_->Resume();
     if (ret != Status::OK) {
@@ -828,6 +832,7 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
             if (!IsBufferDataDrained(bufferDesc, cacheBuffer, size, cacheBufferSize, isAudioVivid, bufferPts)) {
                 break;
             }
+            ReportTrackRenderStart(cacheBuffer);
             HandleBypassOutput(cacheBuffer);
             CalcMaxAmplitude(cacheBuffer);
         }
@@ -839,6 +844,24 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
         return true;
     }
     return false;
+}
+
+void AudioSink::ReportTrackRenderStart(const std::shared_ptr<AVBuffer>& cacheBuffer)
+{
+    uint64_t frameChangeSeq = 0;
+    int32_t frameStreamType = -1;
+    if (cacheBuffer != nullptr && cacheBuffer->meta_ != nullptr) {
+        cacheBuffer->meta_->GetData(Tag::MEDIA_CHANGE_SEQ, frameChangeSeq);
+        cacheBuffer->meta_->GetData(Tag::MEDIA_CHANGE_STREAM_TYPE, frameStreamType);
+    }
+    if (frameChangeSeq <= 0 || frameChangeSeq <= lastRenderedChangeSeqNum_.load()) {
+        return;
+    }
+    lastRenderedChangeSeqNum_.store(frameChangeSeq);
+    if (playerEventReceiver_ != nullptr && frameStreamType == MEDIA_STREAM_TYPE_AUDIO) {
+        playerEventReceiver_->OnDfxEvent({"audio_sink",
+            DfxEventType::DFX_EVENT_NEW_TRACK_RENDER_START, frameChangeSeq});
+    }
 }
 
 Status AudioSink::MuteAudioBuffer(size_t size, AudioStandard::BufferDesc &bufferDesc, bool isEos)
@@ -1121,6 +1144,7 @@ void AudioSink::GetAvailableOutputBuffers()
             inputBufferQueueConsumer_->ReleaseBuffer(processedBuffer);
             continue;
         }
+        UpdateSeekState(filledInputBuffer);
         decodedBuffers_.push(filledInputBuffer);
         availOutputBuffers_.push(processedBuffer);
         MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is push", processedBuffer->pts_);
@@ -1454,6 +1478,7 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     bool render = true; // audio sink always report time anchor and do not drop
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN_V(syncCenter != nullptr, 0);
+
     if (firstPts_ == HST_TIME_NONE) {
         if (syncCenter && syncCenter->GetMediaStartPts() != HST_TIME_NONE) {
             firstPts_ = syncCenter->GetMediaStartPts();
@@ -1693,6 +1718,7 @@ Status AudioSink::SetSeekTime(int64_t seekTime)
 {
     MEDIA_LOG_I("AudioSink SetSeekTime pts = " PUBLIC_LOG_D64, seekTime);
     seekTimeUs_ = seekTime;
+    SetSeekFlag();
     return Status::OK;
 }
 
@@ -1928,6 +1954,47 @@ Status AudioSink::ReleaseDecodedBuffer()
     decodedBuffers_.pop();
     inputBufferQueueConsumer_->ReleaseBuffer(decodedBuffer);
     return Status::OK;
+}
+
+void AudioSink::UpdateSeekState(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    if (seekFlag_.load()) {
+        isFirstFrameAfterSeek_ = true;
+    } else if (isFirstFrameAfterSeek_) {
+        isFirstFrameAfterSeek_ = false;
+    } else {
+        CheckPtsDiscontinuity(buffer);
+    }
+}
+
+void AudioSink::CheckPtsDiscontinuity(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    FALSE_RETURN_NOLOG(playerEventReceiver_ != nullptr);
+    FALSE_RETURN_NOLOG(buffer != nullptr);
+    FALSE_RETURN_NOLOG(!(buffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)));
+    
+    int64_t curPts = buffer->pts_;
+    int64_t lastPts = lastPtsForDiscontinuity_;
+    lastPtsForDiscontinuity_ = curPts;
+    
+    int64_t ptsDiff = curPts > lastPts ? (curPts - lastPts) : (lastPts - curPts);
+    if (ptsDiff > PTS_DISCONTINUE_THRESHOLD_US && lastPts != HST_TIME_NONE) {
+        MEDIA_LOG_I("Audio PTS discontinuity detected, lastPts " PUBLIC_LOG_D64
+            ", curPts " PUBLIC_LOG_D64, lastPts, curPts);
+        MediaDiscontinueInfo discontinueInfo {
+            .streamType = 1,
+            .discontinueType = 2,
+            .ptsBefore = lastPts,
+            .ptsAfter = curPts
+        };
+        playerEventReceiver_->OnDfxEvent({"AudioSink", DfxEventType::DFX_EVENT_MEDIA_DISCONTINUE, discontinueInfo});
+    }
+}
+
+void AudioSink::SetSeekFlag()
+{
+    seekFlag_.store(true);
+    lastPtsForDiscontinuity_ = HST_TIME_NONE;
 }
 } // namespace MEDIA
 } // namespace OHOS

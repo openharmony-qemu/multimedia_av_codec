@@ -22,6 +22,7 @@
 #include "avcodec_errors.h"
 #include "common/log.h"
 #include "common/media_core.h"
+#include "common/event.h"
 #include "avcodec_info.h"
 #include "avcodec_common.h"
 #include "avcodec_list.h"
@@ -1080,8 +1081,13 @@ void DecoderSurfaceFilter::HandleRender(
         int64_t frameIntervalMs = videoSink_->GetFrameInterval();
         std::vector<int64_t> timeStampList;
         outBuffer->meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
-        WriteDfxTimeToVector(currentSysTimeNs / NS_PER_MS, renderTime / NS_PER_MS, outBuffer->pts_ / NS_PER_US,
-            lastRenderTimeNs / NS_PER_MS, frameIntervalMs, timeStampList);
+        StallingTimestampData data;
+        data.syncEndMs = currentSysTimeNs / NS_PER_MS;
+        data.rendererStartMs = renderTime / NS_PER_MS;
+        data.framePtsMs = outBuffer->pts_ / NS_PER_US;
+        data.lastRenderTimeMs = lastRenderTimeNs / NS_PER_MS;
+        data.frameIntervalMs = frameIntervalMs;
+        WriteDfxTimeToVector(data, timeStampList);
         outBuffer->meta_->SetData(Tag::STALLING_TIMESTAMP, timeStampList);
         FALSE_RETURN(frameIntervalMs > 0 && renderTime > 0L);
 
@@ -1094,23 +1100,23 @@ void DecoderSurfaceFilter::HandleRender(
     }
 }
 
-void DecoderSurfaceFilter::WriteDfxTimeToVector(int64_t syncEndMs, int64_t redererStartMs, int64_t framePtsMs,
-    int64_t lastRenderTimeMs, int64_t frameIntervalMs, std::vector<int64_t>& timeStampList)
+void DecoderSurfaceFilter::WriteDfxTimeToVector(const StallingTimestampData& data,
+    std::vector<int64_t>& timeStampList)
 {
-        timeStampList.push_back(static_cast<int64_t>(StallingStage::AVSYNC_END));
-        timeStampList.push_back(syncEndMs);
-
-        timeStampList.push_back(static_cast<int64_t>(StallingStage::RENDERER_START));
-        timeStampList.push_back(redererStartMs);
-
-        timeStampList.push_back(static_cast<int64_t>(StallingStage::CUSTOM_FRAME_PTS));
-        timeStampList.push_back(framePtsMs);
-
-        timeStampList.push_back(static_cast<int64_t>(StallingStage::CUSTOM_PRE_RENDER));
-        timeStampList.push_back(lastRenderTimeMs);
-
-        timeStampList.push_back(static_cast<int64_t>(StallingStage::CUSTOM_FRAME_INTERVAL));
-        timeStampList.push_back(frameIntervalMs);
+    timeStampList.push_back(static_cast<int64_t>(StallingStage::AVSYNC_END));
+    timeStampList.push_back(data.syncEndMs);
+    
+    timeStampList.push_back(static_cast<int64_t>(StallingStage::RENDERER_START));
+    timeStampList.push_back(data.rendererStartMs);
+    
+    timeStampList.push_back(static_cast<int64_t>(StallingStage::CUSTOM_FRAME_PTS));
+    timeStampList.push_back(data.framePtsMs);
+    
+    timeStampList.push_back(static_cast<int64_t>(StallingStage::CUSTOM_PRE_RENDER));
+    timeStampList.push_back(data.lastRenderTimeMs);
+    
+    timeStampList.push_back(static_cast<int64_t>(StallingStage::CUSTOM_FRAME_INTERVAL));
+    timeStampList.push_back(data.frameIntervalMs);
 }
 
 Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer,
@@ -1121,19 +1127,19 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         MEDIA_LOG_I("render first frame pts is " PUBLIC_LOG_D64, outBuffer->pts_);
         HandleFirstOutput();
     }
-    if ((playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE) &&
-        (outBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT)) {
-        MEDIA_LOG_I("ReleaseBuffer for eos, SetPlayRange start: " PUBLIC_LOG_D64 ", end: " PUBLIC_LOG_D64,
-                    playRangeStartTime_, playRangeEndTime_);
+    HandleMediaChangeDetection(outBuffer);
+    
+    if (playRangeEndTime_ != PLAY_RANGE_DEFAULT_VALUE &&
+            outBuffer->pts_ > playRangeEndTime_ * MICROSECONDS_CONVERT_UNIT) {
         HandleEosOutput(index);
         return Status::OK;
     }
 
     if ((outBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS)) && !isInSeekContinuous_) {
         ResetSeekInfo();
-        MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u,  bufferid: %{public}" PRIu64
-                ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
-                outBuffer->pts_, outBuffer->flag_);
+        MEDIA_LOG_I("ReleaseBuffer for eos, index: %{public}u, bufferid: %{public}" PRIu64
+            ", pts: %{public}" PRIu64", flag: %{public}u", index, outBuffer->GetUniqueId(),
+            outBuffer->pts_, outBuffer->flag_);
         HandleEosOutput(index);
         return Status::OK;
     }
@@ -1156,6 +1162,22 @@ Status DecoderSurfaceFilter::ReleaseOutputBuffer(int index, bool render, const s
         DoReleaseOutputBuffer(index, render, outBuffer->pts_);
     }
     return Status::OK;
+}
+
+void DecoderSurfaceFilter::HandleMediaChangeDetection(const std::shared_ptr<AVBuffer>& outBuffer)
+{
+    uint64_t frameChangeSeq = 0;
+    int32_t frameStreamType = -1;
+    if (outBuffer != nullptr && outBuffer->meta_ != nullptr) {
+        outBuffer->meta_->GetData(Tag::MEDIA_CHANGE_SEQ, frameChangeSeq);
+        outBuffer->meta_->GetData(Tag::MEDIA_CHANGE_STREAM_TYPE, frameStreamType);
+    }
+    if (frameChangeSeq > 0 && frameChangeSeq > lastRenderedChangeSeqNum_.load()) {
+        lastRenderedChangeSeqNum_.store(frameChangeSeq);
+        if (eventReceiver_ != nullptr && frameStreamType != MEDIA_STREAM_TYPE_AUDIO) {
+            eventReceiver_->OnDfxEvent({"video_sink", DfxEventType::DFX_EVENT_NEW_TRACK_RENDER_START, frameChangeSeq});
+        }
+    }
 }
 
 void DecoderSurfaceFilter::DoReleaseOutputBuffer(uint32_t index, bool render, int64_t pts)
@@ -1437,6 +1459,9 @@ void DecoderSurfaceFilter::SetSeekTime(int64_t seekTimeUs, PlayerSeekMode mode)
     }
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
     postProcessor_->SetSeekTime(seekTimeUs, mode);
+    if (videoSink_ != nullptr) {
+        videoSink_->SetSeekFlag();
+    }
 }
 
 void DecoderSurfaceFilter::ResetSeekInfo()

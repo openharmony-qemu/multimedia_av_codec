@@ -36,15 +36,10 @@
 #include "source.h"
 #include "demuxer_plugin.h"
 #include "stream_demuxer.h"
+#include "../../../../services/media_engine/modules/demuxer/demuxer_types.h"
 
 namespace OHOS {
 namespace Media {
-enum TrackType {
-    TRACK_VIDEO = 0,
-    TRACK_AUDIO,
-    TRACK_SUBTITLE,
-    TRACK_INVALID
-};
 
 enum class DemuxerCallerType : int32_t;
 
