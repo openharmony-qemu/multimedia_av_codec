@@ -28,6 +28,8 @@
 #include "media_types.h"
 #include "avcodec_sysevent.h"
 #include "scoped_timer.h"
+#include "interstitial_controller.h"
+#include "interstitial_scheduler.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "DemuxerFilter" };
@@ -431,6 +433,12 @@ Status DemuxerFilter::DoStart()
 
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     SetIsInPrePausing(false);
+
+    if (HandleAdsStart()) {
+        state_ = FilterState::RUNNING;
+        return Status::OK;
+    }
+
     auto ret = demuxer_->Start();
     state_ = ret == Status::OK ? FilterState::RUNNING : FilterState::ERROR;
     return ret;
@@ -441,6 +449,7 @@ Status DemuxerFilter::DoStop()
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::Stop");
     MEDIA_LOG_I("Stop in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    HandleAdsStop();
     SetIsInPrePausing(true);
     auto ret = demuxer_->Stop();
     SetIsInPrePausing(false);
@@ -703,6 +712,14 @@ Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& 
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SeekTo");
     MEDIA_LOG_D("SeekTo in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+
+    if (interstitialController_ && interstitialController_->IsPlayingInterstitial()) {
+        MEDIA_LOG_I("SeekTo: seeking within ad, seekTime=%{public}lld", static_cast<long long>(seekTime));
+        return demuxer_->SeekTo(seekTime, mode, realSeekTime);
+    }
+
+    HandleAdsSeek(seekTime);
+
     if (seekTime == 0) {
         return demuxer_->SeekToStart(seekTime, mode, realSeekTime);
     }
@@ -1031,6 +1048,14 @@ Status DemuxerFilter::SetSpeed(float speed)
     return demuxer_->SetSpeed(speed);
 }
 
+void DemuxerFilter::SetSpeedChangeCallback(SpeedChangeCallback cb)
+{
+    speedChangeCallback_ = cb;
+    if (interstitialController_) {
+        interstitialController_->SetSpeedChangeCallback(cb);
+    }
+}
+
 Status DemuxerFilter::DisableMediaTrack(Plugins::MediaType mediaType)
 {
     disabledMediaTracks_.emplace(mediaType);
@@ -1142,7 +1167,136 @@ bool DemuxerFilter::IsFlvLive()
 void DemuxerFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter)
 {
     FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    syncCenter_ = syncCenter;
     demuxer_->SetSyncCenter(syncCenter);
+    if (interstitialController_) {
+        interstitialController_->SetSyncCenter(syncCenter);
+    }
+}
+
+bool DemuxerFilter::HandleAdsStart()
+{
+    if (!interstitialController_) {
+        return false;
+    }
+    interstitialController_->TryPreRollAd();
+    if (interstitialController_->IsPlayingInterstitial()) {
+        MEDIA_LOG_I("HandleAdsStart: pre-roll ad is playing, skip main content Start");
+        return true;
+    }
+    return false;
+}
+
+void DemuxerFilter::HandleAdsStop()
+{
+    if (interstitialController_) {
+        interstitialController_->OnStop();
+    }
+    auto scheduler = demuxer_->GetInterstitialScheduler();
+    if (scheduler) {
+        scheduler->OnStop();
+    }
+}
+
+void DemuxerFilter::HandleAdsSeek(int64_t seekTime)
+{
+    if (interstitialController_) {
+        interstitialController_->OnSeek(seekTime);
+    }
+    auto scheduler = demuxer_->GetInterstitialScheduler();
+    if (scheduler) {
+        scheduler->OnSeek(seekTime);
+    }
+}
+
+void DemuxerFilter::EnsureInterstitialController()
+{
+    if (!interstitialController_) {
+        interstitialController_ = std::make_shared<InterstitialController>();
+        interstitialController_->Init(demuxer_, syncCenter_);
+        demuxer_->SetInterstitialController(interstitialController_);
+        if (mediaSource_) {
+            interstitialController_->SetMainContentUri(mediaSource_->GetSourceUri());
+        }
+        interstitialController_->SetAdsEventCallback([weakSelf = weak_from_this()](
+            const AdsChangeEvent& event) {
+            auto self = weakSelf.lock();
+            if (!self || !self->receiver_) {
+                return;
+            }
+            auto avEvent = std::make_shared<MediaAVCodec::AVAdsChangeEvent>();
+            avEvent->type = static_cast<int32_t>(event.type);
+            avEvent->eventId = event.eventId;
+            avEvent->startMs = event.startMs;
+            avEvent->durationMs = event.durationMs;
+            avEvent->reason = static_cast<int32_t>(event.reason);
+            self->receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ADS_CHANGE, Any(avEvent)});
+        });
+        if (speedChangeCallback_) {
+            interstitialController_->SetSpeedChangeCallback(speedChangeCallback_);
+        }
+    }
+}
+
+void DemuxerFilter::EnsureInterstitialScheduler()
+{
+    auto scheduler = demuxer_->GetInterstitialScheduler();
+    if (!scheduler) {
+        auto newScheduler = std::make_shared<InterstitialScheduler>();
+        newScheduler->SetSyncCenter(syncCenter_);
+        newScheduler->SetNotifyCallback([weakSelf = weak_from_this()](
+            const std::shared_ptr<MediaAVCodec::AVTimedMetaData>& metadata) {
+            auto self = weakSelf.lock();
+            if (!self || !self->receiver_ || !metadata) {
+                return;
+            }
+            self->receiver_->OnEvent({"demuxer_filter", EventType::EVENT_TIMED_METADATA, Any(metadata)});
+        });
+        scheduler = demuxer_->SetInterstitialScheduler(newScheduler);
+    }
+    interstitialController_->SetScheduler(scheduler);
+}
+
+Status DemuxerFilter::AddAdsMediaSource(const std::shared_ptr<MediaSource>& source, int64_t startMs, bool isLive,
+    std::string& outId)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_INVALID_PARAMETER, "demuxer_ is nullptr");
+
+    if (!isLive && startMs > 0) {
+        int64_t durationMs = 0;
+        if (GetDuration(durationMs) && durationMs > 0 && startMs > durationMs) {
+            MEDIA_LOG_E("AddAdsMediaSource: startMs=%{public}lld exceeds duration=%{public}lld",
+                static_cast<long long>(startMs), static_cast<long long>(durationMs));
+            return Status::ERROR_INVALID_PARAMETER;
+        }
+    }
+
+    EnsureInterstitialController();
+    EnsureInterstitialScheduler();
+
+    interstitialController_->SetLiveSource(isLive);
+    return interstitialController_->AddAdsMediaSource(source, startMs, outId);
+}
+
+Status DemuxerFilter::RemoveAdsMediaSource(const std::string& id)
+{
+    FALSE_RETURN_V_MSG_E(interstitialController_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "interstitialController_ is nullptr");
+    return interstitialController_->RemoveAdsMediaSource(id);
+}
+
+Status DemuxerFilter::DisableAllAdsMediaSource()
+{
+    FALSE_RETURN_V_MSG_E(interstitialController_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "interstitialController_ is nullptr");
+    return interstitialController_->DisableAllAdsMediaSource();
+}
+
+Status DemuxerFilter::SkipCurrentAdsMediaSource()
+{
+    FALSE_RETURN_V_MSG_E(interstitialController_ != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "interstitialController_ is nullptr");
+    return interstitialController_->SkipCurrentAdsMediaSource();
 }
 
 Status DemuxerFilter::StopBufferring(bool isAppBackground)

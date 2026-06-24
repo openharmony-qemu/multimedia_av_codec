@@ -19,6 +19,11 @@ media_demuxer_test_sources = [
   "$av_codec_root_dir/services/media_engine/modules/demuxer/sample_queue.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/sample_queue_controller.cpp",
   "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/interstitial/interstitial_controller.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/interstitial/interstitial_scheduler.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/interstitial/interstitial_live_strategies.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/interstitial/interstitial_vod_strategies.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/sink/media_sync_manager.cpp",
   "$av_codec_root_dir/test/unittest/common/statistics_event_reporter_mock.cpp",
   "mock/codec_ability_singleton_mock.cpp",
   "mock/hcodec_loader_mock.cpp",
@@ -64,6 +69,8 @@ config("media_demuxer_unittest_cfg") {
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/test/unittest/common",
     "./mock",
+    "$av_codec_root_dir/services/media_engine/modules/demuxer",
+    "$av_codec_root_dir/services/media_engine/modules/interstitial",
   ]
 }
 

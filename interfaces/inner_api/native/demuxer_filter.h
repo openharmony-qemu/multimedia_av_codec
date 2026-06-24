@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace Media {
+class InterstitialController;
 namespace Pipeline {
 class DemuxerFilter : public Filter, public std::enable_shared_from_this<DemuxerFilter> {
 public:
@@ -129,6 +130,13 @@ public:
     Status PauseDemuxerReadLoop();
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
+    Status AddAdsMediaSource(const std::shared_ptr<MediaSource>& source, int64_t startMs, bool isLive,
+        std::string& outId);
+    Status RemoveAdsMediaSource(const std::string& id);
+    Status DisableAllAdsMediaSource();
+    Status SkipCurrentAdsMediaSource();
+    using SpeedChangeCallback = std::function<void(float speed)>;
+    void SetSpeedChangeCallback(SpeedChangeCallback cb);
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);
@@ -172,9 +180,12 @@ private:
     Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
     std::string GetOriginalCodecName();
-    bool IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio,
-        bool hasVideoFilter, bool hasAudioTrack);
-
+    bool IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio, bool hasVideoFilter, bool hasAudioTrack);
+    void EnsureInterstitialController();
+    void EnsureInterstitialScheduler();
+    bool HandleAdsStart();
+    void HandleAdsStop();
+    void HandleAdsSeek(int64_t seekTime);
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
 
@@ -200,6 +211,9 @@ private:
     int32_t apiVersion_ {0};
     bool isVideoMuted_ = false;
     std::vector<std::string> dolbyList_ {};
+    std::shared_ptr<InterstitialController> interstitialController_;
+    std::shared_ptr<MediaSyncManager> syncCenter_;
+    SpeedChangeCallback speedChangeCallback_;
 };
 } // namespace Pipeline
 } // namespace Media

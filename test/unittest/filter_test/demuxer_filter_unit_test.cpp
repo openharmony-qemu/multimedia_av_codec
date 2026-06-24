@@ -21,6 +21,10 @@
 #include <sys/stat.h>
 #include "demuxer_filter_unit_test.h"
 #include "scope_guard.h"
+#include "interstitial_controller.h"
+#include "interstitial_scheduler.h"
+#include "media_sync_manager.h"
+#include "common/media_source.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -1306,6 +1310,307 @@ HWTEST_F(DemuxerFilterUnitTest, IsAVTrackInvalid_NonPlayerMode, TestSize.Level1)
     result = demuxerFilter->IsAVTrackInvalid(true, true, false, false);
     EXPECT_FALSE(result);
 }
+/**
+ * @tc.name  : Test SetSyncCenter
+ * @tc.number: SetSyncCenter_Interstitial_001
+ * @tc.desc  : Test SetSyncCenter stores syncCenter_ and propagates to demuxer
+ */
+HWTEST_F(DemuxerFilterUnitTest, SetSyncCenter_Interstitial_001, TestSize.Level1)
+{
+    auto syncMgr = std::make_shared<MediaSyncManager>();
+    demuxerFilter_->SetSyncCenter(syncMgr);
+    EXPECT_EQ(demuxerFilter_->syncCenter_, syncMgr);
+}
+
+/**
+ * @tc.name  : Test SetSyncCenter
+ * @tc.number: SetSyncCenter_Interstitial_002
+ * @tc.desc  : Test SetSyncCenter with null demuxer_
+ */
+HWTEST_F(DemuxerFilterUnitTest, SetSyncCenter_Interstitial_002, TestSize.Level1)
+{
+    demuxerFilter_->demuxer_ = nullptr;
+    auto syncMgr = std::make_shared<MediaSyncManager>();
+    demuxerFilter_->SetSyncCenter(syncMgr);
+    EXPECT_EQ(demuxerFilter_->syncCenter_, nullptr);
+}
+
+/**
+ * @tc.name  : Test HandleAdsStop
+ * @tc.number: HandleAdsStop_001
+ * @tc.desc  : Test HandleAdsStop with no controller and no scheduler
+ */
+HWTEST_F(DemuxerFilterUnitTest, HandleAdsStop_001, TestSize.Level1)
+{
+    demuxerFilter_->interstitialController_ = nullptr;
+    demuxerFilter_->HandleAdsStop();
+    EXPECT_EQ(demuxerFilter_->interstitialController_, nullptr);
+}
+
+/**
+ * @tc.name  : Test HandleAdsStop
+ * @tc.number: HandleAdsStop_002
+ * @tc.desc  : Test HandleAdsStop with controller set
+ */
+HWTEST_F(DemuxerFilterUnitTest, HandleAdsStop_002, TestSize.Level1)
+{
+    auto controller = std::make_shared<InterstitialController>();
+    demuxerFilter_->interstitialController_ = controller;
+    auto source = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    controller->AddAdsMediaSource(source, 1000, outId);
+    demuxerFilter_->HandleAdsStop();
+    EXPECT_FALSE(controller->HasPendingEvents());
+}
+
+/**
+ * @tc.name  : Test HandleAdsSeek
+ * @tc.number: HandleAdsSeek_001
+ * @tc.desc  : Test HandleAdsSeek with no controller and no scheduler
+ */
+HWTEST_F(DemuxerFilterUnitTest, HandleAdsSeek_001, TestSize.Level1)
+{
+    demuxerFilter_->interstitialController_ = nullptr;
+    demuxerFilter_->HandleAdsSeek(3000);
+    EXPECT_EQ(demuxerFilter_->interstitialController_, nullptr);
+}
+
+/**
+ * @tc.name  : Test HandleAdsSeek
+ * @tc.number: HandleAdsSeek_002
+ * @tc.desc  : Test HandleAdsSeek with controller set (VOD)
+ */
+HWTEST_F(DemuxerFilterUnitTest, HandleAdsSeek_002, TestSize.Level1)
+{
+    auto controller = std::make_shared<InterstitialController>();
+    controller->SetLiveSource(false);
+    demuxerFilter_->interstitialController_ = controller;
+    auto source1 = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    auto source2 = std::make_shared<MediaSource>("http://example.com/ad2.mp4");
+    std::string outId1, outId2;
+    controller->AddAdsMediaSource(source1, 1000, outId1);
+    controller->AddAdsMediaSource(source2, 5000, outId2);
+    demuxerFilter_->HandleAdsSeek(3000);
+    EXPECT_TRUE(controller->entries_[outId1].played);
+    EXPECT_FALSE(controller->entries_[outId2].played);
+}
+
+/**
+ * @tc.name  : Test AddAdsMediaSource
+ * @tc.number: FilterAddAds_001
+ * @tc.desc  : Test AddAdsMediaSource with null demuxer_
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterAddAds_001, TestSize.Level1)
+{
+    demuxerFilter_->demuxer_ = nullptr;
+    auto source = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    auto ret = demuxerFilter_->AddAdsMediaSource(source, 1000, false, outId);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test AddAdsMediaSource
+ * @tc.number: FilterAddAds_002
+ * @tc.desc  : Test AddAdsMediaSource creates controller and scheduler
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterAddAds_002, TestSize.Level1)
+{
+    auto source = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    auto ret = demuxerFilter_->AddAdsMediaSource(source, 1000, false, outId);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(demuxerFilter_->interstitialController_, nullptr);
+    EXPECT_EQ(outId, "ad_0");
+}
+
+/**
+ * @tc.name  : Test AddAdsMediaSource
+ * @tc.number: FilterAddAds_003
+ * @tc.desc  : Test AddAdsMediaSource with live source
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterAddAds_003, TestSize.Level1)
+{
+    auto source = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    auto ret = demuxerFilter_->AddAdsMediaSource(source, 1000, true, outId);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(demuxerFilter_->interstitialController_->IsLiveSource());
+}
+
+/**
+ * @tc.name  : Test RemoveAdsMediaSource
+ * @tc.number: FilterRemoveAds_001
+ * @tc.desc  : Test RemoveAdsMediaSource with null controller
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterRemoveAds_001, TestSize.Level1)
+{
+    demuxerFilter_->interstitialController_ = nullptr;
+    auto ret = demuxerFilter_->RemoveAdsMediaSource("ad_0");
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test RemoveAdsMediaSource
+ * @tc.number: FilterRemoveAds_002
+ * @tc.desc  : Test RemoveAdsMediaSource with valid controller
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterRemoveAds_002, TestSize.Level1)
+{
+    auto source = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    demuxerFilter_->AddAdsMediaSource(source, 1000, false, outId);
+    auto ret = demuxerFilter_->RemoveAdsMediaSource(outId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test DisableAllAdsMediaSource
+ * @tc.number: FilterDisableAds_001
+ * @tc.desc  : Test DisableAllAdsMediaSource with null controller
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterDisableAds_001, TestSize.Level1)
+{
+    demuxerFilter_->interstitialController_ = nullptr;
+    auto ret = demuxerFilter_->DisableAllAdsMediaSource();
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test DisableAllAdsMediaSource
+ * @tc.number: FilterDisableAds_002
+ * @tc.desc  : Test DisableAllAdsMediaSource with valid controller
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterDisableAds_002, TestSize.Level1)
+{
+    auto source = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    demuxerFilter_->AddAdsMediaSource(source, 1000, false, outId);
+    auto ret = demuxerFilter_->DisableAllAdsMediaSource();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(demuxerFilter_->interstitialController_->IsAdsDisabled());
+}
+
+/**
+ * @tc.name  : Test SkipCurrentAdsMediaSource
+ * @tc.number: FilterSkipAds_001
+ * @tc.desc  : Test SkipCurrentAdsMediaSource with null controller
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterSkipAds_001, TestSize.Level1)
+{
+    demuxerFilter_->interstitialController_ = nullptr;
+    auto ret = demuxerFilter_->SkipCurrentAdsMediaSource();
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test SkipCurrentAdsMediaSource
+ * @tc.number: FilterSkipAds_002
+ * @tc.desc  : Test SkipCurrentAdsMediaSource in IDLE state
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterSkipAds_002, TestSize.Level1)
+{
+    auto source = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    demuxerFilter_->AddAdsMediaSource(source, 1000, false, outId);
+    auto ret = demuxerFilter_->SkipCurrentAdsMediaSource();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test EnsureInterstitialController
+ * @tc.number: EnsureController_001
+ * @tc.desc  : Test EnsureInterstitialController lazy creation
+ */
+HWTEST_F(DemuxerFilterUnitTest, EnsureController_001, TestSize.Level1)
+{
+    EXPECT_EQ(demuxerFilter_->interstitialController_, nullptr);
+    demuxerFilter_->EnsureInterstitialController();
+    EXPECT_NE(demuxerFilter_->interstitialController_, nullptr);
+}
+
+/**
+ * @tc.name  : Test EnsureInterstitialController
+ * @tc.number: EnsureController_002
+ * @tc.desc  : Test EnsureInterstitialController idempotent
+ */
+HWTEST_F(DemuxerFilterUnitTest, EnsureController_002, TestSize.Level1)
+{
+    demuxerFilter_->EnsureInterstitialController();
+    auto first = demuxerFilter_->interstitialController_;
+    demuxerFilter_->EnsureInterstitialController();
+    EXPECT_EQ(demuxerFilter_->interstitialController_, first);
+}
+
+/**
+ * @tc.name  : Test EnsureInterstitialScheduler
+ * @tc.number: EnsureScheduler_001
+ * @tc.desc  : Test EnsureInterstitialScheduler lazy creation
+ */
+HWTEST_F(DemuxerFilterUnitTest, EnsureScheduler_001, TestSize.Level1)
+{
+    demuxerFilter_->EnsureInterstitialController();
+    demuxerFilter_->EnsureInterstitialScheduler();
+    EXPECT_NE(demuxerFilter_->demuxer_->GetInterstitialScheduler(), nullptr);
+}
+
+// ==================== HandleAdsStart ====================
+
+/**
+ * @tc.name  : Test HandleAdsStart
+ * @tc.number: HandleAdsStart_001
+ * @tc.desc  : Test HandleAdsStart returns false with no controller
+ */
+HWTEST_F(DemuxerFilterUnitTest, HandleAdsStart_001, TestSize.Level1)
+{
+    demuxerFilter_->interstitialController_ = nullptr;
+    EXPECT_FALSE(demuxerFilter_->HandleAdsStart());
+}
+
+/**
+ * @tc.name  : Test HandleAdsStart
+ * @tc.number: HandleAdsStart_002
+ * @tc.desc  : Test HandleAdsStart returns false with controller but no pre-roll ad
+ */
+HWTEST_F(DemuxerFilterUnitTest, HandleAdsStart_002, TestSize.Level1)
+{
+    auto controller = std::make_shared<InterstitialController>();
+    demuxerFilter_->interstitialController_ = controller;
+    EXPECT_FALSE(demuxerFilter_->HandleAdsStart());
+}
+
+/**
+ * @tc.name  : Test HandleAdsStart
+ * @tc.number: HandleAdsStart_003
+ * @tc.desc  : Test HandleAdsStart returns false when ads are disabled
+ */
+HWTEST_F(DemuxerFilterUnitTest, HandleAdsStart_003, TestSize.Level1)
+{
+    auto controller = std::make_shared<InterstitialController>();
+    controller->DisableAllAdsMediaSource();
+    demuxerFilter_->interstitialController_ = controller;
+    EXPECT_FALSE(demuxerFilter_->HandleAdsStart());
+}
+
+/**
+ * @tc.name  : Test HandleAdsStart
+ * @tc.number: HandleAdsStart_004
+ * @tc.desc  : Test HandleAdsStart returns false when pre-roll ad TryPreRollAd does not start playing
+ */
+HWTEST_F(DemuxerFilterUnitTest, HandleAdsStart_004, TestSize.Level1)
+{
+    demuxerFilter_->EnsureInterstitialController();
+    demuxerFilter_->interstitialController_->SetLiveSource(false);
+    demuxerFilter_->interstitialController_->SetMainContentUri("http://example.com/main.mp4");
+
+    auto source = std::make_shared<MediaSource>("http://example.com/preroll.mp4");
+    std::string outId;
+    demuxerFilter_->AddAdsMediaSource(source, 0, false, outId);
+    EXPECT_EQ(demuxerFilter_->interstitialController_->preRollAdId_, outId);
+
+    EXPECT_FALSE(demuxerFilter_->HandleAdsStart());
+}
+
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

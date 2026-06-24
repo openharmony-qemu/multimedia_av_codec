@@ -155,6 +155,14 @@ struct AVTimedMetaData {
     std::map<std::string, std::string> contents;  // Key-value pairs (d.ts: contents)
 };
 
+struct AVAdsChangeEvent {
+    int32_t type{0};
+    std::string eventId;
+    int64_t startMs{-1};
+    int64_t durationMs{-1};
+    int32_t reason{0};
+};
+
 class AVDemuxerCallback {
 public:
     virtual ~AVDemuxerCallback() = default;

@@ -233,6 +233,12 @@ void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
 Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
 {
     MEDIA_LOG_D("InitDefaultPlay Begin");
+    curVideoStreamID_ = -1;
+    curAudioStreamID_ = -1;
+    curSubTitleStreamID_ = -1;
+    streamInfoMap_.clear();
+    pluginName_.clear();
+    isDash_ = false;
     for (const auto& iter : streams) {
         FALSE_RETURN_V_MSG_E(iter.streamId >= 0, Status::ERROR_INVALID_PARAMETER,
             "Invalid streamId, id = " PUBLIC_LOG_D32, iter.streamId);
