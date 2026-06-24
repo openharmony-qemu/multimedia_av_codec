@@ -223,7 +223,6 @@ public:
         bool isPrimary);
     void SetParame(OH_AVCodec *venc);
     uint32_t SetNativeWindowFormat(int32_t &index);
-    void StopAndNotify();
     bool isGetVideoSupportedPixelFormats = false;
     bool isGetFormatKey = false;
     int isGetVideoSupportedPixelFormatsNum = 0;

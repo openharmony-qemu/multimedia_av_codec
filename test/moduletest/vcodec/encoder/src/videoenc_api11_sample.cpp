@@ -896,20 +896,12 @@ int32_t VEncAPI11Sample::ReadFileData(uint8_t *dst, OHNativeWindowBuffer *ohNati
     return 1;
 }
 
-void VEncAPI11Sample::StopAndNotify()
-{
-    isRunning_.store(false);
-    signal_->inCond_.notify_all();
-    signal_->outCond_.notify_all();
-}
-
 void VEncAPI11Sample::InputFuncSurface()
 {
     int32_t readFileIndex = 0;
     int64_t sendPts = FRAME_INTERVAL;
     while (true) {
         if (!isRunning_.load()) {
-            StopAndNotify();
             break;
         }
         OHNativeWindowBuffer *ohNativeWindowBuffer;
@@ -922,21 +914,18 @@ void VEncAPI11Sample::InputFuncSurface()
         }
         int err = InitBuffer(ohNativeWindowBuffer, nativeBuffer, dst);
         if (err == 0) {
-            StopAndNotify();
             break;
         } else if (err == -1) {
             continue;
         }
         err = ReadFileData(dst, ohNativeWindowBuffer, readFileIndex);
         if (err == 0) {
-            StopAndNotify();
             break;
         } else if (err == -1) {
             continue;
         }
         err = FlushSurf(ohNativeWindowBuffer, nativeBuffer);
         if (err != 0) {
-            StopAndNotify();
             break;
         }
         SetPreProcessParameter();
