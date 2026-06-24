@@ -40,6 +40,9 @@ ohos_static_library("av_codec_engine_codeclist") {
   if (av_codec_enable_special_codec) {
     defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
+  if (av_codec_enable_codec_vivid) {
+    defines += [ "SUPPORT_CODEC_AUDIO_VIVID" ]
+  }
   if (target_cpu == "arm64") {
     av_codec_path = "\"/system/lib64\""
   } else {

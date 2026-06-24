@@ -166,8 +166,10 @@ public:
 #endif
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
             AUDIO_ENCODER_VENDOR_AAC_NAME,
-            AUDIO_DECODER_VIVID_NAME,
             AUDIO_ENCODER_AMRWB_NAME,
+#endif
+#ifdef SUPPORT_CODEC_AUDIO_VIVID
+            AUDIO_DECODER_VIVID_NAME,
             AUDIO_ENCODER_VIVID_NAME,
 #endif
         };
