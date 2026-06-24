@@ -179,7 +179,7 @@ Status InterstitialController::SkipCurrentAdsMediaSource()
         }
         MEDIA_LOG_I("SkipCurrentAdsMediaSource: skipping current ad id=" PUBLIC_LOG_S, currentAdId_.c_str());
     }
-    FinishCurrentAdAndContinue(AdsEndReason::SKIPPED);
+    FinishCurrentAdAndContinue(AdsEventType::SKIPPED);
     return Status::OK;
 }
 
@@ -219,7 +219,7 @@ void InterstitialController::OnAdEos()
         }
         MEDIA_LOG_I("OnAdEos: ad EOS detected, currentAdId=" PUBLIC_LOG_S, currentAdId_.c_str());
     }
-    FinishCurrentAdAndContinue(AdsEndReason::COMPLETED);
+    FinishCurrentAdAndContinue(AdsEventType::COMPLETED);
 }
 
 void InterstitialController::TryPreRollAd()
@@ -373,6 +373,7 @@ bool InterstitialController::DoSwitch(const std::string& id)
     auto ret = DoSourceSwitch(it->second.resourceUri, ADS_SEEK_POS, ADS_PLAYBACK_SPEED, preStartAction);
     if (ret != Status::OK) {
         MEDIA_LOG_E("DoSwitch: DoSourceSwitch failed for id=" PUBLIC_LOG_S, id.c_str());
+        EmitEndEvent(it->second, AdsEventType::ERROR, static_cast<int32_t>(ret), "DoSourceSwitch failed");
         SetPlayState(InterstitialPlayState::IDLE);
         currentAdId_.clear();
         return false;
@@ -472,7 +473,7 @@ Status InterstitialController::DoSourceSwitch(const std::string& uri, int64_t se
     return Status::OK;
 }
 
-void InterstitialController::FinishCurrentAdAndContinue(AdsEndReason reason)
+void InterstitialController::FinishCurrentAdAndContinue(AdsEventType eventType)
 {
     InterstitialEntry currentEntry;
     int64_t startMs = -1;
@@ -487,7 +488,7 @@ void InterstitialController::FinishCurrentAdAndContinue(AdsEndReason reason)
         }
     }
 
-    EmitEndEvent(currentEntry, reason);
+    EmitEndEvent(currentEntry, eventType);
 
     if (startMs >= 0 && TrySwitchAdCandidates(startMs)) {
         return;
@@ -585,31 +586,32 @@ void InterstitialController::EmitStartEvent(const InterstitialEntry& entry)
     }
 
     AdsChangeEvent event;
-    event.type = AdsEventType::START;
+    event.type = AdsEventType::STARTED;
     event.eventId = entry.eventId;
-    event.startMs = entry.startMs;
     event.durationMs = entry.durationMs;
 
-    MEDIA_LOG_I("EmitStartEvent: eventId=" PUBLIC_LOG_S ", startMs=" PUBLIC_LOG_D64 ", durationMs=" PUBLIC_LOG_D64,
-        entry.eventId.c_str(), entry.startMs, entry.durationMs);
+    MEDIA_LOG_I("EmitStartEvent: eventId=" PUBLIC_LOG_S ", durationMs=" PUBLIC_LOG_D64,
+        entry.eventId.c_str(), entry.durationMs);
     adsEventCallback_(event);
 }
 
-void InterstitialController::EmitEndEvent(const InterstitialEntry& entry, AdsEndReason reason)
+void InterstitialController::EmitEndEvent(const InterstitialEntry& entry, AdsEventType eventType,
+    int32_t errorCode, const std::string& errorMessage)
 {
     if (!adsEventCallback_ || entry.eventId.empty()) {
         return;
     }
 
     AdsChangeEvent event;
-    event.type = AdsEventType::END;
+    event.type = eventType;
     event.eventId = entry.eventId;
-    event.startMs = entry.startMs;
     event.durationMs = entry.durationMs;
-    event.reason = reason;
+    event.errorCode = errorCode;
+    event.errorMessage = errorMessage;
 
-    MEDIA_LOG_I("EmitEndEvent: eventId=" PUBLIC_LOG_S ", startMs=" PUBLIC_LOG_D64 ", durationMs=" PUBLIC_LOG_D64
-        ", reason=" PUBLIC_LOG_D32, entry.eventId.c_str(), entry.startMs, entry.durationMs, reason);
+    MEDIA_LOG_I("EmitEndEvent: eventId=" PUBLIC_LOG_S ", durationMs=" PUBLIC_LOG_D64
+        ", type=" PUBLIC_LOG_D32 ", errorCode=" PUBLIC_LOG_D32,
+        entry.eventId.c_str(), entry.durationMs, static_cast<int32_t>(eventType), errorCode);
     adsEventCallback_(event);
 }
 

@@ -50,22 +50,18 @@ enum class InterstitialPlayState : uint32_t {
 };
 
 enum class AdsEventType : int32_t {
-    START = 0,
-    END = 1,
-};
-
-enum class AdsEndReason : int32_t {
-    COMPLETED = 0,
-    SKIPPED = 1,
-    ERROR = 2,
+    STARTED = 0,
+    COMPLETED = 1,
+    SKIPPED = 2,
+    ERROR = 3,
 };
 
 struct AdsChangeEvent {
     AdsEventType type;
     std::string eventId;
-    int64_t startMs{-1};
     int64_t durationMs{-1};
-    AdsEndReason reason{AdsEndReason::COMPLETED};
+    int32_t errorCode{0};
+    std::string errorMessage;
 };
 
 struct InterstitialEntry {
@@ -123,7 +119,7 @@ private:
     void DoResume();
     Status DoSourceSwitch(const std::string& uri, int64_t seekMs, float speed,
         std::function<void()> preStartAction = nullptr);
-    void FinishCurrentAdAndContinue(AdsEndReason reason);
+    void FinishCurrentAdAndContinue(AdsEventType eventType);
 
     // Helpers
     int64_t ClampSeekMs(int64_t seekMs);
@@ -132,7 +128,8 @@ private:
     std::string GenerateAdId();
     std::string CreateAndAddEntry(const std::string& uri, int64_t startMs, const std::shared_ptr<MediaSource>& source);
     void EmitStartEvent(const InterstitialEntry& entry);
-    void EmitEndEvent(const InterstitialEntry& entry, AdsEndReason reason);
+    void EmitEndEvent(const InterstitialEntry& entry, AdsEventType eventType,
+        int32_t errorCode = 0, const std::string& errorMessage = "");
     void SetPlayState(InterstitialPlayState state);
 
     // Dependencies

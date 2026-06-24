@@ -158,9 +158,9 @@ struct AVTimedMetaData {
 struct AVAdsChangeEvent {
     int32_t type{0};
     std::string eventId;
-    int64_t startMs{-1};
     int64_t durationMs{-1};
-    int32_t reason{0};
+    int32_t errorCode{0};
+    std::string errorMessage;
 };
 
 class AVDemuxerCallback {

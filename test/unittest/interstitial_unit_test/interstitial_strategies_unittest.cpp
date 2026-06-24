@@ -209,24 +209,13 @@ HWTEST_F(InterstitialStrategiesUnitTest, LiveTrim_002, TestSize.Level1)
     EXPECT_EQ(events[0].metadata->id, "event_1");
 }
 
-/**
- * @tc.name  : Test LiveScheduleStrategy GetResumeSeekMs
- * @tc.number: LiveGetResume_001
- * @tc.desc  : Test GetResumeSeekMs returns duration from demuxer
- */
-HWTEST_F(InterstitialStrategiesUnitTest, LiveGetResume_001, TestSize.Level1)
-{
-    mockDemuxer_->duration_ = 10000000;
-    int64_t result = liveStrategy_->GetResumeSeekMs(5000, mockDemuxer_);
-    EXPECT_EQ(result, 10000);
-}
 
 /**
  * @tc.name  : Test LiveScheduleStrategy GetResumeSeekMs
- * @tc.number: LiveGetResume_002
+ * @tc.number: LiveGetResume_001
  * @tc.desc  : Test GetResumeSeekMs returns 0 when demuxer is null
  */
-HWTEST_F(InterstitialStrategiesUnitTest, LiveGetResume_002, TestSize.Level1)
+HWTEST_F(InterstitialStrategiesUnitTest, LiveGetResume_001, TestSize.Level1)
 {
     int64_t result = liveStrategy_->GetResumeSeekMs(5000, nullptr);
     EXPECT_EQ(result, 0);

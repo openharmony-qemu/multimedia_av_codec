@@ -1227,9 +1227,9 @@ void DemuxerFilter::EnsureInterstitialController()
             auto avEvent = std::make_shared<MediaAVCodec::AVAdsChangeEvent>();
             avEvent->type = static_cast<int32_t>(event.type);
             avEvent->eventId = event.eventId;
-            avEvent->startMs = event.startMs;
             avEvent->durationMs = event.durationMs;
-            avEvent->reason = static_cast<int32_t>(event.reason);
+            avEvent->errorCode = event.errorCode;
+            avEvent->errorMessage = event.errorMessage;
             self->receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ADS_CHANGE, Any(avEvent)});
         });
         if (speedChangeCallback_) {
