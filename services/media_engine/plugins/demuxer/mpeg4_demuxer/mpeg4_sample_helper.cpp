@@ -799,25 +799,13 @@ Status MPEG4SampleHelper::SetSampleSizeParams(uint32_t atomType, int64_t dataOff
     FALSE_RETURN_V_MSG_E(numSampleSizes <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid sample size count");
 
     constexpr uint32_t maxUint32 = std::numeric_limits<uint32_t>::max();
-    uint32_t size = 0;
-    if (atomType == FourccType("stsz")) {
-        if (numSampleSizes > maxUint32 / sizeof(uint32_t)) {
-            return Status::ERROR_INVALID_PARAMETER;
-        }
-        size = numSampleSizes * sizeof(uint32_t);
-    } else {
-        if (fieldSize == 0 || numSampleSizes > maxUint32 / fieldSize) {
-            return Status::ERROR_INVALID_PARAMETER;
-        }
-        uint32_t totalBits = numSampleSizes * fieldSize;
-        size = (totalBits + BYTE_BITS - 1) / BYTE_BITS;
-    }
-    if (dataSize < STSZ_HEAD_LENGTH || (dataSize - STSZ_HEAD_LENGTH) < size) {
-        return Status::ERROR_INVALID_PARAMETER;
-    }
-
-    ret = ProcessSampleSizeData(atomType, currentOffset, size, fieldSize, numSampleSizes);
-    return ret;
+    uint32_t unit = atomType == FourccType("stsz") ? sizeof(uint32_t) : fieldSize;
+    FALSE_RETURN_V_NOLOG(unit > 0 && numSampleSizes <= maxUint32 / unit, Status::ERROR_INVALID_PARAMETER);
+    uint32_t size = atomType == FourccType("stsz")
+        ? numSampleSizes * sizeof(uint32_t)
+        : (numSampleSizes * fieldSize + BYTE_BITS - 1) / BYTE_BITS;
+    FALSE_RETURN_V_NOLOG(dataSize >= STSZ_HEAD_LENGTH && dataSize - STSZ_HEAD_LENGTH >= size, Status::ERROR_UNKNOWN);
+    return ProcessSampleSizeData(atomType, currentOffset, size, fieldSize, numSampleSizes);
 }
 
 Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOffset, size_t dataSize)
@@ -843,39 +831,27 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
 
     uint8_t entryBuffer[4];
     ret = dataReader_->ReadUintData(currentOffset, entryBuffer, sizeof(entryBuffer));
-    if (ret != Status::OK) {
-        return ret;
-    }
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     uint32_t numChunkOffsets = GetU32Value(entryBuffer);
     FALSE_RETURN_V_MSG_E(numChunkOffsets <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid chunk offset count");
     currentOffset += sizeof(uint32_t);
-    if ((atomType == FourccType("co64") && (dataSize - sizeof(uint64_t)) / sizeof(uint64_t) < numChunkOffsets) ||
-        (atomType == FourccType("stco") && (dataSize - sizeof(uint64_t)) / sizeof(uint32_t) < numChunkOffsets)) {
+    uint32_t unit = atomType == FourccType("stco") ? sizeof(uint32_t) : sizeof(uint64_t);
+    if ((dataSize - sizeof(uint64_t)) / unit < numChunkOffsets) {
         return Status::ERROR_UNKNOWN;
     }
 
-    size_t size = atomType == FourccType("stco") ? numChunkOffsets * sizeof(uint32_t) :
-        numChunkOffsets * sizeof(uint64_t);
+    size_t size = numChunkOffsets * unit;
     auto data = std::make_unique<uint8_t[]>(size);
     ret = dataReader_->ReadUintData(currentOffset, data.get(), size);
-    if (ret != Status::OK) {
-        return ret;
-    }
-    currentOffset += static_cast<int64_t>(size);
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     chunkOffsets_.reserve(numChunkOffsets);
 
-    if (atomType == FourccType("stco")) {
-        for (uint32_t i = 0; i < numChunkOffsets; ++i) {
-            uint32_t offset = GetU32Value(data.get() + i * sizeof(uint32_t));
-            chunkOffsets_.emplace_back(static_cast<int64_t>(offset));
-        }
-    } else {
-        for (uint32_t i = 0; i < numChunkOffsets; ++i) {
-            uint64_t offset = GetU64Value(data.get() + i * sizeof(uint64_t));
-            chunkOffsets_.emplace_back(static_cast<int64_t>(offset));
-        }
+    for (uint32_t i = 0; i < numChunkOffsets; ++i) {
+        int64_t offset = atomType == FourccType("stco")
+            ? static_cast<int64_t>(GetU32Value(data.get() + i * sizeof(uint32_t)))
+            : static_cast<int64_t>(GetU64Value(data.get() + i * sizeof(uint64_t)));
+        chunkOffsets_.emplace_back(offset);
     }
-
     return Status::OK;
 }
 

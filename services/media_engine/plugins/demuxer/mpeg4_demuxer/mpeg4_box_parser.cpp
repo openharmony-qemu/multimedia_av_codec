@@ -2003,7 +2003,8 @@ Status MPEG4AtomParser::ParseSampleDescriptionEntry(int32_t depth, ParseContext*
     Status ret = dataReader_->ReadUintData(atomOffset, sampleEntryHeader, sizeof(sampleEntryHeader));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sample entry header failed");
     uint32_t atomSize = GetU32Value(&sampleEntryHeader[0]);
-    FALSE_RETURN_V_MSG_E(atomSize >= sizeof(sampleEntryHeader), Status::ERROR_INVALID_DATA, "Invalid sample entry size");
+    FALSE_RETURN_V_MSG_E(atomSize >= sizeof(sampleEntryHeader), Status::ERROR_INVALID_DATA,
+                         "Invalid sample entry size");
     MPEG4Atom atom {
         .type = static_cast<int32_t>(GetU32Value(&sampleEntryHeader[4])), .size = atomSize,
         .dataSize = atomSize - sizeof(sampleEntryHeader)
