@@ -17,6 +17,7 @@
 #define HISTREAMER_AUDIO_SINK_H
 #include <mutex>
 #include "common/status.h"
+#include "common/event.h"
 #include "dolby_passthrough.h"
 #include "meta/meta.h"
 #include "sink/media_synchronous_sink.h"
@@ -118,6 +119,7 @@ public:
     void SetPCMOutputStatus(bool isEnable);
     void SetPCMProcessorStatus(bool isEnable);
     void SetPCMProcessorMaxLen(int32_t maxProcessedPcmLen);
+    void SetSeekFlag();
 
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
@@ -128,6 +130,7 @@ private:
     int64_t getPendingAudioPlayoutDurationUs(int64_t nowUs);
     int64_t getDurationUsPlayedAtSampleRate(uint32_t numFrames);
     bool CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc);
+    void ReportTrackRenderStart(const std::shared_ptr<AVBuffer>& cacheBuffer);
     void SyncWriteByRenderInfo();
     void UpdateRenderInfo();
     void UpdateAmplitude();
@@ -175,6 +178,8 @@ private:
     std::shared_ptr<AVBuffer> HandlePostProcessingOutput(const std::shared_ptr<AVBuffer> &buffer);
     std::shared_ptr<AVBuffer> CopyPcmBuffer(const std::shared_ptr<AVBuffer> buffer, int32_t minCapacity = 0);
     Status ReleaseDecodedBuffer();
+    void UpdateSeekState(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    void CheckPtsDiscontinuity(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
 
     class UnderrunDetector {
     public:
@@ -353,6 +358,10 @@ private:
     int32_t maxProcessedPcmLen_ {0};
     std::unique_ptr<Task> bypassTask_ {nullptr};
     std::queue<std::shared_ptr<AVBuffer>> decodedBuffers_ {};
+    int64_t lastPtsForDiscontinuity_ {HST_TIME_NONE};
+    std::atomic<bool> seekFlag_ {false};
+    std::atomic<bool> isFirstFrameAfterSeek_ {true};
+    std::atomic<uint64_t> lastRenderedChangeSeqNum_{0};
 };
 }
 }

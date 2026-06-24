@@ -1348,6 +1348,11 @@ void HttpMediaDownloader::DownloadReport()
                 " KByte", static_cast<int32_t>(downloadRate / 1024), remainingBuffer / 1024);
             MediaAVCodec::AVCodecTrace trace("HttpMediaDownloader::DownloadReport, download speed: " +
                 std::to_string(downloadRate) + " bit/s, bufferSize: " + std::to_string(remainingBuffer) + " Byte");
+            auto callback = callback_.lock();
+            if (callback != nullptr) {
+                callback->OnEvent({PluginEventType::LOADING_RATE_CHANGED, {static_cast<uint32_t>(downloadRate)},
+                    "loading rate change"});
+            }
             // Remaining playable time: s
             uint64_t bufferDuration = 0;
             if (readBitrate_ > 0) {

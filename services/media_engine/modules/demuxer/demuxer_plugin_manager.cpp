@@ -148,7 +148,7 @@ bool DemuxerPluginManager::GetPluginName(std::string& pluginName)
     return true;
 }
 
-void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
+void DemuxerPluginManager::InitAudioTrack(const Plugins::StreamInfo& info)
 {
     if (curAudioStreamID_ == -1) {    // 获取第一个音频流
         FALSE_RETURN_MSG(info.streamId >= 0, "Invalid streamId, id = " PUBLIC_LOG_D32, info.streamId);
@@ -178,7 +178,7 @@ void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
     streamInfoMap_[info.streamId].type = AUDIO;
 }
 
-void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
+void DemuxerPluginManager::InitVideoTrack(const Plugins::StreamInfo& info)
 {
     if (curVideoStreamID_ == -1) {
         FALSE_RETURN_MSG(info.streamId >= 0, "Invalid streamId, id = " PUBLIC_LOG_D32, info.streamId);
@@ -195,6 +195,7 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
             format.Set<Tag::VIDEO_IS_HDR_VIVID>(
                 static_cast<uint32_t>(info.videoType == VideoType::VIDEO_TYPE_HDR_VIVID));
         }
+        format.Set<Tag::VIDEO_TYPE>(static_cast<int32_t>(info.videoType));
 		if (info.mimeType.empty()) {
             if (apiVersion_ >= API_VERSION_18) {
                 format.Set<Tag::MIME_TYPE>("video/unknown");
@@ -212,7 +213,7 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
     streamInfoMap_[info.streamId].type = VIDEO;
 }
 
-void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
+void DemuxerPluginManager::InitSubtitleTrack(const Plugins::StreamInfo& info)
 {
     if (curSubTitleStreamID_ == -1) {   // 获取第一个字幕流
         FALSE_RETURN_MSG(info.streamId >= 0, "Invalid streamId, id = " PUBLIC_LOG_D32, info.streamId);
@@ -230,7 +231,7 @@ void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
     streamInfoMap_[info.streamId].sniffSize = info.sniffSize;
 }
 
-Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
+Status DemuxerPluginManager::InitDefaultPlay(const std::vector<Plugins::StreamInfo>& streams)
 {
     MEDIA_LOG_D("InitDefaultPlay Begin");
     curVideoStreamID_ = -1;

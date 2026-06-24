@@ -17,6 +17,7 @@
 #define MEDIA_DEMUXER_H
 
 #include <atomic>
+#include <deque>
 #include <limits>
 #include <string>
 #include <shared_mutex>
@@ -29,6 +30,7 @@
 #include "buffer/avbuffer.h"
 #include "common/media_source.h"
 #include "common/seek_callback.h"
+#include "common/event.h"
 #include "demuxer/type_finder.h"
 #include "demuxer/sample_queue.h"
 #include "demuxer/sample_queue_controller.h"
@@ -45,6 +47,7 @@
 #include "performance_utils.h"
 #include "media_sync_manager.h"
 #include "avcodec_list.h"
+#include "demuxer_types.h"
 
 namespace OHOS {
 namespace Media {
@@ -69,10 +72,49 @@ enum class DemuxerTrackType : int32_t {
     SUBTITLE,
 };
 
-enum class DemuxerCallerType : int32_t {
-    PLAYER = 0,
-    AVMETADATA,
-    TRANSCODER,
+enum MediaChangeReason : int32_t {
+    MEDIA_CHANGE_NETWORK_QUALITY = 1,
+    MEDIA_CHANGE_MANUAL = 2,
+};
+
+enum MediaChangeResult : int32_t {
+    MEDIA_CHANGE_SUCCESS = 0,
+    MEDIA_CHANGE_FAILED = 1,
+};
+
+struct MediaChangeInfo {
+    bool isLocalFd;
+    int32_t streamType;
+    int32_t changeReason;
+    int32_t changeResult;
+    int32_t streamIdBefore;
+    int32_t streamIdAfter;
+    uint32_t bitrateBefore;
+    uint32_t bitrateAfter;
+    int32_t videoWidthBefore;
+    int32_t videoHeightBefore;
+    int32_t videoWidthAfter;
+    int32_t videoHeightAfter;
+    uint32_t videoFrameRateBefore;
+    uint32_t videoFrameRateAfter;
+    uint32_t audioChannelsBefore;
+    uint32_t audioChannelsAfter;
+    uint32_t audioSampleRateBefore;
+    uint32_t audioSampleRateAfter;
+    std::string audioLangBefore;
+    std::string audioLangAfter;
+    std::string subtitleLangBefore;
+    std::string subtitleLangAfter;
+    std::string audioMimeTypeBefore;
+    std::string audioMimeTypeAfter;
+    std::string videoMimeTypeBefore;
+    std::string videoMimeTypeAfter;
+    int32_t videoTypeBefore;
+    int32_t videoTypeAfter;
+    std::string codecsBefore;
+    std::string codecsAfter;
+    std::string originCodecsBefore;
+    std::string originCodecsAfter;
 };
 
 class MediaDemuxer : public std::enable_shared_from_this<MediaDemuxer>,
@@ -191,6 +233,7 @@ public:
     void SetEnableOnlineFdCache(bool isEnableFdCache);
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
+    int32_t GetCurrentAudioTrackId();
     int32_t GetTargetVideoTrackId(std::vector<std::shared_ptr<Meta>> trackInfos);
     void SetIsEnableReselectVideoTrack(bool isEnable);
     void SetApiVersion(int32_t apiVersion);
@@ -230,6 +273,7 @@ public:
     Status SetPlayStrategy(const std::shared_ptr<PlayStrategy> playStrategy);
     bool IsCloudFd();
     void SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList> &codecList);
+    void OnNewTrackRender(uint64_t renderSeqNum);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -237,6 +281,64 @@ private:
     struct MediaMetaData {
         std::vector<std::shared_ptr<Meta>> trackMetas;
         std::shared_ptr<Meta> globalMeta;
+    };
+
+    struct MediaChangeParams {
+        bool isLocalFd = false;
+        int32_t trackIdBefore = -1;
+        int32_t trackIdAfter = -1;
+        int32_t streamIdBefore = -1;
+        int32_t streamIdAfter = -1;
+        MediaStreamType streamType = MEDIA_STREAM_TYPE_VIDEO;
+        MediaChangeReason reason = MEDIA_CHANGE_MANUAL;
+        int32_t videoTrackIdBefore = -1;
+        int32_t videoTrackIdAfter = -1;
+        int32_t audioTrackIdBefore = -1;
+        int32_t audioTrackIdAfter = -1;
+        int32_t subtitleTrackIdBefore = -1;
+        int32_t subtitleTrackIdAfter = -1;
+    };
+
+    struct MediaChangeRecord {
+        uint64_t changeSeqNum = 0;
+        
+        bool isLocalFd = false;
+        int32_t trackIdBefore = -1;
+        int32_t trackIdAfter = -1;
+        int32_t streamIdBefore = -1;
+        int32_t streamIdAfter = -1;
+        bool isStreamIdChange = false;
+        
+        int32_t streamType = 0;
+        MediaChangeReason changeReason;
+        bool hasReported = false;
+        
+        uint32_t bitrateBefore = 0;
+        uint32_t bitrateAfter = 0;
+        int32_t videoWidthBefore = 0;
+        int32_t videoWidthAfter = 0;
+        int32_t videoHeightBefore = 0;
+        int32_t videoHeightAfter = 0;
+        uint32_t videoFrameRateBefore = 0;
+        uint32_t videoFrameRateAfter = 0;
+        uint32_t audioChannelsBefore = 0;
+        uint32_t audioChannelsAfter = 0;
+        uint32_t audioSampleRateBefore = 0;
+        uint32_t audioSampleRateAfter = 0;
+        std::string audioLangBefore;
+        std::string audioLangAfter;
+        std::string subtitleLangBefore;
+        std::string subtitleLangAfter;
+        std::string audioMimeTypeBefore;
+        std::string audioMimeTypeAfter;
+        std::string videoMimeTypeBefore;
+        std::string videoMimeTypeAfter;
+        std::string codecsBefore;
+        std::string codecsAfter;
+        std::string originCodecsBefore;
+        std::string originCodecsAfter;
+        int32_t videoTypeBefore = 0;
+        int32_t videoTypeAfter = 0;
     };
 
     struct MaintainBaseInfo {
@@ -327,6 +429,7 @@ private:
 
     bool IsLangMatch(const std::string& lang, OHOS::Media::MediaType mediaType);
     void AutoSelectTrackByBitrate(int32_t trackId, bool isSelectHigherBitrate = false);
+
     Plugins::Seekable seekable_;
     Plugins::Seekable subSeekable_;
     std::string uri_;
@@ -354,6 +457,7 @@ private:
     void TryReclaimParserTask();
 
     Status HandleSelectTrack(int32_t trackId);
+    void RecordLocalFdMediaChange(int32_t trackId, int32_t curTrackId, TrackType trackType, MediaStreamType streamType);
     Status HandleSegmentMediaSelectTrack(int32_t trackId);
     void ReportTrackChangeEvent(int32_t trackId);
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
@@ -447,6 +551,7 @@ private:
     Status HandleSelectSubtitleStream(int64_t seekTime, Plugins::SeekMode mode, int32_t streamId);
     void ResetAfterSeek(Status ret);
     void OnEventStream(const Plugins::PluginEvent &event);
+    void HandleSignificantBitrateChange(uint32_t prevBitRate, uint32_t newBitRate);
     int64_t GetCurrentTimeMs();
     void UpdateTrackMap();
     bool IsNeedPreDownload() const;
@@ -469,6 +574,7 @@ private:
         std::shared_ptr<AVBuffer>& dstBuffer, sptr<AVBufferQueueProducer>& bufferQueue);
     Status PushBufferBySlices(int32_t trackId, std::shared_ptr<SampleQueue>& sampleQueue,
         std::shared_ptr<AVBuffer>& dstBuffer, sptr<AVBufferQueueProducer>& bufferQueue);
+    void ReportMediaChangedFailedEvent();
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -634,6 +740,7 @@ private:
     std::atomic<bool> isAutoSelect_ {true};
     std::atomic<bool> isForceAutoSelect_ {false};
     std::atomic<uint32_t> curDownloadBitRate_ {0};
+    std::atomic<uint32_t> prevBitRate_ {0};
     std::atomic<uint32_t> lastSwitchDownloadRate_ {0};
     std::string defaultAudioLang_ {};
     std::string defaultSubtitleLang_ {};
@@ -651,6 +758,63 @@ private:
     std::shared_ptr<MediaAVCodec::AVCodecList> codecList_ {nullptr};
     std::unique_ptr<FilteredStreamMap> filteredStreamMap_;
     int64_t videoAudioBasePtsDiff = -1;
+
+    std::deque<MediaChangeRecord> mediaChangeHistory_;
+    std::atomic<uint64_t> mediaChangeSeqNum_{0};
+    std::atomic<uint64_t> activeChangeSeqNum_{0};
+    uint64_t lastReportedSeqNum_{0};
+    int32_t lastReportedStreamId_{-1};
+    int32_t lastReportedTrackId_{-1};
+    uint32_t lastReportedBitrate_{0};
+    int32_t lastReportedVideoWidth_{0};
+    int32_t lastReportedVideoHeight_{0};
+    uint32_t lastReportedVideoFrameRate_{0};
+    uint32_t lastReportedAudioChannels_{0};
+    uint32_t lastReportedAudioSampleRate_{0};
+    std::string lastReportedCodecs_;
+    std::string lastReportedOriginCodecs_;
+    int32_t lastReportedVideoType_{0};
+    
+    void RecordMediaChange(const MediaChangeParams& params);
+    bool IsBackToOriginalStream(const MediaChangeRecord& firstRecord, const MediaChangeRecord& lastRecord);
+    bool CheckParameterChange(const MediaChangeRecord& firstRecord, const MediaChangeRecord& lastRecord);
+    void ProcessHistoryOnSeek();
+    void RemoveUnreportedRecords();
+    void CleanUpReportedRecords();
+    void ClearMediaChangeHistory();
+    void UpdateLastReportedState(const MediaChangeRecord& record);
+    
+private:
+    std::deque<MediaChangeRecord>::iterator GetLatestUnreportedRecord();
+    void FillChangeInfoFromRecord(MediaChangeInfo& changeInfo, const MediaChangeRecord& record,
+        bool isFailed = false);
+    void FillChangeInfo(MediaChangeInfo& changeInfo, const MediaChangeRecord& record, bool isFailed, bool isLocalFd);
+    void FillChangeInfoCommon(MediaChangeInfo& changeInfo, const MediaChangeRecord& record, bool isFailed);
+    void FillRecordFromStream(MediaChangeRecord& record, int32_t streamIdBefore, int32_t streamIdAfter);
+    void FillRecordBeforeFromLastReported(MediaChangeRecord& record);
+    void FillRecordAfterFromRecord(MediaChangeRecord& record, const MediaChangeRecord& source);
+    void FillVideoParamsFromVideoTrack(MediaChangeRecord& record, int32_t videoTrackIdBefore,
+        int32_t videoTrackIdAfter);
+    void FillSubtitleParamsFromSubtitleTrack(MediaChangeRecord& record, int32_t subtitleTrackIdBefore,
+        int32_t subtitleTrackIdAfter);
+    void FillAudioParamsFromAudioTrack(MediaChangeRecord& record, int32_t audioTrackIdBefore,
+        int32_t audioTrackIdAfter);
+    void FillVideoParamsFromVideoStream(MediaChangeRecord& record);
+    void FillSubtitleParamsFromSubtitleStream(MediaChangeRecord& record);
+    void FillAudioParamsFromAudioStream(MediaChangeRecord& record);
+    void TrimHistorySize();
+    
+    void RecordSelectTrackMediaChange(int32_t curTrackId, int32_t trackId, int32_t currentStreamID,
+        int32_t targetStreamID, MediaStreamType streamType);
+    
+    MediaStreamType GetDashChangeStreamType(DemuxerTrackType trackType);
+    
+    void RecordSelectBitRateMediaChange(uint32_t bitRate, bool isAutoSelect);
+    void AdjustMediaChangeRecords(int32_t currentStreamID, int32_t newStreamID);
+    uint64_t FindActiveChangeSeqNum(int32_t newStreamID);
+    
+    int32_t GetInnerTrackId(int32_t trackId);
+    void TagSampleWithLatestChange(std::shared_ptr<AVBuffer> sample, int32_t trackId);
 };
 } // namespace Media
 } // namespace OHOS

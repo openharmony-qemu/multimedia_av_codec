@@ -137,6 +137,7 @@ public:
     Status SkipCurrentAdsMediaSource();
     using SpeedChangeCallback = std::function<void(float speed)>;
     void SetSpeedChangeCallback(SpeedChangeCallback cb);
+    int32_t GetCurrentAudioTrackId();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);
@@ -154,6 +155,7 @@ public:
     Status NotifyResumeUnMute();
     std::shared_ptr<Meta> GetGlobalInfo();
     bool IsMimeInDolbyList(const std::string& mime);
+    void OnNewTrackRender(uint64_t renderSeqNum);
     bool IsBuffering();
     void SetTrackSelectionFilter(TrackSelectionFilter &filter);
     Status SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy);

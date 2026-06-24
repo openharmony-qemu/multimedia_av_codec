@@ -134,6 +134,9 @@ VideoDecoderAdapter::~VideoDecoderAdapter()
         MEDIA_LOG_I("Clear dtsQue_, currrent size: " PUBLIC_LOG_U64, static_cast<uint64_t>(inputBufferDtsQue_.size()));
         inputBufferDtsQue_.clear();
     }
+    if (!ptsToMediaChangeMetaMap_.empty()) {
+        ptsToMediaChangeMetaMap_.clear();
+    }
 }
 
 Status VideoDecoderAdapter::Init(MediaAVCodec::AVCodecType type, bool isMimeType, const std::string &name)
@@ -248,6 +251,9 @@ Status VideoDecoderAdapter::Flush()
                 static_cast<uint64_t>(inputBufferDtsQue_.size()));
             inputBufferDtsQue_.clear();
         }
+        if (!ptsToMediaChangeMetaMap_.empty()) {
+            ptsToMediaChangeMetaMap_.clear();
+        }
     }
     MEDIA_LOG_I_SHORT("Flush end.");
     return ret == AVCodecServiceErrCode::AVCS_ERR_OK ? Status::OK : Status::ERROR_INVALID_STATE;
@@ -358,6 +364,7 @@ void VideoDecoderAdapter::AquireAvailableInputBuffer()
             isRenderStarted_ = true;
         }
         RecordTimeStamp(*tmpBuffer, StallingStage::DECODER_START);
+        RecordMediaChangeMeta(tmpBuffer);
         int32_t ret = mediaCodec_->QueueInputBuffer(index);
         if (ret != ERR_OK) {
             MEDIA_LOG_E("QueueInputBuffer failed, index: %{public}u,  bufferid: %{public}" PRIu64
@@ -386,6 +393,30 @@ void VideoDecoderAdapter::GetInputBufferDts(std::shared_ptr<AVBuffer> &inputBuff
         inputBuffer->dts_, static_cast<uint64_t>(inputBufferDtsQue_.size()));
 }
 
+void VideoDecoderAdapter::RecordMediaChangeMeta(const std::shared_ptr<AVBuffer> &inputBuffer)
+{
+    FALSE_RETURN_MSG(inputBuffer != nullptr && inputBuffer->meta_ != nullptr, "inputBuffer or meta is nullptr.");
+    uint64_t mediaChangeSeq = 0;
+    int32_t mediaChangeStreamType = -1;
+    inputBuffer->meta_->GetData(Tag::MEDIA_CHANGE_SEQ, mediaChangeSeq);
+    inputBuffer->meta_->GetData(Tag::MEDIA_CHANGE_STREAM_TYPE, mediaChangeStreamType);
+    if (mediaChangeSeq <= 0) {
+        return;
+    }
+    std::unique_lock<std::mutex> lock(dtsQueMutex_);
+    size_t mapMaxSize = 50;
+    if (ptsToMediaChangeMetaMap_.size() > mapMaxSize) {
+        MEDIA_LOG_D("ptsToMediaChangeMetaMap_ size is over 50, remove oldest pts: " PUBLIC_LOG_D64,
+            ptsToMediaChangeMetaMap_.begin()->first);
+        ptsToMediaChangeMetaMap_.erase(ptsToMediaChangeMetaMap_.begin());
+    }
+    ptsToMediaChangeMetaMap_[inputBuffer->pts_] = {mediaChangeSeq, mediaChangeStreamType};
+    MEDIA_LOG_D("Record mediaChangeMeta pts: " PUBLIC_LOG_D64 ", seq: " PUBLIC_LOG_U64
+        ", streamType: " PUBLIC_LOG_D32 ", map size: " PUBLIC_LOG_U64,
+        inputBuffer->pts_, mediaChangeSeq, mediaChangeStreamType,
+        static_cast<uint64_t>(ptsToMediaChangeMetaMap_.size()));
+}
+
 void VideoDecoderAdapter::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBuffer)
 {
     FALSE_RETURN_MSG(outputBuffer != nullptr, "outputBuffer is nullptr.");
@@ -398,6 +429,39 @@ void VideoDecoderAdapter::SetOutputBufferPts(std::shared_ptr<AVBuffer> &outputBu
     } else {
         MEDIA_LOG_W("DtsQue_ is empty.");
         outputBuffer->pts_ = outputBuffer->dts_;
+    }
+}
+
+void VideoDecoderAdapter::SetOutputBufferMediaChangeMeta(std::shared_ptr<AVBuffer> &outputBuffer)
+{
+    FALSE_RETURN_MSG(outputBuffer != nullptr && outputBuffer->meta_ != nullptr, "outputBuffer or meta is nullptr.");
+    if (outputBuffer->pts_ < 0) {
+        MEDIA_LOG_D("SetOutputBufferMediaChangeMeta skip invalid pts: " PUBLIC_LOG_D64, outputBuffer->pts_);
+        return;
+    }
+    std::unique_lock<std::mutex> lock(dtsQueMutex_);
+    auto it = ptsToMediaChangeMetaMap_.find(outputBuffer->pts_);
+    if (it != ptsToMediaChangeMetaMap_.end()) {
+        uint64_t mediaChangeSeq = it->second.first;
+        int32_t mediaChangeStreamType = it->second.second;
+        if (mediaChangeSeq > 0) {
+            outputBuffer->meta_->SetData(Tag::MEDIA_CHANGE_SEQ, mediaChangeSeq);
+            outputBuffer->meta_->SetData(Tag::MEDIA_CHANGE_STREAM_TYPE, mediaChangeStreamType);
+            MEDIA_LOG_D("SetOutputBufferMediaChangeMeta pts: " PUBLIC_LOG_D64
+                ", seq: " PUBLIC_LOG_U64 ", streamType: " PUBLIC_LOG_D32,
+                outputBuffer->pts_, mediaChangeSeq, mediaChangeStreamType);
+        }
+        ptsToMediaChangeMetaMap_.erase(it);
+    } else {
+        MEDIA_LOG_D("SetOutputBufferMediaChangeMeta pts: " PUBLIC_LOG_D64 " not found in map",
+            outputBuffer->pts_);
+    }
+    auto upperBound = ptsToMediaChangeMetaMap_.lower_bound(outputBuffer->pts_);
+    if (upperBound != ptsToMediaChangeMetaMap_.begin()) {
+        size_t cleanCount = std::distance(ptsToMediaChangeMetaMap_.begin(), upperBound);
+        MEDIA_LOG_D("Clean stale metadata before pts " PUBLIC_LOG_D64 ", count: " PUBLIC_LOG_U64,
+            outputBuffer->pts_, static_cast<uint64_t>(cleanCount));
+        ptsToMediaChangeMetaMap_.erase(ptsToMediaChangeMetaMap_.begin(), upperBound);
     }
 }
 
@@ -460,6 +524,7 @@ void VideoDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_pt
     if (ptsManagedFileTypes.find(static_cast<FileType>(fileType_)) != ptsManagedFileTypes.end()) {
         SetOutputBufferPts(buffer);
     }
+    SetOutputBufferMediaChangeMeta(buffer);
     FALSE_RETURN_MSG(callback_ != nullptr, "callback_ is nullptr");
     callback_->OnOutputBufferAvailable(index, buffer);
 }

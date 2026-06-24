@@ -1692,6 +1692,8 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
     if (callback != nullptr) {
         callback->OnEvent({PluginEventType::NETWORK_BITRATE_CHANGED, {bitRate},
             "network bitrate change"});
+        callback->OnEvent({PluginEventType::LOADING_RATE_CHANGED, {bitRate},
+            "loading rate change"});
     }
 }
 

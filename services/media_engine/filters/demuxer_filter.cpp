@@ -24,6 +24,7 @@
 #include "common/log.h"
 #include "osal/task/autolock.h"
 #include "common/media_core.h"
+#include "common/event.h"
 #include "demuxer_filter.h"
 #include "media_types.h"
 #include "avcodec_sysevent.h"
@@ -167,6 +168,7 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
         std::make_shared<DemuxerFilterDrmCallback>(shared_from_this());
     demuxer_->SetDrmCallback(drmCallback);
+    
     demuxer_->SetEventReceiver(receiver);
     demuxer_->SetPlayerId(groupId_);
     if (interruptMonitor_) {
@@ -350,6 +352,13 @@ bool DemuxerFilter::IsMimeInDolbyList(const std::string& mime)
         dolbyList_.assign(rawList.begin(), rawList.end());
     }
     return std::find(dolbyList_.begin(), dolbyList_.end(), mime) != dolbyList_.end();
+}
+
+void DemuxerFilter::OnNewTrackRender(uint64_t renderSeqNum)
+{
+    if (demuxer_ != nullptr) {
+        demuxer_->OnNewTrackRender(renderSeqNum);
+    }
 }
 
 Status DemuxerFilter::FaultDemuxerEventInfoWrite(StreamType& streamType)
@@ -1115,6 +1124,12 @@ int32_t DemuxerFilter::GetCurrentVideoTrackId()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, -1, "demuxer_ is nullptr");
     return demuxer_->GetCurrentVideoTrackId();
+}
+
+int32_t DemuxerFilter::GetCurrentAudioTrackId()
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, -1, "demuxer_ is nullptr");
+    return demuxer_->GetCurrentAudioTrackId();
 }
 
 void DemuxerFilter::SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart)

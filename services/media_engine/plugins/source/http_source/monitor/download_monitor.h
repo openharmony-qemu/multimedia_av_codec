@@ -36,6 +36,13 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+enum LoadingRequestStage : int32_t {
+    LOADING_STAGE_CONNECTION = 0,
+    LOADING_STAGE_PLAYLIST = 1,
+    LOADING_STAGE_MEDIA_DATA = 2,
+};
+
 struct RetryRequest {
     std::shared_ptr<DownloadRequest> request;
     std::function<void()> function;
@@ -106,10 +113,14 @@ private:
     int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);
     bool NeedRetry(const std::shared_ptr<DownloadRequest>& request);
+    void ReportErrorAndClose(const std::shared_ptr<DownloadRequest>& request,
+        int32_t clientError, int32_t serverError);
+    bool CheckRetryLimitReached(int32_t clientError, int32_t retryTimes);
     void NotifyError(int32_t clientErrorCode, int32_t serverErrorCode);
+    void ReportLoadingErrorEvent(const std::shared_ptr<DownloadRequest>& request,
+        int32_t clientErrorCode, int32_t serverErrorCode);
     void GetServerMediaServiceErrorCode(int32_t errorCode, int32_t& serverCode);
     void GetClientMediaServiceErrorCode(int32_t errorCode, int32_t& clientCode);
-    void ReportLoadingErrorEvent();
 
     std::atomic<bool> isClosed_{false};
     std::shared_ptr<MediaDownloader> downloader_;
@@ -121,6 +132,7 @@ private:
     Mutex taskMutex_ {};
     uint64_t haveReadData_ {0};
     bool isNeedClearBuffer_ {false};
+    std::atomic<bool> isFirstRequest_ {true};
 
     std::map<int32_t, MediaServiceErrCode> clientErrorCodeMap_ = {
         {-6, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},

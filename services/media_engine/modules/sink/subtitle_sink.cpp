@@ -372,6 +372,21 @@ int64_t SubtitleSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer> &
 
 void SubtitleSink::NotifyRender(SubtitleInfo &subtitleInfo)
 {
+    if (subtitleInfo.buffer_ != nullptr && subtitleInfo.buffer_->meta_ != nullptr) {
+        uint64_t frameChangeSeq = 0;
+        int32_t frameStreamType = -1;
+        subtitleInfo.buffer_->meta_->GetData(Tag::MEDIA_CHANGE_SEQ, frameChangeSeq);
+        subtitleInfo.buffer_->meta_->GetData(Tag::MEDIA_CHANGE_STREAM_TYPE, frameStreamType);
+        if (frameChangeSeq > 0 && frameChangeSeq > lastRenderedChangeSeqNum_.load()) {
+            lastRenderedChangeSeqNum_.store(frameChangeSeq);
+            if (playerEventReceiver_ != nullptr &&
+                (frameStreamType == MEDIA_STREAM_TYPE_SUBTITLE || frameStreamType == MEDIA_STREAM_TYPE_MIXED)) {
+                playerEventReceiver_->OnDfxEvent({"subtitle_sink",
+                    DfxEventType::DFX_EVENT_NEW_TRACK_RENDER_START, frameChangeSeq});
+            }
+        }
+    }
+    
     Format format;
     (void)format.PutStringValue(Tag::SUBTITLE_TEXT, subtitleInfo.text_);
     (void)format.PutIntValue(Tag::SUBTITLE_PTS, Plugins::Us2Ms(subtitleInfo.pts_));

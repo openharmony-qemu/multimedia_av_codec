@@ -617,6 +617,8 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
                 if (callback != nullptr) {
                     callback->OnEvent({PluginEventType::NETWORK_BITRATE_CHANGED, {downloadSpeed},
                         "network bitrate change"});
+                    callback->OnEvent({PluginEventType::LOADING_RATE_CHANGED, {downloadSpeed},
+                        "loading rate change"});
                 }
             }
             if (segmentDownloader != nullptr && !segmentDownloader->IsAllSegmentFinished() &&

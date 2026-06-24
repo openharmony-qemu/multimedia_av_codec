@@ -351,6 +351,13 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     OnMediaDemuxerEvent(event);
 }
 
+void Source::OnDfxEvent(const Plugins::PluginDfxEvent& event)
+{
+    MEDIA_LOG_D("OnDfxEvent");
+    FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
+    mediaDemuxerCallback_->OnDfxEvent(event);
+}
+
 void Source::OnMediaDemuxerEvent(const Plugins::PluginEvent& event)
 {
     FALSE_RETURN_MSG(mediaDemuxerCallback_ != nullptr, "mediaDemuxerCallback is nullptr");
@@ -384,7 +391,8 @@ void Source::OnMediaDemuxerEvent(const Plugins::PluginEvent& event)
     } else if (event.type == PluginEventType::HLS_SEEK_READY) {
         MEDIA_LOG_D("Onevent hls seek ready.");
         mediaDemuxerCallback_->OnEvent(event);
-    } else if (event.type == PluginEventType::STREAM_UPDATE || event.type == PluginEventType::NETWORK_BITRATE_CHANGED) {
+    } else if (event.type == PluginEventType::STREAM_UPDATE || event.type == PluginEventType::NETWORK_BITRATE_CHANGED ||
+        event.type == PluginEventType::LOADING_RATE_CHANGED) {
         MEDIA_LOG_D("Onevent stream update or network bitrate change.");
         mediaDemuxerCallback_->OnEvent(event);
     } else if (event.type == PluginEventType::SOURCE_TIMED_METADATA) {
