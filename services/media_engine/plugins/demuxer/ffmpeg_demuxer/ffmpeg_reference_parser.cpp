@@ -90,8 +90,8 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
     }
     FALSE_RETURN_MSG(GetPresentationTimeUsFromFfmpegMOV(
         GET_ALL_FRAME_PTS, parserRefIdx_, 0, 0) == Status::OK, "get all frame pts failed.");
-    MEDIA_LOG_I("Success parse, minPts:" PUBLIC_LOG_D64 ", IFramePos size: " PUBLIC_LOG_ZU,
-        minPts_, IFramePos_.size());
+    MEDIA_LOG_I("Success parse, minPts:" PUBLIC_LOG_D64  ", dtsOffsetUs: " PUBLIC_LOG_D64
+        ", IFramePos size: " PUBLIC_LOG_ZU, minPts_, dtsOffsetUs_, IFramePos_.size());
 }
 
 AVStream *FFmpegDemuxerPlugin::GetVideoStream()
@@ -457,8 +457,7 @@ Status FFmpegDemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0,
         Status::ERROR_NULL_POINTER, "AVStream->stts_data is empty");
-    // External relative time -> internal absolute time
-    int64_t pts = seekMs * 1000 + minPts_;
+    int64_t pts = seekMs * 1000 + minPts_; // 1000 for ms to us
     auto iter = pts2DtsMap_.upper_bound(pts);
     if (iter != pts2DtsMap_.begin()) {
         --iter;
@@ -475,7 +474,6 @@ Status FFmpegDemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
     AVStream *st = formatContext_->streams[parserRefIdx_];
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     int64_t ffTimeDts = CalculateTimeByFrameIndex(st, static_cast<int32_t>(frameId));
-    // Raw physical DTS -> framework DTS (add offset for Map matching)
     int64_t rawDtsUs = AvTime2Us(ConvertTimeFromFFmpeg(ffTimeDts, st->time_base));
     int64_t frameworkDtsUs = rawDtsUs + dtsOffsetUs_;
 
@@ -527,10 +525,7 @@ int64_t FFmpegDemuxerPlugin::CalculateGlobalOffset(const AVStream* avStream, int
     } else if (avStream->start_time != AV_NOPTS_VALUE) {
         globalOffset = avStream->start_time - rawFirstPts;
         MEDIA_LOG_I("globalOffset from start_time: " PUBLIC_LOG_D64, globalOffset);
-    } else {
-        MEDIA_LOG_I("globalOffset fallback to 0");
     }
-
     dtsOffsetUs_ = AvTime2Us(ConvertTimeFromFFmpeg(globalOffset, avStream->time_base));
     return globalOffset;
 }

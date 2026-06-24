@@ -3483,9 +3483,9 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
 {
     uint32_t sttsIdx = 0;
     uint32_t cttsIdx = 0;
-    ptsCnt_ = 0;
     int64_t pts = 0; // init pts
     int64_t dts = 0; // init dts
+    ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIdx].count);
     int32_t cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIdx].count);
     int64_t globalOffset = CalculateGlobalOffset(avStream,
@@ -3570,11 +3570,6 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
 {
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
-    MEDIA_LOG_I("GetPresentationTimeUsFromFfmpegMOV: trackIndex=" PUBLIC_LOG_U32
-        ", hasCtts=" PUBLIC_LOG_D32 ", time_scale=" PUBLIC_LOG_D32
-        ", start_time=" PUBLIC_LOG_D64 ", stts_count=" PUBLIC_LOG_U32,
-        trackIndex, static_cast<int32_t>(avStream->ctts_data != nullptr),
-        static_cast<int32_t>(avStream->time_scale), avStream->start_time, avStream->stts_count);
     FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0,
         Status::ERROR_NULL_POINTER, "AVStream->stts_data is empty");
     FALSE_RETURN_V_MSG_E(avStream->time_scale != 0, Status::ERROR_INVALID_DATA, "AVStream->time_scale is zero");
@@ -3599,8 +3594,7 @@ void FFmpegDemuxerPlugin::PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode
         case GET_ALL_FRAME_PTS:
             if (pts2DtsMap_.empty()) {
                 minPts_ = pts;
-                MEDIA_LOG_D("SwitchProcess first frame: minPts_=" PUBLIC_LOG_D64
-                    ", pts=" PUBLIC_LOG_D64 ", dts=" PUBLIC_LOG_D64, minPts_, pts, dts);
+                MEDIA_LOG_I("SwitchProcess first frame: pts=" PUBLIC_LOG_D64 ", dts=" PUBLIC_LOG_D64, pts, dts);
             }
             MEDIA_LOG_D("dts " PUBLIC_LOG_D64 ", pts " PUBLIC_LOG_D64 ", frameId " PUBLIC_LOG_ZU,
                 dts, pts, pts2DtsMap_.size());
@@ -3827,15 +3821,9 @@ void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
         !FFmpegFormatHelper::IsMpeg4File(fileType_) && pkt->pts != AV_NOPTS_VALUE && pkt->pts < minTsPktInfo_.minPts) {
         minTsPktInfo_.streamIndex = pkt->stream_index;
         minTsPktInfo_.minPts = pkt->pts;
-        MEDIA_LOG_D("UpdMinTsPacketInfo update minPts: streamIndex=" PUBLIC_LOG_D32
-            ", minPts=" PUBLIC_LOG_D64 ", pkt->pts=" PUBLIC_LOG_D64,
-            minTsPktInfo_.streamIndex, minTsPktInfo_.minPts, pkt->pts);
     } else if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < minTsPktInfo_.minDts) {
         minTsPktInfo_.streamIndex = pkt->stream_index;
         minTsPktInfo_.minDts = pkt->dts;
-        MEDIA_LOG_D("UpdMinTsPacketInfo update minDts: streamIndex=" PUBLIC_LOG_D32
-            ", minDts=" PUBLIC_LOG_D64 ", pkt->dts=" PUBLIC_LOG_D64,
-            minTsPktInfo_.streamIndex, minTsPktInfo_.minDts, pkt->dts);
     }
 }
 

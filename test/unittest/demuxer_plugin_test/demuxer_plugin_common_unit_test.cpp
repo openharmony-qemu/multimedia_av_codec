@@ -1917,3 +1917,129 @@ HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_LimitedProbe_Supplement_061337, TestSi
     AvReadFrameMockReset();
     AvReadFrameMockLogEnable(0);
 }
+
+// ==================== RecordTrackMinTs Tests ====================
+
+HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_null_pkt_062400, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    plugin->RecordTrackMinTs(nullptr);
+    EXPECT_TRUE(plugin->trackMinPtsMap_.empty());
+    EXPECT_TRUE(plugin->trackMinDtsMap_.empty());
+}
+
+HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_records_pts_dts_062401, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    AVPacket* pkt = av_packet_alloc();
+    ASSERT_NE(pkt, nullptr);
+    pkt->pts = 1000;
+    pkt->dts = 900;
+    pkt->stream_index = 0;
+    plugin->RecordTrackMinTs(pkt);
+    EXPECT_EQ(plugin->trackMinPtsMap_[0], 1000);
+    EXPECT_EQ(plugin->trackMinDtsMap_[0], 900);
+    av_packet_free(&pkt);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_updates_smaller_only_062402, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    AVPacket* pkt = av_packet_alloc();
+    ASSERT_NE(pkt, nullptr);
+    pkt->stream_index = 0;
+    pkt->pts = 1000;
+    pkt->dts = 900;
+    plugin->RecordTrackMinTs(pkt);
+    pkt->pts = 500;
+    pkt->dts = 800;
+    plugin->RecordTrackMinTs(pkt);
+    EXPECT_EQ(plugin->trackMinPtsMap_[0], 500);
+    EXPECT_EQ(plugin->trackMinDtsMap_[0], 800);
+    pkt->pts = 1500;
+    pkt->dts = 1200;
+    plugin->RecordTrackMinTs(pkt);
+    EXPECT_EQ(plugin->trackMinPtsMap_[0], 500);
+    EXPECT_EQ(plugin->trackMinDtsMap_[0], 800);
+    av_packet_free(&pkt);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_multi_track_062403, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    AVPacket* pkt = av_packet_alloc();
+    ASSERT_NE(pkt, nullptr);
+    pkt->pts = 100;
+    pkt->dts = 80;
+    pkt->stream_index = 0;
+    plugin->RecordTrackMinTs(pkt);
+    pkt->pts = 200;
+    pkt->dts = 150;
+    pkt->stream_index = 1;
+    plugin->RecordTrackMinTs(pkt);
+    EXPECT_EQ(plugin->trackMinPtsMap_[0], 100);
+    EXPECT_EQ(plugin->trackMinPtsMap_[1], 200);
+    EXPECT_EQ(plugin->trackMinDtsMap_[0], 80);
+    EXPECT_EQ(plugin->trackMinDtsMap_[1], 150);
+    av_packet_free(&pkt);
+}
+
+// ==================== CalculateGlobalOffset Tests ====================
+
+HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_mapHit_062404, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mp4";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
+    auto avStream = demuxerPlugin_->formatContext_->streams[0];
+    ASSERT_NE(avStream, nullptr);
+    int64_t mapMinPts = demuxerPlugin_->trackMinPtsMap_[0];
+    int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
+    EXPECT_EQ(globalOffset, mapMinPts);
+    EXPECT_GT(demuxerPlugin_->dtsOffsetUs_, 0);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_startTime_fallback_062405, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mp4";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
+    auto avStream = demuxerPlugin_->formatContext_->streams[0];
+    ASSERT_NE(avStream, nullptr);
+    demuxerPlugin_->trackMinPtsMap_.clear();
+    int64_t startTime = avStream->start_time;
+    int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
+    EXPECT_EQ(globalOffset, startTime);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_zero_fallback_062406, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mp4";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
+    auto avStream = demuxerPlugin_->formatContext_->streams[0];
+    ASSERT_NE(avStream, nullptr);
+    demuxerPlugin_->trackMinPtsMap_.clear();
+    int64_t savedStartTime = avStream->start_time;
+    avStream->start_time = AV_NOPTS_VALUE;
+    int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
+    EXPECT_EQ(globalOffset, 0);
+    EXPECT_EQ(demuxerPlugin_->dtsOffsetUs_, 0);
+    avStream->start_time = savedStartTime;
+}
