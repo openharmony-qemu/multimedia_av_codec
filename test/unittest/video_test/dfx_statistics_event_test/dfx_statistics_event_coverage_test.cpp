@@ -282,14 +282,14 @@ HWTEST_F(TEST_SUIT, OnSummateEventInfo_NoCodecType_001, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, OnSummateEventInfo_VideoCodecSpecInfo_AllTypes_001, TestSize.Level1)
 {
-    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_sw_dec_test");
-    meta->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_SOFTWARE));
-    meta->SetData(Tag::MIME_TYPE, "video/av01");
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta);
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_sw_dec_test");
+    meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::DECODER_SOFTWARE));
+    meta_->SetData(Tag::MIME_TYPE, "video/av01");
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
 
-    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_sw_enc_test");
-    meta->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
-    meta->SetData(Tag::MIME_TYPE, "video/av01");
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "video_sw_enc_test");
+    meta_->SetData("VIDEO_CODEC_TYPE", static_cast<int32_t>(VideoCodecType::ENCODER_SOFTWARE));
+    meta_->SetData(Tag::MIME_TYPE, "video/av01");
     SubmitEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO);
 }
 
@@ -1195,7 +1195,7 @@ HWTEST_F(TEST_SUIT, CodecErrorInfo_OnSummate_MixedScenarios_001, TestSize.Level1
                    static_cast<int32_t>(VideoCodecType::DECODER_HARDWARE));
     meta_->SetData(Media::Tag::MIME_TYPE, "video/avc");
     meta_->SetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), static_cast<int32_t>(-1001));
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_->);
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::CODEC_ERROR_INFO, *meta_);
 
     meta_->SetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),
                    static_cast<int32_t>(VideoCodecType::ENCODER_HARDWARE));
