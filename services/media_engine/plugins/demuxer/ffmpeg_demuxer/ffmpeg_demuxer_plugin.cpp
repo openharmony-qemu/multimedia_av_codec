@@ -45,20 +45,6 @@
 #include "xcollie/xcollie_define.h"
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerPlugin" };
-
-int32_t GetMinCttsDuration(const AVStream* avStream)
-{
-    if (avStream == nullptr) {
-        return 0;
-    }
-    int32_t minCttsDuration = INT_MAX;
-    for (uint32_t i = 0u; i < avStream->ctts_count; i++) {
-        if (avStream->ctts_data[i].duration < minCttsDuration) {
-            minCttsDuration = avStream->ctts_data[i].duration;
-        }
-    }
-    return std::min(minCttsDuration, 0);
-}
 }
 
 namespace OHOS {
@@ -569,6 +555,11 @@ void FFmpegDemuxerPlugin::ResetParam()
     minTsPktInfo_.streamIndex = -1;
     minTsPktInfo_.minPts = AV_NOPTS_VALUE;
     minTsPktInfo_.minDts = AV_NOPTS_VALUE;
+    {
+        std::lock_guard<std::mutex> lock(minTsMutex_);
+        trackMinPtsMap_.clear();
+        trackMinDtsMap_.clear();
+    }
     AccumulateXpsPktReleaseAll();
 }
 
@@ -1697,6 +1688,7 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
 
     // parse media info
     GetMediaInfo();
+    ParserBoxInfo();
 
     SetAVReadFrameLimit();
 
@@ -1820,7 +1812,6 @@ bool FFmpegDemuxerPlugin::HasCodecParameters()
 void FFmpegDemuxerPlugin::InitParser()
 {
     FALSE_RETURN_MSG(formatContext_ != nullptr, "AVFormatContext is nullptr");
-    ParserBoxInfo();
     streamParsers_ = std::make_shared<MultiStreamParserManager>();
     for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
         if (formatContext_->streams[trackIndex] == nullptr ||
@@ -2580,6 +2571,7 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesFull()
             continue;
         }
         InitMinTsPacketInfo(pktWrapper->GetAVPacket());
+        RecordTrackMinTs(pktWrapper->GetAVPacket());
         ret = AddPacketToCacheQueue(pktWrapper);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
         bool isVvc = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
@@ -2641,6 +2633,7 @@ Status FFmpegDemuxerPlugin::ReadAndValidateLimitedPacket(AVPacketWrapperPtr& pkt
         return Status::OK;
     }
     InitMinTsPacketInfo(pktWrapper->GetAVPacket());
+    RecordTrackMinTs(pktWrapper->GetAVPacket());
     Status ret = AddPacketToCacheQueue(pktWrapper);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add to cache failed");
     bool isVvc = (stream->codecpar->codec_id == AV_CODEC_ID_VVC);
@@ -3490,12 +3483,41 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
 {
     uint32_t sttsIndex = 0;
     uint32_t cttsIndex = 0;
-    int64_t pts = 0; // init pts
-    int64_t dts = 0; // init dts
+    int64_t pts = 0;
+    int64_t dts = 0;
     ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
     int32_t cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
-    int32_t minCttsDuration = GetMinCttsDuration(avStream);
+
+    // Global offset: align hand-computed timestamps with FFmpeg's output (handles elst, cslg, etc.)
+    int64_t globalOffset = 0;
+    int64_t rawFirstCtts = (avStream->ctts_count > 0) ? avStream->ctts_data[0].duration : 0;
+    int64_t rawFirstPts = rawFirstCtts;
+
+    bool mapHit = false;
+    int64_t mapMinPts = 0;
+    {
+        std::lock_guard<std::mutex> lock(minTsMutex_);
+        auto ptsIt = trackMinPtsMap_.find(avStream->index);
+        if (ptsIt != trackMinPtsMap_.end()) {
+            mapMinPts = ptsIt->second;
+            mapHit = true;
+        }
+    }
+
+    if (mapHit) {
+        globalOffset = mapMinPts - rawFirstPts;
+        MEDIA_LOG_I("globalOffset from trackMinPtsMap_: " PUBLIC_LOG_D64, globalOffset);
+    } else if (avStream->start_time != AV_NOPTS_VALUE) {
+        globalOffset = avStream->start_time - rawFirstPts;
+        MEDIA_LOG_I("globalOffset from start_time: " PUBLIC_LOG_D64, globalOffset);
+    } else {
+        MEDIA_LOG_I("globalOffset fallback to 0");
+    }
+
+    // 【补充漏掉的赋值】：记录转为微秒后的全局偏移，供外部物理时间转换使用
+    dtsOffsetUs_ = AvTime2Us(ConvertTimeFromFFmpeg(globalOffset, avStream->time_base));
+
     while (sttsIndex < avStream->stts_count && cttsIndex < avStream->ctts_count &&
             cttsCurNum >= 0 && sttsCurNum >= 0) {
         if (cttsCurNum == 0) {
@@ -3506,15 +3528,24 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
             cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIndex].count);
         }
         cttsCurNum--;
-        int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration - minCttsDuration);
-        if (((dts + currentCttsDuration) / static_cast<int64_t>(avStream->time_scale)) >
-            (INT64_MAX / 1000 / 1000)) { // 1000 is used for converting pts to us
-                MEDIA_LOG_E("pts overflow");
-                return Status::ERROR_INVALID_DATA;
+        int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIndex].duration);
+        int64_t rawPts = dts + currentCttsDuration + globalOffset;
+        int64_t rawDts = dts + globalOffset;
+
+        // 【防御性校验 1】：防止 PTS 转换为微秒时发生乘法溢出
+        if ((rawPts / static_cast<int64_t>(avStream->time_scale)) > (INT64_MAX / MS_TO_NS)) {
+            MEDIA_LOG_E("pts overflow before convert to us");
+            return Status::ERROR_INVALID_DATA;
         }
-        double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
-        double ptsTemp = static_cast<double>(dts) + static_cast<double>(currentCttsDuration);
-        pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
+
+        // 【防御性校验 2】：防止 DTS 转换为微秒时发生乘法溢出
+        if ((rawDts / static_cast<int64_t>(avStream->time_scale)) > (INT64_MAX / MS_TO_NS)) {
+            MEDIA_LOG_E("dts overflow before convert to us");
+            return Status::ERROR_INVALID_DATA;
+        }
+
+        pts = AvTime2Us(ConvertTimeFromFFmpeg(rawPts, avStream->time_base));
+        int64_t finalDts = AvTime2Us(ConvertTimeFromFFmpeg(rawDts, avStream->time_base));
         if (mode == GET_ALL_FRAME_PTS) {
             if (ptsCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
                 MEDIA_LOG_I("PTS cnt has reached the maximum limit");
@@ -3522,7 +3553,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
             }
             ptsCnt_++;
         }
-        PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index, static_cast<int64_t>(dts * timeScaleRate));
+        PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index, finalDts);
         sttsCurNum--;
         if ((INT64_MAX - dts) < (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
             MEDIA_LOG_E("dts overflow");
@@ -3542,19 +3573,49 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
     uint32_t sttsIndex = 0;
-    int64_t pts = 0; // init pts
-    int64_t dts = 0; // init dts
+    int64_t pts = 0;
+    int64_t dts = 0;
     ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIndex].count);
-    while (sttsIndex < avStream->stts_count && sttsCurNum >= 0) {
-        if ((dts / static_cast<int64_t>(avStream->time_scale)) >
-            (INT64_MAX / 1000 / 1000)) { // 1000 is used for converting pts to us
-                MEDIA_LOG_E("pts overflow");
-                return Status::ERROR_INVALID_DATA;
+
+    // Global offset: align hand-computed timestamps with FFmpeg's output (handles elst, cslg, etc.)
+    int64_t globalOffset = 0;
+
+    bool mapHit = false;
+    int64_t mapMinPts = 0;
+    {
+        std::lock_guard<std::mutex> lock(minTsMutex_);
+        auto ptsIt = trackMinPtsMap_.find(avStream->index);
+        if (ptsIt != trackMinPtsMap_.end()) {
+            mapMinPts = ptsIt->second;
+            mapHit = true;
         }
-        double timeScaleRate = static_cast<double>(MS_TO_NS) / static_cast<double>(avStream->time_scale);
-        double ptsTemp = static_cast<double>(dts);
-        pts = static_cast<int64_t>(ptsTemp * timeScaleRate);
+    }
+
+    if (mapHit) {
+        globalOffset = mapMinPts;
+        MEDIA_LOG_I("globalOffset from trackMinPtsMap_: " PUBLIC_LOG_D64, globalOffset);
+    } else if (avStream->start_time != AV_NOPTS_VALUE) {
+        globalOffset = avStream->start_time;
+        MEDIA_LOG_I("globalOffset from start_time: " PUBLIC_LOG_D64, globalOffset);
+    } else {
+        MEDIA_LOG_I("globalOffset fallback to 0");
+    }
+
+    // 【补充漏掉的赋值】：记录转为微秒后的全局偏移，供外部物理时间转换使用
+    dtsOffsetUs_ = AvTime2Us(ConvertTimeFromFFmpeg(globalOffset, avStream->time_base));
+
+    while (sttsIndex < avStream->stts_count && sttsCurNum >= 0) {
+        int64_t rawPts = dts + globalOffset;
+
+        // 【防御性校验】：防止 PTS 转换为微秒时发生乘法溢出
+        if ((rawPts / static_cast<int64_t>(avStream->time_scale)) > (INT64_MAX / MS_TO_NS)) {
+            MEDIA_LOG_E("pts overflow before convert to us");
+            return Status::ERROR_INVALID_DATA;
+        }
+
+        pts = AvTime2Us(ConvertTimeFromFFmpeg(rawPts, avStream->time_base));
+        int64_t finalDts = pts;
         if (mode == GET_ALL_FRAME_PTS) {
             if (ptsCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
                 MEDIA_LOG_I("PTS cnt has reached the maximum limit");
@@ -3562,7 +3623,7 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
             }
             ptsCnt_++;
         }
-        PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index, pts);
+        PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index, finalDts);
         sttsCurNum--;
         if ((INT64_MAX - dts) < (static_cast<int64_t>(avStream->stts_data[sttsIndex].duration))) {
             MEDIA_LOG_E("dts overflow");
@@ -3583,6 +3644,11 @@ Status FFmpegDemuxerPlugin::GetPresentationTimeUsFromFfmpegMOV(IndexAndPTSConver
 {
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
+    MEDIA_LOG_I("yxy_debug_0623 GetPresentationTimeUsFromFfmpegMOV: trackIndex=" PUBLIC_LOG_U32
+        ", hasCtts=" PUBLIC_LOG_D32 ", time_scale=" PUBLIC_LOG_D32
+        ", start_time=" PUBLIC_LOG_D64 ", stts_count=" PUBLIC_LOG_U32,
+        trackIndex, static_cast<int32_t>(avStream->ctts_data != nullptr),
+        static_cast<int32_t>(avStream->time_scale), avStream->start_time, avStream->stts_count);
     FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0,
         Status::ERROR_NULL_POINTER, "AVStream->stts_data is empty");
     FALSE_RETURN_V_MSG_E(avStream->time_scale != 0, Status::ERROR_INVALID_DATA, "AVStream->time_scale is zero");
@@ -3605,13 +3671,14 @@ void FFmpegDemuxerPlugin::PTSAndIndexConvertSwitchProcess(IndexAndPTSConvertMode
             RelativePTSToIndexProcess(pts, absolutePTS);
             break;
         case GET_ALL_FRAME_PTS:
-            if (dts == 0L) {
+            if (pts2DtsMap_.empty()) {
                 minPts_ = pts;
-                MEDIA_LOG_I("minPts=" PUBLIC_LOG_D64, minPts_);
+                MEDIA_LOG_I("yxy_debug_0623 SwitchProcess first frame: minPts_=" PUBLIC_LOG_D64
+                    ", pts=" PUBLIC_LOG_D64 ", dts=" PUBLIC_LOG_D64, minPts_, pts, dts);
             }
             MEDIA_LOG_D("dts " PUBLIC_LOG_D64 ", pts " PUBLIC_LOG_D64 ", frameId " PUBLIC_LOG_ZU,
-                dts - minPts_, pts - minPts_, pts2DtsMap_.size());
-            pts2DtsMap_.emplace(pts - minPts_, dts - minPts_);
+                dts, pts, pts2DtsMap_.size());
+            pts2DtsMap_.emplace(pts, dts);
             break;
         default:
             MEDIA_LOG_E("Wrong mode");
@@ -3819,6 +3886,9 @@ void FFmpegDemuxerPlugin::InitMinTsPacketInfo(AVPacket *pkt)
         minTsPktInfo_.minPts = pkt->pts;
         minTsPktInfo_.minDts = pkt->dts;
         minTsPktInfo_.isInit = true;
+        MEDIA_LOG_I("yxy_debug_0623 InitMinTsPacketInfo first init: streamIndex=" PUBLIC_LOG_D32
+            ", minPts=" PUBLIC_LOG_D64 ", minDts=" PUBLIC_LOG_D64,
+            minTsPktInfo_.streamIndex, minTsPktInfo_.minPts, minTsPktInfo_.minDts);
     } else {
         UpdMinTsPacketInfo(pkt);
         minTsPktInfo_.isUpd = false;
@@ -3834,9 +3904,15 @@ void FFmpegDemuxerPlugin::UpdMinTsPacketInfo(AVPacket *pkt)
         !FFmpegFormatHelper::IsMpeg4File(fileType_) && pkt->pts != AV_NOPTS_VALUE && pkt->pts < minTsPktInfo_.minPts) {
         minTsPktInfo_.streamIndex = pkt->stream_index;
         minTsPktInfo_.minPts = pkt->pts;
+        MEDIA_LOG_I("yxy_debug_0623 UpdMinTsPacketInfo update minPts: streamIndex=" PUBLIC_LOG_D32
+            ", minPts=" PUBLIC_LOG_D64 ", pkt->pts=" PUBLIC_LOG_D64,
+            minTsPktInfo_.streamIndex, minTsPktInfo_.minPts, pkt->pts);
     } else if (pkt->dts != AV_NOPTS_VALUE && pkt->dts < minTsPktInfo_.minDts) {
         minTsPktInfo_.streamIndex = pkt->stream_index;
         minTsPktInfo_.minDts = pkt->dts;
+        MEDIA_LOG_I("yxy_debug_0623 UpdMinTsPacketInfo update minDts: streamIndex=" PUBLIC_LOG_D32
+            ", minDts=" PUBLIC_LOG_D64 ", pkt->dts=" PUBLIC_LOG_D64,
+            minTsPktInfo_.streamIndex, minTsPktInfo_.minDts, pkt->dts);
     }
 }
 
