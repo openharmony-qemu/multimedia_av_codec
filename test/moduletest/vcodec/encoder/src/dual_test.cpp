@@ -150,7 +150,7 @@ void SetParameter(std::shared_ptr<VEncAPI11Sample>& encSample, ConfigParameter &
     encSample->DEFAULT_QUALITY = configParameter.quality;
     encSample->DEFAULT_SQR_FACTOR = configParameter.sqrFactor;
     encSample->DEFAULT_MAX_BITERATE = configParameter.maxBiterate;
-    encSample->enbleBFrameMode = configParameter.enbleBFrame;
+    encSample->enableBFrameMode = configParameter.enbleBFrame;
     encSample->enableRepeat = configParameter.repeat;
     encSample->setMaxCount = configParameter.maxCount;
     encSample->DEFAULT_FRAME_AFTER = configParameter.frameAfter;

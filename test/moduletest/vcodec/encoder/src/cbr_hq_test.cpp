@@ -204,7 +204,7 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0700, TestSize.Level2)
     vEncSample->DEFAULT_HEIGHT = 1920;
     vEncSample->DEFAULT_BITRATE = 3000000;
     vEncSample->DEFAULT_BITRATE_MODE = BITRATE_MODE_CBR_HIGH_QUALITY;
-    vEncSample->enbleBFrameMode = 1;
+    vEncSample->enableBFrameMode = 1;
     ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
     ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());

@@ -207,7 +207,7 @@ public:
     int32_t inputFrameCount = 0;
     bool setMaxCount = false;
     bool enableWaterMark = false;
-    bool enbleBFrameMode = false;
+    bool enableBFrameMode = false;
     int32_t videoCoordinateX = 100;
     int32_t videoCoordinateY = 100;
     int32_t videoCoordinateWidth = 400;
