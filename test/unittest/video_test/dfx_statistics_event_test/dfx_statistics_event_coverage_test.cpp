@@ -2030,11 +2030,11 @@ HWTEST_F(TEST_SUIT, BasicInfo_Submit_Test_002, TestSize.Level1)
  */
 HWTEST_F(TEST_SUIT, BasicCreateCodecSpec_Test_001, TestSize.Level1)
 {
-    meta_->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), to::string(AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER));
+    meta_->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), std::to_string(AVCodecType::AVCODEC_TYPE_AUDIO_ENCODER));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    meta_->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), to::string(AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER));
+    meta_->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), std::to_string(AVCodecType::AVCODEC_TYPE_VIDEO_ENCODER));
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
-    meta_->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), to::string(AVCodecType::AVCODEC_TYPE_AUDIO_DECODER));
+    meta_->SetData(EventInfoExtentedKey::CODEC_TYPE.data(), std::to_string(AVCodecType::AVCODEC_TYPE_AUDIO_DECODER));
     meta_->SetData(Tag::MIME_TYPE, "audio/avc");
     StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, *meta_);
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();
@@ -2122,5 +2122,5 @@ HWTEST_F(TEST_SUIT, IsEventValid_Test_001, TestSize.Level1)
     ASSERT_TRUE(StatisticsEventInfo::GetInstance().IsEventValid());
     StatisticsEventInfo::GetInstance().eventInfoMap_.clear();
     StatisticsEventInfo::GetInstance().eventInfoMap_.emplace(StatisticsEventType::BASIC_INFO, nullptr);
-    ASSERT_TRUE(StatisticsEventInfo::GetInstance().IsEventValid());
+    ASSERT_FALSE(StatisticsEventInfo::GetInstance().IsEventValid());
 }
