@@ -2002,9 +2002,11 @@ Status MPEG4AtomParser::ParseSampleDescriptionEntry(int32_t depth, ParseContext*
     uint8_t sampleEntryHeader[8];
     Status ret = dataReader_->ReadUintData(atomOffset, sampleEntryHeader, sizeof(sampleEntryHeader));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sample entry header failed");
+    uint32_t atomSize = GetU32Value(&sampleEntryHeader[0]);
+    FALSE_RETURN_V_MSG_E(atomSize >= sizeof(sampleEntryHeader), Status::ERROR_INVALID_DATA, "Invalid sample entry size");
     MPEG4Atom atom {
-        .type = static_cast<int32_t>(GetU32Value(&sampleEntryHeader[4])), .size = GetU32Value(&sampleEntryHeader[0]),
-        .dataSize = GetU32Value(&sampleEntryHeader[0]) - sizeof(sampleEntryHeader)
+        .type = static_cast<int32_t>(GetU32Value(&sampleEntryHeader[4])), .size = atomSize,
+        .dataSize = atomSize - sizeof(sampleEntryHeader)
     };
     ctx->dataOffset = atomOffset + sizeof(sampleEntryHeader);
     std::string mimeType = GetMimeType(atom.type);
@@ -3194,7 +3196,6 @@ Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx
         MPEG4Atom dca3Atom;
         dca3Atom.size = GetU32Value(&atomHeader[0]);
         dca3Atom.type = static_cast<int32_t>(GetU32Value(&atomHeader[UINT32_SIZE]));
-        dca3Atom.dataSize = GetU32Value(&atomHeader[0]) - static_cast<uint32_t>(sizeof(atomHeader));
         FALSE_RETURN_V_MSG_E(dca3Atom.type == FourccType("dca3"), Status::ERROR_INVALID_DATA,
             "Invalid av3a child atom");
         int64_t dca3EndOffset = 0;
@@ -3202,6 +3203,7 @@ Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx
             Status::ERROR_INVALID_DATA, "dca3 atom size overflow");
         FALSE_RETURN_V_MSG_E(dca3Atom.size >= sizeof(atomHeader) && dca3EndOffset <= dataEndOffset,
             Status::ERROR_INVALID_DATA, "Invalid dca3 atom size");
+        dca3Atom.dataSize = dca3Atom.size - sizeof(atomHeader);
         dataOffset = ctx->offset + sizeof(atomHeader);
         dataSize = dca3Atom.dataSize;
         ctx->offset = dataEndOffset;
@@ -4787,7 +4789,8 @@ Status MPEG4AtomParser::ParseChan(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint32_t currentOffset = entryOffset;
     int64_t channelSets = 0;
     int64_t channelLayoutMask = 0;
-    FALSE_RETURN_V(currentAtom.dataSize >= entryOffset + entryNum * chanEntrySize, Status::OK);
+    uint64_t requiredSize = entryOffset + static_cast<uint64_t>(entryNum) * chanEntrySize;
+    FALSE_RETURN_V(currentAtom.dataSize >= requiredSize, Status::OK);
 
     for (uint32_t i = 0; i < entryNum; ++i) {
         uint32_t channelLabel = GetU32Value(&chanData[currentOffset]);
