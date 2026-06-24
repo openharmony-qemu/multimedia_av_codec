@@ -491,11 +491,12 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1170, TestSize.Level1)
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
         }
-        list<int64_t> toPtsList = {0, 1500, 1000, 1740, 1970, 2100}; // ms
-        vector<int32_t> videoVals = {60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60};
-        if (useMpeg4_) {
-            toPtsList = {0, 1500, 1000, 1740, 1970}; // ms
-            videoVals = {60, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 0};
+        
+        list<int64_t> toPtsList = {0, 1500, 1000, 1740, 1970}; // ms
+        vector<int32_t> videoVals = {60, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 0};
+        if (!useMpeg4_) {
+            toPtsList = {0, 1500, 1000, 1740, 1970, 2100}; // ms
+            videoVals = {60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60};
         }
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);
@@ -518,11 +519,11 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1171, TestSize.Level1)
         for (auto idx : selectedTrackIds_) {
             ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
         }
-        list<int64_t> toPtsList = {0, 1500, 1000, 1740, 1970, 2100}; // ms
-        vector<int32_t> videoVals = {60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60};
-        if (useMpeg4_) {
-            toPtsList = {0, 1500, 1000, 1740, 1970}; // ms
-            videoVals = {60, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 0};
+        list<int64_t> toPtsList = {0, 1500, 1000, 1740, 1970}; // ms
+        vector<int32_t> videoVals = {60, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 60, 0, 60, 0};
+        if (!useMpeg4_) {
+            toPtsList = {0, 1500, 1000, 1740, 1970, 2100}; // ms
+            videoVals = {60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60};
         }
         sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
         ASSERT_NE(sharedMem_, nullptr);

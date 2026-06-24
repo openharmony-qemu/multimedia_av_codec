@@ -976,8 +976,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0025, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0026, TestSize.Level1)
 {
-    std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
-    if (enable != "1") {
+    if (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.skip", "0") == "1") {
         return;
     }
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
@@ -989,8 +988,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0026, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0027, TestSize.Level1)
 {
-    std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
-    if (enable != "1") {
+    if (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.skip", "0") == "1") {
         return;
     }
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MATROSKA, DEF_PROB_SIZE), false);

@@ -585,14 +585,14 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_2000, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 2000, 1920, 2160, 2200, 2440, 2600, 2700, 4080, 4100}; // ms
-    vector<int32_t> audioVals = {174, 174, 174, 90, 91, 91, 90, 134, 90, 47, 91, 91, 47, 91, 91, 47, 91, 47, 47, 91, 47,
-        47, 91, 47, 5, 5, 5, 5};
-    vector<int32_t> videoVals = {103, 103, 103, 53, 53, 53, 53, 78, 53, 28, 53, 53, 28, 53, 53, 28, 53, 28, 28, 53, 28,
-        28, 53, 28, 3, 3, 3, 3};
-    if (useMpeg4_) {
-        audioVals = {174, 174, 174, 86, 87, 86, 86, 130, 86, 43, 87, 87, 43, 87, 87, 43, 87, 87, 43, 87, 43,
+    vector<int32_t> audioVals = {174, 174, 174, 86, 87, 86, 86, 130, 86, 43, 87, 87, 43, 87, 87, 43, 87, 87, 43, 87, 43,
         43, 87, 43, 1, 1, 1, 1};
-        videoVals = {103, 103, 103, 53, 53, 53, 53, 78, 53, 28, 53, 53, 28, 53, 53, 28, 53, 53, 28, 53, 28,
+    vector<int32_t> videoVals = {103, 103, 103, 53, 53, 53, 53, 78, 53, 28, 53, 53, 28, 53, 53, 28, 53, 53, 28, 53, 28,
+        28, 53, 28, 3, 3, 3, 3};
+    if (!useMpeg4_) {
+        audioVals = {174, 174, 174, 90, 91, 91, 90, 134, 90, 47, 91, 91, 47, 91, 91, 47, 91, 47, 47, 91, 47,
+        47, 91, 47, 5, 5, 5, 5};
+        videoVals = {103, 103, 103, 53, 53, 53, 53, 78, 53, 28, 53, 53, 28, 53, 53, 28, 53, 28, 28, 53, 28,
         28, 53, 28, 3, 3, 3, 3};
     }
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
@@ -1102,13 +1102,13 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1195, TestSize.Level1)
     ASSERT_EQ(demuxer_->SelectTrackByID(1), AV_ERR_OK);
     ASSERT_EQ(demuxer_->SelectTrackByID(2), AV_ERR_OK);
     list<int64_t> toPtsList = {0, 4500, 7000, 2000, 10000}; // ms
-    vector<int32_t> videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602, 102, 102};
-    vector<int32_t> audioVals = {433, 433, 433, 74, 254, 254, 74, 254, 74, 253, 433, 433, 75, 75};
-    vector<int32_t> audioVals2 = {417, 417, 417, 71, 245, 245, 71, 245, 71, 244, 417, 417, 72, 72};
-    if (useMpeg4_) {
-        videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602, 0, 102, 102};
-        audioVals = {433, 433, 433, 73, 253, 253, 73, 253, 73, 252, 433, 433, 2, 74, 74};
-        audioVals2 = {417, 417, 417, 69, 243, 243, 69, 243, 69, 242, 417, 417, 1, 70, 70};
+    vector<int32_t> videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602, 0, 102, 102};
+    vector<int32_t> audioVals = {433, 433, 433, 73, 253, 253, 73, 253, 73, 252, 433, 433, 2, 74, 74};
+    vector<int32_t> audioVals2 = {417, 417, 417, 69, 243, 243, 69, 243, 69, 242, 417, 417, 1, 70, 70};
+    if (!useMpeg4_) {
+        videoVals = {602, 602, 602, 102, 352, 352, 102, 352, 102, 352, 602, 602, 102, 102};
+        audioVals = {433, 433, 433, 74, 254, 254, 74, 254, 74, 253, 433, 433, 75, 75};
+        audioVals2 = {417, 417, 417, 71, 245, 245, 71, 245, 71, 244, 417, 417, 72, 72};
     }
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
