@@ -446,7 +446,9 @@ private:
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
     int64_t minPts_ = 0;
-    int64_t startPts_ = 0;
+    std::unordered_map<int32_t, int64_t> trackMinPtsMap_;
+    std::unordered_map<int32_t, int64_t> trackMinDtsMap_;
+    std::mutex minTsMutex_;
     uint32_t ptsCnt_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
@@ -567,6 +569,8 @@ private:
     Status GetFileFirstPacket();
     void InitMinTsPacketInfo(AVPacket *pkt);
     void UpdMinTsPacketInfo(AVPacket *pkt);
+    void RecordTrackMinTs(AVPacket *pkt);
+    int64_t CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts);
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
     int RMSeekToStart();
@@ -594,14 +598,6 @@ private:
     Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
 };
 
-typedef struct DtsFinder {
-    explicit DtsFinder(int64_t dts) : dts_(dts) { }
-    bool operator ()(const std::map<int64_t, int64_t>::value_type &item)
-    {
-        return dts_ == item.second || dts_ == item.second - 1 || dts_ == item.second + 1;
-    }
-    int64_t dts_;
-} DtsFinder;
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

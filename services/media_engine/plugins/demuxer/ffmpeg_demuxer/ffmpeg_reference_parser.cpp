@@ -88,11 +88,10 @@ void FFmpegDemuxerPlugin::ParserBoxInfo()
         }
         av_destory_key_frame_pos_list(keyFramePosInfo);
     }
-    startPts_ = AvTime2Us(ConvertTimeFromFFmpeg(videoStream->start_time, videoStream->time_base));
     FALSE_RETURN_MSG(GetPresentationTimeUsFromFfmpegMOV(
         GET_ALL_FRAME_PTS, parserRefIdx_, 0, 0) == Status::OK, "get all frame pts failed.");
-    MEDIA_LOG_I("Success parse, start pts:" PUBLIC_LOG_D64 ", IFramePos size: " PUBLIC_LOG_ZU,
-        startPts_, IFramePos_.size());
+    MEDIA_LOG_I("Success parse, minPts:" PUBLIC_LOG_D64 ", IFramePos size: " PUBLIC_LOG_ZU,
+        minPts_, IFramePos_.size());
 }
 
 AVStream *FFmpegDemuxerPlugin::GetVideoStream()
@@ -440,7 +439,8 @@ Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "formatContext_ is nullptr");
     auto avStream = formatContext_->streams[parserRefIdx_];
     int64_t ffTimeDts = ConvertTimeToFFmpegByUs(dts, avStream->time_base);
-    int32_t tmpFrameId = av_index_search_timestamp(avStream, ffTimeDts, AVSEEK_FLAG_ANY);
+    int32_t tmpFrameId = av_index_search_timestamp(avStream, ffTimeDts,
+        AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
     FALSE_RETURN_V_MSG_E(tmpFrameId >= 0, Status::ERROR_OUT_OF_RANGE, "find nearest frame failed");
     frameId = static_cast<uint32_t>(tmpFrameId);
     MEDIA_LOG_D("dts " PUBLIC_LOG_D64 ", frameId " PUBLIC_LOG_U32, dts, frameId);
@@ -455,14 +455,14 @@ Status FFmpegDemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     FALSE_RETURN_V_MSG_E(avStream->stts_data != nullptr && avStream->stts_count != 0,
         Status::ERROR_NULL_POINTER, "AVStream->stts_data is empty");
-    int64_t pts = seekMs * 1000; // 1000 for ms to us
+    int64_t pts = seekMs * 1000 + minPts_; // 1000 for ms to us
     auto iter = pts2DtsMap_.upper_bound(pts);
     if (iter != pts2DtsMap_.begin()) {
         --iter;
     }
-    int64_t dts = iter->second + startPts_;
+    int64_t dts = iter->second;
     MEDIA_LOG_D("seekMs " PUBLIC_LOG_D64 ", pts " PUBLIC_LOG_D64 ", mapSize " PUBLIC_LOG_ZU ", dts " PUBLIC_LOG_D64
-        ", startPts " PUBLIC_LOG_D64, seekMs, pts, pts2DtsMap_.size(), dts, startPts_);
+        ", minPts " PUBLIC_LOG_D64, seekMs, pts, pts2DtsMap_.size(), dts, minPts_);
     return Dts2FrameId(dts, frameId);
 }
 
@@ -472,14 +472,80 @@ Status FFmpegDemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
     AVStream *st = formatContext_->streams[parserRefIdx_];
     FALSE_RETURN_V_MSG_E(st != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     int64_t ffTimeDts = CalculateTimeByFrameIndex(st, static_cast<int32_t>(frameId));
-    int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(ffTimeDts, st->time_base)) - startPts_;
-    auto it = std::find_if(pts2DtsMap_.begin(), pts2DtsMap_.end(), DtsFinder(dts));
-    FALSE_RETURN_V_MSG_E(it != pts2DtsMap_.end(), Status::ERROR_UNKNOWN, "find pts failed, frameId "
-        PUBLIC_LOG_U32 ", dts " PUBLIC_LOG_D64, frameId, dts);
-    seekMs = it->first / 1000; // 1000 for ms to us
-    MEDIA_LOG_D("frameId " PUBLIC_LOG_U32 ", dts " PUBLIC_LOG_D64 ", seekMs " PUBLIC_LOG_D64 ", startPts "
-        PUBLIC_LOG_D64, frameId, dts, seekMs, startPts_);
+    int64_t rawDtsUs = AvTime2Us(ConvertTimeFromFFmpeg(ffTimeDts, st->time_base));
+
+    auto bestIt = pts2DtsMap_.end();
+    int64_t minDiff = INT64_MAX;
+    const int64_t maxAllowedDiff = 5000;
+    const int64_t exactMatchThreshold = 5;
+    for (auto current = pts2DtsMap_.begin(); current != pts2DtsMap_.end(); ++current) {
+        int64_t diff = std::abs(current->second - rawDtsUs);
+        if (diff < minDiff) {
+            minDiff = diff;
+            bestIt = current;
+            if (minDiff <= exactMatchThreshold) {
+                break;
+            }
+        }
+    }
+    if (bestIt != pts2DtsMap_.end() && minDiff > maxAllowedDiff) {
+        MEDIA_LOG_W("Nearest DTS found but diff " PUBLIC_LOG_D64 " exceeds limit", minDiff);
+        bestIt = pts2DtsMap_.end();
+    }
+
+    FALSE_RETURN_V_MSG_E(bestIt != pts2DtsMap_.end(), Status::ERROR_UNKNOWN, "find pts failed, frameId "
+        PUBLIC_LOG_U32 ", rawDts " PUBLIC_LOG_D64 ", minDiff " PUBLIC_LOG_D64, frameId, rawDtsUs, minDiff);
+    seekMs = (bestIt->first - minPts_) / 1000; // 1000 for ms to us
+    MEDIA_LOG_D("frameId " PUBLIC_LOG_U32 ", rawDts " PUBLIC_LOG_D64 ", frameworkDts " PUBLIC_LOG_D64
+        ", seekMs " PUBLIC_LOG_D64 ", minDiff " PUBLIC_LOG_D64, frameId, rawDtsUs, rawDtsUs, seekMs, minDiff);
     return Status::OK;
+}
+
+int64_t FFmpegDemuxerPlugin::CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts)
+{
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, 0, "avStream is nullptr");
+    int64_t globalOffset = 0;
+    bool mapHit = false;
+    int64_t mapMinPts = 0;
+    {
+        std::lock_guard<std::mutex> lock(minTsMutex_);
+        auto ptsIt = trackMinPtsMap_.find(avStream->index);
+        if (ptsIt != trackMinPtsMap_.end()) {
+            mapMinPts = ptsIt->second;
+            mapHit = true;
+        }
+    }
+
+    if (mapHit) {
+        globalOffset = mapMinPts - rawFirstPts;
+        MEDIA_LOG_I("globalOffset from trackMinPtsMap_: " PUBLIC_LOG_D64, globalOffset);
+    } else if (avStream->start_time != AV_NOPTS_VALUE) {
+        globalOffset = avStream->start_time - rawFirstPts;
+        MEDIA_LOG_I("globalOffset from start_time: " PUBLIC_LOG_D64, globalOffset);
+    }
+    return globalOffset;
+}
+
+void FFmpegDemuxerPlugin::RecordTrackMinTs(AVPacket *pkt)
+{
+    if (pkt == nullptr) {
+        return;
+    }
+    int32_t trackId = pkt->stream_index;
+    std::lock_guard<std::mutex> lock(minTsMutex_);
+    if (pkt->pts != AV_NOPTS_VALUE) {
+        if (trackMinPtsMap_.find(trackId) == trackMinPtsMap_.end() ||
+            pkt->pts < trackMinPtsMap_[trackId]) {
+            trackMinPtsMap_[trackId] = pkt->pts;
+        }
+    }
+
+    if (pkt->dts != AV_NOPTS_VALUE) {
+        if (trackMinDtsMap_.find(trackId) == trackMinDtsMap_.end() ||
+            pkt->dts < trackMinDtsMap_[trackId]) {
+            trackMinDtsMap_[trackId] = pkt->dts;
+        }
+    }
 }
 
 } // namespace Ffmpeg
