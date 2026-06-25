@@ -1583,6 +1583,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1));
 
+
     OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
     ASSERT_EQ(AV_ERR_OK, ret);
 
@@ -1655,6 +1656,26 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_INVALID_TEST_
     OH_AVErrCode ret = OH_VideoEncoder_Configure(videoEnc, g_format);
     ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
 
+    OH_AVFormat_Destroy(g_format);
+    g_format = OH_AVFormat_Create();
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
+}
+
+
+
+HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_INVALID_TEST_17033, TestSize.Level3)
+{
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
+    ASSERT_NE(nullptr, capability);
+    const char *codecName = OH_AVCapability_GetName(capability);
+    OH_AVCodec *videoEnc = OH_VideoEncoder_CreateByName(codecName);
+    ASSERT_NE(nullptr, videoEnc);
+
+    SetFormatBasicParam(false);
+    ASSERT_TRUE(OH_AVFormat_SetIntValue(g_format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, 1));
+    OH_AVErrCode ret = OH_VideoEncoder_Configure(videoEnc, g_format);
+    ASSERT_EQ(ret, 0);
+    
     OH_AVFormat_Destroy(g_format);
     g_format = OH_AVFormat_Create();
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));

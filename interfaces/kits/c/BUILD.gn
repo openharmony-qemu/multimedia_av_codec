@@ -79,6 +79,7 @@ config("av_cenc_info_capi_config") {
 }
 
 ohos_shared_library("avcodec_api_metrics") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sanitize = av_codec_sanitize
   sources = [
@@ -104,6 +105,7 @@ ohos_shared_library("avcodec_api_metrics") {
 }
 
 ohos_shared_library("avcodec_hiappevent") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sanitize = av_codec_sanitize
   sources =
@@ -154,6 +156,7 @@ ohos_shared_library("native_media_avmuxer") {
 }
 
 ohos_shared_library("native_media_avdemuxer") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avdemuxer/native_avdemuxer.cpp",
@@ -224,6 +227,7 @@ ohos_shared_library("native_media_avsource") {
 }
 
 ohos_shared_library("native_media_codecbase") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avcodec/native_avcodec_base.cpp",
@@ -352,6 +356,7 @@ ohos_shared_library("native_media_aenc") {
 }
 
 ohos_shared_library("native_media_vdec") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sources = [ "$av_codec_root_dir/frameworks/native/capi/avcodec/native_video_decoder.cpp" ]
 
@@ -387,6 +392,7 @@ ohos_shared_library("native_media_vdec") {
 }
 
 ohos_shared_library("native_media_venc") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sanitize = av_codec_sanitize
   sources = [
@@ -448,6 +454,7 @@ ohos_shared_library("native_media_venc") {
 }
 
 ohos_shared_library("native_media_avcencinfo") {
+  branch_protector_ret = "pac_ret"
   install_enable = true
   sources = [
     "$av_codec_root_dir/frameworks/native/capi/avcencinfo/native_cencinfo.cpp",
