@@ -49,6 +49,7 @@ ohos_shared_library("media_plugin_OpusAudioEncoder") {
   ]
 
   sanitize = av_codec_sanitize
+  branch_protector_ret = "pac_ret"
 
   sources = [
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/audio_encoder/opus/audio_opus_encoder_plugin.cpp",
