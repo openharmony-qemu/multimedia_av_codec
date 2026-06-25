@@ -847,10 +847,12 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
     chunkOffsets_.reserve(numChunkOffsets);
 
     for (uint32_t i = 0; i < numChunkOffsets; ++i) {
-        int64_t offset = atomType == FourccType("stco")
-            ? static_cast<int64_t>(GetU32Value(data.get() + i * sizeof(uint32_t)))
-            : static_cast<int64_t>(GetU64Value(data.get() + i * sizeof(uint64_t)));
-        chunkOffsets_.emplace_back(offset);
+        uint64_t offset = atomType == FourccType("stco")
+                              ? static_cast<uint64_t>(GetU32Value(data.get() + i * sizeof(uint32_t)))
+                              : GetU64Value(data.get() + i * sizeof(uint64_t));
+        FALSE_RETURN_V_MSG_E(offset <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()),
+                             Status::ERROR_INVALID_DATA, "Invalid chunk offset");
+        chunkOffsets_.emplace_back(static_cast<int64_t>(offset));
     }
     return Status::OK;
 }
