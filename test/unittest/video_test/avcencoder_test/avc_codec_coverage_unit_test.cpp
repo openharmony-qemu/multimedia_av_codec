@@ -49,6 +49,7 @@ constexpr int32_t RGBA_BUFFER_SIZE = 4;
 constexpr int32_t YUV_BUFFER_SIZE = 3;
 constexpr int32_t CONVERT_WIDTH = 10;
 constexpr int32_t CONVERT_HEIGHT = 10;
+constexpr int32_t MAX_HEADER_SIZE = 1024;
 
 
 class AvcCodecCallback : public MediaCodecCallback {
@@ -182,6 +183,7 @@ void AvcCodecCoverageUnitTest::SetUp(void)
 {
     avcEncoder_ = std::make_shared<Codec::AvcEncoder>("OH.Media.Codec.Encoder.Video.AVC");
     EXPECT_NE(avcEncoder_, nullptr);
+    avcEncoder_->state_ = Codec::AvcEncoder::State::UNINITIALIZED;
     avcCallback_ = std::make_shared<AvcCodecCallback>(avcEncoder_);
     EXPECT_NE(avcCallback_, nullptr);
     avcEncoder_->SetCallback(avcCallback_);
@@ -662,6 +664,8 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Encode_XPS_002, TestSize.Level1)
     avcEncoder_->avcEncoderFrameFunc_ = &EncoderProcess;
     avcEncoder_->avcEncoderDeleteFunc_ = &EncoderDelete;
     avcEncoder_->handle_ = reinterpret_cast<void *>(FAKE_PTR);
+    avcEncoder_->avcEncHeaderArgs_.streamBuf = static_cast<uint8_t *>(malloc(MAX_HEADER_SIZE));
+    avcEncoder_->avcEncHeaderArgs_.size = MAX_HEADER_SIZE;
     ret = avcEncoder_->Start();
     EXPECT_EQ(ret, AVCS_ERR_OK);
     sleep(1);
@@ -671,6 +675,10 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Encode_XPS_002, TestSize.Level1)
     EXPECT_EQ(ret, AVCS_ERR_OK);
     ret = avcEncoder_->Release();
     EXPECT_EQ(ret, AVCS_ERR_OK);
+    if (avcEncoder_->avcEncHeaderArgs_.streamBuf) {
+        free(avcEncoder_->avcEncHeaderArgs_.streamBuf);
+        avcEncoder_->avcEncHeaderArgs_.streamBuf = nullptr;
+    }
 }
 
 /**
@@ -696,6 +704,8 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Encode_XPS_003, TestSize.Level1)
     avcEncoder_->avcEncoderFrameFunc_ = &EncoderProcess;
     avcEncoder_->avcEncoderDeleteFunc_ = &EncoderDelete;
     avcEncoder_->handle_ = reinterpret_cast<void *>(FAKE_PTR);
+    avcEncoder_->avcEncHeaderArgs_.streamBuf = static_cast<uint8_t *>(malloc(MAX_HEADER_SIZE));
+    avcEncoder_->avcEncHeaderArgs_.size = MAX_HEADER_SIZE;
     ret = avcEncoder_->Start();
     EXPECT_EQ(ret, AVCS_ERR_OK);
     sleep(1);
@@ -705,6 +715,10 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Encode_XPS_003, TestSize.Level1)
     EXPECT_EQ(ret, AVCS_ERR_OK);
     ret = avcEncoder_->Release();
     EXPECT_EQ(ret, AVCS_ERR_OK);
+    if (avcEncoder_->avcEncHeaderArgs_.streamBuf) {
+        free(avcEncoder_->avcEncHeaderArgs_.streamBuf);
+        avcEncoder_->avcEncHeaderArgs_.streamBuf = nullptr;
+    }
 }
 
 /**
@@ -1102,6 +1116,25 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_GetCapability_001, TestSize.Level1
     } else {
         EXPECT_EQ(ret, AVCS_ERR_UNSUPPORT);
     }
+}
+
+/**
+ * @tc.name: Test_Codec_IsValid_001
+ * @tc.desc: codec IsValid check after successful creation
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_IsValid_001, TestSize.Level1)
+{
+    EXPECT_TRUE(avcEncoder_->IsValid());
+}
+
+/**
+ * @tc.name: Test_Codec_IsValid_002
+ * @tc.desc: codec IsValid check when state is ERROR
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_IsValid_002, TestSize.Level1)
+{
+    avcEncoder_->state_ = Codec::AvcEncoder::State::ERROR;
+    EXPECT_FALSE(avcEncoder_->IsValid());
 }
 
 /**

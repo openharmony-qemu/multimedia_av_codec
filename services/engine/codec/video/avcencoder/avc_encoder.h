@@ -72,6 +72,7 @@ public:
     int32_t SignalRequestIDRFrame() override;
     void GetBufferFromSurface();
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
+    bool IsValid() const { return state_.load() != State::ERROR; }
 
     class FBuffer {
     public:
@@ -129,7 +130,7 @@ private:
     void NotifyUserToProcessBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
     void NotifyUserToFillBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
 
-    void InitAvcEncoderParams();
+    int32_t InitAvcEncoderParams();
     void FillAvcInitParams(AVC_ENC_INIT_PARAM &param);
 
     void WaitForFence(std::shared_ptr<FBuffer> &inputBuffer);
@@ -186,6 +187,21 @@ private:
         EOS,
         ERROR,
     };
+    static const char* StateToString(State state)
+    {
+        switch (state) {
+            case State::UNINITIALIZED: return "UNINITIALIZED";
+            case State::INITIALIZED: return "INITIALIZED";
+            case State::CONFIGURED: return "CONFIGURED";
+            case State::STOPPING: return "STOPPING";
+            case State::RUNNING: return "RUNNING";
+            case State::FLUSHED: return "FLUSHED";
+            case State::FLUSHING: return "FLUSHING";
+            case State::EOS: return "EOS";
+            case State::ERROR: return "ERROR";
+            default: return "UNKNOWN";
+        }
+    }
     bool IsActive() const;
     void CalculateBufferSize();
     int32_t AllocateBuffers();
