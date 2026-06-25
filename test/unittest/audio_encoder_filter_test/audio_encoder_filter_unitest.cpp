@@ -24,6 +24,9 @@
 #include "common/log.h"
 #include "parameters.h"
 #include "filter/filter.h"
+#ifdef SUPPORT_AUDIO_CONVERT
+#include "audio_format_converter.h"
+#endif
  
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -217,6 +220,8 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_Init_0100, TestSize.Level
     std::shared_ptr<EventReceiver> receiver = std::make_shared<EventReceiverTest>();
     std::shared_ptr<FilterCallback> callback = std::make_shared<FilterCallbackTest>();
     audioEncoderFilter_->Init(receiver, callback);
+    EXPECT_EQ(audioEncoderFilter_->eventReceiver_, receiver);
+    EXPECT_EQ(audioEncoderFilter_->filterCallback_, callback);
 }
 
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_Configure_0100, TestSize.Level1)
@@ -468,6 +473,31 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_GetInputSurface_0100, Tes
     sptr<Surface> surface = audioEncoderFilter_->GetInputSurface();
     EXPECT_EQ(surface, nullptr);
 }
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetTranscoderMode_0100, TestSize.Level1)
+{
+    auto ret = audioEncoderFilter_->SetTranscoderMode();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_NotifyProcessingThread_0100, TestSize.Level1)
+{
+    audioEncoderFilter_->NotifyProcessingThread();
+    EXPECT_EQ(audioEncoderFilter_->hasPendingBuffer_.load(), true);
+}
+
+#ifdef SUPPORT_AUDIO_CONVERT
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_ConverterInputCallback_OnRequestData_0100, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    std::shared_ptr<AudioEncoderFilter::ConverterInputCallback> callback =
+        std::make_shared<AudioEncoderFilter::ConverterInputCallback>(buffer);
+    const void* data;
+    AudioStandard::AudioSuite::InputDataStatus status;
+    EXPECT_EQ(callback->OnRequestData(&data, &status), 0);
+    EXPECT_EQ(status, AudioStandard::AudioSuite::InputDataStatus::DATA_FINISHED);
+}
+#endif
 
 }
 }
