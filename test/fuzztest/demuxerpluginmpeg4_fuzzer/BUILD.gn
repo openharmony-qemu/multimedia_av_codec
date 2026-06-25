@@ -27,6 +27,7 @@ ohos_fuzztest("DemuxerPluginMpeg4FuzzTest") {
     "$MEDIA_ROOT_DIR/services/media_engine/plugins/common",
     "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common",
     "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/mpeg4_demuxer",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/ffmpeg_demuxer",
   ]
   cflags = [
     "-g",
@@ -37,10 +38,30 @@ ohos_fuzztest("DemuxerPluginMpeg4FuzzTest") {
   sources = [
     "mpeg4demuxerplugin_fuzzer.cpp",
     "mpeg4demuxerplugin_sample.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common/avc_parser_impl.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common/converter.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common/demuxer_data_reader.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common/demuxer_log_compressor.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common/demuxer_utils.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common/multi_stream_parser_manager.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common/rbsp_context.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common/reference_parser_manager.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/common/time_range_manager.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_audio_parser.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_box_parser.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_demuxer_plugin.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_demuxer_thread.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_format_checker.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_reference_parser.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_sample_helper.cpp",
+    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_sample_memory.cpp",
   ]
   external_deps = [
     "c_utils:utils",
+    "hicollie:libhicollie",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "init:libbegetutil",
     "ipc:ipc_core",
     "media_foundation:native_media_core",
     "window_manager:libwm",
@@ -48,7 +69,6 @@ ohos_fuzztest("DemuxerPluginMpeg4FuzzTest") {
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/services/media_engine/modules:av_codec_media_engine_modules",
-    "$MEDIA_ROOT_DIR/services/media_engine/plugins/demuxer:media_plugin_Mpeg4Demuxer",
   ]
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
@@ -61,3 +81,4 @@ group("fuzztest") {
   deps += [ ":DemuxerPluginMpeg4FuzzTest" ]
 }
 ###############################################################################
+
