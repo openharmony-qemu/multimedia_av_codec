@@ -86,7 +86,8 @@ public:
     Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
     Status GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &frameId);
     Status RefParserInit();
-    Status ParserRefInfoLoop(std::shared_ptr<AVBuffer> buffer, uint32_t syncSampleIndex);
+    Status ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex,
+        const std::vector<SampleIndexEntry>& sampleIndexEntries_);
     Status UpdateParserGopId(int32_t syncSamplesPtsSize);
     Status SelectProGopId();
 
@@ -172,13 +173,14 @@ private:
     bool isInit_ = false;
     int64_t ptsOfIndexZero_ = 0;
     std::map<int64_t, int64_t> pts2Dts_;  // relative pts(us)->relative dts(us)
-    std::unordered_map<int64_t, uint32_t> dts2SyncSampleIndex_;
+    std::map<int64_t, uint32_t> dts2SyncSampleIndex_;
     std::unordered_map<uint32_t, int64_t> sampleIndex2Pts_;  // Sample index->relative pts(us)
     int32_t refParserTrackIdx_ = -1;
+    std::shared_ptr<MPEG4AtomParser::Track> trackOfRefParser_ = nullptr;
     std::vector<uint32_t> syncSamplesIndex_;  // Sync sample index or Gop id (start from 0)
     int64_t refParserStartTime_ = -1;
     int64_t refParserPendingSeekMsTime_ = -1;
-    int32_t refParserCurGopId_ = 0;
+    int32_t refParserCurGopId_ = 0;  // Gop Id(start from 0)
     bool refParserIsForward_ = true;
     std::atomic<bool> refParserState_ = true;
     std::list<uint32_t> processingSyncSamplesIndex_;
@@ -187,6 +189,7 @@ private:
     int64_t startPts_ = 0;
     bool updatePosIsForward_ = true;
     bool isSdtpExist_ = false;
+    bool isReadSampleDataFromCache_ = false;
 
     int32_t CountTracks();
     void GetAVTrackIds();

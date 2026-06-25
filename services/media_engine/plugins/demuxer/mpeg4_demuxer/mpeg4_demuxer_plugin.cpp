@@ -1340,6 +1340,7 @@ void MPEG4DemuxerPlugin::InitParser()
                     (static_cast<double>(startPtsBasedOnTimescale) / static_cast<double>(timeScale)) * S_TO_US);
             }
             syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
+            MEDIA_LOG_I("syncSamplesIndex_ size is " PUBLIC_LOG_ZU, syncSamplesIndex_.size());
         }
         track = track->next;
     }
