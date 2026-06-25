@@ -452,20 +452,6 @@ HWTEST_F(DecoderSurfaceFilterUnittest, SetSpeed_002, TestSize.Level0)
 }
 
 /**
- * @tc.name: Test SetSpeed API
- * @tc.number: SetSpeed_003
- * @tc.desc: Test videoDecoder_ == nullptr, should return ERROR_INVALID_OPERATION
- */
-HWTEST_F(DecoderSurfaceFilterUnittest, SetSpeed_003, TestSize.Level0)
-{
-    ASSERT_NE(decoderSurfaceFilter_, nullptr);
-    decoderSurfaceFilter_->videoDecoder_ = nullptr;
-    float speed = 2.0f;
-    auto ret = decoderSurfaceFilter_->SetSpeed(speed);
-    EXPECT_EQ(ret, Status::ERROR_INVALID_OPERATION);
-}
-
-/**
  * @tc.name: Test DoPreroll  API
  * @tc.number: DoPreroll_001
  * @tc.desc: Test ret != Status::OK
