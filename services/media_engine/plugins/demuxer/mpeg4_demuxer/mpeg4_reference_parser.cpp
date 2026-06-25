@@ -339,11 +339,11 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
 }
 
 static void InsertIframePtsMap(std::shared_ptr<Sample> sample, int32_t gopId,
-    std::unordered_map<int32_t, int64_t> &gopId2DecodedSamplePts_)
+    std::unordered_map<int32_t, int64_t> &gopId2DecodedSamplePts)
 {
     bool validCheck = (sample != nullptr) && (sample->flag & Sample::SampleFlag::SYNC_FRAME) && (gopId != -1);
-    if (validCheck && (gopId2DecodedSamplePts_.find(gopId) == gopId2DecodedSamplePts_.end())) {
-        gopId2DecodedSamplePts_.insert(std::pair<int32_t, int64_t>(gopId, sample->pts));
+    if (validCheck && (gopId2DecodedSamplePts.find(gopId) == gopId2DecodedSamplePts.end())) {
+        gopId2DecodedSamplePts.insert(std::pair<int32_t, int64_t>(gopId, sample->pts));
     }
 }
 
