@@ -17,6 +17,7 @@
 #include <set>
 #include <thread>
 #include <malloc.h>
+#include <dlfcn.h>
 #include "syspara/parameters.h"
 #include "securec.h"
 #include "avcodec_trace.h"
@@ -156,15 +157,26 @@ AvcEncoder::AvcEncoder(const std::string &name)
     if (encInstanceID_ < VIDEO_INSTANCE_SIZE) {
         handle_ = dlopen(AVC_ENC_LIB_PATH, RTLD_LAZY);
         if (handle_ == nullptr) {
-            AVCODEC_LOGE("Load avc codec failed: %{public}s", AVC_ENC_LIB_PATH);
+            AVCODEC_LOGE("Load avc codec failed: %{public}s, dlerror: %{public}s",
+                         AVC_ENC_LIB_PATH, dlerror());
+            state_ = State::ERROR;
+        } else {
+            AvcFuncMatch();
+            if (handle_ == nullptr) {
+                AVCODEC_LOGE("AvcEncoder function match failed");
+                state_ = State::ERROR;
+            }
         }
-        AvcFuncMatch();
-        AVCODEC_LOGI("Num %{public}u AvcEncoder entered, state: Uninitialized", encInstanceID_);
+        AVCODEC_LOGI("Num %{public}u AvcEncoder entered, state: %{public}s",
+                     encInstanceID_, StateToString(state_.load()));
     } else {
         AVCODEC_LOGE("AvcEncoder already has %{public}d instances, cannot has more instances", VIDEO_INSTANCE_SIZE);
         state_ = State::ERROR;
     }
-    InitAvcEncoderParams();
+    if (state_ != State::ERROR && InitAvcEncoderParams() != AVCS_ERR_OK) {
+        AVCODEC_LOGE("Init avc encoder params failed");
+        state_ = State::ERROR;
+    }
 }
 
 AvcEncoder::~AvcEncoder()
@@ -836,7 +848,7 @@ int32_t AvcEncoder::AllocateBuffers()
     return AVCS_ERR_OK;
 }
 
-void AvcEncoder::InitAvcEncoderParams()
+int32_t AvcEncoder::InitAvcEncoderParams()
 {
     initParams_.logFxn = nullptr;
     initParams_.uiChannelID = 0;
@@ -871,8 +883,10 @@ void AvcEncoder::InitAvcEncoderParams()
     avcEncOutputArgs_.bytes = 0;
     avcEncOutputArgs_.timestamp = 0;
     avcEncHeaderArgs_.streamBuf = static_cast<uint8_t *>(malloc(MAX_HEADER_SIZE));
-    CHECK_AND_RETURN_LOG(avcEncHeaderArgs_.streamBuf != nullptr, "malloc header buffer failed");
+    CHECK_AND_RETURN_RET_LOG(avcEncHeaderArgs_.streamBuf != nullptr, AVCS_ERR_NO_MEMORY,
+                             "malloc header buffer failed");
     avcEncHeaderArgs_.size = MAX_HEADER_SIZE;
+    return AVCS_ERR_OK;
 }
 
 void AvcEncoder::FillAvcInitParams(AVC_ENC_INIT_PARAM &param)

@@ -29,9 +29,14 @@ void CreateAvcEncoderByName(const std::string &name, std::shared_ptr<CodecBase> 
     int32_t ret = AvcEncoder::GetCodecCapability(caps);
     if (ret != AVCS_ERR_OK) {
         codec = nullptr;
-    } else {
-        codec = std::make_shared<AvcEncoder>(name);
+        return;
     }
+    std::shared_ptr<AvcEncoder> encoder = std::make_shared<AvcEncoder>(name);
+    if (!encoder->IsValid()) {
+        codec = nullptr;
+        return;
+    }
+    codec = encoder;
 }
 }
 } // namespace OHOS::MediaAVCodec::Codec
