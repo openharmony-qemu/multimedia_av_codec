@@ -2001,9 +2001,13 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_mapHit_062404, TestSize.Le
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
     auto avStream = demuxerPlugin_->formatContext_->streams[0];
     ASSERT_NE(avStream, nullptr);
-    auto ptsIt = demuxerPlugin_->trackMinPtsMap_.find(0);
-    ASSERT_NE(ptsIt, demuxerPlugin_->trackMinPtsMap_.end());
-    int64_t mapMinPts = ptsIt->second;
+    int64_t mapMinPts = 0;
+    {
+        std::lock_guard<std::mutex> lock(demuxerPlugin_->minTsMutex_);
+        auto ptsIt = demuxerPlugin_->trackMinPtsMap_.find(0);
+        ASSERT_TRUE(ptsIt != demuxerPlugin_->trackMinPtsMap_.end());
+        mapMinPts = ptsIt->second;
+    }
     int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
     EXPECT_EQ(globalOffset, mapMinPts);
 }
@@ -2019,7 +2023,10 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_startTime_fallback_062405,
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
     auto avStream = demuxerPlugin_->formatContext_->streams[0];
     ASSERT_NE(avStream, nullptr);
-    demuxerPlugin_->trackMinPtsMap_.clear();
+    {
+        std::lock_guard<std::mutex> lock(demuxerPlugin_->minTsMutex_);
+        demuxerPlugin_->trackMinPtsMap_.clear();
+    }
     int64_t startTime = avStream->start_time;
     int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
     EXPECT_EQ(globalOffset, startTime);
@@ -2036,7 +2043,10 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_zero_fallback_062406, Test
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
     auto avStream = demuxerPlugin_->formatContext_->streams[0];
     ASSERT_NE(avStream, nullptr);
-    demuxerPlugin_->trackMinPtsMap_.clear();
+    {
+        std::lock_guard<std::mutex> lock(demuxerPlugin_->minTsMutex_);
+        demuxerPlugin_->trackMinPtsMap_.clear();
+    }
     int64_t savedStartTime = avStream->start_time;
     avStream->start_time = AV_NOPTS_VALUE;
     int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
