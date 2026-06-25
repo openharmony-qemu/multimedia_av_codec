@@ -2170,6 +2170,21 @@ HWTEST_F(DownloaderUnitTest, Pause_CloseNoRetry_Normal, TestSize.Level0)
     downloader->Pause();
     EXPECT_EQ(mock->closeCallCount_, 1);
 }
+
+HWTEST_F(DownloaderUnitTest, HttpCurlClient_HeaderList_Free_In_dtor, TestSize.Level1)
+{
+    auto client = NetworkClient::GetInstance(
+        [](void *buffer, size_t size, size_t nitems, void *userParam) ->
+            size_t { (void)buffer; (void)userParam; return size * nitems; },
+        [](void *buffer, size_t size, size_t nitems, void *userParam) ->
+            size_t { (void)buffer; (void)userParam; return size * nitems; },
+        nullptr);
+    EXPECT_NE(client, nullptr);
+    (void)client->Init();
+    std::map<std::string, std::string> httpHeader = {{"Accpet", "*/*"}};
+    (void)client->Open("http://127.0.0.1:46666/test", httpHeader, 1000);
+    client.reset();
+}
 }
 }
 }

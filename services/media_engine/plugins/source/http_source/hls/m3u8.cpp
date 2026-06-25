@@ -151,6 +151,9 @@ M3U8::~M3U8()
     fmp4Header_ = nullptr;
     {
         std::unique_lock<std::shared_mutex> lock(keyMutex_);
+        for (auto& [index, keyInfo] : keyInfos_) {
+            (void)memset_s(keyInfo.key_, sizeof(keyInfo.key_), 0, sizeof(keyInfo.key_));
+        }
         keyInfos_.clear();
     }
     NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
