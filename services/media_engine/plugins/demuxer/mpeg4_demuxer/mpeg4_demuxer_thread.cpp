@@ -109,6 +109,8 @@ Status MPEG4DemuxerPlugin::PrepareSeekToFrameByDts(int32_t trackId, int64_t seek
     int64_t targetDts = 0;
     FALSE_RETURN_V_MSG_E(ConvertTimeScale(seekTime, static_cast<int64_t>(context.trackTimeScale), 1000LL,
         &targetDts) == Status::OK, Status::ERROR_INVALID_PARAMETER, "Convert seek time failed");
+    MEDIA_LOG_I("trackId is " PUBLIC_LOG_D32 ", seekTime is " PUBLIC_LOG_D64 ", targetDts is " PUBLIC_LOG_D64, trackId,
+        seekTime, targetDts);
     Status ret = FindFirstSampleIndexByDts(context.track, targetDts, context.sampleIndex);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find sample by dts failed");
     context.actualDts = context.track->sampleHelper->sampleIndexEntry_[context.sampleIndex].dts;
@@ -199,6 +201,7 @@ Status MPEG4DemuxerPlugin::FindFirstSampleIndexByDts(
         return Status::END_OF_STREAM;
     }
     sampleIndex = static_cast<uint32_t>(std::distance(entry.begin(), iter));
+    MEDIA_LOG_I("sampleIndex is " PUBLIC_LOG_U32, sampleIndex);
     return Status::OK;
 }
 
