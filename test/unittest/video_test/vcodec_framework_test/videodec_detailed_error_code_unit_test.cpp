@@ -99,7 +99,7 @@ void SetDetailedErrorCodeParmater(std::shared_ptr<VDecCallbackTestExt> vdecCallb
 
 void CheckDetailedErrorCode(bool verification, std::string_view param)
 {
-#ifdef HMOS_TEST
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
     std::string codecName = "";
     std::shared_ptr<AVCodecList> codecCapability = AVCodecListFactory::CreateAVCodecList();
     CapabilityData *capabilityData = nullptr;
@@ -118,7 +118,7 @@ void CheckDetailedErrorCode(bool verification, std::string_view param)
         capabilityData->featuresMap.count(static_cast<int32_t>(AVCapabilityFeature::VIDEO_WATERMARK))) {
         ASSERT_EQ(true, verification);
     }
-#endif // HMOS_TEST
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 }
 
 /**
@@ -384,7 +384,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_HEVC);
 }
-#ifdef HMOS_TEST
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoDecoder_XPS_MBAFF_001
  * @tc.desc: xps frame is mbaff
@@ -406,7 +406,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
-#endif // HMOS_TEST
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 } // namespace
 
 int main(int argc, char **argv)
