@@ -1992,7 +1992,7 @@ HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_multi_track_062403, TestSize.Le
 
 HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_mapHit_062404, TestSize.Level1)
 {
-    std::string pluginName = "avdemux_mp4";
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = "/data/test/media/h264_aac.mov";
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
@@ -2009,7 +2009,7 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_mapHit_062404, TestSize.Le
 
 HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_startTime_fallback_062405, TestSize.Level1)
 {
-    std::string pluginName = "avdemux_mp4";
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = "/data/test/media/h264_aac.mov";
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
@@ -2026,7 +2026,7 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_startTime_fallback_062405,
 
 HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_zero_fallback_062406, TestSize.Level1)
 {
-    std::string pluginName = "avdemux_mp4";
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = "/data/test/media/h264_aac.mov";
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
@@ -2048,7 +2048,7 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_zero_fallback_062406, Test
 
 HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_with_dtsOffsetUs_062407, TestSize.Level1)
 {
-    std::string pluginName = "avdemux_mp4";
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = "/data/test/media/h264_aac.mov";
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
@@ -2063,7 +2063,7 @@ HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_with_dtsOffsetUs_062407, TestSize.Le
 
 HWTEST_F(DemuxerPluginUnitTest, SeekMs2FrameId_with_minPts_offset_062408, TestSize.Level1)
 {
-    std::string pluginName = "avdemux_mp4";
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = "/data/test/media/h264_aac.mov";
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
@@ -2085,7 +2085,7 @@ HWTEST_F(DemuxerPluginUnitTest, SeekMs2FrameId_negative_seekMs_062409, TestSize.
 
 HWTEST_F(DemuxerPluginUnitTest, FrameId2SeekMs_exactMatch_threshold_062410, TestSize.Level1)
 {
-    std::string pluginName = "avdemux_mp4";
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = "/data/test/media/h264_aac.mov";
     InitResource(filePath, pluginName);
     ASSERT_TRUE(initStatus_);
