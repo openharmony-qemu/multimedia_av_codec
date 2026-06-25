@@ -1583,7 +1583,6 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1));
 
-
     OH_AVErrCode ret = OH_VideoDecoder_Configure(videoDec, format);
     ASSERT_EQ(AV_ERR_OK, ret);
 
