@@ -2043,3 +2043,57 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_zero_fallback_062406, Test
     EXPECT_EQ(demuxerPlugin_->dtsOffsetUs_, 0);
     avStream->start_time = savedStartTime;
 }
+
+// ==================== Dts2FrameId / SeekMs2FrameId / FrameId2SeekMs Tests ====================
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_with_dtsOffsetUs_062407, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mp4";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_GT(demuxerPlugin_->pts2DtsMap_.size(), 0U);
+    ASSERT_NE(demuxerPlugin_->parserRefIdx_, -1);
+    uint32_t frameId = 0;
+    int64_t dtsUs = demuxerPlugin_->pts2DtsMap_.begin()->second;
+    Status ret = demuxerPlugin_->Dts2FrameId(dtsUs, frameId);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_GT(demuxerPlugin_->dtsOffsetUs_, 0);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, SeekMs2FrameId_with_minPts_offset_062408, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mp4";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_GT(demuxerPlugin_->pts2DtsMap_.size(), 0U);
+    uint32_t frameId = 0;
+    Status ret = demuxerPlugin_->SeekMs2FrameId(0, frameId);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(demuxerPlugin_->minPts_, 0);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, SeekMs2FrameId_negative_seekMs_062409, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    uint32_t frameId = 0;
+    Status ret = plugin->SeekMs2FrameId(-1, frameId);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, FrameId2SeekMs_exactMatch_threshold_062410, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mp4";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_GT(demuxerPlugin_->pts2DtsMap_.size(), 0U);
+    uint32_t frameId = 0;
+    int64_t seekMs = 0;
+    Status ret = demuxerPlugin_->FrameId2SeekMs(frameId, seekMs);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_GE(seekMs, 0);
+    EXPECT_GT(demuxerPlugin_->dtsOffsetUs_, 0);
+}
