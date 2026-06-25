@@ -122,7 +122,8 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
     SelectTrack(refParserTrackIdx_);
     FALSE_RETURN_V_MSG_E(trackOfRefParser_ && trackOfRefParser_->sampleHelper, Status::ERROR_INVALID_DATA,
         "trackOfRefParser_ or sampleHelper is nullptr");
-    const std::vector<SampleIndexEntry>& sampleIndexEntries_ = trackOfRefParser_->sampleHelper->sampleIndexEntry_;
+    const std::vector<MPEG4SampleHelper::SampleIndexEntry>& sampleIndexEntries_ =
+        trackOfRefParser_->sampleHelper->sampleIndexEntry_;
     MEDIA_LOG_I("size of sampleIndexEntries_ is " PUBLIC_LOG_ZU, sampleIndexEntries_.size());
 
     while (refParserState_ && refParserCurGopId_ != -1) {
@@ -340,14 +341,14 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
 static void InsertIframePtsMap(std::shared_ptr<Sample> sample, int32_t gopId,
     std::unordered_map<int32_t, int64_t> &gopId2DecodedSamplePts_)
 {
-    bool validCheck = (sample != nullptr) && (sample->flag_ == AV_PKT_FLAG_KEY) && (gopId != -1);
+    bool validCheck = (sample != nullptr) && (sample->flag == AV_PKT_FLAG_KEY) && (gopId != -1);
     if (validCheck && (gopId2DecodedSamplePts_.find(gopId) == gopId2DecodedSamplePts_.end())) {
-        gopId2DecodedSamplePts_.insert(std::pair<int32_t, int64_t>(gopId, sample->pts_));
+        gopId2DecodedSamplePts_.insert(std::pair<int32_t, int64_t>(gopId, sample->pts));
     }
 }
 
 Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex,
-    const std::vector<SampleIndexEntry>& sampleIndexEntries_)
+    const std::vector<MPEG4SampleHelper::SampleIndexEntry>& sampleIndexEntries_)
 {
     MEDIA_LOG_I("ParserRefInfoLoop start, sampleIndex is " PUBLIC_LOG_U32, sampleIndex);
     std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -360,12 +361,12 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uin
         sample->dts = INT64_MIN;
         sample->flag = Sample::SampleFlag::EOS;
     } else if (isReadSampleDataFromCache_) {
-        std::shared_ptr<MPEG4sAMPLE> cacheSample = cacheQueue_.Front(refParserTrackIdx_);
+        std::shared_ptr<MPEG4Sample> cacheSample = cacheQueue_.Front(refParserTrackIdx_);
         FALSE_RETURN_V_MSG_E(cacheSample != nullptr, Status::ERROR_UNKNOWN, "cacheSample is nullptr");
         sample = cacheSample->sample;
         isReadSampleDataFromCache_ = false;
     } else {
-        const SampleIndexEntry& currentSample = sampleIndexEntries_[sampleIndex];
+        const MPEG4SampleHelper::SampleIndexEntry& currentSample = sampleIndexEntries_[sampleIndex];
         Status ret = ReadSampleData(sample, currentSample.pos, currentSample.size, refParserTrackIdx_);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to read sample.");
         FALSE_RETURN_V_MSG_E(trackOfRefParser_ != nullptr, Status::ERROR_UNKNOWN, "trackOfRefParser_ is nullptr");
