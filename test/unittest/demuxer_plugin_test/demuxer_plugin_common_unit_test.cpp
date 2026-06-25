@@ -2001,7 +2001,9 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_mapHit_062404, TestSize.Le
     ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
     auto avStream = demuxerPlugin_->formatContext_->streams[0];
     ASSERT_NE(avStream, nullptr);
-    int64_t mapMinPts = demuxerPlugin_->trackMinPtsMap_[0];
+    auto ptsIt = demuxerPlugin_->trackMinPtsMap_.find(0);
+    ASSERT_NE(ptsIt, demuxerPlugin_->trackMinPtsMap_.end());
+    int64_t mapMinPts = ptsIt->second;
     int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
     EXPECT_EQ(globalOffset, mapMinPts);
 }
