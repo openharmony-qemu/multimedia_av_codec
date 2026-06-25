@@ -351,14 +351,15 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uin
 {
     MEDIA_LOG_I("ParserRefInfoLoop start, sampleIndex is " PUBLIC_LOG_U32, sampleIndex);
     std::unique_lock<std::mutex> sLock(syncMutex_);
-    if () {
-
-    } else if (sampleIndex > sampleIndexEntries_.size()) {
+    if (sampleIndex > sampleIndexEntries_.size()) {
         MEDIA_LOG_E("sample index(" PUBLIC_LOG_U32 ") out of range", sampleIndex);
         return Status::ERROR_UNKNOWN;
     }
-
-    if (isReadSampleDataFromCache_) {
+    if (sampleIndex == sampleIndexEntries_.size()) {
+        sample->size = 0;
+        sample->dts = INT64_MIN;
+        sample->flag = Sample::SampleFlag::EOS;
+    } else if (isReadSampleDataFromCache_) {
         std::shared_ptr<MPEG4sAMPLE> cacheSample = cacheQueue_.Front(refParserTrackIdx_);
         FALSE_RETURN_V_MSG_E(cacheSample != nullptr, Status::ERROR_UNKNOWN, "cacheSample is nullptr");
         sample = cacheSample->sample;
@@ -368,8 +369,8 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uin
         Status ret = ReadSampleData(sample, currentSample.pos, currentSample.size, refParserTrackIdx_);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to read sample.");
         FALSE_RETURN_V_MSG_E(trackOfRefParser_ != nullptr, Status::ERROR_UNKNOWN, "trackOfRefParser_ is nullptr");
-        int32_t timeScale = track->timeScale;
-        FALSE_RETURN_V_MSG_E(ttimeScale > 0, Status::ERROR_UNKNOWN, "ttimeScale is invalid");
+        int32_t timeScale = trackOfRefParser_->timeScale;
+        FALSE_RETURN_V_MSG_E(timeScale > 0, Status::ERROR_UNKNOWN, "timeScale is invalid");
         double timeScaleRate = static_cast<double>(S_TO_US) / static_cast<double>(timeScale);
         sample->pts = static_cast<int64_t>(currentSample.pts * timeScaleRate);
         sample->dts = static_cast<int64_t>(currentSample.dts * timeScaleRate);
@@ -379,15 +380,14 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uin
     sLock.unlock();
     InsertIframePtsMap(sample, refParserCurGopId_, gopId2DecodedSamplePts_);
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_UNKNOWN, "sample is nullptr!");
-    FALSE_RETURN_V_MSG_I(sample->flag_ & static_cast<uint32_t>(Sample::SampleFlag::EOS), Status::OK, "eos frame");
     Status result = referenceParser_->ParserNalUnits(sample->data.get(), sample->size, sampleIndex, sample->dts);
     FALSE_RETURN_V_MSG_E(result == Status::OK, result, "parse nal units end! ret is " PUBLIC_LOG_D32,
         static_cast<int32_t>(result));
     int32_t syncSampleNum = static_cast<int32_t>(syncSamplesIndex_.size());
-    if (result != Status::OK || (refParserCurGopId_ + 1 < syncSampleNum &&
-        sampleIndex == syncSamplesIndex_[refParserCurGopId_ + 1] - 1)) {
-        MEDIA_LOG_D("syncSamplesIndex_ size: " PUBLIC_LOG_ZU ", processingSyncSamplesIndex_: " PUBLIC_LOG_ZU
-            ", sampleIndex: " PUBLIC_LOG_U32 ", refParserCurGopId_: " PUBLIC_LOG_U32, syncSamplesIndex_.size(),
+    if (sample->flag & Sample::SampleFlag::EOS || (refParserCurGopId_ + 1 < syncSampleNum &&
+        sampleIndex == syncSamplesIndex_[refParserCurGopId_ + 1] - 1)) {  // 到达视频末尾或者本GOP最后一帧解析完
+        MEDIA_LOG_D("syncSamplesIndex_ size is " PUBLIC_LOG_ZU ", processingSyncSamplesIndex_ size is " PUBLIC_LOG_ZU
+            ", sampleIndex is " PUBLIC_LOG_U32 ", refParserCurGopId_ is " PUBLIC_LOG_U32, syncSamplesIndex_.size(),
             processingSyncSamplesIndex_.size(), sampleIndex, refParserCurGopId_);
         processingSyncSamplesIndex_.remove(syncSamplesIndex_[refParserCurGopId_]);
         if (processingSyncSamplesIndex_.size() == 0) {
@@ -401,7 +401,7 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uin
 
 Status MPEG4DemuxerPlugin::UpdateParserGopId(int32_t syncSamplesPtsSize)
 {
-    MEDIA_LOG_D("UpdateParserGopId start, syncSamplesPtsSize is " PUBLIC_LOG_D32 ", refParserCurGopId_ is "
+    MEDIA_LOG_I("UpdateParserGopId start, syncSamplesPtsSize is " PUBLIC_LOG_D32 ", refParserCurGopId_ is "
         PUBLIC_LOG_D32, syncSamplesPtsSize, refParserCurGopId_);
     FALSE_RETURN_V_NOLOG(syncSamplesPtsSize != 0, Status::ERROR_UNKNOWN);
     int32_t tmpGopId = refParserCurGopId_;
