@@ -446,7 +446,6 @@ private:
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
     int64_t minPts_ = 0;
-    int64_t dtsOffsetUs_ = 0;
     std::unordered_map<int32_t, int64_t> trackMinPtsMap_;
     std::unordered_map<int32_t, int64_t> trackMinDtsMap_;
     std::mutex minTsMutex_;

@@ -2004,7 +2004,6 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_mapHit_062404, TestSize.Le
     int64_t mapMinPts = demuxerPlugin_->trackMinPtsMap_[0];
     int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
     EXPECT_EQ(globalOffset, mapMinPts);
-    EXPECT_GT(demuxerPlugin_->dtsOffsetUs_, 0);
 }
 
 HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_startTime_fallback_062405, TestSize.Level1)
@@ -2040,13 +2039,12 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_zero_fallback_062406, Test
     avStream->start_time = AV_NOPTS_VALUE;
     int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
     EXPECT_EQ(globalOffset, 0);
-    EXPECT_EQ(demuxerPlugin_->dtsOffsetUs_, 0);
     avStream->start_time = savedStartTime;
 }
 
 // ==================== Dts2FrameId / SeekMs2FrameId / FrameId2SeekMs Tests ====================
 
-HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_with_dtsOffsetUs_062407, TestSize.Level1)
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_basic_062407, TestSize.Level1)
 {
     std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     std::string filePath = "/data/test/media/h264_aac.mov";
@@ -2058,7 +2056,6 @@ HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_with_dtsOffsetUs_062407, TestSize.Le
     int64_t dtsUs = demuxerPlugin_->pts2DtsMap_.begin()->second;
     Status ret = demuxerPlugin_->Dts2FrameId(dtsUs, frameId);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_GT(demuxerPlugin_->dtsOffsetUs_, 0);
 }
 
 HWTEST_F(DemuxerPluginUnitTest, SeekMs2FrameId_with_minPts_offset_062408, TestSize.Level1)
@@ -2095,5 +2092,4 @@ HWTEST_F(DemuxerPluginUnitTest, FrameId2SeekMs_exactMatch_threshold_062410, Test
     Status ret = demuxerPlugin_->FrameId2SeekMs(frameId, seekMs);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_GE(seekMs, 0);
-    EXPECT_GT(demuxerPlugin_->dtsOffsetUs_, 0);
 }
