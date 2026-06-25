@@ -339,7 +339,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_004, TestSize.Level1)
     surface->GetTransform(transform);
     EXPECT_EQ(0, transform);
 }
-#ifdef HMOS_TEST
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoDecoder_Configure_Transform_005
  * @tc.desc: video codec Configure
@@ -414,7 +414,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_006, TestSize.Level1)
     surface->GetTransform(transform);
     EXPECT_EQ(0, transform);
 }
-#endif
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoDecoder_Configure_Transform_007
  * @tc.desc: video codec Configure

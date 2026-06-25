@@ -17,6 +17,7 @@
 #include <vector>
 #include "av_common.h"
 #include "avcodec_info.h"
+#include "codeclist_mock.h"
 #include "instance_memory_update_event_handler.h"
 #include "meta.h"
 #include "meta/meta_key.h"
@@ -34,17 +35,26 @@ namespace {
 class TEST_SUIT : public testing::Test {
 public:
     static void SetUpTestCase(void);
-    static void TearDownTestCase(void){};
+    static void TearDownTestCase(void);
     void SetUp(void);
     void TearDown(void);
     void UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, AVCodecType codecType, int32_t isHardware,
                         bool enablePostProcessing);
+    void IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat);
 
+    std::shared_ptr<OHOS::MediaAVCodec::CodecListMock> capability_ = nullptr;
     std::shared_ptr<Meta> meta_ = nullptr;
     std::shared_ptr<InstanceMemoryUpdateEventHandler> instanceMemoryHandler_ = nullptr;
 };
 
-void TEST_SUIT::SetUpTestCase(void) {}
+void TEST_SUIT::SetUpTestCase(void)
+{
+    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                    AVCodecCategory::AVCODEC_HARDWARE);
+    ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+}
+
+void TEST_SUIT::TearDownTestCase(void) {}
 
 void TEST_SUIT::SetUp(void)
 {
@@ -58,6 +68,16 @@ void TEST_SUIT::TearDown(void)
 {
     instanceMemoryHandler_ = nullptr;
     meta_->Clear();
+}
+
+void TEST_SUIT::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
+{
+    capability_ = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                AVCodecCategory::AVCODEC_HARDWARE);
+    auto pixelFormats = capability_->GetVideoSupportedPixelFormats();
+    if (std::find(pixelFormats.begin(), pixelFormats.end(), static_cast<int32_t>(pixelFormat)) == pixelFormats.end()) {
+        GTEST_SKIP() << "Unsupport pixel format = " << static_cast<int32_t>(pixelFormat);
+    }
 }
 
 void TEST_SUIT::UpdateMetaData(int32_t pixelFormat, int32_t bitDepth, AVCodecType codecType, int32_t isHardware,
@@ -495,6 +515,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264YUV420_TEST_004, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_001, TestSize.Level3)
 {
+    IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
@@ -514,6 +535,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_001, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_002, TestSize.Level3)
 {
+    IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
@@ -533,6 +555,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_002, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_003, TestSize.Level3)
 {
+    IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);
@@ -552,6 +575,7 @@ HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_003, TestSize.Level3)
  */
 HWTEST_F(TEST_SUIT, SoftwareEncoderH264RGBA_TEST_004, TestSize.Level3)
 {
+    IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     int32_t pixelFormat = static_cast<int32_t>(OHOS::MediaAVCodec::VideoPixelFormat::RGBA);
     UpdateMetaData(pixelFormat, 0, AVCODEC_TYPE_VIDEO_ENCODER, 0, false);
     meta_->SetData(Media::Tag::MIME_TYPE, MimeType::VIDEO_AVC);

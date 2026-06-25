@@ -151,12 +151,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_005, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-#ifdef HMOS_TEST
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
-#endif // HMOS_TEST
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 }
 
 /**
@@ -175,12 +175,12 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_006, TestSize.Level1)
     format_->PutIntValue(OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT, repeatPreviousFrameMaxCount);
     videoEnc_->needSleep_ = true;
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-#ifdef HMOS_TEST
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     int32_t frameOutputCountMin = (videoEnc_->frameInputCount_ - 1) * 2 - 7;
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
-#endif // HMOS_TEST
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 }
 
 /**
@@ -274,7 +274,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(videoEnc_->frameInputCount_, videoEnc_->frameOutputCount_);
 }
-#ifdef HMOS_TEST
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoEncoder_RepeatPreviousFrame_010
  * @tc.desc: repeat the previous frame two times
@@ -320,7 +320,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_011, TestSize.Level1)
     EXPECT_LE(videoEnc_->frameOutputCount_, frameOutputCountMax);
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
-#endif // HMOS_TEST
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 } // namespace
 
 int main(int argc, char **argv)

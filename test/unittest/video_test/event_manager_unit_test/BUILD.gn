@@ -143,14 +143,19 @@ ohos_unittest("video_instance_memory_calc_cov_unit_test") {
 
   include_dirs = [
     "$av_codec_root_dir/services/include",
-    "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/services/common/event_manager/event_handler/instance_memory_update_event_handler",
     "$av_codec_root_dir/services/services/sa_avcodec/server/include",
+    "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/test/unittest/common/common_mock/avformat",
+    "$av_codec_root_dir/test/unittest/common/common_mock/avformat/capi",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test",
   ]
   defines = av_codec_defines
 
   sources = [
     "$av_codec_root_dir/services/services/sa_avcodec/server/avcodec_server_manager.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock.cpp",
+    "$av_codec_root_dir/test/unittest/video_test/codeclist_test/capi/codeclist_capi_mock_factory.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_calculator.cpp",
     "$event_handler_dir/instance_memory_update_event_handler/instance_memory_update_event_handler.cpp",
     "./instance_memory_calc_cov_unit_test.cpp",
