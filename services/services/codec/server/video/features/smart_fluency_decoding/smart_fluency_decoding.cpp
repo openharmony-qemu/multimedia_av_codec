@@ -413,6 +413,10 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         AVCODEC_LOGI_WITH_TAG("ignore eos frame");
         return true;
     }
+    if (caps.requiresNalu && !naluAnalyzer_) {
+        EnsureNaluAnalyzer();
+        ReplayCsdToAnalyzer();
+    }
     PreDecResult res;
     if (naluAnalyzer_ && caps.requiresNalu) {
 #ifdef SFD_DEBUG

@@ -30,12 +30,23 @@ public:
     ~AutoFallbackRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
+    void UpdatePlaybackSpeed(double speed) override;
+    void UpdateSourceFramerate(double sourceFps) override;
     void Reset() override;
     RetentionStrategyType GetMode() const override;
     double GetRatio() const override;
     SfdDecisionReason GetLastDecisionReason() const override;
+    bool IsPassthrough() const override;
+    bool RequiresNaluAnalysis() const override;
+    bool RequiresMvAnalysis() const override;
 
 private:
+    double CalculateFallbackRatio() const;
+    void TransitionToPhase2();
+
+    bool hasSourceFps_{false};
+    double sourceFps_{0.0};
+    double currentSpeed_{1.0};
     std::unique_ptr<FixedRatioRetentionStrategy> fallbackDropper_{nullptr};
 };
 
