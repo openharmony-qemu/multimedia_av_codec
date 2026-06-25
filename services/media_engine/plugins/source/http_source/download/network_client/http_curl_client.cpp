@@ -265,6 +265,10 @@ Status HttpCurlClient::Close(bool isAsync)
             curl_easy_cleanup(easyHandle_);
             easyHandle_ = nullptr;
         }
+        if (headerList_) {
+            curl_slist_free_all(headerList_);
+            headerList_ = nullptr;
+        }
     }
     ipFlag_ = false;
     if (!ip_.empty()) {
@@ -284,6 +288,10 @@ Status HttpCurlClient::Deinit()
     if (easyHandle_) {
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
+    }
+    if (headerList_) {
+        curl_slist_free_all(headerList_);
+        headerList_ = nullptr;
     }
     ipFlag_ = false;
     if (!ip_.empty()) {

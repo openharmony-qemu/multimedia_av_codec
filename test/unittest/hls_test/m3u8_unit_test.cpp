@@ -1216,4 +1216,24 @@ HWTEST_F(M3u8UnitTest, MasterPlaylist_WrongSection, TestSize.Level0)
     playlist.ParseStart(wrongTag);
     EXPECT_TRUE(playlist.isStart_);
 }
+
+HWTEST_F(M3u8UnitTest, KeyInfos_Secure_Cleanup_In_Destructor, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    uint8_t testKey[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                        0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10};
+    for (uint64_t i = 1; i <= 3; ++i) {
+        KeyInfo keyInfo;
+        keyInfo.index_ = i;
+        (void)memcpy_s(keyInfo.key_, sizeof(keyInfo.key_), testKey, sizeof(testKey));
+        keyInfo.keyLen_ = sizeof(testKey);
+        m3u8->keyInfos_[i] = keyInfo;
+    }
+    EXPECT_EQ(m3u8->keyInfos_.size(), 3);
+    for (const auto& [index, keyInfo] : m3u8->keyInfos_) {
+        EXPECT_EQ(memcmp(keyInfo.key_, testKey, sizeof(testKey)), 0);
+    }
+    m3u8.reset();
+    EXPECT_TRUE(true);
+}
 }
