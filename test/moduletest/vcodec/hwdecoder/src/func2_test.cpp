@@ -2418,7 +2418,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ORDER_0300, TestSize.Level2)
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ORDER_0400, TestSize.Level2)
 {
     if (cap_vvc != nullptr && g_codecNameVVC.find("hisi") != string::npos) {
-        if (OH_AVCapability_IsFeatureSupported(cap, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
+        if (OH_AVCapability_IsFeatureSupported(cap_vvc, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_VVC_1080;
             vDecSample->DEFAULT_WIDTH = PORTRAIT_WIDTH;
