@@ -113,7 +113,9 @@
           "json",
           "resource_schedule_service",
           "certificate_manager",
-          "api_metrics"
+          "api_metrics",
+          "egl",
+          "opengles"
         ],
         "third_party": []
       },
