@@ -1768,7 +1768,7 @@ Status DecoderSurfaceFilter::SetVideoWindowSize(int32_t width, int32_t height)
     return postProcessor_->SetVideoWindowSize(width, height);
 }
 
- void DecoderSurfaceFilter::ConfigureFrameRetentionMode(Format &format, float speed)
+void DecoderSurfaceFilter::ConfigureFrameRetentionMode(Format &format, double speed)
 {
     const double eps = 1e-6;
     if (speed <= 1.0 + eps) {
@@ -1785,7 +1785,7 @@ Status DecoderSurfaceFilter::SetSpeed(float speed)
 {
     FALSE_RETURN_V(videoDecoder_ != nullptr, Status::ERROR_INVALID_OPERATION);
     MEDIA_LOG_D("SetSpeed in");
-    speed_ = speed;
+    speed_ = static_cast<double>(speed);
     double frameRate = 0.0;
     configFormat_.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate);
     if (frameRate <= 0) {
