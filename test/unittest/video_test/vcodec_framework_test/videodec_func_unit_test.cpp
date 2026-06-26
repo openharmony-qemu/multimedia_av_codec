@@ -204,6 +204,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_001, TestSize.Level1)
     auto p = consumer_->GetProducer();
     sptr<Surface> producer_ = Surface::CreateSurfaceAsProducer(p);
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
+    ASSERT_NE(nullptr, surface);
+
     surface->SetTransform(1);
     int32_t transform = -1;
     surface->GetTransform(transform);
@@ -234,6 +236,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_002, TestSize.Level1)
     auto p = consumer_->GetProducer();
     sptr<Surface> producer_ = Surface::CreateSurfaceAsProducer(p);
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
+    ASSERT_NE(nullptr, surface);
 
     CreateByNameWithParam(HW_AVC);
     PrepareSource(HW_AVC);
@@ -244,7 +247,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_002, TestSize.Level1)
     formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     formatCfg->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, 1);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(formatCfg));
-    videoDec_->SetOutputSurface(surface);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface(surface));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     int32_t transform = -1;
     surface->GetTransform(transform);
@@ -279,6 +282,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_003, TestSize.Level1)
     auto p = consumer_->GetProducer();
     sptr<Surface> producer_ = Surface::CreateSurfaceAsProducer(p);
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
+    ASSERT_NE(nullptr, surface);
+
     surface->SetTransform(1);
     int32_t transform = -1;
     surface->GetTransform(transform);
@@ -309,6 +314,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_004, TestSize.Level1)
     auto p = consumer_->GetProducer();
     sptr<Surface> producer_ = Surface::CreateSurfaceAsProducer(p);
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
+    ASSERT_NE(nullptr, surface);
 
     CreateByNameWithParam(SW_AVC);
     PrepareSource(SW_AVC);
@@ -319,7 +325,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_004, TestSize.Level1)
     formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     formatCfg->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, 1);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(formatCfg));
-    videoDec_->SetOutputSurface(surface);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface(surface));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     int32_t transform = -1;
     surface->GetTransform(transform);
@@ -354,6 +360,8 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_005, TestSize.Level1)
     auto p = consumer_->GetProducer();
     sptr<Surface> producer_ = Surface::CreateSurfaceAsProducer(p);
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
+    ASSERT_NE(nullptr, surface);
+
     surface->SetTransform(1);
     int32_t transform = -1;
     surface->GetTransform(transform);
@@ -384,6 +392,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_006, TestSize.Level1)
     auto p = consumer_->GetProducer();
     sptr<Surface> producer_ = Surface::CreateSurfaceAsProducer(p);
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
+    ASSERT_NE(nullptr, surface);
 
     CreateVideoCodecByName("OH.Media.Codec.Decoder.Video.HEVC");
     PrepareSource(HW_HEVC);
@@ -394,7 +403,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_006, TestSize.Level1)
     formatCfg->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
     formatCfg->PutIntValue(OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE, 1);
     EXPECT_EQ(AV_ERR_OK, videoDec_->Configure(formatCfg));
-    videoDec_->SetOutputSurface(surface);
+    ASSERT_EQ(AV_ERR_OK, videoDec_->SetOutputSurface(surface));
     EXPECT_EQ(AV_ERR_OK, videoDec_->Start());
     int32_t transform = -1;
     surface->GetTransform(transform);
