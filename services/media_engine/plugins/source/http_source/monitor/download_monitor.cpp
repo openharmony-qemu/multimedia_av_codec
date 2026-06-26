@@ -363,7 +363,7 @@ std::string DownloadMonitor::MaskUrl(const std::string& url)
     size_t pathSlash = url.find('/', hostStart);
     if (pathSlash == std::string::npos) {
         size_t query = url.find_first_of("?#", hostStart);
-        std::string host = url.substr(hostStart, 
+        std::string host = url.substr(hostStart,
             (query == std::string::npos ? url.length() : query) - hostStart);
         return prefix + host;
     }
@@ -371,13 +371,16 @@ std::string DownloadMonitor::MaskUrl(const std::string& url)
     std::string host = url.substr(hostStart, pathSlash - hostStart);
 
     size_t queryStart = url.find_first_of("?#", pathSlash);
-    std::string path = (queryStart == std::string::npos) 
+    std::string path = (queryStart == std::string::npos)
         ? url.substr(pathSlash) : url.substr(pathSlash, queryStart - pathSlash);
 
-    if (path == "/") 
+    if (path == "/")
         return prefix + host + "/";
 
     size_t lastSlash = path.rfind('/');
+    if (lastSlash == std::string::npos) {
+        return prefix + host + path;
+    }
     std::string filename = path.substr(lastSlash + 1);
 
     if (filename.empty()) {
