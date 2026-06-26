@@ -2399,6 +2399,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ORDER_0300, TestSize.Level2)
             vDecSample->DEFAULT_FRAME_RATE = DEFAULT_FRAME_RATE;
             vDecSample->isCheckLowLatency = true;
             vDecSample->enableOrderDecode = true;
+            vDecSample->is8bitYuv = false;
             ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
             vDecSample->WaitForEOS();
             ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
