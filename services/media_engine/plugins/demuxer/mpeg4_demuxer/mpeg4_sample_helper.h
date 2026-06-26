@@ -17,6 +17,7 @@
 #define MPEG4_SAMPLE_HELPER_H
 
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 #include "common/status.h"
 #include "block_queue_pool.h"
@@ -82,7 +83,6 @@ public:
         uint32_t flag = 0;
         int32_t size = 0;
         int64_t duration = 0;
-        std::vector<uint8_t> skipSamplesInfo;
     };
     struct CttsEntry {
         uint32_t count;
@@ -104,6 +104,8 @@ public:
     bool HasTrailingZeroSttsDuration() const;
     uint32_t EstimateVideoDelay() const;
     SdtpEntry GetSdtpEntry();
+    bool HasSkipSamplesInfo(uint32_t sampleIndex) const;
+    const std::vector<uint8_t>* GetSkipSamplesInfo(uint32_t sampleIndex) const;
 
     std::shared_ptr<DemuxerDataReader> dataReader_;
     std::vector<SampleIndexEntry> sampleIndexEntry_;
@@ -135,8 +137,6 @@ private:
     };
     struct StssEntry {
         uint32_t index;
-        int64_t syncPts;
-        int64_t syncDts;
     };
     struct TrackFragmentHeaderInfo {
         enum Flags {
@@ -176,9 +176,11 @@ private:
         uint64_t totalSttsSamples = 0;
         uint64_t processedSttsSamples = 0;
     };
+    using SkipSamplesInfoMap = std::unordered_map<uint32_t, std::vector<uint8_t>>;
     struct EditListBuildContext {
         const std::vector<SampleIndexEntry>& oldEntries;
         std::vector<SampleIndexEntry>& newEntries;
+        SkipSamplesInfoMap& newSkipSamplesInfo;
         int64_t& editListDtsEntryEnd;
         int64_t& emptyEditsDuration;
         int64_t& minCorrectedPts;
@@ -199,6 +201,7 @@ private:
         bool shouldBreak = false;
         SampleIndexEntry newEntry;
         int64_t frameEndTime = 0;
+        std::vector<uint8_t> skipSamplesInfo;
         std::vector<int64_t> leadingDurations;
     };
     struct TfhdParseContext {
@@ -236,6 +239,7 @@ private:
     int32_t movieTimeScale_ = 0;
     int32_t trackTimeScale_ = 0;
     std::vector<EditListEntry> editListEntries_;
+    SkipSamplesInfoMap skipSamplesInfoMap_;
 
     void ProcessHalfByteSampleSizes(const uint8_t* data, uint32_t& entryIndex, uint32_t numSampleSizes);
     Status ExpandCttsEntry(uint32_t sttsNum);
@@ -272,6 +276,8 @@ private:
     void SelectClosestSyncByPts(int64_t inputPts, int64_t& currentIndex) const;
     Status CheckSyncSampleByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, int64_t &currentIndex);
     bool IsSyncSample(const SampleIndexEntry& entry) const;
+    void SetSkipSamplesInfo(uint32_t sampleIndex, std::vector<uint8_t>&& skipSamplesInfo);
+    int64_t GetSyncSamplePts(size_t stssIndex) const;
     int64_t GetCttsDelta(size_t index) const;
     int64_t GetFrameDuration(const std::vector<SampleIndexEntry>& entries, size_t index, int64_t editDuration) const;
     int64_t FindPrevClosestIndex(const std::vector<SampleIndexEntry>& entries, int64_t timestampPts,
