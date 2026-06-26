@@ -137,7 +137,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
         if (isNeedReportError && eventCallback) {
             MEDIA_LOG_E("fail to download m3u8.");
             eventCallback->OnEvent({PluginEventType::CLIENT_ERROR,
-                {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
+                {NetworkClientErrorCode::ERROR_TIME_OUT}, "errorMessage: Hls download m3u8 fail"});
 
             return;
         }
@@ -162,6 +162,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
     downloadRequest_->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetIsIndexM3u8Request(true);
+    downloadRequest_->SetRequestType(RequestType::HLS_PLAYLIST);
     if (downloader_ != nullptr) {
         downloader_->Download(downloadRequest_, -1); // -1
         downloader_->Start();

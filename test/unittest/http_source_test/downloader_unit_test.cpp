@@ -1969,7 +1969,10 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
     downloader->Init();
     auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->callback_ = sourceCallback;
-    downloader->NotifyError(52, 403);
+    NetworkErrorInfo networkErrorInfo;
+    networkErrorInfo.clientErrorCode_ = 52;
+    networkErrorInfo.serverErrorCode_ = 403;
+    downloader->NotifyError(networkErrorInfo);
     std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
     request->clientError_ = 992;
     EXPECT_EQ(downloader->NeedRetry(request), false);
@@ -2013,7 +2016,10 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->downloader_ = nullptr;
     downloader->callback_ = sourceCallback;
-    downloader->NotifyError(52, 403);
+    NetworkErrorInfo networkErrorInfo;
+    networkErrorInfo.clientErrorCode_ = 52;
+    networkErrorInfo.serverErrorCode_ = 403;
+    downloader->NotifyError(networkErrorInfo);
     std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
     request->clientError_ = 992;
     EXPECT_EQ(downloader->NeedRetry(request), false);
@@ -2044,9 +2050,14 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     downloader->GetPlayable();
     EXPECT_EQ(downloader->downloader_, nullptr);
     downloader->callback_.reset();
-    downloader->NotifyError(52, 403);
-    downloader->NotifyError(52, 0);
-    downloader->NotifyError(0, 0);
+    networkErrorInfo.clientErrorCode_ = 52;
+    networkErrorInfo.serverErrorCode_ = 403;
+    downloader->NotifyError(networkErrorInfo);
+    networkErrorInfo.clientErrorCode_ = 52;
+    networkErrorInfo.serverErrorCode_ = 0;
+    downloader->NotifyError(networkErrorInfo);
+    networkErrorInfo.clientErrorCode_ = 0;
+    downloader->NotifyError(networkErrorInfo);
     EXPECT_TRUE(downloader->callback_.expired());
 }
 
@@ -2112,6 +2123,38 @@ HWTEST_F(DownloaderUnitTest, APP_CLIENT_001, TestSize.Level1)
             threadRequestData.join();
         }
     }
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_001, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+    EXPECT_EQ(downloader->MaskUrl(""), "");
+    EXPECT_EQ(downloader->MaskUrl("example.com"), "example.com");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com?foo=bar"), "https://example.com");
+    EXPECT_EQ(downloader->MaskUrl("http://example.org#section"), "http://example.org");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/"), "https://example.com/");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/?q=1"), "https://example.com/");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/"), "https://example.com/***");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/file.txt"), "https://example.com/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/c/file.txt"), "https://example.com/***/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("https://baidu.com/a/b/c/abc.m3u8?a=6&b=8"), "https://baidu.com/***/abc.m3u8");
+    EXPECT_EQ(downloader->MaskUrl("example.com/x/y/z.pdf?v=2"), "example.com/***/z.pdf");
+    EXPECT_EQ(downloader->MaskUrl("example.com/index.html"), "example.com/index.html");
+    EXPECT_EQ(downloader->MaskUrl("http://a.b/c/d?x=1&y=2#top"), "http://a.b/***/d");
+    EXPECT_EQ(downloader->MaskUrl("a.b/"), "a.b/");
+    EXPECT_EQ(downloader->MaskUrl("a.b/c/"), "a.b/***");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com:8080/a/b/file.txt"), "https://example.com:8080/***/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("http://example.com:8080"), "http://example.com:8080");
+    EXPECT_EQ(downloader->MaskUrl("https://site.org/x/y/z/readme"), "https://site.org/***/readme");
+    EXPECT_EQ(downloader->MaskUrl("https://a.com/static/jquery.min.js"), "https://a.com/***/jquery.min.js");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/目录/文件.txt"), "https://example.com/***/文件.txt");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com:8443/api/v2/data.json?pretty=true"),
+        "https://example.com:8443/***/data.json");
+    EXPECT_EQ(downloader->MaskUrl("http://example.com/static/js/app"), "http://example.com/***/app");
+    EXPECT_EQ(downloader->MaskUrl("https://cdn.site.com/assets/videos/2024/summer/promo.mp4"),
+        "https://cdn.site.com/***/promo.mp4");
 }
 
 class MockCloseRetryClient : public NetworkClient {

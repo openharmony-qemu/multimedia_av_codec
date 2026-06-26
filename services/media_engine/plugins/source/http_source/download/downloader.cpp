@@ -118,6 +118,16 @@ DownloadRequest::DownloadRequest(uint64_t keyIndex, KeyDataSaveFunc keySaveData,
     keyIndex_ = keyIndex;
 }
 
+void DownloadRequest::SetRequestType(RequestType requestType)
+{
+    requestType_ = requestType;
+}
+
+RequestType DownloadRequest::GetRequestType()
+{
+    return requestType_;
+}
+
 size_t DownloadRequest::GetFileContentLength() const
 {
     WaitHeaderUpdated();

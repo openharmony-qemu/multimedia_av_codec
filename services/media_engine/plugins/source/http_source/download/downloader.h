@@ -86,6 +86,17 @@ enum  class RequestProtocolType : int32_t {
     DASH = 2,
 };
 
+enum class RequestType : int32_t {
+    DEFAULT = 0,
+    HTTP_MEDIA_DATA = 1,
+    HLS_MEDIA_DATA = 2,
+    HLS_PLAYLIST = 3,
+    HLS_KEY = 4,
+    HLS_MAP = 5,
+    DASH_MPD = 6,
+    DASH_MEDIA_DATA = 7,
+};
+
 class DownloadRequest {
 public:
     DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -159,6 +170,8 @@ public:
     void SetBitRateToRequestSize(const int32_t videoBitrate);
     std::atomic<bool> isHeaderUpdated_ {false};
     std::atomic<bool> haveRedirectRetry_ {false};
+    void SetRequestType(RequestType requestType);
+    RequestType GetRequestType();
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -201,6 +214,7 @@ private:
     std::string downloaderName_;
     int32_t bitRateToRequestSize_ {0};
     uint64_t keyIndex_ {0};
+    RequestType requestType_ {RequestType::DEFAULT};
 };
 
 class Downloader : public std::enable_shared_from_this<Downloader> {

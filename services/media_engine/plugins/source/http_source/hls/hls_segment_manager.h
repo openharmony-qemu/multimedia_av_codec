@@ -239,6 +239,8 @@ private:
     std::shared_ptr<AesDecryptor> GetAesDecryptor();
     void SetAesDecryptor(std::shared_ptr<AesDecryptor> aesDecryptor);
     std::vector<PlayInfo> SeekListHelper(bool isLive);
+    void ConfigureAndDownload(const PlayInfo& playInfo, bool isRequestWholeFile, int64_t startTimePos,
+        DownloadDoneCbFunc downloadDoneCallback);
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;

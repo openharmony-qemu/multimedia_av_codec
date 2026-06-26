@@ -1028,6 +1028,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     FALSE_RETURN_MSG(downloadRequest != nullptr, "downloadRequest is nullptr");
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest->SetRequestProtocolType(RequestProtocolType::DASH);
+    downloadRequest->SetRequestType(RequestType::DASH_MPD);
     if (!requestWholeFile) {
         downloadRequest->SetRangePos(startRange, endRange);
     }
