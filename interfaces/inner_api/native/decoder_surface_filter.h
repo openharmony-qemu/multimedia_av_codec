@@ -143,7 +143,7 @@ public:
     void SetBuffering(bool isBuffering);
     void SetVideoOutput(sptr<Surface> surface);
     void GetVideoSample(int32_t &outputResult);
-    void ConfigureFrameRetentionMode(Format &format, float speed);
+    void ConfigureFrameRetentionMode(Format &format, double speed);
     bool IsResolutionSupportSeekContinuous();
     Status GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs);
 
