@@ -4796,6 +4796,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
 
 Status MPEG4AtomParser::ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
+    FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr, Status::ERROR_NULL_POINTER, "Current track is nullptr");
     ctx->offset += currentAtom.size;
     FALSE_RETURN_V_MSG_D(currentAtom.size >= MIN_CLLI_SIZE, Status::OK, "Clli: Empty");
     uint8_t info[4];
@@ -4814,6 +4815,7 @@ Status MPEG4AtomParser::ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 Status MPEG4AtomParser::ParseMdcv(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
+    FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr, Status::ERROR_NULL_POINTER, "Current track is nullptr");
     ctx->offset += currentAtom.size;
     FALSE_RETURN_V_MSG_D(currentAtom.size >= MIN_MDCV_SIZE, Status::OK, "Mdcv: Empty");
     uint8_t info[24];
