@@ -371,7 +371,7 @@ HWTEST_F(DecoderSurfaceFilterUnittest, ConfigureFrameRetentionMode_001, TestSize
     EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
     EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
     Format format;
-    float speed = 0.5f;
+    double speed = 0.5;
     decoderSurfaceFilter_->ConfigureFrameRetentionMode(format, speed);
     int32_t retentionMode = -1;
     EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, retentionMode));
@@ -389,7 +389,7 @@ HWTEST_F(DecoderSurfaceFilterUnittest, ConfigureFrameRetentionMode_002, TestSize
     EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
     EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
     Format format;
-    float speed = 2.0f;
+    double speed = 2.0;
     decoderSurfaceFilter_->ConfigureFrameRetentionMode(format, speed);
     int32_t retentionMode = -1;
     EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, retentionMode));
@@ -410,7 +410,7 @@ HWTEST_F(DecoderSurfaceFilterUnittest, ConfigureFrameRetentionMode_003, TestSize
     EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
     EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
     Format format;
-    float speed = 1.0f;
+    double speed = 1.0;
     decoderSurfaceFilter_->ConfigureFrameRetentionMode(format, speed);
     int32_t retentionMode = -1;
     EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, retentionMode));
