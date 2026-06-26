@@ -87,7 +87,7 @@ public:
     Status GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &frameId);
     Status RefParserInit();
     Status ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex,
-        const std::vector<MPEG4SampleHelper::SampleIndexEntry>& sampleIndexEntries_);
+        const std::vector<MPEG4SampleHelper::SampleIndexEntry>& sampleIndexEntries);
     Status UpdateParserGopId(int32_t syncSamplesPtsSize);
     Status SelectProGopId();
 
@@ -189,6 +189,7 @@ private:
     int64_t startPts_ = 0;
     bool updatePosIsForward_ = true;
     bool isSdtpExist_ = false;
+    std::shared_ptr<MPEG4Sample> cacheSample_ = nullptr;
     bool isReadSampleDataFromCache_ = false;
 
     int32_t CountTracks();

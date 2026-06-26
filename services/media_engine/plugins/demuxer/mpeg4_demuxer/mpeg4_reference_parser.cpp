@@ -326,7 +326,9 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
         FALSE_RETURN_V_MSG_E(pts2Dts_.find(ptsUs) != pts2Dts_.end(), Status::ERROR_UNKNOWN,
             "ptsUs(" PUBLIC_LOG_D64 ") is invalid", ptsUs);
         seekDtsUs = pts2Dts_[ptsUs];  // relative dts of sync sample
-        MEDIA_LOG_I("SelectProGopId, ptsUs is " PUBLIC_LOG_D64 ", seekDtsUs is " PUBLIC_LOG_D64, ptsUs, seekDtsUs);
+        seekDtsUs += startPts_;  // absolute dts of sync sample
+        MEDIA_LOG_I("SelectProGopId, ptsUs is " PUBLIC_LOG_D64 ", seekDtsUs is " PUBLIC_LOG_D64 ", startPts_ is "
+            PUBLIC_LOG_D64, ptsUs, seekDtsUs, startPts_);
     }
     int64_t realSeekTime = 0;
     // Using (seekDtsUs / US_TO_MS - 1) is to adapt to SeekToFrameByDts
@@ -334,6 +336,7 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
         0);
     MEDIA_LOG_I("realSeekTime is " PUBLIC_LOG_D64, realSeekTime);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "SeekToFrameByDts failed");
+    cacheSample_ = cacheQueue_.Front(refParserTrackIdx_);
     isReadSampleDataFromCache_ = true;
     return Status::OK;
 }
@@ -341,6 +344,8 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
 static void InsertIframePtsMap(std::shared_ptr<Sample> sample, int32_t gopId,
     std::unordered_map<int32_t, int64_t> &gopId2DecodedSamplePts)
 {
+    MEDIA_LOG_I("sample info: size is " PUBLIC_LOG_D32 ", dts is " PUBLIC_LOG_D64 ", pts is " PUBLIC_LOG_D64,
+        sample->size, sample->dts, sample->pts);
     bool validCheck = (sample != nullptr) && (sample->flag & Sample::SampleFlag::SYNC_FRAME) && (gopId != -1);
     if (validCheck && (gopId2DecodedSamplePts.find(gopId) == gopId2DecodedSamplePts.end())) {
         gopId2DecodedSamplePts.insert(std::pair<int32_t, int64_t>(gopId, sample->pts));
@@ -348,25 +353,24 @@ static void InsertIframePtsMap(std::shared_ptr<Sample> sample, int32_t gopId,
 }
 
 Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex,
-    const std::vector<MPEG4SampleHelper::SampleIndexEntry>& sampleIndexEntries_)
+    const std::vector<MPEG4SampleHelper::SampleIndexEntry>& sampleIndexEntries)
 {
     MEDIA_LOG_I("ParserRefInfoLoop start, sampleIndex is " PUBLIC_LOG_U32, sampleIndex);
     std::unique_lock<std::mutex> sLock(syncMutex_);
-    if (sampleIndex > sampleIndexEntries_.size()) {
+    if (sampleIndex > sampleIndexEntries.size()) {
         MEDIA_LOG_E("sample index(" PUBLIC_LOG_U32 ") out of range", sampleIndex);
         return Status::ERROR_UNKNOWN;
     }
-    if (sampleIndex == sampleIndexEntries_.size()) {
+    if (sampleIndex == sampleIndexEntries.size()) {
         sample->size = 0;
         sample->dts = INT64_MIN;
         sample->flag = Sample::SampleFlag::EOS;
     } else if (isReadSampleDataFromCache_) {
-        std::shared_ptr<MPEG4Sample> cacheSample = cacheQueue_.Front(refParserTrackIdx_);
-        FALSE_RETURN_V_MSG_E(cacheSample != nullptr, Status::ERROR_UNKNOWN, "cacheSample is nullptr");
-        sample = cacheSample->sample;
+        FALSE_RETURN_V_MSG_E(cacheSample_ != nullptr, Status::ERROR_UNKNOWN, "cacheSample_ is nullptr");
+        sample = cacheSample_->sample;
         isReadSampleDataFromCache_ = false;
     } else {
-        const MPEG4SampleHelper::SampleIndexEntry& currentSample = sampleIndexEntries_[sampleIndex];
+        const MPEG4SampleHelper::SampleIndexEntry& currentSample = sampleIndexEntries[sampleIndex];
         Status ret = ReadSampleData(sample, currentSample.pos, currentSample.size, refParserTrackIdx_);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to read sample.");
         FALSE_RETURN_V_MSG_E(trackOfRefParser_ != nullptr, Status::ERROR_UNKNOWN, "trackOfRefParser_ is nullptr");
