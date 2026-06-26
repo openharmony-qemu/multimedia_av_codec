@@ -146,7 +146,8 @@ void SurfaceEncoderFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
     MEDIA_LOG_E("AVCodec error happened. ErrorType: %{public}d, errorCode: %{public}d",
         static_cast<int32_t>(errorType), errorCode);
     if (eventReceiver_ != nullptr) {
-        eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, MSERR_VID_ENC_FAILED});
+        eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_VID_ENC_FAILED)});
     }
 }
 
@@ -184,7 +185,8 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
             mediaCodec_->SetEncoderAdapterKeyFramePtsCallback(encoderAdapterKeyFramePtsCallback);
         } else if (eventReceiver_ != nullptr) {
             MEDIA_LOG_I("Init mediaCodec fail");
-            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNKNOWN)});
         }
         surface_ = nullptr;
         isUpdateCodecNeeded_ = false;

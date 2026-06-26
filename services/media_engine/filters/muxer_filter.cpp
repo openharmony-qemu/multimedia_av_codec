@@ -285,9 +285,9 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         if (isTransCoderMode) {
-            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, MSERR_MUXER_FAILED});
+            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, static_cast<int32_t>(MSERR_MUXER_FAILED)});
         } else {
-            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, ret});
+            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, static_cast<int32_t>(ret)});
         }
         SetFaultEvent("MuxerFilter::OnLinked error", (int32_t)ret);
         return ret;
@@ -423,7 +423,7 @@ void MuxerFilter::HandleTransCoderComplete()
         eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_COMPLETE, MSERR_OK});
     } else {
         MEDIA_LOG_I("mediaMuxer_ stop failed, res = %{public}d", static_cast<int32_t>(res));
-        eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, MSERR_MUXER_FAILED});
+        eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, static_cast<int32_t>(MSERR_MUXER_FAILED)});
     }
 }
 

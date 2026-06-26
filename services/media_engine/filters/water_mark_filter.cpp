@@ -967,7 +967,8 @@ Status WaterMarkFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stre
         std::make_shared<WaterMarkFilterLinkCallback>(shared_from_this());
     auto ret = nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
     if (ret != Status::OK && eventReceiver_) {
-        eventReceiver_->OnEvent({"WaterMarkFilter::LinkNext error", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+        eventReceiver_->OnEvent({"WaterMarkFilter::LinkNext error", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_UNKNOWN)});
     }
     return ret;
 }
