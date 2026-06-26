@@ -232,6 +232,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     requestInfo.httpHeader = httpHeader;
     auto downloadRequest = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
+    downloadRequest->SetRequestType(RequestType::HTTP_MEDIA_DATA);
     auto downloader = GetDownloader();
     if (downloader) {
         downloader->Download(downloadRequest, -1); // -1

@@ -2053,7 +2053,6 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     networkErrorInfo.clientErrorCode_ = 52;
     networkErrorInfo.serverErrorCode_ = 403;
     downloader->NotifyError(networkErrorInfo);
-    networkErrorInfo.clientErrorCode_ = 52;
     networkErrorInfo.serverErrorCode_ = 0;
     downloader->NotifyError(networkErrorInfo);
     networkErrorInfo.clientErrorCode_ = 0;
