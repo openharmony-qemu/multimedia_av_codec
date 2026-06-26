@@ -1578,6 +1578,11 @@ void DecoderSurfaceFilter::RegisterVideoFrameReadyCallback(std::shared_ptr<Video
     isInSeekContinuous_ = true;
     FALSE_RETURN(callback != nullptr);
     videoFrameReadyCallback_ = callback;
+    if (videoDecoder_ != nullptr) {
+        Format format;
+        ConfigureFrameRetentionMode(format, 1.0);
+        videoDecoder_->SetParameter(format);
+    }
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
     postProcessor_->StartSeekContinous();
 }
@@ -1587,6 +1592,11 @@ void DecoderSurfaceFilter::DeregisterVideoFrameReadyCallback()
     std::unique_lock<std::mutex> draggingLock(draggingMutex_);
     isInSeekContinuous_ = false;
     videoFrameReadyCallback_ = nullptr;
+    if (videoDecoder_ != nullptr) {
+        Format format;
+        ConfigureFrameRetentionMode(format, speed_);
+        videoDecoder_->SetParameter(format);
+    }
     FALSE_RETURN_NOLOG(postProcessor_ != nullptr);
     postProcessor_->StopSeekContinous();
 }
@@ -1758,10 +1768,24 @@ Status DecoderSurfaceFilter::SetVideoWindowSize(int32_t width, int32_t height)
     return postProcessor_->SetVideoWindowSize(width, height);
 }
 
+void DecoderSurfaceFilter::ConfigureFrameRetentionMode(Format &format, double speed)
+{
+    const double eps = 1e-6;
+    if (speed <= 1.0 + eps) {
+        format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
+            OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_FULL);
+    } else {
+        format.PutDoubleValue(Tag::VIDEO_DECODER_SPEED, speed);
+        format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
+            OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_ADAPTIVE);
+    }
+}
+
 Status DecoderSurfaceFilter::SetSpeed(float speed)
 {
     FALSE_RETURN_V(videoDecoder_ != nullptr, Status::ERROR_INVALID_OPERATION);
     MEDIA_LOG_D("SetSpeed in");
+    speed_ = static_cast<double>(speed);
     double frameRate = 0.0;
     configFormat_.GetDoubleValue(Tag::VIDEO_FRAME_RATE, frameRate);
     if (frameRate <= 0) {
@@ -1773,17 +1797,9 @@ Status DecoderSurfaceFilter::SetSpeed(float speed)
 
     Format format;
     format.PutDoubleValue(Tag::VIDEO_FRAME_RATE, frameRateWithSpeed);
-    const double eps = 1e-6;
-    if (speed <= 1.0 + eps) {
-        format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
-            OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_FULL);
-    } else {
-        format.PutDoubleValue(Tag::VIDEO_DECODER_SPEED, speed);
-        format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
-            OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_ADAPTIVE);
-    }
-
+    ConfigureFrameRetentionMode(format, speed);
     videoDecoder_->SetParameter(format);
+
     FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
     return postProcessor_->SetSpeed(speed);
 }

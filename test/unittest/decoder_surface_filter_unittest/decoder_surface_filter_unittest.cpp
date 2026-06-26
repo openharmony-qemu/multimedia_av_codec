@@ -361,6 +361,97 @@ HWTEST_F(DecoderSurfaceFilterUnittest, DoFlush_001, TestSize.Level0)
 }
 
 /**
+ * @tc.name: Test ConfigureFrameRetentionMode API
+ * @tc.number: ConfigureFrameRetentionMode_001
+ * @tc.desc: Test speed <= 1.0, should set OH_FRAME_RETENTION_MODE_FULL
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, ConfigureFrameRetentionMode_001, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    Format format;
+    double speed = 0.5;
+    decoderSurfaceFilter_->ConfigureFrameRetentionMode(format, speed);
+    int32_t retentionMode = -1;
+    EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, retentionMode));
+    EXPECT_EQ(retentionMode, OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_FULL);
+}
+
+/**
+ * @tc.name: Test ConfigureFrameRetentionMode API
+ * @tc.number: ConfigureFrameRetentionMode_002
+ * @tc.desc: Test speed > 1.0, should set OH_FRAME_RETENTION_MODE_ADAPTIVE and VIDEO_DECODER_SPEED
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, ConfigureFrameRetentionMode_002, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    Format format;
+    double speed = 2.0;
+    decoderSurfaceFilter_->ConfigureFrameRetentionMode(format, speed);
+    int32_t retentionMode = -1;
+    EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, retentionMode));
+    EXPECT_EQ(retentionMode, OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_ADAPTIVE);
+    double decoderSpeed = 0.0;
+    EXPECT_TRUE(format.GetDoubleValue(Tag::VIDEO_DECODER_SPEED, decoderSpeed));
+    EXPECT_DOUBLE_EQ(decoderSpeed, static_cast<double>(speed));
+}
+
+/**
+ * @tc.name: Test ConfigureFrameRetentionMode API
+ * @tc.number: ConfigureFrameRetentionMode_003
+ * @tc.desc: Test speed exactly 1.0, should set OH_FRAME_RETENTION_MODE_FULL (boundary)
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, ConfigureFrameRetentionMode_003, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    Format format;
+    double speed = 1.0;
+    decoderSurfaceFilter_->ConfigureFrameRetentionMode(format, speed);
+    int32_t retentionMode = -1;
+    EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, retentionMode));
+    EXPECT_EQ(retentionMode, OH_FrameRetentionMode::OH_FRAME_RETENTION_MODE_FULL);
+}
+
+/**
+ * @tc.name: Test SetSpeed API
+ * @tc.number: SetSpeed_001
+ * @tc.desc: Test speed > 1.0 with valid videoDecoder_, should succeed and update speed_
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, SetSpeed_001, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), SetParameter(_)).WillRepeatedly(Return(NUM_TEST));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    float speed = 2.0f;
+    auto ret = decoderSurfaceFilter_->SetSpeed(speed);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_FLOAT_EQ(decoderSurfaceFilter_->speed_, speed);
+}
+
+/**
+ * @tc.name: Test SetSpeed API
+ * @tc.number: SetSpeed_002
+ * @tc.desc: Test speed <= 1.0 with valid videoDecoder_, should succeed and update speed_
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, SetSpeed_002, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), SetParameter(_)).WillRepeatedly(Return(NUM_TEST));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    float speed = 0.5f;
+    auto ret = decoderSurfaceFilter_->SetSpeed(speed);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_FLOAT_EQ(decoderSurfaceFilter_->speed_, speed);
+}
+
+/**
  * @tc.name: Test DoPreroll  API
  * @tc.number: DoPreroll_001
  * @tc.desc: Test ret != Status::OK

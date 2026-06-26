@@ -143,6 +143,7 @@ public:
     void SetBuffering(bool isBuffering);
     void SetVideoOutput(sptr<Surface> surface);
     void GetVideoSample(int32_t &outputResult);
+    void ConfigureFrameRetentionMode(Format &format, double speed);
     bool IsResolutionSupportSeekContinuous();
     Status GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs);
 
@@ -258,6 +259,7 @@ private:
 
     std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback_;
     bool isInSeekContinuous_{false};
+    double speed_ = 1.0;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferMap_;
     std::mutex draggingMutex_ {};
     std::unique_ptr<Task> eosTask_ {nullptr};
