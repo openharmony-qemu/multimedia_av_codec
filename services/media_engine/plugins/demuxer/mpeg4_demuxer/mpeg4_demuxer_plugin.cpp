@@ -60,6 +60,12 @@ constexpr int32_t READ_LEN = 8;
 constexpr int32_t MIN_ATOM_SIZE = 16;
 constexpr int64_t SNIFF_DATA_SIZE = 2048;
 
+static const std::vector<SeekMode>  g_seekMode = {
+    SeekMode::SEEK_PREVIOUS_SYNC,
+    SeekMode::SEEK_NEXT_SYNC,
+    SeekMode::SEEK_CLOSEST_SYNC,
+};
+
 static const std::map<std::string, VideoStreamType> g_streamParserMap = {
     { "video/avc",  VideoStreamType::AVC },
     { "video/hevc", VideoStreamType::HEVC },
@@ -1950,14 +1956,25 @@ int MPEG4DemuxerPlugin::SelectSeekTrack()
     return trackIndex;
 }
 
-Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t &realSeekTime)
+Status MPEG4DemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) const
 {
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    MediaAVCodec::AVCodecTrace trace("SeekTo");
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS,
         Status::ERROR_INVALID_PARAMETER, "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
+    FALSE_RETURN_V_MSG_E((std::find(g_seekMode.cbegin(), g_seekMode.cend(), mode) != g_seekMode.cend()),
+        Status::ERROR_INVALID_PARAMETER,
+        "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mode, int64_t &realSeekTime)
+{
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
+    MediaAVCodec::AVCodecTrace trace("SeekTo");
+
+    Status check = CheckSeekParams(seekTime, mode);
+    FALSE_RETURN_V_MSG_E(check == Status::OK, check, "CheckSeekParams failed");
     FALSE_RETURN_V_MSG_E(CheckSeekTimeInFileDuration(mediaInfo_, seekTime), Status::ERROR_INVALID_PARAMETER,
         "Seek time out of file duration");
 

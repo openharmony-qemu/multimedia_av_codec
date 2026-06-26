@@ -313,6 +313,7 @@ private:
     void ParseAVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
     int SelectSeekTrack();
+    Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
 
     // 辅助轨相关函数
     bool IsVideoType(const MPEG4AtomParser::Track& track);
