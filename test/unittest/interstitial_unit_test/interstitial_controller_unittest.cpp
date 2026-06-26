@@ -416,8 +416,7 @@ HWTEST_F(InterstitialControllerUnitTest, Skip_002, TestSize.Level1)
     auto ret = controller_->SkipCurrentAdsMediaSource();
     EXPECT_EQ(ret, Status::OK);
     EXPECT_EQ(controller_->GetPlayState(), InterstitialPlayState::IDLE);
-    EXPECT_EQ(receivedEvent.type, AdsEventType::END);
-    EXPECT_EQ(receivedEvent.reason, AdsEndReason::SKIPPED);
+    EXPECT_EQ(receivedEvent.type, AdsEventType::SKIPPED);
     EXPECT_TRUE(controller_->entries_[outId].played);
 }
 
@@ -773,8 +772,7 @@ HWTEST_F(InterstitialControllerUnitTest, Eos_002, TestSize.Level1)
     });
     controller_->OnAdEos();
     EXPECT_EQ(controller_->GetPlayState(), InterstitialPlayState::IDLE);
-    EXPECT_EQ(receivedEvent.type, AdsEventType::END);
-    EXPECT_EQ(receivedEvent.reason, AdsEndReason::COMPLETED);
+    EXPECT_EQ(receivedEvent.type, AdsEventType::COMPLETED);
     EXPECT_TRUE(controller_->entries_[outId].played);
 }
 
@@ -1117,9 +1115,8 @@ HWTEST_F(InterstitialControllerUnitTest, Emit_001, TestSize.Level1)
     entry.startMs = 1000;
     entry.durationMs = 5000;
     controller_->EmitStartEvent(entry);
-    EXPECT_EQ(receivedEvent.type, AdsEventType::START);
+    EXPECT_EQ(receivedEvent.type, AdsEventType::STARTED);
     EXPECT_EQ(receivedEvent.eventId, "test_id");
-    EXPECT_EQ(receivedEvent.startMs, 1000);
     EXPECT_EQ(receivedEvent.durationMs, 5000);
 }
 
@@ -1152,9 +1149,8 @@ HWTEST_F(InterstitialControllerUnitTest, Emit_003, TestSize.Level1)
     entry.eventId = "test_id";
     entry.startMs = 1000;
     entry.durationMs = 5000;
-    controller_->EmitEndEvent(entry, AdsEndReason::COMPLETED);
-    EXPECT_EQ(receivedEvent.type, AdsEventType::END);
-    EXPECT_EQ(receivedEvent.reason, AdsEndReason::COMPLETED);
+    controller_->EmitEndEvent(entry, AdsEventType::COMPLETED);
+    EXPECT_EQ(receivedEvent.type, AdsEventType::COMPLETED);
 }
 
 /**
@@ -1171,8 +1167,8 @@ HWTEST_F(InterstitialControllerUnitTest, Emit_004, TestSize.Level1)
     });
     InterstitialEntry entry;
     entry.eventId = "test_id";
-    controller_->EmitEndEvent(entry, AdsEndReason::SKIPPED);
-    EXPECT_EQ(receivedEvent.reason, AdsEndReason::SKIPPED);
+    controller_->EmitEndEvent(entry, AdsEventType::SKIPPED);
+    EXPECT_EQ(receivedEvent.type, AdsEventType::SKIPPED);
 }
 
 /**
@@ -1189,8 +1185,10 @@ HWTEST_F(InterstitialControllerUnitTest, Emit_005, TestSize.Level1)
     });
     InterstitialEntry entry;
     entry.eventId = "test_id";
-    controller_->EmitEndEvent(entry, AdsEndReason::ERROR);
-    EXPECT_EQ(receivedEvent.reason, AdsEndReason::ERROR);
+    controller_->EmitEndEvent(entry, AdsEventType::ERROR, 5400103, "DoSourceSwitch failed");
+    EXPECT_EQ(receivedEvent.type, AdsEventType::ERROR);
+    EXPECT_EQ(receivedEvent.errorCode, 5400103);
+    EXPECT_EQ(receivedEvent.errorMessage, "DoSourceSwitch failed");
 }
 
 /**
@@ -1204,7 +1202,7 @@ HWTEST_F(InterstitialControllerUnitTest, Emit_006, TestSize.Level1)
     controller_->adsEventCallback_ = nullptr;
     InterstitialEntry entry;
     entry.eventId = "test_id";
-    controller_->EmitEndEvent(entry, AdsEndReason::COMPLETED);
+    controller_->EmitEndEvent(entry, AdsEventType::COMPLETED);
 }
 
 /**
@@ -1235,7 +1233,7 @@ HWTEST_F(InterstitialControllerUnitTest, Emit_008, TestSize.Level1)
     });
     InterstitialEntry entry;
     entry.eventId = "";
-    controller_->EmitEndEvent(entry, AdsEndReason::COMPLETED);
+    controller_->EmitEndEvent(entry, AdsEventType::COMPLETED);
     EXPECT_FALSE(callbackInvoked);
 }
 
@@ -1871,7 +1869,7 @@ HWTEST_F(InterstitialControllerUnitTest, Continuous_004, TestSize.Level1)
     controller_->playState_ = InterstitialPlayState::PLAYING;
     controller_->currentAdId_ = outId1;
 
-    controller_->FinishCurrentAdAndContinue(AdsEndReason::ERROR);
+    controller_->FinishCurrentAdAndContinue(AdsEventType::ERROR);
 
     EXPECT_TRUE(controller_->entries_[outId1].played);
     EXPECT_TRUE(controller_->entries_[outId2].played);

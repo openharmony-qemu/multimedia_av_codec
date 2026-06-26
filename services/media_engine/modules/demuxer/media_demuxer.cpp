@@ -3005,7 +3005,7 @@ void MediaDemuxer::DriveInterstitialTicks()
         scheduler->OnPlaybackTick();
     }
 
-    if (controller && !controller->IsPlayingInterstitial()) {
+    if (controller && !controller->IsPlayingInterstitial() && controller->HasPendingEvents()) {
         controller->OnPreloadTick();
     }
 }
