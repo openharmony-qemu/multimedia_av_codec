@@ -802,7 +802,6 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
     uint8_t entryBuffer[4];
     ret = dataReader_->ReadUintData(currentOffset, entryBuffer, sizeof(entryBuffer));
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     uint32_t numChunkOffsets = GetU32Value(entryBuffer);
     FALSE_RETURN_V_MSG_E(numChunkOffsets <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid chunk offset count");
     currentOffset += sizeof(uint32_t);
