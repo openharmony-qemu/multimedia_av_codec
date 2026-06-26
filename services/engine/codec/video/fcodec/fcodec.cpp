@@ -924,7 +924,8 @@ int32_t FCodec::AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer)
     if (!splitMime.empty()) {
         mime = splitMime.back();
     }
-    std::string name = std::to_string(width_) + "x" + std::to_string(height_) + "-" + mime + "-" + fDecInfo_.instanceId;
+    std::string name = fDecInfo_.processName + "-" + std::to_string(width_) + "x" + std::to_string(height_)
+                       + "-" + mime + "-" + fDecInfo_.instanceId;
     ioctl(fd, DMA_BUF_SET_LEAK_TYPE, type.c_str());
     std::string pid = std::to_string(fDecInfo_.pid);
     ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());

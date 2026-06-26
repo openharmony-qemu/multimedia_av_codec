@@ -1067,8 +1067,8 @@ void VideoDecoder::SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer)
     if (!splitMime.empty()) {
         mime = splitMime.back();
     }
-    std::string name =
-        std::to_string(width_) + "x" + std::to_string(height_) + "-" + mime + "-" + decInfo_.instanceId;
+    std::string name = decInfo_.processName + "-" + std::to_string(width_) + "x" + std::to_string(height_)
+                       + "-" + mime + "-" + decInfo_.instanceId;
     ioctl(fd, DMA_BUF_SET_LEAK_TYPE, type.c_str());
     std::string pid = std::to_string(decInfo_.pid);
     ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
