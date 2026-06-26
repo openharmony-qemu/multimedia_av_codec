@@ -1563,7 +1563,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0031, TestSiz
     if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
-        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT;
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1590,7 +1590,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0032, TestSiz
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateSurface());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
         usleep(DELAY_TIME);
-        ASSERT_EQ(-1, vEncSample->RequestWindowBuffer(MAX_INPUT_BUFFER_COUNT));
+        ASSERT_EQ(-1, vEncSample->RequestWindowBuffer(MAX_INPUT_BUFFER_COUNT - 1));
     }
 }
 
@@ -1610,7 +1610,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0033, TestSiz
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
         usleep(DELAY_TIME);
-        ASSERT_EQ(-1, vEncSample->RequestWindowBuffer(MAX_INPUT_BUFFER_COUNT));
+        ASSERT_EQ(-1, vEncSample->RequestWindowBuffer(MAX_INPUT_BUFFER_COUNT - 1));
     }
 }
 
