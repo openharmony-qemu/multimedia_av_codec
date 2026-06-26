@@ -1932,6 +1932,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1206, TestSize.Level1)
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
             if (ret_ != AV_ERR_OK) {
                 printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                numbers_ += 1;
                 continue;
             }
             ReadData();
@@ -3795,8 +3796,8 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1807, TestSize.Level1)
         ASSERT_EQ(demuxer_->SelectTrackByID(idx), AV_ERR_OK);
     }
     list<int64_t> toPtsList = {0, 2466}; // ms
-    vector<int32_t> videoVals = {76, 76, 76, 0, 76, 76};
-    vector<int32_t> audioVals = {107, 107, 107, 0, 107, 107};
+    vector<int32_t> videoVals = {76, 76, 76, 76, 76};
+    vector<int32_t> audioVals = {107, 107, 107, 107, 107};
     sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
     ASSERT_NE(sharedMem_, nullptr);
     SeekTest(toPtsList, seekModes, {videoVals, audioVals});
