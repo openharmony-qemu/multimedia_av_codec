@@ -2897,6 +2897,19 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
     auto avStream = formatContext_->streams[trackIndex];
     FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "AVStream is nullptr");
     realSeekTime = ConvertTimeFromFFmpeg(ffTime, avStream->time_base);
+    int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode, seekTime, fileType_);
+    MEDIA_LOG_I("Time [" PUBLIC_LOG_U64 "/" PUBLIC_LOG_U64 "/" PUBLIC_LOG_D64 "] flag ["
+                PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
+                seekTime, ffTime, realSeekTime, static_cast<int32_t>(mode), flag);
+    if (flag == AVSEEK_FLAG_FRAME && FFmpegFormatHelper::IsMpeg4File(fileType_)) {
+        int keyFrameNext = av_index_search_timestamp(avStream, ffTime, AVSEEK_FLAG_FRAME);
+        FALSE_RETURN_V_MSG_E(keyFrameNext >= 0, Status::ERROR_OUT_OF_RANGE,
+            "Seek failed, err: Not next key frame");
+    }
+    std::unique_lock<std::mutex> sLock(syncMutex_);
+    auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
+    sLock.unlock();
+
     const bool isFlvEosCodec =
         fileType_ == FileType::FLV &&
         avStream->codecpar != nullptr &&
@@ -2910,18 +2923,6 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
             return Status::ERROR_UNKNOWN;
         }
     }
-    int flag = ConvertFlagsToFFmpeg(avStream, ffTime, mode, seekTime, fileType_);
-    MEDIA_LOG_I("Time [" PUBLIC_LOG_U64 "/" PUBLIC_LOG_U64 "/" PUBLIC_LOG_D64 "] flag ["
-                PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
-                seekTime, ffTime, realSeekTime, static_cast<int32_t>(mode), flag);
-    if (flag == AVSEEK_FLAG_FRAME && FFmpegFormatHelper::IsMpeg4File(fileType_)) {
-        int keyFrameNext = av_index_search_timestamp(avStream, ffTime, AVSEEK_FLAG_FRAME);
-        FALSE_RETURN_V_MSG_E(keyFrameNext >= 0, Status::ERROR_OUT_OF_RANGE,
-            "Seek failed, err: Not next key frame");
-    }
-    std::unique_lock<std::mutex> sLock(syncMutex_);
-    auto ret = av_seek_frame(formatContext_.get(), trackIndex, ffTime, flag);
-    sLock.unlock();
     formatContext_->pb->error = 0;
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ret).c_str());

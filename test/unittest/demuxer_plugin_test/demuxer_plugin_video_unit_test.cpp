@@ -823,6 +823,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_0001, TestSize.Level1)
             Status ret_ = demuxerPlugin_->SeekTo(-1, *toPts, *mode, seekTime);
             if (ret_ != Status::OK) {
                 printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                numbers_ += 1;
                 continue;
             }
             ReadData();

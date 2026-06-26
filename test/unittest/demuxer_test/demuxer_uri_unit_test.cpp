@@ -1200,6 +1200,7 @@ HWTEST_F(DemuxerUnitTest, Demuxer_SeekToTime_1205, TestSize.Level1)
             ret_ = demuxer_->SeekToTime(*toPts, *mode);
             if (ret_ != AV_ERR_OK) {
                 printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                numbers_ += 1;
                 continue;
             }
             ReadData();
