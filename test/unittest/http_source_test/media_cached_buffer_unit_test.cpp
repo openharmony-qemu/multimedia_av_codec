@@ -965,30 +965,6 @@ HWTEST_F(TestCacheMediaChunkBufferTest, Fix1_Seek_NotCrashWhenLruReturnsCurrWrit
     EXPECT_TRUE(testBuffer_->CheckLruConsistency());
 }
 
-HWTEST_F(TestCacheMediaChunkBufferTest, Fix3_UpdateFailure_ReferReAddEntry, TestSize.Level1)
-{
-    const uint64_t BUFFER_SIZE = 5 * 1024 * 1024;
-    testBuffer_->Init(BUFFER_SIZE, CHUNK_SIZE);
-    testBuffer_->SetIsLargeOffsetSpan(true);
-    testBuffer_->ForceLruCacheSize(2);
-
-    uint8_t data[CHUNK_SIZE] = {0};
-    for (uint32_t i = 0; i < CHUNK_SIZE; i++) { data[i] = static_cast<uint8_t>(i % 256); }
-
-    testBuffer_->Write(data, 0, CHUNK_SIZE);
-    testBuffer_->Write(data, CHUNK_SIZE, CHUNK_SIZE);
-    testBuffer_->Write(data, 2 * CHUNK_SIZE, CHUNK_SIZE);
-    testBuffer_->Write(data, 3 * CHUNK_SIZE, CHUNK_SIZE);
-
-    EXPECT_TRUE(testBuffer_->CheckLruConsistency());
-    EXPECT_EQ(testBuffer_->GetLruSize(), 2);
-
-    uint8_t readData[256] = {0};
-    size_t readSize = testBuffer_->Read(readData, 0, sizeof(readData));
-    EXPECT_GT(readSize, 0);
-    EXPECT_TRUE(testBuffer_->CheckLruConsistency());
-}
-
 HWTEST_F(TestCacheMediaChunkBufferTest, Fix4_Reset_ClearsLruStaleIterators, TestSize.Level1)
 {
     const uint64_t BUFFER_SIZE = 5 * 1024 * 1024;

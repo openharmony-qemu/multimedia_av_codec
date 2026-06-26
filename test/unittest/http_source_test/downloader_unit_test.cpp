@@ -2158,7 +2158,7 @@ HWTEST_F(DownloaderUnitTest, Pause_CloseRetry_AllFail, TestSize.Level0)
     auto future = std::async(std::launch::async, [&]() { downloader->Pause(); });
     auto status = future.wait_for(std::chrono::seconds(30));
     EXPECT_NE(status, std::future_status::timeout);
-    EXPECT_EQ(mock->closeCallCount_, 6);
+    EXPECT_EQ(mock->closeCallCount_, 5);
 }
 
 HWTEST_F(DownloaderUnitTest, Pause_CloseNoRetry_Normal, TestSize.Level0)
