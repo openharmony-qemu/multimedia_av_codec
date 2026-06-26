@@ -351,7 +351,6 @@ std::string DownloadMonitor::BuildErrorDescription(const NetworkErrorInfo& netwo
 std::string DownloadMonitor::MaskUrl(const std::string& url)
 {
     if (url.empty()) return url;
-
     size_t schemeEnd = url.find("://");
     std::string prefix;
     size_t hostStart = 0;
@@ -359,7 +358,6 @@ std::string DownloadMonitor::MaskUrl(const std::string& url)
         prefix = url.substr(0, schemeEnd + 3); // 3
         hostStart = schemeEnd + 3; // 3
     }
-
     size_t pathSlash = url.find('/', hostStart);
     if (pathSlash == std::string::npos) {
         size_t query = url.find_first_of("?#", hostStart);
@@ -367,13 +365,10 @@ std::string DownloadMonitor::MaskUrl(const std::string& url)
             (query == std::string::npos ? url.length() : query) - hostStart);
         return prefix + host;
     }
-
     std::string host = url.substr(hostStart, pathSlash - hostStart);
-
     size_t queryStart = url.find_first_of("?#", pathSlash);
     std::string path = (queryStart == std::string::npos)
         ? url.substr(pathSlash) : url.substr(pathSlash, queryStart - pathSlash);
-
     if (path == "/")
         return prefix + host + "/";
     size_t lastSlash = path.rfind('/');
