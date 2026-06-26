@@ -197,6 +197,7 @@ public:
     void OutputFunc();
     void SyncOutputFunc();
     uint32_t FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
+    int32_t RequestWindowBuffer(uint32_t time);
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInloop();
@@ -211,6 +212,7 @@ public:
     int32_t QueryOutputBuffer(uint32_t index, int64_t timeoutUs);
     OH_AVBuffer *GetInputBuffer(uint32_t index);
     OH_AVBuffer *GetOutputBuffer(uint32_t index);
+    void GetInputDescription();
     int32_t PushInputParameter(uint32_t index);
     void SetConfigureEnc(OH_AVFormat *format);
     void FlushStatus();
@@ -281,11 +283,13 @@ public:
     bool enableRepeat = false;
     bool enableSeekEos = false;
     bool setMaxCount = false;
+    uint32_t repeatHeaderXPS = 0;
+    int32_t maxFrameDelayCount = 5;
     int32_t DEFAULT_FRAME_AFTER = 1;
     int32_t DEFAULT_MAX_COUNT = 1;
     uint32_t inCount = 0;
     int32_t enbleSyncMode = 0;
-    int32_t enbleBFrameMode = 0;
+    int32_t enableBFrameMode = 0;
     int32_t layerId = 0;
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;

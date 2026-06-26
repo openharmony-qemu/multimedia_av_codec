@@ -46,7 +46,8 @@ OH_AVCapability *cap_hevc = nullptr;
 constexpr uint32_t CODEC_NAME_SIZE = 128;
 char g_codecName[CODEC_NAME_SIZE] = {};
 char g_codecNameHEVC[CODEC_NAME_SIZE] = {};
-
+constexpr uint32_t MAX_INPUT_BUFFER_COUNT = 5;
+constexpr uint32_t DELAY_TIME = 1000000;
 fileInfo file_640_480_rgba{"/data/test/media/640_480.rgba", NATIVEBUFFER_PIXEL_FMT_RGBA_8888, 640, 480 };
 fileInfo file_1280_536_nv21{"/data/test/media/1280_536_nv21.yuv", NATIVEBUFFER_PIXEL_FMT_YCRCB_420_SP, 1280, 536 };
 fileInfo file_1280_720_nv12{"/data/test/media/1280_720_nv12.yuv", NATIVEBUFFER_PIXEL_FMT_YCBCR_420_SP, 1280, 720 };
@@ -110,7 +111,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0010, TestSize.Level2)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0010.h264";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->DEFAULT_BITRATE_MODE = CBR;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -137,7 +138,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0020, TestSize.Level2)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0020.h264";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->DEFAULT_BITRATE_MODE = CQ;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -164,7 +165,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0030, TestSize.Level2)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0030.h264";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->DEFAULT_BITRATE_MODE = SQR;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -191,7 +192,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0040, TestSize.Level0)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0040.h264";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->DEFAULT_BITRATE_MODE = VBR;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -218,7 +219,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0050, TestSize.Level0)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0050.h264";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->SURF_INPUT = true;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -248,7 +249,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0060, TestSize.Level2)
             vEncSample->SURF_INPUT = true;
             vEncSample->readMultiFiles = true;
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->fileInfos.push_back(file_640_480_rgba);
             vEncSample->fileInfos.push_back(file_1280_536_nv21);
             vEncSample->fileInfos.push_back(file_1280_720_nv12);
@@ -279,7 +280,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0070, TestSize.Level2)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0070.h265";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->DEFAULT_BITRATE_MODE = CBR;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -306,7 +307,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0080, TestSize.Level2)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0080.h265";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->DEFAULT_BITRATE_MODE = CQ;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -333,7 +334,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0090, TestSize.Level2)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0090.h265";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->DEFAULT_BITRATE_MODE = SQR;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -360,7 +361,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0100, TestSize.Level0)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0100.h265";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->DEFAULT_BITRATE_MODE = VBR;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -387,7 +388,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0110, TestSize.Level0)
             vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_SYNC_0110.h265";
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->SURF_INPUT = true;
             ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -417,7 +418,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_BFRAME_SYNC_0120, TestSize.Level2)
             vEncSample->SURF_INPUT = true;
             vEncSample->readMultiFiles = true;
             vEncSample->enbleSyncMode = 1;
-            vEncSample->enbleBFrameMode = 1;
+            vEncSample->enableBFrameMode = 1;
             vEncSample->fileInfos.push_back(file_640_480_rgba);
             vEncSample->fileInfos.push_back(file_1280_536_nv21);
             vEncSample->fileInfos.push_back(file_1280_720_nv12);
@@ -1304,6 +1305,507 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_ANOTHER_0010, TestSize.Level2)
         ASSERT_EQ(AV_ERR_OK, vEncSample2->Stop());
         ASSERT_EQ(AV_ERR_OK, vEncSample2->Start());
         ASSERT_EQ(AV_ERR_OK, vEncSample2->Reset());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0010
+ * @tc.name      : 264 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0010, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(vEncSample->signal_->inBufferQueue_.size(), MAX_INPUT_BUFFER_COUNT - 1);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0011
+ * @tc.name      : 265 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0011, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(vEncSample->signal_->inBufferQueue_.size(), MAX_INPUT_BUFFER_COUNT - 1);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0012
+ * @tc.name      : 264 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0012, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(vEncSample->signal_->inBufferQueue_.size(), 1);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0013
+ * @tc.name      : 265 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0013, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(vEncSample->signal_->inBufferQueue_.size(), 1);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0014
+ * @tc.name      : 264 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0014, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(vEncSample->signal_->inBufferQueue_.size(), MAX_INPUT_BUFFER_COUNT);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0015
+ * @tc.name      : 265 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0015, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(vEncSample->signal_->inBufferQueue_.size(), MAX_INPUT_BUFFER_COUNT);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0020
+ * @tc.name      : 264 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0020, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT << 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0021
+ * @tc.name      : 265 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0021, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT << 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0022
+ * @tc.name      : 264 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0022, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = 0;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0023
+ * @tc.name      : 265 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0023, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = 0;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0024
+ * @tc.name      : 264 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0024, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = -1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0025
+ * @tc.name      : 265 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0025, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = -1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0030
+ * @tc.name      : 264 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0030, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateSurface());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(0, vEncSample->RequestWindowBuffer(MAX_INPUT_BUFFER_COUNT - 1));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0031
+ * @tc.name      : 265 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0031, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(0, vEncSample->RequestWindowBuffer(MAX_INPUT_BUFFER_COUNT - 1));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0032
+ * @tc.name      : 264 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0032, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateSurface());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(-1, vEncSample->RequestWindowBuffer(MAX_INPUT_BUFFER_COUNT));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0033
+ * @tc.name      : 265 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0033, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
+        usleep(DELAY_TIME);
+        ASSERT_EQ(-1, vEncSample->RequestWindowBuffer(MAX_INPUT_BUFFER_COUNT));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0040
+ * @tc.name      : 264 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0040, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0041
+ * @tc.name      : 265 encoder set input buffer delay count
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0041, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_ENABLE_REPEAT_XPS_0010
+ * @tc.name      : 264 encoder buffer mode set repeat xps
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_ENABLE_REPEAT_XPS_0010, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->OUT_DIR = "/data/test/media/010.h264";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->repeatHeaderXPS = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_ENABLE_REPEAT_XPS_0011
+ * @tc.name      : 265 encoder buffer mode set repeat xps
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_ENABLE_REPEAT_XPS_0011, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->OUT_DIR = "/data/test/media/011.h265";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->repeatHeaderXPS = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_ENABLE_REPEAT_XPS_0012
+ * @tc.name      : 264 encoder buffer mode set repeat xps
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_ENABLE_REPEAT_XPS_0012, TestSize.Level2)
+{
+    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->OUT_DIR = "/data/test/media/012.h264";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->repeatHeaderXPS = 1;
+        vEncSample->SURF_INPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_ENABLE_REPEAT_XPS_0013
+ * @tc.name      : 265 encoder buffer mode set repeat xps
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_ENABLE_REPEAT_XPS_0013, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->OUT_DIR = "/data/test/media/013.h265";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->repeatHeaderXPS = 1;
+        vEncSample->SURF_INPUT = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_ENABLE_REPEAT_XPS_0014
+ * @tc.name      : 265 encoder buffer mode set repeat xps
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_ENABLE_REPEAT_XPS_0014, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->OUT_DIR = "/data/test/media/013.h265";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->repeatHeaderXPS = 1;
+        vEncSample->enableBFrameMode = 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODE_ENABLE_REPEAT_XPS_0015
+ * @tc.name      : 265 encoder buffer mode set repeat xps
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_ENABLE_REPEAT_XPS_0015, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
+        vEncSample->OUT_DIR = "/data/test/media/013.h265";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->repeatHeaderXPS = 1;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_CONFIG = true;
+        vEncSample->TEMPORAL_JUMP_MODE = true;
+        int32_t temporalGopSize = sizeof(uint32_t) << 1;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
     }

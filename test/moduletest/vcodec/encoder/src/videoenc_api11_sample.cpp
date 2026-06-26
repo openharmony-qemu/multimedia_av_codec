@@ -50,7 +50,8 @@ int32_t g_keyWidth;
 int32_t g_keyHeight;
 FILE *g_outFile = nullptr;
 FILE *g_outFileSec = nullptr;
-
+uint32_t g_inputFrameCount = 0;
+uint32_t g_outputFrameCount = 0;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -153,6 +154,12 @@ static void onEncOutputBufferAvailable(OH_AVCodec *codec, uint32_t index, OH_AVB
         std::cout << "onEncOutputBufferAvailable Primary" << std::endl;
     }
     signal->outCond_.notify_all();
+    OH_AVCodecBufferAttr attr;
+    OH_AVBuffer_GetBufferAttr(buffer, &attr);
+    if (attr.flags != AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
+        g_outputFrameCount++;
+        enc_sample->GetInputDescription();
+    }
 }
 
 static void onEncInputParamRoi(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parameter, void *userData)
@@ -324,7 +331,9 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder()
         }
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME, enbleBFrameMode);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrameMode);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, maxFrameDelayCount);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, repeatHeaderXPS);
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);
     return ret;
@@ -437,6 +446,17 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder_fuzz(int32_t data)
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);
     return ret;
+}
+
+void VEncAPI11Sample::GetInputDescription()
+{
+    OH_AVFormat *format = OH_VideoEncoder_GetInputDescription(venc_);
+    int32_t numberOfPendingFrame = 0;
+    OH_AVFormat_GetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, &numberOfPendingFrame);
+    if (g_inputFrameCount - g_outputFrameCount != numberOfPendingFrame) {
+        std::cout << "current pending frame count wrone" << std::endl;
+    }
+    OH_AVFormat_Destroy(format);
 }
 
 int32_t VEncAPI11Sample::SetVideoEncoderCallback()
@@ -1871,6 +1891,25 @@ void VEncAPI11Sample::GetFormatKey()
     OH_AVFormat_Destroy(format);
     std::cout << "firstCallBackKey:" << firstCallBackKey << std::endl;
     isGetFormatKeyNum++;
+}
+
+int32_t VEncAPI11Sample::RequestWindowBuffer(uint32_t time)
+{
+    OHNativeWindowBuffer *ohNativeWindowBuffer;
+    int fenceFd = -1;
+    if (nativeWindow == nullptr) {
+        return -1;
+    }
+    for (int i = 0; i < time; i++) {
+        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow, &ohNativeWindowBuffer, &fenceFd);
+        if (err != 0) {
+            return -1;
+        }
+    }
+    if (fenceFd > 0) {
+        close(fenceFd);
+    }
+    return 0;
 }
 
 void VEncAPI11Sample::SwitchParame(size_t index, OH_AVCodec *venc)
