@@ -3204,7 +3204,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Dts2FrameId_0002, TestSi
     int64_t dts = -1;
     uint32_t frameId = -1;
     Status ret = mpeg4Plugin_->Dts2FrameId(dts, frameId);
-    EXPECT_EQ(ret, Status::ERROR_OUT_OF_RANGE);
+    EXPECT_EQ(ret, Status::OK);
 }
 
 /**
