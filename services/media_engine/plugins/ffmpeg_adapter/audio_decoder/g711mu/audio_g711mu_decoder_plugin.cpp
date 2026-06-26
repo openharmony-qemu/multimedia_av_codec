@@ -30,14 +30,16 @@ using namespace G711mu;
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioG711MuDecoderPlugin"};
 constexpr int SUPPORT_CHANNELS = 1;
 constexpr int SUPPORT_SAMPLE_RATE = 8000;
-constexpr int INPUT_BUFFER_SIZE_DEFAULT = 4096; // 20ms:160
-constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 8192; // 20ms:320
+constexpr int INPUT_BUFFER_SIZE_DEFAULT = 24576; // 20ms:160
+constexpr int OUTPUT_BUFFER_SIZE_DEFAULT = 49152; // 20ms:320
 constexpr int AUDIO_G711MU_SIGN_BIT = 0x80;
 constexpr int AVCODEC_G711MU_QUANT_MASK = 0xf;
 constexpr int AVCODEC_G711MU_SHIFT = 4;
 constexpr int AVCODEC_G711MU_SEG_MASK = 0x70;
 constexpr int G711MU_LINEAR_BIAS = 0x84;
 constexpr float TIME_ONE_SECOND = 1000000.f;
+constexpr int SUPPORT_MAX_CHANNELS = 6;
+constexpr int SUPPORT_MAX_SAMPLE_RATE = 48000;
 
 Status RegisterAudioDecoderPlugins(const std::shared_ptr<Register>& reg)
 {
@@ -90,12 +92,12 @@ AudioG711muDecoderPlugin::~AudioG711muDecoderPlugin()
 
 bool AudioG711muDecoderPlugin::CheckFormat()
 {
-    if (channels_ != SUPPORT_CHANNELS) {
+    if (channels_ >= SUPPORT_CHANNELS && channels_ <= SUPPORT_MAX_CHANNELS) {
         AVCODEC_LOGE("AudioG711muDecoderPlugin channels not supported");
         return false;
     }
 
-    if (sampleRate_ != SUPPORT_SAMPLE_RATE) {
+    if (sampleRate_ >= SUPPORT_SAMPLE_RATE && sampleRate_ <= SUPPORT_MAX_SAMPLE_RATE) {
         AVCODEC_LOGE("AudioG711muDecoderPlugin sampleRate not supported");
         return false;
     }

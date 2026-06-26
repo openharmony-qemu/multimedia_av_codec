@@ -147,6 +147,7 @@ const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {11025, 32000, 44100, 48000};
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
 constexpr int MAX_BIT_RATE_G711A_DECODER = 64000;
+constexpr int MAX_CHANNEL_G711MU_DECODER = 6;
 
 const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaudiocodec_aac_proxy_1.0.z.so";
 
@@ -764,9 +765,9 @@ CapabilityData AudioCodeclistInfo::GetG711muDecoderCapability()
     audioG711muDecoderCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU;
     audioG711muDecoderCapability.isVendor = false;
     audioG711muDecoderCapability.bitrate = Range(1, MAX_BIT_RATE_G711MU_DECODER);
-    audioG711muDecoderCapability.channels = Range(1, 1);
-    audioG711muDecoderCapability.sampleRate = AUDIO_G711MU_SAMPLE_RATE;
-    audioG711muDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711MU_SAMPLE_RATE);
+    audioG711muDecoderCapability.channels = Range(1, MAX_CHANNEL_G711MU_DECODER);
+    audioG711muDecoderCapability.sampleRate = AUDIO_G711A_SAMPLE_RATE;
+    audioG711muDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711A_SAMPLE_RATE);
     audioG711muDecoderCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioG711muDecoderCapability;
 }
