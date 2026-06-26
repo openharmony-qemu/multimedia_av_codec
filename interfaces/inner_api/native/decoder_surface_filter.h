@@ -259,7 +259,7 @@ private:
 
     std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback_;
     bool isInSeekContinuous_{false};
-    double speed_ = 1.0f;
+    double speed_ = 1.0;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferMap_;
     std::mutex draggingMutex_ {};
     std::unique_ptr<Task> eosTask_ {nullptr};
