@@ -376,13 +376,8 @@ std::string DownloadMonitor::MaskUrl(const std::string& url)
 
     if (path == "/")
         return prefix + host + "/";
-
     size_t lastSlash = path.rfind('/');
-    if (lastSlash == std::string::npos) {
-        return prefix + host + path;
-    }
     std::string filename = path.substr(lastSlash + 1);
-
     if (filename.empty()) {
         return prefix + host + "/***";
     } else {
