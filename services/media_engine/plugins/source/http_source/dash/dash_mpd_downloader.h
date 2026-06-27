@@ -16,7 +16,11 @@
 #ifndef HISTREAMER_DASH_MPD_DOWNLOADER_H
 #define HISTREAMER_DASH_MPD_DOWNLOADER_H
 
+#include <cstddef>
+#include <memory>
 #include <shared_mutex>
+#include <string>
+#include <vector>
 #include <mutex>
 #include "avcodec_common.h"
 #include "dash_common.h"
@@ -171,6 +175,7 @@ public:
     void SetCallback(const std::shared_ptr<Callback>& cb);
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
     DashList<DashEventStreamInfo *> GetCurrentPeriodEventStreams() const;
+    static std::vector<std::string> ParseMpdResources(const uint8_t* data, size_t size, const std::string& rootUrl);
 
 private:
     void ParseManifest();

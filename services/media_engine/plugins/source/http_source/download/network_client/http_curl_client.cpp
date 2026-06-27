@@ -38,6 +38,7 @@ constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
 constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
+constexpr uint32_t CONNECT_TIMEOUT = 5;
 constexpr char S_ALPHA_NUM_LINE_E[] = "^[a-zA-Z0-9\\-_\\.*]+$";
 
 std::string ToString(const std::list<std::string> &lists, char tab)
@@ -104,6 +105,7 @@ std::string GetHostnameFromURL(const std::string &url)
     }
     return tempUrl.substr(posStart);
 }
+
 bool IsRegexValid(const std::string &regex)
 {
     if (Trim(regex).empty()) {
@@ -172,13 +174,20 @@ NetworkClient *CreateNetworkClient(RxHeader headCallback, RxBody bodyCallback, v
     return new HttpCurlClient(headCallback, bodyCallback, userParam);
 }
 
+NetworkClient *CreateNetworkClientExt(RxHeader headCallback, RxBody bodyCallback, void *userParam,
+    std::optional<uint32_t> connectTimeoutMs)
+{
+    return new HttpCurlClient(headCallback, bodyCallback, userParam, connectTimeoutMs);
+}
+
 std::shared_ptr<NetworkClient> NetworkClient::GetInstance(RxHeader headCallback, RxBody bodyCallback, void *userParam)
 {
     return std::make_shared<HttpCurlClient>(headCallback, bodyCallback, userParam);
 }
 
-HttpCurlClient::HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
-    : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam)
+HttpCurlClient::HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void *userParam,
+    std::optional<uint32_t> connectTimeoutMs)
+    : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam), connectTimeoutMs_(connectTimeoutMs)
 {
     MEDIA_LOG_I("HttpCurlClient ctor");
 }
@@ -342,7 +351,9 @@ Status HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeo
     AutoLock lock(mutex_);
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
-    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
+    uint32_t connectTimeoutMs = connectTimeoutMs_.has_value() ? *connectTimeoutMs_ : CONNECT_TIMEOUT;
+    MEDIA_LOG_I("connect timeout set: %{public}u", connectTimeoutMs);
+    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, connectTimeoutMs);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 2L);
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
@@ -460,6 +471,7 @@ void HttpCurlClient::SetAppUid(int32_t appUid)
 {
     appUid_ = appUid;
 }
+
 }
 }
 }

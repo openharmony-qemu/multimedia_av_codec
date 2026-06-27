@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <optional>
 #include "network/network_client.h"
 #include "network/network_typs.h"
 #include "curl/curl.h"
@@ -43,7 +44,8 @@ bool IsExcluded(const std::string &str, const std::string &exclusions, const std
 
 class HttpCurlClient : public NetworkClient {
 public:
-    HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void* userParam);
+    HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void* userParam,
+        std::optional<uint32_t> connectTimeoutMs = std::nullopt);
 
     ~HttpCurlClient() override;
 
@@ -86,6 +88,7 @@ private:
     bool isFirstRequest_ {true};
     bool isFirstOpen_ {true};
     volatile int32_t appUid_ {-1};
+    std::optional<uint32_t> connectTimeoutMs_ {std::nullopt};
 };
 }
 }

@@ -607,6 +607,7 @@ std::string GetUserAgent()
 
 std::string Downloader::GetCertIssuerNames()
 {
+    AutoLock lock(caMutex_);
     return ca_;
 }
 
@@ -733,7 +734,10 @@ void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, const 
 {
     currentRequest_->clientError_ = clientCode;
     currentRequest_->serverError_ = serverCode;
-    ca_ = ca;
+    {
+        AutoLock loack(caMutex_);
+        ca_ = ca;
+    }
     HandleRedirect(ret);
 
     if (isDestructor_) {
@@ -1013,18 +1017,15 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     size_t dataLen = size * nitems;
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
-
     if (!mediaDownloader->currentRequest_->location_.empty() &&
         !mediaDownloader->currentRequest_->haveRedirectRetry_.load()) {
         MEDIA_LOG_W("Receive location, need retry.");
         return 0;
     }
-
     UpdateHeaderInfo(mediaDownloader);
     MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData, dataLen: " + std::to_string(dataLen)
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
- 
     if (IsDropDataRetryRequest(mediaDownloader) && !mediaDownloader->currentRequest_->IsIndexM3u8Request()) {
         return DropRetryData(buffer, dataLen, mediaDownloader);
     }
@@ -1057,7 +1058,6 @@ size_t Downloader::SaveBodyData(Downloader* mediaDownloader, void* buffer, size_
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ +
                                                   static_cast<int64_t>(writeLen);
     UpdateRequestSize(mediaDownloader);
- 
     if (writeLen != dataLen) {
         if (mediaDownloader->sourceLoader_ != nullptr) {
             mediaDownloader->PauseLoop(true);

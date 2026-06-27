@@ -138,6 +138,39 @@ DashMpdDownloader::~DashMpdDownloader()
     reportInfo_->ca_ = downloader_->GetCertIssuerNames();
 }
 
+std::vector<std::string> DashMpdDownloader::ParseMpdResources(const uint8_t* data, size_t size,
+    const std::string& rootUrl)
+{
+    std::vector<std::string> urls;
+    if (data == nullptr || size = 0) {
+        return urls;
+    }
+
+    auto downloader = std::make_shared<DashMpdDownloader>(nullptr);
+    downloader->url_ = rootUrl;
+
+    std::string mpdContent(reinterpret_cast<const char*>(data), size);
+    downloader->downloadContent_ = mpdContent;
+    downloader->ParseManifest();
+
+    for (auto& streamDesc : downloader->streamDescriptions_) {
+        if (streamDesc == nullptr) {
+            continue;
+        }
+        downloader->GetSegmentsInMpd(streamDesc);
+        if (streamDesc->initSegment_ != nullptr && !streamDesc->initSegment_->url_.empty()) {
+            urls.push_back(streamDesc->initSegment_url_);
+        }
+        for (const auto& segment : streamDesc->mediaSegments_) {
+            if (!segment->url_.empty()) {
+                urls.push_back(segment->url_);
+            }
+        }
+    }
+
+    return urls;
+}
+
 void DashMpdDownloader::Init()
 {
     auto weakDownloader = weak_from_this();
