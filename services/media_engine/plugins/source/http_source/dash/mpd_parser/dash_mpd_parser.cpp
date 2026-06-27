@@ -81,6 +81,9 @@ void DashMpdParser::GetPeriodAttr(IDashMpdNode *periodNode, DashPeriodInfo *peri
 void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
                                      DashPeriodInfo *periodInfo)
 {
+    if (rootElement == nullptr) {
+        return;
+    }
     DashList<std::shared_ptr<XmlElement>> adptSetElementList;
     DashElementList dashElementList;
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
@@ -508,8 +511,8 @@ void DashMpdParser::FillEventMetadata(DashEventInfo *eventInfo, uint64_t duratio
 
     uint32_t timescale = eventStreamInfo->timescale_;
     if (timescale > 0) {
-        uint64_t timeDiff = (eventInfo->presentationTime_ >= eventStreamInfo->presentationTimeOffset_)
-            ? (eventInfo->presentationTime_ - eventStreamInfo->presentationTimeOffset_) : 0;
+        uint64_t timeDiff = eventInfo->presentationTime_ >= eventStreamInfo->presentationTimeOffset_ ?
+            eventInfo->presentationTime_ - eventStreamInfo->presentationTimeOffset_ : 0;
         eventInfo->start_ = timeDiff / timescale * S_TO_MS;
         eventInfo->duration_ = duration / timescale * S_TO_MS;
     }
