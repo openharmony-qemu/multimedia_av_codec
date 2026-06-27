@@ -74,7 +74,7 @@ static const FourccSet g_unsupportedFileBrandsFourcc = {
 
 // codec format
 static const FourccSet g_supportedVideoCodecsFourcc = {
-    FourccType("avc1"), FourccType("acv3"),
+    FourccType("avc1"), FourccType("avc3"),
     FourccType("hvc1"), FourccType("hev1"),
     FourccType("vvc1"), FourccType("vvi1"),
     FourccType("mjpeg"), FourccType("png "), FourccType("bmp "),
@@ -91,7 +91,7 @@ static const FourccSet g_supportedSubtitleCodecsFourcc = {
 };
 
 static const FourccSet g_supportedAuxlCodecsFourcc = {
-    FourccType("avc1"), FourccType("acv3"),
+    FourccType("avc1"), FourccType("avc3"),
     FourccType("hvc1"), FourccType("hev1"),
     FourccType("mp4a"), FourccType(".mp3"), FourccType("mebx"),
 };
@@ -114,7 +114,7 @@ static const std::map<std::string, std::string> g_supportedAllCodecName = {
 
 static const std::map<int32_t, std::string> g_supportedMimeFourcc = {
     { FourccType("avc1"), MimeType::VIDEO_AVC },
-    { FourccType("acv3"), MimeType::VIDEO_AVC },
+    { FourccType("avc3"), MimeType::VIDEO_AVC },
     { FourccType("hvc1"), MimeType::VIDEO_HEVC },
     { FourccType("hev1"), MimeType::VIDEO_HEVC },
     { FourccType("vvc1"), MimeType::VIDEO_VVC },

@@ -880,18 +880,18 @@ Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctxOffset, int64
     // After removing type, size..., the starting offset of the actual data in the atom
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_MSG_E(currentOffset >= MIN_DATA_OFFSET, Status::ERROR_INVALID_PARAMETER, "currentOffset is invalid");
-    for (uint32_t i = 0; i < dataSize && currentOffset < ctxOffset; ++i) {  // Each entry size is 1 Byte
-        if (i >= 0 && i < versionAndFlagsOffset) {  // skip version and flags
-            currentOffset++;
-            continue;
-        }
-        uint8_t sdtpEntry;
-        Status ret = dataReader_->ReadUintData(currentOffset, &sdtpEntry, sizeof(sdtpEntry));
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
-        sdtpEntry_.sdtpData.emplace_back(sdtpEntry);
-        currentOffset++;
-        sdtpEntry_.sdtpEntryCount++;
-    }
+    FALSE_RETURN_V_MSG_W(ctxOffset >= currentOffset, Status::OK, "ctxOffset is invalid");
+    size_t readableSize = std::min(dataSize, static_cast<size_t>(ctxOffset - currentOffset));
+    FALSE_RETURN_V_MSG_W(readableSize >= versionAndFlagsOffset, Status::OK, "sdtp readable size is invalid");
+
+    size_t entryCount = readableSize - versionAndFlagsOffset; // Each entry size is 1 Byte.
+    FALSE_RETURN_V_NOLOG(entryCount != 0, Status::OK);
+    FALSE_RETURN_V_MSG_E(entryCount <= std::numeric_limits<uint32_t>::max(), Status::ERROR_INVALID_DATA,
+        "sdtp entry count is too large");
+    sdtpEntry_.sdtpData.resize(entryCount);
+    Status ret = dataReader_->ReadFully(currentOffset + versionAndFlagsOffset, sdtpEntry_.sdtpData.data(), entryCount);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sdtp data failed");
+    sdtpEntry_.sdtpEntryCount = static_cast<uint32_t>(entryCount);
     return Status::OK;
 }
 
