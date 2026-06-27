@@ -218,7 +218,8 @@ void AudioEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     if (ret != 0 && isTranscoderMode_) {
         MEDIA_LOG_I("TranscoderMode");
         FALSE_RETURN(eventReceiver_ != nullptr);
-        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_ENC_TYPE});
+        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_UNSUPPORT_AUD_ENC_TYPE)});
     }
 }
 
@@ -761,7 +762,8 @@ void AudioEncoderFilter::AddInternalBufferQueue()
     if (intermediateBufferQueue_ == nullptr) {
         MEDIA_LOG_E("Create internal bufferQueue failed!");
         FALSE_RETURN(eventReceiver_ != nullptr);
-        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR, MSERR_NO_MEMORY});
+        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_NO_MEMORY)});
         return;
     }
 

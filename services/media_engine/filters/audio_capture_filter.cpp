@@ -90,7 +90,8 @@ public:
     void OnInterrupt(const std::string &interruptInfo) override
     {
         MEDIA_LOG_I("AudioCaptureModuleCallback interrupt: " PUBLIC_LOG_S, interruptInfo.c_str());
-        receiver_->OnEvent({"audio_capture_filter", EventType::EVENT_ERROR, Status::ERROR_AUDIO_INTERRUPT});
+        receiver_->OnEvent({"audio_capture_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(Status::ERROR_AUDIO_INTERRUPT)});
     }
 private:
     std::shared_ptr<EventReceiver> receiver_;

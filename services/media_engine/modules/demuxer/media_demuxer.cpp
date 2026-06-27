@@ -4397,8 +4397,8 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
             requestBufferErrorCountMap_[trackId] >= REQUEST_FAILED_RETRY_TIMES) {
         MEDIA_LOG_E("Invalid data source, can not get frame");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent(
-                {"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN, GetMime()});
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime()});
         } else {
             MEDIA_LOG_D("EventReceiver is nullptr");
         }
@@ -4413,8 +4413,8 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
         MEDIA_LOG_E("Cache data size is out of limit");
         if (eventReceiver_ != nullptr && !isOnEventNoMemory_.load()) {
             isOnEventNoMemory_.store(true);
-            eventReceiver_->OnEvent(
-                {"demuxer_filter", EventType::EVENT_ERROR, MSERR_DEMUXER_BUFFER_NO_MEMORY, GetMime()});
+            eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_DEMUXER_BUFFER_NO_MEMORY), GetMime()});
         }
         return GetEnableSampleQueueFlag() ? NEXT_DELAY_TIME_US : 0;
     }
@@ -4479,7 +4479,8 @@ void MediaDemuxer::HandlePacketConvertError()
     FALSE_RETURN_NOLOG(convertErrorTime_ >= CONVERT_PACKET_ERROR_MAX_COUNT);
     MEDIA_LOG_E("PacketConvertError happened %{public}d times, stream is unsupported!", convertErrorTime_.load());
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "eventReceiver_ is nullptr");
-    eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, MSERR_DATA_SOURCE_ERROR_UNKNOWN, GetMime()});
+    eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR,
+        static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime()});
 }
 
 Status MediaDemuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)
