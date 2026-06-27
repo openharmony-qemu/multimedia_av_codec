@@ -301,6 +301,7 @@ private:
     int64_t startDownTime_ {0};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::string ca_;
+    FairMutex caMutex_ {};
 };
 }
 }

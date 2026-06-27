@@ -323,7 +323,7 @@ Seekable DashMediaDownloader::GetSeekable() const
 std::vector<SeekRange> DashMediaDownloader::GetSeekableRanges() const
 {
     MEDIA_LOG_I("DashMediaDownloader GetSeekableRanges begin");
-    FALSE_RETURN_V_MSG_E(mpdDownloader_ != nullptr, {}, "mpdDownloader_ is nullptr, unable to get seekable range");
+    FALSE_RETURN_V_MSG_E(mpdDownloader_ != nullptr, {}, "mpdDownloader_ is nullptr, GetSeekableRanges fail");
     return mpdDownloader_->GetSeekableRanges();
 }
 

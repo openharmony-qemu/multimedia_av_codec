@@ -229,9 +229,9 @@ private:
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
     std::shared_ptr<DownloadRequest> GetDownloadRequest();
     bool CheckCanReadOneSeconds(uint64_t wantReadLength);
+    void HandlePlayListChanged(const std::vector<PlayInfo>& playList);
     void UpdateAesDecryptor(const PlayInfo& playInfo);
     bool IsAllDownloadFinish();
-    void HandlePlayListChanged(const std::vector<PlayInfo>& playList);
     bool IsDownloadLastSplice();
     bool CheckLiveToVodEnd();
     bool CheckVodEnd();
@@ -392,9 +392,9 @@ private:
     InfoIndexMap InfoIndexMap_;
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
     std::shared_mutex aesDecryptorMutex_;
+    int64_t currentSequence_ {0};
     bool isSeekedFlag_ {false};
     mutable std::mutex seekCandidatesMutex_;
-    int64_t currentSequence_ {0};
 };
 }
 }

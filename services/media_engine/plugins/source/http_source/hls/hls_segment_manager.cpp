@@ -142,8 +142,8 @@ HlsSegmentManager::HlsSegmentManager(const std::shared_ptr<HlsSegmentManager> &o
     HlsSegmentType type)
 {
     SetType(type);
+    FALSE_RETURN_MSG(other != nullptr, "other is nullptr");
     userDefinedBufferDuration_ = other->userDefinedBufferDuration_;
-
     if (userDefinedBufferDuration_) {
         expectDuration_ = other->expectDuration_;
         totalBufferSize_ = other->totalBufferSize_;
@@ -300,7 +300,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
     if (writeTsIndex_ == 0) {
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
         MEDIA_LOG_I("HLS PutRequest init readOffset." PUBLIC_LOG_U64 ", type: %{public}d", readOffset_, type_);
-        readTsIndex_ = writeTsIndex_;
+        readTsIndex_.store(writeTsIndex_);
         MEDIA_LOG_I("readTsIndex_, PutRequestIntoDownloader init readTsIndex_." PUBLIC_LOG_U32 ", type: %{public}d",
             readTsIndex_.load(), type_);
     }
@@ -469,34 +469,34 @@ void HlsSegmentManager::HandleFfmpegReadback(uint64_t ffmpegOffset)
     MEDIA_LOG_D("HLS Read back, ffmpegOffset: " PUBLIC_LOG_U64 " ffmpegOffset: " PUBLIC_LOG_U64 ", type: %{public}d",
         ffmpegOffset_, ffmpegOffset, type_);
     uint64_t readBack = ffmpegOffset_ - ffmpegOffset;
-    uint64_t curTsHaveRead = readOffset_ > SpliceOffset(readTsIndex_, 0) ?
-        readOffset_ - SpliceOffset(readTsIndex_, 0) : 0;
+    uint64_t curTsHaveRead = readOffset_ > SpliceOffset(readTsIndex_.load(), 0) ?
+        readOffset_ - SpliceOffset(readTsIndex_.load(), 0) : 0;
     AutoLock lock(tsStorageInfoMutex_);
     if (curTsHaveRead >= readBack) {
         readOffset_ -= readBack;
         MEDIA_LOG_D("HLS Read back, current ts, update readOffset: " PUBLIC_LOG_U64 ", type: %{public}d", readOffset_,
             type_);
     } else {
-        if (readTsIndex_ == 0) {
+        if (readTsIndex_.load() == 0) {
             readOffset_ = 0; // Cross ts readback, but this is the first ts, so reset readOffset.
             MEDIA_LOG_W("HLS Read back, this is the first ts: " PUBLIC_LOG_U64 ", type: %{public}d", readOffset_,
                 type_);
             return;
         }
-        if (tsStorageInfo_.find(readTsIndex_ - 1) == tsStorageInfo_.end()) {
+        if (tsStorageInfo_.find(readTsIndex_.load() - 1) == tsStorageInfo_.end()) {
             readOffset_ = readOffset_ > curTsHaveRead ? readOffset_ - curTsHaveRead : 0;
             MEDIA_LOG_W("HLS Read back, last ts is not ready, update readOffset to readTsIndex head: "
                 PUBLIC_LOG_U64 ", type: %{public}d", readOffset_, type_);
             return;
         }
-        readTsIndex_--;
+        readTsIndex_.fetch_sub(1);
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
         uint32_t readTsIndexTempValue = readTsIndex_.load();
         uint32_t offset32 = 0;
-        if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end()) {
-            offset32 = tsStorageInfo_[readTsIndex_].first >= lastTsReadBack ?
-                tsStorageInfo_[readTsIndex_].first - lastTsReadBack : 0;
-            readOffset_ = SpliceOffset(readTsIndex_, offset32);
+        if (tsStorageInfo_.find(readTsIndex_.load()) != tsStorageInfo_.end()) {
+            offset32 = tsStorageInfo_[readTsIndex_.load()].first >= lastTsReadBack ?
+                tsStorageInfo_[readTsIndex_.load()].first - lastTsReadBack : 0;
+            readOffset_ = SpliceOffset(readTsIndex_.load(), offset32);
             MEDIA_LOG_I("HLS Read back, last ts, update readTsIndex: " PUBLIC_LOG_U32
                 " update readOffset: " PUBLIC_LOG_U64 ", type: %{public}d", readTsIndexTempValue, readOffset_, type_);
         }
@@ -506,14 +506,14 @@ void HlsSegmentManager::HandleFfmpegReadback(uint64_t ffmpegOffset)
 bool HlsSegmentManager::CheckDataIntegrity()
 {
     AutoLock lock(tsStorageInfoMutex_);
-    if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
-        !tsStorageInfo_[readTsIndex_].second) {
-        return readTsIndex_ == writeTsIndex_;
+    if (tsStorageInfo_.find(readTsIndex_.load()) != tsStorageInfo_.end() &&
+        !tsStorageInfo_[readTsIndex_.load()].second) {
+        return readTsIndex_.load() == writeTsIndex_;
     } else {
-        uint64_t head = SpliceOffset(readTsIndex_, 0);
+        uint64_t head = SpliceOffset(readTsIndex_.load(), 0);
         uint64_t hasRead = readOffset_ >= head ? readOffset_ - head : 0;
-        uint64_t bufferSize = tsStorageInfo_[readTsIndex_].first >= hasRead ?
-            tsStorageInfo_[readTsIndex_].first - hasRead : 0;
+        uint64_t bufferSize = tsStorageInfo_[readTsIndex_.load()].first >= hasRead ?
+            tsStorageInfo_[readTsIndex_.load()].first - hasRead : 0;
         return bufferSize == GetBufferSize();
     }
 }
@@ -552,7 +552,7 @@ Status HlsSegmentManager::CheckPlaylist(unsigned char* buff, ReadDataInfo& readD
     if (downloadRequest != nullptr) {
         readDataInfo.isEos_ = downloadRequest->IsEos();
     }
-    if (isFinishedPlay && readTsIndex_ + 1 < backPlayList_.size()) {
+    if (isFinishedPlay && readTsIndex_.load() + 1 < backPlayList_.size()) {
         return Status::ERROR_UNKNOWN;
     }
     if (isFinishedPlay && GetBufferSize() > 0) {
@@ -648,9 +648,9 @@ bool HlsSegmentManager::CheckTsEndOrEos(ReadDataInfo& readDataInfo)
         return true;
     }
     readDataInfo.isEos_ = CheckReadStatus();
-    if (readDataInfo.isEos_ && GetBufferSize() == 0 && readTsIndex_ + 1 >= backPlayList_.size() &&
-        tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
-        tsStorageInfo_[readTsIndex_].second) {
+    if (readDataInfo.isEos_ && GetBufferSize() == 0 && readTsIndex_.load() + 1 >= backPlayList_.size() &&
+        tsStorageInfo_.find(readTsIndex_.load()) != tsStorageInfo_.end() &&
+        tsStorageInfo_[readTsIndex_.load()].second) {
         readDataInfo.realReadLength_ = 0;
         MEDIA_LOG_I("HLS buffer is empty, eos, type: %{public}d", type_);
         return true;
@@ -719,9 +719,9 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
                 ", type: %{public}d", readOffset_, readRemain, type_);
         }
     }
-    if (tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
-        tsStorageInfo_[readTsIndex_].second == true) {
-        uint64_t tsEndOffset = SpliceOffset(readTsIndex_, tsStorageInfo_[readTsIndex_].first);
+    if (tsStorageInfo_.find(readTsIndex_.load()) != tsStorageInfo_.end() &&
+        tsStorageInfo_[readTsIndex_.load()].second == true) {
+        uint64_t tsEndOffset = SpliceOffset(readTsIndex_.load(), tsStorageInfo_[readTsIndex_.load()].first);
         if (readOffset_ >= tsEndOffset) {
             MEDIA_LOG_I("HLS read reach splice end, current: %{public}u, type: %{public}d, readTsIndex_: %{public}u",
                 readDataInfo.streamId_, type_, readTsIndex_.load());
@@ -731,17 +731,17 @@ void HlsSegmentManager::ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readD
                 isNeedReadHeader_.store(true);
             }
             RemoveFmp4PaddingData(buff, readDataInfo);
-            readTsIndex_++;
-            cacheMediaBuffer_->ClearFragmentBeforeOffset(SpliceOffset(readTsIndex_, 0));
-            readOffset_ = SpliceOffset(readTsIndex_, 0);
-            if (tsStreamIdInfo_.find(readTsIndex_) != tsStreamIdInfo_.end() &&
+            readTsIndex_.fetch_add(1);
+            cacheMediaBuffer_->ClearFragmentBeforeOffset(SpliceOffset(readTsIndex_.load(), 0));
+            readOffset_ = SpliceOffset(readTsIndex_.load(), 0);
+            if (tsStreamIdInfo_.find(readTsIndex_.load()) != tsStreamIdInfo_.end() &&
                 readDataInfo.streamId_ > 0 &&
-                readDataInfo.streamId_ != static_cast<int32_t>(tsStreamIdInfo_[readTsIndex_])) {
-                curStreamId_ = tsStreamIdInfo_[readTsIndex_];
+                readDataInfo.streamId_ != static_cast<int32_t>(tsStreamIdInfo_[readTsIndex_.load()])) {
+                curStreamId_ = tsStreamIdInfo_[readTsIndex_.load()];
                 isNeedResetOffset_.store(playlistDownloader_->IsHlsFmp4() ? true : isNeedResetOffset_.load());
                 isTsEnd_.store(false);
                 MEDIA_LOG_I("HLS read change stream next time, current: %{public}u, next: %{public}u, type: %{public}d",
-                    readDataInfo.streamId_, tsStreamIdInfo_[readTsIndex_], type_);
+                    readDataInfo.streamId_, tsStreamIdInfo_[readTsIndex_.load()], type_);
                 return;
             }
         }
@@ -806,7 +806,7 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     bool isLive = playlistDownloader_ != nullptr ? playlistDownloader_->IsLive() : false;
     if (!CheckDataIntegrity() && !isLive) {
         MEDIA_LOG_W("HLS Read in, fix download, type: %{public}d", type_);
-        SeekToTsForRead(readTsIndex_);
+        SeekToTsForRead(readTsIndex_.load());
         return Status::ERROR_AGAIN;
     }
 
@@ -924,8 +924,8 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
         isSourceLoaderSeeking_.store(sourceLoader_ != nullptr);
         SeekToTs(seekTime, mode);
     } else {
-        readTsIndex_ = !backPlayList_.empty() ? backPlayList_.size() - 1 : 0; // 0
-        tsStorageInfo_[readTsIndex_].second = true;
+        readTsIndex_.store(!backPlayList_.empty() ? backPlayList_.size() - 1 : 0); // 0
+        tsStorageInfo_[readTsIndex_.load()].second = true;
     }
     HandleSeekReady(curStreamId_, CheckBreakCondition());
     MEDIA_LOG_I("HLS SeekToTime end, type: %{public}d", type_);
@@ -1573,7 +1573,7 @@ void HlsSegmentManager::PushPlayInfo(PlayInfo playInfo)
         OSAL::SleepFor(6); // sleep 6ms
         readOffset_ = SpliceOffset(writeTsIndex_, 0);
         writeOffset_ = readOffset_;
-        readTsIndex_ = writeTsIndex_;
+        readTsIndex_.store(writeTsIndex_);
         {
             AutoLock lock(tsStorageInfoMutex_);
             if (playlistDownloader_->IsLive()) {
@@ -2083,8 +2083,8 @@ uint64_t HlsSegmentManager::GetCrossTsBuffersize()
         return bufferSize;
     }
     bufferSize = cacheMediaBuffer_->GetBufferSize(readOffset_);
-    if (!backPlayList_.empty() && readTsIndex_ + 1 < backPlayList_.size()) {
-        uint64_t nextTsOffset = SpliceOffset(readTsIndex_ + 1, 0);
+    if (!backPlayList_.empty() && readTsIndex_.load() + 1 < backPlayList_.size()) {
+        uint64_t nextTsOffset = SpliceOffset(readTsIndex_.load() + 1, 0);
         uint64_t nextTsBuffersize = cacheMediaBuffer_->GetBufferSize(nextTsOffset);
         bufferSize += nextTsBuffersize;
     }
@@ -2158,11 +2158,11 @@ size_t HlsSegmentManager::GetSegmentOffset()
 {
     if (playlistDownloader_) {
         if (playlistDownloader_->IsLive() || playlistDownloader_->IsLiveEnd()) {
-            std::string url = InfoIndexMap_.writeMap[readTsIndex_];
+            std::string url = InfoIndexMap_.writeMap[readTsIndex_.load()];
             return InfoIndexMap_.urlMap[url].sumDuration_ -
                 static_cast<uint64_t>(InfoIndexMap_.urlMap[url].duration_) * ONE_USSECONDS;
         }
-        return playlistDownloader_->GetSegmentOffset(readTsIndex_);
+        return playlistDownloader_->GetSegmentOffset(readTsIndex_.load());
     }
     return 0;
 }
@@ -2200,7 +2200,7 @@ Status HlsSegmentManager::StopBufferring(bool isAppBackground)
 bool HlsSegmentManager::ClearChunksOfFragment()
 {
     bool res = false;
-    uint64_t offsetBegin = SpliceOffset(readTsIndex_, 0);
+    uint64_t offsetBegin = SpliceOffset(readTsIndex_.load(), 0);
     uint64_t diff = readOffset_ > offsetBegin ? readOffset_ - offsetBegin : 0;
     if (diff > READ_BACK_SAVE_SIZE) {
         MEDIA_LOG_D("HLS ClearChunksOfFragment: " PUBLIC_LOG_U64 ", type: %{public}d", readOffset_, type_);
@@ -2360,7 +2360,7 @@ uint64_t HlsSegmentManager::GetTotalTsBuffersize()
 {
     FALSE_RETURN_V_MSG(cacheMediaBuffer_ != nullptr, 0, "cacheMediaBuffer_ is nullptr.");
     uint64_t totalBufferSize = 0;
-    uint32_t tsIndex = readTsIndex_;
+    uint32_t tsIndex = readTsIndex_.load();
     uint64_t offset = readOffset_;
     while (tsIndex < writeTsIndex_) {
         uint64_t bufferSize = cacheMediaBuffer_->GetBufferSize(offset);
@@ -2440,6 +2440,7 @@ void HlsSegmentManager::OnMasterReady(bool needAudioManager, bool needSubtitlesM
 
 void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
 {
+    FALSE_RETURN_MSG(other != nullptr, "other is nullptr");
     totalBufferSize_ = other->totalBufferSize_;
     callback_ = other->callback_;
     statusCallback_ = other->statusCallback_;

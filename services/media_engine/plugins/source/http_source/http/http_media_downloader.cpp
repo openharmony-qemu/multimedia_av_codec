@@ -123,6 +123,7 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
     }
     downloader->Init();
     SetDownloader(downloader);
+
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
     steadyClock_.Reset();
@@ -362,9 +363,9 @@ bool HttpMediaDownloader::HandleBuffering()
     }
     if (!isBuffering_ && isFirstFrameArrived_ && callback != nullptr) {
         MEDIA_LOG_I("HTTP CacheData onEvent BUFFERING_END, bufferSize: " PUBLIC_LOG_U64 ", waterLineAbove_: "
-        PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
-        PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, GetCurrentBufferSize(), waterLineAbove_, isBuffering_.load(),
-        canWrite_.load(), readOffset_, writeOffset_);
+            PUBLIC_LOG_ZU ", isBuffering: " PUBLIC_LOG_D32 ", canWrite: " PUBLIC_LOG_D32 " readOffset: "
+            PUBLIC_LOG_ZU " writeOffset: " PUBLIC_LOG_ZU, GetCurrentBufferSize(), waterLineAbove_,
+            isBuffering_.load(), canWrite_.load(), readOffset_, writeOffset_);
         UpdateCachedPercent(BufferingInfoType::BUFFERING_END);
         bufferingTime_ = 0;
     }
@@ -1026,7 +1027,6 @@ std::vector<SeekRange> HttpMediaDownloader::GetSeekableRanges() const
     if (canSeek && GetSeekable() == Seekable::SEEKABLE) {
         return {{0, durationHst}};
     }
-
     bool isOfflineCacheEnabled = sourceLoader_ != nullptr && sourceLoader_->GetenableOfflineCache();
     FALSE_RETURN_V(isOfflineCacheEnabled && fileLength != 0, {});
 

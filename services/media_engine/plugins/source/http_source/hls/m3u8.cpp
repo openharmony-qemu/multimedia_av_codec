@@ -415,6 +415,7 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
         fmp4Header_ = new uint8_t[length + 1]; // 1
         fmp4HeaderLen = length + 1;
     }
+    fmp4HeaderUri_ = uri;
     DownloadMap(uri, offset, length);
     AutoLock lock(sleepMutex_);
     sleepCond_.WaitFor(lock, WAIT_KEY_SLEEP_TIME * MAX_DOWNLOAD_TIME, [this]() {

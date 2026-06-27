@@ -259,8 +259,8 @@ void DownloadMonitor::ReportLoadingErrorEvent(const std::shared_ptr<DownloadRequ
     int32_t requestStage = LoadingRequestStage::LOADING_STAGE_MEDIA_DATA;
     if (isFirstRequest_.load()) {
         requestStage = LoadingRequestStage::LOADING_STAGE_CONNECTION;
-    } else if (request != nullptr &&
-        (request->GetDownloaderName() == "hlsPlayList" || request->GetDownloaderName() == "dashMpd")) {
+    } else if (request != nullptr && (request->GetDownloaderName() == "hlsPlayList" ||
+        request->GetDownloaderName() == "dashMpd")) {
         requestStage = LoadingRequestStage::LOADING_STAGE_PLAYLIST;
     } else {
         // do nothing

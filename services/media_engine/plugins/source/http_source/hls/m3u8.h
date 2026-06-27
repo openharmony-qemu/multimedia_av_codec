@@ -166,6 +166,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::atomic<size_t> minFragDuration_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
     uint8_t* fmp4Header_ {nullptr};
+    std::string fmp4HeaderUri_;     // 存XMAP下载链接
     std::shared_ptr<Downloader> downloaderHeader_;
     DataSaveFunc dataSaveHeader_;
     std::atomic<bool> isHeaderReady_ {false};
