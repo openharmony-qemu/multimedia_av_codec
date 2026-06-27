@@ -1723,7 +1723,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, HandleRingBuffering_001, TestSize.Level1)
     FLVhttpMediaDownloader->timeoutInterval_ = 100;
     FLVhttpMediaDownloader->isBuffering_ = true;
     FLVhttpMediaDownloader->isReportedErrorCode_ = false;
-    EXPECT_EQ(FLVhttpMediaDownloader->HandleRingBuffering(buff, readDataInfo), Status::END_OF_STREAM);
+    EXPECT_EQ(FLVhttpMediaDownloader->HandleRingBuffer(buff, readDataInfo), Status::END_OF_STREAM);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, HandleCacheBuffering_001, TestSize.Level1)
@@ -1736,7 +1736,7 @@ HWTEST_F(HttpMediaDownloaderUnitTest, HandleCacheBuffering_001, TestSize.Level1)
     MP4httpMediaDownloader->timeoutInterval_ = 100;
     MP4httpMediaDownloader->isBuffering_ = true;
     MP4httpMediaDownloader->isReportedErrorCode_ = false;
-    EXPECT_EQ(FLVhttpMediaDownloader->HandleCacheBuffering(buff, readDataInfo), Status::END_OF_STREAM);
+    EXPECT_EQ(FLVhttpMediaDownloader->HandleCacheBuffer(buff, readDataInfo), Status::END_OF_STREAM);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RARE_SPEED_NORMAL, TestSize.Level1)
