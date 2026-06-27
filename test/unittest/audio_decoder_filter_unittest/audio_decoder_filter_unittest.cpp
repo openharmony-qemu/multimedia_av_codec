@@ -104,4 +104,10 @@ HWTEST_F(AudioDecoderFilterUnitTest, IsNeedProcessInput_001, TestSize.Level0)
     auto ret = audioDecoderFilter_->IsNeedProcessInput(isOutPort);
     EXPECT_EQ(ret, true);
 }
+
+/**
+ * @tc.name  : Test IsNeedProcessInput
+ * @tc.number: IsNeedProcessInput_002
+ * @tc.desc  : Test bufferStatus_ == BUFFER_STATUS_AVAIL_NONE
+ */
 } // namespace OHOS::Media

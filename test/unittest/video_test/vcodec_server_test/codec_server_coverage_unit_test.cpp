@@ -22,6 +22,7 @@
 #include "codeclist_core.h"
 #include "media_description.h"
 #include "meta/meta_key.h"
+#include "buffer/avbuffer_common.h"
 #include "ui/rs_surface_node.h"
 #include "window_manager.h"
 #include "window_option.h"
