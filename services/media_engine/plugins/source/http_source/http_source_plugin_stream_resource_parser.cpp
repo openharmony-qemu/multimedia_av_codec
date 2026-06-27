@@ -73,8 +73,8 @@ std::vector<StreamResourceInfo> StreamResourceParser::NextBatch(size_t batchSize
 
 std::vector<StreamResourceInfo> StreamResourceParser::GetAll()
 {
-    std::vector<StreamResourceInfo> remaining(resources_.begin() + currnetIndex_, resources_.end());
-    currnetIndex_ = resources_.size();
+    std::vector<StreamResourceInfo> remaining(resources_.begin() + currentIndex_, resources_.end());
+    currentIndex_ = resources_.size();
     return remaining;
 }
 
@@ -85,7 +85,7 @@ size_t StreamResourceParser::GetTotalCount() const
 
 size_t StreamResourceParser::GetProcessedCount() const
 {
-    return currnetIndex_;
+    return currentIndex_;
 }
 
 void StreamResourceParser::ParseHls(const uint8_t* data, size_t size)

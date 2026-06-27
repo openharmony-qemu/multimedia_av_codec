@@ -142,7 +142,7 @@ std::vector<std::string> DashMpdDownloader::ParseMpdResources(const uint8_t* dat
     const std::string& rootUrl)
 {
     std::vector<std::string> urls;
-    if (data == nullptr || size = 0) {
+    if (data == nullptr || size == 0) {
         return urls;
     }
 
@@ -159,7 +159,7 @@ std::vector<std::string> DashMpdDownloader::ParseMpdResources(const uint8_t* dat
         }
         downloader->GetSegmentsInMpd(streamDesc);
         if (streamDesc->initSegment_ != nullptr && !streamDesc->initSegment_->url_.empty()) {
-            urls.push_back(streamDesc->initSegment_url_);
+            urls.push_back(streamDesc->initSegment_->url_);
         }
         for (const auto& segment : streamDesc->mediaSegments_) {
             if (!segment->url_.empty()) {

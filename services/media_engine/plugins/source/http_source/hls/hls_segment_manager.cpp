@@ -489,7 +489,7 @@ void HlsSegmentManager::HandleFfmpegReadback(uint64_t ffmpegOffset)
                 PUBLIC_LOG_U64 ", type: %{public}d", readOffset_, type_);
             return;
         }
-        readTsIndex_fetch_sub(1);
+        readTsIndex_.fetch_sub(1);
         uint64_t lastTsReadBack = readBack - curTsHaveRead;
         uint32_t readTsIndexTempValue = readTsIndex_.load();
         uint32_t offset32 = 0;
