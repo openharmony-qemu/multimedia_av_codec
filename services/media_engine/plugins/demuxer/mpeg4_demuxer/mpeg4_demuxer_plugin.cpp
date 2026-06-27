@@ -60,7 +60,7 @@ constexpr int32_t READ_LEN = 8;
 constexpr int32_t MIN_ATOM_SIZE = 16;
 constexpr int64_t SNIFF_DATA_SIZE = 2048;
 
-static const std::vector<SeekMode>  g_seekMode = {
+static const std::set<SeekMode>  g_seekMode = {
     SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_NEXT_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC,
@@ -1962,7 +1962,7 @@ Status MPEG4DemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) cons
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(seekTime >= 0 && seekTime <= INT64_MAX / MS_TO_NS,
         Status::ERROR_INVALID_PARAMETER, "Seek time " PUBLIC_LOG_D64 " is not supported", seekTime);
-    FALSE_RETURN_V_MSG_E((std::find(g_seekMode.cbegin(), g_seekMode.cend(), mode) != g_seekMode.cend()),
+    FALSE_RETURN_V_MSG_E(g_seekMode.find(mode) != g_seekMode.end(),
         Status::ERROR_INVALID_PARAMETER,
         "Seek mode " PUBLIC_LOG_U32 " is not supported", static_cast<uint32_t>(mode));
     return Status::OK;
