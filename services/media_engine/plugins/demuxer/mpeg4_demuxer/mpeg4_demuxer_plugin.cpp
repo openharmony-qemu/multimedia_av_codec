@@ -1598,6 +1598,8 @@ Status MPEG4DemuxerPlugin::DynamicBaseTrackSelect(int64_t seekTime, int64_t &max
             seekTimeToPts += track->elstShiftStartTime;
         }
 
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->sampleIndexEntry_.size() != 0, Status::ERROR_NULL_POINTER,
+            "sampleIndexEntry_ is empty");
         int64_t firstPts = track->sampleHelper->sampleIndexEntry_[0].pts;  // 获取首帧pts
         int64_t lastPts = track->sampleHelper->lastPTS_;
         if (seekTimeToPts >= firstPts && seekTimeToPts < lastPts) {
