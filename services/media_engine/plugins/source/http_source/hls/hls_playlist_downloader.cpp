@@ -343,15 +343,7 @@ bool HlsPlayListDownloader::IsLiveTimeShiftSeekable()
 void HlsPlayListDownloader::UpdateSeekRanges(const std::list<std::shared_ptr<M3U8Fragment>>& files)
 {
     std::lock_guard<std::mutex> lock(seekRangeMutex_);
-    auto master = GetThreadSafeMaster();
-    if (master && master->bLive_) {
-        UpdateLiveBaseOffset(files);
-    } else {
-        liveBaseOffset_ = 0;
-        lastFirstSeq_ = -1;
-        lastSegDurations_.clear();
-    }
-    seekRanges_.clear();
+    CheckAllFragmentsSeekable(files);
     int64_t pos = liveBaseOffset_;
     int64_t rangeStart = 0;
     int64_t rangeEnd = 0;
@@ -376,8 +368,70 @@ void HlsPlayListDownloader::UpdateSeekRanges(const std::list<std::shared_ptr<M3U
         rangeEnd = pos;
     }
     if (hasRange && rangeEnd > rangeStart) {
+        auto master = GetThreadSafeMaster();
+        FALSE_RETURN_NOLOG(master != nullptr);
+        if (allFragmentsSeekable_ || !master->bLive_) {
+            seekRanges_.push_back({rangeStart, rangeEnd});
+            return;
+        }
+        rangeStart = rangeEnd;
+        auto it = files.rbegin();
+        for (auto i = 0; i != MAX_LIVE_TS_NUM && it != files.rend(); i++) {
+            int64_t fragDuration = static_cast<int64_t>((*it)->duration_ * HST_SECOND / HST_NSECOND);
+            if (fragDuration < 0) {
+                fragDuration = 0;
+            }
+            rangeStart -= fragDuration;
+            ++it;
+        }
         seekRanges_.push_back({rangeStart, rangeEnd});
     }
+}
+
+void HlsPlayListDownloader::CheckAllFragmentsSeekable(const std::list<std::shared_ptr<M3U8Fragment>>& files)
+{
+    auto master = GetThreadSafeMaster();
+    if (master && master->bLive_) {
+        UpdateLiveBaseOffset(files);
+    } else {
+        liveBaseOffset_ = 0;
+        lastFirstSeq_ = -1;
+        lastSegDurations_.clear();
+    }
+    seekRanges_.clear();
+    FALSE_RETURN_NOLOG(!files.empty());
+    if (!isFragmentsUriSet_) {
+        copiedFileSequences_.clear();
+        allFragmentsSeekable_ = false;
+        for (const auto &file : files) {
+            FALSE_CONTINUE_NOLOG(file != nullptr);
+            copiedFileSequences_.push_back(file->sequence_);
+        }
+        isFragmentsUriSet_ = true;
+    }
+    if ((*files.begin()) == nullptr) {
+        return;
+    }
+    auto firstFileSequence = (*files.begin())->sequence_;
+    auto fileSequence = copiedFileSequences_.rbegin();
+    for (auto i = 0; i < std::min(MAX_LIVE_TS_NUM, static_cast<unsigned int>(copiedFileSequences_.size())); i++) {
+        if (firstFileSequence == *fileSequence) {
+            allFragmentsSeekable_ = true;
+            break;
+        }
+        ++fileSequence;
+    }
+
+    FALSE_RETURN_NOLOG(!allFragmentsSeekable_);
+
+    allFragmentsSeekable_ = true;
+    for (auto it = copiedFileSequences_.begin(); it != copiedFileSequences_.end(); ++it) {
+        if (*it == firstFileSequence) {
+            allFragmentsSeekable_ = false;
+            break;
+        }
+    }
+    return;
 }
 
 void HlsPlayListDownloader::UpdateLiveBaseOffset(const std::list<std::shared_ptr<M3U8Fragment>>& files)
@@ -793,6 +847,7 @@ void HlsPlayListDownloader::SelectBitRate(uint32_t bitRate)
     }
     SetThreadSafeCurrentVariant(newVariant_);
     auto currentVariant = GetThreadSafeCurrentVariant();
+    isFragmentsUriSet_ = false;
     MEDIA_LOG_I("SelectBitRate currentVariant_ " PUBLIC_LOG_U64, currentVariant->bandWidth_);
 }
 
