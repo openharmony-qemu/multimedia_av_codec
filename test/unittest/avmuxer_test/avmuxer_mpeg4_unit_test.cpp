@@ -1968,7 +1968,7 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Add_Multiple_Tracks, TestSize.Level0) {
  */
 HWTEST_F(Mpeg4MuxerUnitTest, Muxer_GENRE_001, TestSize.Level1)
 {
-    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_GENRE_001.mp4");
+    std::string outputFile = TEST_FILE_PATH + std::string("Mpeg4Muxer_GENRE_001.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     ASSERT_TRUE(avmuxer_->CreateMuxer(fd_, outputFormat));
