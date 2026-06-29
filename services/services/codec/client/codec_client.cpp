@@ -84,9 +84,7 @@ CodecClient::CodecClient(const sptr<IStandardCodecService> &ipcProxy)
     : codecProxy_(ipcProxy),
       converter_(std::make_shared<BufferConverter>()),
       syncMutex_(std::make_shared<std::recursive_mutex>())
-{
-    AVCODEC_LOGI_WITH_TAG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
-}
+{}
 
 CodecClient::~CodecClient()
 {
@@ -96,7 +94,6 @@ CodecClient::~CodecClient()
         SetNeedListen(false);
         circular_.SetIsRunning(false);
     }
-    AVCODEC_LOGI_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
 
 void CodecClient::AVCodecServerDied()
@@ -542,7 +539,6 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<AVCodecCallback> &callbac
     if (ret == AVCS_ERR_OK) {
         callbackMode_ = MEMORY_CALLBACK;
     }
-    AVCODEC_LOGI_WITH_TAG("AVSharedMemory callback.%{public}s", ErrorToStr(ret).c_str());
     return ret;
 }
 
@@ -557,7 +553,6 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecCallback> &call
     if (ret == AVCS_ERR_OK) {
         callbackMode_ = BUFFER_CALLBACK;
     }
-    AVCODEC_LOGI_WITH_TAG("AVBuffer callback.%{public}s", ErrorToStr(ret).c_str());
     return ret;
 }
 
@@ -571,7 +566,6 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecParameterCallba
     if (ret == AVCS_ERR_OK) {
         codecMode_ |= CODEC_ENABLE_PARAMETER;
     }
-    AVCODEC_LOGI_WITH_TAG("Parameter callback.%{public}s", ErrorToStr(ret).c_str());
     return ret;
 }
 
@@ -585,7 +579,6 @@ int32_t CodecClient::SetCallback(const std::shared_ptr<MediaCodecParameterWithAt
     if (ret == AVCS_ERR_OK) {
         codecMode_ |= CODEC_ENABLE_PARAMETER;
     }
-    AVCODEC_LOGI_WITH_TAG("Parameter callback.%{public}s", ErrorToStr(ret).c_str());
     return ret;
 }
 

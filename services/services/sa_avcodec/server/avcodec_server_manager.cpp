@@ -304,7 +304,7 @@ void AVCodecServerManager::SetCriticalInner(const bool isKeyService)
     int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
     CHECK_AND_RETURN_LOG(ret == 0, "set to %{public}d fail", isKeyService);
     setCriticalFailed_ = false;
-    AVCODEC_LOGI("set to %{public}d", isKeyService);
+    AVCODEC_LOGD("set to %{public}d", isKeyService);
 }
 
 uint32_t AVCodecServerManager::GetInstanceCount()
