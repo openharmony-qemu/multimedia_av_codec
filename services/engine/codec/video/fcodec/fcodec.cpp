@@ -941,7 +941,7 @@ int32_t FCodec::AllocateOutputBuffer()
         buf->width_ = width_;
         buf->height_ = height_;
 #ifdef EMULATOR_ENABLED
-        std::shared_ptr<AVAllocator> allocator = 
+        std::shared_ptr<AVAllocator> allocator =
             AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
         CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}u allocator is nullptr", i);
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outputBufferSize_);
@@ -953,7 +953,7 @@ int32_t FCodec::AllocateOutputBuffer()
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(sb);
 #endif
         CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ !=nullptr,
-                                 "create output avbuffer failed, index=%{public}d", i);
+                               "create output avbuffer failed, index=%{public}d", i);
         int32_t curBufSize = buf->avBuffer_->memory_->GetCapacity();
         AVCODEC_LOGI("Allocate output buffer success: index=%{public}u, size=%{public}d", i, curBufSize);
         buffers_[INDEX_OUTPUT].emplace_back(buf);
@@ -1058,16 +1058,16 @@ int32_t FCodec::AllocateBuffers()
 
 int32_t FCodec::UpdateBuffers(uint32_t index)
 {
-    if (buffers_[INDEX_OUTPUT][index]->width_ != width_ || buffers_[INDEX_OUTPUT][index]->height_ != height_) {        
+    if (buffers_[INDEX_OUTPUT][index]->width_ != width_ || buffers_[INDEX_OUTPUT][index]->height_ != height_) {
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
         CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
         buf->width_ = width_;
         buf->height_ = height_;
 #ifdef EMULATOR_ENABLED
-        std::shared_ptr<AVAllocator> allocator = 
+        std::shared_ptr<AVAllocator> allocator =
             AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
-        CHECK_AND_RETURN_RET_LOG(allocator != nullptr, AVCS_ERR_NO_MEMORY,"buffer %{public}u allocator is nullptr", 
-                    index);
+        CHECK_AND_RETURN_RET_LOG(allocator != nullptr, AVCS_ERR_NO_MEMORY,
+                                "buffer %{public}u allocator is nullptr", index);
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outputBufferSize_);
 #else
         sptr<SurfaceBuffer> sb = nullptr;
