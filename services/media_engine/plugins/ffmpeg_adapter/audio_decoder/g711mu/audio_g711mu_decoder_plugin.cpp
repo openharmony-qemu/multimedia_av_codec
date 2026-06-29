@@ -92,7 +92,7 @@ AudioG711muDecoderPlugin::~AudioG711muDecoderPlugin()
 
 bool AudioG711muDecoderPlugin::CheckFormat()
 {
-    if (channels_ >= SUPPORT_CHANNELS && channels_ <= SUPPORT_MAX_CHANNELS) {
+    if (channels_ < SUPPORT_CHANNELS || channels_ > SUPPORT_MAX_CHANNELS) {
         AVCODEC_LOGE("AudioG711muDecoderPlugin channels not supported");
         return false;
     }
