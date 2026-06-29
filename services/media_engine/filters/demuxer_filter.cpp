@@ -1303,6 +1303,8 @@ Status DemuxerFilter::RemoveAdsMediaSource(const std::string& id)
 
 Status DemuxerFilter::DisableAllAdsMediaSource()
 {
+    EnsureInterstitialController();
+    EnsureInterstitialScheduler();
     FALSE_RETURN_V_MSG_E(interstitialController_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "interstitialController_ is nullptr");
     return interstitialController_->DisableAllAdsMediaSource();
