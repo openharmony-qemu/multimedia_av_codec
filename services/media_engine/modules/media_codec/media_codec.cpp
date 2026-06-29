@@ -288,12 +288,12 @@ int32_t MediaCodec::SetOutputSurface(sptr<Surface> surface)
 
 int32_t MediaCodec::Prepare()
 {
-    AVCODEC_LOGI("Prepare enter");
+    AVCODEC_LOGD("Prepare enter");
     AutoLock lock(stateMutex_);
     MediaAVCodec::AVCodecTrace trace("MediaCodec::Prepare");
     CHECK_AND_RETURN_RET_LOG(state_ != CodecState::FLUSHED, (int32_t)Status::ERROR_AGAIN,
         "state is flushed, no need prepare");
-    CHECK_AND_RETURN_RET_LOG(state_ != CodecState::PREPARED, (int32_t)Status::OK, "already prepared");
+    CHECK_AND_RETURN_RET_LOGD(state_ != CodecState::PREPARED, (int32_t)Status::OK, "already prepared");
     CHECK_AND_RETURN_RET_LOG(state_ == CodecState::CONFIGURED, (int32_t)Status::ERROR_INVALID_STATE, "state invalid");
     if (isBufferMode_ && isSurfaceMode_) {
         AVCODEC_LOGE("state error");
