@@ -414,7 +414,6 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
     }
     if (caps.requiresNalu && !naluAnalyzer_) {
         EnsureNaluAnalyzer();
-        ReplayCsdToAnalyzer();
     }
     PreDecResult res;
     if (naluAnalyzer_ && caps.requiresNalu) {
@@ -440,7 +439,6 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
     } else if (caps.isPassthrough) {
         res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
     }
-
     if (!res.shouldRetain) {
         ExecutePreDrop(index, buffer);
     }

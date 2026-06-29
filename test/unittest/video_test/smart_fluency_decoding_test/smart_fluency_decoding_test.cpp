@@ -836,10 +836,6 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_LazyNaluCreation_048, T
     // Phase 1: naluAnalyzer_ should not exist (RequiresNaluAnalysis=false)
     EXPECT_EQ(sfd_->naluAnalyzer_, nullptr);
 
-    // Inject CSD data for later replay
-    std::vector<uint8_t> csd = {0x00, 0x00, 0x00, 0x01, 0x67};
-    EXPECT_TRUE(sfd_->InjectCsdData(csd));
-
     // Trigger Phase 2 transition by providing sourceFps
     sfd_->strategy_->UpdateSourceFramerate(60.0); // 60.0: source fps → Phase 2, RequiresNaluAnalysis=true
     EXPECT_TRUE(sfd_->strategy_->RequiresNaluAnalysis());
@@ -851,7 +847,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_LazyNaluCreation_048, T
     sfd_->inBufferMap_[0] = buffer;
 
     // MakePreDecodeDecision should detect requiresNalu && !naluAnalyzer_
-    // and call EnsureNaluAnalyzer() + ReplayCsdToAnalyzer()
+    // and lazily call EnsureNaluAnalyzer()
     bool result = sfd_->MakePreDecodeDecision(0);
     EXPECT_TRUE(result); // Should not crash, buffer is retained
 
