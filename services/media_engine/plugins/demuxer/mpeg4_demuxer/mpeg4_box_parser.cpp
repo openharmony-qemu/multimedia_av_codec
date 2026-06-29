@@ -172,6 +172,14 @@ constexpr std::array<size_t, 4> MATRIX_2X2_INDICES = {0, 1, 3, 4}; // [0][0], [0
 constexpr std::array<size_t, 3> MATRIX_DIAGONAL_INDICES = {0, 4, 8}; // [0][0], [1][1], [2][2]
 constexpr std::array<size_t, 6> MATRIX_OFF_DIAGONAL_INDICES = {1, 2, 3, 5, 6, 7}; // 非对角线元素
 
+constexpr uint8_t VORBIS_EXTRADATA_SIZE = 10;
+constexpr uint8_t OFFSET_4 = 4;
+constexpr uint8_t OFFSET_5 = 5;
+constexpr uint8_t OFFSET_6 = 6;
+constexpr uint8_t OFFSET_7 = 7;
+constexpr uint8_t OFFSET_8 = 8;
+constexpr uint8_t OFFSET_9 = 9;
+
 void SetTrackMediaType(Meta &format, TrackType trackType)
 {
     MediaType mediaType = GetMediaType(trackType);
@@ -2614,25 +2622,51 @@ Status MPEG4AtomParser::ParseEsds(MPEG4Atom currentAtom, int32_t depth, ParseCon
         "Expected decoder config descriptor, got tag: " PUBLIC_LOG_U8, tag);
     
     // 解析 Decoder Config Descriptor
-    FALSE_RETURN_V_MSG_E(ParseDecoderConfigDescriptor(esdsData.get(), currentAtom.dataSize, offset),
-        Status::ERROR_INVALID_DATA, "Failed to parse decoder config descriptor");
+    ret = ParseDecoderConfigDescriptor(esdsData.get(), currentAtom.dataSize, offset);
+    FALSE_RETURN_V_NOLOG(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_INVALID_DATA, "Failed to parse decoder config descriptor");
     
     return Status::OK;
 }
 
-bool MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t dataSize, uint64_t& offset)
+bool MPEG4AtomParser::IsSupportEsds()
 {
-    FALSE_RETURN_V_MSG_E(offset + ESDS_READ_SIZE <= dataSize, false, "Parse decoderConfig descriptor failed");
+    // mp4a vorbis
+    if (lastTrack_ != nullptr && lastTrack_->codecParms.extradataSize >= VORBIS_EXTRADATA_SIZE &&
+        lastTrack_->codecParms.data[OFFSET_4] == 0x76 && lastTrack_->codecParms.data[OFFSET_5] == 0x6F &&
+        lastTrack_->codecParms.data[OFFSET_6] == 0x72 && lastTrack_->codecParms.data[OFFSET_7] == 0x62 &&
+        lastTrack_->codecParms.data[OFFSET_8] == 0x69 && lastTrack_->codecParms.data[OFFSET_9] == 0x73) {
+        return false;
+    }
+    return true;
+}
+
+bool MPEG4AtomParser::IsSupportObjectTypeId(uint8_t objectTypeId)
+{
+    switch (objectTypeId) {
+        case 0xA9: // DTS Core AUdio
+        case 0xAA: // DTS-HD Master Audio
+        case 0xAC: // DTS-HD High Resolution Audio
+            return false;
+        default:
+            return true;
+    }
+}
+
+Status MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t dataSize, uint64_t& offset)
+{
+    FALSE_RETURN_V_MSG_E(offset + ESDS_READ_SIZE <= dataSize, Status::ERROR_INVALID_DATA, "Parse decoderConfig failed");
 
     uint8_t objectTypeId = data[offset++];         // Object Type ID
-    // 跳过 streamType(1字节) buffer size (3字节) 和 max bitrate (4字节)
-    offset += sizeof(uint64_t);
+    offset += sizeof(uint64_t); // 跳过 streamType(1字节) buffer size (3字节) 和 max bitrate (4字节)
 
     std::string mimeType = GetMimeTypeByObjectType(objectTypeId);
     if (!mimeType.empty()) {
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MIME_TYPE>(mimeType);
         lastTrack_->sampleHelper->mimeType_ = mimeType;
     }
+    FALSE_RETURN_V_MSG_E(
+        IsSupportObjectTypeId(objectTypeId), Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, "Unsupported track");
     uint32_t avgBitrate = GetU32Value(&data[offset]);
     offset += sizeof(uint32_t);
 
@@ -2642,15 +2676,15 @@ bool MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t
     // 读取解码器特定信息描述符
     uint8_t tag;
     uint32_t size;
-    FALSE_RETURN_V_MSG_E(ReadDescriptor(data, dataSize, offset, tag, size), false, "No decoder specific info found");
+    FALSE_RETURN_V_MSG_E(ReadDescriptor(data, dataSize, offset, tag, size), Status::ERROR_INVALID_DATA, "No info");
 
     if (tag == MPEG4_DEC_SPECIFIC_DESCR_TAG) {
         // 特殊情况：MPEG-1/2 Audio 不需要 decoder specific info
         const uint32_t maxSize = 1 << 30;
-        FALSE_RETURN_V_MSG_D(objectTypeId != 0x69 && objectTypeId != 0x6B, true,
+        FALSE_RETURN_V_MSG_D(objectTypeId != 0x69 && objectTypeId != 0x6B, Status::ERROR_INVALID_DATA,
             "MPEG-1/2 Audio detected, no decoder specific info needed");
-        FALSE_RETURN_V_MSG_E(size > 0 && size <= maxSize, false, "Wrong descriptor size");
-        FALSE_RETURN_V_MSG_E(offset + size <= dataSize, false, "Decoder specific info extends beyond atom boundary");
+        FALSE_RETURN_V_MSG_E(size > 0 && size <= maxSize, Status::ERROR_INVALID_DATA, "Wrong descriptor size");
+        FALSE_RETURN_V_MSG_E(offset + size <= dataSize, Status::ERROR_INVALID_DATA, "Wrong descriptor size");
         
         // 提取 decoder specific info
         const uint8_t* specificInfo = &data[offset];
@@ -2666,18 +2700,18 @@ bool MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t
                 lastTrack_->codecParms.data.reset();
             }
             lastTrack_->codecParms.data = std::make_unique<uint8_t[]>(size);
-            FALSE_RETURN_V_MSG_E(lastTrack_->codecParms.data, false, "Failed to allocate codec config");
+            FALSE_RETURN_V_MSG_E(lastTrack_->codecParms.data, Status::ERROR_INVALID_DATA, "Alloc failed");
             
             auto ret = memcpy_s(lastTrack_->codecParms.data.get(), size, specificInfo, size);
-            FALSE_RETURN_V_MSG_E(ret == EOK, false, "Failed to copy codec config data");
+            FALSE_RETURN_V_MSG_E(ret == EOK, Status::ERROR_INVALID_DATA, "Copy fialed");
             lastTrack_->codecParms.extradataSize = size;
+            FALSE_RETURN_V_MSG_E(IsSupportEsds(), Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, "Unsupported track");
         }
         if (mimeType == MimeType::AUDIO_AAC) {
-            return ParseAACSpecificConfig(specificInfo, size);
+            return ParseAACSpecificConfig(specificInfo, size) ? Status::OK : Status::ERROR_INVALID_DATA;
         }
     }
-    
-    return true;
+    return Status::OK;
 }
 
 void GetAACConfigExtInfo(const std::shared_ptr<DemuxerBitReader> bitReader, uint8_t& audioObjectType)

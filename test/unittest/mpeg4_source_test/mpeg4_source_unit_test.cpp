@@ -52,6 +52,8 @@ string g_mp4FlipPath = TEST_FILE_PATH + string("FLIP_V_90.mp4");
 string g_mp4FlipUri = TEST_URI_PATH + string("FLIP_V_90.mp4");
 string g_mp4TimedMetadataPath = TEST_FILE_PATH + string("timed_metadata_track.mp4");
 string g_mp4TimedMetadataUri = TEST_URI_PATH + string("timed_metadata_track.mp4");
+string g_mp4UnsupportOgg = TEST_FILE_PATH + string("mpeg4_unsupport_ogg.mp4");
+string g_mp4UnsupportDts = TEST_FILE_PATH + string("mpeg4_unsupport_dts.mp4");
 } // namespace
 
 void Mpeg4SourceUnitTest::SetUpTestCase(void)
@@ -366,5 +368,51 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_1006, TestSize.Level1)
     EXPECT_EQ(formatVal_.codecMime, "meta/timed-metadata");
     EXPECT_EQ(formatVal_.timedMetadataKey, TEST_TIMED_METADATA.c_str());
     EXPECT_EQ(formatVal_.srcTrackID, 0);
+}
+
+/**
+ * @tc.name: mp4Source_Unsupport_1001
+ * @tc.desc: unsupport audio track vorbis, switch ffmpeg demuxer auto
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4SourceUnitTest, mp4Source_Unsupport_1001, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mp4UnsupportOgg);
+    size_ = GetFileSize(g_mp4UnsupportOgg);
+    printf("---- %s ----\n", g_mp4UnsupportOgg.c_str());
+    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    EXPECT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_VORBIS);
+}
+
+/**
+ * @tc.name: mp4Source_Unsupport_1002
+ * @tc.desc: unsupport audio track dts, switch ffmpeg demuxer auto
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4SourceUnitTest, mp4Source_Unsupport_1002, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mp4UnsupportDts);
+    size_ = GetFileSize(g_mp4UnsupportDts);
+    printf("---- %s ----\n", g_mp4UnsupportDts.c_str());
+    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    trackIndex_ = 0;
+    format_ = source_->GetTrackFormat(trackIndex_);
+    ASSERT_NE(format_, nullptr);
+    printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
+    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
+    EXPECT_EQ(formatVal_.codecMime, CodecMimeType::AUDIO_DTS);
 }
 } // namespace

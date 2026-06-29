@@ -239,7 +239,9 @@ private:
     Status ProcessAuxiliaryHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
     Status ParseSampleDescriptionEntry(int32_t depth, ParseContext* ctx);
     // 音频属性相关辅助函数
-    bool ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t dataSize, uint64_t& offset);
+    bool IsSupportEsds();
+    bool IsSupportObjectTypeId(uint8_t objectTypeId);
+    Status ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t dataSize, uint64_t& offset);
     bool ParseAACConfig(const uint8_t* data, uint32_t size, uint32_t& sampleRate, uint32_t& channels,
         AudioChannelLayout &layout);
     bool ParseAACSpecificConfig(const uint8_t* data, uint32_t size);
