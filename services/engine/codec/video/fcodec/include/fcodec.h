@@ -124,11 +124,13 @@ private:
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif
+#ifndef EMULATOR_ENABLED
     void GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
     void GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
+#endif
     int32_t DecodedFrameProcess(uint32_t index);
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
-    int32_t AllocateInputBuffer(int32_t inBufferSize);
+    int32_t AllocateInputBuffer();
     int32_t AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer);
     int32_t AllocateOutputBuffer(int32_t outBufferSize);
     int32_t ClearSurfaceAndSetQueueSize();
