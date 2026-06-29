@@ -943,7 +943,7 @@ int32_t FCodec::AllocateOutputBuffer()
 #ifdef EMULATOR_ENABLED
         std::shared_ptr<AVAllocator> allocator = 
             AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
-        CHECK_AND_RETURN_RET_LOG(allocator != nullptr, "output buffer %{public}u allocator is nullptr", i);
+        CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}u allocator is nullptr", i);
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outputBufferSize_);
 #else
         sptr<SurfaceBuffer> sb = nullptr;
