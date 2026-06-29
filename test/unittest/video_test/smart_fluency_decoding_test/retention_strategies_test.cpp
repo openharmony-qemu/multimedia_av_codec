@@ -172,15 +172,14 @@ HWTEST_F(FixedRatioRetentionStrategyTest, UpdateTargetRatio_Normal_012, TestSize
     FrameRetentionContext ctx{};
     // Accumulate: frame 1 (first frame rule → true), frame 2 (acc=0.5 < 1.0 → false)
     strategy->MakeRetentionDecision(ctx);
-    bool second = strategy->MakeRetentionDecision(ctx);
+    strategy->MakeRetentionDecision(ctx); // second frame: acc=0.5 < 1.0 → drop
 
     // Update ratio to 0.8
     strategy->UpdateTargetRatio(0.8);
     EXPECT_NEAR(strategy->GetRatio(), 0.8, DEFAULT_TOLERANCE);
 
     // Verify strategy continues to work with new ratio (accumulator preserved)
-    bool third = strategy->MakeRetentionDecision(ctx);
-    EXPECT_TRUE(third || !third); // No crash, accumulator state preserved
+    strategy->MakeRetentionDecision(ctx); // no crash, accumulator state preserved
 }
 
 /**
