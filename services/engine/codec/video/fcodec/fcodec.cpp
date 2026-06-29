@@ -1067,7 +1067,7 @@ int32_t FCodec::UpdateBuffers(uint32_t index)
         std::shared_ptr<AVAllocator> allocator =
             AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
         CHECK_AND_RETURN_RET_LOG(allocator != nullptr, AVCS_ERR_NO_MEMORY,
-                                "buffer %{public}u allocator is nullptr", index);
+                                 "buffer %{public}u allocator is nullptr", index);
         buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outputBufferSize_);
 #else
         sptr<SurfaceBuffer> sb = nullptr;
