@@ -97,7 +97,7 @@ bool AudioG711muDecoderPlugin::CheckFormat()
         return false;
     }
 
-    if (sampleRate_ >= SUPPORT_SAMPLE_RATE && sampleRate_ <= SUPPORT_MAX_SAMPLE_RATE) {
+    if (sampleRate_ < SUPPORT_SAMPLE_RATE || sampleRate_ > SUPPORT_MAX_SAMPLE_RATE) {
         AVCODEC_LOGE("AudioG711muDecoderPlugin sampleRate not supported");
         return false;
     }
