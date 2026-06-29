@@ -57,8 +57,8 @@ const std::vector<int32_t> AUDIO_AMRWB_SAMPLE_RATE = {16000};
 
 const std::vector<int32_t> AUDIO_G711MU_SAMPLE_RATE = {8000};
 
-const std::vector<int32_t> AUDIO_G711A_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
-                                                      44100, 48000};
+const std::vector<int32_t> AUDIO_G711_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
+                                                     44100, 48000};
 
 const std::vector<int32_t> AUDIO_FLAC_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
                                                      44100, 48000, 64000, 88200, 96000, 192000};
@@ -766,8 +766,8 @@ CapabilityData AudioCodeclistInfo::GetG711muDecoderCapability()
     audioG711muDecoderCapability.isVendor = false;
     audioG711muDecoderCapability.bitrate = Range(1, MAX_BIT_RATE_G711MU_DECODER);
     audioG711muDecoderCapability.channels = Range(1, MAX_CHANNEL_G711MU_DECODER);
-    audioG711muDecoderCapability.sampleRate = AUDIO_G711A_SAMPLE_RATE;
-    audioG711muDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711A_SAMPLE_RATE);
+    audioG711muDecoderCapability.sampleRate = AUDIO_G711_SAMPLE_RATE;
+    audioG711muDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711_SAMPLE_RATE);
     audioG711muDecoderCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioG711muDecoderCapability;
 }
@@ -797,8 +797,8 @@ CapabilityData AudioCodeclistInfo::GetG711aDecoderCapability()
     audioG711aDecoderCapability.isVendor = false;
     audioG711aDecoderCapability.bitrate = Range(1, MAX_BIT_RATE_G711A_DECODER);
     audioG711aDecoderCapability.channels = Range(1, MAX_CHANNEL_COUNT_G711A);
-    audioG711aDecoderCapability.sampleRate = AUDIO_G711A_SAMPLE_RATE;
-    audioG711aDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711A_SAMPLE_RATE);
+    audioG711aDecoderCapability.sampleRate = AUDIO_G711_SAMPLE_RATE;
+    audioG711aDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711_SAMPLE_RATE);
     audioG711aDecoderCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioG711aDecoderCapability;
 }
