@@ -132,6 +132,7 @@ private:
         const std::shared_ptr<DashSegmentDownloader> &segDownloader);
     void SwitchAudioStream(const std::shared_ptr<DashStreamDescription> &newAudioStream,
         const std::shared_ptr<DashSegmentDownloader> &segDownloader);
+    Status HandleDownloadError();
 
 private:
 

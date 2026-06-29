@@ -190,6 +190,8 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     uint64_t totalKeyIndex_ {0};
     std::list<std::shared_ptr<DateRange>> dateRanges_;
     std::string currentProgramDateTime_;
+    void InitializeDownloadHeader(const std::string& uri, size_t offset, size_t length);
+    void StartDownload();
 };
 
 struct M3U8Media {

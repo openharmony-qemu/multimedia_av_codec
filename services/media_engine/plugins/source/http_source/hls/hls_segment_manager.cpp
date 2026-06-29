@@ -314,6 +314,13 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
         }
     }
     InfoIndexMap_.writeMap[writeTsIndex_] = playInfo.url_;
+    UpdateAesDecryptor(playInfo);
+    ConfigureAndDownload(playInfo, isRequestWholeFile, startTimePos, downloadDoneCallback);
+}
+
+void HlsSegmentManager::ConfigureAndDownload(const PlayInfo& playInfo, bool isRequestWholeFile, int64_t startTimePos,
+    DownloadDoneCbFunc downloadDoneCallback)
+{
     auto downloadRequest = GetDownloadRequest();
     tsStreamIdInfo_[writeTsIndex_] = playInfo.streamId_;
     if (!playInfo.rangeUrl_.empty()) {
@@ -321,10 +328,10 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
             downloadRequest->SetRangePos(playInfo.offset_, playInfo.offset_ + playInfo.length_ - 1); // 1
         }
     }
-    UpdateAesDecryptor(playInfo);
     downloadRequest->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest->SetStartTimePos(startTimePos);
+    downloadRequest->SetRequestType(RequestType::HLS_MEDIA_DATA);
     downloader_->Download(downloadRequest, -1); // -1
     downloader_->Start();
 }
@@ -1740,7 +1747,8 @@ void HlsSegmentManager::SetDownloadErrorState()
     downloadErrorState_ = true;
     if (segEventCb_ && !isReportedErrorCode_) {
         HlsSegEvent event {.segType = type_, .type = PluginEventType::CLIENT_ERROR,
-            .networkError = NetworkClientErrorCode::ERROR_TIME_OUT, .str = "download"};
+            .networkError = NetworkClientErrorCode::ERROR_TIME_OUT,
+            .str = "errorMessage: Hls download pause due to request failed"};
         segEventCb_(event);
         isTimeoutErrorNotified_.store(true);
     }

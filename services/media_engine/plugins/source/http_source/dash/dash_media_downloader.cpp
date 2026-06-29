@@ -119,18 +119,7 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
     }
 
     if (downloadErrorState_) {
-        auto callback = callback_.lock();
-        if (callback) {
-            MEDIA_LOG_I("Read Client Error, OnEvent");
-            callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "read"});
-        }
-        segmentDownloaders_.Foreach([](const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
-            if (segDownloader == nullptr) {
-                return;
-            }
-            segDownloader->Close(false, true);
-        });
-        return Status::ERROR_AGAIN;
+        return HandleDownloadError();
     }
 
     std::shared_ptr<DashSegmentDownloader> segmentDownloader = GetSegmentDownloader(readDataInfo.streamId_);
@@ -163,6 +152,23 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         return Status::END_OF_STREAM;
     }
     return Status::OK;
+}
+
+Status DashMediaDownloader::HandleDownloadError()
+{
+    auto callback = callback_.lock();
+    if (callback) {
+        MEDIA_LOG_I("Read Client Error, OnEvent");
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+            "errorMessage: Dash read error due to request failed"});
+    }
+    segmentDownloaders_.Foreach([](const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
+        if (segDownloader == nullptr) {
+            return;
+        }
+        segDownloader->Close(false, true);
+    });
+    return Status::ERROR_AGAIN;
 }
 
 std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader(int32_t streamId)
@@ -443,7 +449,8 @@ void DashMediaDownloader::SetDownloadErrorState()
     MEDIA_LOG_I("Dash SetDownloadErrorState");
     auto callback = callback_.lock();
     if (callback) {
-        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "download"});
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+            "errorMessage: Dash download pause due to request failed"});
     }
     downloadErrorState_ = true;
 }

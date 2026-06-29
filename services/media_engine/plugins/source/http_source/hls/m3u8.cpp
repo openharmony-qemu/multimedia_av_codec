@@ -508,6 +508,15 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
     if (uri.empty()) {
         return;
     }
+    InitializeDownloadHeader(uri, offset, length);
+    StartDownload();
+}
+
+ void M3U8::InitializeDownloadHeader(const std::string& uri, size_t offset, size_t length)
+ {
+    if (uri.empty()) {
+        return;
+    }
     InitDownloadHeader();
     if (downloaderHeader_ != nullptr && downloadCallback_ != nullptr) {
         downloaderHeader_->SetDownloadCallback(downloadCallback_);
@@ -551,6 +560,11 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
         downloadHeaderRequest_->SetRangePos(offset, offset + length);
     }
     downloadHeaderRequest_->SetIsAuthRequest(true);
+    downloadHeaderRequest_->SetRequestType(RequestType::HLS_MAP);
+}
+
+void M3U8::StartDownload()
+{
     downloaderHeader_->Download(downloadHeaderRequest_, -1);
     downloaderHeader_->Start();
 }
@@ -803,6 +817,7 @@ void M3U8::DownloadKey(bool isKey)
     uint64_t index = isKey ? (keyIndex_ + totalKeyIndex_) : sessionKeyIndex_;
     downloadRequest_ = std::make_shared<DownloadRequest>(index, keyDataSave_, realStatusCallback, requestInfo, true);
     downloadRequest_->SetIsAuthRequest(true);
+    downloadRequest_->SetRequestType(RequestType::HLS_KEY);
     downloader_->Download(downloadRequest_, -1);
     downloader_->Start();
 }
