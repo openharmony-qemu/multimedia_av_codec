@@ -37,7 +37,7 @@ bool SurfaceTools::RegisterReleaseListener(int32_t instanceId, sptr<Surface> sur
     std::lock_guard<std::mutex> lock(mutex_);
     GSError err = surface->RegisterReleaseListener(callback);
     if (err != GSERROR_OK) {
-        AVCODEC_LOGE("Register Listener failed, GSError=%{public}d, instanceId=%{public}d, id=%{public}" PRIu64,
+        AVCODEC_LOGE("failed, GSError=%{public}d, instanceId=%{public}d, id=%{public}" PRIu64,
             err, instanceId, id);
         return false;
     }

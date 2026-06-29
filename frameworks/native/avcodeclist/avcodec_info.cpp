@@ -522,7 +522,7 @@ std::vector<int32_t> VideoCaps::GetSupportedBitrateMode()
 {
     CHECK_AND_RETURN_RET_LOG(data_ != nullptr, std::vector<int32_t>(), "data is null");
     std::vector<int32_t> bitrateMode = data_->bitrateMode;
-    CHECK_AND_RETURN_RET_LOG(bitrateMode.size() != 0, bitrateMode, "GetSupportedBitrateMode failed: get null");
+    CHECK_AND_RETURN_RET_LOG(bitrateMode.size() != 0, bitrateMode, "failed: get null");
     return bitrateMode;
 }
 

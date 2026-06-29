@@ -85,7 +85,7 @@ void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
 #endif
     int64_t ptsMs = pts / 1000; // 1000: us to ms
     if (lastPtsMs_ != -1 && std::abs(ptsMs - lastPtsMs_) > SEEK_DETECTION_THRESHOLD_MS) {
-        AVCODEC_LOGI("seek detection, lastPtsMs %{public}" PRId64 ", ptsMs %{public}" PRId64 "", lastPtsMs_, ptsMs);
+        AVCODEC_LOGD("seek detection, lastPtsMs %{public}" PRId64 ", ptsMs %{public}" PRId64 "", lastPtsMs_, ptsMs);
         ResetIntervalStats();
     }
     if (frameCnt_ == 0) {
@@ -338,7 +338,7 @@ void DecodingBehaviorAnalyzer::ResetIntervalStats()
     droppedCnt_ = 0;
     ptsWin_.clear();
     hasSendPauseEvent_ = false;
-    AVCODEC_LOGI("ResetIntervalStats");
+    AVCODEC_LOGD("ResetIntervalStats");
 }
 
 void DecodingBehaviorAnalyzer::OnChecked(double decFps)
@@ -403,7 +403,7 @@ size_t DecodingBehaviorAnalyzer::UpdateSpeedEstimates(double speed)
     }
     size_t newSpeedIdx = MatchAndUpdateSpeedStats(decInSpeed_);
     double stdSpeed = standardSpeeds[newSpeedIdx];
-    AVCODEC_LOGI("speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f",
+    AVCODEC_LOGD("speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f",
         speed, decInSpeed_, stdSpeed, srcFps_);
     if (decInfoCallBack_) {
         decInfoCallBack_(srcFps_, stdSpeed);

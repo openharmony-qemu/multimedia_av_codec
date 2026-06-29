@@ -249,7 +249,6 @@ std::optional<CodecScenario> BFrameScenarioChecker(CapabilityData &capData, cons
         return scenario;
     }
     if (!enableExist || !enable) {
-        AVCODEC_LOGW("Please enable key VIDEO_ENCODER_ENABLE_B_FRAME or set a correct value!");
         return scenario;
     }
     CHECK_AND_RETURN_RET_LOGW(capData.featuresMap.count(
