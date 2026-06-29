@@ -106,6 +106,7 @@ private:
     bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
     void UpdateRetentionFeedback(bool shouldRetain);
     void ApplyNewStrategy(RetentionStrategyType newMode, const std::optional<double>& newRatio);
+    void ApplyStatisticalSpeed(double speed);
     void SetNoRefFrameMap(int64_t pts, bool isNonRef);
     bool GetNoRefFrameFromMap(int64_t pts);
 

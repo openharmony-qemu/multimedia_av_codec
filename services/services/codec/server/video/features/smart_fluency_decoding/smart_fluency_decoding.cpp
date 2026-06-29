@@ -90,6 +90,17 @@ int32_t SmartFluencyDecoding::InitializeInternal()
     return AVCS_ERR_OK;
 }
 
+void SmartFluencyDecoding::ApplyStatisticalSpeed(double speed)
+{
+    strategy_->UpdatePlaybackSpeed(speed);
+#ifdef SFD_DEBUG
+    if (dumper_) {
+        dumper_->UpdateSpeed(speed);
+    }
+#endif
+    AVCODEC_LOGI_WITH_TAG("SFD statistical speed updated to: %{public}.3f", speed);
+}
+
 void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed, bool fromUser)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
@@ -112,26 +123,14 @@ void SmartFluencyDecoding::UpdatePlaybackSpeed(double speed, bool fromUser)
             speed, userConfiguredSpeed_.value());
         return;
     }
-    strategy_->UpdatePlaybackSpeed(speed);
-#ifdef SFD_DEBUG
-    if (dumper_) {
-        dumper_->UpdateSpeed(speed);
-    }
-#endif
-    AVCODEC_LOGI_WITH_TAG("SFD Playback speed updated to: %{public}.3f", speed);
+    ApplyStatisticalSpeed(speed);
 }
 
 void SmartFluencyDecoding::OnDecInfoUpdate(double sourceFps, double speed)
 {
     std::lock_guard<std::mutex> lock(configMutex_);
     if (!userConfiguredSpeed_.has_value() && strategy_) {
-        strategy_->UpdatePlaybackSpeed(speed);
-#ifdef SFD_DEBUG
-        if (dumper_) {
-            dumper_->UpdateSpeed(speed);
-        }
-#endif
-        AVCODEC_LOGI_WITH_TAG("SFD statistical speed updated to: %{public}.3f", speed);
+        ApplyStatisticalSpeed(speed);
     } else if (strategy_) {
         AVCODEC_LOGI_WITH_TAG("SFD statistical speed %{public}.3f ignored, user speed %{public}.3f in effect",
             speed, userConfiguredSpeed_.value());
