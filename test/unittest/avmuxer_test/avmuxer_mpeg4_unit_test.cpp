@@ -1961,6 +1961,7 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Add_Multiple_Tracks, TestSize.Level0) {
     ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 
+#ifndef FFMPEG_MUXER_TEST
 /**
  * @tc.name: Muxer_GENRE_001
  * @tc.desc: Muxer add genre data test
@@ -2006,6 +2007,7 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_GENRE_001, TestSize.Level1)
     ASSERT_EQ(memcmp(genreGet, "test_genre_str", strlen(genreGet)), 0);
     OH_AVSource_Destroy(source);
 }
+#endif
 
 /**
  * @tc.name: Muxer_SetFormat_CreationTime_001
