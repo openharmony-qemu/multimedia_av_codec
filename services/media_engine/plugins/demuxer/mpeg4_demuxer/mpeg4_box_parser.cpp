@@ -500,7 +500,7 @@ bool IsIdentityMatrix(const int32_t* matrix)
         matrix[MATRIX_DIAGONAL_INDICES[2]] != (1 << 0x1E)) {    // [2][2]
         return false;
     }
-    
+
     // 检查非对角线元素是否都为0
     for (size_t idx : MATRIX_OFF_DIAGONAL_INDICES) {
         FALSE_RETURN_V_NOLOG(matrix[idx] == 0, false);
@@ -948,7 +948,7 @@ int64_t MPEG4AtomParser::GetTrackDuration(std::shared_ptr<Track> track, bool cal
 {
     FALSE_RETURN_V_MSG_E(track && track->sampleHelper && IsValidTrackIndex(mediaInfo_, track->trackIndex), 0,
         "Invalid track for duration calculation");
-    
+
     int64_t duration = 0;
     if (track->sampleHelper && !track->sampleHelper->sampleIndexEntry_.empty()) {
         if (calculateBitrate) {
@@ -1341,7 +1341,7 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_E(depth == MPEG4_DEPTH_ONE, Status::ERROR_INVALID_DATA, "Invalid trak depth");
     auto track = std::make_shared<Track>();
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate memory for track");
-    
+
     size_t originalTrackCount = mediaInfo_.tracks.size();
     Meta newTrackMeta;
     mediaInfo_.tracks.emplace_back(std::move(newTrackMeta));
@@ -1421,7 +1421,7 @@ void MPEG4AtomParser::CalculateSampleAspectRatio(std::shared_ptr<Track> track, u
     FALSE_RETURN_MSG(track != nullptr, "CalculateSampleAspectRatio: track is null");
     FALSE_RETURN_MSG(track->hasDisplayMatrix && track->displayMatrix != nullptr, "Track has no valid display matrix");
     FALSE_RETURN_MSG(IsValidTrackIndex(mediaInfo_, track->trackIndex), "Invalid track index");
-    
+
     constexpr int32_t transformComponents = 2; // 变换组件数量：X和Y
     constexpr int32_t matrixColOffset = 3;     // 矩阵列偏移量
     std::array<double, transformComponents> dispTransform;
@@ -1449,9 +1449,9 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
 {
     FALSE_RETURN_MSG(track != nullptr, "CalculateSARFromTrackInfo: track is null");
     FALSE_RETURN_MSG(IsValidTrackIndex(mediaInfo_, track->trackIndex), "Invalid track index");
-    
+
     double sar = 0.0;
-    
+
     if (track->hasPasp && track->hSpacing > 0 && track->vSpacing > 0) {
         sar = static_cast<double>(track->hSpacing) / static_cast<double>(track->vSpacing);
         MEDIA_LOG_D("SAR from pasp: hSpacing=%{public}u, vSpacing=%{public}u, sar=%{public}f",
@@ -1459,7 +1459,7 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
         mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
         return;
     }
-    
+
     if (track->stsdWidth > 0 && track->stsdHeight > 0 &&
         track->tkhdWidth > 0 && track->tkhdHeight > 0 &&
         (track->stsdWidth != track->tkhdWidth || track->stsdHeight != track->tkhdHeight)) {
@@ -1473,7 +1473,7 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
             return;
         }
     }
-    
+
     std::string mime;
     if (mediaInfo_.tracks[track->trackIndex].Get<Tag::MIME_TYPE>(mime) &&
         (mime == MimeType::VIDEO_MPEG4 || mime == MimeType::VIDEO_MPEG2)) {
@@ -1607,7 +1607,7 @@ Status ParseElstEntry(const uint8_t* elstInfo, uint32_t index, uint8_t version,
         index, segmentDuration, mediaTime);
     FALSE_RETURN_V_MSG_E(mediaTime >= 0 || mediaTime == -1, Status::ERROR_INVALID_DATA,
         "Invalid edit list media time: " PUBLIC_LOG_D64, mediaTime);
-    
+
     return Status::OK;
 }
 
@@ -1680,14 +1680,14 @@ Status MPEG4AtomParser::ParseTref(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_E(subAtomSize >= minAtomSize, ret, "Invalid atom size");
     uint32_t subAtomType = GetU32Value(&subAtomData[typeOffset]);
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::TRACK_REFERENCE_TYPE>(FourccToString(subAtomType));
-    
+
     MEDIA_LOG_D("ParseTref subAtomSize: " PUBLIC_LOG_U32 " subAtomType: " PUBLIC_LOG_U32 ", type: " PUBLIC_LOG_S,
         subAtomSize, subAtomType, FourccToString(subAtomType).c_str());
-    
+
     uint32_t idCount = (subAtomSize - 8) / 4;
     FALSE_RETURN_V_MSG_E(idCount > 0 && idCount <= MAX_TRACK_REFERENCE_COUNT, Status::ERROR_INVALID_DATA,
         "Invalid id count in tref atom");
-    
+
     auto idData = std::make_unique<uint8_t[]>(idCount * sizeof(uint32_t));
     ret = dataReader_->ReadUintData(ctx->dataOffset + sizeof(subAtomData), idData.get(), idCount * sizeof(uint32_t));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read tref atom id data failed");
@@ -1716,7 +1716,7 @@ Status MPEG4AtomParser::ParseTref(MPEG4Atom currentAtom, int32_t depth, ParseCon
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::REFERENCE_TRACK_IDS>(referencedTrackIds);
         MEDIA_LOG_D("ParseTref Referenced track IDs: " PUBLIC_LOG_S, referencedIdsStr.str().c_str());
     }
-    
+
     ctx->offset += currentAtom.size;
     return ret;
 }
@@ -1821,13 +1821,13 @@ bool MPEG4AtomParser::UnderMetaPath(const std::vector<uint32_t>& path, int32_t d
     FALSE_RETURN_V_NOLOG(path.size() < DIRECT_META_PATH_SIZE || path[0] != FourccType("moov") ||
         path[1] != FourccType("meta"), (depth == MPEG4_DEPTH_TWO || (depth == MPEG4_DEPTH_THREE &&
         path.size() >= metaPathSize && path[pathTwo] == FourccType("hdlr"))));
-    
+
     // 情况2：moov/udta/meta 结构
     FALSE_RETURN_V_NOLOG(path.size() < metaPathSize || path[0] != FourccType("moov") ||
         path[1] != FourccType("udta") || path[pathTwo] != FourccType("meta"),
         (depth == MPEG4_DEPTH_THREE || (depth == MPEG4_DEPTH_FOUR &&
         path.size() >= hdlrPathSize && path[pathThree] == FourccType("hdlr"))));
-    
+
     return false;
 }
 
@@ -1921,7 +1921,7 @@ Status MPEG4AtomParser::ProcessMetaHandler(MPEG4Atom currentAtom, ParseContext* 
     Status ret = dataReader_->ReadUintData(ctx->dataOffset + MAX_TITLE_SIZE,
         reinterpret_cast<uint8_t*>(titleBuffer.data()), titleSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read meta handler title failed");
-    
+
     int32_t offset = (!isIsom_ && static_cast<uint8_t>(titleBuffer[0]) == titleSize - 1) ? 1 : 0;
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::TRACK_DESCRIPTION>(titleBuffer.data() + offset);
     constexpr uint32_t timedMetaDataLength = 14;
@@ -2244,7 +2244,7 @@ Status MPEG4AtomParser::ParseAudioSampleEntry(MPEG4Atom currentAtom, int32_t dep
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse Audio Sample Entry child failed");
     }
     FALSE_RETURN_V_MSG_E(ctx->offset == endOffset, Status::ERROR_INVALID_DATA, "Invalid Audio Sample Entry size");
-    
+
     return ret;
 }
 
@@ -2655,19 +2655,19 @@ Status MPEG4AtomParser::ParseEsds(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_E(CheckBoxDataAllocSize(currentAtom.dataSize, "esds"), Status::ERROR_INVALID_DATA,
         "Invalid esds data size");
     ctx->offset += currentAtom.size;
-    
+
     auto esdsData = std::make_unique<uint8_t[]>(currentAtom.dataSize);
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, esdsData.get(), currentAtom.dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read esds data failed");
     // 跳过 version + flags
     uint64_t offset = 4;
-    
+
     // 跳过 ES Descriptor
     uint8_t tag;
     uint32_t size;
     FALSE_RETURN_V_MSG_E(ReadDescriptor(esdsData.get(), currentAtom.dataSize, offset, tag, size),
         Status::ERROR_INVALID_DATA, "Failed to read ES descriptor");
-    
+
     const uint64_t skipOffsetMax = 3; // ES_ID + flags
     const uint64_t skipOffsetMin = 2;
     offset += (tag == MPEG4_ES_DESCR_TAG) ? skipOffsetMax : skipOffsetMin;
@@ -2677,12 +2677,12 @@ Status MPEG4AtomParser::ParseEsds(MPEG4Atom currentAtom, int32_t depth, ParseCon
         Status::ERROR_INVALID_DATA, "Failed to read decoder config descriptor");
     FALSE_RETURN_V_MSG_E(tag == MPEG4_DEC_CONFIG_DESCR_TAG, Status::ERROR_INVALID_DATA,
         "Expected decoder config descriptor, got tag: " PUBLIC_LOG_U8, tag);
-    
+
     // 解析 Decoder Config Descriptor
     ret = ParseDecoderConfigDescriptor(esdsData.get(), currentAtom.dataSize, offset);
     FALSE_RETURN_V_NOLOG(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_INVALID_DATA, "Failed to parse decoder config descriptor");
-    
+
     return Status::OK;
 }
 
@@ -2743,7 +2743,7 @@ Status MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64
         FALSE_RETURN_V_MSG_E(size > 0 && size <= MAX_EXTRA_DATA_SIZE, Status::ERROR_INVALID_DATA,
             "Wrong descriptor size");
         FALSE_RETURN_V_MSG_E(offset + size <= dataSize, Status::ERROR_INVALID_DATA, "Wrong descriptor size");
-        
+
         // 提取 decoder specific info
         const uint8_t* specificInfo = &data[offset];
         if (specificInfo && size > 0) {
@@ -2754,12 +2754,9 @@ Status MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64
                 mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_WIDTH>(0);
                 mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_HEIGHT>(0);
             }
-            if (lastTrack_->codecParms.data) {
-                lastTrack_->codecParms.data.reset();
-            }
             lastTrack_->codecParms.data = std::make_unique<uint8_t[]>(size);
             FALSE_RETURN_V_MSG_E(lastTrack_->codecParms.data, Status::ERROR_INVALID_DATA, "Alloc failed");
-            
+
             auto ret = memcpy_s(lastTrack_->codecParms.data.get(), size, specificInfo, size);
             FALSE_RETURN_V_MSG_E(ret == EOK, Status::ERROR_INVALID_DATA, "Copy fialed");
             lastTrack_->codecParms.extradataSize = size;
@@ -2935,9 +2932,7 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
     }
     uint8_t channelConfig = bitReader->ReadBits(0x04);
     uint32_t frameLengthFlag = 0;
-    static const uint8_t aacAudioChannels[14] = {
-        0, 1, 2, 3, 4, 5, 6, 8, 0, 0, 0, 7, 8, 24
-    };
+    static const uint8_t aacAudioChannels[14] = {0, 1, 2, 3, 4, 5, 6, 8, 0, 0, 0, 7, 8, 24};
     if (channelConfig < sizeof(aacAudioChannels) / sizeof(aacAudioChannels[0])) {
         channels = aacAudioChannels[channelConfig];
         layout = AAC_CHANNEL_LAYOUT_TABLE[channelConfig];
@@ -2991,7 +2986,7 @@ bool MPEG4AtomParser::ParseAACSpecificConfig(const uint8_t* data, uint32_t size)
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
         return true;
     }
-    
+
     return false;
 }
 
@@ -3088,7 +3083,7 @@ Status MPEG4AtomParser::ParseDfla(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_E(dflaData != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate dfla buffer");
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, dflaData.get(), currentAtom.dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read dfla data failed");
-    
+
     uint8_t version = dflaData[0];
     FALSE_RETURN_V_MSG_E(version == 0, Status::ERROR_INVALID_DATA, "Unsupported FLAC version");
 
@@ -3104,7 +3099,7 @@ Status MPEG4AtomParser::ParseDfla(MPEG4Atom currentAtom, int32_t depth, ParseCon
         "StreamInfo must be first FLACMetadataBlock");
     FALSE_RETURN_V_MSG_E(blockSize == streamInfoSize, Status::ERROR_INVALID_DATA,
         "Invalid streamInfo size: " PUBLIC_LOG_U32 ", expected: " PUBLIC_LOG_U32, blockSize, streamInfoSize);
-    
+
     offset += sizeof(streamInfoSize); // 跳过元数据块头部
     FALSE_RETURN_V_MSG_E(offset + blockSize <= currentAtom.dataSize, Status::ERROR_INVALID_DATA,
         "dfla atom truncated at streamInfo data");
@@ -3240,7 +3235,7 @@ Status MPEG4AtomParser::ReadDca3Payload(MPEG4Atom currentAtom, ParseContext* ctx
     }
     return ReadDca3ConfigData(dataReader_, dataOffset, dca3Data, dataSize);
 }
- 
+
 Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_t contentType,
                                              Av3aConfigParams& params)
 {
@@ -3252,7 +3247,7 @@ Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_
             uint8_t channelNumberIndex = static_cast<uint8_t>(ReadBitsWide(bitReader, 7));
             FALSE_RETURN_V_MSG_E(bitReader.SkipBits(1), Status::ERROR_INVALID_DATA,
                 "Skip av3a reserved channel bit failed");
-            
+
             uint8_t minChannelConfig = (contentType == AV3A_CHANNEL_OBJECT_TYPE) ?
                 AV3A_CHANNEL_CONFIG_STEREO : AV3A_CHANNEL_CONFIG_MONO;
             FALSE_RETURN_V_MSG_E(channelNumberIndex >= minChannelConfig &&
@@ -3261,7 +3256,7 @@ Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_
             FALSE_RETURN_V_MSG_E(GetAv3aChannelConfig(channelNumberIndex,
                 params.channelLayout, params.soundbedChannels),
                 Status::ERROR_INVALID_DATA, "Invalid av3a channel config");
-            
+
             if (contentType == AV3A_CHANNEL_OBJECT_TYPE) {
                 // 8为av3a object count长度
                 FALSE_RETURN_V_MSG_E(bitReader.HasBits(8), Status::ERROR_INVALID_DATA, "av3a object count missing");
@@ -3302,7 +3297,7 @@ Status MPEG4AtomParser::ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_
     }
     return Status::OK;
 }
- 
+
 Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const Av3aConfigParams& params)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
@@ -3310,12 +3305,12 @@ Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const A
     FALSE_RETURN_V_MSG_E(bitReader.HasBits(18), Status::ERROR_INVALID_DATA, "av3a bitrate or resolution missing");
     uint32_t bitrateKbps = ReadBitsWide(bitReader, 16);
     FALSE_RETURN_V_MSG_E(bitrateKbps > 0, Status::ERROR_INVALID_DATA, "Invalid av3a bitrate");
-    
+
     uint8_t resolutionIndex = static_cast<uint8_t>(ReadBitsWide(bitReader, 2));
     FALSE_RETURN_V_MSG_E(resolutionIndex < AV3A_RESOLUTION_TABLE.size() &&
         AV3A_RESOLUTION_TABLE[resolutionIndex].sampleFormat != AudioSampleFormat::INVALID_WIDTH,
         Status::ERROR_INVALID_DATA, "Invalid av3a resolution");
- 
+
     int32_t totalChannels = params.soundbedChannels + params.objectNumber;
     auto& trackMeta = mediaInfo_.tracks[lastTrack_->trackIndex];
 
@@ -3330,7 +3325,7 @@ Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const A
     trackMeta.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AV3A_AUDIO_FRAME_SIZE);
     trackMeta.Set<Tag::AUDIO_OBJECT_NUMBER>(params.objectNumber);
     trackMeta.Set<Tag::AUDIO_SOUNDBED_CHANNELS_NUMBER>(params.soundbedChannels);
-    
+
     if (params.hoaOrder > 0) trackMeta.Set<Tag::AUDIO_HOA_ORDER>(params.hoaOrder);
     if (totalChannels > 0) {
         trackMeta.Set<Tag::AUDIO_CHANNEL_COUNT>(totalChannels);
@@ -3338,18 +3333,18 @@ Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const A
     }
     trackMeta.Set<Tag::AUDIO_CHANNEL_LAYOUT>(params.channelLayout);
     trackMeta.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(params.channelLayout);
- 
+
     return Status::OK;
 }
- 
+
 Status MPEG4AtomParser::ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(ctx != nullptr, Status::ERROR_NULL_POINTER, "Parse context is null");
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
- 
+
     std::unique_ptr<uint8_t[]> dca3Data;
     uint64_t dataSize = 0;
-    
+
     // 读取有效载荷
     Status ret = ReadDca3Payload(currentAtom, ctx, dca3Data, dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read av3a payload failed");
@@ -3360,12 +3355,12 @@ Status MPEG4AtomParser::ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx)
         trackMeta.Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::UNKNOWN);
         return Status::OK;
     }
- 
+
     auto bitReader = std::make_shared<DemuxerBitReader>(dca3Data.get(), dataSize);
     FALSE_RETURN_V_MSG_E(bitReader != nullptr, Status::ERROR_NO_MEMORY, "Failed create bitReader");
     // 16为av3a config data长度
     FALSE_RETURN_V_MSG_E(bitReader->HasBits(16), Status::ERROR_INVALID_DATA, "av3a config data too short");
- 
+
     // 解析基础头部信息
     uint8_t audioCodecId = bitReader->ReadBits(4);
     FALSE_RETURN_V_MSG_E(audioCodecId == AV3A_LOSSY_CODEC_ID, Status::ERROR_INVALID_DATA, "Unsupported codec id");
@@ -3375,22 +3370,22 @@ Status MPEG4AtomParser::ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx)
         Status::ERROR_INVALID_DATA, "Unsupported av3a nn type");
     FALSE_RETURN_V_MSG_E(bitReader->SkipBits(1), Status::ERROR_INVALID_DATA, "Skip reserved bit failed");
     uint8_t contentType = bitReader->ReadBits(4);
- 
+
     // 解析 ContentType 对应详情
     Av3aConfigParams params;
     ret = ParseDca3ContentType(*bitReader, contentType, params);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ParseDca3ContentType failed");
- 
+
     // 更新元数据标签
     ret = UpdateDca3TrackMeta(*bitReader, params);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "UpdateDca3TrackMeta failed");
- 
+
     MEDIA_LOG_I("MPEG4AtomParser::ParseDca3 out");
     MEDIA_LOG_I("Parse av3a config success, samplingIndex=" PUBLIC_LOG_U8 ", contentType=" PUBLIC_LOG_U8
         ", soundbed=" PUBLIC_LOG_D32 ", objects=" PUBLIC_LOG_D32 ", layout=" PUBLIC_LOG_U64,
         samplingFrequencyIndex, contentType, params.soundbedChannels, params.objectNumber,
         static_cast<uint64_t>(params.channelLayout));
-    
+
     return Status::OK;
 }
 
@@ -3479,7 +3474,7 @@ Status MPEG4AtomParser::ParseColorParams(int64_t offset, uint64_t dataSize, cons
     uint32_t readSize = std::min(static_cast<uint64_t>(sizeof(colorParams)), dataSize);
     Status ret = dataReader_->ReadUintData(offset, colorParams, readSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read color parameters failed");
-    
+
     uint16_t colorPrimaries = GetU16Value(&colorParams[0]);
     uint16_t colorTrc = GetU16Value(&colorParams[2]);
     uint16_t colorMatrix = GetU16Value(&colorParams[4]);
@@ -4075,14 +4070,14 @@ Status MPEG4AtomParser::ProcessTfhdAtom(const MPEG4Atom& atom)
     if (atom.dataOffset < 0 || atom.dataSize < MIN_TFHD_SIZE) {
         return Status::ERROR_INVALID_PARAMETER;
     }
-    
+
     uint8_t tfhdHeader[8];
     Status ret = dataReader_->ReadUintData(atom.dataOffset, tfhdHeader, sizeof(tfhdHeader));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
-    
+
     uint32_t tfhdFlag = GetU32Value(&tfhdHeader[0]);
     uint32_t trackId = GetU32Value(&tfhdHeader[4]);
-    
+
     while (currentTrack_ && static_cast<uint32_t>(currentTrack_->trackId) != trackId) {
         currentTrack_ = currentTrack_->next;
     }
@@ -4090,12 +4085,12 @@ Status MPEG4AtomParser::ProcessTfhdAtom(const MPEG4Atom& atom)
         MEDIA_LOG_W("tfhd: TrackId " PUBLIC_LOG_U32 " not found or has no sampleHelper", trackId);
         return Status::OK;
     }
-    
+
     int64_t tfhdDataOffset = atom.dataOffset + sizeof(tfhdHeader);
     int64_t dataSize = static_cast<int64_t>(atom.dataSize - sizeof(tfhdHeader));
     ret = currentTrack_->sampleHelper->SetTrackFragmentHeaderParams(tfhdDataOffset, dataSize, tfhdFlag, moofOffset_);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set track fragment header params failed");
-    
+
     return Status::OK;
 }
 // LCOV_EXCL_STOP
@@ -4113,7 +4108,7 @@ void MPEG4AtomParser::ParseLocationString(const std::string& locationStr)
     std::regex pattern(R"([+-]\d+\.\d+)");
     std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
     std::sregex_iterator end;
-    
+
     const uint32_t minLocationNum = 2; // 至少需要两个数字：纬度和经度
     auto cnt = static_cast<uint32_t>(std::distance(numbers, end));
     FALSE_RETURN_MSG_D(cnt >= minLocationNum, "Info format error");
@@ -4189,7 +4184,7 @@ Status MPEG4AtomParser::ParseCover(MPEG4Atom currentAtom, uint32_t dataType, uin
 
     auto coverTrack = std::make_shared<Track>();
     FALSE_RETURN_V_MSG_E(coverTrack != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate cover track");
-    
+
     coverTrack->trackIndex = trackCount_;
     coverTrack->codecParms.trackType = VIDEO_TYPE;
     coverTrack->codecParms.extradataSize = stringSize;
@@ -4215,7 +4210,7 @@ Status MPEG4AtomParser::ParseCover(MPEG4Atom currentAtom, uint32_t dataType, uin
     coverMeta.Set<Tag::MEDIA_COVER>(std::move(cover));
     mediaInfo_.tracks.emplace_back(std::move(coverMeta));
     ++trackCount_;
-    
+
     if (lastTrack_) {
         lastTrack_->next = coverTrack;
     } else {
@@ -4234,7 +4229,7 @@ Status MPEG4AtomParser::ParseUserDataString(MPEG4Atom currentAtom, int32_t depth
         MEDIA_LOG_W("Unknown metadata type: " PUBLIC_LOG_S, atomTypeStr.c_str());
         return Status::OK;
     }
-    
+
     std::string value;
     Status ret = Status::OK;
     if (ctx->founditunesMetadata && currentAtom.dataSize > DEFAULT_HEAD_SIZE) {
@@ -4287,7 +4282,7 @@ std::string MPEG4AtomParser::GetMetadataKey(uint32_t atomType, ParseContext* ctx
         { FourccType("\251enc"), "encoder" },
         { FourccType("\251swr"), "encoder" },
     };
-    
+
     auto it = keyMap.find(atomType);
     return (it != keyMap.end()) ? it->second : "";
 }
@@ -4297,7 +4292,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
     uint8_t dataHeader[8];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, dataHeader, sizeof(dataHeader));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read iTunes metadata header failed");
-    
+
     uint32_t dataSize = GetU32Value(&dataHeader[0]);
     uint32_t dataTag = GetU32Value(&dataHeader[4]);
     constexpr uint32_t headerSize = 16; // size + type
@@ -4305,7 +4300,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
         uint8_t typeInfo[8];
         ret = dataReader_->ReadUintData(ctx->dataOffset + sizeof(typeInfo), typeInfo, sizeof(typeInfo));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data type info failed");
-        
+
         uint32_t dataType = GetU32Value(&typeInfo[0]);
         uint64_t stringSize = dataSize - headerSize;
         if (currentAtom.type == FourccType("covr") || (!key.empty() && key == "com.apple.quicktime.artwork")) {
@@ -4316,7 +4311,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
     } else {
         MEDIA_LOG_W("Invalid iTunes metadata format: dataTag=" PUBLIC_LOG_U32, dataTag);
     }
-    
+
     return Status::OK;
 }
 
@@ -4327,7 +4322,7 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     uint8_t lengthData[2];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, lengthData, sizeof(lengthData));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read string length failed");
-    
+
     uint16_t stringLength = GetU16Value(lengthData);
     constexpr uint16_t defaultSkipSize = 4;
     if (stringLength > currentAtom.dataSize - defaultSkipSize) {
@@ -4337,7 +4332,7 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
         // 跳过语言代码
         ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0, ctx->isUserMeta);
     }
-    
+
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read traditional metadata string failed");
     return Status::OK;
 }
@@ -4399,7 +4394,7 @@ bool ParseUnSignedInteger(uint8_t* data, uint64_t size, uint32_t& out)
 std::string DecodeMacString(const uint8_t* data, size_t size)
 {
     FALSE_RETURN_V_MSG_E(data != nullptr && size > 0, "", "DecodeMacString: data is null");
-    
+
     std::string result;
     result.reserve(size);
     constexpr size_t asciiStart = 32; // ASCII 可打印字符的起始值
@@ -4521,7 +4516,7 @@ Status MPEG4AtomParser::ReadMetadataString(
     FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate metadata buffer");
     Status ret = dataReader_->ReadUintData(offset, buffer.get(), size);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
-    
+
     buffer[size] = '\0';
     if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) && !isUserMeta) {
         return Status::OK;
@@ -4547,7 +4542,7 @@ Status MPEG4AtomParser::ParseMeta(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t testBytes[8];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, testBytes, sizeof(testBytes));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read meta test bytes failed");
-    
+
     uint32_t firstSize = GetU32Value(&testBytes[0]);
     uint32_t firstType = GetU32Value(&testBytes[4]);
     if (firstType == FourccType("hdlr") && firstSize > sizeof(testBytes) && firstSize <= currentAtom.dataSize) {
@@ -4629,7 +4624,7 @@ Status MPEG4AtomParser::ParseIlst(MPEG4Atom currentAtom, int32_t depth, ParseCon
     ctx->founditunesMetadata = true;
     Status ret = ParseContainerAtom(currentAtom, depth, ctx);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse ilst container failed");
-    
+
     ctx->founditunesMetadata = false;
     return ret;
 }
@@ -4651,13 +4646,13 @@ Status MPEG4AtomParser::ParseLoci(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
     uint64_t offset = 6; // 跳过version+flags(4) + language(2)
     uint64_t remainingLen = currentAtom.dataSize - offset;
-    
+
     // 跳过地点名称字符串（以null结尾）
     uint64_t placeStartOffset = offset;
     while (offset < currentAtom.dataSize && lociInfo[offset] != 0) {
         ++offset;
     }
-    
+
     FALSE_RETURN_V_MSG_E(offset < currentAtom.dataSize, Status::ERROR_INVALID_DATA, "loci place not null-terminated");
     // 提取地点名称
     std::string place;
@@ -4732,7 +4727,7 @@ Status MPEG4AtomParser::ParseUdtaGenre(MPEG4Atom currentAtom, int32_t depth, Par
         uint8_t genreData[2];
         Status ret = dataReader_->ReadUintData(ctx->dataOffset, genreData, 2);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read gnre data failed");
-        
+
         // 跳过第一个字节
         uint8_t genreNumber = genreData[1];
         if (genreNumber >= 1 && genreNumber <= ID3V1_GENRE_MAX + 1) {
@@ -5025,7 +5020,7 @@ Status MPEG4AtomParser::ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, i
     const uint32_t typeOffset = 4; // type在第5-8字节
     Status ret = dataReader_->ReadUintData(ctx->offset, atomInfo, sizeof(atomInfo));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read atom header info failed");
-    
+
     atom.size = GetU32Value(&atomInfo[0]);
     atom.type = static_cast<int32_t>(GetU32Value(&atomInfo[typeOffset]));
     typeStr = FourccToString(atom.type);
@@ -5281,7 +5276,7 @@ int64_t MPEG4AtomParser::GetMpeg4FileDuration()
     bool hasValidDuration = false;
     mediaInfo_.general.Get<Tag::MEDIA_CONTAINER_START_TIME>(containerStartTime);
     MEDIA_LOG_D("Container start time: " PUBLIC_LOG_D64 " us", containerStartTime);
-    
+
     // 遍历所有轨道，找出最早开始时间和最晚结束时间
     for (auto track = firstTrack_; track; track = track->next) {
         FALSE_CONTINUE_NOLOG(!IsImageMimeType(track->sampleHelper ? track->sampleHelper->mimeType_ : ""));
@@ -5297,7 +5292,7 @@ int64_t MPEG4AtomParser::GetMpeg4FileDuration()
         if (trackStartTimeSeconds < earliestStartTime) {
             earliestStartTime = trackStartTimeSeconds;
         }
-        
+
         trackEndTime = trackStartTimeSeconds + trackDurationInSeconds;
         if (trackEndTime > latestEndTime) {
             latestEndTime = trackEndTime;
@@ -5391,14 +5386,14 @@ double MPEG4AtomParser::CalculateDuration(std::shared_ptr<Track> track, bool isR
     FALSE_RETURN_V_MSG_E(track != nullptr, 0.0, "Track is null");
     FALSE_RETURN_V_MSG_E(track->sampleHelper != nullptr, 0.0, "SampleHelper is null");
     FALSE_RETURN_V_MSG_E(!track->sampleHelper->sampleIndexEntry_.empty(), 0.0, "Sample data is empty");
-    
+
     int32_t timeScale = track->timeScale;
     FALSE_RETURN_V_MSG_W(timeScale > 0, 0.0, "Track " PUBLIC_LOG_U32 " has invalid time scale", track->trackIndex);
-    
+
     int64_t firstPts = track->sampleHelper->sampleIndexEntry_.front().pts;
     int64_t baseDuration = 0;
     int64_t ctsTail = 0;
-    
+
     if (hasSidxBox_ && track->sidxDuration > 0) {
         // FMP4文件有sidx box，使用sidx中的duration
         baseDuration = track->sidxDuration;
@@ -5415,7 +5410,7 @@ double MPEG4AtomParser::CalculateDuration(std::shared_ptr<Track> track, bool isR
             baseDuration = std::max(baseDuration, maxPtsEnd);
         }
     }
-    
+
     // FFmpeg uses the sidx-referenced stream duration directly for fragmented MP4s with sidx.
     // The edit-list empty duration is still exposed as start_time, but must not be added again to duration.
     int64_t totalDuration = baseDuration;
