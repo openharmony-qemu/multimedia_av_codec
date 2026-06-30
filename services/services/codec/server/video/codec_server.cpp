@@ -460,7 +460,7 @@ int32_t CodecServer::Stop()
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
     }
-
+    
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
