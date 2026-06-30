@@ -281,7 +281,6 @@ void AVCodecClient::DoAVCodecServerDied()
             codecListClient->AVCodecServerDied();
         }
     }
-    codecListClientList_.clear();
 #endif
 }
 
