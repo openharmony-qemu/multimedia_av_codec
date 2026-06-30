@@ -1227,7 +1227,7 @@ void DemuxerFilter::HandleAdsSeek(int64_t seekTime)
 
 void DemuxerFilter::EnsureInterstitialController()
 {
-    FALSE_RETURN(interstitialController_ != nullptr);
+    FALSE_RETURN(interstitialController_ == nullptr);
     MEDIA_LOG_I("EnsureInterstitialController create InterstitialController");
     interstitialController_ = std::make_shared<InterstitialController>();
     interstitialController_->Init(demuxer_, syncCenter_);
