@@ -203,6 +203,7 @@ private:
     Status GetMediaInfo();
     void GetSingleTrackInfo(const MPEG4AtomParser::Track& track, const uint32_t trackIndex);
     void ResetParam();
+    void ReleaseReferenceParserState();
     void InitParser();
     bool TrackIsSelected(const uint32_t trackId);
     std::shared_ptr<MPEG4AtomParser::Track> FindTrackById(int32_t trackId);
