@@ -367,19 +367,24 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
 
 void CodecServer::StartInputParamTask()
 {
-    if (inputParamTask_ == nullptr) {
-        inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
-        std::weak_ptr<CodecServer> weakThis = weak_from_this();
-        inputParamTask_->RegisterHandler([weakThis] {
-            std::shared_ptr<CodecServer> cs = weakThis.lock();
-            if (cs) {
-                uint32_t index = cs->temporalScalability_->GetFirstBufferIndex();
+    if (inputParamTask_ != nullptr) {
+        inputParamTask_->Start();
+        return;
+    }
+    inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
+    std::weak_ptr<CodecServer> weakThis = weak_from_this();
+    inputParamTask_->RegisterHandler([weakThis] {
+        std::shared_ptr<CodecServer> cs = weakThis.lock();
+        if (cs) {
+            cs->temporalScalability_->CheckInputQueEmpty();
+            uint32_t index = UINT32_MAX;
+            if (cs->temporalScalability_->GetFirstBufferIndex(index) && index != UINT32_MAX) {
                 AVCodecBufferInfo info;
                 AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
                 CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
-            }
-        });
-    }
+            };
+        }
+    });
     inputParamTask_->Start();
 }
 
@@ -512,6 +517,15 @@ int32_t CodecServer::Flush()
 
 int32_t CodecServer::NotifyEos()
 {
+    if (temporalScalability_ != nullptr && inputParamTask_ != nullptr) {
+        AVCODEC_LOGI_WITH_TAG("Delegating to temporal scalability");
+        int32_t ret = temporalScalability_->NotifyEosWhenComplete();
+        if (ret != AVCS_ERR_OK) {
+            AVCODEC_LOGE_WITH_TAG("Temporal scalability failed with %{public}d", ret);
+            return ret;
+        }
+        AVCODEC_LOGI_WITH_TAG("Done (Delegating to temporal scalability), ret=%{public}d", ret);
+    }
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
