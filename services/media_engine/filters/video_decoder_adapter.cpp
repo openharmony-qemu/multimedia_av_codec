@@ -458,7 +458,7 @@ void VideoDecoderAdapter::SetOutputBufferMediaChangeMeta(std::shared_ptr<AVBuffe
     }
     auto upperBound = ptsToMediaChangeMetaMap_.lower_bound(outputBuffer->pts_);
     if (upperBound != ptsToMediaChangeMetaMap_.begin()) {
-        size_t cleanCount = std::distance(ptsToMediaChangeMetaMap_.begin(), upperBound);
+        size_t cleanCount = static_cast<size_t>(std::distance(ptsToMediaChangeMetaMap_.begin(), upperBound));
         MEDIA_LOG_D("Clean stale metadata before pts " PUBLIC_LOG_D64 ", count: " PUBLIC_LOG_U64,
             outputBuffer->pts_, static_cast<uint64_t>(cleanCount));
         ptsToMediaChangeMetaMap_.erase(ptsToMediaChangeMetaMap_.begin(), upperBound);
