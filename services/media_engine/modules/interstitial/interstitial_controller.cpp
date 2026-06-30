@@ -489,7 +489,7 @@ void InterstitialController::FinishCurrentAdAndContinue(AdsEventType eventType)
     }
 
     EmitEndEvent(currentEntry, eventType);
-
+    FALSE_RETURN_MSG_W(!isDisableAds_.load(), "FinishCurrentAdAndContinue failed: ads are disabled");
     if (startMs >= 0 && TrySwitchAdCandidates(startMs)) {
         return;
     }
