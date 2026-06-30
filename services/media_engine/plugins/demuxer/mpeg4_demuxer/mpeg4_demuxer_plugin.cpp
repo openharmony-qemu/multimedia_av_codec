@@ -509,10 +509,11 @@ bool GetSkipInfoEditedAudioDurationUs(
 {
     const auto& entries = context.entries;
     const auto& currentSample = context.currentSample;
+    const auto& track = context.packet.track;
     uint32_t sampleIndex = context.packet.sampleIndex;
     // Edit-list audio with skip samples may need to merge the previous packet spacing into the tail.
-    if (rawTailDuration != currentSample.duration ||
-        !context.packet.track->sampleHelper->HasSkipSamplesInfo(0) || sampleIndex == 0) {
+    if (rawTailDuration != currentSample.duration || track == nullptr || track->sampleHelper == nullptr ||
+        !track->sampleHelper->HasSkipSamplesInfo(0) || sampleIndex == 0) {
         return false;
     }
     int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
@@ -894,7 +895,8 @@ Status BuildReadSamplePacketAttr(const ReadSamplePacketContext& context, ReadSam
 
     const auto& currentSample = entries[context.sampleIndex];
     attr.flag = GetPacketSampleFlag(track, context.sampleIndex, currentSample, context.hasPlayableVideoTrack);
-    const auto* skipSamplesInfo = track->sampleHelper->GetSkipSamplesInfo(context.sampleIndex);
+    const auto* skipSamplesInfo = track != nullptr && track->sampleHelper != nullptr ?
+        track->sampleHelper->GetSkipSamplesInfo(context.sampleIndex) : nullptr;
     if (skipSamplesInfo != nullptr) {
         attr.skipSamplesInfo = *skipSamplesInfo;
     }
@@ -1052,12 +1054,12 @@ void MPEG4DemuxerPlugin::ReleaseReferenceParserState()
     refParserPendingSeekMsTime_ = -1;
     refParserCurGopId_ = 0;
     refParserIsForward_ = true;
-    refParserState_.store(true, std::memory_order_release);
     std::list<uint32_t>().swap(processingSyncSamplesIndex_);
     std::unordered_map<int32_t, int64_t>().swap(gopId2DecodedSamplePts_);
     mimeTypeOfVideoStream_ = MimeType::INVALID_TYPE;
     startPts_ = 0;
     updatePosIsForward_ = true;
+    refParserState_.store(true, std::memory_order_release);
 }
 
 void MPEG4DemuxerPlugin::ResetParam()
