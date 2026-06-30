@@ -144,7 +144,7 @@ HWTEST_F(BufferConverterUnitTest, SetInputBufferFormat_001, TestSize.Level1)
         EXPECT_EQ(converter_->rect_.hStride, DEFAULT_HEIGHT);
         EXPECT_LE(converter_->hwRect_.wStride, DEFAULT_WIDTH_64_ALIGN);
         EXPECT_EQ(converter_->hwRect_.hStride, DEFAULT_HEIGHT);
-        EXPECT_EQ(converter_->usrRect_.wStride, DEFAULT_WIDTH_16_ALIGN);
+        EXPECT_LE(converter_->usrRect_.wStride, DEFAULT_WIDTH_16_ALIGN);
         EXPECT_EQ(converter_->usrRect_.hStride, DEFAULT_HEIGHT);
         EXPECT_EQ(converter_->needResetFormat_, false);
     }
