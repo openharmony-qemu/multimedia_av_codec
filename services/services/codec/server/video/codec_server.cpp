@@ -373,10 +373,14 @@ void CodecServer::StartInputParamTask()
         inputParamTask_->RegisterHandler([weakThis] {
             std::shared_ptr<CodecServer> cs = weakThis.lock();
             if (cs) {
-                uint32_t index = cs->temporalScalability_->GetFirstBufferIndex();
-                AVCodecBufferInfo info;
-                AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-                CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+                cs->temporalScalability_->CheckInputQueEmpty();
+                uint32_t index = UINT32_MAX;
+                if (cs->temporalScalability_->GetFirstBufferIndex(index) && index != UINT32_MAX) {
+                    AVCodecBufferInfo info;
+                    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
+                    CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK,
+                                         "QueueInputBuffer failed");
+                };
             }
         });
     }
@@ -456,7 +460,7 @@ int32_t CodecServer::Stop()
         temporalScalability_->SetBlockQueueActive();
         inputParamTask_->Stop();
     }
-    
+
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
     CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
@@ -512,6 +516,15 @@ int32_t CodecServer::Flush()
 
 int32_t CodecServer::NotifyEos()
 {
+    if (temporalScalability_ != nullptr && inputParamTask_ != nullptr) {
+        AVCODEC_LOGI_WITH_TAG("Delegating to temporal scalability");
+        int32_t ret = temporalScalability_->NotifyEosWhenComplete();
+        if (ret != AVCS_ERR_OK) {
+            AVCODEC_LOGE_WITH_TAG("Temporal scalability failed with %{public}d", ret);
+            return ret;
+        }
+        AVCODEC_LOGI_WITH_TAG("Done (Delegating to temporal scalability), ret=%{public}d", ret);
+    }
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
