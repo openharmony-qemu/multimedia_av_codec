@@ -367,23 +367,24 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
 
 void CodecServer::StartInputParamTask()
 {
-    if (inputParamTask_ == nullptr) {
-        inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
-        std::weak_ptr<CodecServer> weakThis = weak_from_this();
-        inputParamTask_->RegisterHandler([weakThis] {
-            std::shared_ptr<CodecServer> cs = weakThis.lock();
-            if (cs) {
-                cs->temporalScalability_->CheckInputQueEmpty();
-                uint32_t index = UINT32_MAX;
-                if (cs->temporalScalability_->GetFirstBufferIndex(index) && index != UINT32_MAX) {
-                    AVCodecBufferInfo info;
-                    AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
-                    CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK,
-                                         "QueueInputBuffer failed");
-                };
-            }
-        });
+    if (inputParamTask_ != nullptr) {
+        inputParamTask_->Start();
+        return;
     }
+    inputParamTask_ = std::make_shared<TaskThread>("InputParamTask");
+    std::weak_ptr<CodecServer> weakThis = weak_from_this();
+    inputParamTask_->RegisterHandler([weakThis] {
+        std::shared_ptr<CodecServer> cs = weakThis.lock();
+        if (cs) {
+            cs->temporalScalability_->CheckInputQueEmpty();
+            uint32_t index = UINT32_MAX;
+            if (cs->temporalScalability_->GetFirstBufferIndex(index) && index != UINT32_MAX) {
+                AVCodecBufferInfo info;
+                AVCodecBufferFlag flag = AVCODEC_BUFFER_FLAG_NONE;
+                CHECK_AND_RETURN_LOG(cs->QueueInputBuffer(index, info, flag) == AVCS_ERR_OK, "QueueInputBuffer failed");
+            };
+        }
+    });
     inputParamTask_->Start();
 }
 
