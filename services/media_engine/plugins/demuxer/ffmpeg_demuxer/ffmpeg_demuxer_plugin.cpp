@@ -4080,6 +4080,11 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFI
     FALSE_RETURN_V_MSG_E(ret == Status::OK, -1, "Read probe data failed for " PUBLIC_LOG_S, pluginName.c_str());
     getData = bufferInfo->GetMemory()->GetSize();
     FALSE_RETURN_V_MSG_E(getData > 0, -1, "No data for sniff " PUBLIC_LOG_S, pluginName.c_str());
+    int32_t confidence = 0;
+    if (pluginName.find("mp3") != std::string::npos) {
+        AVProbeData firstProbeData{"", buff.data(), static_cast<int32_t>(getData), ""};
+        confidence = ffPlugin->read_probe(&firstProbeData);
+    }
     if (getFileSize == Status::OK && getData > ID3V2_HEADER_SIZE && IsStartWithID3(buff.data(), "ID3")) {
         int32_t id3Len = GetID3TagLen(buff.data());
         // id3 tag length is out of file, or file just contains id3 tag, no valid data.
@@ -4097,7 +4102,11 @@ int32_t GetConfidence(std::shared_ptr<AVInputFormat> plugin, std::shared_ptr<FFI
         }
     }
     AVProbeData probeData{"", buff.data(), static_cast<int32_t>(getData), ""};
-    return ffPlugin->read_probe(&probeData);
+    int32_t confidenceSec = ffPlugin->read_probe(&probeData);
+    if (confidenceSec == 0 && confidence > 0) {
+        return confidence;
+    }
+    return confidenceSec;
 }
 
 int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
