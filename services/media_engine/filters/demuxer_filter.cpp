@@ -1227,30 +1227,32 @@ void DemuxerFilter::HandleAdsSeek(int64_t seekTime)
 
 void DemuxerFilter::EnsureInterstitialController()
 {
-    if (!interstitialController_) {
-        interstitialController_ = std::make_shared<InterstitialController>();
-        interstitialController_->Init(demuxer_, syncCenter_);
-        demuxer_->SetInterstitialController(interstitialController_);
-        if (mediaSource_) {
-            interstitialController_->SetMainContentUri(mediaSource_->GetSourceUri());
+    if (interstitialController_) {
+        return;
+    }
+    MEDIA_LOG_I("EnsureInterstitialController create InterstitialController");
+    interstitialController_ = std::make_shared<InterstitialController>();
+    interstitialController_->Init(demuxer_, syncCenter_);
+    demuxer_->SetInterstitialController(interstitialController_);
+    if (mediaSource_) {
+        interstitialController_->SetMainContentUri(mediaSource_->GetSourceUri());
+    }
+    interstitialController_->SetAdsEventCallback([weakSelf = weak_from_this()](
+        const AdsChangeEvent& event) {
+        auto self = weakSelf.lock();
+        if (!self || !self->receiver_) {
+            return;
         }
-        interstitialController_->SetAdsEventCallback([weakSelf = weak_from_this()](
-            const AdsChangeEvent& event) {
-            auto self = weakSelf.lock();
-            if (!self || !self->receiver_) {
-                return;
-            }
-            auto avEvent = std::make_shared<MediaAVCodec::AVAdsChangeEvent>();
-            avEvent->type = static_cast<int32_t>(event.type);
-            avEvent->eventId = event.eventId;
-            avEvent->durationMs = event.durationMs;
-            avEvent->errorCode = event.errorCode;
-            avEvent->errorMessage = event.errorMessage;
-            self->receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ADS_CHANGE, Any(avEvent)});
-        });
-        if (speedChangeCallback_) {
-            interstitialController_->SetSpeedChangeCallback(speedChangeCallback_);
-        }
+        auto avEvent = std::make_shared<MediaAVCodec::AVAdsChangeEvent>();
+        avEvent->type = static_cast<int32_t>(event.type);
+        avEvent->eventId = event.eventId;
+        avEvent->durationMs = event.durationMs;
+        avEvent->errorCode = event.errorCode;
+        avEvent->errorMessage = event.errorMessage;
+        self->receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ADS_CHANGE, Any(avEvent)});
+    });
+    if (speedChangeCallback_) {
+        interstitialController_->SetSpeedChangeCallback(speedChangeCallback_);
     }
 }
 
