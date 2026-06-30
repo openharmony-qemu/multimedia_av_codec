@@ -15,6 +15,7 @@
 
 #include "auto_fallback_retention_strategy.h"
 #include "avcodec_log.h"
+#include <algorithm>
 #include "double_utils.h"
 #include "smart_fluency_decoding_types.h"
 
@@ -45,11 +46,11 @@ void AutoFallbackRetentionStrategy::ApplyCalculatedRatio()
     double ratio = CalculateFallbackRatio();
     if (fallbackDropper_ == nullptr) {
         fallbackDropper_ = std::make_unique<FixedRatioRetentionStrategy>(ratio);
-        AVCODEC_LOGI("AutoFallback activates calculated ratio: %{public}.3f "
+        AVCODEC_LOGD("AutoFallback activates calculated ratio: %{public}.3f "
                      "(sourceFps=%{public}.3f, speed=%{public}.3f)", ratio, sourceFps_, currentSpeed_);
     } else {
         fallbackDropper_->UpdateTargetRatio(ratio);
-        AVCODEC_LOGI("AutoFallback recalculated ratio to %{public}.3f "
+        AVCODEC_LOGD("AutoFallback recalculated ratio to %{public}.3f "
                      "(sourceFps=%{public}.3f, speed=%{public}.3f)", ratio, sourceFps_, currentSpeed_);
     }
 }
