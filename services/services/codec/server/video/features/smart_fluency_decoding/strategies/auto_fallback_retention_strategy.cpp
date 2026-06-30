@@ -28,7 +28,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AutoFa
 
 AutoFallbackRetentionStrategy::AutoFallbackRetentionStrategy()
 {
-    AVCODEC_LOGD("AutoFallbackRetentionStrategy created (Phase 1: passthrough, waiting for sourceFps)");
+    AVCODEC_LOGD("AutoFallbackRetentionStrategy created (passthrough, waiting for sourceFps)");
 }
 
 double AutoFallbackRetentionStrategy::CalculateFallbackRatio() const
@@ -40,16 +40,16 @@ double AutoFallbackRetentionStrategy::CalculateFallbackRatio() const
     return std::clamp(FALLBACK_TARGET_FPS / renderFps, MIN_RETENTION_RATIO, MAX_RETENTION_RATIO);
 }
 
-void AutoFallbackRetentionStrategy::TransitionToPhase2()
+void AutoFallbackRetentionStrategy::ApplyCalculatedRatio()
 {
     double ratio = CalculateFallbackRatio();
     if (fallbackDropper_ == nullptr) {
         fallbackDropper_ = std::make_unique<FixedRatioRetentionStrategy>(ratio);
-        AVCODEC_LOGI("AutoFallback transitions to Phase 2: FixedRatio with ratio %{public}.3f "
+        AVCODEC_LOGI("AutoFallback activates calculated ratio: %{public}.3f "
                      "(sourceFps=%{public}.3f, speed=%{public}.3f)", ratio, sourceFps_, currentSpeed_);
     } else {
         fallbackDropper_->UpdateTargetRatio(ratio);
-        AVCODEC_LOGI("AutoFallback Phase 2 ratio updated to %{public}.3f "
+        AVCODEC_LOGI("AutoFallback recalculated ratio to %{public}.3f "
                      "(sourceFps=%{public}.3f, speed=%{public}.3f)", ratio, sourceFps_, currentSpeed_);
     }
 }
@@ -57,7 +57,7 @@ void AutoFallbackRetentionStrategy::TransitionToPhase2()
 bool AutoFallbackRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
     if (!hasSourceFps_) {
-        AVCODEC_LOGD("AutoFallback Phase 1: retaining all frames (waiting for sourceFps)");
+        AVCODEC_LOGD("AutoFallback passthrough: retaining all frames (waiting for sourceFps)");
         return true;
     }
     return fallbackDropper_->MakeRetentionDecision(ctx);
@@ -68,7 +68,7 @@ void AutoFallbackRetentionStrategy::UpdatePlaybackSpeed(double speed)
     AVCODEC_LOGD("AutoFallback UpdatePlaybackSpeed: %{public}.3f -> %{public}.3f", currentSpeed_, speed);
     currentSpeed_ = DoubleUtils::IsGreater(speed, 0.0) ? speed : 1.0;
     if (hasSourceFps_) {
-        TransitionToPhase2();
+        ApplyCalculatedRatio();
     }
 }
 
@@ -77,12 +77,8 @@ void AutoFallbackRetentionStrategy::UpdateSourceFramerate(double sourceFps)
     AVCODEC_LOGD("AutoFallback UpdateSourceFramerate: %{public}.3f -> %{public}.3f", sourceFps_, sourceFps);
     if (DoubleUtils::IsGreater(sourceFps, 0.0)) {
         sourceFps_ = sourceFps;
-        if (!hasSourceFps_) {
-            hasSourceFps_ = true;
-            TransitionToPhase2();
-        } else {
-            TransitionToPhase2();
-        }
+        hasSourceFps_ = true;
+        ApplyCalculatedRatio();
     }
 }
 
@@ -94,7 +90,7 @@ void AutoFallbackRetentionStrategy::Reset()
     if (fallbackDropper_) {
         fallbackDropper_->Reset();
     }
-    AVCODEC_LOGD("AutoFallbackRetentionStrategy reset (back to Phase 1)");
+    AVCODEC_LOGD("AutoFallbackRetentionStrategy reset (back to passthrough)");
 }
 
 RetentionStrategyType AutoFallbackRetentionStrategy::GetMode() const

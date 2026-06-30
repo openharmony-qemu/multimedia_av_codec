@@ -206,7 +206,7 @@ HWTEST_F(FixedRatioRetentionStrategyTest, UpdateTargetRatio_ClampMax_014, TestSi
     EXPECT_NEAR(strategy->GetRatio(), MAX_RETENTION_RATIO, DEFAULT_TOLERANCE); // clamped to 1.0
 }
 
-// --- AutoFallbackRetentionStrategy (Two-Phase Design) ---
+// --- AutoFallbackRetentionStrategy (Two-Phase: Passthrough → Active) ---
 
 class AutoFallbackRetentionStrategyTest : public testing::Test {
 protected:
@@ -215,12 +215,12 @@ protected:
 };
 
 /**
- * @tc.name: Phase1_Passthrough_001
+ * @tc.name: Passthrough_001
  * @tc.desc: Verify Phase 1 behavior: IsPassthrough=true, RequiresNaluAnalysis=false,
  *           RequiresMvAnalysis=false, GetRatio=1.0, MakeRetentionDecision returns true.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase1_Passthrough_001, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Passthrough_001, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     EXPECT_EQ(strategy->GetMode(), RetentionStrategyType::AUTO_RATIO);
@@ -237,11 +237,11 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase1_Passthrough_001, TestSize.Lev
 }
 
 /**
- * @tc.name: Phase1_SpeedIgnored_002
+ * @tc.name: Passthrough_SpeedIgnored_002
  * @tc.desc: Verify that UpdatePlaybackSpeed in Phase 1 does not trigger transition.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase1_SpeedIgnored_002, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Passthrough_SpeedIgnored_002, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdatePlaybackSpeed(2.0); // 2.0: high speed
@@ -251,12 +251,12 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase1_SpeedIgnored_002, TestSize.Le
 }
 
 /**
- * @tc.name: Phase2_TransitionViaSourceFps_003
+ * @tc.name: Active_TransitionViaSourceFps_003
  * @tc.desc: Verify that UpdateSourceFramerate triggers Phase 2 transition.
  *           60fps source → ratio = 30/60 = 0.5
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_TransitionViaSourceFps_003, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_TransitionViaSourceFps_003, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(60.0); // 60.0: source fps
@@ -277,12 +277,12 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_TransitionViaSourceFps_003, T
 }
 
 /**
- * @tc.name: Phase2_TransitionThenSpeedUpdate_004
+ * @tc.name: Active_SpeedUpdate_004
  * @tc.desc: Verify that speed update in Phase 2 recalculates ratio via UpdateTargetRatio.
  *           60fps 1x → ratio=0.5, then speed=2x → ratio=30/120=0.25
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_TransitionThenSpeedUpdate_004, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_SpeedUpdate_004, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(60.0); // 60.0: source fps, ratio=0.5
@@ -293,12 +293,12 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_TransitionThenSpeedUpdate_004
 }
 
 /**
- * @tc.name: Phase2_RatioClampLowFps_005
+ * @tc.name: Active_RatioClampLowFps_005
  * @tc.desc: Verify that low sourceFps (24fps) clamps ratio to 1.0 (FULL equivalent).
  *           30/(24*1) = 1.25 → clamp to 1.0
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_RatioClampLowFps_005, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_RatioClampLowFps_005, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(24.0); // 24.0: low source fps
@@ -312,11 +312,11 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_RatioClampLowFps_005, TestSiz
 }
 
 /**
- * @tc.name: Phase2_RatioHighFps_006
+ * @tc.name: Active_RatioHighFps_006
  * @tc.desc: Verify that 120fps source gives ratio = 30/120 = 0.25.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_RatioHighFps_006, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_RatioHighFps_006, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(120.0); // 120.0: high source fps
@@ -324,11 +324,11 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_RatioHighFps_006, TestSize.Le
 }
 
 /**
- * @tc.name: Phase2_ReasonMapping_007
+ * @tc.name: Active_ReasonMapping_007
  * @tc.desc: Verify POST_RETAIN_FIXED_ACC from underlying FixedRatio is mapped to POST_RETAIN_AUTO_FALLBACK.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_ReasonMapping_007, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_ReasonMapping_007, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(60.0); // 60.0: source fps
@@ -338,11 +338,11 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_ReasonMapping_007, TestSize.L
 }
 
 /**
- * @tc.name: Phase2_DropReasonPassthrough_008
+ * @tc.name: Active_DropReasonPassthrough_008
  * @tc.desc: Verify POST_DROP_FIXED_ACC from underlying FixedRatio is returned as-is (not mapped).
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_DropReasonPassthrough_008, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_DropReasonPassthrough_008, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(60.0); // 60.0: source fps, ratio=0.5
@@ -355,11 +355,11 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_DropReasonPassthrough_008, Te
 }
 
 /**
- * @tc.name: Phase1_InvalidSourceFps_009
+ * @tc.name: Passthrough_InvalidSourceFps_009
  * @tc.desc: Verify that UpdateSourceFramerate with invalid fps (<= 0) does not trigger Phase 2.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase1_InvalidSourceFps_009, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Passthrough_InvalidSourceFps_009, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(0.0); // 0.0: invalid fps
@@ -370,11 +370,11 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase1_InvalidSourceFps_009, TestSiz
 }
 
 /**
- * @tc.name: Phase2_InvalidSpeed_010
+ * @tc.name: Active_InvalidSpeed_010
  * @tc.desc: Verify that UpdatePlaybackSpeed with invalid speed defaults to 1.0.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_InvalidSpeed_010, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_InvalidSpeed_010, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(60.0); // 60.0: source fps, ratio=0.5 (speed=1.0 default)
@@ -387,11 +387,11 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_InvalidSpeed_010, TestSize.Le
 }
 
 /**
- * @tc.name: Reset_BackToPhase1_011
+ * @tc.name: Reset_BackToPassthrough_011
  * @tc.desc: Verify Reset clears sourceFps/speed state and returns to Phase 1.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Reset_BackToPhase1_011, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Reset_BackToPassthrough_011, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(60.0); // 60.0: source fps → Phase 2
@@ -407,12 +407,12 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Reset_BackToPhase1_011, TestSize.Lev
 }
 
 /**
- * @tc.name: Phase2_SpeedThenSourceFps_012
+ * @tc.name: Active_SpeedThenSourceFps_012
  * @tc.desc: Verify that speed update before sourceFps (Phase 1) is stored but doesn't trigger transition.
  *           Then UpdateSourceFramerate triggers Phase 2 with stored speed.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_SpeedThenSourceFps_012, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_SpeedThenSourceFps_012, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdatePlaybackSpeed(2.0); // 2.0: speed stored, no transition yet
@@ -424,12 +424,12 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_SpeedThenSourceFps_012, TestS
 }
 
 /**
- * @tc.name: Phase2_SourceFpsUpdate_013
+ * @tc.name: Active_SourceFpsUpdate_013
  * @tc.desc: Verify that sourceFps update in Phase 2 recalculates ratio.
  *           60fps→ratio=0.5, then 30fps→ratio=1.0 (clamped)
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_SourceFpsUpdate_013, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_SourceFpsUpdate_013, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     strategy->UpdateSourceFramerate(60.0); // 60.0: ratio=0.5
@@ -440,11 +440,11 @@ HWTEST_F(AutoFallbackRetentionStrategyTest, Phase2_SourceFpsUpdate_013, TestSize
 }
 
 /**
- * @tc.name: Phase1_RatioConstantValue_014
+ * @tc.name: Passthrough_RatioConstantValue_014
  * @tc.desc: Verify FALLBACK_TARGET_FPS constant equals 30.0.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Phase1_RatioConstantValue_014, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Passthrough_RatioConstantValue_014, TestSize.Level1)
 {
     EXPECT_NEAR(FALLBACK_TARGET_FPS, 30.0, DEFAULT_TOLERANCE);
 }

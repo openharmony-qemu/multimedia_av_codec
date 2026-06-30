@@ -42,7 +42,7 @@ public:
 
 private:
     double CalculateFallbackRatio() const;
-    void TransitionToPhase2();
+    void ApplyCalculatedRatio();
 
     bool hasSourceFps_{false};
     double sourceFps_{0.0};
