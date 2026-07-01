@@ -234,7 +234,7 @@ OH_AVErrCode OH_AVDemuxer_ReadSampleBuffer(OH_AVDemuxer *demuxer, uint32_t track
     CHECK_AND_RETURN_RET_LOG(sample != nullptr && sample->buffer_ != nullptr, AV_ERR_INVALID_VAL, "Sample is nullptr");
     CHECK_AND_RETURN_RET_LOG(sample->magic_ == MFMagic::MFMAGIC_AVBUFFER, AV_ERR_INVALID_VAL, "Magic error");
 
-    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_ReadSampleBuffer.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_ReadSampleBuffer.Time", TIMES, 50); // 50freq
     struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
     CHECK_AND_RETURN_RET_LOG(demuxerObj != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
     CHECK_AND_RETURN_RET_LOG(demuxerObj->demuxer_ != nullptr, AV_ERR_INVALID_VAL, "Get demuxerObject failed");
