@@ -79,8 +79,7 @@ double AdaptiveRetentionStrategy::CalculateTargetRatio(const FrameRetentionConte
     if (sourceFps_ <= 0.0) {
         return 1.0;
     }
-    double effectiveSpeed = currentSpeed_;
-    double renderFps = sourceFps_ * effectiveSpeed;
+    double renderFps = sourceFps_ * currentSpeed_;
     if (DoubleUtils::IsLessOrEqual(renderFps, MIN_SOURCE_FPS_FOR_DROP)) {
         return 1.0;
     }

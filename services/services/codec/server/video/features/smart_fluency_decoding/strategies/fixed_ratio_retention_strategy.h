@@ -30,6 +30,7 @@ public:
     ~FixedRatioRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
+    void UpdateTargetRatio(double newRatio);
     void Reset() override;
     RetentionStrategyType GetMode() const override;
     double GetRatio() const override;

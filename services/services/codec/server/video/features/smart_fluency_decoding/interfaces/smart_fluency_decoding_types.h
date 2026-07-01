@@ -46,6 +46,7 @@ namespace SFD {
 
 constexpr double MIN_RETENTION_RATIO = 0.01;
 constexpr double MAX_RETENTION_RATIO = 1.0;
+constexpr double FALLBACK_TARGET_FPS = 30.0;
 
 enum class SfdDecisionReason : int32_t {
     UNSPECIFIED = 0,
