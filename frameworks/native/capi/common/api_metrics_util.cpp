@@ -21,8 +21,6 @@
 
 #ifdef HISTOGRAMMANAGER_ENABLE
 #include "histogram_plugin_macros.h"
-#endif
-
 namespace {
 std::mutex g_apiMetricsMutex;
 std::unordered_map<std::string, int32_t> g_apiMetricsCounters;
@@ -57,6 +55,7 @@ bool ShouldReportByFrequency(const std::string &apiName, OHOS::MediaAVCodec::Met
     return false;
 }
 }
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
