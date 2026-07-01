@@ -548,7 +548,7 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
     uint8_t version = header[0];
-    uint32_t flags = GetU32Value(header) & 0x00FFFFFF;
+    uint32_t flags = GetU32Value(header, sizeof(header)) & 0x00FFFFFF;
     if ((version != 0 && version != 1) || flags != 0) {
         return Status::ERROR_INVALID_DATA;
     }
@@ -593,7 +593,7 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
     uint8_t version = header[0];
-    uint32_t flags = GetU32Value(header) & 0x00FFFFFF;
+    uint32_t flags = GetU32Value(header, sizeof(header)) & 0x00FFFFFF;
     if ((version != 0 && version != 1) || flags != 0) {
         return Status::ERROR_INVALID_DATA;
     }
@@ -636,7 +636,7 @@ Status MPEG4SampleHelper::SetSyncSampleParams(int64_t dataOffset, size_t dataSiz
     uint8_t header[8];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
-    if (GetU32Value(header)) {
+    if (GetU32Value(header, sizeof(header))) {
         return Status::ERROR_INVALID_DATA;
     }
 
@@ -673,7 +673,7 @@ Status MPEG4SampleHelper::SetFieldSize(uint32_t atomType, int64_t &currentOffset
         uint8_t sizeBuffer[4];
         Status ret = dataReader_->ReadUintData(currentOffset, sizeBuffer, sizeof(sizeBuffer));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sizeBuffer failed");
-        uint32_t defaultSampleSize = GetU32Value(sizeBuffer);
+        uint32_t defaultSampleSize = GetU32Value(sizeBuffer, sizeof(sizeBuffer));
         currentOffset += sizeof(uint32_t);
         if (defaultSampleSize) {
             sampleSizes_.emplace_back(defaultSampleSize);
@@ -752,7 +752,7 @@ Status MPEG4SampleHelper::SetSampleSizeParams(uint32_t atomType, int64_t dataOff
     uint8_t header[4];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
-    FALSE_RETURN_V_NOLOG(!GetU32Value(header), Status::ERROR_INVALID_DATA);
+    FALSE_RETURN_V_NOLOG(!GetU32Value(header, sizeof(header)), Status::ERROR_INVALID_DATA);
     currentOffset += sizeof(uint32_t);
 
     uint32_t fieldSize;
@@ -765,7 +765,7 @@ Status MPEG4SampleHelper::SetSampleSizeParams(uint32_t atomType, int64_t dataOff
     uint8_t entryBuffer[4];
     ret = dataReader_->ReadUintData(currentOffset, entryBuffer, sizeof(entryBuffer));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read entryBuffer failed");
-    uint32_t numSampleSizes = GetU32Value(entryBuffer);
+    uint32_t numSampleSizes = GetU32Value(entryBuffer, sizeof(entryBuffer));
     currentOffset += sizeof(uint32_t);
     if (!numSampleSizes) {
         return Status::OK;
@@ -796,13 +796,13 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
     uint8_t header[4];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
-    FALSE_RETURN_V_NOLOG(!GetU32Value(header), Status::ERROR_INVALID_DATA);
+    FALSE_RETURN_V_NOLOG(!GetU32Value(header, sizeof(header)), Status::ERROR_INVALID_DATA);
     currentOffset += sizeof(uint32_t);
 
     uint8_t entryBuffer[4];
     ret = dataReader_->ReadUintData(currentOffset, entryBuffer, sizeof(entryBuffer));
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    uint32_t numChunkOffsets = GetU32Value(entryBuffer);
+    uint32_t numChunkOffsets = GetU32Value(entryBuffer, sizeof(entryBuffer));
     FALSE_RETURN_V_MSG_E(numChunkOffsets <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid chunk offset count");
     currentOffset += sizeof(uint32_t);
     uint32_t unit = atomType == static_cast<uint32_t>(FourccType("stco")) ? sizeof(uint32_t) : sizeof(uint64_t);
@@ -839,7 +839,7 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
     uint8_t header[8];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
-    FALSE_RETURN_V_NOLOG(!GetU32Value(header), Status::ERROR_INVALID_DATA);
+    FALSE_RETURN_V_NOLOG(!GetU32Value(header, sizeof(header)), Status::ERROR_INVALID_DATA);
 
     uint32_t numStscEntries = GetU32Value(&header[4]);
     FALSE_RETURN_V_MSG_E(numStscEntries <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid stsc entry count");
@@ -1009,11 +1009,11 @@ Status MPEG4SampleHelper::SetTrackFragmentDecodeTimeParams(int64_t dataOffset, i
     if (version) {
         uint8_t data[8];
         ret = dataReader_->ReadUintData(currentOffset, data, sizeof(data));
-        tfdtDts_ = static_cast<int64_t>(GetU64Value(data));
+        tfdtDts_ = static_cast<int64_t>(GetU64Value(data, sizeof(data)));
     } else {
         uint8_t data[4];
         ret = dataReader_->ReadUintData(currentOffset, data, sizeof(data));
-        tfdtDts_ = GetU32Value(data);
+        tfdtDts_ = GetU32Value(data, sizeof(data));
     }
     return ret;
 }

@@ -2703,7 +2703,7 @@ int32_t GetFtypConfidence(std::shared_ptr<DemuxerDataReader> dataReader_,
         FALSE_RETURN_V_MSG_E(dataReader_->ReadUintData(
             chunkDataOffset + readLengHalf * i, brandData, sizeof(brandData)) == Status::OK,
             0, "Read brand failed");
-        brand = GetU32Value(brandData);
+        brand = GetU32Value(brandData, sizeof(brandData));
         if (IsSupportedBrand(brand)) {
             return FIRST_LEVEL_RANK;
         }
@@ -2725,7 +2725,7 @@ bool UpdateAtomSize(
         FALSE_RETURN_V_MSG_E(
             dataReader->ReadUintData(offset + READ_LEN, sizeData, sizeof(sizeData)) == Status::OK, false,
             "Read atom size(version 1) failed");
-        atom.size = GetU64Value(sizeData);
+        atom.size = GetU64Value(sizeData, sizeof(sizeData));
         chunkDataOffset += READ_LEN;
         FALSE_RETURN_V_MSG_E(atom.size >= MIN_ATOM_SIZE && atom.size <= INT64_MAX, false, "atom size error");
     } else if (atom.size < READ_LEN) {

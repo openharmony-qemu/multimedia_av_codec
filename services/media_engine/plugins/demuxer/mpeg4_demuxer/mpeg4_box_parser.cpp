@@ -143,6 +143,7 @@ constexpr size_t MAX_SIZE = 1 << 30;
 constexpr size_t DURATION_OFFSET_V0 = 16;
 constexpr size_t DURATION_OFFSET_V1 = 24;
 constexpr size_t DIRECT_META_PATH_SIZE = 2;  // moov/meta 直接结构的路径大小
+constexpr size_t ALAC_ATTRIBUTES_BUFF_SAFE_SIZE = 25;
 constexpr uint8_t AOT_SBR = 5;
 constexpr uint8_t AOT_PS = 29;
 constexpr uint8_t AAC_MAIN = 1;
@@ -464,14 +465,17 @@ bool IsIdentityMatrix(const int32_t* matrix)
     return true;
 }
 
-bool IsDisplayMatrixIdentity(const int32_t matrix[3][3])
+bool IsDisplayMatrixIdentity(const int32_t matrix[3][3], const size_t len)
 {
+    FALSE_RETURN_V_NOLOG(len == 36UL, false);
     return IsIdentityMatrix(reinterpret_cast<const int32_t*>(matrix));
 }
 
-void MultiplyDisplayMatrix(const int32_t a[3][3], const int32_t b[3][3], int32_t result[3][3])
+void MultiplyDisplayMatrix(const int32_t a[3][3], const int32_t b[3][3], int32_t result[3][3],
+                            const size_t lenA, const size_t lenB, const size_t lenC)
 {
     FALSE_RETURN_MSG(a != nullptr && b != nullptr && result != nullptr, "Invalid params");
+    FALSE_RETURN_MSG(lenA == 36UL && lenB == 36UL && lenC == 36UL, "Invalid params len");
     // MPEG4 display matrix的位移量，用于定点数运算
     // [0][0], [1][1] 元素使用16位小数
     // [2][2] 元素使用30位小数
@@ -673,7 +677,7 @@ Status MPEG4AtomParser::ParseContainerAtom(const MPEG4Atom& containerAtom, int32
         uint8_t atomSizeData[sizeof(uint32_t)] = {0};
         Status sizeRet = dataReader_->ReadUintData(ctx->offset, atomSizeData, sizeof(atomSizeData));
         FALSE_RETURN_V_MSG_E(sizeRet == Status::OK, sizeRet, "Read child atom size failed");
-        if (GetU32Value(atomSizeData) == 0) {
+        if (GetU32Value(atomSizeData, sizeof(atomSizeData)) == 0) {
             MEDIA_LOG_D("Zero-size child atom at offset " PUBLIC_LOG_D64 ", treat remaining container as padding",
                 ctx->offset);
             ctx->offset = endOffset;
@@ -760,7 +764,7 @@ Status MPEG4AtomParser::ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseCon
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, headBuffer, sizeof(headBuffer));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read embedded size failed");
 
-    uint32_t embeddedSize = GetU32Value(headBuffer);
+    uint32_t embeddedSize = GetU32Value(headBuffer, sizeof(headBuffer));
     // 如果不是0 sized mdat atom，跳过剩余数据
     if (embeddedSize != 0) {
         ctx->offset += static_cast<int64_t>(currentAtom.size);
@@ -808,9 +812,12 @@ std::string FormatTimestamp(uint64_t creationTime)
     return std::string(buffer);
 }
 
-MPEG4AtomParser::MvhdInfo MPEG4AtomParser::ParseMvhdInfo(const uint8_t* headerInfo) const
+MPEG4AtomParser::MvhdInfo MPEG4AtomParser::ParseMvhdInfo(const uint8_t* headerInfo, const size_t len) const
 {
     MvhdInfo mvhdInfo;
+    if (len <= 0) {
+        MEDIA_LOG_E("Invalid headerInfo");
+    }
     uint8_t version = headerInfo[0];
     mvhdInfo.matrixOffset = version == 1 ? DYNAMIC_MATRIX_OFFSET_V1 : DYNAMIC_MATRIX_OFFSET_V0;
     if (version == 1) {
@@ -851,14 +858,14 @@ void MPEG4AtomParser::SetMvhdMediaInfo(const MvhdInfo& mvhdInfo)
 }
 
 Status MPEG4AtomParser::ParseMvhdDisplayMatrix(const MPEG4Atom& currentAtom, const uint8_t* headerInfo,
-    ParseContext* ctx)
+    ParseContext* ctx, const size_t len)
 {
     // 解析movie level display matrix
-    int32_t matrixOffset = ParseMvhdInfo(headerInfo).matrixOffset;
+    int32_t matrixOffset = ParseMvhdInfo(headerInfo, len).matrixOffset;
     if (currentAtom.dataSize >= static_cast<uint64_t>(matrixOffset + DISPLAY_MATRIX_SIZE)) {
         Status ret = ParseDisplayMatrix(&headerInfo[matrixOffset], ctx->movieDisplayMatrix);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse movie display matrix");
-        ctx->hasMovieDisplayMatrix = !IsDisplayMatrixIdentity(ctx->movieDisplayMatrix); // 单位阵不是有效的旋转矩阵
+        ctx->hasMovieDisplayMatrix = !IsDisplayMatrixIdentity(ctx->movieDisplayMatrix, sizeof(ctx->movieDisplayMatrix)); // 单位阵不是有效的旋转矩阵
         if (ctx->hasMovieDisplayMatrix) {
             MEDIA_LOG_D("Movie has non-identity display matrix");
         }
@@ -876,9 +883,9 @@ Status MPEG4AtomParser::ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t headerInfo[currentAtom.dataSize];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, headerInfo, sizeof(headerInfo));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read mvhd header info failed");
-    MvhdInfo mvhdInfo = ParseMvhdInfo(headerInfo);
+    MvhdInfo mvhdInfo = ParseMvhdInfo(headerInfo, sizeof(headerInfo));
     SetMvhdMediaInfo(mvhdInfo);
-    return ParseMvhdDisplayMatrix(currentAtom, headerInfo, ctx);
+    return ParseMvhdDisplayMatrix(currentAtom, headerInfo, ctx, sizeof(headerInfo));
 }
 
 int64_t MPEG4AtomParser::GetElstDuration(std::shared_ptr<Track> track)
@@ -1445,9 +1452,9 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
 }
 
 void MPEG4AtomParser::SetTrackDisplayMatrix(std::shared_ptr<Track> track, const int32_t resultMatrix[3][3],
-    uint32_t width, uint32_t height)
+    uint32_t width, uint32_t height, const size_t len)
 {
-    if (!IsDisplayMatrixIdentity(resultMatrix)) {
+    if (!IsDisplayMatrixIdentity(resultMatrix, len)) {
         constexpr uint16_t matrixSize = 9;
         track->displayMatrix = std::make_unique<int32_t[]>(matrixSize);
         FALSE_RETURN_MSG(track->displayMatrix != nullptr, "Failed to allocate memory for display matrix");
@@ -1509,14 +1516,15 @@ Status MPEG4AtomParser::ParseTkhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         // 计算最终的display matrix (track * movie)
         int32_t resultMatrix[DISPLAY_MATRIX_ROWS][DISPLAY_MATRIX_COLS];
         if (ctx->hasMovieDisplayMatrix) {
-            MultiplyDisplayMatrix(trackDisplayMatrix, ctx->movieDisplayMatrix, resultMatrix);
+            MultiplyDisplayMatrix(trackDisplayMatrix, ctx->movieDisplayMatrix, resultMatrix,
+                                sizeof(trackDisplayMatrix), sizeof(ctx->movieDisplayMatrix), sizeof(resultMatrix));
         } else {
             FALSE_RETURN_V_MSG_E(
                 memcpy_s(&resultMatrix[0][0], sizeof(int32_t) * DISPLAY_MATRIX_ROWS * DISPLAY_MATRIX_COLS,
                 &trackDisplayMatrix[0][0], sizeof(int32_t) * DISPLAY_MATRIX_ROWS * DISPLAY_MATRIX_COLS) == EOK,
                 Status::ERROR_INVALID_DATA, "Failed to copy track display matrix");
         }
-        SetTrackDisplayMatrix(lastTrack_, resultMatrix, width, height);
+        SetTrackDisplayMatrix(lastTrack_, resultMatrix, width, height, sizeof(resultMatrix));
     } else {
         MEDIA_LOG_E("tkhd atom too small for display matrix, size: " PUBLIC_LOG_U64, currentAtom.dataSize);
         lastTrack_->hasDisplayMatrix = false;
@@ -2498,8 +2506,10 @@ void MPEG4AtomParser::SetRawPCMSampleFormat(const MPEG4Atom& currentAtom, uint16
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat);
 }
 
-Status MPEG4AtomParser::SetAlacAudioAttributes(const uint8_t* buffer)
+Status MPEG4AtomParser::SetAlacAudioAttributes(const uint8_t* buffer, const size_t len)
 {
+    FALSE_RETURN_V_MSG_E(len < ALAC_ATTRIBUTES_BUFF_SAFE_SIZE, Status::ERROR_INVALID_DATA,
+                        "Invalid Alac Attributes buffer len");
     uint8_t sampleSize = buffer[5];
     uint8_t channelCount = buffer[9];
     uint32_t sampleRate = GetU32Value(&buffer[20]);
@@ -2561,7 +2571,7 @@ Status MPEG4AtomParser::ParseAlacEntry(ParseContext& ctx)
     }
     lastTrack_->codecParms.data = std::move(configData);
     lastTrack_->codecParms.extradataSize = static_cast<int64_t>(size);
-    ret = SetAlacAudioAttributes(buffer);
+    ret = SetAlacAudioAttributes(buffer, sizeof(buffer));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set ALAC audio attributes failed");
     ctx.offset = dataOffset;
     return Status::OK;
@@ -3508,7 +3518,7 @@ Status MPEG4AtomParser::ParseStts(MPEG4Atom currentAtom, int32_t depth, ParseCon
             Status readRet = dataReader_->ReadUintData(ctx->dataOffset + sttsEntryCountOffset,
                 entryCountData, sizeof(entryCountData));
             FALSE_RETURN_V_MSG_E(readRet == Status::OK, readRet, "Read stts entry count failed");
-            if (GetU32Value(entryCountData) == 0) {
+            if (GetU32Value(entryCountData, sizeof(entryCountData)) == 0) {
                 MEDIA_LOG_W("Stts entry count is zero, skipping time to sample parsing");
                 return Status::OK;
             }
@@ -3608,7 +3618,7 @@ Status MPEG4AtomParser::ParseFiel(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t fieldOrder[2];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, fieldOrder, sizeof(fieldOrder));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read field order failed");
-    uint16_t fieldOrderValue = GetU16Value(fieldOrder);
+    uint16_t fieldOrderValue = GetU16Value(fieldOrder, sizeof(fieldOrder));
     if ((fieldOrderValue & 0xFF00) == 0X0100) {
         decodedFieldOrder = FieldOrder::FIELD_ORDER_PROGRESSIVE;
     } else if ((fieldOrderValue & 0xFF00) == 0X0200) {
@@ -4910,7 +4920,7 @@ Status MPEG4AtomParser::ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, i
         uint8_t sizeData[8];
         ret = dataReader_->ReadUintData(ctx->dataOffset, sizeData, sizeof(sizeData));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read atom extended size failed");
-        atom.size = GetU64Value(sizeData);
+        atom.size = GetU64Value(sizeData, sizeof(sizeData));
         ctx->dataOffset += sizeof(sizeData);
         FALSE_RETURN_V_MSG_E(atom.size >= minExtendSize, Status::ERROR_INVALID_DATA,
             "Invalid extended atom size: " PUBLIC_LOG_U64, atom.size);

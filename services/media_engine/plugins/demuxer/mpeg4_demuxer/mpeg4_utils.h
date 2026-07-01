@@ -61,9 +61,28 @@ inline uint16_t GetU16Value(const uint8_t *data)
     return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 0x08) | data[1]);
 }
 
+inline uint16_t GetU16Value(const uint8_t *data, const size_t len)
+{
+    if (!data || len < 2) {
+        return 0;
+    }
+    return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 0x08) | data[1]);
+}
+
 inline uint32_t GetU32Value(const uint8_t *data)
 {
     if (!data) {
+        return 0;
+    }
+    return (static_cast<uint32_t>(data[0]) << 0x18) |
+           (static_cast<uint32_t>(data[1]) << 0x10) |
+           (static_cast<uint32_t>(data[THIRD_CHAR]) << 0x08) |
+           static_cast<uint32_t>(data[FOURTH_CHAR]);
+}
+
+inline uint32_t GetU32Value(const uint8_t *data, const size_t len)
+{
+    if (!data || len < 4) {
         return 0;
     }
     return (static_cast<uint32_t>(data[0]) << 0x18) |
@@ -83,6 +102,14 @@ inline std::string GetCharValue(const uint8_t *data)
 inline uint64_t GetU64Value(const uint8_t *data)
 {
     if (!data) {
+        return 0;
+    }
+    return (static_cast<uint64_t>(GetU32Value(data)) << 0x20) | GetU32Value(data + 0x04);
+}
+
+inline uint64_t GetU64Value(const uint8_t *data, const size_t len)
+{
+    if (!data || len < 8) {
         return 0;
     }
     return (static_cast<uint64_t>(GetU32Value(data)) << 0x20) | GetU32Value(data + 0x04);
