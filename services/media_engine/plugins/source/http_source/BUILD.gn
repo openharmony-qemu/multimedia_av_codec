@@ -29,12 +29,11 @@ config("http_source_plugin_config") {
     "-Wshadow",
     "-FPIC",
     "-FS",
-    "-Os",
+    "-O2",
     "-fvisibility=hidden",
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
     "-Wdate-time",
-    "-fno-unwind-tables",
   ]
 
   cflags_cc = [
