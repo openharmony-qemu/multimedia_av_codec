@@ -1661,7 +1661,7 @@ Status MPEG4DemuxerPlugin::FindBaseTrackAndCalcDelay(int64_t seekTime, SeekMode 
     int64_t maxPts = 0; // ms
     FALSE_RETURN_V_MSG_E(DynamicBaseTrackSelect(seekTime, maxPts, baseTrackIndex) == Status::OK,
         Status::ERROR_INVALID_PARAMETER, "Find base track failed");
-    relativeEndPts_ = maxPts;
+    relativeEndPts_ = static_cast<uint64_t>(maxPts);
     if (seekTime > static_cast<int64_t>(relativeEndPts_) && mode == SeekMode::SEEK_NEXT_SYNC) {
         MEDIA_LOG_W("Seek time " PUBLIC_LOG_D64 " exceeds stream end " PUBLIC_LOG_U64
             ", clamp to stream duration", seekTime, relativeEndPts_);
@@ -1683,7 +1683,7 @@ Status MPEG4DemuxerPlugin::FindFragmentSyncSample(uint32_t fragmentIndex, std::s
         auto it = std::upper_bound(entry.begin(), entry.end(), moofOffset,
             [](int64_t b, const MPEG4SampleHelper::SampleIndexEntry& a) { return b < a.pos; });
 
-        uint32_t sampleIndex = std::distance(entry.begin(), it);
+        uint32_t sampleIndex = static_cast<uint32_t>(std::distance(entry.begin(), it));
         if (sampleIndex < entry.size() - 1) {
             currentTrack->currentSampleIndex = sampleIndex;
         } else {
@@ -1703,7 +1703,7 @@ Status MPEG4DemuxerPlugin::FindFragmentAtTime(int64_t fragmentSeekTime, SeekMode
     auto& entry = fragmentEntry_;
     auto it = std::lower_bound(entry.begin(), entry.end(), fragmentSeekTime,
         [](const MPEG4AtomParser::FragmentEntry& a, int64_t b) { return a.firstDts < b; });
-    uint32_t fragmentIndex = std::distance(entry.begin(), it);
+    uint32_t fragmentIndex = static_cast<uint32_t>(std::distance(entry.begin(), it));
     if (fragmentSeekTime != fragmentEntry_[fragmentIndex].firstDts) {
         fragmentIndex = fragmentIndex ? fragmentIndex - 1 : 0;
     }
@@ -2200,7 +2200,7 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg
         } else {
             payloadData += tempSize;
             if (tempSize <= INT32_MAX && payloadSize >= INT32_MIN + static_cast<int32_t>(tempSize)) {
-                payloadSize -= tempSize;
+                payloadSize -= static_cast<int32_t>(tempSize);
             }
         }
     }
@@ -2671,8 +2671,9 @@ void IsMPEGPS(int64_t offset, int64_t kMaxOffset, const std::shared_ptr<DemuxerD
         for (uint32_t i = 0; i < sizeof(tagType) / sizeof(tagType[0]); ++i) {
             tagType[i] = GetU32Value(&tag[sizeof(uint32_t) * i]);
         }
-        if (tagType[0] == FourccType("hdlr") && tagType[secondTagOffset] == FourccType("mhlr") &&
-            tagType[thirdTagOffset] == FourccType("MPEG")) {
+        if (tagType[0] == static_cast<uint32_t>(FourccType("hdlr")) &&
+            tagType[secondTagOffset] == static_cast<uint32_t>(FourccType("mhlr")) &&
+            tagType[thirdTagOffset] == static_cast<uint32_t>(FourccType("MPEG"))) {
             MEDIA_LOG_D("MPEG-PS");
             confidence = RANK_MIN;
             break;
@@ -2688,7 +2689,7 @@ int32_t GetFtypConfidence(std::shared_ptr<DemuxerDataReader> dataReader_,
 {
     const int32_t readLengHalf = 4;
     FALSE_RETURN_V_MSG_E(chunkDataSize >= READ_LEN, 0, "ftyp data size error");
-    uint32_t numBrands = (chunkDataSize - READ_LEN) / readLengHalf;
+    uint32_t numBrands = static_cast<uint32_t>((chunkDataSize - READ_LEN) / readLengHalf);
     uint32_t numBrandsIteration = 0;
     uint32_t offSetMore = 2;
     FALSE_RETURN_V_MSG_E(!(__builtin_add_overflow(numBrands, offSetMore, &numBrandsIteration)), 0,
@@ -2779,9 +2780,9 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
         AtomInfo atom {GetU32Value(&atomInfoData[0]), GetU32Value(&atomInfoData[4])};
         int64_t chunkDataOffset = offset + READ_LEN;
         FALSE_RETURN_V_NOLOG(UpdateAtomSize(atom, offset, chunkDataOffset, dataReader), 0);
-        int64_t chunkDataSize = atom.size - (chunkDataOffset - offset);
+        int64_t chunkDataSize = static_cast<int64_t>(atom.size) - (chunkDataOffset - offset);
         FALSE_RETURN_V_MSG_E(chunkDataSize >= 0, 0, "atom data size error");
-        FALSE_RETURN_V_MSG_E((!isFirstAtom || atom.type == FourccType("ftyp")), 0, "no ftyp atom");
+        FALSE_RETURN_V_MSG_E((!isFirstAtom || atom.type == static_cast<uint32_t>(FourccType("ftyp"))), 0, "no ftyp atom");
         isFirstAtom = false;
         switch (GetAtomLevel(atom)) {
             case AtomLevel::LEVEL_0: {

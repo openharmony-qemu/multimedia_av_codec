@@ -231,10 +231,10 @@ private:
     AVC_ENC_INARGS avcEncInputArgs_;
     AVC_ENC_OUTARGS avcEncOutputArgs_;
     struct AVC_ENC_HEADER_ARGS {
-        uint32_t encodedFrameType;
+        uint32_t encodedFrameType = 0;
         void *streamBuf = nullptr;
-        uint32_t size;
-        uint32_t bytes;
+        uint32_t size = 0;
+        uint32_t bytes = 0;
     };
     AVC_ENC_HEADER_ARGS avcEncHeaderArgs_;
 

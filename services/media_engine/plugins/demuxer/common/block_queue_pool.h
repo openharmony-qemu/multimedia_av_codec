@@ -399,19 +399,21 @@ std::shared_ptr<T> BlockQueuePool<T>::Pop(uint32_t trackIndex)
         return nullptr;
     }
     auto& queVector = queMap_[trackIndex];
-    for (auto it = queVector.begin(); it != queVector.end(); ++it) {
-        int32_t index = std::distance(queVector.begin(), it);
-        auto queIndex = queVector[index];
+    for (auto it = queVector.begin(); it != queVector.end();) {
+        auto queIndex = *it;
         if (quePool_[queIndex].blockQue == nullptr) {
             MEDIA_LOG_D("Block queue " PUBLIC_LOG_D32 " is nullptr, will find next", queIndex);
+            ++it;
             continue;
         }
         if (quePool_[queIndex].blockQue->Size() == 0) {
+            ++it;
             continue;
         }
         auto block = quePool_[queIndex].blockQue->Pop();
         if (block == nullptr) {
             MEDIA_LOG_D("Block is nullptr");
+            ++it;
             continue;
         }
         uint32_t blockSize = BlockTraits<T>::GetDataSize(block);
@@ -422,7 +424,9 @@ std::shared_ptr<T> BlockQueuePool<T>::Pop(uint32_t trackIndex)
             quePool_[queIndex].maxPts = INT64_MIN;
             MEDIA_LOG_D("Track " PUBLIC_LOG_U32 " queue " PUBLIC_LOG_D32 " is empty, will return to pool",
                 trackIndex, queIndex);
-            queVector.erase(queVector.begin() + index);
+            it = queVector.erase(it);
+        } else {
+            ++it;
         }
         MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S " for track " PUBLIC_LOG_U32,
             name_.c_str(), trackIndex);

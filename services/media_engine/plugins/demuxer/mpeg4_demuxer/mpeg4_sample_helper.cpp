@@ -668,7 +668,7 @@ Status MPEG4SampleHelper::SetSyncSampleParams(int64_t dataOffset, size_t dataSiz
 
 Status MPEG4SampleHelper::SetFieldSize(uint32_t atomType, int64_t &currentOffset, uint32_t &fieldSize)
 {
-    if (atomType == FourccType("stsz")) {
+    if (atomType == static_cast<uint32_t>(FourccType("stsz"))) {
         fieldSize = DEFAULT_FIELD_SIZE;
         uint8_t sizeBuffer[4];
         Status ret = dataReader_->ReadUintData(currentOffset, sizeBuffer, sizeof(sizeBuffer));
@@ -698,10 +698,10 @@ Status MPEG4SampleHelper::ProcessSampleSizeData(uint32_t atomType, int64_t curre
     auto data = std::make_unique<uint8_t[]>(size);
     Status ret = dataReader_->ReadUintData(currentOffset, data.get(), size);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sampleSize failed");
-    currentOffset += size;
+    currentOffset += static_cast<int64_t>(size);
     sampleSizes_.reserve(numSampleSizes);
 
-    if (atomType == FourccType("stsz")) {
+    if (atomType == static_cast<uint32_t>(FourccType("stsz"))) {
         for (uint32_t i = 0; i < numSampleSizes; ++i) {
             uint32_t sampleSize = GetU32Value(data.get() + i * sizeof(uint32_t));
             sampleSizes_.emplace_back(static_cast<int32_t>(sampleSize));
@@ -742,8 +742,8 @@ Status MPEG4SampleHelper::SetSampleSizeParams(uint32_t atomType, int64_t dataOff
 {
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(sampleSizes_.empty(), Status::ERROR_INVALID_OPERATION, "sampleSizes exist");
-    FALSE_RETURN_V_NOLOG(atomType == FourccType("stsz") || atomType == FourccType("stz2"),
-        Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V_NOLOG(atomType == static_cast<uint32_t>(FourccType("stsz")) ||
+                         atomType == static_cast<uint32_t>(FourccType("stz2")), Status::ERROR_INVALID_PARAMETER);
 
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_NOLOG(currentOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE,
@@ -773,9 +773,9 @@ Status MPEG4SampleHelper::SetSampleSizeParams(uint32_t atomType, int64_t dataOff
     FALSE_RETURN_V_MSG_E(numSampleSizes <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid sample size count");
 
     constexpr uint32_t maxUint32 = std::numeric_limits<uint32_t>::max();
-    uint32_t unit = atomType == FourccType("stsz") ? sizeof(uint32_t) : fieldSize;
+    uint32_t unit = atomType == static_cast<uint32_t>(FourccType("stsz")) ? sizeof(uint32_t) : fieldSize;
     FALSE_RETURN_V_NOLOG(unit > 0 && numSampleSizes <= maxUint32 / unit, Status::ERROR_INVALID_PARAMETER);
-    uint32_t size = atomType == FourccType("stsz")
+    uint32_t size = atomType == static_cast<uint32_t>(FourccType("stsz"))
         ? numSampleSizes * sizeof(uint32_t)
         : (numSampleSizes * fieldSize + BYTE_BITS - 1) / BYTE_BITS;
     FALSE_RETURN_V_NOLOG(dataSize >= STSZ_HEAD_LENGTH && dataSize - STSZ_HEAD_LENGTH >= size, Status::ERROR_UNKNOWN);
@@ -786,8 +786,8 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
 {
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(chunkOffsets_.empty(), Status::ERROR_INVALID_OPERATION, "chunkOffsets exist");
-    FALSE_RETURN_V_NOLOG(atomType == FourccType("stco") || atomType == FourccType("co64"),
-        Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V_NOLOG(atomType == static_cast<uint32_t>(FourccType("stco")) ||
+                         atomType == static_cast<uint32_t>(FourccType("co64")), Status::ERROR_INVALID_PARAMETER);
 
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_NOLOG(currentOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE,
@@ -805,7 +805,7 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
     uint32_t numChunkOffsets = GetU32Value(entryBuffer);
     FALSE_RETURN_V_MSG_E(numChunkOffsets <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid chunk offset count");
     currentOffset += sizeof(uint32_t);
-    uint32_t unit = atomType == FourccType("stco") ? sizeof(uint32_t) : sizeof(uint64_t);
+    uint32_t unit = atomType == static_cast<uint32_t>(FourccType("stco")) ? sizeof(uint32_t) : sizeof(uint64_t);
     if ((dataSize - sizeof(uint64_t)) / unit < numChunkOffsets) {
         return Status::ERROR_UNKNOWN;
     }
@@ -817,7 +817,7 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
     chunkOffsets_.reserve(numChunkOffsets);
 
     for (uint32_t i = 0; i < numChunkOffsets; ++i) {
-        uint64_t offset = atomType == FourccType("stco")
+        uint64_t offset = atomType == static_cast<uint32_t>(FourccType("stco"))
                               ? static_cast<uint64_t>(GetU32Value(data.get() + i * sizeof(uint32_t)))
                               : GetU64Value(data.get() + i * sizeof(uint64_t));
         FALSE_RETURN_V_MSG_E(offset <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()),
@@ -1084,8 +1084,8 @@ void MPEG4SampleHelper::UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& buffe
 void MPEG4SampleHelper::InitMoofParam()
 {
     if (firstMoofSampleIndex_ == -1) {
-        firstMoofSampleIndex_ = sampleIndexEntry_.size();
-        firstMoofSttsIndex_ = sttsEntry_.size();
+        firstMoofSampleIndex_ = static_cast<int64_t>(sampleIndexEntry_.size());
+        firstMoofSttsIndex_ = static_cast<int64_t>(sttsEntry_.size());
         numMoovSamples_ = sampleIndexEntry_.size();
     }
 }
@@ -1237,10 +1237,10 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
         UpdateSampleInfo(sampleInfo, bufferOffset, trunFlag, data.get(), firstSampleFlag);
         bool isOverlap = (prevDts != INT64_MIN && prevDts >= currentDts);
         UpdateSampleEntryInfo(sampleInfo, offset, currentDts, isOverlap);
-        duration += sampleInfo.duration;
+        duration += static_cast<int64_t>(sampleInfo.duration);
         prevDts = currentDts;
-        currentDts += sampleInfo.duration;
-        offset += sampleInfo.size;
+        currentDts += static_cast<int64_t>(sampleInfo.duration);
+        offset += static_cast<int64_t>(sampleInfo.size);
         FALSE_RETURN_V_MSG_E(duration >= 0 && offset >= 0, Status::ERROR_INVALID_DATA,
             "Duration DTS or Offset is negative");
     }
@@ -1311,8 +1311,8 @@ bool MPEG4SampleHelper::GetSampleSize(uint32_t sampleIndex, uint32_t &samplesPer
         int32_t sampleSize = sampleSizes_[0];
         FALSE_RETURN_V_NOLOG(sampleSize <= INT32_MAX / MAX_SAMPLES_PER_FRAME, false);
         samplesPerFrame = std::min(MAX_SAMPLES_PER_FRAME, remainSamples);
-        remainSamples -= samplesPerFrame;
-        entry.size = samplesPerFrame * sampleSize;
+        remainSamples -= static_cast<int64_t>(samplesPerFrame);
+        entry.size = static_cast<int32_t>(samplesPerFrame) * sampleSize;
     } else {
         entry.size = hasDefaultStszSize_ ? sampleSizes_[0] : sampleSizes_[sampleIndex];
     }
@@ -1750,14 +1750,15 @@ Status MPEG4SampleHelper::GetSampleDuration(uint32_t index, uint32_t &duration)
             uint32_t sttsIndex = 0;
             while (sttsIndex < sttsEntry_.size() - 1 &&
                 temp >= static_cast<int64_t>(sttsEntry_[sttsIndex].count)) {
-                temp -= sttsEntry_[sttsIndex].count;
+                temp -= static_cast<int64_t>(sttsEntry_[sttsIndex].count);
                 ++sttsIndex;
             }
             duration = sttsEntry_[sttsIndex].delta;
         } else {
             FALSE_RETURN_V_MSG_E(index >= numMoovSamples_ && firstMoofSttsIndex_ > 0,
                 Status::ERROR_INVALID_PARAMETER, "Invalid sample index");
-            uint64_t sttsIndex = static_cast<uint64_t>(index) - numMoovSamples_ + firstMoofSttsIndex_ - 1;
+            uint64_t sttsIndex = static_cast<uint64_t>(index) - numMoovSamples_ +
+                                 static_cast<uint64_t>(firstMoofSttsIndex_) - 1;
             FALSE_RETURN_V_MSG_E(sttsIndex < sttsEntry_.size(), Status::ERROR_INVALID_PARAMETER,
                 "sttsIndex out of range");
             duration = sttsEntry_[sttsIndex].delta;
@@ -1768,7 +1769,7 @@ Status MPEG4SampleHelper::GetSampleDuration(uint32_t index, uint32_t &duration)
     int64_t temp = index;
     uint32_t sttsIndex = 0;
     while (sttsIndex < sttsEntry_.size() - 1 && temp >= static_cast<int64_t>(sttsEntry_[sttsIndex].count)) {
-        temp -= sttsEntry_[sttsIndex].count;
+        temp -= static_cast<int64_t>(sttsEntry_[sttsIndex].count);
         ++sttsIndex;
     }
     // LCOV_EXCL_STOP
