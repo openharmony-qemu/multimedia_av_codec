@@ -673,7 +673,8 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBufferAtTime(OH_AVCodec *codec, uint32_
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
         "Codec magic error!");
     
-    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_RenderOutputBufferAtTime.Time", TIMES, 0, 50); // 50freq
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_RenderOutputBufferAtTime.Time",
+        TIMES, 0, 50); // 50freq
     struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoDecObj->videoDecoder_ != nullptr, AV_ERR_INVALID_VAL, "Video decoder is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoDecObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
