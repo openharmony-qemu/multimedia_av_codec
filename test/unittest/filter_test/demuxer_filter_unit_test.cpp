@@ -1467,21 +1467,9 @@ HWTEST_F(DemuxerFilterUnitTest, FilterRemoveAds_002, TestSize.Level1)
 /**
  * @tc.name  : Test DisableAllAdsMediaSource
  * @tc.number: FilterDisableAds_001
- * @tc.desc  : Test DisableAllAdsMediaSource with null controller
- */
-HWTEST_F(DemuxerFilterUnitTest, FilterDisableAds_001, TestSize.Level1)
-{
-    demuxerFilter_->interstitialController_ = nullptr;
-    auto ret = demuxerFilter_->DisableAllAdsMediaSource();
-    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
-}
-
-/**
- * @tc.name  : Test DisableAllAdsMediaSource
- * @tc.number: FilterDisableAds_002
  * @tc.desc  : Test DisableAllAdsMediaSource with valid controller
  */
-HWTEST_F(DemuxerFilterUnitTest, FilterDisableAds_002, TestSize.Level1)
+HWTEST_F(DemuxerFilterUnitTest, FilterDisableAds_001, TestSize.Level1)
 {
     auto source = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
     std::string outId;
@@ -1489,6 +1477,55 @@ HWTEST_F(DemuxerFilterUnitTest, FilterDisableAds_002, TestSize.Level1)
     auto ret = demuxerFilter_->DisableAllAdsMediaSource();
     EXPECT_EQ(ret, Status::OK);
     EXPECT_TRUE(demuxerFilter_->interstitialController_->IsAdsDisabled());
+}
+
+/**
+ * @tc.name  : Test DisableAllAdsMediaSource
+ * @tc.number: FilterDisableAds_002
+ * @tc.desc  : Test DisableAllAdsMediaSource without adding any ads, auto-creates controller
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterDisableAds_002, TestSize.Level1)
+{
+    auto ret = demuxerFilter_->DisableAllAdsMediaSource();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(demuxerFilter_->interstitialController_, nullptr);
+    EXPECT_TRUE(demuxerFilter_->interstitialController_->IsAdsDisabled());
+}
+
+/**
+ * @tc.name  : Test DisableAllAdsMediaSource
+ * @tc.number: FilterDisableAds_003
+ * @tc.desc  : Test DisableAllAdsMediaSource called multiple times is idempotent
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterDisableAds_003, TestSize.Level1)
+{
+    auto source = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    demuxerFilter_->AddAdsMediaSource(source, 1000, false, outId);
+    EXPECT_EQ(demuxerFilter_->DisableAllAdsMediaSource(), Status::OK);
+    EXPECT_EQ(demuxerFilter_->DisableAllAdsMediaSource(), Status::OK);
+    EXPECT_EQ(demuxerFilter_->DisableAllAdsMediaSource(), Status::OK);
+    EXPECT_TRUE(demuxerFilter_->interstitialController_->IsAdsDisabled());
+}
+
+/**
+ * @tc.name  : Test DisableAllAdsMediaSource
+ * @tc.number: FilterDisableAds_004
+ * @tc.desc  : Test DisableAllAdsMediaSource with multiple ads, verify not playing after disable
+ */
+HWTEST_F(DemuxerFilterUnitTest, FilterDisableAds_004, TestSize.Level1)
+{
+    std::string outId;
+    auto source1 = std::make_shared<MediaSource>("http://example.com/ad1.mp4");
+    auto source2 = std::make_shared<MediaSource>("http://example.com/ad2.mp4");
+    auto source3 = std::make_shared<MediaSource>("http://example.com/ad3.mp4");
+    demuxerFilter_->AddAdsMediaSource(source1, 1000, false, outId);
+    demuxerFilter_->AddAdsMediaSource(source2, 2000, false, outId);
+    demuxerFilter_->AddAdsMediaSource(source3, 3000, false, outId);
+    auto ret = demuxerFilter_->DisableAllAdsMediaSource();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(demuxerFilter_->interstitialController_->IsAdsDisabled());
+    EXPECT_FALSE(demuxerFilter_->interstitialController_->IsPlayingInterstitial());
 }
 
 /**
