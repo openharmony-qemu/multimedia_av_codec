@@ -392,6 +392,7 @@ Status SampleQueue::ReleaseBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 
     // Remove the skip info to prevent anomalies caused by meta reuse.
     FALSE_GOON_NOEXEC(sampleBuffer->meta_ != nullptr, sampleBuffer->meta_->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO));
+    FALSE_GOON_NOEXEC(sampleBuffer->meta_ != nullptr, sampleBuffer->meta_->Remove(Tag::CHECK_CODEC_CHANGE));
     Status status = sampleBufferQueueConsumer_->ReleaseBuffer(sampleBuffer);
     FALSE_RETURN_V_MSG_E(
         status == Status::OK, status, PUBLIC_LOG_S "ReleaseBuffer failed ", config_.queueName_.c_str());

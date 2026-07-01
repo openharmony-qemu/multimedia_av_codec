@@ -106,6 +106,9 @@ public:
     void OnOutputFormatChanged(const Format& format);
 
     void ResetOutputAudioMime(std::string mimeType);
+
+    void UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -119,7 +122,6 @@ private:
     Status SetInputBufferQueueConsumerListener();
     Status SetOutputBufferQueueProducerListener();
     bool IsNeedProcessInput(bool isOutPort);
-    void UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta);
 
     std::string name_;
     FilterType filterType_;

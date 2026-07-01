@@ -1209,5 +1209,19 @@ void DemuxerPluginManager::SetPlayerMode(bool isPlayerMode)
 {
     isPlayerMode_ = isPlayerMode;
 }
+
+int32_t DemuxerPluginManager::GetTmpTrackIdByTrackId(int32_t trackId)
+{
+    auto iter = temp2TrackInfoMap_.find(trackId);
+    if (iter != temp2TrackInfoMap_.end()) {
+        return iter->second.trackID;
+    }
+    return INVALID_STREAM_OR_TRACK_ID;
+}
+
+Plugins::MediaInfo DemuxerPluginManager::GetMediaInfo()
+{
+    return curMediaInfo_;
+}
 } // namespace Media
 } // namespace OHOS
