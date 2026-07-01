@@ -189,6 +189,7 @@ private:
     void SetCodecConfig(std::shared_ptr<Track> track);
     void AdapterFormat(std::shared_ptr<Track> track);
     bool IsValidTrackIndex(const MediaInfo& mediaInfo, uint32_t index);
+    bool IsLastTrackValid();
     bool UnderMetaPath(const std::vector<uint32_t>& path, int32_t depth);
     bool UnderFileLevelMetaPath(const std::vector<uint32_t>& path, int32_t depth);
     void TrySetGltfOffset(ParseContext* ctx);
