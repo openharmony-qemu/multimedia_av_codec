@@ -325,8 +325,9 @@ void AvcEncoder::GetBufferFromSurface()
 
 void AvcEncoder::EncoderBuffersConsumerListener::OnBufferAvailable()
 {
-    if (codec_) {
-        codec_->GetBufferFromSurface();
+    std::shared_ptr<AvcEncoder> codec = codec_.lock();
+    if (codec) {
+        codec->GetBufferFromSurface();
     }
 }
 
@@ -939,7 +940,7 @@ int32_t AvcEncoder::Start()
     sendTask_->Start();
     if (inputSurface_ != nullptr) {
         ClearDirtyList();
-        sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(this);
+        sptr<IBufferConsumerListener> listener = new EncoderBuffersConsumerListener(shared_from_this());
         inputSurface_->RegisterConsumerListener(listener);
     }
 
