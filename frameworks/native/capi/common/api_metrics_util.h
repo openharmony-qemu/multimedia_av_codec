@@ -16,8 +16,9 @@
 #ifndef API_METRICS_UTIL_H
 #define API_METRICS_UTIL_H
 
-#include <string>
 #include <chrono>
+#include <cstdint>
+#include <string>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -31,13 +32,16 @@ enum MetricesType : int32_t {
 
 class ApiMetricsReporter {
 public:
-    ApiMetricsReporter(std::string apiName, MetricesType metricesType, int32_t sample = 0);
+    ApiMetricsReporter(std::string apiName, MetricesType metricesType, int32_t sample = 0,
+        int32_t frequency = 1, bool forceReport = false);
     ~ApiMetricsReporter();
 
 private:
     std::string apiName_;
     MetricesType metricesType_;
     int32_t sample_;
+    int32_t frequency_;
+    bool forceReport_;
     std::chrono::time_point<std::chrono::steady_clock> beginTime_;
 };
 } // namespace MediaAVCodec
