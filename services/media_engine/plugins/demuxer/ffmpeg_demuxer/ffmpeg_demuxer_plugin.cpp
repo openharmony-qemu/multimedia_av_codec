@@ -1291,12 +1291,15 @@ Status FFmpegDemuxerPlugin::HandleReadFrameResult(int ffmpegRet)
         return Status::END_OF_STREAM;
     }
     if (ffmpegRet < 0) { // fail
-        MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
-            AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
         if (ioContext_.retry) {
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+                "Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+                AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
             ResetContext();
             return Status::ERROR_AGAIN;
         }
+        MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+            AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -1406,7 +1409,7 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
     FALSE_RETURN_V_MSG_E(ioContext->offset <= INT64_MAX - static_cast<int64_t>(bufSize), ret, "Offset invalid");
 
     if (ioContext->dataSource->IsDash() && ioContext->eos == true) {
-        MEDIA_LOG_I("Read eos");
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT, "Read eos");
         return AVERROR_EOF;
     }
 
@@ -1421,7 +1424,8 @@ int FFmpegDemuxerPlugin::CheckContextIsValid(void* opaque, int &bufSize)
     if (ioContext->isLimit) {
         int32_t remainingSize = ioContext->sizeLimit - ioContext->readSizeCnt;
         if (remainingSize <= 0) {
-            MEDIA_LOG_E("Read limit cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_D32 ", read: " PUBLIC_LOG_D32,
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+                "Read limit cur: " PUBLIC_LOG_D32 ", limit: " PUBLIC_LOG_D32 ", read: " PUBLIC_LOG_D32,
                 ioContext->readSizeCnt, ioContext->sizeLimit, bufSize);
             return ret;
         }
