@@ -3105,7 +3105,7 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
         auto trackMeta = mediaInfo.tracks[index];
         Plugins::MediaType mediaType;
         trackMeta.GetData(Tag::MEDIA_TYPE, mediaType);
-        if (isPlayerMode_ && mediaType == Plugins::MediaType::SUBTITLE) {
+        if (!isPlayerMode_ && mediaType == Plugins::MediaType::SUBTITLE) {
             trackMeta.Remove(Tag::MEDIA_LANGUAGE);
             trackMeta.Remove(Tag::MEDIA_TITLE);
         }
