@@ -560,7 +560,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0200, TestSize.Level
  */
 HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0300, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         const char *file = "/data/test/media/h265_aac.m2ts";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
@@ -578,7 +578,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0300, TestSize.Level
  */
 HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0400, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         const char *file = "/data/test/media/h265_mp3.m2ts";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
@@ -1161,7 +1161,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0100, TestSize.
  */
 HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0200, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         const char *file = "/data/test/media/265_audiovivid_short_pts.flv";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
@@ -1200,7 +1200,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0400, TestSize.
  */
 HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         CheckSeekResult("/data/test/media/265_audiovivid_short_pts.flv", SEEKTIMES);
     }
 }
@@ -1257,7 +1257,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0600, TestSize.
  */
 HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         seekInfo fileTest1{"/data/test/media/265_audiovivid_short_pts.flv", SEEK_MODE_PREVIOUS_SYNC,
             1000000, 242, 12, 0};
         CheckSeekMode(fileTest1);
@@ -1333,7 +1333,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0800, TestSize.
  */
 HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         const char *file = "/data/test/media/265_audiovivid_short_pts.flv";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
