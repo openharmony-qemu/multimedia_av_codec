@@ -278,10 +278,9 @@ void M3U8::UpdateByteRange(std::shared_ptr<Tag>& tag, M3U8Info& info)
     auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
     std::string value = svTag->GetValue().QuotedString();
     std::shared_ptr<Attribute> attr = std::make_shared<Attribute>("BYTERANGE", value);
-    offset_ = attr->GetByteRange().first + 1;
+    offset_ = attr->GetByteRange().first;
     length_ = attr->GetByteRange().second;
     if (!isHeaderReady_.load()) {
-        offset_ -= 1;
         isPureByteRange_.store(true);
     }
 }
