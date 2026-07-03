@@ -58,6 +58,7 @@ ohos_fuzztest("DemuxerPluginMpeg4FuzzTest") {
   ]
   external_deps = [
     "c_utils:utils",
+    "graphic_surface:surface",
     "hicollie:libhicollie",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
