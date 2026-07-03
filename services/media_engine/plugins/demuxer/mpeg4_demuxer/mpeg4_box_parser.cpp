@@ -2703,7 +2703,7 @@ Status MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64
             FALSE_RETURN_V_MSG_E(lastTrack_->codecParms.data, Status::ERROR_INVALID_DATA, "Alloc failed");
             
             auto ret = memcpy_s(lastTrack_->codecParms.data.get(), size, specificInfo, size);
-            FALSE_RETURN_V_MSG_E(ret == EOK, Status::ERROR_INVALID_DATA, "Copy fialed");
+            FALSE_RETURN_V_MSG_E(ret == EOK, Status::ERROR_INVALID_DATA, "Copy failed");
             lastTrack_->codecParms.extradataSize = size;
             FALSE_RETURN_V_MSG_E(IsSupportEsds(), Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, "Unsupported track");
         }
