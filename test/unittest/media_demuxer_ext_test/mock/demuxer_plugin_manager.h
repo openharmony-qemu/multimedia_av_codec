@@ -114,6 +114,8 @@ public:
     MOCK_METHOD2(GetCurrentCacheSize, Status(uint32_t trackId, uint32_t& size));
     MOCK_METHOD1(SetReadTimeoutForInitSeek, Status(int64_t timeoutMs));
     MOCK_METHOD1(SetPlayerMode, void(bool isPlayerMode));
+    MOCK_METHOD1(GetTmpTrackIdByTrackId, int32_t(int32_t trackId));
+    MOCK_METHOD0(GetMediaInfo, Plugins::MediaInfo());
 };
 }
 }

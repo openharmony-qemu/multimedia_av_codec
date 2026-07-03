@@ -51,7 +51,7 @@ static const std::unordered_map<std::string, M3U8MediaType> kTypeMap = {
     {"CLOSED-CAPTIONS", M3U8MediaType::M3U8_MEDIA_TYPE_CLOSED_CAPTIONS}
 };
 static const std::unordered_set<std::string> VIDEO_CODECS = {
-    "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263"
+    "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263", "hvc1"
 };
 
 using TagUpdater = void (M3U8::*)(std::shared_ptr<Tag>&, M3U8Info&);

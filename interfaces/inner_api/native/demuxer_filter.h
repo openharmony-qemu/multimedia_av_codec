@@ -82,6 +82,7 @@ public:
     Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs);
 
     Status StartTask(int32_t trackId);
+    Status StartTask(Plugins::MediaType mediaType);
     Status SelectTrack(int32_t trackId);
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;

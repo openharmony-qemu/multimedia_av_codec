@@ -516,6 +516,7 @@ Status AudioServerSinkPlugin::GetParameter(std::shared_ptr<Meta> &meta)
 {
     AudioStandard::AudioRendererParams params;
     meta->Set<Tag::MEDIA_BITRATE>(bitRate_);
+    meta->Set<Tag::MIME_TYPE>(mimeType_);
     if (audioRenderer_ && audioRenderer_->GetParams(params) == AudioStandard::SUCCESS) {
         MEDIA_LOG_I_T("get param with fmt " PUBLIC_LOG_D32 " sampleRate " PUBLIC_LOG_D32 " channel " PUBLIC_LOG_D32
                     " encode type " PUBLIC_LOG_D32,

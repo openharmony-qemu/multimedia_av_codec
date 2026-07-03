@@ -163,6 +163,8 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     this->receiver_ = receiver;
     this->callback_ = callback;
     this->interruptMonitor_ = monitor;
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->SetHiplayerCallback(callback);
     MEDIA_LOG_D("DemuxerFilter Init for drm callback");
 
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
@@ -743,6 +745,12 @@ Status DemuxerFilter::StartTask(int32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
     return demuxer_->StartTask(trackId);
+}
+
+Status DemuxerFilter::StartTask(Plugins::MediaType mediaType)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    return demuxer_->StartTask(mediaType);
 }
 
 Status DemuxerFilter::SelectTrack(int32_t trackId)

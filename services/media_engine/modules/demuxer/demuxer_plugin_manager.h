@@ -153,6 +153,9 @@ public:
     void SetIsHlsFmp4(bool isHlsFmp4);
     bool GetPluginName(std::string& pluginName);
     void SetPlayerMode(bool isPlayerMode);
+    int32_t GetTmpTrackIdByTrackId(int32_t trackId);
+    Plugins::MediaInfo GetMediaInfo();
+
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
     Status InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);

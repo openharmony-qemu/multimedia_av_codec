@@ -825,6 +825,209 @@ HWTEST_F(DecoderSurfaceFilterUnittest, HandleRender_002, TestSize.Level0)
 
     EXPECT_EQ(decoderSurfaceFilter_->lastRenderTimeNs_, originalLastRenderTime);
 }
+
+/**
+ * @tc.name: IsCodecChanged_001
+ * @tc.desc: Test IsCodecChanged interface, newMeta is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, IsCodecChanged_001, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    auto result = decoderSurfaceFilter_->IsCodecChanged(nullptr);
+    EXPECT_EQ(result, false);
+}
+
+/**
+ * @tc.name: IsCodecChanged_002
+ * @tc.desc: Test IsCodecChanged interface, meta_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, IsCodecChanged_002, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    decoderSurfaceFilter_->meta_ = nullptr;
+    auto newMeta = std::make_shared<Meta>();
+    newMeta->SetData(Tag::MIME_TYPE, std::string("video/hevc"));
+    auto result = decoderSurfaceFilter_->IsCodecChanged(newMeta);
+    EXPECT_EQ(result, false);
+}
+
+/**
+ * @tc.name: IsCodecChanged_003
+ * @tc.desc: Test IsCodecChanged interface, both metas have no MIME_TYPE
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, IsCodecChanged_003, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
+    auto newMeta = std::make_shared<Meta>();
+    auto result = decoderSurfaceFilter_->IsCodecChanged(newMeta);
+    EXPECT_EQ(result, false);
+}
+
+/**
+ * @tc.name: IsCodecChanged_004
+ * @tc.desc: Test IsCodecChanged interface, same MIME_TYPE returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, IsCodecChanged_004, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_->SetData(Tag::MIME_TYPE, std::string("video/avc"));
+    auto newMeta = std::make_shared<Meta>();
+    newMeta->SetData(Tag::MIME_TYPE, std::string("video/avc"));
+    auto result = decoderSurfaceFilter_->IsCodecChanged(newMeta);
+    EXPECT_EQ(result, false);
+}
+
+/**
+ * @tc.name: IsCodecChanged_005
+ * @tc.desc: Test IsCodecChanged interface, different MIME_TYPE returns true
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, IsCodecChanged_005, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_->SetData(Tag::MIME_TYPE, std::string("video/avc"));
+    auto newMeta = std::make_shared<Meta>();
+    newMeta->SetData(Tag::MIME_TYPE, std::string("video/hevc"));
+    auto result = decoderSurfaceFilter_->IsCodecChanged(newMeta);
+    EXPECT_EQ(result, true);
+}
+
+/**
+ * @tc.name: SetNewMeta_001
+ * @tc.desc: Test SetNewMeta interface, set and verify newMeta_
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, SetNewMeta_001, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    EXPECT_EQ(decoderSurfaceFilter_->newMeta_, nullptr);
+    auto meta = std::make_shared<Meta>();
+    meta->SetData(Tag::MIME_TYPE, std::string("video/hevc"));
+    decoderSurfaceFilter_->SetNewMeta(meta);
+    EXPECT_NE(decoderSurfaceFilter_->newMeta_, nullptr);
+    std::string mime;
+    EXPECT_EQ(decoderSurfaceFilter_->newMeta_->GetData(Tag::MIME_TYPE, mime), true);
+    EXPECT_EQ(mime, std::string("video/hevc"));
+}
+
+/**
+ * @tc.name: HandleCodecChange_001
+ * @tc.desc: Test HandleCodecChange interface, newMeta_ is nullptr returns early
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, HandleCodecChange_001, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    decoderSurfaceFilter_->newMeta_ = nullptr;
+    bool isHandled = false;
+    int32_t index = 0;
+    decoderSurfaceFilter_->HandleCodecChange(index, isHandled);
+    EXPECT_EQ(isHandled, false);
+}
+
+/**
+ * @tc.name: HandleCodecChange_002
+ * @tc.desc: Test HandleCodecChange interface, full codec change flow
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, HandleCodecChange_002, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Start()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Init(_, _, _)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Configure(_)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), SetCallback(_)).WillRepeatedly(Return(NUM_TEST));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), SetCallingInfo(_, _, _, _)).WillRepeatedly(Return());
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Flush()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_),
+        ReleaseOutputBuffer(_, _, _)).WillRepeatedly(Return(NUM_TEST));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    auto mockEventReceiver = std::make_shared<MockEventReceiver>();
+    decoderSurfaceFilter_->eventReceiver_ = mockEventReceiver;
+    decoderSurfaceFilter_->meta_ = std::make_shared<Meta>();
+    decoderSurfaceFilter_->meta_->SetData(Tag::MIME_TYPE, std::string("video/avc"));
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_WIDTH, WIDTH_TEST);
+    decoderSurfaceFilter_->meta_->SetData(Tag::VIDEO_HEIGHT, HEIGHT_TEST);
+    decoderSurfaceFilter_->isDrmProtected_ = false;
+    decoderSurfaceFilter_->postProcessor_ = nullptr;
+    auto newMeta = std::make_shared<Meta>();
+    newMeta->SetData(Tag::MIME_TYPE, std::string("video/hevc"));
+    decoderSurfaceFilter_->newMeta_ = newMeta;
+    bool isHandled = false;
+    int32_t index = NUM_TEST;
+    decoderSurfaceFilter_->HandleCodecChange(index, isHandled);
+    EXPECT_EQ(isHandled, true);
+    EXPECT_EQ(decoderSurfaceFilter_->newMeta_, nullptr);
+    std::string mime;
+    EXPECT_EQ(decoderSurfaceFilter_->meta_->GetData(Tag::MIME_TYPE, mime), true);
+    EXPECT_EQ(mime, std::string("video/hevc"));
+}
+
+/**
+ * @tc.name: HandleCodecChange_003
+ * @tc.desc: Test HandleCodecChange interface, videoDecoder_ is nullptr returns early
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, HandleCodecChange_003, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_),
+        ReleaseOutputBuffer(_, _, _)).WillRepeatedly(Return(NUM_TEST));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    auto savedDecoder = decoderSurfaceFilter_->videoDecoder_;
+    decoderSurfaceFilter_->videoDecoder_ = nullptr;
+    auto newMeta = std::make_shared<Meta>();
+    newMeta->SetData(Tag::MIME_TYPE, std::string("video/hevc"));
+    decoderSurfaceFilter_->newMeta_ = newMeta;
+    bool isHandled = false;
+    int32_t index = NUM_TEST;
+    decoderSurfaceFilter_->HandleCodecChange(index, isHandled);
+    EXPECT_EQ(isHandled, true);
+    decoderSurfaceFilter_->videoDecoder_ = savedDecoder;
+}
+
+/**
+ * @tc.name: HandleCodecChange_004
+ * @tc.desc: Test HandleCodecChange interface, newMeta has no MIME_TYPE returns early
+ * @tc.type: FUNC
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, HandleCodecChange_004, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_), Release()).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoDecoder_),
+        ReleaseOutputBuffer(_, _, _)).WillRepeatedly(Return(NUM_TEST));
+    EXPECT_CALL(*(decoderSurfaceFilter_->videoSink_), ResetSyncInfo()).WillRepeatedly(Return());
+    auto newMeta = std::make_shared<Meta>();
+    decoderSurfaceFilter_->newMeta_ = newMeta;
+    bool isHandled = false;
+    int32_t index = NUM_TEST;
+    decoderSurfaceFilter_->HandleCodecChange(index, isHandled);
+    EXPECT_EQ(isHandled, true);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
