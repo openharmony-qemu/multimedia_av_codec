@@ -28,6 +28,7 @@ namespace OHOS {
 namespace Media {
 namespace Pipeline {
 
+const uint32_t MIN_VERTICES_SIZE = 16;
 const uint32_t MAX_WATERMARK_NUMBER = 5;
 const uint64_t MAX_WATERMARK_SIZE = 20 * 1024 * 1024;
 const uint32_t DRAW_COUNT = 4;
@@ -709,6 +710,11 @@ void WaterMarkFilter::InitOpenGl()
 WaterMarkFilter::WaterMarkFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
+    // 初始化为单位矩阵
+    int matrixStep = 4;
+    for (int i = 0; i < matrixStep; ++i) {
+        matrix_[i * matrixStep + i] = 1.0f;
+    }
     MEDIA_LOG_I("water mark filter create");
 }
 
