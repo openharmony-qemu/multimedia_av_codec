@@ -715,7 +715,7 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
                 static_cast<AudioStandard::AudioChannelLayout>(inputAudio->channelLayout);
             converterInputFormat_.sampleFormat =
                 static_cast<AudioStandard::AudioSampleFormat>(inputAudio->sampleFormat);
-            converterInputFormat_.channelCount = inputAudio->channelCount;
+            converterInputFormat_.channelCount = static_cast<uint32_t>(inputAudio->channelCount);
 
             // 初始化转换器输出格式（单声道）
             converterOutputFormat_.sampleRate = static_cast<AudioStandard::AudioSamplingRate>(outputAudio->sampleRate);
@@ -723,7 +723,7 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
                 static_cast<AudioStandard::AudioChannelLayout>(outputAudio->channelLayout);
             converterOutputFormat_.sampleFormat =
                 static_cast<AudioStandard::AudioSampleFormat>(outputAudio->sampleFormat);
-            converterOutputFormat_.channelCount = outputAudio->channelCount;
+            converterOutputFormat_.channelCount = static_cast<uint32_t>(outputAudio->channelCount);
 
             // 创建转换器
             channelConverter_ = AudioFormatConverter::Create(
@@ -916,7 +916,7 @@ Status AudioEncoderFilter::ConvertAudioData(const std::shared_ptr<AVBuffer>& src
     FALSE_RETURN_V_MSG_E(channelConverter_ != nullptr, Status::ERROR_NULL_POINTER, "channelConverter_ is nullptr");
 
     MEDIA_LOG_I("is converting");
-    uint32_t outputSize = dstBuffer->memory_->GetCapacity();
+    uint32_t outputSize = static_cast<uint32_t>(dstBuffer->memory_->GetCapacity());
     auto callback = std::make_shared<ConverterInputCallback>(srcBuffer);
     channelConverter_->SetInputCallback(callback);
 
@@ -959,7 +959,9 @@ Status AudioEncoderFilter::CopyAudioData(const std::shared_ptr<AVBuffer>& srcBuf
     FALSE_RETURN_V_MSG_E(srcSize > 0 && dstCapacity >= srcSize, Status::ERROR_INVALID_PARAMETER,
         "Empty source buffer or insufficient space, dstCapacity=%{public}u, srcSize=%{public}u", dstCapacity, srcSize);
 
-    memcpy_s(dstData, dstCapacity, srcData, srcSize);
+    errno_t ret = memcpy_s(dstData, dstCapacity, srcData, srcSize);
+    FALSE_RETURN_V_MSG_E(ret == 0, Status::ERROR_INVALID_PARAMETER,
+        "memcpy_s failed, ret: %{public}d", ret);
     dstBuffer->memory_->SetSize(srcSize);
     
     return Status::OK;
