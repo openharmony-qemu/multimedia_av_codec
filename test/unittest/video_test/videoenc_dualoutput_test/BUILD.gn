@@ -108,8 +108,10 @@ ohos_unittest("videoenc_dualoutput_unit_test") {
 
   external_deps = [
     "c_utils:utils",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "openssl:libcrypto_shared",
     "window_manager:libwm",
@@ -157,8 +159,10 @@ ohos_unittest("videoenc_dualoutput_coverage_test") {
     "c_utils:utils",
     "drivers_interface_display:libdisplay_commontype_proxy_1.0",
     "drivers_interface_display:libdisplay_commontype_proxy_2.2",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "openssl:libcrypto_shared",
     "window_manager:libwm",
