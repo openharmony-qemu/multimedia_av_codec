@@ -315,11 +315,6 @@ ohos_shared_library("av_codec_client") {
 
   deps += [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
 
-  public_external_deps = [
-    "media_foundation:media_foundation",
-    "ffmpeg:libohosffmpeg",
-  ]
-
   external_deps = [
     "bounds_checking_function:libsec_static",
     "bundle_framework:appexecfwk_base",
@@ -330,6 +325,7 @@ ohos_shared_library("av_codec_client") {
     "hilog:libhilog",
     "hitrace:hitrace_meter",
     "ipc:ipc_single",
+    "media_foundation:media_foundation",
     "qos_manager:qos",
     "samgr:samgr_proxy",
     "ffmpeg:libohosffmpeg",
