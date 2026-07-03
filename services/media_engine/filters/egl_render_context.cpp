@@ -81,7 +81,7 @@ EglRenderContext::~EglRenderContext() noexcept
 bool EglRenderContext::Init()
 {
     FALSE_RETURN_V_MSG(!IsEglContextReady(), true, "IsEglContextReady is ok");
-    MEDIA_LOG_I("EglRenderContext", "EglRenderContext::Init begin.");
+    MEDIA_LOG_I("EglRenderContext EglRenderContext::Init begin.");
     eglDisplay_ = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     FALSE_RETURN_V_MSG(eglDisplay_ != EGL_NO_DISPLAY, false, "EglRenderContext::Init: failed to create eglDisplay");
     EGLint major;

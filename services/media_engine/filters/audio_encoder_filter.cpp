@@ -926,8 +926,8 @@ Status AudioEncoderFilter::ConvertAudioData(const std::shared_ptr<AVBuffer>& src
     FALSE_RETURN_V_MSG_E(convertRet == 0 && actualOutputSize != 0,
         Status::ERROR_UNKNOWN, "Channel conversion failed, ret: %{public}d", convertRet);
 
-    actualOutputSize = actualOutputSize > dstBuffer->memory_->GetCapacity() ?
-        dstBuffer->memory_->GetCapacity() : actualOutputSize;
+    actualOutputSize = actualOutputSize > static_cast<uint32_t>(dstBuffer->memory_->GetCapacity()) ?
+        static_cast<uint32_t>(dstBuffer->memory_->GetCapacity()) : actualOutputSize;
     dstBuffer->memory_->SetSize(actualOutputSize);
 
     CopyBufferMetadata(srcBuffer, dstBuffer);

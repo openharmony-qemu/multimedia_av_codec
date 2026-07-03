@@ -662,11 +662,11 @@ Status WaterMarkFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer,
     // 检查乘法溢出
     FALSE_RETURN_V_MSG(histride > 0 && hiheight > 0, Status::ERROR_INVALID_PARAMETER,
         "Invalid watermark dimensions");
-    FALSE_RETURN_V_MSG(hiheight <= MAX_WATERMARK_SIZE / histride, Status::ERROR_INVALID_PARAMETER,
-        "Watermark size exceeds maximum limit");
+    FALSE_RETURN_V_MSG(static_cast<uint64_t>(hiheight) <= MAX_WATERMARK_SIZE / histride,
+        Status::ERROR_INVALID_PARAMETER, "Watermark size exceeds maximum limit");
     int64_t bufferSize = static_cast<int64_t>(hiheight) * histride;
-    FALSE_RETURN_V_MSG(bufferSize < MAX_WATERMARK_SIZE && bufferSize > 0, Status::ERROR_INVALID_PARAMETER,
-        "Failed to allocate memory for image data");
+    FALSE_RETURN_V_MSGstatic_cast<uint32_t>((bufferSize) < MAX_WATERMARK_SIZE && bufferSize > 0,
+        Status::ERROR_INVALID_PARAMETER, "Failed to allocate memory for image data");
     FALSE_RETURN_V_MSG(waterMarkBuffer != nullptr && waterMarkBuffer->memory_ != nullptr,
         Status::ERROR_INVALID_OPERATION, "waterMarkBuffer or memory_ is null");
     auto dataBuffer = new uint8_t[bufferSize];
