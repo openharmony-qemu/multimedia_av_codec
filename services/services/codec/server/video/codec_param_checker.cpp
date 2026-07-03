@@ -917,14 +917,15 @@ int32_t MaxFrameDelayCountChecker(CapabilityData &capData, Format &format, Codec
         return AVCS_ERR_OK;
     }
 
-    CHECK_AND_RETURN_RET_LOG(maxFrameDelayCount > 0 && maxFrameDelayCount <= 5, AVCS_ERR_INVALID_VAL, // 5:max count
-        "Param invalid, %{public}s: %{public}d, should be in range [1, 5]",
+    CHECK_AND_RETURN_RET_LOG(maxFrameDelayCount > 0 && maxFrameDelayCount <= 5, // 5: max buffer pool capacity
+        AVCS_ERR_INVALID_VAL, "Param invalid, %{public}s: %{public}d, should be in range [1, 5]",
         Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, maxFrameDelayCount);
 
     if (!capData.isVendor) {
         AVCODEC_LOGW("Not support VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT for software encoder");
         return AVCS_ERR_OK;
     }
+
     return AVCS_ERR_OK;
 }
 } // namespace
