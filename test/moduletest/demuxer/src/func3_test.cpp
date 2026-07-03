@@ -1319,7 +1319,7 @@ HWTEST_F(DemuxerFunc3NdkTest, DEMUXER_FUNCTION_TS_0010, TestSize.Level0)
         }
     }
     ASSERT_EQ(aKeyCount, 526);
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         ASSERT_EQ(vKeyCount, 2);
     }
     close(fd);
