@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "demuxer_data_reader.h"
 #include "file_server_demo.h"
 #include "mpeg4_sample_memory.h"
 #include "rbsp_context.h"
@@ -282,6 +283,56 @@ struct FixedSeekSampleExpected {
 struct KnownSetDataSourceDiffResource {
     std::string filePath;
     std::vector<std::string> issueFields;
+};
+
+class ShortReadDataSource : public DataSource {
+public:
+    ShortReadDataSource(std::vector<uint8_t> data, size_t maxReadSize)
+        : data_(std::move(data)), maxReadSize_(maxReadSize)
+    {
+    }
+
+    Status ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override
+    {
+        readOffsets.emplace_back(offset);
+        readExpectedLens.emplace_back(expectedLen);
+        if (offset < 0 || buffer == nullptr || buffer->GetMemory() == nullptr ||
+            static_cast<size_t>(offset) >= data_.size()) {
+            return Status::END_OF_STREAM;
+        }
+        size_t available = data_.size() - static_cast<size_t>(offset);
+        size_t copySize = std::min({expectedLen, maxReadSize_, available});
+        size_t writeSize = buffer->GetMemory()->Write(data_.data() + offset, copySize, 0);
+        return writeSize > 0 ? Status::OK : Status::ERROR_UNKNOWN;
+    }
+
+    Status GetSize(uint64_t& size) override
+    {
+        size = data_.size();
+        return Status::OK;
+    }
+
+    Seekable GetSeekable() override
+    {
+        return Seekable::SEEKABLE;
+    }
+
+    int32_t GetStreamID() override
+    {
+        return 0;
+    }
+
+    bool IsDash() override
+    {
+        return false;
+    }
+
+    std::vector<int64_t> readOffsets;
+    std::vector<size_t> readExpectedLens;
+
+private:
+    std::vector<uint8_t> data_;
+    size_t maxReadSize_ = 0;
 };
 
 std::vector<FixedSeekSampleExpected> GetH264BFfprobeSeekExpectedResults()
@@ -3220,6 +3271,70 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FrameId2SeekMs_0001, Tes
     int64_t seekMs = -1;
     mpeg4Plugin_->FrameId2SeekMs(frameId, seekMs);
     EXPECT_EQ(seekMs, 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_DemuxerDataReader_ReadFullyShortRead_0001
+ * @tc.desc: Verify DemuxerDataReader continues from the previous short read offset
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DemuxerDataReader_ReadFullyShortRead_0001,
+    TestSize.Level1)
+{
+    constexpr size_t shortReadSize = 10 * 1024;
+    constexpr size_t requestSize = 20 * 1024;
+    constexpr int64_t baseOffset = 37;
+    std::vector<uint8_t> source(baseOffset + requestSize);
+    for (size_t i = 0; i < source.size(); ++i) {
+        source[i] = static_cast<uint8_t>((i % 251) + 1);
+    }
+
+    auto dataSource = std::make_shared<ShortReadDataSource>(source, shortReadSize);
+    DemuxerDataReader reader;
+    ASSERT_EQ(reader.SetDataReader(dataSource), Status::OK);
+    std::vector<uint8_t> output(requestSize, 0);
+    ASSERT_EQ(reader.ReadFully(baseOffset, output.data(), output.size()), Status::OK);
+
+    std::vector<uint8_t> expected(source.begin() + baseOffset, source.begin() + baseOffset + requestSize);
+    EXPECT_EQ(output, expected);
+    ASSERT_GE(dataSource->readOffsets.size(), 2U);
+    EXPECT_EQ(dataSource->readOffsets[0], baseOffset);
+    EXPECT_EQ(dataSource->readOffsets[1], baseOffset + static_cast<int64_t>(shortReadSize));
+    EXPECT_EQ(dataSource->readExpectedLens[0], requestSize);
+    EXPECT_EQ(dataSource->readExpectedLens[1], requestSize - shortReadSize);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ReadSampleDataToBuffer_ShortRead_0001
+ * @tc.desc: Verify ReadSampleDataToBuffer continues from the previous short read offset
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSampleDataToBuffer_ShortRead_0001, TestSize.Level1)
+{
+    constexpr size_t shortReadSize = 10 * 1024;
+    constexpr size_t requestSize = 20 * 1024;
+    constexpr int64_t baseOffset = 53;
+    std::vector<uint8_t> source(baseOffset + requestSize);
+    for (size_t i = 0; i < source.size(); ++i) {
+        source[i] = static_cast<uint8_t>((i % 251) + 1);
+    }
+
+    auto dataSource = std::make_shared<ShortReadDataSource>(source, shortReadSize);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    plugin.dataSource_ = dataSource;
+    auto sample = std::make_shared<Plugins::MPEG4::Sample>();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_EQ(plugin.ReadSampleDataToBuffer(sample, baseOffset, requestSize), Status::OK);
+    ASSERT_NE(sample->data, nullptr);
+
+    std::vector<uint8_t> actual(sample->data.get(), sample->data.get() + requestSize);
+    std::vector<uint8_t> expected(source.begin() + baseOffset, source.begin() + baseOffset + requestSize);
+    EXPECT_EQ(actual, expected);
+    ASSERT_GE(dataSource->readOffsets.size(), 2U);
+    EXPECT_EQ(dataSource->readOffsets[0], baseOffset);
+    EXPECT_EQ(dataSource->readOffsets[1], baseOffset + static_cast<int64_t>(shortReadSize));
+    EXPECT_EQ(dataSource->readExpectedLens[0], requestSize);
+    EXPECT_EQ(dataSource->readExpectedLens[1], requestSize - shortReadSize);
 }
 } // namespace Media
 } // namespace OHOS
