@@ -1056,7 +1056,7 @@ int32_t AudioEncoderFilter::ConverterInputCallback::OnRequestData(
     }
 
     auto totalSize = sourceBuffer_->memory_->GetSize();
-    if (readOffset_ >= totalSize) {
+    if (totalSize < 0 || readOffset_ >= static_cast<size_t>(totalSize)) {
         if (status != nullptr) {
             *status = InputDataStatus::DATA_FINISHED;
         }
@@ -1067,8 +1067,8 @@ int32_t AudioEncoderFilter::ConverterInputCallback::OnRequestData(
         *data = static_cast<const uint8_t*>(sourceBuffer_->memory_->GetAddr()) + readOffset_;
     }
 
-    size_t remainingSize = totalSize - readOffset_;
-    readOffset_ = totalSize; // 下次调用返回 DATA_FINISHED
+    size_t remainingSize = static_cast<size_t>(totalSize) - readOffset_;
+    readOffset_ = static_cast<size_t>(totalSize); // 下次调用返回 DATA_FINISHED
 
     if (status != nullptr) {
         // 根据 sourceBuffer 的 flag 判断是否为 EOS
