@@ -2221,9 +2221,9 @@ Status HlsSegmentManager::StopBufferring(bool isAppBackground)
     }
     downloader_->SetAppState(isAppBackground);
     if (isAppBackground) {
-        isInterrupt_.load() = true;
+        isInterrupt_.store(true);
     } else {
-        isInterrupt_.load() = false;
+        isInterrupt_.store(false);
     }
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_->StopBufferring();
