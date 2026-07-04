@@ -391,7 +391,7 @@ void HlsSegmentManager::InitCacheWithDuration()
 void HlsSegmentManager::Close(bool isAsync)
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " HLS Close enter, type: %{public}d", FAKE_POINTER(this), type_);
-    isInterrupt_ = true;
+    isInterrupt_.store(true);
     if (playList_) {
         playList_->SetActive(false);
     }
@@ -763,7 +763,11 @@ void HlsSegmentManager::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo&
     }
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         size_t endValue = buff[readDataInfo.realReadLength_ - 1];
-        size_t paddingStart = readDataInfo.realReadLength_ > endValue ? readDataInfo.realReadLength_ - endValue : 0;
+        if (endValue < 1 || endValue > AES_BLOCK_LEN || endValue > readDataInfo.realReadLength_) {
+            MEDIA_LOG_W("HLS invalid PKCS#7 padding value");
+            return;
+        }
+        size_t paddingStart = readDataInfo.realReadLength_ - endValue;
         // PKCS#7 standard: if n bytes of padding are required, the value of each padding byte is n.
         if (paddingStart >= readDataInfo.wantReadLength_) {
             MEDIA_LOG_W("HLS buffer out-of-bounds read");
@@ -785,13 +789,23 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
     canReadCond_.wait_for(lock, std::chrono::milliseconds(ONE_SECONDS), [this, len]() {
         auto index = (!isFirstFrameArrived_ && type_ == HlsSegmentType::SEG_SUBTITLE) ?
             readTsIndex_.load() : writeTsIndex_;
-        return GetCrossTsBuffersize() >= len || (tsStorageInfo_.find(index) != tsStorageInfo_.end() &&
-            tsStorageInfo_[index].second && GetSeekable() == Seekable::SEEKABLE) || IsAllDownloadFinish();
+        bool tsFinished = false;
+        {
+            AutoLock tsLock(tsStorageInfoMutex_);
+            tsFinished = tsStorageInfo_.find(index) != tsStorageInfo_.end() && tsStorageInfo_[index].second;
+        }
+        return GetCrossTsBuffersize() >= len || (tsFinished && GetSeekable() == Seekable::SEEKABLE) ||
+            IsAllDownloadFinish();
     });
     auto index = (!isFirstFrameArrived_ && type_ == HlsSegmentType::SEG_SUBTITLE) ?
         readTsIndex_.load() : writeTsIndex_;
-    auto canRead = GetCrossTsBuffersize() >= len || (tsStorageInfo_.find(index) != tsStorageInfo_.end() &&
-        tsStorageInfo_[index].second && GetSeekable() == Seekable::SEEKABLE) || IsAllDownloadFinish();
+    bool tsFinished = false;
+    {
+        AutoLock tsLock(tsStorageInfoMutex_);
+        tsFinished = tsStorageInfo_.find(index) != tsStorageInfo_.end() && tsStorageInfo_[index].second;
+    }
+    auto canRead = GetCrossTsBuffersize() >= len || (tsFinished && GetSeekable() == Seekable::SEEKABLE) ||
+        IsAllDownloadFinish();
     if (!canRead) {
         MEDIA_LOG_I("HLS CheckCanReadOneSeconds out, can read: %{public}d, type: %{public}d", canRead, type_);
     }
@@ -800,9 +814,13 @@ bool HlsSegmentManager::CheckCanReadOneSeconds(uint64_t wantReadLength)
 
 bool HlsSegmentManager::IsAllDownloadFinish()
 {
-    return (CheckReadStatus() || isStopped) &&
-        tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
-        tsStorageInfo_[writeTsIndex_].second && GetSeekable() == Seekable::SEEKABLE;
+    bool tsFinished = false;
+    {
+        AutoLock tsLock(tsStorageInfoMutex_);
+        tsFinished = tsStorageInfo_.find(writeTsIndex_) != tsStorageInfo_.end() &&
+            tsStorageInfo_[writeTsIndex_].second;
+    }
+    return (CheckReadStatus() || isStopped) && tsFinished && GetSeekable() == Seekable::SEEKABLE;
 }
 
 Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
@@ -932,7 +950,10 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
         SeekToTs(seekTime, mode);
     } else {
         readTsIndex_.store(!backPlayList_.empty() ? backPlayList_.size() - 1 : 0); // 0
-        tsStorageInfo_[readTsIndex_.load()].second = true;
+        {
+            AutoLock tsLock(tsStorageInfoMutex_);
+            tsStorageInfo_[readTsIndex_.load()].second = true;
+        }
     }
     HandleSeekReady(curStreamId_, CheckBreakCondition());
     MEDIA_LOG_I("HLS SeekToTime end, type: %{public}d", type_);
@@ -994,6 +1015,7 @@ void HlsSegmentManager::PlaylistBackup(const PlayInfo& fragment)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);
     if (playlistDownloader_->IsLive()) {
+        std::lock_guard<std::mutex> seekCandidatesLock(seekCandidatesMutex_);
         auto sameFragment = std::find_if(seekCandidates_.begin(), seekCandidates_.end(),
             [&fragment](const PlayInfo& item) {
                 return item.url_ == fragment.url_ && item.rangeUrl_ == fragment.rangeUrl_ &&
@@ -1018,16 +1040,21 @@ void HlsSegmentManager::PlaylistBackup(const PlayInfo& fragment)
 void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
     MEDIA_LOG_I("HLS OnPlayListChanged in: %{public}zu, type: %{public}d", playList.size(), type_);
+    AutoLock lock(switchMutex_);
     HandlePlayListChanged(playList);
     if (!isDownloadStarted_ && !playList_->Empty() && !isInterruptNeeded_.load()) {
         auto playInfo = playList_->Pop();
         std::string url = playInfo.url_;
         isDownloadStarted_ = true;
-        if (tsStorageInfo_.find(0) != tsStorageInfo_.end() && tsStorageInfo_[0].second) {
-            writeTsIndex_++;
-        } else {
-            writeTsIndex_ > 0 ? writeTsIndex_++ : 0;
+        {
+            AutoLock tsLock(tsStorageInfoMutex_);
+            if (tsStorageInfo_.find(0) != tsStorageInfo_.end() && tsStorageInfo_[0].second) {
+                writeTsIndex_++;
+            } else {
+                writeTsIndex_ > 0 ? writeTsIndex_++ : 0;
+            }
         }
+        
         PutRequestIntoDownloader(playInfo);
     }
     if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
@@ -1151,7 +1178,7 @@ uint32_t HlsSegmentManager::SaveCacheBufferData(uint8_t* data, uint32_t len, boo
         return SaveCacheBufferDataNotblock(data, len);
     }
     size_t hasWriteSize = 0;
-    while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_) {
+    while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_.load()) {
         size_t res = cacheMediaBuffer_->Write(data + hasWriteSize, writeOffset_, len - hasWriteSize);
         writeOffset_ += res;
         hasWriteSize += res;
@@ -1172,16 +1199,16 @@ uint32_t HlsSegmentManager::SaveCacheBufferData(uint8_t* data, uint32_t len, boo
         writeBitrateCaculator_->StopClock();
         MEDIA_LOG_W("HLS CacheMediaBuffer full, type: %{public}d", type_);
         canWrite_ = false;
-        while (!isInterrupt_ && !canWrite_.load() && !isInterruptNeeded_.load()) {
+        while (!isInterrupt_.load() && !canWrite_.load() && !isInterruptNeeded_.load()) {
             if (CacheBufferFullLoop()) {
                 return len;
             }
         }
         canWrite_ = true;
     }
-    if (isInterruptNeeded_.load() || isInterrupt_) {
+    if (isInterruptNeeded_.load() || isInterrupt_.load()) {
         MEDIA_LOG_W("HLS isInterruptNeeded %{public}d, isInterrupt: %{public}d, type: %{public}d",
-            isInterruptNeeded_.load(), isInterrupt_, type_);
+            isInterruptNeeded_.load(), isInterrupt_.load(), type_);
         return 0;
     }
     return hasWriteSize;
@@ -2167,8 +2194,9 @@ size_t HlsSegmentManager::GetSegmentOffset()
     if (playlistDownloader_) {
         if (playlistDownloader_->IsLive() || playlistDownloader_->IsLiveEnd()) {
             std::string url = InfoIndexMap_.writeMap[readTsIndex_.load()];
-            return InfoIndexMap_.urlMap[url].sumDuration_ -
-                static_cast<uint64_t>(InfoIndexMap_.urlMap[url].duration_) * ONE_USSECONDS;
+            uint64_t sumDuration = InfoIndexMap_.urlMap[url].sumDuration_;
+            uint64_t lastDuration = static_cast<uint64_t>(InfoIndexMap_.urlMap[url].duration_) * ONE_USSECONDS;
+            return sumDuration < lastDuration ? 0 : sumDuration - lastDuration;
         }
         return playlistDownloader_->GetSegmentOffset(readTsIndex_.load());
     }
@@ -2193,9 +2221,9 @@ Status HlsSegmentManager::StopBufferring(bool isAppBackground)
     }
     downloader_->SetAppState(isAppBackground);
     if (isAppBackground) {
-        isInterrupt_ = true;
+        isInterrupt_.store(true);
     } else {
-        isInterrupt_ = false;
+        isInterrupt_.store(false);
     }
     bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_->StopBufferring();
@@ -2459,7 +2487,7 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     isInterruptNeeded_.store(other->isInterruptNeeded_.load());
     httpHeader_ = other->httpHeader_;
     isStopped.store(other->isStopped.load());
-    isInterrupt_ = other->isInterrupt_;
+    isInterrupt_.store(other->isInterrupt_.load());
     isFirstFrameArrived_ = other->isFirstFrameArrived_;
     isReportedErrorCode_ = other->isReportedErrorCode_;
     bufferDurationForPlaying_ = other->bufferDurationForPlaying_;
