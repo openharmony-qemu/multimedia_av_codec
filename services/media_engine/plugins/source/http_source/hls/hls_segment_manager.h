@@ -327,7 +327,7 @@ private:
     std::atomic<bool> isStopped = false;
     std::string mimeType_;
     size_t waterLineAbove_ {0};
-    bool isInterrupt_ {false};
+    std::atomic<bool> isInterrupt_ {false};
     bool isFirstFrameArrived_ {false};
     std::atomic<bool> isSeekingFlag {false};
     std::atomic<bool> isSourceLoaderSeeking_ {false};

@@ -609,11 +609,17 @@ uint64_t M3U8::ExtractNumber(const std::string& uri)
     uint64_t dotPos = 0;
     uint64_t queryPos = (uri.find('?') == std::string::npos) ? 0 : static_cast<uint64_t>(uri.find('?'));
     if (queryPos == 0) {
-        bool isExitDotPos = uri.find_last_of('.') == std::string::npos;
-        dotPos = isExitDotPos ? MAX_UINT64_NUM : static_cast<uint64_t>(uri.find_last_of('.'));
+        auto dotFindResult = uri.find_last_of('.');
+        if (dotFindResult == std::string::npos) {
+            return MAX_UINT64_NUM;
+        }
+        dotPos = static_cast<uint64_t>(dotFindResult);
     } else {
-        bool isExitQueryPos = uri.rfind('.', queryPos - 1) == std::string::npos;
-        dotPos = isExitQueryPos ? MAX_UINT64_NUM : static_cast<uint64_t>(uri.rfind('.', queryPos - 1));
+        auto dotFindResult = uri.rfind('.', queryPos - 1);
+        if (dotFindResult == std::string::npos) {
+            return MAX_UINT64_NUM;
+        }
+        dotPos = static_cast<uint64_t>(dotFindResult);
     }
     uint64_t start = dotPos;
     while (start > 0 && isdigit(static_cast<unsigned char>(uri[start - 1]))) {

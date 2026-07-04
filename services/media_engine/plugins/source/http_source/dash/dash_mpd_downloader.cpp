@@ -380,7 +380,7 @@ DashMpdGetRet DashMpdDownloader::GetNextSegmentByStreamId(int streamId, std::sha
                 streamDescription->currentNumberSeq_ - streamDescription->startNumberSeq_ + 1;
             MEDIA_LOG_D("get segment index :" PUBLIC_LOG_D64 ", id:" PUBLIC_LOG_D32 ", seq:"
                 PUBLIC_LOG_D64, segmentIndex, streamDescription->streamId_, streamDescription->currentNumberSeq_);
-            if (segmentIndex >= 0 && (unsigned int) segmentIndex < streamDescription->mediaSegments_.size()) {
+            if (segmentIndex >= 0 && static_cast<uint64_t>(segmentIndex) < streamDescription->mediaSegments_.size()) {
                 seg = streamDescription->mediaSegments_[segmentIndex];
                 streamDescription->currentNumberSeq_ = seg->numberSeq_;
                 MEDIA_LOG_D("after get segment index :"
