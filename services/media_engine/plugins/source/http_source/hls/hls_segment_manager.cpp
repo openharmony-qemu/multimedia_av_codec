@@ -763,11 +763,11 @@ void HlsSegmentManager::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo&
     }
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         size_t endValue = buff[readDataInfo.realReadLength_ - 1];
-        if (endValue < 1 || endValue > AES_BLOCK_LEN || endValue > readDataInfo.readReadLength_) {
+        if (endValue < 1 || endValue > AES_BLOCK_LEN || endValue > readDataInfo.realReadLength_) {
             MEDIA_LOG_W("HLS invalid PKCS#7 padding value");
             return;
         }
-        size_t paddingStart = readDataInfo.realReadLength_ > endValue;
+        size_t paddingStart = readDataInfo.realReadLength_ - endValue;
         // PKCS#7 standard: if n bytes of padding are required, the value of each padding byte is n.
         if (paddingStart >= readDataInfo.wantReadLength_) {
             MEDIA_LOG_W("HLS buffer out-of-bounds read");
