@@ -58,9 +58,8 @@ void AppClient::MapToString(std::map<std::string, std::string> httpHeader)
     for (std::map<std::string, std::string>::iterator iter = httpHeaderTmp.begin();
         iter != httpHeaderTmp.end(); iter++) {
         headerStr = iter->first + " : " + iter->second;
-        char* headerTmp = const_cast<char*>(headerStr.c_str());
-        MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S, FAKE_POINTER(this), headerTmp);
-        void* buffer = reinterpret_cast<void*>(headerTmp);
+        MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S, FAKE_POINTER(this), headerStr.c_str());
+        void* buffer = reinterpret_cast<void*>(headerStr.data());
         rxHeader_(buffer, 1, headerStr.size(), userParam_);
     }
 }
@@ -218,7 +217,7 @@ int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_p
         return BUFFER_FULL;
     }
     
-    int32_t receiveDataSize = memory->GetSize();
+    int32_t receiveDataSize = static_cast<int32_t>(memory->GetSize());
     MediaAVCodec::AVCodecTrace trace("AppClient RespondData, uuid: " + std::to_string(uuid) +
         ", offset: " + std::to_string(offset) + ", receiveDataSize: " + std::to_string(receiveDataSize));
     dataInFlight_ -= receiveDataSize;

@@ -14,6 +14,7 @@
  */
 
 #include <cstring>
+#include <string_view>
 
 #include "http_source_plugin_stream_protocol_sniffer.h"
 
@@ -37,9 +38,11 @@ StreamProtocolType StreamProtocolSniffer::SniffStreamProtocolFromData(const uint
         return StreamProtocolType::HLS;
     }
 
-    if (memcmp(data, DASH_XML_SIGNATURE, DASH_XML_SIGNATURE_LEN) == 0 &&
-        strstr(reinterpret_cast<const char*>(data), DASH_MPD_SIGNATURE) != nullptr) {
-        return StreamProtocolType::DASH;
+    if (memcmp(data, DASH_XML_SIGNATURE, DASH_XML_SIGNATURE_LEN) == 0) {
+        std::string_view dataView(reinterpret_cast<const char*>(data), size);
+        if (dataView.find(DASH_MPD_SIGNATURE) != std::string_view::npos) {
+            return StreamProtocolType::DASH;
+        }
     }
 
     return StreamProtocolType::HTTP;

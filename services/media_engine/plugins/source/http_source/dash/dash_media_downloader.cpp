@@ -1258,8 +1258,8 @@ void DashMediaDownloader::ReportEventStreamMetadata()
             auto metaData = std::make_shared<MediaAVCodec::AVTimedMetaData>();
             metaData->id = event->id_;
             metaData->classify = event->classify_;
-            metaData->start = event->start_;
-            metaData->duration = event->duration_;
+            metaData->start = static_cast<int64_t>(event->start_);
+            metaData->duration = static_cast<int64_t>(event->duration_);
             metaData->contents = event->contents_;
 
             MEDIA_LOG_I("ReportEventStreamMetadata: id=" PUBLIC_LOG_S ", schemeIdUri=" PUBLIC_LOG_S

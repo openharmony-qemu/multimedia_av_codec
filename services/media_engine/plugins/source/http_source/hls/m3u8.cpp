@@ -917,8 +917,8 @@ void M3U8::StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>>&
         }
         MEDIA_LOG_D("this uuid exists many times");
         bool isSame = false;
-        for (; pos.first != pos.second; ++pos.first) {
-            if (newItem.second == pos.first->second) {
+        for (auto it = pos.first; it != pos.second; ++it) {
+            if (newItem.second == it->second) {
                 MEDIA_LOG_D("this uuid exists and same pssh");
                 isSame = true;
                 break;

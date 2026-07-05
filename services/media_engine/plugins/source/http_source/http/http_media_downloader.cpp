@@ -197,7 +197,7 @@ void HttpMediaDownloader::SetDefaultStreamId(int32_t &videoStreamId, int32_t &au
              playMediaStreams_[index]->width == defaultStream_->width &&
              playMediaStreams_[index]->height == defaultStream_->height &&
              playMediaStreams_[index]->bitrate == defaultStream_->bitrate)) {
-            videoStreamId = index;
+            videoStreamId = static_cast<int32_t>(index);
         }
     }
 }
@@ -2258,11 +2258,11 @@ Status HttpMediaDownloader::GetStreamInfo(std::vector<StreamInfo>& streams, bool
             continue;
         }
         StreamInfo info;
-        info.streamId = index;
+        info.streamId = static_cast<int32_t>(index);
         info.type = StreamType::MIXED;
         info.bitRate = playMediaStreams_[index]->bitrate;
-        info.videoWidth = playMediaStreams_[index]->width;
-        info.videoHeight = playMediaStreams_[index]->height;
+        info.videoWidth = static_cast<int32_t>(playMediaStreams_[index]->width);
+        info.videoHeight = static_cast<int32_t>(playMediaStreams_[index]->height);
         if (defaultStream_ != nullptr &&
           (playMediaStreams_[index]->url == defaultStream_->url &&
            playMediaStreams_[index]->width == defaultStream_->width &&
