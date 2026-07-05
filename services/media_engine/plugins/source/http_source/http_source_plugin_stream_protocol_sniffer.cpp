@@ -38,10 +38,11 @@ StreamProtocolType StreamProtocolSniffer::SniffStreamProtocolFromData(const uint
         return StreamProtocolType::HLS;
     }
 
-    if (memcmp(data, DASH_XML_SIGNATURE, DASH_XML_SIGNATURE_LEN) == 0 &&
-        std::string_view(reinterpret_cast<const char*>(data), size).find(DASH_MPD_SIGNATURE) !=
-            std::string_view::npos) {
-        return StreamProtocolType::DASH;
+    if (memcmp(data, DASH_XML_SIGNATURE, DASH_XML_SIGNATURE_LEN) == 0) {
+        std::string_view dataView(reinterpret_cast<const char*>(data), size);
+        if (dataView.find(DASH_MPD_SIGNATURE) != std::string_view::npos) {
+            return StreamProtocolType::DASH;
+        }
     }
 
     return StreamProtocolType::HTTP;
