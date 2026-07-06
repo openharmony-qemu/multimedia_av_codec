@@ -354,8 +354,13 @@ Status HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeo
     uint32_t connectTimeoutMs = connectTimeoutMs_.has_value() ? *connectTimeoutMs_ : CONNECT_TIMEOUT;
     MEDIA_LOG_I("connect timeout set: %{public}u", connectTimeoutMs);
     curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, connectTimeoutMs);
-    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 1L);
-    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 2L);
+    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 0L);
+    curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 0L);
+#ifndef CA_DIR
+    curl_easy_setopt(easyHanlde_, CURLOPT_CAINFO, "/etc/ssl/certs/" "cacert.pem");
+#else
+    curl_easy_setopt(easyHanlde_, CURLOPT_CAINFO, CA_DIR "cacert.pem");
+#endif
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);

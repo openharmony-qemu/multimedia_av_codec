@@ -62,7 +62,6 @@ public:
     Status Deinit() override;
     Status GetIp(std::string &ip) override;
     void SetAppUid(int32_t appUid) override;
-
     struct SocketOwner {
         uid_t uid;
         gid_t gid;
