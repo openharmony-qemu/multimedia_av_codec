@@ -59,7 +59,6 @@ void HevcSwdecStateNdkTest::SetUpTestCase(void)
     cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     string hevcCodeName = OH_AVCapability_GetName(cap);
     cout << "hevcCodeName: " << hevcCodeName << endl;
-
 }
 
 void HevcSwdecStateNdkTest::TearDownTestCase(void) {}
