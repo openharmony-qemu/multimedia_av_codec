@@ -1114,7 +1114,7 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
             MEDIA_LOG_W("sscanf get range failed, parsed: " PUBLIC_LOG_D32, sret);
             return false;
         }
-        if (fileLen > SIEZ_MAX) {
+        if (fileLen > SIZE_MAX) {
             MEDIA_LOG_E("Content-Range fileLen exceeds upper bound: " PUBLIC_LOG_ZU, fileLen);
             return false;
         }
