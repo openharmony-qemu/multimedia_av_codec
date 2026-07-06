@@ -53,7 +53,7 @@ void HwdecHdr2SdrStateNdkTest::SetUp(void)
 {
     vDecSample2 = new VDecAPI11Sample();
     vDecSample2->SF_OUTPUT = true;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample2->TRANSFER_FLAG = true;
     } else {
         vDecSample2->TRANSFER_FLAG = false;

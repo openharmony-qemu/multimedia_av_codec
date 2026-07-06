@@ -1277,7 +1277,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VRR_0001, TestSize.Level0)
     vDecSample->enableVRR = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     }
 }
@@ -1297,7 +1297,7 @@ HWTEST_F(HwdecFuncNdkTest, VIDEO_DECODE_VRR_0002, TestSize.Level0)
     vDecSample->enableVRR = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
     }
 }

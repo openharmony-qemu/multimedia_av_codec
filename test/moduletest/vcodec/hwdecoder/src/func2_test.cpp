@@ -619,7 +619,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_SYNC_HW265_FUNC_0030, TestSize.Level1)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_SYNC_HW265_FUNC_0040, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = inpDirVivid;
         vDecSample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
@@ -1064,7 +1064,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_SYNC_HW265_HDR2SDR_FUNC_0010, TestSize.
         vDecSample->SF_OUTPUT = true;
         vDecSample->TRANSFER_FLAG = true;
         vDecSample->enbleSyncMode = 1;
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
             ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
             ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());
@@ -1396,7 +1396,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_H266_FLUSH_0020, TestSize.Level1)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0010, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = inpDirHdr106400Metadata;
         vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";
@@ -1423,7 +1423,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0010, TestSize.Level0)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0020, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = inpDirHdr106400Metadata;
         vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_6400.bin";
@@ -1450,7 +1450,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0020, TestSize.Level0)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0030, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         if (OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_LOW_LATENCY)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = inpDirHdr106400Metadata;
@@ -1480,7 +1480,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0030, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0040, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hdr10_metadata_res.h265";
         vDecSample->STATIC_METADATA_FILE = "hdr10_static_meta_res.bin";
@@ -1508,7 +1508,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0040, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0050, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = inpDirHdrvivid1080Metadata;
         vDecSample->DYNAMIC_METADATA_FILE = "hdrvivid_dynamic_meta_1080p.bin";
@@ -1536,7 +1536,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0050, TestSize.Level0)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0060, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = inpDirHdrvivid1080Metadata;
         vDecSample->DYNAMIC_METADATA_FILE = "hdrvivid_dynamic_meta_1080p.bin";
@@ -1564,7 +1564,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0060, TestSize.Level0)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0070, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         if (OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_LOW_LATENCY)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = inpDirHdrvivid1080Metadata;
@@ -1595,7 +1595,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0070, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0080, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hdrvivid_metadata_res.h265";
         vDecSample->DYNAMIC_METADATA_FILE = "hdrvivid_dynamic_meta_res.bin";
@@ -1624,7 +1624,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0080, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0090, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = inpDirHlg128Metadata;
         vDecSample->DEFAULT_WIDTH = 128;
@@ -1652,7 +1652,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0090, TestSize.Level0)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0100, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = inpDirHlg128Metadata;
         vDecSample->DEFAULT_WIDTH = 128;
@@ -1680,7 +1680,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0100, TestSize.Level0)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0110, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         if (OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_LOW_LATENCY)) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = inpDirHlg128Metadata;
@@ -1711,7 +1711,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0110, TestSize.Level0)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0120, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hdr_hlg_metadata_res.h265";
         vDecSample->DEFAULT_WIDTH = 3840;
@@ -1740,7 +1740,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_HDR_BUFFER_0120, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0010, TestSize.Level0)
 {
-    if (access("/data/test/media/9200_720.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) && cap != nullptr) {
+    if (access("/data/test/media/9200_720.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP && cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/9200_720.h264";
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -1760,7 +1760,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0010, TestSize.Level0)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0020, TestSize.Level0)
 {
-    if (access("/data/test/media/9200_720.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/9200_720.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/9200_720.h265";
@@ -1781,7 +1781,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0020, TestSize.Level0)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0030, TestSize.Level2)
 {
-    if (access("/data/test/media/8_720.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) && cap != nullptr) {
+    if (access("/data/test/media/8_720.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP && cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/8_720.h264";
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -1801,7 +1801,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0030, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0040, TestSize.Level2)
 {
-    if (access("/data/test/media/16_720.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/16_720.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/16_720.h265";
@@ -1822,7 +1822,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0040, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0050, TestSize.Level2)
 {
-    if (access("/data/test/media/720_9200.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) && cap != nullptr) {
+    if (access("/data/test/media/720_9200.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP && cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/720_9200.h264";
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -1842,7 +1842,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0050, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0060, TestSize.Level2)
 {
-    if (access("/data/test/media/720_9200.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/720_9200.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/720_9200.h265";
@@ -1863,7 +1863,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0060, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0070, TestSize.Level2)
 {
-    if (access("/data/test/media/720_8.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) && cap != nullptr) {
+    if (access("/data/test/media/720_8.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP && cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/720_8.h264";
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -1883,7 +1883,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0070, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0080, TestSize.Level2)
 {
-    if (access("/data/test/media/720_16.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/720_16.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/720_16.h265";
@@ -1904,7 +1904,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0080, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0090, TestSize.Level1)
 {
-    if (access("/data/test/media/1280_720_12bit.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_12bit.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_12bit.h265";
@@ -1926,7 +1926,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0090, TestSize.Level1)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0100, TestSize.Level1)
 {
-    if (access("/data/test/media/1280_720_gray.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_gray.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_gray.h264";
@@ -1947,7 +1947,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0100, TestSize.Level1)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0110, TestSize.Level2)
 {
-    if (access("/data/test/media/1280_720_yuv422.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_yuv422.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_yuv422.h264";
@@ -1968,7 +1968,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0110, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0120, TestSize.Level2)
 {
-    if (access("/data/test/media/1280_720_yuv444.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_yuv444.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_yuv444.h264";
@@ -1989,7 +1989,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0120, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0130, TestSize.Level2)
 {
-    if (access("/data/test/media/1280_720_gray.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_gray.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_gray.h265";
@@ -2010,7 +2010,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0130, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0140, TestSize.Level2)
 {
-    if (access("/data/test/media/1280_720_yuv422.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_yuv422.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_yuv422.h265";
@@ -2031,7 +2031,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0140, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0150, TestSize.Level2)
 {
-    if (access("/data/test/media/1280_720_yuv444.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_yuv444.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_yuv444.h265";
@@ -2052,7 +2052,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0150, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0160, TestSize.Level2)
 {
-    if (access("/data/test/media/1280_720_mbaff.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_mbaff.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_mbaff.h264";
@@ -2073,7 +2073,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0160, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0170, TestSize.Level2)
 {
-    if (access("/data/test/media/1280_720_10bit.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_10bit.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_10bit.h264";
@@ -2094,7 +2094,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0170, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0180, TestSize.Level2)
 {
-    if (access("/data/test/media/1280_720_error_xps.h264", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1280_720_error_xps.h264", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1280_720_error_xps.h264";
@@ -2117,7 +2117,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0180, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0190, TestSize.Level2)
 {
-    if (access("/data/test/media/1920_1080_error_xps.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1920_1080_error_xps.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_error_xps.h265";
@@ -2139,7 +2139,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0190, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0200, TestSize.Level2)
 {
-    if (access("/data/test/media/1920_1080_error_xps.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1920_1080_error_xps.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_720_30;
@@ -2162,7 +2162,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0200, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0210, TestSize.Level2)
 {
-    if (access("/data/test/media/1920_1080_error_xps.h265", F_OK) == 0 && !access("/system/lib64/media/", 0) &&
+    if (access("/data/test/media/1920_1080_error_xps.h265", F_OK) == 0 && ONLY_FOR_FLAGSHIP_CHIP &&
         cap_hevc != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_20;
@@ -2236,7 +2236,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_PIXE_FORMAT_0020, TestSize.Level1)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_PIXE_FORMAT_0030, TestSize.Level1)
 {
-    if (cap_vvc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_vvc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_VVC_1080;
         vDecSample->isGetVideoSupportedPixelFormats = true;

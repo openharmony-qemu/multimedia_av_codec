@@ -136,7 +136,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0012, TestSiz
 {
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
     ASSERT_NE(nullptr, codeclist);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
             true, AVCodecCategory::AVCODEC_HARDWARE);
         ASSERT_NE(nullptr, capabilityData);
@@ -176,7 +176,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0014, TestSiz
 {
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
     ASSERT_NE(nullptr, codeclist);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
             true, AVCodecCategory::AVCODEC_HARDWARE);
         ASSERT_NE(nullptr, capabilityData);
@@ -216,7 +216,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0016, TestSiz
 {
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
     ASSERT_NE(nullptr, codeclist);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
             false, AVCodecCategory::AVCODEC_HARDWARE);
         ASSERT_NE(nullptr, capabilityData);
@@ -240,7 +240,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0017, TestSiz
 {
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
     ASSERT_NE(nullptr, codeclist);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
             true, AVCodecCategory::AVCODEC_HARDWARE);
         ASSERT_NE(nullptr, capabilityData);
@@ -275,7 +275,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0018, TestSiz
         featureFormat));
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, codecInfo->GetFeatureProperties(static_cast<AVCapabilityFeature>(100),
         featureFormat));
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY,
             featureFormat));
     } else {
@@ -316,7 +316,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0020, TestSiz
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY,
             featureFormat));
     } else {
@@ -353,7 +353,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0022, TestSiz
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
     ASSERT_NE(nullptr, codeclist);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_AVC),
             true, AVCodecCategory::AVCODEC_HARDWARE);
         ASSERT_NE(nullptr, capabilityData);
@@ -423,7 +423,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0025, TestSiz
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY,
             featureFormat));
     } else {
@@ -445,7 +445,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0026, TestSiz
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(true, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
     } else {
         ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
@@ -481,7 +481,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0028, TestSiz
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(true, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_LOW_LATENCY));
     } else {
         ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_LOW_LATENCY));
@@ -501,7 +501,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0029, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(true, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_LOW_LATENCY));
     } else {
         ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_LOW_LATENCY));
@@ -521,7 +521,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0030, TestSiz
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(true, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
     } else {
         ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
@@ -558,7 +558,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0032, TestSiz
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY,
             featureFormat));
     } else {
@@ -617,7 +617,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0035, TestSiz
         true, AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capabilityData);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, codecInfo->GetFeatureProperties(
             AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY, featureFormat));
     } else {
@@ -654,7 +654,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0037, TestSiz
     Format featureFormat;
     auto codeclist = AVCodecListFactory::CreateAVCodecList();
     ASSERT_NE(nullptr, codeclist);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         CapabilityData *capabilityData = codeclist->GetCapability(string(CodecMimeType::VIDEO_HEVC),
             true, AVCodecCategory::AVCODEC_HARDWARE);
         ASSERT_NE(nullptr, capabilityData);
@@ -687,7 +687,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0038, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_LONG_TERM_REFERENCE));
         }
     }
@@ -706,7 +706,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0039, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             ASSERT_EQ(true, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_LOW_LATENCY));
         } else {
             ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_LOW_LATENCY));
@@ -727,7 +727,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0040, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             ASSERT_EQ(false, codecInfo->IsFeatureSupported(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY));
         }
     }
@@ -747,7 +747,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0041, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
                 codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY,
                 featureFormat));
@@ -770,7 +770,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0042, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             ASSERT_EQ(AVCS_ERR_OK,
                 codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_LOW_LATENCY, featureFormat));
             Format::FormatDataMap formatMap = featureFormat.GetFormatMap();
@@ -793,7 +793,7 @@ HWTEST_F(HwCapabilityInnerNdkTest, VIDEO_TEMPORAL_ENCODE_INNER_API_0043, TestSiz
         false, AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityData != nullptr) {
         std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capabilityData);
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             ASSERT_EQ(AVCS_ERR_INVALID_OPERATION,
                 codecInfo->GetFeatureProperties(AVCapabilityFeature::VIDEO_ENCODER_TEMPORAL_SCALABILITY,
                 featureFormat));

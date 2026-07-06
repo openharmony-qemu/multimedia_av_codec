@@ -125,7 +125,7 @@ bool IsSupportRgba1010102Format()
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0010, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 320;
         vEncSample->DEFAULT_HEIGHT = 240;
@@ -150,7 +150,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0010, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0020, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 1280;
         vEncSample->DEFAULT_HEIGHT = 720;
@@ -175,7 +175,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0020, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0030, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 3840;
         vEncSample->DEFAULT_HEIGHT = 2160;
@@ -203,7 +203,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0030, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0040, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 1920;
         vEncSample->DEFAULT_HEIGHT = 1080;
@@ -228,7 +228,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0040, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0050, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 320;
         vEncSample->DEFAULT_HEIGHT = 240;
@@ -253,7 +253,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0050, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0060, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 1280;
         vEncSample->DEFAULT_HEIGHT = 720;
@@ -278,7 +278,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0060, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0070, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 3840;
         vEncSample->DEFAULT_HEIGHT = 2160;
@@ -306,7 +306,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0070, TestSize.Level0)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0080, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 1920;
         vEncSample->DEFAULT_HEIGHT = 1080;
@@ -331,7 +331,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0080, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0090, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 3840;
         vEncSample->DEFAULT_HEIGHT = 2160;
@@ -356,7 +356,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0090, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0100, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 3840;
         vEncSample->DEFAULT_HEIGHT = 2160;
@@ -381,7 +381,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0100, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0110, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 3840;
         vEncSample->DEFAULT_HEIGHT = 2160;
@@ -405,7 +405,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0110, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0120, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 3840;
         vEncSample->DEFAULT_HEIGHT = 2160;
@@ -430,7 +430,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0120, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0130, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 3840;
         vEncSample->DEFAULT_HEIGHT = 2160;
@@ -455,7 +455,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0130, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0140, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 3840;
         vEncSample->DEFAULT_HEIGHT = 2160;
@@ -480,7 +480,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0140, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_MULTIFILE_0150, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->DEFAULT_WIDTH = 3840;
         vEncSample->DEFAULT_HEIGHT = 2160;
@@ -1453,7 +1453,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_SYNC_FUNC_0280, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_SYNC_FUNC_0290, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_SYNC_FUNC_0290.h265";
         vEncSample->DEFAULT_WIDTH = 1920;
@@ -1479,7 +1479,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_SYNC_FUNC_0290, TestSize.Level1)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_SYNC_FUNC_0300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_SYNC_FUNC_0300.h264";
         vEncSample->DEFAULT_WIDTH = 1920;
@@ -1506,7 +1506,7 @@ HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_SYNC_FUNC_0300, TestSize.Level2)
  */
 HWTEST_F(HwEncFunc2NdkTest, VIDEO_ENCODE_SYNC_FUNC_0310, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_SYNC_FUNC_0310.h265";
         vEncSample->SURF_INPUT = true;
