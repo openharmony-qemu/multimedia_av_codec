@@ -488,7 +488,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0200, TestSize.Level
  */
 HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0300, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         const char *file = "/data/test/media/h265_aac.m2ts";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
@@ -506,7 +506,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0300, TestSize.Level
  */
 HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0400, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         const char *file = "/data/test/media/h265_mp3.m2ts";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
