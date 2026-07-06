@@ -715,7 +715,7 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
                 static_cast<AudioStandard::AudioChannelLayout>(inputAudio->channelLayout);
             converterInputFormat_.sampleFormat =
                 static_cast<AudioStandard::AudioSampleFormat>(inputAudio->sampleFormat);
-            converterInputFormat_.channelCount = inputAudio->channelCount;
+            converterInputFormat_.channelCount = static_cast<uint32_t>(inputAudio->channelCount);
 
             // 初始化转换器输出格式（单声道）
             converterOutputFormat_.sampleRate = static_cast<AudioStandard::AudioSamplingRate>(outputAudio->sampleRate);
@@ -723,7 +723,7 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
                 static_cast<AudioStandard::AudioChannelLayout>(outputAudio->channelLayout);
             converterOutputFormat_.sampleFormat =
                 static_cast<AudioStandard::AudioSampleFormat>(outputAudio->sampleFormat);
-            converterOutputFormat_.channelCount = outputAudio->channelCount;
+            converterOutputFormat_.channelCount = static_cast<uint32_t>(outputAudio->channelCount);
 
             // 创建转换器
             channelConverter_ = AudioFormatConverter::Create(
@@ -916,7 +916,7 @@ Status AudioEncoderFilter::ConvertAudioData(const std::shared_ptr<AVBuffer>& src
     FALSE_RETURN_V_MSG_E(channelConverter_ != nullptr, Status::ERROR_NULL_POINTER, "channelConverter_ is nullptr");
 
     MEDIA_LOG_I("is converting");
-    uint32_t outputSize = dstBuffer->memory_->GetCapacity();
+    uint32_t outputSize = static_cast<uint32_t>(dstBuffer->memory_->GetCapacity());
     auto callback = std::make_shared<ConverterInputCallback>(srcBuffer);
     channelConverter_->SetInputCallback(callback);
 
@@ -926,8 +926,8 @@ Status AudioEncoderFilter::ConvertAudioData(const std::shared_ptr<AVBuffer>& src
     FALSE_RETURN_V_MSG_E(convertRet == 0 && actualOutputSize != 0,
         Status::ERROR_UNKNOWN, "Channel conversion failed, ret: %{public}d", convertRet);
 
-    actualOutputSize = actualOutputSize > dstBuffer->memory_->GetCapacity() ?
-        dstBuffer->memory_->GetCapacity() : actualOutputSize;
+    actualOutputSize = actualOutputSize > static_cast<uint32_t>(dstBuffer->memory_->GetCapacity()) ?
+        static_cast<uint32_t>(dstBuffer->memory_->GetCapacity()) : actualOutputSize;
     dstBuffer->memory_->SetSize(actualOutputSize);
 
     CopyBufferMetadata(srcBuffer, dstBuffer);
@@ -959,7 +959,9 @@ Status AudioEncoderFilter::CopyAudioData(const std::shared_ptr<AVBuffer>& srcBuf
     FALSE_RETURN_V_MSG_E(srcSize > 0 && dstCapacity >= srcSize, Status::ERROR_INVALID_PARAMETER,
         "Empty source buffer or insufficient space, dstCapacity=%{public}u, srcSize=%{public}u", dstCapacity, srcSize);
 
-    memcpy_s(dstData, dstCapacity, srcData, srcSize);
+    errno_t ret = memcpy_s(dstData, dstCapacity, srcData, srcSize);
+    FALSE_RETURN_V_MSG_E(ret == 0, Status::ERROR_INVALID_PARAMETER,
+        "memcpy_s failed, ret: %{public}d", ret);
     dstBuffer->memory_->SetSize(srcSize);
     
     return Status::OK;
@@ -1056,7 +1058,7 @@ int32_t AudioEncoderFilter::ConverterInputCallback::OnRequestData(
     }
 
     auto totalSize = sourceBuffer_->memory_->GetSize();
-    if (readOffset_ >= totalSize) {
+    if (totalSize < 0 || readOffset_ >= static_cast<size_t>(totalSize)) {
         if (status != nullptr) {
             *status = InputDataStatus::DATA_FINISHED;
         }
@@ -1067,8 +1069,8 @@ int32_t AudioEncoderFilter::ConverterInputCallback::OnRequestData(
         *data = static_cast<const uint8_t*>(sourceBuffer_->memory_->GetAddr()) + readOffset_;
     }
 
-    size_t remainingSize = totalSize - readOffset_;
-    readOffset_ = totalSize; // 下次调用返回 DATA_FINISHED
+    size_t remainingSize = static_cast<size_t>(totalSize) - readOffset_;
+    readOffset_ = static_cast<size_t>(totalSize); // 下次调用返回 DATA_FINISHED
 
     if (status != nullptr) {
         // 根据 sourceBuffer 的 flag 判断是否为 EOS

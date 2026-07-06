@@ -81,7 +81,7 @@ EglRenderContext::~EglRenderContext() noexcept
 bool EglRenderContext::Init()
 {
     FALSE_RETURN_V_MSG(!IsEglContextReady(), true, "IsEglContextReady is ok");
-    MEDIA_LOG_I("EglRenderContext", "EglRenderContext::Init begin.");
+    MEDIA_LOG_I("EglRenderContext EglRenderContext::Init begin.");
     eglDisplay_ = eglGetDisplay(EGL_DEFAULT_DISPLAY);
     FALSE_RETURN_V_MSG(eglDisplay_ != EGL_NO_DISPLAY, false, "EglRenderContext::Init: failed to create eglDisplay");
     EGLint major;
@@ -117,7 +117,7 @@ bool EglRenderContext::Init()
         return false;
     }
  
-    MEDIA_LOG_I("EglRenderContext", "EglRenderContext::Init end.");
+    MEDIA_LOG_I("EglRenderContext EglRenderContext::Init end.");
     return true;
 }
 
@@ -127,9 +127,7 @@ void EglRenderContext::MakeCurrent(EGLSurface surface) const
     if (!eglMakeCurrent(eglDisplay_, currSurface, currSurface, eglContext_)) {
         EGLint surfaceId = -1;
         eglQuerySurface(eglDisplay_, surface, EGL_CONFIG_ID, &surfaceId);
-
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::MakeCurrent: Failed to make current on EGLSurface %{public}d, error is %{public}s.",
+        MEDIA_LOG_E("MakeCurrent: Failed to make current on EGLSurface %{public}d, error is %{public}s.",
             surfaceId, GetEglErrorString());
     }
 }
@@ -140,8 +138,7 @@ void EglRenderContext::SwapBuffers(EGLSurface surface) const
     if (ret == EGL_FALSE) {
         EGLint surfaceId = -1;
         eglQuerySurface(eglDisplay_, surface, EGL_CONFIG_ID, &surfaceId);
-        MEDIA_LOG_W("EglRenderContext",
-            "EglRenderContext::SwapBuffers: Failed to SwapBuffers on EGLSurface %{public}d, error is %{public}s.",
+        MEDIA_LOG_W("SwapBuffers: Failed to SwapBuffers on EGLSurface %{public}d, error is %{public}s.",
             surfaceId, GetEglErrorString());
     }
 }
@@ -151,9 +148,8 @@ void EglRenderContext::DestroyEglSurface(EGLSurface surface)
     if (!eglDestroySurface(eglDisplay_, surface)) {
         EGLint surfaceId = -1;
         eglQuerySurface(eglDisplay_, surface, EGL_CONFIG_ID, &surfaceId);
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::DestroyEglWindowSurface: Failed to DestroySurface on EGLSurface %{public}d, "
-            "error is %{public}s.", surfaceId, GetEglErrorString());
+        MEDIA_LOG_E("DestroyEglWindowSurface: Failed to DestroySurface on EGLSurface %{public}d, error is %{public}s.",
+            surfaceId, GetEglErrorString());
     }
 }
  
