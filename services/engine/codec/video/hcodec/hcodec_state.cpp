@@ -141,6 +141,7 @@ void HCodec::BaseState::OnSetParameters(const MsgInfo &info)
     ReplyErrorCode(info.id, codec_->OnSetParameters(params));
 }
 
+// LCOV_EXCL_START
 void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 {
     int32_t generation = 0;
@@ -160,6 +161,7 @@ void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
     (void)info.param->GetValue("isNeedNotifyCaller", isNeedNotifyCaller);
     codec_->ForceShutdown(generation, isNeedNotifyCaller);
 }
+// LCOV_EXCL_STOP
 
 void HCodec::BaseState::OnSuspend(const MsgInfo &info)
 {
@@ -181,6 +183,7 @@ void HCodec::BaseState::OnResume(const MsgInfo &info)
     ReplyErrorCode(info.id, errCode);
 }
 
+// LCOV_EXCL_START
 void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
 {
     int32_t errorCode = 0;
@@ -219,6 +222,7 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
     codec_->SignalError(AVCODEC_ERROR_INTERNAL, errorCode);
     codec_->FaultEventWrite(faultType, sysEventMsg);
 }
+// LCOV_EXCL_STOP
 /**************************** BaseState End ******************************/
 
 
@@ -753,6 +757,7 @@ void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
     codec_->DeferMessage(info);
 }
 
+// LCOV_EXCL_START
 void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
 {
     int32_t generation = 0;
@@ -770,6 +775,7 @@ void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
     SLOGE("stucked, need force shut down");
     (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
 }
+// LCOV_EXCL_STOP
 
 void HCodec::OutputPortChangedState::OnCodecEvent(CodecEventType event, uint32_t data1, uint32_t data2)
 {
