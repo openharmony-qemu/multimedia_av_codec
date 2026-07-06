@@ -45,7 +45,7 @@ public:
         constexpr uint32_t valueBits = sizeof(T) * RBSP_BYTE_BITS;
         constexpr uint32_t workBits = sizeof(U) * RBSP_BYTE_BITS;
         constexpr uint32_t accumulatorBits = sizeof(uint64_t) * RBSP_BYTE_BITS;
-        if (size == 0 || size > valueBits || size > workBits || size > accumulatorBits) {
+        if (size == 0 || size > valueBits || size > workBits|| size > accumulatorBits) {
             return 0;
         }
 

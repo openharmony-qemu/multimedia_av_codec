@@ -880,12 +880,13 @@ Status MPEG4AtomParser::ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         Status::ERROR_INVALID_DATA, "Invalid atom size");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
 
-    uint8_t headerInfo[currentAtom.dataSize];
-    Status ret = dataReader_->ReadUintData(ctx->dataOffset, headerInfo, sizeof(headerInfo));
+    auto headerInfo = std::make_unique<uint8_t[]>(currentAtom.dataSize);
+    FALSE_RETURN_V_MSG_E(headerInfo != nullptr, Status::ERROR_NO_MEMORY, "Allocate mvhd header info failed");
+    Status ret = dataReader_->ReadUintData(ctx->dataOffset, headerInfo.get(), currentAtom.dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read mvhd header info failed");
-    MvhdInfo mvhdInfo = ParseMvhdInfo(headerInfo, sizeof(headerInfo));
+    MvhdInfo mvhdInfo = ParseMvhdInfo(headerInfo.get(), currentAtom.dataSize);
     SetMvhdMediaInfo(mvhdInfo);
-    return ParseMvhdDisplayMatrix(currentAtom, headerInfo, ctx, sizeof(headerInfo));
+    return ParseMvhdDisplayMatrix(currentAtom, headerInfo.get(), ctx, currentAtom.dataSize);
 }
 
 int64_t MPEG4AtomParser::GetElstDuration(std::shared_ptr<Track> track)
@@ -1045,7 +1046,12 @@ int64_t MPEG4AtomParser::GetBitrateTotalSize(const std::shared_ptr<Track>& track
     }
     const auto& samples = track->sampleHelper->sampleIndexEntry_;
     for (const auto& sample : samples) {
-        totalSize += sample.size;
+        int64_t newTotalSize;
+        if(__builtin_add_overflow(totalSize, sample.size, &newTotalSize)) {
+            MEDIA_LOG_E("GetBitrateTotalSize overflow");
+            return 0;
+        }
+        totalSize = newTotalSize;
     }
     return totalSize;
 }
@@ -1423,8 +1429,15 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
     if (track->stsdWidth > 0 && track->stsdHeight > 0 &&
         track->tkhdWidth > 0 && track->tkhdHeight > 0 &&
         (track->stsdWidth != track->tkhdWidth || track->stsdHeight != track->tkhdHeight)) {
-        uint64_t numerator = static_cast<uint64_t>(track->stsdHeight) * track->tkhdWidth;
-        uint64_t denominator = static_cast<uint64_t>(track->stsdWidth) * track->tkhdHeight;
+        uint64_t numerator, denominator;
+        if (__builtin_mul_overflow(static_cast<uint64_t>(track->stsdHeight), track->tkhdWidth, &numerator)) {
+            MEDIA_LOG_E("Calculate SAR overflow: track->stsdHeight * track->tkhdWidth");
+            return;
+        }
+        if (__builtin_mul_overflow(static_cast<uint64_t>(track->stsdWidth), track->tkhdHeight, &denominator)) {
+            MEDIA_LOG_E("Calculate SAR overflow: track->stsdWidth * track->tkhdHeight");
+            return;
+        }
         if (denominator > 0) {
             sar = static_cast<double>(numerator) / static_cast<double>(denominator);
             MEDIA_LOG_D("SAR from width/height diff: [%{public}u/%{public}u/%{public}u/%{public}u], sar=%{public}f",
@@ -2361,6 +2374,10 @@ void MPEG4AtomParser::SetMpegAudioAttribute()
 Status MPEG4AtomParser::SetVorbisAudioAttribute()
 {
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_F32P);
+    if (lastTrack_->codecParms.data == nullptr || lastTrack_->codecParms.extradataSize <14) {
+        MEDIA_LOG_E("Invalid Vorbis codec params");
+        return Status::ERROR_INVALID_DATA;
+    }
     uint8_t* vorbisData = lastTrack_->codecParms.data.get();
     uint32_t currentOffset = 4;
     if (vorbisData[currentOffset] != 0x76 || vorbisData[currentOffset + 0x01] != 0x6F ||

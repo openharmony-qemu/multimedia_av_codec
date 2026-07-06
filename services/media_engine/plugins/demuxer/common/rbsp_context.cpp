@@ -32,7 +32,10 @@ RbspContext::RbspContext(const uint8_t *buf, int32_t size) : RbspContext(buf, si
 RbspContext::RbspContext(const uint8_t *buf, int32_t size, bool skipEmulationPreventionByte)
 {
     buf_ = buf;
-    size_ = static_cast<uint32_t>(size);
+    size_ = 0;
+    if (size > 0) {
+        size_ = static_cast<uint32_t>(size);
+    }
     byteIndex_ = 0;
     bitIndex_ = 0;
     zeroCount_ = 0;
@@ -64,8 +67,16 @@ void RbspContext::RbspSkipBits(uint32_t size)
     if (byteIndex_ >= size_) {
         return;
     }
-    byteIndex_ = byteIndex_ + (bitIndex_ + size) / 0x08;
-    bitIndex_ = (bitIndex_ + size) % 0x08;
+    uint64_t totalBits = static_cast<uint64_t>(bitIndex_) + size;
+    uint64_t byteOffset = totalBits / 0x08;
+    uint64_t newByteIndex = static_cast<uint64_t>(byteIndex_) + byteOffset;
+    uint64_t newBitIndex_ = totalBits % 0x08;;
+    if (newBitIndex_ > UINT32_MAX || newByteIndex > UINT32_MAX) {
+        return;
+    }
+
+    byteIndex_ = static_cast<uint32_t>(newByteIndex);
+    bitIndex_ = static_cast<uint32_t>(newBitIndex_);
 }
 
 uint32_t RbspContext::GetBytesIndex() const
@@ -121,7 +132,7 @@ bool RbspContext::RbspReadUE(uint32_t& value)
         return false;
     }
     uint32_t suffix = 0;
-    if (leadingZeroBits > 0 && !RbspReadBits(leadingZeroBits, suffix)) {
+    if ((leadingZeroBits > 0 && !RbspReadBits(leadingZeroBits, suffix)) || leadingZeroBits >=64) {
         return false;
     }
     uint64_t codeNum = (static_cast<uint64_t>(1) << leadingZeroBits) - 1 + suffix;

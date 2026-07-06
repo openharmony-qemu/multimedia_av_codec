@@ -46,6 +46,7 @@ constexpr uint32_t READ_RETRY_SLEEP_TIME_US = 5000;
 constexpr uint32_t DEFAULT_CACHE_PRESSURE_WINDOW_MS = 500;
 constexpr int64_t NS_PER_MS = 1000000LL;
 const uint32_t SETTIMER_TIMEOUT = 5; // second
+const int READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
 
 bool HaveValidParserForThread(const std::string& mime)
 {
@@ -62,7 +63,10 @@ int32_t GetSampleSizeWithCodecConfigForThread(const MediaInfo& mediaInfo,
     if (mediaInfo.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && HaveValidParserForThread(mime) &&
         mediaInfo.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata) &&
         (sample->flag & Sample::SampleFlag::SYNC_FRAME)) {
-        sampleSize += static_cast<int32_t>(extradata.size());
+        int32_t newSampleSize = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(sampleSize, static_cast<int32_t>(extradata.size()), &newSampleSize),
+                            0, "SampleSize overflow");
+        sampleSize = newSampleSize;
     }
     return sampleSize;
 }
@@ -322,6 +326,8 @@ Status MPEG4DemuxerPlugin::UpdateReadSampleDataTimeout(Status ret, std::shared_p
 
 Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size)
 {
+    FALSE_RETURN_V_MSG_E(size > 0, Status::ERROR_INVALID_BUFFER_SIZE, "Invalid buffer size");
+    FALSE_RETURN_V_MSG_E(size < READ_SIZE_LIMIT_DEFAULT, Status::ERROR_INVALID_BUFFER_SIZE, "Invalid buffer size");
     size_t bufferSize = static_cast<size_t>(size);
     auto buffer = std::make_shared<Buffer>();
     FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "Buffer allocation failed");
@@ -355,6 +361,7 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
 
     auto memory = buffer->GetMemory();
     FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
+    FALSE_RETURN_V_MSG_E(memory->GetSize() <= INT32_MAX, Status::ERROR_UNKNOWN, "Memory size too large, may cause dataSize overflow");
     int32_t dataSize = static_cast<int32_t>(memory->GetSize());
     MEDIA_LOG_D("Want:" PUBLIC_LOG_D32 ", Get:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, size, dataSize, pos);
     FALSE_RETURN_V_MSG_E(dataSize > 0, Status::ERROR_AGAIN, "No enough data");
@@ -873,6 +880,7 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId)
 
 Status MPEG4DemuxerPlugin::PushEosToCache(uint32_t trackId)
 {
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     (void)trackId;
     for (const auto& selectedTrackId : selectedTrackIds_) {
         auto backSample = cacheQueue_.Back(selectedTrackId);

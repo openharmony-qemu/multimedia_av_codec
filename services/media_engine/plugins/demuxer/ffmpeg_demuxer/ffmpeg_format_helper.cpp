@@ -447,6 +447,10 @@ static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channelLayout)
         if (channelLayout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
             return mask;
         }
+        if (channelLayout->u.map[i].id >= 64) {
+            MEDIA_LOG_E("Invalid channel id: %d", channelLayout->u.map[i].id);
+            return 0;
+        }
         mask |= (1ULL << channelLayout->u.map[i].id);
     }
     return mask;
@@ -691,7 +695,9 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
         MEDIA_LOG_D("Parse bitrate failed: " PUBLIC_LOG_D64, bitRate);
     }
 
-    if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata != nullptr) {
+    constexpr size_t MAX_EXTRADATA_SIZE = 10 * 1024 * 1024; //10MB上限
+    if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata_size <= MAX_EXTRADATA_SIZE
+        && avStream.codecpar->extradata != nullptr) {
         std::vector<uint8_t> extra(avStream.codecpar->extradata_size);
         extra.assign(avStream.codecpar->extradata, avStream.codecpar->extradata + avStream.codecpar->extradata_size);
         format.Set<Tag::MEDIA_CODEC_CONFIG>(extra);
@@ -772,8 +778,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
 
 void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta &format)
 {
-    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
-    if (displayMatrix) {
+    size_t sideDataSize = 0;
+    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, &sideDataSize);
+    if (displayMatrix && sideDataSize >= 9) {
         float rotation = -round(av_display_rotation_get(displayMatrix));
         MEDIA_LOG_D("Parse rotate info from display matrix: " PUBLIC_LOG_F, rotation);
         if (isnan(rotation)) {
@@ -804,9 +811,10 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
 
 void FFmpegFormatHelper::ParseVideoHdrAndColorMetadata(const AVStream& avStream, Meta &format)
 {
+    size_t sideDataSize = 0;
     const uint8_t *sideData = (uint8_t *)av_stream_get_side_data(
-        &avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL);
-    if (sideData) {
+        &avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, &sideDataSize);
+    if (sideData && sizeof(AVMasteringDisplayMetadata) <= sideDataSize) {
         std::vector<uint8_t> extra(sizeof(AVMasteringDisplayMetadata));
         extra.assign(sideData, sideData + sizeof(AVMasteringDisplayMetadata));
         format.Set<Tag::VIDEO_HDR_METADATA>(extra);
@@ -825,8 +833,9 @@ void PrintMatrixToLog(int32_t * matrix, const std::string& matrixName)
 void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Meta &format)
 {
     VideoOrientationType orientationType = VideoOrientationType::ROTATE_NONE;
-    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
-    if (displayMatrix) {
+    size_t sideDataSize = 0;
+    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, &sideDataSize);
+    if (displayMatrix && sideDataSize >= 9) {
         PrintMatrixToLog(displayMatrix, "displayMatrix");
         int convertedMatrix[CONVERT_MATRIX_SIZE] = {0, 0, 0, 0};
         std::transform(&displayMatrix[0], &displayMatrix[0] + 1, // 0 is displayMatrix index, 1 is copy lenth
@@ -850,7 +859,8 @@ void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
     format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
     AVPacket pkt = avStream.attached_pic;
-    if (pkt.size > 0 && pkt.data != nullptr) {
+    constexpr size_t MAX_COVER_SIZE = 50 * 1024 * 1024; // 50MB上限
+    if (pkt.size > 0 && pkt.size <= MAX_COVER_SIZE && pkt.data != nullptr) {
         std::vector<uint8_t> cover(pkt.size);
         cover.assign(pkt.data, pkt.data + pkt.size);
         format.Set<Tag::MEDIA_COVER>(cover);
@@ -1087,8 +1097,9 @@ void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format
 
 void FFmpegFormatHelper::ParseHdrStaticMetadata(const AVStream& avStream, Meta &format)
 {
-    uint8_t *sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_CONTENT_LIGHT_LEVEL, nullptr);
-    if (sideData != nullptr) {
+    size_t sideDataSize = 0;
+    uint8_t *sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_CONTENT_LIGHT_LEVEL, &sideDataSize);
+    if (sideData != nullptr && sideDataSize >= sizeof(AVContentLightMetadata)) {
         AVContentLightMetadata* cta861Data = reinterpret_cast<AVContentLightMetadata*>(sideData);
         if (cta861Data != nullptr) {
             Cta861 cta861;
@@ -1100,8 +1111,8 @@ void FFmpegFormatHelper::ParseHdrStaticMetadata(const AVStream& avStream, Meta &
         }
     }
     
-    sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, nullptr);
-    if (sideData != nullptr) {
+    sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, &sideDataSize);
+    if (sideData != nullptr && sideDataSize >= sizeof(AVMasteringDisplayMetadata)) {
         AVMasteringDisplayMetadata* smpte2086Data = reinterpret_cast<AVMasteringDisplayMetadata*>(sideData);
         if (smpte2086Data != nullptr && smpte2086Data->has_luminance && smpte2086Data->has_primaries) {
             Smpte2086 smpte2086;

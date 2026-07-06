@@ -662,6 +662,8 @@ Status FFmpegDemuxerPlugin::WriteBuffer(
     FALSE_RETURN_V_MSG_E(outBuffer != nullptr, Status::ERROR_NULL_POINTER, "Buffer is nullptr");
     if (writeData != nullptr && writeSize > 0) {
         FALSE_RETURN_V_MSG_E(outBuffer->memory_ != nullptr, Status::ERROR_NULL_POINTER, "Memory is nullptr");
+        FALSE_RETURN_V_MSG_E(writeSize <= outBuffer->memory_->GetCapacity(),
+        Status::ERROR_INVALID_OPERATION, "Write size exceeds buffer capacity");
         int32_t ret = outBuffer->memory_->Write(writeData, writeSize, 0);
         FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_INVALID_OPERATION, "Memory write failed");
     }
@@ -688,7 +690,7 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
     size_t cencInfoSize = 0;
     MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(firstPkt,
         AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
-    if ((cencInfo != nullptr) && (cencInfoSize != 0)) {
+    if ((cencInfo != nullptr) && (cencInfoSize >= sizeof(MetaDrmCencInfo))) {
         std::vector<uint8_t> drmCencVec(reinterpret_cast<uint8_t *>(cencInfo),
             (reinterpret_cast<uint8_t *>(cencInfo)) + sizeof(MetaDrmCencInfo));
         sample->meta_->SetData(Media::Tag::DRM_CENC_INFO, std::move(drmCencVec));
@@ -717,7 +719,9 @@ AVPacketWrapperPtr FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePac
     for (const auto &pktWrapper : samplePacket->pkts) {
         FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr, nullptr,
             "AVPacket is nullptr");
-        totalSize += pktWrapper->GetSize();
+        int newTotalSize = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(totalSize, pktWrapper->GetSize(), &newTotalSize), nullptr, "TotalSize overflow");
+        totalSize = newTotalSize;
     }
 
     AVPacketWrapperPtr tempWrapper = std::make_shared<AVPacketWrapper>();
