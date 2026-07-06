@@ -418,6 +418,9 @@ int32_t CodecServer::Start()
         StatusChanged(ERROR);
     } else {
         StatusChanged(RUNNING);
+        if (framerateCalculator_) {
+            framerateCalculator_->SetFramerate2ConfiguredFramerate();
+        }
         if (!isModeConfirmed_) {
             isModeConfirmed_ = true;
             Media::Meta statisticsMeta;
