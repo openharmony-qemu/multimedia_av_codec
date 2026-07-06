@@ -352,6 +352,11 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
         MEDIA_LOG_D("Want:" PUBLIC_LOG_ZU ", Get:" PUBLIC_LOG_ZU ", offset:" PUBLIC_LOG_U64,
             remaining, readSize, currentPos);
         if (readSize > 0) {
+#ifdef BUILD_ENG_VERSION
+            DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & dumpMode_), sample->data.get() + totalRead, -1,
+                static_cast<int64_t>(currentPos), static_cast<int>(readSize), readatIndex_++, -1, -1};
+            Dump(dumpParam);
+#endif
             totalRead += readSize;
             readStartTimeMs_.store(0, std::memory_order_release);
             count = 0;
@@ -382,7 +387,14 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
     FALSE_RETURN_V(ret == Status::OK, ret);
     ret = ReadSampleDataToBuffer(sample, pos, size);
     if (ret == Status::OK) {
-        return WriteSampleAttr(trackId, sample);
+        ret = WriteSampleAttr(trackId, sample);
+        FALSE_RETURN_V(ret == Status::OK, ret);
+#ifdef BUILD_ENG_VERSION
+        DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), sample->data.get(),
+            static_cast<int>(trackId), -1, sample->size, avpacketIndex_++, sample->pts, static_cast<int64_t>(pos)};
+        Dump(dumpParam);
+#endif
+        return Status::OK;
     }
     sample->data.reset();
     return ret;

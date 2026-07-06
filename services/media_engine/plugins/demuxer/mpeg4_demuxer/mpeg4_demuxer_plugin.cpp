@@ -1005,6 +1005,8 @@ bool IsSupportedTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 }
 } // namespace
 
+std::atomic<int> MPEG4DemuxerPlugin::readatIndex_ = 0;
+
 MPEG4DemuxerPlugin::MPEG4DemuxerPlugin(std::string name)
     : DemuxerPlugin(std::move(name)),
       firstTrack_(nullptr),
@@ -1018,6 +1020,11 @@ MPEG4DemuxerPlugin::MPEG4DemuxerPlugin(std::string name)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_D("In");
+#ifdef BUILD_ENG_VERSION
+    std::string dumpModeStr = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.dump", "0");
+    dumpMode_ = static_cast<DumpMode>(strtoul(dumpModeStr.c_str(), nullptr, 2)); // 2 is binary
+    MEDIA_LOG_D("Dump mode = %s(%lu)", dumpModeStr.c_str(), dumpMode_);
+#endif
 }
 
 MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
@@ -1041,9 +1048,40 @@ MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
     pendingWebVttSamples_.clear();
     rawDtsPrefix_.clear();
     avTrackIds_.clear();
+    trackDfxInfoMap_.clear();
     inited_ = false;
     readModeFlags_.store(0, std::memory_order_release);
     MEDIA_LOG_D("Out");
+}
+
+void MPEG4DemuxerPlugin::Dump(const DumpParam &dumpParam)
+{
+    std::string path;
+    switch (dumpParam.mode) {
+        case DUMP_READAT_INPUT:
+            path = "Readat_index." + std::to_string(dumpParam.index) + "_offset." +
+                std::to_string(dumpParam.offset) + "_size." + std::to_string(dumpParam.size);
+            break;
+        case DUMP_AVPACKET_OUTPUT:
+            path = "AVPacket_index." + std::to_string(dumpParam.index) + "_track." +
+                std::to_string(dumpParam.trackId) + "_pts." + std::to_string(dumpParam.pts) + "_pos." +
+                std::to_string(dumpParam.pos);
+            break;
+        case DUMP_AVBUFFER_OUTPUT:
+            path = "AVBuffer_track." + std::to_string(dumpParam.trackId) + "_index." +
+                std::to_string(dumpParam.index) + "_pts." + std::to_string(dumpParam.pts);
+            break;
+        default:
+            return;
+    }
+    std::ofstream ofs;
+    path = "/data/ff_dump/" + path;
+    ofs.open(path, std::ios::out); //  | std::ios::app
+    if (ofs.is_open()) {
+        ofs.write(reinterpret_cast<char*>(dumpParam.buf), dumpParam.size);
+        ofs.close();
+    }
+    MEDIA_LOG_D("Dump path:" PUBLIC_LOG_S, path.c_str());
 }
 
 void MPEG4DemuxerPlugin::ReleaseReferenceParserState()
@@ -1084,6 +1122,7 @@ void MPEG4DemuxerPlugin::ResetParam()
     cacheSamples_.clear();
     pendingWebVttSamples_.clear();
     rawDtsPrefix_.clear();
+    trackDfxInfoMap_.clear();
     ReleaseReferenceParserState();
     
     hasMoofBox_ = false;
@@ -1094,6 +1133,8 @@ void MPEG4DemuxerPlugin::ResetParam()
     trackMtx_.clear();
     mediaInfo_ = MediaInfo();
     movieTimeScale_ = 1;
+    readatIndex_ = 0;
+    avpacketIndex_ = 0;
     readModeFlags_.store(0, std::memory_order_release);
     readLoopStatus_.store(Status::OK, std::memory_order_release);
     readToEnd_ = false;
@@ -2486,6 +2527,12 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
         FALSE_RETURN_V_MSG_E(outBuffer->memory_ != nullptr, Status::ERROR_NULL_POINTER, "Memory is nullptr");
         int32_t writeResult = outBuffer->memory_->Write(writeData, copySize, 0);
         FALSE_RETURN_V_MSG_E(writeResult >= 0, Status::ERROR_INVALID_OPERATION, "Memory write failed");
+#ifdef BUILD_ENG_VERSION
+        DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), const_cast<uint8_t*>(writeData),
+            static_cast<int>(trackIndex), -1, copySize, trackDfxInfoMap_[trackIndex].frameIndex++, outBuffer->pts_,
+            -1};
+        Dump(dumpParam);
+#endif
     }
 
     if (copySize < remainSize) {

@@ -116,6 +116,13 @@ public:
     Status SetCachePressureCallback(CachePressureCallback cb) override;
     Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override;
 private:
+    enum DumpMode : unsigned long {
+        DUMP_NONE = 0,
+        DUMP_READAT_INPUT = 0b001,
+        DUMP_AVPACKET_OUTPUT = 0b010,
+        DUMP_AVBUFFER_OUTPUT = 0b100,
+    };
+
     enum IndexAndPTSConversionMode : unsigned int {
         GET_FIRST_SAMPLE_PTS,
         INDEX_TO_RELATIVEPTS,
@@ -160,6 +167,27 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
     std::unordered_map<uint32_t, std::shared_ptr<Sample>> pendingWebVttSamples_ {};
     std::unordered_map<uint32_t, std::vector<int64_t>> rawDtsPrefix_ {};
+
+    struct TrackDfxInfo {
+        int frameIndex = 0;
+    };
+
+    struct DumpParam {
+        DumpMode mode;
+        uint8_t* buf;
+        int trackId;
+        int64_t offset;
+        int size;
+        int index;
+        int64_t pts;
+        int64_t pos;
+    };
+    std::unordered_map<uint32_t, TrackDfxInfo> trackDfxInfoMap_ {};
+    DumpMode dumpMode_ {DUMP_NONE};
+    static std::atomic<int> readatIndex_;
+    int avpacketIndex_ {0};
+
+    static void Dump(const DumpParam &dumpParam);
 
     int64_t absolutePTSOfIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> index2RelativePTSHeap_;
