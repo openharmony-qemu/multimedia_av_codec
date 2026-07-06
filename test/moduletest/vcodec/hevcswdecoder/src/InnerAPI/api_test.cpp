@@ -55,6 +55,7 @@ std::shared_ptr<VDecInnerSignal> signal_ = nullptr;
 std::string g_invalidCodecMime = "avdec_h265";
 std::string g_codecMime = "video/hevc";
 std::string g_codecName = "";
+OH_AVCapability *cap = nullptr;
 
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
@@ -62,7 +63,7 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 void HevcswdecInnerApiNdkTest::SetUpTestCase()
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, SOFTWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, SOFTWARE);
     const char *tmpCodecName = OH_AVCapability_GetName(cap);
     g_codecName = tmpCodecName;
     cout << "g_codecName: " << g_codecName << endl;

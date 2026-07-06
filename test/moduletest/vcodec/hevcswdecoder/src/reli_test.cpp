@@ -67,14 +67,16 @@ static string g_codecNameHevc = "";
 static string g_codecNameHisi = "";
 int32_t g_reliCount = 16;
 int32_t g_reliCount1000 = 1000;
+OH_AVCapability *cap = nullptr
+OH_AVCapability *cap2 = nullptr
 void HevcSwdecReliNdkTest::SetUpTestCase()
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(
+    cap = OH_AVCodec_GetCapabilityByCategory(
         OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     g_codecNameHevc = OH_AVCapability_GetName(cap);
     cout << "g_codecNameHevc: " << g_codecNameHevc << endl;
 
-    OH_AVCapability *cap2 = OH_AVCodec_GetCapabilityByCategory(
+    cap2 = OH_AVCodec_GetCapabilityByCategory(
         OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     g_codecNameHisi = OH_AVCapability_GetName(cap2);
     cout << "g_codecNameHisi: " << g_codecNameHisi  << endl;

@@ -51,8 +51,10 @@ public:
 protected:
     const ::testing::TestInfo *testInfo_ = nullptr;
     bool createCodecSuccess_ = false;
-    OH_AVCapability *cap = nullptr;
 };
+
+OH_AVCapability *cap = nullptr;
+string hevcCodeName = "";
 
 void HevcSwdecStateNdkTest::SetUpTestCase(void)
 {
