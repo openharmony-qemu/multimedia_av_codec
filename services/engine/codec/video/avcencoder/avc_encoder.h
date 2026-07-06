@@ -123,7 +123,7 @@ private:
 
     void ReleaseSurfaceBuffer();
     void ClearDirtyList();
-    void WaitForInBuffer();
+    void WaitForInBuffer(std::unique_lock<std::mutex> &listLock);
     void FillEncodedBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
 
     void ReleaseSurfaceBufferByAVBuffer(std::shared_ptr<AVBuffer> &buffer);
@@ -257,7 +257,7 @@ private:
     int32_t encQpMin_;
     int32_t encIperiod_;
     double encFrameRate_;
-    bool encIdrRequest_ = false;
+    std::atomic<bool> encIdrRequest_ = false;
     bool enableSurfaceModeInputCb_ = false;
     bool enableIdrAppendXps_ = false;
     uint8_t srcRange_ = 0;
