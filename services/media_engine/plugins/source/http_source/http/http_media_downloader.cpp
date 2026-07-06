@@ -338,7 +338,7 @@ bool HttpMediaDownloader::HandleBuffering()
     if (isBuffering_ && GetBufferingTimeOut() && callback != nullptr) {
         MEDIA_LOG_I("HTTP cachebuffer buffering time out.");
         callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-            "errorMessage: Http buffer timeout due to request fail"});
+            "errorMessage: HTTP buffer timeout due to request error"});
         isTimeoutErrorNotified_.store(true);
         isBuffering_ = false;
         return false;
@@ -652,7 +652,7 @@ Status HttpMediaDownloader::HandleRingBuffer(unsigned char* buff, ReadDataInfo& 
     if (isBuffering_ && GetBufferingTimeOut() && callback && !isReportedErrorCode_) {
         MEDIA_LOG_I("HTTP ringbuffer read time out.");
         callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-            "errorMessage: Http ringbuffer timeout due to request fail"});
+            "errorMessage: HTTP ringbuffer timeout due to request error"});
         isTimeoutErrorNotified_.store(true);
         return Status::END_OF_STREAM;
     }
@@ -675,7 +675,7 @@ Status HttpMediaDownloader::HandleCacheBuffer(unsigned char* buff, ReadDataInfo&
     if (isBuffering_ && GetBufferingTimeOut() && callback && !isReportedErrorCode_) {
         MEDIA_LOG_I("HTTP cachebuffer read time out.");
         callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-            "errorMessage: Http cachebuffer timeout due to request fail"});
+            "errorMessage: HTTP cachebuffer timeout due to request error"});
         isTimeoutErrorNotified_.store(true);
         return Status::END_OF_STREAM;
     }
@@ -1393,7 +1393,7 @@ void HttpMediaDownloader::SetDownloadErrorState()
     auto callback = callback_.lock();
     if (callback != nullptr && !isReportedErrorCode_) {
         callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_NOT_RETRY},
-            "errorMessage: Http download pause due to request failed"});
+            "errorMessage: HTTP download pause due to request failed"});
         isTimeoutErrorNotified_.store(true);
     }
     Close(true);
@@ -1881,7 +1881,7 @@ bool HttpMediaDownloader::IsNeedBufferForPlaying()
         auto callback = callback_.lock();
         if (callback) {
             callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-                "errorMessage: Http buffer for playing timeout due to request fail"});
+                "errorMessage:HTTP IsNeedBufferForPlaying timeout due to request error"});
         }
         isTimeoutErrorNotified_.store(true);
         AutoLock lk(bufferingEndMutex_);

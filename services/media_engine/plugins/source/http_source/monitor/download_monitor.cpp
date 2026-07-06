@@ -18,7 +18,6 @@
 #include "cpp_ext/algorithm_ext.h"
 #include "common/event.h"
 #include <sstream>
-#include <iostream>
 
 namespace OHOS {
 namespace Media {

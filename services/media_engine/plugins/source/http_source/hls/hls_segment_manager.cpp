@@ -1775,7 +1775,7 @@ void HlsSegmentManager::SetDownloadErrorState()
     if (segEventCb_ && !isReportedErrorCode_) {
         HlsSegEvent event {.segType = type_, .type = PluginEventType::CLIENT_ERROR,
             .networkError = NetworkClientErrorCode::ERROR_TIME_OUT,
-            .str = "errorMessage: Hls download pause due to request failed"};
+            .str = "errorMessage:HLS download pause due to request failed"};
         segEventCb_(event);
         isTimeoutErrorNotified_.store(true);
     }
