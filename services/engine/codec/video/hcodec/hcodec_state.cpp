@@ -743,7 +743,6 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
         }
     }
 }
-// LCOV_EXCL_STOP
 
 void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
 {
@@ -757,7 +756,6 @@ void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
     codec_->DeferMessage(info);
 }
 
-// LCOV_EXCL_START
 void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
 {
     int32_t generation = 0;
