@@ -448,7 +448,8 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
         if (seekErrorCount_ > ERROR_COUNT) {
             auto cb = callback_.lock();
             if (cb != nullptr) {
-                cb->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "seek error"});
+                cb->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+                    "errorMessage: seek time exceeds the maximum duration of the resource"});
             }
         }
         FALSE_RETURN_V(offset <= downloader_->GetContentLength(), Status::ERROR_INVALID_PARAMETER);

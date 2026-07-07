@@ -189,6 +189,7 @@ private:
     void SetCodecConfig(std::shared_ptr<Track> track);
     void AdapterFormat(std::shared_ptr<Track> track);
     bool IsValidTrackIndex(const MediaInfo& mediaInfo, uint32_t index);
+    bool IsLastTrackValid();
     bool UnderMetaPath(const std::vector<uint32_t>& path, int32_t depth);
     bool UnderFileLevelMetaPath(const std::vector<uint32_t>& path, int32_t depth);
     void TrySetGltfOffset(ParseContext* ctx);
@@ -239,7 +240,9 @@ private:
     Status ProcessAuxiliaryHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
     Status ParseSampleDescriptionEntry(int32_t depth, ParseContext* ctx);
     // 音频属性相关辅助函数
-    bool ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t dataSize, uint64_t& offset);
+    bool IsSupportEsds();
+    bool IsSupportObjectTypeId(uint8_t objectTypeId);
+    Status ParseDecoderConfigDescriptor(const uint8_t* data, uint64_t dataSize, uint64_t& offset);
     bool ParseAACConfig(const uint8_t* data, uint32_t size, uint32_t& sampleRate, uint32_t& channels,
         AudioChannelLayout &layout);
     bool ParseAACSpecificConfig(const uint8_t* data, uint32_t size);

@@ -60,7 +60,8 @@ int RetryNonReadAgainBounded(int& tryCount, int32_t sleepTimeMs, const std::stri
         MEDIA_LOG_I("%{public}s exceeds retry, offset:" PUBLIC_LOG_D64, logPrefix.c_str(), offset);
         return AV_READ_PACKET_READ_ERROR;
     }
-    MEDIA_LOG_I("%{public}s, retry count:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+        "%{public}s, retry count:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
         logPrefix.c_str(), tryCount, offset);
     std::this_thread::sleep_for(std::chrono::milliseconds(sleepTimeMs));
     return AV_READ_PACKET_READ_AGAIN;
@@ -143,7 +144,9 @@ int FFmpegDemuxerPlugin::HandleNonReadAgain(IOContext* ioContext, int& tryCount)
                 MEDIA_LOG_I("AVReadPacket stopped");
                 return AV_READ_PACKET_READ_ERROR;
             case AVReadPacketStopState::FALSE:
-                MEDIA_LOG_I("Read again and retry, offset:" PUBLIC_LOG_D64, ioContext->offset);
+                AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+                    "Read again and retry, offset:" PUBLIC_LOG_D64,
+                    ioContext->offset);
                 std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
                 return AV_READ_PACKET_READ_AGAIN;
             case AVReadPacketStopState::UNSET:
@@ -188,7 +191,9 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
         ioContext->readCbReady.store(false); // Reset the flag
         tryCount = 0;
     } else {
-        MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, tryCount, ioContext->offset);
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "Read again, retry count: " PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+            tryCount, ioContext->offset);
         std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
     }
     return AV_READ_PACKET_READ_AGAIN;
@@ -560,8 +565,14 @@ void FFmpegDemuxerPlugin::HandleAVPacketReadError(AVPacketWrapperPtr& pktWrapper
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_MSG(pkt != nullptr, "AVPacket is nullptr");
     pktWrapper.reset();
-    MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
-        AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
+    if (ioContext_.retry) {
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+            AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
+    } else {
+        MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+            AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
+    }
     readLoopStatus_ = Status::ERROR_UNKNOWN;
 }
 

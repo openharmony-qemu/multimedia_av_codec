@@ -146,6 +146,9 @@ public:
     void ConfigureFrameRetentionMode(Format &format, double speed);
     bool IsResolutionSupportSeekContinuous();
     Status GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs);
+    bool IsCodecChanged(const std::shared_ptr<Meta> &newMeta);
+    void SetNewMeta(const std::shared_ptr<Meta> &meta);
+    void ChangePlugin(const std::shared_ptr<Meta> &newMeta);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -189,6 +192,7 @@ private:
     bool CheckDecoderCapability(bool isHwDecoder, int32_t width, int32_t height, std::string &decoderName);
     Status InitDecoder();
     Status ConfigureDecoderSettings();
+    void HandleCodecChange(int32_t index, bool &isHandled);
 
     std::string name_;
     FilterType filterType_;
@@ -305,6 +309,8 @@ private:
     std::atomic<bool> isClosestSeekDone_ {true};
     std::mutex closestSeekMutex_ {};
     std::condition_variable closestSeekCond_ {};
+    std::shared_ptr<Meta> newMeta_;
+    std::mutex newMetaMutex_ {};
 };
 } // namespace Pipeline
 } // namespace Media

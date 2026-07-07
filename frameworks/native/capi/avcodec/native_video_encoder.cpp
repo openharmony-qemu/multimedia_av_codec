@@ -367,7 +367,7 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(struct OH_AVCodec *codec, uint32_t
         return AV_ERR_OK;
     }
 
-    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoEncoder_FreeOutputBuffer.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoEncoder_FreeOutputBuffer.Time", TIMES, 0, 50); // 50freq
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOG(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "Video encoder is nullptr!");
     CHECK_AND_RETURN_RET_LOG(!videoEncObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
@@ -544,7 +544,7 @@ OH_AVErrCode OH_VideoEncoder_PushInputBuffer(struct OH_AVCodec *codec, uint32_t 
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "magic error!");
 
-    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoEncoder_PushInputBuffer.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoEncoder_PushInputBuffer.Time", TIMES, 0, 50); // 50freq
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "videoEncoder_ is nullptr!");
     CHECK_AND_RETURN_RET_LOGD(!videoEncObj->isSetMemoryCallback_, AV_ERR_INVALID_STATE,
@@ -563,7 +563,7 @@ OH_AVErrCode OH_VideoEncoder_PushInputParameter(OH_AVCodec *codec, uint32_t inde
     CHECK_AND_RETURN_RET_LOGD(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER, AV_ERR_INVALID_VAL,
         "magic error!");
 
-    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoEncoder_PushInputParameter.Time", TIMES);
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoEncoder_PushInputParameter.Time", TIMES, 0, 50); // 50freq
     struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec);
     CHECK_AND_RETURN_RET_LOGD(videoEncObj->videoEncoder_ != nullptr, AV_ERR_INVALID_VAL, "videoEncoder_ is nullptr!");
 

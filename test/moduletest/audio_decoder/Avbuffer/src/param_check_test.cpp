@@ -818,7 +818,7 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_016, TestSize.Level2)
     format = OH_AVFormat_Create();
     codec = aDecBufferDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     result0 = aDecBufferDemo->SetCallback(codec);
-    channel = 2;  // 2 channel
+    channel = 7;  // 7 channel
     result0 = aDecBufferDemo->Configure(codec, format, channel, sampleRate);
     ASSERT_EQ(result0, AV_ERR_INVALID_VAL);
     result0 = aDecBufferDemo->Destroy(codec);
@@ -857,7 +857,7 @@ HWTEST_F(ParamCheckTest, PARAM_CHECK_017, TestSize.Level2)
     format = OH_AVFormat_Create();
     codec = aDecBufferDemo->CreateByMime(OH_AVCODEC_MIMETYPE_AUDIO_G711MU);
     result0 = aDecBufferDemo->SetCallback(codec);
-    sampleRate = 8001;  // 8001hz
+    sampleRate = 48001;  // 48001hz
     result0 = aDecBufferDemo->Configure(codec, format, channel, sampleRate);
     ASSERT_EQ(result0, AV_ERR_INVALID_VAL);
     result0 = aDecBufferDemo->Destroy(codec);

@@ -51,7 +51,7 @@ static const std::unordered_map<std::string, M3U8MediaType> kTypeMap = {
     {"CLOSED-CAPTIONS", M3U8MediaType::M3U8_MEDIA_TYPE_CLOSED_CAPTIONS}
 };
 static const std::unordered_set<std::string> VIDEO_CODECS = {
-    "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263"
+    "mp4v", "avc1", "hev1", "svc1", "mvc1", "mvc2", "sevc", "s263", "hvc1"
 };
 
 using TagUpdater = void (M3U8::*)(std::shared_ptr<Tag>&, M3U8Info&);
@@ -278,10 +278,9 @@ void M3U8::UpdateByteRange(std::shared_ptr<Tag>& tag, M3U8Info& info)
     auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
     std::string value = svTag->GetValue().QuotedString();
     std::shared_ptr<Attribute> attr = std::make_shared<Attribute>("BYTERANGE", value);
-    offset_ = attr->GetByteRange().first + 1;
+    offset_ = attr->GetByteRange().first;
     length_ = attr->GetByteRange().second;
     if (!isHeaderReady_.load()) {
-        offset_ -= 1;
         isPureByteRange_.store(true);
     }
 }
@@ -508,6 +507,15 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
     if (uri.empty()) {
         return;
     }
+    InitializeDownloadHeader(uri, offset, length);
+    StartDownload();
+}
+
+ void M3U8::InitializeDownloadHeader(const std::string& uri, size_t offset, size_t length)
+ {
+    if (uri.empty()) {
+        return;
+    }
     InitDownloadHeader();
     if (downloaderHeader_ != nullptr && downloadCallback_ != nullptr) {
         downloaderHeader_->SetDownloadCallback(downloadCallback_);
@@ -551,6 +559,11 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
         downloadHeaderRequest_->SetRangePos(offset, offset + length);
     }
     downloadHeaderRequest_->SetIsAuthRequest(true);
+    downloadHeaderRequest_->SetRequestType(RequestType::HLS_MAP);
+}
+
+void M3U8::StartDownload()
+{
     downloaderHeader_->Download(downloadHeaderRequest_, -1);
     downloaderHeader_->Start();
 }
@@ -596,11 +609,17 @@ uint64_t M3U8::ExtractNumber(const std::string& uri)
     uint64_t dotPos = 0;
     uint64_t queryPos = (uri.find('?') == std::string::npos) ? 0 : static_cast<uint64_t>(uri.find('?'));
     if (queryPos == 0) {
-        bool isExitDotPos = uri.find_last_of('.') == std::string::npos;
-        dotPos = isExitDotPos ? MAX_UINT64_NUM : static_cast<uint64_t>(uri.find_last_of('.'));
+        auto dotFindResult = uri.find_last_of('.');
+        if (dotFindResult == std::string::npos) {
+            return MAX_UINT64_NUM;
+        }
+        dotPos = static_cast<uint64_t>(dotFindResult);
     } else {
-        bool isExitQueryPos = uri.rfind('.', queryPos - 1) == std::string::npos;
-        dotPos = isExitQueryPos ? MAX_UINT64_NUM : static_cast<uint64_t>(uri.rfind('.', queryPos - 1));
+        auto dotFindResult = uri.rfind('.', queryPos - 1);
+        if (dotFindResult == std::string::npos) {
+            return MAX_UINT64_NUM;
+        }
+        dotPos = static_cast<uint64_t>(dotFindResult);
     }
     uint64_t start = dotPos;
     while (start > 0 && isdigit(static_cast<unsigned char>(uri[start - 1]))) {
@@ -803,6 +822,7 @@ void M3U8::DownloadKey(bool isKey)
     uint64_t index = isKey ? (keyIndex_ + totalKeyIndex_) : sessionKeyIndex_;
     downloadRequest_ = std::make_shared<DownloadRequest>(index, keyDataSave_, realStatusCallback, requestInfo, true);
     downloadRequest_->SetIsAuthRequest(true);
+    downloadRequest_->SetRequestType(RequestType::HLS_KEY);
     downloader_->Download(downloadRequest_, -1);
     downloader_->Start();
 }
@@ -897,8 +917,8 @@ void M3U8::StoreDrmInfos(const std::multimap<std::string, std::vector<uint8_t>>&
         }
         MEDIA_LOG_D("this uuid exists many times");
         bool isSame = false;
-        for (; pos.first != pos.second; ++pos.first) {
-            if (newItem.second == pos.first->second) {
+        for (auto it = pos.first; it != pos.second; ++it) {
+            if (newItem.second == it->second) {
                 MEDIA_LOG_D("this uuid exists and same pssh");
                 isSame = true;
                 break;

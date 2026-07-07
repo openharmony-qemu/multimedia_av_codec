@@ -80,6 +80,17 @@ using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Do
     std::shared_ptr<DownloadRequest>&)>;
 using DownloadDoneCbFunc = std::function<void(const std::string&, const std::string&)>;
 
+enum class RequestType : int32_t {
+    DEFAULT = 0,
+    HTTP_MEDIA_DATA = 1,
+    HLS_MEDIA_DATA = 2,
+    HLS_PLAYLIST = 3,
+    HLS_KEY = 4,
+    HLS_MAP = 5,
+    DASH_MPD = 6,
+    DASH_MEDIA_DATA = 7,
+};
+
 enum  class RequestProtocolType : int32_t {
     HTTP = 0,
     HLS = 1,
@@ -151,14 +162,16 @@ public:
     uint32_t GetBitRate() const;
     bool IsChunkedVod() const;
     bool IsM3u8Request() const;
+    std::string GetDownloaderName() const;
     bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
     void SetRequestProtocolType(RequestProtocolType protocolType);
     void SetIsM3u8Request(bool isM3u8Request);
-    std::string GetDownloaderName() const;
     void SetBitRateToRequestSize(const int32_t videoBitrate);
     std::atomic<bool> isHeaderUpdated_ {false};
     std::atomic<bool> haveRedirectRetry_ {false};
+    void SetRequestType(RequestType requestType);
+    RequestType GetRequestType();
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -201,6 +214,7 @@ private:
     std::string downloaderName_;
     int32_t bitRateToRequestSize_ {0};
     uint64_t keyIndex_ {0};
+    RequestType requestType_ {RequestType::DEFAULT};
 };
 
 class Downloader : public std::enable_shared_from_this<Downloader> {

@@ -26,6 +26,8 @@
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+constexpr uint32_t BLOCK_QUEUE_LOG_LIMIT_FREQUENCY = 100;
+
 namespace Ffmpeg {
 struct SamplePacket {
     uint32_t offset = 0;
@@ -395,7 +397,8 @@ std::shared_ptr<T> BlockQueuePool<T>::Pop(uint32_t trackIndex)
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
-        MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
+        MEDIA_LOGW_LIMIT(BLOCK_QUEUE_LOG_LIMIT_FREQUENCY,
+            "Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
         return nullptr;
     }
     auto& queVector = queMap_[trackIndex];
@@ -431,7 +434,8 @@ std::shared_ptr<T> BlockQueuePool<T>::Pop(uint32_t trackIndex)
         }
         return block;
     }
-    MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
+    MEDIA_LOGW_LIMIT(BLOCK_QUEUE_LOG_LIMIT_FREQUENCY,
+        "Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
     return nullptr;
 }
 
@@ -441,7 +445,8 @@ std::shared_ptr<T> BlockQueuePool<T>::Front(uint32_t trackIndex)
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
-        MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
+        MEDIA_LOGW_LIMIT(BLOCK_QUEUE_LOG_LIMIT_FREQUENCY,
+            "Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
         return nullptr;
     }
     auto queVector = queMap_[trackIndex];
@@ -456,7 +461,8 @@ std::shared_ptr<T> BlockQueuePool<T>::Front(uint32_t trackIndex)
             return block;
         }
     }
-    MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
+    MEDIA_LOGW_LIMIT(BLOCK_QUEUE_LOG_LIMIT_FREQUENCY,
+        "Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
     return nullptr;
 }
 
@@ -466,7 +472,8 @@ std::shared_ptr<T> BlockQueuePool<T>::Back(uint32_t trackIndex)
     std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasQueue(trackIndex)) {
-        MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
+        MEDIA_LOGW_LIMIT(BLOCK_QUEUE_LOG_LIMIT_FREQUENCY,
+            "Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
         return nullptr;
     }
     auto queVector = queMap_[trackIndex];
@@ -477,7 +484,8 @@ std::shared_ptr<T> BlockQueuePool<T>::Back(uint32_t trackIndex)
             return block;
         }
     }
-    MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
+    MEDIA_LOGW_LIMIT(BLOCK_QUEUE_LOG_LIMIT_FREQUENCY,
+        "Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
     return nullptr;
 }
 
@@ -531,7 +539,8 @@ Status BlockQueuePool<T>::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxP
     maxPts = INT64_MIN;
     MEDIA_LOG_D("In, block queue " PUBLIC_LOG_S ", track " PUBLIC_LOG_U32, name_.c_str(), trackIndex);
     if (!HasCache(trackIndex)) {
-        MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
+        MEDIA_LOGW_LIMIT(BLOCK_QUEUE_LOG_LIMIT_FREQUENCY,
+            "Track " PUBLIC_LOG_U32 " has not cache queue", trackIndex);
         return Status::ERROR_NOT_EXISTED;
     }
     auto queVector = queMap_[trackIndex];
@@ -543,7 +552,8 @@ Status BlockQueuePool<T>::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxP
         maxPts = quePool_[queIndex].maxPts;
         return Status::OK;
     }
-    MEDIA_LOG_E("Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
+    MEDIA_LOGW_LIMIT(BLOCK_QUEUE_LOG_LIMIT_FREQUENCY,
+        "Track " PUBLIC_LOG_U32 " has not cache data", trackIndex);
     return Status::ERROR_NOT_EXISTED;
 }
 

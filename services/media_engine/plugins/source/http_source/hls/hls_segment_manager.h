@@ -239,6 +239,8 @@ private:
     std::shared_ptr<AesDecryptor> GetAesDecryptor();
     void SetAesDecryptor(std::shared_ptr<AesDecryptor> aesDecryptor);
     std::vector<PlayInfo> SeekListHelper(bool isLive);
+    void ConfigureAndDownload(const PlayInfo& playInfo, bool isRequestWholeFile, int64_t startTimePos,
+        DownloadDoneCbFunc downloadDoneCallback);
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -325,7 +327,7 @@ private:
     std::atomic<bool> isStopped = false;
     std::string mimeType_;
     size_t waterLineAbove_ {0};
-    bool isInterrupt_ {false};
+    std::atomic<bool> isInterrupt_ {false};
     bool isFirstFrameArrived_ {false};
     std::atomic<bool> isSeekingFlag {false};
     std::atomic<bool> isSourceLoaderSeeking_ {false};

@@ -293,7 +293,7 @@ void InterstitialController::OnSeek(int64_t seekTargetMs)
             }
         }
     }
-
+    FALSE_RETURN_MSG_W(!isDisableAds_.load(), "OnSeek switch failed: ads are disabled");
     FALSE_RETURN_MSG(!preRollToTrigger.empty(), "OnSeek: no pre-roll ad to trigger");
     if (!TrySwitchAdCandidates(0)) {
         DoResume();
@@ -489,7 +489,7 @@ void InterstitialController::FinishCurrentAdAndContinue(AdsEventType eventType)
     }
 
     EmitEndEvent(currentEntry, eventType);
-
+    FALSE_RETURN_MSG_W(!isDisableAds_.load(), "FinishCurrentAdAndContinue failed: ads are disabled");
     if (startMs >= 0 && TrySwitchAdCandidates(startMs)) {
         return;
     }

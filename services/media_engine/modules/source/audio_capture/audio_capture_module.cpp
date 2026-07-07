@@ -177,8 +177,8 @@ Status AudioCaptureModule::Stop()
     AutoLock lock (captureMutex_);
     if (audioCapturer_ && audioCapturer_->GetStatus() == AudioStandard::CAPTURER_RUNNING) {
         if (!audioCapturer_->Stop()) {
-            MEDIA_LOG_E("Stop audioCapturer fail");
-            SetFaultEvent("audioCapturer stop fail");
+            MEDIA_LOG_E("audioCapturer stop fail");
+            SetFaultEvent("AudioCaptureModule::Stop error");
             return Status::ERROR_AUD_STOP_FAILED;
         }
     }

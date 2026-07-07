@@ -8901,4 +8901,342 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_Pause_005, TestSize.Level1)
     auto ret = mediaDemuxer_->Pause();
     EXPECT_EQ(ret, Status::OK);
 }
+
+/**
+ * @tc.name: StartTaskByMediaType_001
+ * @tc.desc: Test StartTask(MediaType) interface, mediaType is AUDIO
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, StartTaskByMediaType_001, TestSize.Level1)
+{
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    mediaDemuxer_->enableSampleQueue_ = false;
+    auto ret = mediaDemuxer_->StartTask(Plugins::MediaType::AUDIO);
+    EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
+}
+
+/**
+ * @tc.name: StartTaskByMediaType_002
+ * @tc.desc: Test StartTask(MediaType) interface, mediaType is VIDEO
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, StartTaskByMediaType_002, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->enableSampleQueue_ = false;
+    auto ret = mediaDemuxer_->StartTask(Plugins::MediaType::VIDEO);
+    EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
+}
+
+/**
+ * @tc.name: StartTaskByMediaType_003
+ * @tc.desc: Test StartTask(MediaType) interface, mediaType is SUBTITLE
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, StartTaskByMediaType_003, TestSize.Level1)
+{
+    mediaDemuxer_->subtitleTrackId_ = NEG_1;
+    mediaDemuxer_->enableSampleQueue_ = false;
+    auto ret = mediaDemuxer_->StartTask(Plugins::MediaType::SUBTITLE);
+    EXPECT_EQ(ret, Status::OK);
+    mediaDemuxer_->StopAllTask();
+}
+
+/**
+ * @tc.name: StartTaskByMediaType_004
+ * @tc.desc: Test StartTask(MediaType) interface, mediaType is invalid
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, StartTaskByMediaType_004, TestSize.Level1)
+{
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    mediaDemuxer_->enableSampleQueue_ = false;
+    auto ret = mediaDemuxer_->StartTask(Plugins::MediaType::UNKNOWN);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    mediaDemuxer_->StopAllTask();
+}
+
+/**
+ * @tc.name: PushCodecCheckBuffer_001
+ * @tc.desc: Test PushCodecCheckBuffer interface, invalid trackId returns early
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, PushCodecCheckBuffer_001, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    int32_t invalidTrackId = NEG_1;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    mediaDemuxer_->PushCodecCheckBuffer(invalidTrackId);
+    EXPECT_EQ(mediaDemuxer_->bufferMap_.find(invalidTrackId), mediaDemuxer_->bufferMap_.end());
+}
+
+/**
+ * @tc.name: PushCodecCheckBuffer_002
+ * @tc.desc: Test PushCodecCheckBuffer interface, trackId not equal to videoTrackId_ or audioTrackId_
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, PushCodecCheckBuffer_002, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    int32_t otherTrackId = NUM_2;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    mediaDemuxer_->PushCodecCheckBuffer(otherTrackId);
+    EXPECT_EQ(mediaDemuxer_->bufferMap_.find(otherTrackId), mediaDemuxer_->bufferMap_.end());
+}
+
+/**
+ * @tc.name: PushCodecCheckBuffer_003
+ * @tc.desc: Test PushCodecCheckBuffer interface, buffer is nullptr after retry
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, PushCodecCheckBuffer_003, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->audioTrackId_ = NUM_2;
+    mediaDemuxer_->bufferMap_[NUM_1] = nullptr;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    mediaDemuxer_->PushCodecCheckBuffer(NUM_1);
+    EXPECT_EQ(mediaDemuxer_->bufferMap_[NUM_1], nullptr);
+}
+
+/**
+ * @tc.name: PushCodecCheckBuffer_004
+ * @tc.desc: Test PushCodecCheckBuffer interface, buffer->memory_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, PushCodecCheckBuffer_004, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->audioTrackId_ = NUM_2;
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = std::make_shared<Meta>();
+    buffer->memory_ = nullptr;
+    mediaDemuxer_->bufferMap_[NUM_1] = buffer;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+
+    auto trackMeta = std::make_shared<Meta>();
+    trackMeta->SetData(Tag::MIME_TYPE, std::string("video/avc"));
+    mediaDemuxer_->mediaMetaData_.trackMetas = {trackMeta};
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpTrackIdByTrackId(NUM_1))
+        .WillOnce(Return(NUM_0));
+
+    AVBufferConfig config;
+    EXPECT_CALL(*buffer, GetConfig()).WillRepeatedly(ReturnRef(config));
+
+    mediaDemuxer_->enableSampleQueue_ = true;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsNeedPreDownload()).WillRepeatedly(Return(false));
+
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[NUM_1] = sampleQueue;
+    EXPECT_CALL(*(mediaDemuxer_->sampleQueueMap_[NUM_1]), PushBuffer(_, _)).WillRepeatedly(Return(Status::OK));
+
+    mediaDemuxer_->PushCodecCheckBuffer(NUM_1);
+    EXPECT_NE(mediaDemuxer_->bufferMap_[NUM_1], nullptr);
+    EXPECT_NE(mediaDemuxer_->bufferMap_[NUM_1]->memory_, nullptr);
+}
+
+/**
+ * @tc.name: PushCodecCheckBuffer_007
+ * @tc.desc: Test PushCodecCheckBuffer interface, normal flow with valid buffer and meta
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, PushCodecCheckBuffer_007, TestSize.Level1)
+{
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->audioTrackId_ = NUM_2;
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = std::make_shared<Meta>();
+    buffer->memory_ = std::make_shared<AVMemory>();
+    mediaDemuxer_->bufferMap_[NUM_1] = buffer;
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+
+    auto trackMeta = std::make_shared<Meta>();
+    trackMeta->SetData(Tag::MIME_TYPE, std::string("video/avc"));
+    mediaDemuxer_->mediaMetaData_.trackMetas = {trackMeta};
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTmpTrackIdByTrackId(NUM_1))
+        .WillOnce(Return(NUM_0));
+
+    mediaDemuxer_->enableSampleQueue_ = true;
+    EXPECT_CALL(*(mediaDemuxer_->source_), IsNeedPreDownload()).WillRepeatedly(Return(false));
+
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    mediaDemuxer_->sampleQueueMap_[NUM_1] = sampleQueue;
+    EXPECT_CALL(*(mediaDemuxer_->sampleQueueMap_[NUM_1]), PushBuffer(_, _)).WillRepeatedly(Return(Status::OK));
+
+    mediaDemuxer_->PushCodecCheckBuffer(NUM_1);
+    EXPECT_NE(mediaDemuxer_->bufferMap_[NUM_1], nullptr);
+}
+
+/**
+ * @tc.name: CheckCodecChange_001
+ * @tc.desc: Test CheckCodecChange(SampleQueue, trackId) interface, AcquireBuffer succeeds, needRelease is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChange_001, TestSize.Level1)
+{
+    auto sampleQueue = std::make_shared<SampleQueue>();
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = std::make_shared<Meta>();
+    buffer->meta_->SetData(Tag::CHECK_CODEC_CHANGE, true);
+    buffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
+    EXPECT_CALL(*sampleQueue, AcquireBuffer(_)).WillRepeatedly(DoAll(SetArgReferee<0>(buffer), Return(Status::OK)));
+    EXPECT_CALL(*sampleQueue, ReleaseBuffer(_)).WillRepeatedly(Return(Status::OK));
+    EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), IsDash()).WillRepeatedly(Return(true));
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    bool needRelease = false;
+    mediaDemuxer_->CheckCodecChange(sampleQueue, NUM_1, needRelease);
+    EXPECT_EQ(needRelease, true);
+}
+
+/**
+ * @tc.name: CheckCodecChangeWithBuffer_001
+ * @tc.desc: Test CheckCodecChange(buffer, trackId, needRelease) interface, buffer is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChangeWithBuffer_001, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    int32_t trackId = NUM_1;
+    bool needRelease = false;
+    mediaDemuxer_->CheckCodecChange(buffer, trackId, needRelease);
+    EXPECT_EQ(needRelease, false);
+}
+
+/**
+ * @tc.name: CheckCodecChangeWithBuffer_002
+ * @tc.desc: Test CheckCodecChange(buffer, trackId, needRelease) interface, buffer->meta_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChangeWithBuffer_002, TestSize.Level1)
+{
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = nullptr;
+    int32_t trackId = NUM_1;
+    bool needRelease = false;
+    mediaDemuxer_->CheckCodecChange(buffer, trackId, needRelease);
+    EXPECT_EQ(needRelease, false);
+}
+
+/**
+ * @tc.name: CheckCodecChangeWithBuffer_003
+ * @tc.desc: Test CheckCodecChange(buffer, trackId, needRelease) interface, no CHECK_CODEC_CHANGE flag
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChangeWithBuffer_003, TestSize.Level1)
+{
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = std::make_shared<Meta>();
+    int32_t trackId = NUM_1;
+    bool needRelease = false;
+    mediaDemuxer_->CheckCodecChange(buffer, trackId, needRelease);
+    EXPECT_EQ(needRelease, false);
+}
+
+/**
+ * @tc.name: CheckCodecChangeWithBuffer_004
+ * @tc.desc: Test CheckCodecChange(buffer, trackId, needRelease) interface, CHECK_CODEC_CHANGE flag set but no EOS
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChangeWithBuffer_004, TestSize.Level1)
+{
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = std::make_shared<Meta>();
+    buffer->meta_->SetData(Tag::CHECK_CODEC_CHANGE, true);
+    buffer->flag_ = 0;
+    int32_t trackId = NUM_1;
+    bool needRelease = false;
+    mediaDemuxer_->CheckCodecChange(buffer, trackId, needRelease);
+    EXPECT_EQ(needRelease, false);
+}
+
+/**
+ * @tc.name: CheckCodecChangeWithBuffer_005
+ * @tc.desc: Test CheckCodecChange(buffer, trackId, needRelease) interface, audio track with EOS and CHECK_CODEC_CHANGE
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChangeWithBuffer_005, TestSize.Level1)
+{
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = std::make_shared<Meta>();
+    buffer->meta_->SetData(Tag::CHECK_CODEC_CHANGE, true);
+    buffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
+    mediaDemuxer_->audioTrackId_ = NUM_1;
+    int32_t trackId = NUM_1;
+    bool needRelease = false;
+    mediaDemuxer_->CheckCodecChange(buffer, trackId, needRelease);
+    EXPECT_EQ(needRelease, true);
+}
+
+/**
+ * @tc.name: CheckCodecChangeWithBuffer_006
+ * @tc.desc: Test CheckCodecChange(buffer, trackId, needRelease) interface, video track, hiplayerCallback_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChangeWithBuffer_006, TestSize.Level1)
+{
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = std::make_shared<Meta>();
+    buffer->meta_->SetData(Tag::CHECK_CODEC_CHANGE, true);
+    buffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
+    mediaDemuxer_->audioTrackId_ = NUM_2;
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    mediaDemuxer_->hiplayerCallback_ = nullptr;
+    int32_t trackId = NUM_1;
+    bool needRelease = false;
+    mediaDemuxer_->CheckCodecChange(buffer, trackId, needRelease);
+    EXPECT_EQ(needRelease, false);
+}
+
+/**
+ * @tc.name: CheckCodecChangeWithBuffer_007
+ * @tc.desc: Test CheckCodecChange(buffer, trackId, needRelease) interface, video track, codec changed
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChangeWithBuffer_007, TestSize.Level1)
+{
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = std::make_shared<Meta>();
+    buffer->meta_->SetData(Tag::CHECK_CODEC_CHANGE, true);
+    buffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
+    mediaDemuxer_->audioTrackId_ = NUM_2;
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    auto mockCallback = std::make_shared<MockFilterCallback>();
+    mockCallback->isCodecChanged_ = true;
+    mediaDemuxer_->hiplayerCallback_ = mockCallback;
+    std::string taskName = "SampleConsumer";
+    auto taskPtr = std::make_unique<MockTask>(taskName, mediaDemuxer_->playerId_);
+    EXPECT_CALL(*taskPtr, PauseAsync()).Times(1);
+    EXPECT_CALL(*taskPtr, Pause()).Times(1);
+    mediaDemuxer_->sampleConsumerTaskMap_[NUM_1] = std::move(taskPtr);
+    int32_t trackId = NUM_1;
+    bool needRelease = false;
+    mediaDemuxer_->CheckCodecChange(buffer, trackId, needRelease);
+    EXPECT_EQ(needRelease, false);
+}
+
+/**
+ * @tc.name: CheckCodecChangeWithBuffer_008
+ * @tc.desc: Test CheckCodecChange(buffer, trackId, needRelease) interface, video track, codec not changed
+ * @tc.type: FUNC
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChangeWithBuffer_008, TestSize.Level1)
+{
+    auto buffer = std::make_shared<AVBuffer>();
+    buffer->meta_ = std::make_shared<Meta>();
+    buffer->meta_->SetData(Tag::CHECK_CODEC_CHANGE, true);
+    buffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
+    mediaDemuxer_->audioTrackId_ = NUM_2;
+    mediaDemuxer_->videoTrackId_ = NUM_1;
+    auto mockCallback = std::make_shared<MockFilterCallback>();
+    mockCallback->isCodecChanged_ = false;
+    mediaDemuxer_->hiplayerCallback_ = mockCallback;
+    int32_t trackId = NUM_1;
+    bool needRelease = false;
+    mediaDemuxer_->CheckCodecChange(buffer, trackId, needRelease);
+    EXPECT_EQ(needRelease, true);
+}
 }  // namespace OHOS::Media

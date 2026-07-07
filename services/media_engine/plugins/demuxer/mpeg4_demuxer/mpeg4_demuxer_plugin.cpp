@@ -515,9 +515,11 @@ bool GetSkipInfoEditedAudioDurationUs(
 {
     const auto& entries = context.entries;
     const auto& currentSample = context.currentSample;
+    const auto& track = context.packet.track;
     uint32_t sampleIndex = context.packet.sampleIndex;
     // Edit-list audio with skip samples may need to merge the previous packet spacing into the tail.
-    if (rawTailDuration != currentSample.duration || entries.front().skipSamplesInfo.empty() || sampleIndex == 0) {
+    if (rawTailDuration != currentSample.duration || track == nullptr || track->sampleHelper == nullptr ||
+        !track->sampleHelper->HasSkipSamplesInfo(0) || sampleIndex == 0) {
         return false;
     }
     int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
@@ -704,9 +706,13 @@ bool ShouldClearAudioDiscardForSkipPacket(
     const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
     const MPEG4SampleHelper::SampleIndexEntry& currentSample, bool hasPlayableVideoTrack)
 {
-    FALSE_RETURN_V_NOLOG(track != nullptr && track->codecParms.trackType == AUDIO_TYPE &&
-        track->sampleHelper != nullptr && !(currentSample.skipSamplesInfo.empty()), false);
-    uint32_t skipSamples = GetSkipSamplesFromInfo(currentSample.skipSamplesInfo);
+    const auto* skipSamplesInfo = track != nullptr && track->sampleHelper != nullptr ?
+        track->sampleHelper->GetSkipSamplesInfo(sampleIndex) : nullptr;
+    if (track == nullptr || track->codecParms.trackType != AUDIO_TYPE || track->sampleHelper == nullptr ||
+        skipSamplesInfo == nullptr) {
+        return false;
+    }
+    uint32_t skipSamples = GetSkipSamplesFromInfo(*skipSamplesInfo);
     if (skipSamples == 0 || currentSample.duration <= 0) {
         return false;
     }
@@ -895,7 +901,11 @@ Status BuildReadSamplePacketAttr(const ReadSamplePacketContext& context, ReadSam
 
     const auto& currentSample = entries[context.sampleIndex];
     attr.flag = GetPacketSampleFlag(track, context.sampleIndex, currentSample, context.hasPlayableVideoTrack);
-    attr.skipSamplesInfo = currentSample.skipSamplesInfo;
+    const auto* skipSamplesInfo = track != nullptr && track->sampleHelper != nullptr ?
+        track->sampleHelper->GetSkipSamplesInfo(context.sampleIndex) : nullptr;
+    if (skipSamplesInfo != nullptr) {
+        attr.skipSamplesInfo = *skipSamplesInfo;
+    }
     attr.sourceSampleIndex = context.sampleIndex;
     return Status::OK;
 }
@@ -1036,6 +1046,28 @@ MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
     MEDIA_LOG_D("Out");
 }
 
+void MPEG4DemuxerPlugin::ReleaseReferenceParserState()
+{
+    referenceParser_ = nullptr;
+    isInit_ = false;
+    ptsOfIndexZero_ = 0;
+    std::map<int64_t, int64_t>().swap(pts2Dts_);
+    std::map<int64_t, uint32_t>().swap(dts2SyncSampleIndex_);
+    std::unordered_map<uint32_t, int64_t>().swap(sampleIndex2Pts_);
+    refParserTrackIdx_ = -1;
+    std::vector<uint32_t>().swap(syncSamplesIndex_);
+    refParserStartTime_ = -1;
+    refParserPendingSeekMsTime_ = -1;
+    refParserCurGopId_ = 0;
+    refParserIsForward_ = true;
+    std::list<uint32_t>().swap(processingSyncSamplesIndex_);
+    std::unordered_map<int32_t, int64_t>().swap(gopId2DecodedSamplePts_);
+    mimeTypeOfVideoStream_ = MimeType::INVALID_TYPE;
+    startPts_ = 0;
+    updatePosIsForward_ = true;
+    refParserState_.store(true, std::memory_order_release);
+}
+
 void MPEG4DemuxerPlugin::ResetParam()
 {
     ReleaseReadLoop();
@@ -1052,6 +1084,7 @@ void MPEG4DemuxerPlugin::ResetParam()
     cacheSamples_.clear();
     pendingWebVttSamples_.clear();
     rawDtsPrefix_.clear();
+    ReleaseReferenceParserState();
     
     hasMoofBox_ = false;
     hasSidxBox_ = false;

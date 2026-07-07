@@ -533,7 +533,7 @@ HWTEST_F(SFDManagerTest, IsCodecSupported_SecureDecoder_029, TestSize.Level1)
 
 /**
  * @tc.name: OnInputBufferAvailable_AfterCsdCached_030
- * @tc.desc: Verify OnInputBufferAvailable skips tempCsdBufferMap insertion after CSD is cached.
+ * @tc.desc: Verify OnInputBufferAvailable still inserts to tempCsdBufferMap when CSD cache is incomplete.
  * @tc.type: FUNC
  */
 HWTEST_F(SFDManagerTest, OnInputBufferAvailable_AfterCsdCached_030, TestSize.Level1)
@@ -546,10 +546,10 @@ HWTEST_F(SFDManagerTest, OnInputBufferAvailable_AfterCsdCached_030, TestSize.Lev
     EXPECT_FALSE(manager.isCsdCached_);
     EXPECT_TRUE(manager.tempCsdBufferMap_.empty());  // Cleared after caching complete
 
-    // After isCsdCached_=true, new buffers skip tempCsdBufferMap_ insertion
+    // isCsdCached_ still false (CSD not enough size/no sync frame), buffer still inserted
     auto buffer2 = CreateMockBuffer(0, 100);
     manager.OnInputBufferAvailable(1, buffer2);
-    EXPECT_FALSE(manager.tempCsdBufferMap_.empty());  // Still empty, skipped insertion
+    EXPECT_FALSE(manager.tempCsdBufferMap_.empty());  // Buffer inserted, map not empty
 }
 
 /**

@@ -22,6 +22,7 @@
 #include "codeclist_core.h"
 #include "media_description.h"
 #include "meta/meta_key.h"
+#include "buffer/avbuffer_common.h"
 #include "ui/rs_surface_node.h"
 #include "window_manager.h"
 #include "window_option.h"
@@ -37,6 +38,10 @@ using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
 using namespace testing;
 using namespace testing::ext;
+
+namespace {
+constexpr uint32_t BUFFER_IS_EOS = 1;
+}
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -1185,6 +1190,345 @@ HWTEST_F(CodecServerUnitTest, SetAudioDecryptionConfig_Test_001, TestSize.Level1
     svpFlag = false;
     ret = codecBaseMock_->SetAudioDecryptionConfig(keySession, svpFlag);
     EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: HandleOutputBufferAvailability_Test_001
+ * @tc.desc: Test HandleOutputBufferAvailability with nullptr buffer
+ */
+HWTEST_F(CodecServerUnitTest, HandleOutputBufferAvailability_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    uint32_t index = 1;
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    server_->HandleOutputBufferAvailability(index, buffer);
+}
+
+/**
+ * @tc.name: HandleOutputBufferAvailability_Test_002
+ * @tc.desc: Test HandleOutputBufferAvailability with sfdManager_ and MakePostDecodeDecision returns false
+ */
+HWTEST_F(CodecServerUnitTest, HandleOutputBufferAvailability_Test_002, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->sfdManager_ = std::make_unique<SFD::SmartFluencyDecodingManager>("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    uint32_t index = 1;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer, nullptr);
+    server_->HandleOutputBufferAvailability(index, buffer);
+}
+
+/**
+ * @tc.name: HandleOutputBufferAvailability_Test_003
+ * @tc.desc: Test HandleOutputBufferAvailability with isSurfaceMode_ and decoder and valid memory
+ */
+HWTEST_F(CodecServerUnitTest, HandleOutputBufferAvailability_Test_003, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->codecType_ = AVCODEC_TYPE_VIDEO_DECODER;
+    server_->isSurfaceMode_ = true;
+    uint32_t index = 1;
+    AVBufferConfig bufferConfig;
+    bufferConfig.size = 1024;
+    bufferConfig.capacity = 1024;
+    bufferConfig.memoryType = MemoryType::VIRTUAL_MEMORY;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(bufferConfig);
+    EXPECT_NE(buffer, nullptr);
+    EXPECT_NE(buffer->memory_, nullptr);
+    server_->HandleOutputBufferAvailability(index, buffer);
+    EXPECT_EQ(buffer->memory_, nullptr);
+}
+
+/**
+ * @tc.name: HandleOutputBufferAvailability_Test_004
+ * @tc.desc: Test HandleOutputBufferAvailability with isLocalReleaseMode_ true
+ */
+HWTEST_F(CodecServerUnitTest, HandleOutputBufferAvailability_Test_004, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(false);
+    uint32_t index = 1;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer, nullptr);
+    server_->HandleOutputBufferAvailability(index, buffer);
+    EXPECT_EQ(server_->indexs_.size(), 1u);
+    server_->isReleaseFree_.store(true);
+    server_->releaseBufferCondition_.notify_all();
+}
+
+/**
+ * @tc.name: HandleOutputBufferAvailability_Test_005
+ * @tc.desc: Test HandleOutputBufferAvailability with videoCb_ nullptr
+ */
+HWTEST_F(CodecServerUnitTest, HandleOutputBufferAvailability_Test_005, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->videoCb_ = nullptr;
+    uint32_t index = 1;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer, nullptr);
+    server_->HandleOutputBufferAvailability(index, buffer);
+}
+
+/**
+ * @tc.name: HandleOutputBufferAvailability_Test_006
+ * @tc.desc: Test HandleOutputBufferAvailability with valid videoCb_
+ */
+HWTEST_F(CodecServerUnitTest, HandleOutputBufferAvailability_Test_006, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
+    uint32_t index = 1;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer, nullptr);
+    EXPECT_CALL(*mock, OnOutputBufferAvailable(index, buffer)).Times(1);
+    server_->HandleOutputBufferAvailability(index, buffer);
+    server_->videoCb_ = nullptr;
+}
+
+/**
+ * @tc.name: HandleOutputBufferAvailability_Test_007
+ * @tc.desc: Test HandleOutputBufferAvailability with encoder
+ */
+HWTEST_F(CodecServerUnitTest, HandleOutputBufferAvailability_Test_007, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->codecType_ = AVCODEC_TYPE_VIDEO_ENCODER;
+    server_->isSurfaceMode_ = true;
+    uint32_t index = 1;
+    AVBufferConfig bufferConfig;
+    bufferConfig.size = 1024;
+    bufferConfig.capacity = 1024;
+    bufferConfig.memoryType = MemoryType::VIRTUAL_MEMORY;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(bufferConfig);
+    EXPECT_NE(buffer, nullptr);
+    EXPECT_NE(buffer->memory_, nullptr);
+    server_->HandleOutputBufferAvailability(index, buffer);
+    EXPECT_NE(buffer->memory_, nullptr);
+}
+
+/**
+ * @tc.name: ReleaseBuffer_Test_001
+ * @tc.desc: Test ReleaseBuffer with isReleaseFree_ true
+ */
+HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_001, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(true);
+    server_->ReleaseBuffer();
+}
+
+/**
+ * @tc.name: ReleaseBuffer_Test_002
+ * @tc.desc: Test ReleaseBuffer with empty indexs_
+ */
+HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_002, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(false);
+    server_->indexs_.clear();
+    std::thread notifyThread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        server_->isReleaseFree_.store(true);
+        server_->releaseBufferCondition_.notify_all();
+    });
+    server_->ReleaseBuffer();
+    notifyThread.join();
+}
+
+/**
+ * @tc.name: ReleaseBuffer_Test_003
+ * @tc.desc: Test ReleaseBuffer with nullptr buffer
+ */
+HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_003, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(false);
+    uint32_t index = 1;
+    server_->indexs_.push_back(std::make_pair(index, nullptr));
+    std::thread notifyThread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        server_->isReleaseFree_.store(true);
+        server_->releaseBufferCondition_.notify_all();
+    });
+    server_->ReleaseBuffer();
+    notifyThread.join();
+}
+
+/**
+ * @tc.name: ReleaseBuffer_Test_004
+ * @tc.desc: Test ReleaseBuffer with EOS buffer
+ */
+HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_004, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->status_ = CodecServer::CodecStatus::RUNNING;
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(false);
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
+    uint32_t index = 1;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer, nullptr);
+    buffer->flag_ = BUFFER_IS_EOS;
+    server_->indexs_.push_back(std::make_pair(index, buffer));
+    EXPECT_CALL(*mock, OnOutputBufferAvailable(index, buffer)).Times(1);
+    std::thread notifyThread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        server_->isReleaseFree_.store(true);
+        server_->releaseBufferCondition_.notify_all();
+    });
+    server_->ReleaseBuffer();
+    notifyThread.join();
+    server_->videoCb_ = nullptr;
+}
+
+/**
+ * @tc.name: ReleaseBuffer_Test_005
+ * @tc.desc: Test ReleaseBuffer with pts > lastBufferPts_
+ */
+HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_005, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->status_ = CodecServer::CodecStatus::RUNNING;
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(false);
+    server_->lastBufferPts_.store(100);
+    uint32_t index = 1;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer, nullptr);
+    buffer->pts_ = 200;
+    server_->indexs_.push_back(std::make_pair(index, buffer));
+    EXPECT_CALL(*codecBaseMock_, RenderOutputBuffer(index)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    std::thread notifyThread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        server_->isReleaseFree_.store(true);
+        server_->releaseBufferCondition_.notify_all();
+    });
+    server_->ReleaseBuffer();
+    notifyThread.join();
+}
+
+/**
+ * @tc.name: ReleaseBuffer_Test_006
+ * @tc.desc: Test ReleaseBuffer with pts <= lastBufferPts_ (drop buffer)
+ */
+HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_006, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->status_ = CodecServer::CodecStatus::RUNNING;
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(false);
+    server_->lastBufferPts_.store(200);
+    uint32_t index = 1;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer, nullptr);
+    buffer->pts_ = 100;
+    server_->indexs_.push_back(std::make_pair(index, buffer));
+    EXPECT_CALL(*codecBaseMock_, ReleaseOutputBuffer(index)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    std::thread notifyThread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        server_->isReleaseFree_.store(true);
+        server_->releaseBufferCondition_.notify_all();
+    });
+    server_->ReleaseBuffer();
+    notifyThread.join();
+}
+
+/**
+ * @tc.name: ReleaseBuffer_Test_007
+ * @tc.desc: Test ReleaseBuffer with multiple buffers
+ */
+HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_007, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->status_ = CodecServer::CodecStatus::RUNNING;
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(false);
+    server_->lastBufferPts_.store(100);
+    
+    for (uint32_t i = 0; i < 3; i++) {
+        std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+        EXPECT_NE(buffer, nullptr);
+        buffer->pts_ = 200 + i * 100;
+        server_->indexs_.push_back(std::make_pair(i, buffer));
+    }
+    
+    EXPECT_CALL(*codecBaseMock_, RenderOutputBuffer).Times(3).WillRepeatedly(Return(AVCS_ERR_OK));
+    std::thread notifyThread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        server_->isReleaseFree_.store(true);
+        server_->releaseBufferCondition_.notify_all();
+    });
+    server_->ReleaseBuffer();
+    notifyThread.join();
+}
+
+/**
+ * @tc.name: ReleaseBuffer_Test_008
+ * @tc.desc: Test ReleaseBuffer with mixed normal and EOS buffers
+ */
+HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_008, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->status_ = CodecServer::CodecStatus::RUNNING;
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(false);
+    server_->lastBufferPts_.store(100);
+    auto mock = std::make_shared<MediaCodecCallbackMock>();
+    server_->videoCb_ = mock;
+    
+    std::shared_ptr<AVBuffer> buffer1 = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer1, nullptr);
+    buffer1->pts_ = 200;
+    server_->indexs_.push_back(std::make_pair(1, buffer1));
+    
+    std::shared_ptr<AVBuffer> buffer2 = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer2, nullptr);
+    buffer2->flag_ = BUFFER_IS_EOS;
+    server_->indexs_.push_back(std::make_pair(2, buffer2));
+    
+    EXPECT_CALL(*codecBaseMock_, RenderOutputBuffer(1)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*mock, OnOutputBufferAvailable(2, buffer2)).Times(1);
+    
+    std::thread notifyThread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        server_->isReleaseFree_.store(true);
+        server_->releaseBufferCondition_.notify_all();
+    });
+    server_->ReleaseBuffer();
+    notifyThread.join();
+    server_->videoCb_ = nullptr;
+}
+
+/**
+ * @tc.name: ReleaseBuffer_Test_009
+ * @tc.desc: Test ReleaseBuffer with EOS buffer and videoCb_ nullptr
+ */
+HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_009, TestSize.Level1)
+{
+    CreateHCodecByMime();
+    server_->status_ = CodecServer::CodecStatus::RUNNING;
+    server_->isLocalReleaseMode_ = true;
+    server_->isReleaseFree_.store(false);
+    server_->videoCb_ = nullptr;
+    uint32_t index = 1;
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
+    EXPECT_NE(buffer, nullptr);
+    buffer->flag_ = BUFFER_IS_EOS;
+    server_->indexs_.push_back(std::make_pair(index, buffer));
+    std::thread notifyThread([this]() {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        server_->isReleaseFree_.store(true);
+        server_->releaseBufferCondition_.notify_all();
+    });
+    server_->ReleaseBuffer();
+    notifyThread.join();
 }
 
 } // MediaAVCodec

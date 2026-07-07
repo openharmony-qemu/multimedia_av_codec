@@ -631,8 +631,8 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         auto callback = eventCallback_.lock();
         if (callback) {
             MEDIA_LOG_E("ParseManifest parse failed.");
-            callback->OnEvent({PluginEventType::CLIENT_ERROR,
-                              {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
+            callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+                "errorMessage: Parse Invalid M3U8 file"});
         }
     }
 }
@@ -671,15 +671,16 @@ void HlsPlayListDownloader::SetDefaultStreamId(
     UpdateManifestAndNotifyListChange(isPreParse_);
     auto currentVariant = GetThreadSafeCurrentVariant();
     if (audioStreamId == -1 && currentVariant != nullptr && currentVariant->defaultAudio_ != nullptr) {
-        audioStreamId = currentVariant->defaultAudio_->streamId_;
+        audioStreamId = static_cast<int32_t>(currentVariant->defaultAudio_->streamId_);
     }
     if (subTitleStreamId == -1 && currentVariant != nullptr && currentVariant->defaultSubtitles_ != nullptr) {
-        subTitleStreamId = currentVariant->defaultSubtitles_->streamId_;
+        subTitleStreamId = static_cast<int32_t>(currentVariant->defaultSubtitles_->streamId_);
     }
     auto callback = eventCallback_.lock();
     if (!master->isParseSuccess_ && callback != nullptr) {
         MEDIA_LOG_E("ParseManifest parse failed.");
-        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT}, "parse m3u8"});
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+            "errorMessage: Invalid M3U8 file"});
     }
 }
 
@@ -1155,13 +1156,13 @@ void HlsPlayListDownloader::GetMediaStreams(StreamType streamType, std::vector<S
         }
         bool isDefault = false;
         if (streamType == StreamType::AUDIO && audioStreamId_.load() != -1) {
-            isDefault = media->streamId_ == audioStreamId_.load();
+            isDefault = media->streamId_ == static_cast<uint32_t>(audioStreamId_.load());
         } else if (streamType == StreamType::AUDIO && currentVariant != nullptr) {
             isDefault = currentVariant->defaultAudio_ != nullptr &&
                 media->streamId_ == currentVariant->defaultAudio_->streamId_;
         }
         if (streamType == StreamType::SUBTITLE && subtitleStreamId_.load() != -1) {
-            isDefault = media->streamId_ == subtitleStreamId_.load();
+            isDefault = media->streamId_ == static_cast<uint32_t>(subtitleStreamId_.load());
             streamInfo.sniffSize = DEFAULT_SUBTITLE_SNIFFSIZE;
         } else if (streamType == StreamType::SUBTITLE && currentVariant != nullptr) {
             isDefault = currentVariant->defaultSubtitles_ != nullptr &&
@@ -1250,9 +1251,9 @@ int32_t HlsPlayListDownloader::GetDefaultMediaStreamId(HlsSegmentType mediaType)
         MEDIA_LOG_I("no default streamId.");
     }
     if (mediaType == HlsSegmentType::SEG_AUDIO && currentVariant->defaultAudio_ != nullptr) {
-        return currentVariant->defaultAudio_->streamId_;
+        return static_cast<int32_t>(currentVariant->defaultAudio_->streamId_);
     } else if (currentVariant->defaultSubtitles_ != nullptr) {
-        return currentVariant->defaultSubtitles_->streamId_;
+        return static_cast<int32_t>(currentVariant->defaultSubtitles_->streamId_);
     } else {
         MEDIA_LOG_I("no DefaultMediaStreamId.");
     }
@@ -1345,7 +1346,7 @@ void HlsPlayListDownloader::UpdateStreamInfo()
     audioStreamIds_.clear();
     subtitlesStreamIds_.clear();
     auto master = GetThreadSafeMaster();
-    FALSE_RETURN_NOLOG(master != nullptr);
+    FALSE_RETURN_MSG(master != nullptr, "master_ is nullptr");
     for (const auto &stream: master->variants_) {
         if (stream == nullptr) {
             continue;

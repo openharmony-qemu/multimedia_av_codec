@@ -155,6 +155,7 @@ public:
     void ClearSampleQueues();
 
     Status StartTask(int32_t trackId);
+    Status StartTask(Plugins::MediaType mediaType);
     Status SelectTrack(uint32_t trackIndex); // Interface for AVDemuxer
     Status UnselectTrack(uint32_t trackIndex); // Interface for AVDemuxer
     Status ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample); // Interface for AVDemuxer
@@ -268,6 +269,7 @@ public:
     bool BoostThreadPriorityIfNeeded();
     bool IsWatchDevice();
     bool IsBuffering();
+    void SetHiplayerCallback(const std::shared_ptr<Pipeline::FilterCallback> &callback);
     void SetTrackSelectionFilter(const TrackSelectionFilter &filter);
     void SetIsTriggerAutoMode(bool isAutoSelect);
     Status SetPlayStrategy(const std::shared_ptr<PlayStrategy> playStrategy);
@@ -575,6 +577,10 @@ private:
     Status PushBufferBySlices(int32_t trackId, std::shared_ptr<SampleQueue>& sampleQueue,
         std::shared_ptr<AVBuffer>& dstBuffer, sptr<AVBufferQueueProducer>& bufferQueue);
     void ReportMediaChangedFailedEvent();
+    void PushCodecCheckBuffer(int32_t trackId);
+    void CheckCodecChange(const std::shared_ptr<SampleQueue> &sampleQueue, int32_t trackId, bool& needRelease);
+    void CheckCodecChange(const std::shared_ptr<AVBuffer>& buffer, int32_t trackId, bool& needRelease);
+    Status PauseConsumerTaskByTrackId(int32_t trackId);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -737,6 +743,7 @@ private:
     std::mutex frameCountNeedDropMutex_ {};
     std::recursive_mutex streamMapMutex_ {};
     std::map<int32_t, uint32_t> frameCountNeedDrop_;
+    std::shared_ptr<Pipeline::FilterCallback> hiplayerCallback_;
     std::atomic<bool> isAutoSelect_ {true};
     std::atomic<bool> isForceAutoSelect_ {false};
     std::atomic<uint32_t> curDownloadBitRate_ {0};

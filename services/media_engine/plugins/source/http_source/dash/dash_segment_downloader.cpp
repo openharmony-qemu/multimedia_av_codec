@@ -1123,6 +1123,7 @@ void DashSegmentDownloader::PutRequestIntoDownloader(unsigned int duration, int6
         realStatusCallback, requestInfo, requestWholeFile);
     request->SetDownloadDoneCb(downloadDoneCallback);
     request->SetRequestProtocolType(RequestProtocolType::DASH);
+    request->SetRequestType(RequestType::DASH_MEDIA_DATA);
     if (!requestWholeFile && (endPos > startPos)) {
         request->SetRangePos(startPos, endPos);
     }
@@ -1274,7 +1275,7 @@ bool DashSegmentDownloader::IsNeedBufferForPlaying()
     auto callback = callback_.lock();
     if (GetBufferingTimeOut() && callback != nullptr) {
         callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-                            "buffer for playing"});
+            "errorMessage:dash buffer timeout due to request error"});
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;

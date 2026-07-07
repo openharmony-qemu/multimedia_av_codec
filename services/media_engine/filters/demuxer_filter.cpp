@@ -163,6 +163,8 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     this->receiver_ = receiver;
     this->callback_ = callback;
     this->interruptMonitor_ = monitor;
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->SetHiplayerCallback(callback);
     MEDIA_LOG_D("DemuxerFilter Init for drm callback");
 
     std::shared_ptr<OHOS::MediaAVCodec::AVDemuxerCallback> drmCallback =
@@ -745,6 +747,12 @@ Status DemuxerFilter::StartTask(int32_t trackId)
     return demuxer_->StartTask(trackId);
 }
 
+Status DemuxerFilter::StartTask(Plugins::MediaType mediaType)
+{
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    return demuxer_->StartTask(mediaType);
+}
+
 Status DemuxerFilter::SelectTrack(int32_t trackId)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SelectTrack");
@@ -1227,30 +1235,30 @@ void DemuxerFilter::HandleAdsSeek(int64_t seekTime)
 
 void DemuxerFilter::EnsureInterstitialController()
 {
-    if (!interstitialController_) {
-        interstitialController_ = std::make_shared<InterstitialController>();
-        interstitialController_->Init(demuxer_, syncCenter_);
-        demuxer_->SetInterstitialController(interstitialController_);
-        if (mediaSource_) {
-            interstitialController_->SetMainContentUri(mediaSource_->GetSourceUri());
+    FALSE_RETURN(interstitialController_ == nullptr);
+    MEDIA_LOG_I("EnsureInterstitialController create InterstitialController");
+    interstitialController_ = std::make_shared<InterstitialController>();
+    interstitialController_->Init(demuxer_, syncCenter_);
+    demuxer_->SetInterstitialController(interstitialController_);
+    if (mediaSource_) {
+        interstitialController_->SetMainContentUri(mediaSource_->GetSourceUri());
+    }
+    interstitialController_->SetAdsEventCallback([weakSelf = weak_from_this()](
+        const AdsChangeEvent& event) {
+        auto self = weakSelf.lock();
+        if (!self || !self->receiver_) {
+            return;
         }
-        interstitialController_->SetAdsEventCallback([weakSelf = weak_from_this()](
-            const AdsChangeEvent& event) {
-            auto self = weakSelf.lock();
-            if (!self || !self->receiver_) {
-                return;
-            }
-            auto avEvent = std::make_shared<MediaAVCodec::AVAdsChangeEvent>();
-            avEvent->type = static_cast<int32_t>(event.type);
-            avEvent->eventId = event.eventId;
-            avEvent->durationMs = event.durationMs;
-            avEvent->errorCode = event.errorCode;
-            avEvent->errorMessage = event.errorMessage;
-            self->receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ADS_CHANGE, Any(avEvent)});
-        });
-        if (speedChangeCallback_) {
-            interstitialController_->SetSpeedChangeCallback(speedChangeCallback_);
-        }
+        auto avEvent = std::make_shared<MediaAVCodec::AVAdsChangeEvent>();
+        avEvent->type = static_cast<int32_t>(event.type);
+        avEvent->eventId = event.eventId;
+        avEvent->durationMs = event.durationMs;
+        avEvent->errorCode = event.errorCode;
+        avEvent->errorMessage = event.errorMessage;
+        self->receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ADS_CHANGE, Any(avEvent)});
+    });
+    if (speedChangeCallback_) {
+        interstitialController_->SetSpeedChangeCallback(speedChangeCallback_);
     }
 }
 
@@ -1303,6 +1311,8 @@ Status DemuxerFilter::RemoveAdsMediaSource(const std::string& id)
 
 Status DemuxerFilter::DisableAllAdsMediaSource()
 {
+    EnsureInterstitialController();
+    EnsureInterstitialScheduler();
     FALSE_RETURN_V_MSG_E(interstitialController_ != nullptr, Status::ERROR_INVALID_PARAMETER,
         "interstitialController_ is nullptr");
     return interstitialController_->DisableAllAdsMediaSource();

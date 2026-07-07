@@ -1704,6 +1704,41 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_016, TestSize.Level1)
     EXPECT_EQ(res.size(), 0);
 }
 
+HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering_001, TestSize.Level1)
+{
+    size_t now = static_cast<size_t>(MP4httpMediaDownloader->steadyClock_.ElapsedMilliseconds());
+    MP4httpMediaDownloader->bufferingTime_ = now - 1000;
+    MP4httpMediaDownloader->timeoutInterval_ = 100;
+    MP4httpMediaDownloader->isBuffering_ = true;
+    EXPECT_FALSE(MP4httpMediaDownloader->HandleBuffering());
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, HandleRingBuffering_001, TestSize.Level1)
+{
+    unsigned char buff[1 * 1024 * 1024];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    size_t now = static_cast<size_t>(FLVhttpMediaDownloader->steadyClock_.ElapsedMilliseconds());
+    FLVhttpMediaDownloader->bufferingTime_ = now - 1000;
+    FLVhttpMediaDownloader->timeoutInterval_ = 100;
+    FLVhttpMediaDownloader->isBuffering_ = true;
+    FLVhttpMediaDownloader->isReportedErrorCode_ = false;
+    EXPECT_EQ(FLVhttpMediaDownloader->HandleRingBuffer(buff, readDataInfo), Status::END_OF_STREAM);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, HandleCacheBuffering_001, TestSize.Level1)
+{
+    unsigned char buff[1 * 1024 * 1024];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    size_t now = static_cast<size_t>(MP4httpMediaDownloader->steadyClock_.ElapsedMilliseconds());
+    MP4httpMediaDownloader->bufferingTime_ = now - 1000;
+    MP4httpMediaDownloader->timeoutInterval_ = 100;
+    MP4httpMediaDownloader->isBuffering_ = true;
+    MP4httpMediaDownloader->isReportedErrorCode_ = false;
+    EXPECT_EQ(FLVhttpMediaDownloader->HandleCacheBuffer(buff, readDataInfo), Status::END_OF_STREAM);
+}
+
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RARE_SPEED_NORMAL, TestSize.Level1)
 {
     auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);

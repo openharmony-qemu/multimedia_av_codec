@@ -15,6 +15,9 @@
 
 #include "auto_fallback_retention_strategy.h"
 #include "avcodec_log.h"
+#include <algorithm>
+#include "double_utils.h"
+#include "smart_fluency_decoding_types.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -22,25 +25,73 @@ namespace SFD {
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "AutoFallbackStrategy"};
-// In the absence of a better PPS-based scheme, 0.8 is the safe fallback ratio.
-constexpr double DEFAULT_FALLBACK_RATIO = 0.8;
 }
 
 AutoFallbackRetentionStrategy::AutoFallbackRetentionStrategy()
 {
-    fallbackDropper_ = std::make_unique<FixedRatioRetentionStrategy>(DEFAULT_FALLBACK_RATIO);
-    AVCODEC_LOGD("AutoFallbackRetentionStrategy created (Delegating to FixedRatio: %{public}.3f)",
-                 DEFAULT_FALLBACK_RATIO);
+    AVCODEC_LOGD("AutoFallbackRetentionStrategy created (passthrough, waiting for sourceFps)");
+}
+
+double AutoFallbackRetentionStrategy::CalculateFallbackRatio() const
+{
+    double renderFps = sourceFps_ * currentSpeed_;
+    if (DoubleUtils::IsLessOrEqual(renderFps, 0.0)) {
+        return 1.0;
+    }
+    return std::clamp(FALLBACK_TARGET_FPS / renderFps, MIN_RETENTION_RATIO, MAX_RETENTION_RATIO);
+}
+
+void AutoFallbackRetentionStrategy::ApplyCalculatedRatio()
+{
+    double ratio = CalculateFallbackRatio();
+    if (fallbackDropper_ == nullptr) {
+        fallbackDropper_ = std::make_unique<FixedRatioRetentionStrategy>(ratio);
+        AVCODEC_LOGD("AutoFallback activates calculated ratio: %{public}.3f "
+                     "(sourceFps=%{public}.3f, speed=%{public}.3f)", ratio, sourceFps_, currentSpeed_);
+    } else {
+        fallbackDropper_->UpdateTargetRatio(ratio);
+        AVCODEC_LOGD("AutoFallback recalculated ratio to %{public}.3f "
+                     "(sourceFps=%{public}.3f, speed=%{public}.3f)", ratio, sourceFps_, currentSpeed_);
+    }
 }
 
 bool AutoFallbackRetentionStrategy::MakeRetentionDecision(const FrameRetentionContext& ctx)
 {
+    if (!hasSourceFps_) {
+        AVCODEC_LOGD("AutoFallback passthrough: retaining all frames (waiting for sourceFps)");
+        return true;
+    }
     return fallbackDropper_->MakeRetentionDecision(ctx);
+}
+
+void AutoFallbackRetentionStrategy::UpdatePlaybackSpeed(double speed)
+{
+    AVCODEC_LOGD("AutoFallback UpdatePlaybackSpeed: %{public}.3f -> %{public}.3f", currentSpeed_, speed);
+    currentSpeed_ = DoubleUtils::IsGreater(speed, 0.0) ? speed : 1.0;
+    if (hasSourceFps_) {
+        ApplyCalculatedRatio();
+    }
+}
+
+void AutoFallbackRetentionStrategy::UpdateSourceFramerate(double sourceFps)
+{
+    AVCODEC_LOGD("AutoFallback UpdateSourceFramerate: %{public}.3f -> %{public}.3f", sourceFps_, sourceFps);
+    if (DoubleUtils::IsGreater(sourceFps, 0.0)) {
+        sourceFps_ = sourceFps;
+        hasSourceFps_ = true;
+        ApplyCalculatedRatio();
+    }
 }
 
 void AutoFallbackRetentionStrategy::Reset()
 {
-    fallbackDropper_->Reset();
+    hasSourceFps_ = false;
+    sourceFps_ = 0.0;
+    currentSpeed_ = 1.0;
+    if (fallbackDropper_) {
+        fallbackDropper_->Reset();
+    }
+    AVCODEC_LOGD("AutoFallbackRetentionStrategy reset (back to passthrough)");
 }
 
 RetentionStrategyType AutoFallbackRetentionStrategy::GetMode() const
@@ -50,16 +101,37 @@ RetentionStrategyType AutoFallbackRetentionStrategy::GetMode() const
 
 double AutoFallbackRetentionStrategy::GetRatio() const
 {
-    return fallbackDropper_->GetRatio();
+    if (!hasSourceFps_) {
+        return 1.0;
+    }
+    return fallbackDropper_ ? fallbackDropper_->GetRatio() : 1.0;
 }
 
 SfdDecisionReason AutoFallbackRetentionStrategy::GetLastDecisionReason() const
 {
+    if (!hasSourceFps_) {
+        return SfdDecisionReason::POST_RETAIN_FULL;
+    }
     SfdDecisionReason internalReason = fallbackDropper_->GetLastDecisionReason();
     if (internalReason == SfdDecisionReason::POST_RETAIN_FIXED_ACC) {
         return SfdDecisionReason::POST_RETAIN_AUTO_FALLBACK;
     }
     return internalReason;
+}
+
+bool AutoFallbackRetentionStrategy::IsPassthrough() const
+{
+    return !hasSourceFps_;
+}
+
+bool AutoFallbackRetentionStrategy::RequiresNaluAnalysis() const
+{
+    return hasSourceFps_;
+}
+
+bool AutoFallbackRetentionStrategy::RequiresMvAnalysis() const
+{
+    return false;
 }
 
 } // namespace SFD

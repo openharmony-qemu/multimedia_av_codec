@@ -380,7 +380,7 @@ DashMpdGetRet DashMpdDownloader::GetNextSegmentByStreamId(int streamId, std::sha
                 streamDescription->currentNumberSeq_ - streamDescription->startNumberSeq_ + 1;
             MEDIA_LOG_D("get segment index :" PUBLIC_LOG_D64 ", id:" PUBLIC_LOG_D32 ", seq:"
                 PUBLIC_LOG_D64, segmentIndex, streamDescription->streamId_, streamDescription->currentNumberSeq_);
-            if (segmentIndex >= 0 && (unsigned int) segmentIndex < streamDescription->mediaSegments_.size()) {
+            if (segmentIndex >= 0 && static_cast<uint64_t>(segmentIndex) < streamDescription->mediaSegments_.size()) {
                 seg = streamDescription->mediaSegments_[segmentIndex];
                 streamDescription->currentNumberSeq_ = seg->numberSeq_;
                 MEDIA_LOG_D("after get segment index :"
@@ -934,7 +934,7 @@ void DashMpdDownloader::ParseSidx()
     }
 
     std::list<std::shared_ptr<SubSegmentIndex>> subSegIndexList;
-    int32_t parseRet = SidxBoxParser::ParseSidxBox(const_cast<char *>(sidxContent.c_str()), sidxContent.length(),
+    int32_t parseRet = SidxBoxParser::ParseSidxBox(sidxContent.data(), sidxContent.length(),
                                                    currentDownloadStream_->indexSegment_->indexRangeEnd_,
                                                    subSegIndexList);
     if (parseRet != 0) {
@@ -993,7 +993,7 @@ void DashMpdDownloader::BuildDashSegment(std::list<std::shared_ptr<SubSegmentInd
         srcSegment.endRangeValue_ = subSegIndex->endPos_;
         srcSegment.url_ = currentDownloadStream_->indexSegment_->url_; // only store url in stream in Dash On-Demand
         srcSegment.byteRange_ = "";
-        if (DASH_SEGMENT_INIT_FAILED == AddOneSegment(srcSegment, currentDownloadStream_)) {
+        if (AddOneSegment(srcSegment, currentDownloadStream_) == DASH_SEGMENT_INIT_FAILED) {
             MEDIA_LOG_E("ParseSidx AddOneSegment is failed");
         }
     }
@@ -1061,6 +1061,7 @@ void DashMpdDownloader::DoOpen(const std::string& url, int64_t startRange, int64
     FALSE_RETURN_MSG(downloadRequest != nullptr, "downloadRequest is nullptr");
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest->SetRequestProtocolType(RequestProtocolType::DASH);
+    downloadRequest->SetRequestType(RequestType::DASH_MPD);
     if (!requestWholeFile) {
         downloadRequest->SetRangePos(startRange, endRange);
     }
@@ -1936,7 +1937,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
             return DASH_SEGMENT_INIT_FAILED;
         }
 
-        if (DASH_SEGMENT_INIT_FAILED == AddOneSegment(segRealDur, segmentSeq, tempUrl, desc)) {
+        if (AddOneSegment(segRealDur, segmentSeq, tempUrl, desc) == DASH_SEGMENT_INIT_FAILED) {
             return DASH_SEGMENT_INIT_FAILED;
         }
     }
@@ -2019,7 +2020,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInOneTimeline(const DashSegTi
             return DASH_SEGMENT_INIT_FAILED;
         }
 
-        if (DASH_SEGMENT_INIT_FAILED == AddOneSegment(sampleInfo.segDuration_, segmentSeq, tempUrl, streamDesc)) {
+        if (AddOneSegment(sampleInfo.segDuration_, segmentSeq, tempUrl, streamDesc) == DASH_SEGMENT_INIT_FAILED) {
             MEDIA_LOG_E("AddOneSegment with SegmentTimeline in static is failed");
             return DASH_SEGMENT_INIT_FAILED;
         }
@@ -2145,7 +2146,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithSegList(const DashSegList
         srcSegment.numberSeq_ = segmentSeq;
         srcSegment.url_ = mediaUrl;
         srcSegment.byteRange_ = (*it)->mediaRange_;
-        if (DASH_SEGMENT_INIT_FAILED == AddOneSegment(srcSegment, streamDesc)) {
+        if (AddOneSegment(srcSegment, streamDesc) == DASH_SEGMENT_INIT_FAILED) {
             return DASH_SEGMENT_INIT_FAILED;
         }
         segmentCount++;
@@ -2221,7 +2222,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithBaseUrl(std::list<std::st
         srcSegment.url_ = baseUrlList.front();
     }
 
-    if (DASH_SEGMENT_INIT_FAILED == AddOneSegment(srcSegment, streamDesc)) {
+    if (AddOneSegment(srcSegment, streamDesc) == DASH_SEGMENT_INIT_FAILED) {
         MEDIA_LOG_E("GetSegmentsWithBaseUrl AddOneSegment is failed");
         return DASH_SEGMENT_INIT_FAILED;
     }

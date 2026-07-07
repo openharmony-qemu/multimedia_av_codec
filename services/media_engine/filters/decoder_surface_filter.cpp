@@ -1629,6 +1629,10 @@ void DecoderSurfaceFilter::HandleFirstOutput()
 
 void DecoderSurfaceFilter::HandleEosOutput(int index)
 {
+    bool isHandled = false;
+    HandleCodecChange(index, isHandled);
+    FALSE_RETURN_MSG_W(!isHandled, "Handled codec change.");
+
     int64_t curTimeNs = GetSystimeTimeNs();
     int64_t lastRenderTimeNs = lastRenderTimeNs_.load();
     if (lastRenderTimeNs == HST_TIME_NONE || curTimeNs >= lastRenderTimeNs || !eosTask_) {
@@ -1953,6 +1957,60 @@ Status DecoderSurfaceFilter::GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyn
         FALSE_RETURN_V(videoSink_ != nullptr, Status::ERROR_INVALID_OPERATION);
         return videoSink_->GetAVSyncInfo(syncCount, totalSyncDurationMs);
     }
+
+bool DecoderSurfaceFilter::IsCodecChanged(const std::shared_ptr<Meta> &newMeta)
+{
+    FALSE_RETURN_V(meta_ != nullptr && newMeta != nullptr, false);
+
+    std::string oldMime;
+    std::string newMime;
+    FALSE_RETURN_V(meta_->GetData(Tag::MIME_TYPE, oldMime) && newMeta->GetData(Tag::MIME_TYPE, newMime), false);
+    FALSE_RETURN_V_NOLOG(oldMime != newMime, false);
+    MEDIA_LOG_I("Video codec change, oldMime: %{public}s, newMime: %{public}s", oldMime.c_str(), newMime.c_str());
+    return true;
+}
+
+void DecoderSurfaceFilter::SetNewMeta(const std::shared_ptr<Meta> &meta)
+{
+    std::unique_lock<std::mutex> lock(newMetaMutex_);
+    newMeta_ = meta;
+}
+
+void DecoderSurfaceFilter::HandleCodecChange(int32_t index, bool &isHandled)
+{
+    isHandled = false;
+    std::shared_ptr<Meta> localMeta;
+    {
+        std::unique_lock<std::mutex> lock(newMetaMutex_);
+        FALSE_RETURN(newMeta_ != nullptr);
+        localMeta = newMeta_;
+        newMeta_ = nullptr;
+    }
+    isHandled = true;
+    DoReleaseOutputBuffer(index, false);
+
+    ChangePlugin(localMeta);
+
+    FALSE_RETURN(eventReceiver_ != nullptr);
+    eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_VIDEO_DECODER_CHANGE_END});
+}
+
+void DecoderSurfaceFilter::ChangePlugin(const std::shared_ptr<Meta> &newMeta)
+{
+    FALSE_RETURN(videoDecoder_ != nullptr);
+    FALSE_RETURN_MSG(newMeta->GetData(Tag::MIME_TYPE, codecMimeType_), "get mime failed.");
+
+    videoDecoder_->Release();
+    meta_ = newMeta;
+    meta_->SetData(Tag::AV_PLAYER_IS_DRM_PROTECTED, isDrmProtected_);
+
+    auto ret = DoInitAfterLink();
+    FALSE_RETURN_MSG(ret == Status::OK, "DoInitAfterLink fail");
+
+    videoDecoder_->Flush();
+    DoStart();
+    MEDIA_LOG_I("Video codec changed newMime: %{public}s", codecMimeType_.c_str());
+}
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

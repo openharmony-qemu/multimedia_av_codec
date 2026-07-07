@@ -118,6 +118,16 @@ DownloadRequest::DownloadRequest(uint64_t keyIndex, KeyDataSaveFunc keySaveData,
     keyIndex_ = keyIndex;
 }
 
+void DownloadRequest::SetRequestType(RequestType requestType)
+{
+    requestType_ = requestType;
+}
+
+RequestType DownloadRequest::GetRequestType()
+{
+    return requestType_;
+}
+
 size_t DownloadRequest::GetFileContentLength() const
 {
     WaitHeaderUpdated();
@@ -735,7 +745,7 @@ void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, const 
     currentRequest_->clientError_ = clientCode;
     currentRequest_->serverError_ = serverCode;
     {
-        AutoLock loack(caMutex_);
+        AutoLock lock(caMutex_);
         ca_ = ca;
     }
     HandleRedirect(ret);
@@ -853,7 +863,7 @@ void Downloader::HandleRetOK()
     } else {
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
-    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 1) { // Check whether the playback ends.
+    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
         currentRequest_->isEos_ = true;
         HandlePlayingFinish();
@@ -1067,6 +1077,7 @@ size_t Downloader::SaveBodyData(Downloader* mediaDownloader, void* buffer, size_
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }
+    mediaDownloader->currentRequest_->isDownloading_ = false;
     return dataLen;
 }
 

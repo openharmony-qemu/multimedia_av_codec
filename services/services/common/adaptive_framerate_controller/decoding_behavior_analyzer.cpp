@@ -37,7 +37,7 @@ constexpr double MAX_REPORT_FPS = 60.0;
 constexpr int64_t SEEK_DETECTION_THRESHOLD_MS = 1000;
 constexpr double MIN_CAL_DURATION_MS = 100.0;
 constexpr double SMOOTHING_FACTOR = 0.5;
-constexpr int64_t MIN_REASONABLE_DIFF = 8;
+constexpr int64_t MIN_REASONABLE_DIFF_US = 8000;
 #ifdef SUPPORT_FPS_FOR_MEMC
 constexpr size_t FPS_WINDOW_SIZE = 3;
 constexpr uint32_t CONTINUES_FRAME_CNT = 5;
@@ -85,13 +85,13 @@ void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
 #endif
     int64_t ptsMs = pts / 1000; // 1000: us to ms
     if (lastPtsMs_ != -1 && std::abs(ptsMs - lastPtsMs_) > SEEK_DETECTION_THRESHOLD_MS) {
-        AVCODEC_LOGI("seek detection, lastPtsMs %{public}" PRId64 ", ptsMs %{public}" PRId64 "", lastPtsMs_, ptsMs);
+        AVCODEC_LOGD("seek detection, lastPtsMs %{public}" PRId64 ", ptsMs %{public}" PRId64 "", lastPtsMs_, ptsMs);
         ResetIntervalStats();
     }
     if (frameCnt_ == 0) {
         startSysTime_ = std::chrono::steady_clock::now();
     }
-    ptsWin_.push_back(ptsMs);
+    ptsWin_.push_back(pts);
     if (ptsWin_.size() > PTS_WINDOW_MAX_SIZE) {
         ptsWin_.pop_front();
     }
@@ -112,14 +112,14 @@ double DecodingBehaviorAnalyzer::GetSrcFps()
     int64_t minValidDiff = INT64_MAX;
     for (size_t i = 1; i < sortedPts.size(); ++i) {
         int64_t diff = sortedPts[i] - sortedPts[i - 1];
-        if (diff >= MIN_REASONABLE_DIFF && diff < minValidDiff) {
+        if (diff >= MIN_REASONABLE_DIFF_US && diff < minValidDiff) {
             minValidDiff = diff;
         }
     }
     if (minValidDiff == 0) {
         return 0.0;
     }
-    return 1000.0 / minValidDiff; // 1000.0: ms to s
+    return 1000000.0 / minValidDiff; // 1000000.0: us to s
 }
 
 #ifdef SUPPORT_FPS_FOR_MEMC
@@ -338,7 +338,7 @@ void DecodingBehaviorAnalyzer::ResetIntervalStats()
     droppedCnt_ = 0;
     ptsWin_.clear();
     hasSendPauseEvent_ = false;
-    AVCODEC_LOGI("ResetIntervalStats");
+    AVCODEC_LOGD("ResetIntervalStats");
 }
 
 void DecodingBehaviorAnalyzer::OnChecked(double decFps)
@@ -403,7 +403,7 @@ size_t DecodingBehaviorAnalyzer::UpdateSpeedEstimates(double speed)
     }
     size_t newSpeedIdx = MatchAndUpdateSpeedStats(decInSpeed_);
     double stdSpeed = standardSpeeds[newSpeedIdx];
-    AVCODEC_LOGI("speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f",
+    AVCODEC_LOGD("speed: %{public}.2f, avgSpeed: %{public}.2f, stdSpeed %{public}.2f, srcFps %{public}.2f",
         speed, decInSpeed_, stdSpeed, srcFps_);
     if (decInfoCallBack_) {
         decInfoCallBack_(srcFps_, stdSpeed);

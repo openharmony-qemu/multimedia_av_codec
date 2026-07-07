@@ -48,7 +48,7 @@ using DeleteFuncType = uint32_t (*)(AVC_ENC_HANDLE hEncoder);
 
 #define SCOPED_TRACE_AVC(name) HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, name)
 
-class AvcEncoder : public CodecBase, public RefBase {
+class AvcEncoder : public CodecBase, public RefBase, public std::enable_shared_from_this<AvcEncoder> {
 public:
     explicit AvcEncoder(const std::string &name);
     ~AvcEncoder() override;
@@ -123,7 +123,7 @@ private:
 
     void ReleaseSurfaceBuffer();
     void ClearDirtyList();
-    void WaitForInBuffer();
+    void WaitForInBuffer(std::unique_lock<std::mutex> &listLock);
     void FillEncodedBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
 
     void ReleaseSurfaceBufferByAVBuffer(std::shared_ptr<AVBuffer> &buffer);
@@ -217,10 +217,10 @@ private:
 private:
     class EncoderBuffersConsumerListener : public IBufferConsumerListener {
     public:
-        explicit EncoderBuffersConsumerListener(AvcEncoder *codec) : codec_(codec) {}
+        explicit EncoderBuffersConsumerListener(std::weak_ptr<AvcEncoder> codec) : codec_(codec) {}
         void OnBufferAvailable() override;
     private:
-        AvcEncoder *codec_ = nullptr;
+        std::weak_ptr<AvcEncoder> codec_;
     };
 
     AVC_ENC_HANDLE avcEncoder_ = nullptr;
@@ -257,7 +257,7 @@ private:
     int32_t encQpMin_;
     int32_t encIperiod_;
     double encFrameRate_;
-    bool encIdrRequest_ = false;
+    std::atomic<bool> encIdrRequest_ = false;
     bool enableSurfaceModeInputCb_ = false;
     bool enableIdrAppendXps_ = false;
     uint8_t srcRange_ = 0;

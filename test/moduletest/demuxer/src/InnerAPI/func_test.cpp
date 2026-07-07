@@ -1719,7 +1719,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0800, TestSize.Leve
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_0100, TestSize.Level0)
 {
     std::string codecName = "";
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         GetCodecNameFromTrack("/data/test/media/mp3_h265.mkv", 0, codecName);
         ASSERT_EQ(codecName, "hevc");
         GetCodecNameFromTrack("/data/test/media/mp3_h265.mkv", 1, codecName);
@@ -1985,7 +1985,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_1900, TestSize.Le
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2000, TestSize.Level0)
 {
     std::string codecName = "";
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         GetCodecNameFromTrack("/data/test/media/double_hevc.mp4", 0, codecName);
         ASSERT_EQ(codecName, "hevc");
         GetCodecNameFromTrack("/data/test/media/double_hevc.mp4", 1, codecName);
@@ -2001,7 +2001,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2000, TestSize.Le
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2100, TestSize.Level0)
 {
     std::string codecName = "";
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         GetCodecNameFromTrack("/data/test/media/video_9audio.mp4", 0, codecName);
         ASSERT_EQ(codecName, "hevc");
         for (int32_t i = 1; i <= 9; i++) {
@@ -2019,7 +2019,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_CODECNAME_INNER_FUNC_2100, TestSize.Le
 HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_ENCODER_INNER_FUNC_0100, TestSize.Level0)
 {
     std::string codecName = "";
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         fd_ = open("/data/test/media/test_265_B_Gop25_4sec.mp4", O_RDONLY);
         struct stat fileStatus {};
         if (stat("/data/test/media/test_265_B_Gop25_4sec.mp4", &fileStatus) == 0) {

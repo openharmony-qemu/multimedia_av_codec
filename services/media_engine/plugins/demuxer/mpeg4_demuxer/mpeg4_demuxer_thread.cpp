@@ -329,16 +329,14 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
     FALSE_RETURN_V_MSG_E(size > 0, Status::ERROR_INVALID_BUFFER_SIZE, "Invalid buffer size");
     FALSE_RETURN_V_MSG_E(size < READ_SIZE_LIMIT_DEFAULT, Status::ERROR_INVALID_BUFFER_SIZE, "Invalid buffer size");
     size_t bufferSize = static_cast<size_t>(size);
-    auto buffer = std::make_shared<Buffer>();
-    FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "Buffer allocation failed");
     sample->data = std::make_unique<uint8_t[]>(size);
     FALSE_RETURN_V_MSG_E(sample->data != nullptr, Status::ERROR_NO_MEMORY, "Memory allocation failed");
-    buffer->WrapMemory(sample->data.get(), size, size);
 
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
+    size_t totalRead = 0;
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
-    while (ret == Status::ERROR_AGAIN &&
+    while (totalRead < bufferSize &&
         (readTimeoutMs_.load(std::memory_order_acquire) >= 0 || count < READ_RETRY_TIMES)) {
         if (stopReadThread_.load(std::memory_order_acquire) ||
             avReadPacketStopState_.load(std::memory_order_acquire) == AVReadPacketStopState::TRUE) {
@@ -346,26 +344,42 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
             sample->data.reset();
             return Status::ERROR_WRONG_STATE;
         }
-        ret = dataSource_->ReadAt(pos, buffer, bufferSize);
+        size_t remaining = bufferSize - totalRead;
+        auto buffer = std::make_shared<Buffer>();
+        FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "Buffer allocation failed");
+        auto bufferMemory = buffer->WrapMemory(sample->data.get() + totalRead, remaining, 0);
+        FALSE_RETURN_V_MSG_E(bufferMemory != nullptr, Status::ERROR_NO_MEMORY, "Memory allocation failed");
+
+        uint64_t currentPos = pos + static_cast<uint64_t>(totalRead);
+        ret = dataSource_->ReadAt(static_cast<int64_t>(currentPos), buffer, remaining);
         auto memory = buffer->GetMemory();
         FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
-        if (ret == Status::OK && memory->GetSize() == bufferSize) {
+        size_t readSize = std::min(memory->GetSize(), remaining);
+        MEDIA_LOG_D("Want:" PUBLIC_LOG_ZU ", Get:" PUBLIC_LOG_ZU ", offset:" PUBLIC_LOG_U64,
+            remaining, readSize, currentPos);
+        if (readSize > 0) {
+            totalRead += readSize;
             readStartTimeMs_.store(0, std::memory_order_release);
+            count = 0;
+            continue;
+        }
+        if (ret != Status::OK && ret != Status::ERROR_AGAIN) {
             break;
         }
-        Status retryRet = UpdateReadSampleDataTimeout(ret, sample);
+        Status retryRet = UpdateReadSampleDataTimeout(Status::ERROR_AGAIN, sample);
         FALSE_RETURN_V(retryRet == Status::OK, retryRet);
         ++count;
         usleep(READ_RETRY_SLEEP_TIME_US);
     }
 
-    auto memory = buffer->GetMemory();
-    FALSE_RETURN_V_MSG_E(memory != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
-    FALSE_RETURN_V_MSG_E(memory->GetSize() <= INT32_MAX, Status::ERROR_UNKNOWN, "Memory size too large, may cause dataSize overflow");
-    int32_t dataSize = static_cast<int32_t>(memory->GetSize());
+    FALSE_RETURN_V_MSG_E(totalRead <= INT32_MAX, Status::ERROR_UNKNOWN, "TotalRead size too large, may cause dataSize overflow");
+    int32_t dataSize = static_cast<int32_t>(totalRead);
     MEDIA_LOG_D("Want:" PUBLIC_LOG_D32 ", Get:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, size, dataSize, pos);
-    FALSE_RETURN_V_MSG_E(dataSize > 0, Status::ERROR_AGAIN, "No enough data");
-    return ret;
+    if (totalRead != bufferSize && ret != Status::OK && ret != Status::ERROR_AGAIN) {
+        return ret;
+    }
+    FALSE_RETURN_V_MSG_E(totalRead == bufferSize, Status::ERROR_AGAIN, "No enough data");
+    return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size, uint32_t trackId)
