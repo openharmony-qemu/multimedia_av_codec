@@ -359,6 +359,12 @@ struct Av3aChannelConfig {
     int32_t channels;
 };
 
+struct MultiplyDisplayMatrixDataLen {
+    size_t lenA = 0;
+    size_t lenB = 0;
+    size_t lenC = 0;
+};
+
 constexpr std::array<Av3aResolutionInfo, 4> AV3A_RESOLUTION_TABLE = {{
     {AudioSampleFormat::SAMPLE_U8, 8},
     {AudioSampleFormat::SAMPLE_S16LE, 16},
@@ -517,10 +523,10 @@ bool IsDisplayMatrixIdentity(const int32_t matrix[3][3], const size_t len)
 }
 
 void MultiplyDisplayMatrix(const int32_t a[3][3], const int32_t b[3][3], int32_t result[3][3],
-                           const size_t lenA, const size_t lenB, const size_t lenC)
+                           MultiplyDisplayMatrixDataLen len)
 {
     FALSE_RETURN_MSG(a != nullptr && b != nullptr && result != nullptr, "Invalid params");
-    FALSE_RETURN_MSG(lenA == 36UL && lenB == 36UL && lenC == 36UL, "Invalid params len");
+    FALSE_RETURN_MSG(len.lenA == 36UL && len.lenB == 36UL && len.lenC == 36UL, "Invalid params len");
     // MPEG4 display matrix的位移量，用于定点数运算
     // [0][0], [1][1] 元素使用16位小数
     // [2][2] 元素使用30位小数
@@ -1579,8 +1585,9 @@ Status MPEG4AtomParser::ParseTkhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         // 计算最终的display matrix (track * movie)
         int32_t resultMatrix[DISPLAY_MATRIX_ROWS][DISPLAY_MATRIX_COLS];
         if (ctx->hasMovieDisplayMatrix) {
-            MultiplyDisplayMatrix(trackDisplayMatrix, ctx->movieDisplayMatrix, resultMatrix,
-                                  sizeof(trackDisplayMatrix), sizeof(ctx->movieDisplayMatrix), sizeof(resultMatrix));
+            MultiplyDisplayMatrixDataLen len{sizeof(trackDisplayMatrix),
+                                             sizeof(ctx->movieDisplayMatrix), sizeof(resultMatrix)};
+            MultiplyDisplayMatrix(trackDisplayMatrix, ctx->movieDisplayMatrix, resultMatrix, len);
         } else {
             FALSE_RETURN_V_MSG_E(
                 memcpy_s(&resultMatrix[0][0], sizeof(int32_t) * DISPLAY_MATRIX_ROWS * DISPLAY_MATRIX_COLS,

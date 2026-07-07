@@ -64,8 +64,9 @@ int32_t GetSampleSizeWithCodecConfigForThread(const MediaInfo& mediaInfo,
         mediaInfo.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata) &&
         (sample->flag & Sample::SampleFlag::SYNC_FRAME)) {
         int32_t newSampleSize = 0;
-        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(sampleSize, static_cast<int32_t>(extradata.size()), &newSampleSize),
-        0, "SampleSize overflow");
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(sampleSize,
+                                                     static_cast<int32_t>(extradata.size()), &newSampleSize),
+                                                     0, "SampleSize overflow");
         sampleSize = newSampleSize;
     }
     return sampleSize;
@@ -371,7 +372,6 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
         ++count;
         usleep(READ_RETRY_SLEEP_TIME_US);
     }
-
     FALSE_RETURN_V_MSG_E(totalRead <= INT32_MAX, Status::ERROR_UNKNOWN,
                          "TotalRead size too large, may cause dataSize overflow");
     int32_t dataSize = static_cast<int32_t>(totalRead);
