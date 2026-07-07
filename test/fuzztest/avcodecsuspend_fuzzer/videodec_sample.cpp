@@ -197,6 +197,7 @@ void VDecFuzzSample::ReleaseInFile()
 void VDecFuzzSample::StopInLoop()
 {
     if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        isRunning_.store(false);
         unique_lock<mutex> lock(signal_->inMutex_);
         clearIntqueue(signal_->inIdxQueue_);
         signal_->inCond_.notify_all();
@@ -425,6 +426,7 @@ int32_t VDecFuzzSample::Flush()
 {
     unique_lock<mutex> inLock(signal_->inMutex_);
     clearIntqueue(signal_->inIdxQueue_);
+    clearAvBufferQueue(signal_->inBufferQueue_);
     signal_->inCond_.notify_all();
     inLock.unlock();
     isRunning_.store(false);

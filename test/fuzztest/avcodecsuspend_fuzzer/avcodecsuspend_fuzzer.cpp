@@ -173,14 +173,20 @@ bool AvcodecSuspend002FuzzTest(FuzzedDataProvider *fdp)
     vDecSample->SetVideoDecoderCallback();
     vDecSample->StartVideoDecoder();
     if (!FreezeRepeat(fdp, pid)) {
+        delete vDecSample;
+        vDecSample = nullptr;
         return false;
     }
     vDecSample->Flush();
     if (!FreezeAvitiveRepeat(fdp, pid)) {
+        delete vDecSample;
+        vDecSample = nullptr;
         return false;
     }
     vDecSample->Stop();
     if (!FreezeAvitive(fdp)) {
+        delete vDecSample;
+        vDecSample = nullptr;
         return false;
     }
     vDecSample->Release();
