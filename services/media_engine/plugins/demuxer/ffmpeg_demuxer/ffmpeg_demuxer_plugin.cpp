@@ -598,7 +598,11 @@ void FFmpegDemuxerPlugin::InitBitStreamContext(const AVStream& avStream)
             "Call av_bsf_alloc failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
 
         ret = avcodec_parameters_copy(avbsfContext->par_in, avStream.codecpar);
-        FALSE_RETURN_MSG((ret >= 0), "Call avcodec_parameters_copy failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
+        if (ret < 0) {
+            av_bsf_free(&avbsfContext);
+            MEDIA_LOG_E("Call avcodec_parameters_copy failed, err:" PUBLIC_LOG_S, AVStrError(ret).c_str());
+            return;
+        }
 
         ret = av_bsf_init(avbsfContext);
         if (ret < 0) {
