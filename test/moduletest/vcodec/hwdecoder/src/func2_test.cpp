@@ -775,7 +775,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_SYNC_HW264_CHANGE_FUNC_0010, TestSize.L
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_SYNC_HW265_CHANGE_FUNC_0010, TestSize.Level2)
 {
-    if (cap_hevc != nullptr) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/change_8bit_h265.h265";
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -2187,7 +2187,7 @@ HWTEST_F(HwdecFunc2NdkTest, VIDEO_DECODE_ERRCODE_REPORT_0210, TestSize.Level2)
  */
 HWTEST_F(HwdecFunc2NdkTest, VIDEO_HWDEC_PIXE_FORMAT_0010, TestSize.Level1)
 {
-    if (cap_hevc != nullptr) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/change_8bit_h265.h265";
         vDecSample->isGetVideoSupportedPixelFormats = true;

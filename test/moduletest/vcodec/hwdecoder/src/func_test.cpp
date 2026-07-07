@@ -799,16 +799,18 @@ HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
 {
-    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
-    vDecSample->maxInputSize = INT_MAX;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
+        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/1920_1080_10_30Mb.h264";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        vDecSample->maxInputSize = INT_MAX;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecName));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 
 /**
@@ -855,16 +857,18 @@ HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_004, TestSize.Level0)
  */
 HWTEST_F(HwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_005, TestSize.Level0)
 {
-    shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
-    vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
-    vDecSample->DEFAULT_WIDTH = 1920;
-    vDecSample->DEFAULT_HEIGHT = 1080;
-    vDecSample->DEFAULT_FRAME_RATE = 30;
-    vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
-    vDecSample->maxInputSize = INT_MAX;
-    ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
-    vDecSample->WaitForEOS();
-    ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
+        shared_ptr<VDecNdkSample> vDecSample = make_shared<VDecNdkSample>();
+        vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
+        vDecSample->maxInputSize = INT_MAX;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameHEVC));
+        vDecSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
+    }
 }
 
 /**

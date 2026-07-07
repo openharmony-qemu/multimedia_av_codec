@@ -681,7 +681,7 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_1300, TestSize.Level2)
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_AVC, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
     string codecName = OH_AVCapability_GetName(capability);
-    ASSERT_GT(0, OH_AVCapability_GetMaxSupportedInstances(capability));
+    ASSERT_GT(OH_AVCapability_GetMaxSupportedInstances(capability), 0);
 }
 
 /**
@@ -694,7 +694,7 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_1310, TestSize.Level2)
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
     ASSERT_NE(nullptr, capability);
     string codecName = OH_AVCapability_GetName(capability);
-    ASSERT_GT(0, OH_AVCapability_GetMaxSupportedInstances(capability));
+    ASSERT_GT(OH_AVCapability_GetMaxSupportedInstances(capability), 0);
 }
 
 /**

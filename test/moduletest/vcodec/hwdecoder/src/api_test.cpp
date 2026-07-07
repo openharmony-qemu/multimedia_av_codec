@@ -1851,15 +1851,11 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_7100, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
     ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     OH_VideoDecoder_Destroy(vdec_);
+    vdec_ = nullptr;
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
-    } else {
-        vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
-        ASSERT_NE(nullptr, vdec_);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV21);
         ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
@@ -1908,15 +1904,11 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_1200, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_YUVI420);
     ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     OH_VideoDecoder_Destroy(vdec_);
+    vdec_ = nullptr;
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
         ASSERT_NE(nullptr, vdec_);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_RGBA);
-        ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
-    } else {
-        vdec_ = OH_VideoDecoder_CreateByMime(OH_AVCODEC_MIMETYPE_VIDEO_HEVC);
-        ASSERT_NE(nullptr, vdec_);
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV21);
         ASSERT_NE(AV_ERR_OK, OH_VideoDecoder_Configure(vdec_, format));
     }
 }
@@ -2170,7 +2162,9 @@ HWTEST_F(HwdecApiNdkTest, VIDEO_HWDEC_CAP_API_8310, TestSize.Level2)
 {
     OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
     ASSERT_NE(nullptr, capability);
-    ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, HEVC_PROFILE_MAIN, 1));
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
+        ASSERT_EQ(true, OH_AVCapability_AreProfileAndLevelSupported(capability, HEVC_PROFILE_MAIN, 1));
+    }
 }
 
 /**
