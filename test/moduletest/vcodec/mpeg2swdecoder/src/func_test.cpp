@@ -127,7 +127,7 @@ static void RunDec(DecInfo decinfo)
     vDecSample->WaitForEOS();
 }
 
-bool isWukong100Device()
+bool IsWukong100Device()
 {
     std::string buildtimeValue = OHOS::system::GetParameter(IMAGE_BUILDTIME_KEY, DEFAULT_BUILDTIME_VALUE);
     return buildtimeValue.find(WUKONG100_KEYWORD) != std::string::npos;
@@ -267,7 +267,7 @@ HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_MPEG2SWDEC_FUNCTION_0600, TestSize.Level2)
  */
 HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_MPEG2SWDEC_FUNCTION_0700, TestSize.Level2)
 {
-    if (cap_mpeg2 != nullptr && !isWukong100Device()) {
+    if (cap_mpeg2 != nullptr && !IsWukong100Device()) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_2;
         vDecSample->DEFAULT_WIDTH = 640;
