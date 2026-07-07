@@ -66,7 +66,7 @@ int32_t GetSampleSizeWithCodecConfigForThread(const MediaInfo& mediaInfo,
         int32_t newSampleSize = 0;
         FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(sampleSize,
                                                      static_cast<int32_t>(extradata.size()), &newSampleSize),
-                                                     0, "SampleSize overflow");
+                             0, "SampleSize overflow");
         sampleSize = newSampleSize;
     }
     return sampleSize;
