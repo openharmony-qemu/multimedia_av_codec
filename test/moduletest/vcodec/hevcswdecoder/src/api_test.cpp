@@ -121,7 +121,7 @@ HWTEST_F(HevcSwdecApiNdkTest, VIDEO_SWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
 {
     if (cap_hevc) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecName_hevc.c_str());
-        ASSERT_EQ(NULL, vdec_);
+        ASSERT_NE(NULL, vdec_);
     }
 }
 
