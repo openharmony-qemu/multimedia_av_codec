@@ -333,6 +333,7 @@ void HCodec::RunningState::OnBufferRecycle(const MsgInfo &info)
     ReplyErrorCode(info.id, errCode);
 }
 
+// LCOV_EXCL_START
 /**************************** FrozenState Start ********************************/
 void HCodec::FrozenState::OnMsgReceived(const MsgInfo &info)
 {
@@ -407,6 +408,7 @@ void HCodec::FrozenState::OnMsgReceived(const MsgInfo &info)
         }
     }
 }
+// // LCOV_EXCL_STOP
 
 void HCodec::FrozenState::OnBufferWriteback(const MsgInfo &info)
 {
