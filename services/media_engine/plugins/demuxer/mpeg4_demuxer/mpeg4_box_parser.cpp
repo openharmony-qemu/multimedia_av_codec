@@ -2436,7 +2436,7 @@ void MPEG4AtomParser::SetMpegAudioAttribute()
 Status MPEG4AtomParser::SetVorbisAudioAttribute()
 {
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_F32P);
-    if (lastTrack_->codecParms.data == nullptr || lastTrack_->codecParms.extradataSize <14) {
+    if (lastTrack_->codecParms.data == nullptr || lastTrack_->codecParms.extradataSize < 14) {
         MEDIA_LOG_E("Invalid Vorbis codec params");
         return Status::ERROR_INVALID_DATA;
     }

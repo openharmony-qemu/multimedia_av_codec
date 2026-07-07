@@ -694,7 +694,7 @@ Status FFmpegDemuxerPlugin::SetDrmCencInfo(
     size_t cencInfoSize = 0;
     MetaDrmCencInfo *cencInfo = (MetaDrmCencInfo *)av_packet_get_side_data(firstPkt,
         AV_PKT_DATA_ENCRYPTION_INFO, &cencInfoSize);
-    if ((cencInfo != nullptr) && (cencInfoSize >= sizeof(MetaDrmCencInfo))) {
+    if ((cencInfo != nullptr) && (cencInfoSize == sizeof(MetaDrmCencInfo))) {
         std::vector<uint8_t> drmCencVec(reinterpret_cast<uint8_t *>(cencInfo),
             (reinterpret_cast<uint8_t *>(cencInfo)) + sizeof(MetaDrmCencInfo));
         sample->meta_->SetData(Media::Tag::DRM_CENC_INFO, std::move(drmCencVec));

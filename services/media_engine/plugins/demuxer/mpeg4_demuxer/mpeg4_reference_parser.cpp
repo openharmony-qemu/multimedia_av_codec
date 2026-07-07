@@ -441,8 +441,6 @@ Status MPEG4DemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t t
     uint32_t sampleCount = GetSampleCount(trackIndex);
     FALSE_RETURN_V_MSG_E(sampleCount <= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT, Status::ERROR_INVALID_DATA,
         "Sample count exceeds limit");
-    FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA,
-        "Sample count zero or overflow");
     
     ResetParametersOfPTSAndIndexConversion();
     // Obtain the absolute pts of the first sample
