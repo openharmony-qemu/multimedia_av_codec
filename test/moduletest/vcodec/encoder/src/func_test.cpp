@@ -198,9 +198,9 @@ HWTEST_F(HwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0700, TestSize.Level1)
         ASSERT_NE(nullptr, venc_);
         format = OH_AVFormat_Create();
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, 1));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES, 
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES,
                                                 OH_ColorPrimary::COLOR_PRIMARY_BT709));
-        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, 
+        ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS,
                                                 OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_LINEAR));
         ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS,
                                                 OH_MatrixCoefficient::MATRIX_COEFFICIENT_YCGCO));
