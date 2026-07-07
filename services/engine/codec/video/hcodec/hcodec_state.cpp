@@ -141,7 +141,6 @@ void HCodec::BaseState::OnSetParameters(const MsgInfo &info)
     ReplyErrorCode(info.id, codec_->OnSetParameters(params));
 }
 
-// LCOV_EXCL_START
 void HCodec::BaseState::OnCheckIfStuck(const MsgInfo &info)
 {
     int32_t generation = 0;
@@ -161,7 +160,6 @@ void HCodec::BaseState::OnForceShutDown(const MsgInfo &info)
     (void)info.param->GetValue("isNeedNotifyCaller", isNeedNotifyCaller);
     codec_->ForceShutdown(generation, isNeedNotifyCaller);
 }
-// LCOV_EXCL_STOP
 
 void HCodec::BaseState::OnSuspend(const MsgInfo &info)
 {
