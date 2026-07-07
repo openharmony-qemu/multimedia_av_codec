@@ -54,7 +54,7 @@ protected:
 };
 
 OH_AVCapability *cap = nullptr;
-string g_hevcCodeName
+string g_hevcCodeName = "";
 
 void HevcSwdecStateNdkTest::SetUpTestCase(void)
 {       
