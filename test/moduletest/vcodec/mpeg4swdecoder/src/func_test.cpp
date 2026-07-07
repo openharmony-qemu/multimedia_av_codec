@@ -91,7 +91,7 @@ void Mpeg4SwdecFuncNdkTest::TearDownTestCase() {}
 void Mpeg4SwdecFuncNdkTest::SetUp() {}
 void Mpeg4SwdecFuncNdkTest::TearDown() {}
 
-bool isWukong100Device()
+bool IsWukong100Device()
 {
     std::string buildtimeValue = OHOS::system::GetParameter(IMAGE_BUILDTIME_KEY, DEFAULT_BUILDTIME_VALUE);
     return buildtimeValue.find(WUKONG100_KEYWORD) != std::string::npos;
@@ -237,7 +237,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0700, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr && !isWukong100Device()) {
+    if (cap_mpeg4 != nullptr && !IsWukong100Device()) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
