@@ -72,6 +72,40 @@ HDecoder::~HDecoder()
 #endif
 }
 
+int32_t HDecoder::OnConfigure(const Format &format)
+{
+    currGeneration_ = 0;
+    currGenerationLayoutHasParsed_ = false;
+    currLayout_.reset();
+    configFormat_ = make_shared<Format>(format);
+    (void)SetProcessName();
+
+    if (!DecideOutputBufMode()) {
+        HLOGE("set output buffer type failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+
+    int32_t ret  = SetDecOrder(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    ret = SetLowLatency(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+
+    SetColorAspects(format);
+    SetMasteringDisplayColourVolumeFromContainer(format);
+    SetContentLightLevelFromContainer(format);
+
+    SaveTransform(format);
+    SaveScaleMode(format);
+    (void)SetFrameRateAdaptiveMode(format);
+    (void)SetVrrEnable(format);
+    (void)SetIsMvUpload(format);
+    return SetupPort(format);
+}
+
 // LCOV_EXCL_START
 bool HDecoder::DecideOutputBufMode()
 {
@@ -110,43 +144,7 @@ bool HDecoder::DecideOutputBufMode()
     }
     return UseHandleOnOutputPort(isDynamic_);
 }
-// LCOV_EXCL_STOP
 
-int32_t HDecoder::OnConfigure(const Format &format)
-{
-    currGeneration_ = 0;
-    currGenerationLayoutHasParsed_ = false;
-    currLayout_.reset();
-    configFormat_ = make_shared<Format>(format);
-    (void)SetProcessName();
-
-    if (!DecideOutputBufMode()) {
-        HLOGE("set output buffer type failed");
-        return AVCS_ERR_UNKNOWN;
-    }
-
-    int32_t ret  = SetDecOrder(format);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
-    ret = SetLowLatency(format);
-    if (ret != AVCS_ERR_OK) {
-        return ret;
-    }
-
-    SetColorAspects(format);
-    SetMasteringDisplayColourVolumeFromContainer(format);
-    SetContentLightLevelFromContainer(format);
-
-    SaveTransform(format);
-    SaveScaleMode(format);
-    (void)SetFrameRateAdaptiveMode(format);
-    (void)SetVrrEnable(format);
-    (void)SetIsMvUpload(format);
-    return SetupPort(format);
-}
-
-// LCOV_EXCL_START
 int32_t HDecoder::SetDecOrder(const Format &format)
 {
     int32_t enableDecOrder;
@@ -170,7 +168,7 @@ int32_t HDecoder::SetDecOrder(const Format &format)
     HLOGI("enable dec order succ");
     return AVCS_ERR_OK;
 }
- // LCOV_EXCL_STOP
+// LCOV_EXCL_STOP
 
 int32_t HDecoder::SetupPort(const Format &format)
 {
@@ -1343,7 +1341,6 @@ void HDecoder::OnStartJankDetect()
     detect_ = true;
     currSurface_.beginTime_ = GetCurrUs();
 }
-// LCOV_EXCL_STOP
 
 void HDecoder::OnStopJankDetect()
 {
@@ -1385,6 +1382,7 @@ void HDecoder::OnStopJankDetect()
     currSurface_.totalJankDur_ = 0;
     currSurface_.beginTime_ = 0;
 }
+// LCOV_EXCL_STOP
 
 void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
