@@ -1402,7 +1402,11 @@ int32_t HEncoder::ParseKvpairs(const std::string& kvpairs)
     std::string temp = kvpairs;
     while (std::regex_search(temp, match, kvPat)) {
         if (match[1].str() == "dqp") {
-            dqp = std::stoi(match[2].str());      // 2: value
+            try {
+                dqp = std::stoi(match[2].str());
+            } catch (...) {
+                HLOGW("stoi failed for dqp value");
+            }
         }
         temp = match.suffix().str();
     }
@@ -1421,16 +1425,24 @@ bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t wid
         return false;
     }
     
-    roiRect.top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, height);
-    roiRect.left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, width);
-    roiRect.bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, height);
-    roiRect.right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, width);
+    try {
+        roiRect.top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, height);
+        roiRect.left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, width);
+        roiRect.bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, height);
+        roiRect.right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, width);
+    } catch (...) {
+        return false;
+    }
     if (match[DELTAQP_INDEX].matched) {
         std::string kvStr = match[DELTAQP_INDEX].str();
         if (kvStr.find(":") != std::string::npos) {
             roiRect.deltaQP = ParseKvpairs(kvStr);
         } else {
-            roiRect.deltaQP = std::stoi(kvStr);
+            try {
+                roiRect.deltaQP = std::stoi(kvStr);
+            } catch (...) {
+                roiRect.deltaQP = DEFAULT_DELTAQP;
+            }
         }
     }
     return true;
@@ -1461,8 +1473,8 @@ void HEncoder::ParseRoiStringValid(const std::string& roiValue, shared_ptr<Codec
             param.roiInfo[count].regionEnable = true;
             param.roiInfo[count].absQp = 0;
             param.roiInfo[count].roiQp = roiRect.deltaQP;
-            param.roiInfo[count].roiStartX = roiRect.left;
-            param.roiInfo[count].roiStartY = roiRect.top;
+            param.roiInfo[count].roiStartX = static_cast<uint32_t>(roiRect.left);
+            param.roiInfo[count].roiStartY = static_cast<uint32_t>(roiRect.top);
             param.roiInfo[count].roiWidth = roiRect.right - roiRect.left;
             param.roiInfo[count].roiHeight = roiRect.bottom - roiRect.top;
             HLOGD("Get a valid roi: %d,%d-%d,%d qp=%d",
