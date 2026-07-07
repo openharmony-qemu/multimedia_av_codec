@@ -64,8 +64,11 @@ const int32_t AV3A_SAMPLE_24BITS = 24;
 const int32_t SMPTE2086_RED_INDEX = 0;
 const int32_t SMPTE2086_GREEN_INDEX = 1;
 const int32_t SMPTE2086_BLUE_INDEX = 2;
+const int32_t CHANNEL_LAYOUT_ID_MAX = 64;
 
 const size_t BRAND_CODE_LEN = 4; // 4 is brand code length
+constexpr size_t MAX_EXTRADATA_SIZE = 10 * 1024 * 1024; //10MB上限
+constexpr size_t MAX_COVER_SIZE = 50 * 1024 * 1024; // 50MB上限
 
 static std::map<AVPixelFormat, RawVideoPixelFormat> g_convertFfmpegPixFmt = {
     {AVPixelFormat::AV_PIX_FMT_YUV420P, RawVideoPixelFormat::YUV420P},
@@ -447,7 +450,7 @@ static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channelLayout)
         if (channelLayout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
             return mask;
         }
-        if (channelLayout->u.map[i].id >= 64) {
+        if (channelLayout->u.map[i].id >= CHANNEL_LAYOUT_ID_MAX) {
             MEDIA_LOG_E("Invalid channel id: %d", channelLayout->u.map[i].id);
             return 0;
         }
@@ -695,7 +698,6 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
         MEDIA_LOG_D("Parse bitrate failed: " PUBLIC_LOG_D64, bitRate);
     }
 
-    constexpr size_t MAX_EXTRADATA_SIZE = 10 * 1024 * 1024; //10MB上限
     if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata_size <= MAX_EXTRADATA_SIZE
         && avStream.codecpar->extradata != nullptr) {
         std::vector<uint8_t> extra(avStream.codecpar->extradata_size);
@@ -780,7 +782,7 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
 {
     size_t sideDataSize = 0;
     int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, &sideDataSize);
-    if (displayMatrix && sideDataSize >= 9) {
+    if (displayMatrix && sideDataSize >= DISPLAY_MATRIX_SIZE) {
         float rotation = -round(av_display_rotation_get(displayMatrix));
         MEDIA_LOG_D("Parse rotate info from display matrix: " PUBLIC_LOG_F, rotation);
         if (isnan(rotation)) {
@@ -835,7 +837,7 @@ void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Me
     VideoOrientationType orientationType = VideoOrientationType::ROTATE_NONE;
     size_t sideDataSize = 0;
     int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, &sideDataSize);
-    if (displayMatrix && sideDataSize >= 9) {
+    if (displayMatrix && sideDataSize >= DISPLAY_MATRIX_SIZE) {
         PrintMatrixToLog(displayMatrix, "displayMatrix");
         int convertedMatrix[CONVERT_MATRIX_SIZE] = {0, 0, 0, 0};
         std::transform(&displayMatrix[0], &displayMatrix[0] + 1, // 0 is displayMatrix index, 1 is copy lenth
@@ -859,7 +861,6 @@ void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
     format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
     AVPacket pkt = avStream.attached_pic;
-    constexpr size_t MAX_COVER_SIZE = 50 * 1024 * 1024; // 50MB上限
     if (pkt.size > 0 && pkt.size <= MAX_COVER_SIZE && pkt.data != nullptr) {
         std::vector<uint8_t> cover(pkt.size);
         cover.assign(pkt.data, pkt.data + pkt.size);

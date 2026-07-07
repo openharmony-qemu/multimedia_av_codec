@@ -2147,7 +2147,8 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleInfo(uint32_t trackId, int64_t &pos,
                 track = FindTrackById(trackId);
                 FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
                 numSamples = track->sampleHelper->sampleIndexEntry_.size();
-                FALSE_RETURN_V_MSG_E(index < numSamples, Status::ERROR_INVALID_DATA, "ParseMoof did not produce enough samples");
+                FALSE_RETURN_V_MSG_E(index < numSamples, Status::ERROR_INVALID_DATA,
+                    "ParseMoof did not produce enough samples");
                 sample = track->sampleHelper->sampleIndexEntry_[index];
                 ++currentFragment_;
             } else if (index >= numSamples && nextMoofOffset == -1) {
@@ -2817,7 +2818,8 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
         FALSE_RETURN_V_NOLOG(UpdateAtomSize(atom, offset, chunkDataOffset, dataReader), 0);
         int64_t chunkDataSize = static_cast<int64_t>(atom.size) - (chunkDataOffset - offset);
         FALSE_RETURN_V_MSG_E(chunkDataSize >= 0, 0, "atom data size error");
-        FALSE_RETURN_V_MSG_E((!isFirstAtom || atom.type == static_cast<uint32_t>(FourccType("ftyp"))), 0, "no ftyp atom");
+        FALSE_RETURN_V_MSG_E((!isFirstAtom || atom.type == static_cast<uint32_t>(FourccType("ftyp"))),
+                             0, "no ftyp atom");
         isFirstAtom = false;
         switch (GetAtomLevel(atom)) {
             case AtomLevel::LEVEL_0: {

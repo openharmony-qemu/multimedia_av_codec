@@ -33,6 +33,9 @@ const int32_t FOURCC_TYPE_LENGTH = 5;
 const int32_t MAJOR_BRAND_LENGTH = 4;
 const int32_t THIRD_CHAR = 2;
 const int32_t FOURTH_CHAR = 3;
+const int32_t BIT_SIZE_2 = 2;
+const int32_t BIT_SIZE_4 = 4;
+const int32_t BIT_SIZE_8 = 8;
 
 enum TrackType : int32_t {
     AUDIO_TYPE = 0,
@@ -64,7 +67,7 @@ inline uint16_t GetU16Value(const uint8_t *data)
 
 inline uint16_t GetU16Value(const uint8_t *data, const size_t len)
 {
-    if (!data || len < 2) {
+    if (!data || len < BIT_SIZE_2) {
         return 0;
     }
     return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 0x08) | data[1]);
@@ -83,7 +86,7 @@ inline uint32_t GetU32Value(const uint8_t *data)
 
 inline uint32_t GetU32Value(const uint8_t *data, const size_t len)
 {
-    if (!data || len < 4) {
+    if (!data || len < BIT_SIZE_4) {
         return 0;
     }
     return (static_cast<uint32_t>(data[0]) << 0x18) |
@@ -110,7 +113,7 @@ inline uint64_t GetU64Value(const uint8_t *data)
 
 inline uint64_t GetU64Value(const uint8_t *data, const size_t len)
 {
-    if (!data || len < 8) {
+    if (!data || len < BIT_SIZE_8) {
         return 0;
     }
     return (static_cast<uint64_t>(GetU32Value(data)) << 0x20) | GetU32Value(data + 0x04);

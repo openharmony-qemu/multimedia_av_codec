@@ -67,6 +67,7 @@ constexpr int64_t HDR_VIVID_TAG_LENGTH = 31;
 constexpr int64_t HDR_VIVID_TAG_OFFSET = 43;
 constexpr int32_t MATRIX_SIZE = 4;
 constexpr int32_t MAX_DEPTH = 10;
+constexpr int32_t MIN_CODECPARAM_EXTRADATA_SIZE = 14;
 constexpr uint64_t MAX_TITLE_SIZE = 24;
 constexpr uint64_t MAX_EXTRA_DATA_SIZE = 1024 * 1024;
 constexpr uint64_t MAX_DATA_SIZE = 256;
@@ -516,7 +517,7 @@ bool IsDisplayMatrixIdentity(const int32_t matrix[3][3], const size_t len)
 }
 
 void MultiplyDisplayMatrix(const int32_t a[3][3], const int32_t b[3][3], int32_t result[3][3],
-                            const size_t lenA, const size_t lenB, const size_t lenC)
+                           const size_t lenA, const size_t lenB, const size_t lenC)
 {
     FALSE_RETURN_MSG(a != nullptr && b != nullptr && result != nullptr, "Invalid params");
     FALSE_RETURN_MSG(lenA == 36UL && lenB == 36UL && lenC == 36UL, "Invalid params len");
@@ -910,7 +911,8 @@ Status MPEG4AtomParser::ParseMvhdDisplayMatrix(const MPEG4Atom& currentAtom, con
     if (currentAtom.dataSize >= static_cast<uint64_t>(matrixOffset + DISPLAY_MATRIX_SIZE)) {
         Status ret = ParseDisplayMatrix(&headerInfo[matrixOffset], ctx->movieDisplayMatrix);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse movie display matrix");
-        ctx->hasMovieDisplayMatrix = !IsDisplayMatrixIdentity(ctx->movieDisplayMatrix, sizeof(ctx->movieDisplayMatrix)); // 单位阵不是有效的旋转矩阵
+        ctx->hasMovieDisplayMatrix = !IsDisplayMatrixIdentity(ctx->movieDisplayMatrix,
+                                                              sizeof(ctx->movieDisplayMatrix)); // 单位阵不是有效的旋转矩阵
         if (ctx->hasMovieDisplayMatrix) {
             MEDIA_LOG_D("Movie has non-identity display matrix");
         }
@@ -1092,7 +1094,7 @@ int64_t MPEG4AtomParser::GetBitrateTotalSize(const std::shared_ptr<Track>& track
     const auto& samples = track->sampleHelper->sampleIndexEntry_;
     for (const auto& sample : samples) {
         int64_t newTotalSize;
-        if(__builtin_add_overflow(totalSize, sample.size, &newTotalSize)) {
+        if (__builtin_add_overflow(totalSize, sample.size, &newTotalSize)) {
             MEDIA_LOG_E("GetBitrateTotalSize overflow");
             return 0;
         }
@@ -1476,7 +1478,8 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
     if (track->stsdWidth > 0 && track->stsdHeight > 0 &&
         track->tkhdWidth > 0 && track->tkhdHeight > 0 &&
         (track->stsdWidth != track->tkhdWidth || track->stsdHeight != track->tkhdHeight)) {
-        uint64_t numerator, denominator;
+        uint64_t numerator = 0;
+        uint64_t denominator = 0;
         if (__builtin_mul_overflow(static_cast<uint64_t>(track->stsdHeight), track->tkhdWidth, &numerator)) {
             MEDIA_LOG_E("Calculate SAR overflow: track->stsdHeight * track->tkhdWidth");
             return;
@@ -1577,7 +1580,7 @@ Status MPEG4AtomParser::ParseTkhd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         int32_t resultMatrix[DISPLAY_MATRIX_ROWS][DISPLAY_MATRIX_COLS];
         if (ctx->hasMovieDisplayMatrix) {
             MultiplyDisplayMatrix(trackDisplayMatrix, ctx->movieDisplayMatrix, resultMatrix,
-                                sizeof(trackDisplayMatrix), sizeof(ctx->movieDisplayMatrix), sizeof(resultMatrix));
+                                  sizeof(trackDisplayMatrix), sizeof(ctx->movieDisplayMatrix), sizeof(resultMatrix));
         } else {
             FALSE_RETURN_V_MSG_E(
                 memcpy_s(&resultMatrix[0][0], sizeof(int32_t) * DISPLAY_MATRIX_ROWS * DISPLAY_MATRIX_COLS,
@@ -2436,7 +2439,8 @@ void MPEG4AtomParser::SetMpegAudioAttribute()
 Status MPEG4AtomParser::SetVorbisAudioAttribute()
 {
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_F32P);
-    if (lastTrack_->codecParms.data == nullptr || lastTrack_->codecParms.extradataSize < 14) {
+    if (lastTrack_->codecParms.data == nullptr ||
+        lastTrack_->codecParms.extradataSize < MIN_CODECPARAM_EXTRADATA_SIZE) {
         MEDIA_LOG_E("Invalid Vorbis codec params");
         return Status::ERROR_INVALID_DATA;
     }
@@ -2589,7 +2593,7 @@ void MPEG4AtomParser::SetRawPCMSampleFormat(const MPEG4Atom& currentAtom, uint16
 Status MPEG4AtomParser::SetAlacAudioAttributes(const uint8_t* buffer, const size_t len)
 {
     FALSE_RETURN_V_MSG_E(len < ALAC_ATTRIBUTES_BUFF_SAFE_SIZE, Status::ERROR_INVALID_DATA,
-                        "Invalid Alac Attributes buffer len");
+                         "Invalid Alac Attributes buffer len");
     uint8_t sampleSize = buffer[5];
     uint8_t channelCount = buffer[9];
     uint32_t sampleRate = GetU32Value(&buffer[20]);
@@ -5124,7 +5128,7 @@ Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
     }
     PathAdder pathAdder(&ctx->path, atom.type);
     int64_t gapOffset = ctx->dataOffset - ctx->offset;
-    atom.dataSize = gapOffset >= 0? (atom.size - static_cast<uint64_t>(gapOffset)) :
+    atom.dataSize = gapOffset >= 0 ? (atom.size - static_cast<uint64_t>(gapOffset)) :
                                     (atom.size + static_cast<uint64_t>(std::abs(gapOffset)));
     FALSE_RETURN_V_MSG_E(atom.dataSize >= 0, Status::ERROR_INVALID_DATA, "Invalid atom data size");
     FALSE_RETURN_V_MSG_W(!IsUnsupportedFmp4Atom(atom.type),

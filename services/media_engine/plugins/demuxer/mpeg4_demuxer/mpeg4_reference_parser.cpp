@@ -491,7 +491,8 @@ Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t t
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to get pts");
 
-    FALSE_RETURN_V_MSG_E(index2RelativePTSHeap_.top() >= absolutePTSOfIndexZero_, Status::ERROR_INVALID_DATA, "Calculation results less than 0");
+    FALSE_RETURN_V_MSG_E(index2RelativePTSHeap_.top() >= absolutePTSOfIndexZero_,
+                         Status::ERROR_INVALID_DATA, "Calculation results less than 0");
     int64_t relativePts = index2RelativePTSHeap_.top() - absolutePTSOfIndexZero_;
     relativePresentationTimeUs = static_cast<uint64_t>(relativePts);
 

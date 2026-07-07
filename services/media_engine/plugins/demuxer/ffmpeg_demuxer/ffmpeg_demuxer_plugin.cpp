@@ -667,7 +667,7 @@ Status FFmpegDemuxerPlugin::WriteBuffer(
     if (writeData != nullptr && writeSize > 0) {
         FALSE_RETURN_V_MSG_E(outBuffer->memory_ != nullptr, Status::ERROR_NULL_POINTER, "Memory is nullptr");
         FALSE_RETURN_V_MSG_E(writeSize <= outBuffer->memory_->GetCapacity(),
-        Status::ERROR_INVALID_OPERATION, "Write size exceeds buffer capacity");
+                             Status::ERROR_INVALID_OPERATION, "Write size exceeds buffer capacity");
         int32_t ret = outBuffer->memory_->Write(writeData, writeSize, 0);
         FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_INVALID_OPERATION, "Memory write failed");
     }
@@ -724,7 +724,8 @@ AVPacketWrapperPtr FFmpegDemuxerPlugin::CombinePackets(std::shared_ptr<SamplePac
         FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr, nullptr,
             "AVPacket is nullptr");
         int newTotalSize = 0;
-        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(totalSize, pktWrapper->GetSize(), &newTotalSize), nullptr, "TotalSize overflow");
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(totalSize, pktWrapper->GetSize(), &newTotalSize),
+                             nullptr, "TotalSize overflow");
         totalSize = newTotalSize;
     }
 
