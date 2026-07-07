@@ -2113,6 +2113,8 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleInfo(uint32_t trackId, int64_t &pos,
                 FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ParseMoof failed");
                 track = FindTrackById(trackId);
                 FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
+                numSamples = track->sampleHelper->sampleIndexEntry_.size();
+                FALSE_RETURN_V_MSG_E(index < numSamples, Status::ERROR_INVALID_DATA, "ParseMoof did not produce enough samples");
                 sample = track->sampleHelper->sampleIndexEntry_[index];
                 ++currentFragment_;
             } else if (index >= numSamples && nextMoofOffset == -1) {

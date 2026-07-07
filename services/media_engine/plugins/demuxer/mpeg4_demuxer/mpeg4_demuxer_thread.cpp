@@ -504,7 +504,7 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
 
 Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer, uint32_t timeout)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace(std::string("ReadSample_timeout_") + std::to_string(trackId));
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
@@ -552,7 +552,7 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
 
 Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSize, uint32_t timeout)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace(std::string("GetNextSampleSize_timeout_") + std::to_string(trackId));
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_UNKNOWN, "Plugin has not been initialized");
@@ -995,7 +995,7 @@ void MPEG4DemuxerPlugin::ReleaseReadLoop()
 
 Status MPEG4DemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer, uint32_t timeout)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace(std::string("ReadSampleZeroCopy_timeout_") + std::to_string(trackId));
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");

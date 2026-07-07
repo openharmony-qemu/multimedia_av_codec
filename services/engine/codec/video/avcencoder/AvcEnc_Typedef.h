@@ -50,47 +50,47 @@ typedef enum {
 } ENC_PROFILE;
 
 typedef struct TagAvcEncInitParam {
-    uint32_t uiChannelID = 0;
-    IHW264E_VIDEO_ALG_LOG_FXN logFxn = nullptr;
-    uint32_t  width = 0;
-    uint32_t  height = 0;
-    ENC_MODE  encMode = ENC_MODE::MODE_CBR;
-    uint32_t  frameRate = 0;
-    uint32_t  bitrate = 0;
-    uint32_t  qp = 0;
-    uint32_t  qpMax = 0;
-    uint32_t  qpMin = 0;
-    uint32_t  iperiod = 0;
-    COLOR_FORMAT colorFmt = COLOR_FORMAT::YUV_420P;
-    uint8_t   range = 0;
-    uint8_t   primaries = 0;
-    uint8_t   transfer = 0;
-    uint8_t   matrix = 0;
-    uint32_t  level = 0;
-    ENC_PROFILE profile = ENC_PROFILE::PROFILE_BASE;
+    uint32_t uiChannelID;
+    IHW264E_VIDEO_ALG_LOG_FXN logFxn;
+    uint32_t  width;
+    uint32_t  height;
+    ENC_MODE  encMode;
+    uint32_t  frameRate;
+    uint32_t  bitrate;
+    uint32_t  qp;
+    uint32_t  qpMax;
+    uint32_t  qpMin;
+    uint32_t  iperiod;
+    COLOR_FORMAT colorFmt;
+    uint8_t   range;
+    uint8_t   primaries;
+    uint8_t   transfer;
+    uint8_t   matrix;
+    uint32_t  level;
+    ENC_PROFILE profile;
 } AVC_ENC_INIT_PARAM;
 
 typedef struct ReconfigArgs {
-    uint32_t  bitrate = 0;
-    uint32_t  idrRequest = 0;
+    uint32_t  bitrate;
+    uint32_t  idrRequest;
 } RECONFIG_ARGS;
 
 typedef struct TagAvcEncInArgs {
-    COLOR_FORMAT colorFmt = COLOR_FORMAT::YUV_420P;
-    uint64_t timestamp = 0;
-    void *inputBufs[IV_MAX_RAW_COMPONENTS] = {nullptr};  // YUV address, store YUV in order
-    uint32_t width[IV_MAX_RAW_COMPONENTS] = {0};
-    uint32_t height[IV_MAX_RAW_COMPONENTS] = {0};
-    uint32_t stride[IV_MAX_RAW_COMPONENTS] = {0};
+    COLOR_FORMAT colorFmt;
+    uint64_t timestamp;
+    void *inputBufs[IV_MAX_RAW_COMPONENTS];  // YUV address, store YUV in order
+    uint32_t width[IV_MAX_RAW_COMPONENTS];
+    uint32_t height[IV_MAX_RAW_COMPONENTS];
+    uint32_t stride[IV_MAX_RAW_COMPONENTS];
     RECONFIG_ARGS configArgs;
 } AVC_ENC_INARGS;
 
 typedef struct TagAvcEncOutArgs {
-    uint32_t encodedFrameType = 0;
-    uint32_t isLast = 0;
-    void *streamBuf = nullptr;
-    uint32_t size = 0;
-    uint32_t bytes = 0;
-    uint64_t timestamp = 0;
+    uint32_t encodedFrameType;
+    uint32_t isLast;
+    void *streamBuf;
+    uint32_t size;
+    uint32_t bytes;
+    uint64_t timestamp;
 } AVC_ENC_OUTARGS;
 #endif // __AVC_ENC_TYPE_DEF_H__
