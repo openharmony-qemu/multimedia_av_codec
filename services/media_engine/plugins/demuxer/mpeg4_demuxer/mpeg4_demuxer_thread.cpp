@@ -320,6 +320,38 @@ Status MPEG4DemuxerPlugin::UpdateReadSampleDataTimeout(Status ret, std::shared_p
     return Status::OK;
 }
 
+Status MPEG4DemuxerPlugin::CheckReadSampleDataStopState(const std::shared_ptr<Sample>& sample)
+{
+    if (!stopReadThread_.load(std::memory_order_acquire) &&
+        avReadPacketStopState_.load(std::memory_order_acquire) != AVReadPacketStopState::TRUE) {
+        return Status::OK;
+    }
+    MEDIA_LOG_I("ReadSampleData stopped");
+    sample->data.reset();
+    return Status::ERROR_WRONG_STATE;
+}
+
+void MPEG4DemuxerPlugin::DumpReadAtData(
+    [[maybe_unused]] uint8_t* data, [[maybe_unused]] uint64_t pos, [[maybe_unused]] size_t size)
+{
+#ifdef BUILD_ENG_VERSION
+    DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & dumpMode_), data, -1, static_cast<int64_t>(pos),
+        static_cast<int>(size), readatIndex_++, -1, -1};
+    Dump(dumpParam);
+#endif
+}
+
+void MPEG4DemuxerPlugin::DumpAVPacketData(
+    [[maybe_unused]] const std::shared_ptr<Sample>& sample,
+    [[maybe_unused]] uint32_t trackId, [[maybe_unused]] uint64_t pos)
+{
+#ifdef BUILD_ENG_VERSION
+    DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), sample->data.get(), static_cast<int>(trackId),
+        -1, sample->size, avpacketIndex_++, sample->pts, static_cast<int64_t>(pos)};
+    Dump(dumpParam);
+#endif
+}
+
 Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size)
 {
     size_t bufferSize = static_cast<size_t>(size);
@@ -332,12 +364,8 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
     MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAt");
     while (totalRead < bufferSize &&
         (readTimeoutMs_.load(std::memory_order_acquire) >= 0 || count < READ_RETRY_TIMES)) {
-        if (stopReadThread_.load(std::memory_order_acquire) ||
-            avReadPacketStopState_.load(std::memory_order_acquire) == AVReadPacketStopState::TRUE) {
-            MEDIA_LOG_I("ReadSampleData stopped");
-            sample->data.reset();
-            return Status::ERROR_WRONG_STATE;
-        }
+        ret = CheckReadSampleDataStopState(sample);
+        FALSE_RETURN_V(ret == Status::OK, ret);
         size_t remaining = bufferSize - totalRead;
         auto buffer = std::make_shared<Buffer>();
         FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "Buffer allocation failed");
@@ -352,11 +380,7 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
         MEDIA_LOG_D("Want:" PUBLIC_LOG_ZU ", Get:" PUBLIC_LOG_ZU ", offset:" PUBLIC_LOG_U64,
             remaining, readSize, currentPos);
         if (readSize > 0) {
-#ifdef BUILD_ENG_VERSION
-            DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & dumpMode_), sample->data.get() + totalRead, -1,
-                static_cast<int64_t>(currentPos), static_cast<int>(readSize), readatIndex_++, -1, -1};
-            Dump(dumpParam);
-#endif
+            DumpReadAtData(sample->data.get() + totalRead, currentPos, readSize);
             totalRead += readSize;
             readStartTimeMs_.store(0, std::memory_order_release);
             count = 0;
@@ -389,11 +413,7 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64
     if (ret == Status::OK) {
         ret = WriteSampleAttr(trackId, sample);
         FALSE_RETURN_V(ret == Status::OK, ret);
-#ifdef BUILD_ENG_VERSION
-        DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), sample->data.get(),
-            static_cast<int>(trackId), -1, sample->size, avpacketIndex_++, sample->pts, static_cast<int64_t>(pos)};
-        Dump(dumpParam);
-#endif
+        DumpAVPacketData(sample, trackId, pos);
         return Status::OK;
     }
     sample->data.reset();

@@ -2475,6 +2475,17 @@ Status MPEG4DemuxerPlugin::GetSampleBySeekableStatus(const Seekable seekable, ui
     return Status::OK;
 }
 
+void MPEG4DemuxerPlugin::DumpAVBufferData(
+    [[maybe_unused]] const uint8_t* data, [[maybe_unused]] uint32_t trackId,
+    [[maybe_unused]] int32_t size, [[maybe_unused]] int64_t pts)
+{
+#ifdef BUILD_ENG_VERSION
+    DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), const_cast<uint8_t*>(data),
+        static_cast<int>(trackId), -1, size, trackDfxInfoMap_[trackId].frameIndex++, pts, -1};
+    Dump(dumpParam);
+#endif
+}
+
 uint32_t MPEG4DemuxerPlugin::GetFlags(const std::shared_ptr<Sample> sample, bool memoryNotEnough)
 {
     uint32_t flags = static_cast<uint32_t>(AVBufferFlag::NONE);
@@ -2527,12 +2538,7 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
         FALSE_RETURN_V_MSG_E(outBuffer->memory_ != nullptr, Status::ERROR_NULL_POINTER, "Memory is nullptr");
         int32_t writeResult = outBuffer->memory_->Write(writeData, copySize, 0);
         FALSE_RETURN_V_MSG_E(writeResult >= 0, Status::ERROR_INVALID_OPERATION, "Memory write failed");
-#ifdef BUILD_ENG_VERSION
-        DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), const_cast<uint8_t*>(writeData),
-            static_cast<int>(trackIndex), -1, copySize, trackDfxInfoMap_[trackIndex].frameIndex++, outBuffer->pts_,
-            -1};
-        Dump(dumpParam);
-#endif
+        DumpAVBufferData(writeData, trackIndex, copySize, outBuffer->pts_);
     }
 
     if (copySize < remainSize) {
