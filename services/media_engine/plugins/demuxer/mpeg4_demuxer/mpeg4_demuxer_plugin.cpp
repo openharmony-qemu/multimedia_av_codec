@@ -2476,8 +2476,8 @@ Status MPEG4DemuxerPlugin::GetSampleBySeekableStatus(const Seekable seekable, ui
 }
 
 void MPEG4DemuxerPlugin::DumpAVBufferData(
-    [[maybe_unused]] const uint8_t* data, [[maybe_unused]] uint32_t trackId,
-    [[maybe_unused]] int32_t size, [[maybe_unused]] int64_t pts)
+    const uint8_t* data [[maybe_unused]], uint32_t trackId [[maybe_unused]],
+    int32_t size [[maybe_unused]], int64_t pts [[maybe_unused]])
 {
 #ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), const_cast<uint8_t*>(data),

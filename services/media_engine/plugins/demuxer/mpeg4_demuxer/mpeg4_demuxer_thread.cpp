@@ -332,7 +332,7 @@ Status MPEG4DemuxerPlugin::CheckReadSampleDataStopState(const std::shared_ptr<Sa
 }
 
 void MPEG4DemuxerPlugin::DumpReadAtData(
-    [[maybe_unused]] uint8_t* data, [[maybe_unused]] uint64_t pos, [[maybe_unused]] size_t size)
+    uint8_t* data [[maybe_unused]], uint64_t pos [[maybe_unused]], size_t size [[maybe_unused]])
 {
 #ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_READAT_INPUT & dumpMode_), data, -1, static_cast<int64_t>(pos),
@@ -342,8 +342,8 @@ void MPEG4DemuxerPlugin::DumpReadAtData(
 }
 
 void MPEG4DemuxerPlugin::DumpAVPacketData(
-    [[maybe_unused]] const std::shared_ptr<Sample>& sample,
-    [[maybe_unused]] uint32_t trackId, [[maybe_unused]] uint64_t pos)
+    const std::shared_ptr<Sample>& sample [[maybe_unused]],
+    uint32_t trackId [[maybe_unused]], uint64_t pos [[maybe_unused]])
 {
 #ifdef BUILD_ENG_VERSION
     DumpParam dumpParam {DumpMode(DUMP_AVPACKET_OUTPUT & dumpMode_), sample->data.get(), static_cast<int>(trackId),
