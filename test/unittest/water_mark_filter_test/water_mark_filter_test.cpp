@@ -15,7 +15,7 @@
  
 #include <memory>
 #include "water_mark_filter_test.h"
- 
+
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
