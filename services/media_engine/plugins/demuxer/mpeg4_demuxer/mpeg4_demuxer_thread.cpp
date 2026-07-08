@@ -63,6 +63,7 @@ int32_t GetSampleSizeWithCodecConfigForThread(const MediaInfo& mediaInfo,
     if (mediaInfo.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && HaveValidParserForThread(mime) &&
         mediaInfo.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata) &&
         (sample->flag & Sample::SampleFlag::SYNC_FRAME)) {
+        FALSE_RETURN_V_MSG_E(extradata.size() < INT32_MAX, 0, "extradata.size() overflow");
         int32_t newSampleSize = 0;
         FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(sampleSize,
                                                      static_cast<int32_t>(extradata.size()), &newSampleSize),

@@ -1395,9 +1395,10 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(const MPEG4AtomParser::Track& track,
             FirstFrameValid(trackIndex)) {
             auto firstFrame = firstFrameMap_[trackIndex];
             uint8_t* dataPtr = firstFrame->data.get();
+            int32_t dataSize = firstFrame->size;
             PacketConvertInfo convertInfo {nullptr, 0, false};
-            streamParsers_->ConvertPacketToAnnexb(trackIndex, &dataPtr, firstFrame->size, convertInfo);
-            streamParsers_->ParseAnnexbExtraData(trackIndex, dataPtr, firstFrame->size);
+            streamParsers_->ConvertPacketToAnnexb(trackIndex, &dataPtr, dataSize, convertInfo);
+            streamParsers_->ParseAnnexbExtraData(trackIndex, dataPtr, dataSize);
             // Parser only sends xps info when first call ConvertPacketToAnnexb
             // readSample will call ConvertPacketToAnnexb again, so rest here
             streamParsers_->ResetXPSSendStatus(trackIndex);
@@ -1736,6 +1737,9 @@ Status MPEG4DemuxerPlugin::FindFragmentAtTime(int64_t fragmentSeekTime, SeekMode
     auto& entry = fragmentEntry_;
     auto it = std::lower_bound(entry.begin(), entry.end(), fragmentSeekTime,
         [](const MPEG4AtomParser::FragmentEntry& a, int64_t b) { return a.firstDts < b; });
+    if (it == entry.end()) {
+        it = entry.end() - 1;
+    }
     uint32_t fragmentIndex = static_cast<uint32_t>(std::distance(entry.begin(), it));
     if (fragmentSeekTime != fragmentEntry_[fragmentIndex].firstDts) {
         fragmentIndex = fragmentIndex ? fragmentIndex - 1 : 0;
