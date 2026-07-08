@@ -198,7 +198,7 @@ private:
     void CalculateSampleAspectRatio(std::shared_ptr<Track> track, uint32_t width, uint32_t height);
     void CalculateSARFromTrackInfo(std::shared_ptr<Track> track);
     void SetTrackDisplayMatrix(std::shared_ptr<Track> track, const int32_t resultMatrix[3][3],
-        uint32_t width, uint32_t height);
+        uint32_t width, uint32_t height, const size_t len);
     Status ParseDisplayMatrix(const uint8_t* data, int32_t matrix[3][3]);
     // 视频方向解析相关辅助函数
     void ParseOrientationFromMatrix(std::shared_ptr<Track> track);
@@ -286,7 +286,7 @@ private:
     Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta);
     Status SetMetadata(std::string& key, uint8_t* buffer, uint64_t size, uint32_t dataType);
-    Status SetAlacAudioAttributes(const uint8_t* buffer);
+    Status SetAlacAudioAttributes(const uint8_t* buffer, const size_t len);
     Status ParseAlacEntry(ParseContext& ctx);
     Status ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx);
     Status ParseIccProfile(int64_t offset, uint64_t dataSize);
@@ -303,9 +303,10 @@ private:
     Status ParseMoov(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMdat(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
-    MvhdInfo ParseMvhdInfo(const uint8_t* headerInfo) const;
+    MvhdInfo ParseMvhdInfo(const uint8_t* headerInfo, const size_t len) const;
     void SetMvhdMediaInfo(const MvhdInfo& mvhdInfo);
-    Status ParseMvhdDisplayMatrix(const MPEG4Atom& currentAtom, const uint8_t* headerInfo, ParseContext* ctx);
+    Status ParseMvhdDisplayMatrix(const MPEG4Atom& currentAtom, const uint8_t* headerInfo, ParseContext* ctx,
+        const size_t len);
     Status ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseTkhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);

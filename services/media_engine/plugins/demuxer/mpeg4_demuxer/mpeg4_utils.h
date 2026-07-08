@@ -33,6 +33,9 @@ const int32_t FOURCC_TYPE_LENGTH = 5;
 const int32_t MAJOR_BRAND_LENGTH = 4;
 const int32_t THIRD_CHAR = 2;
 const int32_t FOURTH_CHAR = 3;
+const int32_t BIT_SIZE_2 = 2;
+const int32_t BIT_SIZE_4 = 4;
+const int32_t BIT_SIZE_8 = 8;
 
 enum TrackType : int32_t {
     AUDIO_TYPE = 0,
@@ -44,7 +47,7 @@ enum TrackType : int32_t {
     INVALID_TYPE = -1,
 };
 
-inline std::string FourccToString(int32_t fourcc)
+inline std::string FourccToString(uint32_t fourcc)
 {
     return std::string {
         static_cast<char>((fourcc >> 0x18) & 0xFF),
@@ -62,9 +65,28 @@ inline uint16_t GetU16Value(const uint8_t *data)
     return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 0x08) | data[1]);
 }
 
+inline uint16_t GetU16Value(const uint8_t *data, const size_t len)
+{
+    if (!data || len < BIT_SIZE_2) {
+        return 0;
+    }
+    return static_cast<uint16_t>((static_cast<uint16_t>(data[0]) << 0x08) | data[1]);
+}
+
 inline uint32_t GetU32Value(const uint8_t *data)
 {
     if (!data) {
+        return 0;
+    }
+    return (static_cast<uint32_t>(data[0]) << 0x18) |
+           (static_cast<uint32_t>(data[1]) << 0x10) |
+           (static_cast<uint32_t>(data[THIRD_CHAR]) << 0x08) |
+           static_cast<uint32_t>(data[FOURTH_CHAR]);
+}
+
+inline uint32_t GetU32Value(const uint8_t *data, const size_t len)
+{
+    if (!data || len < BIT_SIZE_4) {
         return 0;
     }
     return (static_cast<uint32_t>(data[0]) << 0x18) |
@@ -84,6 +106,14 @@ inline std::string GetCharValue(const uint8_t *data)
 inline uint64_t GetU64Value(const uint8_t *data)
 {
     if (!data) {
+        return 0;
+    }
+    return (static_cast<uint64_t>(GetU32Value(data)) << 0x20) | GetU32Value(data + 0x04);
+}
+
+inline uint64_t GetU64Value(const uint8_t *data, const size_t len)
+{
+    if (!data || len < BIT_SIZE_8) {
         return 0;
     }
     return (static_cast<uint64_t>(GetU32Value(data)) << 0x20) | GetU32Value(data + 0x04);
@@ -112,10 +142,10 @@ constexpr int32_t FourccType(const char (&str)[N])
     if (N != FOURCC_TYPE_LENGTH) {
         return -1;
     }
-    return (static_cast<int32_t>(str[0]) << 0x18) |
-           (static_cast<int32_t>(str[1]) << 0x10) |
-           (static_cast<int32_t>(str[THIRD_CHAR]) << 0x08) |
-           static_cast<int32_t>(str[FOURTH_CHAR]);
+    return static_cast<int32_t>((static_cast<uint32_t>(static_cast<uint8_t>(str[0])) << 0x18) |
+                                (static_cast<uint32_t>(static_cast<uint8_t>(str[1])) << 0x10) |
+                                (static_cast<uint32_t>(static_cast<uint8_t>(str[THIRD_CHAR])) << 0x08) |
+                                static_cast<uint32_t>(static_cast<uint8_t>(str[FOURTH_CHAR])));
 }
 } // namespace MPEG4
 } // namespace Plugins

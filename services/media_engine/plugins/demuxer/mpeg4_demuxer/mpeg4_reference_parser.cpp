@@ -411,6 +411,7 @@ Status MPEG4DemuxerPlugin::UpdateParserGopId(int32_t syncSamplesPtsSize)
     FALSE_RETURN_V_NOLOG(syncSamplesPtsSize != 0, Status::ERROR_UNKNOWN);
     int32_t tmpGopId = refParserCurGopId_;
     int32_t searchCnt = 0;
+    std::unique_lock<std::mutex> sLock(syncMutex_);
     while (std::find(processingSyncSamplesIndex_.begin(), processingSyncSamplesIndex_.end(),
         syncSamplesIndex_[refParserCurGopId_]) == processingSyncSamplesIndex_.end()) {
         if (updatePosIsForward_) {
@@ -489,9 +490,10 @@ Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t t
     ret = GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::INDEX_TO_RELATIVEPTS, trackIndex,
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to get pts");
-    
+
+    FALSE_RETURN_V_MSG_E(index2RelativePTSHeap_.top() >= absolutePTSOfIndexZero_,
+                         Status::ERROR_INVALID_DATA, "Calculation results less than 0");
     int64_t relativePts = index2RelativePTSHeap_.top() - absolutePTSOfIndexZero_;
-    FALSE_RETURN_V_MSG_E(relativePts >= 0, Status::ERROR_INVALID_DATA, "Calculation results less than 0");
     relativePresentationTimeUs = static_cast<uint64_t>(relativePts);
 
     return Status::OK;
@@ -676,7 +678,9 @@ void MPEG4DemuxerPlugin::ProcessRelativePTS2Index(int64_t pts, int64_t absoluteP
     minRelativePTS_ = minRelativePTS_ > pts ? pts : minRelativePTS_;
     maxRelativePTS_ = maxRelativePTS_ < pts ? pts : maxRelativePTS_;
     
-    int64_t relativePTSDiff = abs(pts - absolutePTS);
+    int64_t diff = pts - absolutePTS;
+    FALSE_RETURN_MSG(!__builtin_sub_overflow(pts, absolutePTS, &diff), "diff overflow");
+    int64_t relativePTSDiff = (diff > 0) ? diff : -diff;
     if (pts < absolutePTS && relativePTSDiff < minRelativePTSDiffOfLeft_) {
         minRelativePTSDiffOfLeft_ = relativePTSDiff;
     }

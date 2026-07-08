@@ -39,7 +39,9 @@ bool TimeRangeManager::IsInTimeRanges(const int64_t targetTs, TimeRange &timeRan
 
 void TimeRangeManager::AddTimeRange(const TimeRange &range)
 {
-    if (range.start_ts > range.end_ts) {
+    if (range.start_ts > range.end_ts ||
+        range.start_ts == AV_NOPTS_VALUE ||
+        range.end_ts == AV_NOPTS_VALUE) {
         return;
     }
     ReduceRanges();

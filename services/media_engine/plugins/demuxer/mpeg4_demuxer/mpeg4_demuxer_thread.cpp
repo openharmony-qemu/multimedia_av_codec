@@ -46,6 +46,7 @@ constexpr uint32_t READ_RETRY_SLEEP_TIME_US = 5000;
 constexpr uint32_t DEFAULT_CACHE_PRESSURE_WINDOW_MS = 500;
 constexpr int64_t NS_PER_MS = 1000000LL;
 const uint32_t SETTIMER_TIMEOUT = 5; // second
+const int READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2; // 帧数据大小限制
 
 bool HaveValidParserForThread(const std::string& mime)
 {
@@ -62,7 +63,12 @@ int32_t GetSampleSizeWithCodecConfigForThread(const MediaInfo& mediaInfo,
     if (mediaInfo.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && HaveValidParserForThread(mime) &&
         mediaInfo.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata) &&
         (sample->flag & Sample::SampleFlag::SYNC_FRAME)) {
-        sampleSize += static_cast<int32_t>(extradata.size());
+        FALSE_RETURN_V_MSG_E(extradata.size() < INT32_MAX, 0, "extradata.size() overflow");
+        int32_t newSampleSize = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(sampleSize,
+                                                     static_cast<int32_t>(extradata.size()), &newSampleSize),
+                             0, "SampleSize overflow");
+        sampleSize = newSampleSize;
     }
     return sampleSize;
 }
@@ -354,6 +360,8 @@ void MPEG4DemuxerPlugin::DumpAVPacketData(
 
 Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size)
 {
+    FALSE_RETURN_V_MSG_E(size > 0, Status::ERROR_INVALID_BUFFER_SIZE, "Invalid buffer size");
+    FALSE_RETURN_V_MSG_E(size < READ_SIZE_LIMIT_DEFAULT, Status::ERROR_INVALID_BUFFER_SIZE, "Invalid buffer size");
     size_t bufferSize = static_cast<size_t>(size);
     sample->data = std::make_unique<uint8_t[]>(size);
     FALSE_RETURN_V_MSG_E(sample->data != nullptr, Status::ERROR_NO_MEMORY, "Memory allocation failed");
@@ -394,7 +402,8 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
         ++count;
         usleep(READ_RETRY_SLEEP_TIME_US);
     }
-
+    FALSE_RETURN_V_MSG_E(totalRead <= INT32_MAX, Status::ERROR_UNKNOWN,
+                         "TotalRead size too large, may cause dataSize overflow");
     int32_t dataSize = static_cast<int32_t>(totalRead);
     MEDIA_LOG_D("Want:" PUBLIC_LOG_D32 ", Get:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, size, dataSize, pos);
     if (totalRead != bufferSize && ret != Status::OK && ret != Status::ERROR_AGAIN) {
@@ -543,7 +552,7 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
 
 Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer, uint32_t timeout)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace(std::string("ReadSample_timeout_") + std::to_string(trackId));
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
@@ -591,7 +600,7 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
 
 Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSize, uint32_t timeout)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace(std::string("GetNextSampleSize_timeout_") + std::to_string(trackId));
     MEDIA_LOG_D("In, track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_UNKNOWN, "Plugin has not been initialized");
@@ -919,6 +928,7 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId)
 
 Status MPEG4DemuxerPlugin::PushEosToCache(uint32_t trackId)
 {
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     (void)trackId;
     for (const auto& selectedTrackId : selectedTrackIds_) {
         auto backSample = cacheQueue_.Back(selectedTrackId);
@@ -1033,7 +1043,7 @@ void MPEG4DemuxerPlugin::ReleaseReadLoop()
 
 Status MPEG4DemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer, uint32_t timeout)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MediaAVCodec::AVCodecTrace trace(std::string("ReadSampleZeroCopy_timeout_") + std::to_string(trackId));
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");

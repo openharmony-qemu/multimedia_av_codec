@@ -85,9 +85,9 @@ static bool ConvertHexStrToBuffer(const std::string hexStr, std::vector<uint8_t>
     if (hexStr.empty() || hexStr.size() % VALUE_2 != 0) {
         return false;
     }
-    int len = static_cast<int>(hexStr.size()) / VALUE_2;
+    size_t len = hexStr.size() / VALUE_2;
     buffer.resize(len);
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         int8_t high = HexCharToValue(hexStr[i * VALUE_2]);
         int8_t low = HexCharToValue(hexStr[i * VALUE_2 + POS_1]);
         FALSE_RETURN_V_MSG_E(high >= 0 && low >= 0, false,

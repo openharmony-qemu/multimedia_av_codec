@@ -560,6 +560,11 @@ bool AvcParserImpl::ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, in
 
 void AvcParserImpl::ConvertExtradata(uint8_t **packet, int32_t &packetSize)
 {
+    if (annexbExtraDataVec_.empty()) {
+        packet = nullptr;
+        packetSize = 0;
+        return;
+    }
     *packet = annexbExtraDataVec_.data();
     packetSize = static_cast<int32_t>(annexbExtraDataVec_.size());
 }

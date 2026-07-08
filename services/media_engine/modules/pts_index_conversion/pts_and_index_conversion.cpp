@@ -504,7 +504,7 @@ Status TimeAndIndexConversion::GetRelativePresentationTimeUsByIndex(const uint32
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Get pts failed");
 
-    if (index + 1 > indexToRelativePTSFrameCount_) {
+    if (index >= indexToRelativePTSFrameCount_) {
         MEDIA_LOG_E("Index is out of range");
         return Status::ERROR_INVALID_DATA;
     }
