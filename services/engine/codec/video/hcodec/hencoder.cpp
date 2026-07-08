@@ -1431,6 +1431,7 @@ bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t wid
         roiRect.bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, height);
         roiRect.right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, width);
     } catch (...) {
+        HLOGW("stoi failed for roi coordinates: %{public}s", roi.c_str());
         return false;
     }
     if (match[DELTAQP_INDEX].matched) {
@@ -1441,6 +1442,7 @@ bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t wid
             try {
                 roiRect.deltaQP = std::stoi(kvStr);
             } catch (...) {
+                HLOGW("stoi failed for roi deltaQP: %{public}s", kvStr.c_str());
                 roiRect.deltaQP = DEFAULT_DELTAQP;
             }
         }
