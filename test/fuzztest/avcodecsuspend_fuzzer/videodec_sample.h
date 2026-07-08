@@ -82,7 +82,7 @@ public:
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInLoop();
-    VDecSignal *signal_;
+    VDecSignal *signal_ {nullptr};
     uint32_t errCount = 0;
     bool isSurfMode = false;
     OH_AVCodec *vdec_;

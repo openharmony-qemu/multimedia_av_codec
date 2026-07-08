@@ -111,7 +111,7 @@ private:
     std::mutex wakeUpMutex_;
     std::mutex releaseMutex_;
     std::atomic<int> availableFrameCnt_{ 0 };
-    float matrix_[16];
+    float matrix_[16] = {};
     OH_OnFrameAvailableListener nativeImageFrameAvailableListener_{};
     std::atomic<bool> running_{ true };
     bool hasReleased_ = false;  // 标记是否已释放资源，防止重复释放

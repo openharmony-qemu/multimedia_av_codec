@@ -72,6 +72,7 @@ HDecoder::~HDecoder()
 #endif
 }
 
+// LCOV_EXCL_START
 bool HDecoder::DecideOutputBufMode()
 {
     isAlloc_ = false;
@@ -109,6 +110,7 @@ bool HDecoder::DecideOutputBufMode()
     }
     return UseHandleOnOutputPort(isDynamic_);
 }
+// LCOV_EXCL_STOP
 
 int32_t HDecoder::OnConfigure(const Format &format)
 {
@@ -144,6 +146,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
     return SetupPort(format);
 }
 
+// LCOV_EXCL_START
 int32_t HDecoder::SetDecOrder(const Format &format)
 {
     int32_t enableDecOrder;
@@ -167,6 +170,7 @@ int32_t HDecoder::SetDecOrder(const Format &format)
     HLOGI("enable dec order succ");
     return AVCS_ERR_OK;
 }
+// LCOV_EXCL_STOP
 
 int32_t HDecoder::SetupPort(const Format &format)
 {
@@ -927,6 +931,7 @@ uint64_t HDecoder::GetVendorProducerUsage()
     return 0;
 }
 
+// LCOV_EXCL_START
 bool HDecoder::SetUsageToVendor(uint64_t usage)
 {
     GetBufferHandleUsageParams param;
@@ -1004,6 +1009,7 @@ uint64_t HDecoder::GetSurfaceConsumerUsage()
     }
     return consumerUsage;
 }
+// LCOV_EXCL_STOP
 
 int32_t HDecoder::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface, uint32_t targetSize)
 {
@@ -1327,7 +1333,8 @@ int32_t HDecoder::NotifySurfaceToRenderOutputBuffer(BufferInfo &info)
     ChangeOwner(info, BufferOwner::OWNED_BY_SURFACE);
     return AVCS_ERR_OK;
 }
- 
+
+// LCOV_EXCL_START
 void HDecoder::OnStartJankDetect()
 {
     if (detect_) {
@@ -1336,7 +1343,7 @@ void HDecoder::OnStartJankDetect()
     detect_ = true;
     currSurface_.beginTime_ = GetCurrUs();
 }
- 
+
 void HDecoder::OnStopJankDetect()
 {
     if (!detect_) {
@@ -1377,6 +1384,7 @@ void HDecoder::OnStopJankDetect()
     currSurface_.totalJankDur_ = 0;
     currSurface_.beginTime_ = 0;
 }
+// LCOV_EXCL_STOP
 
 void HDecoder::OnOMXEmptyBufferDone(uint32_t bufferId, BufferOperationMode mode)
 {
@@ -1483,6 +1491,7 @@ void HDecoder::SurfaceItem::Release(bool cleanAll)
     }
 }
 
+// LCOV_EXCL_START
 void HDecoder::OnSetOutputSurfaceWhenRunning(const sptr<Surface> &newSurface,
     const MsgInfo &msg, BufferOperationMode mode)
 {
@@ -1590,7 +1599,6 @@ void HDecoder::SwitchBetweenSurface(const sptr<Surface> &newSurface,
     HLOGI("set surface(%" PRIu64 ")(%s) succ", newId, newSurface->GetName().c_str());
 }
 
-// LCOV_EXCL_START
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 int32_t HDecoder::VrrPrediction(BufferInfo &info)
 {

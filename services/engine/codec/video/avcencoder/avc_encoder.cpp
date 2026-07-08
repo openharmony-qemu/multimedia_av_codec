@@ -260,9 +260,8 @@ void AvcEncoder::ClearDirtyList()
     }
 }
 
-void AvcEncoder::WaitForInBuffer()
+void AvcEncoder::WaitForInBuffer(std::unique_lock<std::mutex> &listLock)
 {
-    std::unique_lock<std::mutex> listLock(freeListMutex_);
     surfaceRecvCv_.wait(listLock, [this] {
         if (state_ == State::STOPPING) {
             return true;
@@ -279,9 +278,11 @@ void AvcEncoder::WaitForInBuffer()
 void AvcEncoder::GetBufferFromSurface()
 {
     CHECK_AND_RETURN_LOG(inputSurface_ != nullptr, "inputSurface_ not exists");
+    std::unique_lock<std::mutex> listLock(freeListMutex_);
     if (freeList_.empty()) {
-        WaitForInBuffer();
+        WaitForInBuffer(listLock);
     }
+    listLock.unlock();
     if (state_ == State::STOPPING) {
         ReleaseSurfaceBuffer();
         AVCODEC_LOGE("surface exit .");
@@ -303,8 +304,8 @@ void AvcEncoder::GetBufferFromSurface()
     buffer->InvalidateCache();
 
     AVCODEC_LOGD("timestamp: %{public}" PRId64 ", dataSize: %{public}d", pts, buffer->GetSize());
+    listLock.lock();
     CHECK_AND_RETURN_LOG(!freeList_.empty(), "freeList_ is empty!");
-    std::unique_lock<std::mutex> listLock(freeListMutex_);
     uint32_t index = freeList_.front();
     freeList_.pop_front();
     listLock.unlock();
@@ -731,13 +732,19 @@ void AvcEncoder::InitBuffers()
 {
     inputAvailQue_->SetActive(true);
     codecAvailQue_->SetActive(true);
-    freeList_.clear();
+    {
+        std::lock_guard<std::mutex> lock(freeListMutex_);
+        freeList_.clear();
+        for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
+            buffers_[INDEX_INPUT][i]->owner_ = FBuffer::Owner::OWNED_BY_USER;
+            if (inputSurface_ != nullptr) {
+                freeList_.emplace_back(i);
+            }
+        }
+    }
     for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
-        buffers_[INDEX_INPUT][i]->owner_ = FBuffer::Owner::OWNED_BY_USER;
         if (inputSurface_ == nullptr) {
             callback_->OnInputBufferAvailable(i, buffers_[INDEX_INPUT][i]->avBuffer_);
-        } else {
-            freeList_.emplace_back(i);
         }
         AVCODEC_LOGI("OnInputBufferAvailable frame index = %{public}d, owner = %{public}d",
             i, buffers_[INDEX_INPUT][i]->owner_.load());
@@ -958,7 +965,10 @@ void AvcEncoder::ResetBuffers()
 {
     inputAvailQue_->Clear();
     codecAvailQue_->Clear();
-    freeList_.clear();
+    {
+        std::lock_guard<std::mutex> lock(freeListMutex_);
+        freeList_.clear();
+    }
 }
 
 int32_t AvcEncoder::Stop()
@@ -1227,13 +1237,12 @@ int32_t AvcEncoder::ReleaseOutputBuffer(uint32_t index)
 int32_t AvcEncoder::NotifyEos()
 {
     AVCODEC_LOGI(" start ");
-    WaitForInBuffer();
+    std::unique_lock<std::mutex> listLock(freeListMutex_);
+    WaitForInBuffer(listLock);
     if (freeList_.empty()) {
         AVCODEC_LOGE("no empty buffer");
         return AVCS_ERR_OK;
     }
-
-    std::unique_lock<std::mutex> listLock(freeListMutex_);
     uint32_t index = freeList_.front();
     freeList_.pop_front();
     listLock.unlock();
@@ -1578,6 +1587,7 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
     }
 
     uint32_t codecIndex = codecAvailQue_->Front();
+    CHECK_AND_RETURN_RET_LOG(codecIndex < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL, "invalid index");
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][codecIndex];
     CHECK_AND_RETURN_RET_LOG(outputBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output buffer nullptr");
     std::shared_ptr<AVBuffer> &outputAVBuffer = outputBuffer->avBuffer_;
@@ -1653,6 +1663,7 @@ int32_t AvcEncoder::CopyHeaderInfoToOutArgs()
     CHECK_AND_RETURN_RET_LOG(avcEncHeaderArgs_.streamBuf != nullptr, AVCS_ERR_NO_MEMORY,
         "header buffer not allocated");
     uint32_t codecIndex = codecAvailQue_->Front();
+    CHECK_AND_RETURN_RET_LOG(codecIndex < buffers_[INDEX_OUTPUT].size(), AVCS_ERR_INVALID_VAL, "invalid index");
     std::shared_ptr<FBuffer> outputBuffer = buffers_[INDEX_OUTPUT][codecIndex];
     CHECK_AND_RETURN_RET_LOG(outputBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output buffer nullptr");
     std::shared_ptr<AVBuffer> &outputAVBuffer = outputBuffer->avBuffer_;
@@ -1711,6 +1722,7 @@ void AvcEncoder::SendFrame()
     int32_t ret = AVCS_ERR_OK;
     uint32_t index = inputAvailQue_->Front();
     CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
+    CHECK_AND_RETURN_LOG(index < buffers_[INDEX_INPUT].size(), "invalid index");
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     CHECK_AND_RETURN_LOG(inputBuffer != nullptr, "input buffer nullptr");
     std::shared_ptr<AVBuffer> inputAVBuffer = GetAvBuffer(inputBuffer);

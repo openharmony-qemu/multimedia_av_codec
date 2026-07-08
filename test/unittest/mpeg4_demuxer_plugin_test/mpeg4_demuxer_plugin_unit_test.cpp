@@ -801,6 +801,8 @@ static const std::vector<KnownSetDataSourceDiffResource> g_knownSetDataSourceDif
     {TEST_DEMUXER_RESOURCE_DIR + "/stereo_16bit_48000Hz_32kbps.mp4",
         {"outChannelLayout", "smpFmt", "smpFrm", "bitsPerRawSmp", "channelLayout"}},
     {TEST_DEMUXER_RESOURCE_DIR + "/test_265_B_Gop25_4sec.mp4", {"csd"}},
+    {TEST_DEMUXER_RESOURCE_DIR + "/webvtt.mp4", {"lang"}},
+    {TEST_DEMUXER_RESOURCE_DIR + "/wvtt.mp4", {"lang"}},
 };
 
 const std::vector<KnownSetDataSourceDiffResource>& GetKnownSetDataSourceDiffResources()

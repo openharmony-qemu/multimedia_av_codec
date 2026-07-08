@@ -116,6 +116,13 @@ public:
     Status SetCachePressureCallback(CachePressureCallback cb) override;
     Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override;
 private:
+    enum DumpMode : unsigned long {
+        DUMP_NONE = 0,
+        DUMP_READAT_INPUT = 0b001,
+        DUMP_AVPACKET_OUTPUT = 0b010,
+        DUMP_AVBUFFER_OUTPUT = 0b100,
+    };
+
     enum IndexAndPTSConversionMode : unsigned int {
         GET_FIRST_SAMPLE_PTS,
         INDEX_TO_RELATIVEPTS,
@@ -160,6 +167,27 @@ private:
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
     std::unordered_map<uint32_t, std::shared_ptr<Sample>> pendingWebVttSamples_ {};
     std::unordered_map<uint32_t, std::vector<int64_t>> rawDtsPrefix_ {};
+
+    struct TrackDfxInfo {
+        int frameIndex = 0;
+    };
+
+    struct DumpParam {
+        DumpMode mode;
+        uint8_t* buf;
+        int trackId;
+        int64_t offset;
+        int size;
+        int index;
+        int64_t pts;
+        int64_t pos;
+    };
+    std::unordered_map<uint32_t, TrackDfxInfo> trackDfxInfoMap_ {};
+    DumpMode dumpMode_ {DUMP_NONE};
+    static std::atomic<int> readatIndex_;
+    int avpacketIndex_ {0};
+
+    static void Dump(const DumpParam &dumpParam);
 
     int64_t absolutePTSOfIndexZero_ = INT64_MAX;
     std::priority_queue<int64_t> index2RelativePTSHeap_;
@@ -270,10 +298,17 @@ private:
         std::shared_ptr<MPEG4SampleHelper::SampleIndexEntry> &sample);
     Status GetUnseekableSampleInfo(uint32_t &trackId, int64_t &pos, int32_t &size);
     Status GetSeekableSampleInfo(uint32_t trackId, int64_t &pos, int32_t &size);
+    Status CheckReadSampleDataStopState(const std::shared_ptr<Sample>& sample);
     Status ReadSampleData(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size, uint32_t trackId);
     Status CheckReadSampleDataState(int32_t size);
     Status ReadSampleDataToBuffer(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size);
     Status UpdateReadSampleDataTimeout(Status ret, std::shared_ptr<Sample> sample);
+    void DumpReadAtData(uint8_t* data [[maybe_unused]], uint64_t pos [[maybe_unused]],
+        size_t size [[maybe_unused]]);
+    void DumpAVPacketData(const std::shared_ptr<Sample>& sample [[maybe_unused]],
+        uint32_t trackId [[maybe_unused]], uint64_t pos [[maybe_unused]]);
+    void DumpAVBufferData(const uint8_t* data [[maybe_unused]], uint32_t trackId [[maybe_unused]],
+        int32_t size [[maybe_unused]], int64_t pts [[maybe_unused]]);
     Status ReadSampleData(std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint64_t pos, int32_t size, uint32_t trackId);
     Status AddSampleToCacheQueue(std::shared_ptr<Sample> sample, const uint32_t trackId);
     void MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes);
