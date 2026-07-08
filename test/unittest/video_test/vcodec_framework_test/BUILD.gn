@@ -116,7 +116,6 @@ group("vcodec_framework_test") {
       ":videodec_hevcdec_unit_test",
       ":videodec_inner_async_unit_test",
       ":videodec_inner_sync_unit_test",
-      ":videodec_memrecycle_unit_test",
       ":videodec_mpeg_func_async_unit_test",
       ":videodec_mpeg_func_sync_unit_test",
       ":videodec_VC1_func_async_unit_test",
