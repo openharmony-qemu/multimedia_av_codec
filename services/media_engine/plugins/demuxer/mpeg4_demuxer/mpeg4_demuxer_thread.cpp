@@ -46,7 +46,7 @@ constexpr uint32_t READ_RETRY_SLEEP_TIME_US = 5000;
 constexpr uint32_t DEFAULT_CACHE_PRESSURE_WINDOW_MS = 500;
 constexpr int64_t NS_PER_MS = 1000000LL;
 const uint32_t SETTIMER_TIMEOUT = 5; // second
-const int READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2;
+const int READ_SIZE_LIMIT_DEFAULT = 4096 * 2160 * 3 * 2; // 帧数据大小限制
 
 bool HaveValidParserForThread(const std::string& mime)
 {
