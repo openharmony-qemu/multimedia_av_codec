@@ -1403,7 +1403,7 @@ int32_t HEncoder::ParseKvpairs(const std::string& kvpairs)
     while (std::regex_search(temp, match, kvPat)) {
         if (match[1].str() == "dqp") {
             try {
-                dqp = std::stoi(match[2].str());
+                dqp = std::stoi(match[2].str()); // 2: value
             } catch (...) {
                 HLOGW("stoi failed for dqp value");
             }

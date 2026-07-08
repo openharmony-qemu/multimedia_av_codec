@@ -434,6 +434,10 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_codecbase_roi_empty, TestSiz
 
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_roi_mixed_format, TestSize.Level1)
 {
+    // old format (=integer), new dqp+slb, new slb+dqp, slb-only, no QP, invalid region
+    const char *roiStr = "0,0-32,32=-5;10,10-50,50=dqp:-3,slb:1;"
+        "20,20-80,80=slb:2,dqp:-7;30,30-60,60=slb:3;"
+        "40,40-70,70;invalid_region;";
     OHOS::system::SetParameter("hcodec.dump", "0100");
     CommandOpt opt = {
         .apiType = ApiType::TEST_CODEC_BASE,
@@ -448,8 +452,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_roi_mixed_format, T
         .isBufferMode = true,
         .paramsFeedback = true,
         .perFrameParamsMap = {
-            // old format (=integer), new dqp+slb, new slb+dqp, slb-only, no QP, invalid region
-            {10, PerFrameParams{ .roiParams = "0,0-32,32=-5;10,10-50,50=dqp:-3,slb:1;20,20-80,80=slb:2,dqp:-7;30,30-60,60=slb:3;40,40-70,70;invalid_region;", }},
+            {10, PerFrameParams{ .roiParams = roiStr, }},
         },
     };
     bool ret = TesterCommon::Run(opt);
@@ -458,6 +461,10 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_roi_mixed_format, T
 
 HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_codecbase_roi_exceed_max, TestSize.Level1)
 {
+    // 7 regions (> roiNum=6), last region should be skipped
+    const char *roiStr = "0,0-10,10=-3;10,10-20,20=-3;20,20-30,30=-3;"
+        "30,30-40,40=-3;40,40-50,50=-3;50,50-60,60=-3;"
+        "60,60-70,70=-3;";
     OHOS::system::SetParameter("hcodec.dump", "0100");
     CommandOpt opt = {
         .apiType = ApiType::TEST_CODEC_BASE,
@@ -472,8 +479,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_codecbase_roi_exceed_max, Te
         .isBufferMode = false,
         .paramsFeedback = true,
         .perFrameParamsMap = {
-            // 7 regions (> roiNum=6), last region should be skipped
-            {10, PerFrameParams{ .roiParams = "0,0-10,10=-3;10,10-20,20=-3;20,20-30,30=-3;30,30-40,40=-3;40,40-50,50=-3;50,50-60,60=-3;60,60-70,70=-3;", }},
+            {10, PerFrameParams{ .roiParams = roiStr, }},
         },
     };
     bool ret = TesterCommon::Run(opt);
@@ -482,6 +488,14 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_codecbase_roi_exceed_max, Te
 
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_roi_stoi_exception, TestSize.Level1)
 {
+    // out-of-range coord (ParseOneRoi coordinate catch),
+    // out-of-range old-format dqp (ParseOneRoi deltaQP catch),
+    // out-of-range new-format dqp (ParseKvpairs catch),
+    // valid region for normal encoding
+    const char *roiStr = "999999999999999999,0-100,100=-3;"
+        "0,0-100,100=999999999999999999;"
+        "0,0-100,100=dqp:999999999999999999;"
+        "0,0-32,32=-3;";
     OHOS::system::SetParameter("hcodec.dump", "0100");
     CommandOpt opt = {
         .apiType = ApiType::TEST_CODEC_BASE,
@@ -496,9 +510,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_roi_stoi_exception,
         .isBufferMode = true,
         .paramsFeedback = true,
         .perFrameParamsMap = {
-            // out-of-range coord (ParseOneRoi coordinate catch), out-of-range old-format dqp (ParseOneRoi deltaQP catch),
-            // out-of-range new-format dqp (ParseKvpairs catch), valid region for normal encoding
-            {10, PerFrameParams{ .roiParams = "999999999999999999,0-100,100=-3;0,0-100,100=999999999999999999;0,0-100,100=dqp:999999999999999999;0,0-32,32=-3;", }},
+            {10, PerFrameParams{ .roiParams = roiStr, }},
         },
     };
     bool ret = TesterCommon::Run(opt);
