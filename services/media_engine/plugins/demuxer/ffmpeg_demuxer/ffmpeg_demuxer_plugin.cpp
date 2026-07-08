@@ -3011,6 +3011,9 @@ Status FFmpegDemuxerPlugin::SeekToRmKeyFrame(int trackIndex, int64_t seekTime, i
     SeekMode mode, int64_t& realSeekTime)
 {
     Status ret = Status::OK;
+    FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
+    FALSE_RETURN_V_MSG_E(selectedTrackIds_[0] <= static_cast<uint32_t>(INT_MAX), Status::ERROR_INVALID_DATA,
+        "Invalid track index: " PUBLIC_LOG_U32, selectedTrackIds_[0]);
     int videoTrackIndex = static_cast<int>(selectedTrackIds_[0]);
     int audioTrackIndex = static_cast<int>(selectedTrackIds_[0]);
     if (GetVideoTrack(videoTrackIndex) && GetAudioTrack(audioTrackIndex)) {
