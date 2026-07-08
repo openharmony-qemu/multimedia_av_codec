@@ -29,9 +29,7 @@
 #include "avcodec_codec_name.h"
 #include "dma_swap.h"
 #include "fcodec_surport_codec.h"
-#ifndef EMULATOR_ENABLED
 #include "fcodec_utils.h"
-#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -266,13 +264,11 @@ int32_t FCodec::ValidateAndSetVideoResolutionFormat(const Format &format)
 int32_t FCodec::ConfigureRawVideoPixelFormat(const Format &format)
 {
     int32_t pixelFormat = 0;
-    if (!format.GetIntValue(FMTKey::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, pixelFormat)) {
+    if (!(format.GetIntValue(FMTKey::VIDEO_RAWVIDEO_INPUT_PIXEL_FORMAT, pixelFormat) &&
+          IsValidRawVideoPixelFormat(pixelFormat))) {
         return AVCS_ERR_OK;
     }
     rawvideoPixFmt_ = static_cast<RawVideoPixelFormat>(pixelFormat);
-    CHECK_AND_RETURN_RET_LOG(
-        rawvideoPixFmt_ >= RawVideoPixelFormat::YUV420P && rawvideoPixFmt_ <= RawVideoPixelFormat::RGBA,
-        AVCS_ERR_INVALID_VAL, "Unsupported rawvideo pixel format %{public}d!", static_cast<int32_t>(rawvideoPixFmt_));
     avCodecContext_->pix_fmt = g_convertFfmpegPixFmt[rawvideoPixFmt_];
     return AVCS_ERR_OK;
 }
@@ -1330,11 +1326,7 @@ void FCodec::SendFrame()
 
 int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
 {
-    VideoPixelFormat targetPixelFmt = outputPixelFmt_;
-    if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
-        targetPixelFmt = VideoPixelFormat::NV12;
-    }
-    AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(targetPixelFmt);
+    AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(outputPixelFmt_);
     int32_t ffpixfmt = cachedFrame_->format;
     AVCODEC_LOGD("decode output ffmpeg pixfmt: %{public}d, target output ffmpeg pixfmt: %{public}d", ffpixfmt,
                  static_cast<int32_t>(ffmpegFormat));
@@ -1351,8 +1343,8 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
     }
     {
         std::lock_guard<std::mutex> lock(formatMutex_);
-        format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(targetPixelFmt));
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(targetPixelFmt);
+        format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(outputPixelFmt_));
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
         format_.PutIntValue(FMTKey::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     }
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
@@ -1366,7 +1358,18 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
         surfaceInfo.scaleLineSize = scaleLineSize_;
         ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
     } else {
+#ifdef EMULATOR_ENABLED
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, format_);
+#else
+        sptr<SurfaceBuffer> surfacebuffer = bufferMemory->GetSurfaceBuffer();
+        CHECK_AND_RETURN_RET_LOG(surfacebuffer != nullptr, AVCS_ERR_INVALID_VAL, "surfacebuffer is nullptr");
+        int32_t surfaceStride = surfacebuffer->GetStride();
+        Format bufferFormat;
+        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
+        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, cachedFrame_->height);
+        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(outputPixelFmt_));
+        ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
+#endif
     }
     frameBuffer->avBuffer_->pts_ = cachedFrame_->pts;
     AVCODEC_LOGD("Fill frame buffer successful");
