@@ -15,6 +15,7 @@
 
 #include <atomic>
 #include <cmath>
+#include <dlfcn.h>
 #include <fstream>
 #include <regex>
 #include <sys/stat.h>
@@ -23,6 +24,7 @@
 #include <vector>
 
 #include <gtest/gtest.h>
+#include "avcodec_errors.h"
 #include "fast_kits_interface.h"
 #include "surface.h"
 #include "surface_buffer_impl.h"

@@ -16,34 +16,14 @@
 #ifndef MEDIA_AVCODEC_FAST_KITS_INTERFACE_H
 #define MEDIA_AVCODEC_FAST_KITS_INTERFACE_H
 
-#include <dlfcn.h>
-#include <shared_mutex>
-#include <unordered_set>
+#include <cstdint>
+#include <memory>
 
-#include "avcodec_errors.h"
-#include "avcodec_log_ex.h"
 #include "surface.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace PreProcessing {
-
-// libfast_image.so 返回的错误码
-enum FastErrCode {
-    FAST_ERR_SUCCESS = 0,
-    FAST_ERR_SUCCESS_PARTIAL = 1,
-    FAST_ERR_ILLEGAL_INPUT = 2,
-    FAST_ERR_INVALID_PTR = 3,
-    FAST_ERR_UNSURPPORTED = 4,
-};
-
-// libfast_image.so 导出符号的函数指针类型
-using FastScaleInitFunc = int32_t (*)(uint32_t format, int32_t algo);
-using FastScaleDownSampleFunc = int32_t (*)(SurfaceBuffer *input, SurfaceBuffer *output, int32_t algo);
-using FastScaleCropFunc = int32_t (*)(SurfaceBuffer *input, SurfaceBuffer *output, void *rect);
-using CreateCropRectFunc = void *(*)(int32_t top, int32_t left, int32_t bottom, int32_t right);
-using DestroyCropRectFunc = void (*)(void *rect);
-using FastScaleClearGPUFunc = void (*)();
 
 enum class FastResizeAlgoType {
     HARDWARE,
@@ -73,31 +53,15 @@ public:
     int32_t DownSample(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
                        FastResizeAlgoType algo = FastResizeAlgoType::HARDWARE);
 
-private:
-    FastKitsInterface() = default;
     ~FastKitsInterface();
+
+private:
+    FastKitsInterface();
     FastKitsInterface(const FastKitsInterface &) = delete;
     FastKitsInterface &operator=(const FastKitsInterface &) = delete;
 
-    bool OpenLibrary();
-    bool ReadSymbols();
-    void ClearSymbols();
-
-    template <typename FuncPtr>
-    bool LoadSymbol(void *handle, FuncPtr &func, const char *name);
-
-    static int32_t ConvertErrorCode(int32_t fastErr);
-
-    mutable std::shared_mutex mutex_;
-    int32_t refCount_ = 0;
-    void *handle_ = nullptr;
-    std::unordered_set<uint32_t> initializedFormats_;
-    FastScaleInitFunc initFunc_ = nullptr;
-    FastScaleDownSampleFunc downSampleFunc_ = nullptr;
-    FastScaleCropFunc cropFunc_ = nullptr;
-    CreateCropRectFunc createRectFunc_ = nullptr;
-    DestroyCropRectFunc destroyRectFunc_ = nullptr;
-    FastScaleClearGPUFunc fastScaleClearGPUFunc_ = nullptr;
+    class Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 } // namespace PreProcessing
