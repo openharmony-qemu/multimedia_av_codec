@@ -480,6 +480,31 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_codecbase_roi_exceed_max, Te
     ASSERT_TRUE(ret);
 }
 
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_roi_stoi_exception, TestSize.Level1)
+{
+    OHOS::system::SetParameter("hcodec.dump", "0100");
+    CommandOpt opt = {
+        .apiType = ApiType::TEST_CODEC_BASE,
+        .isEncoder = true,
+        .inputFile = INPUT_FILE_PATH,
+        .dispW = W,
+        .dispH = H,
+        .protocol = H265,
+        .pixFmt = VideoPixelFormat::NV12,
+        .frameRate = 30,
+        .timeout = 100,
+        .isBufferMode = true,
+        .paramsFeedback = true,
+        .perFrameParamsMap = {
+            // out-of-range coord (ParseOneRoi coordinate catch), out-of-range old-format dqp (ParseOneRoi deltaQP catch),
+            // out-of-range new-format dqp (ParseKvpairs catch), valid region for normal encoding
+            {10, PerFrameParams{ .roiParams = "999999999999999999,0-100,100=-3;0,0-100,100=999999999999999999;0,0-100,100=dqp:999999999999999999;0,0-32,32=-3;", }},
+        },
+    };
+    bool ret = TesterCommon::Run(opt);
+    ASSERT_TRUE(ret);
+}
+
 HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_capi_old, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dump", "0010");

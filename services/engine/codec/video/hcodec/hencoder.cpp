@@ -1443,7 +1443,7 @@ bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t wid
                 roiRect.deltaQP = std::stoi(kvStr);
             } catch (...) {
                 HLOGW("stoi failed for roi deltaQP: %{public}s", kvStr.c_str());
-                roiRect.deltaQP = DEFAULT_DELTAQP;
+                return false;
             }
         }
     }
