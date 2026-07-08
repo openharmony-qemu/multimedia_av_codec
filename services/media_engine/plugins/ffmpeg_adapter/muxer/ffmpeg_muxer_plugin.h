@@ -22,7 +22,6 @@
 #include <sstream>
 #include <iomanip>
 #include "plugin/muxer_plugin.h"
-#include "stream_parser_manager.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,70 +52,24 @@ public:
     Status Reset() override;
 
 private:
-    Status SetRotation(std::shared_ptr<Meta> param);
     Status SetLocation(std::shared_ptr<Meta> param);
     Status SetMetaData(std::shared_ptr<Meta> param);
-    Status SetGltfInfo(std::shared_ptr<Meta> param);
-
-private:
     Status CheckAacParam(const std::shared_ptr<Meta> &trackDesc);
     Status SetCodecParameterOfAudioTrack(AVStream *stream, const std::shared_ptr<Meta> &trackDesc);
-    Status SetCodecParameterOfVideoTrack(AVStream *stream, const std::shared_ptr<Meta> &trackDesc);
     Status SetCodecParameterExtra(AVStream *stream, const uint8_t *extraData, int32_t extraDataSize);
-    Status SetCodecParameterColor(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
-    Status SetCodecParameterColorByParser(AVStream* stream);
-    Status SetCodecParameterCuva(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
-    Status SetCodecParameterCuvaByParser(AVStream *stream);
-    Status SetCodecParameterVideoDelay(AVStream *stream);
-    void SetSeiLogInfo();
-    Status SetDisplayMatrix(AVStream* stream);
-    Status SetCodecParameterTimedMeta(AVStream* stream, const std::shared_ptr<Meta> &trackDesc);
-    bool CheckTrackReferenceType(const std::shared_ptr<Meta> &trackDesc, std::string &trackRefType);
-    bool CheckTrackDescription(const std::shared_ptr<Meta> &trackDesc, std::string &trackDescription);
-    bool CheckReferenceTrackIDS(const std::shared_ptr<Meta> &trackDesc, std::string &toStringTrackId);
-    Status SetAuxiliaryMeta(const std::shared_ptr<Meta> &trackDesc, AVStream* st);
     Status AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
-    Status AddTimedMetaTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
-    Status AddAudioAuxiliaryTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
-    Status AddVideoAuxiliaryTrack(
-        int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
     Status WriteNormal(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample, int32_t dataOffset);
-    Status WriteVideoSample(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
-    Status WriteVideoSampleData(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample);
-    std::vector<uint8_t> TransAnnexbToMp4(const uint8_t *sample, int32_t size);
-    uint8_t *FindNalStartCode(const uint8_t *buf, const uint8_t *end, int32_t &startCodeLen);
-    bool IsAvccSample(const uint8_t* sample, int32_t size, int32_t nalSizeLen);
-    Status SetNalSizeLen(AVStream *stream, const std::vector<uint8_t> &codecConfig);
-    void HandleOptions(std::string& optionName);
     Status UpdateExtraData(uint8_t *data, size_t size);
     void CheckChannelLayout(uint64_t channelLayout, const std::shared_ptr<Meta> &trackDesc);
-    bool CheckGltfParam(std::shared_ptr<Meta> param);
     Status SetOggUserMeta(const std::shared_ptr<Meta> &userMeta);
-
-private:
-    struct VideoSampleInfo {
-        bool isFirstFrame_ {true};
-        bool isNeedTransData_ {false};
-        std::vector<uint8_t> extraData_ {};
-        int32_t nalSizeLen_ {0x04};
-    };
 
     std::shared_ptr<AVPacket> cachePacket_ {};
     std::shared_ptr<AVOutputFormat> outputFormat_ {};
     std::shared_ptr<AVFormatContext> formatContext_ {};
-    VideoRotation rotation_ { VIDEO_ROTATION_0 };
     bool isWriteHeader_ {false};
-    bool isHdrVivid_ = {false};
-    bool isColorSet_ = {false};
-    bool isFastStart_ = {false};
     bool canReadFile_ = {false};
-    bool useTimedMetadata_ = {false};
-    bool isAigc_ = {false};
-    std::shared_ptr<StreamParserManager> hevcParser_ {nullptr};
-    std::unordered_map<int32_t, VideoSampleInfo> videoTracksInfo_;
     std::mutex mutex_;
-    int32_t editList_ = 1;
     std::shared_ptr<FlacCodecConfig> flacCodecConfig_ {nullptr};
 };
 } // namespace Ffmpeg
