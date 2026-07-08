@@ -62,7 +62,7 @@ const std::unordered_map<std::string, NodeConfig>& GetNodeConfigMap()
         {"EventStream", {{"timescale", "value", "schemeIdUri", "presentationTimeOffset"}, {}, {}}},
         {"Event", {{"id", "duration", "presentationTime", "value"}, {}, {}}},
         {"SpliceInfoSection", {{"xmlns"}, {}, {}}},
-        {"SplceInsert", {{"outOfNetworkIndicator", "spliceImmediateFlag"}, {}, {}}},
+        {"SpliceInsert", {{"outOfNetworkIndicator", "spliceImmediateFlag"}, {}, {}}},
         {"BreakDuration", {{"duration", "autoReturn"}, {}, {}}},
         {"Initialization", {{"sourceURL", "range"}, {}, {}}},
         {"RepresentationIndex", {{"sourceURL", "range"}, {}, {}}},
