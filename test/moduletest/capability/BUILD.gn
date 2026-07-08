@@ -68,6 +68,10 @@ ohos_unittest("capability_module_test") {
     "-Wunused-parameter",
   ]
 
+if (av_codec_enable_only_for_flagship_chip) {
+    defines = [ "ONLY_FOR_FLAGSHIP_CHIP" ]
+  }
+
   public_external_deps = [ "ffmpeg:libohosffmpeg" ]
 
   deps = [

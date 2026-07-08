@@ -622,7 +622,7 @@ uint32_t VEncAPI11Sample::ReadOneFrameRGBA8888(uint8_t *dst)
 uint32_t VEncAPI11Sample::FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer)
 {
     int32_t ret = 0;
-    struct Region region;
+    struct Region region = {};
     struct Region::Rect *rect = new Region::Rect();
     rect->x = 0;
     rect->y = 0;

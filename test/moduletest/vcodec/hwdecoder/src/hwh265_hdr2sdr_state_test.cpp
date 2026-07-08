@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
 #include <string>
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
@@ -53,7 +56,7 @@ void HwdecHdr2SdrStateNdkTest::SetUp(void)
 {
     vDecSample2 = new VDecAPI11Sample();
     vDecSample2->SF_OUTPUT = true;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample2->TRANSFER_FLAG = true;
     } else {
         vDecSample2->TRANSFER_FLAG = false;

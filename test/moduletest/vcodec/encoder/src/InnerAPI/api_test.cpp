@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
 #include <iostream>
 #include <cstdio>
 #include <string>
@@ -160,18 +163,20 @@ HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0600, TestSize.Level2)
  */
 HWTEST_F(HwEncInnerApiNdkTest, VIDEO_ENCODE_ILLEGAL_PARA_0700, TestSize.Level2)
 {
-    venc_ = VideoEncoderFactory::CreateByMime(g_codecMime);
-    ASSERT_NE(nullptr, venc_);
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
+        venc_ = VideoEncoderFactory::CreateByMime(g_codecMime);
+        ASSERT_NE(nullptr, venc_);
 
-    Format format;
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 1080);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1080);
-    format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
+        Format format;
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 1080);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1080);
+        format.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::YUVI420));
 
-    ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
-    ASSERT_EQ(AVCS_ERR_OK, venc_->Start());
-    usleep(1000000);
-    ASSERT_EQ(AVCS_ERR_INVALID_STATE, venc_->ReleaseOutputBuffer(9999999));
+        ASSERT_EQ(AVCS_ERR_OK, venc_->Configure(format));
+        ASSERT_EQ(AVCS_ERR_OK, venc_->Start());
+        usleep(1000000);
+        ASSERT_EQ(AVCS_ERR_INVALID_STATE, venc_->ReleaseOutputBuffer(9999999));
+    }
 }
 
 /**

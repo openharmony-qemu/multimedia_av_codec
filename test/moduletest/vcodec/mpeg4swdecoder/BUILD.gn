@@ -92,6 +92,10 @@ ohos_unittest("mpeg4swdecoder_native_module_test") {
     ]
   }
 
+  if (is_standard_system) {
+    external_deps += ["init:libbegetutil"]
+  }
+
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }
