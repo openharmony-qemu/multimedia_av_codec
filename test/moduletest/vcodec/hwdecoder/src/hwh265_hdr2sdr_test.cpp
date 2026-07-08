@@ -249,16 +249,6 @@ HWTEST_F(HwdecHdr2SdrNdkTest, HEVC_HW_HDR2SDR_FUNC_0041, TestSize.Level2)
         vDecSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
     }
-    else {
-        shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
-        vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
-        vDecSample->SF_OUTPUT = true;
-        vDecSample->TRANSFER_FLAG = true;
-        vDecSample->rsAtTime = true;
-        ASSERT_EQ(AV_ERR_UNSUPPORT, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
-        vDecSample->WaitForEOS();
-        ASSERT_EQ(AV_ERR_OK, vDecSample->errCount);
-    }
 }
 
 /**

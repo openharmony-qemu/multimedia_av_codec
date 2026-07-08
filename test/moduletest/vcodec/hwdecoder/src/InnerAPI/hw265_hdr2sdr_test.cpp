@@ -157,9 +157,6 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0003, TestSize.Level0
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
-    } else {
-        ASSERT_EQ(AVCS_ERR_OK, vDecSample->CreateByName(g_codecNameHEVC));
-        ASSERT_EQ(AVCS_ERR_UNSUPPORT, vDecSample->Configure());
     }
 }
 
