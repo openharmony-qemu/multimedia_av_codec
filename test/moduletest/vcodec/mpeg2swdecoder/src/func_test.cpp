@@ -130,7 +130,7 @@ static void RunDec(DecInfo decinfo)
 bool IsWukong100Device()
 {
     std::string buildtimeValue = OHOS::system::GetParameter(IMAGE_BUILDTIME_KEY, DEFAULT_BUILDTIME_VALUE);
- 	return buildtimeValue.find(WUKONG100_KEYWORD) != std::string::npos;
+    return buildtimeValue.find(WUKONG100_KEYWORD) != std::string::npos;
 }
 
 namespace {
