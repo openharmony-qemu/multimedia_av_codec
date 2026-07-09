@@ -41,6 +41,7 @@ struct VideoEncoderObject : public OH_AVCodec {
 
     void ClearBufferList();
     void StopCallback();
+    void ClearOutputBufferForStreamChange();
     void FormatToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVFormat>>& tempMap);
     void BufferToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>>& tempMap);
     void MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>>& tempMap);
