@@ -86,8 +86,6 @@ ohos_unittest("media_demuxer_ext_unit_test") {
   sources = media_demuxer_test_sources + [ "media_demuxer_ext_unit_test.cpp" ]
   deps = [
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-    "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
-    "$av_codec_root_dir/services/engine:av_codec_engine_package",
   ]
 
   external_deps = [
