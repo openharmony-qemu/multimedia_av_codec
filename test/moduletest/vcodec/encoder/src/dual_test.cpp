@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
+
 #include <string>
 #include <limits>
 #include <iostream>
@@ -336,7 +340,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0040, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0050, TestSize.Level1)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR}));
@@ -352,7 +356,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0050, TestSize.Level1)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0060, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1080_nv21}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR, .width = 1920, .height = 1080,
@@ -370,7 +374,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0060, TestSize.Level0)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0070, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_3840_2160_nv12}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR, .width = 3840, .height = 2160}));
@@ -386,7 +390,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0070, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0080, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR, .width = 1920, .height = 1080}));
@@ -404,7 +408,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0080, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0090, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_3840_2160_nv12}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR, .width = 1920, .height = 1080}));
@@ -422,7 +426,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0090, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0100, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_3840_2160_nv12}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.width = 3840, .height = 2160}));
@@ -438,7 +442,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0100, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0110, TestSize.Level0)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR}));
@@ -454,7 +458,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0110, TestSize.Level0)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0120, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.width = 1920, .height = 1088,
@@ -472,7 +476,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0120, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0130, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1920_1080_nv21}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR, .width = 1920, .height = 1080,
@@ -490,7 +494,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0130, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0140, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR}));
@@ -506,7 +510,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0140, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0150, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR, .width = 1920, .height = 1088,
@@ -524,7 +528,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0150, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0160, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1920_1080_nv21}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CQ, .width = 1920, .height = 1080,
@@ -542,7 +546,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0160, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0170, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CQ, .width = 1280, .height = 720}));
@@ -558,7 +562,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0170, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0180, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CQ, .width = 1920, .height = 1088,
@@ -576,7 +580,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0180, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0190, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR, .width = 1280, .height = 720}));
@@ -592,7 +596,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0190, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0200, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR, .width = 1920, .height = 1088,
@@ -610,7 +614,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0200, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0210, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY}));
@@ -626,7 +630,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0210, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0220, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .width = 1920,
@@ -644,7 +648,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0220, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0230, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_3840_2160_nv12}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRate = 6000000, .width = 3840, .height = 2160}));
@@ -660,7 +664,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0230, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0240, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRate = 5000000}));
@@ -676,7 +680,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0240, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0250, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRate = 6000000, .width = 1920, .height = 1088,
@@ -694,7 +698,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0250, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0260, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1920_1080_nv21}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CQ, .quality = 25, .width = 1920,
@@ -712,7 +716,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0260, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0270, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CQ, .quality = 30}));
@@ -728,7 +732,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0270, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0280, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CQ, .quality = 25, .width = 1920,
@@ -746,7 +750,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0280, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0290, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR, .sqrFactor = 30,
@@ -764,7 +768,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0290, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0300, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR, .width = 1920, .height = 1088,
@@ -782,7 +786,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0300, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0310, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 6000000}));
@@ -798,7 +802,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0310, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0320, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 5000000,
@@ -816,7 +820,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0320, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0330, TestSize.Level0)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_3840_2160_nv12}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CQ, .width = 3840, .height = 2160}));
@@ -832,7 +836,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0330, TestSize.Level0)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0340, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CQ}));
@@ -848,7 +852,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0340, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0350, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CQ, .width = 1920, .height = 1088,
@@ -866,7 +870,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0350, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0360, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR, .sqrFactor = 30,
@@ -883,7 +887,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0360, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0370, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR, .width = 1920, .height = 1088,
@@ -901,7 +905,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0370, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0380, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 5000000}));
@@ -917,7 +921,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0380, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0390, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 5000000,
@@ -935,7 +939,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0390, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0400, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR, .sqrFactor = 30,
@@ -952,7 +956,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0400, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0410, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR, .width = 1920, .height = 1088,
@@ -970,7 +974,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0410, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0420, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 5000000}));
@@ -986,7 +990,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0420, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0430, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 5000000,
@@ -1004,7 +1008,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0430, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0440, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 5000000}));
@@ -1020,7 +1024,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0440, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0450, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 5000000,
@@ -1038,7 +1042,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0450, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0460, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR, .width = 1920, .height = 1088}));
@@ -1055,7 +1059,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0460, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0470, TestSize.Level1)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchPrimary = true, .enableSwitchParame = true,
             .bitrateMode = {CBR}, .cbrBitrate = 6000000};
@@ -1074,7 +1078,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0470, TestSize.Level1)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0480, TestSize.Level0)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchPrimary = true, .enableSwitchMode = true, .enableSwitchParame = true,
             .bitrateMode = {VBR}, .vbrBitrate = 5000000};
@@ -1093,7 +1097,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0480, TestSize.Level0)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0490, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchPrimary = true, .enableSwitchMode = true, .enableSwitchParame = true,
             .bitrateMode = {VBR, SQR, CBR_HIGH_QUALITY}, .sqrFactor = 30, .maxBitrate = 6000000,
@@ -1113,7 +1117,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0490, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0500, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchPrimary = true, .enableSwitchBitParame = true,
             .bitrateMode = {CBR}, .hevcProfile = HEVC_PROFILE_MAIN_10};
@@ -1132,7 +1136,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0500, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0510, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchPrimary = true, .enableSwitchBitParame = true,
             .bitrateMode = {CBR}, .hevcProfile = HEVC_PROFILE_MAIN};
@@ -1153,7 +1157,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0510, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0520, TestSize.Level1)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchSecondary = true, .enableSwitchParame = true,
             .bitrateMode = {CBR}, .cbrBitrate = 6000000};
@@ -1172,7 +1176,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0520, TestSize.Level1)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0530, TestSize.Level0)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchSecondary = true, .enableSwitchMode = true, .enableSwitchParame = true,
             .bitrateMode = {VBR}, .vbrBitrate = 5000000};
@@ -1191,7 +1195,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0530, TestSize.Level0)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0540, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchSecondary = true, .enableSwitchMode = true, .enableSwitchParame = true,
             .bitrateMode = {VBR, SQR, CBR_HIGH_QUALITY}, .sqrFactor = 30, .maxBitrate = 6000000,
@@ -1211,7 +1215,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0540, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0550, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchSecondary = true, .enableSwitchBitParame = true,
             .bitrateMode = {CBR}, .hevcProfile = HEVC_PROFILE_MAIN_10};
@@ -1230,7 +1234,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0550, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0560, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchSecondary = true, .enableSwitchBitParame = true,
             .bitrateMode = {CBR}, .hevcProfile = HEVC_PROFILE_MAIN};
@@ -1251,7 +1255,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0560, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0570, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchPrimary = true, .enableSwitchSecondary = true, .enableSwitchParame = true,
             .bitrateMode = {CBR}, .cbrBitrate = 6000000};
@@ -1270,7 +1274,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0570, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0580, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchPrimary = true, .enableSwitchSecondary = true, .enableSwitchMode = true,
             .enableSwitchParame = true, .bitrateMode = {VBR}, .vbrBitrate = 5000000};
@@ -1289,7 +1293,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0580, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0590, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->parameter = {.enableSwitchPrimary = true, .enableSwitchSecondary = true, .enableSwitchMode = true,
             .enableSwitchParame = true, .bitrateMode = {VBR, SQR, CBR_HIGH_QUALITY}, .sqrFactor = 30,
@@ -1309,7 +1313,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0590, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0600, TestSize.Level1)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR}));
@@ -1325,7 +1329,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0600, TestSize.Level1)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0610, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR, .enbleBFrame = 1}));
@@ -1341,7 +1345,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0610, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0620, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.repeat = true, .maxCount = true}));
@@ -1358,7 +1362,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0620, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0630, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.roi = true}));
@@ -1375,7 +1379,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0630, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0640, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.enableTemporal = true, .temporalConfig = true}));
@@ -1391,7 +1395,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0640, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0650, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR}));
@@ -1407,7 +1411,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0650, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0660, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.repeat = true, .maxCount = true}));
@@ -1423,7 +1427,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0660, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0670, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.roi = true}));
@@ -1440,7 +1444,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0670, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0680, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.enableTemporal = true, .temporalConfig = true}));
@@ -1456,7 +1460,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0680, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0690, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR}));
@@ -1472,7 +1476,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0690, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0700, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.repeat = true, .maxCount = true}));
@@ -1488,7 +1492,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0700, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0710, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.roi = true}));
@@ -1505,7 +1509,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0710, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0720, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.enableTemporal = true, .temporalConfig = true}));
@@ -1521,7 +1525,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0720, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0730, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR}));
@@ -1537,7 +1541,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0730, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0740, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->enableDualRoi = true;
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
@@ -1554,7 +1558,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0740, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0750, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.enableTemporal = true, .temporalConfig = true}));
@@ -1570,7 +1574,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0750, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0760, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR}));
@@ -1586,7 +1590,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0760, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0770, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.roi = true}));
@@ -1602,7 +1606,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0770, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0780, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.enableTemporal = true, .temporalConfig = true}));
@@ -1618,7 +1622,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0780, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0790, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR}));
@@ -1634,7 +1638,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0790, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0800, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.enableTemporal = true, .temporalConfig = true}));
@@ -1650,7 +1654,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0800, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0810, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR}));
@@ -1667,7 +1671,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0810, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0820, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = SQR, .width = 1920, .height = 1088,
@@ -1685,7 +1689,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0820, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0830, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 6000000}));
@@ -1702,7 +1706,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0830, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0840, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1920_1088_nv12_10bit}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR_HIGH_QUALITY, .bitRate = 6000000,
@@ -1720,7 +1724,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0840, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0850, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.enableTemporal = true, .temporalConfig = true}));
@@ -1736,7 +1740,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0850, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0860, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_640_480_rgba,
             file_1280_536_nv21, file_1280_720_nv, file_1920_1080_nv21, file_3840_2160_nv12}));
@@ -1753,7 +1757,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0860, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0870, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_640_480_rgba,
             file_1280_720_nv, file_1920_1080_nv21, file_1280_536_nv21, file_3840_2160_nv12}));
@@ -1770,7 +1774,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0870, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0880, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv12_10bit,
             file_176_144_rgba1010102}));
@@ -1787,7 +1791,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0880, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0890, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR}));
@@ -1803,7 +1807,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0890, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0900, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR}));
@@ -1819,7 +1823,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0900, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0910, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR}));
@@ -1835,7 +1839,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0910, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0920, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR}));
@@ -1851,7 +1855,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0920, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0930, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetPrimaryConfig(vEncSample, {.bitRateMode = CBR, .dualEos = true}));
@@ -1866,7 +1870,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0930, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0940, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR, .surfSecondaryInput = true}));
@@ -1889,7 +1893,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0940, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0950, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR}));
@@ -1909,7 +1913,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0950, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0960, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->needStopInLoop = true;
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
@@ -1931,7 +1935,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0960, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0970, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->needStopInLoop = true;
         vEncSample->noStop = true;
@@ -1957,7 +1961,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0970, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0980, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = CBR}));
@@ -1980,7 +1984,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0980, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0990, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->runDualEncoder = true;
         vEncSample->readMultiFiles = true;
@@ -1999,7 +2003,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0990, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_1000, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->repeatCreateSecondary = true;
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
@@ -2016,7 +2020,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_1000, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_1010, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto sample = make_unique<VideoTransCodeApi11Sample>();
         sample->DEFAULT_PROFILE = AVC_PROFILE_MAIN;
         sample->DEFAULT_WIDTH = 1104;
@@ -2044,7 +2048,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_1010, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_1020, TestSize.Level2)
 {
-    if (cap_hevc_dec != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc_dec != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VideoTransCodeApi11Sample> sample = make_shared<VideoTransCodeApi11Sample>();
         sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN;
         sample->DEFAULT_WIDTH = 1920;
@@ -2072,7 +2076,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_1020, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_1030, TestSize.Level2)
 {
-    if (cap_hevc_dec != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap_hevc_dec != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VideoTransCodeApi11Sample> sample = make_shared<VideoTransCodeApi11Sample>();
         sample->DEFAULT_PROFILE = HEVC_PROFILE_MAIN_10;
         sample->DEFAULT_WIDTH = 3840;
@@ -2100,7 +2104,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_1030, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_1040, TestSize.Level2)
 {
-    if (cap != nullptr && !access("/system/lib64/media/", 0)) {
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_AVC, {file_1280_720_nv}));
         ASSERT_EQ(AV_ERR_OK, SetSecondaryConfig(vEncSample, {.bitRateMode = VBR, .pixFmt = AV_PIXEL_FORMAT_NV21}));

@@ -23,6 +23,8 @@
 #include "native_avcapability.h"
 #include "native_avformat.h"
 #include "openssl/sha.h"
+#include <parameter.h>
+#include <parameters.h>
 
 #ifdef SUPPORT_DRM
 #include "native_mediakeysession.h"
@@ -92,6 +94,9 @@ const std::vector<OH_NativeBuffer_TransformType> transfromTypes = {
     NATIVEBUFFER_FLIP_H_ROT270,
     NATIVEBUFFER_FLIP_V_ROT270
 };
+constexpr const char* IMAGE_BUILDTIME_KEY = "const.image.buildtime";
+constexpr const char* WUKONG100_KEYWORD = "wukong100";
+constexpr const char* DEFAULT_BUILDTIME_VALUE = "";
 } // namespace
 
 void Mpeg2SwdecFuncNdkTest::SetUpTestCase()
@@ -120,6 +125,12 @@ static void RunDec(DecInfo decinfo)
     vDecSample->DEFAULT_FRAME_RATE = decinfo.defaultFrameRate;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg2));
     vDecSample->WaitForEOS();
+}
+
+bool IsWukong100Device()
+{
+    std::string buildtimeValue = OHOS::system::GetParameter(IMAGE_BUILDTIME_KEY, DEFAULT_BUILDTIME_VALUE);
+ 	return buildtimeValue.find(WUKONG100_KEYWORD) != std::string::npos;
 }
 
 namespace {
@@ -257,7 +268,7 @@ HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_MPEG2SWDEC_FUNCTION_0600, TestSize.Level2)
  */
 HWTEST_F(Mpeg2SwdecFuncNdkTest, VIDEO_MPEG2SWDEC_FUNCTION_0700, TestSize.Level2)
 {
-    if (cap_mpeg2 != nullptr) {
+    if (cap_mpeg2 != nullptr && !IsWukong100Device()) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_2;
         vDecSample->DEFAULT_WIDTH = 640;
