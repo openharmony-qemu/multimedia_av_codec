@@ -166,7 +166,7 @@ private:
                                       const std::shared_ptr<Media::Meta> &meta);
     void ParseRoiStringValid(const std::string &roiValue, std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer);
     bool ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t width, int32_t height);
-    int32_t ParseKvpairs(const std::string& kvpairs);
+    bool ParseKvpairs(const std::string& kvpairs, int32_t& dqp);
     void WrapRoiParamIntoOmxBuffer(std::shared_ptr<CodecHDI::OmxCodecBuffer> &omxBuffer,
                                   const std::shared_ptr<Media::Meta> &meta, sptr<SurfaceBuffer> surfaceBuffer);
     void BeforeCbOutToUser(BufferInfo &info) override;

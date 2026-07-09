@@ -1395,25 +1395,23 @@ int32_t HEncoder::CalculateFrameRateParamIntoOmxBuffer(int64_t curPts)
     return 0;
 }
 
-int32_t HEncoder::ParseKvpairs(const std::string& kvpairs)
+bool HEncoder::ParseKvpairs(const std::string& kvpairs, int32_t& dqp)
 {
     std::regex kvPat(R"((dqp|slb):(-?\d+))");
     std::smatch match;
-    int32_t dqp = DEFAULT_DELTAQP;
+    dqp = DEFAULT_DELTAQP;
     std::string temp = kvpairs;
     while (std::regex_search(temp, match, kvPat)) {
         if (match[1].str() == "dqp") {
-            int32_t parsedDqp = DEFAULT_DELTAQP;
             auto valStr = match[2].str(); // 2: value
-            if (std::from_chars(valStr.data(), valStr.data() + valStr.size(), parsedDqp).ec != std::errc()) {
+            if (std::from_chars(valStr.data(), valStr.data() + valStr.size(), dqp).ec != std::errc()) {
                 HLOGW("std::from_chars failed for dqp value");
-            } else {
-                dqp = parsedDqp;
+                return false;
             }
         }
         temp = match.suffix().str();
     }
-    return dqp;
+    return true;
 }
 
 bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t width, int32_t height)
@@ -1428,7 +1426,10 @@ bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t wid
         return false;
     }
     
-    int32_t topVal = 0, leftVal = 0, bottomVal = 0, rightVal = 0;
+    int32_t topVal = 0;
+    int32_t leftVal = 0;
+    int32_t bottomVal = 0;
+    int32_t rightVal = 0;
     auto topStr = match[TOP_INDEX].str();
     auto leftStr = match[LEFT_INDEX].str();
     auto bottomStr = match[BOTTOM_INDEX].str();
@@ -1447,7 +1448,10 @@ bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t wid
     if (match[DELTAQP_INDEX].matched) {
         std::string kvStr = match[DELTAQP_INDEX].str();
         if (kvStr.find(":") != std::string::npos) {
-            roiRect.deltaQP = ParseKvpairs(kvStr);
+            if (!ParseKvpairs(kvStr, roiRect.deltaQP)) {
+                HLOGW("ParseKvpairs failed for roi: %{public}s", kvStr.c_str());
+                return false;
+            }
         } else {
             if (std::from_chars(kvStr.data(), kvStr.data() + kvStr.size(), roiRect.deltaQP).ec != std::errc()) {
                 HLOGW("std::from_chars failed for roi deltaQP: %{public}s", kvStr.c_str());

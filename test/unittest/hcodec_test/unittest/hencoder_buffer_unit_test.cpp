@@ -486,7 +486,7 @@ HWTEST_F(HEncoderBufferUnitTest, encode_surface_265_codecbase_roi_exceed_max, Te
     ASSERT_TRUE(ret);
 }
 
-HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_roi_stoi_exception, TestSize.Level1)
+HWTEST_F(HEncoderBufferUnitTest, encode_buffer_265_codecbase_roi_parse_exception, TestSize.Level1)
 {
     // out-of-range coord (ParseOneRoi coordinate catch),
     // out-of-range old-format dqp (ParseOneRoi deltaQP catch),
