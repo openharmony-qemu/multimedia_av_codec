@@ -270,6 +270,9 @@ private:
 
     Status ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, int32_t depth, bool &isZeroSizeAtom,
         ParseContext* ctx);
+    Status ParseAtomSize(MPEG4Atom& atom, int32_t depth, bool& isZeroSizeAtom, ParseContext* ctx);
+    Status ValidateAtomSourceRange(MPEG4Atom& atom, const std::string& typeStr, int32_t depth, ParseContext* ctx,
+        uint64_t atomInfoSize);
     Status ProcessMetaHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
     Status ProcessTfhdAtom(const MPEG4Atom& atom);
     Status UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const Av3aConfigParams& params);
@@ -280,6 +283,9 @@ private:
     bool UpdataMoofInfo(MPEG4Atom& atom, Status& ret, int64_t& currentOffset, FragmentEntry& frag, int64_t sidxDts);
     // 解析函数
     Status ParseContainerAtom(const MPEG4Atom& containerAtom, int32_t depth, ParseContext* ctx);
+    Status PrepareChildAtomInContainer(int64_t endOffset, ParseContext* ctx, bool& isPadding);
+    Status ReadExtendedChildAtomSize(int64_t childHeaderEndOffset, int64_t endOffset, ParseContext* ctx,
+        uint64_t& childSize);
     Status ParseAudioAttributes(MPEG4Atom currentAtom, ParseContext* parseCtx);
     Status ParseCover(MPEG4Atom currentAtom, uint32_t dataType, uint64_t stringSize, ParseContext* parseCtx);
     Status ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
@@ -293,8 +299,16 @@ private:
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);
     std::shared_ptr<Track> FindSidxTrack(uint32_t referenceId);
     void CheckSidxReferenceEnd();
-    Status ParseSidxEntries(const uint8_t* headerInfo, int64_t entryOffset,
+    Status ReadSidxHeaderInfo(MPEG4Atom currentAtom, ParseContext* ctx, std::unique_ptr<uint8_t[]>& headerInfo,
+        std::shared_ptr<Track>& currentTrack, uint8_t& version);
+    Status ParseSidxContext(MPEG4Atom currentAtom, ParseContext* ctx, const uint8_t* headerInfo, uint8_t version,
+        uint64_t& entryOffset);
+    Status ParseSidxEntries(const uint8_t* headerInfo, uint64_t entryOffset, uint64_t bufferSize,
         SidxParseContext& sidxCtx, std::shared_ptr<Track> currentTrack);
+    Status GetSidxEntryOffset(uint64_t entryOffset, uint64_t bufferSize, uint32_t index,
+        uint64_t& currentEntryOffset);
+    Status ParseSidxEntry(const uint8_t* headerInfo, uint64_t currentEntryOffset, SidxParseContext& sidxCtx,
+        std::shared_ptr<Track> currentTrack, uint32_t index);
     Status FindNextMoof(int64_t& headerOffset, uint32_t& atomSize);
     Status UpdateFragmentEntryAndOffset(bool inEntry, uint32_t fragIndex, FragmentEntry& frag,
         int64_t moofOffset, int64_t& currentOffset);
