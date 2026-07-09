@@ -67,6 +67,34 @@ void VideoEncoderObject::ClearBufferList()
     }
 }
 
+void VideoEncoderObject::ClearOutputBufferForStreamChange()
+{
+    std::lock_guard<std::shared_mutex> lock(objListMutex_);
+    for (auto it = outputBufferMap_.begin(); it != outputBufferMap_.end();) {
+        if (it->second->buffer_ == nullptr) {
+            it->second->magic_ = MFMagic::MFMAGIC_UNKNOWN;
+            tempList_.push(std::move(it->second));
+            it = outputBufferMap_.erase(it);
+        } else {
+            it->second->buffer_ = nullptr;
+            ++it;
+        }
+    }
+    for (auto it = outputMemoryMap_.begin(); it != outputMemoryMap_.end();) {
+        if (it->second->memory_ == nullptr) {
+            it->second->magic_ = MFMagic::MFMAGIC_UNKNOWN;
+            tempList_.push(std::move(it->second));
+            it = outputMemoryMap_.erase(it);
+        } else {
+            it->second->memory_ = nullptr;
+            ++it;
+        }
+    }
+    while (tempList_.size() > MAX_TEMPNUM) {
+        tempList_.pop();
+    }
+}
+
 void VideoEncoderObject::StopCallback()
 {
     if (callback_ == nullptr) {
@@ -128,6 +156,10 @@ OH_AVMemory* VideoEncoderObject::GetTransData(const uint32_t& index, std::shared
     auto iterAndRet = memoryMap.emplace(index, object);
     if (!iterAndRet.second) {
         auto& temp = iterAndRet.first->second;
+        if (temp->memory_ == nullptr) {
+            temp->memory_ = memory;
+            return reinterpret_cast<OH_AVMemory*>(temp.GetRefPtr());
+        }
         temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
         temp->memory_ = nullptr;
         tempList_.push(std::move(temp));
@@ -156,6 +188,10 @@ OH_AVBuffer* VideoEncoderObject::GetTransData(const uint32_t& index, std::shared
     auto iterAndRet = bufferMap.emplace(index, object);
     if (!iterAndRet.second) {
         auto& temp = iterAndRet.first->second;
+        if (temp->buffer_ == nullptr) {
+            temp->buffer_ = buffer;
+            return reinterpret_cast<OH_AVBuffer*>(temp.GetRefPtr());
+        }
         temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
         temp->buffer_ = nullptr;
         tempList_.push(std::move(temp));
@@ -253,6 +289,9 @@ void NativeVideoEncoderCallback::OnOutputFormatChanged(const Media::Format& form
 
     CHECK_AND_RETURN_LOG(asyncCallback_.onStreamChanged != nullptr || callback_.onStreamChanged != nullptr,
         "Callback is nullptr");
+    struct VideoEncoderObject* videoEncObj = reinterpret_cast<VideoEncoderObject*>(codec_);
+    CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Video encoder is nullptr!");
+    videoEncObj->ClearOutputBufferForStreamChange();
     OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
     CHECK_AND_RETURN_LOG(object != nullptr, "OH_AVFormat create failed");
     // The object lifecycle is controlled by the current function stack
