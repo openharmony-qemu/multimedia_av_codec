@@ -28,6 +28,7 @@
 #include "v2_2/buffer_handle_meta_key_type.h"
 #include "v4_0/codec_ext_types.h"
 #include <algorithm>
+#include <charconv>
 #include <regex>
 
 namespace OHOS::MediaAVCodec {
@@ -1402,10 +1403,12 @@ int32_t HEncoder::ParseKvpairs(const std::string& kvpairs)
     std::string temp = kvpairs;
     while (std::regex_search(temp, match, kvPat)) {
         if (match[1].str() == "dqp") {
-            try {
-                dqp = std::stoi(match[2].str()); // 2: value
-            } catch (...) {
-                HLOGW("stoi failed for dqp value");
+            int32_t parsedDqp = DEFAULT_DELTAQP;
+            auto valStr = match[2].str(); // 2: value
+            if (std::from_chars(valStr.data(), valStr.data() + valStr.size(), parsedDqp).ec != std::errc()) {
+                HLOGW("std::from_chars failed for dqp value");
+            } else {
+                dqp = parsedDqp;
             }
         }
         temp = match.suffix().str();
@@ -1425,24 +1428,29 @@ bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t wid
         return false;
     }
     
-    try {
-        roiRect.top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, height);
-        roiRect.left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, width);
-        roiRect.bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, height);
-        roiRect.right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, width);
-    } catch (...) {
-        HLOGW("stoi failed for roi coordinates: %{public}s", roi.c_str());
+    int32_t topVal = 0, leftVal = 0, bottomVal = 0, rightVal = 0;
+    auto topStr = match[TOP_INDEX].str();
+    auto leftStr = match[LEFT_INDEX].str();
+    auto bottomStr = match[BOTTOM_INDEX].str();
+    auto rightStr = match[RIGHT_INDEX].str();
+    if (std::from_chars(topStr.data(), topStr.data() + topStr.size(), topVal).ec != std::errc() ||
+        std::from_chars(leftStr.data(), leftStr.data() + leftStr.size(), leftVal).ec != std::errc() ||
+        std::from_chars(bottomStr.data(), bottomStr.data() + bottomStr.size(), bottomVal).ec != std::errc() ||
+        std::from_chars(rightStr.data(), rightStr.data() + rightStr.size(), rightVal).ec != std::errc()) {
+        HLOGW("std::from_chars failed for roi coordinates: %{public}s", roi.c_str());
         return false;
     }
+    roiRect.top = std::clamp(topVal, 0, height);
+    roiRect.left = std::clamp(leftVal, 0, width);
+    roiRect.bottom = std::clamp(bottomVal, 0, height);
+    roiRect.right = std::clamp(rightVal, 0, width);
     if (match[DELTAQP_INDEX].matched) {
         std::string kvStr = match[DELTAQP_INDEX].str();
         if (kvStr.find(":") != std::string::npos) {
             roiRect.deltaQP = ParseKvpairs(kvStr);
         } else {
-            try {
-                roiRect.deltaQP = std::stoi(kvStr);
-            } catch (...) {
-                HLOGW("stoi failed for roi deltaQP: %{public}s", kvStr.c_str());
+            if (std::from_chars(kvStr.data(), kvStr.data() + kvStr.size(), roiRect.deltaQP).ec != std::errc()) {
+                HLOGW("std::from_chars failed for roi deltaQP: %{public}s", kvStr.c_str());
                 return false;
             }
         }
@@ -1470,7 +1478,7 @@ void HEncoder::ParseRoiStringValid(const std::string& roiValue, shared_ptr<Codec
         if (count >= roiNum) {
             break;
         }
-        RoiRect roiRect;;
+        RoiRect roiRect;
         if (ParseOneRoi(reg, roiRect, static_cast<int32_t>(width_), static_cast<int32_t>(height_))) {
             param.roiInfo[count].regionEnable = true;
             param.roiInfo[count].absQp = 0;
