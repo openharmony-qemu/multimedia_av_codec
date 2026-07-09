@@ -82,9 +82,9 @@ ohos_shared_library("avcodec_api_metrics") {
   branch_protector_ret = "pac_ret"
   install_enable = true
   sanitize = av_codec_sanitize
-  sources = [
-    "$av_codec_root_dir/frameworks/native/capi/common/api_metrics_util.cpp",
-  ]
+  sources =
+    [ "$av_codec_root_dir/frameworks/native/capi/common/api_metrics_util.cpp",
+    ]
 
   public_configs = [ ":av_codec_capi_header_config" ]
   configs = [ ":av_codec_capi_compile_config" ]
@@ -96,7 +96,9 @@ ohos_shared_library("avcodec_api_metrics") {
 
   defines = []
   if (av_codec_enable_api_metrics) {
-    external_deps += [ "api_metrics:histogrammanager" ]
+    external_deps += [
+      "api_metrics:histogrammanager",
+    ]
     defines += [ "HISTOGRAMMANAGER_ENABLE" ]
   }
   output_extension = "so"
@@ -165,11 +167,10 @@ ohos_shared_library("native_media_avdemuxer") {
   public_configs = [ ":av_codec_capi_header_config" ]
   configs = [ ":av_codec_capi_compile_config" ]
 
-  deps = [
-    "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
-    "$av_codec_root_dir/interfaces/kits/c:avcodec_api_metrics",
-    "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
-  ]
+  deps = [ "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
+           "$av_codec_root_dir/interfaces/kits/c:avcodec_api_metrics",
+           "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
+         ]
 
   external_deps = [
     "c_utils:utils",
@@ -202,12 +203,11 @@ ohos_shared_library("native_media_avsource") {
   public_configs = [ ":av_codec_capi_header_config" ]
   configs = [ ":av_codec_capi_compile_config" ]
 
-  deps = [
-    "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
-    "$av_codec_root_dir/interfaces/kits/c:avcodec_api_metrics",
-    "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
-    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
-  ]
+  deps = [ "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
+           "$av_codec_root_dir/interfaces/kits/c:avcodec_api_metrics",
+           "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
+           "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+         ]
 
   external_deps = [
     "bundle_framework:appexecfwk_base",
@@ -365,10 +365,10 @@ ohos_shared_library("native_media_vdec") {
 
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
-    "$av_codec_root_dir/interfaces/kits/c:avcodec_api_metrics",
     "$av_codec_root_dir/interfaces/kits/c:avcodec_hiappevent",
     "$av_codec_root_dir/interfaces/kits/c:native_media_codecbase",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/interfaces/kits/c:avcodec_api_metrics",
   ]
 
   external_deps = [
