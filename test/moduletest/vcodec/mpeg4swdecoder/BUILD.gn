@@ -93,8 +93,8 @@ ohos_unittest("mpeg4swdecoder_native_module_test") {
   }
   
   if (is_standard_system) {
- 	  external_deps += ["init:libbegetutil"]
- 	}
+    external_deps += ["init:libbegetutil"]
+  }
 
   if (av_codec_enable_only_for_flagship_chip) {
  	  defines = [ "ONLY_FOR_FLAGSHIP_CHIP" ]
