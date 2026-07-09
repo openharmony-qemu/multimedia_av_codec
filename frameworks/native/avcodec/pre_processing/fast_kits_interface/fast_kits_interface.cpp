@@ -74,7 +74,7 @@ int32_t ConvertErrorCode(int32_t fastErr)
 }
 } // namespace
 
-class FastKitsInterface::Impl {
+class __attribute__((visibility("hidden"))) FastKitsInterface::Impl {
 public:
     ~Impl();
     void Retain();
