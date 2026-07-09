@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
+
 #include <string>
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
@@ -663,7 +667,7 @@ HWTEST_F(H263SwdecFuncNdkTest, VIDEO_DECODE_H263_RESOLUTION_0060, TestSize.Level
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -688,7 +692,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -711,7 +715,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -734,7 +738,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -756,7 +760,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -780,7 +784,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -803,7 +807,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -826,7 +830,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -849,7 +853,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -873,7 +877,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_010, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -898,7 +902,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_010, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_011, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -922,7 +926,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_011, TestSize.Level1)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -945,7 +949,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level1)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
         vDecSample->DEFAULT_WIDTH = 352;
@@ -979,7 +983,7 @@ HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level2)
  */
 HWTEST_F(H263SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < 2; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = "/data/test/media/profile0_level30_352x288.h263";
