@@ -120,7 +120,7 @@ HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_0100, TestSize.Leve
  */
 HWTEST_F(MjpegSwdecApiNdkTest, VIDEO_MJPEGSWDEC_ILLEGAL_PARA_0200, TestSize.Level2)
 {
-    if (access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
+    if (!ONLY_FOR_FLAGSHIP_CHIP) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(NULL, vdec_);
     }
