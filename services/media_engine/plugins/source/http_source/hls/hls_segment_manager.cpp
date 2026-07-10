@@ -1266,7 +1266,14 @@ uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool 
         return 0;
     }
 
-    // fill single block
+    // Not enough data to fill singleBlock_ to a complete AES block, store and wait for more data
+    if (singleBlockLen_ + len < AES_BLOCK_LEN) {
+        MEDIA_LOG_I("HLS DecryptDataLeft not enough data, len: %{public}u, type: %{public}d",
+            singleBlockLen_ + len, type_);
+        return FillSingleBlock(data, len);
+    }
+
+    // fill single block to 16 bytes and decrypt
     uint32_t lastWrittenLen {singleBlockLen_};
     FillSingleBlock(data, len);
 
@@ -1673,6 +1680,18 @@ int64_t HlsSegmentManager::RequestNewTsForRead(const PlayInfo& item)
     return 0;
 }
 
+void HlsSegmentManager::ResetDecryptBuffer()
+{
+    NZERO_LOG(memset_s(singleBlock_, AES_BLOCK_LEN, 0x00, AES_BLOCK_LEN));
+    singleBlockLen_ = 0;
+    NZERO_LOG(memset_s(decryptBuffer_, AES_DECRYPT_LEN, 0x00, AES_DECRYPT_LEN));
+    decryptLen_ = 0;
+    auto aesDecryptor = GetAesDecryptor();
+    if (aesDecryptor != nullptr) {
+        NZERO_LOG(memcpy_s(aesDecryptor->iv_, AES_BLOCK_LEN, aesDecryptor->initIv_, AES_BLOCK_LEN));
+    }
+}
+
 void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std::string& location)
 {
     (void) url;
@@ -1683,10 +1702,7 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         AutoLock lock(tsStorageInfoMutex_);
         tsStorageInfo_[writeTsIndex_].second = true;
     }
-    auto aesDecryptor = GetAesDecryptor();
-    if (aesDecryptor != nullptr) {
-        NZERO_LOG(memcpy_s(aesDecryptor->iv_, AES_BLOCK_LEN, aesDecryptor->initIv_, AES_BLOCK_LEN));
-    }
+    ResetDecryptBuffer();
     auto playInfo = playList_->Pop(POP_TIME_OUT_MS);
     if (!playInfo.url_.empty()) {
         writeTsIndex_++;

@@ -175,6 +175,7 @@ private:
     uint32_t FillSingleBlock(uint8_t *&data, uint32_t &len);
     uint32_t DecryptDataLeft(uint8_t *&data, uint32_t &len, bool notBlock);
     uint32_t DecryptData(uint8_t *&data, uint32_t &len, bool notBlock);
+    void ResetDecryptBuffer();
     void InitMediaDownloader();
     void DownloadRecordHistory(int64_t nowTime);
     void OnWriteCacheBuffer(uint32_t len);

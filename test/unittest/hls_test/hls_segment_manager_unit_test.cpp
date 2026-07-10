@@ -2936,4 +2936,86 @@ HWTEST_F(HlsSegmentManagerUnitTest, REMOVE_FMP4_PADDING_DATA_002, TestSize.Level
     downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
     EXPECT_EQ(readDataInfo.realReadLength_, 16);
 }
+
+HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_NOT_ENOUGH_DATA_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(
+        MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->memorySize_ = MAX_CACHE_BUFFER_SIZE_UT;
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    uint8_t aesKey[16] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+    };
+    uint8_t aesIv[16] = {
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+    };
+    downloader->aesDecryptor_->OnSourceKeyChange(aesKey, 16, aesIv);
+
+    downloader->singleBlockLen_ = 5;
+    for (uint32_t i = 0; i < 5; i++) {
+        downloader->singleBlock_[i] = static_cast<uint8_t>(i);
+    }
+
+    uint8_t data[5] = {5, 6, 7, 8, 9};
+    uint32_t len = 5;
+    uint8_t *dataPtr = data;
+    uint32_t result = downloader->DecryptDataLeft(dataPtr, len, true);
+
+    EXPECT_EQ(result, 5);
+    EXPECT_EQ(downloader->singleBlockLen_, 10);
+    EXPECT_EQ(len, 0);
+    for (uint32_t i = 0; i < 10; i++) {
+        EXPECT_EQ(downloader->singleBlock_[i], static_cast<uint8_t>(i));
+    }
+
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_COMPLETE_BLOCK_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(
+        MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->memorySize_ = MAX_CACHE_BUFFER_SIZE_UT;
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    uint8_t aesKey[16] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+    };
+    uint8_t aesIv[16] = {
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+    };
+    downloader->aesDecryptor_->OnSourceKeyChange(aesKey, 16, aesIv);
+
+    uint8_t plaintext[16] = "HelloWorld12345";
+    uint8_t ciphertext[16] = {0};
+    AES_KEY encryptKey;
+    AES_set_encrypt_key(aesKey, 128, &encryptKey);
+    uint8_t encIv[16];
+    (void)memcpy_s(encIv, 16, aesIv, 16);
+    AES_cbc_encrypt(plaintext, ciphertext, 16, &encryptKey, encIv, AES_ENCRYPT);
+
+    downloader->singleBlockLen_ = 5;
+    (void)memcpy_s(downloader->singleBlock_, 16, ciphertext, 5);
+
+    uint8_t data[11] = {0};
+    (void)memcpy_s(data, 11, ciphertext + 5, 11);
+    uint32_t len = 11;
+    uint8_t *dataPtr = data;
+    uint32_t result = downloader->DecryptDataLeft(dataPtr, len, true);
+
+    EXPECT_EQ(result, 11);
+    EXPECT_EQ(downloader->singleBlockLen_, 0);
+    EXPECT_EQ(len, 0);
+
+    downloader = nullptr;
+}
 }
