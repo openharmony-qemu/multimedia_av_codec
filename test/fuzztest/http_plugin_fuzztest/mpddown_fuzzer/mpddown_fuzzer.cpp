@@ -498,10 +498,29 @@ bool MpdParse(const uint8_t *data, size_t size)
 }
 }
 
+enum MpdDownTestType {
+    TEST_DASH_GET_ATTR = 0,
+    TEST_DASH_MEDIA_FUZZER,
+    TEST_DASH_ADPT_RUN,
+    TEST_DASH_DESCRIPTOR_NODE_RUN,
+    TEST_MPD_MANGER_RUN,
+    TEST_DASH_MPD_NODE_RUN,
+    TEST_DASH_PERIOD_NODE_RUN,
+    TEST_DASH_REPRESEN_RUN,
+    TEST_DASH_REPRESENTATION_NODE_RUN,
+    TEST_DASH_URL_TYPE_NODE_RUN,
+    TEST_DASH_SEG_BASE_NODE_RUN,
+    TEST_MPD_PARSE,
+    TEST_COUNT
+};
+
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    if (data == nullptr || size < sizeof(uint32_t)) {
+        return 0;
+    }
     if (!InitServer()) {
         cout << "Init server error" << endl;
         return -1;
@@ -509,18 +528,48 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
-    OHOS::Media::Plugins::DashGetAttr(data, size);
-    OHOS::Media::Plugins::DashMediaFuzzerTest(data, size);
-    OHOS::Media::Plugins::DashAdptRun(data, size);
-    OHOS::Media::Plugins::DashDescriptorNodeRun(data, size);
-    OHOS::Media::Plugins::MpdMangerRun(data, size);
-    OHOS::Media::Plugins::DashMpdNodeRun(data, size);
-    OHOS::Media::Plugins::DashPeriodNodeRun(data, size);
-    OHOS::Media::Plugins::DashRepresenRun(data, size);
-    OHOS::Media::Plugins::DashRepresentationNodeRun(data, size);
-    OHOS::Media::Plugins::DashUrlTypeNodeRun(data, size);
-    OHOS::Media::Plugins::DashSegBaseNodeRun(data, size);
-    OHOS::Media::Plugins::MpdParse(data, size);
+    int32_t testType = GetData<int32_t>();
+    testType = abs(testType) % TEST_COUNT;
+    switch (static_cast<MpdDownTestType>(testType)) {
+        case TEST_DASH_GET_ATTR:
+            OHOS::Media::Plugins::DashGetAttr(data, size);
+            break;
+        case TEST_DASH_MEDIA_FUZZER:
+            OHOS::Media::Plugins::DashMediaFuzzerTest(data, size);
+            break;
+        case TEST_DASH_ADPT_RUN:
+            OHOS::Media::Plugins::DashAdptRun(data, size);
+            break;
+        case TEST_DASH_DESCRIPTOR_NODE_RUN:
+            OHOS::Media::Plugins::DashDescriptorNodeRun(data, size);
+            break;
+        case TEST_MPD_MANGER_RUN:
+            OHOS::Media::Plugins::MpdMangerRun(data, size);
+            break;
+        case TEST_DASH_MPD_NODE_RUN:
+            OHOS::Media::Plugins::DashMpdNodeRun(data, size);
+            break;
+        case TEST_DASH_PERIOD_NODE_RUN:
+            OHOS::Media::Plugins::DashPeriodNodeRun(data, size);
+            break;
+        case TEST_DASH_REPRESEN_RUN:
+            OHOS::Media::Plugins::DashRepresenRun(data, size);
+            break;
+        case TEST_DASH_REPRESENTATION_NODE_RUN:
+            OHOS::Media::Plugins::DashRepresentationNodeRun(data, size);
+            break;
+        case TEST_DASH_URL_TYPE_NODE_RUN:
+            OHOS::Media::Plugins::DashUrlTypeNodeRun(data, size);
+            break;
+        case TEST_DASH_SEG_BASE_NODE_RUN:
+            OHOS::Media::Plugins::DashSegBaseNodeRun(data, size);
+            break;
+        case TEST_MPD_PARSE:
+            OHOS::Media::Plugins::MpdParse(data, size);
+            break;
+        default:
+            break;
+    }
     if (!CloseServer()) {
         cout << "Close server error" << endl;
         return -1;
