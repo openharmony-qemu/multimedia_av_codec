@@ -357,6 +357,7 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
             config.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
             config.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
             config.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY);
+            OnInstanceAdvancedFeatureEvent("VENC_B_FRAME", nullptr);
             break;
         default:
             break;
@@ -1117,6 +1118,13 @@ void CodecServer::SetInstanceInfo(AVCodecType type, bool isMimeType, const std::
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, callerInfo);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::CODEC_INSTANCE_USAGE_INFO, callerInfo);
+    if (codecMime_ == CodecMimeType::VIDEO_VVC) {
+        if(codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+            OnInstanceAdvancedFeatureEvent("ENC_H266", nullptr);
+        } else if(codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+            OnInstanceAdvancedFeatureEvent("DEC_H266", nullptr);
+        }
+    }
 
     EXPECT_AND_LOGI_WITH_TAG((forwardCaller_.pid >= 0) || (!forwardCaller_.processName.empty()),
                              "Forward caller pid: %{public}d, process name: %{public}s", forwardCaller_.pid,
