@@ -308,5 +308,104 @@ HWTEST_F(AVMuxerFlacUnitTest, AddTrack_003, TestSize.Level0)
     ret = avmuxer_->AddTrack(trackId, audioParams);
     EXPECT_NE(ret, 0);
 }
+
+/**
+ * @tc.name: MuxerFLAC_MultiChannel_001
+ * @tc.desc: FLAC AddTrack with stereo (2 channels) should succeed
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerFlacUnitTest, MuxerFLAC_MultiChannel_001, TestSize.Level1)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("MuxerFLAC_MultiChannel_001.flac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_FLAC;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_FLAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 48000);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+}
+
+/**
+ * @tc.name: MuxerFLAC_HighSampleRate_001
+ * @tc.desc: FLAC AddTrack with boundary sample rates (8kHz, 96kHz, 192kHz) should succeed
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerFlacUnitTest, MuxerFLAC_HighSampleRate_001, TestSize.Level1)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("MuxerFLAC_HighSampleRate_001.flac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_FLAC;
+
+    const int32_t highSampleRates[] = {8000, 96000, 192000};
+    for (int32_t sampleRate : highSampleRates) {
+        int32_t trackId = -1;
+        fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+        bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+        ASSERT_TRUE(isCreated);
+
+        std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+        audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_FLAC);
+        audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, sampleRate);
+        audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 1);
+        audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+        int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+        ASSERT_EQ(ret, 0);
+        ASSERT_GE(trackId, 0);
+
+        avmuxer_->Destroy();
+        close(fd_);
+        fd_ = -1;
+    }
+}
+
+/**
+ * @tc.name: MuxerFLAC_WrongMimeType_001
+ * @tc.desc: FLAC AddTrack with non-FLAC mime type should fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerFlacUnitTest, MuxerFLAC_WrongMimeType_001, TestSize.Level1)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("MuxerFLAC_WrongMimeType_001.flac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_FLAC;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_AAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 48000);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 1);
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    EXPECT_NE(ret, 0);
+}
+
+/**
+ * @tc.name: MuxerFLAC_Destroy_Lifecycle_001
+ * @tc.desc: FLAC Create then Destroy without AddTrack should succeed
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerFlacUnitTest, MuxerFLAC_Destroy_Lifecycle_001, TestSize.Level1)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("MuxerFLAC_Destroy_Lifecycle_001.flac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_FLAC;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    int32_t ret = avmuxer_->Destroy();
+    ASSERT_EQ(ret, 0);
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

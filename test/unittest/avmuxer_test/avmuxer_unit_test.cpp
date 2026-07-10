@@ -3809,4 +3809,71 @@ HWTEST_F(AVMuxerUnitTest, Muxer_MP4_AIGC_002, TestSize.Level0)
     ASSERT_EQ(avmuxer_->Stop(), 0);
 }
 #endif
+
+/**
+ * @tc.name: Muxer_MP3_Lifecycle_001
+ * @tc.desc: MP3 Create AddTrack Destroy lifecycle
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_MP3_Lifecycle_001, TestSize.Level1)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_MP3_Lifecycle_001.mp3");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MP3;
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, AV_ERR_OK);
+    ASSERT_GE(trackId, 0);
+}
+
+/**
+ * @tc.name: Muxer_MP3_InvalidParams_001
+ * @tc.desc: MP3 AddTrack with invalid sample rate should fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_MP3_InvalidParams_001, TestSize.Level1)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_MP3_InvalidParams_001.mp3");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MP3;
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 0);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 2);
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    EXPECT_NE(ret, 0);
+}
+
+/**
+ * @tc.name: Muxer_MP3_InvalidParams_002
+ * @tc.desc: MP3 AddTrack with invalid channel count should fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerUnitTest, Muxer_MP3_InvalidParams_002, TestSize.Level1)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_MP3_InvalidParams_002.mp3");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MP3;
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 44100);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 0);
+    int32_t ret = avmuxer_->AddTrack(trackId, audioParams);
+    EXPECT_NE(ret, 0);
+}
 } // namespace
