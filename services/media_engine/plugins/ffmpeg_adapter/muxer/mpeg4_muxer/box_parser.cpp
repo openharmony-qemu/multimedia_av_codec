@@ -709,6 +709,7 @@ std::shared_ptr<BasicBox> BoxParser::AvccBoxGenerate(std::shared_ptr<BasicTrack>
         avccBox->spsCount_ = codecConfig[pos++]; // pos 5
         for (uint8_t i = 0; i < (avccBox->spsCount_ & 0x1F) && pos + 1 < size; ++i) {
             uint32_t len = codecConfig[pos] * 0x100 + codecConfig[pos + 1] + 2;  // 2
+            FALSE_RETURN_V_MSG_E(pos + len <= size, avccBox, "avcc box size error");
             std::vector<uint8_t> sps(codecConfig.data() + pos, codecConfig.data() + pos + len);
             avccBox->sps_.emplace_back(sps);
             pos += len;
@@ -719,6 +720,7 @@ std::shared_ptr<BasicBox> BoxParser::AvccBoxGenerate(std::shared_ptr<BasicTrack>
         avccBox->ppsCount_ = codecConfig[pos++];
         for (uint8_t i = 0; i < avccBox->ppsCount_ && pos + 1 < size; ++i) {
             uint32_t len = codecConfig[pos] * 0x100 + codecConfig[pos + 1] + 2;  // 2
+            FALSE_RETURN_V_MSG_E(pos + len <= size, avccBox, "avcc box size error");
             std::vector<uint8_t> pps(codecConfig.data() + pos, codecConfig.data() + pos + len);
             avccBox->pps_.emplace_back(pps);
             pos += len;
@@ -732,6 +734,7 @@ std::shared_ptr<BasicBox> BoxParser::AvccBoxGenerate(std::shared_ptr<BasicTrack>
         avccBox->spsExtCount_ = codecConfig[pos++];
         for (uint8_t i = 0; i < avccBox->spsExtCount_ && pos + 1 < size; ++i) {
             uint32_t len = codecConfig[pos] * 0x100 + codecConfig[pos + 1] + 2;  // 2
+            FALSE_RETURN_V_MSG_E(pos + len <= size, avccBox, "avcc box size error");
             std::vector<uint8_t> spsExt(codecConfig.data() + pos, codecConfig.data() + pos + len);
             avccBox->spsExt_.emplace_back(spsExt);
             pos += len;
