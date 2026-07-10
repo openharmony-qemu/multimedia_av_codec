@@ -104,9 +104,12 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
     if (sfd_ != nullptr) {
         builder_->SetFromFormat(sfdFormat);
         sfd_->UpdateDynamicConfig(sfdFormat);
-        if (isCsdCached_ && !cachedCsdData_.empty()) {
-            sfd_->InjectCsdData(cachedCsdData_);
-            sfd_->ReplayCsdToAnalyzer();
+        {
+            std::lock_guard<std::mutex> csdLock(csdMutex_);
+            if (isCsdCached_ && !cachedCsdData_.empty()) {
+                sfd_->InjectCsdData(cachedCsdData_);
+                sfd_->ReplayCsdToAnalyzer();
+            }
         }
         AVCODEC_LOGI_WITH_TAG("SFD dynamically updated via Configure.");
         return;
@@ -119,9 +122,12 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
     builder_->SetFromFormat(sfdFormat);
     auto sfd = builder_->Build();
     if (sfd) {
-        if (isCsdCached_ && !cachedCsdData_.empty()) {
-            sfd->InjectCsdData(cachedCsdData_);
-            sfd->ReplayCsdToAnalyzer();
+        {
+            std::lock_guard<std::mutex> csdLock(csdMutex_);
+            if (isCsdCached_ && !cachedCsdData_.empty()) {
+                sfd->InjectCsdData(cachedCsdData_);
+                sfd->ReplayCsdToAnalyzer();
+            }
         }
         sfd->SetTag(this->GetTag());
         sfd->SetCallbacks(inputCb_, outputCb_);
@@ -133,9 +139,11 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
 void SmartFluencyDecodingManager::OnInputBufferAvailable(uint32_t index, const std::shared_ptr<AVBuffer>& buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is null for index %{public}u", index);
-    if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER && !isCsdCached_) {
-        std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
-        tempCsdBufferMap_[index] = buffer;
+    if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+        std::lock_guard<std::mutex> csdLock(csdMutex_);
+        if (!isCsdCached_) {
+            tempCsdBufferMap_[index] = buffer;
+        }
     }
     if (sfd_) {
         sfd_->SetInputBuffer(index, buffer);
@@ -221,17 +229,15 @@ void SmartFluencyDecodingManager::ExtractCsdData(const std::shared_ptr<AVBuffer>
 
 void SmartFluencyDecodingManager::CacheCsdData(uint32_t index)
 {
+    std::lock_guard<std::mutex> csdLock(csdMutex_);
     if (codecType_ != AVCODEC_TYPE_VIDEO_DECODER || isCsdCached_) {
         return;
     }
     std::shared_ptr<AVBuffer> csdAttemptBuffer = nullptr;
-    {
-        std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
-        auto it = tempCsdBufferMap_.find(index);
-        if (it != tempCsdBufferMap_.end()) {
-            csdAttemptBuffer = it->second;
-            tempCsdBufferMap_.erase(it);
-        }
+    auto it = tempCsdBufferMap_.find(index);
+    if (it != tempCsdBufferMap_.end()) {
+        csdAttemptBuffer = it->second;
+        tempCsdBufferMap_.erase(it);
     }
     if (csdAttemptBuffer) {
         ExtractCsdData(csdAttemptBuffer);
@@ -239,7 +245,6 @@ void SmartFluencyDecodingManager::CacheCsdData(uint32_t index)
         bool isSyncFrame = ((csdAttemptBuffer->flag_ & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != 0);
         if (!cachedCsdData_.empty() && (isEnoughSize || isSyncFrame)) {
             isCsdCached_ = true;
-            std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
             tempCsdBufferMap_.clear();
         }
     }
@@ -285,10 +290,10 @@ bool SmartFluencyDecodingManager::IsCodecSupported(const std::string& codecMime,
 
 void SmartFluencyDecodingManager::CleanResources()
 {
-    isCsdCached_ = false;
-    cachedCsdData_.clear();
     {
-        std::lock_guard<std::mutex> csdLock(tempCsdMutex_);
+        std::lock_guard<std::mutex> csdLock(csdMutex_);
+        isCsdCached_ = false;
+        cachedCsdData_.clear();
         tempCsdBufferMap_.clear();
     }
     {

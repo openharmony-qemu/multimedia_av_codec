@@ -551,6 +551,9 @@ void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, 
         "getMetadata failed or size mismatch (ret:%{public}d, size:%{public}zu)", ret, vec.size());
     CHECK_AND_RETURN_LOG_WITH_TAG(memcpy_s(&data, sizeof(V2_0::BlobDataType),
         vec.data(), vec.size()) == EOK, "memcpy_s failed");
+    CHECK_AND_RETURN_LOG_WITH_TAG(data.length > 0 && data.offset <= UINT32_MAX - data.length,
+        "MV data offset/length invalid (offset:%{public}u, length:%{public}u)",
+        data.offset, data.length);
 #ifdef SFD_DEBUG
     int64_t copyEnd = GetCurrentSysTimeUs();
     copyCostUs = copyEnd - copyStart;
