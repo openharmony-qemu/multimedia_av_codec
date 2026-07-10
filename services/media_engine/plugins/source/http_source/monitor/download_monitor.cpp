@@ -24,8 +24,12 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
-    constexpr int APP_DOWNLOAD_RETRY_TIMES = 60;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 6;
+    constexpr int APP_DOWNLOAD_RETRY_TIMES = 9;
+    constexpr int64_t RETRY_DELAY_TIME[] = {
+        20, 100, 200, 400, 800,
+        1600, 3200, 6400, 12800, 25600
+    };
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
     constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
@@ -44,6 +48,8 @@ namespace {
         28, // Timeout was reached.
         56,
         18,
+        6,
+        7,
         0,
     };
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
@@ -103,9 +109,13 @@ int64_t DownloadMonitor::HttpMonitorLoop()
             retryTasks_.pop_front();
         }
     }
+    int64_t retryDelayTime = RETRY_SEG;
     if (task.request && task.function) {
         task.function();
+        auto retryTimes = task.request->GetRetryTimes();
+        retryDelayTime = retryTimes > 9 ? RETRY_SEG : RETRY_DELAY_TIME[retryTimes];
     }
+    return retryDelayTime * MICROSECONDS_TO_MILLISECOND；
     return RETRY_SEG * MICROSECONDS_TO_MILLISECOND; // retry after 50ms
 }
 
@@ -457,6 +467,8 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         }
         return false;
     }
+    MEDIA_LOG_W("DoRetryL clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
+        ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
     return true;
 }
 
