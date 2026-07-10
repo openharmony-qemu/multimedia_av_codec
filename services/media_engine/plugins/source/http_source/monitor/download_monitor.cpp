@@ -113,10 +113,9 @@ int64_t DownloadMonitor::HttpMonitorLoop()
     if (task.request && task.function) {
         task.function();
         auto retryTimes = task.request->GetRetryTimes();
-        retryDelayTime = retryTimes > 9 ? RETRY_SEG : RETRY_DELAY_TIME[retryTimes];
+        retryDelayTime = retryTimes > APP_DOWNLOAD_RETRY_TIMES ? RETRY_SEG : RETRY_DELAY_TIME[retryTimes];
     }
-    return retryDelayTime * MICROSECONDS_TO_MILLISECOND；
-    return RETRY_SEG * MICROSECONDS_TO_MILLISECOND; // retry after 50ms
+    return retryDelayTime * MICROSECONDS_TO_MILLISECOND;
 }
 
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
