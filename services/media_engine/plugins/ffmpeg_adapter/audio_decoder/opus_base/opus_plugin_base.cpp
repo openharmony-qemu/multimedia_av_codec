@@ -23,7 +23,7 @@ namespace MediaAVCodec {
 constexpr int32_t MAX_INPUT = 1500;
 constexpr int32_t LSB_DEPTH = 16;
 constexpr int32_t TIME_MS = 20;
-constexpr int32_t TIME_MS_MAX = 60; // capability slove 60ms frame
+constexpr int32_t TIME_MS_MAX = 120; // capability slove 120ms frame
 constexpr int32_t TIME_S_MS = 1000;
 constexpr int32_t PARAM_STREAMS = 4;
 constexpr int32_t PARAM_COUPLED = 5;
