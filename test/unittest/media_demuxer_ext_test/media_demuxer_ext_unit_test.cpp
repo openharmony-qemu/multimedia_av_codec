@@ -8914,7 +8914,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTaskByMediaType_001, TestSize.Level1)
     mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), GetIsIgnoreParse()).WillRepeatedly(Return(true));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(NUM_1))
-        .WillRepeatedly(return(TRACK_AUDIO));
+        .WillRepeatedly(Return(TRACK_AUDIO));
     auto ret = mediaDemuxer_->StartTask(Plugins::MediaType::AUDIO);
     EXPECT_EQ(ret, Status::OK);
     mediaDemuxer_->StopAllTask();
@@ -8932,7 +8932,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTaskByMediaType_002, TestSize.Level1)
     mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), GetIsIgnoreParse()).WillRepeatedly(Return(true));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(NUM_1))
-        .WillRepeatedly(return(TRACK_VIDEO));
+        .WillRepeatedly(Return(TRACK_VIDEO));
     auto ret = mediaDemuxer_->StartTask(Plugins::MediaType::VIDEO);
     EXPECT_EQ(ret, Status::OK);
     mediaDemuxer_->StopAllTask();
@@ -8950,7 +8950,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, StartTaskByMediaType_003, TestSize.Level1)
     mediaDemuxer_->streamDemuxer_ = std::make_shared<StreamDemuxer>();
     EXPECT_CALL(*(mediaDemuxer_->streamDemuxer_), GetIsIgnoreParse()).WillRepeatedly(Return(true));
     EXPECT_CALL(*(mediaDemuxer_->demuxerPluginManager_), GetTrackTypeByTrackID(NEG_1))
-        .WillRepeatedly(return(TRACK_SUBTITLE));
+        .WillRepeatedly(Return(TRACK_SUBTITLE));
     auto ret = mediaDemuxer_->StartTask(Plugins::MediaType::SUBTITLE);
     EXPECT_EQ(ret, Status::OK);
     mediaDemuxer_->StopAllTask();
