@@ -78,6 +78,7 @@ const char *OH_ED_KEY_EOS = "endOfStream";
 const char *OH_MD_KEY_TRACK_TYPE = "track_type";
 const char *OH_MD_KEY_CODEC_MIME = "codec_mime";
 const char *OH_MD_KEY_DURATION = "duration";
+const char *OH_MD_KEY_VIDEO_ENCODER_WITH_LOWPOWER_CAMERA = "venc_with_lowpower_cam";
 const char *OH_MD_KEY_BITRATE = "bitrate";
 const char *OH_MD_KEY_MAX_BITRATE = "max_bitrate";
 const char *OH_MD_KEY_MAX_INPUT_SIZE = "max_input_size";
