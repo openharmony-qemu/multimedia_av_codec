@@ -18,9 +18,6 @@
 #include <set>
 #include <thread>
 #include <malloc.h>
-#include <sstream>
-#include <sys/ioctl.h>
-#include <linux/dma-buf.h>
 #include "syspara/parameters.h"
 #include "securec.h"
 #include "avcodec_trace.h"
@@ -65,7 +62,6 @@ static std::map<RawVideoPixelFormat, AVPixelFormat> g_convertFfmpegPixFmt = {
     {RawVideoPixelFormat::NV21, AVPixelFormat::AV_PIX_FMT_NV21},
     {RawVideoPixelFormat::RGBA, AVPixelFormat::AV_PIX_FMT_RGBA},
 };
-#define DMA_BUF_SET_LEAK_TYPE _IOW(DMA_BUF_BASE, 5, const char *)
 } // namespace
 using namespace OHOS::Media;
 using FMTKey = Media::Tag;
