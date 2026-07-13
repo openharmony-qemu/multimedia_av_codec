@@ -88,6 +88,9 @@ constexpr uint64_t MIN_AUDIO_SAMPLE_ENTRY_SIZE = 28;
 constexpr uint64_t MIN_ACLR_SIZE = 13;
 constexpr uint64_t MIN_PCMC_SIZE = 6;
 constexpr uint64_t MIN_SIDX_SIZE = 12;
+constexpr uint64_t MAX_SIDX_SIZE = MAX_EXTRA_DATA_SIZE;
+constexpr uint32_t SIDX_ENTRY_SIZE = 12;
+constexpr uint32_t MAX_SIDX_ENTRY_COUNT = 8192;
 constexpr uint64_t MIN_TIMED_METADATA_SAMPLE_ENTRY_SIZE = 16;
 constexpr uint64_t MIN_TRADITIONAL_METADATA_SIZE = 4;
 constexpr uint64_t MIN_LOCI_SIZE = 20;
@@ -721,27 +724,85 @@ Status MPEG4AtomParser::ParseContainerAtom(const MPEG4Atom& containerAtom, int32
     // 设置解析起始位置为容器的数据开始位置
     ctx->offset = ctx->dataOffset;
     while (ctx->offset < endOffset) {
-        if (ctx->offset + static_cast<int64_t>(sizeof(uint32_t)) > endOffset) {
-            MEDIA_LOG_D("Trailing padding at offset " PUBLIC_LOG_D64, ctx->offset);
-            ctx->offset = endOffset;
+        bool isPadding = false;
+        Status ret = PrepareChildAtomInContainer(endOffset, ctx, isPadding);
+        if (ret != Status::OK) {
+            return ret;
+        }
+        if (isPadding) {
             break;
         }
-        uint8_t atomSizeData[sizeof(uint32_t)] = {0};
-        Status sizeRet = dataReader_->ReadUintData(ctx->offset, atomSizeData, sizeof(atomSizeData));
-        FALSE_RETURN_V_MSG_E(sizeRet == Status::OK, sizeRet, "Read child atom size failed");
-        if (GetU32Value(atomSizeData, sizeof(atomSizeData)) == 0) {
-            MEDIA_LOG_D("Zero-size child atom at offset " PUBLIC_LOG_D64 ", treat remaining container as padding",
-                ctx->offset);
-            ctx->offset = endOffset;
-            break;
-        }
-        Status ret = MPEG4ParseAtom(depth + 1, ctx);
+        ret = MPEG4ParseAtom(depth + 1, ctx);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse atom at offset " PUBLIC_LOG_D64, ctx->offset);
     }
     FALSE_RETURN_V_MSG_E(ctx->offset == endOffset, Status::ERROR_INVALID_DATA,
         "Finished parsing container atom at offset " PUBLIC_LOG_D64 ", expected end at " PUBLIC_LOG_D64,
         ctx->offset, endOffset);
 
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::PrepareChildAtomInContainer(int64_t endOffset, ParseContext* ctx, bool& isPadding)
+{
+    isPadding = false;
+    if (ctx->offset + static_cast<int64_t>(sizeof(uint32_t)) > endOffset) {
+        MEDIA_LOG_D("Trailing padding at offset " PUBLIC_LOG_D64, ctx->offset);
+        ctx->offset = endOffset;
+        isPadding = true;
+        return Status::OK;
+    }
+    uint8_t atomSizeData[sizeof(uint32_t)] = {0};
+    Status sizeRet = dataReader_->ReadUintData(ctx->offset, atomSizeData, sizeof(atomSizeData));
+    FALSE_RETURN_V_MSG_E(sizeRet == Status::OK, sizeRet, "Read child atom size failed");
+    uint32_t childSize32 = GetU32Value(atomSizeData);
+    if (childSize32 == 0) {
+        MEDIA_LOG_D("Zero-size child atom at offset " PUBLIC_LOG_D64 ", treat remaining container as padding",
+            ctx->offset);
+        ctx->offset = endOffset;
+        isPadding = true;
+        return Status::OK;
+    }
+    constexpr int64_t basicHeaderSize = 8;
+    constexpr uint64_t basicHeaderSizeU64 = 8;
+    int64_t childHeaderEndOffset = 0;
+    if (__builtin_add_overflow(ctx->offset, basicHeaderSize, &childHeaderEndOffset) ||
+        childHeaderEndOffset > endOffset) {
+        MEDIA_LOG_E("Child atom header exceeds container at offset " PUBLIC_LOG_D64, ctx->offset);
+        return Status::ERROR_INVALID_DATA;
+    }
+    uint64_t childSize = childSize32;
+    if (childSize32 == 1) {
+        Status ret = ReadExtendedChildAtomSize(childHeaderEndOffset, endOffset, ctx, childSize);
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
+    uint64_t minChildSize = childSize32 == 1 ? sizeof(uint64_t) + sizeof(uint64_t) : basicHeaderSizeU64;
+    FALSE_RETURN_V_MSG_E(childSize >= minChildSize, Status::ERROR_INVALID_DATA,
+        "Invalid child atom size: " PUBLIC_LOG_U64, childSize);
+    int64_t childEndOffset = 0;
+    if (__builtin_add_overflow(ctx->offset, childSize, &childEndOffset) || childEndOffset > endOffset) {
+        MEDIA_LOG_E("Child atom exceeds container: end " PUBLIC_LOG_D64 ", container end " PUBLIC_LOG_D64,
+            childEndOffset, endOffset);
+        return Status::ERROR_INVALID_DATA;
+    }
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ReadExtendedChildAtomSize(int64_t childHeaderEndOffset, int64_t endOffset, ParseContext* ctx,
+    uint64_t& childSize)
+{
+    int64_t extendedHeaderEndOffset = 0;
+    if (__builtin_add_overflow(childHeaderEndOffset, static_cast<int64_t>(sizeof(uint64_t)),
+        &extendedHeaderEndOffset) || extendedHeaderEndOffset > endOffset) {
+        MEDIA_LOG_E("Child atom extended size exceeds container at offset " PUBLIC_LOG_D64, ctx->offset);
+        return Status::ERROR_INVALID_DATA;
+    }
+    uint8_t extendedSizeData[sizeof(uint64_t)] = {0};
+    Status extSizeRet = dataReader_->ReadUintData(childHeaderEndOffset, extendedSizeData,
+        sizeof(extendedSizeData));
+    FALSE_RETURN_V_MSG_E(extSizeRet == Status::OK, extSizeRet, "Read child atom extended size failed");
+    childSize = GetU64Value(extendedSizeData);
     return Status::OK;
 }
 
@@ -3171,7 +3232,10 @@ bool MPEG4AtomParser::ParseOPUSExtradata(const uint8_t* data, uint64_t dataSize)
         channelLayout = (channels == 1) ? AudioChannelLayout::MONO :
                                           AudioChannelLayout::STEREO;
     } else if (mapType == 1) {
-        channelLayout = FLAC_CHANNEL_LAYOUT_TABLE.find(channels)->second;
+        auto it = FLAC_CHANNEL_LAYOUT_TABLE.find(channels);
+        FALSE_RETURN_V_MSG_E(it != FLAC_CHANNEL_LAYOUT_TABLE.end() && channels > 0, false,
+            "Invalid channels: " PUBLIC_LOG_D32, channels);
+        channelLayout = it->second;
     }
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
     return true;
@@ -3797,48 +3861,26 @@ Status MPEG4AtomParser::ParseTrex(MPEG4Atom currentAtom, int32_t depth, ParseCon
 Status MPEG4AtomParser::ParseSidx(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(depth == 0, Status::ERROR_INVALID_DATA, "Invalid sidx depth");
-    FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_SIDX_SIZE, Status::ERROR_INVALID_DATA, "Invalid sidx atom size");
-    FALSE_RETURN_V_MSG_E(CheckBoxDataAllocSize(currentAtom.dataSize, "sidx"), Status::ERROR_INVALID_DATA,
-        "Invalid sidx data size");
+    FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_SIDX_SIZE && currentAtom.dataSize <= MAX_SIDX_SIZE,
+        Status::ERROR_INVALID_DATA, "Invalid sidx atom size");
 
     auto headerInfo = std::make_unique<uint8_t[]>(currentAtom.dataSize);
-    Status ret = dataReader_->ReadUintData(ctx->dataOffset, headerInfo.get(), currentAtom.dataSize);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sidx header info failed");
-    uint8_t version = headerInfo[0];
-    uint32_t referenceId = GetU32Value(&headerInfo[4]);
-    auto currentTrack = FindSidxTrack(referenceId);
-    uint32_t timeScale = GetU32Value(&headerInfo[8]);
-    FALSE_RETURN_V_MSG_E(timeScale > 0, Status::ERROR_INVALID_DATA, "Invalid time scale: " PUBLIC_LOG_U32, timeScale);
-    int64_t currentOffset = 12; // Skip version, flags, referenceId, and timeScale
-
-    uint64_t firstOffset = 0;
-    constexpr uint64_t firstOffsetV1 = 20;
-    constexpr uint64_t firstOffsetV0 = 16;
-    if (version == 0) {
-        sidxCtx_.dts = GetU32Value(&headerInfo[currentOffset]);
-        firstOffset = GetU32Value(&headerInfo[firstOffsetV0]);
-        currentOffset += sizeof(uint64_t);
-    } else if (version == 1) {
-        sidxCtx_.dts = GetU64Value(&headerInfo[currentOffset]);
-        firstOffset = GetU64Value(&headerInfo[firstOffsetV1]);
-        currentOffset += sizeof(sidxCtx_.dts) + sizeof(firstOffset);
+    std::shared_ptr<Track> currentTrack = nullptr;
+    uint8_t version = 0;
+    Status ret = ReadSidxHeaderInfo(currentAtom, ctx, headerInfo, currentTrack, version);
+    if (ret != Status::OK) {
+        return ret;
     }
-    int64_t skipSize = 2;
-    sidxCtx_.firstMoofOffset = ctx->offset + currentAtom.size + firstOffset;
-    sidxCtx_.entryCount = GetU16Value(&headerInfo[currentOffset + skipSize]);
-    FALSE_RETURN_V_MSG_E(sidxCtx_.entryCount > 0, Status::ERROR_INVALID_DATA, "Invalid sidx entry count");
-    currentOffset += sizeof(uint32_t);
-    constexpr uint32_t defaultEntrySize = 12;
-    if (currentAtom.dataSize < sidxCtx_.entryCount * defaultEntrySize) {
-        MEDIA_LOG_E("Invalid sidx data size: " PUBLIC_LOG_U64 ", expected at least " PUBLIC_LOG_U32,
-            currentAtom.dataSize, sidxCtx_.entryCount * defaultEntrySize);
-        return Status::ERROR_INVALID_DATA;
+    uint64_t entryOffset = 0;
+    ret = ParseSidxContext(currentAtom, ctx, headerInfo.get(), version, entryOffset);
+    if (ret != Status::OK) {
+        return ret;
     }
 
     if (currentTrack != nullptr) {
         currentTrack->sidxReferencedSize = 0;
     }
-    ret = ParseSidxEntries(headerInfo.get(), currentOffset, sidxCtx_, currentTrack);
+    ret = ParseSidxEntries(headerInfo.get(), entryOffset, currentAtom.dataSize, sidxCtx_, currentTrack);
     CheckSidxReferenceEnd();
     if (currentTrack != nullptr) {
         MEDIA_LOG_D("current track index" PUBLIC_LOG_U32 " sidx duration: " PUBLIC_LOG_U64,
@@ -3847,6 +3889,70 @@ Status MPEG4AtomParser::ParseSidx(MPEG4Atom currentAtom, int32_t depth, ParseCon
     ctx->offset += static_cast<int64_t>(currentAtom.size);
     hasSidxBox_ = true;
     return ret;
+}
+
+Status MPEG4AtomParser::ReadSidxHeaderInfo(MPEG4Atom currentAtom, ParseContext* ctx,
+    std::unique_ptr<uint8_t[]>& headerInfo, std::shared_ptr<Track>& currentTrack, uint8_t& version)
+{
+    Status ret = dataReader_->ReadUintData(ctx->dataOffset, headerInfo.get(), currentAtom.dataSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sidx header info failed");
+    version = headerInfo[0];
+    FALSE_RETURN_V_MSG_E(version <= 1, Status::ERROR_INVALID_DATA, "Invalid sidx version: " PUBLIC_LOG_U8, version);
+    uint32_t referenceId = GetU32Value(&headerInfo[4]);
+    currentTrack = FindSidxTrack(referenceId);
+    uint32_t timeScale = GetU32Value(&headerInfo[8]);
+    FALSE_RETURN_V_MSG_E(timeScale > 0, Status::ERROR_INVALID_DATA,
+        "Invalid time scale: " PUBLIC_LOG_U32, timeScale);
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ParseSidxContext(MPEG4Atom currentAtom, ParseContext* ctx, const uint8_t* headerInfo,
+    uint8_t version, uint64_t& entryOffset)
+{
+    int64_t currentOffset = 12; // Skip version, flags, referenceId, and timeScale
+    uint64_t firstOffset = 0;
+    constexpr uint64_t firstOffsetV1 = 20;
+    constexpr uint64_t firstOffsetV0 = 16;
+    if (version == 0) {
+        constexpr uint64_t version0HeaderSize = 24;
+        FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= version0HeaderSize, Status::ERROR_INVALID_DATA,
+            "Invalid sidx v0 atom size");
+        sidxCtx_.dts = GetU32Value(&headerInfo[currentOffset]);
+        firstOffset = GetU32Value(&headerInfo[firstOffsetV0]);
+        currentOffset += sizeof(uint64_t);
+    } else if (version == 1) {
+        constexpr uint64_t version1HeaderSize = 32;
+        FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= version1HeaderSize, Status::ERROR_INVALID_DATA,
+            "Invalid sidx v1 atom size");
+        sidxCtx_.dts = GetU64Value(&headerInfo[currentOffset]);
+        firstOffset = GetU64Value(&headerInfo[firstOffsetV1]);
+        currentOffset += sizeof(sidxCtx_.dts) + sizeof(firstOffset);
+    }
+    int64_t skipSize = 2;
+    uint64_t sidxEndOffset = 0;
+    uint64_t firstMoofOffset = 0;
+    if (ctx->offset < 0 || __builtin_add_overflow(static_cast<uint64_t>(ctx->offset), currentAtom.size,
+        &sidxEndOffset) || __builtin_add_overflow(sidxEndOffset, firstOffset, &firstMoofOffset) ||
+        firstMoofOffset > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+        MEDIA_LOG_E("Sidx first moof offset overflow");
+        return Status::ERROR_INVALID_DATA;
+    }
+    sidxCtx_.firstMoofOffset = static_cast<int64_t>(firstMoofOffset);
+    sidxCtx_.entryCount = GetU16Value(&headerInfo[currentOffset + skipSize]);
+    FALSE_RETURN_V_MSG_E(sidxCtx_.entryCount > 0 && sidxCtx_.entryCount <= MAX_SIDX_ENTRY_COUNT,
+        Status::ERROR_INVALID_DATA, "Invalid sidx entry count");
+    currentOffset += sizeof(uint32_t);
+    uint64_t entriesSize = 0;
+    uint64_t requiredSize = 0;
+    entryOffset = static_cast<uint64_t>(currentOffset);
+    if (__builtin_mul_overflow(static_cast<uint64_t>(sidxCtx_.entryCount), static_cast<uint64_t>(SIDX_ENTRY_SIZE),
+        &entriesSize) || __builtin_add_overflow(entryOffset, entriesSize, &requiredSize) ||
+        currentAtom.dataSize < requiredSize) {
+        MEDIA_LOG_E("Invalid sidx data size: " PUBLIC_LOG_U64 ", expected at least " PUBLIC_LOG_U64,
+            currentAtom.dataSize, requiredSize);
+        return Status::ERROR_INVALID_DATA;
+    }
+    return Status::OK;
 }
 
 std::shared_ptr<MPEG4AtomParser::Track> MPEG4AtomParser::FindSidxTrack(uint32_t referenceId)
@@ -3869,49 +3975,88 @@ void MPEG4AtomParser::CheckSidxReferenceEnd()
     }
 }
 
-Status MPEG4AtomParser::ParseSidxEntries(const uint8_t* headerInfo, int64_t entryOffset,
+Status MPEG4AtomParser::ParseSidxEntries(const uint8_t* headerInfo, uint64_t entryOffset, uint64_t bufferSize,
     SidxParseContext& sidxCtx, std::shared_ptr<Track> currentTrack)
 {
-    constexpr uint32_t defaultEntrySize = 12;
+    uint64_t entriesSize = 0;
+    uint64_t entriesEndOffset = 0;
+    if (__builtin_mul_overflow(static_cast<uint64_t>(sidxCtx.entryCount), static_cast<uint64_t>(SIDX_ENTRY_SIZE),
+        &entriesSize) || __builtin_add_overflow(entryOffset, entriesSize, &entriesEndOffset) ||
+        entriesEndOffset > bufferSize) {
+        MEDIA_LOG_E("Invalid sidx entries size: entry offset " PUBLIC_LOG_U64 ", count " PUBLIC_LOG_U32
+            ", buffer size " PUBLIC_LOG_U64, entryOffset, sidxCtx.entryCount, bufferSize);
+        return Status::ERROR_INVALID_DATA;
+    }
     for (uint32_t i = 0; i < sidxCtx.entryCount; ++i) {
-        uint32_t size = GetU32Value(&headerInfo[entryOffset + defaultEntrySize * i]);
-        uint32_t duration = GetU32Value(&headerInfo[entryOffset + 4 + defaultEntrySize * i]);
-        if (size & 0x80000000) {
-            MEDIA_LOG_W("Sub sidx not supported");
+        uint64_t currentEntryOffset = 0;
+        Status ret = GetSidxEntryOffset(entryOffset, bufferSize, i, currentEntryOffset);
+        if (ret != Status::OK) {
+            return ret;
         }
-        uint32_t referencedSize = size & 0x7FFFFFFF;
-        int64_t safeReferencedSize = static_cast<int64_t>(referencedSize);
-        int64_t safeDuration = static_cast<int64_t>(duration);
-        MEDIA_LOG_D("Entry " PUBLIC_LOG_U32 ": offset=" PUBLIC_LOG_D64 ", size="
-            PUBLIC_LOG_U32 ", duration=" PUBLIC_LOG_U32, i, sidxCtx.firstMoofOffset, referencedSize, duration);
-        int64_t firstMoofOffset = sidxCtx.firstMoofOffset;
-        bool found = std::any_of(fragmentEntry_.begin(), fragmentEntry_.end(),
-            [firstMoofOffset](const FragmentEntry& entry) {
-                return entry.moofOffset == firstMoofOffset;
-            });
-        if (!found) {
-            FALSE_RETURN_V_MSG_E(sidxCtx.dts <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()),
-                Status::ERROR_INVALID_DATA, "Sidx dts overflow");
-            fragmentEntry_.emplace_back(FragmentEntry {
-                .firstDts = static_cast<int64_t>(sidxCtx.dts),
-                .moofOffset = sidxCtx.firstMoofOffset,
-                .duration = safeDuration,
-                .hasRead = false
-            });
+        ret = ParseSidxEntry(headerInfo, currentEntryOffset, sidxCtx, currentTrack, i);
+        if (ret != Status::OK) {
+            return ret;
         }
-        if (currentTrack) {
-            if (__builtin_add_overflow(currentTrack->sidxDuration, safeDuration, &currentTrack->sidxDuration) ||
-                __builtin_add_overflow(currentTrack->sidxReferencedSize, safeReferencedSize,
-                    &currentTrack->sidxReferencedSize)) {
-                MEDIA_LOG_E("Sidx track info overflow");
-                return Status::ERROR_INVALID_DATA;
-            }
-        }
-        if (__builtin_add_overflow(sidxCtx.firstMoofOffset, safeReferencedSize, &sidxCtx.firstMoofOffset) ||
-            __builtin_add_overflow(sidxCtx.dts, static_cast<uint64_t>(duration), &sidxCtx.dts)) {
-            MEDIA_LOG_E("Sidx context overflow");
+    }
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::GetSidxEntryOffset(uint64_t entryOffset, uint64_t bufferSize, uint32_t index,
+    uint64_t& currentEntryOffset)
+{
+    uint64_t entryEndOffset = 0;
+    uint64_t currentEntriesSize = 0;
+    if (__builtin_mul_overflow(static_cast<uint64_t>(index) + 1, static_cast<uint64_t>(SIDX_ENTRY_SIZE),
+        &currentEntriesSize) || __builtin_add_overflow(entryOffset, currentEntriesSize, &entryEndOffset) ||
+        entryEndOffset > bufferSize) {
+        MEDIA_LOG_E("Invalid sidx entry offset: index " PUBLIC_LOG_U32 ", buffer size " PUBLIC_LOG_U64,
+            index, bufferSize);
+        return Status::ERROR_INVALID_DATA;
+    }
+    currentEntryOffset = entryEndOffset - SIDX_ENTRY_SIZE;
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ParseSidxEntry(const uint8_t* headerInfo, uint64_t currentEntryOffset,
+    SidxParseContext& sidxCtx, std::shared_ptr<Track> currentTrack, uint32_t index)
+{
+    uint32_t size = GetU32Value(&headerInfo[currentEntryOffset]);
+    uint32_t duration = GetU32Value(&headerInfo[currentEntryOffset + sizeof(uint32_t)]);
+    if (size & 0x80000000) {
+        MEDIA_LOG_W("Sub sidx not supported");
+    }
+    uint32_t referencedSize = size & 0x7FFFFFFF;
+    int64_t safeReferencedSize = static_cast<int64_t>(referencedSize);
+    int64_t safeDuration = static_cast<int64_t>(duration);
+    MEDIA_LOG_D("Entry " PUBLIC_LOG_U32 ": offset=" PUBLIC_LOG_D64 ", size="
+        PUBLIC_LOG_U32 ", duration=" PUBLIC_LOG_U32, index, sidxCtx.firstMoofOffset, referencedSize, duration);
+    int64_t firstMoofOffset = sidxCtx.firstMoofOffset;
+    bool found = std::any_of(fragmentEntry_.begin(), fragmentEntry_.end(),
+        [firstMoofOffset](const FragmentEntry& entry) {
+            return entry.moofOffset == firstMoofOffset;
+        });
+    if (!found) {
+        FALSE_RETURN_V_MSG_E(sidxCtx.dts <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()),
+            Status::ERROR_INVALID_DATA, "Sidx dts overflow");
+        fragmentEntry_.emplace_back(FragmentEntry {
+            .firstDts = static_cast<int64_t>(sidxCtx.dts),
+            .moofOffset = sidxCtx.firstMoofOffset,
+            .duration = safeDuration,
+            .hasRead = false
+        });
+    }
+    if (currentTrack) {
+        if (__builtin_add_overflow(currentTrack->sidxDuration, safeDuration, &currentTrack->sidxDuration) ||
+            __builtin_add_overflow(currentTrack->sidxReferencedSize, safeReferencedSize,
+                &currentTrack->sidxReferencedSize)) {
+            MEDIA_LOG_E("Sidx track info overflow");
             return Status::ERROR_INVALID_DATA;
         }
+    }
+    if (__builtin_add_overflow(sidxCtx.firstMoofOffset, safeReferencedSize, &sidxCtx.firstMoofOffset) ||
+        __builtin_add_overflow(sidxCtx.dts, static_cast<uint64_t>(duration), &sidxCtx.dts)) {
+        MEDIA_LOG_E("Sidx context overflow");
+        return Status::ERROR_INVALID_DATA;
     }
     return Status::OK;
 }
@@ -5068,28 +5213,66 @@ Status MPEG4AtomParser::ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, i
     typeStr = FourccToString(atom.type);
     ctx->dataOffset = ctx->offset + sizeof(atomInfo);
 
+    ret = ParseAtomSize(atom, depth, isZeroSizeAtom, ctx);
+    if (ret != Status::OK || isZeroSizeAtom) {
+        return ret;
+    }
+    FALSE_RETURN_V_MSG_E(atom.size >= sizeof(atomInfo), Status::ERROR_INVALID_DATA, "Invalid atom size");
+    return ValidateAtomSourceRange(atom, typeStr, depth, ctx, sizeof(atomInfo));
+}
+
+Status MPEG4AtomParser::ParseAtomSize(MPEG4Atom& atom, int32_t depth, bool& isZeroSizeAtom, ParseContext* ctx)
+{
     const uint64_t minExtendSize = 16;
     if (atom.size == 1) {
         uint8_t sizeData[8];
-        ret = dataReader_->ReadUintData(ctx->dataOffset, sizeData, sizeof(sizeData));
+        Status ret = dataReader_->ReadUintData(ctx->dataOffset, sizeData, sizeof(sizeData));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read atom extended size failed");
         atom.size = GetU64Value(sizeData, sizeof(sizeData));
         ctx->dataOffset += sizeof(sizeData);
         FALSE_RETURN_V_MSG_E(atom.size >= minExtendSize, Status::ERROR_INVALID_DATA,
             "Invalid extended atom size: " PUBLIC_LOG_U64, atom.size);
     } else if (atom.size == 0) {
-        if (depth == 0) { // 根级atoms
+        if (depth == 0) {
             uint64_t dataSourceSize = 0;
-            ret = dataSource_->GetSize(dataSourceSize);
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_INVALID_PARAMETER, "Failed to get data source size");
+            Status ret = dataSource_->GetSize(dataSourceSize);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_INVALID_PARAMETER,
+                "Failed to get data source size");
+            FALSE_RETURN_V_MSG_E(ctx->offset >= 0 && static_cast<uint64_t>(ctx->offset) <= dataSourceSize,
+                Status::ERROR_INVALID_DATA, "Invalid zero-size atom offset");
             atom.size = dataSourceSize - static_cast<uint64_t>(ctx->offset);
         } else {
-            ctx->offset += sizeof(uint32_t); // 跳过size字段
+            ctx->offset += sizeof(uint32_t);
             isZeroSizeAtom = true;
-            return Status::OK;
         }
     }
-    FALSE_RETURN_V_MSG_E(atom.size >= sizeof(atomInfo), Status::ERROR_INVALID_DATA, "Invalid atom size");
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ValidateAtomSourceRange(MPEG4Atom& atom, const std::string& typeStr, int32_t depth,
+    ParseContext* ctx, uint64_t atomInfoSize)
+{
+    uint64_t dataSourceSize = 0;
+    if (dataSource_ != nullptr && dataSource_->GetSize(dataSourceSize) == Status::OK && dataSourceSize > 0) {
+        FALSE_RETURN_V_MSG_E(ctx->offset >= 0 && static_cast<uint64_t>(ctx->offset) <= dataSourceSize,
+            Status::ERROR_INVALID_DATA, "Invalid atom offset");
+        uint64_t atomEndOffset = 0;
+        bool atomExceedsSource = __builtin_add_overflow(static_cast<uint64_t>(ctx->offset), atom.size,
+            &atomEndOffset) || atomEndOffset > dataSourceSize;
+        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && moovFound_ && hasMdatBox_ &&
+            MPEG4ParseTable_.find(atom.type) == MPEG4ParseTable_.end()) {
+            uint64_t remainingSize = dataSourceSize - static_cast<uint64_t>(ctx->offset);
+            FALSE_RETURN_V_MSG_E(remainingSize >= atomInfoSize, Status::ERROR_INVALID_DATA,
+                "Invalid trailing unknown atom size");
+            atom.size = remainingSize;
+            MEDIA_LOG_W("Trim trailing unknown atom: offset " PUBLIC_LOG_D64 ", type " PUBLIC_LOG_S
+                ", source size " PUBLIC_LOG_U64, ctx->offset, typeStr.c_str(), dataSourceSize);
+        } else if (atomExceedsSource) {
+            MEDIA_LOG_E("Atom exceeds data source: offset " PUBLIC_LOG_D64 ", size " PUBLIC_LOG_U64
+                ", source size " PUBLIC_LOG_U64, ctx->offset, atom.size, dataSourceSize);
+            return Status::ERROR_INVALID_DATA;
+        }
+    }
     return Status::OK;
 }
 

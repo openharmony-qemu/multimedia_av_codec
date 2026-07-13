@@ -26,6 +26,7 @@
 #include <numeric>
 #include <sstream>
 #include <sys/stat.h>
+#include <tuple>
 #include <unistd.h>
 
 #include "demuxer_data_reader.h"
@@ -334,6 +335,101 @@ private:
     std::vector<uint8_t> data_;
     size_t maxReadSize_ = 0;
 };
+
+void AppendU32(std::vector<uint8_t>& data, uint32_t value)
+{
+    data.emplace_back(static_cast<uint8_t>((value >> 24) & 0xFF));
+    data.emplace_back(static_cast<uint8_t>((value >> 16) & 0xFF));
+    data.emplace_back(static_cast<uint8_t>((value >> 8) & 0xFF));
+    data.emplace_back(static_cast<uint8_t>(value & 0xFF));
+}
+
+void WriteU16(std::vector<uint8_t>& data, size_t offset, uint16_t value)
+{
+    data[offset] = static_cast<uint8_t>((value >> 8) & 0xFF);
+    data[offset + 1] = static_cast<uint8_t>(value & 0xFF);
+}
+
+std::shared_ptr<DemuxerDataReader> CreateReaderForBytes(const std::vector<uint8_t>& data)
+{
+    auto dataSource = std::make_shared<ShortReadDataSource>(data, std::max<size_t>(data.size(), 1));
+    auto reader = std::make_shared<DemuxerDataReader>();
+    EXPECT_EQ(reader->SetDataReader(dataSource), Status::OK);
+    return reader;
+}
+
+std::shared_ptr<ShortReadDataSource> CreateDataSourceForBytes(const std::vector<uint8_t>& data)
+{
+    return std::make_shared<ShortReadDataSource>(data, std::max<size_t>(data.size(), 1));
+}
+
+std::vector<uint8_t> BuildStszData(uint32_t defaultSampleSize, uint32_t sampleCount,
+    const std::vector<uint32_t>& sampleSizes = {})
+{
+    std::vector<uint8_t> data;
+    AppendU32(data, 0);
+    AppendU32(data, defaultSampleSize);
+    AppendU32(data, sampleCount);
+    for (uint32_t sampleSize : sampleSizes) {
+        AppendU32(data, sampleSize);
+    }
+    return data;
+}
+
+std::vector<uint8_t> BuildStz2Data(uint32_t fieldSize, uint32_t sampleCount, const std::vector<uint8_t>& payload)
+{
+    std::vector<uint8_t> data;
+    AppendU32(data, 0);
+    AppendU32(data, fieldSize);
+    AppendU32(data, sampleCount);
+    data.insert(data.end(), payload.begin(), payload.end());
+    return data;
+}
+
+std::vector<uint8_t> BuildSttsData(const std::vector<std::pair<uint32_t, uint32_t>>& entries)
+{
+    std::vector<uint8_t> data;
+    AppendU32(data, 0);
+    AppendU32(data, static_cast<uint32_t>(entries.size()));
+    for (const auto& entry : entries) {
+        AppendU32(data, entry.first);
+        AppendU32(data, entry.second);
+    }
+    return data;
+}
+
+std::vector<uint8_t> BuildCttsData(const std::vector<std::pair<uint32_t, uint32_t>>& entries)
+{
+    return BuildSttsData(entries);
+}
+
+std::vector<uint8_t> BuildStscData(const std::vector<std::tuple<uint32_t, uint32_t, uint32_t>>& entries)
+{
+    std::vector<uint8_t> data;
+    AppendU32(data, 0);
+    AppendU32(data, static_cast<uint32_t>(entries.size()));
+    for (const auto& [firstChunk, samplesPerChunk, descriptionId] : entries) {
+        AppendU32(data, firstChunk);
+        AppendU32(data, samplesPerChunk);
+        AppendU32(data, descriptionId);
+    }
+    return data;
+}
+
+std::vector<uint8_t> BuildSidxV0Data(uint8_t version, uint16_t entryCount)
+{
+    std::vector<uint8_t> data;
+    data.resize(24 + static_cast<size_t>(entryCount) * 12, 0);
+    data[0] = version;
+    WriteU16(data, 22, entryCount);
+    data[11] = 1; // timeScale
+    for (uint16_t i = 0; i < entryCount; ++i) {
+        size_t entryOffset = 24 + static_cast<size_t>(i) * 12;
+        data[entryOffset + 3] = 1; // referenced size
+        data[entryOffset + 7] = 1; // duration
+    }
+    return data;
+}
 
 std::vector<FixedSeekSampleExpected> GetH264BFfprobeSeekExpectedResults()
 {
@@ -3337,6 +3433,250 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSampleDataToBuffer_S
     EXPECT_EQ(dataSource->readOffsets[1], baseOffset + static_cast<int64_t>(shortReadSize));
     EXPECT_EQ(dataSource->readExpectedLens[0], requestSize);
     EXPECT_EQ(dataSource->readExpectedLens[1], requestSize - shortReadSize);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleSize_Stz2HalfByteSingleEntry_001
+ * @tc.desc: Verify stz2 half-byte parsing does not append an extra low-nibble sample for an odd count
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleSize_Stz2HalfByteSingleEntry_001, TestSize.Level1)
+{
+    auto data = BuildStz2Data(4, 1, {0xA0});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    ASSERT_EQ(helper.SetSampleSizeParams(static_cast<uint32_t>(Plugins::MPEG4::FourccType("stz2")), 0, data.size()),
+        Status::OK);
+    ASSERT_EQ(helper.sampleSizes_.size(), 1U);
+    EXPECT_EQ(helper.sampleSizes_[0], 10);
+    EXPECT_EQ(helper.sampleSizeCount_, 1U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleSize_DefaultStszKeepsSampleCount_001
+ * @tc.desc: Verify stsz default sample size still records the declared sample count
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleSize_DefaultStszKeepsSampleCount_001, TestSize.Level1)
+{
+    auto data = BuildStszData(512, 3);
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    ASSERT_EQ(helper.SetSampleSizeParams(static_cast<uint32_t>(Plugins::MPEG4::FourccType("stsz")), 0, data.size()),
+        Status::OK);
+    ASSERT_EQ(helper.sampleSizes_.size(), 1U);
+    EXPECT_EQ(helper.sampleSizes_[0], 512);
+    EXPECT_TRUE(helper.hasDefaultStszSize_);
+    EXPECT_EQ(helper.sampleSizeCount_, 3U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleSize_RejectOversizedDefaultStsz_001
+ * @tc.desc: Verify default stsz sample size must fit in signed sample index entry size
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleSize_RejectOversizedDefaultStsz_001, TestSize.Level1)
+{
+    auto data = BuildStszData(0x80000000U, 1);
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    EXPECT_EQ(helper.SetSampleSizeParams(static_cast<uint32_t>(Plugins::MPEG4::FourccType("stsz")), 0, data.size()),
+        Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleSize_RejectOversizedExplicitStsz_001
+ * @tc.desc: Verify explicit stsz sample size must fit in signed sample index entry size
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleSize_RejectOversizedExplicitStsz_001, TestSize.Level1)
+{
+    auto data = BuildStszData(0, 1, {0x80000000U});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    EXPECT_EQ(helper.SetSampleSizeParams(static_cast<uint32_t>(Plugins::MPEG4::FourccType("stsz")), 0, data.size()),
+        Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TimeToSample_RejectOversizedSampleCount_001
+ * @tc.desc: Verify stts sample count is capped before sample index expansion
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TimeToSample_RejectOversizedSampleCount_001,
+    TestSize.Level1)
+{
+    auto data = BuildSttsData({{1000001U, 40U}});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    EXPECT_EQ(helper.SetTimeToSampleParams(0, data.size()), Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_CompositionTime_RejectZeroSampleCount_001
+ * @tc.desc: Verify ctts entries with zero samples are rejected before expansion
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CompositionTime_RejectZeroSampleCount_001, TestSize.Level1)
+{
+    auto data = BuildCttsData({{0U, 0U}});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    EXPECT_EQ(helper.SetCompositionTimeToSampleParams(0, data.size()), Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleToChunk_RejectZeroSampleCount_001
+ * @tc.desc: Verify stsc entries with zero samples per chunk are rejected
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleToChunk_RejectZeroSampleCount_001, TestSize.Level1)
+{
+    auto data = BuildStscData({{1U, 0U, 1U}});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    EXPECT_EQ(helper.SetSampleToChunkParams(0, data.size()), Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_Sidx_RejectUnsupportedVersion_001
+ * @tc.desc: Verify sidx version must be version 0 or 1 even when the remaining bytes look parseable
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Sidx_RejectUnsupportedVersion_001, TestSize.Level1)
+{
+    auto data = BuildSidxV0Data(2, 1);
+    WriteU16(data, 14, 1);
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    parser.dataReader_ = CreateReaderForBytes(data);
+    Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom atom;
+    atom.size = data.size() + 8;
+    atom.dataSize = data.size();
+    atom.dataOffset = 0;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    ctx.offset = 0;
+    ctx.dataOffset = 0;
+
+    EXPECT_EQ(parser.ParseSidx(atom, 0, &ctx), Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_Sidx_RejectTooManyEntries_001
+ * @tc.desc: Verify sidx reference count is capped before entry parsing
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Sidx_RejectTooManyEntries_001, TestSize.Level1)
+{
+    auto data = BuildSidxV0Data(0, 8193);
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    parser.dataReader_ = CreateReaderForBytes(data);
+    Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom atom;
+    atom.size = data.size() + 8;
+    atom.dataSize = data.size();
+    atom.dataOffset = 0;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    ctx.offset = 0;
+    ctx.dataOffset = 0;
+
+    EXPECT_EQ(parser.ParseSidx(atom, 0, &ctx), Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SidxEntries_RejectBufferBoundary_001
+ * @tc.desc: Verify sidx entry parsing checks the supplied buffer boundary before reading an entry
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SidxEntries_RejectBufferBoundary_001, TestSize.Level1)
+{
+    std::vector<uint8_t> header(16, 0);
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    Plugins::MPEG4::MPEG4AtomParser::SidxParseContext sidxCtx;
+    sidxCtx.entryCount = 1;
+
+    EXPECT_EQ(parser.ParseSidxEntries(header.data(), 4, 15, sidxCtx, nullptr), Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomHeader_RejectAtomExceedingSource_001
+ * @tc.desc: Verify known root atom size cannot exceed the data source size
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomHeader_RejectAtomExceedingSource_001, TestSize.Level1)
+{
+    std::vector<uint8_t> data;
+    AppendU32(data, 32);
+    AppendU32(data, static_cast<uint32_t>(Plugins::MPEG4::FourccType("ftyp")));
+    auto dataSource = CreateDataSourceForBytes(data);
+    auto reader = std::make_shared<DemuxerDataReader>();
+    ASSERT_EQ(reader->SetDataReader(dataSource), Status::OK);
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    parser.dataReader_ = reader;
+    parser.dataSource_ = dataSource;
+    Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom atom;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    std::string typeStr;
+    bool isZeroSizeAtom = false;
+
+    EXPECT_EQ(parser.ParseAtomHeader(atom, typeStr, 0, isZeroSizeAtom, &ctx), Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomHeader_TrimTrailingUnknownAtom_001
+ * @tc.desc: Verify trailing unknown root atom after moov and mdat is trimmed to remaining source bytes
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomHeader_TrimTrailingUnknownAtom_001, TestSize.Level1)
+{
+    std::vector<uint8_t> data;
+    AppendU32(data, 32);
+    AppendU32(data, static_cast<uint32_t>(Plugins::MPEG4::FourccType("zzzz")));
+    data.resize(12, 0);
+    auto dataSource = CreateDataSourceForBytes(data);
+    auto reader = std::make_shared<DemuxerDataReader>();
+    ASSERT_EQ(reader->SetDataReader(dataSource), Status::OK);
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    parser.dataReader_ = reader;
+    parser.dataSource_ = dataSource;
+    parser.moovFound_ = true;
+    parser.hasMdatBox_ = true;
+    Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom atom;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    std::string typeStr;
+    bool isZeroSizeAtom = false;
+
+    ASSERT_EQ(parser.ParseAtomHeader(atom, typeStr, 0, isZeroSizeAtom, &ctx), Status::OK);
+    EXPECT_EQ(atom.size, data.size());
+    EXPECT_FALSE(isZeroSizeAtom);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ContainerAtom_RejectTruncatedExtendedChildHeader_001
+ * @tc.desc: Verify container parsing rejects a child atom whose extended-size header crosses the container end
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ContainerAtom_RejectTruncatedExtendedChildHeader_001, TestSize.Level1)
+{
+    std::vector<uint8_t> data;
+    AppendU32(data, 1);
+    AppendU32(data, static_cast<uint32_t>(Plugins::MPEG4::FourccType("free")));
+    data.resize(12, 0);
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    parser.dataReader_ = CreateReaderForBytes(data);
+    Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom containerAtom;
+    containerAtom.dataOffset = 0;
+    containerAtom.dataSize = data.size();
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    ctx.dataOffset = 0;
+
+    EXPECT_EQ(parser.ParseContainerAtom(containerAtom, 0, &ctx), Status::ERROR_INVALID_DATA);
 }
 } // namespace Media
 } // namespace OHOS

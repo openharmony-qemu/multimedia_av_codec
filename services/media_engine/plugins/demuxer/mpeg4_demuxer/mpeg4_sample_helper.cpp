@@ -37,6 +37,7 @@ namespace Plugins {
 namespace MPEG4 {
 constexpr uint32_t DEFAULT_FIELD_SIZE = 32;
 constexpr int64_t MAX_TRUN_SAMPLES = 1000000; //需要确定讨论
+constexpr uint32_t MAX_SAMPLE_TABLE_SAMPLES = static_cast<uint32_t>(MAX_TRUN_SAMPLES);
 constexpr int64_t NEXT_FRAME = 1;
 constexpr int64_t PREVIOUS_FRAME = 0;
 constexpr int64_t MAX_SAMPLES_PER_FRAME = 1024;
@@ -604,7 +605,8 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
 
     for (uint32_t i = 0; i < numSttsEntries; ++i) {
         uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(SttsEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
+        FALSE_RETURN_V_MSG_E(sampleCount > 0 && sampleCount <= MAX_SAMPLE_TABLE_SAMPLES,
+            Status::ERROR_INVALID_DATA, "Invalid stts sample count");
         sttsEntry_.emplace_back(SttsEntry{
             .count = sampleCount,
             .delta = GetU32Value(data.get() + 4 + i * sizeof(SttsEntry))
@@ -648,9 +650,12 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
     cttsEntry_.reserve(numCttsEntries);
 
     for (uint32_t i = 0; i < numCttsEntries; ++i) {
+        uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(CttsEntry));
+        FALSE_RETURN_V_MSG_E(sampleCount > 0 && sampleCount <= MAX_SAMPLE_TABLE_SAMPLES,
+            Status::ERROR_INVALID_DATA, "Invalid ctts sample count");
         uint32_t rawDelta = GetU32Value(data.get() + 4 + i * sizeof(CttsEntry));
         cttsEntry_.emplace_back(CttsEntry {
-            .count = GetU32Value(data.get() + i * sizeof(CttsEntry)),
+            .count = sampleCount,
             .delta = (version == 1) ? static_cast<int32_t>(rawDelta) : static_cast<int32_t>(rawDelta)
         });
     }
@@ -708,7 +713,9 @@ Status MPEG4SampleHelper::SetFieldSize(uint32_t atomType, int64_t &currentOffset
         uint32_t defaultSampleSize = GetU32Value(sizeBuffer, sizeof(sizeBuffer));
         currentOffset += sizeof(uint32_t);
         if (defaultSampleSize) {
-            sampleSizes_.emplace_back(defaultSampleSize);
+            FALSE_RETURN_V_MSG_E(defaultSampleSize <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max()),
+                Status::ERROR_INVALID_DATA, "Invalid default sample size");
+            sampleSizes_.emplace_back(static_cast<int32_t>(defaultSampleSize));
             hasDefaultStszSize_ = true;
         }
     } else {
@@ -736,6 +743,8 @@ Status MPEG4SampleHelper::ProcessSampleSizeData(uint32_t atomType, int64_t curre
     if (atomType == static_cast<uint32_t>(FourccType("stsz"))) {
         for (uint32_t i = 0; i < numSampleSizes; ++i) {
             uint32_t sampleSize = GetU32Value(data.get() + i * sizeof(uint32_t));
+            FALSE_RETURN_V_MSG_E(sampleSize <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max()),
+                Status::ERROR_INVALID_DATA, "Invalid sample size");
             sampleSizes_.emplace_back(static_cast<int32_t>(sampleSize));
         }
     } else {
@@ -764,7 +773,7 @@ void MPEG4SampleHelper::ProcessHalfByteSampleSizes(const uint8_t* data, uint32_t
     uint32_t index = entryIndex / 2;
     uint8_t sampleSize = data[index];
     sampleSizes_.emplace_back(sampleSize >> 0x4);
-    if (entryIndex < numSampleSizes) {
+    if (entryIndex + 1 < numSampleSizes) {
         sampleSizes_.emplace_back(sampleSize - (sampleSize >> 0x4));
         ++entryIndex;
     }
@@ -790,19 +799,21 @@ Status MPEG4SampleHelper::SetSampleSizeParams(uint32_t atomType, int64_t dataOff
     uint32_t fieldSize;
     ret = SetFieldSize(atomType, currentOffset, fieldSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set fieldSize failed");
-    if (hasDefaultStszSize_) {
-        return Status::OK;
-    }
 
+    FALSE_RETURN_V_NOLOG(dataSize >= STSZ_HEAD_LENGTH, Status::ERROR_INVALID_PARAMETER);
     uint8_t entryBuffer[4];
     ret = dataReader_->ReadUintData(currentOffset, entryBuffer, sizeof(entryBuffer));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read entryBuffer failed");
-    uint32_t numSampleSizes = GetU32Value(entryBuffer, sizeof(entryBuffer));
+    uint32_t numSampleSizes = GetU32Value(entryBuffer);
+    sampleSizeCount_ = numSampleSizes;
     currentOffset += sizeof(uint32_t);
     if (!numSampleSizes) {
         return Status::OK;
     }
     FALSE_RETURN_V_MSG_E(numSampleSizes <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid sample size count");
+    if (hasDefaultStszSize_) {
+        return Status::OK;
+    }
 
     constexpr uint32_t maxUint32 = std::numeric_limits<uint32_t>::max();
     uint32_t unit = atomType == static_cast<uint32_t>(FourccType("stsz")) ? sizeof(uint32_t) : fieldSize;
@@ -889,10 +900,13 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
     for (uint32_t i = 0; i < numStscEntries; ++i) {
         uint32_t tempFirst = GetU32Value(data.get() + i * sizeof(StscEntry));
         FALSE_RETURN_V_NOLOG(tempFirst > 0, Status::ERROR_INVALID_DATA);
+        uint32_t sampleCount = GetU32Value(data.get() + sizeof(uint32_t) + i * sizeof(StscEntry));
+        FALSE_RETURN_V_MSG_E(sampleCount > 0 && sampleCount <= MAX_SAMPLE_TABLE_SAMPLES,
+            Status::ERROR_INVALID_DATA, "Invalid stsc sample count");
 
         stscEntry_.emplace_back(StscEntry{
             .first = tempFirst - 1,
-            .count = GetU32Value(data.get() + sizeof(uint32_t) + i * sizeof(StscEntry)),
+            .count = sampleCount,
             .id = GetU32Value(data.get() + sizeof(uint64_t) + i * sizeof(StscEntry))
         });
     }
@@ -1288,7 +1302,8 @@ Status MPEG4SampleHelper::ExpandCttsEntry(uint32_t sttsNum)
     uint32_t cttsNum = 0;
     for (const auto& entry : cttsEntry_) {
         uint32_t temp;
-        if (__builtin_add_overflow(cttsNum, entry.count, &temp)) {
+        if (entry.count == 0 || entry.count > MAX_SAMPLE_TABLE_SAMPLES ||
+            __builtin_add_overflow(cttsNum, entry.count, &temp) || temp > MAX_SAMPLE_TABLE_SAMPLES) {
             MEDIA_LOG_E("CTTS count overflow: current=" PUBLIC_LOG_U32 ", add="
                 PUBLIC_LOG_U32, cttsNum, entry.count);
             return Status::ERROR_INVALID_DATA;
@@ -1319,7 +1334,36 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
 
     uint32_t sttsNum = 0;
     for (const auto& entry : sttsEntry_) {
-        sttsNum += entry.count;
+        uint32_t temp = 0;
+        if (entry.count == 0 || entry.count > MAX_SAMPLE_TABLE_SAMPLES ||
+            __builtin_add_overflow(sttsNum, entry.count, &temp) || temp > MAX_SAMPLE_TABLE_SAMPLES) {
+            MEDIA_LOG_E("STTS count overflow: current=" PUBLIC_LOG_U32 ", add="
+                PUBLIC_LOG_U32, sttsNum, entry.count);
+            return Status::ERROR_INVALID_DATA;
+        }
+        sttsNum = temp;
+    }
+    FALSE_RETURN_V_MSG_E(sttsNum > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
+
+    if (!hasDefaultStszSize_) {
+        FALSE_RETURN_V_MSG_E(sampleSizes_.size() == sampleSizeCount_, Status::ERROR_INVALID_DATA,
+            "Invalid stsz sample size count");
+        FALSE_RETURN_V_MSG_E(sttsNum <= sampleSizes_.size(), Status::ERROR_INVALID_DATA,
+            "stsz sample size count is less than stts");
+    } else if (sampleSizeCount_ != sttsNum) {
+        MEDIA_LOG_W("stsz sample count " PUBLIC_LOG_U32 " does not match stts sample count " PUBLIC_LOG_U32,
+            sampleSizeCount_, sttsNum);
+    }
+    for (uint32_t i = 0; i < stscEntry_.size(); ++i) {
+        const auto& entry = stscEntry_[i];
+        FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_SAMPLE_TABLE_SAMPLES, Status::ERROR_INVALID_DATA,
+            "Invalid stsc sample count");
+        FALSE_RETURN_V_MSG_E(entry.first < chunkOffsets_.size(), Status::ERROR_INVALID_DATA,
+            "Invalid stsc first chunk");
+        if (i > 0) {
+            FALSE_RETURN_V_MSG_E(entry.first > stscEntry_[i - 1].first, Status::ERROR_INVALID_DATA,
+                "Invalid stsc first chunk order");
+        }
     }
 
     if (!cttsEntry_.empty()) {
@@ -1327,10 +1371,6 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         Status ret = ExpandCttsEntry(sttsNum);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ExpandCttsEntry failed");
         CalculateDtsShift();
-    }
-
-    if (!hasDefaultStszSize_) {
-        FALSE_RETURN_V_MSG_E(sttsNum == sampleSizes_.size(), Status::ERROR_INVALID_DATA, "stsz did not match stts");
     }
 
     return Status::OK;
@@ -1746,8 +1786,13 @@ Status MPEG4SampleHelper::AppendSampleIndexEntry(const SttsEntry& sttsEntry, uin
 Status MPEG4SampleHelper::BuildSampleIndexEntries()
 {
     FALSE_RETURN_V_MSG_E(PreBuildProcessAndCheck() == Status::OK, Status::ERROR_INVALID_DATA, "PreCheck failed");
+    uint64_t expectedSampleCount = CountSttsSamples();
+    FALSE_RETURN_V_MSG_E(expectedSampleCount > 0 && expectedSampleCount <= MAX_SAMPLE_TABLE_SAMPLES,
+        Status::ERROR_INVALID_DATA, "Invalid sample index entry count");
     SampleIndexBuildContext buildCtx = CreateSampleIndexBuildContext();
     for (const auto& sttsEntry : sttsEntry_) {  // 遍历sttsEntry
+        FALSE_RETURN_V_MSG_E(sttsEntry.count > 0 && sttsEntry.count <= expectedSampleCount,
+            Status::ERROR_INVALID_DATA, "Invalid stts sample count");
         uint32_t sampleInSttsEntry = 0;
         while (sampleInSttsEntry < sttsEntry.count) {  // 根据sttsEntry.count进行循环
             Status ret = AppendSampleIndexEntry(sttsEntry, sampleInSttsEntry, buildCtx);
@@ -1834,8 +1879,11 @@ uint32_t MPEG4SampleHelper::CalculateSampleCount()
 {
     uint32_t sampleCount = 0;
     for (const auto& entry : sttsEntry_) {
-        FALSE_RETURN_V_MSG_E(UINT32_MAX - entry.count >= sampleCount, 0, "sampleCount overflow");
-        sampleCount += entry.count;
+        uint32_t temp = 0;
+        FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_SAMPLE_TABLE_SAMPLES &&
+            !__builtin_add_overflow(sampleCount, entry.count, &temp) && temp <= MAX_SAMPLE_TABLE_SAMPLES,
+            0, "sampleCount overflow");
+        sampleCount = temp;
     }
     MEDIA_LOG_I("sampleCount is " PUBLIC_LOG_U32, sampleCount);
     return sampleCount;
