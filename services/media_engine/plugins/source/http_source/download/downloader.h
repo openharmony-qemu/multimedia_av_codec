@@ -43,11 +43,11 @@ enum struct DownloadStatus {
 
 struct HeaderInfo {
     char contentType[32] = {}; // 32 chars
-    size_t fileContentLen {0};
+    int64_t fileContentLen {0};
     mutable size_t retryTimes {0};
     const static size_t maxRetryTimes {100};
     const static int sleepTime {10};
-    long contentLen {0};
+    int64_t contentLen {0};
     bool isChunked {false};
     std::atomic<bool> isClosed {false};
     bool isServerAcceptRange {false};
@@ -60,10 +60,10 @@ struct HeaderInfo {
         isChunked = info->isChunked;
     }
 
-    size_t GetFileContentLength() const
+    int64_t GetFileContentLength() const
     {
         while (fileContentLen == 0 && !isChunked && !isClosed && retryTimes < maxRetryTimes) {
-            OSAL::SleepFor(sleepTime); // 10, wait for fileContentLen updated
+            OSAL::SleepFor(sleepTime);
             retryTimes++;
         }
         return fileContentLen;
@@ -110,8 +110,8 @@ public:
     DownloadRequest(uint64_t keyIndex, KeyDataSaveFunc keySaveData, StatusCallbackFunc statusCallback,
         RequestInfo requestInfo, bool requestWholeFile = false);
     ~DownloadRequest();
-    size_t GetFileContentLength() const;
-    size_t GetFileContentLengthNoWait() const;
+    int64_t GetFileContentLength() const;
+    int64_t GetFileContentLengthNoWait() const;
     void SaveHeader(const HeaderInfo* header);
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;

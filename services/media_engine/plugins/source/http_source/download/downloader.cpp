@@ -38,7 +38,8 @@ constexpr int32_t CLIENT_RETRY_TIME_LIMIT = 4; // 3, 15, 75, 375
 constexpr int32_t CLIENT_RETRY_TIME_FACTOR = 5;
 constexpr int32_t CLIENT_RETRY_TIME = 3;
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
-constexpr long LIVE_CONTENT_LENGTH = 2147483646;
+constexpr int64_t LIVE_CONTENT_LENGTH = 2147483646;
+constexpr int64_t MAX_FILE_CONTENT_LEN_FROM_SERVER = 100LL * 1024 * 1024 * 1024;
 constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
 constexpr int32_t LOOP_TIMES = 5;
 constexpr int32_t MAX_LEN = 128;
@@ -128,13 +129,13 @@ RequestType DownloadRequest::GetRequestType()
     return requestType_;
 }
 
-size_t DownloadRequest::GetFileContentLength() const
+int64_t DownloadRequest::GetFileContentLength() const
 {
     WaitHeaderUpdated();
     return headerInfo_.GetFileContentLength();
 }
 
-size_t DownloadRequest::GetFileContentLengthNoWait() const
+int64_t DownloadRequest::GetFileContentLengthNoWait() const
 {
     return headerInfo_.fileContentLen;
 }
@@ -472,7 +473,7 @@ void Downloader::Resume()
         if (currentRequest_ != nullptr) {
             currentRequest_->isEos_ = false;
 
-            int64_t fileLength = static_cast<int64_t>(currentRequest_->GetFileContentLength());
+            int64_t fileLength = currentRequest_->GetFileContentLength();
             if (currentRequest_->startPos_ + currentRequest_->requestSize_ > fileLength) {
                 int correctRequestSize = fileLength - currentRequest_->startPos_;
                 MEDIA_LOG_E("resume error startPos = " PUBLIC_LOG_D64 ", requestSize = " PUBLIC_LOG_D32
@@ -523,14 +524,14 @@ bool Downloader::Seek(int64_t offset)
     FALSE_RETURN_V_MSG(!isDestructor_ && !isInterruptNeeded_, false, "Seek fail, is Destructor or InterruptNeeded");
     AutoLock lock(operatorMutex_);
     FALSE_RETURN_V_MSG(currentRequest_ != nullptr, false, "Seek fail, currentRequest nullptr");
-    size_t contentLength = currentRequest_->GetFileContentLength();
-    MEDIA_LOG_I("Seek Begin, offset = " PUBLIC_LOG_D64 ", contentLength = " PUBLIC_LOG_ZU, offset, contentLength);
-    if (offset >= 0 && offset < static_cast<int64_t>(contentLength)) {
+    int64_t contentLength = currentRequest_->GetFileContentLength();
+    MEDIA_LOG_I("Seek Begin, offset = " PUBLIC_LOG_D64 ", contentLength = " PUBLIC_LOG_D64, offset, contentLength);
+    if (offset >= 0 && offset < contentLength) {
         currentRequest_->startPos_ = offset;
     }
-    size_t temp = currentRequest_->GetFileContentLength() - static_cast<size_t>(currentRequest_->startPos_);
+    int64_t temp = currentRequest_->GetFileContentLength() - currentRequest_->startPos_;
     currentRequest_->requestSize_ = static_cast<int>(std::min(temp,
-        static_cast<size_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
+        static_cast<int64_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
     if (downloadRequestSize_ > 0) {
         currentRequest_->requestSize_ = std::min(currentRequest_->requestSize_,
             static_cast<int>(downloadRequestSize_));
@@ -858,7 +859,7 @@ void Downloader::HandleRetOK()
     }
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
-        int64_t fileContentLenTmp = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen);
+        int64_t fileContentLenTmp = currentRequest_->headerInfo_.fileContentLen;
         remaining = fileContentLenTmp - std::min(fileContentLenTmp, currentRequest_->startPos_);
     } else {
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
@@ -975,7 +976,7 @@ void Downloader::UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* heade
     int64_t hstTime = 0;
     Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
     int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
-    int64_t contenLen = static_cast<int64_t>(header->fileContentLen);
+    int64_t contenLen = header->fileContentLen;
     int64_t startPos = 0;
     if (hstTime != 0) {
         startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
@@ -992,9 +993,9 @@ void Downloader::HandleFileContentLen(HeaderInfo* header)
 {
     if (header->fileContentLen == 0) {
         if (header->contentLen > 0) {
-            MEDIA_LOG_W("Unsupported range, use content length as content file length, contentLen: " PUBLIC_LOG_D32,
-                static_cast<int32_t>(header->contentLen));
-            header->fileContentLen = static_cast<size_t>(header->contentLen);
+            MEDIA_LOG_W("Unsupported range, use content length as content file length, contentLen: " PUBLIC_LOG_D64,
+                header->contentLen);
+            header->fileContentLen = header->contentLen;
         } else {
             MEDIA_LOG_D("fileContentLen and contentLen are both zero.");
         }
@@ -1005,7 +1006,7 @@ void Downloader::UpdateRequestSize(Downloader* mediaDownloader)
 {
     int64_t remaining = 0;
     if (mediaDownloader->currentRequest_->endPos_ <= 0) {
-        remaining = static_cast<int64_t>(mediaDownloader->currentRequest_->headerInfo_.fileContentLen) -
+        remaining = mediaDownloader->currentRequest_->headerInfo_.fileContentLen -
                     mediaDownloader->currentRequest_->startPos_;
     } else {
         remaining = mediaDownloader->currentRequest_->endPos_ - mediaDownloader->currentRequest_->startPos_ + 1;
@@ -1106,16 +1107,26 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         char* strRange = StringTrim(token);
-        size_t start = 0;
-        size_t end = 0;
-        size_t fileLen = 0;
-        int sret = sscanf_s(strRange, "bytes %zu-%zu/%zu", &start, &end, &fileLen);
-        if (sret != 3) { // 3: expected fields parsed from content-range
-            MEDIA_LOG_W("sscanf get range failed, parsed: " PUBLIC_LOG_D32, sret);
+        std::string rangeStr(strRange);
+        if (rangeStr.find("bytes ") != 0) {
+            MEDIA_LOG_W("Content-Range format invalid: " PUBLIC_LOG_S, rangeStr.c_str());
             return false;
         }
-        if (fileLen > SIZE_MAX) {
-            MEDIA_LOG_E("Content-Range fileLen exceeds upper bound: " PUBLIC_LOG_ZU, fileLen);
+        rangeStr = rangeStr.substr(6); // skip "bytes " prefix length 6
+        auto dashPos = rangeStr.find('-');
+        auto slashPos = rangeStr.find('/');
+        if (dashPos == std::string::npos || slashPos == std::string::npos) {
+            MEDIA_LOG_W("Content-Range separators missing: " PUBLIC_LOG_S, rangeStr.c_str());
+            return false;
+        }
+        int64_t start = 0;
+        int64_t end = 0;
+        int64_t fileLen = 0;
+        FALSE_RETURN_V(StringUtil::SafeStoInt64(rangeStr.substr(0, dashPos), start), false);
+        FALSE_RETURN_V(StringUtil::SafeStoInt64(rangeStr.substr(dashPos + 1, slashPos - dashPos - 1), end), false);
+        FALSE_RETURN_V(StringUtil::SafeStoInt64(rangeStr.substr(slashPos + 1), fileLen), false);
+        if (fileLen <= 0 || fileLen > MAX_FILE_CONTENT_LEN_FROM_SERVER) {
+            MEDIA_LOG_E("Content-Range fileLen invalid: " PUBLIC_LOG_D64, fileLen);
             return false;
         }
         if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
@@ -1168,10 +1179,10 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Do
         FALSE_RETURN_V(token != nullptr, false);
         if (info != nullptr && mediaDownloader != nullptr) {
             std::string strToken(StringTrim(token));
-            int32_t tempContentLen;
-            FALSE_RETURN_V(StringUtil::SafeStoInt32(strToken, tempContentLen), false);
-            info->contentLen = static_cast<long>(tempContentLen);
-            MEDIA_LOG_I("content-length: " PUBLIC_LOG_D32, static_cast<int32_t>(info->contentLen));
+            int64_t tempContentLen;
+            FALSE_RETURN_V(StringUtil::SafeStoInt64(strToken, tempContentLen), false);
+            info->contentLen = tempContentLen;
+            MEDIA_LOG_I("content-length: " PUBLIC_LOG_D64, info->contentLen);
             if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
                 info->isChunked = true;
             }
