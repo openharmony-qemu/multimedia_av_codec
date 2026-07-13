@@ -1119,9 +1119,9 @@ void CodecServer::SetInstanceInfo(AVCodecType type, bool isMimeType, const std::
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, callerInfo);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::CODEC_INSTANCE_USAGE_INFO, callerInfo);
     if (codecMime_ == CodecMimeType::VIDEO_VVC) {
-        if(codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+        if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
             OnInstanceAdvancedFeatureEvent("ENC_H266", nullptr);
-        } else if(codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+        } else if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
             OnInstanceAdvancedFeatureEvent("DEC_H266", nullptr);
         }
     }
