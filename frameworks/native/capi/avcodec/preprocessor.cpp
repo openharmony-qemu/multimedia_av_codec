@@ -65,7 +65,7 @@ constexpr size_t ROI_MATCH_LEFT_INDEX = 2;
 constexpr size_t ROI_MATCH_BOTTOM_INDEX = 3;
 constexpr size_t ROI_MATCH_RIGHT_INDEX = 4;
 constexpr size_t ROI_MATCH_PARAM_INDEX = 5;
-auto fastKitEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.FastKit.Enable", true);
+constexpr auto fastKitEnable = true;
 
 std::optional<int32_t> ParseInt32(const std::string &str)
 {
@@ -171,7 +171,7 @@ Preprocessor::~Preprocessor()
 bool Preprocessor::IsAvailable()
 {
     if (!fastKitEnable) {
-        return true;
+        return false;
     }
     auto &fastKits = PreProcessing::FastKitsInterface::GetInstance();
     fastKits.Retain();
@@ -494,19 +494,10 @@ int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    if (fastKitEnable) {
-        PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
-        int32_t ret = fastKitsInterface_.Crop(input, output, rect);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit crop failed: %{public}d", ret);
-        return AVCS_ERR_OK;
-    }
-    PreProcessing::CpuImageProcessRequest request;
-    request.input = input;
-    request.output = output;
-    request.operation = PreProcessing::CpuImageOperation::CROP;
-    request.crop = {cropConfig_.left, cropConfig_.top, cropConfig_.width, cropConfig_.height};
-    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Crop failed: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(fastKitEnable, AVCS_ERR_UNSUPPORT, "Crop requires FastKit");
+    PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
+    int32_t ret = fastKitsInterface_.Crop(input, output, rect);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit crop failed: %{public}d", ret);
     return AVCS_ERR_OK;
 }
 
@@ -517,17 +508,9 @@ int32_t Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    if (fastKitEnable) {
-        int32_t ret = fastKitsInterface_.DownSample(input, output);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit downsampling failed: %{public}d", ret);
-        return AVCS_ERR_OK;
-    }
-    PreProcessing::CpuImageProcessRequest request;
-    request.input = input;
-    request.output = output;
-    request.operation = PreProcessing::CpuImageOperation::DOWNSAMPLE;
-    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Downsampling failed: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(fastKitEnable, AVCS_ERR_UNSUPPORT, "Downsampling requires FastKit");
+    int32_t ret = fastKitsInterface_.DownSample(input, output);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit downsampling failed: %{public}d", ret);
     return AVCS_ERR_OK;
 }
 
