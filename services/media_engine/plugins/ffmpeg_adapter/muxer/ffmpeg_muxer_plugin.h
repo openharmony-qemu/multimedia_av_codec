@@ -52,6 +52,7 @@ public:
     Status Reset() override;
 
 private:
+    Status SetRotation(std::shared_ptr<Meta> param);
     Status SetLocation(std::shared_ptr<Meta> param);
     Status SetMetaData(std::shared_ptr<Meta> param);
     Status CheckAacParam(const std::shared_ptr<Meta> &trackDesc);
