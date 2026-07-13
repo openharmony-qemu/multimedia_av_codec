@@ -1358,18 +1358,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
         surfaceInfo.scaleLineSize = scaleLineSize_;
         ret = WriteSurfaceData(bufferMemory, surfaceInfo, format_);
     } else {
-#ifdef EMULATOR_ENABLED
         ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, format_);
-#else
-        sptr<SurfaceBuffer> surfacebuffer = bufferMemory->GetSurfaceBuffer();
-        CHECK_AND_RETURN_RET_LOG(surfacebuffer != nullptr, AVCS_ERR_INVALID_VAL, "surfacebuffer is nullptr");
-        int32_t surfaceStride = surfacebuffer->GetStride();
-        Format bufferFormat;
-        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, surfaceStride);
-        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, cachedFrame_->height);
-        bufferFormat.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(outputPixelFmt_));
-        ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, bufferFormat);
-#endif
     }
     frameBuffer->avBuffer_->pts_ = cachedFrame_->pts;
     AVCODEC_LOGD("Fill frame buffer successful");
