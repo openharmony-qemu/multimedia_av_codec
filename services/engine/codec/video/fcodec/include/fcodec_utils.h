@@ -21,7 +21,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
-bool IsValidRawVideoPixelFormat(int32_t val)
+static bool IsValidRawVideoPixelFormat(int32_t val)
 {
     return val >= static_cast<int32_t>(RawVideoPixelFormat::YUV420P) &&
            val <= static_cast<int32_t>(RawVideoPixelFormat::RGBA);
