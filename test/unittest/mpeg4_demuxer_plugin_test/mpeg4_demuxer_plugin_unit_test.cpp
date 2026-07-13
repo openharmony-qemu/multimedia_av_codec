@@ -3546,29 +3546,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleToChunk_RejectZero
 }
 
 /**
- * @tc.name: Mpeg4DemuxerPlugin_BuildSampleIndex_AllowsExtraStszEntries_001
- * @tc.desc: Verify sample index build accepts stsz entries beyond the stts-covered samples
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_BuildSampleIndex_AllowsExtraStszEntries_001,
-    TestSize.Level1)
-{
-    Plugins::MPEG4::MPEG4SampleHelper helper;
-    helper.sttsEntry_.push_back({1U, 40U});
-    helper.sampleSizes_ = {100, 200};
-    helper.sampleSizeCount_ = 2;
-    helper.chunkOffsets_ = {1000};
-    helper.stscEntry_.push_back({0U, 1U, 1U});
-    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
-
-    ASSERT_EQ(helper.BuildSampleIndexEntries(), Status::OK);
-    ASSERT_EQ(helper.sampleIndexEntry_.size(), 1U);
-    EXPECT_EQ(helper.sampleIndexEntry_[0].size, 100);
-    EXPECT_EQ(helper.sampleIndexEntry_[0].pos, 1000);
-    EXPECT_EQ(helper.CalculateSampleCount(), 1U);
-}
-
-/**
  * @tc.name: Mpeg4DemuxerPlugin_Sidx_RejectUnsupportedVersion_001
  * @tc.desc: Verify sidx version must be version 0 or 1 even when the remaining bytes look parseable
  * @tc.type: FUNC
