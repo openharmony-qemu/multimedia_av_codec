@@ -142,7 +142,7 @@ Status FFmpegAmrnbDecoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
 
 Status FFmpegAmrnbDecoderPlugin::ExtractOneAmrnbFrame()
 {
-    CHECK_AND_RETURN_RET_LOG(inputBuf_.size() >= 1, Status::ERROR_NOT_ENOUGH_DATA, "inputBuf_ is invalid");
+    CHECK_AND_RETURN_RET_LOGD(inputBuf_.size() >= 1, Status::ERROR_NOT_ENOUGH_DATA, "inputBuf_ is invalid");
 
     uint8_t toc = inputBuf_[0];
     int32_t mode = (toc >> 3) & 0x0F;
@@ -202,7 +202,7 @@ Status FFmpegAmrnbDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &ou
         nbSamplesPerFrame_ = outputBuffer->memory_->GetSize() / (sampleFormat_ + 1);
         AVCODEC_LOGD("nbSamplesPerFrame_:%{public}d", nbSamplesPerFrame_);
         Status extractSucc = ExtractOneAmrnbFrame();
-        CHECK_AND_RETURN_RET_LOG(extractSucc == Status::OK, Status::ERROR_NOT_ENOUGH_DATA,
+        CHECK_AND_RETURN_RET_LOGD(extractSucc == Status::OK, Status::ERROR_NOT_ENOUGH_DATA,
             "amrnb split frame failed, remaining size: %{public}zu", inputBuf_.size());
     } else {
         avPacket_->size = 0;

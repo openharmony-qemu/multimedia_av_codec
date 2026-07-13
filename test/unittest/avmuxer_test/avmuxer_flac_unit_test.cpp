@@ -407,5 +407,74 @@ HWTEST_F(AVMuxerFlacUnitTest, MuxerFLAC_Destroy_Lifecycle_001, TestSize.Level1)
     ASSERT_EQ(ret, 0);
 }
 
+/**
+ * @tc.name: MuxerFLAC_SetRotation_ValidValues_001
+ * @tc.desc: FLAC SetRotation with valid values should succeed, then complete lifecycle
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerFlacUnitTest, MuxerFLAC_SetRotation_ValidValues_001, TestSize.Level1)
+{
+    int32_t trackId = -1;
+    std::string outputFile = TEST_FILE_PATH + std::string("MuxerFLAC_SetRotation_ValidValues_001.flac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_FLAC;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    int32_t ret = avmuxer_->SetRotation(0);
+    EXPECT_EQ(ret, 0);
+
+    ret = avmuxer_->SetRotation(90);
+    EXPECT_EQ(ret, 0);
+
+    ret = avmuxer_->SetRotation(180);
+    EXPECT_EQ(ret, 0);
+
+    ret = avmuxer_->SetRotation(270);
+    EXPECT_EQ(ret, 0);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_FLAC);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, 48000);
+    audioParams->PutIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, 1);
+    audioParams->PutIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, SAMPLE_S16LE);
+    ret = avmuxer_->AddTrack(trackId, audioParams);
+    ASSERT_EQ(ret, 0);
+    ASSERT_GE(trackId, 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+}
+
+/**
+ * @tc.name: MuxerFLAC_SetRotation_InvalidValues_001
+ * @tc.desc: FLAC SetRotation with invalid values should fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVMuxerFlacUnitTest, MuxerFLAC_SetRotation_InvalidValues_001, TestSize.Level1)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("MuxerFLAC_SetRotation_InvalidValues_001.flac");
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_FLAC;
+
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    int32_t ret = avmuxer_->SetRotation(1);
+    EXPECT_NE(ret, 0);
+
+    ret = avmuxer_->SetRotation(91);
+    EXPECT_NE(ret, 0);
+
+    ret = avmuxer_->SetRotation(360);
+    EXPECT_NE(ret, 0);
+
+    ret = avmuxer_->SetRotation(-1);
+    EXPECT_NE(ret, 0);
+
+    ret = avmuxer_->SetRotation(-90);
+    EXPECT_NE(ret, 0);
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

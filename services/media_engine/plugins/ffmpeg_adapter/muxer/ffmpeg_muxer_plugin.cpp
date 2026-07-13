@@ -102,11 +102,27 @@ Status FFmpegMuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
 Status FFmpegMuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
 {
     Status ret = Status::NO_ERROR;
+    ret = SetRotation(param);
+    FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
     ret = SetLocation(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
     ret = SetMetaData(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetParameter failed");
     return ret;
+}
+
+Status FFmpegMuxerPlugin::SetRotation(std::shared_ptr<Meta> param)
+{
+    if (param->Find(Tag::VIDEO_ROTATION) != param->end()) {
+        VideoRotation rotation = VIDEO_ROTATION_0;
+        param->Get<Tag::VIDEO_ROTATION>(rotation); // rotation
+        if (rotation != VIDEO_ROTATION_0 && rotation != VIDEO_ROTATION_90 &&
+            rotation != VIDEO_ROTATION_180 && rotation != VIDEO_ROTATION_270) {
+            MEDIA_LOG_W("Invalid rotation: %{public}d, keep default 0", rotation);
+            return Status::ERROR_INVALID_DATA;
+        }
+    }
+    return Status::NO_ERROR;
 }
 
 Status FFmpegMuxerPlugin::SetLocation(std::shared_ptr<Meta> param)
