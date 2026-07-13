@@ -19,7 +19,6 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
-constexpr int32_t MAX_OUTPUT = 96000;
 constexpr int32_t MAX_INPUT = 1500;
 constexpr int32_t LSB_DEPTH = 16;
 constexpr int32_t DOUBLE = 2;
@@ -192,8 +191,8 @@ int32_t AudioOpusDecoderPlugin::SetPluginParameter(int32_t key, int32_t value)
 int32_t AudioOpusDecoderPlugin::Init()
 {
     dec_ = opus_decoder_create(samplingRate_, channels_, &(ret_));
-
-    frameSize_ = static_cast<int32_t>(samplingRate_ * TIME_MS / TIME_S_MS);  // mono frame size
+    constexpr int32_t decTimeMs = 120;  // 120 ms
+    frameSize_ = static_cast<int32_t>(samplingRate_ * decTimeMs / TIME_S_MS);  // mono frame size
     data_ = (short *)malloc(frameSize_ * sizeof(int16_t) * channels_ * DOUBLE);
     if (!data_) {
         MEDIA_LOG_E("AudioOpusDecoderPlugin allocate data memory failed");
@@ -214,7 +213,7 @@ int32_t AudioOpusDecoderPlugin::ProcessSendData(void *inputBuffer, int32_t *len)
         return -1;
     }
     in_ = static_cast<uint8_t*>(inputBuffer);
-    *len = opus_decode(dec_, in_, *len, data_, MAX_OUTPUT, 0);
+    *len = opus_decode(dec_, in_, *len, data_, frameSize_ * DOUBLE, 0);
 
     if (*len >= 0) {
         return 0;
