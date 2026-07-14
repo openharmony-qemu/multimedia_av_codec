@@ -1363,8 +1363,9 @@ void HDecoder::OnStopJankDetect()
         ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
            "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
            "#LAST_FLUSH_TIME:" << currSurface_.lastFlushTime_ <<
-           "#DURATION:" << duration;
- 
+           "#DURATION:" << duration <<
+           "#PID:" << caller_.app.pid <<
+           "#BUNDLE_NAME:" << caller_.app.processName;
         callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK, ss.str()); //上报卡顿事件
     }
 
@@ -1663,7 +1664,9 @@ void HDecoder::PerfMeasure()
             ss << "#UNIQUEID:" << currSurface_.surface_->GetUniqueId() <<
                "#SURFACE_NAME:" << currSurface_.surface_->GetName() <<
                "#LAST_FLUSH_TIME:" << currSurface_.lastFlushTime_ <<
-               "#DURATION:" << span;
+               "#DURATION:" << span <<
+               "#PID:" << caller_.app.pid <<
+               "#BUNDLE_NAME:" << caller_.app.processName;
             callback_->OnXperfEvent(OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK, ss.str()); //上报卡顿事件
         }
     }
@@ -1675,7 +1678,9 @@ void HDecoder::OnEnterRunningState()
     std::unique_lock<std::shared_mutex> lk(g_xperfMtx);
     if (g_xperfConnector == nullptr) {
         g_xperfConnector = sptr<XperfConnector>::MakeSptr();
-        int regret = OHOS::HiviewDFX::XperfServiceClient::GetInstance().RegisterVideoState("avcodec", g_xperfConnector);
+        int regret = OHOS::HiviewDFX::XperfServiceClient::GetInstance().RegisterEventListener("avcodec",
+            g_xperfConnector, {HiviewDFX::EventCode::RS_JANK_FRAME, HiviewDFX::EventCode::XPERF_VIDEO_START,
+            HiviewDFX::EventCode::XPERF_VIDEO_STOP});
         if (regret != 0) {
             g_xperfConnector = nullptr;
         }
@@ -1727,6 +1732,39 @@ std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecode
     return nullptr;
 }
 
+std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecoder(const std::string& msg)
+{
+    std::string sub = "#UNIQUEID:";
+    auto pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGD("cannot find #UNIQUEID:");
+        return nullptr;
+    }
+    uint64_t surfaceId = strtoull(msg.substr(pos + sub.length()).c_str(), nullptr, 10);
+    sub = "#BUNDLE_NAME:";
+    pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGD("cannot find #BUNDLE_NAME:");
+        return nullptr;
+    }
+    string bundleName = msg.substr(pos + sub.length());
+    return FindSuitableDecoder(surfaceId, bundleName);
+}
+
+ErrCode HDecoder::XperfConnector::OnXperfEvent(int eventCode, const std::string& eventData)
+{
+    switch (eventCode) {
+        case HiviewDFX::EventCode::RS_JANK_FRAME:
+            return OnVideoJankEvent(eventData);
+        case HiviewDFX::EventCode::XPERF_VIDEO_START:
+            return OnVideoResumed(eventData);
+        case HiviewDFX::EventCode::XPERF_VIDEO_STOP:
+            return OnVideoPaused(eventData);
+        default:
+            return 0;
+    }
+}
+
 ErrCode HDecoder::XperfConnector::OnVideoJankEvent(const std::string& msg)
 {
     LOGD("msg=%s", msg.c_str());
@@ -1766,25 +1804,6 @@ ErrCode HDecoder::XperfConnector::OnVideoJankEvent(const std::string& msg)
     return 0;
 }
 
-std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecoder(const std::string& msg)
-{
-    std::string sub = "#UNIQUEID:";
-    auto pos = msg.find(sub);
-    if (pos == std::string::npos) {
-        LOGD("cannot find #UNIQUEID:");
-        return nullptr;
-    }
-    uint64_t surfaceId = strtoull(msg.substr(pos + sub.length()).c_str(), nullptr, 10);
-    sub = "#BUNDLE_NAME:";
-    pos = msg.find(sub);
-    if (pos == std::string::npos) {
-        LOGD("cannot find #BUNDLE_NAME:");
-        return nullptr;
-    }
-    string bundleName = msg.substr(pos + sub.length());
-    return FindSuitableDecoder(surfaceId, bundleName);
-}
- 
 ErrCode HDecoder::XperfConnector::OnVideoResumed(const std::string& msg)
 {
     std::shared_ptr<MsgToken> codec = FindSuitableDecoder(msg);
