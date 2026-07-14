@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
+
 #include <string>
 #include "gtest/gtest.h"
 #include "native_averrors.h"
@@ -104,7 +108,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0001, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -129,7 +133,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0002, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->BT709_LIMIT_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -155,7 +159,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0003, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -181,7 +185,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0004, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->BT709_LIMIT_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -206,7 +210,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0005, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -231,7 +235,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0006, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->BT709_LIMIT_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -256,7 +260,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0007, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -281,7 +285,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0008, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->BT709_LIMIT_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -306,7 +310,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0009, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -331,7 +335,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0010, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->BT709_LIMIT_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -357,7 +361,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0011, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -383,7 +387,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0012, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->BT709_LIMIT_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -409,7 +413,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0013, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -435,7 +439,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0014, TestSize.Level0
     vDecSample->SF_OUTPUT = true;
     vDecSample->BT709_LIMIT_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -461,7 +465,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0015, TestSize.Level0
     vDecSample->BT709_FULL_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     ASSERT_EQ(AVCS_ERR_OK, vDecSample->CreateByName(g_codecNameHEVC));
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, vDecSample->Configure());
     } else {
         ASSERT_EQ(AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, vDecSample->Configure());
@@ -504,7 +508,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0017, TestSize.Level0
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->HDR2SDR = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -530,7 +534,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0018, TestSize.Level0
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->HDR2SDR = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -556,7 +560,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0019, TestSize.Level0
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->HDR2SDR = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -582,7 +586,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0020, TestSize.Level0
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->HDR2SDR = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -608,7 +612,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0021, TestSize.Level0
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->HDR2SDR = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -636,7 +640,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0022, TestSize.Level0
     vDecSample->CreateSurface();
     ASSERT_NE(vDecSample->nativeWindow[0], nullptr);
     ASSERT_EQ(AVCS_ERR_OK, vDecSample->CreateByName(g_codecNameHEVC));
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->Configure());
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->SetOutputSurface());
         ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, vDecSample->Start());
@@ -659,7 +663,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0023, TestSize.Level0
     vDecSample->DEFAULT_FRAME_RATE = 10;
     vDecSample->P3_FULL_FLAG = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_INVALID_OPERATION, vDecSample->RunVideoDecoder(g_codecNameHEVC));
         vDecSample->WaitForEOS();
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->errCount);
@@ -686,7 +690,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0024, TestSize.Level0
     vDecSample->DEFAULT_FORMAT = static_cast<int32_t>(VideoPixelFormat::NV21);
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     ASSERT_EQ(AVCS_ERR_OK, vDecSample->CreateByName(g_codecName));
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, vDecSample->Configure());
     } else {
         ASSERT_EQ(AVCS_ERR_UNSUPPORT, vDecSample->Configure());
@@ -700,7 +704,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_HW_HDR2SDR_INNER_FUNC_0024, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_720_10;
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -722,7 +726,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0001, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0002, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_720_10;
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -744,7 +748,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0002, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0003, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_1080_10;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -767,7 +771,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0003, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0004, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_1080_10;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -790,7 +794,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0004, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0005, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_1920_1440_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -812,7 +816,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0005, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0006, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
     shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
     vDecSample->INP_DIR = INP_DIR_1920_1440_30;
     vDecSample->DEFAULT_WIDTH = 1920;
@@ -834,7 +838,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0006, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0007, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_720_10;
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -855,7 +859,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0007, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0008, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_720_10;
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -877,7 +881,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0008, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0010, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = inpDirHlgLimit;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -900,7 +904,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0010, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0011, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_720_10;
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -925,7 +929,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0011, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0012, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_720_10;
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -946,7 +950,7 @@ HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0012, TestSize.Level0
  */
 HWTEST_F(HwdecHdr2SdrInnerTest, HEVC_SW_HDR2SDR_INNER_FUNC_0013, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_720_10;
         vDecSample->DEFAULT_WIDTH = 1280;

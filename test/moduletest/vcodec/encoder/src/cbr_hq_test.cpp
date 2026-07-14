@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
+
 #include <string>
 #include <limits>
 #include "meta/format.h"
@@ -243,7 +247,7 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0800, TestSize.Level2)
  */
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
         vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_1000.h265";
@@ -271,7 +275,7 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_0900, TestSize.Level2)
  */
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_1000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1920_1080_nv21.yuv";
         vEncSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_CBRHQ_FUNC_1000.h265";
@@ -300,7 +304,7 @@ HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_1000, TestSize.Level2)
  */
 HWTEST_F(CBRHQNdkTest, CBR_HQ_ENCODE_FUNC_1100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         vEncSample->OUT_DIR = "/data/test/media/CBR_HQ_ENCODE_FUNC_1500.h265";
         vEncSample->SURF_INPUT = true;

@@ -54,6 +54,10 @@ ohos_unittest("hdrcodec_native_module_test") {
 
   cflags = hdrcodec_moduletest_cflags
 
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines = [ "ONLY_FOR_FLAGSHIP_CHIP" ]
+  }
+
   if (av_codec_support_codec) {
     sources = [
       "./src/InnerAPI/func_test.cpp",

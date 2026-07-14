@@ -684,7 +684,7 @@ int32_t VEncNdkInnerSample::CheckFlag(AVCodecBufferFlag flag)
 int32_t VEncNdkInnerSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer)
 {
     int32_t ret = 0;
-    struct Region region;
+    struct Region region = {};
     struct Region::Rect *rect = new Region::Rect();
     rect->x = 0;
     rect->y = 0;

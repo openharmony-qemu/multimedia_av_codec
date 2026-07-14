@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
 
 #include <iostream>
 #include <cstdio>
@@ -76,7 +79,7 @@ namespace {
  */
 HWTEST_F(MjpegSwdecReliNdkTest, VIDEO_MJPEGSWDEC_STABILITY_0010, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->SF_OUTPUT = false;
@@ -104,7 +107,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, VIDEO_MJPEGSWDEC_STABILITY_0010, TestSize.Level3
  */
 HWTEST_F(MjpegSwdecReliNdkTest, VIDEO_MJPEGSWDEC_STABILITY_0020, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -130,7 +133,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, VIDEO_MJPEGSWDEC_STABILITY_0020, TestSize.Level3
  */
 HWTEST_F(MjpegSwdecReliNdkTest, VIDEO_MJPEGSWDEC_STABILITY_0060, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -155,7 +158,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, VIDEO_MJPEGSWDEC_STABILITY_0060, TestSize.Level3
  */
 HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0010, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->SF_OUTPUT = false;
@@ -183,7 +186,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0010, TestSize.
  */
 HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0020, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -209,7 +212,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0020, TestSize.
  */
 HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0040, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vector<shared_ptr<VDecAPI11Sample>> decVec;
         for (int i = 0; i < g_reliCount; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
@@ -243,7 +246,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0040, TestSize.
  */
 HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0050, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int j = 0; j < 5; j++) {
             vector<shared_ptr<VDecAPI11Sample>> decVec;
             for (int i = 0; i < g_reliCount; i++) {
@@ -279,7 +282,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0050, TestSize.
  */
 HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0060, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -304,7 +307,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0060, TestSize.
  */
 HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0100, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount; i++) {
             for (int j = 0; j < 2; j++) {
                 shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
@@ -329,7 +332,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0100, TestSize.
  */
 HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0130, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_144;
@@ -357,7 +360,7 @@ HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0130, TestS
  */
 HWTEST_F(MjpegSwdecReliNdkTest, API11_VIDEO_MJPEGSWDEC_STABILITY_0110, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount; i++) {
             for (int j = 0; j < 2; j++) {
                 shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();

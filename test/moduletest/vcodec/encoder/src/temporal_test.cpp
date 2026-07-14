@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
+
 #include <string>
 
 #include "gtest/gtest.h"
@@ -120,7 +124,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_API_0020, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 3);
     ret = OH_VideoEncoder_Configure(venc_, format);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
     } else {
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -149,7 +153,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_API_0030, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 30);
     ret = OH_VideoEncoder_Configure(venc_, format);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
     } else {
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -164,7 +168,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_API_0030, TestSize.Level2)
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0010, TestSize.Level1)
 {
     int32_t temporalGopSize = 2;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         cout << "running on phone=========="<< endl;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));

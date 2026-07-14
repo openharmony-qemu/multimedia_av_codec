@@ -82,6 +82,10 @@ ohos_unittest("encoder_native_module_test") {
       "./src/videotranscode_api11_sample.cpp",
     ]
   }
+  
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines = [ "ONLY_FOR_FLAGSHIP_CHIP" ]
+  }
 
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
