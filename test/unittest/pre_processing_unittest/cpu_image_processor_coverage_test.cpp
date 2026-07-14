@@ -681,6 +681,9 @@ HWTEST_F(TEST_SUIT, IsFormatSupported_UnsupportedFormat_Test_001, TestSize.Level
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
 
+/**
+ * @tc.name BuildI420Layout_Invalid_Test_001
+ * @tc.desc input stride is odd number
  * @tc.type FUNC
  */
 HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
