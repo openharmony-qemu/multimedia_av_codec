@@ -1732,39 +1732,6 @@ std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecode
     return nullptr;
 }
 
-std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecoder(const std::string& msg)
-{
-    std::string sub = "#UNIQUEID:";
-    auto pos = msg.find(sub);
-    if (pos == std::string::npos) {
-        LOGD("cannot find #UNIQUEID:");
-        return nullptr;
-    }
-    uint64_t surfaceId = strtoull(msg.substr(pos + sub.length()).c_str(), nullptr, 10);
-    sub = "#BUNDLE_NAME:";
-    pos = msg.find(sub);
-    if (pos == std::string::npos) {
-        LOGD("cannot find #BUNDLE_NAME:");
-        return nullptr;
-    }
-    string bundleName = msg.substr(pos + sub.length());
-    return FindSuitableDecoder(surfaceId, bundleName);
-}
-
-ErrCode HDecoder::XperfConnector::OnXperfEvent(int eventCode, const std::string& eventData)
-{
-    switch (eventCode) {
-        case HiviewDFX::EventCode::RS_JANK_FRAME:
-            return OnVideoJankEvent(eventData);
-        case HiviewDFX::EventCode::XPERF_VIDEO_START:
-            return OnVideoResumed(eventData);
-        case HiviewDFX::EventCode::XPERF_VIDEO_STOP:
-            return OnVideoPaused(eventData);
-        default:
-            return 0;
-    }
-}
-
 ErrCode HDecoder::XperfConnector::OnVideoJankEvent(const std::string& msg)
 {
     LOGD("msg=%s", msg.c_str());
@@ -1802,6 +1769,39 @@ ErrCode HDecoder::XperfConnector::OnVideoJankEvent(const std::string& msg)
     OHOS::HiviewDFX::XperfServiceClient::GetInstance().NotifyToXperf(
         OHOS::HiviewDFX::DomainId::AVCODEC, OHOS::HiviewDFX::AvcodecEventCode::AVCODEC_JANK_REPORT, str);
     return 0;
+}
+
+std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecoder(const std::string& msg)
+{
+    std::string sub = "#UNIQUEID:";
+    auto pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGD("cannot find #UNIQUEID:");
+        return nullptr;
+    }
+    uint64_t surfaceId = strtoull(msg.substr(pos + sub.length()).c_str(), nullptr, 10);
+    sub = "#BUNDLE_NAME:";
+    pos = msg.find(sub);
+    if (pos == std::string::npos) {
+        LOGD("cannot find #BUNDLE_NAME:");
+        return nullptr;
+    }
+    string bundleName = msg.substr(pos + sub.length());
+    return FindSuitableDecoder(surfaceId, bundleName);
+}
+
+ErrCode HDecoder::XperfConnector::OnXperfEvent(int eventCode, const std::string& eventData)
+{
+    switch (eventCode) {
+        case HiviewDFX::EventCode::RS_JANK_FRAME:
+            return OnVideoJankEvent(eventData);
+        case HiviewDFX::EventCode::XPERF_VIDEO_START:
+            return OnVideoResumed(eventData);
+        case HiviewDFX::EventCode::XPERF_VIDEO_STOP:
+            return OnVideoPaused(eventData);
+        default:
+            return 0;
+    }
 }
 
 ErrCode HDecoder::XperfConnector::OnVideoResumed(const std::string& msg)
