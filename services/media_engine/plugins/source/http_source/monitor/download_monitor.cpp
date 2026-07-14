@@ -24,8 +24,8 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 6;
-    constexpr int APP_DOWNLOAD_RETRY_TIMES = 9;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 5;
+    constexpr int APP_DOWNLOAD_RETRY_TIMES = 5;
     constexpr int64_t RETRY_DELAY_TIME[] = {
         20, 100, 200, 400, 800,
         1600, 3200, 6400, 12800, 25600
