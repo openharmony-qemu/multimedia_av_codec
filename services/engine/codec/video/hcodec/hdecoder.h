@@ -23,7 +23,7 @@
 #endif
 #include "xperf_service_action_type.h"
 #include "xperf_service_client.h"
-#include "video_state_callback_stub.h"
+#include "event_callback_stub.h"
 
 namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
@@ -31,14 +31,16 @@ public:
     HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType);
     ~HDecoder() override;
 
-    class XperfConnector : public OHOS::HiviewDFX::VideoStateCallbackStub {
+    class XperfConnector : public OHOS::HiviewDFX::EventCallbackStub {
     public:
         static std::shared_ptr<MsgToken> FindSuitableDecoder(uint64_t surfaceId, const std::string& bundleName);
         static std::shared_ptr<MsgToken> FindSuitableDecoder(const std::string& msg);
- 
-        ErrCode OnVideoJankEvent(const std::string& msg) override;
-        ErrCode OnVideoResumed(const std::string& msg) override;
-        ErrCode OnVideoPaused(const std::string& msg) override;
+        
+        ErrCode OnXperfEvent(int eventCode, const std::string& eventData) override;
+    private:
+        ErrCode OnVideoJankEvent(const std::string& msg);
+        ErrCode OnVideoResumed(const std::string& msg);
+        ErrCode OnVideoPaused(const std::string& msg);
     };
 
     struct DecoderInst {
