@@ -822,10 +822,20 @@ void DashSegmentDownloader::CalcClearPositionInSegment(const std::shared_ptr<Das
         clearTail = segment->bufferPosTail_;
         return;
     }
+    size_t segSize = static_cast<size_t>(segmentSize);
     if (clearTail > 0) {
-        clearTail += segmentSize;
+        if (clearTail > std::numeric_limits<size_t>::max() - segSize) {
+            clearTail = segment->bufferPosTail_;
+            return;
+        }
+        clearTail += segSize;
     } else {
-        clearTail = buffer_->GetHead() + segmentSize;
+        size_t head = buffer_->GetHead();
+        if (head > std::numeric_limits<size_t>::max() - segSize) {
+            clearTail = segment->bufferPosTail_;
+            return;
+        }
+        clearTail = head + segSize;
     }
     segment->bufferPosTail_ = clearTail;
     segment->isEos_ = true;
