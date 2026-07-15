@@ -406,6 +406,11 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
         return;
     }
     if (length > 0 && length < DEFAULT_MAX_SIZE) {
+        if (offset > DEFAULT_MAX_SIZE - length) {
+            MEDIA_LOG_W("ParseMap: offset + length overflow, offset " PUBLIC_LOG_ZU " length " PUBLIC_LOG_ZU,
+                offset, length);
+            return;
+        }
         if (fmp4Header_ != nullptr) {
             delete[] fmp4Header_;
             fmp4Header_ = nullptr;
@@ -556,6 +561,11 @@ void M3U8::InitializeDownloadHeader(const std::string& uri, size_t offset, size_
                                                         requestInfo, length > 0 ? false : true);
     downloadHeaderRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (length > 0) {
+        if (offset > SIZE_MAX - length) {
+            MEDIA_LOG_W("InitializeDownloadHeader: offset + length overflow, offset " PUBLIC_LOG_ZU
+                " length " PUBLIC_LOG_ZU, offset, length);
+            return;
+        }
         downloadHeaderRequest_->SetRangePos(offset, offset + length - 1);
     }
     downloadHeaderRequest_->SetIsAuthRequest(true);
