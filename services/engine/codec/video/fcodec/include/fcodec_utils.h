@@ -16,14 +16,11 @@
 #ifndef FCODEC_UTILS_H
 #define FCODEC_UTILS_H
 
-#ifndef EMULATOR_ENABLED
 #include "v2_0/cm_color_space.h"
 #include "v2_0/buffer_handle_meta_key_type.h"
 #include "meta/video_types.h"
-#endif
 #include "codec_utils.h"
 
-#ifndef EMULATOR_ENABLED
 namespace {
 using namespace OHOS::HDI::Display::Graphic::Common::V2_0;
 using ColorPrimary = OHOS::Media::Plugins::ColorPrimary;
@@ -257,12 +254,11 @@ int32_t CMRangeToBoolean(CM_Range range)
     }
 }
 } // namespace
-#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
-bool IsValidRawVideoPixelFormat(int32_t val)
+static bool IsValidRawVideoPixelFormat(int32_t val)
 {
     return val >= static_cast<int32_t>(RawVideoPixelFormat::YUV420P) &&
            val <= static_cast<int32_t>(RawVideoPixelFormat::RGBA);
