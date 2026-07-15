@@ -103,6 +103,8 @@ public:
     int64_t GetRawSampleCount() const;
     bool HasTrailingZeroSttsDuration() const;
     uint32_t EstimateVideoDelay() const;
+    void SetFragmented(bool fragmented);
+    int64_t GetBaseDataOffset() const { return tfhd_.baseDataOffset; }
     SdtpEntry GetSdtpEntry();
     bool HasSkipSamplesInfo(uint32_t sampleIndex) const;
     const std::vector<uint8_t>* GetSkipSamplesInfo(uint32_t sampleIndex) const;
@@ -239,6 +241,7 @@ private:
     int64_t rawSampleCount_ = 0;
     int32_t movieTimeScale_ = 0;
     int32_t trackTimeScale_ = 0;
+    bool isFragmented_ = false;
     std::vector<EditListEntry> editListEntries_;
     SkipSamplesInfoMap skipSamplesInfoMap_;
 

@@ -40,6 +40,8 @@
 #include "demuxer_log_compressor.h"
 #include "syspara/parameters.h"
 
+constexpr uint32_t HEX_CHARS_PER_BYTE = 2;
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "MPEG4DemuxerPlugin" };
 }
@@ -77,6 +79,7 @@ bool HaveValidParser(const std::string mime)
     return g_streamParserMap.count(mime) != 0;
 }
 
+constexpr int32_t PSSH_UUID_SIZE = 16;
 constexpr int64_t US_TO_NS = 1000;
 constexpr int64_t NS_TIME_BASE = 1000000000LL;
 constexpr int64_t MS_TIME_SCALE = 1000LL;
@@ -1202,6 +1205,24 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
     hasSidxBox_ = parser->GetHasSidx();
     hasMoofBox_ = parser->GetHasMoof();
 
+    {
+        std::lock_guard<std::mutex> drmLock(cachedDrmInfoMutex_);
+        cachedDrmInfo_.clear();
+        const auto& psshList = parser->GetPsshList();
+        for (const auto& pssh : psshList) {
+            if (pssh.uuidLen == PSSH_UUID_SIZE) {
+                std::stringstream ss;
+                for (uint32_t i = 0; i < pssh.uuidLen; ++i) {
+                    ss << std::hex << std::setfill('0') << std::setw(HEX_CHARS_PER_BYTE)
+                    << static_cast<int32_t>(pssh.uuid[i]);
+                }
+                //ss.str() is uuid
+                cachedDrmInfo_.emplace(ss.str(), pssh.psshData);
+            }
+        }
+        drmInfoCached_.store(!cachedDrmInfo_.empty());
+    }
+
     InitParser();
 
     GetMediaInfo();
@@ -1272,7 +1293,8 @@ Status MPEG4DemuxerPlugin::HasCodecParameters()
         FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "track is nullptr");
         Meta &format = mediaInfo_.tracks[trackIndex];
         std::string mime;
-        FALSE_RETURN_V_MSG_E(format.Get<Tag::MIME_TYPE>(mime), Status::ERROR_INVALID_DATA, "Get mime type failed");
+        FALSE_RETURN_V_MSG_E(format.Get<Tag::MIME_TYPE>(mime), Status::ERROR_INVALID_DATA,
+            "Get mime type failed");
         bool flag = !HaveValidParser(mime) || (HaveValidParser(mime) && streamParsers_ != nullptr);
         if (IsAudioType(*track)) {
             FALSE_RETURN_V_MSG_E(format.Get<Tag::AUDIO_CHANNEL_COUNT>(param), Status::ERROR_INVALID_DATA,
@@ -1528,7 +1550,132 @@ Status MPEG4DemuxerPlugin::GetDrmInfo(std::multimap<std::string, std::vector<uin
 {
     MEDIA_LOG_D("In");
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
-    // pass
+    FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
+    std::lock_guard<std::mutex> drmLock(cachedDrmInfoMutex_);
+    drmInfo = cachedDrmInfo_;
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::SetDrmCencInfo(uint32_t trackId, std::shared_ptr<AVBuffer> sample, int32_t sampleSize,
+    int32_t oldSampleSize, uint32_t sampleIndex)
+{
+    FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_INVALID_OPERATION, "Sample is nullptr");
+    FALSE_RETURN_V_MSG_E(sample->memory_ != nullptr, Status::ERROR_INVALID_OPERATION, "Memory is nullptr");
+    auto track = FindTrackById(trackId);
+    FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
+    if (!track->drmInfo.isEncrypted) {
+        return Status::OK;
+    }
+    uint32_t localSampleIndex = (sampleIndex != UINT32_MAX) ? sampleIndex : track->currentSampleIndex;
+    if (localSampleIndex >= track->drmInfo.sampleEncryptionEntries.size()) {
+        if (track->drmInfo.defaultCencInfo.keyIdLen == 0) {
+            return Status::OK;
+        }
+    }
+    MetaDrmCencInfo cencInfo;
+    errno_t err = memset_s(&cencInfo, sizeof(MetaDrmCencInfo), 0, sizeof(MetaDrmCencInfo));
+    FALSE_RETURN_V_MSG_E(err == EOK, Status::ERROR_INVALID_OPERATION, "memset cencInfo failed");
+
+    Status ret = BuildDrmCencBaseInfo(track, cencInfo);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build DRM CENC base info failed");
+
+    ret = FillDrmSampleEncryption(track, cencInfo, localSampleIndex, sampleSize, oldSampleSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Fill DRM sample encryption failed");
+
+    std::vector<uint8_t> drmCencVec(reinterpret_cast<uint8_t*>(&cencInfo),
+        reinterpret_cast<uint8_t*>(&cencInfo) + sizeof(MetaDrmCencInfo));
+    sample->meta_->SetData(Media::Tag::DRM_CENC_INFO, std::move(drmCencVec));
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::BuildDrmCencBaseInfo(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    MetaDrmCencInfo& cencInfo)
+{
+    switch (track->drmInfo.schemeType) {
+        case FourccType("cenc"):
+        case FourccType("cens"):
+            cencInfo.algo = MetaDrmCencAlgorithm::META_DRM_ALG_CENC_AES_CTR;
+            break;
+        case FourccType("cbc1"):
+        case FourccType("cbcs"):
+            cencInfo.algo = MetaDrmCencAlgorithm::META_DRM_ALG_CENC_AES_CBC;
+            break;
+        case FourccType("sm4c"):
+        case FourccType("sm4s"):
+            cencInfo.algo = MetaDrmCencAlgorithm::META_DRM_ALG_CENC_SM4_CBC;
+            break;
+        default:
+            cencInfo.algo = MetaDrmCencAlgorithm::META_DRM_ALG_CENC_UNENCRYPTED;
+            break;
+    }
+    if (track->drmInfo.defaultCencInfo.keyIdLen > 0) {
+        errno_t err = memcpy_s(cencInfo.keyId, sizeof(cencInfo.keyId),
+            track->drmInfo.defaultCencInfo.keyId, track->drmInfo.defaultCencInfo.keyIdLen);
+        FALSE_RETURN_V_MSG_E(err == EOK, Status::ERROR_INVALID_OPERATION, "Copy keyId failed");
+        cencInfo.keyIdLen = track->drmInfo.defaultCencInfo.keyIdLen;
+    }
+    cencInfo.encryptBlocks = track->drmInfo.defaultCencInfo.encryptBlocks;
+    cencInfo.skipBlocks = track->drmInfo.defaultCencInfo.skipBlocks;
+    cencInfo.mode = MetaDrmCencInfoMode::META_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET;
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::FillDrmSampleEncryption(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    MetaDrmCencInfo& cencInfo, uint32_t localSampleIndex, int32_t sampleSize, int32_t oldSampleSize)
+{
+    if (localSampleIndex >= track->drmInfo.sampleEncryptionEntries.size()) {
+        cencInfo.subSampleNum = 1;
+        cencInfo.subSamples[0].clearHeaderLen = 0;
+        cencInfo.subSamples[0].payLoadLen = static_cast<uint32_t>(sampleSize);
+        return Status::OK;
+    }
+    const auto& entry = track->drmInfo.sampleEncryptionEntries[localSampleIndex];
+    if (!entry.iv.empty() && entry.iv.size() <= sizeof(cencInfo.iv)) {
+        errno_t err = memcpy_s(cencInfo.iv, sizeof(cencInfo.iv), entry.iv.data(), entry.iv.size());
+        FALSE_RETURN_V_MSG_E(err == EOK, Status::ERROR_INVALID_OPERATION, "Copy iv failed");
+        cencInfo.ivLen = static_cast<uint32_t>(entry.iv.size());
+    } else if (track->drmInfo.defaultCencInfo.ivLen > 0) {
+        errno_t err = memcpy_s(cencInfo.iv, sizeof(cencInfo.iv),
+            track->drmInfo.defaultCencInfo.iv, track->drmInfo.defaultCencInfo.ivLen);
+        FALSE_RETURN_V_MSG_E(err == EOK, Status::ERROR_INVALID_OPERATION, "Copy default iv failed");
+        cencInfo.ivLen = track->drmInfo.defaultCencInfo.ivLen;
+    }
+    return FillDrmSubsamples(cencInfo, entry, sampleSize, oldSampleSize);
+}
+
+Status MPEG4DemuxerPlugin::FillDrmSubsamples(MetaDrmCencInfo& cencInfo,
+    const MPEG4AtomParser::Mpeg4SampleEncryptionEntry& entry, int32_t sampleSize, int32_t oldSampleSize)
+{
+    if (entry.subSamples.empty()) {
+        cencInfo.subSampleNum = 1;
+        cencInfo.subSamples[0].clearHeaderLen = 0;
+        cencInfo.subSamples[0].payLoadLen = static_cast<uint32_t>(sampleSize);
+        return Status::OK;
+    }
+    uint32_t subsampleCount = static_cast<uint32_t>(entry.subSamples.size());
+    constexpr uint32_t maxSubsampleNum = 64;
+    subsampleCount = std::min(subsampleCount, maxSubsampleNum);
+    cencInfo.subSampleNum = subsampleCount;
+    for (uint32_t i = 0; i < subsampleCount; ++i) {
+        cencInfo.subSamples[i].clearHeaderLen = entry.subSamples[i].clearHeaderLen;
+        cencInfo.subSamples[i].payLoadLen = entry.subSamples[i].payLoadLen;
+    }
+    if (oldSampleSize <= 0 || oldSampleSize == sampleSize) {
+        return Status::OK;
+    }
+    int32_t diff = sampleSize - oldSampleSize;
+    if (diff > 0) {
+        cencInfo.subSamples[0].clearHeaderLen += static_cast<uint32_t>(diff);
+        return Status::OK;
+    }
+    uint32_t diffAbs = static_cast<uint32_t>(-diff);
+    for (uint32_t i = 0; i < subsampleCount; ++i) {
+        if (cencInfo.subSamples[i].clearHeaderLen < diffAbs) {
+            continue;
+        }
+        cencInfo.subSamples[i].clearHeaderLen -= diffAbs;
+        break;
+    }
     return Status::OK;
 }
 
@@ -2146,13 +2293,9 @@ Status MPEG4DemuxerPlugin::GetUnseekableSampleInfo(uint32_t &trackId, int64_t &p
         std::shared_ptr<MPEG4SampleHelper::SampleIndexEntry> sample = nullptr;
         FALSE_RETURN_V(FindValidSample(track, sample) == Status::OK, Status::ERROR_NULL_POINTER);
         if (!sample && !fragmentEntry_.empty() && !tryNextMoof && !readToEnd_) {
-            auto ret = ParseMoof(fragmentEntry_[currentFragment_].nextAtomOffset);
-            FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, Status::ERROR_AGAIN, "Parse next moof failed, try again");
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::END_OF_STREAM, "Parse next moof failed");
-            tryNextMoof = true;
-            ++currentFragment_;
-            FALSE_RETURN_V(currentFragment_ < fragmentEntry_.size(), Status::END_OF_STREAM);
-            continue;
+            // All moof should be parsed during initialization now
+            // If still no sample, we've reached end of all fragments
+            return Status::END_OF_STREAM;
         } else if (!sample) {
             return Status::END_OF_STREAM;
         }
@@ -2182,7 +2325,7 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleInfo(uint32_t trackId, int64_t &pos,
         if (index < numSamples) {
             sample = track->sampleHelper->sampleIndexEntry_[index];
         }
-        if (hasSidxBox_ && hasMoofBox_ && !checkedFragment) {
+        if (hasMoofBox_ && !checkedFragment) {
             int64_t nextMoofOffset = (currentFragment_ < fragmentEntry_.size() - 1) ?
                 fragmentEntry_[currentFragment_ + 1].moofOffset : -1;
             checkedFragment = true;
@@ -2303,7 +2446,8 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<MPEG4Sample>& mpeg4Sam
     return ReadSampleData(sample, pos, size, trackId);
 }
 
-Status MPEG4DemuxerPlugin::AddSampleToCacheQueue(std::shared_ptr<Sample> sample, const uint32_t trackId)
+Status MPEG4DemuxerPlugin::AddSampleToCacheQueue(std::shared_ptr<Sample> sample,
+    const uint32_t trackId, uint32_t sampleIndex)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NULL_POINTER, "sample is nullptr");
 
@@ -2313,6 +2457,12 @@ Status MPEG4DemuxerPlugin::AddSampleToCacheQueue(std::shared_ptr<Sample> sample,
     if (cacheSample != nullptr) {
         cacheSample->sample = sample;
         cacheSample->offset = 0;
+        if (sampleIndex == UINT32_MAX) {
+            auto track = FindTrackById(static_cast<int32_t>(trackId));
+            cacheSample->sampleIndex = track ? track->currentSampleIndex : 0;
+        } else {
+            cacheSample->sampleIndex = sampleIndex;
+        }
         cacheQueue_.Push(trackId, cacheSample);
         ret = CheckCacheDataLimit(trackId);
         uint32_t cacheBytes = cacheQueue_.GetCacheDataSize(trackId);
@@ -2450,12 +2600,13 @@ Status MPEG4DemuxerPlugin::GetSampleBySeekableStatus(const Seekable seekable, ui
             return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
         } else if (ret != Status::OK) {
             return ret;
-        } else {
-            std::unique_lock<std::mutex> sLock(syncMutex_);
-            ret = ReadSampleData(mpeg4Sample, pos, size, trackIndex);
-            sLock.unlock();
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
         }
+        auto track = FindTrackById(trackIndex);
+        mpeg4Sample->sampleIndex = track ? track->currentSampleIndex : 0;
+        std::unique_lock<std::mutex> sLock(syncMutex_);
+        ret = ReadSampleData(mpeg4Sample, pos, size, trackIndex);
+        sLock.unlock();
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
     } else if (seekable == Seekable::UNSEEKABLE) {
         while (!cacheQueue_.HasCache(trackId)) {
             ret = GetUnseekableSampleInfo(trackIndex, pos, size);
@@ -2464,15 +2615,19 @@ Status MPEG4DemuxerPlugin::GetSampleBySeekableStatus(const Seekable seekable, ui
                 return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
             } else if (ret != Status::OK) {
                 return ret;
-            } else {
-                std::unique_lock<std::mutex> sLock(syncMutex_);
-                auto sample = std::make_shared<Sample>();
-                FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
-                ret = ReadSampleData(sample, pos, size, trackIndex);
-                sLock.unlock();
-                FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
-                ret = AddSampleToCacheQueue(sample, trackIndex);
-                FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
+            }
+            auto track = FindTrackById(trackIndex);
+            uint32_t currentSampleIndex = track ? track->currentSampleIndex : 0;
+            std::unique_lock<std::mutex> sLock(syncMutex_);
+            auto sample = std::make_shared<Sample>();
+            FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
+            ret = ReadSampleData(sample, pos, size, trackIndex);
+            sLock.unlock();
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
+            ret = AddSampleToCacheQueue(sample, trackIndex, currentSampleIndex);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
+            if (track) {
+                track->currentSampleIndex++;
             }
         }
         std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
@@ -2527,6 +2682,7 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
     if (cacheQueue_.ResetInfo(mpeg4Sample) == false) {
         MEDIA_LOG_D("Reset info failed");
     }
+    int32_t oldSize = mpeg4Sample->sample->size;
     Status ret = ConvertSampleToAnnexb(mpeg4Sample, trackIndex);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert annexb failed");
     if (cacheQueue_.SetInfo(mpeg4Sample) == false) {
@@ -2547,6 +2703,9 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
         FALSE_RETURN_V_MSG_E(writeResult >= 0, Status::ERROR_INVALID_OPERATION, "Memory write failed");
         DumpAVBufferData(writeData, trackIndex, copySize, outBuffer->pts_);
     }
+
+    auto track = FindTrackById(trackIndex);
+    SetDrmCencInfo(trackIndex, outBuffer, mpeg4Sample->sample->size, oldSize, mpeg4Sample->sampleIndex);
 
     if (copySize < remainSize) {
         FALSE_RETURN_V_MSG_E(mpeg4Sample->offset <= INT32_MAX - copySize, Status::ERROR_INVALID_DATA,
@@ -2588,7 +2747,6 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
         Status::ERROR_INVALID_OPERATION, "Cannot use sync and async Read together");
     readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
-    
     std::shared_ptr<MPEG4Sample> mpeg4Sample = nullptr;
     Status ret = Status::OK;
     bool getFromCache = false;

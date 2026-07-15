@@ -286,7 +286,7 @@ Status MPEG4DemuxerPlugin::PrefetchSeekSample(
             return ret;
         }
     }
-    Status ret = AddSampleToCacheQueue(sample, track->trackIndex);
+    Status ret = AddSampleToCacheQueue(sample, track->trackIndex, sampleIndex);
     if (ret != Status::OK) {
         track->currentSampleIndex = oldIndex;
         return ret;
@@ -403,7 +403,7 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
         usleep(READ_RETRY_SLEEP_TIME_US);
     }
     FALSE_RETURN_V_MSG_E(totalRead <= INT32_MAX, Status::ERROR_UNKNOWN,
-                         "TotalRead size too large, may cause dataSize overflow");
+        "TotalRead size too large, may cause dataSize overflow");
     int32_t dataSize = static_cast<int32_t>(totalRead);
     MEDIA_LOG_D("Want:" PUBLIC_LOG_D32 ", Get:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, size, dataSize, pos);
     if (totalRead != bufferSize && ret != Status::OK && ret != Status::ERROR_AGAIN) {
@@ -534,6 +534,8 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
         PUBLIC_LOG_U32, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_, trackIndex);
 
     CheckResetXPSSendStatus(trackIndex, mpeg4Sample->sample);
+    auto track = FindTrackById(trackIndex);
+    int32_t oldSize = mpeg4Sample->sample->size;
     if (cacheQueue_.ResetInfo(mpeg4Sample) == false) {
         MEDIA_LOG_D("Reset info failed");
     }
@@ -547,6 +549,8 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
     auto sampleMemory = std::make_shared<MPEG4SampleMemory>(mpeg4Sample->sample, mpeg4Sample->offset);
     FALSE_RETURN_V_MSG_E(sampleMemory != nullptr, Status::ERROR_NO_MEMORY, "Create sample memory failed");
     outBuffer->memory_ = std::static_pointer_cast<AVMemory>(sampleMemory);
+    
+    SetDrmCencInfo(trackIndex, outBuffer, mpeg4Sample->sample->size, oldSize, mpeg4Sample->sampleIndex);
     return Status::OK;
 }
 
@@ -791,19 +795,19 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
     auto pending = pendingWebVttSamples_.find(trackId);
     if (mpeg4Sample->isVttc) {
         if (pending != pendingWebVttSamples_.end()) {
-            UpdateWebVTTDuration(pending->second, mpeg4Sample->sample->pts);
-            ret = AddSampleToCacheQueue(pending->second, trackId);
+            UpdateWebVTTDuration(pending->second->sample, mpeg4Sample->sample->pts);
+            ret = AddSampleToCacheQueue(pending->second->sample, trackId, pending->second->sampleIndex);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add pending WebVTT cache failed");
         }
-        pendingWebVttSamples_[trackId] = mpeg4Sample->sample;
+        pendingWebVttSamples_[trackId] = mpeg4Sample;
         return Status::OK;
     }
 
     if (pending == pendingWebVttSamples_.end()) {
         return Status::OK;
     }
-    UpdateWebVTTDuration(pending->second, mpeg4Sample->sample->pts);
-    ret = AddSampleToCacheQueue(pending->second, trackId);
+    UpdateWebVTTDuration(pending->second->sample, mpeg4Sample->sample->pts);
+    ret = AddSampleToCacheQueue(pending->second->sample, trackId, pending->second->sampleIndex);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add WebVTT cache failed");
     pendingWebVttSamples_.erase(pending);
     return Status::OK;
@@ -816,11 +820,11 @@ Status MPEG4DemuxerPlugin::FlushPendingWebVTTSample(uint32_t trackId)
         return Status::OK;
     }
     auto track = FindTrackById(static_cast<int32_t>(trackId));
-    int64_t endPts = GetWebVTTFlushEndPtsUs(track, iter->second);
+    int64_t endPts = GetWebVTTFlushEndPtsUs(track, iter->second->sample);
     if (endPts > 0) {
-        UpdateWebVTTDuration(iter->second, endPts);
+        UpdateWebVTTDuration(iter->second->sample, endPts);
     }
-    Status ret = AddSampleToCacheQueue(iter->second, trackId);
+    Status ret = AddSampleToCacheQueue(iter->second->sample, trackId, iter->second->sampleIndex);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add pending WebVTT cache failed");
     pendingWebVttSamples_.erase(iter);
     return Status::OK;
@@ -910,6 +914,8 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId)
         auto mpeg4Sample = std::make_shared<MPEG4Sample>();
         FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate MPEG4Sample");
         mpeg4Sample->sample = sample;
+        uint32_t currentSampleIndex = currentTrack->currentSampleIndex;
+        mpeg4Sample->sampleIndex = currentSampleIndex;
         {
             std::unique_lock<std::mutex> sLock(syncMutex_);
             ret = ReadSampleData(sample, pos, size, currentTrackId);
@@ -918,7 +924,7 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId)
         if (IsWebVTTTrack(currentTrack)) {
             ret = ProcessWebVTTSampleForCache(currentTrack, mpeg4Sample);
         } else {
-            ret = AddSampleToCacheQueue(sample, currentTrackId);
+            ret = AddSampleToCacheQueue(sample, currentTrackId, currentSampleIndex);
             AdvanceSampleIndex(currentTrack);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");

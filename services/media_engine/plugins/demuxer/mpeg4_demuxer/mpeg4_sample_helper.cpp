@@ -1327,6 +1327,9 @@ Status MPEG4SampleHelper::ExpandCttsEntry(uint32_t sttsNum)
 
 Status MPEG4SampleHelper::PreBuildProcessAndCheck()
 {
+    if (isFragmented_) {
+        return Status::OK;
+    }
     FALSE_RETURN_V_MSG_E(!sttsEntry_.empty(), Status::ERROR_INVALID_DATA, "stts corrupted");
     FALSE_RETURN_V_MSG_E(!sampleSizes_.empty(), Status::ERROR_INVALID_DATA, "stsz corrupted");
     FALSE_RETURN_V_MSG_E(!chunkOffsets_.empty(), Status::ERROR_INVALID_DATA, "stco corrupted");
@@ -1956,6 +1959,12 @@ Status MPEG4SampleHelper::GetPtsOfFirstSample(int64_t& startPtsBasedOnTimescale)
     FALSE_RETURN_V_MSG_E(!sampleIndexEntry_.empty(), Status::ERROR_INVALID_DATA, "sampleIndexEntry_ is empty");
     startPtsBasedOnTimescale = sampleIndexEntry_[0].pts;  // pts based on track time scale
     return Status::OK;
+}
+
+void MPEG4SampleHelper::SetFragmented(bool fragmented)
+{
+    MEDIA_LOG_I("SetFragmented in");
+    isFragmented_ = fragmented;
 }
 } // namespace MPEG4
 } // namespace Plugins

@@ -45,6 +45,44 @@ public:
         CodecParams() = default;
     };
 
+    struct Mpeg4DrmSubSample {
+        uint32_t clearHeaderLen = 0;
+        uint32_t payLoadLen = 0;
+    };
+
+    struct Mpeg4DrmCencInfo {
+        uint32_t algo = 0;
+        uint8_t keyId[16] = {0};
+        uint32_t keyIdLen = 0;
+        uint8_t iv[16] = {0};
+        uint32_t ivLen = 0;
+        uint32_t encryptBlocks = 0;
+        uint32_t skipBlocks = 0;
+        uint32_t firstEncryptOffset = 0;
+        std::vector<Mpeg4DrmSubSample> subSamples;
+        uint32_t subSampleNum = 0;
+        uint32_t mode = 0;
+    };
+
+    struct Mpeg4SampleEncryptionEntry {
+        std::vector<uint8_t> iv;
+        std::vector<Mpeg4DrmSubSample> subSamples;
+    };
+
+    struct Mpeg4TrackDrmInfo {
+        bool isEncrypted = false;
+        uint32_t schemeType = 0;
+        uint32_t perSampleIvSize = 0;
+        Mpeg4DrmCencInfo defaultCencInfo;
+        std::vector<Mpeg4SampleEncryptionEntry> sampleEncryptionEntries;
+        // For saiz/saio auxiliary info parsing
+        uint8_t auxiliaryInfoDefaultSize = 0;
+        std::vector<uint8_t> auxiliaryInfoSizes;
+        std::vector<uint64_t> auxiliaryOffsets;
+        uint32_t auxiliaryInfoSampleCount = 0;
+        uint32_t auxiliaryOffsetsCount = 0;
+    };
+
     struct Track {
         std::shared_ptr<Track> next = nullptr;
         uint32_t trackIndex = 0;
@@ -53,6 +91,7 @@ public:
         std::unique_ptr<int32_t[]> displayMatrix = nullptr;  // 3x3 display matrix (9个int32_t), 按行存储
         bool hasDisplayMatrix = false;  // 是否有有效的display matrix
         uint32_t currentSampleIndex = 0;
+        uint32_t currentFragmentIndexBase = 0; // 当前fragment在全局sample中的起始索引
         int64_t duration = 0; // track的duration，mdhd box中定义的
         int32_t timeScale = 1; // mdhd timescale, kept internal and not exported to track meta
         int64_t totalElstDuration = 0; // elst box中所有entry的segment duration之和
@@ -72,8 +111,16 @@ public:
         uint16_t audioSampleEntryChannelCount = 0;
         uint16_t audioSampleEntryBitsPerCodedSample = 0;
         CodecParams codecParms{};
+        Mpeg4TrackDrmInfo drmInfo;
 
         Track() = default;
+    };
+
+    struct Mpeg4PsshInfo {
+        uint8_t uuid[16] = {0};
+        uint32_t uuidLen = 0;
+        std::vector<uint8_t> psshData;
+        uint32_t psshLen = 0;
     };
     
     struct FragmentEntry {
@@ -95,6 +142,9 @@ public:
     int32_t GetMovieTimeScale() const;
     Status MPEG4ParseHeader(const std::shared_ptr<DataSource>& source, Seekable seekable, int64_t readTimeoutMs = -1);
     Status ParseMoof(const std::shared_ptr<Track>& track, int64_t offset);
+    void ClearTrackSaizSaioState();
+    void PadSampleEncryptionEntries();
+    const std::vector<Mpeg4PsshInfo>& GetPsshList() const;
     
 private:
     std::shared_ptr<Track> firstTrack_;
@@ -172,6 +222,7 @@ private:
     ParseFunction FindAtomParser(const MPEG4Atom& atom, ParseContext* ctx);
     std::unordered_map<int32_t, ParseFunction> MPEG4ParseTable_;
     std::vector<FragmentEntry> fragmentEntry_;
+    std::vector<Mpeg4PsshInfo> psshList_;
     std::shared_ptr<DataSource> dataSource_ {nullptr};
     std::shared_ptr<DemuxerDataReader> dataReader_ {nullptr};
     bool isIsom_;
@@ -281,6 +332,13 @@ private:
     Status ParseDca3ContentType(DemuxerBitReader& bitReader, uint8_t contentType, Av3aConfigParams& params);
 
     bool UpdataMoofInfo(MPEG4Atom& atom, Status& ret, int64_t& currentOffset, FragmentEntry& frag, int64_t sidxDts);
+    bool ProcessMoofMfhd(MPEG4Atom& atom, Status& ret, int64_t& currentOffset);
+    bool ProcessMoofTfhd(MPEG4Atom& atom, Status& ret, int64_t& currentOffset);
+    bool ProcessMoofTfdt(MPEG4Atom& atom, Status& ret, int64_t& currentOffset);
+    bool ProcessMoofTrun(MPEG4Atom& atom, Status& ret, int64_t& currentOffset, FragmentEntry& frag, int64_t sidxDts);
+    bool ProcessMoofSenc(MPEG4Atom& atom, Status& ret, int64_t& currentOffset);
+    bool ProcessMoofSaiz(MPEG4Atom& atom, Status& ret, int64_t& currentOffset);
+    bool ProcessMoofSaio(MPEG4Atom& atom, Status& ret, int64_t& currentOffset);
     // 解析函数
     Status ParseContainerAtom(const MPEG4Atom& containerAtom, int32_t depth, ParseContext* ctx);
     Status PrepareChildAtomInContainer(int64_t endOffset, ParseContext* ctx, bool& isPadding);
@@ -373,6 +431,20 @@ private:
     Status ParseFrma(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseSchi(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseSchm(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseSinf(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParsePssh(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status BuildPsshInfo(int64_t boxOffset, const uint8_t uuidData[16], uint32_t boxSize);
+    Status ParseTenc(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseSenc(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseSencSampleEntry(uint32_t& dataOffset, size_t entryIndex, bool useSubsamples,
+        uint32_t atomEndOffset);
+    Status ParseSaiz(const MPEG4Atom& atom);
+    Status ParseSaizBody(int64_t dataOffset, const MPEG4Atom& atom);
+    Status ParseSaio(const MPEG4Atom& atom);
+    Status ReadSaioOffsetEntries(int64_t dataOffset, uint8_t version, const MPEG4Atom& atom);
+    Status ParseAuxiliaryInfo(const std::shared_ptr<Track>& track);
+    Status ParseAuxiliarySampleEntry(int64_t& auxiliaryOffset, size_t entryIndex, uint32_t sampleInfoSize,
+        const std::shared_ptr<Track>& track);
     Status ParseKind(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseChan(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseChap(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);

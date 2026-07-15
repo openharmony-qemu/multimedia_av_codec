@@ -69,7 +69,13 @@ public:
     Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override {}
-
+    Status SetDrmCencInfo(uint32_t trackId, std::shared_ptr<AVBuffer> sample, int32_t sampleSize,
+        int32_t oldSampleSize = -1, uint32_t sampleIndex = UINT32_MAX);
+    Status BuildDrmCencBaseInfo(const std::shared_ptr<MPEG4AtomParser::Track>& track, MetaDrmCencInfo& cencInfo);
+    Status FillDrmSampleEncryption(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        MetaDrmCencInfo& cencInfo, uint32_t localSampleIndex, int32_t sampleSize, int32_t oldSampleSize);
+    Status FillDrmSubsamples(MetaDrmCencInfo& cencInfo,
+        const MPEG4AtomParser::Mpeg4SampleEncryptionEntry& entry, int32_t sampleSize, int32_t oldSampleSize);
     bool IsRefParserSupported() override;
     Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
@@ -165,7 +171,7 @@ private:
     std::vector<uint32_t> avTrackIds_ {};
     std::map<int32_t, std::shared_ptr<Sample>> firstFrameMap_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
-    std::unordered_map<uint32_t, std::shared_ptr<Sample>> pendingWebVttSamples_ {};
+    std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> pendingWebVttSamples_ {};
     std::unordered_map<uint32_t, std::vector<int64_t>> rawDtsPrefix_ {};
 
     struct TrackDfxInfo {
@@ -310,7 +316,8 @@ private:
     void DumpAVBufferData(const uint8_t* data [[maybe_unused]], uint32_t trackId [[maybe_unused]],
         int32_t size [[maybe_unused]], int64_t pts [[maybe_unused]]);
     Status ReadSampleData(std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint64_t pos, int32_t size, uint32_t trackId);
-    Status AddSampleToCacheQueue(std::shared_ptr<Sample> sample, const uint32_t trackId);
+    Status AddSampleToCacheQueue(std::shared_ptr<Sample> sample,
+        const uint32_t trackId, uint32_t sampleIndex = UINT32_MAX);
     void MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes);
     int64_t NowMs() const;
     Status FindFirstSampleIndexByDts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
@@ -441,6 +448,11 @@ private:
     std::unordered_map<uint32_t, uint32_t> trackThrottleWindowMs_ {};
     std::unordered_map<uint32_t, int64_t> trackLastNotifyMs_ {};
     std::mutex cachePressureMutex_ {};
+
+    // DRM info cache
+    std::multimap<std::string, std::vector<uint8_t>> cachedDrmInfo_;
+    std::mutex cachedDrmInfoMutex_;
+    std::atomic<bool> drmInfoCached_ {false};
 };
 } // namespace MPEG4
 } // namespace Plugins
