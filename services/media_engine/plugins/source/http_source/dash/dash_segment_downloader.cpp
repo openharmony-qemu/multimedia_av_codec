@@ -812,7 +812,8 @@ void DashSegmentDownloader::CalcClearPositionInSegment(const std::shared_ptr<Das
         return;
     }
 
-    if (segmentKeepDuration > 0 && segment->contentLength_ > std::numeric_limits<uint64_t>::max() / segmentKeepDuration) {
+    if (segmentKeepDuration > 0 &&
+        segment->contentLength_ > std::numeric_limits<uint64_t>::max() / segmentKeepDuration) {
         clearTail = segment->bufferPosTail_;
         return;
     }
