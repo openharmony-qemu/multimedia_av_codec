@@ -1081,9 +1081,9 @@ int32_t FCodec::UpdateBuffers(uint32_t index)
             CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && sb != nullptr, ret,
                                      "Alloc surface buffer failed, ret=%{public}d", ret);
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(sb);
-            CHECK_AND_RETURN_RET_LOG(buf->avBuffer_ != nullptr, AVCS_ERR_UNKNOWN,
-                                     "create output avbuffer failed, index=%{public}d", index);
         }
+        CHECK_AND_RETURN_RET_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr, AVCS_ERR_UNKNOWN,
+                                 "create output avbuffer failed, index=%{public}d", index);
         int32_t curBufSize = buf->avBuffer_->memory_->GetCapacity();
         AVCODEC_LOGI("update output buffer success: index=%{public}u, size=%{public}d", index, curBufSize);
         buf->owner_ = Owner::OWNED_BY_CODEC;
@@ -1091,7 +1091,6 @@ int32_t FCodec::UpdateBuffers(uint32_t index)
     }
     return AVCS_ERR_OK;
 }
-
 int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
