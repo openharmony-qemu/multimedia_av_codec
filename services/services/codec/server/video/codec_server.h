@@ -128,6 +128,7 @@ private:
     int32_t InitServer(int32_t instanceId = INVALID_INSTANCE_ID);
     int32_t ConfigureCodecScenario(Format &config, int32_t &paramCheckRet);
     void UpdateConfiguredFramerate(const Format &format);
+    void UpdateCodecParamsFromFormat(const Format &format);
     void ConfigureSfdManager(Format &config);
     void ReportResolutionInfo(const Format &config);
     int32_t CodecScenarioInit(Format &config);
@@ -147,6 +148,7 @@ private:
     void SetInstanceEncodeEventInfo(std::shared_ptr<Media::Meta> &meta);
     void OnInstanceAdvancedFeatureEvent(std::string feature, std::shared_ptr<Media::Meta> meta = nullptr);
     void InitFramerateCalculator(Meta &callerInfo);
+    void UpdateInstanceInfo(int32_t codeWidth, int32_t codeHeight, int32_t codecBitrate, int32_t codecLowpower);
 
     CodecStatus status_ = UNINITIALIZED;
 
@@ -226,6 +228,10 @@ private:
     Format outputFormatChanged_;
     std::shared_ptr<MediaCodecCallback> codecBaseCb_ = nullptr;
     std::shared_ptr<FramerateCalculator> framerateCalculator_ = nullptr;
+    int32_t codecWidth_ = 0;
+    int32_t codecHeight_ = 0;
+    int32_t codecBitrate_ = 0;
+    int32_t oldcodecLowpower_ = -1;
 
     // smart flency decoding, video decoder only
     void InitSfdManager();

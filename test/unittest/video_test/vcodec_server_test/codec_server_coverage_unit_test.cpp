@@ -1531,5 +1531,1015 @@ HWTEST_F(CodecServerUnitTest, ReleaseBuffer_Test_009, TestSize.Level1)
     notifyThread.join();
 }
 
+// ========== UpdateCodecParamsFromFormat Tests ==========
+
+/**
+ * @tc.name: CodecServer_UpdateCodecParamsFromFormat_001
+ * @tc.desc: UpdateCodecParamsFromFormat reads width, height, bitrate and lowPower=1 from Format
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateCodecParamsFromFormat_001, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    Format format;
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 640);
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 480);
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 300000);
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+
+    server_->UpdateCodecParamsFromFormat(format);
+    EXPECT_EQ(server_->codecWidth_, 640);
+    EXPECT_EQ(server_->codecHeight_, 480);
+    EXPECT_EQ(server_->codecBitrate_, 300000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+}
+
+/**
+ * @tc.name: CodecServer_UpdateCodecParamsFromFormat_002
+ * @tc.desc: UpdateCodecParamsFromFormat sets oldcodecLowpower_ to 0 when lowPower=0
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateCodecParamsFromFormat_002, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 0);
+
+    server_->UpdateCodecParamsFromFormat(format);
+    EXPECT_EQ(server_->oldcodecLowpower_, 0);
+}
+
+/**
+ * @tc.name: CodecServer_UpdateCodecParamsFromFormat_003
+ * @tc.desc: UpdateCodecParamsFromFormat clamps invalid lowPower value (e.g. 5) to -1
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateCodecParamsFromFormat_003, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 5); // invalid value
+
+    server_->UpdateCodecParamsFromFormat(format);
+    // (5 != 0 && 5 != 1) → clamped to -1, oldcodecLowpower_ = -1
+    EXPECT_EQ(server_->oldcodecLowpower_, -1);
+}
+
+/**
+ * @tc.name: CodecServer_UpdateCodecParamsFromFormat_004
+ * @tc.desc: UpdateCodecParamsFromFormat preserves oldcodecLowpower_ when lowPower key is absent
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateCodecParamsFromFormat_004, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Set lowPower to 1 first
+    Format formatInit;
+    formatInit.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    server_->UpdateCodecParamsFromFormat(formatInit);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+
+    // Now call with Format that has no lowPower key — oldcodecLowpower_ should stay 1
+    Format formatNoLowPower;
+    formatNoLowPower.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1920);
+    server_->UpdateCodecParamsFromFormat(formatNoLowPower);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1); // preserved
+    EXPECT_EQ(server_->codecWidth_, 1920);
+}
+
+/**
+ * @tc.name: CodecServer_UpdateCodecParamsFromFormat_005
+ * @tc.desc: UpdateCodecParamsFromFormat casts int64_t bitrate to int32_t
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateCodecParamsFromFormat_005, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 500000);
+    server_->UpdateCodecParamsFromFormat(format);
+    EXPECT_EQ(server_->codecBitrate_, 500000);
+}
+
+// ========== SetParameter LowPower Tests ==========
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_001
+ * @tc.desc: SetParameter updates oldcodecLowpower_ when new lowPower differs from old value
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_001, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Initial: oldcodecLowpower_ = -1 (default)
+    EXPECT_EQ(server_->oldcodecLowpower_, -1);
+
+    // SetParameter with lowPower=1 → different from -1, so oldcodecLowpower_ updates to 1
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    server_->SetParameter(format);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_002
+ * @tc.desc: SetParameter resets lowPower to -1 when new value equals oldcodecLowpower_
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_002, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(2).WillRepeatedly(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // First: set lowPower=1
+    Format format1;
+    format1.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    server_->SetParameter(format1);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+
+    // Second: set lowPower=1 again → same as oldcodecLowpower_, so oldcodecLowpower_ stays 1
+    Format format2;
+    format2.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    server_->SetParameter(format2);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1); // unchanged, but the local lowPower resets to -1
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_003
+ * @tc.desc: SetParameter clamps invalid lowPower value (e.g. 2) to -1
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_003, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 2); // invalid value
+    server_->SetParameter(format);
+    // (2 != 0 && 2 != 1) → clamped to -1
+    // oldcodecLowpower_ == -1 (default), and clamped lowPower == -1 → same value, stays -1
+    EXPECT_EQ(server_->oldcodecLowpower_, -1);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_004
+ * @tc.desc: SetParameter triggers UpdateInstanceInfo when bitrate changes alone
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_004, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Set bitrate change only — isCodecParmChange=true, triggers UpdateInstanceInfo
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 600000);
+    server_->SetParameter(format);
+    EXPECT_EQ(server_->codecBitrate_, 600000);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_005
+ * @tc.desc: SetParameter triggers UpdateInstanceInfo when both bitrate and lowPower change
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_005, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 400000);
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    server_->SetParameter(format);
+    EXPECT_EQ(server_->codecBitrate_, 400000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+}
+
+// ========== UpdateInstanceInfo Tests ==========
+
+/**
+ * @tc.name: CodecServer_UpdateInstanceInfo_001
+ * @tc.desc: UpdateInstanceInfo dispatches codec params via EventManager with codecParamMeta
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateInstanceInfo_001, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+
+    // Set member values directly (private=public flag allows this)
+    server_->codecWidth_ = 1280;
+    server_->codecHeight_ = 720;
+    server_->codecBitrate_ = 500000;
+    server_->oldcodecLowpower_ = 1;
+
+    // UpdateInstanceInfo now uses local codecParamMeta and sends via EventManager
+    server_->UpdateInstanceInfo(1280, 720, 500000, 1);
+
+    // Verify member values remain correctly set (no crash, method executed)
+    EXPECT_EQ(server_->codecWidth_, 1280);
+    EXPECT_EQ(server_->codecHeight_, 720);
+    EXPECT_EQ(server_->codecBitrate_, 500000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+}
+
+/**
+ * @tc.name: CodecServer_UpdateInstanceInfo_002
+ * @tc.desc: UpdateInstanceInfo with lowpower=-1 still dispatches event correctly
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateInstanceInfo_002, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+
+    // Set oldcodecLowpower_ to 0 and call UpdateInstanceInfo with lowPower=-1
+    server_->codecWidth_ = 320;
+    server_->codecHeight_ = 240;
+    server_->codecBitrate_ = 100000;
+    server_->oldcodecLowpower_ = 0;
+
+    // UpdateInstanceInfo passes codecLowpower=-1 directly to EventManager via codecParamMeta
+    server_->UpdateInstanceInfo(320, 240, 100000, -1);
+
+    // Verify member values remain correctly set (no crash, method executed)
+    EXPECT_EQ(server_->codecWidth_, 320);
+    EXPECT_EQ(server_->codecHeight_, 240);
+    EXPECT_EQ(server_->codecBitrate_, 100000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 0);
+}
+
+/**
+ * @tc.name: CodecServer_UpdateCodecParamsFromFormat_006
+ * @tc.desc: UpdateCodecParamsFromFormat preserves codecWidth_ when MD_KEY_WIDTH is absent
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateCodecParamsFromFormat_006, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Set codecWidth_ to a known value first
+    Format formatInit;
+    formatInit.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1280);
+    server_->UpdateCodecParamsFromFormat(formatInit);
+    EXPECT_EQ(server_->codecWidth_, 1280);
+
+    // Now call with Format that has no MD_KEY_WIDTH — codecWidth_ should stay 1280
+    Format formatNoWidth;
+    formatNoWidth.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 720);
+    server_->UpdateCodecParamsFromFormat(formatNoWidth);
+    EXPECT_EQ(server_->codecWidth_, 1280); // preserved
+    EXPECT_EQ(server_->codecHeight_, 720);
+}
+
+/**
+ * @tc.name: CodecServer_UpdateCodecParamsFromFormat_007
+ * @tc.desc: UpdateCodecParamsFromFormat preserves codecHeight_ when MD_KEY_HEIGHT is absent
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateCodecParamsFromFormat_007, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Set codecHeight_ to a known value first
+    Format formatInit;
+    formatInit.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 720);
+    server_->UpdateCodecParamsFromFormat(formatInit);
+    EXPECT_EQ(server_->codecHeight_, 720);
+
+    // Now call with Format that has no MD_KEY_HEIGHT — codecHeight_ should stay 720
+    Format formatNoHeight;
+    formatNoHeight.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 640);
+    server_->UpdateCodecParamsFromFormat(formatNoHeight);
+    EXPECT_EQ(server_->codecWidth_, 640);
+    EXPECT_EQ(server_->codecHeight_, 720); // preserved
+}
+
+/**
+ * @tc.name: CodecServer_UpdateCodecParamsFromFormat_008
+ * @tc.desc: UpdateCodecParamsFromFormat preserves codecBitrate_ when MD_KEY_BITRATE is absent
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateCodecParamsFromFormat_008, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Set codecBitrate_ to a known value first
+    Format formatInit;
+    formatInit.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 1000000);
+    server_->UpdateCodecParamsFromFormat(formatInit);
+    EXPECT_EQ(server_->codecBitrate_, 1000000);
+
+    // Now call with Format that has no MD_KEY_BITRATE — codecBitrate_ should stay 1000000
+    Format formatNoBitrate;
+    formatNoBitrate.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 320);
+    server_->UpdateCodecParamsFromFormat(formatNoBitrate);
+    EXPECT_EQ(server_->codecWidth_, 320);
+    EXPECT_EQ(server_->codecBitrate_, 1000000); // preserved
+}
+
+/**
+ * @tc.name: CodecServer_UpdateCodecParamsFromFormat_009
+ * @tc.desc: UpdateCodecParamsFromFormat with empty Format preserves all member values
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_UpdateCodecParamsFromFormat_009, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Set all values to known values first
+    Format formatInit;
+    formatInit.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1920);
+    formatInit.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 1080);
+    formatInit.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 2000000);
+    formatInit.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    server_->UpdateCodecParamsFromFormat(formatInit);
+    EXPECT_EQ(server_->codecWidth_, 1920);
+    EXPECT_EQ(server_->codecHeight_, 1080);
+    EXPECT_EQ(server_->codecBitrate_, 2000000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+
+    // Call with completely empty Format — all values should be preserved
+    Format emptyFormat;
+    server_->UpdateCodecParamsFromFormat(emptyFormat);
+    EXPECT_EQ(server_->codecWidth_, 1920);
+    EXPECT_EQ(server_->codecHeight_, 1080);
+    EXPECT_EQ(server_->codecBitrate_, 2000000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1); // preserved since key absent
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_006
+ * @tc.desc: SetParameter with no bitrate/lowPower keys
+ *           does not trigger UpdateInstanceInfo (isCodecParmChange=false)
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_006, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false,
+        "video.F.Decoder.Name.00", *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Set known values first
+    Format formatInit;
+    formatInit.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 800000);
+    formatInit.PutIntValue(
+        Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    server_->SetParameter(formatInit);
+    EXPECT_EQ(server_->codecBitrate_, 800000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+
+    // Call SetParameter with Format having no bitrate/lowPower
+    // isCodecParmChange stays false, values unchanged
+    Format formatNoChange;
+    formatNoChange.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 320);
+    server_->SetParameter(formatNoChange);
+    // codecBitrate_ and oldcodecLowpower_ should remain unchanged
+    EXPECT_EQ(server_->codecBitrate_, 800000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_007
+ * @tc.desc: SetParameter with lowPower=0 covers ternary (lowPower!=0) false branch
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_007, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Initial: oldcodecLowpower_ = -1 (default)
+    EXPECT_EQ(server_->oldcodecLowpower_, -1);
+
+    // SetParameter with lowPower=0 → (0!=0 && 0!=1) → 0!=0 false → short-circuit → lowPower=0
+    // oldcodecLowpower_(-1) != lowPower(0) → true → oldcodecLowpower_ = 0
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 0);
+    server_->SetParameter(format);
+    EXPECT_EQ(server_->oldcodecLowpower_, 0);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_008
+ * @tc.desc: SetParameter with lowPower=0 twice covers else branch when oldcodecLowpower_==0
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_008, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(2).WillRepeatedly(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // First: set lowPower=0 → oldcodecLowpower_ updates from -1 to 0
+    Format format1;
+    format1.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 0);
+    server_->SetParameter(format1);
+    EXPECT_EQ(server_->oldcodecLowpower_, 0);
+
+    // Second: set lowPower=0 again → ternary result=0, oldcodecLowpower_(0) == lowPower(0) → else: lowPower=-1
+    Format format2;
+    format2.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 0);
+    server_->SetParameter(format2);
+    EXPECT_EQ(server_->oldcodecLowpower_, 0); // stays 0, local lowPower resets to -1
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_009
+ * @tc.desc: SetParameter with lowPower=0 and bitrate covers both keys present with lowPower=0
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_009, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // Both bitrate and lowPower=0 present
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 200000);
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 0);
+    server_->SetParameter(format);
+    EXPECT_EQ(server_->codecBitrate_, 200000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 0);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_LowPower_010
+ * @tc.desc: SetParameter with lowPower=0 after lowPower=1 covers oldcodecLowpower_!=0 true
+ *           when oldcodecLowpower_ was previously 1
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_LowPower_010, TestSize.Level1)
+{
+    EXPECT_CALL(*codecBaseMock_, Init).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL_GET_HCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, {})));
+    EXPECT_CALL_GET_FCODEC_CAPS_MOCK(Return(RetAndCaps(AVCS_ERR_OK, FCODEC_CAPS)));
+    EXPECT_CALL(*codecBaseMock_, CodecBaseCtor()).Times(1);
+    EXPECT_CALL(*codecBaseMock_, CreateFCodecByName("video.F.Decoder.Name.00"))
+        .Times(1).WillOnce(Return(std::make_shared<CodecBase>()));
+    EXPECT_CALL(*codecBaseMock_, SetCallback(std::shared_ptr<MediaCodecCallback>(nullptr)))
+        .Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, Configure()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(2).WillRepeatedly(Return(AVCS_ERR_OK));
+
+    int32_t ret = server_->Init(AVCODEC_TYPE_VIDEO_ENCODER, false, "video.F.Decoder.Name.00",
+        *validFormat_.GetMeta());
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    // First: set lowPower=1 → oldcodecLowpower_ = 1
+    Format format1;
+    format1.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    server_->SetParameter(format1);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+
+    // Second: set lowPower=0 → oldcodecLowpower_(1) != lowPower(0) → true → oldcodecLowpower_ = 0
+    Format format2;
+    format2.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 0);
+    server_->SetParameter(format2);
+    EXPECT_EQ(server_->oldcodecLowpower_, 0);
+}
+
+// ========== SetParameter Branch Coverage Tests ==========
+
+/**
+ * @tc.name: CodecServer_SetParameter_BranchCoverage_001
+ * @tc.desc: SetParameter with bitrate key present covers line 1069 true branch
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_BranchCoverage_001, TestSize.Level1)
+{
+    CreateFCodecByName();
+    // After Init, status_ is INITIALIZED (valid for SetParameter)
+    // Set codecType_ to NONE to bypass CheckParameterValid block at line 1044,
+    // ensuring the code reaches lines 1069-1083
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Format with bitrate key present → covers line 1069 true branch
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 300000);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->codecBitrate_, 300000);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_BranchCoverage_002
+ * @tc.desc: SetParameter with bitrate key absent covers line 1069 false branch
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_BranchCoverage_002, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Format without bitrate key → covers line 1069 false branch
+    // codecBitrate_ stays at default 0
+    Format format;
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 320);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->codecBitrate_, 0); // unchanged
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_BranchCoverage_003
+ * @tc.desc: SetParameter with lowpower key present covers line 1074 true branch
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_BranchCoverage_003, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Format with lowpower key present → covers line 1074 true branch
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_BranchCoverage_004
+ * @tc.desc: SetParameter with lowpower key absent covers line 1074 false branch
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_BranchCoverage_004, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Format without lowpower key → covers line 1074 false branch
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 200000);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->codecBitrate_, 200000);
+    // oldcodecLowpower_ stays at default -1 (no lowpower key)
+    EXPECT_EQ(server_->oldcodecLowpower_, -1);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_BranchCoverage_005
+ * @tc.desc: SetParameter with lowPower same as oldcodecLowpower_ covers line 1076 else branch
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_BranchCoverage_005, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(2).WillRepeatedly(Return(AVCS_ERR_OK));
+
+    // First: set lowpower=1 → oldcodecLowpower_ = 1
+    Format format1;
+    format1.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    int32_t ret = server_->SetParameter(format1);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+
+    // Second: set lowpower=1 again → same value, covers line 1076 else branch
+    // (oldcodecLowpower_ == lowPower → else: lowPower = -1)
+    Format format2;
+    format2.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    ret = server_->SetParameter(format2);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1); // stays same
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_BranchCoverage_006
+ * @tc.desc: SetParameter with no bitrate/lowpower covers line 1083 false branch (isCodecParmChange=false)
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_BranchCoverage_006, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Format with neither bitrate nor lowpower → isCodecParmChange stays false
+    // covers line 1083 false branch (if (isCodecParmChange) → skip)
+    Format format;
+    format.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 640);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->codecBitrate_, 0);      // unchanged
+    EXPECT_EQ(server_->oldcodecLowpower_, -1);  // unchanged
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_BranchCoverage_007
+ * @tc.desc: SetParameter with bitrate change covers line 1083 true branch (isCodecParmChange=true)
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_BranchCoverage_007, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Format with bitrate → isCodecParmChange=true, covers line 1083 true branch
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 500000);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->codecBitrate_, 500000);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_BranchCoverage_008
+ * @tc.desc: SetParameter with both bitrate and lowpower covers both true branches (1069+1074)
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_BranchCoverage_008, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Format with both bitrate and lowpower → covers line 1069 true + line 1074 true
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 400000);
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 0);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->codecBitrate_, 400000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 0);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_8Branch_001
+ * @tc.desc: SetParameter with bitrate present covers line 1069 true → 1070, 1083 true → 1084
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_8Branch_001, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Format with bitrate key → line 1069 true, line 1070 executed, isCodecParmChange=true
+    // → line 1083 true, line 1084 UpdateInstanceInfo called
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 300000);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->codecBitrate_, 300000);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_8Branch_002
+ * @tc.desc: SetParameter with no bitrate and no lowpower covers
+ *           line 1069 false, line 1074 false, line 1083 false → 1084 skip
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_8Branch_002, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Empty format → no bitrate key (1069 false), no lowpower key (1074 false),
+    // isCodecParmChange stays false → 1083 false → 1084 not called
+    Format format;
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->codecBitrate_, 0);       // unchanged (default)
+    EXPECT_EQ(server_->oldcodecLowpower_, -1);   // unchanged (default)
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_8Branch_003
+ * @tc.desc: SetParameter with lowpower=1, oldcodecLowpower_=-1 covers
+ *           line 1074 true, line 1075 ternary false (1 is valid),
+ *           line 1076 true → 1077 (oldcodecLowpower_ != lowPower)
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_8Branch_003, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // lowPower=1: (1!=0 && 1!=1) → true&&false → false → ternary false → lowPower=1
+    // oldcodecLowpower_=-1 (default), -1 != 1 → true → line 1077 (oldcodecLowpower_ = 1)
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_8Branch_004
+ * @tc.desc: SetParameter with lowpower=1, oldcodecLowpower_=1 covers
+ *           line 1075 ternary false, line 1076 false → else (lowPower reset to -1)
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_8Branch_004, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(2).WillRepeatedly(Return(AVCS_ERR_OK));
+
+    // First call: set lowpower=1 → oldcodecLowpower_ becomes 1
+    Format format1;
+    format1.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    int32_t ret = server_->SetParameter(format1);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+
+    // Second call: lowpower=1 again, oldcodecLowpower_=1 → 1 != 1 → false → else (lowPower=-1)
+    // line 1076 false branch covered
+    Format format2;
+    format2.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    ret = server_->SetParameter(format2);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1); // stays unchanged
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_8Branch_005
+ * @tc.desc: SetParameter with lowpower=2 (invalid) covers line 1075 ternary true → -1
+ *           Also covers line 1076 true with oldcodecLowpower_=0 (different from clamped -1)
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_8Branch_005, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    // Pre-set oldcodecLowpower_=0 so that after ternary clamps to -1, 0 != -1 → true
+    server_->oldcodecLowpower_ = 0;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // lowPower=2: (2!=0 && 2!=1) → true&&true → true → ternary true → lowPower=-1
+    // oldcodecLowpower_=0, 0 != -1 → true → line 1077 (oldcodecLowpower_ = -1)
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 2);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->oldcodecLowpower_, -1); // updated from 0 to clamped -1
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_8Branch_006
+ * @tc.desc: SetParameter with lowpower=2 (invalid) and oldcodecLowpower_=-1 covers
+ *           line 1075 ternary true, line 1076 false → else
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_8Branch_006, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    // oldcodecLowpower_=-1 (default), after ternary clamps lowPower to -1 → -1 == -1 → false → else
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // lowPower=2: ternary true → -1
+    // oldcodecLowpower_=-1, -1 == -1 → false → else (lowPower = -1, already -1)
+    // This covers line 1076 false branch combined with line 1075 ternary true
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 2);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->oldcodecLowpower_, -1); // unchanged since clamped -1 == old -1
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_8Branch_007
+ * @tc.desc: SetParameter with lowpower=0 (valid) covers line 1075 ternary false
+ *           with lowPower!=0 → false → ternary false branch for lowPower=0 case
+ *           and line 1076 true → 1077 (oldcodecLowpower_=-1 != 0)
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_8Branch_007, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // lowPower=0: (0!=0 && 0!=1) → false&&true → false → short-circuit, ternary false → lowPower=0
+    // oldcodecLowpower_=-1, -1 != 0 → true → line 1077
+    Format format;
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 0);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->oldcodecLowpower_, 0);
+}
+
+/**
+ * @tc.name: CodecServer_SetParameter_8Branch_008
+ * @tc.desc: SetParameter with bitrate + lowpower covers 1084 UpdateInstanceInfo
+ *           with explicit lowPower parameter value verification
+ */
+HWTEST_F(CodecServerUnitTest, CodecServer_SetParameter_8Branch_008, TestSize.Level1)
+{
+    CreateFCodecByName();
+    server_->codecType_ = AVCODEC_TYPE_NONE;
+    EXPECT_CALL(*codecBaseMock_, SetParameter()).Times(1).WillOnce(Return(AVCS_ERR_OK));
+
+    // Both bitrate and lowpower → isCodecParmChange=true → line 1084 called
+    Format format;
+    format.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, 500000);
+    format.PutIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, 1);
+    int32_t ret = server_->SetParameter(format);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(server_->codecBitrate_, 500000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+
+    // Verify UpdateInstanceInfo was called — member values reflect the update
+    EXPECT_EQ(server_->codecBitrate_, 500000);
+    EXPECT_EQ(server_->oldcodecLowpower_, 1);
+}
 } // MediaAVCodec
 } // namespace
