@@ -65,7 +65,7 @@ constexpr size_t ROI_MATCH_LEFT_INDEX = 2;
 constexpr size_t ROI_MATCH_BOTTOM_INDEX = 3;
 constexpr size_t ROI_MATCH_RIGHT_INDEX = 4;
 constexpr size_t ROI_MATCH_PARAM_INDEX = 5;
-constexpr auto fastKitEnable = true;
+constexpr auto FAST_KIT_ENABLE = true;
 
 std::optional<int32_t> ParseInt32(const std::string &str)
 {
@@ -109,10 +109,10 @@ bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t
     if (width <= 0 || height <= 0) {
         return false;
     }
-    if (fastKitEnable &&
+    if (FAST_KIT_ENABLE &&
         !OHOS::MediaAVCodec::PreProcessing::FastKitsInterface::IsFormatSupported(static_cast<int32_t>(format))) {
         return false;
-    } else if (!fastKitEnable &&
+    } else if (!FAST_KIT_ENABLE &&
                !OHOS::MediaAVCodec::PreProcessing::CpuImageProcessor::IsFormatSupported(static_cast<int32_t>(format))) {
         return false;
     }
@@ -156,21 +156,21 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
 
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
-    if (fastKitEnable) {
+    if (FAST_KIT_ENABLE) {
         fastKitsInterface_.Retain();
     }
 }
 
 Preprocessor::~Preprocessor()
 {
-    if (fastKitEnable) {
+    if (FAST_KIT_ENABLE) {
         fastKitsInterface_.Release();
     }
 }
 
 bool Preprocessor::IsAvailable()
 {
-    if (!fastKitEnable) {
+    if (!FAST_KIT_ENABLE) {
         return false;
     }
     auto &fastKits = PreProcessing::FastKitsInterface::GetInstance();
@@ -257,7 +257,7 @@ int32_t Preprocessor::Configure(const Media::Format &format)
     if (dropParams_.result != ConfigResult::NOT_SET) {
         dropFrameConfig_ = DropFrameConfig(dropParams_);
     }
-    if (fastKitEnable && (cropConfig_.enabled || downsamplingConfig_.enabled)) {
+    if (FAST_KIT_ENABLE && (cropConfig_.enabled || downsamplingConfig_.enabled)) {
         int32_t initRet = fastKitsInterface_.Init(static_cast<uint32_t>(encoderParams_.pixelFormat));
         CHECK_AND_RETURN_RET_LOG(initRet == AVCS_ERR_OK, initRet, "Failed to init FastKitsInterface: %{public}d",
                                  initRet);
@@ -494,7 +494,7 @@ int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    CHECK_AND_RETURN_RET_LOG(fastKitEnable, AVCS_ERR_UNSUPPORT, "Crop requires FastKit");
+    CHECK_AND_RETURN_RET_LOG(FAST_KIT_ENABLE, AVCS_ERR_UNSUPPORT, "Crop requires FastKit");
     PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
     int32_t ret = fastKitsInterface_.Crop(input, output, rect);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit crop failed: %{public}d", ret);
@@ -508,7 +508,7 @@ int32_t Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    CHECK_AND_RETURN_RET_LOG(fastKitEnable, AVCS_ERR_UNSUPPORT, "Downsampling requires FastKit");
+    CHECK_AND_RETURN_RET_LOG(FAST_KIT_ENABLE, AVCS_ERR_UNSUPPORT, "Downsampling requires FastKit");
     int32_t ret = fastKitsInterface_.DownSample(input, output);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit downsampling failed: %{public}d", ret);
     return AVCS_ERR_OK;
@@ -520,7 +520,7 @@ int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    if (fastKitEnable) {
+    if (FAST_KIT_ENABLE) {
         PreProcessing::CropRect rect{0, 0, input->GetHeight() - 1, input->GetWidth() - 1};
         int32_t ret = fastKitsInterface_.Crop(input, output, rect);
 #ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
