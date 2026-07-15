@@ -805,13 +805,6 @@ void DashSegmentDownloader::CalcClearPositionInSegment(const std::shared_ptr<Das
         return;
     }
 
-    uint32_t remainDuration =
-        (segment->bufferPosTail_ - buffer_->GetHead()) * segment->duration_ / segment->contentLength_;
-    if (remainDuration < segmentKeepDuration + SEGMENT_KEEP_DELTA) {
-        clearTail = segment->bufferPosTail_;
-        return;
-    }
-
     if (segmentKeepDuration > 0 &&
         segment->contentLength_ > std::numeric_limits<uint64_t>::max() / segmentKeepDuration) {
         clearTail = segment->bufferPosTail_;
@@ -862,13 +855,16 @@ void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq,
         }
 
         uint32_t remainDuration = (it->bufferPosTail_ - buffer_->GetHead()) * it->duration_ / it->contentLength_;
-        if (remainDuration < segmentKeepDuration) {
+        if (remainDuration < segmentKeepDuration + SEGMENT_KEEP_DELTA &&
+            remainDuration + SEGMENT_KEEP_DELTA >= segmentKeepDuration) {
+            clearTail = it->bufferPosTail_;
+        } else if (remainDuration < segmentKeepDuration) {
             clearTail = it->bufferPosTail_;
             segmentKeepDuration -= remainDuration;
             continue;
+        } else {
+            CalcClearPositionInSegment(it, segmentKeepDuration, clearTail, isEnd);
         }
-
-        CalcClearPositionInSegment(it, segmentKeepDuration, clearTail, isEnd);
         break;
     }
 }
