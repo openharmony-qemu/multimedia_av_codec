@@ -303,12 +303,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         waitTimeUs = 0 - diff;
         RenderAtTimeLog(waitTimeUs);
         if (waitTimeUs > WAIT_TIME_US_THRESHOLD && !needDropOnMute_.load()) {
-            int64_t ptsDiff = static_cast<int64_t>(buffer->pts_ - lastPts_);
-            if (ptsDiff > WAIT_TIME_US_THRESHOLD) {
-                waitTimeUs = ptsDiff;
-            } else {
-                waitTimeUs = WAIT_TIME_US_THRESHOLD;
-            }
+            waitTimeUs = WAIT_TIME_US_THRESHOLD;
         }
     } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms, buffer is late
         tooLate = true;

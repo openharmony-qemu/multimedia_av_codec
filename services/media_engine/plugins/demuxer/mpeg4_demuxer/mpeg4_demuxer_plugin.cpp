@@ -2290,9 +2290,11 @@ Status MPEG4DemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
             MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32 ", by user "
                 PUBLIC_LOG_D32, trackId, cacheDataSize, cachelimitSize_, static_cast<int32_t>(setLimitByUser_));
             outOfLimit_ = true;
+        } else {
+            return Status::OK;
         }
     }
-    return Status::OK;
+    return Status::ERROR_NO_FREE_BUFFER;
 }
 
 Status MPEG4DemuxerPlugin::ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> dstMpeg4Sample, const uint32_t trackIndex)
@@ -2828,6 +2830,7 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
         switch (GetAtomLevel(atom)) {
             case AtomLevel::LEVEL_0: {
                 int32_t originalConfidence = confidence;
+                FALSE_RETURN_V_MSG_E(atom.size < MPEG4_MAX_BOX_DATA_SIZE, 0, "atom data size too large");
                 confidence = GetFtypConfidence(dataReader, chunkDataOffset, chunkDataSize, confidence);
                 FALSE_RETURN_V_NOLOG(!(confidence != FIRST_LEVEL_RANK || confidence == originalConfidence), confidence);
                 break;

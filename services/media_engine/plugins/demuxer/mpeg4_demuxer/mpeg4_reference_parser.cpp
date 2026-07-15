@@ -678,7 +678,7 @@ void MPEG4DemuxerPlugin::ProcessRelativePTS2Index(int64_t pts, int64_t absoluteP
     minRelativePTS_ = minRelativePTS_ > pts ? pts : minRelativePTS_;
     maxRelativePTS_ = maxRelativePTS_ < pts ? pts : maxRelativePTS_;
     
-    int64_t diff = pts - absolutePTS;
+    int64_t diff = 0;
     FALSE_RETURN_MSG(!__builtin_sub_overflow(pts, absolutePTS, &diff), "diff overflow");
     int64_t relativePTSDiff = (diff > 0) ? diff : -diff;
     if (pts < absolutePTS && relativePTSDiff < minRelativePTSDiffOfLeft_) {

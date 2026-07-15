@@ -171,7 +171,7 @@ int32_t AVDemuxerImpl::SeekToTime(int64_t millisecond, SeekMode mode)
 {
     AVCODEC_SYNC_TRACE;
 
-    std::shared_lock<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
 
     AVCODEC_LOGD("Seek to time: millisecond=%{public}" PRId64 "; mode=%{public}d", millisecond, mode);
 

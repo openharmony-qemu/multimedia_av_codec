@@ -285,7 +285,10 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
                          "eos or not video");
     int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
+    FALSE_RETURN_V_MSG_E(pkt->data != nullptr, Status::ERROR_UNKNOWN, "Packet data is nullptr!");
+    std::unique_lock<std::shared_mutex> rLock(sharedReferenceParserMutex_);
     Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
+    rLock.unlock();
     FALSE_RETURN_V_MSG_E(result == Status::OK, result, "parse nal units end! ret=" PUBLIC_LOG_D32,
                          static_cast<int32_t>(result));
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
@@ -402,6 +405,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
 
 Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
+    std::shared_lock<std::shared_mutex> rLock(sharedReferenceParserMutex_);
     FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
     MEDIA_LOG_D("In, dts: " PUBLIC_LOG_D64, videoSample->dts_);
     if (isSdtpExist_) {
