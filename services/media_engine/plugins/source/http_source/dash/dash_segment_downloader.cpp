@@ -52,6 +52,8 @@ constexpr size_t DOWNLOADER_RESUME_THRESHOLD = 2 * 1024 * 1024;
 constexpr int WRITTING_DATA_LOG_FREQUENCY = 20;
 constexpr uint32_t HEADER_MAX_SIZE = 100 * 1024 * 1024;
 constexpr uint32_t BODY_MAX_SIZE = 100 * 1024 * 1024;
+constexpr uint32_t SEGMENT_KEEP_DELTA = 100; // ms
+constexpr uint32_t SEGMENT_KEEP_DURATION = 1000; // ms
 
 static const std::map<MediaAVCodec::MediaType, uint32_t> BUFFER_SIZE_MAP = {
     {MediaAVCodec::MediaType::MEDIA_TYPE_VID, VID_RING_BUFFER_SIZE},
@@ -137,9 +139,10 @@ bool DashSegmentDownloader::Open(const std::shared_ptr<DashSegment>& dashSegment
         DashParseRange(mediaSegment_->byteRange_, mediaSegment_->startRangeValue_, mediaSegment_->endRangeValue_);
     }
 
-    if (mediaSegment_->startRangeValue_ >= 0 && mediaSegment_->endRangeValue_ > mediaSegment_->startRangeValue_) {
-        mediaSegment_->contentLength_ = static_cast<size_t>(mediaSegment_->endRangeValue_ -
-                                                            mediaSegment_->startRangeValue_ + 1);
+    int64_t diff = mediaSegment_->endRangeValue_ - mediaSegment_->startRangeValue_;
+    if (mediaSegment_->startRangeValue_ >= 0 && diff > 0 &&
+        static_cast<uint64_t>(diff) < std::numeric_limits<size_t>::max()) {
+        mediaSegment_->contentLength_ = static_cast<size_t>(diff + 1);
     }
     segmentList_.push_back(mediaSegment_);
     MEDIA_LOG_I("Open enter streamId:" PUBLIC_LOG_D32 " ,seqNum:" PUBLIC_LOG_D64 ", range=" PUBLIC_LOG_D64 "-"
@@ -792,55 +795,76 @@ bool DashSegmentDownloader::CleanSegmentBuffer(bool isCleanAll, int64_t& remainL
     return true;
 }
 
-void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail, bool& isEnd)
+void DashSegmentDownloader::CalcClearPositionInSegment(const std::shared_ptr<DashBufferSegment> &segment,
+    uint32_t segmentKeepDuration, size_t &clearTail, bool &isEnd)
 {
-    // residue segment duration
-    uint32_t remainDuration = 0;
-    uint32_t segmentKeepDuration = 1000; // ms
-    uint32_t segmentKeepDelta = 100; // ms
+    if (segment->contentLength_ == 0 || segment->duration_ == 0) {
+        MEDIA_LOG_I("CalcClearPositionInSegment: contentLength:" PUBLIC_LOG_ZU
+            ", duration:" PUBLIC_LOG_U32, segment->contentLength_, segment->duration_);
+        clearTail = segment->bufferPosTail_;
+        return;
+    }
+
+    if (segmentKeepDuration > 0 &&
+        segment->contentLength_ > std::numeric_limits<uint64_t>::max() / segmentKeepDuration) {
+        clearTail = segment->bufferPosTail_;
+        return;
+    }
+    uint64_t segmentSize =
+        (static_cast<uint64_t>(segmentKeepDuration) * segment->contentLength_) / segment->duration_;
+    if (segmentSize > std::numeric_limits<size_t>::max()) {
+        clearTail = segment->bufferPosTail_;
+        return;
+    }
+    size_t segSize = static_cast<size_t>(segmentSize);
+    if (clearTail > 0) {
+        if (clearTail > std::numeric_limits<size_t>::max() - segSize) {
+            clearTail = segment->bufferPosTail_;
+            return;
+        }
+        clearTail += segSize;
+    } else {
+        size_t head = buffer_->GetHead();
+        if (head > std::numeric_limits<size_t>::max() - segSize) {
+            clearTail = segment->bufferPosTail_;
+            return;
+        }
+        clearTail = head + segSize;
+    }
+    segment->bufferPosTail_ = clearTail;
+    segment->isEos_ = true;
+    isEnd = false;
+}
+
+void DashSegmentDownloader::CleanByTimeInternal(int64_t& remainLastNumberSeq,
+    size_t& clearTail, bool& isEnd)
+{
+    uint32_t segmentKeepDuration = SEGMENT_KEEP_DURATION;
     for (const auto &it: segmentList_) {
-        if (it == nullptr ||
-            buffer_->GetHead() > it->bufferPosTail_ ||
-            it->bufferPosHead_ >= it->bufferPosTail_) {
+        if (it == nullptr || buffer_->GetHead() > it->bufferPosTail_ || it->bufferPosHead_ >= it->bufferPosTail_) {
             continue;
         }
 
         remainLastNumberSeq = it->numberSeq_;
         isEnd = it->isEos_;
-        if (it->contentLength_ == 0 ||
-            it->duration_ == 0) {
-            MEDIA_LOG_I("CleanByTimeInternal: contentLength is:" PUBLIC_LOG_ZU ", duration is:"
-                PUBLIC_LOG_U32, it->contentLength_, it->duration_);
-            // can not caculate segment content length, just keep one segment
+        if (it->contentLength_ == 0 || it->duration_ == 0) {
+            MEDIA_LOG_I("CleanByTimeInternal: contentLength:" PUBLIC_LOG_ZU
+                ", duration:" PUBLIC_LOG_U32, it->contentLength_, it->duration_);
             clearTail = it->bufferPosTail_;
             break;
         }
 
-        remainDuration = (it->bufferPosTail_ - buffer_->GetHead()) * it->duration_ / it->contentLength_;
-        if (remainDuration < segmentKeepDuration + segmentKeepDelta &&
-            remainDuration + segmentKeepDelta >= segmentKeepDuration) {
-            // find clear buffer position with segment tail position
+        uint32_t remainDuration = (it->bufferPosTail_ - buffer_->GetHead()) * it->duration_ / it->contentLength_;
+        if (remainDuration < segmentKeepDuration + SEGMENT_KEEP_DELTA &&
+            remainDuration + SEGMENT_KEEP_DELTA >= segmentKeepDuration) {
             clearTail = it->bufferPosTail_;
         } else if (remainDuration < segmentKeepDuration) {
-            // get next segment buffer
             clearTail = it->bufferPosTail_;
             segmentKeepDuration -= remainDuration;
             continue;
         } else {
-            // find clear buffer position
-            uint32_t segmentSize = (segmentKeepDuration * it->contentLength_) / it->duration_;
-            if (clearTail > 0) {
-                // find clear buffer position in multi segments
-                clearTail += segmentSize;
-            } else {
-                // find clear buffer position in one segment
-                clearTail = buffer_->GetHead() + segmentSize;
-            }
-            it->bufferPosTail_ = clearTail;
-            it->isEos_ = true;
-            isEnd = false;
+            CalcClearPositionInSegment(it, segmentKeepDuration, clearTail, isEnd);
         }
-
         break;
     }
 }
