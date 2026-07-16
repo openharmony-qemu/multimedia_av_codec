@@ -3911,15 +3911,18 @@ Status MediaDemuxer::CopyFrameToUserQueue(int32_t trackId)
     }
     GetMemoryUsage(trackId, pluginTemp);
     int32_t size = 0;
-    Status ret = enableAsyncDemuxer_ ?
-        pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size, timeout_) :
-        pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size);
-    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WAIT_TIMEOUT, ret, "Get size timeout " PUBLIC_LOG_D32, trackId);
-    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, ret, "Get size failed for track " PUBLIC_LOG_D32, trackId);
-    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, ret,
-        "Get size failed for track " PUBLIC_LOG_D32 ", retry", trackId);
-    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Get size failed for track " PUBLIC_LOG_D32, trackId);
-    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WRONG_STATE, ret, " Get size interrupt");
+    Status ret = Status::OK;
+    if (!isPlayerMode_) {
+        ret = enableAsyncDemuxer_ ?
+            pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size, timeout_) :
+            pluginTemp->GetNextSampleSize(static_cast<uint32_t>(innerTrackID), size);
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WAIT_TIMEOUT, ret, "Get size timeout " PUBLIC_LOG_D32, trackId);
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_UNKNOWN, ret, "Get size failed for track " PUBLIC_LOG_D32, trackId);
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_AGAIN, ret,
+            "Get size failed for track " PUBLIC_LOG_D32 ", retry", trackId);
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_NO_MEMORY, ret, "Get size failed for track " PUBLIC_LOG_D32, trackId);
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_WRONG_STATE, ret, " Get size interrupt");
+    }
     int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(trackId);
     bool isHlsSegmentEos = isHls_ && ret == Status::END_OF_STREAM && !source_->IsHlsEnd(streamId);
     if (isHlsSegmentEos) {
