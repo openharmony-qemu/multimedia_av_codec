@@ -49,6 +49,7 @@ constexpr uint32_t HALF_BYTE_BITS = 4;
 constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
 constexpr uint32_t MAX_REORDER_DELAY = 16;
+constexpr uint32_t HALF_BYTE_NUMBER = 2;
 
 Status ConvertTimeScaleRoundNearest(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result)
 {
@@ -596,7 +597,9 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
         return Status::ERROR_UNKNOWN;
     }
 
-    size_t size = numSttsEntries * sizeof(SttsEntry);
+    size_t size = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_mul_overflow(numSttsEntries, sizeof(SttsEntry), &size),
+                         Status::ERROR_INVALID_DATA, "numSttsEntries * sizeof(SttsEntry) overflow");
     auto data = std::make_unique<uint8_t[]>(size);
     ret = dataReader_->ReadUintData(currentOffset, data.get(), size);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
@@ -753,6 +756,7 @@ Status MPEG4SampleHelper::ProcessSampleSizeData(uint32_t atomType, int64_t curre
         while (i < numSampleSizes) {
             uint32_t sampleSize = 0;
             if (fieldSize == HALF_BYTE_BITS) {
+                FALSE_BREAK_LOGD((i / HALF_BYTE_NUMBER) < size, "index > data size");
                 ProcessHalfByteSampleSizes(data.get(), i, numSampleSizes);
             } else if (fieldSize == BYTE_BITS) {
                 sampleSize = data[i];
@@ -853,7 +857,9 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
         return Status::ERROR_UNKNOWN;
     }
 
-    size_t size = numChunkOffsets * unit;
+    size_t size = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_mul_overflow(numChunkOffsets, unit, &size),
+                         Status::ERROR_INVALID_DATA, "Size overflow");
     auto data = std::make_unique<uint8_t[]>(size);
     ret = dataReader_->ReadUintData(currentOffset, data.get(), size);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
@@ -1172,7 +1178,10 @@ bool MPEG4SampleHelper::InsertSampleEntry(SampleIndexEntry&& sample, uint32_t du
         false, "Invalid stts index");
 
     lastPTS_ = std::max(lastPTS_, sample.pts);
-    rawTotalSize_ += sample.size;
+    int64_t newRawTotalSize = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(rawTotalSize_, sample.size, &newRawTotalSize),
+                         false, "rawTotalSize_ overflow");
+    rawTotalSize_ = newRawTotalSize;
     sampleIndexEntry_.insert(sampleIndexEntry_.begin() + sampleIndex, std::move(sample));
     const int64_t insertedDts = sampleIndexEntry_[sampleIndex].dts;
     for (size_t i = static_cast<size_t>(sampleIndex) + 1; i < sampleIndexEntry_.size(); ++i) {
@@ -1228,6 +1237,7 @@ Status MPEG4SampleHelper::ReadTrunRunData(int64_t dataOffset, int64_t dataSize, 
         Status::ERROR_INVALID_DATA);
 
     numSamples = GetU32Value(&header[trunSampleCountOffset]);
+    FALSE_RETURN_V_MSG_E(dataSize > sizeof(header), Status::ERROR_INVALID_BUFFER_SIZE, "Data allocate 0 memory");
     data = std::make_unique<uint8_t[]>(dataSize - sizeof(header));
     ret = dataReader_->ReadUintData(dataOffset + sizeof(uint64_t), data.get(), dataSize - sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
@@ -1575,7 +1585,11 @@ Status MPEG4SampleHelper::BuildEditListSampleEntry(const SampleIndexEntry& oldEn
 
     processCtx.newEntry = oldEntry;
     processCtx.newEntry.dts = processCtx.dtsCounter;
-    processCtx.newEntry.pts = processCtx.dtsCounter + dtsShift_ + currCtts;
+    int64_t tmpSum = 0;
+    if (__builtin_add_overflow(processCtx.dtsCounter, dtsShift_, &tmpSum) ||
+        __builtin_add_overflow(tmpSum, currCtts, &processCtx.newEntry.pts)) {
+        return Status::ERROR_INVALID_DATA;
+    }
     processCtx.newEntry.duration = frameDuration;
     processCtx.skipSamplesInfo.clear();
     bool outsideEdit = currCts < edit.mediaTime || currCts >= processCtx.editEndTime;
@@ -1619,7 +1633,11 @@ Status MPEG4SampleHelper::AppendEditListSample(const SampleIndexEntry& oldEntry,
         buildCtx.newSkipSamplesInfo[newSampleIndex] = std::move(processCtx.skipSamplesInfo);
     }
     if (processCtx.editListStartEncountered) {
-        processCtx.dtsCounter += buildCtx.newEntries.back().duration;
+        int64_t newDtsCounter = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(processCtx.dtsCounter, buildCtx.newEntries.back().duration,
+                                                     &newDtsCounter),
+                             Status::ERROR_INVALID_DATA, "DtsCounter + duration overflow");
+        processCtx.dtsCounter = newDtsCounter;
     }
     if (processCtx.frameEndTime >= processCtx.editEndTime && (IsSyncSample(oldEntry) || trackType_ == AUDIO_TYPE)) {
         if (!cttsEntry_.empty() && trackType_ != AUDIO_TYPE && !processCtx.foundKeyframeAfterEdit) {

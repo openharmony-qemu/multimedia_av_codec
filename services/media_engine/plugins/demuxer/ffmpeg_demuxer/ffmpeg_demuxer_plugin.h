@@ -439,6 +439,7 @@ private:
     IOContext parserRefIoContext_;
     std::shared_ptr<AVFormatContext> parserRefCtx_{nullptr};
     int parserRefIdx_ = -1;
+    std::shared_mutex sharedReferenceParserMutex_;
     std::shared_ptr<ReferenceParserManager> referenceParser_{nullptr};
     int32_t parserCurGopId_ = 0;
     int64_t pendingSeekMsTime_ = -1;

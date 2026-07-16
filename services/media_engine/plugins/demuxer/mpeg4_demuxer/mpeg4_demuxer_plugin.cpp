@@ -2881,6 +2881,7 @@ int32_t GetConfidence(std::shared_ptr<DemuxerDataReader> dataReader)
         switch (GetAtomLevel(atom)) {
             case AtomLevel::LEVEL_0: {
                 int32_t originalConfidence = confidence;
+                FALSE_RETURN_V_MSG_E(atom.size < MPEG4_MAX_BOX_DATA_SIZE, 0, "atom data size too large");
                 confidence = GetFtypConfidence(dataReader, chunkDataOffset, chunkDataSize, confidence);
                 FALSE_RETURN_V_NOLOG(!(confidence != FIRST_LEVEL_RANK || confidence == originalConfidence), confidence);
                 break;

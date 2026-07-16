@@ -67,7 +67,7 @@ constexpr int64_t HDR_VIVID_TAG_LENGTH = 31;
 constexpr int64_t HDR_VIVID_TAG_OFFSET = 43;
 constexpr int32_t MATRIX_SIZE = 4;
 constexpr int32_t MAX_DEPTH = 10;
-constexpr int32_t MIN_CODECPARAM_EXTRADATA_SIZE = 14;
+constexpr int32_t MIN_CODECPARAM_EXTRADATA_SIZE = 15;
 constexpr uint64_t MAX_TITLE_SIZE = 24;
 constexpr uint64_t MAX_EXTRA_DATA_SIZE = 1024 * 1024;
 constexpr uint64_t MAX_DATA_SIZE = 256;
@@ -826,8 +826,11 @@ Status MPEG4AtomParser::ParseFtyp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     bool hasGltfBrand = false;
     if (compatibleBrandsCount > 0) {
         for (uint32_t i = 0; i < compatibleBrandsCount; ++i) {
+            uint32_t pos = 8 + 4 * i;
+            FALSE_RETURN_V_MSG_E(pos <= currentAtom.dataSize - sizeof(uint32_t), Status::ERROR_INVALID_DATA,
+                                 "Invalid ftypInfo pos number");
             // 解析和存储所有brands, 跳过 minor version，从第8字节开始
-            uint32_t compatibleBrand = GetU32Value(&ftypInfo[8 + 4 * i]);
+            uint32_t compatibleBrand = GetU32Value(&ftypInfo[pos]);
             std::string brandStr = FourccToString(compatibleBrand);
             ctx->compatibleBrands.insert(compatibleBrand);
             hasGltfBrand = hasGltfBrand || compatibleBrand == static_cast<uint32_t>(FourccType("glti"));
@@ -2521,7 +2524,12 @@ Status MPEG4AtomParser::SetVorbisAudioAttribute()
     }
     currentOffset += 0x0A;
     int32_t channels = vorbisData[currentOffset];
-    AudioChannelLayout channelLayout = FLAC_CHANNEL_LAYOUT_TABLE.find(channels) -> second;
+    auto it = FLAC_CHANNEL_LAYOUT_TABLE.find(channels);
+    if (it == FLAC_CHANNEL_LAYOUT_TABLE.end()) {
+        MEDIA_LOG_E("FLAC_CHANNEL_LAYOUT_TABLE can't find vorbis channels");
+        return Status::ERROR_INVALID_DATA;
+    }
+    AudioChannelLayout channelLayout = it -> second;
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
     return Status::OK;
 }
@@ -4237,6 +4245,7 @@ Status MPEG4AtomParser::ParseMoof(const std::shared_ptr<Track>& track, int64_t o
         FALSE_RETURN_V_MSG_E(
             currentOffset + static_cast<int64_t>(atom.size) <= moofEndOffset, Status::ERROR_INVALID_DATA,
             "Invalid moof size: " PUBLIC_LOG_U64 ", moof end offset: " PUBLIC_LOG_D64, atom.size, moofEndOffset);
+        FALSE_RETURN_V_MSG_E(atom.size >= atom.headerSize, Status::ERROR_INVALID_DATA, "atom.size < atom.headerSize");
         atom.dataSize = atom.size - atom.headerSize;
         atom.dataOffset = currentOffset + static_cast<int64_t>(atom.headerSize); // Skip size and type
         MEDIA_LOG_D("Processing box: " PUBLIC_LOG_S ", size: " PUBLIC_LOG_U64 " at offset " PUBLIC_LOG_D64,
@@ -4267,7 +4276,7 @@ Status MPEG4AtomParser::ProcessTfhdAtom(const MPEG4Atom& atom)
     }
     if (!currentTrack_ || !currentTrack_->sampleHelper) {
         MEDIA_LOG_W("tfhd: TrackId " PUBLIC_LOG_U32 " not found or has no sampleHelper", trackId);
-        return Status::OK;
+        return Status::ERROR_INVALID_DATA;
     }
 
     int64_t tfhdDataOffset = atom.dataOffset + sizeof(tfhdHeader);
