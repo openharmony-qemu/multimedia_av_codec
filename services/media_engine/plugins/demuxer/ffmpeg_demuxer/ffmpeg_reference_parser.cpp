@@ -419,6 +419,7 @@ Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSam
 
 Status FFmpegDemuxerPlugin::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
 {
+    std::shared_lock<std::shared_mutex> rLock(sharedReferenceParserMutex_);
     FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
     MEDIA_LOG_D("In, dts: " PUBLIC_LOG_U32, frameId);
     return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
@@ -426,6 +427,7 @@ Status FFmpegDemuxerPlugin::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &
 
 Status FFmpegDemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
+    std::shared_lock<std::shared_mutex> rLock(sharedReferenceParserMutex_);
     FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
     MEDIA_LOG_D("In, gopId: " PUBLIC_LOG_U32, gopId);
     return referenceParser_->GetGopLayerInfo(gopId, gopLayerInfo);
