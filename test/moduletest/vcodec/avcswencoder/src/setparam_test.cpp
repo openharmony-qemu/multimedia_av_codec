@@ -30,7 +30,7 @@ const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t DEFAULT_FRAME_RATE = 30;
-constexpr uint32_t DEFAULT__KEY_FRAME_INTERVAL = 1000;
+constexpr uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
 } // namespace
 namespace OHOS {
 namespace Media {
@@ -287,7 +287,7 @@ HWTEST_F(AvcSwEncSetParamNdkTest, RESET_INVALID_KEY_003, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
     ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
     OH_AVFormat *format = OH_AVFormat_Create();
-    (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_FRAME_INTERVAL);
+    (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_I_FRAME_INTERVAL, DEFAULT_KEY_FRAME_INTERVAL);
     EXPECT_EQ(AV_ERR_INVALID_VAL, vEncSample->SetParameter(format));
     OH_AVFormat_Destroy(format);
     vEncSample->WaitForEOS();
