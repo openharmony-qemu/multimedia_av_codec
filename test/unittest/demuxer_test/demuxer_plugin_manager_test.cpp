@@ -974,27 +974,6 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0025, TestSize.
     RemoveValue();
 }
 
-HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0026, TestSize.Level1)
-{
-    if (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.skip", "0") == "1") {
-        return;
-    }
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
-    ASSERT_EQ(PluginSelectTracks(), true);
-    ASSERT_EQ(PluginReadAllSample(), true);
-    ASSERT_EQ(ResultAssert(1875, 0, 1875, 0), true);
-    RemoveValue();
-}
-
-HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0027, TestSize.Level1)
-{
-    if (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.skip", "0") == "1") {
-        return;
-    }
-    ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MATROSKA, DEF_PROB_SIZE), false);
-    RemoveValue();
-}
-
 HWTEST_F(DemuxerPluginManagerUnitTest, Demuxer_Mp4InitCheck_0001, TestSize.Level1)
 {
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MP4_2, DEF_PROB_SIZE), true);

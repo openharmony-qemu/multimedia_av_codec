@@ -69,7 +69,6 @@ protected:
     std::map<uint32_t, bool> eosFlag_;
     bool readFlag_ = false;
     bool seekTestFlag_ = false;
-    bool useMpeg4_ = true;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

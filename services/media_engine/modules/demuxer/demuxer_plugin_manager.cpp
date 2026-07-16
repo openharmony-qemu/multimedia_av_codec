@@ -718,11 +718,7 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
     MEDIA_LOG_D("MediaTypeFound, pluginName: " PUBLIC_LOG_S ", id: " PUBLIC_LOG_D32, pluginName.c_str(), id);
     Status st = InitPlugin(streamDemuxer, pluginName, id);
     MEDIA_LOG_D("MediaTypeFound, InitPlugin ret: " PUBLIC_LOG_D32, static_cast<int32_t>(st));
-    if (st == Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT) {
-        MEDIA_LOG_I("MediaTypeFound, retry with avdemux_mov");
-        st = InitPlugin(streamDemuxer, "avdemux_mov,mp4,m4a,3gp,3g2,mj2", id);
-        FALSE_RETURN_MSG(st == Status::OK, "Init plugin error.");
-    } else if (st != Status::OK) {
+    if (st != Status::OK) {
         MEDIA_LOG_E("Init plugin error.");
     }
 }

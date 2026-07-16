@@ -12,7 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "avc_parser_impl.h"
 #include "multi_stream_parser_manager.h"
 #include <dlfcn.h>
 #include "common/log.h"
@@ -31,18 +30,6 @@ std::mutex MultiStreamParserManager::mtx_;
 std::map<VideoStreamType, void *> MultiStreamParserManager::handlerMap_ {};
 std::map<VideoStreamType, CreateFunc> MultiStreamParserManager::createFuncMap_ {};
 std::map<VideoStreamType, DestroyFunc> MultiStreamParserManager::destroyFuncMap_ {};
-
-StreamParser *CreateH264StreamParser()
-{
-    auto avcParser = std::make_unique<AvcParserImpl>();
-    return avcParser.release();
-}
-
-void DestroyH264StreamParser(StreamParser* avcParser)
-{
-    delete avcParser;
-    avcParser = nullptr;
-}
 
 MultiStreamParserManager::~MultiStreamParserManager()
 {
@@ -84,11 +71,6 @@ bool MultiStreamParserManager::Init(VideoStreamType videoStreamType)
     }
 
     std::string streamParserPath;
-    if (videoStreamType == VideoStreamType::AVC) {
-        createFuncMap_[videoStreamType] = &CreateH264StreamParser;
-        destroyFuncMap_[videoStreamType] = &DestroyH264StreamParser;
-        return true;
-    }
     if (videoStreamType == VideoStreamType::HEVC) {
         streamParserPath = HEVC_LIB_PATH;
     } else if (videoStreamType == VideoStreamType::VVC) {
@@ -97,16 +79,14 @@ bool MultiStreamParserManager::Init(VideoStreamType videoStreamType)
         MEDIA_LOG_E("Unsupport stream parser type");
         return false;
     }
-    if (videoStreamType != VideoStreamType::AVC) {
-        if (handlerMap_.count(videoStreamType) == 0) {
-            handlerMap_[videoStreamType] = LoadLib(streamParserPath);
-        }
-        if (!CheckSymbol(handlerMap_[videoStreamType], videoStreamType)) {
-            MEDIA_LOG_E("Load stream parser failed");
-            dlclose(handlerMap_[videoStreamType]);
-            handlerMap_.erase(videoStreamType);
-            return false;
-        }
+    if (handlerMap_.count(videoStreamType) == 0) {
+        handlerMap_[videoStreamType] = LoadLib(streamParserPath);
+    }
+    if (!CheckSymbol(handlerMap_[videoStreamType], videoStreamType)) {
+        MEDIA_LOG_E("Load stream parser failed");
+        dlclose(handlerMap_[videoStreamType]);
+        handlerMap_.erase(videoStreamType);
+        return false;
     }
     return true;
 }
@@ -225,12 +205,6 @@ uint32_t MultiStreamParserManager::GetPicWidInLumaSamples(uint32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), 0, "Stream parser is invalid");
     return streamMap_[trackId].parser->GetPicWidInLumaSamples();
-}
-
-double MultiStreamParserManager::GetSar(uint32_t trackId)
-{
-    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), 0, "Stream parser is invalid");
-    return streamMap_[trackId].parser->GetSar();
 }
 
 uint32_t MultiStreamParserManager::GetPicHetInLumaSamples(uint32_t trackId)
