@@ -160,7 +160,7 @@ private:
         uint32_t targetPeriodIndex {0};
         std::shared_ptr<DashStreamDescription> newStream {nullptr};
         bool pending {false};
-    }
+    };
     std::mutex pendingSwitchMutex_;
     PendingPeriodSwitch pendingVideoSwitch_;
     PendingPeriodSwitch pendingAudioSwitch_;
