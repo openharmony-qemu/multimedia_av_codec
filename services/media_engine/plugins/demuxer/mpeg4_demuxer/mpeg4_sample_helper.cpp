@@ -48,6 +48,7 @@ constexpr uint32_t HALF_BYTE_BITS = 4;
 constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
 constexpr uint32_t MAX_REORDER_DELAY = 16;
+constexpr uint32_t HALF_BYTE_NUMBER = 2;
 
 Status ConvertTimeScaleRoundNearest(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result)
 {
@@ -746,7 +747,7 @@ Status MPEG4SampleHelper::ProcessSampleSizeData(uint32_t atomType, int64_t curre
         while (i < numSampleSizes) {
             uint32_t sampleSize = 0;
             if (fieldSize == HALF_BYTE_BITS) {
-                FALSE_BREAK_LOGD((i / 2) < size, "index > data size");
+                FALSE_BREAK_LOGD((i / HALF_BYTE_NUMBER) < size, "index > data size");
                 ProcessHalfByteSampleSizes(data.get(), i, numSampleSizes);
             } else if (fieldSize == BYTE_BITS) {
                 sampleSize = data[i];
