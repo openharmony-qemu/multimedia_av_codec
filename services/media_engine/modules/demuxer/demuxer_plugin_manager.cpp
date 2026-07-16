@@ -723,7 +723,7 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
         st = InitPlugin(streamDemuxer, "avdemux_mov,mp4,m4a,3gp,3g2,mj2", id);
         FALSE_RETURN_MSG(st == Status::OK, "Init plugin error.");
     } else if (st != Status::OK) {
-       MEDIA_LOG_E("Init plugin error.");
+        MEDIA_LOG_E("Init plugin error.");
     }
 }
 
