@@ -124,6 +124,12 @@ private:
     bool NeedRestartDecoder(const std::shared_ptr<DashStreamDescription>& oldStream,
         const std::shared_ptr<DashStreamDescription>& newStream);
     void SwitchToPeriod(uint32_t newPeriodIndex);
+    void SwitchStreamToPeriod(uint32_t newPeriodIndex,
+        const std::shared_ptr<DashSegmentDownloader> &triggerDownloader);
+    void SwitchOtherStreamToPeriod(uint32_t newPeriodIndex, MediaAVCodec::MediaType otherType,
+        const std::shared_ptr<DashStreamDescription> &newVideoStream,
+        const std::shared_ptr<DashStreamDescription> &newAudioStream);
+    bool ApplyPendingPeriodSwitch(const std::shared_ptr<DashSegmentDownloader> &segDownloader);
     bool GetStreamsForPeriodSwitch(uint32_t newPeriodIndex,
         std::shared_ptr<DashStreamDescription> &oldVideoStream,
         std::shared_ptr<DashStreamDescription> &newVideoStream,
@@ -150,6 +156,14 @@ private:
     DashMpdTrackParam trackParam_;
     DashPreparedAction preparedAction_;
     std::mutex switchMutex_;
+    struct PendingPeriodSwitch {
+        uint32_t targetPeriodIndex {0};
+        std::shared_ptr<DashStreamDescription> newStream {nullptr};
+        bool pending {false};
+    }
+    std::mutex pendingSwitchMutex_;
+    PendingPeriodSwitch pendingVideoSwitch_;
+    PendingPeriodSwitch pendingAudioSwitch_;
     std::mutex parseSidxMutex_;
     uint64_t expectDuration_{0};
     std::mutex bufferingMutex_;
