@@ -406,7 +406,7 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
         return;
     }
     if (length > 0 && length < DEFAULT_MAX_SIZE) {
-        if (offset > DEFAULT_MAX_SIZE - length) {
+        if (offset > SIZE_MAX - length) {
             MEDIA_LOG_W("ParseMap: offset + length overflow, offset " PUBLIC_LOG_ZU " length " PUBLIC_LOG_ZU,
                 offset, length);
             return;
