@@ -766,10 +766,10 @@ Status MPEG4AtomParser::ParseFtyp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     if (compatibleBrandsCount > 0) {
         for (uint32_t i = 0; i < compatibleBrandsCount; ++i) {
             uint32_t pos = 8 + 4 * i;
-            FALSE_RETURN_V_MSG_E(pos < currentAtom.dataSize, Status::ERROR_INVALID_DATA,
+            FALSE_RETURN_V_MSG_E(pos <= currentAtom.dataSize - sizeof(uint32_t), Status::ERROR_INVALID_DATA,
                                  "Invalid ftypInfo pos number");
             // 解析和存储所有brands, 跳过 minor version，从第8字节开始
-            uint32_t compatibleBrand = GetU32Value(&ftypInfo[8 + 4 * i]);
+            uint32_t compatibleBrand = GetU32Value(&ftypInfo[pos]);
             std::string brandStr = FourccToString(compatibleBrand);
             ctx->compatibleBrands.insert(compatibleBrand);
             hasGltfBrand = hasGltfBrand || compatibleBrand == static_cast<uint32_t>(FourccType("glti"));
@@ -1408,7 +1408,6 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
         }
         if (lastTrack_->sampleHelper->BuildSampleIndexEntries() != Status::OK) {
             MEDIA_LOG_E("BuildSampleIndexEntry failed");
-            return Status::ERROR_INVALID_DATA;
         }
     }
     SetCodecConfig(lastTrack_);

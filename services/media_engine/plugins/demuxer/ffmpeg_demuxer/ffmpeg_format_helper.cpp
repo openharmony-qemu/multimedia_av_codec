@@ -560,10 +560,6 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
                 MEDIA_LOG_D("Parse user data info " PUBLIC_LOG_S " failed, value too short", valPtr->key);
                 continue;
             }
-             if (strlen(valPtr->value) > MAX_EXTRADATA_SIZE) {
-                MEDIA_LOG_D("Parse user data info " PUBLIC_LOG_S " failed, value too long", valPtr->key);
-                continue;
-            }
             if (StartWith(valPtr->value, "00000000")) { // reserved
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: reserved", (valPtr->key + KEY_PREFIX_LEN));
                 SetToFormatIfConvertSuccess(
@@ -1219,10 +1215,6 @@ void FFmpegFormatHelper::ParseInfoFromMetadata(
         }
         MEDIA_LOG_D("SupportMeta:" PUBLIC_LOG_S, valPtr->key);
         // ffmpeg use ';' to contact all single value in vorbis-comment, need to remove duplicates
-        if (strlen(valPtr->value) > MAX_EXTRADATA_SIZE) {
-            MEDIA_LOG_E("UnsupportMeta length:" PUBLIC_LOG_U32, strlen(valPtr->value));
-            continue;
-        }
         std::string value = RemoveDuplication(std::string(valPtr->value));
         format.SetData(tagRange[tempKey], value);
         AVDictionaryEntry *textEncodingPtr = nullptr;

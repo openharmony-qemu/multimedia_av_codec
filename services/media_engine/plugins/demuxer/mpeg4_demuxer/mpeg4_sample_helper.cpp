@@ -746,7 +746,7 @@ Status MPEG4SampleHelper::ProcessSampleSizeData(uint32_t atomType, int64_t curre
         while (i < numSampleSizes) {
             uint32_t sampleSize = 0;
             if (fieldSize == HALF_BYTE_BITS) {
-                FALSE_CONTINUE_LOGD((i / 2) < size, "index > data size");
+                FALSE_BREAK_LOGD((i / 2) < size, "index > data size");
                 ProcessHalfByteSampleSizes(data.get(), i, numSampleSizes);
             } else if (fieldSize == BYTE_BITS) {
                 sampleSize = data[i];
@@ -1163,10 +1163,10 @@ bool MPEG4SampleHelper::InsertSampleEntry(SampleIndexEntry&& sample, uint32_t du
         false, "Invalid stts index");
 
     lastPTS_ = std::max(lastPTS_, sample.pts);
-    int64_t newRawTotalSize_ = 0;
-    FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(rawTotalSize_, sample.size, &newRawTotalSize_),
+    int64_t newRawTotalSize = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(rawTotalSize_, sample.size, &newRawTotalSize),
                          false, "rawTotalSize_ overflow");
-    rawTotalSize_ = newRawTotalSize_;
+    rawTotalSize_ = newRawTotalSize;
     sampleIndexEntry_.insert(sampleIndexEntry_.begin() + sampleIndex, std::move(sample));
     const int64_t insertedDts = sampleIndexEntry_[sampleIndex].dts;
     for (size_t i = static_cast<size_t>(sampleIndex) + 1; i < sampleIndexEntry_.size(); ++i) {

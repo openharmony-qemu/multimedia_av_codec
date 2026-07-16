@@ -4329,11 +4329,8 @@ int64_t MediaDemuxer::DoBeforeSubtitleTrackReadLoop(int32_t trackId)
     auto subtitleDemuxerPlugin = demuxerPluginManager_->GetPluginByStreamID(subtitleStreamId);
     FALSE_RETURN_V_MSG_E(subtitleDemuxerPlugin != nullptr, RETRY_DELAY_TIME_US,
         "Invalid demuxer plugin, unabled to read subtitle sample");
-    int32_t innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
-    FALSE_RETURN_V_MSG_E(innerTrackID != INVALID_STREAM_OR_TRACK_ID, RETRY_DELAY_TIME_US,
-        "Invalid innerTrackID, unabled to read innerTrackID BY TrackID");
     uint32_t cacheSize = 0;
-    auto res = subtitleDemuxerPlugin->GetCurrentCacheSize(innerTrackID, cacheSize);
+    auto res = subtitleDemuxerPlugin->GetCurrentCacheSize(trackId, cacheSize);
     // Only if demuxer plugin has subtitle cache can read subtitle sample
     if (res == Status::OK && cacheSize > 0) {
         MEDIA_LOG_DD("Demuxer plugin has cached subtitle data size " PUBLIC_LOG_U32, cacheSize);

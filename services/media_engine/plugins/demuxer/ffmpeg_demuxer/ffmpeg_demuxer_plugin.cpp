@@ -3680,11 +3680,9 @@ Status FFmpegDemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
             MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " cache out of limit: " PUBLIC_LOG_U32 "/" PUBLIC_LOG_U32 ", by user "
                 PUBLIC_LOG_D32, trackId, cacheDataSize, cachelimitSize_, static_cast<int32_t>(setLimitByUser));
             outOfLimit_ = true;
-        } else {
-            return Status::OK;
         }
     }
-    return Status::ERROR_NO_FREE_BUFFER;
+    return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
