@@ -207,6 +207,12 @@ uint32_t MultiStreamParserManager::GetPicWidInLumaSamples(uint32_t trackId)
     return streamMap_[trackId].parser->GetPicWidInLumaSamples();
 }
 
+double MultiStreamParserManager::GetSar(uint32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), 0, "Stream parser is invalid");
+    return streamMap_[trackId].parser->GetSar();
+}
+
 uint32_t MultiStreamParserManager::GetPicHetInLumaSamples(uint32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), 0, "Stream parser is invalid");
