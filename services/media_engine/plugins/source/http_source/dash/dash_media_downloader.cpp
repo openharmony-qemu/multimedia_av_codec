@@ -906,6 +906,47 @@ int64_t DashMediaDownloader::GetVideoSeekTime(int64_t seekTimeMs)
     return mpdDownloader_->SeekToTs(videoSegmentDownloader->GetStreamId(), seekTimeMs, segment);
 }
 
+void DashMediaDownloader::SeekToSegment(const std::shared_ptr<DashSegmentDownloader> &segDownloader,
+    int64_t seekTimeMs, bool isSwitching)
+{
+    if (segDownloader == nullptr) {
+        return;
+    }
+    std::shared_ptr<DashSegment> segment;
+    int32_t streamId = static_cast<int32_t>(segDownloader->GetStreamId());
+    mpdDownloader_->SeekToTs(segDownloader->GetStreamId(), seekTimeMs, segment);
+    if (segment == nullptr) {
+        MEDIA_LOG_I("Dash SeekToTs end streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
+            segDownloader->GetStreamId(), segDownloader->GetStreamType());
+        int64_t remainLastNumberSeq = -1;
+        segDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
+        segDownloader->SetAllSegmentFinished();
+        this->HandleSeekReady(static_cast<int32_t>(segDownloader->GetStreamType()), streamId, seekTimeMs, 1);
+        return;
+    }
+
+    if (segDownloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_VID &&
+        segDownloader->GetBufferSize() == 0 && seekTimeMs == 0) {
+        segDownloader->NotifyInitSuccess();
+    }
+    MEDIA_LOG_D("Dash SeekToTs segment " PUBLIC_LOG_D64 ", duration:"
+        PUBLIC_LOG_U32, segment->numberSeq_, segment->duration_);
+    std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
+        segDownloader->GetStreamId());
+    if (!isSwitching && segDownloader->SeekToTime(segment, streamId)) {
+        MEDIA_LOG_I("Dash SeekToTs of buffered streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
+            segDownloader->GetStreamId(), segDownloader->GetStreamType());
+        segDownloader->SetInitSegment(initSeg, true);
+    } else {
+        int64_t remainLastNumberSeq = -1;
+        segDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
+        mpdDownloader_->SetCurrentNumberSeqByStreamId(segDownloader->GetStreamId(), segment->numberSeq_);
+        segDownloader->SetInitSegment(initSeg, true);
+        segDownloader->Open(segment);
+    }
+    this->HandleSeekReady(static_cast<int32_t>(segDownloader->GetStreamType()), streamId, seekTimeMs, 0);
+}
+
 void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
 {
     bool isSwitching = IsSeekingInSwitch();
@@ -926,42 +967,7 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
     }
     segmentDownloaders_.ForeachSnapshot([this, seekTimeMs, isSwitching](
         const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
-        if (segDownloader == nullptr) {
-            return;
-        }
-        std::shared_ptr<DashSegment> segment;
-        int32_t streamId = static_cast<int32_t>(segDownloader->GetStreamId());
-        mpdDownloader_->SeekToTs(segDownloader->GetStreamId(), seekTimeMs, segment);
-        if (segment == nullptr) {
-            MEDIA_LOG_I("Dash SeekToTs end streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
-                segDownloader->GetStreamId(), segDownloader->GetStreamType());
-            int64_t remainLastNumberSeq = -1;
-            segDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
-            segDownloader->SetAllSegmentFinished();
-            this->HandleSeekReady(static_cast<int32_t>(segDownloader->GetStreamType()), streamId, seekTimeMs, 1);
-            return;
-        }
-
-        if (segDownloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_VID &&
-            segDownloader->GetBufferSize() == 0 && seekTimeMs == 0) {
-            segDownloader->NotifyInitSuccess();
-        }
-        MEDIA_LOG_D("Dash SeekToTs segment " PUBLIC_LOG_D64 ", duration:"
-            PUBLIC_LOG_U32, segment->numberSeq_, segment->duration_);
-        std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
-            segDownloader->GetStreamId());
-        if (!isSwitching && segDownloader->SeekToTime(segment, streamId)) {
-            MEDIA_LOG_I("Dash SeekToTs of buffered streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
-                segDownloader->GetStreamId(), segDownloader->GetStreamType());
-            segDownloader->SetInitSegment(initSeg, true);
-        } else {
-            int64_t remainLastNumberSeq = -1;
-            segDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
-            mpdDownloader_->SetCurrentNumberSeqByStreamId(segDownloader->GetStreamId(), segment->numberSeq_);
-            segDownloader->SetInitSegment(initSeg, true);
-            segDownloader->Open(segment);
-        }
-        this->HandleSeekReady(static_cast<int32_t>(segDownloader->GetStreamType()), streamId, seekTimeMs, 0);
+        SeekToSegment(segDownloader, seekTimeMs, isSwitching);
     });
 }
 

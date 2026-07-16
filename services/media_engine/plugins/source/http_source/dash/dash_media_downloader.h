@@ -129,6 +129,8 @@ private:
     void SwitchOtherStreamToPeriod(uint32_t newPeriodIndex, MediaAVCodec::MediaType otherType,
         const std::shared_ptr<DashStreamDescription> &newVideoStream,
         const std::shared_ptr<DashStreamDescription> &newAudioStream);
+    void SeekToSegment(const std::shared_ptr<DashSegmentDownloader> &segDownloader,
+    int64_t seekTimeMs, bool isSwitching);
     bool ApplyPendingPeriodSwitch(const std::shared_ptr<DashSegmentDownloader> &segDownloader);
     bool GetStreamsForPeriodSwitch(uint32_t newPeriodIndex,
         std::shared_ptr<DashStreamDescription> &oldVideoStream,
