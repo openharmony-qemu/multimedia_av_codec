@@ -96,7 +96,7 @@ static bool CheckBitsPerSample(int32_t bitsPerCodedSample)
 
 int32_t AudioFFMpegFlacEncoderPlugin::SetContext(const Format &format)
 {
-    int32_t complianceLevel = MIN_COMPLIANCE_LEVEL - 1;
+    int32_t complianceLevel = 0;
     int32_t bitsPerCodedSample = -1;
     auto avCodecContext = basePlugin->GetCodecContext();
     format.GetIntValue(MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL, complianceLevel);
@@ -133,7 +133,7 @@ int32_t AudioFFMpegFlacEncoderPlugin::CheckFormat(const Format &format)
     int32_t channelCount = -1;
     int32_t sampleRate = -1;
     int32_t bitsPerCodedSample = -1;
-    int32_t complianceLevel = MIN_COMPLIANCE_LEVEL - 1;
+    int32_t complianceLevel = 0;
     int64_t channelLayout = -1;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channelCount);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampleRate);
