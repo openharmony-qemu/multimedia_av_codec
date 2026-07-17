@@ -5290,7 +5290,7 @@ Status MediaDemuxer::RequestDstBuffer(int32_t trackId, int32_t size, std::shared
 Status MediaDemuxer::CopyAndPushBufferBySlices(int32_t trackId, std::shared_ptr<AVBuffer> &srcBuffer,
     std::shared_ptr<AVBuffer> &dstBuffer, int32_t sliceSize)
 {
-    auto srcBufferSize = sliceSize == 0 ? srcBuffer->memory_->GetSize() : sliceSize;
+    auto srcBufferSize = sliceSize == 0 ? srcBuffer->memory_->GetSize() - srcBuffer->memory_->GetOffset() : sliceSize;
     int32_t copySize = std::min(dstBuffer->memory_->GetCapacity(), srcBufferSize);
     MEDIA_LOG_D("prepare to copy: %{public}d, dest cap: %{public}d, src buf id: %{public}" PRIu64,
         copySize, dstBuffer->memory_->GetCapacity(), srcBuffer->GetUniqueId());
