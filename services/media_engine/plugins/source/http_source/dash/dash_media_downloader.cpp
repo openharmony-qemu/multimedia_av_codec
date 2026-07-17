@@ -1489,6 +1489,10 @@ bool DashMediaDownloader::GetStreamsForPeriodSwitch(uint32_t newPeriodIndex,
 void DashMediaDownloader::SwitchVideoStream(const std::shared_ptr<DashStreamDescription> &newVideoStream,
     const std::shared_ptr<DashSegmentDownloader> &segDownloader)
 {
+    if (newVideoStream == nullptr || segDownloader == nullptr) {
+        MEDIA_LOG_E("newVideoStream or segDownloader is null");
+        return;
+    }
     int64_t remainLastNumberSeq = -1;
     segDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
 
@@ -1518,6 +1522,10 @@ void DashMediaDownloader::SwitchVideoStream(const std::shared_ptr<DashStreamDesc
 void DashMediaDownloader::SwitchAudioStream(const std::shared_ptr<DashStreamDescription> &newAudioStream,
     const std::shared_ptr<DashSegmentDownloader> &segDownloader)
 {
+    if (newAudioStream == nullptr || segDownloader == nullptr) {
+        MEDIA_LOG_E("newAudioStream or segDownloader is null");
+        return;
+    }
     int64_t remainLastNumberSeq = -1;
     segDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
 
