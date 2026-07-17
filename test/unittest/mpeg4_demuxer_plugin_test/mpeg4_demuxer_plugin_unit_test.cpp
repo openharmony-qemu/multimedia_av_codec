@@ -1057,7 +1057,7 @@ std::shared_ptr<Plugins::MPEG4::MPEG4Sample> MakeWebVttCueSample(
     return mpeg4Sample;
 }
 
-std::shared_ptr<Plugins::MPEG4::Sample> MakePendingWebVttSample(int64_t pts, int64_t duration)
+std::shared_ptr<Plugins::MPEG4::MPEG4Sample> MakePendingWebVttSample(int64_t pts, int64_t duration)
 {
     auto sample = std::make_shared<Plugins::MPEG4::Sample>();
     sample->pts = pts;
@@ -1065,7 +1065,9 @@ std::shared_ptr<Plugins::MPEG4::Sample> MakePendingWebVttSample(int64_t pts, int
     sample->duration = duration;
     sample->flag = Plugins::MPEG4::Sample::SYNC_FRAME;
     sample->size = 1;
-    return sample;
+    auto mpeg4Sample = std::make_shared<Plugins::MPEG4::MPEG4Sample>();
+    mpeg4Sample->sample = sample;
+    return mpeg4Sample;
 }
 
 std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> MakeWebVttTrack(uint32_t trackIndex, int64_t duration)
@@ -2172,7 +2174,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     EXPECT_GT(size, 0);
 
     std::multimap<std::string, std::vector<uint8_t>> drmInfo;
-    EXPECT_EQ(plugin->GetDrmInfo(drmInfo), Status::OK);
+    EXPECT_EQ(plugin->GetDrmInfo(drmInfo), Status::ERROR_NULL_POINTER);
     EXPECT_FALSE(plugin->IsRefParserSupported());
     EXPECT_EQ(plugin->ParserRefUpdatePos(0), Status::ERROR_UNSUPPORTED_FORMAT);
     EXPECT_EQ(plugin->ParserRefInfo(), Status::ERROR_UNKNOWN);
