@@ -57,7 +57,7 @@ ohos_shared_library("avc_encoder") {
   ]
 
   external_deps = [
-    "bounds_checking_function:libsec_static",
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",

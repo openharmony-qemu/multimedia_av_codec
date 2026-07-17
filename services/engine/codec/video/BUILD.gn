@@ -51,7 +51,7 @@ ohos_source_set("av_codec_video_loader") {
   ]
 
   external_deps = [
-    "bounds_checking_function:libsec_static",
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
