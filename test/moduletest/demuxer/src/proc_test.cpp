@@ -1918,6 +1918,8 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0100, TestSize.Level2
     const char *file = INP_DIR_1;
     g_fd = open(file, O_RDONLY);
     CheckFile(file, g_fd, &source, &demuxer, &g_trackCount);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     int tarckType = 0;
     int auidoTrackCount = 2;
     bool videoIsEnd = false;
@@ -1972,6 +1974,8 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0200, TestSize.Level2
     const char *file = INP_DIR_2;
     g_fd = open(file, O_RDONLY);
     CheckFile(file, g_fd, &source, &demuxer, &g_trackCount);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     int tarckType = 0;
     int videoTrackCount = 2;
     bool audioIsEnd = false;
