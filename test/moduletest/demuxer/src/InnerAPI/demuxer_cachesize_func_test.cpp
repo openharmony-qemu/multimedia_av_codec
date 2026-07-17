@@ -63,7 +63,7 @@ namespace {
 void UpdateCacheSizeForPlugin(std::vector<std::vector<int32_t>>& cacheCheckSteps)
 {
     std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
-    if(enable != "1") {
+    if (enable != "1") {
         return;
     }
     printf("Using mpeg4 demuxer, update cache size for check\n");
