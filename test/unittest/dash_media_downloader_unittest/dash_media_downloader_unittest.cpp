@@ -1277,7 +1277,7 @@ HWTEST_F(DashMediaDownloaderUnittest, ApplyPendingPeriodSwitch_004, TestSize.Lev
 
     auto ret = mediaDownloader_->ApplyPendingPeriodSwitch(audioDownloader);
     EXPECT_EQ(ret, true);
-    EXPECT_EQ(mediaDownloader_->pendingVideoSwitch_.pending, false);
+    EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.pending, false);
 }
 
 /**
@@ -1300,7 +1300,7 @@ HWTEST_F(DashMediaDownloaderUnittest, ApplyPendingPeriodSwitch_005, TestSize.Lev
 /**
  * @tc.name  : Test SwitchStreamToPeriod - triggerDownloader is nullptr
  * @tc.number: SwitchStreamToPeriod_001
- * @tc.desc  : Test SwitchStreamToPeriod returns early when truggerDownloader is nullptr
+ * @tc.desc  : Test SwitchStreamToPeriod returns early when triggerDownloader is nullptr
  */
 HWTEST_F(DashMediaDownloaderUnittest, SwitchStreamToPeriod_001, TestSize.Level0)
 {
@@ -1366,10 +1366,10 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchStreamToPeriod_003, TestSize.Level0)
     newAudioStream->periodIndex_ = 1;
     newAudioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
 
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldAudioStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newAudioStream);
 
     std::shared_ptr<Callback> callback = nullptr;
     auto videoDownloader = std::make_shared<DashSegmentDownloader>(
@@ -1423,10 +1423,10 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchStreamToPeriod_004, TestSize.Level0)
     newAudioStream->periodIndex_ = 1;
     newAudioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
 
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldAudioStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newAudioStream);
 
     std::shared_ptr<Callback> callback = nullptr;
     auto videoDownloader = std::make_shared<DashSegmentDownloader>(
@@ -1447,7 +1447,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchStreamToPeriod_004, TestSize.Level0)
 }
 
 /**
- * @tc.name  : Test SwitchStreamToPeriod - video trigger + video buffer empty
+ * @tc.name  : Test SwitchStreamToPeriod - audio trigger + video buffer empty
  * @tc.number: SwitchStreamToPeriod_005
  * @tc.desc  : Test SwitchStreamToPeriod when audio triggers, video buffer is empty -> both switch immediately
  */
@@ -1480,10 +1480,10 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchStreamToPeriod_005, TestSize.Level0)
     newAudioStream->periodIndex_ = 1;
     newAudioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
 
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldAudioStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newAudioStream);
 
     std::shared_ptr<Callback> callback = nullptr;
     auto videoDownloader = std::make_shared<DashSegmentDownloader>(
@@ -1500,11 +1500,11 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchStreamToPeriod_005, TestSize.Level0)
 
     mediaDownloader_->SwitchStreamToPeriod(1, audioDownloader);
     EXPECT_EQ(mediaDownloader_->currentPeriodIndex_, 1);
-    EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.pending, false);
+    EXPECT_EQ(mediaDownloader_->pendingVideoSwitch_.pending, false);
 }
 
 /**
- * @tc.name  : Test SwitchStreamToPeriod - video trigger + video buffer not empty
+ * @tc.name  : Test SwitchStreamToPeriod - audio trigger + video buffer not empty
  * @tc.number: SwitchStreamToPeriod_006
  * @tc.desc  : Test SwitchStreamToPeriod when audio triggers, video has data -> video deferred
  */
@@ -1537,10 +1537,10 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchStreamToPeriod_006, TestSize.Level0)
     newAudioStream->periodIndex_ = 1;
     newAudioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
 
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldAudioStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newAudioStream);
 
     std::shared_ptr<Callback> callback = nullptr;
     auto videoDownloader = std::make_shared<DashSegmentDownloader>(
@@ -1558,8 +1558,8 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchStreamToPeriod_006, TestSize.Level0)
     mediaDownloader_->SwitchStreamToPeriod(1, audioDownloader);
     EXPECT_EQ(mediaDownloader_->currentPeriodIndex_, 1);
     // Video should be deferred since IsAllSegmentFinished is false
-    EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.pending, true);
-    EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.targetPeriodIndex, 1u);
+    EXPECT_EQ(mediaDownloader_->pendingVideoSwitch_.pending, true);
+    EXPECT_EQ(mediaDownloader_->pendingVideoSwitch_.targetPeriodIndex, 1u);
 }
 
 /**
@@ -1584,13 +1584,13 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_001, TestSize.Le
     // No segment downloaders, so GetSegmentDownloaderByType returns nullptr
     mediaDownloader_->SwitchOtherStreamToPeriod(1, MediaAVCodec::MediaType::MEDIA_TYPE_VID,
         newVideoStream, newAudioStream);
-    EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.pending, false);
+    EXPECT_EQ(mediaDownloader_->pendingVideoSwitch_.pending, false);
 }
 
 /**
  * @tc.name  : Test SwitchOtherStreamToPeriod - video buffer empty, switch immediately
  * @tc.number: SwitchOtherStreamToPeriod_002
- * @tc.desc  : Test SwitchOtherStreamToPeriod switchs video immediately when buffer is empty
+ * @tc.desc  : Test SwitchOtherStreamToPeriod switches video immediately when buffer is empty
  */
 HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_002, TestSize.Level0)
 {
@@ -1614,7 +1614,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_002, TestSize.Le
 
     mediaDownloader_->SwitchOtherStreamToPeriod(1, MediaAVCodec::MediaType::MEDIA_TYPE_VID,
         newVideoStream, newAudioStream);
-    EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.pending, false);
+    EXPECT_EQ(mediaDownloader_->pendingVideoSwitch_.pending, false);
 }
 
 /**
@@ -1639,19 +1639,19 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_003, TestSize.Le
     auto videoDownloader = std::make_shared<DashSegmentDownloader>(
         callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
     videoDownloader->Init();
-    // IsAllSegmentFinished is false by default-> buffer "not empty"
+    // IsAllSegmentFinished is false by default -> buffer "not empty"
     mediaDownloader_->segmentDownloaders_.PushBack(videoDownloader);
 
     mediaDownloader_->SwitchOtherStreamToPeriod(1, MediaAVCodec::MediaType::MEDIA_TYPE_VID,
         newVideoStream, newAudioStream);
-    EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.pending, true);
-    EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.targetPeriodIndex, 1u);
+    EXPECT_EQ(mediaDownloader_->pendingVideoSwitch_.pending, true);
+    EXPECT_EQ(mediaDownloader_->pendingVideoSwitch_.targetPeriodIndex, 1u);
 }
 
 /**
  * @tc.name  : Test SwitchOtherStreamToPeriod - audio buffer empty, switch immediately
  * @tc.number: SwitchOtherStreamToPeriod_004
- * @tc.desc  : Test SwitchOtherStreamToPeriod switchs audio immediately when buffer is empty
+ * @tc.desc  : Test SwitchOtherStreamToPeriod switches audio immediately when buffer is empty
  */
 HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_004, TestSize.Level0)
 {
@@ -1668,7 +1668,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_004, TestSize.Le
 
     std::shared_ptr<Callback> callback = nullptr;
     auto audioDownloader = std::make_shared<DashSegmentDownloader>(
-        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
+        callback, 2, MediaAVCodec::MediaType::MEDIA_TYPE_AUD, 0, nullptr);
     audioDownloader->Init();
     audioDownloader->SetAllSegmentFinished();
     mediaDownloader_->segmentDownloaders_.PushBack(audioDownloader);
@@ -1698,9 +1698,9 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_005, TestSize.Le
 
     std::shared_ptr<Callback> callback = nullptr;
     auto audioDownloader = std::make_shared<DashSegmentDownloader>(
-        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
+        callback, 2, MediaAVCodec::MediaType::MEDIA_TYPE_AUD, 0, nullptr);
     audioDownloader->Init();
-    // IsAllSegmentFinished is false by default-> buffer "not empty"
+    // IsAllSegmentFinished is false by default -> buffer "not empty"
     mediaDownloader_->segmentDownloaders_.PushBack(audioDownloader);
 
     mediaDownloader_->SwitchOtherStreamToPeriod(1, MediaAVCodec::MediaType::MEDIA_TYPE_AUD,
@@ -1725,7 +1725,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_006, TestSize.Le
 
     std::shared_ptr<Callback> callback = nullptr;
     auto audioDownloader = std::make_shared<DashSegmentDownloader>(
-        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
+        callback, 2, MediaAVCodec::MediaType::MEDIA_TYPE_AUD, 0, nullptr);
     audioDownloader->Init();
     mediaDownloader_->segmentDownloaders_.PushBack(audioDownloader);
 
@@ -1735,11 +1735,11 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_006, TestSize.Le
 }
 
 /**
- * @tc.name  : Test SwitchOtherStreamToPeriod - no audio stream in new period
- * @tc.number: SwitchOtherStreamToPeriod_007
- * @tc.desc  : Test SwitchOtherStreamToPeriod when newAudioStream is nullptr(no audio in new period)
+ * @tc.name  : Test SwitchStreamToPeriod - no audio stream in new period
+ * @tc.number: SwitchStreamToPeriod_007
+ * @tc.desc  : Test SwitchStreamToPeriod when newAudioStream is nullptr(no audio in new period)
  */
-HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_007, TestSize.Level0)
+HWTEST_F(DashMediaDownloaderUnittest, SwitchStreamToPeriod_007, TestSize.Level0)
 {
     ASSERT_NE(mediaDownloader_, nullptr);
     mediaDownloader_->currentPeriodIndex_ = 0;
@@ -1758,13 +1758,14 @@ HWTEST_F(DashMediaDownloaderUnittest, SwitchOtherStreamToPeriod_007, TestSize.Le
     newVideoStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
 
     // No audio stream in new period
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
 
     std::shared_ptr<Callback> callback = nullptr;
     auto videoDownloader = std::make_shared<DashSegmentDownloader>(
         callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
     videoDownloader->Init();
+    videoDownloader->SetAllSegmentFinished();
     mediaDownloader_->segmentDownloaders_.PushBack(videoDownloader);
 
     mediaDownloader_->SwitchStreamToPeriod(1, videoDownloader);
@@ -1800,7 +1801,7 @@ HWTEST_F(DashMediaDownloaderUnittest, SeekInternal_PendingSwitch_001, TestSize.L
 /**
  * @tc.name  : Test ApplyPendingPeriodSwitch after deferred switch
  * @tc.number: ApplyPendingPeriodSwitch_DeferredFlow_001
- * @tc.desc  : Test the full flow: SwitchStreamPeriod defers audio, then ApplyPendingPeriodSwitch applies it
+ * @tc.desc  : Test the full flow: SwitchStreamToPeriod defers audio, then ApplyPendingPeriodSwitch applies it
  */
 HWTEST_F(DashMediaDownloaderUnittest, ApplyPendingPeriodSwitch_DeferredFlow_001, TestSize.Level0)
 {
@@ -1831,10 +1832,10 @@ HWTEST_F(DashMediaDownloaderUnittest, ApplyPendingPeriodSwitch_DeferredFlow_001,
     newAudioStream->periodIndex_ = 1;
     newAudioStream->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_AUD;
 
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(oldAudioStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newVideoStream);
-    mediaDownloader_->mpdDownloader_->streamDesciptions_.push_back(newAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(oldAudioStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newVideoStream);
+    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(newAudioStream);
 
     std::shared_ptr<Callback> callback = nullptr;
     auto videoDownloader = std::make_shared<DashSegmentDownloader>(
@@ -1856,6 +1857,7 @@ HWTEST_F(DashMediaDownloaderUnittest, ApplyPendingPeriodSwitch_DeferredFlow_001,
     auto ret = mediaDownloader_->ApplyPendingPeriodSwitch(audioDownloader);
     EXPECT_EQ(ret, true);
     EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.pending, false);
+}
 }
 }
 }
