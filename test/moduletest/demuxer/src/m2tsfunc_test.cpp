@@ -1358,7 +1358,7 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0900, TestSize.
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
         ASSERT_NE(source, nullptr);
-        SSERT_NE(demuxer, nullptr);
+        ASSERT_NE(demuxer, nullptr);
         CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
         CheckTrackSelect();
         CheckSourceKey(1, 1, 5500000);
