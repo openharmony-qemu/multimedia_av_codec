@@ -35,8 +35,6 @@ constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
 constexpr uint32_t STOP_TIME_OUT_MS = 2000;
 constexpr uint32_t MAX_STOPPED_FRAMES_FOR_BOOST = 2;
-//Codec wait timeout with no video frame received
-constexpr uint32_t AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED = 50001 ;
 namespace OHOS {
 namespace Media {
 
@@ -934,7 +932,7 @@ void SurfaceEncoderAdapter::HandleWaitforStop()
     if (waitStatus == std::cv_status::timeout && currentKeyFramePts_ == -1) {
         MEDIA_LOG_E("Codec wait timeout with no video frame received");
         encoderAdapterCallback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
-                                         AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED);
+                                         static_cast<int32_t>(Status::ERROR_AVCODEC_TIMEOUT_NO_VIDEO_FRAMES_RECEIVED));
     }
 }
 
