@@ -82,6 +82,11 @@ enum MediaChangeResult : int32_t {
     MEDIA_CHANGE_FAILED = 1,
 };
 
+enum ReadSampleMode : uint8_t {
+    READ_SAMPLE_SYNC = 0,
+    READ_SAMPLE_ASYNC = 1
+}
+
 struct MediaChangeInfo {
     bool isLocalFd;
     int32_t streamType;
@@ -174,6 +179,8 @@ public:
     void OnDashSeekReadyEvent(const Plugins::PluginEvent &event);
     void OnHlsSeekReadyEvent(const Plugins::PluginEvent &event);
     void OnDfxEvent(const Plugins::PluginDfxEvent &event) override;
+    void SetReadSampleMode(ReadSampleMode readSampleMode);
+    void SetReadSampleTimeout(uint32_t timeoutMs);
 
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
 
@@ -720,6 +727,7 @@ private:
     bool hasSetLargeSize_ {false};
 
     uint32_t timeout_ = {10}; // 10 represents 10ms. Optimization can consider dynamic adjustment.
+    ReadSampleMode readSampleMode_ = READ_SAMPLE_SYNC;  // Readsample sync or async, sync by default
     bool enableAsyncDemuxer_ = true;
 
     bool enableDfxBufferQueue_ {false};
