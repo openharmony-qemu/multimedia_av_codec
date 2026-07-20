@@ -75,7 +75,7 @@ const std::map<AVCodecServiceErrCode, std::string> AVCS_ERRCODE_INFOS = {
     {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, "video unsupported color space conversion"},
     {AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION,        "unsuported codec specification"},
     {AVCS_ERR_ILLEGAL_PARAMETER_SETS,                 "illegal parameter sets"},
-    {AVCS_ERR_MINSSING_PARAMETER_SETS,                "missing parameter sets"}};
+    {AVCS_ERR_MISSING_PARAMETER_SETS,                "missing parameter sets"}};
 
 
 const std::map<AVCodecServiceErrCode, std::string> AVCS_NAME_INFOS = {
@@ -139,7 +139,7 @@ const std::map<AVCodecServiceErrCode, std::string> AVCS_NAME_INFOS = {
     {AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION, "VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION"},
     {AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION, "UNSUPPORTED_CODEC_SPECIFICATION"},
     {AVCS_ERR_ILLEGAL_PARAMETER_SETS, "ILLEGAL_PARAMETER_SETS"},
-    {AVCS_ERR_MINSSING_PARAMETER_SETS, "MISSING_PARAMETER_SETS"},
+    {AVCS_ERR_MISSING_PARAMETER_SETS, "MISSING_PARAMETER_SETS"},
     {AVCS_ERR_INSUFFICIENT_HARDWARE_RESOURCES, "INSUFFICIENT_HARDWARE_RESOURCES"}
 };
 

@@ -122,9 +122,9 @@ void VDecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
         } else if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS) {
             dec_sample->errCodeResult = AVCS_ERR_ILLEGAL_PARAMETER_SETS;
             cout << "AVCS_ERR_ILLEGAL_PARAMETER_SETS" << endl;
-        } else if (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS) {
-            dec_sample->errCodeResult = AVCS_ERR_MINSSING_PARAMETER_SETS;
-            cout << "AVCS_ERR_MINSSING_PARAMETER_SETS" << endl;
+        } else if (errorCode == AVCS_ERR_MISSING_PARAMETER_SETS) {
+            dec_sample->errCodeResult = AVCS_ERR_MISSING_PARAMETER_SETS;
+            cout << "AVCS_ERR_MISSING_PARAMETER_SETS" << endl;
         }
         dec_sample->isRunning_.store(false);
         innersignal_->inCond_.notify_all();
