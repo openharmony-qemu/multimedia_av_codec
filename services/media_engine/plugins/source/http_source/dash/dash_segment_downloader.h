@@ -187,6 +187,7 @@ private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     void PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, const std::string &url);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
+    void CloseInternal(bool isAsync, bool isClean);
     bool UpdateInitSegmentFinish();
     uint32_t GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment);
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
@@ -232,6 +233,7 @@ private:
     std::shared_ptr<DashBufferSegment> mediaSegment_;
     std::list<std::shared_ptr<DashBufferSegment>> segmentList_;
     std::vector<std::shared_ptr<DashInitSegment>> initSegments_;
+    std::mutex closeMutex_;
     std::mutex segmentMutex_;
     std::mutex initSegmentMutex_;
     mutable std::shared_mutex downloaderMutex_;
