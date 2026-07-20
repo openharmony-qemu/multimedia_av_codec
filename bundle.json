@@ -325,16 +325,6 @@
           },
           {
             "type": "so",
-            "name": "//foundation/multimedia/av_codec/services/media_engine/plugins/demuxer:media_plugin_Mpeg4Demuxer",
-            "header": {
-              "header_files": [
-                "reference_parser.h"
-              ],
-              "header_base": "//foundation/multimedia/av_codec/services/media_engine/plugins/demuxer/common"
-            }
-          },
-          {
-            "type": "so",
             "name": "//foundation/multimedia/av_codec/services/engine/codec/video/hevcdecoder:hevc_decoder",
             "header": {
               "header_files": [
