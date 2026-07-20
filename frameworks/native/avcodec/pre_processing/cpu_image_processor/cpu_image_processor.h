@@ -25,22 +25,12 @@ namespace PreProcessing {
 
 enum class CpuImageOperation {
     COPY,
-    CROP,
-    DOWNSAMPLE,
-};
-
-struct CpuImageCropRect {
-    int32_t left{0};
-    int32_t top{0};
-    int32_t width{0};
-    int32_t height{0};
 };
 
 struct CpuImageProcessRequest {
     sptr<SurfaceBuffer> input;
     sptr<SurfaceBuffer> output;
     CpuImageOperation operation{CpuImageOperation::COPY};
-    CpuImageCropRect crop;
 };
 
 class CpuImageProcessor {
