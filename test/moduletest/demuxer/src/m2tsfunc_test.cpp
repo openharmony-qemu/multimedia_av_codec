@@ -531,6 +531,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0100, TestSize.Level
     const char *file = "/data/test/media/h264_aac.m2ts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(602, 3, 472, 472);
@@ -547,6 +549,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0200, TestSize.Level
     const char *file = "/data/test/media/h264_mp3.m2ts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(602, 3, 420, 420);
@@ -564,6 +568,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0300, TestSize.Level
         const char *file = "/data/test/media/h265_aac.m2ts";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
+        ASSERT_NE(source, nullptr);
+        ASSERT_NE(demuxer, nullptr);
         CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
         CheckTrackSelect();
             CheckFrames(602, 3, 472, 472);
@@ -582,6 +588,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0400, TestSize.Level
         const char *file = "/data/test/media/h265_mp3.m2ts";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
+        ASSERT_NE(source, nullptr);
+        ASSERT_NE(demuxer, nullptr);
         CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
         CheckTrackSelect();
         CheckFrames(602, 3, 420, 420);
@@ -599,6 +607,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0500, TestSize.Level
     const char *file = "/data/test/media/mpeg2_aac.m2ts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(303, 26, 434, 434);
@@ -615,6 +625,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_0600, TestSize.Level
     const char *file = "/data/test/media/mpeg2_mp3.m2ts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(303, 26, 387, 387);
@@ -732,6 +744,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, M2TS_DEMUXER_FUNCTION_TEST_1000, TestSize.Level
     const char *file = "/data/test/media/multi_trk.m2ts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 3);
     CheckTrackSelect();
     FramesMultiTrks(60, 1, 145, 145);
@@ -1147,6 +1161,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0100, TestSize.
     const char *file = "/data/test/media/264_audiovivid_short_pts.flv";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(123, 1, 43, 43);
@@ -1165,6 +1181,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0200, TestSize.
         const char *file = "/data/test/media/265_audiovivid_short_pts.flv";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
+        ASSERT_NE(source, nullptr);
+        ASSERT_NE(demuxer, nullptr);
         CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
         CheckTrackSelect();
         CheckFrames(242, 1, 43, 43);
@@ -1307,6 +1325,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0800, TestSize.
     const char *file = "/data/test/media/264_audiovivid_short_pts.flv";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckSourceKey(1, 1, 5566000);
@@ -1337,6 +1357,8 @@ HWTEST_F(DemuxerM2tsFuncNdkTest, FLV_AUDIOVIVID_DEMUXER_FUNCTION_0900, TestSize.
         const char *file = "/data/test/media/265_audiovivid_short_pts.flv";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
+        ASSERT_NE(source, nullptr);
+        ASSERT_NE(demuxer, nullptr);
         CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
         CheckTrackSelect();
         CheckSourceKey(1, 1, 5500000);

@@ -459,6 +459,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0100, TestSize.Level0)
     const char *file = "/data/test/media/h264_aac.mts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(602, 3, 472, 472);
@@ -475,6 +477,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0200, TestSize.Level0)
     const char *file = "/data/test/media/h264_mp3.mts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(602, 3, 420, 420);
@@ -492,6 +496,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0300, TestSize.Level0)
         const char *file = "/data/test/media/h265_aac.mts";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
+        ASSERT_NE(source, nullptr);
+        ASSERT_NE(demuxer, nullptr);
         CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
         CheckTrackSelect();
         CheckFrames(602, 3, 472, 472);
@@ -510,6 +516,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0400, TestSize.Level0)
         const char *file = "/data/test/media/h265_mp3.mts";
         int fd = open(file, O_RDONLY);
         OpenFile(file, fd, &source, &demuxer);
+        ASSERT_NE(source, nullptr);
+        ASSERT_NE(demuxer, nullptr);
         CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
         CheckTrackSelect();
         CheckFrames(602, 3, 420, 420);
@@ -527,6 +535,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0500, TestSize.Level0)
     const char *file = "/data/test/media/mpeg2_aac.mts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(303, 26, 434, 434);
@@ -543,6 +553,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0600, TestSize.Level0)
     const char *file = "/data/test/media/mpeg2_mp3.mts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(303, 26, 387, 387);
@@ -559,6 +571,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0700, TestSize.Level0)
     const char *file = "/data/test/media/mpeg4_aac.mts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(303, 26, 434, 434);
@@ -575,6 +589,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_0800, TestSize.Level0)
     const char *file = "/data/test/media/mpeg4_mp3.mts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(303, 26, 387, 387);
@@ -692,6 +708,8 @@ HWTEST_F(DemuxerMtsFuncNdkTest, MTS_DEMUXER_FUNCTION_TEST_1200, TestSize.Level2)
     const char *file = "/data/test/media/multi_trk.mts";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 4);
     CheckTrackSelect();
     FramesMultiTrks(120, 6, 145, 145);
