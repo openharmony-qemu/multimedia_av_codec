@@ -41,7 +41,6 @@ public:
                       SmartFluencyDecoding::AsyncDropOutputCallback outputCb);
     void CleanResources();
     void Flush();
-    bool IsSfdActive() const;
     bool ShouldReportDfx() const;
     void EnableMVOutput(Media::Format& format);
     void OnInputBufferAvailable(uint32_t index, const std::shared_ptr<AVBuffer>& buffer);

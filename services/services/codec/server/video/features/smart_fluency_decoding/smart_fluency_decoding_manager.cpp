@@ -263,11 +263,6 @@ void SmartFluencyDecodingManager::Flush()
     }
 }
 
-bool SmartFluencyDecodingManager::IsSfdActive() const
-{
-    return sfd_ != nullptr;
-}
-
 bool SmartFluencyDecodingManager::ShouldReportDfx() const
 {
     if (sfd_ == nullptr) {
