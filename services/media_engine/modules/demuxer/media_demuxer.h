@@ -85,7 +85,7 @@ enum MediaChangeResult : int32_t {
 enum ReadSampleMode : uint8_t {
     READ_SAMPLE_SYNC = 0,
     READ_SAMPLE_ASYNC = 1
-}
+};
 
 struct MediaChangeInfo {
     bool isLocalFd;
