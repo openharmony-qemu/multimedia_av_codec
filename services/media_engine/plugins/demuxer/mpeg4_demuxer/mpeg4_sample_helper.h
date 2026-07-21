@@ -165,6 +165,13 @@ private:
         uint32_t dataOffset = 0;
         uint32_t index = 0;
     };
+    struct TrunSampleInitContext {
+        uint32_t trunFlag = 0;
+        const uint8_t* data = nullptr;
+        size_t dataSize = 0;
+        uint32_t bufferOffset = 0;
+        uint32_t firstSampleFlag = 0;
+    };
     struct SampleIndexBuildContext {
         int64_t currentOffset = 0;
         uint32_t chunkIndex = 0;
@@ -319,8 +326,7 @@ private:
         std::unique_ptr<uint8_t[]>& data);
     bool IsValidTrunSampleData(int64_t dataSize, uint32_t bufferOffset, uint32_t byteLength,
         uint32_t numSamples) const;
-    Status InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
-        const uint8_t* data, size_t dataSize, uint32_t& firstSampleFlag);
+    Status InitSampleInfo(SampleInfo& sampleInfo, TrunSampleInitContext& initContext);
     void UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
         uint8_t* data, uint32_t firstSampleFlag);
     SampleIndexEntry CreateSampleEntry(const SampleInfo& sampleInfo, int64_t offset, int64_t currentDts,

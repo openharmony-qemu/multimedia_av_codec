@@ -419,14 +419,24 @@ std::vector<uint8_t> BuildStscData(const std::vector<std::tuple<uint32_t, uint32
 std::vector<uint8_t> BuildTrunData(uint32_t flags, uint32_t sampleCount, size_t payloadSize)
 {
     constexpr size_t trunHeaderSize = 8;
+    constexpr size_t flagsFirstByteIndex = 1;
+    constexpr size_t flagsSecondByteIndex = 2;
+    constexpr size_t flagsThirdByteIndex = 3;
+    constexpr size_t sampleCountFirstByteIndex = 4;
+    constexpr size_t sampleCountSecondByteIndex = 5;
+    constexpr size_t sampleCountThirdByteIndex = 6;
+    constexpr size_t sampleCountFourthByteIndex = 7;
+    constexpr uint32_t firstByteShift = 24;
+    constexpr uint32_t secondByteShift = 16;
+    constexpr uint32_t thirdByteShift = 8;
     std::vector<uint8_t> data(trunHeaderSize + payloadSize, 0);
-    data[1] = static_cast<uint8_t>((flags >> 16) & 0xFF);
-    data[2] = static_cast<uint8_t>((flags >> 8) & 0xFF);
-    data[3] = static_cast<uint8_t>(flags & 0xFF);
-    data[4] = static_cast<uint8_t>((sampleCount >> 24) & 0xFF);
-    data[5] = static_cast<uint8_t>((sampleCount >> 16) & 0xFF);
-    data[6] = static_cast<uint8_t>((sampleCount >> 8) & 0xFF);
-    data[7] = static_cast<uint8_t>(sampleCount & 0xFF);
+    data[flagsFirstByteIndex] = static_cast<uint8_t>((flags >> secondByteShift) & 0xFF);
+    data[flagsSecondByteIndex] = static_cast<uint8_t>((flags >> thirdByteShift) & 0xFF);
+    data[flagsThirdByteIndex] = static_cast<uint8_t>(flags & 0xFF);
+    data[sampleCountFirstByteIndex] = static_cast<uint8_t>((sampleCount >> firstByteShift) & 0xFF);
+    data[sampleCountSecondByteIndex] = static_cast<uint8_t>((sampleCount >> secondByteShift) & 0xFF);
+    data[sampleCountThirdByteIndex] = static_cast<uint8_t>((sampleCount >> thirdByteShift) & 0xFF);
+    data[sampleCountFourthByteIndex] = static_cast<uint8_t>(sampleCount & 0xFF);
     return data;
 }
 
