@@ -39,6 +39,7 @@ public:
     bool IsPassthrough() const override;
     bool RequiresNaluAnalysis() const override;
     bool RequiresMvAnalysis() const override;
+    bool ShouldReportDfx() const override;
 
 private:
     double CalculateFallbackRatio() const;

@@ -43,6 +43,7 @@ public:
     virtual bool IsPassthrough() const { return false; }
     virtual bool RequiresMvAnalysis() const { return false; }
     virtual bool RequiresNaluAnalysis() const { return true; }
+    virtual bool ShouldReportDfx() const { return false; }
 };
 
 } // namespace SFD

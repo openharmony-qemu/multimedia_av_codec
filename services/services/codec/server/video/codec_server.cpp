@@ -285,10 +285,9 @@ void CodecServer::ConfigureSfdManager(Format &config)
     InitSfdManager();
     if (sfdManager_) {
         sfdManager_->Configure(config);
-        if (sfdManager_->IsSfdActive()) {
+        if (sfdManager_->ShouldReportDfx()) {
             OnInstanceAdvancedFeatureEvent("SmartFluencyDecoding", nullptr);
         }
-        sfdManager_->EnableMVOutput(config);
     }
 }
 
@@ -1034,9 +1033,10 @@ int32_t CodecServer::SetParameter(const Format &format)
     }
 
     if (sfdManager_) {
-        bool isEnabled = sfdManager_->IsSfdActive();
+        bool wasReportable = sfdManager_->ShouldReportDfx();
         sfdManager_->Configure(format);
-        if (!isEnabled && sfdManager_->IsSfdActive()) {
+        bool isReportable = sfdManager_->ShouldReportDfx();
+        if (!wasReportable && isReportable) {
             OnInstanceAdvancedFeatureEvent("SmartFluencyDecoding", nullptr);
         }
     }

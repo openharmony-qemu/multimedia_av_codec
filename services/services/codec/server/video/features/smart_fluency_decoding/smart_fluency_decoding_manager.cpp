@@ -263,9 +263,12 @@ void SmartFluencyDecodingManager::Flush()
     }
 }
 
-bool SmartFluencyDecodingManager::IsSfdActive() const
+bool SmartFluencyDecodingManager::ShouldReportDfx() const
 {
-    return sfd_ != nullptr;
+    if (sfd_ == nullptr) {
+        return false;
+    }
+    return sfd_->ShouldReportDfx();
 }
 
 void SmartFluencyDecodingManager::EnableMVOutput(Media::Format& format)

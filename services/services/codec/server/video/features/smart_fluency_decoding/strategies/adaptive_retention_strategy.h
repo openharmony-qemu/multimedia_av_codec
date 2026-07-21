@@ -35,6 +35,7 @@ public:
     double GetRatio() const override;
     SfdDecisionReason GetLastDecisionReason() const override;
     bool RequiresMvAnalysis() const override;
+    bool ShouldReportDfx() const override;
 
 private:
     double CalculateTargetRatio(const FrameRetentionContext& ctx) const;

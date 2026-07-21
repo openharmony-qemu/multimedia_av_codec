@@ -67,7 +67,7 @@ HWTEST_F(SFDManagerTest, Configure_UnsupportedCodec_001, TestSize.Level1)
     SmartFluencyDecodingManager manager("audio/mp4a-latm", AVCODEC_TYPE_AUDIO_DECODER);
     Format format;
     manager.Configure(format);
-    EXPECT_FALSE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -107,7 +107,7 @@ HWTEST_F(SFDManagerTest, Configure_SupportedCodec_003, TestSize.Level1)
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
 
     manager.Configure(format);
-    EXPECT_TRUE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -136,10 +136,10 @@ HWTEST_F(SFDManagerTest, CleanResources_Lifecycle_005, TestSize.Level1)
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
 
     manager.Configure(format);
-    EXPECT_TRUE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 
     manager.CleanResources();
-    EXPECT_FALSE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -159,7 +159,7 @@ HWTEST_F(SFDManagerTest, CsdCaching_PipelineSafe_006, TestSize.Level1)
 
     // SFD is inactive, so it must return true, but internally it safely cached the CSD
     EXPECT_TRUE(shouldRetain);
-    EXPECT_FALSE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -191,12 +191,12 @@ HWTEST_F(SFDManagerTest, Configure_DynamicUpdate_008, TestSize.Level1)
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
 
     manager.Configure(format);
-    EXPECT_TRUE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 
     // Update with new format
     format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_720P);
     manager.Configure(format);
-    EXPECT_TRUE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -213,7 +213,7 @@ HWTEST_F(SFDManagerTest, SetCallbacks_ActiveSync_009, TestSize.Level1)
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
 
     manager.Configure(format);
-    ASSERT_TRUE(manager.IsSfdActive());
+    ASSERT_FALSE(manager.ShouldReportDfx());
 
     bool inputCalled = false;
     bool outputCalled = false;
@@ -222,7 +222,7 @@ HWTEST_F(SFDManagerTest, SetCallbacks_ActiveSync_009, TestSize.Level1)
         [&outputCalled](uint32_t) { outputCalled = true; }
     );
     // Success if no crash, as internal sfd_ calls SetCallbacks
-    EXPECT_TRUE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -252,7 +252,7 @@ HWTEST_F(SFDManagerTest, ExtractCsdData_SmallSize_011, TestSize.Level1)
 
     manager.OnInputBufferAvailable(0, buffer);
     manager.MakePreDecodeDecision(0);
-    EXPECT_FALSE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -300,7 +300,7 @@ HWTEST_F(SFDManagerTest, CacheCsdData_NonVideoDecoder_014, TestSize.Level1)
     auto buffer = CreateMockBuffer(AVCODEC_BUFFER_FLAG_CODEC_DATA, 100);
     manager.OnInputBufferAvailable(0, buffer);
     manager.MakePreDecodeDecision(0);
-    EXPECT_FALSE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -404,7 +404,7 @@ HWTEST_F(SFDManagerTest, Configure_InjectCsdData_020, TestSize.Level1)
     format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
     manager.Configure(format);
-    EXPECT_TRUE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -420,10 +420,10 @@ HWTEST_F(SFDManagerTest, Flush_ActiveSfd_021, TestSize.Level1)
     format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
     format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
     manager.Configure(format);
-    ASSERT_TRUE(manager.IsSfdActive());
+    ASSERT_FALSE(manager.ShouldReportDfx());
 
     manager.Flush();
-    EXPECT_TRUE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -435,7 +435,7 @@ HWTEST_F(SFDManagerTest, Flush_NoSfd_022, TestSize.Level1)
 {
     SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
     manager.Flush();
-    EXPECT_FALSE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -472,7 +472,7 @@ HWTEST_F(SFDManagerTest, OnInputBufferAvailable_NullBuffer_025, TestSize.Level1)
 {
     SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
     manager.OnInputBufferAvailable(0, nullptr);
-    EXPECT_FALSE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -502,7 +502,7 @@ HWTEST_F(SFDManagerTest, Configure_ModeNotSet_027, TestSize.Level1)
     format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
     // No VIDEO_DECODER_FRAME_RETENTION_MODE → INVALID → Build returns null
     manager.Configure(format);
-    EXPECT_FALSE(manager.IsSfdActive());
+    EXPECT_FALSE(manager.ShouldReportDfx());
 }
 
 /**
@@ -565,4 +565,97 @@ HWTEST_F(SFDManagerTest, EnableMVOutput_VvcAuto_031, TestSize.Level1)
     int32_t val = -1;
     EXPECT_FALSE(format.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, val));
     EXPECT_EQ(val, -1);
+}
+
+/**
+ * @tc.name: ShouldReportDfx_NoSfd_032
+ * @tc.desc: Verify ShouldReportDfx returns false when SFD is not created.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, ShouldReportDfx_NoSfd_032, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    EXPECT_FALSE(manager.ShouldReportDfx());
+}
+
+/**
+ * @tc.name: ShouldReportDfx_InvalidMode_033
+ * @tc.desc: Verify ShouldReportDfx returns false when retention mode is not set (INVALID).
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, ShouldReportDfx_InvalidMode_033, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    // No VIDEO_DECODER_FRAME_RETENTION_MODE → INVALID → Build returns null
+    manager.Configure(format);
+    EXPECT_FALSE(manager.ShouldReportDfx());
+}
+
+/**
+ * @tc.name: ShouldReportDfx_FullMode_034
+ * @tc.desc: Verify ShouldReportDfx returns false for FULL mode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, ShouldReportDfx_FullMode_034, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0); // FULL
+    manager.Configure(format);
+    EXPECT_FALSE(manager.ShouldReportDfx());
+}
+
+/**
+ * @tc.name: ShouldReportDfx_AdaptiveMode_035
+ * @tc.desc: Verify ShouldReportDfx returns true for ADAPTIVE mode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, ShouldReportDfx_AdaptiveMode_035, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 1); // ADAPTIVE
+    manager.Configure(format);
+    EXPECT_TRUE(manager.ShouldReportDfx());
+}
+
+/**
+ * @tc.name: ShouldReportDfx_FixedRatioMode_036
+ * @tc.desc: Verify ShouldReportDfx returns true for FIXED_RATIO mode (UNIFORM with ratio).
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, ShouldReportDfx_FixedRatioMode_036, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 2); // UNIFORM
+    format.PutDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.5); // with ratio → FIXED_RATIO
+    manager.Configure(format);
+    EXPECT_TRUE(manager.ShouldReportDfx());
+}
+
+/**
+ * @tc.name: ShouldReportDfx_AutoRatioMode_037
+ * @tc.desc: Verify ShouldReportDfx returns true for AUTO_RATIO mode (UNIFORM without ratio).
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, ShouldReportDfx_AutoRatioMode_037, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 2); // UNIFORM
+    // No ratio → AUTO_RATIO
+    manager.Configure(format);
+    EXPECT_TRUE(manager.ShouldReportDfx());
 }
