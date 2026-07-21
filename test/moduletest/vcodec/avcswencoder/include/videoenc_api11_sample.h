@@ -148,6 +148,7 @@ public:
     uint32_t outCount = 0;
     uint32_t frameCount = 0;
     uint32_t switchParamsTimeSec = 3;
+    uint32_t switchParamsFrame = 5;
     bool sleepOnFPS = false;
     bool SURF_INPUT = false;
     bool enableAutoSwitchParam = false;

@@ -789,7 +789,7 @@ void VEncAPI11Sample::AutoSwitchParam()
     int64_t currentBitrate = DEFAULT_BITRATE;
     double currentFrameRate = DEFAULT_FRAME_RATE;
     int32_t currentQP = DEFAULT_QP;
-    if (frameCount == switchParamsTimeSec) {
+    if (frameCount == switchParamsFrame) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetBitrate) {
             currentBitrate = DEFAULT_BITRATE >> 1;
@@ -807,7 +807,7 @@ void VEncAPI11Sample::AutoSwitchParam()
         SetParameter(format) == AV_ERR_OK ? (0) : (errCount++);
         OH_AVFormat_Destroy(format);
     }
-    if (frameCount == switchParamsTimeSec * DOUBLE) {
+    if (frameCount == switchParamsFrame * DOUBLE) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetBitrate) {
             currentBitrate = DEFAULT_BITRATE << 1;
