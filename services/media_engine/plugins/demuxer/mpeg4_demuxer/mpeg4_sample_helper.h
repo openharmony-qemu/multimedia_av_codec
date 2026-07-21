@@ -320,7 +320,7 @@ private:
     bool IsValidTrunSampleData(int64_t dataSize, uint32_t bufferOffset, uint32_t byteLength,
         uint32_t numSamples) const;
     Status InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
-        uint8_t* data, uint32_t& firstSampleFlag);
+        const uint8_t* data, size_t dataSize, uint32_t& firstSampleFlag);
     void UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
         uint8_t* data, uint32_t firstSampleFlag);
     SampleIndexEntry CreateSampleEntry(const SampleInfo& sampleInfo, int64_t offset, int64_t currentDts,

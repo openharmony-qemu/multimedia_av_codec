@@ -416,6 +416,20 @@ std::vector<uint8_t> BuildStscData(const std::vector<std::tuple<uint32_t, uint32
     return data;
 }
 
+std::vector<uint8_t> BuildTrunData(uint32_t flags, uint32_t sampleCount, size_t payloadSize)
+{
+    constexpr size_t trunHeaderSize = 8;
+    std::vector<uint8_t> data(trunHeaderSize + payloadSize, 0);
+    data[1] = static_cast<uint8_t>((flags >> 16) & 0xFF);
+    data[2] = static_cast<uint8_t>((flags >> 8) & 0xFF);
+    data[3] = static_cast<uint8_t>(flags & 0xFF);
+    data[4] = static_cast<uint8_t>((sampleCount >> 24) & 0xFF);
+    data[5] = static_cast<uint8_t>((sampleCount >> 16) & 0xFF);
+    data[6] = static_cast<uint8_t>((sampleCount >> 8) & 0xFF);
+    data[7] = static_cast<uint8_t>(sampleCount & 0xFF);
+    return data;
+}
+
 std::vector<uint8_t> BuildSidxV0Data(uint8_t version, uint16_t entryCount)
 {
     std::vector<uint8_t> data;
@@ -3435,6 +3449,61 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSampleDataToBuffer_S
     EXPECT_EQ(dataSource->readOffsets[1], baseOffset + static_cast<int64_t>(shortReadSize));
     EXPECT_EQ(dataSource->readExpectedLens[0], requestSize);
     EXPECT_EQ(dataSource->readExpectedLens[1], requestSize - shortReadSize);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TrunRejectsTruncatedOptionalFields_001
+ * @tc.desc: Verify trun optional uint32 fields are rejected before a short payload can be read out of bounds
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TrunRejectsTruncatedOptionalFields_001,
+    TestSize.Level1)
+{
+    const std::vector<std::pair<uint32_t, size_t>> invalidCases = {
+        {Plugins::MPEG4::TRUN_DATA_OFFSET, sizeof(uint32_t) - 1},
+        {Plugins::MPEG4::TRUN_FIRST_SAMPLE_FLAGS, sizeof(uint32_t) - 1},
+        {Plugins::MPEG4::TRUN_DATA_OFFSET | Plugins::MPEG4::TRUN_FIRST_SAMPLE_FLAGS,
+            sizeof(uint32_t) * 2 - 1},
+    };
+
+    for (const auto& [flags, payloadSize] : invalidCases) {
+        auto data = BuildTrunData(flags, 0, payloadSize);
+        Plugins::MPEG4::MPEG4SampleHelper helper;
+        helper.dataReader_ = CreateReaderForBytes(data);
+        helper.hasTfhd_ = true;
+        helper.tfhd_.defaultSampleDuration = 1;
+        helper.tfhd_.defaultSampleSize = 1;
+        helper.tfhd_.flags = 1;
+        int64_t moofDts = 0;
+        int64_t duration = 0;
+
+        EXPECT_EQ(helper.SetTrackFragmentRunParams(0, static_cast<int64_t>(data.size()), 0, moofDts, duration),
+            Status::ERROR_INVALID_DATA) << "flags=" << flags << ", payloadSize=" << payloadSize;
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TrunAcceptsCompleteOptionalFields_001
+ * @tc.desc: Verify valid trun optional uint32 fields remain accepted after bounds hardening
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TrunAcceptsCompleteOptionalFields_001,
+    TestSize.Level1)
+{
+    constexpr uint32_t flags = Plugins::MPEG4::TRUN_DATA_OFFSET |
+        Plugins::MPEG4::TRUN_FIRST_SAMPLE_FLAGS;
+    auto data = BuildTrunData(flags, 0, sizeof(uint32_t) * 2);
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+    helper.hasTfhd_ = true;
+    helper.tfhd_.defaultSampleDuration = 1;
+    helper.tfhd_.defaultSampleSize = 1;
+    helper.tfhd_.flags = 1;
+    int64_t moofDts = 0;
+    int64_t duration = 0;
+
+    EXPECT_EQ(helper.SetTrackFragmentRunParams(0, static_cast<int64_t>(data.size()), 0, moofDts, duration),
+        Status::OK);
 }
 
 /**
