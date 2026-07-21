@@ -268,7 +268,7 @@ bool SmartFluencyDecodingManager::ShouldReportDfx() const
     if (sfd_ == nullptr) {
         return false;
     }
-    return sfd_->GetMode() != RetentionStrategyType::FULL;
+    return sfd_->ShouldReportDfx();
 }
 
 void SmartFluencyDecodingManager::EnableMVOutput(Media::Format& format)

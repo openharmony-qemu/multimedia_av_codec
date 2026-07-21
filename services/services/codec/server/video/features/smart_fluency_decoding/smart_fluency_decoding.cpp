@@ -51,10 +51,10 @@ namespace MediaAVCodec {
 using namespace Media;
 namespace SFD {
 
-RetentionStrategyType SmartFluencyDecoding::GetMode() const
+bool SmartFluencyDecoding::ShouldReportDfx() const
 {
     std::lock_guard<std::mutex> lock(configMutex_);
-    return strategy_ ? strategy_->GetMode() : RetentionStrategyType::INVALID;
+    return strategy_ ? strategy_->ShouldReportDfx() : false;
 }
 
 int32_t SmartFluencyDecoding::Initialize(const SFDConfig& config)

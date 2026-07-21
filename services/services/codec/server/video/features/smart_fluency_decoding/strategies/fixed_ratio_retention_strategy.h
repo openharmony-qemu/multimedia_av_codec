@@ -35,6 +35,7 @@ public:
     RetentionStrategyType GetMode() const override;
     double GetRatio() const override;
     SfdDecisionReason GetLastDecisionReason() const override;
+    bool ShouldReportDfx() const override;
 
 private:
     double accumulator_{0.0};
