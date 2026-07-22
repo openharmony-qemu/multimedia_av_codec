@@ -368,7 +368,7 @@ HWTEST_F(SFDManagerTest, IsCodecSupported_Cases_018, TestSize.Level1)
 
 /**
  * @tc.name: EnableMVOutput_ActiveSfd_019
- * @tc.desc: Test MV output enablement when SFD is active.
+ * @tc.desc: Test MV output enablement when SFD is active in ADAPTIVE mode.
  * @tc.type: FUNC
  */
 HWTEST_F(SFDManagerTest, EnableMVOutput_ActiveSfd_019, TestSize.Level1)
@@ -377,7 +377,7 @@ HWTEST_F(SFDManagerTest, EnableMVOutput_ActiveSfd_019, TestSize.Level1)
     Format format;
     format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
     format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
-    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 1);
     manager.Configure(format);
 
     Format mvFormat;
@@ -658,4 +658,65 @@ HWTEST_F(SFDManagerTest, ShouldReportDfx_AutoRatioMode_037, TestSize.Level1)
     // No ratio → AUTO_RATIO
     manager.Configure(format);
     EXPECT_TRUE(manager.ShouldReportDfx());
+}
+
+/**
+ * @tc.name: EnableMVOutput_FullMode_NoTag_038
+ * @tc.desc: Verify EnableMVOutput does not set MV tag for FULL mode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, EnableMVOutput_FullMode_NoTag_038, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
+    manager.Configure(format);
+
+    Format mvFormat;
+    manager.EnableMVOutput(mvFormat);
+    int32_t val = -1;
+    EXPECT_FALSE(mvFormat.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, val));
+}
+
+/**
+ * @tc.name: EnableMVOutput_FixedRatio_NoTag_039
+ * @tc.desc: Verify EnableMVOutput does not set MV tag for FIXED_RATIO mode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, EnableMVOutput_FixedRatio_NoTag_039, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 2);
+    format.PutDoubleValue(Tag::VIDEO_DECODER_FRAME_RETENTION_RATIO, 0.5);
+    manager.Configure(format);
+
+    Format mvFormat;
+    manager.EnableMVOutput(mvFormat);
+    int32_t val = -1;
+    EXPECT_FALSE(mvFormat.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, val));
+}
+
+/**
+ * @tc.name: EnableMVOutput_AutoRatio_NoTag_040
+ * @tc.desc: Verify EnableMVOutput does not set MV tag for AUTO_RATIO mode.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, EnableMVOutput_AutoRatio_NoTag_040, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_1080P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_1080P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 2);
+    manager.Configure(format);
+
+    Format mvFormat;
+    manager.EnableMVOutput(mvFormat);
+    int32_t val = -1;
+    EXPECT_FALSE(mvFormat.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, val));
 }

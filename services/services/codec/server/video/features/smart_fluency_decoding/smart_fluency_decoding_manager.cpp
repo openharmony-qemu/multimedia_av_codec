@@ -273,7 +273,7 @@ bool SmartFluencyDecodingManager::ShouldReportDfx() const
 
 void SmartFluencyDecodingManager::EnableMVOutput(Media::Format& format)
 {
-    if (sfd_ != nullptr) {
+    if (sfd_ != nullptr && sfd_->RequiresMvAnalysis()) {
         format.PutIntValue(Media::Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, 1);
     }
 }

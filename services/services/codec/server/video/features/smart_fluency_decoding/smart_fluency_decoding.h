@@ -50,6 +50,7 @@ public:
 
     int32_t Initialize(const SFDConfig& config);
     bool ShouldReportDfx() const;
+    bool RequiresMvAnalysis() const;
     void UpdatePlaybackSpeed(double speed, bool fromUser = false);
     int32_t UpdateDynamicConfig(const Media::Format& format);
     void SetInputBuffer(uint32_t index, const std::shared_ptr<AVBuffer>& buffer);
