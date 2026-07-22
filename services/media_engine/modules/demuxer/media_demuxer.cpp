@@ -4544,7 +4544,8 @@ Status MediaDemuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> s
         sample->memory_->SetSize(0);
         return Status::END_OF_STREAM;
     }
-    Status ret = InnerReadSample(static_cast<int32_t>(trackIndex), sample, true);
+    Status ret = InnerReadSample(static_cast<int32_t>(trackIndex), sample,
+        readSampleMode_ == ReadSampleMode::READ_SAMPLE_SYNC);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) {
             eosMap_[trackIndex] = true;
@@ -4824,6 +4825,16 @@ void MediaDemuxer::OnDfxEvent(const Plugins::PluginDfxEvent &event)
     auto it = DFX_EVENT_MAP.find(event.type);
     FALSE_RETURN_MSG(it != DFX_EVENT_MAP.end(), "No mapped dfx event type, src type %{public}d", event.type);
     eventReceiver_->OnDfxEvent({ it->second.first, it->second.second, event.param });
+}
+
+void MediaDemuxer::SetReadSampleMode(ReadSampleMode readSampleMode)
+{
+    readSampleMode_ = readSampleMode;
+}
+
+void MediaDemuxer::SetReadSampleTimeout(uint32_t timeoutMs)
+{
+    timeout_ = timeoutMs;
 }
 
 Status MediaDemuxer::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)
