@@ -1070,39 +1070,47 @@ Status MPEG4SampleHelper::SetTrackFragmentDecodeTimeParams(int64_t dataOffset, i
     return ret;
 }
 
-Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
-    uint8_t* data, uint32_t& firstSampleFlag)
+Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, TrunSampleInitContext& initContext)
 {
-    if (trunFlag & TRUN_DATA_OFFSET) {
-        sampleInfo.dataOffset = GetU32Value(data + bufferOffset);
-        bufferOffset += sizeof(uint32_t);
+    auto readUint32 = [&initContext](uint32_t& value) -> Status {
+        size_t offset = static_cast<size_t>(initContext.bufferOffset);
+        FALSE_RETURN_V_MSG_E(initContext.data != nullptr && offset <= initContext.dataSize &&
+            initContext.dataSize - offset >= sizeof(uint32_t),
+            Status::ERROR_INVALID_DATA, "trun optional field exceeds payload");
+        value = GetU32Value(initContext.data + offset, initContext.dataSize - offset);
+        initContext.bufferOffset += sizeof(uint32_t);
+        return Status::OK;
+    };
+    if (initContext.trunFlag & TRUN_DATA_OFFSET) {
+        Status ret = readUint32(sampleInfo.dataOffset);
+        FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     }
-    if (trunFlag & TRUN_FIRST_SAMPLE_FLAGS) {
-        firstSampleFlag = GetU32Value(data + bufferOffset);
-        bufferOffset += sizeof(uint32_t);
+    if (initContext.trunFlag & TRUN_FIRST_SAMPLE_FLAGS) {
+        Status ret = readUint32(initContext.firstSampleFlag);
+        FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     }
-    if (trunFlag & TRUN_SAMPLE_DURATION) {
+    if (initContext.trunFlag & TRUN_SAMPLE_DURATION) {
         sampleInfo.byteLength += sizeof(uint32_t);
     } else if (tfhd_.defaultSampleDuration) {
         sampleInfo.duration = tfhd_.defaultSampleDuration;
     } else {
         return Status::ERROR_INVALID_DATA;
     }
-    if (trunFlag & TRUN_SAMPLE_SIZE) {
+    if (initContext.trunFlag & TRUN_SAMPLE_SIZE) {
         sampleInfo.byteLength += sizeof(uint32_t);
     } else if (tfhd_.defaultSampleSize) {
         sampleInfo.size = tfhd_.defaultSampleSize;
     } else {
         return Status::ERROR_INVALID_DATA;
     }
-    if (trunFlag & TRUN_SAMPLE_FLAGS) {
+    if (initContext.trunFlag & TRUN_SAMPLE_FLAGS) {
         sampleInfo.byteLength += sizeof(uint32_t);
     } else if (tfhd_.flags) {
         sampleInfo.flag = tfhd_.flags;
     } else {
         return Status::ERROR_INVALID_DATA;
     }
-    if (trunFlag & TRUN_SAMPLE_CTS) {
+    if (initContext.trunFlag & TRUN_SAMPLE_CTS) {
         sampleInfo.byteLength += sizeof(uint32_t);
     }
     return Status::OK;
@@ -1237,9 +1245,12 @@ Status MPEG4SampleHelper::ReadTrunRunData(int64_t dataOffset, int64_t dataSize, 
         Status::ERROR_INVALID_DATA);
 
     numSamples = GetU32Value(&header[trunSampleCountOffset]);
-    FALSE_RETURN_V_MSG_E(dataSize > sizeof(header), Status::ERROR_INVALID_BUFFER_SIZE, "Data allocate 0 memory");
-    data = std::make_unique<uint8_t[]>(dataSize - sizeof(header));
-    ret = dataReader_->ReadUintData(dataOffset + sizeof(uint64_t), data.get(), dataSize - sizeof(header));
+    FALSE_RETURN_V_MSG_E(dataSize > sizeof(header) &&
+        static_cast<uint64_t>(dataSize - sizeof(header)) <= static_cast<uint64_t>(std::numeric_limits<size_t>::max()),
+        Status::ERROR_INVALID_BUFFER_SIZE, "Invalid trun payload size");
+    size_t payloadSize = static_cast<size_t>(dataSize - sizeof(header));
+    data = std::make_unique<uint8_t[]>(payloadSize);
+    ret = dataReader_->ReadUintData(dataOffset + sizeof(uint64_t), data.get(), payloadSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
     return Status::OK;
 }
@@ -1273,13 +1284,13 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read trun run data failed");
 
     SampleInfo sampleInfo;
-    uint32_t bufferOffset = 0;
-    uint32_t firstSampleFlag = 0;
-    ret = InitSampleInfo(sampleInfo, bufferOffset, trunFlag, data.get(), firstSampleFlag);
+    size_t payloadSize = static_cast<size_t>(dataSize - sizeof(uint64_t));
+    TrunSampleInitContext initContext = {trunFlag, data.get(), payloadSize, 0, 0};
+    ret = InitSampleInfo(sampleInfo, initContext);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
 
-    FALSE_RETURN_V_NOLOG(IsValidTrunSampleData(dataSize, bufferOffset, sampleInfo.byteLength, numSamples),
-        Status::ERROR_INVALID_DATA);
+    FALSE_RETURN_V_NOLOG(IsValidTrunSampleData(dataSize, initContext.bufferOffset,
+        sampleInfo.byteLength, numSamples), Status::ERROR_INVALID_DATA);
 
     FALSE_RETURN_V_MSG_E(tfhd_.baseDataOffset <= std::numeric_limits<int64_t>::max() -
         static_cast<int64_t>(sampleInfo.dataOffset), Status::ERROR_INVALID_DATA, "Invalid trun data offset");
@@ -1290,7 +1301,7 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     int64_t prevDts = (sampleIndexEntry_.size() > 0) ? sampleIndexEntry_.back().dts : INT64_MIN;
     for (uint32_t i = 0; i < numSamples; ++i) {
         sampleInfo.index = i;
-        UpdateSampleInfo(sampleInfo, bufferOffset, trunFlag, data.get(), firstSampleFlag);
+        UpdateSampleInfo(sampleInfo, initContext.bufferOffset, trunFlag, data.get(), initContext.firstSampleFlag);
         bool isOverlap = (prevDts != INT64_MIN && prevDts >= currentDts);
         UpdateSampleEntryInfo(sampleInfo, offset, currentDts, isOverlap);
         duration += static_cast<int64_t>(sampleInfo.duration);
