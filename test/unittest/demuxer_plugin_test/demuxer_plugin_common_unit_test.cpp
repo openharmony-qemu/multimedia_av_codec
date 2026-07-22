@@ -193,6 +193,9 @@ HWTEST(FFmpegUtilsTest, AVDemuxer_FFmpegUtils_TimeAndFlags_061340, TestSize.Leve
     EXPECT_EQ(ConvertTimeToFFmpeg(1000000000, {0, 90000}), AV_NOPTS_VALUE);
     EXPECT_EQ(ConvertTimeToFFmpegByUs(1000, {1, 1000}), 1);
     EXPECT_EQ(ConvertTimeToFFmpegByUs(1000, {1, 0}), AV_NOPTS_VALUE);
+    EXPECT_EQ(ConvertTimeToFFmpegByUsRoundDown(1000, {1, 1000}), 1);
+    EXPECT_EQ(ConvertTimeToFFmpegByUsRoundDown(1000, {1, 0}), AV_NOPTS_VALUE);
+    EXPECT_EQ(ConvertTimeToFFmpegByUsRoundDown(5555, {1, 90000}), 499);
     EXPECT_EQ(AvTime2Us(123456789), 123456);
 
     AVPacket pkt {};

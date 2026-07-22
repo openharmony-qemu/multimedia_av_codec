@@ -40,6 +40,7 @@ std::string AVStrError(int errnum);
 int64_t ConvertTimeFromFFmpeg(int64_t pts, AVRational base);
 int64_t ConvertTimeToFFmpeg(int64_t timestampNs, AVRational base);
 int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base);
+int64_t ConvertTimeToFFmpegByUsRoundDown(int64_t timestampUs, AVRational base);
 uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough);
 int64_t CalculateTimeByFrameIndex(AVStream* avStream, int keyFrameIdx);
 
