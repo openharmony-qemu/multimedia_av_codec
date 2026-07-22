@@ -1249,7 +1249,8 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
 uint32_t HlsSegmentManager::FillSingleBlock(uint8_t *&data, uint32_t &len)
 {
     auto fillLen = std::min(static_cast<uint32_t>(AES_BLOCK_LEN) - singleBlockLen_, len);
-    NZERO_LOG(memcpy_s(singleBlock_ + singleBlockLen_, AES_BLOCK_LEN - singleBlockLen_, data, fillLen));
+    FALSE_RETURN_V_MSG(memcpy_s(singleBlock_ + singleBlockLen_, AES_BLOCK_LEN - singleBlockLen_, data, fillLen) == EOK,
+        0, "FillSingleBlock memcpy_s failed");
 
     // update in buffer index & single block index
     len -= fillLen;
