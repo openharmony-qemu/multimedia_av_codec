@@ -525,7 +525,7 @@ bool DemuxerPluginManager::CheckTrackIsActive(int32_t trackId)
     auto iter = trackInfoMap_.find(trackId);
     if (iter != trackInfoMap_.end()) {
         int32_t streamId = iter->second.streamID;
-        FALSE_RETURN_V(streamInfoMap_.find(streamId) != TRACK_MAP.end(), false);
+        FALSE_RETURN_V(streamInfoMap_.find(streamId) != streamInfoMap_.end(), false);
         return streamInfoMap_[streamId].activated;
     }
     return false;
@@ -1036,9 +1036,10 @@ Status DemuxerPluginManager::Pause()
 
 Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
 {
+    Plugins::MediaInfo mediaInfo
     {
         std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
-        Plugins::MediaInfo mediaInfo = curMediaInfo_;
+        mediaInfo = curMediaInfo_;
     }
     std::map<int32_t, MediaTrackMap> tempTrackInfoMap = trackInfoMap_;
     for (size_t i = 0; i < streamInfoMap_[streamID].mediaInfo.tracks.size(); i++) {
