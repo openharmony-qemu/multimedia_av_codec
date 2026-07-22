@@ -4545,7 +4545,7 @@ Status MediaDemuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> s
         return Status::END_OF_STREAM;
     }
     Status ret = InnerReadSample(static_cast<int32_t>(trackIndex), sample,
-        (readSampleMode_ == ReadSampleMode::READ_SAMPLE_SYNC) ? true : false);
+        readSampleMode_ == ReadSampleMode::READ_SAMPLE_SYNC);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) {
             eosMap_[trackIndex] = true;
