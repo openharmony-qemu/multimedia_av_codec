@@ -1429,6 +1429,8 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Demuxer plugin is nullptr");
         innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
     } else {
+        FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr,
+            Status::ERROR_INVALID_PARAMETER, "demuxerPluginManager_ is nullptr");
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(demuxerPluginManager_->GetStreamIDByTrackID(trackId));
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Demuxer plugin is nullptr");
     }
