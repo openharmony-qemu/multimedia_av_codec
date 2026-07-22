@@ -1036,7 +1036,7 @@ Status DemuxerPluginManager::Pause()
 
 Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
 {
-    Plugins::MediaInfo mediaInfo
+    Plugins::MediaInfo mediaInfo;
     {
         std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
         mediaInfo = curMediaInfo_;
