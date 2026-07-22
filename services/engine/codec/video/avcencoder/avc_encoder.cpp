@@ -321,7 +321,9 @@ void AvcEncoder::GetBufferFromSurface()
     inputBuffer->avBuffer_->pts_ = pts;
     if (enableSurfaceModeInputCb_) {
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
-        callback_->OnInputBufferAvailable(index, inputBuffer->avBuffer_);
+        std::shared_ptr<AVBuffer> avbuffer = inputAVBuffer->avBuffer_;
+        iLock.unlock();
+        callback_->OnInputBufferAvailable(index, avbuffer);
     } else {
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
         inputAvailQue_->Push(index);
