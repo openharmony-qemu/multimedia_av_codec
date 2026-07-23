@@ -72,6 +72,7 @@ ohos_shared_library("av_codec_service_dfx") {
     "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
+    "json:nlohmann_json_static",
     "media_foundation:media_foundation",
     "openssl:libcrypto_shared",
     "openssl:libssl_shared",
