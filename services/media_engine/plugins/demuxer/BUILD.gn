@@ -43,8 +43,6 @@ config("demuxer_config") {
     "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/services/media_engine/plugins/common",
     "$av_codec_root_dir/services/media_engine/plugins/demuxer/common",
-    "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer",
-    "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer",
   ]
 }
 
@@ -61,10 +59,13 @@ if (av_codec_support_demuxer) {
     defines += [
       "OHOS_EXPAND_MP4_INFO",
       "OHOS_AV3A_DEMUXER",
+      "USE_FF_DEMUXER",
     ]
     defines += av_codec_defines
 
     public_configs = [ ":demuxer_config" ]
+
+    include_dirs = [ "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer" ]
 
     if (build_variant != "user") {
       defines += [ "BUILD_ENG_VERSION" ]
@@ -120,13 +121,11 @@ if (av_codec_support_demuxer) {
 
     defines = []
 
-    defines += [
-      "OHOS_EXPAND_MP4_INFO",
-      "OHOS_AV3A_DEMUXER",
-    ]
-    defines += av_codec_defines
+    defines = av_codec_defines
 
     public_configs = [ ":demuxer_config" ]
+
+    include_dirs = [ "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer" ]
 
     if (build_variant != "user") {
       defines += [ "BUILD_ENG_VERSION" ]
@@ -160,7 +159,6 @@ if (av_codec_support_demuxer) {
 
     external_deps = [
       "c_utils:utils",
-      "ffmpeg:libohosffmpeg",
       "graphic_surface:surface",
       "hicollie:libhicollie",
       "hilog:libhilog",

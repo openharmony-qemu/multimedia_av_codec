@@ -4678,7 +4678,7 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
     auto it = keyToTagMap.find(Converter::ToLower(key));
     if (it != keyToTagMap.end()) {
         std::string resultStr = "";
-        if (!Converter::IsUTF8(value.c_str()) && Converter::IsGBK(value.c_str())) {
+        if (!Converter::IsUTF8(value) && Converter::IsGBK(value.c_str())) {
             resultStr = Converter::ConvertGBKToUTF8(value);
         }
         resultStr = resultStr.length() > 0 ? resultStr : value;
