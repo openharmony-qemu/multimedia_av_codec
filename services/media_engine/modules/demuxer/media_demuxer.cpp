@@ -654,7 +654,7 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
             FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
             mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(sourceDurationMs);
             if (sourceDurationMs < 0) {
-                sourceDurationMs *= (sourceDurationMs == INT64_MIN) ? INT64_MAX : -sourceDurationMs;
+                sourceDurationMs = (sourceDurationMs == INT64_MIN) ? INT64_MAX : -sourceDurationMs;
             }
             (void)source_->SetMediaDuration(sourceDurationMs);
         }
@@ -672,7 +672,7 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
             FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
             mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(sourceDurationMs);
             if (sourceDurationMs < 0) {
-                sourceDurationMs *= (sourceDurationMs == INT64_MIN) ? INT64_MAX : -sourceDurationMs;
+                sourceDurationMs = (sourceDurationMs == INT64_MIN) ? INT64_MAX : -sourceDurationMs;
             }
             (void)source_->SetMediaDuration(sourceDurationMs);
         }
@@ -4383,8 +4383,8 @@ void MediaDemuxer::HandleNotAllTrackEos(int32_t trackId)
     // if sampleQueue reached the limit.
     bool audioTaskExists = taskMap_.find(audioTrackId_) != taskMap_.end() && taskMap_[audioTrackId_] != nullptr;
     bool videoTaskExists = taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr;
-    if (GetTrackIsBuffering(trackId) && (audioTaskExists && !taskMap_[audioTrackId_]->IsTaskRunning() ||
-        videoTaskExists && !taskMap_[videoTrackId_]->IsTaskRunning() ||
+    if (GetTrackIsBuffering(trackId) && ((audioTaskExists && !taskMap_[audioTrackId_]->IsTaskRunning()) ||
+        (videoTaskExists && !taskMap_[videoTrackId_]->IsTaskRunning()) ||
         (audioQueueExists &&
             sampleQueueMap_[audioTrackId_]->GetFilledBufferSize() >= SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1) ||
         (videoQueueExists &&
