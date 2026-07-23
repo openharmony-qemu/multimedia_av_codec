@@ -92,6 +92,7 @@ private:
     std::pair<int32_t, int32_t> curtInfo_{};
     bool isSingleSpeed_{true};
     std::chrono::steady_clock::time_point lastConsumTime_;
+    std::unordered_map<std::string, std::string> tveventData_;
 #endif
     bool hasSendPauseEvent_{false};
     void ResetIntervalStats();
