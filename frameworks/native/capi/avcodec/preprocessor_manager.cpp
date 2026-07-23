@@ -116,8 +116,12 @@ PreprocessorManager::PreprocessorManager()
 
 PreprocessorManager::~PreprocessorManager()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto &[encoderId, info] : encoders_) {
+    std::map<std::string, std::shared_ptr<EncoderInfo>> encoders;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        encoders.swap(encoders_);
+    }
+    for (auto &[encoderId, info] : encoders) {
         if (info) {
             info->Stop();
         }
@@ -141,27 +145,44 @@ void PreprocessorManager::RegisterEncoder(std::string_view encoderId, std::share
 
 void PreprocessorManager::UnregisterEncoder(std::string_view encoderId)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    encoders_.erase(std::string(encoderId));
+    std::shared_ptr<EncoderInfo> encoderInfo;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto iter = encoders_.find(std::string(encoderId));
+        if (iter != encoders_.end()) {
+            encoderInfo = std::move(iter->second);
+            encoders_.erase(iter);
+        }
+    }
+    if (encoderInfo) {
+        encoderInfo->Stop();
+    }
     AVCODEC_LOGI("Encoder unregistered: %{public}s", std::string(encoderId).c_str());
 }
 
-void PreprocessorManager::SetEncoderRunning(std::string_view encoderId, bool isRunning)
+int32_t PreprocessorManager::SetEncoderRunning(std::string_view encoderId, bool isRunning)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto iter = encoders_.find(std::string(encoderId));
-    if (iter == encoders_.end() || !iter->second) {
-        AVCODEC_LOGE("Encoder not found: %{public}s", std::string(encoderId).c_str());
-        return;
+    std::shared_ptr<EncoderInfo> encoderInfo;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto iter = encoders_.find(std::string(encoderId));
+        if (iter == encoders_.end() || !iter->second) {
+            AVCODEC_LOGE("Encoder not found: %{public}s", std::string(encoderId).c_str());
+            return AVCS_ERR_INVALID_STATE;
+        }
+        encoderInfo = iter->second;
     }
 
     if (isRunning) {
-        iter->second->Start();
+        int32_t ret = encoderInfo->Start();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start encoder info failed: %{public}s",
+                                 std::string(encoderId).c_str());
         AVCODEC_LOGI("Encoder running: %{public}s", std::string(encoderId).c_str());
     } else {
-        iter->second->Stop();
+        encoderInfo->Stop();
         AVCODEC_LOGI("Encoder stopped: %{public}s", std::string(encoderId).c_str());
     }
+    return AVCS_ERR_OK;
 }
 
 void PreprocessorManager::CreateSharedSurface()
@@ -319,6 +340,11 @@ int32_t PreprocessorManager::EncoderInfo::Start()
         AVCODEC_LOGW("Encoder already running: %{public}s", encoderId_.data());
         return AVCS_ERR_OK;
     }
+    if (processThread_.joinable()) {
+        lock.unlock();
+        processThread_.join();
+        lock.lock();
+    }
     if (!encoderSurface_ || !preprocessor_) {
         AVCODEC_LOGE("EncoderSurface or Preprocessor not initialized for encoder: %{public}s", encoderId_.data());
         return AVCS_ERR_UNKNOWN;
@@ -329,7 +355,8 @@ int32_t PreprocessorManager::EncoderInfo::Start()
     lastNotifiedWidth_ = 0;
     lastNotifiedHeight_ = 0;
     lastNotifiedFormat_ = static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT);
-    CheckAndAllocateSurfaceBufferFromEncSurface();
+    int32_t ret = CheckAndAllocateSurfaceBufferFromEncSurface();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Allocate encoder surface buffer failed");
     isRunning_ = true;
     processThread_ = std::thread(&EncoderInfo::EncoderThreadLoop, this);
     if (!processThread_.joinable()) {
@@ -358,10 +385,11 @@ void PreprocessorManager::EncoderInfo::Stop()
 
 int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSurface()
 {
-    uint32_t allocTimes = encoderSurface_->GetQueueSize() - encoderSurfaceBufferPool_.size();
-    if (allocTimes == 0) {
-        return AV_ERR_OK;
+    uint32_t queueSize = encoderSurface_->GetQueueSize();
+    if (encoderSurfaceBufferPool_.size() >= queueSize) {
+        return AVCS_ERR_OK;
     }
+    uint32_t allocTimes = queueSize - static_cast<uint32_t>(encoderSurfaceBufferPool_.size());
 
     BufferRequestConfig requestConfig = {
         .width = preprocessor_->GetConfiguredWidth(),
@@ -376,7 +404,7 @@ int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSu
         auto surfaceBuffer = SurfaceBuffer::Create();
         if (!surfaceBuffer) {
             AVCODEC_LOGE("Create surface buffer failed");
-            return AV_ERR_NO_MEMORY;
+            return AVCS_ERR_NO_MEMORY;
         }
 
         auto ret = surfaceBuffer->Alloc(requestConfig);
@@ -477,7 +505,7 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
     std::string threadName = std::string("OS_Preproc_") + (encoderId_.find("primary") != std::string::npos ? "P" : "S");
     pthread_setname_np(pthread_self(), threadName.c_str());
     AVCODEC_LOGI("EncoderThreadLoop started: %{public}s", encoderId_.data());
-    while (isRunning_) {
+    for (;;) {
         std::unique_lock<std::mutex> lock(bufferQueueMutex_);
         bufferQueueCv_.wait(lock, [this]() {
             if (!isRunning_ || (eosRequested_ && pendingBuffers_.empty())) {

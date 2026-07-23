@@ -49,6 +49,8 @@ struct VideoEncoderObject : public OH_AVCodec {
     void BufferToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>>& tempMap);
     void MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>>& tempMap);
     OH_AVBuffer* GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput);
+    void GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput,
+        OHOS::sptr<OH_AVBuffer>& object);
     OH_AVMemory* GetTransData(const uint32_t& index, std::shared_ptr<AVSharedMemory>& memory, bool isOutput);
     OH_AVFormat* GetTransData(const uint32_t& index, std::shared_ptr<Media::Format>& format);
 

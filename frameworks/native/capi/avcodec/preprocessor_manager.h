@@ -47,7 +47,7 @@ public:
                          OnStreamChangedCallback streamChangedCb = nullptr,
                          OnPreprocessErrorCallback errorCb = nullptr);
     void UnregisterEncoder(std::string_view encoderId);
-    void SetEncoderRunning(std::string_view encoderId, bool isRunning);
+    int32_t SetEncoderRunning(std::string_view encoderId, bool isRunning);
     void CreateSharedSurface();
     sptr<Surface> GetSharedSurface();
     bool RequestNotifyEos(std::string_view encoderId, std::function<void()> notifyEosTask);
