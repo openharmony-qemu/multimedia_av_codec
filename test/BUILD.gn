@@ -610,7 +610,6 @@ group("http_source_fuzz_test") {
     ]
   }
 }
-}
 
 group("video_codec_unit_test") {
   testonly = true
