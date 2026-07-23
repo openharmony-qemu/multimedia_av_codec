@@ -652,7 +652,7 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
         if (duration_ != Plugins::HST_TIME_NONE) {
             MEDIA_LOG_I("Hls: " PUBLIC_LOG_D64, duration_);
             int64_t sourceDurationMs = Plugins::HstTime2Us(duration_);
-            FALSE_RETURN_V_MSG(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
+            FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
             mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(sourceDurationMs);
             if (sourceDurationMs < 0) {
                 sourceDurationMs *= (sourceDurationMs == INT64_MIN) ? INT64_MAX : -sourceDurationMs;
@@ -660,7 +660,7 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
             (void)source_->SetMediaDuration(sourceDurationMs);
         }
         MEDIA_LOG_I("SeekToTime");
-        FALSE_RETURN_V_MSG(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
+        FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
         return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
     }
     
@@ -670,7 +670,7 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
         if (duration_ != Plugins::HST_TIME_NONE) {
             MEDIA_LOG_I("Not hls: " PUBLIC_LOG_D64, duration_);
             int64_t sourceDurationMs = Plugins::HstTime2Us(duration_);
-            FALSE_RETURN_V_MSG(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
+            FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
             mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(sourceDurationMs);
             if (sourceDurationMs < 0) {
                 sourceDurationMs *= (sourceDurationMs == INT64_MIN) ? INT64_MAX : -sourceDurationMs;
@@ -678,7 +678,7 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
             (void)source_->SetMediaDuration(sourceDurationMs);
         }
         MEDIA_LOG_I("Seekble");
-        FALSE_RETURN_V_MSG(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
+        FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
         return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
     }
     MEDIA_LOG_I("Other");
@@ -3505,7 +3505,7 @@ void MediaDemuxer::SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList>
 
 bool CheckStreamCodec(const std::string &codecs, StreamType type, std::shared_ptr<MediaAVCodec::AVCodecList> codecList)
 {
-    FALSE_RETURN_V_MSG_E(!codecs.empty(), false, "codecs is empty");
+    CHECK_AND_RETURN_RET_LOG(!codecs.empty(), false, "codecs is empty");
     bool isSupported = true;
     if (type == Plugins::AUDIO) {
         std::vector<Plugins::PluginDescription> descriptions =
