@@ -1236,4 +1236,36 @@ HWTEST_F(M3u8UnitTest, KeyInfos_Secure_Cleanup_In_Destructor, TestSize.Level1)
     m3u8.reset();
     EXPECT_TRUE(true);
 }
+
+HWTEST_F(M3u8UnitTest, InitializeDownloadHeader_LengthGreaterThanZero_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/test.m3u8";
+    auto m3u8 = std::make_shared<M3U8>(testUri, "");
+    m3u8->uri_ = url;
+    m3u8->DownloadMap(url, 100, 718);
+    EXPECT_NE(m3u8->downloadHeaderRequest_, nullptr);
+    EXPECT_EQ(m3u8->downloadHeaderRequest_->startPos_, 100);
+    EXPECT_EQ(m3u8->downloadHeaderRequest_->endPos_, 817);
+}
+
+HWTEST_F(M3u8UnitTest, InitializeDownloadHeader_LengthEqualsZero_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/test.m3u8";
+    auto m3u8 = std::make_shared<M3U8>(testUri, "");
+    m3u8->uri_ = url;
+    m3u8->DownloadMap(url, 0, 0);
+    EXPECT_NE(m3u8->downloadHeaderRequest_, nullptr);
+    EXPECT_EQ(m3u8->downloadHeaderRequest_->startPos_, 0);
+    EXPECT_EQ(m3u8->downloadHeaderRequest_->endPos_, -1);
+}
+
+HWTEST_F(M3u8UnitTest, InitializeDownloadHeader_OffsetLengthOverflow_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/test.m3u8";
+    auto m3u8 = std::make_shared<M3U8>(testUri, "");
+    m3u8->uri_ = url;
+    m3u8->DownloadMap(url, SIZE_MAX, 1);
+    EXPECT_EQ(m3u8->downloadHeaderRequest_->startPos_, 0);
+    EXPECT_EQ(m3u8->downloadHeaderRequest_->endPos_, -1);
+}
 }
