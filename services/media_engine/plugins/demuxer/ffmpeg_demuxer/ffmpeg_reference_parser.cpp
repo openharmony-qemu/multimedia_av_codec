@@ -444,9 +444,9 @@ Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "formatContext_ is nullptr");
     auto avStream = formatContext_->streams[parserRefIdx_];
-    // AVSEEK_FLAG_BACKWARD finds the largest entry <= target. Use AV_ROUND_DOWN
-    // to ensure precision loss does not make ffTimeDts exceed the exact index timestamp.
-    int64_t ffTimeDts = ConvertTimeToFFmpegByUsRoundDown(dts, avStream->time_base);
+    // AVSEEK_FLAG_BACKWARD finds the largest entry <= target. Use AV_ROUND_UP
+    // to compensate for precision loss that makes ffTimeDts slightly undershoot the exact index timestamp.
+    int64_t ffTimeDts = ConvertTimeToFFmpegByUsRoundUp(dts, avStream->time_base);
     int32_t tmpFrameId = av_index_search_timestamp(avStream, ffTimeDts,
         AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
     FALSE_RETURN_V_MSG_E(tmpFrameId >= 0, Status::ERROR_OUT_OF_RANGE, "find nearest frame failed");
