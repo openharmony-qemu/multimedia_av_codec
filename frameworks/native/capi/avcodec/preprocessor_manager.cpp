@@ -391,10 +391,11 @@ int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSu
     }
     uint32_t allocTimes = queueSize - static_cast<uint32_t>(encoderSurfaceBufferPool_.size());
 
+    auto config = preprocessor_->GetConfigSnapshot();
     BufferRequestConfig requestConfig = {
-        .width = preprocessor_->GetConfiguredWidth(),
-        .height = preprocessor_->GetConfiguredHeight(),
-        .format = preprocessor_->GetConfiguredPixelFormat(),
+        .width = config.configuredWidth,
+        .height = config.configuredHeight,
+        .format = config.configuredPixelFormat,
     };
     requestConfig.strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT;
     requestConfig.usage = encoderSurface_->GetDefaultUsage() |
@@ -493,10 +494,10 @@ void PreprocessorManager::EncoderInfo::NotifyEosNowIfPending()
 void PreprocessorManager::EncoderInfo::SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                                                             std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
 {
-    if (!(inputBuffer && inputBuffer->buffer) || !outputBuffer || !preprocessor_) {
+    if (!inputBuffer || !outputBuffer || !outputBuffer->buffer) {
         return;
     }
-    outputBuffer->flushConfig.damage = {0, 0, preprocessor_->GetOutputWidth(), preprocessor_->GetOutputHeight()};
+    outputBuffer->flushConfig.damage = { 0, 0, outputBuffer->buffer->GetWidth(), outputBuffer->buffer->GetHeight() };
     outputBuffer->flushConfig.timestamp = inputBuffer->timestamp;
 }
 
@@ -564,7 +565,7 @@ bool PreprocessorManager::EncoderInfo::ProcessFrame(std::shared_ptr<SurfaceBuffe
         return false;
     }
     CheckAndNotifyStreamChange(inputBuffer);
-    auto ret = preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp);
+    auto ret = preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer);
     if (ret != static_cast<int32_t>(AVCS_ERR_OK)) {
         ReportPreprocessError(ret);
         return false;
@@ -674,15 +675,16 @@ Media::Format PreprocessorManager::EncoderInfo::FillStreamDescription(int32_t wi
         format.PutIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(mappedFmt));
     }
 
-    if (preprocessor_->IsCropEnabled()) {
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, preprocessor_->GetCropLeft());
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, preprocessor_->GetCropRight());
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, preprocessor_->GetCropTop());
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, preprocessor_->GetCropBottom());
+    auto config = preprocessor_->GetConfigSnapshot();
+    if (config.cropEnabled) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, config.cropLeft);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, config.cropRight);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, config.cropTop);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, config.cropBottom);
     }
-    if (preprocessor_->IsDownsamplingEnabled()) {
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, preprocessor_->GetDownsamplingWidth());
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, preprocessor_->GetDownsamplingHeight());
+    if (config.downsamplingEnabled) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, config.downsamplingWidth);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, config.downsamplingHeight);
     }
     return format;
 }

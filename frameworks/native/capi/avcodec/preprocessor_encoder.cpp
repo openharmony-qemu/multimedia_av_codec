@@ -570,9 +570,6 @@ OH_AVErrCode PreprocessorEncoder::SetParameter(const Media::Format &format)
                                  "PreprocessorEncoder set parameter failed!");
     }
 
-    ret = preprocessor->ValidateConfiguration(format, false);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
-                             "PreprocessorEncoder validate preprocessor parameter failed!");
     ret = preprocessor->SetParameter(format);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "PreprocessorEncoder set preprocessor parameter failed!");
@@ -614,10 +611,6 @@ int32_t PreprocessorEncoder::ConfigurePreprocessor(const Media::Format &format)
 {
     auto preprocessor = GetPreprocessor();
     if (preprocessor) {
-        auto ret = preprocessor->ValidateConfiguration(format, true);
-        if (ret != AVCS_ERR_OK) {
-            return ret;
-        }
         return preprocessor->Configure(format);
     }
     return AVCS_ERR_OK;
@@ -942,15 +935,16 @@ OH_AVFormat* PreprocessorEncoder::GetInputDescription()
         }
     }
     // Step 3: Append preprocessing metadata (always)
-    if (preprocessor->IsCropEnabled()) {
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, preprocessor->GetCropLeft());
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, preprocessor->GetCropRight());
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, preprocessor->GetCropTop());
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, preprocessor->GetCropBottom());
+    auto config = preprocessor->GetConfigSnapshot();
+    if (config.cropEnabled) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, config.cropLeft);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, config.cropRight);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, config.cropTop);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, config.cropBottom);
     }
-    if (preprocessor->IsDownsamplingEnabled()) {
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, preprocessor->GetDownsamplingWidth());
-        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, preprocessor->GetDownsamplingHeight());
+    if (config.downsamplingEnabled) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, config.downsamplingWidth);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, config.downsamplingHeight);
     }
 
     OH_AVFormat* avFormat = OH_AVFormat_Create();
