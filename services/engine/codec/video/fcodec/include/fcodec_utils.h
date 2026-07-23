@@ -258,11 +258,47 @@ int32_t CMRangeToBoolean(CM_Range range)
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
+#ifdef BUILD_ENG_VERSION
+constexpr uint32_t PATH_MAX_LEN = 256;
+constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
+
+static std::string VideoPixelFormatToString(VideoPixelFormat fmt)
+{
+    switch (fmt) {
+        case VideoPixelFormat::YUV420P:
+            return "YUV420P";
+        case VideoPixelFormat::YUVI420:
+            return "YUVI420";
+        case VideoPixelFormat::NV12:
+            return "NV12";
+        case VideoPixelFormat::NV21:
+            return "NV21";
+        case VideoPixelFormat::RGBA:
+            return "RGBA";
+        case VideoPixelFormat::RGBA1010102:
+            return "RGBA1010102";
+        case VideoPixelFormat::SURFACE_FORMAT:
+            return "SURFACE_FORMAT";
+        default:
+            return "UNKNOWN";
+    }
+}
+#endif // BUILD_ENG_VERSION
+
 static bool IsValidRawVideoPixelFormat(int32_t val)
 {
     return val >= static_cast<int32_t>(RawVideoPixelFormat::YUV420P) &&
            val <= static_cast<int32_t>(RawVideoPixelFormat::RGBA);
 }
+
+static std::map<RawVideoPixelFormat, AVPixelFormat> g_convertFfmpegPixFmt = {
+    {RawVideoPixelFormat::YUV420P, AVPixelFormat::AV_PIX_FMT_YUV420P},
+    {RawVideoPixelFormat::NV12, AVPixelFormat::AV_PIX_FMT_NV12},
+    {RawVideoPixelFormat::NV21, AVPixelFormat::AV_PIX_FMT_NV21},
+    {RawVideoPixelFormat::RGBA, AVPixelFormat::AV_PIX_FMT_RGBA},
+};
+
+#define DMA_BUF_SET_LEAK_TYPE _IOW(DMA_BUF_BASE, 5, const char *)
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS
