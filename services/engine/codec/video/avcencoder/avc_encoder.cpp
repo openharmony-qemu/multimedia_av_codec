@@ -309,10 +309,13 @@ void AvcEncoder::GetBufferFromSurface()
     uint32_t index = freeList_.front();
     freeList_.pop_front();
     listLock.unlock();
+
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     CHECK_AND_RETURN_LOG(inputBuffer != nullptr, "input buffer is null");
     inputBuffer->surfaceBuffer_ = buffer;
-    inputBuffer->fence_ = fence;
+    if (fence != nullptr && fence->IsValid()) {
+        inputBuffer->fence_ = new SyncFence(fence->Get());
+    }
     CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
     inputBuffer->avBuffer_->pts_ = pts;
     if (enableSurfaceModeInputCb_) {
