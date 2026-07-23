@@ -177,8 +177,11 @@ private:
 
     static void WorkerLoop(const std::shared_ptr<Core>& core)
     {
-        pthread_setname_np(pthread_self(), "OS_Preproc_CB");
-        for (;;) {
+        std::string threadName = std::string("OS_Preproc_Worker_") +
+                                 (encoderId_.find("primary") != std::string::npos ? "P" : "S");
+        pthread_setname_np(pthread_self(), threadName.c_str());
+        bool shouldExit = false;
+        while (!shouldExit) {
             Event event;
             bool execute = false;
             {
@@ -635,8 +638,8 @@ int32_t PreprocessorEncoder::CreateEncoderSurface()
 }
 
 OHOS::sptr<OH_AVBuffer> PreprocessorEncoder::GetTransData(const uint32_t& index,
-                                                            std::shared_ptr<AVBuffer>& buffer,
-                                                            bool isOutput)
+                                                          std::shared_ptr<AVBuffer>& buffer,
+                                                          bool isOutput)
 {
     CHECK_AND_RETURN_RET_LOG(videoEncoderObject_ && videoEncoderObject_->videoEncoder_, nullptr,
                              "Context video encoder is nullptr!");
@@ -893,15 +896,18 @@ void PreprocessorEncoder::OnOutputBufferAvailable(uint32_t index, const std::sha
     }
     auto* codec = static_cast<OH_AVCodec*>(this);
     std::weak_ptr<VideoEncoderObject> weakVideoEncoderObject = videoEncoderObject_;
-    callbackDispatcher_->TryPost([codec, snapshot, index, object]() {
-        snapshot.callback.onNewOutputBuffer(
-            codec, index, reinterpret_cast<OH_AVBuffer*>(object.GetRefPtr()), snapshot.userData);
-    }, [weakVideoEncoderObject, index]() {
-        auto videoEncoderObject = weakVideoEncoderObject.lock();
-        if (videoEncoderObject && videoEncoderObject->videoEncoder_) {
-            (void)videoEncoderObject->videoEncoder_->ReleaseOutputBuffer(index);
+    callbackDispatcher_->TryPost(
+        [codec, snapshot, index, object]() {
+            snapshot.callback.onNewOutputBuffer(codec, index, reinterpret_cast<OH_AVBuffer*>(object.GetRefPtr()),
+                                                snapshot.userData);
+        },
+        [weakVideoEncoderObject, index]() {
+            auto videoEncoderObject = weakVideoEncoderObject.lock();
+            if (videoEncoderObject && videoEncoderObject->videoEncoder_) {
+                (void)videoEncoderObject->videoEncoder_->ReleaseOutputBuffer(index);
+            }
         }
-    });
+    );
 }
 
 OH_AVFormat* PreprocessorEncoder::GetOutputDescription()

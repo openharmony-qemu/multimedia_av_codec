@@ -539,7 +539,8 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
     std::string threadName = std::string("OS_Preproc_") + (encoderId_.find("primary") != std::string::npos ? "P" : "S");
     pthread_setname_np(pthread_self(), threadName.c_str());
     AVCODEC_LOGI("EncoderThreadLoop started: %{public}s", encoderId_.data());
-    for (;;) {
+    bool shouldExit = false;
+    while (!shouldExit) {
         std::unique_lock<std::mutex> lock(bufferQueueMutex_);
         bufferQueueCv_.wait(lock, [this]() {
             if (!isRunning_ || (eosRequested_ && pendingBuffers_.empty())) {
