@@ -315,7 +315,7 @@ void AvcEncoder::GetBufferFromSurface()
     CHECK_AND_RETURN_LOG(inputBuffer != nullptr, "input buffer is null");
     inputBuffer->surfaceBuffer_ = buffer;
     if (fence != nullptr && fence->IsValid()) {
-        inputBuffer->fence_ = fence;
+        inputBuffer->fence_ = new SyncFence(fence->Get());
     }
     CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
     inputBuffer->avBuffer_->pts_ = pts;
