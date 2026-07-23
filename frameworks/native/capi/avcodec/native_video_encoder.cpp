@@ -351,6 +351,7 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputData(struct OH_AVCodec *codec, uint32_t i
     int32_t ret = videoEncObj->videoEncoder_->ReleaseOutputBuffer(index);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder free output data failed!");
+    videoEncObj->ReleaseOutputBufferWrapper(index);
 
     return AV_ERR_OK;
 }
@@ -376,6 +377,7 @@ OH_AVErrCode OH_VideoEncoder_FreeOutputBuffer(struct OH_AVCodec *codec, uint32_t
     int32_t ret = videoEncObj->videoEncoder_->ReleaseOutputBuffer(index);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video encoder free output data failed!");
+    videoEncObj->ReleaseOutputBufferWrapper(index);
 
     return AV_ERR_OK;
 }
@@ -634,10 +636,12 @@ OH_AVErrCode OH_VideoEncoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
     int32_t ret = videoEncObj->videoEncoder_->QueryOutputBuffer(*index, timeoutUs);
     switch (ret) {
         case AVCS_ERR_OK:
+            videoEncObj->MarkOutputBufferPending(*index);
             return AV_ERR_OK;
         case AVCS_ERR_TRY_AGAIN:
             return AV_ERR_TRY_AGAIN_LATER;
         case AVCS_ERR_STREAM_CHANGED:
+            videoEncObj->ClearOutputBufferForUnbind();
             return AV_ERR_STREAM_CHANGED;
         default:
             AVCODEC_LOGD("Video encoder query output data failed!");
