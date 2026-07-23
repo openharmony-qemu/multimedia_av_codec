@@ -253,6 +253,7 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_VALID_DATA, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, SAVE_DATA_INVALID_DATA, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.isSessionKey_ = true;
     uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     uint32_t len = 10;
 
@@ -1267,5 +1268,155 @@ HWTEST_F(M3u8UnitTest, InitializeDownloadHeader_OffsetLengthOverflow_001, TestSi
     m3u8->DownloadMap(url, SIZE_MAX, 1);
     EXPECT_EQ(m3u8->downloadHeaderRequest_->startPos_, 0);
     EXPECT_EQ(m3u8->downloadHeaderRequest_->endPos_, -1);
+}
+/**
+ * @tc.name  : Test hasExplicitIv_ set by ParseKey with IV attribute
+ * @tc.number: HasExplicitIv_ParseKey_IV_Attribute
+ * @tc.desc  : Test ParseKey sets hasExplicitIv_ = true when IV attribute present
+ */
+HWTEST_F(M3u8UnitTest, HasExplicitIv_ParseKey_IV_Attribute, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    std::string keyTagAttr = "METHOD=AES-128,URI=\"http://key.example.com/key\",IV=0x0102030405060708090a0b0c0d0e0f10";
+    std::shared_ptr<AttributesTag> keyTag = std::make_shared<AttributesTag>(HlsTag::EXTXKEY, keyTagAttr);
+    m3u8->ParseKey(keyTag);
+    EXPECT_TRUE(m3u8->hasExplicitIv_.load());
+    for (int i = 0; i < 16; i++) {
+        EXPECT_EQ(m3u8->iv_[i], i + 1);
+    }
+}
+
+/**
+ * @tc.name  : Test hasExplicitIv_ false without IV attribute
+ * @tc.number: HasExplicitIv_ParseKey_No_IV
+ * @tc.desc  : Test ParseKey keeps hasExplicitIv_ = false when no IV attribute
+ */
+HWTEST_F(M3u8UnitTest, HasExplicitIv_ParseKey_No_IV, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    std::string keyTagAttr = "METHOD=AES-128,URI=\"http://key.example.com/key\"";
+    std::shared_ptr<AttributesTag> keyTag = std::make_shared<AttributesTag>(HlsTag::EXTXKEY, keyTagAttr);
+    m3u8->ParseKey(keyTag);
+    EXPECT_FALSE(m3u8->hasExplicitIv_.load());
+}
+
+/**
+ * @tc.name  : Test ProcessInfo per-fragment IV without explicit IV
+ * @tc.number: ProcessInfo_PerFragment_IV_NoExplicit
+ * @tc.desc  : Test ProcessInfo computes per-fragment IV from sequence number when hasExplicitIv_ = false
+ */
+HWTEST_F(M3u8UnitTest, ProcessInfo_PerFragment_IV_NoExplicit, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    m3u8->isDecryptAble_ = true;
+    m3u8->hasExplicitIv_.store(false);
+    m3u8->sequence_ = 1;
+    KeyInfo keyInfo;
+    keyInfo.index_ = 0;
+    uint8_t keyData[16] = {1};
+    (void)memcpy_s(keyInfo.key_, sizeof(keyInfo.key_), keyData, sizeof(keyData));
+    keyInfo.keyLen_ = 16;
+    m3u8->keyInfos_[0] = keyInfo;
+    m3u8->isDecryptKeyReady_.store(true);
+    M3U8Info info;
+    info.uri = "http://example.com/seg1.ts";
+    info.duration = 10.0;
+    info.discontinuity = false;
+    size_t duration = 0;
+    m3u8->ProcessInfo(info, duration);
+    EXPECT_EQ(m3u8->sequence_, 2u);
+    EXPECT_FALSE(info.uri == "http://example.com/seg1.ts");
+    EXPECT_EQ(info.duration, 0.0);
+    EXPECT_NE(duration, 0u);
+    EXPECT_EQ(m3u8->files_.size(), 1u);
+}
+
+/**
+ * @tc.name  : Test ProcessInfo with explicit IV
+ * @tc.number: ProcessInfo_Explicit_IV
+ * @tc.desc  : Test ProcessInfo uses iv_ directly when hasExplicitIv_ = true
+ */
+HWTEST_F(M3u8UnitTest, ProcessInfo_Explicit_IV, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    m3u8->isDecryptAble_ = true;
+    m3u8->hasExplicitIv_.store(true);
+    uint8_t expectedIv[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                              0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10};
+    (void)memcpy_s(m3u8->iv_, sizeof(m3u8->iv_), expectedIv, sizeof(expectedIv));
+    m3u8->sequence_ = 100;
+    KeyInfo keyInfo;
+    keyInfo.index_ = 0;
+    uint8_t keyData[16] = {1};
+    (void)memcpy_s(keyInfo.key_, sizeof(keyInfo.key_), keyData, sizeof(keyData));
+    keyInfo.keyLen_ = 16;
+    m3u8->keyInfos_[0] = keyInfo;
+    m3u8->isDecryptKeyReady_.store(true);
+    M3U8Info info;
+    info.uri = "http://example.com/seg1.ts";
+    info.duration = 10.0;
+    info.discontinuity = false;
+    size_t duration = 0;
+    m3u8->ProcessInfo(info, duration);
+    EXPECT_EQ(m3u8->sequence_, 101u);
+    EXPECT_FALSE(info.uri == "http://example.com/seg1.ts");
+    EXPECT_EQ(info.duration, 0.0);
+    EXPECT_NE(duration, 0u);
+    EXPECT_EQ(m3u8->files_.size(), 1u);
+}
+
+/**
+ * @tc.name  : Test ProcessInfo with isDecryptAble_ = false
+ * @tc.number: ProcessInfo_NoDecrypt
+ * @tc.desc  : Test ProcessInfo creates plain fragment without key/IV when isDecryptAble_ = false
+ */
+HWTEST_F(M3u8UnitTest, ProcessInfo_NoDecrypt, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    m3u8->isDecryptAble_ = false;
+    m3u8->sequence_ = 1;
+    M3U8Info info;
+    info.uri = "http://example.com/seg1.ts";
+    info.duration = 10.0;
+    info.discontinuity = false;
+    size_t duration = 0;
+    m3u8->ProcessInfo(info, duration);
+    EXPECT_EQ(m3u8->sequence_, 2u);
+    EXPECT_FALSE(info.uri == "http://example.com/seg1.ts");
+    EXPECT_EQ(info.duration, 0.0);
+    EXPECT_NE(duration, 0u);
+    EXPECT_EQ(m3u8->files_.size(), 1u);
+    EXPECT_TRUE(m3u8->isFirstFragmentReady_.load());
+}
+
+/**
+ * @tc.name  : Test isSessionKey_ SaveData path
+ * @tc.number: IsSessionKey_SaveData
+ * @tc.desc  : Test SaveData with isSessionKey_ = true skips keyMutex_ and keyInfos_
+ */
+HWTEST_F(M3u8UnitTest, IsSessionKey_SaveData, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    m3u8->isSessionKey_ = true;
+    uint8_t data[16] = {0x01};
+    bool result = m3u8->SaveData(data, 16, false, 0);
+    EXPECT_TRUE(result);
+    EXPECT_TRUE(m3u8->isDecryptKeyReady_.load());
+}
+
+/**
+ * @tc.name  : Test SaveData with invalid length
+ * @tc.number: SaveData_Invalid_Length
+ * @tc.desc  : Test SaveData returns 0 when len > MAX_LOOP or len == 0
+ */
+HWTEST_F(M3u8UnitTest, SaveData_Invalid_Length, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    uint8_t data[32] = {0};
+    bool result = m3u8->SaveData(data, 32, false, 0);
+    EXPECT_FALSE(result);
+
+    result = m3u8->SaveData(data, 0, false, 0);
+    EXPECT_FALSE(result);
 }
 }

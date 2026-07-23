@@ -42,7 +42,7 @@ constexpr uint64_t DEFAULT_SUBTITLE_SNIFFSIZE = 128;
 int64_t GetFragmentDuration(const std::shared_ptr<M3U8Fragment>& file)
 {
     FALSE_RETURN_V(file != nullptr, 0);
-    int64_t duration = static_cast<int64_t>(file->duration_ * HST_SECOND / HST_NSECOND);
+    int64_t duration = static_cast<int64_t>(file->duration_ * static_cast<double>(HST_SECOND));
     return std::max<int64_t>(duration, 0);
 }
 
@@ -265,9 +265,12 @@ int64_t HlsPlayListDownloader::GetDuration()
         // For live stream, HiPlayerImpl needs a negative duration to indicate it's live.
         // But source needs a playwindow duration for obtaining seekable range.
         // So here returns -1 * duration.
-        return IsLiveTimeShiftSeekable() ? -1 * ((int64_t)(master->duration_ * HST_SECOND) / HST_NSECOND) : -1;
+        if (IsLiveTimeShiftSeekable()) {
+            return -1 * static_cast<int64_t>(master->duration_ * static_cast<double>(HST_SECOND));
+        }
+        return -1;
     }
-    return ((int64_t)(master->duration_ * HST_SECOND) / HST_NSECOND);
+    return static_cast<int64_t>(master->duration_ * static_cast<double>(HST_SECOND));
 }
 
 std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo()
@@ -279,7 +282,8 @@ std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo()
     int64_t duration = GetDuration();
     std::pair<int64_t, bool> startInfo{0, false};
     if (master->isStart_) {
-        int64_t timeOffset = ((int64_t)(master->timeOffset_ * HST_SECOND) / HST_MSECOND);
+        int64_t timeOffset = static_cast<int64_t>(static_cast<double>(master->timeOffset_) *
+            static_cast<double>(HST_SECOND / HST_MSECOND));
         if (duration != -1) {
             startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
                 (timeOffset > duration ? duration : timeOffset);
@@ -287,7 +291,8 @@ std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo()
         }
     } else if (master->defaultVariant_ && master->defaultVariant_->m3u8_ &&
             master->defaultVariant_->m3u8_->isStart_) {
-        int64_t timeOffset = ((int64_t)(master->defaultVariant_->m3u8_->timeOffset_ * HST_SECOND) / HST_MSECOND);
+        int64_t timeOffset = static_cast<int64_t>(static_cast<double>(master->defaultVariant_->m3u8_->timeOffset_)
+            * static_cast<double>(HST_SECOND / HST_MSECOND));
         if (duration != -1) {
             startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
                 (timeOffset > duration ? duration : timeOffset);
@@ -360,7 +365,7 @@ void HlsPlayListDownloader::UpdateSeekRanges(const std::list<std::shared_ptr<M3U
             seekRanges_.push_back({rangeStart, rangeEnd});
             rangeStart = pos;
         }
-        int64_t fragDuration = static_cast<int64_t>(file->duration_ * HST_SECOND / HST_NSECOND);
+        int64_t fragDuration = static_cast<int64_t>(file->duration_ * static_cast<double>(HST_SECOND));
         if (fragDuration < 0) {
             fragDuration = 0;
         }
@@ -377,7 +382,7 @@ void HlsPlayListDownloader::UpdateSeekRanges(const std::list<std::shared_ptr<M3U
         rangeStart = rangeEnd;
         auto it = files.rbegin();
         for (auto i = 0; i != MAX_LIVE_TS_NUM && it != files.rend(); i++) {
-            int64_t fragDuration = static_cast<int64_t>((*it)->duration_ * HST_SECOND / HST_NSECOND);
+            int64_t fragDuration = static_cast<int64_t>((*it)->duration_ * static_cast<double>(HST_SECOND));
             if (fragDuration < 0) {
                 fragDuration = 0;
             }
@@ -507,6 +512,14 @@ std::shared_ptr<AesDecryptor> HlsPlayListDownloader::GetAesDecryptor(uint64_t ke
         return aesDecryptorManager_->GetAesDecryptorByKeyIndex(keyIndex);
     }
     return nullptr;
+}
+
+bool HlsPlayListDownloader::HasExplicitIv(uint64_t keyIndex)
+{
+    if (aesDecryptorManager_ != nullptr) {
+        return aesDecryptorManager_->HasExplicitIv(keyIndex);
+    }
+    return false;
 }
 
 void HlsPlayListDownloader::NotifyListChange()
@@ -1048,9 +1061,10 @@ bool HlsPlayListDownloader::ReadMediaHeader(const std::list<std::shared_ptr<M3U8
 {
     for (const auto& stream : mediaList) {
         if (stream == nullptr || stream->m3u8_ == nullptr || stream->streamId_ != streamId ||
-            !stream->m3u8_->isHeaderReady_) {
+            !stream->m3u8_->isHeaderReady_.load()) {
             continue;
         }
+        AutoLock lock(stream->m3u8_->headerMutex_);
         if (stream->m3u8_->downloadHeaderLen_ > wantLen) {
             MEDIA_LOG_W("ReadMediaHeader downloadHeaderLen_ " PUBLIC_LOG_U32 " > wantLen " PUBLIC_LOG_U32,
                 stream->m3u8_->downloadHeaderLen_, wantLen);
@@ -1073,9 +1087,10 @@ bool HlsPlayListDownloader::ReadStreamHeader(const std::list<std::shared_ptr<M3U
 {
     for (const auto &stream : streamList) {
         if (stream == nullptr || stream->m3u8_ == nullptr || stream->streamId_ != streamId ||
-            !stream->m3u8_->isHeaderReady_) {
+            !stream->m3u8_->isHeaderReady_.load()) {
             continue;
         }
+        AutoLock lock(stream->m3u8_->headerMutex_);
         if (stream->m3u8_->downloadHeaderLen_ > wantLen) {
             MEDIA_LOG_W("ReadStreamHeader downloadHeaderLen_ " PUBLIC_LOG_U32 " > wantLen " PUBLIC_LOG_U32,
                 stream->m3u8_->downloadHeaderLen_, wantLen);

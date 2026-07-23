@@ -2227,6 +2227,136 @@ HWTEST_F(DownloaderUnitTest, HttpCurlClient_HeaderList_Free_In_dtor, TestSize.Le
     (void)client->Open("http://127.0.0.1:46666/test", httpHeader, 1000);
     client.reset();
 }
+
+/**
+ * @tc.name  : Test SafeStoDouble API
+ * @tc.number: SafeStoDouble_001
+ * @tc.desc  : Test SafeStoDouble with valid double string
+ */
+HWTEST_F(DownloaderUnitTest, SafeStoDouble_001, TestSize.Level1)
+{
+    double value = 0.0;
+    EXPECT_TRUE(StringUtil::SafeStoDouble("3.14", value));
+    EXPECT_DOUBLE_EQ(value, 3.14);
+}
+
+/**
+ * @tc.name  : Test SafeStoDouble API
+ * @tc.number: SafeStoDouble_002
+ * @tc.desc  : Test SafeStoDouble with empty string returns false
+ */
+HWTEST_F(DownloaderUnitTest, SafeStoDouble_002, TestSize.Level1)
+{
+    double value = -1.0;
+    bool result = StringUtil::SafeStoDouble("", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+    result = StringUtil::SafeStoDouble("   ", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+}
+
+/**
+ * @tc.name  : Test SafeStoDouble API
+ * @tc.number: SafeStoDouble_003
+ * @tc.desc  : Test SafeStoDouble with overflow string returns false
+ */
+HWTEST_F(DownloaderUnitTest, SafeStoDouble_003, TestSize.Level1)
+{
+    double value = -1.0;
+    bool result = StringUtil::SafeStoDouble("1e999", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+    result = StringUtil::SafeStoDouble("-1e999", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+}
+
+/**
+ * @tc.name  : Test SafeStoDouble API
+ * @tc.number: SafeStoDouble_004
+ * @tc.desc  : Test SafeStoDouble with non-numeric string returns false
+ */
+HWTEST_F(DownloaderUnitTest, SafeStoDouble_004, TestSize.Level1)
+{
+    double value = -1.0;
+    bool result = StringUtil::SafeStoDouble("abc", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+    result = StringUtil::SafeStoDouble("!@#", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+}
+
+/**
+ * @tc.name  : Test RetryCore null client
+ * @tc.number: RetryCore_NullClient
+ * @tc.desc  : Test RetryCore returns false when client_ is null
+ */
+HWTEST_F(DownloaderUnitTest, RetryCore_NullClient, TestSize.Level1)
+{
+    auto downloader = std::make_shared<Downloader>("test_retry_null");
+    auto request = std::make_shared<DownloadRequest>("http://test.com",
+        [](uint8_t*, uint32_t, bool) { return (uint32_t)0; },
+        [](DownloadStatus, std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {});
+    downloader->client_ = nullptr;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    bool result = downloader->RetryCore(request);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name  : Test RetryCore null currentRequest
+ * @tc.number: RetryCore_NullCurrentRequest
+ * @tc.desc  : Test RetryCore with null currentRequest_ skips inner block
+ */
+HWTEST_F(DownloaderUnitTest, RetryCore_NullCurrentRequest, TestSize.Level1)
+{
+    auto downloader = std::make_shared<Downloader>("test_retry_nullreq");
+    auto request = std::make_shared<DownloadRequest>("http://test.com",
+        [](uint8_t*, uint32_t, bool) { return (uint32_t)0; },
+        [](DownloadStatus, std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {});
+    downloader->client_ = std::make_shared<AppClient>(
+        [](void*, size_t, size_t, void*) -> size_t { return 0; },
+        [](void*, size_t, size_t, void*) -> size_t { return 0; },
+        nullptr);
+    downloader->currentRequest_ = nullptr;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    bool result = downloader->RetryCore(request);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name  : Test RetryCore range request size update
+ * @tc.number: RetryCore_RangeSizeUpdate
+ * @tc.desc  : Test RetryCore updates requestSize for valid range (endPos > 0, startPos >= 0)
+ */
+HWTEST_F(DownloaderUnitTest, RetryCore_RangeSizeUpdate, TestSize.Level1)
+{
+    auto downloader = std::make_shared<Downloader>("test_retry_range");
+    auto request = std::make_shared<DownloadRequest>("http://test.com",
+        [](uint8_t*, uint32_t, bool) { return (uint32_t)0; },
+        [](DownloadStatus, std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {});
+    downloader->client_ = std::make_shared<AppClient>(
+        [](void*, size_t, size_t, void*) -> size_t { return 0; },
+        [](void*, size_t, size_t, void*) -> size_t { return 0; },
+        nullptr);
+    downloader->requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>("testQue");
+    downloader->currentRequest_ = request;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    downloader->currentRequest_->startPos_ = 100;
+    downloader->currentRequest_->endPos_ = 200;
+    downloader->currentRequest_->requestSize_ = 0;
+    bool result = downloader->RetryCore(request);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(downloader->currentRequest_->requestSize_, 101);
+}
 }
 }
 }

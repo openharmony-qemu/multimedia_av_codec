@@ -20,6 +20,7 @@
 #include "securec.h"
 #include "dash_mpd_parser.h"
 #include "dash_mpd_util.h"
+#include "utils/string_utils.h"
 #include "utils/time_utils.h"
 
 namespace {
@@ -88,7 +89,7 @@ void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::
     DashElementList dashElementList;
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
 
@@ -113,7 +114,7 @@ void DashMpdParser::GetPeriodElement(std::shared_ptr<XmlParser> xmlParser, std::
 
     // parse AdaptationSet label last
     while (adptSetElementList.size() > 0) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
 
@@ -260,7 +261,7 @@ void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser
     DashElementList dashElementList;
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
 
@@ -300,7 +301,7 @@ void DashMpdParser::GetAdaptationSetElement(std::shared_ptr<XmlParser> xmlParser
 
     // parse representation last
     while (representationElementList.size() > 0) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
 
@@ -423,7 +424,7 @@ void DashMpdParser::ParseEventStream(std::shared_ptr<XmlParser> xmlParser, std::
 
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
 
@@ -483,7 +484,7 @@ void DashMpdParser::ParseEventChildren(std::shared_ptr<XmlParser> xmlParser,
 {
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
         
@@ -556,7 +557,7 @@ bool DashMpdParser::ParseSpliceInfoSectionChildren(std::shared_ptr<XmlParser> xm
 {
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
         
@@ -617,7 +618,7 @@ bool DashMpdParser::ParseSpliceInsertChildren(std::shared_ptr<XmlParser> xmlPars
 {
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
         
@@ -695,7 +696,7 @@ void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::
         // parse element SegmentBase
         std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
         while (childElement != nullptr) {
-            if (this->stopFlag_) {
+            if (this->stopFlag_.load()) {
                 break;
             }
 
@@ -752,7 +753,7 @@ void DashMpdParser::ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::
         // parse element SegmentList
         std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
         while (childElement != nullptr) {
-            if (this->stopFlag_) {
+            if (this->stopFlag_.load()) {
                 break;
             }
 
@@ -850,7 +851,7 @@ void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, s
         // parse element SegmentTemplate
         std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
         while (childElement != nullptr) {
-            if (this->stopFlag_) {
+            if (this->stopFlag_.load()) {
                 break;
             }
 
@@ -942,7 +943,7 @@ void DashMpdParser::GetRepresentationElement(std::shared_ptr<XmlParser> xmlParse
     DashElementList dashElementList;
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
 
@@ -1043,7 +1044,7 @@ void DashMpdParser::ParseContentProtection(std::shared_ptr<XmlParser> xmlParser,
 
         std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
         while (childElement != nullptr) {
-            if (this->stopFlag_) {
+            if (this->stopFlag_.load()) {
                 break;
             }
 
@@ -1119,30 +1120,15 @@ void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xm
         propertyList.push_back(channelProperty);
 
         const std::string &val = channelProperty->value_;
-        bool isDigit = !val.empty();
-        for (char c : val) {
-            if (!std::isdigit(static_cast<unsigned char>(c))) {
-                isDigit = false;
-                break;
+        int64_t tempVal = 0;
+        if (!val.empty() && StringUtil::SafeStoInt64(val, tempVal)) {
+            if (tempVal >= 0 && tempVal <= UINT32_MAX) {
+                channels = static_cast<uint32_t>(tempVal);
+            } else {
+                MEDIA_LOG_E("audioChannelConfigurationNode out of range");
+                IDashMpdNode::DestroyNode(node);
+                return;
             }
-        }
-        size_t pos = 0;
-        int32_t base = 10;
-        unsigned long value = 0;
-        if (!val.empty()) {
-            const char* start = val.c_str();
-            char* end = nullptr;
-            value = strtoul(start, &end, base);
-            pos = static_cast<size_t>(end - start);
-        }
-
-        if (pos < val.length()) {
-            MEDIA_LOG_E("audioChannelConfigurationNode out of range");
-            IDashMpdNode::DestroyNode(node);
-            return;
-        }
-        if (isDigit && value < UINT32_MAX) {
-            channels = static_cast<uint32_t>(value);
         }
 
         IDashMpdNode::DestroyNode(node);
@@ -1158,7 +1144,7 @@ void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, s
     // parse element SegmentTimeliness
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
 
@@ -1285,7 +1271,7 @@ void DashMpdParser::GetMpdElement(std::shared_ptr<XmlParser> xmlParser, std::sha
     DashList<std::shared_ptr<XmlElement>> periodElementList;
     std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
     while (childElement != nullptr) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
 
@@ -1319,7 +1305,7 @@ void DashMpdParser::ParsePeriodElement(std::shared_ptr<XmlParser> &xmlParser,
 {
     // parse Period label last
     while (periodElementList.size() > 0) {
-        if (this->stopFlag_) {
+        if (this->stopFlag_.load()) {
             break;
         }
 
@@ -1334,19 +1320,19 @@ void DashMpdParser::ParsePeriodElement(std::shared_ptr<XmlParser> &xmlParser,
 
 void DashMpdParser::ParseMPD(const char *mpdData, uint32_t length)
 {
-    if (this->stopFlag_) {
+    if (this->stopFlag_.load()) {
         return;
     }
 
     std::shared_ptr<XmlParser> xmlParser = std::make_shared<XmlParser>();
     int32_t ret = xmlParser->ParseFromBuffer(mpdData, length);
     if (ret != static_cast<int32_t>(XmlBaseRtnValue::XML_BASE_OK)) {
-        MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_, ret);
+        MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_.load(), ret);
         return;
     }
     std::shared_ptr<XmlElement> rootElement = xmlParser->GetRootElement();
-    if (this->stopFlag_ || rootElement == nullptr) {
-        MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_, ret);
+    if (this->stopFlag_.load() || rootElement == nullptr) {
+        MEDIA_LOG_E("Parse error or stop " PUBLIC_LOG_D32 ", ret=" PUBLIC_LOG_D32, this->stopFlag_.load(), ret);
         return;
     }
 
@@ -1403,12 +1389,12 @@ void DashMpdParser::Clear()
     dashMpdInfo_.hwTotalViewNumber_ = 0;
     dashMpdInfo_.profile_ = "";
     dashMpdInfo_.mediaType_ = "";
-    stopFlag_ = 0;
+    stopFlag_.store(0);
 }
 
 void DashMpdParser::StopParseMpd()
 {
-    this->stopFlag_ = 1;
+    this->stopFlag_.store(1);
 }
 
 void DashMpdParser::FreeSegmentBase(DashSegBaseInfo *segBaseInfo) const

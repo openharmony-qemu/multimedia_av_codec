@@ -42,6 +42,9 @@ constexpr uint32_t DEFAULT_MAX_SIZE = 100 * 1024 * 1024;
 constexpr double SECOND_TO_MICROSECOND = 1000.0 * 1000.0;
 constexpr uint64_t MAX_UINT64_NUM = UINT64_MAX;
 constexpr size_t RETRY_TIMES = 1000;
+constexpr size_t AES_IV_LEN = 16;
+constexpr int BITS_PER_BYTE = 8;
+constexpr size_t SEQ_IV_OFFSET = AES_IV_LEN / 2;
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
 constexpr char EXT_X_DEFINE_TAG[] = "#EXT-X-DEFINE";
 static const std::unordered_map<std::string, M3U8MediaType> kTypeMap = {
@@ -363,7 +366,7 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
         sourceLoader_->Close(-1);
     }
     isDecryptAble_ = true;
-    isDecryptKeyReady_ = false;
+    isDecryptKeyReady_.store(false);
     ParseKey(std::static_pointer_cast<AttributesTag>(tag));
     auto keyTag = std::static_pointer_cast<AttributesTag>(tag);
     auto keyUri = keyTag ? keyTag->GetAttributeByName("URI") : nullptr;
@@ -373,6 +376,7 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
     } else {
         KeyInfo keyInfo;
         std::copy(std::begin(iv_), std::end(iv_), std::begin(keyInfo.iv_));
+        keyInfo.hasExplicitIv_ = hasExplicitIv_.load();
         keyAllDownload_.fetch_add(1);
         {
             std::unique_lock<std::shared_mutex> lock(keyMutex_);
@@ -408,6 +412,7 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
     if (length > 0 && length < DEFAULT_MAX_SIZE) {
         FALSE_RETURN_MSG(offset <= SIZE_MAX - length,
             "ParseMap: offset + length overflow, offset " PUBLIC_LOG_ZU " length " PUBLIC_LOG_ZU, offset, length);
+        AutoLock lock(headerMutex_);
         if (fmp4Header_ != nullptr) {
             delete[] fmp4Header_;
             fmp4Header_ = nullptr;
@@ -572,13 +577,17 @@ void M3U8::StartDownload()
 
 void M3U8::UpdateDownloadFinished(const std::string& url, const std::string& location)
 {
-    isHeaderReady_.store(true);
+    {
+        AutoLock lock(sleepMutex_);
+        isHeaderReady_.store(true);
+    }
     sleepCond_.NotifyOne();
 }
 
 uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
 {
     FALSE_RETURN_V(data != nullptr, 0);
+    AutoLock lock(headerMutex_);
     if (fmp4Header_ == nullptr && downloadHeaderRequest_) {
         uint32_t headerLen = downloadHeaderRequest_->GetFileContentLengthNoWait();
         headerLen = headerLen > 0 ? headerLen : DEFAULT_HEADER_SIZE; // 1MB
@@ -686,8 +695,18 @@ void M3U8::ProcessInfo(M3U8Info& info, size_t& duration)
     }
     auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.duration, sequence_, info.discontinuity);
     if (isDecryptAble_) {
+        uint8_t fragmentIv[AES_IV_LEN] = {0};
+        std::shared_lock<std::shared_mutex> lock(keyMutex_);
+        if (hasExplicitIv_.load()) {
+            std::copy(std::begin(iv_), std::end(iv_), std::begin(fragmentIv));
+        } else {
+            uint64_t seq = static_cast<uint64_t>(sequence_);
+            for (size_t i = 0; i < SEQ_IV_OFFSET; i++) {
+                fragmentIv[SEQ_IV_OFFSET + i] = static_cast<uint8_t>(seq >> ((SEQ_IV_OFFSET - 1 - i) * BITS_PER_BYTE));
+            }
+        }
         auto m3u8 = M3U8Fragment(info.uri, info.duration, sequence_, info.discontinuity);
-        fragment = std::make_shared<M3U8Fragment>(m3u8, key_, iv_);
+        fragment = std::make_shared<M3U8Fragment>(m3u8, key_, fragmentIv);
     }
     sequence_++;
     AddFile(fragment, duration);
@@ -768,7 +787,10 @@ void M3U8::ParseKey(const std::shared_ptr<AttributesTag> &tag)
         keyUri_ = std::make_shared<std::string>(uriAttribute->QuotedString());
     }
     auto ivAttribute = tag->GetAttributeByName("IV");
+    hasExplicitIv_.store(false);
+    FALSE_RETURN(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)) == 0);
     if (ivAttribute) {
+        hasExplicitIv_.store(true);
         std::vector<uint8_t> iv_buff = ivAttribute->HexSequence();
         uint32_t size = iv_buff.size() > MAX_LOOP ? MAX_LOOP : iv_buff.size();
         for (uint32_t i = 0; i < size; i++) {
@@ -834,18 +856,21 @@ uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock, uint64_t key
     FALSE_RETURN_V(data != nullptr, 0);
     // 16 is a magic number
     if (len <= MAX_LOOP && len != 0) {
-        NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), 0);
-        keyLen_ = len;
-        isDecryptKeyReady_ = true;
         if (!isSessionKey_) {
             {
                 std::unique_lock<std::shared_mutex> lock(keyMutex_);
+                NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), 0);
+                keyLen_ = len;
                 FALSE_RETURN_V_MSG(keyInfos_.find(keyIndex) != keyInfos_.end(), len, "keyIndex out of bounds");
                 NZERO_RETURN_V(memcpy_s(keyInfos_[keyIndex].key_, MAX_LOOP, data, len), 0);
                 keyInfos_[keyIndex].keyLen_ = keyLen_;
             }
             keyAllDownload_.fetch_sub(1);
+        } else {
+            NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), 0);
+            keyLen_ = len;
         }
+        isDecryptKeyReady_.store(true);
         MEDIA_LOG_I("DownloadKey hlsSourceKey end, index:" PUBLIC_LOG_U64, keyIndex);
         return len;
     }
@@ -1026,9 +1051,10 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     if (isDecryptAble_) {
         m3u8->isDecryptAble_ = isDecryptAble_;
         std::copy(std::begin(key_), std::end(key_), std::begin(m3u8->key_));
-        m3u8->isDecryptKeyReady_ = isDecryptKeyReady_;
+        m3u8->isDecryptKeyReady_.store(isDecryptKeyReady_.load());
         std::copy(std::begin(iv_), std::end(iv_), std::begin(m3u8->iv_));
         m3u8->keyLen_ = keyLen_;
+        m3u8->hasExplicitIv_.store(hasExplicitIv_.load());
     }
     m3u8->httpHeader_ = httpHeader_;
     isParseSuccess_ = m3u8->Update(playList_, false, totalKeyIndex_);
@@ -1054,21 +1080,22 @@ void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
         m3u8->SetDownloadCallback(downloadCallback_);
     }
     m3u8->isDecryptAble_ = true;
-    m3u8->isDecryptKeyReady_ = false;
+    m3u8->isDecryptKeyReady_.store(false);
     m3u8->ParseKey(std::static_pointer_cast<AttributesTag>(tag));
     sessionKeyIndex_++;
     m3u8->isSessionKey_ = true;
     m3u8->sessionKeyIndex_ = sessionKeyIndex_;
     m3u8->DownloadKey(false);
     uint32_t downloadTime = 0;
-    while (!m3u8->isDecryptKeyReady_ && downloadTime < MAX_DOWNLOAD_TIME && !isInterruptNeeded_) {
+    while (!m3u8->isDecryptKeyReady_.load() && downloadTime < MAX_DOWNLOAD_TIME && !isInterruptNeeded_) {
         Task::SleepInTask(WAIT_KEY_SLEEP_TIME);
         downloadTime++;
     }
     std::copy(std::begin(m3u8->key_), std::end(m3u8->key_), std::begin(key_));
-    isDecryptKeyReady_ = m3u8->isDecryptKeyReady_;
+    isDecryptKeyReady_.store(m3u8->isDecryptKeyReady_.load());
     std::copy(std::begin(m3u8->iv_), std::end(m3u8->iv_), std::begin(iv_));
     keyLen_ = m3u8->keyLen_;
+    hasExplicitIv_.store(m3u8->hasExplicitIv_.load());
 }
 
 void M3U8MasterPlaylist::UpdateMasterPlaylist()

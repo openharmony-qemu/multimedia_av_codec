@@ -45,6 +45,7 @@ const std::string DASH_LIST[] = {
 constexpr auto UNALLOWED_PROTOCOLS = std::array{
     std::string_view{"file://"},
 };
+constexpr std::string_view HTTP_PREFIX = "http";
 
 }
 
@@ -90,8 +91,9 @@ HttpSourcePlugin::~HttpSourcePlugin()
 
 std::string HttpSourcePlugin::GetContentType()
 {
-    FALSE_RETURN_V(downloader_ != nullptr, "");
-    return downloader_->GetContentType();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, "");
+    return downloader->GetContentType();
 }
 
 Status HttpSourcePlugin::Init()
@@ -126,23 +128,26 @@ Status HttpSourcePlugin::Reset()
 Status HttpSourcePlugin::SetReadBlockingFlag(bool isReadBlockingAllowed)
 {
     MEDIA_LOG_D("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isReadBlockingAllowed);
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_UNKNOWN);
-    downloader_->SetReadBlockingFlag(isReadBlockingAllowed);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_UNKNOWN);
+    downloader->SetReadBlockingFlag(isReadBlockingAllowed);
     return Status::OK;
 }
 
 Status HttpSourcePlugin::GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate)
 {
     MEDIA_LOG_D("GetStreamInfo entered");
-    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
-    return downloader_->GetStreamInfo(streams, isUpdate);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::OK);
+    return downloader->GetStreamInfo(streams, isUpdate);
 }
 
 Status HttpSourcePlugin::SelectStream(int32_t streamID)
 {
     MEDIA_LOG_D("SelectStream entered");
-    FALSE_RETURN_V(downloader_ != nullptr, Status::OK);
-    downloader_->SelectStream(streamID);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::OK);
+    downloader->SelectStream(streamID);
     return Status::OK;
 }
 
@@ -162,8 +167,9 @@ Status HttpSourcePlugin::Stop()
 Status HttpSourcePlugin::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
-    if (downloader_ != nullptr && CheckIsM3U8Uri()) {
-        downloader_->Pause();
+    auto downloader = GetDownloader();
+    if (downloader != nullptr && CheckIsM3U8Uri()) {
+        downloader->Pause();
     }
     return Status::OK;
 }
@@ -171,8 +177,9 @@ Status HttpSourcePlugin::Pause()
 Status HttpSourcePlugin::Resume()
 {
     MEDIA_LOG_I("Resume enter.");
-    if (downloader_ != nullptr && CheckIsM3U8Uri()) {
-        downloader_->Resume();
+    auto downloader = GetDownloader();
+    if (downloader != nullptr && CheckIsM3U8Uri()) {
+        downloader->Resume();
     }
     return Status::OK;
 }
@@ -195,8 +202,9 @@ Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 Status HttpSourcePlugin::SetMediaDuration(int64_t mediaDuration)
 {
     MEDIA_LOG_I("SetMediaDuration enter.");
-    if (downloader_ != nullptr && mediaDuration > 0) {
-        downloader_->SetMediaDuration(mediaDuration);
+    auto downloader = GetDownloader();
+    if (downloader != nullptr && mediaDuration > 0) {
+        downloader->SetMediaDuration(mediaDuration);
     }
     return Status::OK;
 }
@@ -205,9 +213,9 @@ Status HttpSourcePlugin::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     MEDIA_LOG_D("SetCallback enter.");
     callback_ = cb;
-    AutoLock lock(mutex_);
-    if (downloader_ != nullptr) {
-        downloader_->SetCallback(cb);
+    auto downloader = GetDownloader();
+    if (downloader != nullptr) {
+        downloader->SetCallback(cb);
     }
     return Status::OK;
 }
@@ -216,8 +224,7 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 {
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SetSource");
     MEDIA_LOG_D("SetSource enter.");
-    AutoLock lock(mutex_);
-    FALSE_RETURN_V(downloader_ == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
+    FALSE_RETURN_V(GetDownloader() == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
     FALSE_RETURN_V(source != nullptr, Status::ERROR_INVALID_OPERATION);
     FALSE_RETURN_V(IsAllowedProtocol(source->GetSourceUri()), Status::ERROR_INVALID_OPERATION);
     InitSourcePlugin(source);
@@ -233,12 +240,13 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
 Status HttpSourcePlugin::InitSourcePlugin(const std::shared_ptr<MediaSource>& source)
 {
     SetDownloaderBySource(source);
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     auto cb = callback_.lock();
     if (cb) {
-        downloader_->SetCallback(cb);
+        downloader->SetCallback(cb);
     }
-    FALSE_RETURN_V(downloader_->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(downloader->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
     auto uuid = source->GetAppUid();
     std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
     if (reportInfo_ != nullptr) {
@@ -273,54 +281,75 @@ static void UserDefinedDuration(std::shared_ptr<PlayStrategy> strategy, bool& uD
     }
 }
 
+std::shared_ptr<MediaDownloader> HttpSourcePlugin::CreateDashDownloader()
+{
+    auto downloader = std::make_shared<DownloadMonitor>(std::make_shared<DashMediaDownloader>(loaderCombinations_));
+    FALSE_RETURN_V_MSG(downloader != nullptr, nullptr, "CreateDashDownloader downloader is nullptr");
+    downloader->Init();
+    downloader->SetSourceStatisticsDfx(reportInfo_);
+    return downloader;
+}
+
+std::shared_ptr<MediaDownloader> HttpSourcePlugin::CreateHlsDownloader()
+{
+    bool userDefinedDuration = false;
+    uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
+    UserDefinedDuration(playStrategy_, userDefinedDuration, expectDuration);
+    auto downloader = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>
+        (expectDuration, userDefinedDuration, httpHeader_, loaderCombinations_));
+    FALSE_RETURN_V_MSG(downloader != nullptr, nullptr, "CreateHlsDownloader downloader is nullptr");
+    downloader->Init();
+    downloader->SetSourceStatisticsDfx(reportInfo_);
+    return downloader;
+}
+
+void HttpSourcePlugin::InitSourceLoader(std::shared_ptr<MediaSource> source)
+{
+    if (source->GetSourceLoader() == nullptr) {
+        return;
+    }
+    loaderCombinations_ = std::make_shared<MediaSourceLoaderCombinations>(source->GetSourceLoader());
+    loaderCombinations_->EnableOfflineCache(source->GetenableOfflineCache());
+    if (httpHeader_.find("Cookie") != httpHeader_.end() && loaderCombinations_->GetenableOfflineCache()) {
+        loaderCombinations_->Close(-1);
+    } else {
+        std::shared_ptr<StorageUsageUtil> storageUsage = std::make_shared<StorageUsageUtil>();
+        if (loaderCombinations_->GetenableOfflineCache() && !storageUsage->HasEnoughStorage()) {
+            loaderCombinations_->Close(-1);
+        }
+    }
+}
+
 void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
 {
     FALSE_RETURN_MSG(source != nullptr, "source is null.");
-    std::shared_ptr<PlayStrategy> playStrategy;
-    playStrategy = PlayStrategyInit(source);
-    if (source->GetSourceLoader() != nullptr) {
-        loaderCombinations_ = std::make_shared<MediaSourceLoaderCombinations>(source->GetSourceLoader());
-        loaderCombinations_->EnableOfflineCache(source->GetenableOfflineCache());
-        if (httpHeader_.find("Cookie") != httpHeader_.end() && loaderCombinations_->GetenableOfflineCache()) {
-            loaderCombinations_->Close(-1);
-        } else {
-            std::shared_ptr<StorageUsageUtil> storageUsage = std::make_shared<StorageUsageUtil>();
-            if (loaderCombinations_->GetenableOfflineCache() && !storageUsage->HasEnoughStorage()) {
-                loaderCombinations_->Close(-1);
-            }
-        }
-    }
+    playStrategy_ = PlayStrategyInit(source);
+    InitSourceLoader(source);
     if (IsDash()) {
-        downloader_ = std::make_shared<DownloadMonitor>(
-                      std::make_shared<DashMediaDownloader>(loaderCombinations_));
-        FALSE_RETURN_MSG(downloader_ != nullptr, "SetDownloaderBySource downloader is nullptr");
-        downloader_->Init();
-        downloader_->SetSourceStatisticsDfx(reportInfo_);
+        auto downloader = CreateDashDownloader();
+        SetDownloader(downloader);
         delayReady_ = false;
     } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        bool userDefinedDuration = false;  // 允许自动调节缓冲区大小
-        uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
-        UserDefinedDuration(playStrategy, userDefinedDuration, expectDuration);
-        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>
-                      (expectDuration, userDefinedDuration, httpHeader_, loaderCombinations_));
-        FALSE_RETURN_MSG(downloader_ != nullptr, "SetDownloaderBySource downloader is nullptr");
-        downloader_->Init();
-        downloader_->SetSourceStatisticsDfx(reportInfo_);
+        auto downloader = CreateHlsDownloader();
+        SetDownloader(downloader);
         delayReady_ = false;
-    } else if (uri_.compare(0, 4, "http") == 0) { // 0 : position, 4: count
+    } else if (uri_.compare(0, HTTP_PREFIX.length(), HTTP_PREFIX) == 0) {
         InitHttpSource(source);
     }
-    if (downloader_ != nullptr && playStrategy != nullptr) {
-        downloader_->SetPlayStrategy(playStrategy);
+    auto downloader = GetDownloader();
+    if (downloader != nullptr && playStrategy_ != nullptr) {
+        downloader->SetPlayStrategy(playStrategy_);
     }
-    if (mimeType_== AVMimeTypes::APPLICATION_M3U8) {
-        downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
-        downloader_->Init();
+    if (mimeType_ == AVMimeTypes::APPLICATION_M3U8) {
+        auto hlsDownloader = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
+        hlsDownloader->Init();
+        SetDownloader(hlsDownloader);
     }
     MediaStreamDfxTrace(source);
-    if (downloader_ != nullptr) {
-        downloader_->SetInterruptState(isInterruptNeeded_);
-        downloader_->SetAppUid(source->GetAppUid());
+    downloader = GetDownloader();
+    if (downloader != nullptr) {
+        downloader->SetInterruptState(isInterruptNeeded_);
+        downloader->SetAppUid(source->GetAppUid());
     }
 }
 
@@ -333,7 +362,8 @@ void HttpSourcePlugin::InitHttpSource(const std::shared_ptr<MediaSource>& source
             [](const std::shared_ptr<PlayMediaStream>& streamA, const std::shared_ptr<PlayMediaStream>& streamB) {
                 return (streamA->bitrate < streamB->bitrate) ||
                        (streamA->bitrate == streamB->bitrate &&
-                        streamA->width * streamA->height < streamB->width * streamB->height);
+                        static_cast<uint64_t>(streamA->width) * streamA->height <
+                        static_cast<uint64_t>(streamB->width) * streamB->height);
         });
         uri_ = playMediaStreams.front()->url;
     }
@@ -341,15 +371,16 @@ void HttpSourcePlugin::InitHttpSource(const std::shared_ptr<MediaSource>& source
     if (playStrategy != nullptr && playStrategy->duration > 0) {
         expectDuration = playStrategy->duration;
     }
-    downloader_ = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
+    auto downloader = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
         (uri_, expectDuration, loaderCombinations_));
-    downloader_->Init();
-    downloader_->SetSourceStatisticsDfx(reportInfo_);
+    downloader->Init();
+    downloader->SetSourceStatisticsDfx(reportInfo_);
     auto cb = callback_.lock();
     if (cb) {
-        downloader_->SetCallback(cb);
+        downloader->SetCallback(cb);
     }
-    downloader_->SetMediaStreams(playMediaStreams);
+    downloader->SetMediaStreams(playMediaStreams);
+    SetDownloader(downloader);
 }
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
@@ -371,8 +402,8 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::Read, offset: "
         + std::to_string(offset) + ", expectedLen: " + std::to_string(expectedLen));
     MEDIA_LOG_D("Read enter.");
-    AutoLock lock(mutex_);
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
 
     if (buffer == nullptr) {
         buffer = std::make_shared<Buffer>();
@@ -398,7 +429,7 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
     readDataInfo.wantReadLength_ = expectedLen;
     readDataInfo.ffmpegOffset = offset;
 
-    auto result = downloader_->Read(writableAddr, readDataInfo);
+    auto result = downloader->Read(writableAddr, readDataInfo);
     buffer->streamID = readDataInfo.nextStreamId_;
 
     bufData->UpdateDataSize(readDataInfo.realReadLength_);
@@ -410,40 +441,41 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
 Status HttpSourcePlugin::GetSize(uint64_t& size)
 {
     MEDIA_LOG_D("GetSize enter.");
-    AutoLock lock(mutex_);
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    size = static_cast<uint64_t>(downloader_->GetContentLength());
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    size = static_cast<uint64_t>(downloader->GetContentLength());
     return Status::OK;
 }
 
 Seekable HttpSourcePlugin::GetSeekable()
 {
     MEDIA_LOG_D("GetSeekable enter.");
-    AutoLock lock(mutex_);
-    FALSE_RETURN_V(downloader_ != nullptr, Seekable::INVALID);
-    return downloader_->GetSeekable();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Seekable::INVALID);
+    return downloader->GetSeekable();
 }
 
 void HttpSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("SetInterruptState %{public}d.", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
-    if (downloader_ != nullptr) {
-        downloader_->SetInterruptState(isInterruptNeeded);
+    auto downloader = GetDownloader();
+    if (downloader != nullptr) {
+        downloader->SetInterruptState(isInterruptNeeded);
     }
 }
 
 Status HttpSourcePlugin::SeekTo(uint64_t offset)
 {
-    AutoLock lock(mutex_);
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SeekTo");
     MEDIA_LOG_I("SeekTo enter, offset = " PUBLIC_LOG_U64, offset);
-    MEDIA_LOG_I("SeekTo enter, content length = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
-    FALSE_RETURN_V(downloader_->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    if (offset > downloader_->GetContentLength() && downloader_->GetContentLength() != 0) {
+    MEDIA_LOG_I("SeekTo enter, content length = " PUBLIC_LOG_ZU, downloader->GetContentLength());
+    FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
+    if (offset > downloader->GetContentLength() && downloader->GetContentLength() != 0) {
         MEDIA_LOG_I("SeekTo enter fail, offset = " PUBLIC_LOG_U64, offset);
-        MEDIA_LOG_I("SeekTo enter fail, content = " PUBLIC_LOG_ZU, downloader_->GetContentLength());
+        MEDIA_LOG_I("SeekTo enter fail, content = " PUBLIC_LOG_ZU, downloader->GetContentLength());
         seekErrorCount_++;
         if (seekErrorCount_ > ERROR_COUNT) {
             auto cb = callback_.lock();
@@ -452,17 +484,16 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
                     "errorMessage: seek time exceeds the maximum duration of the resource"});
             }
         }
-        FALSE_RETURN_V(offset <= downloader_->GetContentLength(), Status::ERROR_INVALID_PARAMETER);
+        FALSE_RETURN_V(offset <= downloader->GetContentLength(), Status::ERROR_INVALID_PARAMETER);
     }
     bool isSeekHit = false;
-    FALSE_RETURN_V(downloader_->SeekToPos(offset, isSeekHit), Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(downloader->SeekToPos(offset, isSeekHit), Status::ERROR_UNKNOWN);
     return Status::OK;
 }
 
 Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
 {
-    // Not use mutex to avoid deadlock in continuously multi times in seeking
-    std::shared_ptr<MediaDownloader> downloader = downloader_;
+    auto downloader = GetDownloader();
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
     auto duration = downloader->GetDuration();
@@ -476,8 +507,7 @@ Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
 
 Status HttpSourcePlugin::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
 {
-    // Not use mutex to avoid deadlock in continuously multi times in seeking
-    std::shared_ptr<MediaDownloader> downloader = downloader_;
+    auto downloader = GetDownloader();
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
     auto duration = downloader->GetDuration();
@@ -491,46 +521,48 @@ Status HttpSourcePlugin::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode
 
 void HttpSourcePlugin::CloseUri(bool isAsync)
 {
-    // As Read function require lock firstly, if the Read function is block, we can not get the lock
-    std::shared_ptr<MediaDownloader> downloader = downloader_;
+    auto downloader = GetDownloader();
     if (downloader != nullptr) {
         MEDIA_LOG_D("Close uri");
         downloader->Close(true);
     }
     if (!isAsync) {
-        AutoLock lock(mutex_);
-        downloader_ = nullptr;
+        SetDownloader(nullptr);
     }
     uri_.clear();
 }
 
 Status HttpSourcePlugin::GetDuration(int64_t& duration)
 {
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    duration = downloader_->GetDuration();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    duration = downloader->GetDuration();
     return Status::OK;
 }
 
 Status HttpSourcePlugin::GetStartInfo(std::pair<int64_t, bool>& startInfo)
 {
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    startInfo = downloader_->GetStartInfo();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    startInfo = downloader->GetStartInfo();
     return Status::OK;
 }
 
 Status HttpSourcePlugin::GetBitRates(std::vector<uint32_t>& bitRates)
 {
     MEDIA_LOG_I("HttpSourcePlugin::GetBitRates() enter.\n");
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    bitRates = downloader_->GetBitRates();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    bitRates = downloader->GetBitRates();
     return Status::OK;
 }
 
 Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
 {
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    downloader_->SetIsTriggerAutoMode(false);
-    if (downloader_->SelectBitRate(bitRate)) {
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    downloader->SetIsTriggerAutoMode(false);
+    if (downloader->SelectBitRate(bitRate)) {
         return Status::OK;
     }
     return Status::ERROR_UNKNOWN;
@@ -538,8 +570,9 @@ Status HttpSourcePlugin::SelectBitRate(uint32_t bitRate)
 
 Status HttpSourcePlugin::AutoSelectBitRate(uint32_t bitRate)
 {
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    if (downloader_->AutoSelectBitRate(bitRate)) {
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    if (downloader->AutoSelectBitRate(bitRate)) {
         return Status::OK;
     }
     return Status::ERROR_UNKNOWN;
@@ -548,29 +581,33 @@ Status HttpSourcePlugin::AutoSelectBitRate(uint32_t bitRate)
 Status HttpSourcePlugin::GetDownloadInfo(DownloadInfo& downloadInfo)
 {
     MEDIA_LOG_I("HttpSourcePlugin::GetDownloadInfo");
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    downloader_->GetDownloadInfo(downloadInfo);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    downloader->GetDownloadInfo(downloadInfo);
     return Status::OK;
 }
 
 Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
 {
     MEDIA_LOG_I("HttpSourcePlugin::GetPlaybackInfo");
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    downloader_->GetPlaybackInfo(playbackInfo);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    downloader->GetPlaybackInfo(playbackInfo);
     return Status::OK;
 }
 
 std::vector<SeekRange> HttpSourcePlugin::GetSeekableRanges() const
 {
-    FALSE_RETURN_V(downloader_ != nullptr, {});
-    return downloader_->GetSeekableRanges();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, {});
+    return downloader->GetSeekableRanges();
 }
 
 void HttpSourcePlugin::SetDemuxerState(int32_t streamId)
 {
-    if (downloader_ != nullptr) {
-        downloader_->SetDemuxerState(streamId);
+    auto downloader = GetDownloader();
+    if (downloader != nullptr) {
+        downloader->SetDemuxerState(streamId);
     }
 }
 
@@ -581,48 +618,54 @@ void HttpSourcePlugin::SetDownloadErrorState()
 Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
     MEDIA_LOG_I("SetCurrentBitRate");
-    if (downloader_ == nullptr) {
-        MEDIA_LOG_E("SetCurrentBitRate failed, downloader_ is nullptr");
+    auto downloader = GetDownloader();
+    if (downloader == nullptr) {
+        MEDIA_LOG_E("SetCurrentBitRate failed, downloader is nullptr");
         return Status::ERROR_INVALID_OPERATION;
     }
     if (reportInfo_ != nullptr) {
         reportInfo_->bitRate_ = bitRate;
     }
-    return downloader_->SetCurrentBitRate(bitRate, streamID);
+    return downloader->SetCurrentBitRate(bitRate, streamID);
 }
 
 size_t HttpSourcePlugin::GetSegmentOffset()
 {
-    if (downloader_) {
-        return downloader_->GetSegmentOffset();
+    auto downloader = GetDownloader();
+    if (downloader) {
+        return downloader->GetSegmentOffset();
     }
     return 0;
 }
 
 bool HttpSourcePlugin::GetHLSDiscontinuity()
 {
-    if (downloader_) {
-        return downloader_->GetHLSDiscontinuity();
+    auto downloader = GetDownloader();
+    if (downloader) {
+        return downloader->GetHLSDiscontinuity();
     }
     return false;
 }
 
 bool HttpSourcePlugin::SetSourceInitialBufferSize(int32_t offset, int32_t size)
 {
-    FALSE_RETURN_V_MSG_W(downloader_ != nullptr, false, "SetInitialBufferSize downloader is nullptr");
-    return downloader_->SetInitialBufferSize(offset, size);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_W(downloader != nullptr, false, "SetInitialBufferSize downloader is nullptr");
+    return downloader->SetInitialBufferSize(offset, size);
 }
 
 Status HttpSourcePlugin::StopBufferring(bool isAppBackground)
 {
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, Status::ERROR_NULL_POINTER, "downloader_ is nullptr");
-    return downloader_->StopBufferring(isAppBackground);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_E(downloader != nullptr, Status::ERROR_NULL_POINTER, "downloader is nullptr");
+    return downloader->StopBufferring(isAppBackground);
 }
 
 void HttpSourcePlugin::WaitForBufferingEnd()
 {
-    FALSE_RETURN_MSG(downloader_ != nullptr, "WaitForBufferingEnd downloader is nullptr");
-    downloader_->WaitForBufferingEnd();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_MSG(downloader != nullptr, "WaitForBufferingEnd downloader is nullptr");
+    downloader->WaitForBufferingEnd();
 }
 
 static std::pair<std::string, std::string> SplitUri(const std::string& uri)
@@ -684,40 +727,46 @@ bool HttpSourcePlugin::CheckIsM3U8Uri()
 
 void HttpSourcePlugin::NotifyInitSuccess()
 {
-    FALSE_RETURN_MSG(downloader_ != nullptr, "NotifyInitSuccess downloader is nullptr");
-    downloader_->NotifyInitSuccess();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_MSG(downloader != nullptr, "NotifyInitSuccess downloader is nullptr");
+    downloader->NotifyInitSuccess();
 }
 
 Status HttpSourcePlugin::SetStartPts(int64_t startPts)
 {
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    downloader_->SetStartPts(startPts);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    downloader->SetStartPts(startPts);
     return Status::OK;
 }
 
 Status HttpSourcePlugin::SetExtraCache(uint64_t cacheDuration)
 {
-    FALSE_RETURN_V(downloader_ != nullptr, Status::ERROR_NULL_POINTER);
-    downloader_->SetExtraCache(cacheDuration);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
+    downloader->SetExtraCache(cacheDuration);
     return Status::OK;
 }
 
 uint64_t HttpSourcePlugin::GetCachedDuration()
 {
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
-    return downloader_->GetCachedDuration();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_E(downloader != nullptr, 0, "downloader is nullptr");
+    return downloader->GetCachedDuration();
 }
 
 void HttpSourcePlugin::RestartAndClearBuffer()
 {
-    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
-    return downloader_->RestartAndClearBuffer();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_MSG(downloader != nullptr, "downloader is nullptr");
+    return downloader->RestartAndClearBuffer();
 }
 
 bool HttpSourcePlugin::IsFlvLive()
 {
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
-    return downloader_->IsFlvLive();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_E(downloader != nullptr, false, "downloader is nullptr");
+    return downloader->IsFlvLive();
 }
 
 bool HttpSourcePlugin::IsDash()
@@ -731,32 +780,37 @@ bool HttpSourcePlugin::IsDash()
 
 bool HttpSourcePlugin::IsHlsFmp4()
 {
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
-    return downloader_->IsHlsFmp4();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_E(downloader != nullptr, false, "downloader is nullptr");
+    return downloader->IsHlsFmp4();
 }
 
 uint64_t HttpSourcePlugin::GetMemorySize()
 {
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader_ is nullptr");
-    return downloader_->GetMemorySize();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_E(downloader != nullptr, 0, "downloader is nullptr");
+    return downloader->GetMemorySize();
 }
 
 std::string HttpSourcePlugin::GetCurUrl()
 {
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, "", "downloader_ is nullptr");
-    return downloader_->GetCurUrl();
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_E(downloader != nullptr, "", "downloader is nullptr");
+    return downloader->GetCurUrl();
 }
 
 bool HttpSourcePlugin::IsHlsEnd(int32_t streamId)
 {
-    FALSE_RETURN_V_MSG_E(downloader_ != nullptr, false, "downloader_ is nullptr");
-    return downloader_->IsHlsEnd(streamId);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_E(downloader != nullptr, false, "downloader is nullptr");
+    return downloader->IsHlsEnd(streamId);
 }
 
 void HttpSourcePlugin::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)
 {
-    FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
-    downloader_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
+    auto downloader = GetDownloader();
+    FALSE_RETURN_MSG(downloader != nullptr, "downloader is nullptr");
+    downloader->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
 }
 
 bool HttpSourcePlugin::IsHls()
@@ -790,6 +844,18 @@ bool HttpSourcePlugin::IsAllowedProtocol(std::string_view url)
         }
     }
     return true;
+}
+
+std::shared_ptr<MediaDownloader> HttpSourcePlugin::GetDownloader() const
+{
+    std::shared_lock<std::shared_mutex> lock(downloaderMutex_);
+    return downloader_;
+}
+
+void HttpSourcePlugin::SetDownloader(const std::shared_ptr<MediaDownloader>& downloader)
+{
+    std::unique_lock<std::shared_mutex> lock(downloaderMutex_);
+    downloader_ = downloader;
 }
 }
 }

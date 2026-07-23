@@ -17,6 +17,7 @@
 #include <string>
 #include <cstdint>
 #include <charconv>
+#include <cmath>
 
 namespace OHOS {
 namespace Media {
@@ -82,6 +83,21 @@ bool StringUtil::SafeStoInt32(const std::string& str, int32_t& value)
 bool StringUtil::SafeStoInt64(const std::string& str, int64_t& value)
 {
     return StringToInteger(str, value);
+}
+
+bool StringUtil::SafeStoDouble(const std::string& str, double& value)
+{
+    if (str.empty()) {
+        return false;
+    }
+    char* end = nullptr;
+    errno = 0;
+    double result = strtod(str.c_str(), &end);
+    if (end == str.c_str() || end != str.c_str() + str.size() || errno == ERANGE || !std::isfinite(result)) {
+        return false;
+    }
+    value = result;
+    return true;
 }
 }
 }

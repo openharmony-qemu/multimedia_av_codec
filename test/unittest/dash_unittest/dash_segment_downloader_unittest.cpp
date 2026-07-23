@@ -33,6 +33,7 @@ constexpr uint32_t TIMES_ONE = 1;
 constexpr uint32_t ID_STREAM = 1;
 constexpr uint32_t NUM_TEST = 10;
 constexpr size_t MAX_BUFFERING_TIME_OUT = 30 * 1000;
+constexpr int32_t DEFAULT_AUDIO_WATER_LINE = 24 * 1024;
 }
 using namespace testing::ext;
 
@@ -287,22 +288,22 @@ HWTEST_F(DashSegmentDownloaderUnitTest, SaveDataHandleBuffering_001, TestSize.Le
 /**
  * @tc.name  : Test GetWaterLineAbove
  * @tc.number: GetWaterLineAbove_001
- * @tc.desc  : Test GetWaterLineAbove downloadBiteRate_ != 0
- *             Test GetWaterLineAbove realTimeBitBate_ > static_cast<int64_t>(downloadBiteRate_)
- *             Test GetWaterLineAbove realTimeBitBate_ <= static_cast<int64_t>(downloadBiteRate_)
+ * @tc.desc  : Test GetWaterLineAbove downloadBitRate_ != 0
+ *             Test GetWaterLineAbove realTimeBitRate_ > static_cast<int64_t>(downloadBitRate_)
+ *             Test GetWaterLineAbove realTimeBitRate_ <= static_cast<int64_t>(downloadBitRate_)
  */
 HWTEST_F(DashSegmentDownloaderUnitTest, GetWaterLineAbove_001, TestSize.Level1)
 {
-    // Test GetWaterLineAbove realTimeBitBate_ > static_cast<int64_t>(downloadBiteRate_)
+    // Test GetWaterLineAbove realTimeBitRate_ > static_cast<int64_t>(downloadBitRate_)
     segmentDownloader_->downloadRequest_ = std::make_shared<DownloadRequest>("test_request", nullptr, nullptr);
-    segmentDownloader_->realTimeBitBate_ = 1024 * 1024;
-    segmentDownloader_->downloadBiteRate_ = 1024;
+    segmentDownloader_->realTimeBitRate_ = 1024 * 1024;
+    segmentDownloader_->downloadBitRate_ = 1024;
 
     int32_t waterLineAbove = segmentDownloader_->GetWaterLineAbove();
     EXPECT_EQ(waterLineAbove, 200 * 1024);
 
-    // Test GetWaterLineAbove realTimeBitBate_ <= static_cast<int64_t>(downloadBiteRate_)
-    segmentDownloader_->downloadBiteRate_ = 1024 * 1024 * 2;
+    // Test GetWaterLineAbove realTimeBitRate_ <= static_cast<int64_t>(downloadBitRate_)
+    segmentDownloader_->downloadBitRate_ = 1024 * 1024 * 2;
     waterLineAbove = segmentDownloader_->GetWaterLineAbove();
     EXPECT_EQ(waterLineAbove, 39321);
 }
@@ -811,7 +812,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, OnWriteRingBuffer_003, TestSize.Level1)
 {
     segmentDownloader_->steadyClock_.Reset();
     std::this_thread::sleep_for(std::chrono::milliseconds(RECORD_TIME_INTERVAL + 100));
-    segmentDownloader_->realTimeBitBate_ = 8;
+    segmentDownloader_->realTimeBitRate_ = 8;
     segmentDownloader_->recordData_ = std::make_shared<DashSegmentDownloader::RecordData>();
     segmentDownloader_->buffer_->tail_ = 1;
     uint32_t len = 1000;
@@ -1040,6 +1041,196 @@ HWTEST_F(DashSegmentDownloaderUnitTest, GetBufferingTimeOut_001, TestSize.Level1
     segmentDownloader_->bufferingTime_ = 0;
     bool retResult = segmentDownloader_->GetBufferingTimeOut();
     EXPECT_EQ(retResult, false);
+}
+
+/**
+ * @tc.name  : Test GetWaterLineAbove downloadBitRate_ == 0
+ * @tc.number: GetWaterLineAbove_002
+ * @tc.desc  : Test GetWaterLineAbove early return when downloadBitRate_ is 0
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, GetWaterLineAbove_002, TestSize.Level1)
+{
+    segmentDownloader_->realTimeBitRate_ = 1024 * 1024;
+    segmentDownloader_->downloadBitRate_ = 0;
+    int32_t waterLineAbove = segmentDownloader_->GetWaterLineAbove();
+    EXPECT_EQ(waterLineAbove, DEFAULT_AUDIO_WATER_LINE);
+}
+
+/**
+ * @tc.name  : Test GetWaterLineAbove realTimeBitRate_ <= 0
+ * @tc.number: GetWaterLineAbove_003
+ * @tc.desc  : Test GetWaterLineAbove when realTimeBitRate_ <= 0 (no valid request)
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, GetWaterLineAbove_003, TestSize.Level1)
+{
+    segmentDownloader_->realTimeBitRate_ = 0;
+    int32_t waterLineAbove = segmentDownloader_->GetWaterLineAbove();
+    EXPECT_EQ(waterLineAbove, DEFAULT_AUDIO_WATER_LINE);
+}
+
+/**
+ * @tc.name  : Test HandleCachedDuration bitrate <= 0
+ * @tc.number: HandleCachedDuration_001
+ * @tc.desc  : Test HandleCachedDuration early return when realTimeBitRate_ <= 0
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, HandleCachedDuration_001, TestSize.Level1)
+{
+    segmentDownloader_->realTimeBitRate_ = 0;
+    segmentDownloader_->lastDurationRecord_ = 1000;
+    segmentDownloader_->HandleCachedDuration();
+    EXPECT_EQ(segmentDownloader_->lastDurationRecord_.load(), 1000);
+}
+
+/**
+ * @tc.name  : Test HandleCachedDuration significant change
+ * @tc.number: HandleCachedDuration_002
+ * @tc.desc  : Test HandleCachedDuration updates lastDurationRecord_ when change > threshold
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, HandleCachedDuration_002, TestSize.Level1)
+{
+    segmentDownloader_->realTimeBitRate_ = 1024 * 8;
+    segmentDownloader_->lastDurationRecord_ = 0;
+    auto mockCallback = std::make_shared<MockCallback>();
+    segmentDownloader_->callback_ = mockCallback;
+    uint8_t data[1024] = {0};
+    segmentDownloader_->buffer_->WriteBuffer(data, sizeof(data));
+    segmentDownloader_->HandleCachedDuration();
+    EXPECT_NE(segmentDownloader_->lastDurationRecord_.load(), 0);
+}
+
+/**
+ * @tc.name  : Test UpdateCachedPercent bufferSize < lastCachedSize
+ * @tc.number: UpdateCachedPercent_003
+ * @tc.desc  : Test UpdateCachedPercent returns early when buffer shrinks and callback not invoked
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, UpdateCachedPercent_003, TestSize.Level1)
+{
+    bool callbackInvoked = false;
+    segmentDownloader_->waterLineAbove_ = 100;
+    segmentDownloader_->bufferingCbFunc_ = [&callbackInvoked] (uint32_t percent, BufferingInfoType infoType) {
+        callbackInvoked = true;
+    };
+    segmentDownloader_->lastCachedSize_ = 200;
+    segmentDownloader_->UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
+    EXPECT_EQ(segmentDownloader_->lastCachedSize_.load(), 200);
+    EXPECT_FALSE(callbackInvoked);
+}
+
+/**
+ * @tc.name  : Test UpdateCachedPercent triggers callback
+ * @tc.number: UpdateCachedPercent_004
+ * @tc.desc  : Test UpdateCachedPercent invokes callback when deltaSize exceeds UPDATE_CACHE_STEP
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, UpdateCachedPercent_004, TestSize.Level1)
+{
+    uint32_t receivedPercent = 0;
+    BufferingInfoType receivedType = BufferingInfoType::BUFFERING_START;
+    segmentDownloader_->waterLineAbove_ = 100;
+    auto cb = [&receivedPercent, &receivedType] (uint32_t percent, BufferingInfoType infoType) {
+        receivedPercent = percent;
+        receivedType = infoType;
+    };
+    segmentDownloader_->bufferingCbFunc_ = cb;
+    segmentDownloader_->lastCachedSize_ = 0;
+    uint8_t data[64] = {0};
+    segmentDownloader_->buffer_->WriteBuffer(data, sizeof(data));
+    segmentDownloader_->UpdateCachedPercent(BufferingInfoType::BUFFERING_PERCENT);
+    EXPECT_EQ(receivedType, BufferingInfoType::BUFFERING_PERCENT);
+    EXPECT_EQ(segmentDownloader_->lastCachedSize_.load(), 64u);
+}
+
+/**
+ * @tc.name  : Test IsNeedBufferForPlaying prerequisites not met
+ * @tc.number: IsNeedBufferForPlaying_003
+ * @tc.desc  : Test IsNeedBufferForPlaying returns false when prerequisites not met
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, IsNeedBufferForPlaying_003, TestSize.Level1)
+{
+    segmentDownloader_->bufferDurationForPlaying_ = 0;
+    bool retResult = segmentDownloader_->IsNeedBufferForPlaying();
+    EXPECT_EQ(retResult, false);
+
+    segmentDownloader_->bufferDurationForPlaying_ = 1;
+    segmentDownloader_->isDemuxerInitSuccess_.store(false);
+    retResult = segmentDownloader_->IsNeedBufferForPlaying();
+    EXPECT_EQ(retResult, false);
+
+    segmentDownloader_->isDemuxerInitSuccess_.store(true);
+    segmentDownloader_->isBuffering_.store(false);
+    retResult = segmentDownloader_->IsNeedBufferForPlaying();
+    EXPECT_EQ(retResult, false);
+}
+
+/**
+ * @tc.name  : Test SetCurrentBitRate
+ * @tc.number: SetCurrentBitRate_001
+ * @tc.desc  : Test SetCurrentBitRate with positive and negative values
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, SetCurrentBitRate_001, TestSize.Level1)
+{
+    segmentDownloader_->SetCurrentBitRate(500);
+    EXPECT_EQ(segmentDownloader_->realTimeBitRate_.load(), 500);
+    segmentDownloader_->SetCurrentBitRate(-1);
+    EXPECT_EQ(segmentDownloader_->realTimeBitRate_.load(), -1);
+    segmentDownloader_->SetCurrentBitRate(0);
+    EXPECT_EQ(segmentDownloader_->realTimeBitRate_.load(), -1);
+}
+
+/**
+ * @tc.name  : Test SetDemuxerState
+ * @tc.number: SetDemuxerState_001
+ * @tc.desc  : Test SetDemuxerState sets isFirstFrameArrived_ to true
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, SetDemuxerState_001, TestSize.Level1)
+{
+    EXPECT_FALSE(segmentDownloader_->isFirstFrameArrived_.load());
+    segmentDownloader_->SetDemuxerState();
+    EXPECT_TRUE(segmentDownloader_->isFirstFrameArrived_.load());
+}
+
+/**
+ * @tc.name  : Test NotifyInitSuccess VID path
+ * @tc.number: NotifyInitSuccess_002
+ * @tc.desc  : Test NotifyInitSuccess with VID stream sets isDemuxerInitSuccess_ and waterlineForPlaying_
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, NotifyInitSuccess_002, TestSize.Level1)
+{
+    segmentDownloader_->streamType_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    segmentDownloader_->bufferDurationForPlaying_ = 5.0;
+    segmentDownloader_->realTimeBitRate_ = 1024 * 1024;
+    auto mockCallback = std::make_shared<MockCallback>();
+    segmentDownloader_->callback_ = mockCallback;
+    segmentDownloader_->NotifyInitSuccess();
+    EXPECT_TRUE(segmentDownloader_->isDemuxerInitSuccess_.load());
+    EXPECT_NE(segmentDownloader_->waterlineForPlaying_, 0u);
+    EXPECT_NE(segmentDownloader_->bufferingTime_.load(), 0u);
+}
+
+/**
+ * @tc.name  : Test NotifyInitSuccess VID early return
+ * @tc.number: NotifyInitSuccess_003
+ * @tc.desc  : Test NotifyInitSuccess with VID but bufferDurationForPlaying_ <= 0 returns early
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, NotifyInitSuccess_003, TestSize.Level1)
+{
+    segmentDownloader_->streamType_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
+    segmentDownloader_->bufferDurationForPlaying_ = 0;
+    segmentDownloader_->realTimeBitRate_ = 1024 * 1024;
+    segmentDownloader_->NotifyInitSuccess();
+    EXPECT_TRUE(segmentDownloader_->isDemuxerInitSuccess_.load());
+    EXPECT_EQ(segmentDownloader_->waterlineForPlaying_, 0u);
+}
+
+/**
+ * @tc.name  : Test GetBufferingTimeOut not timeout
+ * @tc.number: GetBufferingTimeOut_002
+ * @tc.desc  : Test GetBufferingTimeOut returns false when not timed out yet
+ */
+HWTEST_F(DashSegmentDownloaderUnitTest, GetBufferingTimeOut_002, TestSize.Level1)
+{
+    segmentDownloader_->bufferingTime_.store(1);
+    bool retResult = segmentDownloader_->GetBufferingTimeOut();
+    EXPECT_FALSE(retResult);
 }
 } // namespace HttpPlugin
 } // namespace Plugins

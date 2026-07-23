@@ -19,6 +19,7 @@
 #include <string>
 #include <list>
 #include <iostream>
+#include <atomic>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -71,6 +72,7 @@ private:
     void InitCurProxy(const std::string& url);
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(const std::map<std::string, std::string>& httpHeader);
+    void HttpHeaderParseLocked(const std::map<std::string, std::string>& httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
     void CheckRequestRange(long startPos, int len);
     Status SetIp();
@@ -83,10 +85,10 @@ private:
     mutable Mutex mutex_;
     struct curl_slist* headerList_ {nullptr};
     std::string ip_ {};
-    bool ipFlag_ {false};
-    bool isFirstRequest_ {true};
+    std::atomic<bool> ipFlag_ {false};
+    std::atomic<bool> isFirstRequest_ {true};
     bool isFirstOpen_ {true};
-    volatile int32_t appUid_ {-1};
+    std::atomic<int32_t> appUid_ {-1};
     std::optional<uint32_t> connectTimeoutMs_ {std::nullopt};
 };
 }

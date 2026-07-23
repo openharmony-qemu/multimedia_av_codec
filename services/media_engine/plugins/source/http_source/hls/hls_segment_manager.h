@@ -17,6 +17,7 @@
 #define HISTREAMER_HLS_SEG_MANAGER_H
 
 #include <mutex>
+#include <atomic>
 #include <shared_mutex>
 #include <thread>
 #include <unistd.h>
@@ -111,6 +112,8 @@ public:
     int64_t RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
         double hstTime, const PlayInfo& item);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
+    void NotifyBitrateChange(uint32_t bitRate);
+    bool IsCurrentTsFinished();
     void AutoSelectBitrate(uint32_t bitRate);
     size_t GetTotalBufferSize();
     void SetInterruptState(bool isInterruptNeeded);
@@ -171,6 +174,7 @@ private:
     uint32_t SaveData(uint8_t *data, uint32_t len, bool notBlock);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     void ReadCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
+    void HandleSpliceEnd(unsigned char* buff, ReadDataInfo& readDataInfo);
     uint32_t SaveEncryptData(uint8_t *data, uint32_t len, bool notBlock);
     uint32_t FillSingleBlock(uint8_t *&data, uint32_t &len);
     uint32_t DecryptDataLeft(uint8_t *&data, uint32_t &len, bool notBlock);
@@ -261,6 +265,7 @@ private:
     std::shared_ptr<BlockingQueue<PlayInfo>> playList_;
     std::map<std::string, bool> fragmentDownloadStart;
     std::map<std::string, bool> fragmentPushed;
+    std::mutex fragmentMapMutex_;
     std::deque<PlayInfo> backPlayList_;
     std::deque<PlayInfo> seekCandidates_;
     std::vector<PlayInfo> seekPlayList_;    // used in SeekToTs and RequestNewTs
@@ -351,10 +356,10 @@ private:
     std::atomic<uint32_t> readTsIndex_ {0};
     std::atomic<bool> canWrite_ {true};
     uint64_t ffmpegOffset_ = 0;
-    volatile size_t wantedReadLength_ {0};
-    volatile size_t bufferingTime_ {0};
-    volatile size_t readTime_ {0};
-    FairMutex tsStorageInfoMutex_ {};
+    std::atomic<size_t> wantedReadLength_ {0};
+    std::atomic<size_t> bufferingTime_ {0};
+    std::atomic<size_t> readTime_ {0};
+    FairMutex tsInfoMutex_ {};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_ {nullptr};
 
     FairMutex bufferingEndMutex_ {};
@@ -393,6 +398,7 @@ private:
     std::condition_variable canReadCond_;
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     InfoIndexMap InfoIndexMap_;
+    std::mutex infoIndexMapMutex_;
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
     std::shared_mutex aesDecryptorMutex_;
     int64_t currentSequence_ {0};

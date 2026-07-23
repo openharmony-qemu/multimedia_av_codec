@@ -3148,4 +3148,58 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_URL_001, TestSize.Level1)
 
     EXPECT_EQ(downloader->GetUrl(), "http://test.url");
 }
+
+/**
+ * @tc.name  : Test HasExplicitIv with null aesDecryptorManager
+ * @tc.number: HasExplicitIv_NullManager
+ * @tc.desc  : Test HasExplicitIv returns false when aesDecryptorManager_ is null
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, HasExplicitIv_NullManager, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->aesDecryptorManager_ = nullptr;
+    bool result = downloader->HasExplicitIv(0);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name  : Test HasExplicitIv with valid manager and key
+ * @tc.number: HasExplicitIv_ValidManager
+ * @tc.desc  : Test HasExplicitIv returns true when key has explicit IV
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, HasExplicitIv_ValidManager, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->aesDecryptorManager_ = std::make_shared<AesDecryptorManager>();
+    KeyInfo keyInfo;
+    keyInfo.index_ = 1;
+    keyInfo.hasExplicitIv_ = true;
+    downloader->aesDecryptorManager_->hasExplicitIvMap_[1] = true;
+    bool result = downloader->HasExplicitIv(1);
+    EXPECT_TRUE(result);
+
+    result = downloader->HasExplicitIv(999);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name  : Test GetStartInfo with duration != -1 and timeOffset < 0
+ * @tc.number: GetStartInfo_NegativeTimeOffset
+ * @tc.desc  : Test GetStartInfo with negative timeOffset and valid duration
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GetStartInfo_NegativeTimeOffset, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    const std::string testUriPath = "http://127.0.0.1:46666/";
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", testUriPath);
+    downloader->master_->isStart_ = true;
+    downloader->master_->timeOffset_ = -5000.0;
+    downloader->master_->duration_ = 10000.0;
+    auto info = downloader->GetStartInfo();
+    EXPECT_GT(info.first, 0);
+    EXPECT_EQ(info.second, downloader->master_->precise_);
+}
 }

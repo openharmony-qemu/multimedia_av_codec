@@ -188,6 +188,32 @@ HWTEST_F(DashMpdManagerUnittest, GetDuration_001, TestSize.Level0)
     delete mpdInfo;
     mpdManager_->mpdInfo_ = nullptr;
 }
+
+/**
+ * @tc.name  : Test GetBaseUrl with mpdInfo_ == nullptr
+ * @tc.number: GetBaseUrl_002
+ * @tc.desc  : Test GetBaseUrl returns empty string when mpdInfo_ is nullptr
+ */
+HWTEST_F(DashMpdManagerUnittest, GetBaseUrl_002, TestSize.Level0)
+{
+    ASSERT_NE(mpdManager_, nullptr);
+    mpdManager_->mpdInfo_ = nullptr;
+    auto ret = mpdManager_->GetBaseUrl();
+    EXPECT_EQ(ret, "");
+}
+
+/**
+ * @tc.name  : Test GetDuration with nullptr duration
+ * @tc.number: GetDuration_002
+ * @tc.desc  : Test GetDuration with nullptr duration pointer does not crash
+ */
+HWTEST_F(DashMpdManagerUnittest, GetDuration_002, TestSize.Level0)
+{
+    ASSERT_NE(mpdManager_, nullptr);
+    mpdManager_->mpdInfo_ = nullptr;
+    mpdManager_->GetDuration(nullptr);
+    SUCCEED();
+}
 }
 }
 }

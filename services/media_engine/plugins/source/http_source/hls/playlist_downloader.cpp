@@ -288,7 +288,7 @@ uint32_t PlayListDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader nullptr");
     auto currentRequest = downloader_->GetCurrentRequest();
     FALSE_RETURN_V_MSG_E(currentRequest != nullptr, 0, "current request nullptr");
-    int32_t contentlen = static_cast<int32_t>(currentRequest->GetFileContentLengthNoWait());
+    int64_t contentlen = currentRequest->GetFileContentLengthNoWait();
     std::string location;
     currentRequest->GetLocation(location);
     if (contentlen > MIN_PRE_PARSE_CONTENT_LEN) {
@@ -453,6 +453,7 @@ void AesDecryptorManager::CreateAesDecryptorByKeyInfos(const std::unordered_map<
         std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
         tempAesDecryptor->OnSourceKeyChange(keyInfo.key_, keyInfo.keyLen_, keyInfo.iv_);
         aesDecryptorsMap_[index] = tempAesDecryptor;
+        hasExplicitIvMap_[index] = keyInfo.hasExplicitIv_;
     }
 }
 
@@ -462,6 +463,14 @@ void AesDecryptorManager::CreateOneAesDecryptor(const KeyInfo& keyInfo)
     tempAesDecryptor->OnSourceKeyChange(keyInfo.key_, keyInfo.keyLen_, keyInfo.iv_);
     std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
     aesDecryptorsMap_[keyInfo.index_] = tempAesDecryptor;
+    hasExplicitIvMap_[keyInfo.index_] = keyInfo.hasExplicitIv_;
+}
+
+bool AesDecryptorManager::HasExplicitIv(uint64_t keyIndex)
+{
+    std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    auto it = hasExplicitIvMap_.find(keyIndex);
+    return (it != hasExplicitIvMap_.end()) ? it->second : false;
 }
 }
 }

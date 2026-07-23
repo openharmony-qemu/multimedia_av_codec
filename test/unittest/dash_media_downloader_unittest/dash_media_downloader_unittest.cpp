@@ -1858,6 +1858,58 @@ HWTEST_F(DashMediaDownloaderUnittest, ApplyPendingPeriodSwitch_DeferredFlow_001,
     EXPECT_EQ(ret, true);
     EXPECT_EQ(mediaDownloader_->pendingAudioSwitch_.pending, false);
 }
+
+/**
+ * @tc.name  : Test GetPlayable no segment downloaders
+ * @tc.number: GetPlayable_NoDownloaders
+ * @tc.desc  : Test GetPlayable returns false when no vid or aud segment downloaders exist
+ */
+HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_NoDownloaders, TestSize.Level1)
+{
+    ASSERT_NE(mediaDownloader_, nullptr);
+    mediaDownloader_->segmentDownloaders_.Clear();
+    bool result = mediaDownloader_->GetPlayable();
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name  : Test GetPlayable vid only not buffering
+ * @tc.number: GetPlayable_VidOnly_NotBuffering
+ * @tc.desc  : Test GetPlayable with vid downloader not buffering
+ */
+HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_VidOnly_NotBuffering, TestSize.Level1)
+{
+    auto callback = std::make_shared<TestCallback>();
+    auto vidDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
+    vidDownloader->Init();
+    vidDownloader->isBuffering_.store(false);
+    mediaDownloader_->segmentDownloaders_.PushBack(vidDownloader);
+    bool result = mediaDownloader_->GetPlayable();
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name  : Test GetPlayable both downloaders buffering
+ * @tc.number: GetPlayable_Both_Buffering
+ * @tc.desc  : Test GetPlayable returns false when both downloaders are buffering
+ */
+HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_Both_Buffering, TestSize.Level1)
+{
+    auto callback = std::make_shared<TestCallback>();
+    auto vidDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
+    vidDownloader->Init();
+    vidDownloader->isBuffering_.store(true);
+    mediaDownloader_->segmentDownloaders_.PushBack(vidDownloader);
+    auto audDownloader = std::make_shared<DashSegmentDownloader>(
+        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_AUD, 10, nullptr);
+    audDownloader->Init();
+    audDownloader->isBuffering_.store(true);
+    mediaDownloader_->segmentDownloaders_.PushBack(audDownloader);
+    bool result = mediaDownloader_->GetPlayable();
+    EXPECT_FALSE(result);
+}
 }
 }
 }
