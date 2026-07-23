@@ -131,20 +131,6 @@ int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base)
     return result;
 }
 
-int64_t ConvertTimeToFFmpegByUsRoundUp(int64_t timestampUs, AVRational base)
-{
-    int64_t result;
-    if (base.num == 0 || base.den == 0) {
-        result = AV_NOPTS_VALUE;
-    } else {
-        AVRational bq = {1, AV_CODEC_MSECOND};
-        result = av_rescale_q_rnd(timestampUs, bq, base, AV_ROUND_UP);
-    }
-    MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
-        PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, timestampUs, result);
-    return result;
-}
-
 uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough)
 {
     uint32_t flags = (uint32_t)(AVBufferFlag::NONE);

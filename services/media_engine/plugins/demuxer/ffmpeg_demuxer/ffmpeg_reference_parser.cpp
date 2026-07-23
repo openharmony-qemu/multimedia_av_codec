@@ -41,6 +41,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegReferenceParser" };
 constexpr int64_t REFERENCE_PARSER_TIMEOUT_MS = 10000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
+constexpr int64_t DTS_EPSILON_US = 500;
 }
 
 int64_t GetDuration(int64_t startTime)
@@ -444,9 +445,7 @@ Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "formatContext_ is nullptr");
     auto avStream = formatContext_->streams[parserRefIdx_];
-    // AVSEEK_FLAG_BACKWARD finds the largest entry <= target. Use AV_ROUND_UP
-    // to compensate for precision loss that makes ffTimeDts slightly undershoot the exact index timestamp.
-    int64_t ffTimeDts = ConvertTimeToFFmpegByUsRoundUp(dts, avStream->time_base);
+    int64_t ffTimeDts = ConvertTimeToFFmpegByUs(dts + DTS_EPSILON_US, avStream->time_base);
     int32_t tmpFrameId = av_index_search_timestamp(avStream, ffTimeDts,
         AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
     FALSE_RETURN_V_MSG_E(tmpFrameId >= 0, Status::ERROR_OUT_OF_RANGE, "find nearest frame failed");
