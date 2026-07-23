@@ -896,18 +896,17 @@ void PreprocessorEncoder::OnOutputBufferAvailable(uint32_t index, const std::sha
     }
     auto* codec = static_cast<OH_AVCodec*>(this);
     std::weak_ptr<VideoEncoderObject> weakVideoEncoderObject = videoEncoderObject_;
-    callbackDispatcher_->TryPost(
-        [codec, snapshot, index, object]() {
-            snapshot.callback.onNewOutputBuffer(codec, index, reinterpret_cast<OH_AVBuffer*>(object.GetRefPtr()),
-                                                snapshot.userData);
-        },
-        [weakVideoEncoderObject, index]() {
-            auto videoEncoderObject = weakVideoEncoderObject.lock();
-            if (videoEncoderObject && videoEncoderObject->videoEncoder_) {
-                (void)videoEncoderObject->videoEncoder_->ReleaseOutputBuffer(index);
-            }
+    auto task = [codec, snapshot, index, object]() {
+        snapshot.callback.onNewOutputBuffer(codec, index, reinterpret_cast<OH_AVBuffer*>(object.GetRefPtr()),
+                                            snapshot.userData);
+    };
+    auto onQueueFull = [weakVideoEncoderObject, index]() {
+        auto videoEncoderObject = weakVideoEncoderObject.lock();
+        if (videoEncoderObject && videoEncoderObject->videoEncoder_) {
+            (void)videoEncoderObject->videoEncoder_->ReleaseOutputBuffer(index);
         }
-    );
+    };
+    callbackDispatcher_->TryPost(task, onQueueFull);
 }
 
 OH_AVFormat* PreprocessorEncoder::GetOutputDescription()
