@@ -81,6 +81,7 @@ private:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
+        int32_t stride_ = 0;
         int32_t format_ = 0;
         uint64_t usage_ = SURFACE_DEFAULT_USAGE;
         std::atomic<bool> hasSwapedOut_ = false;
@@ -134,7 +135,7 @@ private:
     int32_t ClearSurfaceAndSetQueueSize();
     int32_t AllocateOutputBuffersFromSurface();
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
-    bool CheckStrideChange(uint32_t index, bool& isChanged);
+    int32_t CheckStrideChange(uint32_t index, bool isChanged);
     int32_t CheckFormatChange(uint32_t index, bool &isChanged);
     void SetSurfaceParameter();
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
@@ -165,7 +166,6 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
-    void PutFormatValue();
 
     bool isEmulator_ = false;
     bool isUsedSharedMem_ = false;
@@ -236,6 +236,7 @@ private:
 #ifdef BUILD_ENG_VERSION
     void OpenDumpFile();
     void DumpOutputBuffer();
+    void DumpOutputBuffer(const std::shared_ptr<AVMemory> &avmemory);
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
 #endif // BUILD_ENG_VERSION
