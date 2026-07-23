@@ -285,6 +285,7 @@ void CodecServer::ConfigureSfdManager(Format &config)
     InitSfdManager();
     if (sfdManager_) {
         sfdManager_->Configure(config);
+        sfdManager_->EnableMVOutput(config);
         if (sfdManager_->ShouldReportDfx()) {
             OnInstanceAdvancedFeatureEvent("SmartFluencyDecoding", nullptr);
         }
