@@ -131,7 +131,6 @@ void FCodec::OpenDumpFile()
     }
 }
 
-// for yuv420 formata
 void FCodec::DumpOutputBuffer()
 {
     if (!dumpOutFile_ || !dumpOutFile_->is_open()) {
@@ -972,22 +971,33 @@ int32_t FCodec::AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer)
 int32_t FCodec::AllocateOutputBuffer()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface == nullptr, AVCS_ERR_UNKNOWN, "Not in buffer mode!");
+    sptr<SurfaceBuffer> probeSb = nullptr;
+    int32_t probeRet = AllocateSurfaceBuffer(probeSb);
+    if (probeRet == AVCS_ERR_OK && probeSb != nullptr) {
+        isUsedSharedMem_ = false;
+    } else {
+        AVCODEC_LOGW("Allocate surface buffer failed, fall back to shared memory, ret=%{public}d", probeRet);
+        isUsedSharedMem_ = true;
+    }
     int32_t valBufferCnt = 0;
     for (uint32_t i = 0u; i < outputBufferCnt_; i++) {
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
         CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
         buf->width_ = width_;
         buf->height_ = height_;
-        sptr<SurfaceBuffer> sb = nullptr;
-        int32_t ret = AllocateSurfaceBuffer(sb);
-        if (ret == AVCS_ERR_OK && sb != nullptr) {
-            isUsedSharedMem_ = false;
-            buf->stride_ = sb->GetStride();
-            buf->avBuffer_ = AVBuffer::CreateAVBuffer(sb);
+        if (!isUsedSharedMem_) {
+            if (i == 0u) {
+                buf->stride_ = probeSb->GetStride();
+                buf->avBuffer_ = AVBuffer::CreateAVBuffer(probeSb);
+            } else {
+                sptr<SurfaceBuffer> sb = nullptr;
+                int32_t ret = AllocateSurfaceBuffer(sb);
+                CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && sb != nullptr, ret,
+                                         "Alloc surface buffer failed, ret=%{public}d", ret);
+                buf->stride_ = sb->GetStride();
+                buf->avBuffer_ = AVBuffer::CreateAVBuffer(sb);
+            }
         } else {
-            AVCODEC_LOGW("Allocate surface buffer failed, fall back to shared memory, index=%{public}u, ret=%{public}d",
-                         i, ret);
-            isUsedSharedMem_ = true;
             buf->stride_ = width_;
             std::shared_ptr<AVAllocator> allocator =
                 AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
@@ -995,7 +1005,7 @@ int32_t FCodec::AllocateOutputBuffer()
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outputBufferSize_);
         }
         CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr,
-                               "create output avbuffer failed, index=%{public}d", i);
+                               "create output avbuffer failed, index=%{public}u", i);
         int32_t curBufSize = buf->avBuffer_->memory_->GetCapacity();
         AVCODEC_LOGI("Allocate output buffer success: index=%{public}u, size=%{public}d, use shared memory: %{public}d",
                      i, curBufSize, isUsedSharedMem_);
