@@ -102,7 +102,7 @@ std::optional<RoiEntry> ParseRoiEntry(std::string_view entry)
     auto left = ParseInt32(entry.substr(firstComma + 1, dash - firstComma - 1));
     auto bottom = ParseInt32(entry.substr(dash + 1, secondComma - dash - 1));
     auto right = ParseInt32(entry.substr(secondComma + 1, coordinateEnd - secondComma - 1));
-    if (!top || !left || !bottom || !right) {
+    if (!top || !left || !bottom || !right || top < 0 || left < 0 || bottom < 0 || right < 0) {
         return std::nullopt;
     }
     return RoiEntry{*top, *left, *bottom, *right,
@@ -323,7 +323,7 @@ int32_t Preprocessor::ApplyConfiguration()
         nextDropFrame = DropFrameConfig(dropParams_);
     }
     if (FAST_KIT_ENABLE && (nextCrop.enabled || nextDownsampling.enabled)) {
-        int32_t initRet = fastKitsInterface_.Init(static_cast<uint32_t>(encoderParams_.pixelFormat));
+        int32_t initRet = fastKitsInterface_.Init(static_cast<uint32_t>(nextEncoder.pixelFormat));
         CHECK_AND_RETURN_RET_LOG(initRet == AVCS_ERR_OK, initRet, "Failed to init FastKitsInterface: %{public}d",
                                  initRet);
     }
@@ -411,10 +411,7 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format)
     if (!hasWidth && !hasHeight) {
         return AVCS_ERR_OK;
     }
-    if (!IsAvailable()) {
-        AVCODEC_LOGE("Downsampling are not supported");
-        return AVCS_ERR_UNSUPPORT;
-    }
+    CHECK_AND_RETURN_RET_LOG(IsAvailable(), AVCS_ERR_UNSUPPORT, "Downsampling is not supported");
     if (hasWidth != hasHeight) {
         return AVCS_ERR_INVALID_VAL;
     }
@@ -424,24 +421,21 @@ int32_t Preprocessor::ValidateDownsampling(const Media::Format &format)
     }
     Range encWidth;
     Range encHeight;
-    if (!GetEncoderRange(format, encWidth, encHeight)) {
-        AVCODEC_LOGE("Failed to get encoder capability for downsampling");
-        return AVCS_ERR_INVALID_VAL;
-    }
+    CHECK_AND_RETURN_RET_LOG(GetEncoderRange(format, encWidth, encHeight), AVCS_ERR_INVALID_VAL,
+        "Failed to get encoder capability for downsampling");
     int32_t minWidth = encWidth.minVal;
     int32_t maxWidth = encWidth.maxVal;
     int32_t minHeight = encHeight.minVal;
     int32_t maxHeight = encHeight.maxVal;
-    if (!(minWidth > 0 && minHeight > 0 && minWidth <= width && width <= encoderParams_.width &&
+    bool validRange = (minWidth > 0 && minHeight > 0 && minWidth <= width && width <= encoderParams_.width &&
           encoderParams_.width <= maxWidth && minHeight <= height && height <= encoderParams_.height &&
-          encoderParams_.height <= maxHeight)) {
-        AVCODEC_LOGE("Invalid downsampling parameters: width=%{public}d, height=%{public}d, "
-                     "valid range: width [%{public}d, %{public}d], height [%{public}d, %{public}d], "
-                     "encoder configured: %{public}dx%{public}d",
-                     width, height, minWidth, maxWidth, minHeight, maxHeight, encoderParams_.width,
-                     encoderParams_.height);
-        return AVCS_ERR_INVALID_VAL;
-    }
+          encoderParams_.height <= maxHeight);
+    CHECK_AND_RETURN_RET_LOG(validRange, AVCS_ERR_INVALID_VAL,
+        "Invalid downsampling parameters: width=%{public}d, height=%{public}d, "
+        "valid range: width [%{public}d, %{public}d], height [%{public}d, %{public}d], "
+        "encoder configured: %{public}dx%{public}d",
+        width, height, minWidth, maxWidth, minHeight, maxHeight, encoderParams_.width,
+        encoderParams_.height);
     downsamplingParams_.width = width;
     downsamplingParams_.height = height;
     downsamplingParams_.result = ConfigResult::ENABLED;
@@ -553,12 +547,12 @@ Preprocessor::ConfigSnapshot Preprocessor::GetConfigSnapshot() const
 int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, const CropConfig &config,
                            const BufferReallocCallback &callback)
 {
+    CHECK_AND_RETURN_RET_LOG(FAST_KIT_ENABLE, AVCS_ERR_UNSUPPORT, "Crop requires FastKit");
     if (!CheckOrReallocOutSurfaceBuffer(config.width, config.height, input->GetFormat(), output, callback)) {
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    CHECK_AND_RETURN_RET_LOG(FAST_KIT_ENABLE, AVCS_ERR_UNSUPPORT, "Crop requires FastKit");
-    PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
+    PreProcessing::CropRect rect{config.top, config.left, config.bottom, config.right};
     int32_t ret = fastKitsInterface_.Crop(input, output, rect);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit crop failed: %{public}d", ret);
     return AVCS_ERR_OK;
@@ -567,11 +561,11 @@ int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
 int32_t Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output,
                                    const DownsamplingConfig &config, const BufferReallocCallback &callback)
 {
+    CHECK_AND_RETURN_RET_LOG(FAST_KIT_ENABLE, AVCS_ERR_UNSUPPORT, "Downsampling requires FastKit");
     if (!CheckOrReallocOutSurfaceBuffer(config.width, config.height, input->GetFormat(), output, callback)) {
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    CHECK_AND_RETURN_RET_LOG(FAST_KIT_ENABLE, AVCS_ERR_UNSUPPORT, "Downsampling requires FastKit");
     int32_t ret = fastKitsInterface_.DownSample(input, output);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit downsampling failed: %{public}d", ret);
     return AVCS_ERR_OK;
@@ -722,11 +716,9 @@ bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t t
                                                   const BufferReallocCallback &callback)
 {
     auto targetGraphicFormat = static_cast<GraphicPixelFormat>(targetFormat);
-    if (!IsGeometrySupported(targetGraphicFormat, targetWidth, targetHeight)) {
-        AVCODEC_LOGE("Unsupported target geometry: %{public}dx%{public}d format=%{public}d",
-                     targetWidth, targetHeight, targetFormat);
-        return false;
-    }
+    bool supported = IsGeometrySupported(targetGraphicFormat, targetWidth, targetHeight);
+    CHECK_AND_RETURN_RET_LOG(supported, false, "Unsupported target geometry: %{public}dx%{public}d format=%{public}d",
+        targetWidth, targetHeight, targetFormat);
     int32_t minStride = GetMinRowBytes(targetGraphicFormat, targetWidth);
     if (minStride <= 0) {
         return false;
@@ -736,6 +728,7 @@ bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t t
                        output->GetVirAddr() == nullptr ||
                        output->GetStride() < minStride;
     if (needRealloc) {
+        CHECK_AND_RETURN_RET_LOG(output && callback, false, "Output buffer or realloc callback is nullptr");
         sptr<SurfaceBuffer> newBuffer = SurfaceBuffer::Create();
         if (!newBuffer) {
             return false;
@@ -750,13 +743,8 @@ bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t t
             .timeout = 0,
         };
         auto ret = newBuffer->Alloc(config);
-        if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Alloc output buffer failed: %{public}d", ret);
-            return false;
-        }
-        if (output && callback) {
-            callback(output, newBuffer);
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, false, "Alloc output buffer failed: %{public}d", ret);
+        CHECK_AND_RETURN_RET_LOG(callback(output, newBuffer), false, "Replace output buffer in surface queue failed");
         output = newBuffer;
     }
     return true;

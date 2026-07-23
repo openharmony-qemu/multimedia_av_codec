@@ -108,6 +108,8 @@ private:
     private:
         void SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                                   std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
+        bool ReplaceOutputBuffer(sptr<SurfaceBuffer> &oldBuffer, const sptr<SurfaceBuffer> &newBuffer);
+        void RecycleOutputBuffer(const std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
         bool ProcessFrame(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                           std::shared_ptr<SurfaceBufferWrapper> &outputBuffer);
         void EncoderThreadLoop();

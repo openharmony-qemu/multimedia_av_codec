@@ -82,6 +82,8 @@ private:
     void OnPreprocessError(int32_t errorCode);
     void PostError(int32_t errorCode);
     void CloseCallbackGate();
+    void CloseAndWaitCallbackIfNeeded();
+    void PrepareCallbackShutdown();
     void ShutdownCallbackDispatcher();
     static std::string GenerateEncoderId(const std::string& prefix);
     OH_AVErrCode InitAsPrimary(const char* mime);

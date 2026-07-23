@@ -60,7 +60,6 @@ public:
             return;
         }
         if (worker_.get_id() == std::this_thread::get_id()) {
-            // The worker only accesses Core, which is retained by the thread entry.
             worker_.detach();
             return;
         }
@@ -86,8 +85,6 @@ public:
             ++core_->epoch;
             dropped.swap(core_->queue);
         }
-        // Destroy callback arguments outside the queue lock. Lifecycle operations
-        // release the underlying buffers; smart pointers only drop their references here.
     }
 
     void TryPost(Task task, Task onQueueFull = nullptr)
@@ -138,6 +135,14 @@ public:
     {
         std::unique_lock<std::mutex> lock(core_->mutex);
         core_->callbackFinishedCv.wait(lock, [core = core_]() { return !core->callbackExecuting; });
+    }
+
+    void WaitForCallbackFinishedIfNeeded() const
+    {
+        if (worker_.joinable() && worker_.get_id() == std::this_thread::get_id()) {
+            return;
+        }
+        WaitForCallbackFinished();
     }
 
     void WaitWorkerExit() const
@@ -331,7 +336,6 @@ void PreprocessorEncoder::Destroy(OH_AVCodec* codec)
             existingDispatcher = preprocEnc->callbackDispatcher_;
         } else {
             preprocEnc->CollectDestroyTargets(encodersToDestroy, dispatchers);
-            // Preserve the type magic until all primary/secondary targets are collected.
             for (auto* encoder : encodersToDestroy) {
                 encoder->magic_ = AVMagic::AVCODEC_MAGIC_INVALID_ENTITY;
             }
@@ -345,17 +349,12 @@ void PreprocessorEncoder::Destroy(OH_AVCodec* codec)
         return;
     }
 
-    // Never hold the global interface lock while stopping or waiting for a callback
-    // worker. An in-flight callback may itself enter Destroy().
     for (auto* encoder : encodersToDestroy) {
-        (void)encoder->Release();
+        encoder->PrepareCallbackShutdown();
         encoder->ShutdownCallbackDispatcher();
     }
     for (const auto& dispatcher : dispatchers) {
         if (dispatcher) {
-            // A callback-side Destroy waits for its own in-flight callback to finish.
-            // The callback cannot finish before Destroy returns, so it blocks safely
-            // without self-joining or deleting callback-owned objects.
             dispatcher->WaitForCallbackFinished();
         }
     }
@@ -363,6 +362,9 @@ void PreprocessorEncoder::Destroy(OH_AVCodec* codec)
         if (dispatcher) {
             dispatcher->JoinWorker();
         }
+    }
+    for (auto* encoder : encodersToDestroy) {
+        (void)encoder->Release();
     }
     for (auto iter = encodersToDestroy.rbegin(); iter != encodersToDestroy.rend(); ++iter) {
         delete *iter;
@@ -665,8 +667,6 @@ OH_AVErrCode PreprocessorEncoder::Start()
     if (preprocessor) {
         preprocessor->FlushTimeStamp();
     }
-    // Open the gate before starting processThread. Otherwise the first processed
-    // frame could produce an output while the gate is still closed.
     if (callbackDispatcher_) {
         callbackDispatcher_->OpenGate();
     }
@@ -686,8 +686,8 @@ OH_AVErrCode PreprocessorEncoder::Start()
 
 OH_AVErrCode PreprocessorEncoder::Stop()
 {
+    CloseAndWaitCallbackIfNeeded();
     std::scoped_lock lock(instanceMutex_);
-    CloseCallbackGate();
     if (preprocMgr_) {
         preprocMgr_->NotifyEosNowIfPending(encoderId_);
         (void)preprocMgr_->SetEncoderRunning(encoderId_, false);
@@ -703,8 +703,8 @@ OH_AVErrCode PreprocessorEncoder::Stop()
 
 OH_AVErrCode PreprocessorEncoder::Flush()
 {
+    CloseAndWaitCallbackIfNeeded();
     std::scoped_lock lock(instanceMutex_);
-    CloseCallbackGate();
     if (preprocMgr_) {
         preprocMgr_->NotifyEosNowIfPending(encoderId_);
         (void)preprocMgr_->SetEncoderRunning(encoderId_, false);
@@ -720,8 +720,8 @@ OH_AVErrCode PreprocessorEncoder::Flush()
 
 OH_AVErrCode PreprocessorEncoder::Reset()
 {
+    CloseAndWaitCallbackIfNeeded();
     std::scoped_lock lock(instanceMutex_);
-    CloseCallbackGate();
     if (preprocMgr_) {
         preprocMgr_->NotifyEosNowIfPending(encoderId_);
         (void)preprocMgr_->SetEncoderRunning(encoderId_, false);
@@ -808,6 +808,27 @@ void PreprocessorEncoder::CloseCallbackGate()
     }
 }
 
+void PreprocessorEncoder::CloseAndWaitCallbackIfNeeded()
+{
+    auto dispatcher = callbackDispatcher_;
+    if (dispatcher) {
+        dispatcher->CloseGate();
+        dispatcher->WaitForCallbackFinishedIfNeeded();
+    }
+}
+
+void PreprocessorEncoder::PrepareCallbackShutdown()
+{
+    std::scoped_lock lock(instanceMutex_);
+    CloseCallbackGate();
+    if (preprocMgr_) {
+        (void)preprocMgr_->SetEncoderRunning(encoderId_, false);
+    }
+    if (videoEncoderObject_) {
+        videoEncoderObject_->StopCallback();
+    }
+}
+
 void PreprocessorEncoder::ShutdownCallbackDispatcher()
 {
     if (callbackDispatcher_) {
@@ -876,8 +897,6 @@ void PreprocessorEncoder::OnOutputBufferAvailable(uint32_t index, const std::sha
         snapshot.callback.onNewOutputBuffer(
             codec, index, reinterpret_cast<OH_AVBuffer*>(object.GetRefPtr()), snapshot.userData);
     }, [weakVideoEncoderObject, index]() {
-        // A full running queue drops the incoming newest output. Unlike lifecycle
-        // queue clearing, the underlying encoder is still running, so release its index.
         auto videoEncoderObject = weakVideoEncoderObject.lock();
         if (videoEncoderObject && videoEncoderObject->videoEncoder_) {
             (void)videoEncoderObject->videoEncoder_->ReleaseOutputBuffer(index);

@@ -295,9 +295,8 @@ PreprocessorManager::EncoderInfo::~EncoderInfo()
 
 void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> preprocessor, sptr<Surface> surface)
 {
-    if (!preprocessor || !surface) {
-        AVCODEC_LOGE("Get a nullptr, %s %s", preprocessor ? "" : "preprocessor", surface ? "" : "surface");
-    }
+    CHECK_AND_RETURN_LOG(preprocessor && surface,
+        "Get a nullptr, %s %s", preprocessor ? "" : "preprocessor", surface ? "" : "surface");
     std::weak_ptr<EncoderInfo> weakThis = shared_from_this();
     encoderSurface_ = surface;
     encoderSurface_->Connect();
@@ -312,25 +311,56 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
     });
 
     preprocessor_ = preprocessor;
-    preprocessor_->SetOnBufferReallocCallback([this](sptr<SurfaceBuffer> oldBuf, sptr<SurfaceBuffer> newBuf) {
-        if (!oldBuf || !newBuf) {
-            AVCODEC_LOGE("Buffer is nullptr");
-            return;
+    preprocessor_->SetOnBufferReallocCallback(
+        [weakThis](sptr<SurfaceBuffer> &oldBuffer, const sptr<SurfaceBuffer> &newBuffer) -> bool {
+            auto encoderInfo = weakThis.lock();
+            return encoderInfo && encoderInfo->ReplaceOutputBuffer(oldBuffer, newBuffer);
+        });
+}
+
+bool PreprocessorManager::EncoderInfo::ReplaceOutputBuffer(
+    sptr<SurfaceBuffer> &oldBuffer, const sptr<SurfaceBuffer> &newBuffer)
+{
+    CHECK_AND_RETURN_RET_LOG(oldBuffer && newBuffer, false, "Buffer is nullptr");
+    bool fatalError = false;
+    {
+        std::lock_guard<std::mutex> lock(bufferQueueMutex_);
+        if (!encoderSurface_) {
+            encoderSurfaceBufferPool_.erase(oldBuffer->GetSeqNum());
+            oldBuffer = nullptr;
+            isRunning_ = false;
+            eosRequested_ = false;
+            notifyEosTask_ = nullptr;
+            fatalError = true;
+        } else {
+            uint32_t oldSeq = oldBuffer->GetSeqNum();
+            auto ret = encoderSurface_->DetachBufferFromQueue(oldBuffer);
+            CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, false,
+                "Detach surface buffer failed, GSError: %{public}d", ret);
+            ret = encoderSurface_->AttachBufferToQueue(newBuffer);
+            if (ret == GSERROR_OK) {
+                encoderSurfaceBufferPool_.erase(oldSeq);
+                encoderSurfaceBufferPool_.insert_or_assign(newBuffer->GetSeqNum(), newBuffer);
+                return true;
+            }
+            AVCODEC_LOGE("Attach new surface buffer failed, GSError: %{public}d", ret);
+            auto rollbackRet = encoderSurface_->AttachBufferToQueue(oldBuffer);
+            if (rollbackRet == GSERROR_OK) {
+                return false;
+            }
+            AVCODEC_LOGE("Rollback old surface buffer failed, GSError: %{public}d", rollbackRet);
+            encoderSurfaceBufferPool_.erase(oldSeq);
+            oldBuffer = nullptr;
+            isRunning_ = false;
+            eosRequested_ = false;
+            notifyEosTask_ = nullptr;
+            fatalError = true;
         }
-        std::unique_lock<std::mutex> lock(bufferQueueMutex_);
-        auto ret = encoderSurface_->DetachBufferFromQueue(oldBuf);
-        if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Dettach surfacebuffer from queue failed, GSError: %{public}d", ret);
-            return;
-        }
-        ret = encoderSurface_->AttachBufferToQueue(newBuf);
-        if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Attach surfacebuffer to queue failed, GSError: %{public}d", ret);
-            return;
-        }
-        encoderSurfaceBufferPool_.erase(oldBuf->GetSeqNum());
-        encoderSurfaceBufferPool_.emplace(newBuf->GetSeqNum(), newBuf);
-    });
+    }
+    if (fatalError) {
+        bufferQueueCv_.notify_all();
+    }
+    return false;
 }
 
 int32_t PreprocessorManager::EncoderInfo::Start()
@@ -345,10 +375,8 @@ int32_t PreprocessorManager::EncoderInfo::Start()
         processThread_.join();
         lock.lock();
     }
-    if (!encoderSurface_ || !preprocessor_) {
-        AVCODEC_LOGE("EncoderSurface or Preprocessor not initialized for encoder: %{public}s", encoderId_.data());
-        return AVCS_ERR_UNKNOWN;
-    }
+    CHECK_AND_RETURN_RET_LOG(encoderSurface_ && preprocessor_, AVCS_ERR_UNKNOWN,
+        "EncoderSurface or Preprocessor not initialized for encoder: %{public}s", encoderId_.data());
     eosRequested_ = false;
     notifyEosTask_ = nullptr;
     streamChangeNotified_ = false;
@@ -369,14 +397,15 @@ int32_t PreprocessorManager::EncoderInfo::Start()
 
 void PreprocessorManager::EncoderInfo::Stop()
 {
+    std::queue<std::shared_ptr<SurfaceBufferWrapper>> emptyQueue;
     {
         std::unique_lock<std::mutex> lock(bufferQueueMutex_);
         isRunning_ = false;
         eosRequested_ = false;
         notifyEosTask_ = nullptr;
-        std::queue<std::shared_ptr<SurfaceBufferWrapper>> emptyQueue;
         std::swap(pendingBuffers_, emptyQueue);
     }
+    emptyQueue = {};
     bufferQueueCv_.notify_all();
     if (processThread_.joinable()) {
         processThread_.join();
@@ -409,18 +438,14 @@ int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSu
         }
 
         auto ret = surfaceBuffer->Alloc(requestConfig);
-        if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Alloc surfacebuffer %{public}u failed, GSError: %{public}d, "
-                "%{public}dx%{public}d, format: %{public}d, usage: %{public}" PRId64,
-                idx, ret, requestConfig.width, requestConfig.height, requestConfig.format, requestConfig.usage);
-            return ret == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, (ret == GSERROR_NO_MEM) ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN,
+            "Alloc surfacebuffer %{public}u failed, GSError: %{public}d, "
+            "%{public}dx%{public}d, format: %{public}d, usage: %{public}" PRId64,
+            idx, ret, requestConfig.width, requestConfig.height, requestConfig.format, requestConfig.usage);
 
         ret = encoderSurface_->AttachBufferToQueue(surfaceBuffer);
-        if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Attach surfacebuffer %{public}u to queue failed, GSError: %{public}d", idx, ret);
-            return AVCS_ERR_UNKNOWN;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, AVCS_ERR_UNKNOWN,
+            "Attach surfacebuffer %{public}u to queue failed, GSError: %{public}d", idx, ret);
 
         encoderSurfaceBufferPool_.emplace(surfaceBuffer->GetSeqNum(), surfaceBuffer);
         auto bufferWrapper = std::make_shared<SurfaceBufferWrapper>(
@@ -461,10 +486,8 @@ void PreprocessorManager::EncoderInfo::OnNewEncoderSurfaceBufferAvailable(uint32
 bool PreprocessorManager::EncoderInfo::RequestNotifyEos(std::function<void()> notifyEosTask)
 {
     std::lock_guard<std::mutex> lock(bufferQueueMutex_);
-    if (!isRunning_) {
-        AVCODEC_LOGE("Encoder is not running when request eos: %{public}s", encoderId_.data());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(isRunning_, false,
+        "Encoder is not running when request eos: %{public}s", encoderId_.data());
     eosRequested_ = true;
     notifyEosTask_ = std::move(notifyEosTask);
     bufferQueueCv_.notify_all();
@@ -489,6 +512,16 @@ void PreprocessorManager::EncoderInfo::NotifyEosNowIfPending()
     }
     bufferQueueCv_.notify_all();
     notifyEosTask();
+}
+
+void PreprocessorManager::EncoderInfo::RecycleOutputBuffer(
+    const std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
+{
+    if (!outputBuffer || !outputBuffer->buffer) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(bufferQueueMutex_);
+    availableInputBuffers_.push(outputBuffer);
 }
 
 void PreprocessorManager::EncoderInfo::SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
@@ -538,15 +571,11 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
         lock.unlock();
 
         if (!inputBuffer || !inputBuffer->buffer || !outputBuffer || !outputBuffer->buffer) {
-            if (outputBuffer) {
-                std::lock_guard<std::mutex> poolLock(bufferQueueMutex_);
-                availableInputBuffers_.push(outputBuffer);
-            }
+            RecycleOutputBuffer(outputBuffer);
             continue;
         }
         if (!ProcessFrame(inputBuffer, outputBuffer)) {
-            std::lock_guard<std::mutex> poolLock(bufferQueueMutex_);
-            availableInputBuffers_.push(outputBuffer);
+            RecycleOutputBuffer(outputBuffer);
             continue;
         }
         DumpBuffers(inputBuffer->buffer, outputBuffer->buffer, encoderId_, inputBuffer->timestamp);

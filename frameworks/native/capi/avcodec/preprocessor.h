@@ -32,7 +32,8 @@ namespace MediaAVCodec {
 
 class Preprocessor {
 public:
-    using BufferReallocCallback = std::function<void(sptr<SurfaceBuffer>, sptr<SurfaceBuffer>)>;
+    using BufferReallocCallback =
+        std::function<bool(sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &)>;
 
     struct ConfigSnapshot {
         int32_t configuredWidth{0};
