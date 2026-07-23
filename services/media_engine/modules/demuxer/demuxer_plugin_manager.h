@@ -190,6 +190,7 @@ private:
     bool isHlsFmp4_ {false};
     std::string pluginName_ {};
     std::atomic<bool> isPlayerMode_ = false;
+    std::shared_mutex mediaInfoMutex_;
 };
 } // namespace Media
 } // namespace OHOS

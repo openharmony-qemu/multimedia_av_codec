@@ -60,6 +60,7 @@ DataSourceImpl::DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream,
 
 bool DataSourceImpl::IsOffsetValid(int64_t offset) const
 {
+    FALSE_RETURN_V(offset >= 0, false);
     if (stream_->seekable_ == Plugins::Seekable::SEEKABLE) {
         return stream_->mediaDataSize_ == 0 || offset <= static_cast<int64_t>(stream_->mediaDataSize_);
     }
@@ -88,6 +89,7 @@ Status DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, s
                             ", offset: " PUBLIC_LOG_D64, !buffer, static_cast<int>(expectedLen), offset);
         return Status::ERROR_UNKNOWN;
     }
+    FALSE_RETURN_V(stream_ != nullptr, Status::ERROR_UNKNOWN);
     return stream_->CallbackReadAt(streamID_, offset, buffer, expectedLen);
 }
 
@@ -366,6 +368,7 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
         AddMediaInfo(iter.first, mediaInfo);
     }
 
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     curMediaInfo_ = mediaInfo;
     return Status::OK;
 }
@@ -378,11 +381,15 @@ Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStrea
         return Status::ERROR_UNKNOWN;
     }
 
-    mediaInfo = curMediaInfo_;
+    {
+        std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
+        mediaInfo = curMediaInfo_;
+    }
     MEDIA_LOG_I("LoadCurrentSubtitleDemuxerPlugin begin");
     Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin subtitle plugin failed.");
     AddMediaInfo(curSubTitleStreamID_, mediaInfo);
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     curMediaInfo_ = mediaInfo;
     MEDIA_LOG_I("LoadCurrentSubtitleDemuxerPlugin success");
     return Status::OK;
@@ -423,6 +430,7 @@ void DemuxerPluginManager::DeleteTempTrackMapInfo(int32_t oldTrackId)
 
 void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId, int32_t newInnerTrackIndex)
 {
+    FALSE_RETURN(trackInfoMap_.find(newTrackId) != trackInfoMap_.end());
     temp2TrackInfoMap_[oldTrackId].streamID = trackInfoMap_[newTrackId].streamID;
     temp2TrackInfoMap_[oldTrackId].trackID = newTrackId;
     if (newInnerTrackIndex == -1) {
@@ -517,6 +525,7 @@ bool DemuxerPluginManager::CheckTrackIsActive(int32_t trackId)
     auto iter = trackInfoMap_.find(trackId);
     if (iter != trackInfoMap_.end()) {
         int32_t streamId = iter->second.streamID;
+        FALSE_RETURN_V(streamInfoMap_.find(streamId) != streamInfoMap_.end(), false);
         return streamInfoMap_[streamId].activated;
     }
     return false;
@@ -587,6 +596,7 @@ Status DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> strea
         }
     }
     MEDIA_LOG_D("InitPlugin, " PUBLIC_LOG_S " used, id " PUBLIC_LOG_D32, pluginName.c_str(), id);
+    FALSE_RETURN_V_MSG_E(streamDemuxer != nullptr, Status::ERROR_NULL_POINTER, "streamDemuxer is nullptr");
     streamDemuxer->SetDemuxerState(id, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
     streamDemuxer->SetIsDash(isDash_);
 
@@ -1026,7 +1036,11 @@ Status DemuxerPluginManager::Pause()
 
 Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
 {
-    Plugins::MediaInfo mediaInfo = curMediaInfo_;
+    Plugins::MediaInfo mediaInfo;
+    {
+        std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
+        mediaInfo = curMediaInfo_;
+    }
     std::map<int32_t, MediaTrackMap> tempTrackInfoMap = trackInfoMap_;
     for (size_t i = 0; i < streamInfoMap_[streamID].mediaInfo.tracks.size(); i++) {
         auto trackMeta = streamInfoMap_[streamID].mediaInfo.tracks[i];
@@ -1048,6 +1062,7 @@ Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
     UpdateGeneralValue(trackInfoMap_.size() - tempTrackInfoMap.size(),
         streamInfoMap_[streamID].mediaInfo.general, mediaInfo.general);
 
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     curMediaInfo_ = mediaInfo;
     return Status::OK;
 }
@@ -1063,6 +1078,7 @@ Status DemuxerPluginManager::UpdateDefaultStreamID(Plugins::MediaInfo& mediaInfo
         curVideoStreamID_ = newStreamID;
     } else {}
 
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     mediaInfo = curMediaInfo_;
 
     return Status::OK;
@@ -1126,6 +1142,7 @@ bool DemuxerPluginManager::IsSubtitleMime(const std::string& mime)
 
 TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 {
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     if (static_cast<size_t>(trackId) >= curMediaInfo_.tracks.size()) {
         return TRACK_INVALID;
     }
@@ -1221,6 +1238,7 @@ int32_t DemuxerPluginManager::GetTmpTrackIdByTrackId(int32_t trackId)
 
 Plugins::MediaInfo DemuxerPluginManager::GetMediaInfo()
 {
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     return curMediaInfo_;
 }
 } // namespace Media
