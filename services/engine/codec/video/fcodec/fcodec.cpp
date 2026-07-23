@@ -1105,7 +1105,7 @@ int32_t FCodec::AllocateBuffers()
     ret = sInfo_.surface ? AllocateOutputBuffersFromSurface() : AllocateOutputBuffer();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Allocate output buffers failed!");
     int32_t stride = buffers_[INDEX_OUTPUT][0]->stride_;
-    if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
+    if (outputPixelFmt_ == VideoPixelFormat::RGBA && isUsedSharedMem_) {
         stride = stride * VIDEO_PIX_DEPTH_RGBA;
     }
     format_.PutIntValue(FMTKey::VIDEO_STRIDE, stride);
@@ -1188,7 +1188,7 @@ void FCodec::CheckStrideChange(uint32_t index, bool isChanged)
 {
     if (isChanged) {
         int32_t stride = buffers_[INDEX_OUTPUT][index]->stride_;
-        if (outputPixelFmt_ == VideoPixelFormat::RGBA) {
+        if (outputPixelFmt_ == VideoPixelFormat::RGBA && isUsedSharedMem_) {
             stride = stride * VIDEO_PIX_DEPTH_RGBA;
         }
         std::lock_guard<std::mutex> lock(formatMutex_);
