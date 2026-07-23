@@ -201,20 +201,34 @@ HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_UnknownId_001, TestSize
  */
 HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_WithPendingBuffers_001, TestSize.Level1)
 {
+    const std::string encoderId = "test_encoder";
     bool eosCalled = false;
     sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
     ASSERT_NE(mockSurface, nullptr);
-    preprocessorManager_->RegisterEncoder("test_encoder", preprocessor_, mockSurface);
-    preprocessorManager_->CreateSharedSurface();
-    preprocessorManager_->SetEncoderRunning("test_encoder", true);
-    preprocessorManager_->NotifyNewBufferAvailable();
-    preprocessorManager_->NotifyNewBufferAvailable();  // Add multiple buffers
-    preprocessorManager_->RequestNotifyEos("test_encoder", [&eosCalled]() {
+    preprocessorManager_->RegisterEncoder(encoderId, preprocessor_, mockSurface);
+    auto iter = preprocessorManager_->encoders_.find(encoderId);
+    ASSERT_NE(iter, preprocessorManager_->encoders_.end());
+    auto encoderInfo = iter->second;
+    ASSERT_NE(encoderInfo, nullptr);
+    sptr<SurfaceBuffer> pendingBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(pendingBuffer, nullptr);
+    auto pendingWrapper = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>(
+        wptr<Surface>(), pendingBuffer, nullptr, PreprocessorManager::SurfaceBufferWrapper::SurfaceType::CONSUMER);
+    {
+        std::lock_guard<std::mutex> lock(encoderInfo->bufferQueueMutex_);
+        encoderInfo->isRunning_ = true;
+        encoderInfo->pendingBuffers_.push(pendingWrapper);
+    }
+    pendingWrapper.reset();
+
+    ASSERT_TRUE(preprocessorManager_->RequestNotifyEos(encoderId, [&eosCalled]() {
         eosCalled = true;
-    });
-    preprocessorManager_->NotifyEosNowIfPending("test_encoder");
-    ASSERT_TRUE(eosCalled);
-    preprocessorManager_->UnregisterEncoder("test_encoder");
+    }));
+    preprocessorManager_->NotifyEosNowIfPending(encoderId);
+    EXPECT_TRUE(eosCalled);
+    EXPECT_FALSE(encoderInfo->isRunning_);
+    EXPECT_FALSE(encoderInfo->eosRequested_);
+    preprocessorManager_->UnregisterEncoder(encoderId);
 }
 
 /**
@@ -1048,7 +1062,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_AfterConfigure_001, TestSize.Level
 
 /**
  * @tc.name: PreprocessorEncoder_Start_NullVideoEncoder_001
- * @tc.desc: Test Flush when preprocMgr_ exists and videoEncoderObject_ exists but videoEncoder_ is nullptr
+ * @tc.desc: Test Start when preprocMgr_ is nullptr and videoEncoderObject_ exists but videoEncoder_ is nullptr
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_NullVideoEncoder_001, TestSize.Level1)
@@ -1057,7 +1071,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_NullVideoEncoder_001, TestSize.Lev
     auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_NE(preprocessor, nullptr);
     preprocessorEncoder_->preprocessors_[preprocessorEncoder_->encoderId_] = preprocessor;
-    preprocessorEncoder_->preprocMgr_ = std::make_shared<PreprocessorManager>();
+    preprocessorEncoder_->preprocMgr_ = nullptr;
     preprocessorEncoder_->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
     auto ret = preprocessorEncoder_->Start();
     EXPECT_EQ(ret, AV_ERR_OK);

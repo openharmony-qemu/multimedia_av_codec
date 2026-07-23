@@ -2003,8 +2003,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ReleasePrimary_DestroysSecondary_001, Tes
     ASSERT_TRUE(dualSample.CreatePrimary(GetCurMimeType()));
     ASSERT_TRUE(dualSample.CreateSecondary());
     ASSERT_EQ(AV_ERR_OK, dualSample.Release(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample.Start(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample.Stop(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample.Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample.Stop(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample.Configure(EncoderType::SECONDARY));
 }
 
