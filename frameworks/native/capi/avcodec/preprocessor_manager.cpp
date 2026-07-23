@@ -549,7 +549,8 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
             return !(pendingBuffers_.empty() || availableInputBuffers_.empty());
         });
         if (!isRunning_) {
-            break;
+            shouldExit = true;
+            continue;
         }
         if (eosRequested_ && pendingBuffers_.empty()) {
             std::function<void()> notifyEosTask{nullptr};
@@ -560,7 +561,8 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
             eosRequested_ = false;
             isRunning_ = false;
             AVCODEC_LOGI("Pending buffers drained, notify eos asynchronously: %{public}s", encoderId_.data());
-            break;
+            shouldExit = true;
+            continue;
         }
         if (pendingBuffers_.empty() || availableInputBuffers_.empty()) {
             continue;

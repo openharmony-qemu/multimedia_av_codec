@@ -48,8 +48,9 @@ class PreprocessorCallbackDispatcher {
 public:
     using Task = std::function<void()>;
 
-    explicit PreprocessorCallbackDispatcher(size_t maxEventCount)
-        : core_(std::make_shared<Core>(maxEventCount)), worker_(&PreprocessorCallbackDispatcher::WorkerLoop, core_)
+    PreprocessorCallbackDispatcher(size_t maxEventCount, bool isPrimary)
+        : core_(std::make_shared<Core>(maxEventCount)),
+          worker_(&PreprocessorCallbackDispatcher::WorkerLoop, core_, isPrimary)
     {
     }
 
@@ -175,11 +176,9 @@ private:
         bool workerExited{false};
     };
 
-    static void WorkerLoop(const std::shared_ptr<Core>& core)
+    static void WorkerLoop(const std::shared_ptr<Core>& core, bool isPrimary)
     {
-        std::string threadName = std::string("OS_Preproc_Worker_") +
-                                 (encoderId_.find("primary") != std::string::npos ? "P" : "S");
-        pthread_setname_np(pthread_self(), threadName.c_str());
+        pthread_setname_np(pthread_self(), isPrimary ? "OS_Preproc_CB_P" : "OS_Preproc_CB_S");
         bool shouldExit = false;
         while (!shouldExit) {
             Event event;
@@ -188,7 +187,8 @@ private:
                 std::unique_lock<std::mutex> lock(core->mutex);
                 core->cv.wait(lock, [core]() { return core->stopping || !core->queue.empty(); });
                 if (core->stopping && core->queue.empty()) {
-                    break;
+                    shouldExit = true;
+                    continue;
                 }
                 event = std::move(core->queue.front());
                 core->queue.pop_front();
@@ -380,7 +380,7 @@ OH_AVErrCode PreprocessorEncoder::InitAsPrimary(const char *mime)
     mime_ = mime;
     encoderId_ = GenerateEncoderId("primary");
 
-    callbackDispatcher_ = std::make_shared<PreprocessorCallbackDispatcher>(MAX_CALLBACK_EVENT_COUNT);
+    callbackDispatcher_ = std::make_shared<PreprocessorCallbackDispatcher>(MAX_CALLBACK_EVENT_COUNT, true);
     CHECK_AND_RETURN_RET_LOG(callbackDispatcher_ != nullptr, AV_ERR_NO_MEMORY,
         "CallbackDispatcher create failed!");
 
@@ -408,7 +408,7 @@ OH_AVErrCode PreprocessorEncoder::InitAsSecondary(PreprocessorEncoder *primary)
     mime_ = primary->mime_;
     encoderId_ = GenerateEncoderId("secondary");
 
-    callbackDispatcher_ = std::make_shared<PreprocessorCallbackDispatcher>(MAX_CALLBACK_EVENT_COUNT);
+    callbackDispatcher_ = std::make_shared<PreprocessorCallbackDispatcher>(MAX_CALLBACK_EVENT_COUNT, false);
     CHECK_AND_RETURN_RET_LOG(callbackDispatcher_ != nullptr, AV_ERR_NO_MEMORY,
         "CallbackDispatcher create failed!");
 
