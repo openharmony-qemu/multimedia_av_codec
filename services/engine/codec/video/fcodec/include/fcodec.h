@@ -135,7 +135,7 @@ private:
     int32_t ClearSurfaceAndSetQueueSize();
     int32_t AllocateOutputBuffersFromSurface();
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
-    int32_t CheckStrideChange(uint32_t index, bool isChanged);
+    void CheckStrideChange(uint32_t index, bool isChanged);
     int32_t CheckFormatChange(uint32_t index, bool &isChanged);
     void SetSurfaceParameter();
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);

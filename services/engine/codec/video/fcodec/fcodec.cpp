@@ -1174,7 +1174,7 @@ int32_t FCodec::UpdateSurfaceMemory(uint32_t index)
     return AVCS_ERR_OK;
 }
 
-int32_t FCodec::CheckStrideChange(uint32_t index, bool isChanged)
+void FCodec::CheckStrideChange(uint32_t index, bool isChanged)
 {
     if (isChanged) {
         int32_t stride = buffers_[INDEX_OUTPUT][index]->stride_;
@@ -1189,7 +1189,6 @@ int32_t FCodec::CheckStrideChange(uint32_t index, bool isChanged)
         format_.PutIntValue(FMTKey::VIDEO_PIC_WIDTH, width_);
         format_.PutIntValue(FMTKey::VIDEO_PIC_HEIGHT, height_);
     }
-    return AVCS_ERR_OK;
 }
 
 int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
@@ -1527,8 +1526,7 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
                                  "Update buffer failed");
     }
     oLock.unlock();
-    ret = CheckStrideChange(index, isChanged);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Check stride change failed");
+    CheckStrideChange(index, isChanged);
     if (!isEmulator_ && !isUsedSharedMem_) {
         std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
         std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
