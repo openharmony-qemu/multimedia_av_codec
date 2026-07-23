@@ -310,7 +310,6 @@ void AvcEncoder::GetBufferFromSurface()
     freeList_.pop_front();
     listLock.unlock();
 
-    std::unique_lock<std::mutex> iLock(inputMutex_);
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     CHECK_AND_RETURN_LOG(inputBuffer != nullptr, "input buffer is null");
     inputBuffer->surfaceBuffer_ = buffer;
@@ -321,9 +320,7 @@ void AvcEncoder::GetBufferFromSurface()
     inputBuffer->avBuffer_->pts_ = pts;
     if (enableSurfaceModeInputCb_) {
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
-        std::shared_ptr<AVBuffer> avbuffer = inputBuffer->avBuffer_;
-        iLock.unlock();
-        callback_->OnInputBufferAvailable(index, avbuffer);
+        callback_->OnInputBufferAvailable(index, inputBuffer->avBuffer_);
     } else {
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_CODEC;
         inputAvailQue_->Push(index);
