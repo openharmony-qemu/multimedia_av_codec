@@ -904,8 +904,10 @@ void PreprocessorEncoder::OnOutputBufferAvailable(uint32_t index, const std::sha
     auto onQueueFull = [weakVideoEncoderObject, index]() {
         auto videoEncoderObject = weakVideoEncoderObject.lock();
         if (videoEncoderObject && videoEncoderObject->videoEncoder_) {
-            (void)videoEncoderObject->videoEncoder_->ReleaseOutputBuffer(index);
-            videoEncoderObject->ReleaseOutputBufferWrapper(index);
+            int32_t ret = videoEncoderObject->videoEncoder_->ReleaseOutputBuffer(index);
+            if (ret == AVCS_ERR_OK) {
+                videoEncoderObject->ReleaseOutputBufferWrapper(index);
+            }
         }
     };
     callbackDispatcher_->TryPost(task, onQueueFull);
