@@ -70,8 +70,10 @@ DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer(int32_t instanceId)
     eventData_.insert(std::make_pair("pid", std::to_string(instanceInfo.caller.pid)));
     eventData_.insert(std::make_pair("decRate", "0"));
 #endif
-    eventData_.insert(std::make_pair("rate", "0"));
-    eventData_.insert(std::make_pair("decSpeed", "100"));
+#ifdef SUPPORT_FPS_FOR_MEMC
+    tveventData_.insert(std::make_pair("rate", "0"));
+    tveventData_.insert(std::make_pair("decSpeed", "100"));
+#endif
 }
 
 void DecodingBehaviorAnalyzer::OnFrameConsumed(int64_t pts, bool render)
@@ -144,8 +146,8 @@ void DecodingBehaviorAnalyzer::IsNeedReport()
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(curt - lastConsumTime_).count();
     if (elapsedTime > SEEK_DETECTION_THRESHOLD_MS && lastConsumTime_ != std::chrono::steady_clock::time_point{}
          && fixedInfo_.first != 0) {
-        eventData_["rate"] = std::to_string(fixedInfo_.first);
-        RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(eventData_);
+        tveventData_["rate"] = std::to_string(fixedInfo_.first);
+        RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(tveventData_);
         AVCODEC_LOGI("video fix fps =%{public}u", fixedInfo_.first);
     }
     lastConsumTime_ = std::chrono::steady_clock::now();
@@ -181,8 +183,8 @@ void DecodingBehaviorAnalyzer::CalcOutputVideoFps(int64_t currentPts, bool rende
             if (curtInfo_.second >= CONTINUES_FRAME_CNT && IsStableFps(fps)) {
                 fixedInfo_.first = curtInfo_.first; //连续相同帧率超过阈值，记录为稳定帧率
                 fixedInfo_.second = curtInfo_.second;
-                eventData_["rate"] = std::to_string(fixedInfo_.first);
-                RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(eventData_);
+                tveventData_["rate"] = std::to_string(fixedInfo_.first);
+                RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(tveventData_);
                 AVCODEC_LOGI("video fix fps =%{public}u pts= %{public}ld, lastPts= %{public}ld, delta= %{public}ld",
                     fixedInfo_.first, currentPts, lastPts, delta);
             }
@@ -363,6 +365,7 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     double decInFps = static_cast<double>(totalFrames - 1) / sysTimeIntvlMs * 1000; // 1000: ms to s
 #ifdef SUPPORT_FPS_FOR_MEMC
     double srcFps = fixedInfo_.first;
+    srcFps_ = srcFps;
 #else
     double srcFps = GetSrcFps();
 #endif
@@ -380,8 +383,8 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
 #ifdef SUPPORT_FPS_FOR_MEMC
     if ((lastDecSpeedIdx != 0 && lastDecSpeedIdx != NORMAL_SPEED && isSingleSpeed_) ||
         (lastDecSpeedIdx == NORMAL_SPEED && !isSingleSpeed_)) {
-        eventData_["decSpeed"] = std::to_string(static_cast<int>(standardSpeeds[lastDecSpeedIdx] * FLOAT2INT));
-        RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(eventData_);
+        tveventData_["decSpeed"] = std::to_string(static_cast<int>(standardSpeeds[lastDecSpeedIdx] * FLOAT2INT));
+        RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(tveventData_);
         AVCODEC_LOGI("video fix fps =%{public}u, new =%{public}zu last =%{public}zu",
             fixedInfo_.first, newSpeedIdx, lastDecSpeedIdx);
     }
