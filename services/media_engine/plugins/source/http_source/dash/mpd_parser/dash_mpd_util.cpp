@@ -189,6 +189,15 @@ static void ClampDurationToUint32(int64_t time, uint32_t &duration)
     }
 }
 
+void ClampDurationToUint32(uint64_t time, uint32_t &duration)
+{
+    if (time > std::numeric_limits<uint32_t>::max()) {
+        duration = std::numeric_limits<uint32_t>::max();
+    } else {
+        duration = static_cast<uint32_t>(time);
+    }
+}
+
 int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
 {
     int64_t time = 0;

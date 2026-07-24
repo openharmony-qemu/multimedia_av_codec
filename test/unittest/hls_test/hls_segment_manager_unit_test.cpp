@@ -24,6 +24,7 @@ using namespace testing::ext;
 
 constexpr uint32_t RING_BUFFER_SIZE = 1 * 1024 * 1024;
 constexpr uint64_t MAX_CACHE_BUFFER_SIZE_UT = 4 * 1024 * 1024;
+constexpr size_t AES_IV_LEN = 16;
 
 const std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "ABC"},
@@ -146,8 +147,8 @@ public:
     {
         return false;
     }
-    bool IsHlsFmp4() override { return false; }
-    bool IsPureByteRange() override { return false; }
+    bool IsHlsFmp4() override { return isHlsFmp4_; }
+    bool IsPureByteRange() override { return isPureByteRange_; }
     void ReOpen(void) override {}
     std::shared_ptr<StreamInfo> GetStreamInfoById(int32_t streamId) override { return nullptr; }
     int32_t GetDefaultMediaStreamId(HlsSegmentType mediaType) override { return 0; }
@@ -160,7 +161,12 @@ public:
     bool IsLiveEnd() override { return false; }
     void UpdateStreamInfo() override {}
     HlsSegmentType GetSegType(uint32_t streamId) override { return HlsSegmentType::SEG_AUDIO; }
-    std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override { return nullptr; }
+    std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override { return aesDecryptor_; }
+    bool HasExplicitIv(uint64_t keyIndex) override { return hasExplicitIvResult_; }
+    std::shared_ptr<AesDecryptor> aesDecryptor_ = nullptr;
+    bool hasExplicitIvResult_ = false;
+    bool isHlsFmp4_ = false;
+    bool isPureByteRange_ = false;
 };
 
 void HlsSegmentManagerUnitTest::SetUpTestCase(void)
@@ -2935,6 +2941,257 @@ HWTEST_F(HlsSegmentManagerUnitTest, REMOVE_FMP4_PADDING_DATA_002, TestSize.Level
     downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
     downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
     EXPECT_EQ(readDataInfo.realReadLength_, 16);
+}
+
+/**
+ * @tc.name  : Test IsCurrentTsFinished
+ * @tc.number: IsCurrentTsFinished_001
+ * @tc.desc  : Test IsCurrentTsFinished when tsStorageInfo_ does not contain index
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, IsCurrentTsFinished_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    hlsSegmentManager_->tsStorageInfo_.clear();
+    hlsSegmentManager_->writeTsIndex_ = 0;
+    hlsSegmentManager_->isFirstFrameArrived_ = true;
+    EXPECT_FALSE(hlsSegmentManager_->IsCurrentTsFinished());
+}
+
+/**
+ * @tc.name  : Test IsCurrentTsFinished
+ * @tc.number: IsCurrentTsFinished_002
+ * @tc.desc  : Test IsCurrentTsFinished when tsStorageInfo_ contains index and second==true
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, IsCurrentTsFinished_002, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    hlsSegmentManager_->tsStorageInfo_.clear();
+    hlsSegmentManager_->writeTsIndex_ = 0;
+    hlsSegmentManager_->isFirstFrameArrived_ = true;
+    hlsSegmentManager_->tsStorageInfo_[0] = {0, true};
+    EXPECT_TRUE(hlsSegmentManager_->IsCurrentTsFinished());
+}
+
+/**
+ * @tc.name  : Test IsCurrentTsFinished
+ * @tc.number: IsCurrentTsFinished_003
+ * @tc.desc  : Test IsCurrentTsFinished when tsStorageInfo_ contains index and second==false
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, IsCurrentTsFinished_003, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    hlsSegmentManager_->tsStorageInfo_.clear();
+    hlsSegmentManager_->writeTsIndex_ = 0;
+    hlsSegmentManager_->isFirstFrameArrived_ = true;
+    hlsSegmentManager_->tsStorageInfo_[0] = {0, false};
+    EXPECT_FALSE(hlsSegmentManager_->IsCurrentTsFinished());
+}
+
+/**
+ * @tc.name  : Test NotifyBitrateChange
+ * @tc.number: NotifyBitrateChange_001
+ * @tc.desc  : Test NotifyBitrateChange with null callback does not crash
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, NotifyBitrateChange_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    hlsSegmentManager_->callback_.reset();
+    hlsSegmentManager_->NotifyBitrateChange(1000);
+    SUCCEED();
+}
+
+/**
+ * @tc.name  : Test NotifyBitrateChange
+ * @tc.number: NotifyBitrateChange_002
+ * @tc.desc  : Test NotifyBitrateChange with valid callback triggers events
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, NotifyBitrateChange_002, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    auto callback = std::make_shared<HlsNetworkBitrateCallback>();
+    hlsSegmentManager_->callback_ = callback;
+    hlsSegmentManager_->NotifyBitrateChange(500);
+    EXPECT_TRUE(callback->eventTriggered_);
+}
+
+/**
+ * @tc.name  : Test HandleSpliceEnd early return when offset below splice end
+ * @tc.number: HandleSpliceEnd_001
+ * @tc.desc  : Test HandleSpliceEnd returns early when readOffset_ < tsEndOffset
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, HandleSpliceEnd_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    hlsSegmentManager_->tsStorageInfo_.clear();
+    hlsSegmentManager_->readTsIndex_ = 0;
+    hlsSegmentManager_->isFirstFrameArrived_ = true;
+    hlsSegmentManager_->tsStorageInfo_[0] = {100, true};
+    hlsSegmentManager_->readOffset_ = 50;
+    unsigned char buff[16] = {0};
+    ReadDataInfo readDataInfo;
+    hlsSegmentManager_->HandleSpliceEnd(buff, readDataInfo);
+    EXPECT_FALSE(hlsSegmentManager_->isTsEnd_.load());
+}
+
+/**
+ * @tc.name  : Test HandleSpliceEnd triggers splice end
+ * @tc.number: HandleSpliceEnd_002
+ * @tc.desc  : Test HandleSpliceEnd sets isTsEnd_ when readOffset_ >= tsEndOffset
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, HandleSpliceEnd_002, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    hlsSegmentManager_->tsStorageInfo_.clear();
+    hlsSegmentManager_->readTsIndex_ = 0;
+    hlsSegmentManager_->isFirstFrameArrived_ = true;
+    hlsSegmentManager_->tsStorageInfo_[0] = {100, true};
+    hlsSegmentManager_->readOffset_ = 100;
+    hlsSegmentManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    hlsSegmentManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    unsigned char buff[16] = {0};
+    ReadDataInfo readDataInfo;
+    hlsSegmentManager_->HandleSpliceEnd(buff, readDataInfo);
+    EXPECT_TRUE(hlsSegmentManager_->isTsEnd_.load());
+}
+
+/**
+ * @tc.name  : Test HandleSpliceEnd early return when tsStorageInfo_ key not found
+ * @tc.number: HandleSpliceEnd_003
+ * @tc.desc  : Test HandleSpliceEnd returns early when readTsIndex_ not in tsStorageInfo_
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, HandleSpliceEnd_003, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    hlsSegmentManager_->tsStorageInfo_.clear();
+    hlsSegmentManager_->readTsIndex_ = 0;
+    hlsSegmentManager_->isFirstFrameArrived_ = true;
+    unsigned char buff[16] = {0};
+    ReadDataInfo readDataInfo;
+    hlsSegmentManager_->HandleSpliceEnd(buff, readDataInfo);
+    EXPECT_FALSE(hlsSegmentManager_->isTsEnd_.load());
+}
+
+/**
+ * @tc.name  : Test HandleSpliceEnd early return when tsStorageInfo second is false
+ * @tc.number: HandleSpliceEnd_004
+ * @tc.desc  : Test HandleSpliceEnd returns early when tsStorageInfo_[readTsIndex_].second is false
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, HandleSpliceEnd_004, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    hlsSegmentManager_->tsStorageInfo_.clear();
+    hlsSegmentManager_->readTsIndex_ = 0;
+    hlsSegmentManager_->isFirstFrameArrived_ = true;
+    hlsSegmentManager_->tsStorageInfo_[0] = {100, false};
+    hlsSegmentManager_->readOffset_ = 100;
+    unsigned char buff[16] = {0};
+    ReadDataInfo readDataInfo;
+    hlsSegmentManager_->HandleSpliceEnd(buff, readDataInfo);
+    EXPECT_FALSE(hlsSegmentManager_->isTsEnd_.load());
+}
+
+/**
+ * @tc.name  : Test RemoveFmp4PaddingData with valid PKCS#7 padding
+ * @tc.number: RemoveFmp4PaddingData_valid_padding
+ * @tc.desc  : Test PKCS#7 valid padding (all bytes equal padding length)
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, RemoveFmp4PaddingData_valid_padding, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(
+        10, true, header_, HlsSegmentType::SEG_VIDEO);
+    auto mockPlaylist = std::make_shared<TestPlayListDownloader>();
+    mockPlaylist->isHlsFmp4_ = true;
+    downloader->playlistDownloader_ = mockPlaylist;
+    auto decryptor = std::make_shared<AesDecryptor>();
+    uint8_t iv[16] = {0};
+    decryptor->SetIv(iv, sizeof(iv));
+    downloader->SetAesDecryptor(decryptor);
+    unsigned char buffer[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3};
+    ReadDataInfo readDataInfo;
+    readDataInfo.realReadLength_ = 16;
+    readDataInfo.wantReadLength_ = 16;
+    readDataInfo.streamId_ = 1;
+    downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
+    EXPECT_EQ(readDataInfo.realReadLength_, 13);
+}
+
+/**
+ * @tc.name  : Test RemoveFmp4PaddingData with invalid PKCS#7 padding
+ * @tc.number: RemoveFmp4PaddingData_invalid_padding
+ * @tc.desc  : Test PKCS#7 invalid padding (mixed values) does not remove padding
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, RemoveFmp4PaddingData_invalid_padding, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> downloader = std::make_shared<HlsSegmentManager>(
+        10, true, header_, HlsSegmentType::SEG_VIDEO);
+    auto mockPlaylist = std::make_shared<TestPlayListDownloader>();
+    mockPlaylist->isHlsFmp4_ = true;
+    downloader->playlistDownloader_ = mockPlaylist;
+    auto decryptor = std::make_shared<AesDecryptor>();
+    uint8_t iv[16] = {0};
+    decryptor->SetIv(iv, sizeof(iv));
+    downloader->SetAesDecryptor(decryptor);
+    unsigned char buffer[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 3};
+    ReadDataInfo readDataInfo;
+    readDataInfo.realReadLength_ = 16;
+    readDataInfo.wantReadLength_ = 16;
+    readDataInfo.streamId_ = 1;
+    downloader->RemoveFmp4PaddingData(buffer, readDataInfo);
+    EXPECT_EQ(readDataInfo.realReadLength_, 16);
+}
+
+/**
+ * @tc.name  : Test UpdateAesDecryptor HasExplicitIv true
+ * @tc.number: UpdateAesDecryptor_HasExplicitIv_True
+ * @tc.desc  : Test UpdateAesDecryptor skips per-fragment IV when HasExplicitIv returns true
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, UpdateAesDecryptor_HasExplicitIv_True, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    auto mockPlaylist = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mockPlaylist;
+    auto decryptor = std::make_shared<AesDecryptor>();
+    uint8_t iv[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    decryptor->SetIv(iv, sizeof(iv));
+    mockPlaylist->aesDecryptor_ = decryptor;
+    mockPlaylist->hasExplicitIvResult_ = true;
+    PlayInfo playInfo;
+    playInfo.keyIndex_ = 0;
+    playInfo.sequence_ = 1;
+    hlsSegmentManager_->UpdateAesDecryptor(playInfo);
+    auto dec = hlsSegmentManager_->GetAesDecryptor();
+    ASSERT_NE(dec, nullptr);
+    for (int i = 0; i < 16; i++) {
+        EXPECT_EQ(dec->iv_[i], iv[i]);
+    }
+}
+
+/**
+ * @tc.name  : Test UpdateAesDecryptor HasExplicitIv false (per-fragment IV)
+ * @tc.number: UpdateAesDecryptor_HasExplicitIv_False
+ * @tc.desc  : Test UpdateAesDecryptor computes per-fragment IV from sequence when HasExplicitIv returns false
+ */
+HWTEST_F(HlsSegmentManagerUnitTest, UpdateAesDecryptor_HasExplicitIv_False, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, hlsSegmentManager_);
+    auto mockPlaylist = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mockPlaylist;
+    auto decryptor = std::make_shared<AesDecryptor>();
+    uint8_t iv[16] = {0};
+    decryptor->SetIv(iv, sizeof(iv));
+    mockPlaylist->aesDecryptor_ = decryptor;
+    mockPlaylist->hasExplicitIvResult_ = false;
+    PlayInfo playInfo;
+    playInfo.keyIndex_ = 0;
+    playInfo.sequence_ = 1;
+    hlsSegmentManager_->UpdateAesDecryptor(playInfo);
+    auto dec = hlsSegmentManager_->GetAesDecryptor();
+    ASSERT_NE(dec, nullptr);
+    uint8_t expectedIv[AES_IV_LEN] = {0};
+    expectedIv[AES_IV_LEN - 1] = 1;
+    for (int i = 0; i < AES_IV_LEN; i++) {
+        EXPECT_EQ(dec->iv_[i], expectedIv[i]);
+    }
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_NOT_ENOUGH_DATA_001, TestSize.Level1)

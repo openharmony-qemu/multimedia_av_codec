@@ -151,6 +151,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     uint8_t iv_[16] { 0 };
     uint8_t key_[16] { 0 };
     size_t keyLen_ { 0 };
+    std::atomic<bool> hasExplicitIv_ {false};
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
     KeyDataSaveFunc keyDataSave_;
@@ -158,7 +159,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     PlayListChangeCallback *callback_ { nullptr };
     bool startedDownloadStatus_ { false };
     bool isDecryptAble_ { false };
-    bool isDecryptKeyReady_ { false };
+    std::atomic<bool> isDecryptKeyReady_ {false};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
@@ -181,6 +182,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     StatusCallbackFunc monitorStatusCallback_;
     ConditionVariable sleepCond_ {};
     Mutex sleepMutex_ {};
+    Mutex headerMutex_ {};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     uint64_t keyIndex_ {0};
@@ -279,10 +281,11 @@ struct M3U8MasterPlaylist {
     std::atomic<bool> isSimple_ {false};
     std::atomic<bool> bLive_ {false};
     bool isDecryptAble_ { false };
-    bool isDecryptKeyReady_ { false };
+    std::atomic<bool> isDecryptKeyReady_ {false};
     uint8_t iv_[16] { 0 };
     uint8_t key_[16] { 0 };
     size_t keyLen_ { 0 };
+    std::atomic<bool> hasExplicitIv_ {false};
     std::atomic<bool> isParseSuccess_ {true};
     bool hasDiscontinuity_ {false};
     std::vector<size_t> segmentOffsets_;

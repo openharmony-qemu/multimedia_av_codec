@@ -242,7 +242,7 @@ private:
     StatusCallbackFunc statusCallback_;
     SegmentDownloadDoneCbFunc downloadDoneCbFunc_;
     SegmentBufferingCbFunc bufferingCbFunc_;
-    bool startedPlayStatus_{false};
+    std::atomic<bool> startedPlayStatus_{false};
     int streamId_{0};
     MediaAVCodec::MediaType streamType_;
     std::atomic<bool> isCleaningBuffer_{false};
@@ -253,13 +253,13 @@ private:
     uint64_t expectDuration_{0};
 
     uint32_t ringBufferCapcity_ {0};
-    uint64_t lastCheckTime_ {0};
-    uint64_t totalBits_ {0};
-    uint64_t lastBits_ {0};
-    double downloadSpeed_ {0};
-    uint64_t downloadDuringTime_ {0};
-    uint64_t downloadBits_ {0};
-    uint64_t totalDownloadDuringTime_ {0};
+    std::atomic<uint64_t> lastCheckTime_ {0};
+    std::atomic<uint64_t> totalBits_ {0};
+    std::atomic<uint64_t> lastBits_ {0};
+    std::atomic<double> downloadSpeed_ {0};
+    std::atomic<uint64_t> downloadDuringTime_ {0};
+    std::atomic<uint64_t> downloadBits_ {0};
+    std::atomic<uint64_t> totalDownloadDuringTime_ {0};
     struct RecordData {
         double downloadRate {0};
         uint64_t bufferDuring {0};
@@ -269,16 +269,16 @@ private:
 
     // play water line
     std::weak_ptr<Callback> callback_;
-    uint32_t waterLineAbove_{0};
+    std::atomic<uint32_t> waterLineAbove_{0};
     std::atomic<bool> isBuffering_{false};
-    uint32_t downloadBiteRate_{0};
-    int64_t realTimeBitBate_{0};
-    uint64_t lastDurationRecord_{0};
-    uint32_t lastCachedSize_{0};
-    bool isFirstFrameArrived_{false};
+    std::atomic<uint32_t> downloadBitRate_{0};
+    std::atomic<int64_t> realTimeBitRate_{0};
+    std::atomic<uint64_t> lastDurationRecord_{0};
+    std::atomic<uint32_t> lastCachedSize_{0};
+    std::atomic<bool> isFirstFrameArrived_{false};
     std::atomic<bool> isAllSegmentFinished_{false};
-    double bufferDurationForPlaying_ {0};
-    volatile size_t bufferingTime_ {0};
+    std::atomic<double> bufferDurationForPlaying_ {0};
+    std::atomic<size_t> bufferingTime_ {0};
     uint64_t waterlineForPlaying_ {0};
     std::atomic<bool> isDemuxerInitSuccess_ {false};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};

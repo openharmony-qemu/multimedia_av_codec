@@ -128,21 +128,21 @@ Status DashMediaDownloader::Read(unsigned char* buff, ReadDataInfo& readDataInfo
         return Status::END_OF_STREAM;
     }
 
-    DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_);
+    DashReadRet ret = segmentDownloader->Read(buff, readDataInfo, isInterruptNeeded_.load());
     MEDIA_LOG_D("Read:streamId " PUBLIC_LOG_D32 " readRet:" PUBLIC_LOG_D32, readDataInfo.streamId_, ret);
     if (ret == DASH_READ_END) {
         MEDIA_LOG_I("Read:streamId " PUBLIC_LOG_D32 " segment all finished end, currentPeriodIndex: " PUBLIC_LOG_U32,
-            readDataInfo.streamId_, currentPeriodIndex_);
+            readDataInfo.streamId_, currentPeriodIndex_.load());
         if (ApplyPendingPeriodSwitch(segmentDownloader)) {
             return Status::OK;
         }
         auto mpdInfo = mpdDownloader_->GetMpdInfo();
         if (mpdInfo != nullptr) {
             size_t totalPeriods = mpdInfo->periodInfoList_.size();
-            unsigned int nextPeriodIndex = currentPeriodIndex_ + 1;
+            unsigned int nextPeriodIndex = currentPeriodIndex_.load() + 1;
             if (totalPeriods > 1 && nextPeriodIndex < totalPeriods) {
                 MEDIA_LOG_I("Read EOS: switch from period " PUBLIC_LOG_U32 " to period " PUBLIC_LOG_U32,
-                    currentPeriodIndex_, nextPeriodIndex);
+                    currentPeriodIndex_.load(), nextPeriodIndex);
                 SwitchStreamToPeriod(nextPeriodIndex, segmentDownloader);
                 return Status::OK;
             }
@@ -308,7 +308,7 @@ Seekable DashMediaDownloader::GetSeekable() const
 
     size_t times = 0;
     bool status = false;
-    while (!status && times < RETRY_TIMES && !isInterruptNeeded_) {
+    while (!status && times < RETRY_TIMES && !isInterruptNeeded_.load()) {
         segmentDownloaders_.FindIf([&status](const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
             if (segDownloader == nullptr) {
                 return false;
@@ -320,7 +320,7 @@ Seekable DashMediaDownloader::GetSeekable() const
         times++;
     }
 
-    if (times >= RETRY_TIMES || isInterruptNeeded_) {
+    if (times >= RETRY_TIMES || isInterruptNeeded_.load()) {
         MEDIA_LOG_I("DashMediaDownloader GetSeekable INVALID");
         return Seekable::INVALID;
     }
@@ -959,10 +959,9 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
 
     seekTimeMs = GetVideoSeekTime(seekTimeMs);
     unsigned int tragetPeriodIndex = mpdDownloader_->GetPeriodIndexBySeekTime(seekTimeMs);
-    bool needSwitchPeriod = (tragetPeriodIndex != currentPeriodIndex_);
-    if (needSwitchPeriod) {
+    if (tragetPeriodIndex != currentPeriodIndex_.load()) {
         MEDIA_LOG_I("SeekInternal: seek from period " PUBLIC_LOG_U32 " to period " PUBLIC_LOG_U32,
-            currentPeriodIndex_, tragetPeriodIndex);
+            currentPeriodIndex_.load(), tragetPeriodIndex);
         SwitchToPeriod(tragetPeriodIndex);
     }
     segmentDownloaders_.ForeachSnapshot([this, seekTimeMs, isSwitching](
@@ -1288,7 +1287,7 @@ void DashMediaDownloader::ReportEventStreamMetadata()
 
 void DashMediaDownloader::SetInterruptState(bool isInterruptNeeded)
 {
-    isInterruptNeeded_ = isInterruptNeeded;
+    isInterruptNeeded_.store(isInterruptNeeded);
     mpdDownloader_->SetInterruptState(isInterruptNeeded);
     segmentDownloaders_.Foreach([isInterruptNeeded](const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
         if (segDownloader == nullptr) {
@@ -1599,7 +1598,7 @@ void DashMediaDownloader::SwitchToPeriod(uint32_t newPeriodIndex)
     }
 
     MEDIA_LOG_I("SwitchToPeriod: switch from period: " PUBLIC_LOG_U32 " to period: " PUBLIC_LOG_U32,
-        currentPeriodIndex_, newPeriodIndex);
+        currentPeriodIndex_.load(), newPeriodIndex);
     
     bool needRestart = NeedRestartDecoder(oldVideoStream, newVideoStream);
 
@@ -1617,7 +1616,7 @@ void DashMediaDownloader::SwitchToPeriod(uint32_t newPeriodIndex)
         }
     });
 
-    currentPeriodIndex_ = newPeriodIndex;
+    currentPeriodIndex_.store(newPeriodIndex);
     mpdDownloader_->SetCurrentPeriodIndex(newPeriodIndex);
 
     if (needRestart) {
@@ -1676,8 +1675,8 @@ void DashMediaDownloader::SwitchStreamToPeriod(uint32_t newPeriodIndex,
     }
 
     MEDIA_LOG_I("SwitchStreamToPeriod: switch from period: " PUBLIC_LOG_U32 " to period: " PUBLIC_LOG_U32
-        ", trigger stream type: " PUBLIC_LOG_D32,
-        currentPeriodIndex_, newPeriodIndex, static_cast<int32_t>(triggerDownloader->GetStreamType()));
+        ", trigger stream type: " PUBLIC_LOG_D32, currentPeriodIndex_.load(), newPeriodIndex,
+        static_cast<int32_t>(triggerDownloader->GetStreamType()));
     
     bool needRestart = NeedRestartDecoder(oldVideoStream, newVideoStream);
 
@@ -1691,7 +1690,7 @@ void DashMediaDownloader::SwitchStreamToPeriod(uint32_t newPeriodIndex,
             newVideoStream, newAudioStream);
     }
 
-    currentPeriodIndex_ = newPeriodIndex;
+    currentPeriodIndex_.store(newPeriodIndex);
     mpdDownloader_->SetCurrentPeriodIndex(newPeriodIndex);
 
     if (needRestart) {

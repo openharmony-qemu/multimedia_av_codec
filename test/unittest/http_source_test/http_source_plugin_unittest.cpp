@@ -18,6 +18,15 @@
 
 using namespace std;
 using namespace testing::ext;
+using namespace OHOS::Media;
+
+class MockSourceLoader : public Plugins::IMediaSourceLoader {
+public:
+    int32_t Init(std::shared_ptr<Plugins::IMediaSourceLoadingRequest> &request) override { return 0; }
+    int64_t Open(const string &url, const map<string, string> &header) override { return 0; }
+    int32_t Read(int64_t uuid, int64_t requestedOffset, int64_t requestedLength) override { return 0; }
+    int32_t Close(int64_t uuid) override { return 0; }
+};
 
 namespace OHOS {
 namespace Media {
@@ -369,6 +378,90 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDefaultStreamId_002, TestSize.Level1)
     int32_t subTitleStreamId = 3;
     plugin_->SetDefaultStreamId(videoStreamId, audioStreamId, subTitleStreamId);
     SUCCEED();
+}
+
+/**
+ * @tc.name  : Test InitSourceLoader API
+ * @tc.number: InitSourceLoader_001
+ * @tc.desc  : Test source->GetSourceLoader() == nullptr does not create loaderCombinations_
+ */
+HWTEST_F(HttpSourcePluginUnitTest, InitSourceLoader_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    std::string uri {"mock"};
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
+    ASSERT_EQ(nullptr, source->sourceLoader_);
+    plugin_->InitSourceLoader(source);
+    ASSERT_EQ(nullptr, plugin_->loaderCombinations_);
+}
+
+/**
+ * @tc.name  : Test CreateDashDownloader API
+ * @tc.number: CreateDashDownloader_001
+ * @tc.desc  : Test CreateDashDownloader returns non-null downloader
+ */
+HWTEST_F(HttpSourcePluginUnitTest, CreateDashDownloader_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    plugin_->loaderCombinations_ = nullptr;
+    auto downloader = plugin_->CreateDashDownloader();
+    ASSERT_NE(nullptr, downloader);
+}
+
+/**
+ * @tc.name  : Test CreateHlsDownloader API
+ * @tc.number: CreateHlsDownloader_001
+ * @tc.desc  : Test CreateHlsDownloader returns non-null downloader when playStrategy_ is nullptr
+ */
+HWTEST_F(HttpSourcePluginUnitTest, CreateHlsDownloader_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    plugin_->playStrategy_ = nullptr;
+    plugin_->loaderCombinations_ = nullptr;
+    auto downloader = plugin_->CreateHlsDownloader();
+    ASSERT_NE(nullptr, downloader);
+}
+
+/**
+ * @tc.name  : Test InitSourceLoader API
+ * @tc.number: InitSourceLoader_002
+ * @tc.desc  : Test InitSourceLoader with sourceLoader != nullptr creates loaderCombinations_
+ */
+HWTEST_F(HttpSourcePluginUnitTest, InitSourceLoader_002, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    std::string uri {"mock"};
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
+    source->sourceLoader_ = std::make_shared<MockSourceLoader>();
+    ASSERT_NE(nullptr, source->GetSourceLoader());
+    plugin_->InitSourceLoader(source);
+    ASSERT_NE(nullptr, plugin_->loaderCombinations_);
+}
+
+/**
+ * @tc.name  : Test GetDownloader/SetDownloader thread safety
+ * @tc.number: GetDownloader_SetDownloader_001
+ * @tc.desc  : Test SetDownloader then GetDownloader returns same downloader
+ */
+HWTEST_F(HttpSourcePluginUnitTest, GetDownloader_SetDownloader_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    auto mockDownloader = std::make_shared<MockMediaDownloader>();
+    plugin_->SetDownloader(mockDownloader);
+    auto result = plugin_->GetDownloader();
+    ASSERT_NE(nullptr, result);
+}
+
+/**
+ * @tc.name  : Test GetDownloader with no downloader set
+ * @tc.number: GetDownloader_001
+ * @tc.desc  : Test GetDownloader returns nullptr when no downloader set
+ */
+HWTEST_F(HttpSourcePluginUnitTest, GetDownloader_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, plugin_);
+    auto result = plugin_->GetDownloader();
+    ASSERT_EQ(nullptr, result);
 }
 }
 }

@@ -142,7 +142,7 @@ private:
     std::weak_ptr<Callback> callback_;
     Mutex taskMutex_ {};
     uint64_t haveReadData_ {0};
-    bool isNeedClearBuffer_ {false};
+    std::atomic<bool> isNeedClearBuffer_ {false};
     std::atomic<bool> isFirstRequest_ {true};
 
     std::map<int32_t, MediaServiceErrCode> clientErrorCodeMap_ = {

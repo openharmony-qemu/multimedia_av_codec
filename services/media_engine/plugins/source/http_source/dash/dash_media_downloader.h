@@ -170,13 +170,13 @@ private:
     uint64_t expectDuration_{0};
     std::mutex bufferingMutex_;
     uint32_t bufferingFlag_{0};
-    uint32_t lastBufferingPercent_{0};
+    std::atomic<uint32_t> lastBufferingPercent_{0};
     double bufferDurationForPlaying_ {0};
 
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
-    uint32_t currentPeriodIndex_ {0};
+    std::atomic<uint32_t> currentPeriodIndex_ {0};
 };
 }
 }

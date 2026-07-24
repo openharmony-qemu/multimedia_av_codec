@@ -47,6 +47,7 @@ void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &e
 bool DashStreamIsHdr(DashList<DashDescriptor*> essentialPropertyList);
 void GetSubstitutionStr(std::string &substitutionStr, std::string &str);
 bool DashStrToNonNegativeDouble(const std::string &str, double &result);
+void ClampDurationToUint32(uint64_t time, uint32_t &duration);
 } // namespace HttpPluginLite
 } // namespace Plugin
 } // namespace Media

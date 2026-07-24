@@ -17,6 +17,7 @@
 #define DASH_MPD_MANAGER_H
 
 #include <cstdint>
+#include <mutex>
 #include "dash_mpd_def.h"
 
 namespace OHOS {
@@ -48,6 +49,7 @@ public:
     void MakeBaseUrl(std::string &mpdUrlBase, std::string &urlSchem);
 
 private:
+    mutable std::mutex mpdMutex_;
     DashMpdInfo *mpdInfo_{nullptr};
     std::string mpdUrl_;
 };
