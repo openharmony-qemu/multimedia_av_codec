@@ -2501,6 +2501,63 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForSeek_Ti
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_InitDrmInfoCache_PsshUuid_001
+ * @tc.desc: Verify only PSSH entries with a complete UUID are cached
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_InitDrmInfoCache_PsshUuid_001, TestSize.Level1)
+{
+    constexpr uint32_t psshUuidSize = 16;
+    auto parser = std::make_shared<Plugins::MPEG4::MPEG4AtomParser>();
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ASSERT_NE(parser, nullptr);
+    ASSERT_NE(plugin, nullptr);
+
+    Plugins::MPEG4::MPEG4AtomParser::Mpeg4PsshInfo validPssh;
+    validPssh.uuidLen = psshUuidSize;
+    validPssh.psshData = {0x10, 0x20, 0x30};
+    for (uint32_t index = 0; index < psshUuidSize; ++index) {
+        validPssh.uuid[index] = static_cast<uint8_t>(index);
+    }
+    parser->psshList_.push_back(validPssh);
+
+    auto invalidPssh = validPssh;
+    invalidPssh.uuidLen = psshUuidSize - 1;
+    parser->psshList_.push_back(invalidPssh);
+    plugin->InitDrmInfoCacheByAtomParser(parser);
+
+    ASSERT_EQ(plugin->cachedDrmInfo_.size(), 1U);
+    auto cachedPssh = plugin->cachedDrmInfo_.find("000102030405060708090a0b0c0d0e0f");
+    ASSERT_NE(cachedPssh, plugin->cachedDrmInfo_.end());
+    EXPECT_EQ(cachedPssh->second, validPssh.psshData);
+    EXPECT_TRUE(plugin->drmInfoCached_.load());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetDataSource_DemuxerMode_001
+ * @tc.desc: Verify SetDataSource reads the configured demuxer mode
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetDataSource_DemuxerMode_001, TestSize.Level1)
+{
+    int fd = -1;
+    auto dataSource = CreateFileDataSource(TEST_MP4_PATH_H264_B, fd);
+    ASSERT_NE(dataSource, nullptr);
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    auto configs = std::make_shared<Meta>();
+    ASSERT_NE(plugin, nullptr);
+    ASSERT_NE(configs, nullptr);
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+
+    EXPECT_EQ(plugin->SetDataSource(dataSource, configs), Status::OK);
+    EXPECT_EQ(plugin->demuxerMode_, Plugins::DemuxerMode::FAST_INIT);
+    EXPECT_EQ(plugin->Reset(), Status::OK);
+    if (fd >= 0) {
+        close(fd);
+    }
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_SetDataSourceWithProbSize_001
  * @tc.desc: Verify SetDataSourceWithProbSize parameter checks and normal initialization path
  * @tc.type: FUNC

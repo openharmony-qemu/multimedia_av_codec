@@ -46,6 +46,9 @@ config("demuxer_config") {
   ]
 }
 
+config("ffmpeg_demuxer_public_config") {
+  include_dirs = [ "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer" ]
+}
 
 if (av_codec_support_demuxer) {
   ohos_shared_library("media_plugin_FFmpegDemuxer") {
@@ -63,9 +66,10 @@ if (av_codec_support_demuxer) {
     ]
     defines += av_codec_defines
 
-    public_configs = [ ":demuxer_config" ]
-
-    include_dirs = [ "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer" ]
+    public_configs = [
+      ":demuxer_config",
+      ":ffmpeg_demuxer_public_config"
+    ]
 
     if (build_variant != "user") {
       defines += [ "BUILD_ENG_VERSION" ]
@@ -118,8 +122,6 @@ if (av_codec_support_demuxer) {
     install_enable = true
 
     sanitize = av_codec_sanitize
-
-    defines = []
 
     defines = av_codec_defines
 
