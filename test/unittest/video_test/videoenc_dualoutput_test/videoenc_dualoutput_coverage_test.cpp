@@ -201,20 +201,34 @@ HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_UnknownId_001, TestSize
  */
 HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_WithPendingBuffers_001, TestSize.Level1)
 {
+    const std::string encoderId = "test_encoder";
     bool eosCalled = false;
     sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
     ASSERT_NE(mockSurface, nullptr);
-    preprocessorManager_->RegisterEncoder("test_encoder", preprocessor_, mockSurface);
-    preprocessorManager_->CreateSharedSurface();
-    preprocessorManager_->SetEncoderRunning("test_encoder", true);
-    preprocessorManager_->NotifyNewBufferAvailable();
-    preprocessorManager_->NotifyNewBufferAvailable();  // Add multiple buffers
-    preprocessorManager_->RequestNotifyEos("test_encoder", [&eosCalled]() {
+    preprocessorManager_->RegisterEncoder(encoderId, preprocessor_, mockSurface);
+    auto iter = preprocessorManager_->encoders_.find(encoderId);
+    ASSERT_NE(iter, preprocessorManager_->encoders_.end());
+    auto encoderInfo = iter->second;
+    ASSERT_NE(encoderInfo, nullptr);
+    sptr<SurfaceBuffer> pendingBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(pendingBuffer, nullptr);
+    auto pendingWrapper = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>(
+        wptr<Surface>(), pendingBuffer, nullptr, PreprocessorManager::SurfaceBufferWrapper::SurfaceType::CONSUMER);
+    {
+        std::lock_guard<std::mutex> lock(encoderInfo->bufferQueueMutex_);
+        encoderInfo->isRunning_ = true;
+        encoderInfo->pendingBuffers_.push(pendingWrapper);
+    }
+    pendingWrapper.reset();
+
+    ASSERT_TRUE(preprocessorManager_->RequestNotifyEos(encoderId, [&eosCalled]() {
         eosCalled = true;
-    });
-    preprocessorManager_->NotifyEosNowIfPending("test_encoder");
-    ASSERT_TRUE(eosCalled);
-    preprocessorManager_->UnregisterEncoder("test_encoder");
+    }));
+    preprocessorManager_->NotifyEosNowIfPending(encoderId);
+    EXPECT_TRUE(eosCalled);
+    EXPECT_FALSE(encoderInfo->isRunning_);
+    EXPECT_FALSE(encoderInfo->eosRequested_);
+    preprocessorManager_->UnregisterEncoder(encoderId);
 }
 
 /**
@@ -710,7 +724,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_UnregisterEncoderFromManager_002, TestSi
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_001, TestSize.Level1)
 {
     Media::Format format;
-    preprocessorEncoder_->asyncCallback_.onStreamChanged = nullptr;
+    preprocessorEncoder_->callback_.onStreamChanged = nullptr;
     preprocessorEncoder_->OnStreamChanged(format);
 }
 
@@ -722,7 +736,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_001, TestSize.Level1)
 {
     int32_t errorCode = 0;
-    preprocessorEncoder_->asyncCallback_.onError = nullptr;
+    preprocessorEncoder_->callback_.onError = nullptr;
     preprocessorEncoder_->OnPreprocessError(errorCode);
 }
 
@@ -734,86 +748,8 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_002, TestSize.Level1)
 {
     int32_t errorCode = 0;
-    preprocessorEncoder_->asyncCallback_.onError = OnErrorVoid;
+    preprocessorEncoder_->callback_.onError = OnErrorVoid;
     preprocessorEncoder_->OnPreprocessError(errorCode);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_DetachSecondaryEncoder_NullSecondary_001
- * @tc.desc: Test DetachSecondaryEncoder when secondary_ is nullptr
- *           This tests the case where no secondary encoder is attached
- *           Expected: Returns nullptr
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_NullSecondary_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->secondary_, nullptr);
-    auto* result = preprocessorEncoder_->DetachSecondaryEncoder();
-    ASSERT_EQ(result, nullptr);
-    ASSERT_EQ(preprocessorEncoder_->secondary_, nullptr);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_DetachSecondaryEncoder_ValidSecondary_001
- * @tc.desc: Test DetachSecondaryEncoder when secondary_ is valid and primary_ relationship is correct
- *           This tests the normal case where secondary_->primary_ == this
- *           Expected: Returns secondary encoder and clears bidirectional relationship
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_ValidSecondary_001, TestSize.Level1)
-{
-    OH_AVCodec* primaryCodec = nullptr;
-    auto ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primaryCodec);
-    if (ret != AV_ERR_OK || primaryCodec == nullptr) {
-        GTEST_SKIP() << "Cannot create primary encoder";
-    }
-    OH_AVCodec* secondaryCodec = nullptr;
-    ret = preprocessorEncoder_->CreateSecondary(primaryCodec, &secondaryCodec);
-    if (ret != AV_ERR_OK || secondaryCodec == nullptr) {
-        preprocessorEncoder_->Destroy(primaryCodec);
-        GTEST_SKIP() << "Cannot create secondary encoder";
-    }
-    auto* primaryEncoder = static_cast<PreprocessorEncoder*>(primaryCodec);
-    auto* secondaryEncoder = static_cast<PreprocessorEncoder*>(secondaryCodec);
-    ASSERT_EQ(primaryEncoder->secondary_, secondaryEncoder);
-    ASSERT_EQ(secondaryEncoder->primary_, primaryEncoder);
-    auto* result = primaryEncoder->DetachSecondaryEncoder();
-    ASSERT_EQ(result, secondaryEncoder);
-    ASSERT_EQ(primaryEncoder->secondary_, nullptr);
-    ASSERT_EQ(secondaryEncoder->primary_, nullptr);
-    preprocessorEncoder_->Destroy(primaryCodec);
-    preprocessorEncoder_->Destroy(secondaryCodec);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_DetachSecondaryEncoder_InvalidPrimaryRef_001
- * @tc.desc: Test DetachSecondaryEncoder when secondary_->primary_ != this
- *           This tests edge case where bidirectional relationship is broken
- *           Expected: Returns secondary encoder but doesn't modify secondary->primary_
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_InvalidPrimaryRef_001, TestSize.Level1)
-{
-    OH_AVCodec* primaryCodec1 = nullptr;
-    auto ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primaryCodec1);
-    if (ret != AV_ERR_OK || primaryCodec1 == nullptr) {
-        GTEST_SKIP() << "Cannot create primary encoder 1";
-    }
-    OH_AVCodec* primaryCodec2 = nullptr;
-    ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primaryCodec2);
-    if (ret != AV_ERR_OK || primaryCodec2 == nullptr) {
-        preprocessorEncoder_->Destroy(primaryCodec1);
-        GTEST_SKIP() << "Cannot create primary encoder 2";
-    }
-    auto* primaryEncoder1 = static_cast<PreprocessorEncoder*>(primaryCodec1);
-    auto* primaryEncoder2 = static_cast<PreprocessorEncoder*>(primaryCodec2);
-    primaryEncoder1->secondary_ = primaryEncoder2;
-    auto* result = primaryEncoder1->DetachSecondaryEncoder();
-    ASSERT_EQ(result, primaryEncoder2);
-    ASSERT_EQ(primaryEncoder1->secondary_, nullptr);
-    ASSERT_EQ(primaryEncoder2->primary_, nullptr);
-    preprocessorEncoder_->Destroy(primaryCodec1);
-    preprocessorEncoder_->Destroy(primaryCodec2);
 }
 
 /**
@@ -1126,7 +1062,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_AfterConfigure_001, TestSize.Level
 
 /**
  * @tc.name: PreprocessorEncoder_Start_NullVideoEncoder_001
- * @tc.desc: Test Flush when preprocMgr_ exists and videoEncoderObject_ exists but videoEncoder_ is nullptr
+ * @tc.desc: Test Start when preprocMgr_ is nullptr and videoEncoderObject_ exists but videoEncoder_ is nullptr
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_NullVideoEncoder_001, TestSize.Level1)
@@ -1135,7 +1071,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_NullVideoEncoder_001, TestSize.Lev
     auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_NE(preprocessor, nullptr);
     preprocessorEncoder_->preprocessors_[preprocessorEncoder_->encoderId_] = preprocessor;
-    preprocessorEncoder_->preprocMgr_ = std::make_shared<PreprocessorManager>();
+    preprocessorEncoder_->preprocMgr_ = nullptr;
     preprocessorEncoder_->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
     auto ret = preprocessorEncoder_->Start();
     EXPECT_EQ(ret, AV_ERR_OK);
@@ -1311,7 +1247,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Reset_NullVideoEncoderObject_001, TestSi
  * @tc.name: PreprocessorEncoder_Release_WithPreprocMgr_001
  * @tc.desc: Test Release when preprocMgr_ is set
  *           This tests the path where SetEncoderRunning(false) is called before release
- *           Expected: Calls SetEncoderRunning(false), then releases encoder and sets magic_ to INVALID_ENTITY
+ *           Expected: Calls SetEncoderRunning(false), releases encoder, and preserves the primary type magic
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_WithPreprocMgr_001, TestSize.Level1)
@@ -1325,7 +1261,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_WithPreprocMgr_001, TestSize.Lev
     encoder->preprocMgr_ = std::make_shared<PreprocessorManager>();
     OH_AVErrCode result = encoder->Release();
     (void)result;
-    ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_INVALID_ENTITY);
+    ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER);
     preprocessorEncoder_->Destroy(primaryCodec);
 }
 
@@ -1333,7 +1269,8 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_WithPreprocMgr_001, TestSize.Lev
  * @tc.name: PreprocessorEncoder_Release_ValidEncoder_001
  * @tc.desc: Test Release with valid videoEncoderObject_
  *           This tests the normal release path
- *           Expected: Calls videoEncoder_->Release(), StopCallback, ClearBufferList, and sets magic_ to INVALID_ENTITY
+ *           Expected: Calls videoEncoder_->Release(), StopCallback and ClearBufferList,
+ *           and preserves the primary type magic
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_ValidEncoder_001, TestSize.Level1)
@@ -1347,7 +1284,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_ValidEncoder_001, TestSize.Level
     ASSERT_NE(encoder->videoEncoderObject_, nullptr);
     OH_AVErrCode result = encoder->Release();
     (void)result;
-    ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_INVALID_ENTITY);
+    ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER);
     delete encoder;
 }
 

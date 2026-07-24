@@ -218,6 +218,14 @@ OH_AVMemory* VideoEncoderObject::GetTransData(const uint32_t& index, std::shared
 
 OH_AVBuffer* VideoEncoderObject::GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput)
 {
+    OHOS::sptr<OH_AVBuffer> object;
+    GetTransData(index, buffer, isOutput, object);
+    return reinterpret_cast<OH_AVBuffer*>(object.GetRefPtr());
+}
+
+void VideoEncoderObject::GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput,
+                                      OHOS::sptr<OH_AVBuffer>& object)
+{
     auto& bufferMap = isOutput ? outputBufferMap_ : inputBufferMap_;
     {
         std::lock_guard<std::shared_mutex> lock(objListMutex_);
@@ -226,11 +234,12 @@ OH_AVBuffer* VideoEncoderObject::GetTransData(const uint32_t& index, std::shared
             if (isOutput) {
                 outputBufferStateMap_[index] = OUTPUT_BUFFER_PENDING;
             }
-            return reinterpret_cast<OH_AVBuffer*>(iter->second.GetRefPtr());
+            object = iter->second;
+            return;
         }
     }
-    OHOS::sptr<OH_AVBuffer> object = new (std::nothrow) OH_AVBuffer(buffer);
-    CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
+    object = new (std::nothrow) OH_AVBuffer(buffer);
+    CHECK_AND_RETURN_LOG(object != nullptr, "failed to new OH_AVBuffer");
 
     std::lock_guard<std::shared_mutex> lock(objListMutex_);
     if (isOutput) {
@@ -247,7 +256,6 @@ OH_AVBuffer* VideoEncoderObject::GetTransData(const uint32_t& index, std::shared
             tempList_.pop();
         }
     }
-    return reinterpret_cast<OH_AVBuffer*>(object.GetRefPtr());
 }
 
 OH_AVFormat* VideoEncoderObject::GetTransData(const uint32_t& index, std::shared_ptr<Media::Format>& format)
@@ -314,6 +322,10 @@ void NativeVideoEncoderCallback::OnError(AVCodecErrorType errorType, int32_t err
 
     CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
     CHECK_AND_RETURN_LOG(IsValidVideoEncoderMagic(codec_->magic_), "Codec magic error!");
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec_->magic_)) {
+        reinterpret_cast<PreprocessorEncoder*>(codec_)->OnEncoderError(errorCode);
+        return;
+    }
     CHECK_AND_RETURN_LOG(asyncCallback_.onError != nullptr || callback_.onError != nullptr, "Callback is nullptr");
     int32_t extErr = AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(errorCode));
     if (asyncCallback_.onError != nullptr) {
@@ -419,22 +431,15 @@ void NativeVideoEncoderCallback::OnOutputBufferAvailable(uint32_t index, std::sh
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
     CHECK_AND_RETURN_LOG(IsValidVideoEncoderMagic(codec_->magic_), "Codec magic error!");
+    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec_->magic_)) {
+        reinterpret_cast<PreprocessorEncoder*>(codec_)->OnOutputBufferAvailable(index, buffer);
+        return;
+    }
     CHECK_AND_RETURN_LOG(callback_.onNewOutputBuffer != nullptr, "Callback is nullptr");
 
-    OH_AVBuffer *data = nullptr;
-    if (PreprocessorEncoder::IsPreprocEncoderMagic(codec_->magic_)) {
-        auto *preprocEnc = reinterpret_cast<PreprocessorEncoder *>(codec_);
-        auto result = preprocEnc->GetTransData(index, buffer, true);
-        if (!result) {
-            return;
-        }
-        data = *result;
-    } else {
-        struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
-        CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Context video encoder is nullptr!");
-        data = videoEncObj->GetTransData(index, buffer, true);
-    }
-
+    struct VideoEncoderObject *videoEncObj = reinterpret_cast<VideoEncoderObject *>(codec_);
+    CHECK_AND_RETURN_LOG(videoEncObj->videoEncoder_ != nullptr, "Context video encoder is nullptr!");
+    OH_AVBuffer *data = videoEncObj->GetTransData(index, buffer, true);
     callback_.onNewOutputBuffer(codec_, index, data, userData_);
 }
 
