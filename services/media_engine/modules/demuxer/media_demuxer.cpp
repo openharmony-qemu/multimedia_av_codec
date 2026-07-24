@@ -3504,7 +3504,6 @@ void MediaDemuxer::SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList>
 
 bool CheckStreamCodec(const std::string &codecs, StreamType type, std::shared_ptr<MediaAVCodec::AVCodecList> codecList)
 {
-    CHECK_AND_RETURN_RET_LOG(!codecs.empty(), false, "codecs is empty");
     bool isSupported = true;
     if (type == Plugins::AUDIO) {
         std::vector<Plugins::PluginDescription> descriptions =
