@@ -22,7 +22,6 @@
 #include "common/log.h"
 #include "meta/format.h"
 #include "demuxer_log_compressor.h"
-#include "ffmpeg_format_helper.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "DemuxerLogCompressor" };

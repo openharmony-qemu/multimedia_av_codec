@@ -54,6 +54,7 @@ config("mpeg4_demuxer_plugin_test_cfg") {
     "HST_ANY_WITH_NO_RTTI",
     "MEDIA_OHOS",
     "TESTING",
+    "USE_FF_DEMUXER",
   ]
 
   cflags = [

@@ -39,6 +39,8 @@
 #include "meta/video_types.h"
 #include "demuxer_log_compressor.h"
 #include "syspara/parameters.h"
+#include "xcollie/xcollie.h"
+#include "xcollie/xcollie_define.h"
 
 constexpr uint32_t HEX_CHARS_PER_BYTE = 2;
 
@@ -50,6 +52,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace MPEG4 {
+const uint32_t SETTIMER_TIMEOUT = 5;
 constexpr uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024;
 constexpr int32_t DEF_PROBE_SCORE_LIMIT = 50;
 constexpr uint32_t PROBE_SIZE = 5000000;
@@ -1179,10 +1182,40 @@ Status MPEG4DemuxerPlugin::Flush()
     return ret;
 }
 
+void MPEG4DemuxerPlugin::InitBaseInfoByAtomParser(std::shared_ptr<MPEG4AtomParser> parser)
+{
+    mediaInfo_ = parser->GetMediaInfo();
+    movieTimeScale_ = parser->GetMovieTimeScale();
+    firstTrack_ = parser->GetFirstTrack();
+    userformat_ = parser->GetUserFormat();
+    hasSidxBox_ = parser->GetHasSidx();
+    hasMoofBox_ = parser->GetHasMoof();
+    fragmentEntry_.clear();
+    parser->GetFragmentEntry(fragmentEntry_);
+}
+
+void MPEG4DemuxerPlugin::InitDrmInfoCacheByAtomParser(std::shared_ptr<MPEG4AtomParser> parser)
+{
+    std::lock_guard<std::mutex> drmLock(cachedDrmInfoMutex_);
+    cachedDrmInfo_.clear();
+    const auto& psshList = parser->GetPsshList();
+    for (const auto& pssh : psshList) {
+        if (pssh.uuidLen == PSSH_UUID_SIZE) {
+            std::stringstream ss;
+            for (uint32_t i = 0; i < pssh.uuidLen; ++i) {
+                ss << std::hex << std::setfill('0') << std::setw(HEX_CHARS_PER_BYTE)
+                << static_cast<int32_t>(pssh.uuid[i]);
+            }
+            //ss.str() is uuid
+            cachedDrmInfo_.emplace(ss.str(), pssh.psshData);
+        }
+    }
+    drmInfoCached_.store(!cachedDrmInfo_.empty());
+}
+
 Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source,
     const std::shared_ptr<Media::Meta>& configs)
 {
-    (void)configs;
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("In");
     FALSE_RETURN_V_MSG_E(!inited_, Status::ERROR_WRONG_STATE, "Plugin has been initialized");
@@ -1190,41 +1223,24 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
     
     seekable_ = source->IsDash() ? Seekable::UNSEEKABLE : source->GetSeekable();
     dataSource_ = source;
+    demuxerMode_ = Plugins::DemuxerMode::FULL_PARSE;
+    if (configs != nullptr && configs->Get<Tag::MEDIA_DEMUXER_MODE>(demuxerMode_)) {
+        MEDIA_LOG_I("DemuxerMode: " PUBLIC_LOG_U32, static_cast<uint32_t>(demuxerMode_));
+    }
     auto parser = std::make_shared<MPEG4AtomParser>();
     FALSE_RETURN_V_MSG_E(parser != nullptr, Status::ERROR_NO_MEMORY, "parser allocation failed");
-    Status ret = parser->MPEG4ParseHeader(source, seekable_, readTimeoutMs_.load(std::memory_order_acquire));
-    FALSE_RETURN_V_MSG_E(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret, "MPEG4 demuxer unsupport type");
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
-    
-    mediaInfo_ = parser->GetMediaInfo();
-    movieTimeScale_ = parser->GetMovieTimeScale();
-    firstTrack_ = parser->GetFirstTrack();
-    userformat_ = parser->GetUserFormat();
-    fragmentEntry_.clear();
-    parser->GetFragmentEntry(fragmentEntry_);
-    hasSidxBox_ = parser->GetHasSidx();
-    hasMoofBox_ = parser->GetHasMoof();
-
     {
-        std::lock_guard<std::mutex> drmLock(cachedDrmInfoMutex_);
-        cachedDrmInfo_.clear();
-        const auto& psshList = parser->GetPsshList();
-        for (const auto& pssh : psshList) {
-            if (pssh.uuidLen == PSSH_UUID_SIZE) {
-                std::stringstream ss;
-                for (uint32_t i = 0; i < pssh.uuidLen; ++i) {
-                    ss << std::hex << std::setfill('0') << std::setw(HEX_CHARS_PER_BYTE)
-                    << static_cast<int32_t>(pssh.uuid[i]);
-                }
-                //ss.str() is uuid
-                cachedDrmInfo_.emplace(ss.str(), pssh.psshData);
-            }
-        }
-        drmInfoCached_.store(!cachedDrmInfo_.empty());
+        auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_setdatasource", SETTIMER_TIMEOUT,
+            nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
+        Status ret = parser->MPEG4ParseHeader(source, seekable_, readTimeoutMs_.load(std::memory_order_acquire));
+        FALSE_RETURN_V_MSG_E(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret, "MPEG4Demuxer unsupport type");
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
+        HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     }
-
+    
+    InitBaseInfoByAtomParser(parser);
+    InitDrmInfoCacheByAtomParser(parser);
     InitParser();
-
     GetMediaInfo();
 
     if (HasCodecParameters() != Status::OK) {

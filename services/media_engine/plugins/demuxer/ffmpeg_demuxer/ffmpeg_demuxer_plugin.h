@@ -16,6 +16,10 @@
 #ifndef FFMPEG_DEMUXER_PLUGIN_H
 #define FFMPEG_DEMUXER_PLUGIN_H
 
+#ifndef USE_FF_DEMUXER
+#define USE_FF_DEMUXER
+#endif
+
 #include <atomic>
 #include <vector>
 #include <thread>

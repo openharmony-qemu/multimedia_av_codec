@@ -144,6 +144,7 @@ private:
     std::mutex syncMutex_ {};
     std::shared_mutex sharedMutex_ {};
     std::unordered_map<uint32_t, std::shared_ptr<std::mutex>> trackMtx_ {};
+    Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
     std::atomic<bool> inited_ = false;
     bool isIsom_ = false;
     bool hasSidxBox_ = false;
@@ -238,7 +239,10 @@ private:
     void GetSingleTrackInfo(const MPEG4AtomParser::Track& track, const uint32_t trackIndex);
     void ResetParam();
     void ReleaseReferenceParserState();
+    
     void InitParser();
+    void InitBaseInfoByAtomParser(std::shared_ptr<MPEG4AtomParser> parser);
+    void InitDrmInfoCacheByAtomParser(std::shared_ptr<MPEG4AtomParser> parser);
     bool TrackIsSelected(const uint32_t trackId);
     std::shared_ptr<MPEG4AtomParser::Track> FindTrackById(int32_t trackId);
 

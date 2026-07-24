@@ -16,7 +16,6 @@
 #include "multi_stream_parser_manager.h"
 #include <dlfcn.h>
 #include "common/log.h"
-#include "converter.h"
 
 namespace {
 const std::string HEVC_LIB_PATH = "libav_codec_hevc_parser.z.so";
