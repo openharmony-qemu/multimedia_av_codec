@@ -154,8 +154,10 @@ std::string GenerateRandomMime()
 void WaitForEventJson()
 {
     std::unique_lock<std::mutex> lock(g_mutex);
-    std::cv_status status = g_cv.wait_for(lock, std::chrono::milliseconds(STATISTIC_EVENT_INFO_TIMEOUT));
-    EXPECT_NE(status, std::cv_status::timeout) << "Expected timeout after " << STATISTIC_EVENT_INFO_TIMEOUT << " ms";
+    g_recordJson.clear();
+    bool received = g_cv.wait_for(lock, std::chrono::milliseconds(STATISTIC_EVENT_INFO_TIMEOUT),
+                                  [] { return !g_recordJson.empty(); });
+    EXPECT_TRUE(received) << "Expected event within " << STATISTIC_EVENT_INFO_TIMEOUT << " ms";
 }
 
 void OnEventTest(HiSysEventRecordC record)
