@@ -794,6 +794,7 @@ OH_AVErrCode PreprocessorEncoder::ReleaseOutputBuffer(uint32_t index)
         int32_t ret = videoEncoderObject_->videoEncoder_->ReleaseOutputBuffer(index);
         CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                                  "Preprocessor release output buffer failed!");
+        videoEncoderObject_->ReleaseOutputBufferWrapper(index);
     }
     return AV_ERR_OK;
 }
@@ -904,6 +905,7 @@ void PreprocessorEncoder::OnOutputBufferAvailable(uint32_t index, const std::sha
         auto videoEncoderObject = weakVideoEncoderObject.lock();
         if (videoEncoderObject && videoEncoderObject->videoEncoder_) {
             (void)videoEncoderObject->videoEncoder_->ReleaseOutputBuffer(index);
+            videoEncoderObject->ReleaseOutputBufferWrapper(index);
         }
     };
     callbackDispatcher_->TryPost(task, onQueueFull);
