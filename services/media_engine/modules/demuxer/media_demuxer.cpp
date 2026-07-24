@@ -3052,6 +3052,7 @@ void MediaDemuxer::DriveInterstitialTicks()
 void MediaDemuxer::HandleTimedMetadataEvent(const Plugins::PluginEvent& event)
 {
     MEDIA_LOG_D("HandleTimedMetadataEvent");
+    FALSE_RETURN_MSG(Any::IsSameTypeWith<std::shared_ptr<MediaAVCodec::AVTimedMetaData>>(event.param), "is not same");
 
     auto controller = interstitialController_.lock();
     if (controller && controller->IsPlayingInterstitial()) {
