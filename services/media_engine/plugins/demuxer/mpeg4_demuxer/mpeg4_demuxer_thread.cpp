@@ -934,7 +934,6 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId)
 
 Status MPEG4DemuxerPlugin::PushEosToCache(uint32_t trackId)
 {
-    std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     (void)trackId;
     for (const auto& selectedTrackId : selectedTrackIds_) {
         auto backSample = cacheQueue_.Back(selectedTrackId);
