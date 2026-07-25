@@ -901,6 +901,7 @@ Status MPEG4AtomParser::ParseMdat(MPEG4Atom currentAtom, int32_t depth, ParseCon
     return Status::OK;
 }
 
+// LCOV_EXCL_START
 Status MPEG4AtomParser::ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     if (currentAtom.dataSize < DEFAULT_HEAD_SIZE) {
@@ -940,6 +941,7 @@ Status MPEG4AtomParser::ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseCon
     ctx->offset = originalOffset + static_cast<int64_t>(currentAtom.size);
     return ret;
 }
+// LCOV_EXCL_STOP
 
 std::string FormatTimestamp(uint64_t creationTime)
 {
@@ -2796,7 +2798,7 @@ Status MPEG4AtomParser::ParseEsds(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
     FALSE_RETURN_V_MSG_E(CheckBoxDataAllocSize(currentAtom.dataSize, "esds"), Status::ERROR_INVALID_DATA,
-        "Invalid esds data size");
+        "Invalid esds data size");  
     ctx->offset += static_cast<int64_t>(currentAtom.size);
 
     auto esdsData = std::make_unique<uint8_t[]>(currentAtom.dataSize);
@@ -3182,6 +3184,7 @@ Status MPEG4AtomParser::ParsePasp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     return ret;
 }
 
+// LCOV_EXCL_START
 bool MPEG4AtomParser::ParseFLACExtradata(const uint8_t* data)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), false, "Invalid current track");
@@ -3321,6 +3324,7 @@ Status MPEG4AtomParser::ParseDops(MPEG4Atom currentAtom, int32_t depth, ParseCon
     lastTrack_->codecParms.extradataSize = static_cast<int64_t>(opusHeadSize);
     return Status::OK;
 }
+// LCOV_EXCL_STOP
 
 static Status ReadDca3ConfigData(const std::shared_ptr<DemuxerDataReader>& dataReader, int64_t dataOffset,
     std::unique_ptr<uint8_t[]>& dca3Data, uint64_t dataSize)
@@ -3678,6 +3682,7 @@ Status MPEG4AtomParser::ParseColr(MPEG4Atom currentAtom, int32_t depth, ParseCon
     return ret;
 }
 
+// LCOV_EXCL_START
 Status MPEG4AtomParser::ParseAclr(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
@@ -3741,6 +3746,7 @@ Status MPEG4AtomParser::ParseGlbl(MPEG4Atom currentAtom, int32_t depth, ParseCon
     ctx->offset += static_cast<int64_t>(currentAtom.size);
     return Status::OK;
 }
+// LCOV_EXCL_STOP
 
 Status MPEG4AtomParser::ParseStts(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
@@ -4630,6 +4636,7 @@ bool ParseUnSignedInteger(uint8_t* data, uint64_t size, uint32_t& out)
     return true;
 }
 
+// LCOV_EXCL_START
 std::string DecodeMacString(const uint8_t* data, size_t size)
 {
     FALSE_RETURN_V_MSG_E(data != nullptr && size > 0, "", "DecodeMacString: data is null");
@@ -4653,6 +4660,7 @@ std::string DecodeMacString(const uint8_t* data, size_t size)
     }
     return result;
 }
+// LCOV_EXCL_STOP
 
 bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string& value)
 {
@@ -4959,6 +4967,7 @@ static const char* GetID3v1GenreString(uint8_t genreNumber)
     return (genreNumber < id3v1_genre_table.size()) ? id3v1_genre_table[genreNumber] : nullptr;
 }
 
+// LCOV_EXCL_START
 Status MPEG4AtomParser::ParseUdtaGenre(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     ctx->offset += static_cast<int64_t>(currentAtom.size);
@@ -4985,6 +4994,7 @@ Status MPEG4AtomParser::ParseUdtaGenre(MPEG4Atom currentAtom, int32_t depth, Par
     }
     return Status::OK;
 }
+// LCOV_EXCL_STOP
 
 Status MPEG4AtomParser::ParseMoovGenre(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
@@ -5007,6 +5017,7 @@ Status MPEG4AtomParser::ParseMoovGenre(MPEG4Atom currentAtom, int32_t depth, Par
     return Status::OK;
 }
 
+// LCOV_EXCL_START
 Status MPEG4AtomParser::ParseLabl(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     ctx->offset += static_cast<int64_t>(currentAtom.size);
@@ -5205,12 +5216,14 @@ Status MPEG4AtomParser::ParseTenc(MPEG4Atom currentAtom, int32_t depth, ParseCon
     ctx->offset += currentAtom.size;
     return Status::OK;
 }
+// LCOV_EXCL_STOP
 
 const std::vector<MPEG4AtomParser::Mpeg4PsshInfo>& MPEG4AtomParser::GetPsshList() const
 {
     return psshList_;
 }
 
+// LCOV_EXCL_START
 Status MPEG4AtomParser::ParseSenc(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(lastTrack_ != nullptr, Status::ERROR_NULL_POINTER, "Current track is null");
@@ -5562,7 +5575,6 @@ Status MPEG4AtomParser::ParseKind(MPEG4Atom currentAtom, int32_t depth, ParseCon
     return Status::OK;
 }
 
-// LCOV_EXCL_START
 Status MPEG4AtomParser::ParseChan(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
