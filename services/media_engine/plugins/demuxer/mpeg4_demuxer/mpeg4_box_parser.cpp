@@ -2798,7 +2798,7 @@ Status MPEG4AtomParser::ParseEsds(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
     FALSE_RETURN_V_MSG_E(CheckBoxDataAllocSize(currentAtom.dataSize, "esds"), Status::ERROR_INVALID_DATA,
-        "Invalid esds data size");  
+        "Invalid esds data size");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
 
     auto esdsData = std::make_unique<uint8_t[]>(currentAtom.dataSize);
