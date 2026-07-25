@@ -68,6 +68,17 @@ public:
      */
     virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
 
+    /**
+     * @brief RSS notify video call PIP status for low power mode adjustment.
+     *
+     * @param bundleName The name of the HAP package.
+     * @param isFloatingWindow True if the call is in floating window mode,
+     *        false otherwise.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 7.0
+     */
+    virtual int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) = 0;
+
 #ifdef SUPPORT_CODECLIST
     /**
      * @brief Create a codeclist service.

@@ -79,7 +79,8 @@ enum class AVCodecServiceInterfaceCode {
     ACTIVE,
     ACTIVEALL,
     GET_ACTIVE_SECURE_DECODER_PIDS,
-    REPORT_STATISTICS_EVENT
+    REPORT_STATISTICS_EVENT,
+    VIDEOCALL
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

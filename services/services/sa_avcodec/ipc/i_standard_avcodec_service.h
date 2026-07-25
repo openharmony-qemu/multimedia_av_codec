@@ -42,6 +42,7 @@ public:
     virtual int32_t SuspendActiveAll() = 0;
     virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
     virtual void ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta) {};
+    virtual int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardAVCodecServiceInterface");
 };

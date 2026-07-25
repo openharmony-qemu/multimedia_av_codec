@@ -16,6 +16,7 @@
 #include "avcodec_videocall.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
+#include "i_avcodec_service.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecVideoCall"};
@@ -25,8 +26,8 @@ namespace OHOS {
 namespace MediaAVCodec {
 int32_t AVCodecVideoCall::VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow)
 {
-    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), AVCS_ERR_INPUT_DATA_ERROR, "hapName is empty");
-    return AVCS_ERR_OK;
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), AVCS_ERR_INPUT_DATA_ERROR, "bundleName is empty");
+    return AVCodecServiceFactory::GetInstance().VideoCallNotifyPiPState(bundleName, isFloatingWindow);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

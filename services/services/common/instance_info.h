@@ -45,6 +45,13 @@ struct CallerInfo {
     std::string processName = "";
 };
 
+struct CodecParamInfo {
+    int32_t encWidth = 0;
+    int32_t encHeight = 0;
+    int32_t encBitrate = 0;
+    int32_t encPowermode = -1;
+};
+
 struct InstanceInfo {
     InstanceId instanceId = INVALID_INSTANCE_ID;
     CallerInfo caller;
@@ -54,6 +61,7 @@ struct InstanceInfo {
     std::string codecName = "";
     std::time_t codecCreateTime = 0;
     VideoCodecType videoCodecType = VideoCodecType::UNKNOWN;
+    CodecParamInfo codecParam;
 
     void Print()
     {

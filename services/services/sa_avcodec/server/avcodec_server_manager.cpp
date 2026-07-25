@@ -433,5 +433,69 @@ void AVCodecServerManager::AsyncExecutor::HandleAsyncExecution()
     }
     tempList.clear();
 }
+
+std::optional<CodecParamInfo> AVCodecServerManager::GetAndUpdateCodecParmInfoByProcessName(
+    const std::string &bundleName, const bool isFloatingWindow)
+{
+    std::unique_lock<std::shared_mutex> lock(mutex_);
+    std::optional<CodecParamInfo> codecParamInfo;
+    int32_t countEnc = 0;
+    int32_t countDec = 0;
+    for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
+        if (iter->second.second.caller.processName == bundleName &&
+            iter->second.second.codecType == AVCODEC_TYPE_VIDEO_ENCODER) {
+            iter->second.second.codecParam.encPowermode = isFloatingWindow ? 1 : 0;
+            codecParamInfo = iter->second.second.codecParam;
+            countEnc++;
+        } else if (iter->second.second.caller.processName == bundleName &&
+                   iter->second.second.codecType == AVCODEC_TYPE_VIDEO_DECODER) {
+            countDec++;
+        }
+    }
+    AVCODEC_LOGD("inner trigger encodec counters is %{public}d, decodec counters is %{public}d",
+                 countEnc, countDec);
+    if (codecParamInfo.has_value() && ((countEnc == 1 && countDec == 1) || !isFloatingWindow))
+        return codecParamInfo;
+    return std::nullopt;
+}
+
+void AVCodecServerManager::UpdateCodecParmInfoByInstanceId(int32_t instanceId, const InstanceInfo &info)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    int32_t countEnc = 0;
+    InstanceInfo instanceInfo;
+    bool found = false;
+    for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
+        if (iter->second.second.instanceId == instanceId) {
+            found = true;
+            iter->second.second.codecParam.encWidth = info.codecParam.encWidth;
+            iter->second.second.codecParam.encHeight = info.codecParam.encHeight;
+            iter->second.second.codecParam.encBitrate = info.codecParam.encBitrate;
+            if (info.codecParam.encPowermode != -1)
+                iter->second.second.codecParam.encPowermode = info.codecParam.encPowermode;
+            instanceInfo = iter->second.second;
+        }
+        if (iter->second.second.caller.processName == info.caller.processName &&
+            iter->second.second.codecType == AVCODEC_TYPE_VIDEO_ENCODER)
+            countEnc++;
+    }
+    if (found && callback_ && (countEnc == 1 || info.codecParam.encPowermode == 0)) {
+        callback_(instanceInfo.codecParam,
+                  instanceInfo.forwardCaller.processName,
+                  instanceInfo.caller.processName);
+        }
+}
+
+void AVCodecServerManager::RegisterCallback(InstanceInfoCallback callback)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    callback_ = callback;
+}
+
+void AVCodecServerManager::UnRegisterCallback()
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    callback_ = nullptr;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

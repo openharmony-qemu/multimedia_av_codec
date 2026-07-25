@@ -37,6 +37,7 @@ enum class EventType : uint32_t {
     STATISTICS_EVENT                    = (7 << 24),
     STATISTICS_EVENT_SUBMIT             = (8 << 24),
     STATISTICS_EVENT_REGISTER_SUBMIT    = (9 << 24),
+    INSTANCE_UPDATE_INFO                = (10 << 24),
     END,
     MASK                                = 0xFF000000,
 };
