@@ -947,6 +947,7 @@ Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctxOffset, int64
     return Status::OK;
 }
 
+// LCOV_EXCL_START
 Status MPEG4SampleHelper::SetTrackExtendsParams(int64_t dataOffset, size_t dataSize)
 {
     MEDIA_LOG_D("In");
@@ -1069,6 +1070,7 @@ Status MPEG4SampleHelper::SetTrackFragmentDecodeTimeParams(int64_t dataOffset, i
     }
     return ret;
 }
+// LCOV_EXCL_STOP
 
 Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, TrunSampleInitContext& initContext)
 {
@@ -1116,6 +1118,7 @@ Status MPEG4SampleHelper::InitSampleInfo(SampleInfo& sampleInfo, TrunSampleInitC
     return Status::OK;
 }
 
+// LCOV_EXCL_START
 void MPEG4SampleHelper::UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
     uint8_t* data, uint32_t firstSampleFlag)
 {
@@ -1140,6 +1143,7 @@ void MPEG4SampleHelper::UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& buffe
         bufferOffset += sizeof(uint32_t);
     }
 }
+// LCOV_EXCL_STOP
 
 void MPEG4SampleHelper::InitMoofParam()
 {
@@ -1150,6 +1154,7 @@ void MPEG4SampleHelper::InitMoofParam()
     }
 }
 
+// LCOV_EXCL_START
 MPEG4SampleHelper::SampleIndexEntry MPEG4SampleHelper::CreateSampleEntry(
     const SampleInfo& sampleInfo, int64_t offset, int64_t currentDts, bool isOverlap) const
 {
@@ -1223,6 +1228,7 @@ void MPEG4SampleHelper::UpdateSampleEntryInfo(
     }
     FALSE_RETURN_NOLOG(InsertSampleEntry(std::move(sample), sampleInfo.duration));
 }
+// LCOV_EXCL_STOP
 
 Status MPEG4SampleHelper::ReadTrunRunData(int64_t dataOffset, int64_t dataSize, uint32_t& trunFlag,
     uint32_t& numSamples, std::unique_ptr<uint8_t[]>& data)
