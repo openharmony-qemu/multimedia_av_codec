@@ -20,8 +20,8 @@
 #include <cstring>
 #include <limits>
 #include <optional>
-#include <regex>
 #include <string>
+#include <string_view>
 #include <vector>
 #include "securec.h"
 #include "avcodec_errors.h"
@@ -60,18 +60,53 @@ constexpr int32_t DISABLE_DOWNSAMPLING_WIDTH = 0;
 constexpr int32_t DISABLE_DOWNSAMPLING_HEIGHT = 0;
 constexpr int32_t DEFAULT_METADATA_OFFSET = 0;
 constexpr double IDENTITY_METADATA_SCALE = 1.0;
-constexpr size_t ROI_MATCH_TOP_INDEX = 1;
-constexpr size_t ROI_MATCH_LEFT_INDEX = 2;
-constexpr size_t ROI_MATCH_BOTTOM_INDEX = 3;
-constexpr size_t ROI_MATCH_RIGHT_INDEX = 4;
-constexpr size_t ROI_MATCH_PARAM_INDEX = 5;
-auto fastKitEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.FastKit.Enable", true);
+constexpr auto FAST_KIT_ENABLE = true;
 
-std::optional<int32_t> ParseInt32(const std::string &str)
+struct RoiEntry {
+    int32_t top{0};
+    int32_t left{0};
+    int32_t bottom{0};
+    int32_t right{0};
+    std::string_view param;
+    bool hasParam{false};
+};
+
+std::optional<int32_t> ParseInt32(std::string_view str)
 {
     int32_t value = 0;
     auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), value);
     return ec == std::errc{} && ptr == (str.data() + str.size()) ? std::optional<int32_t>(value) : std::nullopt;
+}
+
+std::optional<RoiEntry> ParseRoiEntry(std::string_view entry)
+{
+    size_t paramPos = entry.find('=');
+    size_t coordinateEnd = paramPos == std::string_view::npos ? entry.size() : paramPos;
+    size_t firstComma = entry.find(',');
+    if (firstComma == std::string_view::npos || firstComma >= coordinateEnd) {
+        return std::nullopt;
+    }
+    size_t dashSearchStart = firstComma + 1;
+    if (dashSearchStart < coordinateEnd && entry[dashSearchStart] == '-') {
+        ++dashSearchStart;
+    }
+    size_t dash = entry.find('-', dashSearchStart);
+    size_t secondComma = dash == std::string_view::npos ? std::string_view::npos : entry.find(',', dash + 1);
+    if (dash == std::string_view::npos || dash >= coordinateEnd || secondComma == std::string_view::npos ||
+        secondComma >= coordinateEnd) {
+        return std::nullopt;
+    }
+
+    auto top = ParseInt32(entry.substr(0, firstComma));
+    auto left = ParseInt32(entry.substr(firstComma + 1, dash - firstComma - 1));
+    auto bottom = ParseInt32(entry.substr(dash + 1, secondComma - dash - 1));
+    auto right = ParseInt32(entry.substr(secondComma + 1, coordinateEnd - secondComma - 1));
+    if (!top || !left || !bottom || !right) {
+        return std::nullopt;
+    }
+    return RoiEntry{*top, *left, *bottom, *right,
+                    paramPos == std::string_view::npos ? std::string_view{} : entry.substr(paramPos + 1),
+                    paramPos != std::string_view::npos};
 }
 
 double RoundToTwoDecimals(double value)
@@ -109,10 +144,10 @@ bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t
     if (width <= 0 || height <= 0) {
         return false;
     }
-    if (fastKitEnable &&
+    if (FAST_KIT_ENABLE &&
         !OHOS::MediaAVCodec::PreProcessing::FastKitsInterface::IsFormatSupported(static_cast<int32_t>(format))) {
         return false;
-    } else if (!fastKitEnable &&
+    } else if (!FAST_KIT_ENABLE &&
                !OHOS::MediaAVCodec::PreProcessing::CpuImageProcessor::IsFormatSupported(static_cast<int32_t>(format))) {
         return false;
     }
@@ -122,29 +157,31 @@ bool IsGeometrySupported(OHOS::GraphicPixelFormat format, int32_t width, int32_t
 std::string TransformRoiMetadata(const std::string &roi, double scaleX, double scaleY,
                                  int32_t offsetTop, int32_t offsetLeft)
 {
-    static const std::regex roiPattern(R"((?:^|;)(-?\d+),(-?\d+)-(-?\d+),(-?\d+)(?:=([^;]*))?(?=;|$))");
-    std::smatch match;
     std::string result;
-    for (std::string temp = roi; std::regex_search(temp, match, roiPattern); temp = match.suffix().str()) {
-        auto top = ParseInt32(match[ROI_MATCH_TOP_INDEX].str());
-        auto left = ParseInt32(match[ROI_MATCH_LEFT_INDEX].str());
-        auto bottom = ParseInt32(match[ROI_MATCH_BOTTOM_INDEX].str());
-        auto right = ParseInt32(match[ROI_MATCH_RIGHT_INDEX].str());
-        if (!top || !left || !bottom || !right) {
-            continue;
+    std::string_view roiView(roi);
+    for (size_t start = 0; start <= roiView.size();) {
+        size_t end = roiView.find(';', start);
+        std::string_view segment = roiView.substr(start, end == std::string_view::npos ? end : end - start);
+        auto entry = ParseRoiEntry(segment);
+        if (entry) {
+            int32_t newTop = static_cast<int32_t>(std::round(entry->top * scaleY)) - offsetTop;
+            int32_t newLeft = static_cast<int32_t>(std::round(entry->left * scaleX)) - offsetLeft;
+            int32_t newBottom = static_cast<int32_t>(std::round(entry->bottom * scaleY)) - offsetTop;
+            int32_t newRight = static_cast<int32_t>(std::round(entry->right * scaleX)) - offsetLeft;
+            if (!result.empty()) {
+                result += ";";
+            }
+            result += std::to_string(newTop) + "," + std::to_string(newLeft) + "-" +
+                      std::to_string(newBottom) + "," + std::to_string(newRight);
+            if (entry->hasParam) {
+                result += "=";
+                result.append(entry->param.data(), entry->param.size());
+            }
         }
-        int32_t newTop = static_cast<int32_t>(std::round(*top * scaleY)) - offsetTop;
-        int32_t newLeft = static_cast<int32_t>(std::round(*left * scaleX)) - offsetLeft;
-        int32_t newBottom = static_cast<int32_t>(std::round(*bottom * scaleY)) - offsetTop;
-        int32_t newRight = static_cast<int32_t>(std::round(*right * scaleX)) - offsetLeft;
-        if (!result.empty()) {
-            result += ";";
+        if (end == std::string_view::npos) {
+            break;
         }
-        result += std::to_string(newTop) + "," + std::to_string(newLeft) + "-" +
-                  std::to_string(newBottom) + "," + std::to_string(newRight);
-        if (match[ROI_MATCH_PARAM_INDEX].matched) {
-            result += "=" + match[ROI_MATCH_PARAM_INDEX].str();
-        }
+        start = end + 1;
     }
     if (!result.empty()) {
         result += ";";
@@ -156,22 +193,22 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
 
 Preprocessor::Preprocessor(const std::string &mime) : mime_(mime)
 {
-    if (fastKitEnable) {
+    if (FAST_KIT_ENABLE) {
         fastKitsInterface_.Retain();
     }
 }
 
 Preprocessor::~Preprocessor()
 {
-    if (fastKitEnable) {
+    if (FAST_KIT_ENABLE) {
         fastKitsInterface_.Release();
     }
 }
 
 bool Preprocessor::IsAvailable()
 {
-    if (!fastKitEnable) {
-        return true;
+    if (!FAST_KIT_ENABLE) {
+        return false;
     }
     auto &fastKits = PreProcessing::FastKitsInterface::GetInstance();
     fastKits.Retain();
@@ -257,7 +294,7 @@ int32_t Preprocessor::Configure(const Media::Format &format)
     if (dropParams_.result != ConfigResult::NOT_SET) {
         dropFrameConfig_ = DropFrameConfig(dropParams_);
     }
-    if (fastKitEnable && (cropConfig_.enabled || downsamplingConfig_.enabled)) {
+    if (FAST_KIT_ENABLE && (cropConfig_.enabled || downsamplingConfig_.enabled)) {
         int32_t initRet = fastKitsInterface_.Init(static_cast<uint32_t>(encoderParams_.pixelFormat));
         CHECK_AND_RETURN_RET_LOG(initRet == AVCS_ERR_OK, initRet, "Failed to init FastKitsInterface: %{public}d",
                                  initRet);
@@ -494,19 +531,10 @@ int32_t Preprocessor::Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    if (fastKitEnable) {
-        PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
-        int32_t ret = fastKitsInterface_.Crop(input, output, rect);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit crop failed: %{public}d", ret);
-        return AVCS_ERR_OK;
-    }
-    PreProcessing::CpuImageProcessRequest request;
-    request.input = input;
-    request.output = output;
-    request.operation = PreProcessing::CpuImageOperation::CROP;
-    request.crop = {cropConfig_.left, cropConfig_.top, cropConfig_.width, cropConfig_.height};
-    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Crop failed: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(FAST_KIT_ENABLE, AVCS_ERR_UNSUPPORT, "Crop requires FastKit");
+    PreProcessing::CropRect rect{cropConfig_.top, cropConfig_.left, cropConfig_.bottom, cropConfig_.right};
+    int32_t ret = fastKitsInterface_.Crop(input, output, rect);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit crop failed: %{public}d", ret);
     return AVCS_ERR_OK;
 }
 
@@ -517,17 +545,9 @@ int32_t Preprocessor::Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    if (fastKitEnable) {
-        int32_t ret = fastKitsInterface_.DownSample(input, output);
-        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit downsampling failed: %{public}d", ret);
-        return AVCS_ERR_OK;
-    }
-    PreProcessing::CpuImageProcessRequest request;
-    request.input = input;
-    request.output = output;
-    request.operation = PreProcessing::CpuImageOperation::DOWNSAMPLE;
-    int32_t ret = PreProcessing::CpuImageProcessor::Process(request);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Downsampling failed: %{public}d", ret);
+    CHECK_AND_RETURN_RET_LOG(FAST_KIT_ENABLE, AVCS_ERR_UNSUPPORT, "Downsampling requires FastKit");
+    int32_t ret = fastKitsInterface_.DownSample(input, output);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "FastKit downsampling failed: %{public}d", ret);
     return AVCS_ERR_OK;
 }
 
@@ -537,7 +557,7 @@ int32_t Preprocessor::Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &outpu
         AVCODEC_LOGE("Realloc buffer failed");
         return AVCS_ERR_NO_MEMORY;
     }
-    if (fastKitEnable) {
+    if (FAST_KIT_ENABLE) {
         PreProcessing::CropRect rect{0, 0, input->GetHeight() - 1, input->GetWidth() - 1};
         int32_t ret = fastKitsInterface_.Crop(input, output, rect);
 #ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING

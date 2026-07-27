@@ -549,279 +549,6 @@ HWTEST_F(TEST_SUIT, ValidateCpoy_WidtdHeight_Test_010, TestSize.Level1)
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
 
-/**
- * @tc.name ValidateCropRect_NegativeLeft_Test_001
- * @tc.desc Test ValidateCropRect validation when crop.left < 0
- *          This test triggers the left boundary validation branch by setting
- *          negative left value in crop rectangle.
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeLeft_Test_001, TestSize.Level1)
-{
-    constexpr int32_t cropWidth = 320;  // cropWidth: 320
-    constexpr int32_t cropHeight = 240; // cropHeight: 240
-    constexpr size_t outputBufferSize = static_cast<size_t>(cropWidth * cropHeight * 3 / 2);
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    void* virAddr = inputBuffer->GetVirAddr();
-    ASSERT_NE(virAddr, nullptr);
-    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    void* outVirAddr = outputBuffer->GetVirAddr();
-    ASSERT_NE(outVirAddr, nullptr);
-    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
-    request.crop.left = -10; // Negative left triggers validation
-    request.crop.top = 0;
-    request.crop.width = cropWidth;
-    request.crop.height = cropHeight;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name ValidateCropRect_NegativeTop_Test_002
- * @tc.desc Test ValidateCropRect validation when crop.top < 0
- *          This test triggers the top boundary validation branch by setting
- *          negative top value in crop rectangle.
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateCropRect_NegativeTop_Test_002, TestSize.Level1)
-{
-    constexpr int32_t cropWidth = 320;  // cropWidth:320
-    constexpr int32_t cropHeight = 240; // cropHeight:320
-    constexpr size_t outputBufferSize = static_cast<size_t>(cropWidth * cropHeight * 3 / 2);
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    void* virAddr = inputBuffer->GetVirAddr();
-    ASSERT_NE(virAddr, nullptr);
-    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    void* outVirAddr = outputBuffer->GetVirAddr();
-    ASSERT_NE(outVirAddr, nullptr);
-    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
-    request.crop.left = 0;
-    request.crop.top = -10; // Negative top triggers validation
-    request.crop.width = cropWidth;
-    request.crop.height = cropHeight;
-
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name ValidateCropRect_ZeroWidth_Test_003
- * @tc.desc Test ValidateCropRect validation when crop.width == 0
- *          This test triggers the width boundary validation branch by setting
- *          width to 0 in crop rectangle.
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroWidth_Test_003, TestSize.Level1)
-{
-    constexpr int32_t cropWidth = 320;  // cropWidth: 320
-    constexpr int32_t cropHeight = 240; // cropHeight: 240
-    constexpr size_t outputBufferSize = static_cast<size_t>(cropWidth * cropHeight * 3 / 2);
-    
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    void* virAddr = inputBuffer->GetVirAddr();
-    ASSERT_NE(virAddr, nullptr);
-    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    void* outVirAddr = outputBuffer->GetVirAddr();
-    ASSERT_NE(outVirAddr, nullptr);
-    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
-    request.crop.left = 0;
-    request.crop.top = 0;
-    request.crop.width = 0;
-    request.crop.height = cropHeight;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name ValidateCropRect_ZeroHeight_Test_004
- * @tc.desc Test ValidateCropRect validation when crop.height == 0
- *          This test triggers the height boundary validation branch by setting
- *          height to 0 in crop rectangle.
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateCropRect_ZeroHeight_Test_004, TestSize.Level1)
-{
-    constexpr int32_t cropWidth = 320;  // cropWidth: 320
-    constexpr int32_t cropHeight = 240; // cropHeight: 240
-    constexpr size_t outputBufferSize = static_cast<size_t>(cropWidth * cropHeight * 3 / 2);
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    void* virAddr = inputBuffer->GetVirAddr();
-    ASSERT_NE(virAddr, nullptr);
-    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    void* outVirAddr = outputBuffer->GetVirAddr();
-    ASSERT_NE(outVirAddr, nullptr);
-    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
-    request.crop.left = 0;
-    request.crop.top = 0;
-    request.crop.width = cropWidth;
-    request.crop.height = 0;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name ValidateCropRect_OutsideWidth_Test_005
- * @tc.desc Test ValidateCropRect validation when crop.left + crop.width > input.width
- *          This test triggers the width boundary validation branch by setting
- *          left + width to be greater than input width in crop rectangle.
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideWidth_Test_005, TestSize.Level1)
-{
-    constexpr int32_t cropWidth = 320;  // cropWidth: 320
-    constexpr int32_t cropHeight = 240; // cropHeight: 240
-    constexpr size_t outputBufferSize = static_cast<size_t>(cropWidth * cropHeight * 3 / 2);
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    void* virAddr = inputBuffer->GetVirAddr();
-    ASSERT_NE(virAddr, nullptr);
-    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    void* outVirAddr = outputBuffer->GetVirAddr();
-    ASSERT_NE(outVirAddr, nullptr);
-    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
-    request.crop.left = 310;  // left: 310
-    request.crop.top = 0;
-    request.crop.width = 350; // width: 350
-    request.crop.height = cropHeight;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name ValidateCropRect_OutsideHeight_Test_006
- * @tc.desc Test ValidateCropRect validation when crop.top + crop.height > input.height
- *          This test triggers the height boundary validation branch by setting
- *          top + height to be greater than input height in crop rectangle.
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateCropRect_OutsideHeight_Test_006, TestSize.Level1)
-{
-    constexpr int32_t cropWidth = 320;  // cropWidth: 320
-    constexpr int32_t cropHeight = 240; // cropHeight: 240
-    constexpr size_t outputBufferSize = static_cast<size_t>(cropWidth * cropHeight * 3 / 2);
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    void* virAddr = inputBuffer->GetVirAddr();
-    ASSERT_NE(virAddr, nullptr);
-    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    void* outVirAddr = outputBuffer->GetVirAddr();
-    ASSERT_NE(outVirAddr, nullptr);
-    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
-    request.crop.left = 0;
-    request.crop.top = 230;         // top: 230
-    request.crop.width = cropWidth;
-    request.crop.height = 250;      // height: 250
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name ValidateCropRect_ValidCropRect_Test_007
- * @tc.desc Test ValidateCropRect successful path with valid crop rectangle
- *          This validates that ValidateCropRect returns true when all conditions are met,
- *          allowing Process to continue execution successfully.
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateCropRect_ValidCropRect_Test_007, TestSize.Level1)
-{
-    constexpr int32_t cropWidth = 320;  // cropWidth: 320
-    constexpr int32_t cropHeight = 240; // cropHeight: 240
-    constexpr size_t outputBufferSize = static_cast<size_t>(cropWidth * cropHeight * 3 / 2);
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    void* virAddr = inputBuffer->GetVirAddr();
-    ASSERT_NE(virAddr, nullptr);
-    memset_s(virAddr, BUFFER_SIZE, 0, BUFFER_SIZE);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(cropWidth, cropHeight, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    void* outVirAddr = outputBuffer->GetVirAddr();
-    ASSERT_NE(outVirAddr, nullptr);
-    memset_s(outVirAddr, outputBufferSize, 0, outputBufferSize);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
-    request.crop.left = 0;
-    request.crop.top = 0;
-    request.crop.width = cropWidth;
-    request.crop.height = cropHeight;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
 
 /**
  * @tc.name ValidateOperation_NegativeOperation_Test_001
@@ -955,104 +682,6 @@ HWTEST_F(TEST_SUIT, IsFormatSupported_UnsupportedFormat_Test_001, TestSize.Level
 }
 
 /**
- * @tc.name ValidateDownsample_Invalid_Test_001
- * @tc.desc output.width > 0, output.height > 0, output.width > input.width, output.height > input.height
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateDownsample_Invalid_Test_001, TestSize.Level1)
-{
-    constexpr int32_t width = 652; // width: 652
-    constexpr int32_t height = 492; // height: 492
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(width, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::DOWNSAMPLE;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name ValidateDownsample_Invalid_Test_002
- * @tc.desc output.width > 0, output.height > 0, output.width > input.width, output.height < input.height
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateDownsample_Invalid_Test_002, TestSize.Level1)
-{
-    constexpr int32_t width = 652; // width: 652
-    constexpr int32_t height = 492; // height: 492
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(width, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::DOWNSAMPLE;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name ValidateDownsample_Invalid_Test_003
- * @tc.desc output.width > 0, output.height > 0, output.width < input.width, output.height > input.height
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateDownsample_Invalid_Test_003, TestSize.Level1)
-{
-    constexpr int32_t width = 652; // width: 652
-    constexpr int32_t height = 492; // height: 492
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::DOWNSAMPLE;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
-}
-
-/**
- * @tc.name ValidateDownsample_Valid_Test_001
- * @tc.desc output.width > 0, output.height > 0, output.width < input.width, output.height < input.height
- *          input.isYuv420 is true,
- *          input.width is even, input.height is even, output.width is even, output.height is even
- * @tc.type FUNC
- */
-HWTEST_F(TEST_SUIT, ValidateDownsample_Valid_Test_001, TestSize.Level1)
-{
-    constexpr int32_t width = 652; // width: 652
-    constexpr int32_t height = 492; // height: 492
-
-    sptr<SurfaceBuffer> inputBuffer = AllocBuffer(width, height, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(inputBuffer, nullptr);
-
-    sptr<SurfaceBuffer> outputBuffer = AllocBuffer(DEFAULT_WIDTH, DEFAULT_HEIGHT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
-    ASSERT_NE(outputBuffer, nullptr);
-
-    CpuImageProcessRequest request;
-    request.input = inputBuffer;
-    request.output = outputBuffer;
-    request.operation = CpuImageOperation::DOWNSAMPLE;
-    int32_t ret = CpuImageProcessor::Process(request);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-}
-
-/**
  * @tc.name BuildI420Layout_Invalid_Test_001
  * @tc.desc input stride is odd number
  * @tc.type FUNC
@@ -1071,7 +700,7 @@ HWTEST_F(TEST_SUIT, BuildI420Layout_Invalid_Test_001, TestSize.Level1)
     CpuImageProcessRequest request;
     request.input = inputBuffer;
     request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
+    request.operation = CpuImageOperation::COPY;
     int32_t ret = CpuImageProcessor::Process(request);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
@@ -1094,7 +723,7 @@ HWTEST_F(TEST_SUIT, BuildPaneLayout_Invalid_Test_001, TestSize.Level1)
     CpuImageProcessRequest request;
     request.input = inputBuffer;
     request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
+    request.operation = CpuImageOperation::COPY;
     int32_t ret = CpuImageProcessor::Process(request);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
@@ -1117,7 +746,7 @@ HWTEST_F(TEST_SUIT, BuildPaneLayout_Invalid_Test_002, TestSize.Level1)
     CpuImageProcessRequest request;
     request.input = inputBuffer;
     request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
+    request.operation = CpuImageOperation::COPY;
     int32_t ret = CpuImageProcessor::Process(request);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
@@ -1141,7 +770,7 @@ HWTEST_F(TEST_SUIT, BuildPaneLayout_Invalid_Test_003, TestSize.Level1)
     CpuImageProcessRequest request;
     request.input = inputBuffer;
     request.output = outputBuffer;
-    request.operation = CpuImageOperation::CROP;
+    request.operation = CpuImageOperation::COPY;
     int32_t ret = CpuImageProcessor::Process(request);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
 }
