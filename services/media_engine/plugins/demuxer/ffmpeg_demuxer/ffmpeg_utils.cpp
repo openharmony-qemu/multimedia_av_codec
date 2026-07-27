@@ -23,7 +23,7 @@
 #include "ffmpeg_utils.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "HiStreamer" };
 
 constexpr uint8_t HEVC_NAL_TYPE_MASK = 0x7E; // NAL unit type mask (bits 1-6 of first byte)
 constexpr uint8_t HEVC_NAL_TYPE_SHIFT = 1;   // Right shift to get NAL type
@@ -129,14 +129,6 @@ int64_t ConvertTimeToFFmpegByUs(int64_t timestampUs, AVRational base)
     MEDIA_LOG_D("Base: [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "], time convert ["
         PUBLIC_LOG_D64 "]->[" PUBLIC_LOG_D64 "].", base.num, base.den, timestampUs, result);
     return result;
-}
-
-bool StartWith(const char* name, const char* chars)
-{
-    if (name == nullptr || chars == nullptr) {
-        return false;
-    }
-    return !strncmp(name, chars, strlen(chars));
 }
 
 uint32_t ConvertFlagsFromFFmpeg(const AVPacket& pkt, bool memoryNotEnough)
@@ -264,7 +256,7 @@ int64_t AvTime2Us(int64_t hTime)
 
 bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
 {
-    if (size < NAL_START_CODE_SIZE) {
+    if (sample == nullptr || size < NAL_START_CODE_SIZE) {
         return false;
     }
     bool hasShortStartCode = (sample[0] == 0 && sample[1] == 0 && sample[2] == 1); // 001
@@ -274,8 +266,14 @@ bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
 
 int32_t GetNaluSize(const uint8_t *nalStart)
 {
-    return static_cast<int32_t>(
-        (nalStart[POS_3]) | (nalStart[POS_2] << POS_8) | (nalStart[POS_1] << POS_16) | (nalStart[POS_0] << POS_24));
+    if (nalStart == nullptr) {
+        return 0;
+    }
+    uint32_t val = (static_cast<uint32_t>(nalStart[POS_0]) << POS_24) |
+                   (static_cast<uint32_t>(nalStart[POS_1]) << POS_16) |
+                   (static_cast<uint32_t>(nalStart[POS_2]) << POS_8)  |
+                   (static_cast<uint32_t>(nalStart[POS_3]));
+    return static_cast<int32_t>(val);
 }
 
 bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
@@ -293,6 +291,10 @@ bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
     }
     nalStart = nalStart + sizeLen;
     while (nalStart < end) {
+        auto remaining = end - nalStart;
+        if (naluSize > remaining || naluSize < 1) {
+            return false;
+        }
         uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
         if (naluType > 0x10 && naluType <= 0x17) {
             return true;

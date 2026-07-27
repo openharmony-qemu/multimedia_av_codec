@@ -1121,6 +1121,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_Auxl_0002, TestSize.Level1)
     }
 }
 
+#ifdef AVSOURCE_INNER_UNIT_TEST
 /**
  * @tc.name: AVSource_GetFormat_HDRType_0011
  * @tc.desc: Check hdr type for 264, local
@@ -1135,7 +1136,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0011, TestSize.Level1)
         format_ = source_->GetTrackFormat(trackIndex_);
         ASSERT_NE(format_, nullptr);
         printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-        ASSERT_FALSE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
     }
 }
 
@@ -1153,8 +1154,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0012, TestSize.Level1)
         format_ = source_->GetTrackFormat(trackIndex_);
         ASSERT_NE(format_, nullptr);
         printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-        ASSERT_FALSE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
+        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
     }
 }
 
@@ -1172,9 +1172,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0021, TestSize.Level1)
         format_ = source_->GetTrackFormat(trackIndex_);
         ASSERT_NE(format_, nullptr);
         printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_NONE));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::NONE));
     }
 }
 
@@ -1192,9 +1191,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0022, TestSize.Level1)
         format_ = source_->GetTrackFormat(trackIndex_);
         ASSERT_NE(format_, nullptr);
         printf("[trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_NONE));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::NONE));
     }
 }
 
@@ -1220,9 +1218,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0031, TestSize.Level1)
         ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_HLG));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HLG));
     }
 }
 
@@ -1248,9 +1245,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0032, TestSize.Level1)
         ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_HLG));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HLG));
     }
 }
 
@@ -1276,9 +1272,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0041, TestSize.Level1)
         ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_HDR10));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
     }
 }
 
@@ -1304,9 +1299,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0042, TestSize.Level1)
         ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_HDR10));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
     }
 }
 
@@ -1332,9 +1326,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0051, TestSize.Level1)
         ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_HDR_VIVID));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
     }
 }
 
@@ -1360,9 +1353,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0052, TestSize.Level1)
         ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_HDR_VIVID));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
     }
 }
 
@@ -1388,14 +1380,8 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0061, TestSize.Level1)
         ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-#ifdef AVSOURCE_INNER_UNIT_TEST
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_HDR10));
-        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
-#else
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_OTHER));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
-#endif
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
     }
 }
 
@@ -1421,14 +1407,9 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_HDRType_0062, TestSize.Level1)
         ASSERT_EQ(formatVal_.colorMatrix, static_cast<int32_t>(OH_MatrixCoefficient::MATRIX_COEFFICIENT_BT2020_NCL));
         ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_COLOR_RANGE, formatVal_.colorRange));
         ASSERT_EQ(formatVal_.colorRange, 0);
-        ASSERT_TRUE(format_->GetIntValue(OH_MD_KEY_HDR_TYPE, formatVal_.hdrType));
-#ifdef AVSOURCE_INNER_UNIT_TEST
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_HDR10));
-        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
-#else
-        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(OH_HDRType::OH_HDR_TYPE_OTHER));
-        ASSERT_FALSE(format_->GetIntValue(Media::Tag::VIDEO_HDR_COMPATIBILITY, formatVal_.hdrType));
-#endif
+        ASSERT_TRUE(format_->GetIntValue(Media::Tag::VIDEO_HDR_TYPE, formatVal_.hdrType));
+        ASSERT_EQ(formatVal_.hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
     }
 }
+#endif
 } // namespace

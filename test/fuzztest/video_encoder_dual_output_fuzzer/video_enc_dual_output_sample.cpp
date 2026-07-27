@@ -52,12 +52,7 @@ VideoEncDualOutputSample::~VideoEncDualOutputSample()
 
 void VideoEncDualOutputSample::OnError(OH_AVCodec *codec, int32_t errorCode, void *userData) {}
 
-void VideoEncDualOutputSample::OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
-{
-    if (format != nullptr) {
-        OH_AVFormat_Destroy(format);
-    }
-}
+void VideoEncDualOutputSample::OnStreamChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData) {}
 
 void VideoEncDualOutputSample::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
@@ -65,6 +60,9 @@ void VideoEncDualOutputSample::OnNeedInputBuffer(OH_AVCodec *codec, uint32_t ind
 
 void VideoEncDualOutputSample::OnNewOutputBuffer(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
+    if (codec == nullptr) {
+        return;
+    }
     OH_VideoEncoder_FreeOutputBuffer(codec, index);
 }
 
@@ -73,6 +71,9 @@ void VideoEncDualOutputSample::OnNeedInputData(OH_AVCodec *codec, uint32_t index
 void VideoEncDualOutputSample::OnNewOutputData(OH_AVCodec *codec, uint32_t index, OH_AVMemory *data,
                                                OH_AVCodecBufferAttr *attr, void *userData)
 {
+    if (codec == nullptr) {
+        return;
+    }
     OH_VideoEncoder_FreeOutputData(codec, index);
 }
 
@@ -156,15 +157,15 @@ OH_AVCodec *VideoEncDualOutputSample::GetTarget(int32_t target)
     return nullptr;
 }
 
-std::unique_lock<std::mutex> VideoEncDualOutputSample::LockTarget(int32_t target)
+std::unique_lock<std::recursive_mutex> VideoEncDualOutputSample::LockTarget(int32_t target)
 {
     if (target == 0) { // 0: primary
-        return std::unique_lock<std::mutex>(primaryMutex_);
+        return std::unique_lock<std::recursive_mutex>(primaryMutex_);
     }
     if (target == 1) { // 1: secondary
-        return std::unique_lock<std::mutex>(secondaryMutex_);
+        return std::unique_lock<std::recursive_mutex>(secondaryMutex_);
     }
-    return std::unique_lock<std::mutex>();
+    return std::unique_lock<std::recursive_mutex>();
 }
 
 // ======================== Surface Input Thread ========================
@@ -216,9 +217,9 @@ void VideoEncDualOutputSample::InputFuncSurface()
         if (err != 0 || virAddr == nullptr) {
             break;
         }
-        int64_t totalSize = static_cast<int64_t>(bufCfg.stride) * bufCfg.height * 3 / 2; // 3/2: YUV420 bpp
+        int64_t totalSize = static_cast<int64_t>(bufCfg.stride) * bufCfg.height * 3 / 2;              // 3/2: YUV420 bpp
         uint32_t size = static_cast<uint32_t>(std::min(totalSize, static_cast<int64_t>(0x10000000))); // 256MB cap
-        (void)memset_s(virAddr, size, 0x80, size);                                           // 0x80: YUV fill
+        (void)memset_s(virAddr, size, 0x80, size);                                                    // 0x80: YUV fill
         OH_NativeBuffer_Unmap(nativeBuffer);
         Region::Rect rect = {0, 0, static_cast<uint32_t>(defaultWidth), static_cast<uint32_t>(defaultHeight)};
         Region region = {&rect, 1};
@@ -244,10 +245,10 @@ void VideoEncDualOutputSample::DoCreatePrimary(int32_t target, OH_AVCodec *codec
         return;
     }
     const char *mime = fdp.ConsumeBool() ? OH_AVCODEC_MIMETYPE_VIDEO_HEVC : OH_AVCODEC_MIMETYPE_VIDEO_AVC;
-    std::lock_guard<std::mutex> lk1(primaryMutex_);
+    std::lock_guard<std::recursive_mutex> lk1(primaryMutex_);
     StopInloop();
     if (primary_ != nullptr) {
-        std::lock_guard<std::mutex> lk2(secondaryMutex_);
+        std::lock_guard<std::recursive_mutex> lk2(secondaryMutex_);
         if (secondary_ != nullptr) {
             OH_VideoEncoder_Destroy(secondary_);
             secondary_ = nullptr;
@@ -264,11 +265,11 @@ void VideoEncDualOutputSample::DoCreatePrimary(int32_t target, OH_AVCodec *codec
 
 void VideoEncDualOutputSample::DoCreateSecondary(int32_t target, OH_AVCodec *codec, FuzzedDataProvider &fdp)
 {
-    std::lock_guard<std::mutex> lk1(primaryMutex_);
+    std::lock_guard<std::recursive_mutex> lk1(primaryMutex_);
     if (primary_ == nullptr) {
         return;
     }
-    std::lock_guard<std::mutex> lk2(secondaryMutex_);
+    std::lock_guard<std::recursive_mutex> lk2(secondaryMutex_);
     OH_AVCodec *sec = nullptr;
     OH_VideoEncoder_CreateSecondaryFromPrimary(primary_, &sec);
     if (sec != nullptr) {
@@ -414,9 +415,9 @@ void VideoEncDualOutputSample::DoFreeOutputBuffer(int32_t target, OH_AVCodec *co
 void VideoEncDualOutputSample::DoDestroy(int32_t target, OH_AVCodec *codec, FuzzedDataProvider &fdp)
 {
     if (target == 0 && primary_ != nullptr) { // 0: primary
-        std::lock_guard<std::mutex> lk1(primaryMutex_);
+        std::lock_guard<std::recursive_mutex> lk1(primaryMutex_);
         StopInloop();
-        std::lock_guard<std::mutex> lk2(secondaryMutex_);
+        std::lock_guard<std::recursive_mutex> lk2(secondaryMutex_);
         if (secondary_ != nullptr) {
             OH_VideoEncoder_Destroy(secondary_);
             secondary_ = nullptr;
@@ -424,14 +425,11 @@ void VideoEncDualOutputSample::DoDestroy(int32_t target, OH_AVCodec *codec, Fuzz
         OH_VideoEncoder_Destroy(primary_);
         primary_ = nullptr;
     } else if (target == 1 && secondary_ != nullptr) { // 1: secondary
-        std::lock_guard<std::mutex> lk(secondaryMutex_);
+        std::lock_guard<std::recursive_mutex> lk(secondaryMutex_);
         OH_VideoEncoder_Destroy(secondary_);
         secondary_ = nullptr;
     } else if (target == 2) { // 2: invalid target
         OH_VideoEncoder_Destroy(nullptr);
-    } else {
-        auto lk = LockTarget(target);
-        OH_VideoEncoder_Destroy(codec);
     }
 }
 
@@ -530,6 +528,17 @@ const VideoEncDualOutputSample::OpFunc VideoEncDualOutputSample::opDispatch[24] 
     &VideoEncDualOutputSample::DoFreeOutputData,    // 23
 };
 
+void VideoEncDualOutputSample::InvokeOp(int32_t op, int32_t target, FuzzedDataProvider &fdp)
+{
+    if (op == 0 || op == 1 || op == 14) { // 0/1/14: Create*/Destroy
+        (this->*VideoEncDualOutputSample::opDispatch[op])(target, nullptr, fdp);
+        return;
+    }
+    auto lk = LockTarget(target);
+    OH_AVCodec *codec = GetTarget(target);
+    (this->*VideoEncDualOutputSample::opDispatch[op])(target, codec, fdp);
+}
+
 void VideoEncDualOutputSample::ExecuteOp(FuzzedDataProvider &fdp)
 {
     if (fdp.remaining_bytes() < sizeof(int32_t)) {
@@ -537,8 +546,7 @@ void VideoEncDualOutputSample::ExecuteOp(FuzzedDataProvider &fdp)
     }
     int32_t op = fdp.ConsumeIntegralInRange<int32_t>(0, 24 - 1);    // 24: dispatch op count
     int32_t target = fdp.ConsumeIntegralInRange<int32_t>(0, 3 - 1); // 3: target types (primary/secondary/invalid)
-    OH_AVCodec *codec = GetTarget(target);
-    (this->*VideoEncDualOutputSample::opDispatch[op])(target, codec, fdp);
+    InvokeOp(op, target, fdp);
 }
 
 void VideoEncDualOutputSample::Cleanup()
@@ -594,24 +602,27 @@ void VideoEncDualOutputSample::RunFuzzLoop(FuzzedDataProvider &fdp)
             TaskItem task;
             {
                 std::unique_lock<std::mutex> lk(queueMutex);
-                queueCv.wait(lk, [&taskQueue, &producerDone] {
+                bool ready = queueCv.wait_for(lk, WORKER_WAIT_TIMEOUT, [&taskQueue, &producerDone] {
                     return !taskQueue.empty() || producerDone.load();
                 });
                 if (taskQueue.empty() && producerDone.load()) {
                     running = false;
                     continue;
                 }
+                if (!ready && taskQueue.empty()) {
+                    running = false;
+                    continue;
+                }
                 task = std::move(taskQueue.front());
                 taskQueue.pop();
             }
-            OH_AVCodec *codec = GetTarget(std::get<1>(task));
             auto &data = std::get<2>(task);
             FuzzedDataProvider threadFdp(data.data(), data.size());
-            (this->*opDispatch[std::get<0>(task)])(std::get<1>(task), codec, threadFdp);
+            InvokeOp(std::get<0>(task), std::get<1>(task), threadFdp);
         }
     };
     std::thread workerThread(worker);
-    int32_t maxOps = fdp.ConsumeIntegralInRange<int32_t>(1, 30); // 30: max fuzz ops
+    int32_t maxOps = fdp.ConsumeIntegralInRange<int32_t>(1, 30);                           // 30: max fuzz ops
     for (int32_t i = 0; i < maxOps && fdp.remaining_bytes() >= sizeof(int32_t) * 2; i++) { // 2: op + target
         DispatchOneOp(fdp, queueMutex, queueCv, taskQueue);
     }
@@ -638,8 +649,7 @@ void VideoEncDualOutputSample::DispatchOneOp(FuzzedDataProvider &fdp, std::mutex
         }
         cv.notify_one();
     } else {
-        OH_AVCodec *codec = GetTarget(target);
-        (this->*opDispatch[op])(target, codec, fdp);
+        InvokeOp(op, target, fdp);
     }
 }
 

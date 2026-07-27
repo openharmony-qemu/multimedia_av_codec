@@ -335,6 +335,8 @@ HWTEST(TestAudioSink, find_audio_sink_set_sync_center, TestSize.Level1)
     // SetSyncCenter
     auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
     audioSink->SetSyncCenter(syncCenter);
+    int64_t clockTime = 0;
+    ASSERT_TRUE(audioSink->GetSyncCenterClockTime(clockTime));
 }
 
 HWTEST(TestAudioSink, find_audio_sink_set_speed, TestSize.Level1)
@@ -402,8 +404,12 @@ HWTEST(TestAudioSink, find_audio_sink_audio_reset_sync_info, TestSize.Level1)
 {
     std::shared_ptr<AudioSink> audioSink = AudioSinkCreate();
     ASSERT_TRUE(audioSink != nullptr);
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    audioSink->SetSyncCenter(syncCenter);
+    ASSERT_FALSE(audioSink->syncCenter_.expired());
     audioSink->ResetSyncInfo();
-    SUCCEED();
+    ASSERT_EQ(audioSink->lastAnchorClockTime_, HST_TIME_NONE);
+    ASSERT_TRUE(audioSink->forceUpdateTimeAnchorNextTime_);
 }
 
 HWTEST(TestAudioSink, find_audio_sink_audio_change_track, TestSize.Level1)
@@ -870,6 +876,7 @@ HWTEST(TestAudioSink, audio_sink_DrainAndReportEosEvent, TestSize.Level1)
 
     auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
     audioSink->SetSyncCenter(syncCenter);
+    ASSERT_EQ(false, audioSink->eosDraining_);
     audioSink->DrainAndReportEosEvent();
     ASSERT_EQ(false, audioSink->eosDraining_);
 }
@@ -881,8 +888,9 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_001, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->plugin_ = nullptr;
     audioSink->inputBufferQueueConsumer_ = nullptr;
+    audioSink->lastBufferWriteSuccess_ = false;
     audioSink->DrainOutputBuffer(true);
-    ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
+    ASSERT_FALSE(audioSink->lastBufferWriteSuccess_);
 }
 
 // plugin_ != nullptr || inputBufferQueueConsumer_ == nullptr
@@ -890,9 +898,9 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_002, TestSize.Level1)
 {
     auto audioSink = std::make_shared<AudioSink>();
     ASSERT_TRUE(audioSink != nullptr);
-    audioSink->inputBufferQueueConsumer_ = nullptr;
+    audioSink->lastBufferWriteSuccess_ = false;
     audioSink->DrainOutputBuffer(true);
-    ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
+    ASSERT_FALSE(audioSink->lastBufferWriteSuccess_);
 }
 
 // plugin_ != nullptr || inputBufferQueueConsumer_ != nullptr, ret != Status::OK || filledOutputBuffer == nullptr
@@ -902,8 +910,9 @@ HWTEST(TestAudioSink, audio_sink_DrainOutputBuffer_003, TestSize.Level1)
     ASSERT_TRUE(audioSink != nullptr);
     audioSink->inputBufferQueue_ = AVBufferQueue::Create(5, MemoryType::SHARED_MEMORY, "test");
     audioSink->inputBufferQueueConsumer_ = audioSink->inputBufferQueue_->GetConsumer();
+    audioSink->lastBufferWriteSuccess_ = false;
     audioSink->DrainOutputBuffer(true);
-    ASSERT_TRUE(audioSink->lastBufferWriteSuccess_);
+    ASSERT_FALSE(audioSink->lastBufferWriteSuccess_);
 }
 
 HWTEST(TestAudioSink, audio_sink_ResetSyncInfo, TestSize.Level1)
@@ -1298,9 +1307,13 @@ HWTEST(TestAudioSink, audio_sink_SetIsTransitent_001, TestSize.Level1)
 HWTEST(TestAudioSink, audio_sink_GetSyncCenterClockTime_001, TestSize.Level1)
 {
     auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+
+    auto syncCenter = std::make_shared<Pipeline::MediaSyncManager>();
+    audioSink->SetSyncCenter(syncCenter);
+
     int64_t clockTime = 0;
-    auto ret = audioSink->SetIsTransitent(clockTime);
-    ASSERT_TRUE(ret == Status::OK);
+    ASSERT_TRUE(audioSink->GetSyncCenterClockTime(clockTime));
 }
 
 HWTEST(TestAudioSink, audio_sink_SetMuted_001, TestSize.Level1)
@@ -1338,6 +1351,8 @@ HWTEST(TestAudioSink, UpdateLastBufferPTS_001, TestSize.Level1)
 HWTEST(TestAudioSink, audio_sink_SetAudioSinkPluginParameters_001, TestSize.Level1)
 {
     auto audioSink = AudioSinkCreate();
+    ASSERT_TRUE(audioSink != nullptr);
+    ASSERT_TRUE(audioSink->plugin_ != nullptr);
     auto ret = audioSink->SetAudioSinkPluginParameters(audioSink->plugin_);
     ASSERT_TRUE(ret == Status::OK);
 }

@@ -50,6 +50,7 @@ public:
     std::queue<uint32_t> outIdxQueue_;
     std::queue<OH_AVBuffer *> inBufferQueue_;
     std::queue<OH_AVBuffer *> outBufferQueue_;
+    std::queue<bool> isPrimaryQueue_;
 };
 struct fileInfo {
     std::string fileDir;
@@ -68,12 +69,46 @@ typedef struct LtrTestParameter {
     int32_t ltrCount = 0;
 }LtrTestParameter;
 
+typedef struct PreProcessParameter {
+    bool configEnable = false;
+    bool setParameterEnable = false;
+    bool enableCrop = false;
+    bool enableDFrame = false;
+    bool enableDownsampling = false;
+    int32_t cropLeft = 0;
+    int32_t cropRight = 0;
+    int32_t cropTop = 0;
+    int32_t cropBottom = 0;
+    int32_t downsamplingWidth = 0;
+    int32_t downsamplingHeight = 0;
+    double dropFrameRate = 0.00;
+    int32_t cropNum = 4;
+    int32_t downsamplingNum = 2;
+    bool dropFramePtsSame = false;
+}PreProcessParameter;
+
+typedef struct Parameter {
+    bool enableSwitchPrimary = false;
+    bool enableSwitchSecondary = false;
+    bool enableSwitchMode = false;
+    bool enableSwitchParame = false;
+    bool enableSwitchBitParame = false;
+    std::vector<uint32_t> bitrateMode = {};
+    int32_t sqrFactor = 0;
+    int64_t maxBitrate = 0;
+    uint32_t cbrBitrate = 0;
+    uint32_t vbrBitrate = 0;
+    uint32_t cbrHighQuality = 0;
+    OH_HEVCProfile hevcProfile = HEVC_PROFILE_MAIN;
+}Parameter;
+
 class VEncAPI11Sample : public NoCopyable {
 public:
     VEncAPI11Sample() = default;
     ~VEncAPI11Sample();
     const char *INP_DIR = "/data/test/media/1280_720_nv.yuv";
     const char *OUT_DIR = "/data/test/media/VEncTest.h264";
+    const char *OUT_DIR_SEC = "/data/test/media/VEncTest2.h264";
     const char *roiInfo = "0,0-128,64=-4;100,200-300,400=3";
     uint32_t DEFAULT_WIDTH = 1280;
     uint32_t DEFAULT_HEIGHT = 720;
@@ -92,7 +127,28 @@ public:
     uint32_t DEFAULT_COLOR_PRIMARIES = COLOR_PRIMARY_BT709;
     uint32_t DEFAULT_TRANSFER_CHARACTERISTICS = TRANSFER_CHARACTERISTIC_BT709;
     uint32_t DEFAULT_MATRIX_COEFFICIENTS = MATRIX_COEFFICIENT_BT709;
+    uint32_t GOP_REFERENCE_MODE = UNIFORMLY_SCALED_REFERENCE;
     uint32_t repeat_time = 0;
+    bool runDualEncoder = false;
+    PreProcessParameter preProcessParameter;
+    Parameter parameter;
+    int32_t CreatePrimaryEncoder(const char *codecMime);
+    int32_t CreateSecondaryEncoder();
+    int32_t SwitchPrimaryEncoder();
+    int32_t SwitchSecondaryEncoder();
+    int32_t StartSecondaryEncoder();
+    int32_t ReleaseSecondary();
+    int32_t NotifyEndOfStream();
+    int32_t FlushSecondary();
+    int32_t ResetSecondary();
+    int32_t NotifyEndOfStreamSecondary();
+    int32_t StopSecondary();
+    int32_t FlushVideoEncode();
+    int32_t SetDualCallback();
+    int32_t SetCallback();
+    void SwitchParame(size_t index, OH_AVCodec *venc);
+    void SetPreProcessConfigure(OH_AVFormat *format);
+    void SetPreProcessParameter();
     int32_t CreateVideoEncoder(const char *codecName);
     int32_t ConfigureVideoEncoder();
     int32_t ConfigureVideoEncoder_Temporal(int32_t temporal_gop_size);
@@ -141,6 +197,7 @@ public:
     void OutputFunc();
     void SyncOutputFunc();
     uint32_t FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
+    int32_t RequestWindowBuffer(uint32_t time);
     void ReleaseSignal();
     void ReleaseInFile();
     void StopInloop();
@@ -155,10 +212,19 @@ public:
     int32_t QueryOutputBuffer(uint32_t index, int64_t timeoutUs);
     OH_AVBuffer *GetInputBuffer(uint32_t index);
     OH_AVBuffer *GetOutputBuffer(uint32_t index);
+    void GetInputDescription();
+    int32_t PushInputParameter(uint32_t index);
     void SetConfigureEnc(OH_AVFormat *format);
     void FlushStatus();
     void GetVideoSupportedPixelFormats();
     void GetFormatKey();
+    int32_t PushInputBuffer(uint32_t index);
+    int32_t SetRoi(OH_NativeBuffer *nativeBuffer);
+    int32_t ReadFileData(uint8_t *dst, OHNativeWindowBuffer *ohNativeWindowBuffer, int32_t &readFileIndex);
+    void FreeOutputBuffer(FILE *outFile, FILE *outFileSec, OH_AVBuffer *buffer, uint32_t index, int size,
+        bool isPrimary);
+    void SetParame(OH_AVCodec *venc);
+    uint32_t SetNativeWindowFormat(int32_t &index);
     bool isGetVideoSupportedPixelFormats = false;
     bool isGetFormatKey = false;
     int isGetVideoSupportedPixelFormatsNum = 0;
@@ -175,6 +241,7 @@ public:
     uint32_t outCount = 0;
     uint32_t frameCount = 0;
     uint32_t switchParamsTimeSec = 3;
+    uint32_t temporalGopSize = 4;
     bool sleepOnFPS = false;
     bool SURF_INPUT = false;
     bool enableAutoSwitchParam = false;
@@ -187,6 +254,7 @@ public:
     bool repeatRun = false;
     bool showLog = false;
     bool enableLTR = false;
+    bool enableLowLatency = false;
     bool getInputBufferIndexRepeat = false;
     bool abnormalIndexValue = false;
     bool getOutputBufferIndexNoExisted = false;
@@ -202,6 +270,8 @@ public:
     bool TEMPORAL_JUMP_MODE = false;
     bool TEMPORAL_DEFAULT = false;
     bool TEMPORAL_UNIFORMLY = false;
+    bool ENABLE_GOP_SIZE = false;
+    bool TEMPORAL_ENABLE_RUN = false;
     bool getQpMse = false;
     std::vector<fileInfo> fileInfos;
     bool readMultiFiles = false;
@@ -213,11 +283,14 @@ public:
     bool enableRepeat = false;
     bool enableSeekEos = false;
     bool setMaxCount = false;
+    uint32_t repeatHeaderXPS = 0;
+    int32_t maxFrameDelayCount = 5;
     int32_t DEFAULT_FRAME_AFTER = 1;
     int32_t DEFAULT_MAX_COUNT = 1;
     uint32_t inCount = 0;
     int32_t enbleSyncMode = 0;
-    int32_t enbleBFrameMode = 0;
+    int32_t enableBFrameMode = 0;
+    int32_t layerId = 0;
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
@@ -226,6 +299,17 @@ public:
     bool noDestroy = false;
     std::atomic<bool> isRunning_ { false };
     bool isSurface = false;
+    OH_AVCodec *vencPrimary;
+    OH_AVCodec *vencSecondary;
+    int32_t DEFAULT_SQR_FACTOR = 30;
+    int64_t DEFAULT_MAX_BITERATE = 4000000;
+    bool enableRoi = false;
+    bool setParameterFail = false;
+    bool dualEos = false;
+    bool repeatCreateSecondary = false;
+    bool needStopInLoop = false;
+    bool noStop = false;
+    bool enableDualRoi = false;
 private:
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;

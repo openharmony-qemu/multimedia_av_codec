@@ -25,6 +25,7 @@
 #include "meta/video_types.h"
 #include "meta/audio_types.h"
 #include "stream_parser.h"
+#ifdef USE_FF_DEMUXER
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,28 +36,30 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+#endif
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 struct HdrBoxInfo {
     bool haveHdrDoblyVisionBox = false;
     bool haveHdrVividBox = false;
-    bool isHdr = false; // have static metadata or dynamic metadata
 };
 
 class Converter {
 public:
-    static ColorPrimary ConvertFFMpegToOHColorPrimaries(AVColorPrimaries ffColorPrimaries);
-    static TransferCharacteristic ConvertFFMpegToOHColorTrans(AVColorTransferCharacteristic ffColorTrans);
-    static MatrixCoefficient ConvertFFMpegToOHColorMatrix(AVColorSpace ffColorSpace);
-    static int ConvertFFMpegToOHColorRange(AVColorRange ffColorRange);
-    static ChromaLocation ConvertFFMpegToOHChromaLocation(AVChromaLocation ffChromaLocation);
+    static ColorPrimary ConvertFFMpegToOHColorPrimaries(int32_t colorPrimaries);
+    static TransferCharacteristic ConvertFFMpegToOHColorTrans(int32_t colorTransfer);
+    static MatrixCoefficient ConvertFFMpegToOHColorMatrix(int32_t colorSpace);
+    static int32_t ConvertFFMpegToOHColorRange(int32_t colorRange);
+    static ChromaLocation ConvertFFMpegToOHChromaLocation(int32_t chromaLocation);
     static HEVCProfile ConvertToOHHEVCProfile(int ffHEVCProfile);
     static HEVCLevel ConvertToOHHEVCLevel(int ffHEVCLevel);
+#ifdef USE_FF_DEMUXER
     static AudioSampleFormat ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodecID codecId);
     static AudioSampleFormat ConvertFFMpegToOHAudioFormat(AVSampleFormat ffSampleFormat);
     static AudioChannelLayout ConvertFFToOHAudioChannelLayoutV2(uint64_t ffChannelLayout, int channels);
     static AudioChannelLayout ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels);
+#endif
     static void ParseColorBoxInfo(HevcParseFormat parse, Meta &format);
     static void ParseHdrTypeInfo(HdrBoxInfo hdrBoxInfo, Meta &format, HevcParseFormat parse);
     static std::string ToLower(const std::string& str);

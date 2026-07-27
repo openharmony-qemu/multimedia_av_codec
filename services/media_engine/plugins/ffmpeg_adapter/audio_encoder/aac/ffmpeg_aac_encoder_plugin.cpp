@@ -21,9 +21,11 @@
 #include <string>
 #include "avcodec_codec_name.h"
 #include "common/log.h"
+#include "common/pcm_convert.h"
 #include "avcodec_log.h"
 #include "osal/utils/util.h"
 #include "avcodec_common.h"
+#include "meta/mime_type.h"
 
 namespace {
 using namespace OHOS::Media;
@@ -51,6 +53,7 @@ constexpr int32_t CORRECTION_BIT_RATE = 70000;
 constexpr int64_t US_PER_SECOND = 1000000;
 constexpr int32_t CORRECTION_CHANNEL_COUNT = 2;
 constexpr float Q_SCALE = 1.2f;
+constexpr int32_t MAX_INPUT_BUFFER_SIZE_LIMIT = 10 * 1024 * 1024;  // 10MB
 static std::map<int32_t, uint8_t> sampleFreqMap = {{96000, 0},  {88200, 1}, {64000, 2}, {48000, 3}, {44100, 4},
                                                    {32000, 5},  {24000, 6}, {22050, 7}, {16000, 8}, {12000, 9},
                                                    {11025, 10}, {8000, 11}, {7350, 12}};
@@ -60,6 +63,15 @@ static std::set<AudioSampleFormat> supportedSampleFormats = {
     AudioSampleFormat::SAMPLE_S32LE,
     AudioSampleFormat::SAMPLE_F32LE,
 };
+
+static std::set<AudioSampleFormat> extendSampleFormats = {
+    AudioSampleFormat::SAMPLE_U8,
+    AudioSampleFormat::SAMPLE_S16LE,
+    AudioSampleFormat::SAMPLE_S24LE,
+    AudioSampleFormat::SAMPLE_S32LE,
+    AudioSampleFormat::SAMPLE_F32LE,
+};
+
 static std::map<int32_t, uint64_t> channelLayoutMap = {{1, AV_CH_LAYOUT_MONO},         {2, AV_CH_LAYOUT_STEREO},
                                                        {3, AV_CH_LAYOUT_SURROUND},     {4, AV_CH_LAYOUT_4POINT0},
                                                        {5, AV_CH_LAYOUT_5POINT0_BACK}, {6, AV_CH_LAYOUT_5POINT1_BACK},
@@ -129,14 +141,35 @@ bool FFmpegAACEncoderPlugin::CheckSampleRate(const int sampleRate)
 
 bool FFmpegAACEncoderPlugin::CheckSampleFormat()
 {
-    if (supportedSampleFormats.find(audioSampleFormat_) == supportedSampleFormats.end()) {
-        MEDIA_LOG_E("input sample format not supported,srcFmt_=%{public}d", (int32_t)srcFmt_);
+    if (!isEnableFormatConvert_ &&
+        supportedSampleFormats.find(audioSampleFormat_) == supportedSampleFormats.end()) {
+        MEDIA_LOG_E("input sample format not support:%{public}d", static_cast<int32_t>(audioSampleFormat_));
         return false;
     }
-    AudioSampleFormat2AVSampleFormat(audioSampleFormat_, srcFmt_);
+    if (isEnableFormatConvert_ &&
+        extendSampleFormats.find(audioSampleFormat_) == extendSampleFormats.end()) {
+        MEDIA_LOG_E("enable convert but input sample format not support:=%{public}d",
+            static_cast<int32_t>(audioSampleFormat_));
+        return false;
+    }
+    convertSampleFormat_ = audioSampleFormat_;
+    int32_t bytesPerSample = GetPcmBytesPerSample(audioSampleFormat_);
+    if (bytesPerSample == 0) {
+        MEDIA_LOG_E("get bytes per sample fail from:%{public}d", static_cast<int32_t>(audioSampleFormat_));
+        return false;
+    }
+    originSampleByte_ = bytesPerSample;
+    // 输入U8和S24LE时转换成S32LE再给ffmpeg处理
+    if (isEnableFormatConvert_ && (audioSampleFormat_ == AudioSampleFormat::SAMPLE_U8
+        || audioSampleFormat_ == AudioSampleFormat::SAMPLE_S24LE)) {
+        convertSampleFormat_ = AudioSampleFormat::SAMPLE_F32LE;
+        MEDIA_LOG_I("need extend convert sample format");
+    }
+    // 这里修改了srcFmt_用作ffmpeg认为的原始sample format
+    AudioSampleFormat2AVSampleFormat(convertSampleFormat_, srcFmt_);
     MEDIA_LOG_E("AUDIO_SAMPLE_FORMAT found,srcFmt:%{public}d to "
                 "ffmpeg-srcFmt_:%{public}d ",
-                (int32_t)audioSampleFormat_, (int32_t)srcFmt_);
+                (int32_t)convertSampleFormat_, (int32_t)srcFmt_);
     needResample_ = CheckResample();
     return true;
 }
@@ -263,7 +296,7 @@ Status FFmpegAACEncoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
                 return Status::ERROR_INVALID_DATA;
             }
             bufferMeta_ = inputBuffer->meta_;
-            if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstInputPts_) {
+            if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstInputPts_) {
                 prevPts_ = inputBuffer->pts_;
                 isFirstInputPts_ = false;
             }
@@ -319,7 +352,7 @@ Status FFmpegAACEncoderPlugin::ReceivePacketSucc(std::shared_ptr<AVBuffer> &outB
     // how get perfect pts with upstream pts(us)
     outBuffer->duration_ = ConvertTimeFromFFmpeg(avPacket_->duration, avCodecContext_->time_base) / NS_PER_US;
     // adjust ffmpeg duration with sample rate
-    if (ptsMode_ == GENERATE_ENCODE_PTS_BY_INPUT_MODE && isFirstOutputPts_) {
+    if (ptsMode_ == FIRST_INPUT_START_ENCODE_PTS_MODE && isFirstOutputPts_) {
         outBuffer->pts_ = prevPts_ - (initPadding_ * US_PER_SECOND / sampleRate_);
         MEDIA_LOG_I("corrected outBuffer->pts_: %{public}" PRIu64 ".", outBuffer->pts_);
         isFirstOutputPts_ = false;
@@ -414,6 +447,8 @@ Status FFmpegAACEncoderPlugin::Reset()
     ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
     isFirstInputPts_ = true;
     isFirstOutputPts_ = true;
+    isEnableFormatConvert_ = false;
+    convertSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
     return ret;
 }
 
@@ -595,7 +630,6 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
 {
     int32_t type;
     int32_t aacProfile;
-    AudioChannelLayout channelLayout;
     if (meta->Get<Tag::MEDIA_PROFILE>(aacProfile)) {
         if (aacProfile != AAC_PROFILE_LC) {
             MEDIA_LOG_E("this plugin only support LC-AAC, input profile:%{public}d", aacProfile);
@@ -626,6 +660,12 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         MEDIA_LOG_E("no MEDIA_BITRATE, set to 32k");
         bitRate_ = AAC_DEFAULT_BIT_RATE;
     }
+    return GetMetaAdvance(meta);
+}
+
+Status FFmpegAACEncoderPlugin::GetMetaAdvance(const std::shared_ptr<Meta> &meta)
+{
+    AudioChannelLayout channelLayout;
     if (meta->Get<Tag::AUDIO_SAMPLE_FORMAT>(audioSampleFormat_)) {
         MEDIA_LOG_D("AUDIO_SAMPLE_FORMAT found, srcFmt:%{public}d", audioSampleFormat_);
     } else {
@@ -635,12 +675,21 @@ Status FFmpegAACEncoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
     if (meta->Get<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_)) {
         MEDIA_LOG_I("maxInputSize: %{public}d", maxInputSize_);
     }
+    if (meta->Get<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(maxInputBufferSize_)) {
+        if (maxInputBufferSize_ > MAX_INPUT_BUFFER_SIZE_LIMIT) {
+            maxInputBufferSize_ = MAX_INPUT_BUFFER_SIZE_LIMIT;
+        }
+        MEDIA_LOG_I("maxInputBufferSize: %{public}d", maxInputBufferSize_);
+    }
     if (meta->Get<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout)) {
         srcLayout_ = FFMpegConverter::ConvertOHAudioChannelLayoutToFFMpeg(channelLayout);
     } else {
         srcLayout_ = channelLayoutMap.at(channels_);
     }
     MEDIA_LOG_I("srcLayout_: " PUBLIC_LOG_U64, srcLayout_);
+    if (meta->Get<Tag::AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT>(isEnableFormatConvert_)) {
+        MEDIA_LOG_I("set format convert:%{public}d", static_cast<int32_t>(isEnableFormatConvert_));
+    }
     return Status::OK;
 }
 
@@ -675,8 +724,14 @@ Status FFmpegAACEncoderPlugin::GetParameter(std::shared_ptr<Meta> &meta)
     maxOutputSize_ = OUTPUT_BUFFER_SIZE_DEFAULT;
     MEDIA_LOG_I("GetParameter maxInputSize_: %{public}d", maxInputSize_);
     // add codec meta
-    audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
+    if (maxInputBufferSize_ > 0) {
+        audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputBufferSize_);
+    } else {
+        audioParameter_.Set<Tag::AUDIO_MAX_INPUT_SIZE>(maxInputSize_);
+    }
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
+    audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(convertSampleFormat_);
+    audioParameter_.Set<Tag::MIME_TYPE>(MimeType::AUDIO_AAC);
     *meta = audioParameter_;
     return Status::OK;
 }
@@ -694,6 +749,7 @@ Status FFmpegAACEncoderPlugin::InitFrame()
     if (!(fifo_ = av_audio_fifo_alloc(
         avCodecContext_->sample_fmt, avCodecContext_->ch_layout.nb_channels, cachedFrame_->nb_samples))) {
         MEDIA_LOG_E("Could not allocate FIFO");
+        return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
 }
@@ -781,12 +837,22 @@ Status FFmpegAACEncoderPlugin::SendFrameToFfmpeg()
 
 Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inputBuffer)
 {
+    CHECK_AND_RETURN_RET_LOG(fifo_ != nullptr, Status::ERROR_UNKNOWN, "fifo_ is nullptr.");
     MEDIA_LOG_D("PcmFillFrame enter, buffer->pts" PUBLIC_LOG_D64, inputBuffer->pts_);
     auto memory = inputBuffer->memory_;
     auto bytesPerSample = av_get_bytes_per_sample(avCodecContext_->sample_fmt);
     const uint8_t *srcBuffer = memory->GetAddr();
-    uint8_t *destBuffer = const_cast<uint8_t *>(srcBuffer);
     size_t srcBufferSize = static_cast<size_t>(memory->GetSize());
+    std::vector<uint8_t> tmpBuffer;
+    if (isEnableFormatConvert_ && audioSampleFormat_ != convertSampleFormat_) {
+        size_t inputSampleCnt = srcBufferSize / static_cast<size_t>(originSampleByte_);
+        // 转成F32LE有4 bytes
+        srcBufferSize = sizeof(int32_t) * inputSampleCnt;
+        tmpBuffer.resize(srcBufferSize);
+        ConvertPcmSampleFormat(srcBuffer, inputSampleCnt, audioSampleFormat_, convertSampleFormat_, tmpBuffer.data());
+        srcBuffer = tmpBuffer.data();
+    }
+    uint8_t *destBuffer = const_cast<uint8_t *>(srcBuffer);
     size_t destBufferSize = srcBufferSize;
     uint32_t destSamplesPerFrame;
     if (needResample_ && resample_ != nullptr) {
@@ -797,16 +863,8 @@ Status FFmpegAACEncoderPlugin::PcmFillFrame(const std::shared_ptr<AVBuffer> &inp
 
     cachedFrame_->nb_samples =
         static_cast<int>(destBufferSize) / (bytesPerSample * avCodecContext_->ch_layout.nb_channels);
-    if (!(inputBuffer->flag_ & BUFFER_FLAG_EOS) && cachedFrame_->nb_samples != avCodecContext_->frame_size) {
-        MEDIA_LOG_D("Input frame size not match, input samples: %{public}d, "
-                    "frame_size: %{public}d",
-                    cachedFrame_->nb_samples, avCodecContext_->frame_size);
-    }
-    if (needResample_ && resample_ != nullptr) {
-        destSamplesPerFrame = resample_->GetSampleOffset();
-    } else {
-        destSamplesPerFrame = static_cast<uint32_t>(cachedFrame_->nb_samples);
-    }
+    destSamplesPerFrame = ((needResample_ && resample_ != nullptr) ? resample_->GetSampleOffset() :
+        static_cast<uint32_t>(cachedFrame_->nb_samples));
     cachedFrame_->extended_data = cachedFrame_->data;
     cachedFrame_->extended_data[0] = destBuffer;
     cachedFrame_->linesize[0] = cachedFrame_->nb_samples * bytesPerSample;

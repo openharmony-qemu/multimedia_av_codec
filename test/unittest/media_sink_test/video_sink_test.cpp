@@ -87,15 +87,19 @@ HWTEST_F(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     ASSERT_TRUE(buffer != nullptr);
     buffer->flag_ = 0; // not eos
     int64_t actionClock = 0;
-    videoSink_->DoSyncWrite(buffer, actionClock);
+    int64_t writeResult = videoSink_->DoSyncWrite(buffer, actionClock);
+    ASSERT_TRUE(writeResult >= 0);
     buffer->flag_ = BUFFER_FLAG_EOS;
-    videoSink_->DoSyncWrite(buffer, actionClock);
+    writeResult = videoSink_->DoSyncWrite(buffer, actionClock);
+    ASSERT_EQ(writeResult, -1);
     buffer->pts_ = 1;
     videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
-    (void)videoSink_->CheckBufferLatenessMayWait(buffer, 1);
+    bool lateResult = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
+    ASSERT_TRUE(lateResult == 0 || lateResult == 1);
     float speed = 0;
-    videoSink_->AdjustPlaybackRate(speed);
+    float rateResult = videoSink_->AdjustPlaybackRate(speed);
+    ASSERT_TRUE(rateResult >= 0.0f);
 }
 
 HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
@@ -121,17 +125,21 @@ HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
     ASSERT_TRUE(buffer != nullptr);
     buffer->flag_ = 0; // not eos
     int64_t actionClock = 0;
-    videoSink_->DoSyncWrite(buffer, actionClock);
+    int64_t writeResult = videoSink_->DoSyncWrite(buffer, actionClock);
+    ASSERT_TRUE(writeResult >= 0);
     const std::shared_ptr<AVBuffer> buffer2 = AVBuffer::CreateAVBuffer(config);
     ASSERT_TRUE(buffer2 != nullptr);
     buffer->flag_ = 0; // not eos
-    videoSink_->DoSyncWrite(buffer2, actionClock);
+    writeResult = videoSink_->DoSyncWrite(buffer2, actionClock);
+    ASSERT_TRUE(writeResult >= 0);
     buffer->pts_ = 1;
     videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
-    (void)videoSink_->CheckBufferLatenessMayWait(buffer, 1);
+    bool lateResult = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
+    ASSERT_TRUE(lateResult == 0 || lateResult == 1);
     float speed = 0;
-    videoSink_->AdjustPlaybackRate(speed);
+    float rateResult = videoSink_->AdjustPlaybackRate(speed);
+    ASSERT_TRUE(rateResult >= 0.0f);
 }
 
 HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
@@ -157,16 +165,21 @@ HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
     ASSERT_TRUE(buffer != nullptr);
     buffer->flag_ = 1; // eos
     int64_t actionClock = 0;
-    videoSink_->DoSyncWrite(buffer, actionClock);
-    videoSink_->DoSyncWrite(buffer, actionClock);
+    int64_t writeResult = videoSink_->DoSyncWrite(buffer, actionClock);
+    ASSERT_EQ(writeResult, -1);
+    writeResult = videoSink_->DoSyncWrite(buffer, actionClock);
+    ASSERT_EQ(writeResult, -1);
     buffer->flag_ = BUFFER_FLAG_EOS;
-    videoSink_->DoSyncWrite(buffer, actionClock);
+    writeResult = videoSink_->DoSyncWrite(buffer, actionClock);
+    ASSERT_EQ(writeResult, -1);
     buffer->pts_ = 1;
     videoSink_->lastBufferAnchoredClockTime_ = 1;
     videoSink_->seekFlag_ = false;
-    (void)videoSink_->CheckBufferLatenessMayWait(buffer, 1);
+    bool lateResult = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
+    ASSERT_TRUE(lateResult == 0 || lateResult == 1);
     float speed = 0;
-    videoSink_->AdjustPlaybackRate(speed);
+    float rateResult = videoSink_->AdjustPlaybackRate(speed);
+    ASSERT_TRUE(rateResult >= 0.0f);
 }
 
 HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_001, TestSize.Level1)
@@ -294,6 +307,60 @@ HWTEST_F(TestVideoSink, ReportPts_001, TestSize.Level0)
     videoSink_->SetLastPts(lastPts, 0);
     EXPECT_EQ(videoSink_->lastPts_, lastPts);
     videoSink_->ReportPts(nowPts);
+}
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_001, TestSize.Level0)
+{
+    videoSink_->avSyncDetector_.CheckSync(300000, 0);
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 1);
+    EXPECT_EQ(totalSyncDurationMs, 0);
+}
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_002, TestSize.Level0)
+{
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.CheckSync(300000, 0);
+    videoSink_->avSyncDetector_.CheckSync(300000, 1);
+    videoSink_->avSyncDetector_.CheckSync(300000, 2000000);
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 1);
+    EXPECT_EQ(totalSyncDurationMs, 2000);
+}
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_003, TestSize.Level0)
+{
+    videoSink_->avSyncDetector_.CheckSync(300, 0);
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 0);
+    EXPECT_EQ(totalSyncDurationMs, 0);
+}
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_004, TestSize.Level0)
+{
+    videoSink_->avSyncDetector_.CheckSync(300000, 0);
+    videoSink_->avSyncDetector_.CheckSync(300, 1000);
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 1);
+    EXPECT_EQ(totalSyncDurationMs, 1);
+}
+
+HWTEST_F(TestVideoSink, GetAVSyncInfo_005, TestSize.Level0)
+{
+    videoSink_->avSyncDetector_.CheckSync(300000, 1000);
+    videoSink_->avSyncDetector_.CheckSync(300, 0);
+    int64_t syncCount = -1;
+    int64_t totalSyncDurationMs = -1;
+    videoSink_->avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    EXPECT_EQ(syncCount, 1);
+    EXPECT_EQ(totalSyncDurationMs, 0);
 }
 }  // namespace Test
 }  // namespace Media

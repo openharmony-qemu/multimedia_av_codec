@@ -30,14 +30,30 @@
 #include "media_downloader.h"
 #include "common/media_source.h"
 #include "common/media_core.h"
+#include "common/event.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+enum LoadingRequestStage : int32_t {
+    LOADING_STAGE_CONNECTION = 0,
+    LOADING_STAGE_PLAYLIST = 1,
+    LOADING_STAGE_MEDIA_DATA = 2,
+};
+
 struct RetryRequest {
     std::shared_ptr<DownloadRequest> request;
     std::function<void()> function;
+};
+
+struct NetworkErrorInfo {
+    std::string url_;
+    int32_t clientErrorCode_;
+    int32_t serverErrorCode_;
+    RequestType requestType_;
+    bool isClient_;
 };
 
 class DownloadMonitor : public MediaDownloader, public std::enable_shared_from_this<DownloadMonitor> {
@@ -105,9 +121,17 @@ private:
     int64_t HttpMonitorLoop();
     void OnDownloadStatus(std::shared_ptr<Downloader>& downloader, std::shared_ptr<DownloadRequest>& request);
     bool NeedRetry(const std::shared_ptr<DownloadRequest>& request);
-    void NotifyError(int32_t clientErrorCode, int32_t serverErrorCode);
+    void ReportErrorAndClose(const std::shared_ptr<DownloadRequest>& request,
+        int32_t clientError, int32_t serverError);
+    bool CheckRetryLimitReached(int32_t clientError, int32_t retryTimes);
+    void NotifyError(NetworkErrorInfo networkErrorInfo);
+    void ReportLoadingErrorEvent(const std::shared_ptr<DownloadRequest>& request,
+        int32_t clientErrorCode, int32_t serverErrorCode);
     void GetServerMediaServiceErrorCode(int32_t errorCode, int32_t& serverCode);
     void GetClientMediaServiceErrorCode(int32_t errorCode, int32_t& clientCode);
+    NetworkErrorInfo BuildNetworkErrorInfo(const std::shared_ptr<DownloadRequest>& request);
+    std::string BuildErrorDescription(const NetworkErrorInfo& networkErrorInfo);
+    std::string MaskUrl(const std::string& url);
 
     std::atomic<bool> isClosed_{false};
     std::shared_ptr<MediaDownloader> downloader_;
@@ -118,7 +142,8 @@ private:
     std::weak_ptr<Callback> callback_;
     Mutex taskMutex_ {};
     uint64_t haveReadData_ {0};
-    bool isNeedClearBuffer_ {false};
+    std::atomic<bool> isNeedClearBuffer_ {false};
+    std::atomic<bool> isFirstRequest_ {true};
 
     std::map<int32_t, MediaServiceErrCode> clientErrorCodeMap_ = {
         {-6, MediaServiceErrCode::MSERR_IO_SSL_SERVER_CERT_UNTRUSTED},

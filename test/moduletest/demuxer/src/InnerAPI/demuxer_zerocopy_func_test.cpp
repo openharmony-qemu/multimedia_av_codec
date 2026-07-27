@@ -51,18 +51,29 @@ protected:
             : pluginName(name), fileName(file), frameCnt(std::move(cnt)), keyFrameCnt(std::move(keyCnt)) {}
     } TestFileInfo;
 
+    typedef struct TestFrameCount {
+        vector<uint32_t> frameCnt;
+        vector<uint32_t> keyFrameCnt;
+        TestFrameCount(vector<uint32_t> &&cnt, vector<uint32_t> &&keyCnt)
+            : frameCnt(std::move(cnt)), keyFrameCnt(std::move(keyCnt)) {}
+    } TestFrameCount;
+
 private:
     bool CreateDataSource(const std::string& filePath);
     bool CreateDemuxerPluginByName(const std::string& typeName, const std::string& filePath, int probSize);
     bool PluginSelectTracks();
-    bool PluginReadSample(uint32_t idx, uint32_t& flag);
+    bool PluginReadSample(uint32_t idx, uint32_t& flag, bool emptyBuffer);
     void CountFrames(uint32_t index, uint32_t flag);
     void SetEosValue();
     bool isEOS(std::map<uint32_t, bool>& countFlag);
     void RemoveValue();
     bool ResultAssert(std::vector<uint32_t> &framesExpect, std::vector<uint32_t> &keyFramesExpect);
-    bool PluginReadAllSample();
+    bool PluginReadAllSample(bool emptyBuffer = true);
     bool PluginCheckDemuxerResult(TestFileInfo info);
+    bool CreateDemuxerPluginByNameWithConfig(const std::string& typeName, const std::string& filePath,
+        std::shared_ptr<Media::Meta>& configs);
+    bool PluginSeekTo(int64_t seekTime, SeekMode mode, bool emptyBuffer);
+    bool CheckAttr();
 
     int streamId_ = 0;
     std::map<uint32_t, uint32_t> frames_;
@@ -75,10 +86,13 @@ private:
     std::shared_ptr<Media::MediaSource> mediaSource_{ nullptr };
     std::shared_ptr<Media::Source> realSource_{ nullptr };
     std::shared_ptr<Media::PluginBase> pluginBase_{ nullptr };
+    std::shared_ptr<Media::DemuxerPlugin> demuxerPlugin_{ nullptr };
 };
 
+static const int BUFFER_PADDING_SIZE = 1024;
 static const int DEF_PROB_SIZE = 16 * 1024;
 uint32_t TIMEOUT = 10000;
+constexpr int32_t THOUSAND = 1000.0;
 static unique_ptr<FileServerDemo> SERVER{nullptr };
 
 static const std::string DEMUXER_PLUGIN_NAME_AAC = "avdemux_aac";
@@ -237,6 +251,18 @@ static const string TEST_FILE_LOCAL_TRP = TEST_FILE_PATH + "mpeg2_mp3.trp";
 static const string TEST_FILE_URI_TRP = TEST_URI_FILE_PATH + "mpeg2_mp3.trp";
 static const string TEST_FILE_LOCAL_RMVB = TEST_FILE_PATH + "rv40_cook.rmvb";
 static const string TEST_FILE_URI_RMVB = TEST_URI_FILE_PATH + "rv40_cook.rmvb";
+static const string TEST_FILE_LOCAL_24K_MP3 = TEST_FILE_PATH + "audio/MP3_24K_1.mp3";
+static const string TEST_FILE_LOCAL_48000_MP3 = TEST_FILE_PATH + "audio/MP3_48000_1.mp3";
+static const string TEST_FILE_LOCAL_16K_MP3 = TEST_FILE_PATH + "audio/MP3_16K_2.mp3";
+static const string TEST_FILE_LOCAL_8K_MP3 = TEST_FILE_PATH + "audio/MP3_8K_1.mp3";
+static const string TEST_FILE_LOCAL_B_GOP_MP4 = TEST_FILE_PATH + "test_265_B_Gop25_4sec.mp4";
+static const string TEST_FILE_LOCAL_ADPCM_G722_WAV = TEST_FILE_PATH + "ADPCM_G722.wav";
+static const string TEST_FILE_LOCAL_ADPCM_G726_WAV = TEST_FILE_PATH + "ADPCM_G726.wav";
+static const string TEST_FILE_LOCAL_ADPCM_IMA_WAV = TEST_FILE_PATH + "adpcm_ima_wav.wav";
+static const string TEST_FILE_LOCAL_ADPCM_MS_WAV = TEST_FILE_PATH + "adpcm_ms.wav";
+static const string TEST_FILE_LOCAL_ADPCM_YAMAHA_WAV = TEST_FILE_PATH + "adpcm_yamaha.wav";
+static const string TEST_FILE_LOCAL_PCM_WAV = TEST_FILE_PATH + "audio/WAV_24K_32b_1.wav";
+static const string TEST_FILE_LOCAL_ALAW_WAV = TEST_FILE_PATH + "audio/wav_alaw.wav";
 
 void DemuxerZerocopyInnerFuncTest::SetUpTestCase(void)
 {
@@ -290,9 +316,9 @@ bool DemuxerZerocopyInnerFuncTest::CreateDemuxerPluginByName(const std::string& 
         printf("false return: pluginBase_ == nullptr\n");
         return false;
     }
-    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    if (!(demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) == Status::OK)) {
-        printf("false return: demuxerPlugin->SetDataSourceWithProbSize(dataSourceImpl_, probSize) != Status::OK\n");
+    demuxerPlugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    if (!(demuxerPlugin_->SetDataSourceWithProbSize(dataSourceImpl_, probSize) == Status::OK)) {
+        printf("false return: demuxerPlugin_->SetDataSourceWithProbSize(dataSourceImpl_, probSize) != Status::OK\n");
         return false;
     }
     realStreamDemuxer_->SetDemuxerState(streamId_, DemuxerState::DEMUXER_STATE_PARSE_FIRST_FRAME);
@@ -300,11 +326,32 @@ bool DemuxerZerocopyInnerFuncTest::CreateDemuxerPluginByName(const std::string& 
     return true;
 }
 
+bool DemuxerZerocopyInnerFuncTest::CreateDemuxerPluginByNameWithConfig(const std::string& typeName,
+    const std::string& filePath, std::shared_ptr<Media::Meta>& configs)
+{
+    if (!CreateDataSource(filePath)) {
+        printf("false return: CreateDataSource is fail\n");
+        return false;
+    }
+    pluginBase_ = Plugins::PluginManagerV2::Instance().CreatePluginByName(typeName);
+    if (!(pluginBase_ != nullptr)) {
+        printf("false return: pluginBase_ == nullptr\n");
+        return false;
+    }
+    demuxerPlugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    if (!(demuxerPlugin_->SetDataSource(dataSourceImpl_, configs) == Status::OK)) {
+        printf("false return: demuxerPlugin_->SetDataSource(dataSourceImpl_, configs) != Status::OK\n");
+        return false;
+    }
+
+    return true;
+}
+
 bool DemuxerZerocopyInnerFuncTest::PluginSelectTracks()
 {
     MediaInfo mediaInfo;
-    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    if (!(demuxerPlugin->GetMediaInfo(mediaInfo) == Status::OK)) {
+    demuxerPlugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    if (!(demuxerPlugin_->GetMediaInfo(mediaInfo) == Status::OK)) {
         printf("false return: demuxerPlugin->GetMediaInfo(mediaInfo) != Status::OK\n");
         return false;
     }
@@ -321,7 +368,7 @@ bool DemuxerZerocopyInnerFuncTest::PluginSelectTracks()
         if (mime.find("meta/") == 0) {
             printf("the meta track id is %d\n", i);
         }
-        demuxerPlugin->SelectTrack(static_cast<uint32_t>(i));
+        demuxerPlugin_->SelectTrack(static_cast<uint32_t>(i));
         selectedTrackIds_.push_back(static_cast<uint32_t>(i));
         frames_[i] = 0;
         keyFrames_[i] = 0;
@@ -331,19 +378,36 @@ bool DemuxerZerocopyInnerFuncTest::PluginSelectTracks()
     return true;
 }
 
-bool DemuxerZerocopyInnerFuncTest::PluginReadSample(uint32_t idx, uint32_t& flag)
+bool DemuxerZerocopyInnerFuncTest::PluginReadSample(uint32_t idx, uint32_t& flag, bool emptyBuffer)
 {
-    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
-    auto avBuf = AVBuffer::CreateAVBuffer();
-    if (!(avBuf != nullptr)) {
-        printf("false return: avBuf == nullptr\n");
-        return false;
+    if (emptyBuffer) {
+        auto avEmptyBuf = AVBuffer::CreateAVBuffer();
+        if (!(avEmptyBuf != nullptr)) {
+            printf("false return: avEmptyBuf == nullptr\n");
+            return false;
+        }
+        if (demuxerPlugin_->ReadSampleZeroCopy(idx, avEmptyBuf, TIMEOUT) != Status::OK) {
+            printf("false return: ReadSampleZeroCopy failed\n");
+            return false;
+        }
+        flag = avEmptyBuf->flag_;
+    } else {
+        int bufSize = 0;
+        demuxerPlugin_->GetNextSampleSize(idx, bufSize);
+        if (bufSize > buffer_.size()) {
+            buffer_.resize(bufSize + BUFFER_PADDING_SIZE);
+        }
+        auto avBuf = AVBuffer::CreateAVBuffer(buffer_.data(), bufSize, bufSize);
+        if (!(avBuf != nullptr)) {
+            printf("false return: avBuf == nullptr\n");
+            return false;
+        }
+        if (demuxerPlugin_->ReadSample(idx, avBuf) != Status::OK) {
+            printf("false return: ReadSample failed\n");
+            return false;
+        }
+        flag = avBuf->flag_;
     }
-    if (demuxerPlugin->ReadSampleZeroCopy(idx, avBuf, TIMEOUT) != Status::OK) {
-        printf("false return: ReadSampleZeroCopy failed\n");
-        return false;
-    }
-    flag = avBuf->flag_;
 
     return true;
 }
@@ -415,12 +479,24 @@ bool DemuxerZerocopyInnerFuncTest::ResultAssert(std::vector<uint32_t> &framesExp
     return true;
 }
 
-bool DemuxerZerocopyInnerFuncTest::PluginReadAllSample()
+bool DemuxerZerocopyInnerFuncTest::PluginSeekTo(int64_t seekTime, SeekMode mode, bool emptyBuffer)
+{
+    int64_t realSeekTime = 0;
+    auto demuxerPlugin = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    if (!(demuxerPlugin->SeekTo(0, seekTime / THOUSAND, mode, realSeekTime) == Status::OK)) {
+        printf("false return: demuxerPlugin->SeekTo(0, seekTime / THOUSAND, mode, realSeekTime) != Status::OK\n");
+        return false;
+    }
+    PluginReadAllSample(emptyBuffer);
+    return true;
+}
+
+bool DemuxerZerocopyInnerFuncTest::PluginReadAllSample(bool emptyBuffer)
 {
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
             uint32_t flag = 0;
-            if (!PluginReadSample(idx, flag)) {
+            if (!PluginReadSample(idx, flag, emptyBuffer)) {
                 printf("false return: PluginReadSample(idx, flag) is fail\n");
                 return false;
             }
@@ -446,6 +522,43 @@ bool DemuxerZerocopyInnerFuncTest::PluginCheckDemuxerResult(TestFileInfo info)
         return false;
     }
     RemoveValue();
+    return true;
+}
+
+bool DemuxerZerocopyInnerFuncTest::CheckAttr()
+{
+    MediaInfo mediaInfo;
+    demuxerPlugin_->GetMediaInfo(mediaInfo);
+    string album;
+    mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
+    if (album != "") {
+        return false;
+    }
+    string artist;
+    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
+    if (artist != "") {
+        return false;
+    }
+    string date;
+    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
+    if (date != "") {
+        return false;
+    }
+    string encoder;
+    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
+    if (encoder != "") {
+        return false;
+    }
+    string genre;
+    mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
+    if (genre != "") {
+        return false;
+    }
+    string title;
+    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
+    if (title != "") {
+        return false;
+    }
     return true;
 }
 
@@ -533,38 +646,6 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_ZEROCOPY_INNER_FUNC_0002, TestSiz
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_URI_TRUEHD, {5513}, {345}}));
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_LOCAL_MSVIDEO1, {98}, {4}}));
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MATROSKA, TEST_FILE_URI_MSVIDEO1, {98}, {4}}));
-}
-
-/**
- * @tc.number    : DEMUXER_ZEROCOPY_INNER_FUNC_0003
- * @tc.name      : create empty buffer for read, local and uri, mp4
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_ZEROCOPY_INNER_FUNC_0003, TestSize.Level2)
-{
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_HDRVIVID_AV3A,
-        {26, 44}, {1, 44}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_HDRVIVID_AV3A, {26, 44}, {1, 44}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MPEG4_AAC, {2, 2}, {1, 2}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MPEG4_AAC, {2, 2}, {1, 2}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_VVC, {254}, {4}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_VVC, {254}, {4}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_PREY_DEPTH,
-        {16, 77, 77}, {1, 3, 3}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_PREY_DEPTH,
-        {16, 77, 77}, {1, 3, 3}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_META,
-        {210, 211, 210}, {210, 211, 210}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_META,
-        {210, 211, 210}, {210, 211, 210}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_AAC,
-        {431, 431, 431, 231}, {431, 431, 431, 231}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_AAC,
-        {431, 431, 431, 231}, {431, 431, 431, 231}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_MP3,
-        {417, 417, 417, 223}, {417, 417, 417, 223}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_MP3,
-        {417, 417, 417, 223}, {417, 417, 417, 223}}));
 }
 
 /**
@@ -933,6 +1014,325 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_ZEROCOPY_INNER_FUNC_0031, TestSiz
 {
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_RM, TEST_FILE_LOCAL_RMVB, {251, 480}, {2, 480}}));
     ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_RM, TEST_FILE_URI_RMVB, {251, 480}, {2, 480}}));
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0001
+ * @tc.name      : fast init, mp3, 24k
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0001, TestSize.Level0)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_24K_MP3, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{9151}, {9151}};
+    TestFrameCount seekFrameCount = {{8}, {8}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(219408000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0002
+ * @tc.name      : fast init, mp3, 48000k
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0002, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_48000_MP3, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{9150}, {9150}};
+    TestFrameCount seekFrameCount = {{8}, {8}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(219408000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0003
+ * @tc.name      : fast init, mp3, 16k
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0003, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_16K_MP3, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{6101}, {6101}};
+    TestFrameCount seekFrameCount = {{7}, {7}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(219348000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0004
+ * @tc.name      : fast init, mp3, 8K
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0004, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MP3, TEST_FILE_LOCAL_8K_MP3, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{3052}, {3052}};
+    TestFrameCount seekFrameCount = {{6}, {6}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(219240000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0005
+ * @tc.name      : fast init, mp4
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0005, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_B_GOP_MP4, configs));
+    MediaInfo mediaInfo;
+    demuxerPlugin_->GetMediaInfo(mediaInfo);
+    string album;
+    mediaInfo.general.GetData(Tag::MEDIA_ALBUM, album);
+    ASSERT_EQ(album, "album");
+    string artist;
+    mediaInfo.general.GetData(Tag::MEDIA_ARTIST, artist);
+    ASSERT_EQ(artist, "artist");
+    string date;
+    mediaInfo.general.GetData(Tag::MEDIA_DATE, date);
+    ASSERT_EQ(date, "2023");
+    string encoder;
+    mediaInfo.general.GetData(Tag::MEDIA_ENCODER, encoder);
+    ASSERT_EQ(encoder, "Lavf60.3.100");
+    string genre;
+    mediaInfo.general.GetData(Tag::MEDIA_GENRE, genre);
+    ASSERT_EQ(genre, "genre");
+    string title;
+    mediaInfo.general.GetData(Tag::MEDIA_TITLE, title);
+    ASSERT_EQ(title, "title");
+    TestFrameCount readFrameCount = {{103, 174}, {5, 174}};
+    TestFrameCount seekFrameCount = {{3, 5}, {1, 5}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(4000000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0006
+ * @tc.name      : fast init, wav, adpcm_g722
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0006, TestSize.Level1)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_G722_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{54}, {54}};
+    TestFrameCount seekFrameCount = {{17}, {17}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(9473741, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0007
+ * @tc.name      : fast init, wav, adpcm_g726
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0007, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_G726_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{10}, {10}};
+    TestFrameCount seekFrameCount = {{1}, {1}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(9664000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0008
+ * @tc.name      : fast init, wav, adpcm_ima
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0008, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_IMA_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{55}, {55}};
+    TestFrameCount seekFrameCount = {{17}, {17}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(9719048, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0009
+ * @tc.name      : fast init, wav, adpcm_ms
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0009, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ADPCM_MS_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{9}, {9}};
+    TestFrameCount seekFrameCount = {{2}, {2}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(2770068, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0010
+ * @tc.name      : fast init, wav, adpcm_yamaha
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0010, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV,
+        TEST_FILE_LOCAL_ADPCM_YAMAHA_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{12}, {12}};
+    TestFrameCount seekFrameCount = {{9}, {9}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(768000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0011
+ * @tc.name      : fast init, wav, dvaudio
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0011, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_DVAUDIO, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{100}, {100}};
+    TestFrameCount seekFrameCount = {{54}, {54}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(1840000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0012
+ * @tc.name      : fast init, wav, pcm
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0012, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_PCM_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{2110}, {2110}};
+    TestFrameCount seekFrameCount = {{4}, {4}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(89856000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0013
+ * @tc.name      : fast init, wav, pcm_alaw
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0013, TestSize.Level2)
+{
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_WAV, TEST_FILE_LOCAL_ALAW_WAV, configs));
+    ASSERT_TRUE(CheckAttr());
+    TestFrameCount readFrameCount = {{2573}, {2573}};
+    TestFrameCount seekFrameCount = {{8}, {8}};
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginReadAllSample(false));
+    ASSERT_TRUE(ResultAssert(readFrameCount.frameCnt, readFrameCount.keyFrameCnt));
+    RemoveValue();
+    ASSERT_TRUE(PluginSelectTracks());
+    ASSERT_TRUE(PluginSeekTo(218880000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
+    ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
+    RemoveValue();
 }
 }  // namespace Media
 }  // namespace OHOS

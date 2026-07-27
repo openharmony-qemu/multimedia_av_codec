@@ -16,6 +16,7 @@
 #include "pts_and_index_conversion.h"
 
 #include <algorithm>
+#include <limits>
 #include <string>
 #include "netinet/in.h"
 #include "avcodec_trace.h"
@@ -34,6 +35,25 @@ const uint32_t PTS_AND_INDEX_CONVERSION_MAX_FRAMES = 36000;
 const uint32_t BOX_HEAD_LARGE_SIZE = 16;
 constexpr size_t UINT32_BYTES = sizeof(uint32_t);
 constexpr size_t UINT32_BITS = sizeof(uint32_t) * 8;
+constexpr size_t TIME_TO_SAMPLE_HEADER_SIZE = sizeof(uint32_t) * 2;
+
+bool IsValidTimeToSampleEntryCount(size_t dataSize, uint32_t entryCount, size_t entrySize, const char* boxName)
+{
+    if (entryCount > PTS_AND_INDEX_CONVERSION_MAX_FRAMES) {
+        MEDIA_LOG_E("%{public}s entry count exceeds limit: " PUBLIC_LOG_U32, boxName, entryCount);
+        return false;
+    }
+    if (dataSize < TIME_TO_SAMPLE_HEADER_SIZE) {
+        return false;
+    }
+    size_t remainingSize = dataSize - TIME_TO_SAMPLE_HEADER_SIZE;
+    if (entrySize == 0 || entryCount > remainingSize / entrySize) {
+        MEDIA_LOG_E("%{public}s entry count exceeds buffer size: " PUBLIC_LOG_U32, boxName, entryCount);
+        return false;
+    }
+    return true;
+}
+
 TimeAndIndexConversion::TimeAndIndexConversion()
     : source_(std::make_shared<Source>())
 {
@@ -175,9 +195,11 @@ bool TimeAndIndexConversion::IsMP4orMOV()
     return strncmp(header.type, BOX_TYPE_FTYP, sizeof(header.type)) == 0;
 }
 
-void TimeAndIndexConversion::ParseMoov(uint32_t boxSize)
+void TimeAndIndexConversion::ParseMoov(uint64_t boxSize)
 {
-    uint64_t parentSize = offset_ + static_cast<uint64_t>(boxSize);
+    FALSE_RETURN_MSG(boxSize <= std::numeric_limits<uint64_t>::max() - offset_,
+        "ParseMoov failed due to parent box size overflow");
+    uint64_t parentSize = offset_ + boxSize;
     while (offset_ < parentSize) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
@@ -207,9 +229,10 @@ void TimeAndIndexConversion::ParseMoov(uint32_t boxSize)
     }
 }
 
-void TimeAndIndexConversion::ParseTrak(uint32_t boxSize)
+void TimeAndIndexConversion::ParseTrak(uint64_t boxSize)
 {
     MEDIA_LOG_D("curTrakInfoIndex_: " PUBLIC_LOG_D32, curTrakInfoIndex_);
+    FALSE_RETURN_MSG(boxSize >= BOX_HEAD_SIZE, "ParseTrak failed due to error box size");
     curTrakInfo_.trakId = curTrakInfoIndex_;
     ParseBox(boxSize - BOX_HEAD_SIZE);
     trakInfoVec_.push_back(curTrakInfo_);
@@ -218,9 +241,11 @@ void TimeAndIndexConversion::ParseTrak(uint32_t boxSize)
     curTrakInfoIndex_++;
 }
 
-void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
+void TimeAndIndexConversion::ParseBox(uint64_t boxSize)
 {
-    uint64_t parentSize = offset_ + static_cast<uint64_t>(boxSize);
+    FALSE_RETURN_MSG(boxSize <= std::numeric_limits<uint64_t>::max() - offset_,
+        "ParseBox failed due to parent box size overflow");
+    uint64_t parentSize = offset_ + boxSize;
     while (offset_ < parentSize) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
         auto buffer = std::make_shared<Buffer>();
@@ -251,19 +276,21 @@ void TimeAndIndexConversion::ParseBox(uint32_t boxSize)
     }
 }
 
-void TimeAndIndexConversion::ParseCtts(uint32_t boxSize)
+void TimeAndIndexConversion::ParseCtts(uint64_t boxSize)
 {
+    FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseCtts failed due to too large box size");
+    size_t readSize = static_cast<size_t>(boxSize);
     auto buffer = std::make_shared<Buffer>();
-    std::vector<uint8_t> buff(boxSize);
-    auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = source_->Read(0, buffer, offset_, boxSize);
+    std::vector<uint8_t> buff(readSize);
+    auto bufData = buffer->WrapMemory(buff.data(), readSize, readSize);
+    auto result = source_->Read(0, buffer, offset_, readSize);
     FALSE_RETURN_MSG(result == Status::OK, "ParseCtts failed due to read buffer error");
     auto memory = buffer->GetMemory();
     FALSE_RETURN_MSG(memory != nullptr, "ParseCtts failed due to no memory in buffer");
     const uint8_t* ptr = memory->GetReadOnlyData();
     FALSE_RETURN_MSG(ptr != nullptr, "ParseCtts failed due to nullptr");
     size_t size = memory->GetSize();
-    if (size < sizeof(uint32_t) * 2) { // 2 is used to check data
+    if (size < TIME_TO_SAMPLE_HEADER_SIZE) {
         MEDIA_LOG_E("Not enough data in buffer to read CTTS header");
         return;
     }
@@ -272,12 +299,11 @@ void TimeAndIndexConversion::ParseCtts(uint32_t boxSize)
     MEDIA_LOG_D("versionAndFlags: " PUBLIC_LOG_D32, versionAndFlags);
     uint32_t entryCount = *reinterpret_cast<const uint32_t*>(ptr + sizeof(uint32_t));
     entryCount = ntohl(entryCount);
-    // Check if the remaining data is sufficient
-    if (size < sizeof(uint32_t) * 2 + entryCount * sizeof(CTTSEntry)) { // 2 is used to check data
+    if (!IsValidTimeToSampleEntryCount(size, entryCount, sizeof(CTTSEntry), "CTTS")) {
         return;
     }
     std::vector<CTTSEntry> entries(entryCount);
-    const uint8_t* entryPtr = ptr + sizeof(uint32_t) * 2; // 2 is used to skip versionAndFlags and entryCount
+    const uint8_t* entryPtr = ptr + TIME_TO_SAMPLE_HEADER_SIZE;
     for (uint32_t i = 0; i < entryCount; ++i) {
         entries[i].sampleCount = ntohl(*reinterpret_cast<const uint32_t*>(entryPtr));
         entries[i].sampleOffset = static_cast<int32_t>(ntohl(*reinterpret_cast<const uint32_t*>(entryPtr +
@@ -288,19 +314,21 @@ void TimeAndIndexConversion::ParseCtts(uint32_t boxSize)
     offset_ += static_cast<uint64_t>(boxSize);
 }
 
-void TimeAndIndexConversion::ParseStts(uint32_t boxSize)
+void TimeAndIndexConversion::ParseStts(uint64_t boxSize)
 {
+    FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseStts failed due to too large box size");
+    size_t readSize = static_cast<size_t>(boxSize);
     auto buffer = std::make_shared<Buffer>();
-    std::vector<uint8_t> buff(boxSize);
-    auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = source_->Read(0, buffer, offset_, boxSize);
+    std::vector<uint8_t> buff(readSize);
+    auto bufData = buffer->WrapMemory(buff.data(), readSize, readSize);
+    auto result = source_->Read(0, buffer, offset_, readSize);
     FALSE_RETURN_MSG(result == Status::OK, "ParseStts failed due to read buffer error");
     auto memory = buffer->GetMemory();
     FALSE_RETURN_MSG(memory != nullptr, "ParseStts failed due to no memory in buffer");
     const uint8_t* ptr = memory->GetReadOnlyData();
     FALSE_RETURN_MSG(ptr != nullptr, "ParseStts failed due to nullptr");
     size_t size = memory->GetSize();
-    if (size < sizeof(uint32_t) * 2) { // 2 is used to check data
+    if (size < TIME_TO_SAMPLE_HEADER_SIZE) {
         MEDIA_LOG_E("Not enough data in buffer to read STTS header");
         return;
     }
@@ -309,12 +337,11 @@ void TimeAndIndexConversion::ParseStts(uint32_t boxSize)
     MEDIA_LOG_D("versionAndFlags: " PUBLIC_LOG_D32, versionAndFlags);
     uint32_t entryCount = *reinterpret_cast<const uint32_t*>(ptr + sizeof(uint32_t));
     entryCount = ntohl(entryCount);
-    // Check if the remaining data is sufficient
-    if (size < sizeof(uint32_t) * 2 + entryCount * sizeof(STTSEntry)) { // 2 is used to check data
+    if (!IsValidTimeToSampleEntryCount(size, entryCount, sizeof(STTSEntry), "STTS")) {
         return;
     }
     std::vector<STTSEntry> entries(entryCount);
-    const uint8_t* entryPtr = ptr + sizeof(uint32_t) * 2; // 2 is used to skip versionAndFlags and entryCount
+    const uint8_t* entryPtr = ptr + TIME_TO_SAMPLE_HEADER_SIZE;
     for (uint32_t i = 0; i < entryCount; ++i) {
         entries[i].sampleCount = ntohl(*reinterpret_cast<const uint32_t*>(entryPtr));
         entries[i].sampleDelta = ntohl(*reinterpret_cast<const uint32_t*>(entryPtr + sizeof(uint32_t)));
@@ -324,12 +351,14 @@ void TimeAndIndexConversion::ParseStts(uint32_t boxSize)
     offset_ += static_cast<uint64_t>(boxSize);
 }
 
-void TimeAndIndexConversion::ParseHdlr(uint32_t boxSize)
+void TimeAndIndexConversion::ParseHdlr(uint64_t boxSize)
 {
+    FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseHdlr failed due to too large box size");
+    size_t readSize = static_cast<size_t>(boxSize);
     auto buffer = std::make_shared<Buffer>();
-    std::vector<uint8_t> buff(boxSize);
-    auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = source_->Read(0, buffer, offset_, boxSize);
+    std::vector<uint8_t> buff(readSize);
+    auto bufData = buffer->WrapMemory(buff.data(), readSize, readSize);
+    auto result = source_->Read(0, buffer, offset_, readSize);
     FALSE_RETURN_MSG(result == Status::OK, "ParseHdlr failed due to read buffer error");
     auto memory = buffer->GetMemory();
     FALSE_RETURN_MSG(memory != nullptr, "ParseHdlr failed due to no memory in buffer");
@@ -360,12 +389,14 @@ void TimeAndIndexConversion::ParseHdlr(uint32_t boxSize)
     offset_ += static_cast<uint64_t>(boxSize);
 }
 
-void TimeAndIndexConversion::ParseMdhd(uint32_t boxSize)
+void TimeAndIndexConversion::ParseMdhd(uint64_t boxSize)
 {
+    FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseMdhd failed due to too large box size");
+    size_t readSize = static_cast<size_t>(boxSize);
     auto buffer = std::make_shared<Buffer>();
-    std::vector<uint8_t> buff(boxSize);
-    auto bufData = buffer->WrapMemory(buff.data(), boxSize, boxSize);
-    auto result = source_->Read(0, buffer, offset_, boxSize);
+    std::vector<uint8_t> buff(readSize);
+    auto bufData = buffer->WrapMemory(buff.data(), readSize, readSize);
+    auto result = source_->Read(0, buffer, offset_, readSize);
     FALSE_RETURN_MSG(result == Status::OK, "ParseMdhd failed due to read buffer error");
     auto memory = buffer->GetMemory();
     FALSE_RETURN_MSG(memory != nullptr, "ParseMdhd failed due to no memory in buffer");
@@ -473,7 +504,7 @@ Status TimeAndIndexConversion::GetRelativePresentationTimeUsByIndex(const uint32
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Get pts failed");
 
-    if (index + 1 > indexToRelativePTSFrameCount_) {
+    if (index >= indexToRelativePTSFrameCount_) {
         MEDIA_LOG_E("Index is out of range");
         return Status::ERROR_INVALID_DATA;
     }

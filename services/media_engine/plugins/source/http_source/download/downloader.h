@@ -43,11 +43,11 @@ enum struct DownloadStatus {
 
 struct HeaderInfo {
     char contentType[32] = {}; // 32 chars
-    size_t fileContentLen {0};
+    int64_t fileContentLen {0};
     mutable size_t retryTimes {0};
     const static size_t maxRetryTimes {100};
     const static int sleepTime {10};
-    long contentLen {0};
+    int64_t contentLen {0};
     bool isChunked {false};
     std::atomic<bool> isClosed {false};
     bool isServerAcceptRange {false};
@@ -60,10 +60,10 @@ struct HeaderInfo {
         isChunked = info->isChunked;
     }
 
-    size_t GetFileContentLength() const
+    int64_t GetFileContentLength() const
     {
         while (fileContentLen == 0 && !isChunked && !isClosed && retryTimes < maxRetryTimes) {
-            OSAL::SleepFor(sleepTime); // 10, wait for fileContentLen updated
+            OSAL::SleepFor(sleepTime);
             retryTimes++;
         }
         return fileContentLen;
@@ -79,6 +79,17 @@ class DownloadRequest;
 using StatusCallbackFunc = std::function<void(DownloadStatus, std::shared_ptr<Downloader>&,
     std::shared_ptr<DownloadRequest>&)>;
 using DownloadDoneCbFunc = std::function<void(const std::string&, const std::string&)>;
+
+enum class RequestType : int32_t {
+    DEFAULT = 0,
+    HTTP_MEDIA_DATA = 1,
+    HLS_MEDIA_DATA = 2,
+    HLS_PLAYLIST = 3,
+    HLS_KEY = 4,
+    HLS_MAP = 5,
+    DASH_MPD = 6,
+    DASH_MEDIA_DATA = 7,
+};
 
 enum  class RequestProtocolType : int32_t {
     HTTP = 0,
@@ -99,8 +110,8 @@ public:
     DownloadRequest(uint64_t keyIndex, KeyDataSaveFunc keySaveData, StatusCallbackFunc statusCallback,
         RequestInfo requestInfo, bool requestWholeFile = false);
     ~DownloadRequest();
-    size_t GetFileContentLength() const;
-    size_t GetFileContentLengthNoWait() const;
+    int64_t GetFileContentLength() const;
+    int64_t GetFileContentLengthNoWait() const;
     void SaveHeader(const HeaderInfo* header);
     Seekable IsChunked(bool isInterruptNeeded);
     bool IsEos() const;
@@ -146,9 +157,12 @@ public:
     void SetRangePos(int64_t startPos, int64_t endPos);
     void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
     int64_t GetNowTime();
+    int64_t GetDownloadStartTime() const { return downloadStartTime_; }
+    int64_t GetDownloadStartSteadyTime() const { return downloadStartSteadyTime_; }
     uint32_t GetBitRate() const;
     bool IsChunkedVod() const;
     bool IsM3u8Request() const;
+    std::string GetDownloaderName() const;
     bool IsServerAcceptRange() const;
     void GetLocation(std::string& location) const;
     void SetRequestProtocolType(RequestProtocolType protocolType);
@@ -156,6 +170,8 @@ public:
     void SetBitRateToRequestSize(const int32_t videoBitrate);
     std::atomic<bool> isHeaderUpdated_ {false};
     std::atomic<bool> haveRedirectRetry_ {false};
+    void SetRequestType(RequestType requestType);
+    RequestType GetRequestType();
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
@@ -168,20 +184,21 @@ private:
     HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
     RequestInfo requestInfo_ {};
-    bool isEos_ {false}; // file download finished
+    std::atomic<bool> isEos_ {false}; // file download finished
     int64_t startPos_ {0};
     int64_t endPos_ {-1};
     int64_t startTimePos_ {0};
-    bool isDownloading_ {false};
+    std::atomic<bool> isDownloading_ {false};
     bool requestWholeFile_ {false};
     int requestSize_ {0};
     int preRequestSize_ {0};
-    int retryTimes_ {0};
+    std::atomic<int> retryTimes_ {0};
     int32_t clientError_ {0};
     int32_t serverError_ {0};
-    bool shouldSaveData_ {true};
+    std::atomic<bool> shouldSaveData_ {true};
     int64_t downloadStartTime_ {0};
     int64_t downloadDoneTime_ {0};
+    int64_t downloadStartSteadyTime_ {0};  // steady_clock时间，用于DFX上报
     int64_t realRecvContentLen_ {0};
     friend class Downloader;
     std::string location_;
@@ -194,8 +211,10 @@ private:
     bool isIndexM3u8Request_ {false};
     bool isAuthRequest_ {false};
     RequestProtocolType protocolType_ {RequestProtocolType::HTTP};
+    std::string downloaderName_;
     int32_t bitRateToRequestSize_ {0};
     uint64_t keyIndex_ {0};
+    RequestType requestType_ {RequestType::DEFAULT};
 };
 
 class Downloader : public std::enable_shared_from_this<Downloader> {
@@ -213,6 +232,7 @@ public:
     bool Seek(int64_t offset);
     void Cancel();
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
+    bool RetryCore(const std::shared_ptr<DownloadRequest>& request);
     void SetRequestSize(size_t downloadRequestSize);
     void GetIp(std::string &ip);
     void SetAppUid(int32_t appUid);
@@ -233,6 +253,7 @@ private:
     void HandleRetOK();
     void HandleResponseCb(int32_t clientCode, int32_t serverCode, const std::string &cb, Status& ret);
     static size_t RxBodyData(void* buffer, size_t size, size_t nitems, void* userParam);
+    static size_t SaveBodyData(Downloader* mediaDownloader, void* buffer, size_t dataLen);
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam);
     static bool HandleContentRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentType(HeaderInfo* info, char* key, char* next, size_t headerSize,
@@ -240,6 +261,7 @@ private:
     static bool HandleContentEncode(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
     static bool HandleContentLength(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
     static bool HandleRange(HeaderInfo* info, char* key, char* next, size_t size, size_t nitems);
+    static bool HandleTransferEncoding(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
@@ -286,7 +308,7 @@ private:
     bool isNotBlock_ {false};
     std::string appPreviousRequestUrl_ {};
     std::string contentType_;
-    bool isContentTypeUpdated_{false};
+    std::atomic<bool> isContentTypeUpdated_{false};
     ConditionVariable sleepCond_;
     FairMutex sleepMutex_;
     bool isFirstDownload_ {false};
@@ -294,6 +316,7 @@ private:
     int64_t startDownTime_ {0};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::string ca_;
+    FairMutex caMutex_ {};
 };
 }
 }

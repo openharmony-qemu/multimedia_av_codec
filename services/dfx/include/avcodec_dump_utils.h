@@ -18,10 +18,14 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
-#include "meta/format.h"
 
 namespace OHOS {
+namespace Media {
+class Format;
+}
+
 namespace MediaAVCodec {
 class __attribute__((visibility("default"))) AVCodecDumpControler {
 public:

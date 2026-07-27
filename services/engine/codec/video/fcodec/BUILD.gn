@@ -50,8 +50,9 @@ ohos_shared_library("fcodec") {
   ]
 
   external_deps = [
-    "bounds_checking_function:libsec_static",
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
+    "drivers_interface_display:libdisplay_commontype_proxy_2.0",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
@@ -61,6 +62,10 @@ ohos_shared_library("fcodec") {
     "init:libbegetutil",
     "media_foundation:media_foundation",
   ]
+
+  if (is_emulator) {
+    defines += [ "EMULATOR_ENABLED" ]
+  }
 
   if (build_variant != "user") {
     defines += [ "BUILD_ENG_VERSION" ]

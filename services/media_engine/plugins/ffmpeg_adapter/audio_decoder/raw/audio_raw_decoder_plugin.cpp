@@ -573,6 +573,8 @@ Status AudioRawDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &
 {
     if (inputBuffer->flag_ == BUFFER_FLAG_EOS) {
         eosFlag_ = true;
+        pts_ = inputBuffer->pts_;
+        SafeCallInputBufferDone(dataCallback_, inputBuffer);
         return Status::OK;
     }
 
@@ -589,10 +591,7 @@ Status AudioRawDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> &
         ptr += BLURAY_OFFSET;
     }
     if (srcSampleFormat_ == AudioSampleFormat::SAMPLE_DVD) {
-        if (size < DVD_OFFSET) {
-            AVCODEC_LOGE("dvd size:%{public}d is invalid", size);
-            return Status::ERROR_UNKNOWN;
-        }
+        CHECK_AND_RETURN_RET_LOG(size >= DVD_OFFSET, Status::ERROR_UNKNOWN, "dvd size:%{public}d is invalid", size);
         size -= DVD_OFFSET;
         ptr += DVD_OFFSET;
     }
@@ -705,7 +704,7 @@ Status AudioRawDecoderPlugin::GetMetaData(const std::shared_ptr<Meta> &meta)
         }
         // 64: uint64_t bit number
         std::bitset<64> bits(layout_);
-        CHECK_AND_RETURN_RET_LOG(bits.count() == channels_, Status::ERROR_INVALID_PARAMETER,
+        CHECK_AND_RETURN_RET_LOG(static_cast<int32_t>(bits.count()) == channels_, Status::ERROR_INVALID_PARAMETER,
             "AudioRawDecoderPlugin channels:%d and layout:%" PRIu64 " do not match", channels_, layout_);
     }
     return Status::OK;

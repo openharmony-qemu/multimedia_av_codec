@@ -47,6 +47,9 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
     pstream = nullptr;
     if (ret) {
         demuxerTest->RunDemuxerInterfaceFuzz();
+        std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+        configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+        demuxerTest->RunDemuxerInterfaceFuzz(configs);
     }
 }
 }

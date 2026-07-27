@@ -58,7 +58,6 @@ ohos_fuzztest("HwavcencoderServerFuzzTest") {
   if (defined(global_parts_info) &&
       defined(global_parts_info.hdf_drivers_interface_hmi)) {
     defines += [ "HMOS_TEST" ]
-    external_deps += [ "drivers_interface_hmi:libhmi_proxy_1.0" ]
   }
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"

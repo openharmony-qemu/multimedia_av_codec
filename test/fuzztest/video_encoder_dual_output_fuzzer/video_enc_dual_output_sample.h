@@ -17,6 +17,7 @@
 #define VIDEO_ENC_DUAL_OUTPUT_SAMPLE_H
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <cstdint>
 #include <fuzzer/FuzzedDataProvider.h>
@@ -64,13 +65,15 @@ private:
     OH_AVCodecCallback cb_{};
     OH_AVCodecAsyncCallback asyncCb_{};
 
-    std::mutex primaryMutex_;
-    std::mutex secondaryMutex_;
+    std::recursive_mutex primaryMutex_;
+    std::recursive_mutex secondaryMutex_;
 
     std::atomic<bool> isRunning_{false};
     std::unique_ptr<std::thread> inputSurfaceLoop_;
+    static constexpr auto WORKER_WAIT_TIMEOUT = std::chrono::seconds(10); // 10: worker wait_for fallback (s)
 
-    std::unique_lock<std::mutex> LockTarget(int32_t target);
+    std::unique_lock<std::recursive_mutex> LockTarget(int32_t target);
+    void InvokeOp(int32_t op, int32_t target, FuzzedDataProvider &fdp);
     void StartInputLoop();
     void StopInloop();
     void InputFuncSurface();

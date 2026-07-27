@@ -14,34 +14,21 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-module_output_path = "av_codec/av_codec/unittest"
+module_output_path = "av_codec/stream_player_framework"
 dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_media_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_segment_downloader.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_com_attrs_elements.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_content_comp_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_descriptor_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_generic_node.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/i_dash_mpd_node.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_manager_util.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_node.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_util.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mult_seg_base_node.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_node.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_representation_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_representation_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_base_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_list_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_template_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_tmline_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_seg_url_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_url_type_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/i_dash_mpd_node.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/sidx_box_parser.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/app_client.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
@@ -51,11 +38,6 @@ dash_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
   "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_event_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_event_stream_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_splice_info_section_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_splice_insert_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_break_duration_node.cpp",
 ]
 config("dash_unittest_cfg") {
   defines = [
@@ -114,6 +96,7 @@ ohos_unittest("dash_xml_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -141,6 +124,7 @@ ohos_unittest("dash_mpd_parser_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -168,6 +152,7 @@ ohos_unittest("dash_media_downloader_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -198,6 +183,7 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -228,6 +214,7 @@ ohos_unittest("dash_segment_downloader_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -258,41 +245,7 @@ ohos_unittest("dash_adpt_set_manager_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-  ]
-
-  cflags = [
-    "-Dprivate=public",
-    "-Dprotected=public",
-  ]
-
-  resource_config_file =
-      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
-}
-
-ohos_unittest("histream_dash_mpd_parser_unittest") {
-  module_out_path = module_output_path
-  testonly = true
-  configs = [
-    ":dash_unittest_cfg",
-    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
-  ]
-  sources = dash_test_sources + [ "histream_dash_mpd_parser_unittest.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
-
-  external_deps = [
-    "c_utils:utils",
-    "certificate_manager:cert_manager_sdk",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -328,6 +281,7 @@ ohos_unittest("sidx_box_parser_unit_test") {
     "curl:curl_shared",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",

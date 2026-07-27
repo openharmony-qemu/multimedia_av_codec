@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -88,6 +88,7 @@ public:
 
 const uint32_t BUFFERING_SIZE_ = 1024;
 const uint32_t WATERLINE_HIGH_ = 512;
+const uint32_t TIME_WAIT = 500;
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
 static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:46666/segment_base/index.mpd";
 static const std::string M3U8_SEGMENT_BASE = "http://127.0.0.1:46666/test_hls/testHLSEncode.m3u8";
@@ -102,6 +103,7 @@ public:
     void TearDown(void);
 protected:
     std::shared_ptr<HttpSourcePlugin> httpSourcePlugin;
+    std::shared_ptr<MediaSource> mediaSource;
     std::shared_ptr<Meta> meta;
     std::shared_ptr<Buffer> buffer;
 };
@@ -123,10 +125,16 @@ void HttpSourcePluginUnitTest::SetUp(void)
     meta = std::make_shared<Meta>();
     httpSourcePlugin = std::make_shared<HttpSourcePlugin>("test");
     buffer = std::make_shared<Buffer>();
+    mediaSource = nullptr;
 }
 
 void HttpSourcePluginUnitTest::TearDown(void)
 {
+    if (httpSourcePlugin) {
+        httpSourcePlugin->Deinit();
+        OSAL::SleepFor(TIME_WAIT);
+    }
+    mediaSource.reset();
     httpSourcePlugin.reset();
 }
 
@@ -135,9 +143,9 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_pause_resume, TestSize.Level1)
     httpSourcePlugin->SelectStream(0);
     httpSourcePlugin->Pause();
     httpSourcePlugin->Resume();
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -154,10 +162,10 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MP4_SetPlayStrategy, TestSize.Level1)
     playStrategy->height = 1080;
     playStrategy->duration = 100;
     playStrategy->preferHDR = false;
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
-    source->SetPlayStrategy(playStrategy);
+    mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    mediaSource->SetPlayStrategy(playStrategy);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -172,10 +180,10 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_M3U8_SetPlayStrategy, TestSize.Level1)
     playStrategy->height = 1080;
     playStrategy->duration = 100;
     playStrategy->preferHDR = false;
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
-    source->SetPlayStrategy(playStrategy);
+    mediaSource = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    mediaSource->SetPlayStrategy(playStrategy);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -190,10 +198,10 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MPD_SetPlayStrategy, TestSize.Level1)
     playStrategy->height = 1080;
     playStrategy->duration = 100;
     playStrategy->preferHDR = false;
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MPD_SEGMENT_BASE);
-    source->SetPlayStrategy(playStrategy);
+    mediaSource = std::make_shared<MediaSource>(MPD_SEGMENT_BASE);
+    mediaSource->SetPlayStrategy(playStrategy);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -203,9 +211,9 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_MPD_SetPlayStrategy, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level0)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -217,9 +225,9 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4, TestSize.Level0)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MP4_DumuxState, TestSize.Level0)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->SetDemuxerState(0);
@@ -240,9 +248,9 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_FUNC, TestSize.Level1)
     httpSourcePlugin->GetSize(size);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->SetCurrentBitRate(10, 0);
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -264,9 +272,9 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_INFO, TestSize.Level1)
     httpSourcePlugin->GetDownloadInfo(downloadInfo);
     httpSourcePlugin->GetPlaybackInfo(playbackInfo);
     httpSourcePlugin->GetStreamInfo(streams);
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -282,9 +290,9 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_INFO, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MPD, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(MPD_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(MPD_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -296,9 +304,9 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_MPD, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -310,9 +318,9 @@ HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, TEST_OPEN_M3U8_SetDemuxerState, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->SetDemuxerState(0);
@@ -415,9 +423,9 @@ HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter5, TestSize.Leve
 
 HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter6, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     meta->SetData(Tag::MEDIA_DURATION, static_cast<int64_t>(1000));
     Status status = httpSourcePlugin->SetParameter(meta);
@@ -532,9 +540,9 @@ HWTEST_F(HttpSourcePluginUnitTest, SetInterruptState2, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, SEEK_TO_TIME_BY_STREAMID_001, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     httpSourcePlugin->Read(1, buffer, 10, 100);
@@ -552,9 +560,9 @@ HWTEST_F(HttpSourcePluginUnitTest, GET_SEEKABLE_RANGES_001, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, GET_SEEKABLE_RANGES_002, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     httpSourcePlugin->GetSeekable();
     auto ranges = httpSourcePlugin->GetSeekableRanges();
@@ -563,7 +571,7 @@ HWTEST_F(HttpSourcePluginUnitTest, GET_SEEKABLE_RANGES_002, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, INIT_HTTP_SOURCE_001, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
     MediaStreamList mediaStreams;
     std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
@@ -597,8 +605,8 @@ HWTEST_F(HttpSourcePluginUnitTest, INIT_HTTP_SOURCE_001, TestSize.Level1)
     mediaStreamE->url = FLV_SEGMENT_BASE;
     mediaStreams.push_back(mediaStreamE);
 
-    source->playMediaStreamVec_ = mediaStreams;
-    httpSourcePlugin->SetSource(source);
+    mediaSource->playMediaStreamVec_ = mediaStreams;
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     EXPECT_NE(httpSourcePlugin->downloader_, nullptr);
 }
@@ -621,9 +629,9 @@ HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_002, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_003, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     int64_t mediaDuration = 1000;
     Status status = httpSourcePlugin->SetMediaDuration(mediaDuration);
@@ -633,9 +641,9 @@ HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_003, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_004, TestSize.Level1)
 {
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
+    mediaSource = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
     auto sourceCallback = std::make_shared<SourceCallback>();
-    httpSourcePlugin->SetSource(source);
+    httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
     int64_t mediaDuration = 0;
     Status status = httpSourcePlugin->SetMediaDuration(mediaDuration);
@@ -737,6 +745,176 @@ HWTEST_F(HttpSourcePluginUnitTest, MediaSeekTimeByStreamId_005, TestSize.Level1)
     httpSourcePlugin->downloader_ = mockDownloader;
     Status status = httpSourcePlugin->MediaSeekTimeByStreamId(1000, SeekMode::SEEK_NEXT_SYNC, 0);
     EXPECT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_http_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_https_001, TestSize.Level1)
+{
+    std::string url = "https://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_file_001, TestSize.Level1)
+{
+    std::string url = "file:///storage/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_file_002, TestSize.Level1)
+{
+    std::string url = "file://C:/Users/test/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_empty_001, TestSize.Level1)
+{
+    std::string url = "";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_relative_path_001, TestSize.Level1)
+{
+    std::string url = "/storage/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_relative_path_002, TestSize.Level1)
+{
+    std::string url = "video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_rtsp_001, TestSize.Level1)
+{
+    std::string url = "rtsp://example.com/stream";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_rtmp_001, TestSize.Level1)
+{
+    std::string url = "rtmp://example.com/stream";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_m3u8_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/video.m3u8";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_mpd_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/video.mpd";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_001, TestSize.Level1)
+{
+    std::string url = "FILE:///storage/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_002, TestSize.Level1)
+{
+    std::string url = "File:///storage/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_003, TestSize.Level1)
+{
+    std::string url = "fILE:///storage/video.mp4";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_004, TestSize.Level1)
+{
+    std::string url = "HTTP://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_005, TestSize.Level1)
+{
+    std::string url = "Https://example.com/video.mp4";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_case_sensitive_006, TestSize.Level1)
+{
+    std::string url = "RTSP://example.com/stream";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_with_params_001, TestSize.Level1)
+{
+    std::string url = "http://example.com/video.mp4?token=abc&expire=123";
+    EXPECT_TRUE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_file_with_params_001, TestSize.Level1)
+{
+    std::string url = "file:///storage/video.mp4?param=value";
+    EXPECT_FALSE(httpSourcePlugin->IsAllowedProtocol(url));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_001, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>("file:///storage/video.mp4");
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_002, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>("FILE:///storage/video.mp4");
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_003, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>("File:///storage/video.mp4");
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_004, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>("file://C:/Users/test/video.mp4");
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_file_protocol_005, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>("FILE://C:/Users/test/video.mp4");
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    EXPECT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_http_protocol_001, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    EXPECT_NE(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_http_protocol_002, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>("HTTP://127.0.0.1:46666/dewu.mp4");
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    EXPECT_NE(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_https_protocol_001, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>("HTTPS://example.com/video.mp4");
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    EXPECT_NE(status, Status::ERROR_INVALID_OPERATION);
 }
 }
 }

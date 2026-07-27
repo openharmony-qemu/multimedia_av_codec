@@ -151,7 +151,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, Release_001, TestSize.Level1)
     surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
     EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_ERR_CODE));
     Status status = surfaceEncoderAdapter_->Release();
-    EXPECT_EQ(status, Status::ERROR_UNKNOWN);
+    EXPECT_EQ(status, Status::ERROR_FRAMEWORK_ERR);
 }
 
 /**
@@ -194,9 +194,9 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, TransCoderOnOutputBufferAvailable_001, T
     AVBufferConfig config;
     config.memoryType = MemoryType::VIRTUAL_MEMORY;
     auto avbuffer = AVBuffer::CreateAVBuffer(config);
-    auto mockProducer = std::make_shared<MockAVBufferQueueProducer>();
+    auto mockProducer = new MockAVBufferQueueProducer();
     EXPECT_CALL(*(mockProducer), RequestBuffer(_, _, _)).WillRepeatedly(Return(Status::ERROR_UNKNOWN));
-    surfaceEncoderAdapter_->outputBufferQueueProducer_ = OHOS::sptr<AVBufferQueueProducer>(mockProducer.get());
+    surfaceEncoderAdapter_->outputBufferQueueProducer_ = OHOS::sptr<AVBufferQueueProducer>(mockProducer);
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(TEST_INDEX, avbuffer);
     EXPECT_TRUE(surfaceEncoderAdapter_->indexs_.empty());
 }

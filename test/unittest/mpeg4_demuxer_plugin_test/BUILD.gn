@@ -1,0 +1,150 @@
+# Copyright (C) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/test.gni")
+import("//foundation/multimedia/av_codec/config.gni")
+
+module_output_path = "av_codec/AVCodec_Video/unittest"
+mpeg4_demuxer_plugin_test_sources = [
+  "$av_codec_root_dir/services/media_engine/modules/demuxer/base_stream_demuxer.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/demuxer/demuxer_plugin_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/demuxer/stream_demuxer.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/demuxer/type_finder.cpp",
+  "$av_codec_root_dir/services/media_engine/modules/source/source.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/avc_parser_impl.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/converter.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/demuxer_data_reader.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/demuxer_log_compressor.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/demuxer_utils.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/multi_stream_parser_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/rbsp_context.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/reference_parser_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/common/time_range_manager.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer/avpacket_memory.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer/avpacket_wrapper.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer/ffmpeg_demuxer_plugin.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer/ffmpeg_demuxer_thread.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer/ffmpeg_format_helper.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer/ffmpeg_reference_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer/ffmpeg_utils.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_audio_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_box_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_demuxer_plugin.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_demuxer_thread.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_format_checker.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_reference_parser.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_sample_memory.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_sample_helper.cpp",
+  "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+  "$av_codec_root_dir/test/unittest/common/statistics_event_reporter_mock.cpp",
+]
+
+config("mpeg4_demuxer_plugin_test_cfg") {
+  defines = [
+    "HST_ANY_WITH_NO_RTTI",
+    "MEDIA_OHOS",
+    "TESTING",
+    "USE_FF_DEMUXER",
+  ]
+
+  cflags = [
+    "-Wno-sign-compare",
+    "-fno-exceptions",
+    "-fno-common",
+    "-fstack-protector-all",
+    "-Wshadow",
+    "-FPIC",
+    "-FS",
+    "-O2",
+    "-D_FORTIFY_SOURCE=2",
+    "-Wformat=2",
+    "-Wdate-time",
+    "-Dprivate=public",
+    "-Dprotected=public",
+    "-Wno-unused-parameter",
+  ]
+
+  cflags_cc = [
+    "-std=c++17",
+    "-fno-rtti",
+  ]
+
+  include_dirs = [
+    "$av_codec_root_dir/interfaces",
+    "$av_codec_root_dir/interfaces/inner_api",
+    "$av_codec_root_dir/interfaces/inner_api/native",
+    "$av_codec_root_dir/interfaces/kits/c",
+    "$av_codec_root_dir/services/media_engine/modules",
+    "$av_codec_root_dir/services/media_engine/modules/demuxer",
+    "$av_codec_root_dir/services/media_engine/modules/source",
+    "$av_codec_root_dir/services/services/common/event_manager",
+    "$av_codec_root_dir/services/services/sa_avcodec/client",
+    "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/services/media_engine/plugins/common",
+    "$av_codec_root_dir/services/media_engine/plugins/demuxer/common",
+    "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer",
+    "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer",
+    "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
+    "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/nativedemo/include",
+  ]
+}
+
+ohos_unittest("mpeg4_demuxer_plugin_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  testonly = true
+
+  configs = [
+    ":mpeg4_demuxer_plugin_test_cfg",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+    "$av_codec_root_dir/services/media_engine/plugins/demuxer:demuxer_config",
+  ]
+
+  sources = mpeg4_demuxer_plugin_test_sources
+  sources += [
+    "mpeg4_demuxer_plugin_unit_test.cpp",
+  ]
+
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
+  ]
+
+  if (target_cpu == "arm64" || is_emulator) {
+    av_codec_path = "\"/system/lib64\""
+  } else {
+    av_codec_path = "\"/system/lib\""
+  }
+
+  defines = [
+    "AV_CODEC_PATH=${av_codec_path}",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
+    "graphic_surface:surface",
+    "hicollie:libhicollie",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "hisysevent:libhisysevent",
+    "init:libbegetutil",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "qos_manager:qos",
+  ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}

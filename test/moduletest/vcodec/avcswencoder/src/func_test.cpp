@@ -213,7 +213,8 @@ HWTEST_F(AvcSwEncFuncNdkTest, VIDEO_ENCODE_FUNCTION_0700, TestSize.Level1)
     ASSERT_NE(nullptr, venc_);
     format = OH_AVFormat_Create();
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, 1));
-    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES, OH_ColorPrimary::COLOR_PRIMARY_BT709));
+    ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_COLOR_PRIMARIES,
+        OH_ColorPrimary::COLOR_PRIMARY_BT709));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS,
                                             OH_TransferCharacteristic::TRANSFER_CHARACTERISTIC_LINEAR));
     ASSERT_EQ(true, OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS,
@@ -811,7 +812,7 @@ HWTEST_F(AvcSwEncFuncNdkTest, VIDEO_ENCODE_CAPABILITY_2200, TestSize.Level2)
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
     (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, DEFAULT_BITRATE);
 
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, BITRATE_MODE_CQ + BITRATE_MODE_CQ);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, BITRATE_MODE_CQ*5);
     EXPECT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_Configure(venc_, format));
 }
 

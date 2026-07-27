@@ -110,6 +110,27 @@ public:
     ~MockEventReceiver() = default;
     MOCK_METHOD(void, OnEvent, (const Event&), (override));
 };
+
+class MockFilterCallback : public Pipeline::FilterCallback {
+public:
+    MockFilterCallback() = default;
+    ~MockFilterCallback() = default;
+    Status OnCallback(const std::shared_ptr<Pipeline::Filter>& filter, Pipeline::FilterCallBackCommand cmd,
+        Pipeline::StreamType outType) override
+    {
+        (void)filter;
+        (void)cmd;
+        (void)outType;
+        return Status::OK;
+    }
+    void HandleVideoCodecChange(const std::shared_ptr<Meta>& meta, bool& isCodecChanged, bool isSmoothSwitch) override
+    {
+        (void)meta;
+        isCodecChanged = isCodecChanged_;
+        (void)isSmoothSwitch;
+    }
+    bool isCodecChanged_ = false;
+};
 }
 }
 

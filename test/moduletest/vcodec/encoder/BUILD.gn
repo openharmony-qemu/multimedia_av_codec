@@ -63,10 +63,13 @@ ohos_unittest("encoder_native_module_test") {
       "./src/InnerAPI/videoenc_ndk_inner_sample.cpp",
       "./src/api_test.cpp",
       "./src/configure_test.cpp",
+      "./src/cbr_hq_test.cpp",
       "./src/func2_test.cpp",
       "./src/func3_test.cpp",
       "./src/func_test.cpp",
       "./src/temporal_test.cpp",
+      "./src/dual_test.cpp",
+      "./src/preprocess_test.cpp",
 
       #"./src/perf_test.cpp",
       "./src/getparam_test.cpp",
@@ -74,15 +77,23 @@ ohos_unittest("encoder_native_module_test") {
       #"./src/reli_test.cpp",
       "./src/setparam_test.cpp",
       "./src/state_test.cpp",
+      "./src/videocall_test1.cpp",
+      "./src/videocall_test2.cpp",
       "./src/videoenc_api11_sample.cpp",
       "./src/videoenc_ndk_sample.cpp",
+      "./src/videotranscode_api11_sample.cpp",
     ]
+  }
+  
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines = [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
 
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_venc",
+    "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_vdec",
   ]
   external_deps = [
     "c_utils:utils",

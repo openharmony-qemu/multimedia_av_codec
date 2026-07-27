@@ -14,12 +14,15 @@
  */
 #include <arpa/inet.h>
 #include <sys/time.h>
+#include <sstream>
 #include <utility>
 #include "openssl/crypto.h"
+#include "nlohmann/json.hpp"
 #include "openssl/sha.h"
 #include "videodec_api11_sample.h"
 using namespace OHOS;
 using namespace OHOS::Media;
+using namespace nlohmann;
 using namespace std;
 namespace {
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
@@ -193,12 +196,67 @@ void VDecAPI11Sample::Flush_buffer()
     outLock.unlock();
 }
 
-bool VDecAPI11Sample::MdCompare(unsigned char buffer[], int len, const char *source[])
+static void DumpHashValue(std::vector<uint8_t> &srcHashVal, uint8_t outputHashVal[])
 {
-    bool result = true;
-    for (int i = 0; i < len; i++) {
+    printf("--------------output hash value----------------\n");
+    for (int i = 1; i < SHA512_DIGEST_LENGTH + 1; i++) {
+        printf("%02x,", outputHashVal[i - 1]);
+        if (i % SIXTEEN == 0) {
+            printf("\n");
+        }
     }
-    return result;
+    printf("--------------standard hash value----------------\n");
+    for (int i = 1; i < (SHA512_DIGEST_LENGTH + 1) && i <= srcHashVal.size(); i++) {
+        printf("%02x,", srcHashVal[i - 1]);
+        if (i % SIXTEEN == 0) {
+            printf("\n");
+        }
+    }
+}
+std::vector<uint8_t> VDecAPI11Sample::LoadHashFile()
+{
+    std::ifstream f("/data/test/media/hash_val.json", ios::in);
+    std::vector<uint8_t> ret;
+    if (f) {
+        json data = json::parse(f);
+        filesystem::path filePath = INP_DIR;
+        std::string pixFmt = defaultPixelFormat == AV_PIXEL_FORMAT_NV12 ? "nv12" : "nv21";
+        std::string fileName = filePath.filename();
+        std::string hashValue = "";
+        if (enableDecodingOrder) {
+            hashValue = data[fileName.c_str()]["dec_order"];
+        } else {
+            hashValue = data[fileName.c_str()][pixFmt];
+        }
+        std::stringstream ss(hashValue);
+        std::string item;
+        while (getline(ss, item, ',')) {
+            if (!item.empty()) {
+                ret.push_back(stol(item, nullptr, SIXTEEN));
+            }
+        }
+    }
+    return ret;
+}
+
+bool VDecAPI11Sample::MdCompare(uint8_t source[])
+{
+    if (!enableHash) {
+        return true;
+    }
+    std::vector<uint8_t> srcHashVal = LoadHashFile();
+    DumpHashValue(srcHashVal, source);
+    if (srcHashVal.size() != SHA512_DIGEST_LENGTH) {
+        cout << "get hash value failed, size" << srcHashVal.size() << endl;
+        return false;
+    }
+    for (int32_t i = 0; i < SHA512_DIGEST_LENGTH; i++) {
+        if (source[i] != srcHashVal[i]) {
+            cout << "decoded hash value mismatch" << endl;
+            return false;
+        }
+    }
+    return true;
 }
 
 int64_t VDecAPI11Sample::GetSystemTimeUs()
@@ -229,8 +287,9 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
     originalHeight = DEFAULT_HEIGHT;
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, DEFAULT_WIDTH);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, DEFAULT_HEIGHT);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defualtPixelFormat);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, defaultPixelFormat);
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, DEFAULT_FRAME_RATE);
+    (void)OH_AVFormat_SetIntValue (format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, enableDecodingOrder);
     if (useHDRSource) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, DEFAULT_PROFILE);
     }
@@ -771,7 +830,10 @@ int32_t VDecAPI11Sample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
         AutoSwitchSurface();
         SHA512_Final(g_md, &g_c);
         OPENSSL_cleanse(&g_c, sizeof(g_c));
-        MdCompare(g_md, SHA512_DIGEST_LENGTH, fileSourcesha256);
+        bool ret = MdCompare(g_md);
+        if (!ret) {
+            errCount++;
+        }
         return -1;
     }
     if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA) {

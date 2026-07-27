@@ -1704,6 +1704,41 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_016, TestSize.Level1)
     EXPECT_EQ(res.size(), 0);
 }
 
+HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering_001, TestSize.Level1)
+{
+    size_t now = static_cast<size_t>(MP4httpMediaDownloader->steadyClock_.ElapsedMilliseconds());
+    MP4httpMediaDownloader->bufferingTime_ = now - 1000;
+    MP4httpMediaDownloader->timeoutInterval_ = 100;
+    MP4httpMediaDownloader->isBuffering_ = true;
+    EXPECT_FALSE(MP4httpMediaDownloader->HandleBuffering());
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, HandleRingBuffering_001, TestSize.Level1)
+{
+    unsigned char buff[1 * 1024 * 1024];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    size_t now = static_cast<size_t>(FLVhttpMediaDownloader->steadyClock_.ElapsedMilliseconds());
+    FLVhttpMediaDownloader->bufferingTime_ = now - 1000;
+    FLVhttpMediaDownloader->timeoutInterval_ = 100;
+    FLVhttpMediaDownloader->isBuffering_ = true;
+    FLVhttpMediaDownloader->isReportedErrorCode_ = false;
+    EXPECT_EQ(FLVhttpMediaDownloader->HandleRingBuffer(buff, readDataInfo), Status::END_OF_STREAM);
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, HandleCacheBuffering_001, TestSize.Level1)
+{
+    unsigned char buff[1 * 1024 * 1024];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    size_t now = static_cast<size_t>(MP4httpMediaDownloader->steadyClock_.ElapsedMilliseconds());
+    MP4httpMediaDownloader->bufferingTime_ = now - 1000;
+    MP4httpMediaDownloader->timeoutInterval_ = 100;
+    MP4httpMediaDownloader->isBuffering_ = true;
+    MP4httpMediaDownloader->isReportedErrorCode_ = false;
+    EXPECT_EQ(FLVhttpMediaDownloader->HandleCacheBuffer(buff, readDataInfo), Status::END_OF_STREAM);
+}
+
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RARE_SPEED_NORMAL, TestSize.Level1)
 {
     auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
@@ -1830,5 +1865,124 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_ADDPARAMFORURL_NORMAL, TestSize.Level
     downloader->AddParamForUrl(url, key, value);
 
     EXPECT_EQ(url, "http?&1=1");
+}
+
+/**
+ * @tc.name  : Test UpdateOffsetThresholds max update
+ * @tc.number: UpdateOffsetThresholds_001
+ * @tc.desc  : Test UpdateOffsetThresholds when readOffset > maxReadOffset
+ */
+HWTEST_F(HttpMediaDownloaderUnitTest, UpdateOffsetThresholds_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    downloader->Init();
+    downloader->maxReadOffset_ = 100;
+    downloader->maxOffsetNotUpdateCount_ = 0;
+    downloader->minReadOffset_ = 0;
+    downloader->minOffsetNotUpdateCount_ = 0;
+    downloader->isMinAndMaxOffsetUpdate_.store(true);
+    downloader->stateChangeCount_ = 0;
+    downloader->UpdateOffsetThresholds(200);
+    EXPECT_EQ(downloader->maxReadOffset_, 200);
+    EXPECT_EQ(downloader->maxOffsetNotUpdateCount_, 0);
+}
+
+/**
+ * @tc.name  : Test UpdateOffsetThresholds max not update
+ * @tc.number: UpdateOffsetThresholds_002
+ * @tc.desc  : Test UpdateOffsetThresholds when readOffset <= maxReadOffset
+ */
+HWTEST_F(HttpMediaDownloaderUnitTest, UpdateOffsetThresholds_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    downloader->Init();
+    downloader->maxReadOffset_ = 200;
+    downloader->maxOffsetNotUpdateCount_ = 0;
+    downloader->minReadOffset_ = 0;
+    downloader->minOffsetNotUpdateCount_ = 0;
+    downloader->isMinAndMaxOffsetUpdate_.store(true);
+    downloader->stateChangeCount_ = 0;
+    downloader->UpdateOffsetThresholds(100);
+    EXPECT_EQ(downloader->maxReadOffset_, 200);
+    EXPECT_EQ(downloader->maxOffsetNotUpdateCount_, 1);
+}
+
+/**
+ * @tc.name  : Test UpdateOffsetThresholds large span
+ * @tc.number: UpdateOffsetThresholds_003
+ * @tc.desc  : Test UpdateOffsetThresholds sets isLargeOffsetSpan when span > threshold
+ */
+HWTEST_F(HttpMediaDownloaderUnitTest, UpdateOffsetThresholds_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    downloader->Init();
+    downloader->maxReadOffset_ = 5000000;
+    downloader->maxOffsetNotUpdateCount_ = 0;
+    downloader->minReadOffset_ = 0;
+    downloader->minOffsetNotUpdateCount_ = 0;
+    downloader->isMinAndMaxOffsetUpdate_.store(true);
+    downloader->stateChangeCount_ = 0;
+    downloader->UpdateOffsetThresholds(5000000);
+    EXPECT_TRUE(downloader->isLargeOffsetSpan_.load());
+}
+
+/**
+ * @tc.name  : Test CalcAverageSpeed
+ * @tc.number: CalcAverageSpeed_001
+ * @tc.desc  : Test CalcAverageSpeed with empty downloadSpeeds returns 0
+ */
+HWTEST_F(HttpMediaDownloaderUnitTest, CalcAverageSpeed_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    downloader->Init();
+    downloader->downloadSpeeds_.clear();
+    auto speed = downloader->CalcAverageSpeed();
+    EXPECT_EQ(speed, 0);
+}
+
+/**
+ * @tc.name  : Test CalcAverageSpeed
+ * @tc.number: CalcAverageSpeed_002
+ * @tc.desc  : Test CalcAverageSpeed with valid speeds
+ */
+HWTEST_F(HttpMediaDownloaderUnitTest, CalcAverageSpeed_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    downloader->Init();
+    downloader->downloadSpeeds_ = {1000, 2000, 3000};
+    auto speed = downloader->CalcAverageSpeed();
+    EXPECT_EQ(speed, 2000);
+}
+
+/**
+ * @tc.name  : Test CalcDesiredBitRate
+ * @tc.number: CalcDesiredBitRate_001
+ * @tc.desc  : Test CalcDesiredBitRate returns 0 when no stream matches
+ */
+HWTEST_F(HttpMediaDownloaderUnitTest, CalcDesiredBitRate_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    downloader->Init();
+    downloader->defaultStream_ = std::make_shared<PlayMediaStream>();
+    downloader->defaultStream_->bitrate = 500;
+    downloader->playMediaStreams_ = {downloader->defaultStream_};
+    auto result = downloader->CalcDesiredBitRate(1000);
+    EXPECT_EQ(result, 0);
+}
+
+/**
+ * @tc.name  : Test FindStreamByBitRate
+ * @tc.number: FindStreamByBitRate_001
+ * @tc.desc  : Test FindStreamByBitRate with single stream
+ */
+HWTEST_F(HttpMediaDownloaderUnitTest, FindStreamByBitRate_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
+    downloader->Init();
+    auto stream1 = std::make_shared<PlayMediaStream>();
+    stream1->bitrate = 500;
+    downloader->playMediaStreams_ = {stream1};
+    auto result = downloader->FindStreamByBitRate(500);
+    EXPECT_EQ(result, stream1);
 }
 }

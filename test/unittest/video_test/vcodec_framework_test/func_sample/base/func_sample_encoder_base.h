@@ -49,6 +49,9 @@ constexpr int32_t RATIO_US_TO_NS = 1000;
 inline uint8_t g_mdTest[SHA512_DIGEST_LENGTH];
 inline std::atomic<uint32_t> g_shaBufferCount = 0;
 inline SHA512_CTX g_ctxTest;
+constexpr int32_t PARAM_CHANGE_START_FRAME = 3;
+constexpr int32_t RESIZE_WIDTH = 1920;
+constexpr int32_t RESIZE_HEIGHT = 1080;
 
 inline void UpdateSHAForCheck(bool needCheckSHA, const char *addr, int32_t size)
 {
@@ -103,6 +106,19 @@ public:
     int32_t errorNum_ = 0;
     std::atomic<bool> isRunning_ = false;
     std::atomic<bool> isPreparing_ = true;
+
+    // For MAX_FRAME_DELAY_COUNT verification
+    std::atomic<int32_t> pendingInputCount_ = 0;
+    std::atomic<int32_t> maxPendingInputCount_ = 0;
+
+    // For REPEAT_HEADER_BEFORE_SYNC_FRAMES verification
+    std::atomic<int32_t> idrFrameCount_ = 0;
+    std::atomic<int32_t> idrWithImmediateXPSCount_ = 0;
+    std::atomic<bool> lastOutputWasXPS_ = false;
+    bool isAVCCodec_ = true;
+
+    // For NUMBER_OF_PENDING_FRAMES verification
+    std::atomic<int32_t> maxPendingFramesObserved_ = 0;
 };
 
 struct LtrParam {
@@ -118,6 +134,8 @@ public:
     void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
     void OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data) override;
     void OnNewOutputData(uint32_t index, std::shared_ptr<AVMemoryMock> data, OH_AVCodecBufferAttr attr) override;
+    bool inputResizeWidthHeight_ = false;
+    bool input8BitTo10Bit_ = false;
 
 private:
     std::shared_ptr<VEncSignal> signal_ = nullptr;
@@ -131,8 +149,11 @@ public:
     void OnStreamChanged(std::shared_ptr<FormatMock> format) override;
     void OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
     void OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) override;
+    bool inputResizeWidthHeight_ = false;
+    bool input8BitTo10Bit_ = false;
 
 private:
+    void UpdateMaxPendingInputCount();
     std::shared_ptr<VEncSignal> signal_ = nullptr;
 };
 

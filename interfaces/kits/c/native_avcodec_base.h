@@ -1194,18 +1194,33 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_PREVIOUS_MAX_COUNT;
  */
 extern const char *OH_MD_KEY_CREATION_TIME;
 /**
- * @brief Key to set the region of interest(ROI) as QpOffset-Rects, value type is string in the format
- * "Top1,Left1-Bottom1,Right1=Offset1;Top2,Left2-Bottom2,Right2=Offset2;". Each "Top,Left-Bottom,Right=Offset"
- * represents the coordinate information and quantization parameter of one ROI. Each "=Offset" in the string
- * can be omitted, like "Top1,Left1-Bottom1,Right1;Top2,Left2-Bottom2,Right2=Offset2;", the encoder
- * will use the default quantization parameter to perform the ROI encoding on the first ROI and
- * use Offset2 on the second ROI.
+ * @brief Key to set the region of interest(ROI) parameters. Value type is string in the format
+ * "Top1,Left1-Bottom1,Right1[=Params1];Top2,Left2-Bottom2,Right2[=Params2];".
+ *
+ * Each "Top,Left-Bottom,Right" represents the coordinate information of one ROI.
+ * The "[=Params]" is optional.
+ * The format of "[=Params]" varies by version:
+ * 1. Prior to version 26.0.0: Only a single int32_t value representing the
+ * quantization parameter offset is supported (e.g., "=Offset").
+ * 2. Since version 26.0.0: A Key-Value format is additionally supported and recommended.
+ * It uses comma-separated key-value pairs (e.g., "=dqp:-6,slb:1").
+ * Supported keys:
+ * - "dqp": Quantization parameter offset.
+ * - "slb": Semantic label. The value must correspond to {@link OH_VideoMetadataRoiSemanticLabel}.
+ *
+ * If "=Params" is omitted entirely, like "Top1,Left1-Bottom1,Right1;Top2,Left2-Bottom2,Right2=dqp:-6;",
+ * the encoder will use the default parameters to perform the ROI encoding on the first ROI and
+ * use the specified parameters on the second ROI.
+ * Note that the number of ROIs that can be applied simultaneously does not exceed six, and the total area must
+ * not exceed one-fifth of the total image area.
  *
  * This is an optional key that applies only to video encoder.
  * It is used in running process and is set with each frame.
  * In surface mode, it is used in {@link OH_VideoEncoder_OnNeedInputParameter}.
  * In buffer mode, it is configured via {@link OH_AVBuffer_SetParameter}.
- * @syscap SystemCapability.Multimedia.Media.CodecBase
+ *
+ * @note Since version 26.0.0, it is highly recommended to use {@link OH_VideoMetadata_AppendRoiString} to format
+ *     and append ROI configurations safely instead of concatenating the string manually.
  * @since 20
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ROI_PARAMS;
@@ -1415,18 +1430,9 @@ extern const char *OH_MD_KEY_AUDIO_SOUNDBED_BITRATE;
 extern const char *OH_MD_KEY_AUDIO_OBJECT_BITRATE;
 
 /**
- * @brief Key for getting screen capture rectangular window. Value type is a int32_t array, the array length is 4.
- * Get the rectangular window in captured screen, represent [top, left, width, height] in the int32_t array,
- * which can be obtained by calling {@link OH_AVFormat_GetIntBuffer}.
- *
- * @since 26.0.0
- */
-extern const char *OH_MD_KEY_SCREEN_CAPTURE_WINDOW_RECT;
-
-/**
  * @brief Key for setting the video decoding frame retention mode. The value type is int32_t.
  *
- * The value represents a frame retention mode defined in {@link OH_FRAME_RETENTION_MODE}.
+ * The value represents a frame retention mode defined in {@link OH_FrameRetentionMode}.
  * Please refer to the enumeration definition for detailed descriptions of each mode
  * and their behaviors.This key can be configured via the {@link OH_VideoDecoder_Configure} and
  * {@link OH_VideoDecoder_SetParameter} interfaces.
@@ -1439,10 +1445,10 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE;
  * @brief Key for setting the video decoding frame retention ratio. The value type is double.
  *
  * This parameter takes effect when {@link OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_MODE} is set to
- * {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_UNIFORM}, or when the retention mode is not
+ * {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_UNIFORM}, or when the retention mode is not
  * configured (implicitly defaulting to uniform behavior). This configuration is ignored ONLY when
- * the retention mode is explicitly set to {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_ADAPTIVE}
- * or {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_FULL}.
+ * the retention mode is explicitly set to {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_ADAPTIVE}
+ * or {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_FULL}.
  * The valid range is [0.01, 1.0] (where 1.0 means all frames retained and 0.01 is the minimum limit);
  * any value outside this range is considered invalid and will be ignored. This key can be configured
  * via the {@link OH_VideoDecoder_Configure} and {@link OH_VideoDecoder_SetParameter} interfaces.
@@ -1455,7 +1461,7 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO;
  * @brief Key for configuring the video decoder playback speed. The value type is double.
  *
  * This key specifies the target playback speed of the video. It is primarily recommended
- * for use in conjunction with {@link OH_FRAME_RETENTION_MODE#OH_FRAME_RETENTION_MODE_ADAPTIVE}
+ * for use in conjunction with {@link OH_FrameRetentionMode#OH_FRAME_RETENTION_MODE_ADAPTIVE}
  * to assist the adaptive algorithm in accurately evaluating the perceptual impact of frame
  * drops. The value must be strictly greater than 0.0, with recommended standard values
  * including 0.5, 0.75, 1.0 (normal speed), 1.25, 1.5, 2.0, and 3.0; any value less than
@@ -1467,41 +1473,79 @@ extern const char *OH_MD_KEY_VIDEO_DECODER_FRAME_RETENTION_RATIO;
 extern const char *OH_MD_KEY_VIDEO_DECODER_SPEED;
 
 /**
- * @brief Key for HDR type, value type is int32_t, refer to {@link OH_HDRType}.
+ * @brief Key for setting or querying the maximum input buffer size (in bytes) for audio codec, value type is int32_t.
+ *
+ * This key is used to configure or retrieve the maximum size of the input buffer for audio codec.
+ * The actual buffer size is limited by the codec implementation. Setting a value larger than the
+ * codec's maximum supported size can not take effect.
+ * This configuration is optional. If not set, the codec will use its default buffer size.
  *
  * @since 26.0.0
-*/
-extern const char *OH_MD_KEY_HDR_TYPE;
+ */
+extern const char *OH_MD_KEY_AUDIO_MAX_INPUT_BUFFER_SIZE;
 
 /**
- * @brief HDR type.
+ * @brief Key for configuring the PTS output mode of the audio encoder.
+ *
+ * Sets the PTS output behavior mode. The value type is int32_t from {@link OH_AudioEncoderPTSMode}.
+ * Optional. Defaults to {@link OH_AUDIO_ENCODER_PTS_MODE_DEFAULT} if not set.
  *
  * @since 26.0.0
-*/
-typedef enum OH_HDRType {
-    /** Non-HDR
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_NONE = -1,
-    /** HLG
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_HLG = 0,
-    /**
-     * HDR10
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_HDR10 = 1,
-    /**
-     * HDR Vivid
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_HDR_VIVID = 2,
-    /** Other HDR type
-     * @since 26.0.0
-     */
-    OH_HDR_TYPE_OTHER = 3,
-} OH_HDRType;
+ */
+extern const char *OH_MD_KEY_AUDIO_ENCODER_PTS_MODE;
+
+/**
+ * @brief Key for enabling sample format conversion in the audio encoder.
+ * Optional. The value type is int32_t (0 or 1). 1 is enabled, 0 is disabled. Defaults to 0.
+ *
+ * The audio encoder supports only a limited number of sample formats. After this configuration is enabled, if
+ * an unsupported sampling format is used, the audio encoder will convert the sample format to an supported one for 
+ * encoding. The supported sample formats before conversion are as follows: {@link SAMPLE_U8}, {@link SAMPLE_S16LE}, 
+ * {@link SAMPLE_S24LE}, {@link SAMPLE_S32LE}, {@link SAMPLE_F32LE}.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_AUDIO_ENCODER_ENABLE_SAMPLE_FORMAT_CONVERT;
+
+/**
+ * @brief Key to enable the decoder to output frames in decoding order,
+ * value type is int32_t (0 or 1): 1 is enabled, 0 disabled.
+ *
+ * This is an optional key that applies only to video decoder and is only used in configure.
+ * By default, this feature is disabled (0).
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER;
+
+/**
+ * @brief Key for querying the number of pending frames in the video encoder.
+ *
+ * It is used in {@link OH_VideoEncoder_GetInputDescription}.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES;
+
+/**
+ * @brief Key to set the maximum number of frames that a compressor is allowed to hold before it must output a
+ * compressed frame.
+ *
+ * It is used in {@link OH_VideoEncoder_Configure}.
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT;
+
+/**
+ * @brief Key to repeat headers before sync frames, value type is int32_t (0 or 1): 1 is enabled, 0 disabled.
+ *
+ * This is an optional key that applies only to video encoder and is only used in configure.
+ * By default, this feature is disabled (0).
+ *
+ * @since 26.0.0
+ */
+extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES;
 
 /**
  * @brief Media type.
@@ -2321,7 +2365,7 @@ typedef enum OH_TemporalGopReferenceMode {
  *
  * @since 26.0.0
  */
-typedef enum OH_FRAME_RETENTION_MODE {
+typedef enum OH_FrameRetentionMode {
     /**
      * Full frame retention mode. The decoder operates in a transparent passthrough state,
      * retaining 100% of the input frames and effectively disabling the frame dropping feature.
@@ -2345,7 +2389,29 @@ typedef enum OH_FRAME_RETENTION_MODE {
      * @since 26.0.0
      */
     OH_FRAME_RETENTION_MODE_UNIFORM
-} OH_FRAME_RETENTION_MODE;
+} OH_FrameRetentionMode;
+/**
+ * @brief Enum for the PTS mode of audio encoder.
+ *
+ * @since 26.0.0
+ */
+typedef enum OH_AudioEncoderPTSMode {
+    /**
+     * Default PTS mode. Different encoders may perform differently.
+     * @since 26.0.0
+     */
+    OH_AUDIO_ENCODER_PTS_MODE_DEFAULT = 0,
+    /**
+     * PTS starts from zero.
+     * @since 26.0.0
+     */
+    OH_AUDIO_ENCODER_PTS_MODE_ZERO_START = 1,
+    /**
+     * PTS starts from the first input PTS.
+     * @since 26.0.0
+     */
+    OH_AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START = 2,
+} OH_AudioEncoderPTSMode;
 
 #ifdef __cplusplus
 }

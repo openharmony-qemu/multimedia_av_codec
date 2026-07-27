@@ -31,6 +31,7 @@ public:
     int32_t SuspendActive(const std::vector<pid_t> &pidList) override;
     int32_t SuspendActiveAll() override;
     int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) override;
+    int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) override;
 
 private:
     static inline BrokerDelegator<AVCodecServiceProxy> delegator_;

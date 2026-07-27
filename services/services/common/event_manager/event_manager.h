@@ -47,6 +47,7 @@ private:
     void OnStatisticsEvent(StatisticsEventType type, Media::Meta &meta);
     void OnStatisticsEventSubmit();
     void OnStatisticsEventRegisterSubmit();
+    void OnInstanceUpdateInfoEvent(Media::Meta &meta);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

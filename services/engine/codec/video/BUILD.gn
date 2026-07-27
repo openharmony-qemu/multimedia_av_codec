@@ -14,7 +14,7 @@
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-ohos_static_library("av_codec_video_loader") {
+ohos_source_set("av_codec_video_loader") {
   branch_protector_ret = "pac_ret"
   sanitize = av_codec_sanitize
   include_dirs = [
@@ -44,15 +44,14 @@ ohos_static_library("av_codec_video_loader") {
     "$av_codec_root_dir/services/engine/codec/video/video_codec_loader.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
-
-  public_deps = [
+  deps = [
+    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
   ]
 
   external_deps = [
-    "bounds_checking_function:libsec_static",
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",

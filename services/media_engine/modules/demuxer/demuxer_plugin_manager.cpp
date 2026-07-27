@@ -60,6 +60,7 @@ DataSourceImpl::DataSourceImpl(const std::shared_ptr<BaseStreamDemuxer>& stream,
 
 bool DataSourceImpl::IsOffsetValid(int64_t offset) const
 {
+    FALSE_RETURN_V(offset >= 0, false);
     if (stream_->seekable_ == Plugins::Seekable::SEEKABLE) {
         return stream_->mediaDataSize_ == 0 || offset <= static_cast<int64_t>(stream_->mediaDataSize_);
     }
@@ -88,6 +89,7 @@ Status DataSourceImpl::ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, s
                             ", offset: " PUBLIC_LOG_D64, !buffer, static_cast<int>(expectedLen), offset);
         return Status::ERROR_UNKNOWN;
     }
+    FALSE_RETURN_V(stream_ != nullptr, Status::ERROR_UNKNOWN);
     return stream_->CallbackReadAt(streamID_, offset, buffer, expectedLen);
 }
 
@@ -148,7 +150,7 @@ bool DemuxerPluginManager::GetPluginName(std::string& pluginName)
     return true;
 }
 
-void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
+void DemuxerPluginManager::InitAudioTrack(const Plugins::StreamInfo& info)
 {
     if (curAudioStreamID_ == -1) {    // 获取第一个音频流
         FALSE_RETURN_MSG(info.streamId >= 0, "Invalid streamId, id = " PUBLIC_LOG_D32, info.streamId);
@@ -178,7 +180,7 @@ void DemuxerPluginManager::InitAudioTrack(const StreamInfo& info)
     streamInfoMap_[info.streamId].type = AUDIO;
 }
 
-void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
+void DemuxerPluginManager::InitVideoTrack(const Plugins::StreamInfo& info)
 {
     if (curVideoStreamID_ == -1) {
         FALSE_RETURN_MSG(info.streamId >= 0, "Invalid streamId, id = " PUBLIC_LOG_D32, info.streamId);
@@ -195,6 +197,7 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
             format.Set<Tag::VIDEO_IS_HDR_VIVID>(
                 static_cast<uint32_t>(info.videoType == VideoType::VIDEO_TYPE_HDR_VIVID));
         }
+        format.Set<Tag::VIDEO_TYPE>(static_cast<int32_t>(info.videoType));
 		if (info.mimeType.empty()) {
             if (apiVersion_ >= API_VERSION_18) {
                 format.Set<Tag::MIME_TYPE>("video/unknown");
@@ -212,7 +215,7 @@ void DemuxerPluginManager::InitVideoTrack(const StreamInfo& info)
     streamInfoMap_[info.streamId].type = VIDEO;
 }
 
-void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
+void DemuxerPluginManager::InitSubtitleTrack(const Plugins::StreamInfo& info)
 {
     if (curSubTitleStreamID_ == -1) {   // 获取第一个字幕流
         FALSE_RETURN_MSG(info.streamId >= 0, "Invalid streamId, id = " PUBLIC_LOG_D32, info.streamId);
@@ -230,9 +233,15 @@ void DemuxerPluginManager::InitSubtitleTrack(const StreamInfo& info)
     streamInfoMap_[info.streamId].sniffSize = info.sniffSize;
 }
 
-Status DemuxerPluginManager::InitDefaultPlay(const std::vector<StreamInfo>& streams)
+Status DemuxerPluginManager::InitDefaultPlay(const std::vector<Plugins::StreamInfo>& streams)
 {
     MEDIA_LOG_D("InitDefaultPlay Begin");
+    curVideoStreamID_ = -1;
+    curAudioStreamID_ = -1;
+    curSubTitleStreamID_ = -1;
+    streamInfoMap_.clear();
+    pluginName_.clear();
+    isDash_ = false;
     for (const auto& iter : streams) {
         FALSE_RETURN_V_MSG_E(iter.streamId >= 0, Status::ERROR_INVALID_PARAMETER,
             "Invalid streamId, id = " PUBLIC_LOG_D32, iter.streamId);
@@ -359,6 +368,7 @@ Status DemuxerPluginManager::LoadCurrentAllPlugin(std::shared_ptr<BaseStreamDemu
         AddMediaInfo(iter.first, mediaInfo);
     }
 
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     curMediaInfo_ = mediaInfo;
     return Status::OK;
 }
@@ -371,11 +381,15 @@ Status DemuxerPluginManager::LoadCurrentSubtitlePlugin(std::shared_ptr<BaseStrea
         return Status::ERROR_UNKNOWN;
     }
 
-    mediaInfo = curMediaInfo_;
+    {
+        std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
+        mediaInfo = curMediaInfo_;
+    }
     MEDIA_LOG_I("LoadCurrentSubtitleDemuxerPlugin begin");
     Status ret = LoadDemuxerPlugin(curSubTitleStreamID_, streamDemuxer);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "LoadDemuxerPlugin subtitle plugin failed.");
     AddMediaInfo(curSubTitleStreamID_, mediaInfo);
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     curMediaInfo_ = mediaInfo;
     MEDIA_LOG_I("LoadCurrentSubtitleDemuxerPlugin success");
     return Status::OK;
@@ -416,6 +430,7 @@ void DemuxerPluginManager::DeleteTempTrackMapInfo(int32_t oldTrackId)
 
 void DemuxerPluginManager::UpdateTempTrackMapInfo(int32_t oldTrackId, int32_t newTrackId, int32_t newInnerTrackIndex)
 {
+    FALSE_RETURN(trackInfoMap_.find(newTrackId) != trackInfoMap_.end());
     temp2TrackInfoMap_[oldTrackId].streamID = trackInfoMap_[newTrackId].streamID;
     temp2TrackInfoMap_[oldTrackId].trackID = newTrackId;
     if (newInnerTrackIndex == -1) {
@@ -510,6 +525,7 @@ bool DemuxerPluginManager::CheckTrackIsActive(int32_t trackId)
     auto iter = trackInfoMap_.find(trackId);
     if (iter != trackInfoMap_.end()) {
         int32_t streamId = iter->second.streamID;
+        FALSE_RETURN_V(streamInfoMap_.find(streamId) != streamInfoMap_.end(), false);
         return streamInfoMap_[streamId].activated;
     }
     return false;
@@ -566,37 +582,43 @@ bool DemuxerPluginManager::CreatePlugin(std::string pluginName, int32_t id)
     return true;
 }
 
-bool DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
+Status DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
     const std::string& pluginName, int32_t id)
 {
     if (pluginName.empty()) {
-        return false;
+        return Status::ERROR_INVALID_PARAMETER;
     }
     if (streamInfoMap_[id].pluginName != pluginName) {
-        FALSE_RETURN_V(CreatePlugin(pluginName, id), false);
+        FALSE_RETURN_V(CreatePlugin(pluginName, id), Status::ERROR_INVALID_PARAMETER);
     } else {
         if (streamInfoMap_[id].plugin == nullptr || streamInfoMap_[id].plugin->Reset() != Status::OK) {
-            FALSE_RETURN_V(CreatePlugin(pluginName, id), false);
+            FALSE_RETURN_V(CreatePlugin(pluginName, id), Status::ERROR_INVALID_PARAMETER);
         }
     }
     MEDIA_LOG_D("InitPlugin, " PUBLIC_LOG_S " used, id " PUBLIC_LOG_D32, pluginName.c_str(), id);
+    FALSE_RETURN_V_MSG_E(streamDemuxer != nullptr, Status::ERROR_NULL_POINTER, "streamDemuxer is nullptr");
     streamDemuxer->SetDemuxerState(id, DemuxerState::DEMUXER_STATE_PARSE_HEADER);
     streamDemuxer->SetIsDash(isDash_);
 
     streamInfoMap_[id].dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, id);
     streamInfoMap_[id].dataSource->SetIsDash(isDash_);
 
-    Status st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource);
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    if (isPlayerMode_) {
+        configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    }
+    
+    Status st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource, configs);
     if (st == Status::ERROR_NOT_ENOUGH_DATA) {
         int32_t offset = 0;
         int32_t size = 0;
-        FALSE_RETURN_V(streamInfoMap_[id].plugin->GetProbeSize(offset, size), false);
+        FALSE_RETURN_V(streamInfoMap_[id].plugin->GetProbeSize(offset, size), st);
         WaitForInitialBufferingEnd(streamDemuxer, offset, size);
         if (isInitialBufferingSucc_.load()) {
-            st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource);
+            st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource, configs);
         }
     }
-    return st == Status::OK;
+    return st;
 }
 
 void DemuxerPluginManager::WaitForInitialBufferingEnd(std::shared_ptr<BaseStreamDemuxer> streamDemuxer,
@@ -703,7 +725,14 @@ void DemuxerPluginManager::MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> str
     const std::string& pluginName, int32_t id)
 {
     MediaAVCodec::AVCodecTrace trace("DemuxerPluginManager::MediaTypeFound");
-    if (!InitPlugin(streamDemuxer, pluginName, id)) {
+    MEDIA_LOG_D("MediaTypeFound, pluginName: " PUBLIC_LOG_S ", id: " PUBLIC_LOG_D32, pluginName.c_str(), id);
+    Status st = InitPlugin(streamDemuxer, pluginName, id);
+    MEDIA_LOG_D("MediaTypeFound, InitPlugin ret: " PUBLIC_LOG_D32, static_cast<int32_t>(st));
+    if (st == Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT) {
+        MEDIA_LOG_I("MediaTypeFound, retry with avdemux_mov");
+        st = InitPlugin(streamDemuxer, "avdemux_mov,mp4,m4a,3gp,3g2,mj2", id);
+        FALSE_RETURN_MSG(st == Status::OK, "Init plugin error.");
+    } else if (st != Status::OK) {
         MEDIA_LOG_E("Init plugin error.");
     }
 }
@@ -1007,7 +1036,11 @@ Status DemuxerPluginManager::Pause()
 
 Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
 {
-    Plugins::MediaInfo mediaInfo = curMediaInfo_;
+    Plugins::MediaInfo mediaInfo;
+    {
+        std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
+        mediaInfo = curMediaInfo_;
+    }
     std::map<int32_t, MediaTrackMap> tempTrackInfoMap = trackInfoMap_;
     for (size_t i = 0; i < streamInfoMap_[streamID].mediaInfo.tracks.size(); i++) {
         auto trackMeta = streamInfoMap_[streamID].mediaInfo.tracks[i];
@@ -1029,6 +1062,7 @@ Status DemuxerPluginManager::UpdateMediaInfo(int32_t streamID)
     UpdateGeneralValue(trackInfoMap_.size() - tempTrackInfoMap.size(),
         streamInfoMap_[streamID].mediaInfo.general, mediaInfo.general);
 
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     curMediaInfo_ = mediaInfo;
     return Status::OK;
 }
@@ -1044,6 +1078,7 @@ Status DemuxerPluginManager::UpdateDefaultStreamID(Plugins::MediaInfo& mediaInfo
         curVideoStreamID_ = newStreamID;
     } else {}
 
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     mediaInfo = curMediaInfo_;
 
     return Status::OK;
@@ -1107,6 +1142,7 @@ bool DemuxerPluginManager::IsSubtitleMime(const std::string& mime)
 
 TrackType DemuxerPluginManager::GetTrackTypeByTrackID(int32_t trackId)
 {
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
     if (static_cast<size_t>(trackId) >= curMediaInfo_.tracks.size()) {
         return TRACK_INVALID;
     }
@@ -1184,6 +1220,26 @@ void DemuxerPluginManager::UpdateTempTrackMapByStreamId(int32_t oldTrackId, int3
     int32_t newInnerTrackId = -1;
     GetTrackInfoByStreamID(newStreamId, newTrackId, newInnerTrackId, type);
     UpdateTempTrackMapInfo(oldTrackId, newTrackId, newInnerTrackId);
+}
+
+void DemuxerPluginManager::SetPlayerMode(bool isPlayerMode)
+{
+    isPlayerMode_ = isPlayerMode;
+}
+
+int32_t DemuxerPluginManager::GetTmpTrackIdByTrackId(int32_t trackId)
+{
+    auto iter = temp2TrackInfoMap_.find(trackId);
+    if (iter != temp2TrackInfoMap_.end()) {
+        return iter->second.trackID;
+    }
+    return INVALID_STREAM_OR_TRACK_ID;
+}
+
+Plugins::MediaInfo DemuxerPluginManager::GetMediaInfo()
+{
+    std::unique_lock<std::shared_mutex> lock(mediaInfoMutex_);
+    return curMediaInfo_;
 }
 } // namespace Media
 } // namespace OHOS

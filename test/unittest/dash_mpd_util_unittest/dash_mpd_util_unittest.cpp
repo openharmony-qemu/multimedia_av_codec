@@ -401,6 +401,42 @@ HWTEST_F(DashMpdUtilUnitTest, DashStreamIsHdr_001, TestSize.Level0)
     EXPECT_EQ(isHdr, false);
 }
 
+/**
+ * @tc.name  : Test ClampDurationToUint32
+ * @tc.number: ClampDurationToUint32_001
+ * @tc.desc  : Test time >= 0 and time < UINT32_MAX (normal range)
+ */
+HWTEST_F(DashMpdUtilUnitTest, ClampDurationToUint32_001, TestSize.Level0)
+{
+    uint32_t duration = 0;
+    ClampDurationToUint32(5000, duration);
+    EXPECT_EQ(duration, 5000u);
+}
+
+/**
+ * @tc.name  : Test ClampDurationToUint32
+ * @tc.number: ClampDurationToUint32_002
+ * @tc.desc  : Test time > UINT32_MAX (overflow, clamped to UINT32_MAX)
+ */
+HWTEST_F(DashMpdUtilUnitTest, ClampDurationToUint32_002, TestSize.Level0)
+{
+    uint32_t duration = 0;
+    ClampDurationToUint32(static_cast<uint64_t>(UINT32_MAX) + 1, duration);
+    EXPECT_EQ(duration, UINT32_MAX);
+}
+
+/**
+ * @tc.name  : Test ClampDurationToUint32
+ * @tc.number: ClampDurationToUint32_003
+ * @tc.desc  : Test time equals UINT32_MAX (boundary value, no clamp)
+ */
+HWTEST_F(DashMpdUtilUnitTest, ClampDurationToUint32_003, TestSize.Level0)
+{
+    uint32_t duration = 0;
+    ClampDurationToUint32(static_cast<uint64_t>(UINT32_MAX), duration);
+    EXPECT_EQ(duration, UINT32_MAX);
+}
+
 } // namespace HttpPluginLite
 } // namespace Plugin
 } // namespace Media

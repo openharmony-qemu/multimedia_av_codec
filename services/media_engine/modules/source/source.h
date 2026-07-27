@@ -104,6 +104,7 @@ public:
     Status GetSize(uint64_t &fileSize);
 
     void OnEvent(const Plugins::PluginEvent &event) override;
+    void OnDfxEvent(const Plugins::PluginDfxEvent &event) override;
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate) override;
     bool CanAutoSelectBitRate() override;
 
@@ -149,6 +150,7 @@ public:
     bool IsHls();
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
     bool IsCloudFd();
+    void PauseRead();
 
 private:
     Status InitPlugin(const std::shared_ptr<MediaSource>& source);

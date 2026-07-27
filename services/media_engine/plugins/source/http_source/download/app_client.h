@@ -68,7 +68,7 @@ public:
  
 private:
     void NotifyResponseDataEnd(LoadingRequestError state);
-    void MapToString(std::map<std::string, std::string> httpHeader);
+    void MapToString(const std::map<std::string, std::string>& httpHeader);
  
 private:
     RxHeader rxHeader_;
@@ -76,16 +76,16 @@ private:
     void *userParam_;
  
     std::shared_ptr<IMediaSourceLoader> sourceLoader_;
-    int64_t uuid_ {0};
+    std::atomic<int64_t> uuid_ {0};
     std::atomic<bool> isResponseCompleted_ {false};
     ConditionVariable responseCondition_{};
-    LoadingRequestError requestState_ = LoadingRequestError::LOADING_ERROR_SUCCESS;
+    std::atomic<LoadingRequestError> requestState_ {LoadingRequestError::LOADING_ERROR_SUCCESS};
     mutable FairMutex mutex_;
-    int dataInFlight_ {0};
-    long startPos_ {0};
-    int len_ {0};
+    std::atomic<int32_t> dataInFlight_ {0};
+    std::atomic<int64_t> startPos_ {0};
+    std::atomic<int32_t> len_ {0};
     std::string redirectUrl_ {""};
-    int64_t curOffset_ {-2};
+    std::atomic<int64_t> curOffset_ {-2};
 };
 }
 }

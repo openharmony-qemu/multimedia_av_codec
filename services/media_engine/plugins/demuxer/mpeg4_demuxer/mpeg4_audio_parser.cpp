@@ -16,6 +16,7 @@
 #define MEDIA_PLUGIN
 #define HST_LOG_TAG "MPEG4AudioParser"
 #include "common/log.h"
+#include "demuxer_data_reader.h"
 #include "mpeg4_audio_parser.h"
 #include "mpeg4_utils.h"
 
@@ -29,6 +30,39 @@ namespace Plugins {
 namespace MPEG4 {
 constexpr uint32_t DTS_SYNC_WORD = 0x7FFE8001;
 constexpr uint8_t MAX_DTS_AUDIO_MODE = 10;
+constexpr uint32_t MPEG_AUDIO_SYNC = 0x7FF;
+constexpr uint8_t MPEG_AUDIO_VERSION_RESERVED = 0x01;
+constexpr uint8_t MPEG_AUDIO_LAYER_RESERVED = 0x00;
+constexpr uint8_t MPEG_AUDIO_LAYER_I = 0x03;
+constexpr uint8_t MPEG_AUDIO_LAYER_II = 0x02;
+constexpr uint8_t MPEG_AUDIO_BITRATE_FREE = 0x00;
+constexpr uint8_t MPEG_AUDIO_BITRATE_BAD = 0x0F;
+constexpr uint8_t MPEG_AUDIO_SAMPLE_RATE_RESERVED = 0x03;
+constexpr uint8_t MPEG_AUDIO_VERSION_1 = 0x03;
+constexpr int32_t MPEG_AUDIO_LAYER_I_SAMPLES = 384;
+constexpr int32_t MPEG_AUDIO_LAYER_II_SAMPLES = 1152;
+constexpr int32_t MPEG_AUDIO_LAYER_III_MPEG1_SAMPLES = 1152;
+constexpr int32_t MPEG_AUDIO_LAYER_III_LSF_SAMPLES = 576;
+constexpr int32_t MPEG_AUDIO_MONO_CHANNELS = 1;
+constexpr int32_t MPEG_AUDIO_STEREO_CHANNELS = 2;
+constexpr uint8_t AAC_ELEMENT_TYPE_SCE = 0;
+constexpr uint8_t AAC_ELEMENT_TYPE_CPE = 1;
+constexpr uint8_t AAC_ELEMENT_TYPE_FIL = 6;
+constexpr uint8_t AAC_FIL_ESCAPE_COUNT = 15;
+constexpr uint8_t AAC_FILL_COUNT_BITS = 4;
+constexpr uint8_t AAC_FILL_BYTE_BITS = 8;
+constexpr uint8_t AAC_FILL_ESCAPE_ADJUSTMENT = 1;
+constexpr uint8_t AAC_ELEMENT_HEADER_BITS = 7;
+constexpr uint8_t AAC_ELEMENT_TYPE_BITS = 3;
+constexpr uint8_t AAC_ELEMENT_INSTANCE_TAG_BITS = 4;
+constexpr int32_t AAC_STEREO_CHANNELS = 2;
+
+struct MpegAudioFrameInfo {
+    bool valid = false;
+    int32_t samplesPerFrame = 0;
+    AudioSampleFormat sampleFormat = AudioSampleFormat::INVALID_WIDTH;
+    int32_t channels = 0;
+};
 
 const std::vector<std::pair<int32_t, AudioChannelLayout>> g_channelLayoutDefaultMap = {
     {2, AudioChannelLayout::STEREO},             // 2: STEREO
@@ -100,6 +134,86 @@ const std::vector<AudioChannelLayout> g_dtsAudioMode2DtsChannelLayout = {
     AudioChannelLayout::CH_5POINT0,
 };
 
+MpegAudioFrameInfo ParseMpegAudioFrameHeader(const uint8_t* data, uint32_t size)
+{
+    MpegAudioFrameInfo info;
+    constexpr uint32_t headerSize = 4;
+    constexpr uint8_t channelModeMono = 3;
+    if (data == nullptr || size < headerSize) {
+        return info;
+    }
+    uint32_t header = GetU32Value(data);
+    uint32_t sync = (header >> 21) & 0x7FF;
+    uint8_t version = static_cast<uint8_t>((header >> 19) & 0x03);
+    uint8_t layer = static_cast<uint8_t>((header >> 17) & 0x03);
+    uint8_t bitrateIndex = static_cast<uint8_t>((header >> 12) & 0x0F);
+    uint8_t sampleRateIndex = static_cast<uint8_t>((header >> 10) & 0x03);
+    uint8_t channelMode = static_cast<uint8_t>((header >> 6) & 0x03);
+    if (sync != MPEG_AUDIO_SYNC || version == MPEG_AUDIO_VERSION_RESERVED ||
+        layer == MPEG_AUDIO_LAYER_RESERVED || bitrateIndex == MPEG_AUDIO_BITRATE_FREE ||
+        bitrateIndex == MPEG_AUDIO_BITRATE_BAD || sampleRateIndex == MPEG_AUDIO_SAMPLE_RATE_RESERVED) {
+        return info;
+    }
+
+    info.valid = true;
+    info.channels = (channelMode == channelModeMono) ? MPEG_AUDIO_MONO_CHANNELS : MPEG_AUDIO_STEREO_CHANNELS;
+    if (layer == MPEG_AUDIO_LAYER_I) {
+        info.samplesPerFrame = MPEG_AUDIO_LAYER_I_SAMPLES;
+        info.sampleFormat = AudioSampleFormat::SAMPLE_S16P;
+    } else if (layer == MPEG_AUDIO_LAYER_II) {
+        info.samplesPerFrame = MPEG_AUDIO_LAYER_II_SAMPLES;
+        info.sampleFormat = AudioSampleFormat::SAMPLE_S16P;
+    } else {
+        info.samplesPerFrame = (version == MPEG_AUDIO_VERSION_1) ?
+            MPEG_AUDIO_LAYER_III_MPEG1_SAMPLES : MPEG_AUDIO_LAYER_III_LSF_SAMPLES;
+        info.sampleFormat = AudioSampleFormat::SAMPLE_F32P;
+    }
+    return info;
+}
+
+bool SkipAacFillElementPayload(DemuxerBitReader& bitReader)
+{
+    FALSE_RETURN_V(bitReader.HasBits(AAC_FILL_COUNT_BITS), false);
+    uint32_t fillBytes = bitReader.ReadBits(AAC_FILL_COUNT_BITS);
+    if (fillBytes == AAC_FIL_ESCAPE_COUNT) {
+        FALSE_RETURN_V(bitReader.HasBits(AAC_FILL_BYTE_BITS), false);
+        fillBytes += bitReader.ReadBits(AAC_FILL_BYTE_BITS) - AAC_FILL_ESCAPE_ADJUSTMENT;
+    }
+    while (fillBytes > 0) {
+        FALSE_RETURN_V(bitReader.HasBits(AAC_FILL_BYTE_BITS), false);
+        FALSE_RETURN_V(bitReader.SkipBits(AAC_FILL_BYTE_BITS), false);
+        --fillBytes;
+    }
+    return true;
+}
+
+bool ParseAacRawDataBlockChannels(const uint8_t* data, uint32_t size, int32_t& channels, AudioChannelLayout& layout)
+{
+    if (data == nullptr || size == 0) {
+        return false;
+    }
+    DemuxerBitReader bitReader(data, size);
+    while (bitReader.HasBits(AAC_ELEMENT_HEADER_BITS)) {
+        uint8_t elementType = bitReader.ReadBits(AAC_ELEMENT_TYPE_BITS);
+        if (elementType == AAC_ELEMENT_TYPE_FIL) {
+            FALSE_RETURN_V(SkipAacFillElementPayload(bitReader), false);
+            continue;
+        }
+        FALSE_RETURN_V(bitReader.HasBits(AAC_ELEMENT_INSTANCE_TAG_BITS), false);
+        bitReader.SkipBits(AAC_ELEMENT_INSTANCE_TAG_BITS);
+        if (elementType == AAC_ELEMENT_TYPE_SCE) {
+            return false;
+        }
+        if (elementType == AAC_ELEMENT_TYPE_CPE) {
+            channels = AAC_STEREO_CHANNELS;
+            layout = AudioChannelLayout::STEREO;
+            return true;
+        }
+        return false;
+    }
+    return false;
+}
+
 MPEG4AudioParser::MPEG4AudioParser()
 {
     MEDIA_LOG_D("In");
@@ -141,6 +255,8 @@ Status MPEG4AudioParser::ParseAudioFrame(uint8_t* data, uint32_t size, std::stri
     auto ret = Status::OK;
     if (mime == MimeType::AUDIO_MPEG) {
         ret = ParseMpegAudio(mediaInfo);
+    } else if (mime == MimeType::AUDIO_AAC) {
+        ret = ParseAacAudio(mediaInfo);
     } else if (mime == "audio/dts") {
         ret = ParseDtsAudio(mediaInfo);
     }
@@ -151,42 +267,58 @@ Status MPEG4AudioParser::ParseAudioFrame(uint8_t* data, uint32_t size, std::stri
 Status MPEG4AudioParser::ParseMpegAudio(MediaInfo& mediaInfo)
 {
     MEDIA_LOG_D("In");
-    const int32_t layerTwoSamples = 1152;
-    const int32_t layerThreeLsfSamples = 576;
-    if (dataSize_ < 0x02) {
-        return Status::ERROR_INVALID_DATA;
+    MpegAudioFrameInfo frameInfo = ParseMpegAudioFrameHeader(audioData_, dataSize_);
+    if (!frameInfo.valid) {
+        MEDIA_LOG_W("Invalid MPEG audio frame header");
+        mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_F32P);
+        return Status::OK;
     }
-    uint32_t layer = 4 - ((audioData_[1] & 0x06) >> 1);
-    bool lsf = ((audioData_[2] >> 4) & 0x03) == 2;
-    int32_t samplesPerFrame = 0;
-    AudioSampleFormat sampleFormat = AudioSampleFormat::INVALID_WIDTH;
-    switch (layer) {
-        case 0x01:
-            return Status::ERROR_INVALID_DATA;
-        case 0x02:
-            samplesPerFrame = layerTwoSamples;
-            sampleFormat = AudioSampleFormat::SAMPLE_S16P;
-            break;
-        default:
-            samplesPerFrame = lsf ? layerThreeLsfSamples : layerTwoSamples;
-            sampleFormat = AudioSampleFormat::SAMPLE_F32P;
-            break;
+    AudioChannelLayout layout = GetDefaultChannelLayout(frameInfo.channels);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_COUNT>(frameInfo.channels);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_OUTPUT_CHANNELS>(frameInfo.channels);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
+    if (frameInfo.samplesPerFrame > 0) {
+        mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(frameInfo.samplesPerFrame);
     }
-    mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame);
-    mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_FORMAT>(frameInfo.sampleFormat);
+    return Status::OK;
+}
+
+Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
+{
+    MEDIA_LOG_D("In");
+    int32_t channels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    if (!ParseAacRawDataBlockChannels(audioData_, dataSize_, channels, layout)) {
+        return Status::OK;
+    }
+    int32_t parsedChannels = 0;
+    if (mediaInfo.tracks[index_].Get<Tag::AUDIO_CHANNEL_COUNT>(parsedChannels) && parsedChannels > 0 &&
+        channels <= parsedChannels) {
+        return Status::OK;
+    }
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_OUTPUT_CHANNELS>(channels);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
+    mediaInfo.tracks[index_].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
     return Status::OK;
 }
 
 Status MPEG4AudioParser::ParseDtsAudio(MediaInfo& mediaInfo)
 {
     MEDIA_LOG_D("In");
+    constexpr uint32_t syncWordSize = 4;
+    constexpr uint32_t modeFirstByteOffset = 3;
+    constexpr uint32_t modeSecondByteOffset = 4;
+    constexpr uint32_t minDtsHeaderSize = syncWordSize + modeSecondByteOffset + 1;
     uint32_t currentOffset = 0;
-    if (dataSize_ < 0x04 || GetU32Value(&audioData_[currentOffset]) != DTS_SYNC_WORD) {
+    if (dataSize_ < minDtsHeaderSize || GetU32Value(&audioData_[currentOffset]) != DTS_SYNC_WORD) {
         return Status::ERROR_INVALID_DATA;
     }
-    currentOffset += 0x04;
-    uint8_t mode = ((audioData_[currentOffset + 3] & 0xF) << 4) +
-        (audioData_[currentOffset + 4] >> 6);
+    currentOffset += syncWordSize;
+    uint8_t mode = ((audioData_[currentOffset + modeFirstByteOffset] & 0xF) << 4) +
+        (audioData_[currentOffset + modeSecondByteOffset] >> 6);
     if (mode >= MAX_DTS_AUDIO_MODE) {
         return Status::ERROR_INVALID_DATA;
     }

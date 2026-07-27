@@ -48,36 +48,15 @@ string g_mp4Path2 = TEST_FILE_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Uri2 = TEST_URI_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4InfoPath = TEST_FILE_PATH + string("camera_info_parser.mp4");
 string g_mp4InfoUri = TEST_URI_PATH + string("camera_info_parser.mp4");
-string g_m4vPath = TEST_FILE_PATH + string("h264_fmp4.m4v");
-string g_m4vUri = TEST_URI_PATH + string("h264_fmp4.m4v");
 string g_m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
 string g_m4aUri = TEST_URI_PATH + string("audio/h264_fmp4.m4a");
-string g_fmp4Path1 = TEST_FILE_PATH + string("h264_fmp4.mp4");
-string g_fmp4Uri1 = TEST_URI_PATH + string("h264_fmp4.mp4");
-string g_fmp4Path2 = TEST_FILE_PATH + string("h265_fmp4.mp4");
-string g_fmp4Uri2 = TEST_URI_PATH + string("h265_fmp4.mp4");
 string g_mp4HdrPath = TEST_FILE_PATH + string("aac_hdrvivid.mp4");
-string g_mp4HdrUri = TEST_URI_PATH + string("aac_hdrvivid.mp4");
-string g_mp4AvcFlacPath = TEST_FILE_PATH + string("avc_flac.mp4");
-string g_mp4AvcFlacUri = TEST_URI_PATH + string("avc_flac.mp4");
 string g_mp4AvcAacPath = TEST_FILE_PATH + string("avc_aac.mp4");
 string g_mp4AvcAacUri = TEST_URI_PATH + string("avc_aac.mp4");
-string g_mp4AvcVorbisPath = TEST_FILE_PATH + string("h264_vorbis.mov");
-string g_mp4AvcVorbisUri = TEST_URI_PATH + string("h264_vorbis.mov");
-string g_mp4AvcVorbisPath2 = TEST_FILE_PATH + string("h264_vorbis_quad.mov");
-string g_mp4AvcVorbisUri2 = TEST_URI_PATH + string("h264_vorbis_quad.mov");
-string g_mp4AvcAlacPath = TEST_FILE_PATH + string("h264_alac_ch5.1.mov");
-string g_mp4AvcAlacUri = TEST_URI_PATH + string("h264_alac_ch5.1.mov");
 string g_mp4AvcAacPath2 = TEST_FILE_PATH + string("h264_aac_ch5.1.mp4");
 string g_mp4AvcAacUri2 = TEST_URI_PATH + string("h264_aac_ch5.1.mp4");
-string g_mp4HevcAacPath = TEST_FILE_PATH + string("hevc_aac.mov");
-string g_mp4HevcAacUri = TEST_URI_PATH + string("hevc_aac.mov");
 string g_mp4HevcAacPath2 = TEST_FILE_PATH + string("hevc_aac.mp4");
 string g_mp4HevcAacUri2 = TEST_URI_PATH + string("hevc_aac.mp4");
-string g_mp4HevcOpusPath = TEST_FILE_PATH + string("h265_opus_ch7.1.mp4");
-string g_mp4HevcOpusUri = TEST_URI_PATH + string("h265_opus_ch7.1.mp4");
-string g_mp4HevcPcmPath = TEST_FILE_PATH + string("h265_pcm_s16le.mov");
-string g_mp4HevcPcmUri = TEST_URI_PATH + string("h265_pcm_s16le.mov");
 
 std::map<std::string, std::map<std::string, int32_t>> infoMap = {
     {"hdrVivid", {
@@ -216,13 +195,11 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2001, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_COPYRIGHT, formatVal_.copyright));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_EQ(formatVal_.title, "Sintel Trailer");
     EXPECT_EQ(formatVal_.artist, "Durian Open Movie Team");
     EXPECT_EQ(formatVal_.copyright, "(c) copyright Blender Foundation | durian.blender.org");
     EXPECT_EQ(formatVal_.duration, 52209000);
     EXPECT_EQ(formatVal_.trackCount, 2);
-    EXPECT_EQ(formatVal_.timeScale, 1000);
 }
 
 /**
@@ -243,13 +220,11 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3001, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_COPYRIGHT, formatVal_.copyright));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_COUNT, formatVal_.trackCount));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_EQ(formatVal_.title, "Sintel Trailer");
     EXPECT_EQ(formatVal_.artist, "Durian Open Movie Team");
     EXPECT_EQ(formatVal_.copyright, "(c) copyright Blender Foundation | durian.blender.org");
     EXPECT_EQ(formatVal_.duration, 52209000);
     EXPECT_EQ(formatVal_.trackCount, 2);
-    EXPECT_EQ(formatVal_.timeScale, 1000);
 }
 
 /**
@@ -267,9 +242,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2002, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 4120000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -318,9 +291,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3002, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 4120000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -331,9 +302,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3002, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.timeScale, 12800);
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/avc");
     EXPECT_EQ(formatVal_.width, 1920);
@@ -471,222 +440,6 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3005, TestSize.Level1)
 }
 
 /**
- * @tc.name: mp4Source_GetFormat_2006
- * @tc.desc: get format when the file is fmp4, local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2006, TestSize.Level1)
-{
-    fd_ = OpenFile(g_fmp4Path1);
-    size_ = GetFileSize(g_fmp4Path1);
-    printf("---- %s ----\n", g_fmp4Path1.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10066666);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.bitRate, 1267567);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.bitRate, 127829);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3006
- * @tc.desc: get format when the file is fmp4, uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3006, TestSize.Level1)
-{
-    printf("---- %s ------\n", g_fmp4Uri1.data());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_fmp4Uri1.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10066666);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.bitRate, 1267567);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.bitRate, 127829);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2007
- * @tc.desc: get format when the file is fmp4, local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2007, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    InitResource(g_fmp4Path2, LOCAL);
-    ASSERT_TRUE(initStatus_);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10100000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/hevc");
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.bitRate, 2133375);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.bitRate, 127407);
-    CheckHevcInfo("Hevcfmp4");
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3007
- * @tc.desc: get format when the file is fmp4, uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3007, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    InitResource(g_fmp4Uri2, URI);
-    ASSERT_TRUE(initStatus_);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.duration, 10100000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/hevc");
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.bitRate, 2133375);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_LANGUAGE, formatVal_.language));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/mp4a-latm");
-    EXPECT_EQ(formatVal_.language, "chi");
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.bitRate, 127407);
-    CheckHevcInfo("Hevcfmp4");
-}
-
-/**
  * @tc.name: mp4Source_GetFormat_2008
  * @tc.desc: get format when the file is HDRvivid, local
  * @tc.type: FUNC
@@ -712,10 +465,8 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2008, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 90000);
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/hevc");
     EXPECT_EQ(formatVal_.width, 2336);
@@ -755,9 +506,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3008, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 10000);
     EXPECT_EQ(formatVal_.duration, 7334000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -768,10 +517,8 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3008, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 90000);
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/hevc");
     EXPECT_EQ(formatVal_.width, 2336);
@@ -797,112 +544,6 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3008, TestSize.Level1)
 }
 
 /**
- * @tc.name: mp4Source_GetFormat_2009
- * @tc.desc: get format when the file is MP4 with FLAC audio track
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2009, TestSize.Level1)
-{
-    fd_ = OpenFile(g_mp4AvcFlacPath);
-    size_ = GetFileSize(g_mp4AvcFlacPath);
-    printf("---- %s ----\n", g_mp4AvcFlacPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.duration, 52209000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 12288);
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.width, 854);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.bitRate, 539721);
-    EXPECT_EQ(formatVal_.frameRate, 24.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/flac");
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.bitRate, 1266065);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3009
- * @tc.desc: get format when the file is MP4 with FLAC audio track
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3009, TestSize.Level1)
-{
-    printf("---- %s ------\n", g_mp4AvcFlacUri.data());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4AvcFlacUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 52209000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 12288);
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.width, 854);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.bitRate, 539721);
-    EXPECT_EQ(formatVal_.frameRate, 24.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/flac");
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.bitRate, 1266065);
-}
-
-/**
  * @tc.name: mp4Source_GetFormat_2010
  * @tc.desc: get format when the file is MP4 with AAC audio track
  * @tc.type: FUNC
@@ -918,8 +559,6 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2010, TestSize.Level1)
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_EQ(formatVal_.timeScale, 44100);
     EXPECT_EQ(formatVal_.duration, 6135011);
     trackIndex_ = 0;
     format_->Destroy();
@@ -968,9 +607,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3010, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 44100);
     EXPECT_EQ(formatVal_.duration, 6135011);
     trackIndex_ = 0;
     format_->Destroy();
@@ -981,10 +618,8 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3010, TestSize.Level1)
     EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 600);
     EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
     EXPECT_EQ(formatVal_.codecMime, "video/avc");
     EXPECT_EQ(formatVal_.width, 1920);
@@ -1009,282 +644,6 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3010, TestSize.Level1)
 }
 
 /**
- * @tc.name: mp4Source_GetFormat_2011
- * @tc.desc: get format when the file is MP4(h264 + vorbis)
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2011, TestSize.Level1)
-{
-    fd_ = OpenFile(g_mp4AvcVorbisPath);
-    size_ = GetFileSize(g_mp4AvcVorbisPath);
-    printf("---- %s ----\n", g_mp4AvcVorbisPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10067000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.bitRate, 1177099);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/vorbis");
-    EXPECT_EQ(formatVal_.bitRate, 80435);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2012
- * @tc.desc: get format when the file is MP4(h264 + vorbis)
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2012, TestSize.Level1)
-{
-    fd_ = OpenFile(g_mp4AvcVorbisPath);
-    size_ = GetFileSize(g_mp4AvcVorbisPath);
-    printf("---- %s ----\n", g_mp4AvcVorbisPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10067000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_TRACK_START_TIME, formatVal_.startTime));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.startTime, 33000);
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    EXPECT_EQ(formatVal_.channelLayout, 3);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3011
- * @tc.desc: get format when the file is MP4(h264 + vorbis)
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3011, TestSize.Level1)
-{
-    printf("---- %s ------\n", g_mp4AvcVorbisUri.data());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4AvcVorbisUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10067000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.bitRate, 1177099);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/vorbis");
-    EXPECT_EQ(formatVal_.bitRate, 80435);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3012
- * @tc.desc: get format when the file is MP4(h264 + vorbis)
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3012, TestSize.Level1)
-{
-    printf("---- %s ------\n", g_mp4AvcVorbisUri.data());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4AvcVorbisUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10067000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_TRACK_START_TIME, formatVal_.startTime));
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.startTime, 33000);
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    EXPECT_EQ(formatVal_.channelLayout, 3);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2013
- * @tc.desc: get format when the file is MOV(h265 + AAC)
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2013, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    InitResource(g_mp4HevcAacPath, LOCAL);
-    ASSERT_TRUE(initStatus_);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 52209000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 12288);
-    EXPECT_EQ(formatVal_.width, 1920);
-    EXPECT_EQ(formatVal_.height, 1080);
-    EXPECT_EQ(formatVal_.frameRate, 24.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 48000);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    EXPECT_EQ(formatVal_.channelLayout, 3);
-    CheckHevcInfo("Hevcmov");
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3013
- * @tc.desc: get format when the file is MOV(h265 + AAC)
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3013, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    InitResource(g_mp4HevcAacUri, URI);
-    ASSERT_TRUE(initStatus_);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 52209000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 12288);
-    EXPECT_EQ(formatVal_.width, 1920);
-    EXPECT_EQ(formatVal_.height, 1080);
-    EXPECT_EQ(formatVal_.frameRate, 24.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 48000);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    EXPECT_EQ(formatVal_.channelLayout, 3);
-    CheckHevcInfo("Hevcmov");
-}
-
-/**
  * @tc.name: mp4Source_GetFormat_2014
  * @tc.desc: get format when the file is MP4(h265 + AAC)
  * @tc.type: FUNC
@@ -1299,20 +658,16 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2014, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 52209000);
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 12288);
     EXPECT_EQ(formatVal_.width, 1920);
     EXPECT_EQ(formatVal_.height, 1080);
     EXPECT_EQ(formatVal_.frameRate, 24.000000);
@@ -1347,20 +702,16 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3014, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 52209000);
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 12288);
     EXPECT_EQ(formatVal_.width, 1920);
     EXPECT_EQ(formatVal_.height, 1080);
     EXPECT_EQ(formatVal_.frameRate, 24.000000);
@@ -1381,734 +732,6 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3014, TestSize.Level1)
 }
 
 /**
- * @tc.name: mp4Source_GetFormat_2015
- * @tc.desc: get format when the file is MP4(h264 + alac), local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2015, TestSize.Level1)
-{
-    fd_ = OpenFile(g_mp4AvcAlacPath);
-    size_ = GetFileSize(g_mp4AvcAlacPath);
-    printf("---- %s ----\n", g_mp4AvcAlacPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.bitRate, 876853);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.bitRate, 336610);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3015
- * @tc.desc: get format when the file is MP4(h264 + alac), uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3015, TestSize.Level1)
-{
-    printf("---- %s ----\n", g_mp4AvcAlacUri.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4AvcAlacUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.bitRate, 876853);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.bitRate, 336610);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2016
- * @tc.desc: get format when the file is MP4(h264 + alac), local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2016, TestSize.Level1)
-{
-    fd_ = OpenFile(g_mp4AvcAlacPath);
-    size_ = GetFileSize(g_mp4AvcAlacPath);
-    printf("---- %s ----\n", g_mp4AvcAlacPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 6);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
-    EXPECT_EQ(formatVal_.channelLayout, 63);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3016
- * @tc.desc: get format when the file is MP4(h264 + alac), uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3016, TestSize.Level1)
-{
-    printf("---- %s ----\n", g_mp4AvcAlacUri.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4AvcAlacUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 6);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16P);
-    EXPECT_EQ(formatVal_.channelLayout, 63);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2017
- * @tc.desc: get format when the file is MP4(h264 + vorbis), local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2017, TestSize.Level1)
-{
-    fd_ = OpenFile(g_mp4AvcVorbisPath2);
-    size_ = GetFileSize(g_mp4AvcVorbisPath2);
-    printf("---- %s ----\n", g_mp4AvcVorbisPath2.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.bitRate, 876853);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/vorbis");
-    EXPECT_EQ(formatVal_.bitRate, 104171);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3017
- * @tc.desc: get format when the file is MP4(h264 + vorbis), uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3017, TestSize.Level1)
-{
-    printf("---- %s ----\n", g_mp4AvcVorbisUri2.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4AvcVorbisUri2.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/avc");
-    EXPECT_EQ(formatVal_.bitRate, 876853);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/vorbis");
-    EXPECT_EQ(formatVal_.bitRate, 104171);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2018
- * @tc.desc: get format when the file is MP4(h264 + vorbis), local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2018, TestSize.Level1)
-{
-    fd_ = OpenFile(g_mp4AvcVorbisPath2);
-    size_ = GetFileSize(g_mp4AvcVorbisPath2);
-    printf("---- %s ----\n", g_mp4AvcVorbisPath2.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 4);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    EXPECT_EQ(formatVal_.channelLayout, 51);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3018
- * @tc.desc: get format when the file is MP4(h264 + vorbis), uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3018, TestSize.Level1)
-{
-    printf("---- %s ----\n", g_mp4AvcVorbisUri2.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4AvcVorbisUri2.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 4);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    EXPECT_EQ(formatVal_.channelLayout, 51);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2019
- * @tc.desc: get format when the file is MP4(hevc + opus), local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2019, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    fd_ = OpenFile(g_mp4HevcOpusPath);
-    size_ = GetFileSize(g_mp4HevcOpusPath);
-    printf("---- %s ----\n", g_mp4HevcOpusPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/hevc");
-    EXPECT_EQ(formatVal_.bitRate, 454562);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/opus");
-    EXPECT_EQ(formatVal_.bitRate, 100079);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3019
- * @tc.desc: get format when the file is MP4(hevc + opus), uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3019, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    printf("---- %s ----\n", g_mp4HevcOpusUri.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4HevcOpusUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/hevc");
-    EXPECT_EQ(formatVal_.bitRate, 454562);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/opus");
-    EXPECT_EQ(formatVal_.bitRate, 100079);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2020
- * @tc.desc: get format when the file is MP4(hevc + opus), local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2020, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    fd_ = OpenFile(g_mp4HevcOpusPath);
-    size_ = GetFileSize(g_mp4HevcOpusPath);
-    printf("---- %s ----\n", g_mp4HevcOpusPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 48000);
-    EXPECT_EQ(formatVal_.channelCount, 8);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    EXPECT_EQ(formatVal_.channelLayout, 1599);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3020
- * @tc.desc: get format when the file is MP4(hevc + opus), uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3020, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    printf("---- %s ----\n", g_mp4HevcOpusUri.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4HevcOpusUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 3000000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 48000);
-    EXPECT_EQ(formatVal_.channelCount, 8);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
-    EXPECT_EQ(formatVal_.channelLayout, 1599);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2021
- * @tc.desc: get format when the file is MP4(hevc + pcm), local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2021, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    fd_ = OpenFile(g_mp4HevcPcmPath);
-    size_ = GetFileSize(g_mp4HevcPcmPath);
-    printf("---- %s ----\n", g_mp4HevcPcmPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10100000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_TRACK_START_TIME, formatVal_.startTime));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/hevc");
-    EXPECT_EQ(formatVal_.bitRate, 2133375);
-    EXPECT_EQ(formatVal_.startTime, 33000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/raw");
-    EXPECT_EQ(formatVal_.bitRate, 1411200);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3021
- * @tc.desc: get format when the file is MP4(hevc + pcm), uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3021, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    printf("---- %s ----\n", g_mp4HevcPcmUri.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4HevcPcmUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10100000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_TRACK_START_TIME, formatVal_.startTime));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_VID);
-    EXPECT_EQ(formatVal_.codecMime, "video/hevc");
-    EXPECT_EQ(formatVal_.bitRate, 2133375);
-    EXPECT_EQ(formatVal_.startTime, 33000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_TRACK_TYPE, formatVal_.trackType));
-    EXPECT_TRUE(format_->GetStringValue(OH_MD_KEY_CODEC_MIME, formatVal_.codecMime));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_BITRATE, formatVal_.bitRate));
-    EXPECT_EQ(formatVal_.trackType, MediaType::MEDIA_TYPE_AUD);
-    EXPECT_EQ(formatVal_.codecMime, "audio/raw");
-    EXPECT_EQ(formatVal_.bitRate, 1411200);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_2022
- * @tc.desc: get format when the file is MP4(hevc + pcm), local
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2022, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    fd_ = OpenFile(g_mp4HevcPcmPath);
-    size_ = GetFileSize(g_mp4HevcPcmPath);
-    printf("---- %s ----\n", g_mp4HevcPcmPath.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10100000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16LE);
-    EXPECT_EQ(formatVal_.channelLayout, 3);
-}
-
-/**
- * @tc.name: mp4Source_GetFormat_3022
- * @tc.desc: get format when the file is MP4(hevc + pcm), uri
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3022, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
-        return;
-    }
-    printf("---- %s ----\n", g_mp4HevcPcmUri.c_str());
-    source_ = Mpeg4SourceMockFactory::CreateSourceWithURI(const_cast<char*>(g_mp4HevcPcmUri.data()));
-    ASSERT_NE(source_, nullptr);
-    format_ = source_->GetSourceFormat();
-    ASSERT_NE(format_, nullptr);
-    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
-    EXPECT_EQ(formatVal_.duration, 10100000);
-    trackIndex_ = 0;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
-    EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
-    EXPECT_EQ(formatVal_.width, 720);
-    EXPECT_EQ(formatVal_.height, 480);
-    EXPECT_EQ(formatVal_.frameRate, 60.000000);
-    trackIndex_ = 1;
-    format_->Destroy();
-    format_ = source_->GetTrackFormat(trackIndex_);
-    ASSERT_NE(format_, nullptr);
-    printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_SAMPLE_RATE, formatVal_.sampleRate));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUD_CHANNEL_COUNT, formatVal_.channelCount));
-    EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_AUDIO_SAMPLE_FORMAT, formatVal_.audioSampleFormat));
-    EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_CHANNEL_LAYOUT, formatVal_.channelLayout));
-    EXPECT_EQ(formatVal_.sampleRate, 44100);
-    EXPECT_EQ(formatVal_.channelCount, 2);
-    EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_S16LE);
-    EXPECT_EQ(formatVal_.channelLayout, 3);
-}
-
-/**
  * @tc.name: mp4Source_GetFormat_2023
  * @tc.desc: get format when the file is MP4(h264 + aac 5.1)
  * @tc.type: FUNC
@@ -2123,9 +746,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2023, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3000000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -2164,9 +785,7 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3023, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3000000);
     trackIndex_ = 0;
     format_->Destroy();
@@ -2207,20 +826,16 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_2024, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3000000);
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 720);
     EXPECT_EQ(formatVal_.height, 480);
     EXPECT_EQ(formatVal_.frameRate, 60.000000);
@@ -2252,20 +867,16 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3024, TestSize.Level1)
     format_ = source_->GetSourceFormat();
     ASSERT_NE(format_, nullptr);
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetLongValue(OH_MD_KEY_DURATION, formatVal_.duration));
-    EXPECT_EQ(formatVal_.timeScale, 1000);
     EXPECT_EQ(formatVal_.duration, 3000000);
     trackIndex_ = 0;
     format_->Destroy();
     format_ = source_->GetTrackFormat(trackIndex_);
     ASSERT_NE(format_, nullptr);
     printf("[ trackFormat %d]: %s\n", trackIndex_, format_->DumpInfo());
-    EXPECT_TRUE(format_->GetIntValue(Media::Tag::MEDIA_TIME_SCALE, formatVal_.timeScale));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_WIDTH, formatVal_.width));
     EXPECT_TRUE(format_->GetIntValue(OH_MD_KEY_HEIGHT, formatVal_.height));
     EXPECT_TRUE(format_->GetDoubleValue(OH_MD_KEY_FRAME_RATE, formatVal_.frameRate));
-    EXPECT_EQ(formatVal_.timeScale, 15360);
     EXPECT_EQ(formatVal_.width, 720);
     EXPECT_EQ(formatVal_.height, 480);
     EXPECT_EQ(formatVal_.frameRate, 60.000000);
@@ -2283,4 +894,5 @@ HWTEST_F(Mpeg4SourceUnitTest, mp4Source_GetFormat_3024, TestSize.Level1)
     EXPECT_EQ(formatVal_.audioSampleFormat, AudioSampleFormat::SAMPLE_F32P);
     EXPECT_EQ(formatVal_.channelLayout, 63);
 }
+
 } // namespace

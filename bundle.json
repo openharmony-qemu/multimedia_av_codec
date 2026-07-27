@@ -34,6 +34,7 @@
         "av_codec_support_xcollie",
         "av_codec_support_bitstream_dump",
         "av_codec_enable_special_codec",
+        "av_codec_enable_codec_vivid",
         "av_codec_support_drm",
         "av_codec_support_video_processing_engine",
         "av_codec_support_software_codec",
@@ -43,6 +44,7 @@
         "av_codec_enable_codec_rv",
         "av_codec_enable_codec_eac3",
         "av_codec_enable_codec_opus",
+        "av_codec_enable_codec_amrnb",
         "av_codec_enable_codec_truehd",
         "av_codec_enable_codec_dts",
         "av_codec_enable_demuxer_lrc",
@@ -55,7 +57,9 @@
         "av_codec_support_av1_decoder",
         "av_codec_enable_demuxer_dtshd",
         "av_codec_enable_demuxer_truehd",
-        "av_codec_enable_player_startup_optimization"
+        "av_codec_enable_memc",
+        "av_codec_enable_player_startup_optimization",
+        "av_codec_enable_audio_convert"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
@@ -65,6 +69,7 @@
       ],
       "deps": {
         "components": [
+          "opus",
           "access_token",
           "netmanager_base",
           "bounds_checking_function",
@@ -93,6 +98,7 @@
           "drm_framework",
           "ffmpeg",
           "lame",
+          "opencore-amr",
           "libvpx",
           "libxml2",
           "video_processing_engine",
@@ -107,7 +113,9 @@
           "json",
           "resource_schedule_service",
           "certificate_manager",
-          "api_metrics"
+          "api_metrics",
+          "egl",
+          "opengles"
         ],
         "third_party": []
       },

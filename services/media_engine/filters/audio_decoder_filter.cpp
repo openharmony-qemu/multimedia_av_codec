@@ -20,6 +20,7 @@
 #include "filter/filter_factory.h"
 #include "common/log.h"
 #include "common/media_core.h"
+#include "common/event.h"
 #include "sink/audio_sampleformat.h"
 #include "avcodec_info.h"
 #include "avcodec_sysevent.h"
@@ -332,7 +333,17 @@ void AudioDecoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 void AudioDecoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 {
     FALSE_RETURN_MSG(decoder_ != nullptr, "decoder_ is nullptr");
-    decoder_->GetOutputFormat(parameter);
+    FALSE_RETURN_MSG(parameter != nullptr, "parameter is nullptr");
+    std::shared_ptr<Meta> decoderParam_ = std::make_shared<Meta>();
+    decoder_->GetOutputFormat(decoderParam_);
+    int32_t outputbuffersize = 0;
+    if (decoderParam_->GetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize)) {
+        parameter->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize);
+        MEDIA_LOG_I("AUDIO_MAX_OUTPUT_SIZE is: " PUBLIC_LOG_D32,
+            static_cast<int32_t>(outputbuffersize));
+    } else {
+        MEDIA_LOG_I("Failed to get AUDIO_MAX_OUTPUT_SIZE");
+    }
 }
 
 Status AudioDecoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -342,7 +353,20 @@ Status AudioDecoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, S
     nextFiltersMap_[outType].push_back(nextFilter_);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<AudioDecoderFilterLinkCallback>(shared_from_this());
+    if (isDecOnlyMode_) {
+        return nextFilter->OnLinked(outType, outputMeta_, filterLinkCallback);
+    }
+    GetParameter(meta_);
     return nextFilter->OnLinked(outType, meta_, filterLinkCallback);
+}
+
+void AudioDecoderFilter::ResetOutputAudioMime(std::string mimeType)
+{
+    MEDIA_LOG_I("AudioDecoderFilter::ResetOutputAudioMime %{public}s ", mimeType.c_str());
+    FALSE_RETURN_MSG(meta_ != nullptr, "meta is nullptr");
+    isDecOnlyMode_ = true;
+    outputMeta_ = std::make_shared<Meta>(*meta_);
+    outputMeta_->SetData(Tag::MIME_TYPE, mimeType);
 }
 
 Status AudioDecoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -363,7 +387,8 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     bool mimeGetRes = meta->GetData(Tag::MIME_TYPE, mime);
     if (!mimeGetRes && eventReceiver_ != nullptr) {
         MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE, ""});
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), ""});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     UpdateTrackInfoSampleFormat(mime, meta);
@@ -398,7 +423,8 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     bool mimeGetRes = meta->GetData(Tag::MIME_TYPE, mime);
     if (!mimeGetRes && eventReceiver_ != nullptr) {
         MEDIA_LOG_I("AudioDecoderFilter cannot get mime");
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE, ""});
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), ""});
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
     UpdateTrackInfoSampleFormat(mime, meta);
@@ -411,7 +437,8 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
         ret = decoder_->Init(true, mime);
         if (ret != Status::OK && eventReceiver_ != nullptr) {
             MEDIA_LOG_E("decoder init fail.");
-            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE, ""});
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), ""});
         }
     }
     FALSE_RETURN_V(ret == Status::OK, Status::ERROR_INVALID_PARAMETER);
@@ -424,7 +451,8 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     if (ret != Status::OK && ret != Status::ERROR_INVALID_STATE) {
         MEDIA_LOG_I_SHORT("AudioDecoderFilter unsupport format");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_DEC_TYPE, mime});
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), mime});
         }
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
@@ -528,7 +556,7 @@ void AudioDecoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
         ret = SetOutputBufferQueueProducerListener();
         FALSE_RETURN_MSG(ret == Status::OK, "OnLinkedResult SetOutputBufferQueueProducerListener failed");
     }
- 
+
     sptr<AVBufferQueueProducer> inputProducer = decoder_->GetInputBufferQueue();
     FALSE_RETURN(inputProducer != nullptr && onLinkedResultCallback_ != nullptr);
 
@@ -685,7 +713,8 @@ void AudioDecoderFilter::OnError(CodecErrorType errorType, int32_t errorCode)
             if (meta_ != nullptr) {
                 meta_->GetData(Tag::MIME_TYPE, mime);
             }
-            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR, MSERR_DRM_VERIFICATION_FAILED, mime});
+            eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_DRM_VERIFICATION_FAILED), mime});
             break;
         }
         default:
@@ -716,6 +745,24 @@ void AudioDecoderFilter::OnOutputFormatChanged(const Format& format)
     meta_->GetData(Tag::AUDIO_OUTPUT_CHANNELS, preChannels);
     meta_->GetData(Tag::AUDIO_SAMPLE_FORMAT, preSampleFormat);
     FALSE_RETURN_NOLOG(preSampleRate != sampleRate || preChannels != channels || preSampleFormat != sampleFormat);
+
+    if (eventReceiver_ != nullptr) {
+        MEDIA_LOG_I("Audio params discontinuity detected, sampleRate %d->%d, channels %d->%d, format %d->%d",
+            preSampleRate, sampleRate, preChannels, channels, preSampleFormat, sampleFormat);
+        MediaDiscontinueInfo discontinueInfo {
+            .streamType = 1,
+            .discontinueType = 1,
+            .ptsBefore = 0,
+            .ptsAfter = 0,
+            .sampleRateBefore = preSampleRate,
+            .sampleRateAfter = sampleRate,
+            .channelsBefore = preChannels,
+            .channelsAfter = channels,
+            .sampleFormatBefore = preSampleFormat,
+            .sampleFormatAfter = sampleFormat
+        };
+        eventReceiver_->OnDfxEvent({"AudioDecoder", DfxEventType::DFX_EVENT_MEDIA_DISCONTINUE, discontinueInfo});
+    }
 
     meta_->SetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
     meta_->SetData(Tag::AUDIO_OUTPUT_CHANNELS, channels);

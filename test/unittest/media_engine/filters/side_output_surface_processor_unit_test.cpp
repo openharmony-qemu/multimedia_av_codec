@@ -14,12 +14,17 @@
  */
 
 #include "side_output_surface_processor_unit_test.h"
+#include "gmock/gmock.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 using namespace testing;
 using namespace testing::ext;
+
+namespace {
+constexpr uint32_t MAX_BUFFER_SIZE = 100 * 1024 * 1024; // 100MB
+}
 
 namespace OHOS {
 namespace Media {
@@ -31,10 +36,12 @@ void SideOutputSurfaceProcessorUnitTest::TearDownTestCase(void) {}
 
 void SideOutputSurfaceProcessorUnitTest::SetUp(void)
 {
-    processor_ = std::make_shared<SideOutputSurfaceProcessor>();
+    processor_ = std::make_shared<TestableSideOutputSurfaceProcessor>();
     EXPECT_NE(processor_, nullptr);
     callback_ = std::make_shared<MockPostProcessorCallback>();
     receiver_ = std::make_shared<MockEventReceiver>();
+    mockSurface_ = new MockSurface();
+    mockBuffer_ = new MockSurfaceBuffer();
 }
 
 void SideOutputSurfaceProcessorUnitTest::TearDown(void)
@@ -45,15 +52,51 @@ void SideOutputSurfaceProcessorUnitTest::TearDown(void)
     }
     callback_ = nullptr;
     receiver_ = nullptr;
+    mockSurface_ = nullptr;
+    mockBuffer_ = nullptr;
+    
+    for (void* buffer : allocatedBuffers_) {
+        if (buffer != nullptr) {
+            free(buffer);
+        }
+    }
+    allocatedBuffers_.clear();
+}
+
+sptr<MockSurfaceBuffer> SideOutputSurfaceProcessorUnitTest::CreateMockBufferWithMemory(uint32_t size)
+{
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    if (size == 0 || size > MAX_BUFFER_SIZE) {
+        EXPECT_CALL(*mockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+        EXPECT_CALL(*mockBuffer, GetSize()).WillRepeatedly(Return(0));
+        return mockBuffer;
+    }
+    void* realBuffer = malloc(size);
+    if (realBuffer != nullptr) {
+        errno_t ret = memset_s(realBuffer, size, 0, size);
+        if (ret != EOK) {
+            free(realBuffer);
+            EXPECT_CALL(*mockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+            EXPECT_CALL(*mockBuffer, GetSize()).WillRepeatedly(Return(0));
+            return mockBuffer;
+        }
+        allocatedBuffers_.push_back(realBuffer);
+        EXPECT_CALL(*mockBuffer, GetVirAddr()).WillRepeatedly(Return(realBuffer));
+    } else {
+        EXPECT_CALL(*mockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+    }
+    EXPECT_CALL(*mockBuffer, GetSize()).WillRepeatedly(Return(size));
+    return mockBuffer;
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_Init_001
- * @tc.desc: test Init when already initialized (branch: isInitialized_.load() == true)
+ * @tc.desc: test Init when already initialized
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Init_AlreadyInitialized_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Init_AlreadyInitialized, TestSize.Level1)
 {
+    EXPECT_CALL(*callback_, OnError(_)).Times(0);
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
     EXPECT_TRUE(processor_->isInitialized_.load());
@@ -64,13 +107,12 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Init_AlreadyInitialized_Branch, Tes
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_Init_002
- * @tc.desc: test Init for first time (branch: isInitialized_.load() == false)
+ * @tc.desc: test Init for first time initialization
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Init_FirstTime_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Init_FirstTime, TestSize.Level1)
 {
     EXPECT_FALSE(processor_->isInitialized_.load());
-
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
     EXPECT_TRUE(processor_->isInitialized_.load());
@@ -79,17 +121,17 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Init_FirstTime_Branch, TestSize.Lev
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_Flush_001
- * @tc.desc: test Flush when producerSurface_ != nullptr
+ * @tc.desc: test Flush when producerSurface_ is not nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Flush_WithProducerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Flush_WithProducerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    sptr<Surface> inputSurface = processor_->GetInputSurface();
-    EXPECT_NE(inputSurface, nullptr);
-    EXPECT_NE(processor_->producerSurface_, nullptr);
+    processor_->producerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, CleanCache(false)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, CleanCache(true)).Times(AnyNumber());
 
     ret = processor_->Flush();
     EXPECT_EQ(ret, Status::OK);
@@ -97,10 +139,10 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Flush_WithProducerSurface_Branch, T
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_Flush_002
- * @tc.desc: test Flush when producerSurface_ == nullptr
+ * @tc.desc: test Flush when producerSurface_ is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Flush_WithoutProducerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Flush_WithoutProducerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
@@ -111,74 +153,80 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Flush_WithoutProducerSurface_Branch
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_Stop_001
- * @tc.desc: test Stop normal branch
+ * @tc.name: SideOutputSurfaceProcessor_Flush_003
+ * @tc.desc: test Flush when sideSurface_ is not nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Stop_Normal_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Flush_WithSideSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
+    processor_->sideSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, CleanCache(_)).Times(AnyNumber());
+
+    ret = processor_->Flush();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_Flush_004
+ * @tc.desc: test Flush when sideSurface_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Flush_WithoutSideSurface, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    processor_->sideSurface_ = nullptr;
+    ret = processor_->Flush();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_Stop_001
+ * @tc.desc: test Stop normal flow
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Stop_Normal, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+    ret = processor_->Start();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::RUNNING);
+
     ret = processor_->Stop();
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(processor_->state_.load(), SideOutputSurfaceProcessor::ProcessorState::STOPPING);
+    EXPECT_EQ(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::STOPPING);
+    EXPECT_TRUE(processor_->isPaused_.load());
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_Start_001
- * @tc.desc: test Start when state == RUNNING (branch: already running)
+ * @tc.desc: test Start when already in RUNNING state
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Start_AlreadyRunning_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Start_AlreadyRunning, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
+    ret = processor_->Start();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::RUNNING);
 
     ret = processor_->Start();
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(processor_->state_.load(), SideOutputSurfaceProcessor::ProcessorState::RUNNING);
-
-    ret = processor_->Start();
-    EXPECT_EQ(ret, Status::OK);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_Start_002
- * @tc.desc: test Start when state != RUNNING (branch: from idle)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Start_FromIdle_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
-    EXPECT_EQ(ret, Status::OK);
-    EXPECT_NE(processor_->state_.load(), SideOutputSurfaceProcessor::ProcessorState::RUNNING);
-
-    ret = processor_->Start();
-    EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(processor_->state_.load(), SideOutputSurfaceProcessor::ProcessorState::RUNNING);
+    EXPECT_EQ(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::RUNNING);
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_Release_001
- * @tc.desc: test Release when not initialized (branch: !isInitialized_.load() == true)
+ * @tc.desc: test Release when processor is initialized
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_NotInitialized_Branch, TestSize.Level1)
-{
-    EXPECT_FALSE(processor_->isInitialized_.load());
-
-    Status ret = processor_->Release();
-    EXPECT_EQ(ret, Status::OK);
-    processor_ = nullptr;
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_Release_002
- * @tc.desc: test Release when initialized (branch: !isInitialized_.load() == false)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_Initialized_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_Initialized, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
@@ -192,17 +240,17 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_Initialized_Branch, TestSiz
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_Release_003
- * @tc.desc: test Release when state == RUNNING (branch: state == RUNNING)
+ * @tc.name: SideOutputSurfaceProcessor_Release_002
+ * @tc.desc: test Release when processor is in RUNNING state
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WhileRunning_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WhileRunning, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
     ret = processor_->Start();
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(processor_->state_.load(), SideOutputSurfaceProcessor::ProcessorState::RUNNING);
+    EXPECT_EQ(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::RUNNING);
 
     ret = processor_->Release();
     EXPECT_EQ(ret, Status::OK);
@@ -210,34 +258,73 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WhileRunning_Branch, TestSi
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_Release_004
- * @tc.desc: test Release when state != RUNNING (branch: state != RUNNING)
+ * @tc.name: SideOutputSurfaceProcessor_Release_003
+ * @tc.desc: test Release when already released
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_NotRunningState_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_AlreadyReleased, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_NE(processor_->state_.load(), SideOutputSurfaceProcessor::ProcessorState::RUNNING);
+    EXPECT_TRUE(processor_->isInitialized_.load());
 
     ret = processor_->Release();
     EXPECT_EQ(ret, Status::OK);
+    EXPECT_FALSE(processor_->isInitialized_.load());
+    processor_ = nullptr;
+
+    TestableSideOutputSurfaceProcessor tempProcessor;
+    EXPECT_FALSE(tempProcessor.isInitialized_.load());
+    ret = tempProcessor.Release();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_Release_004
+ * @tc.desc: test Release when worker thread is joinable
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WorkerJoinable, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(processor_->worker_.joinable());
+
+    ret = processor_->Release();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_FALSE(processor_->worker_.joinable());
     processor_ = nullptr;
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_Release_005
- * @tc.desc: test Release when consumerSurface_ != nullptr (branch: consumerSurface_ != nullptr)
+ * @tc.desc: test Release when sampleTask_ is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithConsumerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_NoSampleTask, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(processor_->sampleTask_, nullptr);
+
+    processor_->sampleTask_ = nullptr;
+    ret = processor_->Release();
+    EXPECT_EQ(ret, Status::OK);
+    processor_ = nullptr;
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_Release_006
+ * @tc.desc: test Release when consumerSurface_ is not nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithConsumerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    sptr<Surface> inputSurface = processor_->GetInputSurface();
-    EXPECT_NE(inputSurface, nullptr);
-    EXPECT_NE(processor_->consumerSurface_, nullptr);
+    processor_->consumerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, UnregisterConsumerListener()).Times(AnyNumber());
 
     ret = processor_->Release();
     EXPECT_EQ(ret, Status::OK);
@@ -246,11 +333,11 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithConsumerSurface_Branch,
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_Release_006
- * @tc.desc: test Release when consumerSurface_ == nullptr (branch: consumerSurface_ == nullptr)
+ * @tc.name: SideOutputSurfaceProcessor_Release_007
+ * @tc.desc: test Release when consumerSurface_ is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithoutConsumerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithoutConsumerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
@@ -263,18 +350,19 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithoutConsumerSurface_Bran
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_Release_007
- * @tc.desc: test Release when producerSurface_ != nullptr (branch: producerSurface_ != nullptr)
+ * @tc.name: SideOutputSurfaceProcessor_Release_008
+ * @tc.desc: test Release when producerSurface_ is not nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithProducerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithProducerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    sptr<Surface> inputSurface = processor_->GetInputSurface();
-    EXPECT_NE(inputSurface, nullptr);
-    EXPECT_NE(processor_->producerSurface_, nullptr);
+    processor_->producerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, UnRegisterReleaseListener()).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, Disconnect()).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, CleanCache(true)).Times(AnyNumber());
 
     ret = processor_->Release();
     EXPECT_EQ(ret, Status::OK);
@@ -283,11 +371,11 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithProducerSurface_Branch,
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_Release_008
- * @tc.desc: test Release when producerSurface_ == nullptr (branch: producerSurface_ == nullptr)
+ * @tc.name: SideOutputSurfaceProcessor_Release_009
+ * @tc.desc: test Release when producerSurface_ is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithoutProducerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithoutProducerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
@@ -300,211 +388,156 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, Release_WithoutProducerSurface_Bran
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_GetInputSurface_001
- * @tc.desc: test GetInputSurface when consumerSurface_ != nullptr (branch: already exists)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetInputSurface_AlreadyExist_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
-    EXPECT_EQ(ret, Status::OK);
-
-    sptr<Surface> surface1 = processor_->GetInputSurface();
-    EXPECT_NE(surface1, nullptr);
-    EXPECT_NE(processor_->consumerSurface_, nullptr);
-
-    sptr<Surface> surface2 = processor_->GetInputSurface();
-    EXPECT_EQ(surface2, surface1);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_GetInputSurface_002
- * @tc.desc: test GetInputSurface when consumerSurface_ == nullptr (branch: create new)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetInputSurface_CreateNew_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
-    EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(processor_->consumerSurface_, nullptr);
-
-    sptr<Surface> surface = processor_->GetInputSurface();
-    EXPECT_NE(surface, nullptr);
-    EXPECT_NE(processor_->consumerSurface_, nullptr);
-    EXPECT_NE(processor_->producerSurface_, nullptr);
-}
-
-/**
  * @tc.name: SideOutputSurfaceProcessor_SetOutputSurface_001
- * @tc.desc: test SetOutputSurface when surface == nullptr (branch: null surface)
+ * @tc.desc: test SetOutputSurface with nullptr surface
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetOutputSurface_NullSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetOutputSurface_NullSurface, TestSize.Level1)
 {
-    Status ret = processor_->SetOutputSurface(nullptr);
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    ret = processor_->SetOutputSurface(nullptr);
     EXPECT_EQ(ret, Status::ERROR_NULL_SURFACE);
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_SetOutputSurface_002
- * @tc.desc: test SetOutputSurface when producerSurface_ == nullptr (branch: no existing surface)
+ * @tc.desc: test SetOutputSurface with consumer surface
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetOutputSurface_NoExistingSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetOutputSurface_ConsumerSurface, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurface> consumerMockSurface = new MockSurface();
+    EXPECT_CALL(*consumerMockSurface, IsConsumer()).WillRepeatedly(Return(true));
+
+    ret = processor_->SetOutputSurface(consumerMockSurface);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_SetOutputSurface_003
+ * @tc.desc: test SetOutputSurface with same surfaces
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetOutputSurface_SameSurface, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    processor_->producerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, GetUniqueId()).WillRepeatedly(Return(12345));
+    EXPECT_CALL(*mockSurface_, UnRegisterReleaseListener()).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, CleanCache(_)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, Disconnect()).Times(AnyNumber());
+
+    sptr<MockSurface> sameMockSurface = new MockSurface();
+    EXPECT_CALL(*sameMockSurface, IsConsumer()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*sameMockSurface, GetUniqueId()).WillRepeatedly(Return(12345));
+    EXPECT_CALL(*sameMockSurface, UnRegisterReleaseListener()).Times(AnyNumber());
+    EXPECT_CALL(*sameMockSurface, CleanCache(_)).Times(AnyNumber());
+
+    ret = processor_->SetOutputSurface(sameMockSurface);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_SetOutputSurface_005
+ * @tc.desc: test SetOutputSurface when RegisterReleaseListener fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetOutputSurface_RegisterFail, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
     processor_->producerSurface_ = nullptr;
 
-    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("TestConsumer");
-    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
-    sptr<Surface> outputSurface = Surface::CreateSurfaceAsProducer(producer);
+    sptr<MockSurface> failMockSurface = new MockSurface();
+    EXPECT_CALL(*failMockSurface, IsConsumer()).WillRepeatedly(Return(false));
+    EXPECT_CALL(*failMockSurface, UnRegisterReleaseListener()).Times(AnyNumber());
+    EXPECT_CALL(*failMockSurface, RegisterReleaseListener(_)).WillRepeatedly(Return(GSERROR_NO_BUFFER));
 
-    ret = processor_->SetOutputSurface(outputSurface);
-    EXPECT_EQ(ret, Status::OK);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_SetOutputSurface_003
- * @tc.desc: test SetOutputSurface when same surface (branch: GetUniqueId equal)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetOutputSurface_SameSurface_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
-    EXPECT_EQ(ret, Status::OK);
-
-    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("TestSame");
-    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
-    sptr<Surface> outputSurface = Surface::CreateSurfaceAsProducer(producer);
-
-    ret = processor_->SetOutputSurface(outputSurface);
-    EXPECT_EQ(ret, Status::OK);
-
-    ret = processor_->SetOutputSurface(outputSurface);
-    EXPECT_EQ(ret, Status::OK);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_SetOutputSurface_004
- * @tc.desc: test SetOutputSurface when different surface (branch: GetUniqueId not equal)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetOutputSurface_DifferentSurface_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
-    EXPECT_EQ(ret, Status::OK);
-
-    sptr<Surface> consumerSurface1 = Surface::CreateSurfaceAsConsumer("TestDiff1");
-    sptr<IBufferProducer> producer1 = consumerSurface1->GetProducer();
-    sptr<Surface> outputSurface1 = Surface::CreateSurfaceAsProducer(producer1);
-    ret = processor_->SetOutputSurface(outputSurface1);
-    EXPECT_EQ(ret, Status::OK);
-
-    sptr<Surface> consumerSurface2 = Surface::CreateSurfaceAsConsumer("TestDiff2");
-    sptr<IBufferProducer> producer2 = consumerSurface2->GetProducer();
-    sptr<Surface> outputSurface2 = Surface::CreateSurfaceAsProducer(producer2);
-    ret = processor_->SetOutputSurface(outputSurface2);
-    EXPECT_EQ(ret, Status::OK);
+    ret = processor_->SetOutputSurface(failMockSurface);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_OPERATION);
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OnConsumerBufferAvailable_001
- * @tc.desc: test OnConsumerBufferAvailable when !isRunning_ (branch: not running)
+ * @tc.desc: test OnConsumerBufferAvailable when isRunning_ is false
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnConsumerBufferAvailable_NotRunning_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnConsumerBufferAvailable_NotRunning, TestSize.Level1)
 {
     EXPECT_FALSE(processor_->isRunning_.load());
 
     processor_->OnConsumerBufferAvailable();
+    EXPECT_TRUE(processor_->consumerBufferQueue_.empty());
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OnConsumerBufferAvailable_002
- * @tc.desc: test OnConsumerBufferAvailable when state != RUNNING (branch: not running state)
+ * @tc.desc: test OnConsumerBufferAvailable when state is not RUNNING
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnConsumerBufferAvailable_NotRunningState_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnConsumerBufferAvailable_NotRunningState, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
     EXPECT_TRUE(processor_->isRunning_.load());
-    EXPECT_NE(processor_->state_.load(), SideOutputSurfaceProcessor::ProcessorState::RUNNING);
+    EXPECT_NE(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::RUNNING);
 
     processor_->OnConsumerBufferAvailable();
+    EXPECT_TRUE(processor_->consumerBufferQueue_.empty());
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OnConsumerBufferAvailable_003
- * @tc.desc: test OnConsumerBufferAvailable when consumerSurface == nullptr (branch: null surface)
+ * @tc.desc: test OnConsumerBufferAvailable when consumerSurface_ is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnConsumerBufferAvailable_NullConsumerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnConsumerBufferAvailable_NullConsumerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
     ret = processor_->Start();
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(processor_->state_.load(), SideOutputSurfaceProcessor::ProcessorState::RUNNING);
+    EXPECT_EQ(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::RUNNING);
 
     processor_->consumerSurface_ = nullptr;
     processor_->OnConsumerBufferAvailable();
+    EXPECT_TRUE(processor_->consumerBufferQueue_.empty());
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OnConsumerBufferAvailable_004
- * @tc.desc: test OnConsumerBufferAvailable when consumerSurface != nullptr (branch: valid surface)
+ * @tc.desc: test OnConsumerBufferAvailable when AcquireBuffer fails
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnConsumerBufferAvailable_ValidConsumerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnConsumerBufferAvailable_AcquireFail, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
     ret = processor_->Start();
     EXPECT_EQ(ret, Status::OK);
 
-    sptr<Surface> inputSurface = processor_->GetInputSurface();
-    EXPECT_NE(inputSurface, nullptr);
-    EXPECT_NE(processor_->consumerSurface_, nullptr);
+    processor_->consumerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, AcquireBuffer(_, _, _, _)).WillRepeatedly(Return(GSERROR_NO_BUFFER));
+    EXPECT_CALL(*mockSurface_, UnregisterConsumerListener()).Times(AnyNumber());
 
     processor_->OnConsumerBufferAvailable();
-}
-
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, PushBufferToConsumer_AlreadyReady_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
-    EXPECT_EQ(ret, Status::OK);
-
-    processor_->isBufferQueueReady_ = true;
-
-    SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-    bufferInfo.timestamp = 1000;
-    processor_->PushBufferToConsumer(bufferInfo);
-}
-
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, PushBufferToConsumer_NeedPrepare_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
-    EXPECT_EQ(ret, Status::OK);
-
-    processor_->isBufferQueueReady_ = true;
-    processor_->needPrepareBuffers_ = true;
-
-    SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-    bufferInfo.timestamp = 1000;
-    processor_->PushBufferToConsumer(bufferInfo);
-
-    EXPECT_FALSE(processor_->needPrepareBuffers_.load());
+    EXPECT_TRUE(processor_->consumerBufferQueue_.empty());
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OnProducerBufferReleased_001
- * @tc.desc: test OnProducerBufferReleased when !isRunning_ (branch: not running)
+ * @tc.desc: test OnProducerBufferReleased when isRunning_ is false
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_NotRunning_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_NotRunning, TestSize.Level1)
 {
     EXPECT_FALSE(processor_->isRunning_.load());
 
@@ -514,15 +547,15 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_NotRunning
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OnProducerBufferReleased_002
- * @tc.desc: test OnProducerBufferReleased when state == STOPPING (branch: stopping)
+ * @tc.desc: test OnProducerBufferReleased when state is STOPPING
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_Stopping_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_Stopping, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    processor_->state_ = SideOutputSurfaceProcessor::ProcessorState::STOPPING;
+    processor_->state_ = TestableSideOutputSurfaceProcessor::ProcessorState::STOPPING;
 
     GSError err = processor_->OnProducerBufferReleased();
     EXPECT_EQ(err, GSERROR_OK);
@@ -530,10 +563,10 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_Stopping_B
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OnProducerBufferReleased_003
- * @tc.desc: test OnProducerBufferReleased when !isBufferQueueReady_ (branch: queue not ready)
+ * @tc.desc: test OnProducerBufferReleased when isBufferQueueReady_ is false
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_QueueNotReady_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_QueueNotReady, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
@@ -548,10 +581,10 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_QueueNotRe
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OnProducerBufferReleased_004
- * @tc.desc: test OnProducerBufferReleased when producerSurface == nullptr (branch: null surface)
+ * @tc.desc: test OnProducerBufferReleased when producerSurface_ is nullptr
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_NullProducerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_NullProducerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
@@ -566,154 +599,255 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_NullProduc
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_GetConsumerAndProducerBuffer_001
- * @tc.desc: test GetConsumerAndProducerBuffer when queues empty (branch: empty queue)
+ * @tc.name: SideOutputSurfaceProcessor_OnProducerBufferReleased_005
+ * @tc.desc: test OnProducerBufferReleased when RequestBuffer succeeds
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetConsumerAndProducerBuffer_EmptyQueue_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_RequestSuccess, TestSize.Level1)
 {
-    EXPECT_TRUE(processor_->consumerBufferQueue_.empty());
-    EXPECT_TRUE(processor_->producerBufferQueue_.empty());
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+    ret = processor_->Start();
+    EXPECT_EQ(ret, Status::OK);
 
-    SideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
-    SideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    processor_->isBufferQueueReady_ = true;
+    processor_->producerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, UnRegisterReleaseListener()).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, CleanCache(_)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, Disconnect()).Times(AnyNumber());
+    
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(1));
+    
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(mockBuffer), Return(GSERROR_OK)));
 
-    bool ret = processor_->GetConsumerAndProducerBuffer(srcBufferInfo, dstBufferInfo);
-    EXPECT_FALSE(ret);
+    size_t queueSizeBefore = processor_->producerBufferQueue_.size();
+    GSError err = processor_->OnProducerBufferReleased();
+    EXPECT_EQ(err, GSERROR_OK);
+    EXPECT_EQ(processor_->producerBufferQueue_.size(), queueSizeBefore + 1);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_GetConsumerAndProducerBuffer_002
- * @tc.desc: test GetConsumerAndProducerBuffer when srcBufferInfo.buffer == nullptr (branch: null src buffer)
+ * @tc.name: SideOutputSurfaceProcessor_OnProducerBufferReleased_006
+ * @tc.desc: test OnProducerBufferReleased when RequestBuffer fails
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetConsumerAndProducerBuffer_NullSrcBuffer_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OnProducerBufferReleased_RequestFail, TestSize.Level1)
 {
-    SideOutputSurfaceProcessor::SurfaceBufferInfo nullBuffer;
-    nullBuffer.buffer = nullptr;
-    processor_->consumerBufferQueue_.push(nullBuffer);
-    processor_->producerBufferQueue_.push(nullBuffer);
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+    ret = processor_->Start();
+    EXPECT_EQ(ret, Status::OK);
 
-    SideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
-    SideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
-    bool ret = processor_->GetConsumerAndProducerBuffer(srcBufferInfo, dstBufferInfo);
-    EXPECT_FALSE(ret);
+    processor_->isBufferQueueReady_ = true;
+    processor_->producerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, UnRegisterReleaseListener()).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, CleanCache(_)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, Disconnect()).Times(AnyNumber());
+    
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(mockBuffer), Return(GSERROR_NO_BUFFER)));
+    EXPECT_CALL(*mockSurface_, CancelBuffer(_)).Times(AnyNumber());
+
+    size_t queueSizeBefore = processor_->producerBufferQueue_.size();
+    GSError err = processor_->OnProducerBufferReleased();
+    EXPECT_EQ(err, GSERROR_NO_BUFFER);
+    EXPECT_EQ(processor_->producerBufferQueue_.size(), queueSizeBefore);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_GetConsumerAndProducerBuffer_003
- * @tc.desc: test GetConsumerAndProducerBuffer when dstBufferInfo.buffer == nullptr (branch: null dst buffer)
+ * @tc.name: SideOutputSurfaceProcessor_ProcessBuffer_001
+ * @tc.desc: test ProcessBuffer with valid memory addresses (memcpy success path)
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetConsumerAndProducerBuffer_NullDstBuffer_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffer_Success, TestSize.Level1)
 {
-    SideOutputSurfaceProcessor::SurfaceBufferInfo nullBuffer;
-    nullBuffer.buffer = nullptr;
-    processor_->consumerBufferQueue_.push(nullBuffer);
-    processor_->producerBufferQueue_.push(nullBuffer);
+    sptr<MockSurfaceBuffer> srcMockBuffer = CreateMockBufferWithMemory(1024);
+    sptr<MockSurfaceBuffer> dstMockBuffer = CreateMockBufferWithMemory(2048);
 
-    SideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
-    SideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
-    bool ret = processor_->GetConsumerAndProducerBuffer(srcBufferInfo, dstBufferInfo);
-    EXPECT_FALSE(ret);
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+    EXPECT_CALL(*dstMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*dstMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*dstMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    srcBufferInfo.buffer = srcMockBuffer;
+    srcBufferInfo.timestamp = 1000;
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    dstBufferInfo.buffer = dstMockBuffer;
+    dstBufferInfo.timestamp = 0;
+
+    processor_->consumerSurface_ = nullptr;
+    
+    processor_->callback_ = nullptr;
+    bool result = processor_->ProcessBuffer(srcBufferInfo, dstBufferInfo);
+    EXPECT_TRUE(result);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_CopyToSideSurface_001
- * @tc.desc: test CopyToSideSurface when sideSurface_ == nullptr (branch: null side surface)
+ * @tc.name: SideOutputSurfaceProcessor_ProcessBuffer_002
+ * @tc.desc: test ProcessBuffer with consumerSurface
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, CopyToSideSurface_NullSideSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffer_WithConsumerSurface, TestSize.Level1)
 {
-    EXPECT_EQ(processor_->sideSurface_, nullptr);
+    sptr<MockSurfaceBuffer> srcMockBuffer = CreateMockBufferWithMemory(1024);
+    sptr<MockSurfaceBuffer> dstMockBuffer = CreateMockBufferWithMemory(2048);
 
-    SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-    bufferInfo.timestamp = 1000;
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+    EXPECT_CALL(*dstMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*dstMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*dstMockBuffer, GetFormat()).WillRepeatedly(Return(1));
 
-    processor_->CopyToSideSurface(bufferInfo);
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    srcBufferInfo.buffer = srcMockBuffer;
+    srcBufferInfo.timestamp = 1000;
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    dstBufferInfo.buffer = dstMockBuffer;
+    dstBufferInfo.timestamp = 0;
+
+    processor_->consumerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, ReleaseBuffer(_, -1)).WillRepeatedly(Return(GSERROR_OK));
+    EXPECT_CALL(*mockSurface_, UnregisterConsumerListener()).Times(AnyNumber());
+
+    processor_->callback_ = nullptr;
+    bool result = processor_->ProcessBuffer(srcBufferInfo, dstBufferInfo);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_ProcessBuffer_003
+ * @tc.desc: test ProcessBuffer with null memory addresses (null pointer path)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffer_NullMemory, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> srcMockBuffer = new MockSurfaceBuffer();
+    sptr<MockSurfaceBuffer> dstMockBuffer = new MockSurfaceBuffer();
+
+    EXPECT_CALL(*srcMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*dstMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*srcMockBuffer, GetSize()).WillRepeatedly(Return(100));
+    EXPECT_CALL(*dstMockBuffer, GetSize()).WillRepeatedly(Return(200));
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+    EXPECT_CALL(*dstMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*dstMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*dstMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    srcBufferInfo.buffer = srcMockBuffer;
+    srcBufferInfo.timestamp = 1000;
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    dstBufferInfo.buffer = dstMockBuffer;
+    dstBufferInfo.timestamp = 0;
+
+    processor_->consumerSurface_ = nullptr;
+    
+    processor_->callback_ = nullptr;
+    bool result = processor_->ProcessBuffer(srcBufferInfo, dstBufferInfo);
+    EXPECT_FALSE(result);
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OutputBuffer_001
- * @tc.desc: test OutputBuffer when callback != nullptr (branch: callback exists)
+ * @tc.desc: test OutputBuffer with callback set
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OutputBuffer_WithCallback_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OutputBuffer_WithCallback, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    processor_->callback_ = callback_;
+    processor_->SetCallback(callback_);
     EXPECT_NE(processor_->callback_, nullptr);
 
-    callback_->Reset();
-    EXPECT_EQ(callback_->outputBufferCount, 0);
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(1));
 
-    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("TestOutput");
-    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
-    sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(producer);
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
 
-    BufferRequestConfig requestCfg;
-    requestCfg.width = 100;
-    requestCfg.height = 100;
-    requestCfg.usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE;
-    requestCfg.timeout = 0;
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(1, _, false)).Times(AnyNumber());
 
-    sptr<SurfaceBuffer> surfaceBuffer;
-    sptr<SyncFence> fence;
-    GSError err = producerSurface->RequestBuffer(surfaceBuffer, fence, requestCfg);
-    if (err == GSERROR_OK && surfaceBuffer != nullptr) {
-        SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-        bufferInfo.buffer = surfaceBuffer;
-        bufferInfo.timestamp = 1000;
-
-        processor_->OutputBuffer(bufferInfo);
-        EXPECT_EQ(callback_->outputBufferCount, 1);
-    }
+    processor_->OutputBuffer(bufferInfo);
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_OutputBuffer_002
- * @tc.desc: test OutputBuffer when callback == nullptr (branch: no callback)
+ * @tc.desc: test OutputBuffer without callback set
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, OutputBuffer_WithoutCallback_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OutputBuffer_WithoutCallback, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
     processor_->callback_ = nullptr;
 
-    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("TestOutputNoCb");
-    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
-    sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(producer);
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(1));
 
-    BufferRequestConfig requestCfg;
-    requestCfg.width = 100;
-    requestCfg.height = 100;
-    requestCfg.usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE;
-    requestCfg.timeout = 0;
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
 
-    sptr<SurfaceBuffer> surfaceBuffer;
-    sptr<SyncFence> fence;
-    GSError err = producerSurface->RequestBuffer(surfaceBuffer, fence, requestCfg);
-    if (err == GSERROR_OK && surfaceBuffer != nullptr) {
-        SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-        bufferInfo.buffer = surfaceBuffer;
-        bufferInfo.timestamp = 1000;
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(_, _, _)).Times(0);
 
-        callback_->Reset();
-        processor_->OutputBuffer(bufferInfo);
-        EXPECT_EQ(callback_->outputBufferCount, 0);
+    processor_->OutputBuffer(bufferInfo);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_OutputBuffer_003
+ * @tc.desc: test OutputBuffer when renderBufferQueue overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, OutputBuffer_Overflow, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    for (size_t i = 0; i < 6; i++) {
+        sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+        EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(i));
+        
+        TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+        bufferInfo.buffer = mockBuffer;
+        bufferInfo.timestamp = i;
+        processor_->renderBufferQueue_[i] = bufferInfo;
     }
+
+    EXPECT_GE(processor_->renderBufferQueue_.size(), static_cast<size_t>(6));
+
+    sptr<MockSurfaceBuffer> newMockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*newMockBuffer, GetSeqNum()).WillRepeatedly(Return(100));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo newBufferInfo;
+    newBufferInfo.buffer = newMockBuffer;
+    newBufferInfo.timestamp = 100;
+
+    processor_->producerSurface_ = nullptr;
+    processor_->OutputBuffer(newBufferInfo);
+    EXPECT_LE(processor_->renderBufferQueue_.size(), static_cast<size_t>(6));
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_RenderOutputBufferInner_001
- * @tc.desc: test RenderOutputBufferInner when !isRunning_ (branch: not running)
+ * @tc.desc: test RenderOutputBufferInner when isRunning_ is false
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, RenderOutputBufferInner_NotRunning_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, RenderOutputBufferInner_NotRunning, TestSize.Level1)
 {
     EXPECT_FALSE(processor_->isRunning_.load());
 
@@ -723,10 +857,10 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, RenderOutputBufferInner_NotRunning_
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_RenderOutputBufferInner_002
- * @tc.desc: test RenderOutputBufferInner when buffer not found (branch: invalid index)
+ * @tc.desc: test RenderOutputBufferInner with invalid index
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, RenderOutputBufferInner_InvalidIndex_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, RenderOutputBufferInner_InvalidIndex, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
@@ -740,190 +874,526 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, RenderOutputBufferInner_InvalidInde
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_RenderOutputBufferInner_003
- * @tc.desc: test RenderOutputBufferInner when render == false (branch: not render)
+ * @tc.desc: test RenderOutputBufferInner when render is false
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, RenderOutputBufferInner_NotRender_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, RenderOutputBufferInner_NotRender, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("TestNotRender");
-    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
-    sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(producer);
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(1));
 
-    BufferRequestConfig requestCfg;
-    requestCfg.width = 100;
-    requestCfg.height = 100;
-    requestCfg.usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE;
-    requestCfg.timeout = 0;
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
+    processor_->renderBufferQueue_[1] = bufferInfo;
 
-    sptr<SurfaceBuffer> surfaceBuffer;
-    sptr<SyncFence> fence;
-    GSError err = producerSurface->RequestBuffer(surfaceBuffer, fence, requestCfg);
-    if (err == GSERROR_OK && surfaceBuffer != nullptr) {
-        SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-        bufferInfo.buffer = surfaceBuffer;
-        bufferInfo.timestamp = 1000;
-        processor_->renderBufferQueue_[surfaceBuffer->GetSeqNum()] = bufferInfo;
-
-        ret = processor_->RenderOutputBufferInner(surfaceBuffer->GetSeqNum(), -1, false);
-        EXPECT_EQ(ret, Status::OK);
-    }
-}
-
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, DealNotRenderBuffer_NotIdle_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
+    ret = processor_->RenderOutputBufferInner(1, -1, false);
     EXPECT_EQ(ret, Status::OK);
-    ret = processor_->Start();
-    EXPECT_EQ(ret, Status::OK);
-    EXPECT_NE(processor_->state_.load(), SideOutputSurfaceProcessor::ProcessorState::IDLE);
-
-    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("TestDealNotIdle");
-    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
-    sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(producer);
-
-    BufferRequestConfig requestCfg;
-    requestCfg.width = 100;
-    requestCfg.height = 100;
-    requestCfg.usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE;
-    requestCfg.timeout = 0;
-
-    sptr<SurfaceBuffer> surfaceBuffer;
-    sptr<SyncFence> fence;
-    GSError err = producerSurface->RequestBuffer(surfaceBuffer, fence, requestCfg);
-    if (err == GSERROR_OK && surfaceBuffer != nullptr) {
-        SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-        bufferInfo.buffer = surfaceBuffer;
-        bufferInfo.timestamp = 1000;
-
-        processor_->DealNotRenderBuffer(bufferInfo);
-    }
-}
-
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, DealNotRenderBuffer_Idle_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
-    EXPECT_EQ(ret, Status::OK);
-    processor_->state_ = SideOutputSurfaceProcessor::ProcessorState::IDLE;
-
-    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("TestDealIdle");
-    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
-    sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(producer);
-
-    BufferRequestConfig requestCfg;
-    requestCfg.width = 100;
-    requestCfg.height = 100;
-    requestCfg.usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE;
-    requestCfg.timeout = 0;
-
-    sptr<SurfaceBuffer> surfaceBuffer;
-    sptr<SyncFence> fence;
-    GSError err = producerSurface->RequestBuffer(surfaceBuffer, fence, requestCfg);
-    if (err == GSERROR_OK && surfaceBuffer != nullptr) {
-        SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-        bufferInfo.buffer = surfaceBuffer;
-        bufferInfo.timestamp = 1000;
-
-        processor_->DealNotRenderBuffer(bufferInfo);
-    }
+    EXPECT_EQ(processor_->producerBufferQueue_.size(), static_cast<size_t>(1));
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_ProcessBuffers_001
- * @tc.desc: test ProcessBuffers when !isRunning_ (branch: not running)
+ * @tc.name: SideOutputSurfaceProcessor_FindBufferFromRenderQueue_001
+ * @tc.desc: test FindBufferFromRenderQueue when buffer not found
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffers_NotRunning_Branch, TestSize.Level1)
-{
-    EXPECT_FALSE(processor_->isRunning_.load());
-
-    processor_->ProcessBuffers();
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_ProcessBuffers_002
- * @tc.desc: test ProcessBuffers when consumerSurface_ == nullptr (branch: null consumer)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffers_NullConsumerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, FindBufferFromRenderQueue_NotFound, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    processor_->consumerSurface_ = nullptr;
+    processor_->renderBufferQueue_.clear();
 
-    processor_->ProcessBuffers();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bool result = processor_->FindBufferFromRenderQueue(999, bufferInfo);
+    EXPECT_FALSE(result);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_ProcessBuffers_003
- * @tc.desc: test ProcessBuffers when producerSurface_ == nullptr (branch: null producer)
+ * @tc.name: SideOutputSurfaceProcessor_FindBufferFromRenderQueue_002
+ * @tc.desc: test FindBufferFromRenderQueue when buffer found by index
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffers_NullProducerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, FindBufferFromRenderQueue_FoundByIndex, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    uint32_t seqNum = 1;
+    EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(seqNum));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
+    processor_->renderBufferQueue_[seqNum] = bufferInfo;
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo foundBufferInfo;
+    bool result = processor_->FindBufferFromRenderQueue(seqNum, foundBufferInfo);
+    EXPECT_TRUE(result);
+    EXPECT_TRUE(processor_->renderBufferQueue_.empty());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_FindBufferFromRenderQueue_003
+ * @tc.desc: test FindBufferFromRenderQueue when buffer found by SeqNum in loop
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, FindBufferFromRenderQueue_FoundBySeqNum, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    uint32_t realSeqNum = 10;
+    uint32_t fakeKey = 9999;
+    EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(realSeqNum));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
+    processor_->renderBufferQueue_[fakeKey] = bufferInfo;
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo foundBufferInfo;
+    bool result = processor_->FindBufferFromRenderQueue(realSeqNum, foundBufferInfo);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_FlushBufferToProducer_001
+ * @tc.desc: test FlushBufferToProducer when producerSurface_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, FlushBufferToProducer_NullProducerSurface, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(100));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(100));
+    EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(1));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
 
     processor_->producerSurface_ = nullptr;
-
-    processor_->ProcessBuffers();
+    Status flushRet = processor_->FlushBufferToProducer(bufferInfo, -1);
+    EXPECT_EQ(flushRet, Status::ERROR_INVALID_OPERATION);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_WaitTrigger_001
- * @tc.desc: test WaitTrigger when !isRunning_ (branch: not running)
+ * @tc.name: SideOutputSurfaceProcessor_FlushBufferToProducer_002
+ * @tc.desc: test FlushBufferToProducer when FlushBuffer succeeds
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, WaitTrigger_NotRunning_Branch, TestSize.Level1)
-{
-    EXPECT_FALSE(processor_->isRunning_.load());
-
-    bool ret = processor_->WaitTrigger();
-    EXPECT_FALSE(ret);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_ClearBufferQueues_001
- * @tc.desc: test ClearBufferQueues when consumerSurface != nullptr (branch: with surface)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, ClearBufferQueues_WithConsumerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, FlushBufferToProducer_Success, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    sptr<Surface> inputSurface = processor_->GetInputSurface();
-    EXPECT_NE(inputSurface, nullptr);
-    EXPECT_NE(processor_->consumerSurface_, nullptr);
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(100));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(100));
+    EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(1));
 
-    processor_->ClearBufferQueues();
-    EXPECT_TRUE(processor_->consumerBufferQueue_.empty());
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 5000;
+
+    processor_->producerSurface_ = mockSurface_;
+    processor_->isBufferQueueReady_ = true;
+    EXPECT_CALL(*mockSurface_, UnRegisterReleaseListener()).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, CleanCache(_)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, Disconnect()).Times(AnyNumber());
+    
+    EXPECT_CALL(*mockSurface_, FlushBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_OK));
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_OK));
+
+    Status flushRet = processor_->FlushBufferToProducer(bufferInfo, -1);
+    EXPECT_EQ(flushRet, Status::OK);
+    EXPECT_EQ(processor_->pendingSideTimestamp_, 5000);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_ClearBufferQueues_002
- * @tc.desc: test ClearBufferQueues when consumerSurface == nullptr (branch: without surface)
+ * @tc.name: SideOutputSurfaceProcessor_FlushBufferToProducer_003
+ * @tc.desc: test FlushBufferToProducer when FlushBuffer fails
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, ClearBufferQueues_WithoutConsumerSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, FlushBufferToProducer_FlushFail, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    processor_->consumerSurface_ = nullptr;
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(100));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(100));
+    EXPECT_CALL(*mockBuffer, GetSeqNum()).WillRepeatedly(Return(1));
 
-    processor_->ClearBufferQueues();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
+
+    processor_->producerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, UnRegisterReleaseListener()).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, CleanCache(_)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, Disconnect()).Times(AnyNumber());
+    
+    EXPECT_CALL(*mockSurface_, FlushBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_INVALID_ARGUMENTS));
+
+    Status flushRet = processor_->FlushBufferToProducer(bufferInfo, -1);
+    EXPECT_EQ(flushRet, Status::ERROR_INVALID_OPERATION);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_CopyBufferToSideSurface_001
+ * @tc.desc: test CopyBufferToSideSurface when srcBuffer is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, CopyBufferToSideSurface_NullSrcBuffer, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    bool result = processor_->CopyBufferToSideSurface(nullptr, 1000);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_CopyBufferToSideSurface_002
+ * @tc.desc: test CopyBufferToSideSurface when sideSurface_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, CopyBufferToSideSurface_NullSideSurface, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(100));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(100));
+    EXPECT_CALL(*mockBuffer, GetFormat()).WillRepeatedly(Return(1));
+
+    processor_->sideSurface_ = nullptr;
+    bool result = processor_->CopyBufferToSideSurface(mockBuffer, 1000);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_CopyBufferToSideSurface_003
+ * @tc.desc: test CopyBufferToSideSurface success path with valid memory
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, CopyBufferToSideSurface_RequestSuccess, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurfaceBuffer> srcMockBuffer = CreateMockBufferWithMemory(100);
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+    EXPECT_CALL(*srcMockBuffer, GetUsage()).WillRepeatedly(Return(BUFFER_USAGE_CPU_READ));
+
+    sptr<MockSurfaceBuffer> sideMockBuffer = CreateMockBufferWithMemory(200);
+    EXPECT_CALL(*sideMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*sideMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*sideMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+
+    processor_->sideSurface_ = mockSurface_;
+    processor_->requestCfg_.width = 1920;
+    processor_->requestCfg_.height = 1080;
+    
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(sideMockBuffer), Return(GSERROR_OK)));
+    EXPECT_CALL(*mockSurface_, FlushBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_OK));
+
+    bool result = processor_->CopyBufferToSideSurface(srcMockBuffer, 1000);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_CopyBufferToSideSurface_004
+ * @tc.desc: test CopyBufferToSideSurface with null virAddr (null pointer path)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, CopyBufferToSideSurface_NullVirAddr, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurfaceBuffer> srcMockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+    EXPECT_CALL(*srcMockBuffer, GetUsage()).WillRepeatedly(Return(BUFFER_USAGE_CPU_READ));
+    EXPECT_CALL(*srcMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*srcMockBuffer, GetSize()).WillRepeatedly(Return(100));
+
+    sptr<MockSurfaceBuffer> sideMockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*sideMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*sideMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*sideMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*sideMockBuffer, GetSize()).WillRepeatedly(Return(200));
+    EXPECT_CALL(*sideMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+
+    processor_->sideSurface_ = mockSurface_;
+    processor_->requestCfg_.width = 1920;
+    processor_->requestCfg_.height = 1080;
+    
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(sideMockBuffer), Return(GSERROR_OK)));
+    EXPECT_CALL(*mockSurface_, CancelBuffer(_)).Times(AnyNumber());
+
+    bool result = processor_->CopyBufferToSideSurface(srcMockBuffer, 1000);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_RequestSideBuffer_001
+ * @tc.desc: test RequestSideBuffer when RequestBuffer succeeds
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, RequestSideBuffer_Success, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    
+    processor_->requestCfg_.width = 1920;
+    processor_->requestCfg_.height = 1080;
+    
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(mockBuffer), Return(GSERROR_OK)));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo sideBufferInfo;
+    bool result = processor_->RequestSideBuffer(sideBufferInfo, mockSurface_);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_RequestSideBuffer_002
+ * @tc.desc: test RequestSideBuffer when RequestBuffer fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, RequestSideBuffer_RequestFail, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    
+    processor_->requestCfg_.width = 1920;
+    processor_->requestCfg_.height = 1080;
+    
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(mockBuffer), Return(GSERROR_NO_BUFFER)));
+    EXPECT_CALL(*mockSurface_, CancelBuffer(_)).Times(AnyNumber());
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo sideBufferInfo;
+    bool result = processor_->RequestSideBuffer(sideBufferInfo, mockSurface_);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_RequestSideBuffer_003
+ * @tc.desc: test RequestSideBuffer when cfg.width and cfg.height are 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, RequestSideBuffer_DefaultCfg, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    
+    processor_->requestCfg_.width = 0;
+    processor_->requestCfg_.height = 0;
+    
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(mockBuffer), Return(GSERROR_OK)));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo sideBufferInfo;
+    bool result = processor_->RequestSideBuffer(sideBufferInfo, mockSurface_);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_FlushSideBuffer_001
+ * @tc.desc: test FlushSideBuffer when FlushBuffer succeeds
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, FlushSideBuffer_Success, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    int64_t timestamp = 1000;
+
+    EXPECT_CALL(*mockSurface_, FlushBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_OK));
+
+    bool result = processor_->FlushSideBuffer(bufferInfo, timestamp, mockSurface_);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_FlushSideBuffer_002
+ * @tc.desc: test FlushSideBuffer when FlushBuffer fails
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, FlushSideBuffer_FlushFail, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    int64_t timestamp = 1000;
+
+    EXPECT_CALL(*mockSurface_, FlushBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_INVALID_ARGUMENTS));
+
+    bool result = processor_->FlushSideBuffer(bufferInfo, timestamp, mockSurface_);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_HandleSampleTask_001
+ * @tc.desc: test HandleSampleTask when pendingSideSrcBuffer_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_NullPendingBuffer, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    processor_->pendingSideSrcBuffer_ = nullptr;
+
+    processor_->HandleSampleTask();
+    EXPECT_TRUE(processor_->sampleDone_.load());
+    EXPECT_EQ(processor_->sampleResult_, 1);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_HandleSampleTask_002
+ * @tc.desc: test HandleSampleTask when sideSurface_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_NullSideSurface, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*mockBuffer, GetFormat()).WillRepeatedly(Return(1));
+
+    processor_->pendingSideSrcBuffer_ = mockBuffer;
+    processor_->pendingSideTimestamp_ = 1000;
+    processor_->sideSurface_ = nullptr;
+
+    processor_->HandleSampleTask();
+    EXPECT_TRUE(processor_->sampleDone_.load());
+    EXPECT_EQ(processor_->sampleResult_, 0);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_HandleSampleTask_003
+ * @tc.desc: test HandleSampleTask when copy succeeds with valid memory
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_CopySuccess, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurfaceBuffer> srcMockBuffer = CreateMockBufferWithMemory(100);
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+    EXPECT_CALL(*srcMockBuffer, GetUsage()).WillRepeatedly(Return(BUFFER_USAGE_CPU_READ));
+
+    sptr<MockSurfaceBuffer> sideMockBuffer = CreateMockBufferWithMemory(200);
+    EXPECT_CALL(*sideMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*sideMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*sideMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+
+    processor_->pendingSideSrcBuffer_ = srcMockBuffer;
+    processor_->pendingSideTimestamp_ = 1000;
+    processor_->sideSurface_ = mockSurface_;
+    processor_->requestCfg_.width = 1920;
+    processor_->requestCfg_.height = 1080;
+    
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(sideMockBuffer), Return(GSERROR_OK)));
+    EXPECT_CALL(*mockSurface_, FlushBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_OK));
+
+    processor_->HandleSampleTask();
+    EXPECT_TRUE(processor_->sampleDone_.load());
+    EXPECT_EQ(processor_->sampleResult_, 1);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_HandleSampleTask_004
+ * @tc.desc: test HandleSampleTask with null virAddr (null pointer path)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_NullVirAddr, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    sptr<MockSurfaceBuffer> srcMockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+    EXPECT_CALL(*srcMockBuffer, GetUsage()).WillRepeatedly(Return(BUFFER_USAGE_CPU_READ));
+    EXPECT_CALL(*srcMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*srcMockBuffer, GetSize()).WillRepeatedly(Return(100));
+
+    sptr<MockSurfaceBuffer> sideMockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*sideMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*sideMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*sideMockBuffer, GetVirAddr()).WillRepeatedly(Return(nullptr));
+    EXPECT_CALL(*sideMockBuffer, GetSize()).WillRepeatedly(Return(200));
+    EXPECT_CALL(*sideMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+
+    processor_->pendingSideSrcBuffer_ = srcMockBuffer;
+    processor_->pendingSideTimestamp_ = 1000;
+    processor_->sideSurface_ = mockSurface_;
+    processor_->requestCfg_.width = 1920;
+    processor_->requestCfg_.height = 1080;
+    
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(sideMockBuffer), Return(GSERROR_OK)));
+    EXPECT_CALL(*mockSurface_, CancelBuffer(_)).Times(AnyNumber());
+
+    processor_->HandleSampleTask();
+    EXPECT_TRUE(processor_->sampleDone_.load());
+    EXPECT_EQ(processor_->sampleResult_, 0);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_DealNoImage_001
+ * @tc.desc: test DealNoImage normal flow
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, DealNoImage_Normal, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    processor_->DealNoImage();
+    EXPECT_TRUE(processor_->sampleDone_.load());
+    EXPECT_EQ(processor_->sampleResult_, 1);
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_GetVideoSample_001
- * @tc.desc: test GetVideoSample when sampleProcessing_ == true (branch: already processing)
+ * @tc.desc: test GetVideoSample when sampleProcessing_ is true
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetVideoSample_AlreadyProcessing_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetVideoSample_AlreadyProcessing, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
@@ -937,46 +1407,34 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetVideoSample_AlreadyProcessing_Br
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_GetVideoSample_002
- * @tc.desc: test GetVideoSample when sampleProcessing_ == false (branch: not processing)
+ * @tc.desc: test GetVideoSample with sampleTask
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetVideoSample_NotProcessing_Branch, TestSize.Level1)
-{
-    Status ret = processor_->Init();
-    EXPECT_EQ(ret, Status::OK);
-
-    EXPECT_FALSE(processor_->sampleProcessing_.load());
-
-    int32_t result = -1;
-    processor_->GetVideoSample(result);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_GetVideoSample_003
- * @tc.desc: test GetVideoSample when sampleTask_ != nullptr (branch: task exists)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetVideoSample_WithTask_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetVideoSample_WithTask, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
     EXPECT_NE(processor_->sampleTask_, nullptr);
 
+    processor_->pendingSideSrcBuffer_ = nullptr;
+
     int32_t result = -1;
     processor_->GetVideoSample(result);
+    EXPECT_EQ(result, 1);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_GetVideoSample_004
- * @tc.desc: test GetVideoSample when sampleTask_ == nullptr (branch: no task)
+ * @tc.name: SideOutputSurfaceProcessor_GetVideoSample_003
+ * @tc.desc: test GetVideoSample without sampleTask
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetVideoSample_WithoutTask_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetVideoSample_WithoutTask, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
     processor_->sampleTask_ = nullptr;
+    processor_->pendingSideSrcBuffer_ = nullptr;
 
     int32_t result = -1;
     processor_->GetVideoSample(result);
@@ -984,155 +1442,325 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetVideoSample_WithoutTask_Branch, 
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_HandleSampleTask_001
- * @tc.desc: test HandleSampleTask when sideBufferQueue_ empty (branch: empty queue)
+ * @tc.name: SideOutputSurfaceProcessor_ClearBufferQueues_001
+ * @tc.desc: test ClearBufferQueues with consumerSurface
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_EmptyQueue_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ClearBufferQueues_WithConsumerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    processor_->sideBufferQueue_.clear();
+    sptr<MockSurfaceBuffer> mockBuffer1 = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer1, GetSeqNum()).WillRepeatedly(Return(1));
+    
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer1;
+    processor_->consumerBufferQueue_.push(bufferInfo);
 
-    processor_->HandleSampleTask();
+    processor_->consumerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, ReleaseBuffer(_, -1)).WillRepeatedly(Return(GSERROR_OK));
+
+    processor_->ClearBufferQueues();
+    EXPECT_TRUE(processor_->consumerBufferQueue_.empty());
+    EXPECT_FALSE(processor_->isBufferQueueReady_.load());
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_HandleSampleTask_002
- * @tc.desc: test HandleSampleTask when !hasData (branch: no data)
+ * @tc.name: SideOutputSurfaceProcessor_ClearBufferQueues_002
+ * @tc.desc: test ClearBufferQueues without consumerSurface
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_NoData_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ClearBufferQueues_WithoutConsumerSurface, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-    bufferInfo.buffer = nullptr;
-    processor_->sideBufferQueue_.push_back(bufferInfo);
+    sptr<MockSurfaceBuffer> mockBuffer1 = new MockSurfaceBuffer();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer1;
+    processor_->consumerBufferQueue_.push(bufferInfo);
 
-    processor_->HandleSampleTask();
+    processor_->consumerSurface_ = nullptr;
+
+    processor_->ClearBufferQueues();
+    EXPECT_TRUE(processor_->consumerBufferQueue_.empty());
+    EXPECT_FALSE(processor_->isBufferQueueReady_.load());
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_HandleSampleTask_003
- * @tc.desc: test HandleSampleTask when sideSurface_ == nullptr (branch: null side surface)
+ * @tc.name: SideOutputSurfaceProcessor_ClearBufferQueues_003
+ * @tc.desc: test ClearBufferQueues with pendingBuffer
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_NullSideSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ClearBufferQueues_WithPendingBuffer, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer("TestHandle");
-    sptr<IBufferProducer> producer = consumerSurface->GetProducer();
-    sptr<Surface> producerSurface = Surface::CreateSurfaceAsProducer(producer);
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    processor_->pendingSideSrcBuffer_ = mockBuffer;
+    processor_->pendingSideTimestamp_ = 1000;
 
-    BufferRequestConfig requestCfg;
-    requestCfg.width = 100;
-    requestCfg.height = 100;
-    requestCfg.usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE;
-    requestCfg.timeout = 0;
-
-    sptr<SurfaceBuffer> surfaceBuffer;
-    sptr<SyncFence> fence;
-    GSError err = producerSurface->RequestBuffer(surfaceBuffer, fence, requestCfg);
-    if (err == GSERROR_OK && surfaceBuffer != nullptr) {
-        SideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
-        bufferInfo.buffer = surfaceBuffer;
-        bufferInfo.timestamp = 1000;
-        processor_->sideBufferQueue_.push_back(bufferInfo);
-
-        processor_->sideSurface_ = nullptr;
-        processor_->HandleSampleTask();
-    }
+    processor_->ClearBufferQueues();
+    EXPECT_FALSE(processor_->isBufferQueueReady_.load());
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_HandleSampleTask_004
- * @tc.desc: test HandleSampleTask when sideSurface_ != nullptr (branch: valid side surface)
+ * @tc.name: SideOutputSurfaceProcessor_GetConsumerAndProducerBuffer_001
+ * @tc.desc: test GetConsumerAndProducerBuffer when queues are empty
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_ValidSideSurface_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetConsumerAndProducerBuffer_EmptyQueue, TestSize.Level1)
+{
+    EXPECT_TRUE(processor_->consumerBufferQueue_.empty());
+    EXPECT_TRUE(processor_->producerBufferQueue_.empty());
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+
+    bool ret = processor_->GetConsumerAndProducerBuffer(srcBufferInfo, dstBufferInfo);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_GetConsumerAndProducerBuffer_002
+ * @tc.desc: test GetConsumerAndProducerBuffer when srcBuffer is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetConsumerAndProducerBuffer_NullSrcBuffer, TestSize.Level1)
+{
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo nullBuffer;
+    nullBuffer.buffer = nullptr;
+    processor_->consumerBufferQueue_.push(nullBuffer);
+    processor_->producerBufferQueue_.push(nullBuffer);
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    bool ret = processor_->GetConsumerAndProducerBuffer(srcBufferInfo, dstBufferInfo);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_GetConsumerAndProducerBuffer_003
+ * @tc.desc: test GetConsumerAndProducerBuffer when dstBuffer is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetConsumerAndProducerBuffer_NullDstBuffer, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> srcMockBuffer = new MockSurfaceBuffer();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    srcBufferInfo.buffer = srcMockBuffer;
+    processor_->consumerBufferQueue_.push(srcBufferInfo);
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo nullBuffer;
+    nullBuffer.buffer = nullptr;
+    processor_->producerBufferQueue_.push(nullBuffer);
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    bool ret = processor_->GetConsumerAndProducerBuffer(srcBufferInfo, dstBufferInfo);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_GetConsumerAndProducerBuffer_004
+ * @tc.desc: test GetConsumerAndProducerBuffer normal flow
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, GetConsumerAndProducerBuffer_Success, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> srcMockBuffer = new MockSurfaceBuffer();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    srcBufferInfo.buffer = srcMockBuffer;
+    srcBufferInfo.timestamp = 1000;
+    processor_->consumerBufferQueue_.push(srcBufferInfo);
+
+    sptr<MockSurfaceBuffer> dstMockBuffer = new MockSurfaceBuffer();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    dstBufferInfo.buffer = dstMockBuffer;
+    dstBufferInfo.timestamp = 2000;
+    processor_->producerBufferQueue_.push(dstBufferInfo);
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo resultSrcBufferInfo;
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo resultDstBufferInfo;
+    bool ret = processor_->GetConsumerAndProducerBuffer(resultSrcBufferInfo, resultDstBufferInfo);
+    EXPECT_TRUE(ret);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_PushBufferToConsumer_001
+ * @tc.desc: test PushBufferToConsumer when buffer queue not ready
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, PushBufferToConsumer_QueueNotReady, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    processor_->sideSurface_ = Surface::CreateSurfaceAsConsumer("TestHandleSide");
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*mockBuffer, GetFormat()).WillRepeatedly(Return(1));
+    EXPECT_CALL(*mockBuffer, GetUsage()).WillRepeatedly(Return(BUFFER_USAGE_CPU_READ));
 
-    processor_->HandleSampleTask();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
+
+    processor_->isBufferQueueReady_ = false;
+    processor_->isRunning_ = true;
+
+    processor_->PushBufferToConsumer(bufferInfo);
+    EXPECT_TRUE(processor_->isBufferQueueReady_.load());
+    EXPECT_EQ(processor_->requestCfg_.width, 1920);
+    EXPECT_EQ(processor_->requestCfg_.height, 1080);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_HandleSampleTask_005
- * @tc.desc: test HandleSampleTask when sampleResultPtr_ != nullptr (branch: result ptr exists)
+ * @tc.name: SideOutputSurfaceProcessor_PushBufferToConsumer_002
+ * @tc.desc: test PushBufferToConsumer when buffer queue already ready
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_WithResultPtr_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, PushBufferToConsumer_QueueAlreadyReady, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    int32_t result = -1;
-    processor_->sampleResultPtr_ = &result;
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
 
-    processor_->HandleSampleTask();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
+
+    processor_->isBufferQueueReady_ = true;
+    processor_->requestCfg_.width = 1920;
+    processor_->requestCfg_.height = 1080;
+
+    size_t queueSizeBefore = processor_->consumerBufferQueue_.size();
+    processor_->PushBufferToConsumer(bufferInfo);
+    EXPECT_EQ(processor_->consumerBufferQueue_.size(), queueSizeBefore + 1);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_DealNoImage_001
- * @tc.desc: test DealNoImage when sampleResultPtr_ != nullptr (branch: result ptr exists)
+ * @tc.name: SideOutputSurfaceProcessor_DealNotRenderBuffer_001
+ * @tc.desc: test DealNotRenderBuffer when state is not IDLE
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, DealNoImage_WithResultPtr_Branch, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, DealNotRenderBuffer_NotIdle, TestSize.Level1)
 {
-    int32_t result = -1;
-    processor_->sampleResultPtr_ = &result;
-
-    processor_->DealNoImage();
-    EXPECT_EQ(result, 1);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_DealNoImage_002
- * @tc.desc: test DealNoImage when sampleResultPtr_ == nullptr (branch: no result ptr)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, DealNoImage_WithoutResultPtr_Branch, TestSize.Level1)
-{
-    processor_->sampleResultPtr_ = nullptr;
-
-    processor_->DealNoImage();
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_SetCallback_001
- * @tc.desc: test SetCallback normal branch
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetCallback_Normal, TestSize.Level1)
-{
-    Status ret = processor_->SetCallback(callback_);
+    Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(processor_->callback_, callback_);
+    ret = processor_->Start();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::IDLE);
+
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
+
+    size_t queueSizeBefore = processor_->producerBufferQueue_.size();
+    processor_->DealNotRenderBuffer(bufferInfo);
+    EXPECT_EQ(processor_->producerBufferQueue_.size(), queueSizeBefore + 1);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_SetEventReceiver_001
- * @tc.desc: test SetEventReceiver normal branch
+ * @tc.name: SideOutputSurfaceProcessor_DealNotRenderBuffer_002
+ * @tc.desc: test DealNotRenderBuffer when state is IDLE
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetEventReceiver_Normal, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, DealNotRenderBuffer_Idle, TestSize.Level1)
 {
-    Status ret = processor_->SetEventReceiver(receiver_);
+    Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(processor_->eventReceiver_, receiver_);
+    processor_->state_ = TestableSideOutputSurfaceProcessor::ProcessorState::IDLE;
+    EXPECT_EQ(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::IDLE);
+
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
+
+    size_t queueSizeBefore = processor_->producerBufferQueue_.size();
+    processor_->DealNotRenderBuffer(bufferInfo);
+    EXPECT_EQ(processor_->producerBufferQueue_.size(), queueSizeBefore + 1);
+    EXPECT_EQ(processor_->state_.load(), TestableSideOutputSurfaceProcessor::ProcessorState::IDLE);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_WaitTrigger_001
+ * @tc.desc: test WaitTrigger when isRunning_ is false
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, WaitTrigger_NotRunning, TestSize.Level1)
+{
+    EXPECT_FALSE(processor_->isRunning_.load());
+
+    bool ret = processor_->WaitTrigger();
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_ProcessBuffers_001
+ * @tc.desc: test ProcessBuffers when isRunning_ is false
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffers_NotRunning, TestSize.Level1)
+{
+    EXPECT_FALSE(processor_->isRunning_.load());
+
+    processor_->ProcessBuffers();
+    EXPECT_FALSE(processor_->isProcessing_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_ProcessBuffers_002
+ * @tc.desc: test ProcessBuffers when consumerSurface_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffers_NullConsumerSurface, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    processor_->consumerSurface_ = nullptr;
+
+    processor_->ProcessBuffers();
+    EXPECT_FALSE(processor_->isProcessing_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_ProcessBuffers_003
+ * @tc.desc: test ProcessBuffers when producerSurface_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffers_NullProducerSurface, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    processor_->producerSurface_ = nullptr;
+
+    processor_->ProcessBuffers();
+    EXPECT_FALSE(processor_->isProcessing_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_SetVideoWindowSize_001
+ * @tc.desc: test SetVideoWindowSize normal flow
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetVideoWindowSize_Normal, TestSize.Level1)
+{
+    Status ret = processor_->SetVideoWindowSize(1920, 1080);
+    EXPECT_EQ(ret, Status::OK);
 }
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_SetParameter_001
- * @tc.desc: test SetParameter normal branch
+ * @tc.desc: test SetParameter normal flow
  * @tc.type: FUNC
  */
 HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetParameter_Normal, TestSize.Level1)
@@ -1144,106 +1772,174 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetParameter_Normal, TestSize.Level
 
 /**
  * @tc.name: SideOutputSurfaceProcessor_SetPostProcessorOn_001
- * @tc.desc: test SetPostProcessorOn normal branch
+ * @tc.desc: test SetPostProcessorOn normal flow
  * @tc.type: FUNC
  */
 HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetPostProcessorOn_Normal, TestSize.Level1)
 {
     Status ret = processor_->SetPostProcessorOn(true);
     EXPECT_EQ(ret, Status::OK);
+}
 
-    ret = processor_->SetPostProcessorOn(false);
+/**
+ * @tc.name: SideOutputSurfaceProcessor_SetCallback_001
+ * @tc.desc: test SetCallback normal flow
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetCallback_Normal, TestSize.Level1)
+{
+    Status ret = processor_->SetCallback(callback_);
     EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(processor_->callback_, callback_);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_SetVideoWindowSize_001
- * @tc.desc: test SetVideoWindowSize normal branch
+ * @tc.name: SideOutputSurfaceProcessor_SetEventReceiver_001
+ * @tc.desc: test SetEventReceiver normal flow
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetVideoWindowSize_Normal, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetEventReceiver_Normal, TestSize.Level1)
 {
-    Status ret = processor_->SetVideoWindowSize(1920, 1080);
+    Status ret = processor_->SetEventReceiver(receiver_);
     EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(processor_->eventReceiver_, receiver_);
 }
 
 /**
- * @tc.name: SideOutputSurfaceProcessor_NotifyEos_001
- * @tc.desc: test NotifyEos normal branch
+ * @tc.name: SideOutputSurfaceProcessor_PushBufferToConsumer_003
+ * @tc.desc: test PushBufferToConsumer when resolution changed
  * @tc.type: FUNC
  */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, NotifyEos_Normal, TestSize.Level1)
-{
-    Status ret = processor_->NotifyEos(1000);
-    EXPECT_EQ(ret, Status::OK);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_SetVideoOutput_001
- * @tc.desc: test SetVideoOutput normal branch
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, SetVideoOutput_Normal, TestSize.Level1)
-{
-    sptr<Surface> sideSurface = Surface::CreateSurfaceAsConsumer("TestVideoOutput");
-    processor_->SetVideoOutput(sideSurface);
-    EXPECT_EQ(processor_->sideSurface_, sideSurface);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_ReleaseOutputBuffer_001
- * @tc.desc: test ReleaseOutputBuffer when !isRunning_ (branch: not running)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, ReleaseOutputBuffer_NotRunning, TestSize.Level1)
-{
-    EXPECT_FALSE(processor_->isRunning_.load());
-
-    Status ret = processor_->ReleaseOutputBuffer(0, true);
-    EXPECT_EQ(ret, Status::ERROR_INVALID_OPERATION);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_RenderOutputBufferAtTime_001
- * @tc.desc: test RenderOutputBufferAtTime when !isRunning_ (branch: not running)
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, RenderOutputBufferAtTime_NotRunning, TestSize.Level1)
-{
-    EXPECT_FALSE(processor_->isRunning_.load());
-
-    Status ret = processor_->RenderOutputBufferAtTime(0, 1000);
-    EXPECT_EQ(ret, Status::ERROR_INVALID_OPERATION);
-}
-
-/**
- * @tc.name: SideOutputSurfaceProcessor_FullLifecycle_001
- * @tc.desc: test full lifecycle with all methods
- * @tc.type: FUNC
- */
-HWTEST_F(SideOutputSurfaceProcessorUnitTest, FullLifecycle, TestSize.Level1)
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, PushBufferToConsumer_ResolutionChanged, TestSize.Level1)
 {
     Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    processor_->SetCallback(callback_);
-    processor_->SetEventReceiver(receiver_);
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*mockBuffer, GetFormat()).WillRepeatedly(Return(1));
 
-    sptr<Surface> inputSurface = processor_->GetInputSurface();
-    EXPECT_NE(inputSurface, nullptr);
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
 
-    ret = processor_->Start();
+    processor_->isBufferQueueReady_ = true;
+    processor_->requestCfg_.width = 320;
+    processor_->requestCfg_.height = 180;
+    processor_->producerSurface_ = mockSurface_;
+
+    sptr<MockSurfaceBuffer> oldBuffer = new MockSurfaceBuffer();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo oldBufferInfo;
+    oldBufferInfo.buffer = oldBuffer;
+    processor_->producerBufferQueue_.push(oldBufferInfo);
+
+    EXPECT_CALL(*mockSurface_, SetDefaultWidthAndHeight(1920, 1080)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, CancelBuffer(_)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_OK));
+
+    processor_->PushBufferToConsumer(bufferInfo);
+    EXPECT_EQ(processor_->requestCfg_.width, 1920);
+    EXPECT_EQ(processor_->requestCfg_.height, 1080);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_PushBufferToConsumer_004
+ * @tc.desc: test PushBufferToConsumer when resolution changed but producerSurface is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, PushBufferToConsumer_ResolutionChangedNullSurface, TestSize.Level1)
+{
+    Status ret = processor_->Init();
     EXPECT_EQ(ret, Status::OK);
 
-    ret = processor_->Flush();
-    EXPECT_EQ(ret, Status::OK);
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    EXPECT_CALL(*mockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*mockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*mockBuffer, GetFormat()).WillRepeatedly(Return(1));
 
-    ret = processor_->Stop();
-    EXPECT_EQ(ret, Status::OK);
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    bufferInfo.timestamp = 1000;
 
-    ret = processor_->Release();
-    EXPECT_EQ(ret, Status::OK);
-    processor_ = nullptr;
+    processor_->isBufferQueueReady_ = true;
+    processor_->requestCfg_.width = 320;
+    processor_->requestCfg_.height = 180;
+    processor_->producerSurface_ = nullptr;
+
+    processor_->PushBufferToConsumer(bufferInfo);
+    EXPECT_EQ(processor_->requestCfg_.width, 1920);
+    EXPECT_EQ(processor_->requestCfg_.height, 1080);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_ProcessBuffer_004
+ * @tc.desc: test ProcessBuffer when buffer size mismatch
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffer_SizeMismatch, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> srcMockBuffer = CreateMockBufferWithMemory(3137536);
+    sptr<MockSurfaceBuffer> dstMockBuffer = CreateMockBufferWithMemory(94208);
+
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(24));
+    EXPECT_CALL(*dstMockBuffer, GetWidth()).WillRepeatedly(Return(320));
+    EXPECT_CALL(*dstMockBuffer, GetHeight()).WillRepeatedly(Return(180));
+    EXPECT_CALL(*dstMockBuffer, GetFormat()).WillRepeatedly(Return(24));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    srcBufferInfo.buffer = srcMockBuffer;
+    srcBufferInfo.timestamp = 1000;
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    dstBufferInfo.buffer = dstMockBuffer;
+    dstBufferInfo.timestamp = 0;
+
+    processor_->consumerSurface_ = mockSurface_;
+    processor_->producerSurface_ = mockSurface_;
+    processor_->isBufferQueueReady_ = true;
+
+    EXPECT_CALL(*mockSurface_, ReleaseBuffer(_, -1)).WillRepeatedly(Return(GSERROR_OK));
+    EXPECT_CALL(*mockSurface_, CancelBuffer(_)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, RequestBuffer(_, _, _)).WillRepeatedly(Return(GSERROR_OK));
+
+    bool result = processor_->ProcessBuffer(srcBufferInfo, dstBufferInfo);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_ProcessBuffer_005
+ * @tc.desc: test ProcessBuffer when buffer size mismatch with null surfaces
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffer_SizeMismatchNullSurfaces, TestSize.Level1)
+{
+    sptr<MockSurfaceBuffer> srcMockBuffer = CreateMockBufferWithMemory(3137536);
+    sptr<MockSurfaceBuffer> dstMockBuffer = CreateMockBufferWithMemory(94208);
+
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(24));
+    EXPECT_CALL(*dstMockBuffer, GetWidth()).WillRepeatedly(Return(320));
+    EXPECT_CALL(*dstMockBuffer, GetHeight()).WillRepeatedly(Return(180));
+    EXPECT_CALL(*dstMockBuffer, GetFormat()).WillRepeatedly(Return(24));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    srcBufferInfo.buffer = srcMockBuffer;
+    srcBufferInfo.timestamp = 1000;
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    dstBufferInfo.buffer = dstMockBuffer;
+    dstBufferInfo.timestamp = 0;
+
+    processor_->consumerSurface_ = nullptr;
+    processor_->producerSurface_ = nullptr;
+    processor_->isBufferQueueReady_ = true;
+
+    bool result = processor_->ProcessBuffer(srcBufferInfo, dstBufferInfo);
+    EXPECT_FALSE(result);
 }
 
 }  // namespace Pipeline

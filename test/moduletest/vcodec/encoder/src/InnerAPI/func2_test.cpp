@@ -98,7 +98,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0010, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0010.h264";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->DEFAULT_BITRATE_MODE = CQ;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -125,7 +125,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0020, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0020.h264";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -152,7 +152,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0030, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0030.h264";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->DEFAULT_BITRATE_MODE = SQR;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -179,7 +179,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0040, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0040.h264";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->DEFAULT_BITRATE_MODE = VBR;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -206,7 +206,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0050, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0050.h264";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->surfaceInput = true;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecName));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -236,7 +236,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0060, TestSize.L
             vEncInnerSample->surfaceInput = true;
             vEncInnerSample->readMultiFiles = true;
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
             vEncInnerSample->fileInfos.push_back(file_1280_536_nv21);
             vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);
@@ -267,7 +267,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0070, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0070.h265";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->DEFAULT_BITRATE_MODE = CBR;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -294,7 +294,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0080, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0080.h265";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->DEFAULT_BITRATE_MODE = CQ;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -321,7 +321,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0090, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0090.h265";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->DEFAULT_BITRATE_MODE = SQR;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -348,7 +348,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0100, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0100.h265";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->DEFAULT_BITRATE_MODE = VBR;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -375,7 +375,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0110, TestSize.L
             vEncInnerSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
             vEncInnerSample->OUT_DIR = "/data/test/media/VIDEO_ENCODE_BFRAME_INNER_SYNC_0110.h265";
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->surfaceInput = true;
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->CreateByName(g_codecNameHevc));
             ASSERT_EQ(AV_ERR_OK, vEncInnerSample->Configure());
@@ -405,7 +405,7 @@ HWTEST_F(HwEncInnerFunc2NdkTest, VIDEO_ENCODE_BFRAME_INNER_SYNC_0120, TestSize.L
             vEncInnerSample->surfaceInput = true;
             vEncInnerSample->readMultiFiles = true;
             vEncInnerSample->enbleSyncMode = 1;
-            vEncInnerSample->enbleBFrameMode = true;
+            vEncInnerSample->enableBFrameMode = true;
             vEncInnerSample->fileInfos.push_back(file_640_480_rgba);
             vEncInnerSample->fileInfos.push_back(file_1280_536_nv21);
             vEncInnerSample->fileInfos.push_back(file_1280_720_nv12);

@@ -40,6 +40,7 @@ public:
     int32_t SuspendActive(const std::vector<pid_t> &pidList) override;
     int32_t SuspendActiveAll() override;
     int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) override;
+    int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) override;
 
 #ifdef SUPPORT_CODEC
     int32_t CreateCodecService(std::shared_ptr<ICodecService> &codecClient) override;
@@ -79,7 +80,7 @@ private:
     int32_t releaseTimerId_ = 0;
     static constexpr uint32_t RELEASE_DELAY_SECONDS = 180; // Delay before releasing resources (3 minutes)
 #endif
-    std::mutex mutex_;
+    std::recursive_mutex mutex_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

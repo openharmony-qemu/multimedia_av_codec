@@ -52,6 +52,24 @@ void VEncCallbackTest::OnError(int32_t errorCode)
 void VEncCallbackTest::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
+    int32_t picWidth = 0;
+    int32_t picHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    int32_t width = 0;
+    int32_t height = 0;
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, picHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
+    std::cout << "OnStreamChanged: pic_width = " << picWidth
+              << ", pic_height = " << picHeight
+              << ", stride = " << stride
+              << ", slice_height = " << sliceHeight
+              << ", width = " << width
+              << ", height = " << height << std::endl;
 }
 
 void VEncCallbackTest::OnNeedInputData(uint32_t index, std::shared_ptr<AVMemoryMock> data)
@@ -100,6 +118,24 @@ void VEncCallbackTestExt::OnError(int32_t errorCode)
 void VEncCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format)
 {
     UNITTEST_INFO_LOG("format changed: %s", format->DumpInfo());
+    int32_t picWidth = 0;
+    int32_t picHeight = 0;
+    int32_t stride = 0;
+    int32_t sliceHeight = 0;
+    int32_t width = 0;
+    int32_t height = 0;
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_WIDTH, picWidth));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_PIC_HEIGHT, picHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_STRIDE, stride));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_SLICE_HEIGHT, sliceHeight));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_WIDTH, width));
+    EXPECT_TRUE(format->GetIntValue(Media::Tag::VIDEO_HEIGHT, height));
+    std::cout << "OnStreamChanged: pic_width = " << picWidth
+              << ", pic_height = " << picHeight
+              << ", stride = " << stride
+              << ", slice_height = " << sliceHeight
+              << ", width = " << width
+              << ", height = " << height << std::endl;
 }
 
 void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
@@ -114,6 +150,39 @@ void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBuff
     signal_->inIndexQueue_.push(index);
     signal_->inBufferQueue_.push(data);
     signal_->inCond_.notify_all();
+
+    // For MAX_FRAME_DELAY_COUNT verification
+    signal_->pendingInputCount_++;
+    UpdateMaxPendingInputCount();
+}
+
+void VEncCallbackTestExt::UpdateMaxPendingInputCount()
+{
+    int32_t current = signal_->pendingInputCount_.load();
+    int32_t max = signal_->maxPendingInputCount_.load();
+    while (current > max) {
+        if (signal_->maxPendingInputCount_.compare_exchange_weak(max, current)) {
+            break;
+        }
+    }
+}
+
+static const uint8_t *GetNalTypeAddr(const uint8_t *bufferAddr, int32_t size)
+{
+    if (bufferAddr == nullptr || size < 4) { // minimum 4-byte start code: 00 00 00 01
+        return nullptr;
+    }
+    for (int32_t i = 0; i < size - 3; i++) { // 3: min size for start code
+        if (bufferAddr[i] == 0 && bufferAddr[i + 1] == 0) {
+            if (bufferAddr[i + 2] == 1) { // 3-byte start code: 00 00 01  2: offset
+                return bufferAddr + i + 3;
+            } else if (bufferAddr[i + 2] == 0 && i + 4 <= size && // 4-byte start code: 00 00 00 01, 2: offset
+                       bufferAddr[i + 3] == 1) { // 3: offset
+                return bufferAddr + i + 4; // 4: offset
+            }
+        }
+    }
+    return nullptr;
 }
 
 void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
@@ -128,6 +197,41 @@ void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBuff
     signal_->outIndexQueue_.push(index);
     signal_->outBufferQueue_.push(data);
     signal_->outCond_.notify_all();
+
+    struct OH_AVCodecBufferAttr attr;
+    data->GetBufferAttr(attr);
+    uint8_t *bufferAddr = data->GetAddr();
+    const uint8_t *nalAddr = GetNalTypeAddr(bufferAddr, attr.size);
+    if (nalAddr != nullptr) {
+        uint8_t nalType = 0;
+        bool isXPS = false;
+        bool isIDR = false;
+        if (signal_->isAVCCodec_) {
+            nalType = (*nalAddr) & 0x1F; // 0x1F: AVC NAL type mask
+            isXPS = (nalType == 7 || nalType == 8); // 7: SPS, 8: PPS
+            isIDR = (nalType == 5); // 5: IDR slice
+        } else {
+            nalType = ((*nalAddr) & 0x7E) >> 1; // 0x7E: HEVC NAL type mask, >> 1: shift to get type
+            isXPS = (nalType >= 32 && nalType <= 34); // 32: VPS, 33: SPS, 34: PPS
+            isIDR = (nalType == 19 || nalType == 20); // 19: IDR_W_RADL, 20: IDR_N_LP
+        }
+
+        if (isXPS) {
+            signal_->lastOutputWasXPS_.store(true);
+        }
+
+        if (isIDR) {
+            signal_->idrFrameCount_++;
+            if (signal_->lastOutputWasXPS_.load()) {
+                signal_->idrWithImmediateXPSCount_++;
+            }
+            signal_->lastOutputWasXPS_.store(false);
+        }
+
+        if (!isXPS && !isIDR) {
+            signal_->lastOutputWasXPS_.store(false);
+        }
+    }
 }
 
 VEncParamCallbackTest::VEncParamCallbackTest(std::shared_ptr<VEncSignal> signal) : signal_(signal) {}
@@ -402,10 +506,10 @@ int32_t VideoEncAsyncSample::FreeOutputBuffer(uint32_t index)
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 int32_t VideoEncAsyncSample::CreateInputSurface()
 {
-    auto surfaceMock = videoEnc_->CreateInputSurface();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
+    surfaceMock_ = videoEnc_->CreateInputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
 
-    nativeWindow_ = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock)->GetSurface();
+    nativeWindow_ = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock_)->GetSurface();
     nativeWindow_->IncStrongRef(nativeWindow_);
     int32_t ret = 0;
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
@@ -425,12 +529,12 @@ int32_t VideoEncAsyncSample::CreateInputSurface()
 #else
 int32_t VideoEncAsyncSample::CreateInputSurface()
 {
-    auto surfaceMock = videoEnc_->CreateInputSurface();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
+    surfaceMock_ = videoEnc_->CreateInputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
 
-    sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock)->GetSurface();
+    sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock_)->GetSurface();
     nativeWindow_ = CreateNativeWindowFromSurface(&surface);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL,
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_INVALID_VAL,
                                       "CreateNativeWindowFromSurface failed!");
 
     int32_t ret = AV_ERR_OK;
@@ -449,6 +553,53 @@ int32_t VideoEncAsyncSample::CreateInputSurface()
     return AV_ERR_OK;
 }
 #endif
+
+int32_t VideoEncAsyncSample::GetSurfaceQueueSize()
+{
+    if (surfaceMock_ == nullptr) {
+        return -1;
+    }
+    return surfaceMock_->GetQueueSize();
+}
+
+int32_t VideoEncAsyncSample::GetMaxPendingInputCount()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->maxPendingInputCount_.load();
+}
+
+int32_t VideoEncAsyncSample::GetIDRFrameCount()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->idrFrameCount_.load();
+}
+
+int32_t VideoEncAsyncSample::GetIDRWithImmediateXPSCount()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->idrWithImmediateXPSCount_.load();
+}
+
+int32_t VideoEncAsyncSample::GetMaxPendingFramesObserved()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->maxPendingFramesObserved_.load();
+}
+
+void VideoEncAsyncSample::SetIsAVCCodec(bool isAVC)
+{
+    if (signal_ != nullptr) {
+        signal_->isAVCCodec_ = isAVC;
+    }
+}
 
 bool VideoEncAsyncSample::IsValid()
 {
@@ -956,12 +1107,32 @@ void VideoEncAsyncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
     }
 }
 
+void VideoEncAsyncSample::UpdateMaxPendingFramesObserved()
+{
+    auto inputDesc = videoEnc_->GetInputDescription();
+    if (inputDesc == nullptr) {
+        return;
+    }
+    int32_t pendingFrames = -1;
+    if (!inputDesc->GetIntValue(Media::Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames)) {
+        return;
+    }
+    int32_t currentMax = signal_->maxPendingFramesObserved_.load();
+    while (pendingFrames > currentMax) {
+        if (signal_->maxPendingFramesObserved_.compare_exchange_weak(currentMax, pendingFrames)) {
+            break;
+        }
+    }
+}
+
 int32_t VideoEncAsyncSample::InputLoopInnerExt()
 {
     uint32_t index = signal_->inIndexQueue_.front();
     std::shared_ptr<AVBufferMock> buffer = signal_->inBufferQueue_.front();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr, AV_ERR_INVALID_VAL, "Fatal: GetInputBuffer fail. index: %d",
                                       index);
+
+    UpdateMaxPendingFramesObserved();
 
     if (isTemporalScalabilitySyncIdr_ && frameInputCount_ == REQUEST_I_FRAME_NUM) {
         std::shared_ptr<FormatMock> format = buffer->GetParameter();
@@ -990,6 +1161,7 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         buffer->SetBufferAttr(attr);
         int32_t ret = PushInputBuffer(index);
+        signal_->pendingInputCount_--;
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
         if (inFile_ != nullptr && inFile_->is_open()) {
             inFile_->close();
@@ -1004,7 +1176,9 @@ int32_t VideoEncAsyncSample::InputLoopInnerExt()
     }
     InputLoopInnerFeatureExt(attr);
     buffer->SetBufferAttr(attr);
-    return PushInputBuffer(index);
+    int32_t ret = PushInputBuffer(index);
+    signal_->pendingInputCount_--;
+    return ret;
 }
 
 void VideoEncAsyncSample::ReadFrameToBuffer(
@@ -1029,14 +1203,29 @@ void VideoEncAsyncSample::ReadFrameToBuffer(
     }
 }
 
+int32_t VideoEncAsyncSample::ResetFrameParam()
+{
+    int32_t ret = AV_ERR_OK;
+    if (frameInputCount_ > PARAM_CHANGE_START_FRAME) {
+        if (input8BitTo10Bit_) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_P010);
+        } else if (inputResizeWidthHeight_) {
+            ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_BUFFER_GEOMETRY,
+                                                        RESIZE_WIDTH, RESIZE_HEIGHT);
+        }
+    }
+    return ret;
+}
+
 void VideoEncAsyncSample::InputFuncSurface()
 {
     while (signal_->isRunning_.load()) {
         OHNativeWindowBuffer *ohNativeWindowBuffer;
         int fenceFd = -1;
         UNITTEST_CHECK_AND_BREAK_LOG(nativeWindow_ != nullptr, "nativeWindow_ == nullptr");
-
-        int32_t err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
+        int32_t err = ResetFrameParam();
+        UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "ResetFrameParam failed, Error=%d", err);
+        err = OH_NativeWindow_NativeWindowRequestBuffer(nativeWindow_, &ohNativeWindowBuffer, &fenceFd);
         UNITTEST_CHECK_AND_CONTINUE_LOG(err == 0, "RequestBuffer failed, GSError=%d", err);
         if (fenceFd > 0) {
             close(fenceFd);

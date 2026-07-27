@@ -30,6 +30,7 @@
 
 namespace OHOS {
 namespace Media {
+class InterstitialController;
 namespace Pipeline {
 class DemuxerFilter : public Filter, public std::enable_shared_from_this<DemuxerFilter> {
 public:
@@ -81,6 +82,7 @@ public:
     Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs);
 
     Status StartTask(int32_t trackId);
+    Status StartTask(Plugins::MediaType mediaType);
     Status SelectTrack(int32_t trackId);
 
     std::vector<std::shared_ptr<Meta>> GetStreamMetaInfo() const;
@@ -129,6 +131,14 @@ public:
     Status PauseDemuxerReadLoop();
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
+    Status AddAdsMediaSource(const std::shared_ptr<MediaSource>& source, int64_t startMs, bool isLive,
+        std::string& outId);
+    Status RemoveAdsMediaSource(const std::string& id);
+    Status DisableAllAdsMediaSource();
+    Status SkipCurrentAdsMediaSource();
+    using SpeedChangeCallback = std::function<void(float speed)>;
+    void SetSpeedChangeCallback(SpeedChangeCallback cb);
+    int32_t GetCurrentAudioTrackId();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);
@@ -146,6 +156,7 @@ public:
     Status NotifyResumeUnMute();
     std::shared_ptr<Meta> GetGlobalInfo();
     bool IsMimeInDolbyList(const std::string& mime);
+    void OnNewTrackRender(uint64_t renderSeqNum);
     bool IsBuffering();
     void SetTrackSelectionFilter(TrackSelectionFilter &filter);
     Status SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy);
@@ -172,7 +183,12 @@ private:
     Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
     std::string GetOriginalCodecName();
-
+    bool IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio, bool hasVideoFilter, bool hasAudioTrack);
+    void EnsureInterstitialController();
+    void EnsureInterstitialScheduler();
+    bool HandleAdsStart();
+    void HandleAdsStop();
+    void HandleAdsSeek(int64_t seekTime);
     std::string uri_;
     std::atomic<bool> isLoopStarted{false};
 
@@ -181,6 +197,7 @@ private:
     std::shared_ptr<MediaSource> mediaSource_;
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
     bool isTransCoderMode_ {false};
+    bool isPlayerMode_ {false};
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};
@@ -197,6 +214,9 @@ private:
     int32_t apiVersion_ {0};
     bool isVideoMuted_ = false;
     std::vector<std::string> dolbyList_ {};
+    std::shared_ptr<InterstitialController> interstitialController_;
+    std::shared_ptr<MediaSyncManager> syncCenter_;
+    SpeedChangeCallback speedChangeCallback_;
 };
 } // namespace Pipeline
 } // namespace Media

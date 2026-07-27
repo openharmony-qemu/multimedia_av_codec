@@ -21,6 +21,7 @@
 #include "media_sync_manager.h"
 #include "osal/task/jobutils.h"
 #include "syspara/parameters.h"
+#include "common/event.h"
 
 #include <cinttypes>
 
@@ -65,6 +66,8 @@ constexpr int64_t WAIT_TIME_US_THRESHOLD_RENDER = 70000; // warning threshold re
 constexpr int64_t DELTA_TIME_THRESHOLD = 5000; // max delta time 5ms
 
 constexpr int64_t US_PER_SECOND = 1000000; // 1000 * 1000 us per second
+
+constexpr int64_t PTS_DISCONTINUE_THRESHOLD_US = 1000000;
 
 VideoSink::VideoSink()
 {
@@ -128,6 +131,9 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     int64_t waitTime = 0;
     bool render = !isMuted_;
     auto syncCenter = syncCenter_.lock();
+    
+    UpdateSeekState(buffer);
+    
     if ((buffer->flag_ & BUFFER_FLAG_EOS) == 0) {
         int64_t nowCt = syncCenter ? syncCenter->GetClockTimeNow() : 0;
         actionClock = nowCt;
@@ -190,6 +196,8 @@ void VideoSink::PerfRecord(int64_t waitTime)
 
 void VideoSink::ResetSyncInfo()
 {
+    int64_t endPtsMs = (lastPts_ != HST_TIME_NONE) ? (lastPts_ / MS_PER_US) : 0;
+    avSyncDetector_.OnPlaybackEnd(endPtsMs);
     ResetPrerollReported();
     renderFrameCnt_ = 0;
     dropFrameContinuouslyCnt_ = 0;
@@ -202,6 +210,9 @@ void VideoSink::ResetSyncInfo()
     needUpdateTimeAnchor_ = true;
     lagDetector_.Reset();
     perfRecorder_.Reset();
+    avSyncDetector_.Reset();
+    lastPtsForDiscontinuity_ = HST_TIME_NONE;
+    isFirstFrameAfterSeek_ = true;
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
@@ -213,6 +224,8 @@ Status VideoSink::GetLatency(uint64_t& nanoSec)
 void VideoSink::SetSeekFlag()
 {
     seekFlag_ = true;  // seek后首次不走平滑
+    lastPtsForDiscontinuity_ = HST_TIME_NONE;
+    isFirstFrameAfterSeek_ = true;
 }
 
 void VideoSink::SetLastPts(int64_t lastPts, int64_t renderDelay)
@@ -302,6 +315,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
         MEDIA_LOG_D("buffer is too late");
     }
     lastBufferAnchoredClockTime_ = bufferAnchoredClockTime;
+    avSyncDetector_.CheckSync(diff, buffer->pts_);
     bool dropFlag = tooLate && ((buffer->flag_ & BUFFER_FLAG_KEY_FRAME) == 0); // buffer is too late, drop it
     return dropFlag ? -1 : waitTimeUs;
 }
@@ -345,6 +359,7 @@ void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
 {
     this->eventReceiver_ = receiver;
     lagDetector_.SetEventReceiver(receiver);
+    avSyncDetector_.SetEventReceiver(receiver);
 }
 
 void VideoSink::SetFirstPts(int64_t pts)
@@ -456,6 +471,123 @@ void VideoSink::SetMediaMuted(bool isMuted)
         }
     }
     isMuted_ = isMuted;
+}
+
+void VideoSink::AVSyncDetector::Reset()
+{
+    isInAVSync_ = false;
+    syncStartPts_ = 0;
+}
+
+void VideoSink::AVSyncDetector::CheckSync(int64_t diffUs, int64_t pts)
+{
+    if (std::abs(diffUs) > AV_SYNC_THRESHOLD_US) {
+        if (!isInAVSync_) {
+            isInAVSync_ = true;
+            if (syncStartPts_ <= syncEndPts_) {
+                syncStartPts_ = pts;
+            }
+            syncCount_++;
+            lipAsyncType_ = (diffUs < 0) ? VIDEO_AHEAD_FLAG : VIDEO_BEHIND_FLAG;
+            lipAsyncStartPtsMs_ = pts / MS_PER_US;
+            MEDIA_LOG_D("AVSync start, pts: " PUBLIC_LOG_D64 ", diff: " PUBLIC_LOG_D64 " us", pts, diffUs);
+        } else if ((pts - syncStartPts_) > AV_SYNC_CUMULATIVE_US) {
+            totalSyncDurationUs_ += pts - syncStartPts_;
+            syncStartPts_ = pts;
+        }
+    } else {
+        if (isInAVSync_) {
+            int64_t duration = pts - syncStartPts_;
+            if (duration > 0) {
+                totalSyncDurationUs_ += duration;
+                MEDIA_LOG_D("AVSync end, startPts: " PUBLIC_LOG_D64 ", endPts: " PUBLIC_LOG_D64
+                    ", duration: " PUBLIC_LOG_D64 " us, count: " PUBLIC_LOG_D64 ", totalDuration: "
+                    PUBLIC_LOG_D64 " us", syncStartPts_, pts, duration, syncCount_, totalSyncDurationUs_);
+            }
+            syncEndPts_ = pts;
+            ReportLipAsyncEvent(pts / MS_PER_US);
+            isInAVSync_ = false;
+            syncStartPts_ = 0;
+        }
+    }
+}
+
+void VideoSink::AVSyncDetector::GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs)
+{
+    syncCount = syncCount_;
+    totalSyncDurationMs = totalSyncDurationUs_ / MS_PER_US;
+}
+
+void VideoSink::AVSyncDetector::ReportLipAsyncEvent(int64_t endPtsMs)
+{
+    if (eventReceiver_ == nullptr) {
+        return;
+    }
+    LipAsyncInfo lipAsyncInfo {
+        .asyncType = lipAsyncType_,
+        .startTimeMs = lipAsyncStartPtsMs_,
+        .endTimeMs = endPtsMs
+    };
+    MEDIA_LOG_I("LipAsync event, type: " PUBLIC_LOG_D32 ", start: " PUBLIC_LOG_D64
+        " ms, end: " PUBLIC_LOG_D64 " ms", lipAsyncType_, lipAsyncStartPtsMs_, endPtsMs);
+    eventReceiver_->OnDfxEvent({"VideoSink", DfxEventType::DFX_EVENT_AVDESYNC, lipAsyncInfo});
+}
+
+void VideoSink::AVSyncDetector::OnPlaybackEnd(int64_t endPtsMs)
+{
+    if (isInAVSync_ && eventReceiver_ != nullptr) {
+        MEDIA_LOG_I("LipAsync event on playback end, type: " PUBLIC_LOG_D32
+            ", start: " PUBLIC_LOG_D64 " ms, end: " PUBLIC_LOG_D64 " ms",
+            lipAsyncType_, lipAsyncStartPtsMs_, endPtsMs);
+        ReportLipAsyncEvent(endPtsMs);
+    }
+}
+
+void VideoSink::AVSyncDetector::SetEventReceiver(const std::shared_ptr<EventReceiver> eventReceiver)
+{
+    eventReceiver_ = eventReceiver;
+}
+
+Status VideoSink::GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs)
+{
+    avSyncDetector_.GetAVSyncInfo(syncCount, totalSyncDurationMs);
+    return Status::OK;
+}
+
+void VideoSink::UpdateSeekState(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    if (seekFlag_) {
+        seekFlag_ = false;
+        isFirstFrameAfterSeek_ = true;
+    } else if (isFirstFrameAfterSeek_) {
+        isFirstFrameAfterSeek_ = false;
+    } else {
+        CheckPtsDiscontinuity(buffer);
+    }
+}
+
+void VideoSink::CheckPtsDiscontinuity(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    FALSE_RETURN_NOLOG(eventReceiver_ != nullptr);
+    FALSE_RETURN_NOLOG(buffer != nullptr);
+    FALSE_RETURN_NOLOG(!(buffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)));
+    
+    int64_t curPts = buffer->pts_;
+    int64_t lastPts = lastPtsForDiscontinuity_;
+    lastPtsForDiscontinuity_ = curPts;
+    
+    int64_t ptsDiff = curPts > lastPts ? (curPts - lastPts) : (lastPts - curPts);
+    if (ptsDiff > PTS_DISCONTINUE_THRESHOLD_US && lastPts != HST_TIME_NONE) {
+        MEDIA_LOG_I("Video PTS discontinuity detected, lastPts " PUBLIC_LOG_D64
+            ", curPts " PUBLIC_LOG_D64, lastPts, curPts);
+        MediaDiscontinueInfo discontinueInfo {
+            .streamType = 2,
+            .discontinueType = 2,
+            .ptsBefore = lastPts,
+            .ptsAfter = curPts
+        };
+        eventReceiver_->OnDfxEvent({"VideoSink", DfxEventType::DFX_EVENT_MEDIA_DISCONTINUE, discontinueInfo});
+    }
 }
 } // namespace Pipeline
 } // namespace MEDIA

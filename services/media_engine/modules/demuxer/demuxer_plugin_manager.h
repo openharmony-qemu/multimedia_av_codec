@@ -35,18 +35,12 @@
 #include "source/source.h"
 #include "osal/task/mutex.h"
 #include "osal/task/condition_variable.h"
+#include "demuxer_types.h"
 
 namespace OHOS {
 namespace Media {
 
 class BaseStreamDemuxer;
-
-enum TrackType {
-    TRACK_VIDEO = 0,
-    TRACK_AUDIO,
-    TRACK_SUBTITLE,
-    TRACK_INVALID
-};
 
 class DataSourceImpl : public Plugins::DataSource {
 public:
@@ -93,7 +87,7 @@ public:
     explicit DemuxerPluginManager();
     virtual ~DemuxerPluginManager();
 
-    Status InitDefaultPlay(const std::vector<StreamInfo>& streams);
+    Status InitDefaultPlay(const std::vector<Plugins::StreamInfo>& streams);
     std::shared_ptr<Plugins::DemuxerPlugin> GetPluginByStreamID(int32_t streamID);
     void GetTrackInfoByStreamID(int32_t streamID, int32_t& trackId, int32_t& innerTrackId);
     void GetTrackInfoByStreamID(int32_t streamID, int32_t& trackId, int32_t& innerTrackId, TrackType type);
@@ -158,13 +152,17 @@ public:
     void SetApiVersion(int32_t apiVersion);
     void SetIsHlsFmp4(bool isHlsFmp4);
     bool GetPluginName(std::string& pluginName);
+    void SetPlayerMode(bool isPlayerMode);
+    int32_t GetTmpTrackIdByTrackId(int32_t trackId);
+    Plugins::MediaInfo GetMediaInfo();
+
 private:
     bool CreatePlugin(std::string pluginName, int32_t id);
-    bool InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
+    Status InitPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
     void MediaTypeFound(std::shared_ptr<BaseStreamDemuxer> streamDemuxer, const std::string& pluginName, int32_t id);
-    void InitAudioTrack(const StreamInfo& info);
-    void InitVideoTrack(const StreamInfo& info);
-    void InitSubtitleTrack(const StreamInfo& info);
+    void InitAudioTrack(const Plugins::StreamInfo& info);
+    void InitVideoTrack(const Plugins::StreamInfo& info);
+    void InitSubtitleTrack(const Plugins::StreamInfo& info);
     void AddMediaInfo(int32_t streamID, Plugins::MediaInfo& mediaInfo);
     static Status UpdateGeneralValue(int32_t trackCount, const Meta& format, Meta& formatNew);
     static Status AddGeneral(const MediaStreamInfo& info, Meta& formatNew);
@@ -191,6 +189,8 @@ private:
     int32_t apiVersion_ {0};
     bool isHlsFmp4_ {false};
     std::string pluginName_ {};
+    std::atomic<bool> isPlayerMode_ = false;
+    std::shared_mutex mediaInfoMutex_;
 };
 } // namespace Media
 } // namespace OHOS

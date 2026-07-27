@@ -565,7 +565,7 @@ uint32_t VEncAPI11Sample::ReadOneFrameRGBA8888(uint8_t *dst)
 uint32_t VEncAPI11Sample::FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer)
 {
     int32_t ret = 0;
-    struct Region region;
+    struct Region region = {};
     struct Region::Rect *rect = new Region::Rect();
     rect->x = 0;
     rect->y = 0;
@@ -789,7 +789,7 @@ void VEncAPI11Sample::AutoSwitchParam()
     int64_t currentBitrate = DEFAULT_BITRATE;
     double currentFrameRate = DEFAULT_FRAME_RATE;
     int32_t currentQP = DEFAULT_QP;
-    if (frameCount == switchParamsTimeSec * (int32_t)DEFAULT_FRAME_RATE) {
+    if (frameCount == switchParamsFrame) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetBitrate) {
             currentBitrate = DEFAULT_BITRATE >> 1;
@@ -807,7 +807,7 @@ void VEncAPI11Sample::AutoSwitchParam()
         SetParameter(format) == AV_ERR_OK ? (0) : (errCount++);
         OH_AVFormat_Destroy(format);
     }
-    if (frameCount == switchParamsTimeSec * (int32_t)DEFAULT_FRAME_RATE * DOUBLE) {
+    if (frameCount == switchParamsFrame * DOUBLE) {
         OH_AVFormat *format = OH_AVFormat_Create();
         if (needResetBitrate) {
             currentBitrate = DEFAULT_BITRATE << 1;

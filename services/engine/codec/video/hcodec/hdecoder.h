@@ -23,7 +23,7 @@
 #endif
 #include "xperf_service_action_type.h"
 #include "xperf_service_client.h"
-#include "video_state_callback_stub.h"
+#include "event_callback_stub.h"
 
 namespace OHOS::MediaAVCodec {
 class HDecoder : public HCodec {
@@ -31,14 +31,16 @@ public:
     HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType);
     ~HDecoder() override;
 
-    class XperfConnector : public OHOS::HiviewDFX::VideoStateCallbackStub {
+    class XperfConnector : public OHOS::HiviewDFX::EventCallbackStub {
     public:
         static std::shared_ptr<MsgToken> FindSuitableDecoder(uint64_t surfaceId, const std::string& bundleName);
         static std::shared_ptr<MsgToken> FindSuitableDecoder(const std::string& msg);
- 
-        ErrCode OnVideoJankEvent(const std::string& msg) override;
-        ErrCode OnVideoResumed(const std::string& msg) override;
-        ErrCode OnVideoPaused(const std::string& msg) override;
+        
+        ErrCode OnXperfEvent(int eventCode, const std::string& eventData) override;
+    private:
+        ErrCode OnVideoJankEvent(const std::string& msg);
+        ErrCode OnVideoResumed(const std::string& msg);
+        ErrCode OnVideoPaused(const std::string& msg);
     };
 
     struct DecoderInst {
@@ -48,16 +50,8 @@ public:
     };
 
 private:
-    struct SurfaceBufferItem {
-        sptr<SyncFence> fence;
-        // release with seq
-        uint32_t seqnum = 0;
-        // release and request
-        sptr<SurfaceBuffer> buffer;
-        int32_t generation = 0;
-    };
 
-        struct SurfaceBufferLayout {
+    struct SurfaceBufferLayout {
         PixelFmt fmt;
         int32_t handleW = 0;
         int32_t handleH = 0;
@@ -67,7 +61,7 @@ private:
         int32_t cropTop = 0;
         int32_t cropW = 0;
         int32_t cropH = 0;
- 
+
         friend bool operator==(const SurfaceBufferLayout& layout1, const SurfaceBufferLayout& layout2)
         {
             return layout1.fmt           == layout2.fmt &&
@@ -80,11 +74,11 @@ private:
                    layout1.cropW         == layout2.cropW &&
                    layout1.cropH         == layout2.cropH;
         }
- 
+
         std::string ToString() const
         {
             std::string s;
-            s.reserve(64); //64Bytes
+            s.reserve(64); // 64Bytes
             (void)sprintf_s(s.data(), s.capacity(), "(%s, [%dx%d][%dx%d], %u/%u/%u/%u)",
                 fmt.strFmt.c_str(), handleW, handleH, byteStride, alignedHeight, cropLeft, cropTop, cropW, cropH);
             return s;
@@ -95,6 +89,7 @@ private:
     // configure
     bool DecideOutputBufMode();
     int32_t OnConfigure(const Format &format) override;
+    int32_t SetDecOrder(const Format &format);
     int32_t SetupPort(const Format &format);
     int32_t UpdateInPortFormat() override;
     int32_t UpdateOutPortFormat() override;
@@ -109,6 +104,7 @@ private:
     uint64_t GetVendorProducerUsage();
     uint64_t GetSurfaceConsumerUsage();
     bool SetUsageToVendor(uint64_t usage);
+
     int32_t SaveTransform(const Format &format, bool set = false);
     int32_t SetTransform();
     int32_t SaveScaleMode(const Format &format, bool set = false);
@@ -144,13 +140,8 @@ private:
     int32_t NotifySurfaceToRenderOutputBuffer(BufferInfo &info);
     int32_t Attach(BufferInfo &info);
     void OnGetBufferFromSurface(const ParamSP& param) override;
-    SurfaceBufferItem RequestBuffer();
     std::vector<BufferInfo>::iterator FindBelongTo(uint32_t seqnum);
-    std::vector<BufferInfo>::iterator FindBelongTo(sptr<SurfaceBuffer>& buffer);
     std::vector<BufferInfo>::iterator FindNullSlotIfDynamicMode();
-    void SurfaceModeSubmitBuffer();
-    void SurfaceModeSubmitBufferFromFreeList();
-    bool SurfaceModeSubmitOneItem(SurfaceBufferItem& item);
     void DynamicModeSubmitBuffer() override;
     void DynamicModeSubmitIfEos() override;
     void DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::vector<BufferInfo>::iterator nullSlot);
@@ -162,7 +153,6 @@ private:
         const MsgInfo &msg, BufferOperationMode mode);
     void SwitchBetweenSurface(const sptr<Surface> &newSurface,
         const MsgInfo &msg, BufferOperationMode mode);
-    void ConsumeFreeList(BufferOperationMode mode);
     void ClassifyOutputBufferOwners(std::vector<size_t>& ownedByUs,
                                     std::map<int64_t, size_t>& ownedBySurfaceFlushTime2BufferIndex);
 
@@ -240,13 +230,11 @@ private:
         int32_t instanceId_;
     } currSurface_;
 
-    std::list<SurfaceBufferItem> freeList_;
     int32_t currGeneration_ = 0;
     bool currGenerationLayoutHasParsed_ = false;
     std::shared_ptr<SurfaceBufferLayout> currLayout_;
     bool isAlloc_ = false;
     bool isDynamic_ = false;
-    bool isReleaseWithSeq_ = true;  // true: dont need to request, false: need to do request
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;

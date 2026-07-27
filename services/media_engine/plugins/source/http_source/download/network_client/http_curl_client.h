@@ -19,10 +19,12 @@
 #include <string>
 #include <list>
 #include <iostream>
+#include <atomic>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <optional>
 #include "network/network_client.h"
 #include "network/network_typs.h"
 #include "curl/curl.h"
@@ -43,7 +45,8 @@ bool IsExcluded(const std::string &str, const std::string &exclusions, const std
 
 class HttpCurlClient : public NetworkClient {
 public:
-    HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void* userParam);
+    HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void* userParam,
+        std::optional<uint32_t> connectTimeoutMs = std::nullopt);
 
     ~HttpCurlClient() override;
 
@@ -60,7 +63,6 @@ public:
     Status Deinit() override;
     Status GetIp(std::string &ip) override;
     void SetAppUid(int32_t appUid) override;
-
     struct SocketOwner {
         uid_t uid;
         gid_t gid;
@@ -70,6 +72,7 @@ private:
     void InitCurProxy(const std::string& url);
     std::string UrlParse(const std::string& url) const;
     void HttpHeaderParse(const std::map<std::string, std::string>& httpHeader);
+    void HttpHeaderParseLocked(const std::map<std::string, std::string>& httpHeader);
     static std::string ClearHeadTailSpace(std::string& str);
     void CheckRequestRange(long startPos, int len);
     Status SetIp();
@@ -82,10 +85,11 @@ private:
     mutable Mutex mutex_;
     struct curl_slist* headerList_ {nullptr};
     std::string ip_ {};
-    bool ipFlag_ {false};
-    bool isFirstRequest_ {true};
+    std::atomic<bool> ipFlag_ {false};
+    std::atomic<bool> isFirstRequest_ {true};
     bool isFirstOpen_ {true};
-    volatile int32_t appUid_ {-1};
+    std::atomic<int32_t> appUid_ {-1};
+    std::optional<uint32_t> connectTimeoutMs_ {std::nullopt};
 };
 }
 }

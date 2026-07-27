@@ -71,6 +71,7 @@ ohos_unittest("sample_queue_unit_test") {
   external_deps = [
     "c_utils:utils",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

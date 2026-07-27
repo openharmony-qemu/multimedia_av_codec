@@ -96,6 +96,7 @@ ohos_unittest("plugins_source_unit_test") {
     "googletest:gmock",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",

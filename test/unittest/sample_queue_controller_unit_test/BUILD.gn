@@ -74,6 +74,7 @@ ohos_unittest("sample_queue_controller_unit_test") {
     "c_utils:utils",
     "googletest:gmock_main",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

@@ -203,6 +203,11 @@ Status FfmpegBaseDecoder::ReceiveBuffer(std::shared_ptr<AVBuffer> &outBuffer)
         }
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("eos received");
+        auto ioInfoMem = outBuffer->memory_;
+        if (ioInfoMem->GetAddr() && ioInfoMem->GetSize() > 0 &&
+            memset_s(ioInfoMem->GetAddr(), ioInfoMem->GetSize(), 0, ioInfoMem->GetSize()) == EOK) {
+            AVCODEC_LOGI("set eos 0 success");
+        }
         outBuffer->flag_ = MediaAVCodec::AVCODEC_BUFFER_FLAG_EOS;
         avcodec_flush_buffers(avCodecContext_.get());
         status = Status::END_OF_STREAM;

@@ -118,9 +118,14 @@ public:
 #ifdef SUPPORT_CODEC_OPUS
             MEDIA_MIMETYPE_AUDIO_OPUS,
 #endif
-#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
+#ifdef SUPPORT_CODEC_AMRNB
             MEDIA_MIMETYPE_AUDIO_AMRNB,
+#endif
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
             MEDIA_MIMETYPE_AUDIO_AMRWB,
+#endif
+#ifdef SUPPORT_CODEC_AUDIO_VIVID
+            MEDIA_MIMETYPE_AUDIO_VIVID
 #endif
         };
         static const std::unordered_set<std::string_view> DECODE_OUTER_SUPPORT_TABLE = {
@@ -157,7 +162,7 @@ public:
 #ifdef SUPPORT_CODEC_OPUS
             MEDIA_MIMETYPE_AUDIO_OPUS,
 #endif
-#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
+#ifdef SUPPORT_CODEC_AUDIO_VIVID
             MEDIA_MIMETYPE_AUDIO_VIVID
 #endif
         };

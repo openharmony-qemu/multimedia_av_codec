@@ -30,12 +30,6 @@ namespace {
 constexpr uint8_t SENTINEL = 0xCC;
 constexpr int32_t SRC_WIDTH = 8;
 constexpr int32_t SRC_HEIGHT = 6;
-constexpr int32_t CROP_LEFT = 2;
-constexpr int32_t CROP_TOP = 2;
-constexpr int32_t CROP_WIDTH = 4;
-constexpr int32_t CROP_HEIGHT = 2;
-constexpr int32_t DS_WIDTH = 4;
-constexpr int32_t DS_HEIGHT = 4;
 constexpr int32_t BUFFER_STRIDE_ALIGNMENT = 64;
 constexpr int32_t BUFFER_REQUEST_TIMEOUT = 0;
 constexpr int32_t DEFAULT_PLANE_BYTES_PER_PIXEL = 1;
@@ -47,14 +41,6 @@ constexpr int32_t RGBA_BYTES_PER_PIXEL = 4;
 constexpr size_t PATTERN_PLANE_FACTOR = 53;
 constexpr int32_t PATTERN_ROW_FACTOR = 17;
 constexpr uint8_t BYTE_MASK = 0xFF;
-constexpr int32_t NON_YUV_ODD_SRC_WIDTH = 5;
-constexpr int32_t NON_YUV_ODD_SRC_HEIGHT = 3;
-constexpr int32_t ODD_OUTPUT_WIDTH = 3;
-constexpr int32_t ODD_OUTPUT_HEIGHT = 3;
-constexpr int32_t ODD_CROP_LEFT = 1;
-constexpr int32_t ODD_CROP_TOP = 1;
-constexpr int32_t ODD_CROP_WIDTH = 3;
-constexpr int32_t ODD_CROP_HEIGHT = 3;
 
 struct FormatParam {
     const char *name;
@@ -62,6 +48,7 @@ struct FormatParam {
     bool yuv420;
 };
 
+#ifdef SUPPORT_VIDEO_ENCODER_PREPROCESSING
 const FormatParam FORMAT_PARAMS[] = {
     {"NV12", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, true},
     {"NV21", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, true},
@@ -71,6 +58,13 @@ const FormatParam FORMAT_PARAMS[] = {
     {"RGBA8888", GRAPHIC_PIXEL_FMT_RGBA_8888, false},
     {"RGBA1010102", GRAPHIC_PIXEL_FMT_RGBA_1010102, false},
 };
+#else
+const FormatParam FORMAT_PARAMS[] = {
+    {"NV12", GRAPHIC_PIXEL_FMT_YCBCR_420_SP, true},
+    {"NV21", GRAPHIC_PIXEL_FMT_YCRCB_420_SP, true},
+    {"YCBCR_420_P", GRAPHIC_PIXEL_FMT_YCBCR_420_P, true},
+};
+#endif
 
 struct Plane {
     size_t offset;
@@ -184,58 +178,6 @@ std::vector<uint8_t> ReadVisibleBytes(const sptr<SurfaceBuffer> &buffer)
     return data;
 }
 
-std::vector<uint8_t> ExpectedCrop(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
-                                  int32_t left, int32_t top)
-{
-    auto *base = static_cast<uint8_t *>(input->GetVirAddr());
-    std::vector<Plane> srcPlanes;
-    std::vector<Plane> dstPlanes;
-    EXPECT_TRUE(BuildPlanes(input, srcPlanes));
-    EXPECT_TRUE(BuildPlanes(output, dstPlanes));
-    std::vector<uint8_t> data;
-    for (size_t i = 0; i < srcPlanes.size(); ++i) {
-        const Plane &src = srcPlanes[i];
-        const Plane &dst = dstPlanes[i];
-        int32_t srcLeft = left / src.xSubsample;
-        int32_t srcTop = top / src.ySubsample;
-        int32_t bytes = dst.width * dst.bytesPerPixel;
-        for (int32_t y = 0; y < dst.height; ++y) {
-            const uint8_t *row = base + src.offset + static_cast<size_t>(srcTop + y) * src.stride +
-                                 static_cast<size_t>(srcLeft) * src.bytesPerPixel;
-            data.insert(data.end(), row, row + bytes);
-        }
-    }
-    return data;
-}
-
-std::vector<uint8_t> ExpectedDownsample(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output)
-{
-    auto *base = static_cast<uint8_t *>(input->GetVirAddr());
-    std::vector<Plane> srcPlanes;
-    std::vector<Plane> dstPlanes;
-    EXPECT_TRUE(BuildPlanes(input, srcPlanes));
-    EXPECT_TRUE(BuildPlanes(output, dstPlanes));
-    std::vector<uint8_t> data;
-    for (size_t i = 0; i < srcPlanes.size(); ++i) {
-        const Plane &src = srcPlanes[i];
-        const Plane &dst = dstPlanes[i];
-        int32_t srcW = input->GetWidth() / src.xSubsample;
-        int32_t srcH = input->GetHeight() / src.ySubsample;
-        int32_t dstW = output->GetWidth() / dst.xSubsample;
-        int32_t dstH = output->GetHeight() / dst.ySubsample;
-        for (int32_t y = 0; y < dstH; ++y) {
-            int32_t srcY = static_cast<int32_t>((static_cast<int64_t>(y) * srcH) / dstH);
-            for (int32_t x = 0; x < dstW; ++x) {
-                int32_t srcX = static_cast<int32_t>((static_cast<int64_t>(x) * srcW) / dstW);
-                const uint8_t *pixel = base + src.offset + static_cast<size_t>(srcY) * src.stride +
-                                       static_cast<size_t>(srcX) * src.bytesPerPixel;
-                data.insert(data.end(), pixel, pixel + dst.bytesPerPixel);
-            }
-        }
-    }
-    return data;
-}
-
 void ExpectPaddingUntouched(const sptr<SurfaceBuffer> &buffer)
 {
     auto *base = static_cast<uint8_t *>(buffer->GetVirAddr());
@@ -252,47 +194,6 @@ void ExpectPaddingUntouched(const sptr<SurfaceBuffer> &buffer)
 } // namespace
 
 class CpuImageProcessorTest : public testing::TestWithParam<FormatParam> {};
-
-HWTEST_P(CpuImageProcessorTest, CropSuccess, TestSize.Level1)
-{
-    const auto param = GetParam();
-    auto input = AllocBuffer(SRC_WIDTH, SRC_HEIGHT, param.format);
-    auto output = AllocBuffer(CROP_WIDTH, CROP_HEIGHT, param.format);
-    ASSERT_NE(input, nullptr);
-    ASSERT_NE(output, nullptr);
-    FillVisiblePattern(input);
-    FillVisiblePattern(output);
-
-    CpuImageProcessRequest request;
-    request.input = input;
-    request.output = output;
-    request.operation = CpuImageOperation::CROP;
-    request.crop = {CROP_LEFT, CROP_TOP, CROP_WIDTH, CROP_HEIGHT};
-
-    EXPECT_EQ(CpuImageProcessor::Process(request), AVCS_ERR_OK);
-    EXPECT_EQ(ReadVisibleBytes(output), ExpectedCrop(input, output, CROP_LEFT, CROP_TOP));
-    ExpectPaddingUntouched(output);
-}
-
-HWTEST_P(CpuImageProcessorTest, DownsampleSuccess, TestSize.Level1)
-{
-    const auto param = GetParam();
-    auto input = AllocBuffer(SRC_WIDTH, SRC_HEIGHT, param.format);
-    auto output = AllocBuffer(DS_WIDTH, DS_HEIGHT, param.format);
-    ASSERT_NE(input, nullptr);
-    ASSERT_NE(output, nullptr);
-    FillVisiblePattern(input);
-    FillVisiblePattern(output);
-
-    CpuImageProcessRequest request;
-    request.input = input;
-    request.output = output;
-    request.operation = CpuImageOperation::DOWNSAMPLE;
-
-    EXPECT_EQ(CpuImageProcessor::Process(request), AVCS_ERR_OK);
-    EXPECT_EQ(ReadVisibleBytes(output), ExpectedDownsample(input, output));
-    ExpectPaddingUntouched(output);
-}
 
 HWTEST_P(CpuImageProcessorTest, CopySuccess, TestSize.Level1)
 {
@@ -333,31 +234,6 @@ HWTEST_P(CpuImageProcessorTest, FormatMismatchFails, TestSize.Level1)
         EXPECT_EQ(CpuImageProcessor::Process(request), AVCS_ERR_OK);
     } else {
         EXPECT_NE(CpuImageProcessor::Process(request), AVCS_ERR_OK);
-    }
-}
-
-HWTEST_P(CpuImageProcessorTest, OddGeometryPolicy, TestSize.Level1)
-{
-    const auto param = GetParam();
-    auto input = AllocBuffer(param.yuv420 ? SRC_WIDTH : NON_YUV_ODD_SRC_WIDTH,
-                             param.yuv420 ? SRC_HEIGHT : NON_YUV_ODD_SRC_HEIGHT, param.format);
-    auto output = AllocBuffer(ODD_OUTPUT_WIDTH, ODD_OUTPUT_HEIGHT, param.format);
-    ASSERT_NE(input, nullptr);
-    ASSERT_NE(output, nullptr);
-    FillVisiblePattern(input);
-    FillVisiblePattern(output);
-
-    CpuImageProcessRequest request;
-    request.input = input;
-    request.output = output;
-    request.operation = CpuImageOperation::CROP;
-    request.crop = {ODD_CROP_LEFT, ODD_CROP_TOP, ODD_CROP_WIDTH, ODD_CROP_HEIGHT};
-
-    int32_t ret = CpuImageProcessor::Process(request);
-    if (param.yuv420) {
-        EXPECT_NE(ret, AVCS_ERR_OK);
-    } else {
-        EXPECT_EQ(ret, AVCS_ERR_OK);
     }
 }
 

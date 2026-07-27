@@ -320,4 +320,94 @@ HWTEST_F(AVMuxerOggUnitTest, OGG_Muxer_WithOpusEncoder_002, TestSize.Level1)
     }
 }
 
+HWTEST_F(AVMuxerOggUnitTest, OGG_Muxer_InvalidSampleRate_001, TestSize.Level1)
+{
+    string fileName = TEST_FILE_PATH + string("OGG_Muxer_InvalidSampleRate_001.ogg");
+    int32_t fd = open(fileName.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    muxer_ = OH_AVMuxer_Create(fd, AV_OUTPUT_FORMAT_OGG);
+    ASSERT_NE(muxer_, nullptr);
+
+    OH_AVFormat *audioFormat = OH_AVFormat_Create();
+    ASSERT_NE(audioFormat, nullptr);
+    OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, 0);
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, 1);
+
+    int32_t trackId = -1;
+    int32_t ret = OH_AVMuxer_AddTrack(muxer_, &trackId, audioFormat);
+    EXPECT_NE(ret, AV_ERR_OK);
+
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, -1);
+    ret = OH_AVMuxer_AddTrack(muxer_, &trackId, audioFormat);
+    EXPECT_NE(ret, AV_ERR_OK);
+
+    OH_AVFormat_Destroy(audioFormat);
+}
+
+HWTEST_F(AVMuxerOggUnitTest, OGG_Muxer_InvalidChannelCount_001, TestSize.Level1)
+{
+    string fileName = TEST_FILE_PATH + string("OGG_Muxer_InvalidChannelCount_001.ogg");
+    int32_t fd = open(fileName.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    muxer_ = OH_AVMuxer_Create(fd, AV_OUTPUT_FORMAT_OGG);
+    ASSERT_NE(muxer_, nullptr);
+
+    OH_AVFormat *audioFormat = OH_AVFormat_Create();
+    ASSERT_NE(audioFormat, nullptr);
+    OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, 16000);
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, 0);
+
+    int32_t trackId = -1;
+    int32_t ret = OH_AVMuxer_AddTrack(muxer_, &trackId, audioFormat);
+    EXPECT_NE(ret, AV_ERR_OK);
+
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, 99);
+    ret = OH_AVMuxer_AddTrack(muxer_, &trackId, audioFormat);
+    EXPECT_NE(ret, AV_ERR_OK);
+
+    OH_AVFormat_Destroy(audioFormat);
+}
+
+HWTEST_F(AVMuxerOggUnitTest, OGG_Muxer_UnsupportedMimeType_001, TestSize.Level1)
+{
+    string fileName = TEST_FILE_PATH + string("OGG_Muxer_UnsupportedMimeType_001.ogg");
+    int32_t fd = open(fileName.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    muxer_ = OH_AVMuxer_Create(fd, AV_OUTPUT_FORMAT_OGG);
+    ASSERT_NE(muxer_, nullptr);
+
+    OH_AVFormat *audioFormat = OH_AVFormat_Create();
+    ASSERT_NE(audioFormat, nullptr);
+    OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, "audio/mpeg");
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, 16000);
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, 1);
+
+    int32_t trackId = -1;
+    int32_t ret = OH_AVMuxer_AddTrack(muxer_, &trackId, audioFormat);
+    EXPECT_NE(ret, AV_ERR_OK);
+
+    OH_AVFormat_Destroy(audioFormat);
+}
+
+HWTEST_F(AVMuxerOggUnitTest, OGG_Muxer_StartBeforeAddTrack_001, TestSize.Level1)
+{
+    string fileName = TEST_FILE_PATH + string("OGG_Muxer_StartBeforeAddTrack_001.ogg");
+    int32_t fd = open(fileName.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    muxer_ = OH_AVMuxer_Create(fd, AV_OUTPUT_FORMAT_OGG);
+    ASSERT_NE(muxer_, nullptr);
+
+    int32_t ret = OH_AVMuxer_Start(muxer_);
+    EXPECT_NE(ret, AV_ERR_OK);
+}
+
+HWTEST_F(AVMuxerOggUnitTest, OGG_Muxer_Destroy_Lifecycle_001, TestSize.Level1)
+{
+    string fileName = TEST_FILE_PATH + string("OGG_Muxer_Destroy_Lifecycle_001.ogg");
+    int32_t fd = open(fileName.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVMuxer *tmpMuxer = OH_AVMuxer_Create(fd, AV_OUTPUT_FORMAT_OGG);
+    ASSERT_NE(tmpMuxer, nullptr);
+
+    int32_t ret = OH_AVMuxer_Destroy(tmpMuxer);
+    ASSERT_EQ(ret, AV_ERR_OK);
+}
+
 } // namespace

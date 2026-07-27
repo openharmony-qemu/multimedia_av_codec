@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
+
 #include <string>
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
@@ -23,6 +27,8 @@
 #include "native_avcapability.h"
 #include "native_avformat.h"
 #include "openssl/sha.h"
+#include <parameter.h>
+#include <parameters.h>
 
 #ifdef SUPPORT_DRM
 #include "native_mediakeysession.h"
@@ -73,6 +79,9 @@ const std::vector<OH_NativeBuffer_TransformType> transfromTypes = {
     NATIVEBUFFER_FLIP_H_ROT270,
     NATIVEBUFFER_FLIP_V_ROT270
 };
+constexpr const char* IMAGE_BUILDTIME_KEY = "const.image.buildtime";
+constexpr const char* WUKONG100_KEYWORD = "wukong100";
+constexpr const char* DEFAULT_BUILDTIME_VALUE = "";
 } // namespace
 
 void Mpeg4SwdecFuncNdkTest::SetUpTestCase()
@@ -85,6 +94,11 @@ void Mpeg4SwdecFuncNdkTest::SetUpTestCase()
 void Mpeg4SwdecFuncNdkTest::TearDownTestCase() {}
 void Mpeg4SwdecFuncNdkTest::SetUp() {}
 void Mpeg4SwdecFuncNdkTest::TearDown() {}
+bool IsWukong100Device()
+{
+    std::string buildtimeValue = OHOS::system::GetParameter(IMAGE_BUILDTIME_KEY, DEFAULT_BUILDTIME_VALUE);
+    return buildtimeValue.find(WUKONG100_KEYWORD) != std::string::npos;
+}
 
 namespace {
 /**
@@ -226,7 +240,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0600, TestSize.Level2)
  */
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_FUNC_0700, TestSize.Level2)
 {
-    if (cap_mpeg4 != nullptr) {
+    if (cap_mpeg4 != nullptr && !IsWukong100Device()) {
         auto vDecSample = make_shared<VDecNdkSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -989,7 +1003,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0600, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0700, TestSize.Level2)
 {
     if (cap_mpeg4 != nullptr) {
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;
@@ -1012,7 +1026,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0700, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0800, TestSize.Level2)
 {
     if (cap_mpeg4 != nullptr) {
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;
@@ -1035,7 +1049,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0800, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0900, TestSize.Level2)
 {
     if (cap_mpeg4 != nullptr) {
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;
@@ -1058,7 +1072,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0900, TestSize.Level2)
 HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_1000, TestSize.Level2)
 {
     if (cap_mpeg4 != nullptr) {
-        if (!access("/system/lib64/media/", 0)) {
+        if (ONLY_FOR_FLAGSHIP_CHIP) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
             vDecSample->DEFAULT_WIDTH = 1920;

@@ -55,6 +55,7 @@ std::shared_ptr<VDecInnerSignal> signal_ = nullptr;
 std::string g_invalidCodecMime = "avdec_h265";
 std::string g_codecMime = "video/hevc";
 std::string g_codecName = "";
+OH_AVCapability *cap = nullptr;
 
 constexpr uint32_t DEFAULT_WIDTH = 1920;
 constexpr uint32_t DEFAULT_HEIGHT = 1080;
@@ -62,7 +63,7 @@ constexpr double DEFAULT_FRAME_RATE = 30.0;
 
 void HevcswdecInnerApiNdkTest::SetUpTestCase()
 {
-    OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, SOFTWARE);
+    cap = OH_AVCodec_GetCapabilityByCategory(g_codecMime.c_str(), false, SOFTWARE);
     const char *tmpCodecName = OH_AVCapability_GetName(cap);
     g_codecName = tmpCodecName;
     cout << "g_codecName: " << g_codecName << endl;
@@ -96,7 +97,7 @@ namespace {
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByMime("");
         ASSERT_EQ(nullptr, vdec_);
     }
@@ -109,7 +110,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0100, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName("");
         ASSERT_EQ(nullptr, vdec_);
     }
@@ -122,7 +123,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0300, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -139,7 +140,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0500, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
         ASSERT_EQ(AVCS_ERR_NO_MEMORY, vdec_->SetOutputSurface(nullptr));
@@ -153,7 +154,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0600, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_invalidCodecMime);
         ASSERT_EQ(nullptr, vdec_);
     }
@@ -166,7 +167,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0700, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByMime(g_invalidCodecMime);
         ASSERT_EQ(nullptr, vdec_);
     }
@@ -179,7 +180,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0800, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
         ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(0, true));
@@ -193,7 +194,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_0900, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
         ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(0, false));
@@ -207,7 +208,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1000, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
         ASSERT_EQ(AVCS_ERR_INVALID_STATE, vdec_->ReleaseOutputBuffer(-1, false));
@@ -221,7 +222,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1100, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -241,7 +242,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_ILLEGAL_PARA_1200, TestSize.Level
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -259,7 +260,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0100, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -281,7 +282,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0200, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -304,7 +305,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0300, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -328,7 +329,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0400, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -353,7 +354,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0500, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -397,7 +398,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0600, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -421,7 +422,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0700, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -446,7 +447,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0800, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByMime(g_codecMime);
         ASSERT_NE(nullptr, vdec_);
 
@@ -464,7 +465,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_0900, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -481,7 +482,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1000, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -498,7 +499,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1100, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         vdec_ = VideoDecoderFactory::CreateByName(g_codecName);
         ASSERT_NE(nullptr, vdec_);
 
@@ -520,7 +521,7 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_HWDEC_API_1200, TestSize.Level2)
  */
 HWTEST_F(HevcswdecInnerApiNdkTest, API11_VIDEO_SWDEC_FUNCTION_1300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap) {
         shared_ptr<VDecNdkInnerSample> vDecSample = make_shared<VDecNdkInnerSample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         vDecSample->DEFAULT_WIDTH = 1920;

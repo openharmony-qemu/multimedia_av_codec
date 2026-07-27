@@ -69,10 +69,15 @@ public:
 
 private:
     bool CheckFormat();
+    Status QueueOutputBufferBasic(std::shared_ptr<AVBuffer> &outputBuffer);
+    Status QueueOutputBufferCache(std::shared_ptr<AVBuffer> &outputBuffer);
     Meta audioParameter_ ;
     mutable std::mutex avMutex_ {};
     mutable std::mutex paramMutex_ {};
 
+    std::vector<uint8_t> pcmCache_;
+    int32_t maxInputBufferSize_ = -1;
+    bool enableCache_ = false;
     DataCallback* dataCallback_ {nullptr};
     AudioSampleFormat audioSampleFormat_;
 
@@ -83,11 +88,28 @@ private:
     int32_t channels_;
     int64_t bitrate_;
     int64_t pts_;
+    int32_t ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+    bool isFirstInputPts_ = true;
+    int64_t prevPts_ = 0;
+    int32_t frameSize_ = 1152;
+    bool isEnableFormatConvert_ = false;
+    int32_t originSampleByte_ = sizeof(int16_t);
 
     int32_t sampleRate_;
     int32_t maxInputSize_;
     int32_t maxOutputSize_;
     int32_t outputSize_;
+
+    void ConfigureLame(const std::shared_ptr<Meta>& parameter);
+    void ConfigureCache(const std::shared_ptr<Meta>& parameter);
+    void EncodeDirect(const std::shared_ptr<AVBuffer>& inputBuffer);
+    void SetOutputPts(std::shared_ptr<AVBuffer>& outputBuffer);
+    Status OutputEos(std::shared_ptr<AVBuffer>& outputBuffer, const char* reason);
+    int32_t EncodePcmFromCache(int32_t sampleNum, size_t frameBytes);
+    void WriteOutputBuffer(std::shared_ptr<AVBuffer>& outputBuffer);
+    Status EncodeOneFrame(std::shared_ptr<AVBuffer>& outputBuffer, size_t frameBytes, bool isEos);
+    Status EncodeResidual(std::shared_ptr<AVBuffer>& outputBuffer);
+    Status FlushAndOutput(std::shared_ptr<AVBuffer>& outputBuffer);
     std::unique_ptr<unsigned char[]> lameMp3Buffer;
 };
 } // namespace Mp3

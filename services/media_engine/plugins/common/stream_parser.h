@@ -50,7 +50,6 @@ struct PacketConvertToBufferInfo {
 struct HevcParseFormat {
     bool isHdrVivid = false;
     bool isHdr10Plus = false;
-    bool isHdr = false;
     int32_t colorRange = 0;
     uint8_t colorPrimaries = 0x02;
     uint8_t colorTransfer = 0x02;
@@ -69,14 +68,13 @@ public:
     virtual void ParseExtraData(const uint8_t *sample, int32_t size,
                                 uint8_t **extraDataBuf, int32_t *extraDataSize) = 0;
     virtual bool ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize) = 0;
-    virtual void ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
+    virtual bool ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData,
         size_t sideDataSize, bool isExtradata) = 0;
     virtual bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) = 0;
     virtual void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) = 0;
     virtual void ResetXPSSendStatus();
     virtual bool IsHdrVivid() = 0;
     virtual bool IsHdr10Plus() = 0;
-    virtual bool IsHdr() = 0;
     virtual bool IsSyncFrame(const uint8_t *sample, int32_t size) = 0;
     virtual bool GetColorRange() = 0;
     virtual uint8_t GetColorPrimaries() = 0;
@@ -90,6 +88,7 @@ public:
     virtual std::vector<uint8_t> GetLogInfo() = 0;
     virtual uint32_t GetMaxReorderPic() = 0;
     virtual int32_t GetFirstFillerDataNalSize(const uint8_t *sample, int32_t size) = 0;
+    virtual double GetSar() = 0;
 };
 } // Plugins
 } // Media

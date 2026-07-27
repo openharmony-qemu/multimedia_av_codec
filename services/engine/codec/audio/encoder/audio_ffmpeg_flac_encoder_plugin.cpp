@@ -96,11 +96,18 @@ static bool CheckBitsPerSample(int32_t bitsPerCodedSample)
 
 int32_t AudioFFMpegFlacEncoderPlugin::SetContext(const Format &format)
 {
-    int32_t complianceLevel;
-    int32_t bitsPerCodedSample;
+    int32_t complianceLevel = 0;
+    int32_t bitsPerCodedSample = -1;
     auto avCodecContext = basePlugin->GetCodecContext();
     format.GetIntValue(MediaDescriptionKey::MD_KEY_COMPLIANCE_LEVEL, complianceLevel);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, bitsPerCodedSample);
+    if (!CheckBitsPerSample(bitsPerCodedSample)) {
+        AVCODEC_LOGE("init failed, because bitsPerCodedSample=%{public}d not support.", bitsPerCodedSample);
+        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_ERROR;
+    } else if (complianceLevel < MIN_COMPLIANCE_LEVEL || complianceLevel > MAX_COMPLIANCE_LEVEL) {
+        AVCODEC_LOGE("init failed, because complianceLevel=%{public}d not support.", complianceLevel);
+        return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_ERROR;
+    }
     avCodecContext->strict_std_compliance = complianceLevel;
     avCodecContext->bits_per_raw_sample = BITS_PER_RAW_SAMPLE_MAP.at(bitsPerCodedSample);
     return AVCodecServiceErrCode::AVCS_ERR_OK;
@@ -123,11 +130,11 @@ bool AudioFFMpegFlacEncoderPlugin::CheckBitRate(const Format &format) const
 
 int32_t AudioFFMpegFlacEncoderPlugin::CheckFormat(const Format &format)
 {
-    int32_t channelCount;
-    int32_t sampleRate;
-    int32_t bitsPerCodedSample;
-    int32_t complianceLevel;
-    int64_t channelLayout;
+    int32_t channelCount = -1;
+    int32_t sampleRate = -1;
+    int32_t bitsPerCodedSample = -1;
+    int32_t complianceLevel = 0;
+    int64_t channelLayout = -1;
     format.GetIntValue(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT, channelCount);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_SAMPLE_RATE, sampleRate);
     format.GetIntValue(MediaDescriptionKey::MD_KEY_BITS_PER_CODED_SAMPLE, bitsPerCodedSample);

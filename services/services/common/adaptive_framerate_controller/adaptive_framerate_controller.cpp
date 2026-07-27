@@ -36,7 +36,7 @@ FramerateCalculator::FramerateCalculator(int32_t instanceId, bool isEnc, std::fu
     : instanceId_(instanceId), resetFramerateHandler_(std::move(handler))
 {
     if (!isEnc) {
-        behaviorAnalyzer_ = std::make_unique<DecodingBehaviorAnalyzer>();
+        behaviorAnalyzer_ = std::make_unique<DecodingBehaviorAnalyzer>(instanceId);
     }
 }
 
@@ -67,6 +67,13 @@ void FramerateCalculator::OnFrameConsumed(int64_t pts, bool render)
         behaviorAnalyzer_->OnFrameConsumed(pts, render);
     }
     frameCount_++;
+}
+
+ void FramerateCalculator::OnFrameDropped()
+{
+    if (afcEnable && behaviorAnalyzer_) {
+        behaviorAnalyzer_->OnFrameDropped();
+    }
 }
 
 void FramerateCalculator::OnStopped(bool isDecEnd)
@@ -148,6 +155,13 @@ bool FramerateCalculator::SetFramerate2ConfiguredFramerate()
     resetFramerateHandler_(configuredFramerate_);
     lastFramerate_ = configuredFramerate_;
     return true;
+}
+
+void FramerateCalculator::SetDecInfoCallBack(DecInfoCallBack cb)
+{
+    if (behaviorAnalyzer_) {
+        behaviorAnalyzer_->SetDecInfoCallBack(std::move(cb));
+    }
 }
 
 void FramerateCalculator::Register2AFC()

@@ -927,6 +927,93 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_SEEK_RANGES_007, TestSize.Level0)
     EXPECT_TRUE(downloader->seekRanges_.empty());
 }
 
+HWTEST_F(HlsPlayListDownloaderUnitTest, CHECK_ALL_FRAGMENTS_SEEKABLE_001, TestSize.Level0)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+    std::list<std::shared_ptr<M3U8Fragment>> files;
+
+    downloader->CheckAllFragmentsSeekable(files);
+
+    EXPECT_FALSE(downloader->allFragmentsSeekable_);
+    EXPECT_TRUE(downloader->seekRanges_.empty());
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, CHECK_ALL_FRAGMENTS_SEEKABLE_002, TestSize.Level0)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+    std::list<std::shared_ptr<M3U8Fragment>> files;
+    auto fragment1 = std::make_shared<M3U8Fragment>("test1.ts", 5.0, 1, false);
+    auto fragment2 = std::make_shared<M3U8Fragment>("test2.ts", 5.0, 2, false);
+    auto fragment3 = std::make_shared<M3U8Fragment>("test3.ts", 5.0, 3, false);
+    files.push_back(fragment1);
+    files.push_back(fragment2);
+    files.push_back(fragment3);
+
+    downloader->CheckAllFragmentsSeekable(files);
+
+    EXPECT_TRUE(downloader->isFragmentsUriSet_);
+    EXPECT_TRUE(downloader->allFragmentsSeekable_);
+    EXPECT_EQ(downloader->copiedFileSequences_.size(), files.size());
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, CHECK_ALL_FRAGMENTS_SEEKABLE_003, TestSize.Level0)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+    std::list<std::shared_ptr<M3U8Fragment>> firstFiles;
+    firstFiles.push_back(std::make_shared<M3U8Fragment>("test1.ts", 5.0, 1, false));
+    firstFiles.push_back(std::make_shared<M3U8Fragment>("test2.ts", 5.0, 2, false));
+    firstFiles.push_back(std::make_shared<M3U8Fragment>("test3.ts", 5.0, 3, false));
+    downloader->CheckAllFragmentsSeekable(firstFiles);
+
+    std::list<std::shared_ptr<M3U8Fragment>> nextFiles;
+    nextFiles.push_back(std::make_shared<M3U8Fragment>("test2.ts", 5.0, 2, false));
+    nextFiles.push_back(std::make_shared<M3U8Fragment>("test3.ts", 5.0, 3, false));
+    nextFiles.push_back(std::make_shared<M3U8Fragment>("test4.ts", 5.0, 4, false));
+    downloader->CheckAllFragmentsSeekable(nextFiles);
+
+    EXPECT_TRUE(downloader->allFragmentsSeekable_);
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, CHECK_ALL_FRAGMENTS_SEEKABLE_004, TestSize.Level0)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+    std::list<std::shared_ptr<M3U8Fragment>> firstFiles;
+    firstFiles.push_back(std::make_shared<M3U8Fragment>("test1.ts", 5.0, 1, false));
+    firstFiles.push_back(std::make_shared<M3U8Fragment>("test2.ts", 5.0, 2, false));
+    firstFiles.push_back(std::make_shared<M3U8Fragment>("test3.ts", 5.0, 3, false));
+    firstFiles.push_back(std::make_shared<M3U8Fragment>("test4.ts", 5.0, 4, false));
+    firstFiles.push_back(std::make_shared<M3U8Fragment>("test5.ts", 5.0, 5, false));
+    downloader->CheckAllFragmentsSeekable(firstFiles);
+
+    std::list<std::shared_ptr<M3U8Fragment>> nextFiles;
+    nextFiles.push_back(std::make_shared<M3U8Fragment>("test2.ts", 5.0, 2, false));
+    nextFiles.push_back(std::make_shared<M3U8Fragment>("test6.ts", 5.0, 6, false));
+    downloader->CheckAllFragmentsSeekable(nextFiles);
+
+    EXPECT_FALSE(downloader->allFragmentsSeekable_);
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, CHECK_ALL_FRAGMENTS_SEEKABLE_005, TestSize.Level0)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>();
+    downloader->Init();
+    downloader->liveBaseOffset_ = 123;
+    downloader->lastFirstSeq_ = 456;
+    downloader->lastSegDurations_.push_back(789);
+
+    std::list<std::shared_ptr<M3U8Fragment>> files;
+    files.push_back(std::make_shared<M3U8Fragment>("test1.ts", 5.0, 1, false));
+    downloader->CheckAllFragmentsSeekable(files);
+
+    EXPECT_EQ(downloader->liveBaseOffset_, 0);
+    EXPECT_EQ(downloader->lastFirstSeq_, -1);
+    EXPECT_TRUE(downloader->lastSegDurations_.empty());
+}
+
 HWTEST_F(HlsPlayListDownloaderUnitTest, NOTIFY_LIST_CHANGE_001, TestSize.Level0)
 {
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
@@ -2304,51 +2391,6 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MEDIA_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: UPDATE_MEDIA_002
- * @tc.desc: test UpdateMedia sets nextUrl for audio
- * @tc.type: FUNC
- */
-HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MEDIA_002, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
-    downloader->Init();
-    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
-    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
-    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
-    downloader->currentVariant_ = variant;
-    auto audioM3u8 = std::make_shared<M3U8>("http://audio.uri", "");
-    auto audio = std::make_shared<M3U8Media>("a", "http://audio.uri", audioM3u8);
-    audio->uri_ = "http://audio.next.uri";
-    downloader->currentAudio_ = audio;
-
-    downloader->UpdateMedia(HlsSegmentType::SEG_AUDIO);
-    EXPECT_EQ(downloader->url_, "http://audio.next.uri");
-}
-
-/**
- * @tc.name: UPDATE_MEDIA_003
- * @tc.desc: test UpdateMedia sets nextUrl for subtitle
- * @tc.type: FUNC
- */
-HWTEST_F(HlsPlayListDownloaderUnitTest, UPDATE_MEDIA_003, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
-    downloader->Init();
-    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
-    auto m3u8 = std::make_shared<M3U8>(TEST_URI_PATH, "");
-    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, m3u8);
-    downloader->currentVariant_ = variant;
-    downloader->currentAudio_ = nullptr;
-    auto subM3u8 = std::make_shared<M3U8>("http://sub.uri", "");
-    auto sub = std::make_shared<M3U8Media>("s", "http://sub.uri", subM3u8);
-    sub->uri_ = "http://sub.next.uri";
-    downloader->currentSubtitles_ = sub;
-
-    downloader->UpdateMedia(HlsSegmentType::SEG_SUBTITLE);
-    EXPECT_EQ(downloader->url_, "http://sub.next.uri");
-}
-
-/**
  * @tc.name: GET_DEFAULT_MEDIA_STREAM_ID_003
  * @tc.desc: test GetDefaultMediaStreamId returns streamId from defaultAudio_
  * @tc.type: FUNC
@@ -3105,5 +3147,59 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_URL_001, TestSize.Level1)
     downloader->url_ = "http://test.url";
 
     EXPECT_EQ(downloader->GetUrl(), "http://test.url");
+}
+
+/**
+ * @tc.name  : Test HasExplicitIv with null aesDecryptorManager
+ * @tc.number: HasExplicitIv_NullManager
+ * @tc.desc  : Test HasExplicitIv returns false when aesDecryptorManager_ is null
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, HasExplicitIv_NullManager, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->aesDecryptorManager_ = nullptr;
+    bool result = downloader->HasExplicitIv(0);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name  : Test HasExplicitIv with valid manager and key
+ * @tc.number: HasExplicitIv_ValidManager
+ * @tc.desc  : Test HasExplicitIv returns true when key has explicit IV
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, HasExplicitIv_ValidManager, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    downloader->aesDecryptorManager_ = std::make_shared<AesDecryptorManager>();
+    KeyInfo keyInfo;
+    keyInfo.index_ = 1;
+    keyInfo.hasExplicitIv_ = true;
+    downloader->aesDecryptorManager_->hasExplicitIvMap_[1] = true;
+    bool result = downloader->HasExplicitIv(1);
+    EXPECT_TRUE(result);
+
+    result = downloader->HasExplicitIv(999);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name  : Test GetStartInfo with duration != -1 and timeOffset < 0
+ * @tc.number: GetStartInfo_NegativeTimeOffset
+ * @tc.desc  : Test GetStartInfo with negative timeOffset and valid duration
+ */
+HWTEST_F(HlsPlayListDownloaderUnitTest, GetStartInfo_NegativeTimeOffset, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    const std::string testUriPath = "http://127.0.0.1:46666/";
+    downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", testUriPath);
+    downloader->master_->isStart_ = true;
+    downloader->master_->timeOffset_ = -5000.0;
+    downloader->master_->duration_ = 10000.0;
+    auto info = downloader->GetStartInfo();
+    EXPECT_GT(info.first, 0);
+    EXPECT_EQ(info.second, downloader->master_->precise_);
 }
 }

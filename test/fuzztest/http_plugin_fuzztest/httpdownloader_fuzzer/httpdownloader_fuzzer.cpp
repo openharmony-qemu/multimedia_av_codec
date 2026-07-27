@@ -18,6 +18,8 @@
 #include <test_template.h>
 #include <fuzzer/FuzzedDataProvider.h>
 #include "http/http_media_downloader.h"
+#include "http_source_plugin.h"
+#include "monitor/download_monitor.h"
 #include "http_server_mock.h"
 
 namespace OHOS {
@@ -29,7 +31,18 @@ class SourceCallback : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event)
     {
-        (void)event;
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                if (httpMediaDownloader != nullptr) {
+                    httpMediaDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                }
+                break;
+            }
+            default:break;
+        }
     }
 
     void SetSelectBitRateFlag(bool flag, uint32_t desBitRate)
@@ -42,6 +55,13 @@ public:
     {
         return true;
     }
+
+    void SetDownload(std::shared_ptr<HttpMediaDownloader> &downloader)
+    {
+        httpMediaDownloader = downloader;
+    }
+
+    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader = nullptr;
 };
 
 class SourceLoader : public IMediaSourceLoader {
@@ -151,6 +171,13 @@ void CallHttpDownloaderFuncs(std::shared_ptr<HttpMediaDownloader> httpMediaDownl
     httpMediaDownloader->GetStatusCallbackFunc();
     httpMediaDownloader->GetDownloadRateAndSpeed();
     httpMediaDownloader->GetPlayable();
+    std::vector<StreamInfo> streams;
+    httpMediaDownloader->GetStreamInfo(streams);
+    httpMediaDownloader->GetStreamInfo(streams, true);
+    int32_t defaultVideoStreamId = streams.empty() ? -1 : streams.front().streamId;
+    int32_t defaultAudioStreamId = -1;
+    int32_t defaultSubtitleStreamId = -1;
+    httpMediaDownloader->SetDefaultStreamId(defaultVideoStreamId, defaultAudioStreamId, defaultSubtitleStreamId);
     httpMediaDownloader->GetReadTimeOut(true);
     httpMediaDownloader->SetAppUid(fdp.ConsumeIntegral<int32_t>());
     httpMediaDownloader->GetCacheDuration(0);
@@ -180,6 +207,7 @@ void HttpDownloaderRun(FuzzedDataProvider &fdp)
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     auto sourceCallback = std::make_shared<SourceCallback>();
+    sourceCallback->SetDownload(httpMediaDownloader);
     httpMediaDownloader->SetCallback(sourceCallback);
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, g_httpHeader);
     httpMediaDownloader->GetSeekable();
@@ -225,6 +253,7 @@ void HttpDownloaderFlvRun(FuzzedDataProvider &fdp)
         std::shared_ptr<DownloadRequest>& request) {};
     httpMediaDownloader->SetStatusCallback(statusCallback);
     auto sourceCallback = std::make_shared<SourceCallback>();
+    sourceCallback->SetDownload(httpMediaDownloader);
     httpMediaDownloader->SetCallback(sourceCallback);
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();

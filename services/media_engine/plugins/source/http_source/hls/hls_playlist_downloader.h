@@ -86,6 +86,7 @@ public:
         bool isFmp4 = false) override;
     bool IsLiveEnd() override;
     std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override;
+    bool HasExplicitIv(uint64_t keyIndex) override;
 private:
     bool IsLiveTimeShiftSeekable();
     void UpdateMasterInfo(bool isPreParse);
@@ -97,6 +98,7 @@ private:
         uint32_t wantLen, uint32_t& readLen, uint32_t streamId);
     void GetMediaStreams(StreamType streamType, std::vector<StreamInfo>& streams);
     void UpdateSeekRanges(const std::list<std::shared_ptr<M3U8Fragment>>& files);
+    void CheckAllFragmentsSeekable(const std::list<std::shared_ptr<M3U8Fragment>>& files);
     void UpdateLiveBaseOffset(const std::list<std::shared_ptr<M3U8Fragment>>& files);
     void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file, uint64_t sessionKeyIndex);
     uint64_t KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files);
@@ -153,6 +155,9 @@ private:
     int64_t lastFirstSeq_ {-1};
     std::vector<int64_t> lastSegDurations_ {};
     mutable std::mutex lastSegDurationsMutex_;
+    std::list<int64_t> copiedFileSequences_;
+    bool isFragmentsUriSet_ {false};
+    bool allFragmentsSeekable_ {false};
 };
 }
 }

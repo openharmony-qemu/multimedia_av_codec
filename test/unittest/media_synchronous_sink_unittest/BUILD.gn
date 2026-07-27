@@ -90,6 +90,7 @@ ohos_unittest("media_synchronous_sink_unittest") {
     "googletest:gmock_main",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

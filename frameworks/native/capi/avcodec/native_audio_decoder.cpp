@@ -25,6 +25,7 @@
 #include "native_avcodec_base.h"
 #include "native_avmagic.h"
 #include "hiappevent_util.h"
+#include "api_metrics_util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "NativeAudioDecoder"};
@@ -189,6 +190,7 @@ namespace MediaAVCodec {
 
 struct OH_AVCodec *OH_AudioDecoder_CreateByMime(const char *mime)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioDecoder_CreateByMime.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_AudioDecoder_CreateByMime", appEventReporter);
     CHECK_AND_RETURN_RET_LOG(mime != nullptr, nullptr, "input mime is nullptr!");
@@ -205,6 +207,7 @@ struct OH_AVCodec *OH_AudioDecoder_CreateByMime(const char *mime)
 
 struct OH_AVCodec *OH_AudioDecoder_CreateByName(const char *name)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioDecoder_CreateByName.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_AudioDecoder_CreateByName", appEventReporter);
     CHECK_AND_RETURN_RET_LOG(name != nullptr, nullptr, "input name is nullptr!");
@@ -221,6 +224,7 @@ struct OH_AVCodec *OH_AudioDecoder_CreateByName(const char *name)
 
 OH_AVErrCode OH_AudioDecoder_Destroy(struct OH_AVCodec *codec)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioDecoder_Destroy.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
         AV_ERR_INVALID_VAL, "magic error!");
@@ -252,6 +256,7 @@ OH_AVErrCode OH_AudioDecoder_Destroy(struct OH_AVCodec *codec)
 
 OH_AVErrCode OH_AudioDecoder_Configure(struct OH_AVCodec *codec, struct OH_AVFormat *format)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioDecoder_Configure.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
         AV_ERR_INVALID_VAL, "magic error!");
@@ -270,6 +275,7 @@ OH_AVErrCode OH_AudioDecoder_Configure(struct OH_AVCodec *codec, struct OH_AVFor
 
 OH_AVErrCode OH_AudioDecoder_Prepare(struct OH_AVCodec *codec)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioDecoder_Prepare.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
         AV_ERR_INVALID_VAL, "magic error!");
@@ -285,6 +291,7 @@ OH_AVErrCode OH_AudioDecoder_Prepare(struct OH_AVCodec *codec)
 
 OH_AVErrCode OH_AudioDecoder_Start(struct OH_AVCodec *codec)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioDecoder_Start.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
         AV_ERR_INVALID_VAL, "magic error!");
@@ -303,6 +310,7 @@ OH_AVErrCode OH_AudioDecoder_Start(struct OH_AVCodec *codec)
 
 OH_AVErrCode OH_AudioDecoder_Stop(struct OH_AVCodec *codec)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioDecoder_Stop.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
         AV_ERR_INVALID_VAL, "magic error!");
@@ -327,6 +335,7 @@ OH_AVErrCode OH_AudioDecoder_Stop(struct OH_AVCodec *codec)
 
 OH_AVErrCode OH_AudioDecoder_Flush(struct OH_AVCodec *codec)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioDecoder_Flush.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
         AV_ERR_INVALID_VAL, "magic error!");
@@ -353,6 +362,7 @@ OH_AVErrCode OH_AudioDecoder_Flush(struct OH_AVCodec *codec)
 
 OH_AVErrCode OH_AudioDecoder_Reset(struct OH_AVCodec *codec)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioDecoder_Reset.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(codec != nullptr, AV_ERR_INVALID_VAL, "input codec is nullptr!");
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_AUDIO_DECODER,
         AV_ERR_INVALID_VAL, "magic error!");

@@ -26,10 +26,12 @@
 #include "avpacket_wrapper.h"
 #include "avpacket_memory.h"
 #include "demuxer_plugin_unit_test.h"
+#include "ffmpeg_utils.h"
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_manager_v2.h"
 #include "buffer/avbuffer.h"
 #include "mock/ffmpeg_avreadframe_mock_helper.h"
+#include "time_range_manager.h"
 
 extern "C" {
 void AvReadFrameMockSetOrder(const int* streams, int count);
@@ -46,6 +48,21 @@ using namespace OHOS::Media::Plugins::Ffmpeg;
 using namespace testing::ext;
 using MediaAVBuffer = OHOS::Media::AVBuffer;
 
+namespace OHOS {
+namespace Media {
+namespace Plugins {
+namespace Ffmpeg {
+bool Raw2BitPerSample(AudioSampleFormat sampleFormat, uint8_t &bitPerSample);
+int FindNaluSpliter(int size, const uint8_t* data);
+int32_t GetNaluSize(const uint8_t *nalStart);
+const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_t &startCodeLen);
+bool CanDropAvcPkt(const AVPacket& pkt);
+bool CanDropHevcPkt(const AVPacket& pkt);
+} // namespace Ffmpeg
+} // namespace Plugins
+} // namespace Media
+} // namespace OHOS
+
 namespace {
 constexpr int32_t TEST_DATA_SIZE = 1024;
 constexpr int64_t TEST_PTS = 1000;
@@ -61,7 +78,261 @@ constexpr int32_t TEST_TRACK_INDEX = 0;
 constexpr int32_t TEST_SAMPLE_RATE_48K = 48000;
 constexpr int32_t TEST_FRAME_SAMPLES_1024 = 1024;
 constexpr int32_t TEST_SNAPSHOT_CHANNELS_2 = 2;
+
+constexpr uint8_t HEVC_TRAIL_N_NAL = 0x00;
+constexpr uint8_t HEVC_SPS_NAL = 0x42;
+constexpr uint8_t HEVC_IDR_NAL = 0x26;
+constexpr uint8_t AVC_NON_REF_SLICE_NAL = 0x01;
+constexpr uint8_t AVC_REF_SLICE_NAL = 0x41;
+
+AVPacket MakePacket(uint8_t *data, int32_t size, int32_t flags = 0)
+{
+    AVPacket pkt {};
+    pkt.data = data;
+    pkt.size = size;
+    pkt.flags = flags;
+    return pkt;
+}
+
+bool HasCanDropTag(const std::shared_ptr<MediaAVBuffer>& buffer)
+{
+    bool canDrop = false;
+    return buffer != nullptr && buffer->meta_ != nullptr &&
+        buffer->meta_->GetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, canDrop) && canDrop;
+}
 } // namespace
+
+// ==================== TimeRangeManager Tests ====================
+
+/**
+ * @tc.name: AVDemuxer_TimeRangeManager_Basic_061338
+ * @tc.desc: Cover invalid range, hit/miss lookup and overlap merge paths
+ * @tc.type: FUNC
+ */
+HWTEST(TimeRangeManagerTest, AVDemuxer_TimeRangeManager_Basic_061338, TestSize.Level1)
+{
+    TimeRangeManager manager;
+    TimeRange matchedRange;
+
+    manager.AddTimeRange({30, 20});
+    EXPECT_FALSE(manager.IsInTimeRanges(25, matchedRange));
+    EXPECT_TRUE(manager.timeRanges_.empty());
+
+    manager.AddTimeRange({10, 20});
+    manager.AddTimeRange({40, 50});
+    EXPECT_TRUE(manager.IsInTimeRanges(10, matchedRange));
+    EXPECT_EQ(matchedRange.start_ts, 10);
+    EXPECT_EQ(matchedRange.end_ts, 20);
+    EXPECT_TRUE(manager.IsInTimeRanges(50, matchedRange));
+    EXPECT_EQ(matchedRange.start_ts, 40);
+    EXPECT_EQ(matchedRange.end_ts, 50);
+    EXPECT_FALSE(manager.IsInTimeRanges(30, matchedRange));
+
+    manager.AddTimeRange({18, 45});
+    ASSERT_EQ(manager.timeRanges_.size(), 1U);
+    EXPECT_TRUE(manager.IsInTimeRanges(35, matchedRange));
+    EXPECT_EQ(matchedRange.start_ts, 10);
+    EXPECT_EQ(matchedRange.end_ts, 50);
+}
+
+/**
+ * @tc.name: AVDemuxer_TimeRangeManager_Reduce_061339
+ * @tc.desc: Cover ReduceRanges no-op and pruning branches
+ * @tc.type: FUNC
+ */
+HWTEST(TimeRangeManagerTest, AVDemuxer_TimeRangeManager_Reduce_061339, TestSize.Level1)
+{
+    TimeRangeManager manager;
+    manager.maxEntries_ = 8;
+    manager.AddTimeRange({0, 5});
+    manager.AddTimeRange({10, 15});
+    manager.ReduceRanges();
+    EXPECT_EQ(manager.timeRanges_.size(), 2U);
+
+    manager.maxEntries_ = 4;
+    manager.AddTimeRange({20, 25});
+    manager.AddTimeRange({30, 35});
+    manager.AddTimeRange({40, 45});
+    manager.AddTimeRange({50, 55});
+    ASSERT_GE(manager.timeRanges_.size(), 4U);
+
+    manager.ReduceRanges();
+    EXPECT_EQ(manager.timeRanges_.count({0, 5}), 1U);
+    EXPECT_EQ(manager.timeRanges_.count({40, 45}), 1U);
+    EXPECT_EQ(manager.timeRanges_.count({50, 55}), 1U);
+    EXPECT_EQ(manager.timeRanges_.count({10, 15}), 0U);
+    EXPECT_EQ(manager.timeRanges_.count({20, 25}), 0U);
+    EXPECT_EQ(manager.timeRanges_.count({30, 35}), 0U);
+    EXPECT_EQ(manager.timeRanges_.size(), 3U);
+}
+
+// ==================== FFmpeg Utils Tests ====================
+
+/**
+ * @tc.name: AVDemuxer_FFmpegUtils_TimeAndFlags_061340
+ * @tc.desc: Cover time conversion, flag conversion, string split and audio sample format mapping
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegUtilsTest, AVDemuxer_FFmpegUtils_TimeAndFlags_061340, TestSize.Level1)
+{
+    uint8_t bitPerSample = 0;
+    EXPECT_TRUE(Raw2BitPerSample(AudioSampleFormat::SAMPLE_U8, bitPerSample));
+    EXPECT_EQ(bitPerSample, 8);
+    EXPECT_TRUE(Raw2BitPerSample(AudioSampleFormat::SAMPLE_S16LE, bitPerSample));
+    EXPECT_EQ(bitPerSample, 16);
+    EXPECT_TRUE(Raw2BitPerSample(AudioSampleFormat::SAMPLE_S24P, bitPerSample));
+    EXPECT_EQ(bitPerSample, 24);
+    EXPECT_TRUE(Raw2BitPerSample(AudioSampleFormat::SAMPLE_F32P, bitPerSample));
+    EXPECT_EQ(bitPerSample, 32);
+    EXPECT_FALSE(Raw2BitPerSample(AudioSampleFormat::SAMPLE_S8, bitPerSample));
+
+    EXPECT_EQ(ConvertTimeFromFFmpeg(90000, {1, 90000}), 1000000000);
+    EXPECT_EQ(ConvertTimeFromFFmpeg(123, {1, 0}), 123);
+    EXPECT_EQ(ConvertTimeFromFFmpeg(AV_NOPTS_VALUE, {1, 90000}), -1);
+    EXPECT_EQ(ConvertTimeToFFmpeg(1000000000, {1, 90000}), 90000);
+    EXPECT_EQ(ConvertTimeToFFmpeg(1000000000, {0, 90000}), AV_NOPTS_VALUE);
+    EXPECT_EQ(ConvertTimeToFFmpegByUs(1000, {1, 1000}), 1);
+    EXPECT_EQ(ConvertTimeToFFmpegByUs(1000, {1, 0}), AV_NOPTS_VALUE);
+    EXPECT_EQ(AvTime2Us(123456789), 123456);
+
+    AVPacket pkt {};
+    EXPECT_EQ(ConvertFlagsFromFFmpeg(pkt, false), static_cast<uint32_t>(AVBufferFlag::NONE));
+    pkt.flags = AV_PKT_FLAG_KEY | AV_PKT_FLAG_DISCARD;
+    uint32_t flags = ConvertFlagsFromFFmpeg(pkt, true);
+    EXPECT_NE(flags & static_cast<uint32_t>(AVBufferFlag::SYNC_FRAME), 0U);
+    EXPECT_NE(flags & static_cast<uint32_t>(AVBufferFlag::CODEC_DATA), 0U);
+    EXPECT_NE(flags & static_cast<uint32_t>(AVBufferFlag::DISCARD), 0U);
+    EXPECT_NE(flags & static_cast<uint32_t>(AVBufferFlag::PARTIAL_FRAME), 0U);
+
+    EXPECT_TRUE(SplitString(nullptr, ',').empty());
+    EXPECT_TRUE(SplitString("", ',').empty());
+    std::vector<std::string> parts = SplitString("alpha,,beta,gamma,", ',');
+    ASSERT_EQ(parts.size(), 3U);
+    EXPECT_EQ(parts[0], "alpha");
+    EXPECT_EQ(parts[1], "beta");
+    EXPECT_EQ(parts[2], "gamma");
+}
+
+/**
+ * @tc.name: AVDemuxer_FFmpegUtils_NaluHelpers_061341
+ * @tc.desc: Cover AnnexB start code detection, NALU size parsing and droppable packet detection
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegUtilsTest, AVDemuxer_FFmpegUtils_NaluHelpers_061341, TestSize.Level1)
+{
+    const uint8_t shortStartCode[] = {0x00, 0x00, 0x01, AVC_NON_REF_SLICE_NAL};
+    const uint8_t longStartCode[] = {0x00, 0x00, 0x00, 0x01, AVC_NON_REF_SLICE_NAL};
+    const uint8_t invalidStartCode[] = {0x11, 0x22, 0x33, 0x44};
+    EXPECT_FALSE(IsBeginAsAnnexb(shortStartCode, 3));
+    EXPECT_TRUE(IsBeginAsAnnexb(shortStartCode, sizeof(shortStartCode)));
+    EXPECT_TRUE(IsBeginAsAnnexb(longStartCode, sizeof(longStartCode)));
+    EXPECT_FALSE(IsBeginAsAnnexb(invalidStartCode, sizeof(invalidStartCode)));
+
+    EXPECT_EQ(FindNaluSpliter(sizeof(shortStartCode), shortStartCode), 3);
+    EXPECT_EQ(FindNaluSpliter(sizeof(longStartCode), longStartCode), 4);
+    EXPECT_EQ(FindNaluSpliter(sizeof(invalidStartCode), invalidStartCode), -1);
+    EXPECT_EQ(FindNaluSpliter(sizeof(invalidStartCode), nullptr), -1);
+
+    const uint8_t naluSizeData[] = {0x00, 0x00, 0x01, 0x02};
+    EXPECT_EQ(GetNaluSize(naluSizeData), 258);
+
+    int32_t startCodeLen = 0;
+    const uint8_t searchData[] = {0x99, 0x00, 0x00, 0x00, 0x01, HEVC_IDR_NAL};
+    const uint8_t *found = FindNalStartCode(searchData, searchData + sizeof(searchData), startCodeLen);
+    EXPECT_EQ(found, searchData + 1);
+    EXPECT_EQ(startCodeLen, 4);
+    found = FindNalStartCode(invalidStartCode, invalidStartCode + sizeof(invalidStartCode), startCodeLen);
+    EXPECT_EQ(found, invalidStartCode + sizeof(invalidStartCode));
+    EXPECT_EQ(startCodeLen, 3);
+
+    uint8_t avcDropData[] = {0x00, 0x00, 0x01, AVC_NON_REF_SLICE_NAL};
+    uint8_t avcKeepData[] = {0x00, 0x00, 0x01, AVC_REF_SLICE_NAL};
+    uint8_t hevcDropData[] = {0x00, 0x00, 0x01, HEVC_TRAIL_N_NAL};
+    uint8_t hevcKeepData[] = {0x00, 0x00, 0x01, HEVC_IDR_NAL};
+    EXPECT_TRUE(CanDropAvcPkt(MakePacket(avcDropData, sizeof(avcDropData))));
+    EXPECT_FALSE(CanDropAvcPkt(MakePacket(avcKeepData, sizeof(avcKeepData))));
+    EXPECT_FALSE(CanDropAvcPkt(MakePacket(avcKeepData, 2)));
+    EXPECT_TRUE(CanDropHevcPkt(MakePacket(hevcDropData, sizeof(hevcDropData))));
+    EXPECT_FALSE(CanDropHevcPkt(MakePacket(hevcKeepData, sizeof(hevcKeepData))));
+    EXPECT_FALSE(CanDropHevcPkt(MakePacket(hevcKeepData, 2)));
+}
+
+/**
+ * @tc.name: AVDemuxer_FFmpegUtils_HevcFrame_061342
+ * @tc.desc: Cover HEVC sync frame and parameter-set-only detection for AnnexB and HVCC layouts
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegUtilsTest, AVDemuxer_FFmpegUtils_HevcFrame_061342, TestSize.Level1)
+{
+    const uint8_t annexbSync[] = {0x00, 0x00, 0x00, 0x01, HEVC_IDR_NAL, 0x01};
+    const uint8_t annexbNonSync[] = {0x00, 0x00, 0x01, 0x02, 0x01};
+    const uint8_t hvccSync[] = {0x00, 0x00, 0x00, 0x02, HEVC_IDR_NAL, 0x01};
+    const uint8_t hvccNonSync[] = {0x00, 0x00, 0x00, 0x02, 0x02, 0x01};
+    const uint8_t hvccInvalidSize[] = {0x00, 0x00, 0x00, 0x04, 0x02};
+
+    EXPECT_FALSE(IsHevcSyncFrame(nullptr, 0));
+    EXPECT_FALSE(IsHevcSyncFrame(annexbSync, 3));
+    EXPECT_TRUE(IsHevcSyncFrame(annexbSync, sizeof(annexbSync)));
+    EXPECT_FALSE(IsHevcSyncFrame(annexbNonSync, sizeof(annexbNonSync)));
+    EXPECT_TRUE(IsHevcSyncFrame(hvccSync, sizeof(hvccSync)));
+    EXPECT_FALSE(IsHevcSyncFrame(hvccNonSync, sizeof(hvccNonSync)));
+    EXPECT_FALSE(IsHevcSyncFrame(hvccInvalidSize, sizeof(hvccInvalidSize)));
+
+    const uint8_t annexbOnlyParams[] = {
+        0x00, 0x00, 0x00, 0x01, 0x40, 0x01,
+        0x00, 0x00, 0x01, HEVC_SPS_NAL, 0x01,
+    };
+    const uint8_t annexbWithSlice[] = {
+        0x00, 0x00, 0x00, 0x01, 0x40, 0x01,
+        0x00, 0x00, 0x01, HEVC_IDR_NAL, 0x01,
+    };
+    const uint8_t hvccOnlyParams[] = {
+        0x00, 0x00, 0x00, 0x02, 0x40, 0x01,
+        0x00, 0x00, 0x00, 0x02, HEVC_SPS_NAL, 0x01,
+    };
+    const uint8_t hvccWithSlice[] = {
+        0x00, 0x00, 0x00, 0x02, 0x40, 0x01,
+        0x00, 0x00, 0x00, 0x02, HEVC_IDR_NAL, 0x01,
+    };
+
+    EXPECT_FALSE(IsPktOnlyParameterSets(nullptr, 0));
+    EXPECT_TRUE(IsPktOnlyParameterSets(annexbOnlyParams, sizeof(annexbOnlyParams)));
+    EXPECT_FALSE(IsPktOnlyParameterSets(annexbWithSlice, sizeof(annexbWithSlice)));
+    EXPECT_TRUE(IsPktOnlyParameterSets(hvccOnlyParams, sizeof(hvccOnlyParams)));
+    EXPECT_FALSE(IsPktOnlyParameterSets(hvccWithSlice, sizeof(hvccWithSlice)));
+    EXPECT_FALSE(IsPktOnlyParameterSets(hvccInvalidSize, sizeof(hvccInvalidSize)));
+}
+
+/**
+ * @tc.name: AVDemuxer_FFmpegUtils_SetDropTag_061343
+ * @tc.desc: Cover SetDropTag metadata updates for H264, HEVC and unsupported codecs
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegUtilsTest, AVDemuxer_FFmpegUtils_SetDropTag_061343, TestSize.Level1)
+{
+    auto buffer = MediaAVBuffer::CreateAVBuffer();
+    ASSERT_NE(buffer, nullptr);
+    ASSERT_NE(buffer->meta_, nullptr);
+
+    uint8_t avcDropData[] = {0x00, 0x00, 0x01, AVC_NON_REF_SLICE_NAL};
+    uint8_t avcKeepData[] = {0x00, 0x00, 0x01, AVC_REF_SLICE_NAL};
+    uint8_t hevcDropData[] = {0x00, 0x00, 0x01, HEVC_TRAIL_N_NAL};
+    uint8_t hevcKeepData[] = {0x00, 0x00, 0x01, HEVC_IDR_NAL};
+
+    SetDropTag(MakePacket(avcDropData, sizeof(avcDropData)), buffer, AV_CODEC_ID_H264);
+    EXPECT_TRUE(HasCanDropTag(buffer));
+    SetDropTag(MakePacket(avcKeepData, sizeof(avcKeepData)), buffer, AV_CODEC_ID_H264);
+    EXPECT_FALSE(HasCanDropTag(buffer));
+
+    SetDropTag(MakePacket(hevcDropData, sizeof(hevcDropData)), buffer, AV_CODEC_ID_HEVC);
+    EXPECT_TRUE(HasCanDropTag(buffer));
+    SetDropTag(MakePacket(hevcKeepData, sizeof(hevcKeepData)), buffer, AV_CODEC_ID_HEVC);
+    EXPECT_FALSE(HasCanDropTag(buffer));
+
+    buffer->meta_->Set<Media::Tag::VIDEO_BUFFER_CAN_DROP>(true);
+    SetDropTag(MakePacket(avcDropData, sizeof(avcDropData)), buffer, AV_CODEC_ID_AAC);
+    EXPECT_FALSE(HasCanDropTag(buffer));
+}
 
 // ==================== AVPacketWrapper Tests ====================
 
@@ -1645,4 +1916,192 @@ HWTEST_F(DemuxerPluginUnitTest, AVDemuxer_LimitedProbe_Supplement_061337, TestSi
 
     AvReadFrameMockReset();
     AvReadFrameMockLogEnable(0);
+}
+
+// ==================== RecordTrackMinTs Tests ====================
+
+HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_null_pkt_062400, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    plugin->RecordTrackMinTs(nullptr);
+    EXPECT_TRUE(plugin->trackMinPtsMap_.empty());
+    EXPECT_TRUE(plugin->trackMinDtsMap_.empty());
+}
+
+HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_records_pts_dts_062401, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    AVPacket* pkt = av_packet_alloc();
+    ASSERT_NE(pkt, nullptr);
+    pkt->pts = 1000;
+    pkt->dts = 900;
+    pkt->stream_index = 0;
+    plugin->RecordTrackMinTs(pkt);
+    EXPECT_EQ(plugin->trackMinPtsMap_[0], 1000);
+    EXPECT_EQ(plugin->trackMinDtsMap_[0], 900);
+    av_packet_free(&pkt);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_updates_smaller_only_062402, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    AVPacket* pkt = av_packet_alloc();
+    ASSERT_NE(pkt, nullptr);
+    pkt->stream_index = 0;
+    pkt->pts = 1000;
+    pkt->dts = 900;
+    plugin->RecordTrackMinTs(pkt);
+    pkt->pts = 500;
+    pkt->dts = 800;
+    plugin->RecordTrackMinTs(pkt);
+    EXPECT_EQ(plugin->trackMinPtsMap_[0], 500);
+    EXPECT_EQ(plugin->trackMinDtsMap_[0], 800);
+    pkt->pts = 1500;
+    pkt->dts = 1200;
+    plugin->RecordTrackMinTs(pkt);
+    EXPECT_EQ(plugin->trackMinPtsMap_[0], 500);
+    EXPECT_EQ(plugin->trackMinDtsMap_[0], 800);
+    av_packet_free(&pkt);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_multi_track_062403, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    AVPacket* pkt = av_packet_alloc();
+    ASSERT_NE(pkt, nullptr);
+    pkt->pts = 100;
+    pkt->dts = 80;
+    pkt->stream_index = 0;
+    plugin->RecordTrackMinTs(pkt);
+    pkt->pts = 200;
+    pkt->dts = 150;
+    pkt->stream_index = 1;
+    plugin->RecordTrackMinTs(pkt);
+    EXPECT_EQ(plugin->trackMinPtsMap_[0], 100);
+    EXPECT_EQ(plugin->trackMinPtsMap_[1], 200);
+    EXPECT_EQ(plugin->trackMinDtsMap_[0], 80);
+    EXPECT_EQ(plugin->trackMinDtsMap_[1], 150);
+    av_packet_free(&pkt);
+}
+
+// ==================== CalculateGlobalOffset Tests ====================
+
+HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_mapHit_062404, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
+    auto avStream = demuxerPlugin_->formatContext_->streams[0];
+    ASSERT_NE(avStream, nullptr);
+    int64_t mapMinPts = 0;
+    {
+        std::lock_guard<std::mutex> lock(demuxerPlugin_->minTsMutex_);
+        auto ptsIt = demuxerPlugin_->trackMinPtsMap_.find(0);
+        ASSERT_TRUE(ptsIt != demuxerPlugin_->trackMinPtsMap_.end());
+        mapMinPts = ptsIt->second;
+    }
+    int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
+    EXPECT_EQ(globalOffset, mapMinPts);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_startTime_fallback_062405, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
+    auto avStream = demuxerPlugin_->formatContext_->streams[0];
+    ASSERT_NE(avStream, nullptr);
+    {
+        std::lock_guard<std::mutex> lock(demuxerPlugin_->minTsMutex_);
+        demuxerPlugin_->trackMinPtsMap_.clear();
+    }
+    int64_t startTime = avStream->start_time;
+    int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
+    EXPECT_EQ(globalOffset, startTime);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_zero_fallback_062406, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    AVBufferWrapper avbuffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, avbuffer.mediaAVBuffer, 100), Status::OK);
+    auto avStream = demuxerPlugin_->formatContext_->streams[0];
+    ASSERT_NE(avStream, nullptr);
+    {
+        std::lock_guard<std::mutex> lock(demuxerPlugin_->minTsMutex_);
+        demuxerPlugin_->trackMinPtsMap_.clear();
+    }
+    int64_t savedStartTime = avStream->start_time;
+    avStream->start_time = AV_NOPTS_VALUE;
+    int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
+    EXPECT_EQ(globalOffset, 0);
+    avStream->start_time = savedStartTime;
+}
+
+// ==================== Dts2FrameId / SeekMs2FrameId / FrameId2SeekMs Tests ====================
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_basic_062407, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_GT(demuxerPlugin_->pts2DtsMap_.size(), 0U);
+    ASSERT_NE(demuxerPlugin_->parserRefIdx_, -1);
+    uint32_t frameId = 0;
+    int64_t dtsUs = demuxerPlugin_->pts2DtsMap_.begin()->second;
+    Status ret = demuxerPlugin_->Dts2FrameId(dtsUs, frameId);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, SeekMs2FrameId_with_minPts_offset_062408, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_GT(demuxerPlugin_->pts2DtsMap_.size(), 0U);
+    uint32_t frameId = 0;
+    Status ret = demuxerPlugin_->SeekMs2FrameId(0, frameId);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(demuxerPlugin_->minPts_, 0);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, SeekMs2FrameId_negative_seekMs_062409, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    uint32_t frameId = 0;
+    Status ret = plugin->SeekMs2FrameId(-1, frameId);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, FrameId2SeekMs_exactMatch_threshold_062410, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    std::string filePath = "/data/test/media/h264_aac.mov";
+    InitResource(filePath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_GT(demuxerPlugin_->pts2DtsMap_.size(), 0U);
+    uint32_t frameId = 0;
+    int64_t seekMs = 0;
+    Status ret = demuxerPlugin_->FrameId2SeekMs(frameId, seekMs);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_GE(seekMs, 0);
 }

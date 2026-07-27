@@ -81,6 +81,7 @@ private:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
+        int32_t stride_ = 0;
         int32_t format_ = 0;
         uint64_t usage_ = SURFACE_DEFAULT_USAGE;
         std::atomic<bool> hasSwapedOut_ = false;
@@ -110,24 +111,32 @@ private:
     void ReleaseBuffers();
     void StopThread();
     void ReleaseResource();
-    int32_t UpdateBuffers(uint32_t index, int32_t bufferSize, uint32_t bufferType);
+    int32_t UpdateBuffers(uint32_t index);
     int32_t UpdateSurfaceMemory(uint32_t index);
     void SendFrame();
     void ReceiveFrame();
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
                              int32_t maxVal = INT_MAX);
     int32_t ConfigureContext(const Format &format);
+    int32_t AllocateCodecContext();
+    int32_t ValidateAndSetVideoResolutionFormat(const Format &format);
+    int32_t ConfigureRawVideoPixelFormat(const Format &format);
+    void ConfigureThread(const Format &format);
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif
+    void GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
+    void GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
+    int32_t DecodedFrameProcess(uint32_t index);
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t inBufferSize);
-    int32_t AllocateOutputBuffer(int32_t outBufferSize);
+    int32_t AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer);
+    int32_t AllocateOutputBuffer();
     int32_t ClearSurfaceAndSetQueueSize();
     int32_t AllocateOutputBuffersFromSurface();
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
-    bool CheckStrideChange(uint32_t index, bool& isChanged);
-    int32_t CheckFormatChange(uint32_t index, int width, int height);
+    void CheckStrideChange(uint32_t index, bool isChanged);
+    int32_t CheckFormatChange(uint32_t index, bool &isChanged);
     void SetSurfaceParameter();
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
@@ -157,9 +166,10 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
-    void PutFormatValue();
-    int32_t pid_ = -1;
 
+    bool isEmulator_ = false;
+    bool isUsedSharedMem_ = false;
+    int32_t pid_ = -1;
     int32_t instanceId_ = -1;
     std::string decName_;
     std::string codecName_;
@@ -226,6 +236,7 @@ private:
 #ifdef BUILD_ENG_VERSION
     void OpenDumpFile();
     void DumpOutputBuffer();
+    void DumpOutputBuffer(const std::shared_ptr<AVMemory> &avmemory);
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
 #endif // BUILD_ENG_VERSION

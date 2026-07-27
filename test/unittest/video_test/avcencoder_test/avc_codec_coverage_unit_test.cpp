@@ -40,8 +40,7 @@ constexpr double DEFAULT_VIDEO_FRAMERATE_DOUBLE = 30.0;
 constexpr int32_t VIDEO_QUALITY_DEFAULT = 80;
 constexpr int32_t VIDEO_QP_MAX = 51;
 constexpr int32_t VIDEO_QP_MIN = 4;
-constexpr int32_t VIDEO_IFRAME_INTERVAL_MIN_TIME = 1000;
-constexpr int32_t VIDEO_IFRAME_INTERVAL_MAX_TIME = 3600000;
+constexpr int32_t DEFAULT_VIDEO_IFRAME_INTERVAL = 60;
 constexpr int32_t MOCK_ENCODE_TIEMSTAMPS = 0;
 constexpr int32_t MOCK_ENCODE_BYTES = 100;
 constexpr int32_t MOCK_ENCODE_FRAMETYPE = 3;
@@ -50,6 +49,7 @@ constexpr int32_t RGBA_BUFFER_SIZE = 4;
 constexpr int32_t YUV_BUFFER_SIZE = 3;
 constexpr int32_t CONVERT_WIDTH = 10;
 constexpr int32_t CONVERT_HEIGHT = 10;
+constexpr int32_t MAX_HEADER_SIZE = 1024;
 
 
 class AvcCodecCallback : public MediaCodecCallback {
@@ -85,7 +85,10 @@ public:
             if (setDiscardBufferFlag) {
                 buffer->meta_->SetData(OHOS::Media::Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, true);
             }
-            codec->QueueInputBuffer(index);
+            int32_t ret = codec->QueueInputBuffer(index);
+            if (ret != AVCS_ERR_OK) {
+                cout << "QueueInputBuffer failed: " << ret << endl;
+            }
         } else {
             cout << "AvcCodecCallback OnInputBufferAvailable null encoder" << endl;
         }
@@ -180,6 +183,7 @@ void AvcCodecCoverageUnitTest::SetUp(void)
 {
     avcEncoder_ = std::make_shared<Codec::AvcEncoder>("OH.Media.Codec.Encoder.Video.AVC");
     EXPECT_NE(avcEncoder_, nullptr);
+    avcEncoder_->state_ = Codec::AvcEncoder::State::UNINITIALIZED;
     avcCallback_ = std::make_shared<AvcCodecCallback>(avcEncoder_);
     EXPECT_NE(avcCallback_, nullptr);
     avcEncoder_->SetCallback(avcCallback_);
@@ -247,7 +251,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Config_001, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
         static_cast<int32_t>(VideoPixelFormat::NV21));
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, VIDEO_IFRAME_INTERVAL_MIN_TIME);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 0);
 
     // CQ & Quality & qp
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
@@ -292,7 +296,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Config_002, TestSize.Level1)
     format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, VIDEO_BITRATE_MAX_SIZE + 1);
     format_.PutDoubleValue(MediaDescriptionKey::MD_KEY_FRAME_RATE,
         static_cast<double>(VIDEO_FRAMERATE_MAX_SIZE + 1));
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, VIDEO_IFRAME_INTERVAL_MAX_TIME + 1);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, -1);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
         static_cast<int32_t>(VideoEncodeBitrateMode::CBR));
 
@@ -320,6 +324,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Config_003, TestSize.Level1)
         static_cast<int32_t>(VideoEncodeBitrateMode::VBR));
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_VIDEO_FRAMERATE);
     format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, DEFAULT_VIDEO_IFRAME_INTERVAL);
 
     int32_t ret = avcEncoder_->Configure(format_);
     EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
@@ -416,6 +421,63 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Config_007, TestSize.Level1)
 
     ret = avcEncoder_->Start();
     EXPECT_EQ(ret, AVCS_ERR_NO_MEMORY);
+}
+
+/**
+ * @tc.name: Test_Codec_Config_008
+ * @tc.desc: codec Configure repeat header
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Config_008, TestSize.Level1)
+{
+    format_ = Format();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::NV21));
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_VIDEO_FRAMERATE);
+    format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, 0);
+
+    int32_t ret = avcEncoder_->Configure(format_);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: Test_Codec_Config_009
+ * @tc.desc: codec Configure repeat header
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Config_009, TestSize.Level1)
+{
+    format_ = Format();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::NV21));
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_VIDEO_FRAMERATE);
+    format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, 1);
+
+    int32_t ret = avcEncoder_->Configure(format_);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: Test_Codec_Config_010
+ * @tc.desc: codec Configure repeat header
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Config_010, TestSize.Level1)
+{
+    format_ = Format();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::NV21));
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_VIDEO_FRAMERATE);
+    format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, -1);
+
+    int32_t ret = avcEncoder_->Configure(format_);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
 }
 
 /**
@@ -544,6 +606,119 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Encode_RGBA_001, TestSize.Level1)
     EXPECT_EQ(ret, AVCS_ERR_OK);
     ret = avcEncoder_->Release();
     EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: Test_Codec_Encode_XPS_001
+ * @tc.desc: codec encode with REPEAT_HEADER disable
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Encode_XPS_001, TestSize.Level1)
+{
+    format_ = Format();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::RGBA));
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_VIDEO_FRAMERATE);
+    format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, 0);
+
+    int32_t ret = avcEncoder_->Configure(format_);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    avcEncoder_->avcEncoderCreateFunc_ = &EncoderCreate;
+    avcEncoder_->avcEncoderFrameFunc_ = &EncoderProcess;
+    avcEncoder_->avcEncoderDeleteFunc_ = &EncoderDelete;
+    avcEncoder_->handle_ = reinterpret_cast<void *>(FAKE_PTR);
+    ret = avcEncoder_->Start();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    sleep(1);
+    ret = avcEncoder_->Flush();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    ret = avcEncoder_->Stop();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    ret = avcEncoder_->Release();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: Test_Codec_Encode_XPS_002
+ * @tc.desc: codec encode with REPEAT_HEADER enable
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Encode_XPS_002, TestSize.Level1)
+{
+    format_ = Format();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::RGBA));
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_VIDEO_FRAMERATE);
+    format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, 1);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, 0);
+
+    int32_t ret = avcEncoder_->Configure(format_);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    avcEncoder_->avcEncoderCreateFunc_ = &EncoderCreate;
+    avcEncoder_->avcEncoderFrameFunc_ = &EncoderProcess;
+    avcEncoder_->avcEncoderDeleteFunc_ = &EncoderDelete;
+    avcEncoder_->handle_ = reinterpret_cast<void *>(FAKE_PTR);
+    avcEncoder_->avcEncHeaderArgs_.streamBuf = static_cast<uint8_t *>(malloc(MAX_HEADER_SIZE));
+    avcEncoder_->avcEncHeaderArgs_.size = MAX_HEADER_SIZE;
+    ret = avcEncoder_->Start();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    sleep(1);
+    ret = avcEncoder_->Flush();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    ret = avcEncoder_->Stop();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    ret = avcEncoder_->Release();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    if (avcEncoder_->avcEncHeaderArgs_.streamBuf) {
+        free(avcEncoder_->avcEncHeaderArgs_.streamBuf);
+        avcEncoder_->avcEncHeaderArgs_.streamBuf = nullptr;
+    }
+}
+
+/**
+ * @tc.name: Test_Codec_Encode_XPS_003
+ * @tc.desc: codec encode with REPEAT_HEADER enable
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Encode_XPS_003, TestSize.Level1)
+{
+    format_ = Format();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_VIDEO_WIDTH);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+        static_cast<int32_t>(VideoPixelFormat::RGBA));
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_VIDEO_FRAMERATE);
+    format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
+    format_.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, 1);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_I_FRAME_INTERVAL, DEFAULT_VIDEO_IFRAME_INTERVAL);
+
+    int32_t ret = avcEncoder_->Configure(format_);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    avcEncoder_->avcEncoderCreateFunc_ = &EncoderCreate;
+    avcEncoder_->avcEncoderFrameFunc_ = &EncoderProcess;
+    avcEncoder_->avcEncoderDeleteFunc_ = &EncoderDelete;
+    avcEncoder_->handle_ = reinterpret_cast<void *>(FAKE_PTR);
+    avcEncoder_->avcEncHeaderArgs_.streamBuf = static_cast<uint8_t *>(malloc(MAX_HEADER_SIZE));
+    avcEncoder_->avcEncHeaderArgs_.size = MAX_HEADER_SIZE;
+    ret = avcEncoder_->Start();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    sleep(1);
+    ret = avcEncoder_->Flush();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    ret = avcEncoder_->Stop();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    ret = avcEncoder_->Release();
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    if (avcEncoder_->avcEncHeaderArgs_.streamBuf) {
+        free(avcEncoder_->avcEncHeaderArgs_.streamBuf);
+        avcEncoder_->avcEncHeaderArgs_.streamBuf = nullptr;
+    }
 }
 
 /**
@@ -872,7 +1047,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_GetInFormat_002, TestSize.Level1)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
     format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
 
-    int32_t ret = avcEncoder_->SetParameter(format_);
+    int32_t ret = avcEncoder_->ConfigureContext(format_);
     EXPECT_EQ(ret, AVCS_ERR_OK);
 
     Format inFormat;
@@ -888,6 +1063,44 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_GetInFormat_002, TestSize.Level1)
 }
 
 /**
+ * @tc.name: Test_Codec_SetParamter_001
+ * @tc.desc: codec set dynamic parameter
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_SetParameter_001, TestSize.Level1)
+{
+    format_ = Format();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_FRAME_RATE, DEFAULT_VIDEO_FRAMERATE);
+    int32_t ret = avcEncoder_->SetParameter(format_);
+    EXPECT_EQ(ret, AVCS_ERR_INVALID_VAL);
+
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, 1);
+    ret = avcEncoder_->SetParameter(format_);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
+    format_.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, DEFAULT_VIDEO_BITRATE);
+    ret = avcEncoder_->SetParameter(format_);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.name: Test_Codec_SetBitrateMode_001
+ * @tc.desc: codec set CQ mode
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_SetBitrateMode_001, TestSize.Level1)
+{
+    format_ = Format();
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
+        static_cast<int32_t>(VideoEncodeBitrateMode::CQ));
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 50); // set 50
+    avcEncoder_->GetBitRateModeFromUser(format_);
+    EXPECT_EQ(avcEncoder_->encQp_, 27); // transfer quality 50 to qp 27
+
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_QUALITY, 80); // set 80
+    avcEncoder_->GetBitRateModeFromUser(format_);
+    EXPECT_EQ(avcEncoder_->encQp_, 13); // transfer quality 80 to qp 13
+}
+
+/**
  * @tc.name: Test_Codec_GetCapability_001
  * @tc.desc: codec get capability
  */
@@ -898,7 +1111,30 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_GetCapability_001, TestSize.Level1
     avcEncoder_->GetCapabilityData(capsData, 0);
     EXPECT_EQ(capsData.isVendor, false);
     int32_t ret = avcEncoder_->GetCodecCapability(capaArray);
-    EXPECT_EQ(ret, AVCS_ERR_UNSUPPORT);
+    if (avcEncoder_->CheckAvcEncLibStatus() == AVCS_ERR_OK) {
+        EXPECT_EQ(ret, AVCS_ERR_OK);
+    } else {
+        EXPECT_EQ(ret, AVCS_ERR_UNSUPPORT);
+    }
+}
+
+/**
+ * @tc.name: Test_Codec_IsValid_001
+ * @tc.desc: codec IsValid check after successful creation
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_IsValid_001, TestSize.Level1)
+{
+    EXPECT_TRUE(avcEncoder_->IsValid());
+}
+
+/**
+ * @tc.name: Test_Codec_IsValid_002
+ * @tc.desc: codec IsValid check when state is ERROR
+ */
+HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_IsValid_002, TestSize.Level1)
+{
+    avcEncoder_->state_ = Codec::AvcEncoder::State::ERROR;
+    EXPECT_FALSE(avcEncoder_->IsValid());
 }
 
 /**

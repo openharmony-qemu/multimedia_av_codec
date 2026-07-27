@@ -100,6 +100,7 @@ ohos_unittest("audio_decoder_filter_callback_unittest") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:libhitracechain",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

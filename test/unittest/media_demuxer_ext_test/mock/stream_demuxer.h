@@ -76,6 +76,8 @@ public:
     MOCK_METHOD1(SetSourceType, void(SourceType type));
     MOCK_METHOD0(GetIsDataSrcNoSeek, bool());
     MOCK_METHOD0(GetFirstFrameDecapsulationTime, int64_t());
+    MOCK_METHOD0(IsPlayerMode, bool());
+    MOCK_METHOD1(SetPlayerMode, void(bool isPlayerMode));
 };
 
 class StreamDemuxer : public BaseStreamDemuxer {

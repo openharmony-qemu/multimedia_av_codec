@@ -66,6 +66,7 @@ ohos_shared_library("media_plugin_AudioServerSink") {
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

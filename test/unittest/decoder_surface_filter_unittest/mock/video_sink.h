@@ -44,6 +44,7 @@ public:
     MOCK_METHOD(Status, SetPerfRecEnabled, (bool isPerfRecEnabled), ());
     MOCK_METHOD(void, SetMediaMuted, (bool isMuted), ());
     MOCK_METHOD(int64_t, GetFrameInterval, (), ());
+    MOCK_METHOD(Status, GetAVSyncInfo, (int64_t& syncCount, int64_t& totalSyncDurationMs), ());
 };
 }  // namespace Pipeline
 }  // namespace Media

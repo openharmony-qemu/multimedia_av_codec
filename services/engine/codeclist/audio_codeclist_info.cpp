@@ -57,8 +57,8 @@ const std::vector<int32_t> AUDIO_AMRWB_SAMPLE_RATE = {16000};
 
 const std::vector<int32_t> AUDIO_G711MU_SAMPLE_RATE = {8000};
 
-const std::vector<int32_t> AUDIO_G711A_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
-                                                      44100, 48000};
+const std::vector<int32_t> AUDIO_G711_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
+                                                     44100, 48000};
 
 const std::vector<int32_t> AUDIO_FLAC_SAMPLE_RATE = {8000, 11025, 12000, 16000, 22050, 24000, 32000,
                                                      44100, 48000, 64000, 88200, 96000, 192000};
@@ -101,7 +101,7 @@ constexpr int MAX_BIT_RATE_DVAUDIO = 1536000;
 constexpr int MAX_BIT_RATE_DTS = 1536000;
 #endif
 
-#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
+#ifdef SUPPORT_CODEC_AUDIO_VIVID
 const std::vector<int32_t> AUDIO_VIVID_SAMPLE_RATE = {32000, 44100, 48000, 96000, 192000};
 const std::vector<int32_t> AUDIO_VIVID_ENCODER_SAMPLE_RATE = {32000, 44100, 48000};
 constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
@@ -109,6 +109,8 @@ constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
 constexpr int32_t MIN_BIT_RATE_VIVID_ENCODER = 32000;
 constexpr int32_t MAX_BIT_RATE_VIVID_ENCODER = 832000;
 constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
+#endif
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
 const std::vector<int32_t> AUDIO_L2HC_SAMPLE_RATE = {44100, 48000, 88200, 96000, 176400, 192000};
 constexpr int MIN_BITRATE_L2HC = 160000;
 constexpr int MAX_BITRATE_L2HC = 10000000;
@@ -145,6 +147,7 @@ const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {11025, 32000, 44100, 48000};
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
 constexpr int MAX_BIT_RATE_G711A_DECODER = 64000;
+constexpr int MAX_CHANNEL_G711MU_DECODER = 6;
 
 const std::string VENDOR_AAC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libaudiocodec_aac_proxy_1.0.z.so";
 
@@ -513,7 +516,7 @@ CapabilityData AudioCodeclistInfo::GetRawDecoderCapability()
     return audioRawCapability;
 }
 
-#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
+#ifdef SUPPORT_CODEC_AUDIO_VIVID
 CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
 {
     CapabilityData audioVividCapability;
@@ -543,22 +546,9 @@ CapabilityData AudioCodeclistInfo::GetVividEncoderCapability()
     audioVividCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioVividCapability;
 }
+#endif
 
-CapabilityData AudioCodeclistInfo::GetAmrnbEncoderCapability()
-{
-    CapabilityData audioAmrnbCapability;
-    audioAmrnbCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_AMRNB_NAME;
-    audioAmrnbCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
-    audioAmrnbCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB;
-    audioAmrnbCapability.isVendor = false;
-    audioAmrnbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRNB);
-    audioAmrnbCapability.channels = Range(1, 1);
-    audioAmrnbCapability.sampleRate = AUDIO_AMRNB_SAMPLE_RATE;
-    audioAmrnbCapability.sampleRateRanges = convertVectorToRange(AUDIO_AMRNB_SAMPLE_RATE);
-    audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
-    return audioAmrnbCapability;
-}
-
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
 CapabilityData AudioCodeclistInfo::GetAmrwbEncoderCapability()
 {
     CapabilityData audioAmrwbCapability;
@@ -718,6 +708,23 @@ CapabilityData AudioCodeclistInfo::GetOpusDecoderCapability()
 }
 #endif
 
+#ifdef SUPPORT_CODEC_AMRNB
+CapabilityData AudioCodeclistInfo::GetAmrnbEncoderCapability()
+{
+    CapabilityData audioAmrnbCapability;
+    audioAmrnbCapability.codecName = AVCodecCodecName::AUDIO_ENCODER_AMRNB_NAME;
+    audioAmrnbCapability.codecType = AVCODEC_TYPE_AUDIO_ENCODER;
+    audioAmrnbCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_AMRNB;
+    audioAmrnbCapability.isVendor = false;
+    audioAmrnbCapability.bitrate = Range(1, MAX_BIT_RATE_AMRNB);
+    audioAmrnbCapability.channels = Range(1, 1);
+    audioAmrnbCapability.sampleRate = AUDIO_AMRNB_SAMPLE_RATE;
+    audioAmrnbCapability.sampleRateRanges = convertVectorToRange(AUDIO_AMRNB_SAMPLE_RATE);
+    audioAmrnbCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioAmrnbCapability;
+}
+#endif
+
 CapabilityData AudioCodeclistInfo::GetAacEncoderCapability()
 {
     CapabilityData audioAacCapability;
@@ -758,9 +765,9 @@ CapabilityData AudioCodeclistInfo::GetG711muDecoderCapability()
     audioG711muDecoderCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_G711MU;
     audioG711muDecoderCapability.isVendor = false;
     audioG711muDecoderCapability.bitrate = Range(1, MAX_BIT_RATE_G711MU_DECODER);
-    audioG711muDecoderCapability.channels = Range(1, 1);
-    audioG711muDecoderCapability.sampleRate = AUDIO_G711MU_SAMPLE_RATE;
-    audioG711muDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711MU_SAMPLE_RATE);
+    audioG711muDecoderCapability.channels = Range(1, MAX_CHANNEL_G711MU_DECODER);
+    audioG711muDecoderCapability.sampleRate = AUDIO_G711_SAMPLE_RATE;
+    audioG711muDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711_SAMPLE_RATE);
     audioG711muDecoderCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioG711muDecoderCapability;
 }
@@ -790,8 +797,8 @@ CapabilityData AudioCodeclistInfo::GetG711aDecoderCapability()
     audioG711aDecoderCapability.isVendor = false;
     audioG711aDecoderCapability.bitrate = Range(1, MAX_BIT_RATE_G711A_DECODER);
     audioG711aDecoderCapability.channels = Range(1, MAX_CHANNEL_COUNT_G711A);
-    audioG711aDecoderCapability.sampleRate = AUDIO_G711A_SAMPLE_RATE;
-    audioG711aDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711A_SAMPLE_RATE);
+    audioG711aDecoderCapability.sampleRate = AUDIO_G711_SAMPLE_RATE;
+    audioG711aDecoderCapability.sampleRateRanges = convertVectorToRange(AUDIO_G711_SAMPLE_RATE);
     audioG711aDecoderCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
     return audioG711aDecoderCapability;
 }
@@ -894,9 +901,12 @@ AudioCodeclistInfo::AudioCodeclistInfo()
 {
     audioCapabilities_ = {
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
-                          GetVividDecoderCapability(), GetAmrnbEncoderCapability(), GetAmrwbEncoderCapability(),
+                          GetAmrwbEncoderCapability(),
                           GetLbvcDecoderCapability(), GetLbvcEncoderCapability(), GetL2hcEncoderCapability(),
-                          GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(), GetVividEncoderCapability(),
+                          GetL2hcDecoderCapability(), GetVendorAacEncoderCapability(),
+#endif
+#ifdef SUPPORT_CODEC_AUDIO_VIVID
+                          GetVividDecoderCapability(), GetVividEncoderCapability(),
 #endif
                           GetMP3DecoderCapability(),   GetAacDecoderCapability(),    GetFlacDecoderCapability(),
                           GetVorbisDecoderCapability(), GetAmrnbDecoderCapability(), GetAmrwbDecoderCapability(),
@@ -908,6 +918,9 @@ AudioCodeclistInfo::AudioCodeclistInfo()
                           GetIlbcDecoderCapability(), GetTwinVQDecoderCapability(),
 #ifdef SUPPORT_CODEC_TRUEHD
                           GetTruehdDecoderCapability(),
+#endif
+#ifdef SUPPORT_CODEC_AMRNB
+                          GetAmrnbEncoderCapability(),
 #endif
 #ifdef SUPPORT_CODEC_OPUS
                           GetOpusDecoderCapability(), GetOpusEncoderCapability(),

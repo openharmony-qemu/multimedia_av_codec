@@ -26,6 +26,7 @@
 #include "video_sink.h"
 #include "sink/media_synchronous_sink.h"
 #include "common/status.h"
+#include "common/event.h"
 #include "video_decoder_adapter.h"
 #include "meta/meta.h"
 #include "meta/format.h"
@@ -43,6 +44,15 @@
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
+
+struct StallingTimestampData {
+    int64_t syncEndMs;
+    int64_t rendererStartMs;
+    int64_t framePtsMs;
+    int64_t lastRenderTimeMs;
+    int64_t frameIntervalMs;
+};
+
 class DecoderSurfaceFilter : public Filter, public std::enable_shared_from_this<DecoderSurfaceFilter>,
     public InterruptListener {
 public:
@@ -133,6 +143,12 @@ public:
     void SetBuffering(bool isBuffering);
     void SetVideoOutput(sptr<Surface> surface);
     void GetVideoSample(int32_t &outputResult);
+    void ConfigureFrameRetentionMode(Format &format, double speed);
+    bool IsResolutionSupportSeekContinuous();
+    Status GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs);
+    bool IsCodecChanged(const std::shared_ptr<Meta> &newMeta);
+    void SetNewMeta(const std::shared_ptr<Meta> &meta);
+    void ChangePlugin(const std::shared_ptr<Meta> &newMeta);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -148,11 +164,9 @@ private:
     void ParseDecodeRateLimit();
     void RenderNextOutput(uint32_t index, std::shared_ptr<AVBuffer> &outputBuffer);
     void HandleRender(int index, bool render, const std::shared_ptr<AVBuffer>& outBuffer, int64_t& renderTime);
-    void WriteDfxTimeToVector(int64_t currentRenderPts, int64_t currentSysTimeNs,
-        int64_t lastRenderTimeNs, int64_t frameIntervalNs, std::vector<int64_t>& timeStampList);
-    void WriteDfxTimeToVector(int64_t syncEndMs, int64_t redererStartMs, int64_t framePtsMs,
-        int64_t lastRenderTimeMs, int64_t frameIntervalMs, std::vector<int64_t>& timeStampList);
+    void WriteDfxTimeToVector(const StallingTimestampData& data, std::vector<int64_t>& timeStampList);
     Status ReleaseOutputBuffer(int index, bool render, const std::shared_ptr<AVBuffer> &outBuffer, int64_t renderTime);
+    void HandleMediaChangeDetection(const std::shared_ptr<AVBuffer>& outBuffer);
     void DoReleaseOutputBuffer(uint32_t index, bool render, int64_t pts = 0);
     void DoRenderOutputBufferAtTime(uint32_t index, int64_t renderTime, int64_t pts = 0);
     bool AcquireNextRenderBuffer(bool byIdx, uint32_t &index, std::shared_ptr<AVBuffer> &outBuffer,
@@ -178,6 +192,7 @@ private:
     bool CheckDecoderCapability(bool isHwDecoder, int32_t width, int32_t height, std::string &decoderName);
     Status InitDecoder();
     Status ConfigureDecoderSettings();
+    void HandleCodecChange(int32_t index, bool &isHandled);
 
     std::string name_;
     FilterType filterType_;
@@ -248,10 +263,12 @@ private:
 
     std::shared_ptr<VideoFrameReadyCallback> videoFrameReadyCallback_;
     bool isInSeekContinuous_{false};
+    double speed_ = 1.0;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> outputBufferMap_;
     std::mutex draggingMutex_ {};
     std::unique_ptr<Task> eosTask_ {nullptr};
     std::atomic<int64_t> lastRenderTimeNs_ = HST_TIME_NONE;
+    std::atomic<uint64_t> lastRenderedChangeSeqNum_{0};
     int64_t renderTimeMaxAdvanceUs_ { 80000 };
     bool enableRenderAtTime_ {true};
     bool enableRenderAtTimeDfx_ {false};
@@ -292,6 +309,8 @@ private:
     std::atomic<bool> isClosestSeekDone_ {true};
     std::mutex closestSeekMutex_ {};
     std::condition_variable closestSeekCond_ {};
+    std::shared_ptr<Meta> newMeta_;
+    std::mutex newMetaMutex_ {};
 };
 } // namespace Pipeline
 } // namespace Media

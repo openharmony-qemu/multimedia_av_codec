@@ -30,10 +30,12 @@ public:
     ~FixedRatioRetentionStrategy() override = default;
 
     bool MakeRetentionDecision(const FrameRetentionContext& ctx) override;
+    void UpdateTargetRatio(double newRatio);
     void Reset() override;
     RetentionStrategyType GetMode() const override;
     double GetRatio() const override;
     SfdDecisionReason GetLastDecisionReason() const override;
+    bool ShouldReportDfx() const override;
 
 private:
     double accumulator_{0.0};

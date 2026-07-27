@@ -27,7 +27,7 @@ namespace Media {
 namespace Plugins {
 namespace Mpeg4 {
 using namespace OHOS::Media::Plugins;
-HevcParser::HevcParser(bool &videoDelay) : VideoParser(VideoParserStreamType::H265), hasVideoDelay_(videoDelay)
+HevcParser::HevcParser(int32_t &videoDelay) : VideoParser(VideoParserStreamType::H265), videoDelay_(videoDelay)
 {}
 
 int32_t HevcParser::Init()
@@ -122,10 +122,10 @@ Status HevcParser::SetVideoDelay()
     FALSE_RETURN_V_MSG_E(parser_ != nullptr, Status::ERROR_INVALID_DATA, "hevc parser is null");
     uint32_t maxReorderPic = parser_->GetMaxReorderPic();
     if (maxReorderPic > 0) {
-        hasVideoDelay_ = (maxReorderPic > 0 && maxReorderPic <= 16);  // max 16
+        videoDelay_ = (maxReorderPic > 0 && maxReorderPic <= 16) ? static_cast<int32_t>(maxReorderPic) : 0;  // max 16
     }
-    MEDIA_LOG_I("hevc parser get video delay:%{public}d, set:%{public}d",
-        maxReorderPic, static_cast<int32_t>(hasVideoDelay_));
+    MEDIA_LOG_I("hevc parser get video delay:%{public}d, videoDelay:%{public}d",
+        maxReorderPic, videoDelay_);
     return Status::NO_ERROR;
 }
 

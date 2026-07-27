@@ -15,6 +15,7 @@
 
 #include "temporal_scalability.h"
 #include <cmath>
+#include <thread>
 #include "meta/video_types.h"
 #include "avcodec_log.h"
 #include "avcodec_common.h"
@@ -95,14 +96,33 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
 
 void TemporalScalability::StoreAVBuffer(uint32_t index, shared_ptr<AVBuffer> buffer)
 {
-    inputIndexQueue_->Push(index);
     lock_guard<shared_mutex> inputBufLock(inputBufMutex_);
+    inputIndexQueue_->Push(index);
     inputBufferMap_.emplace(index, buffer);
 }
 
-uint32_t TemporalScalability::GetFirstBufferIndex()
+void TemporalScalability::CheckInputQueEmpty()
 {
-    return inputIndexQueue_->Front();
+    if (eosRequested_.load() && !lastBufferProcessed_.load()) {
+        bool wasEmpty = inputIndexQueue_->Empty();
+        AVCODEC_LOGD_WITH_TAG("queue empty? %{public}d, EOS requested? %{public}d", wasEmpty, eosRequested_.load());
+        if (wasEmpty) {
+            lastBufferProcessed_.store(true);
+            std::lock_guard<std::shared_mutex> eosLock(eosMutex_);
+            AVCODEC_LOGI_WITH_TAG("Last buffer processed, notifying EOS condition");
+            eosCondition_.notify_all();
+        }
+    }
+}
+
+bool TemporalScalability::GetFirstBufferIndex(uint32_t &index)
+{
+    if (inputIndexQueue_->Empty()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        return false;
+    }
+    index = inputIndexQueue_->Front();
+    return true;
 }
 
 void TemporalScalability::SetBlockQueueActive()
@@ -286,6 +306,25 @@ void TemporalScalability::ConfigureLTR(uint32_t index)
         frameFlagMap_.emplace(inputFrameCounter_, flag);
         inputFrameCounter_++;
     }
+}
+
+int32_t TemporalScalability::NotifyEosWhenComplete()
+{
+    AVCODEC_LOGI_WITH_TAG("Start");
+    eosRequested_.store(true);
+    lastBufferProcessed_.store(false);
+
+    {
+        std::unique_lock<std::shared_mutex> eosLock(eosMutex_);
+        AVCODEC_LOGI_WITH_TAG("Waiting for buffers to complete...");
+        eosCondition_.wait(eosLock, [this] { return lastBufferProcessed_.load(); });
+        AVCODEC_LOGI_WITH_TAG("All buffers completed, queue is empty");
+    }
+
+    eosRequested_.store(false);
+    lastBufferProcessed_.store(false);
+    AVCODEC_LOGI_WITH_TAG("Done, returning AVCS_ERR_OK");
+    return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

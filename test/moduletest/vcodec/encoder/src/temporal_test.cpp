@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
+
 #include <string>
 
 #include "gtest/gtest.h"
@@ -34,6 +38,7 @@ constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t DEFAULT_KEY_FRAME_INTERVAL = 1000;
 constexpr uint32_t DEFAULT_BITRATE = 10000000;
+constexpr uint32_t DEFAULT_BITRATE_3000000 = 30000000;
 constexpr double DEFAULT_FRAME_RATE = 30.0;
 OH_AVPixelFormat DEFAULT_PIX_FMT = AV_PIXEL_FORMAT_NV12;
 const char *INP_DIR_720 = "/data/test/media/1280_720_nv.yuv";
@@ -119,7 +124,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_API_0020, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, 3);
     ret = OH_VideoEncoder_Configure(venc_, format);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
     } else {
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -148,7 +153,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_API_0030, TestSize.Level2)
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 30);
     ret = OH_VideoEncoder_Configure(venc_, format);
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         ASSERT_EQ(ret, AV_ERR_INVALID_VAL);
     } else {
         ASSERT_EQ(ret, AV_ERR_OK);
@@ -163,7 +168,7 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_API_0030, TestSize.Level2)
 HWTEST_F(HwEncTemporalNdkTest, VIDEO_TEMPORAL_ENCODE_FUNCTION_0010, TestSize.Level1)
 {
     int32_t temporalGopSize = 2;
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vEncSample = make_unique<VEncAPI11Sample>();
         cout << "running on phone=========="<< endl;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
@@ -1342,6 +1347,232 @@ HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_1000, TestSize.Le
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_1100
+ * @tc.name      : Supports dynamic enabling or dissabling of the time-domain layer capability cbr
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_1100, TestSize.Level1)
+{
+    if (!strcmp(g_codecName, "OMX.hisi.video.encoder.avc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1100.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->DEFAULT_BITRATE = DEFAULT_BITRATE_3000000;
+        vEncSample->SURF_INPUT = false;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1100_2.h265";
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_1200
+ * @tc.name      : Supports dynamic enabling or dissabling of the time-domain layer capability vbr
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_1200, TestSize.Level1)
+{
+    if (!strcmp(g_codecName, "OMX.hisi.video.encoder.avc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1200.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->DEFAULT_BITRATE = DEFAULT_BITRATE_3000000;
+        vEncSample->SURF_INPUT = false;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        vEncSample->DEFAULT_BITRATE_MODE = VBR;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1200_2.h265";
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_1300
+ * @tc.name      : Supports dynamic enabling or dissabling of the time-domain layer capability sqr
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_1300, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1300.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->DEFAULT_BITRATE = DEFAULT_BITRATE_3000000;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->TEMPORAL_ENABLE = true;
+        vEncSample->TEMPORAL_UNIFORMLY = true;
+        vEncSample->DEFAULT_BITRATE_MODE = SQR;
+        int32_t temporalGopSize = 2;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder_Temporal(temporalGopSize));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        vEncSample->isSurface = true;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1300_2.h265";
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_1400
+ * @tc.name      : Supports dynamic enabling or dissabling of the time-domain layer capability sqr
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_1400, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1400.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->DEFAULT_BITRATE = DEFAULT_BITRATE_3000000;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->DEFAULT_BITRATE_MODE = SQR;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        vEncSample->isSurface = true;
+        vEncSample->TEMPORAL_ENABLE_RUN = true;
+        vEncSample->ENABLE_GOP_SIZE = true;
+        vEncSample->DEFAULT_BITRATE_MODE = SQR;
+        vEncSample->GOP_REFERENCE_MODE = JUMP_REFERENCE;
+        vEncSample->temporalGopSize = 4;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1400_2.h265";
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_1500
+ * @tc.name      : Supports dynamic enabling or dissabling of the time-domain layer capability cbrhq
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_1500, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1500.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->DEFAULT_BITRATE = DEFAULT_BITRATE_3000000;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR_HIGH_QUALITY;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        vEncSample->isSurface = true;
+        vEncSample->TEMPORAL_ENABLE_RUN = true;
+        vEncSample->ENABLE_GOP_SIZE = true;
+        vEncSample->DEFAULT_BITRATE_MODE = CBR_HIGH_QUALITY;
+        vEncSample->GOP_REFERENCE_MODE = ADJACENT_REFERENCE;
+        vEncSample->temporalGopSize = 4;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1500_2.h265";
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_UNIFORMLY_ENCODE_FUNCTION_1600
+ * @tc.name      : Supports dynamic enabling or dissabling of the time-domain layer capability vbr
+ * @tc.desc      : func test
+ */
+HWTEST_F(HwEncTemporalNdkTest, VIDEO_UNIFORMLY_ENCODE_FUNCTION_1600, TestSize.Level1)
+{
+    if (!strcmp(g_codecNameHEVC, "OMX.hisi.video.encoder.hevc")) {
+        auto vEncSample = make_unique<VEncAPI11Sample>();
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1600.h265";
+        vEncSample->INP_DIR = INP_DIR_720;
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->DEFAULT_BITRATE = DEFAULT_BITRATE_3000000;
+        vEncSample->SURF_INPUT = true;
+        vEncSample->DEFAULT_BITRATE_MODE = VBR;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+        ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
+        vEncSample->isSurface = true;
+        vEncSample->TEMPORAL_ENABLE_RUN = true;
+        vEncSample->ENABLE_GOP_SIZE = true;
+        vEncSample->DEFAULT_BITRATE_MODE = VBR;
+        vEncSample->GOP_REFERENCE_MODE = UNIFORMLY_SCALED_REFERENCE;
+        vEncSample->temporalGopSize = 4;
+        vEncSample->OUT_DIR = "/data/test/media/VIDEO_UNIFORMLY_ENCODE_FUNCTION_1600_2.h265";
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
+        ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
+        vEncSample->WaitForEOS();
+        ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
     }
 }
 } // namespace

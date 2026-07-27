@@ -17,6 +17,8 @@
 #define HST_LOG_TAG "Downloader"
 
 #include "downloader.h"
+#include <cstdint>
+#include <limits>
 #include "avcodec_trace.h"
 #include "securec.h"
 #include "plugin/plugin_time.h"
@@ -32,8 +34,12 @@ constexpr int32_t PER_REQUEST_SIZE = 2 * 1024 * 1024;
 constexpr int32_t BITRATE_REQUEST_SIZE = 4;
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
 constexpr size_t RETRY_TIMES = 6000;  // Retry 6000 times
+constexpr int32_t CLIENT_RETRY_TIME_LIMIT = 4; // 3, 15, 75, 375
+constexpr int32_t CLIENT_RETRY_TIME_FACTOR = 5;
+constexpr int32_t CLIENT_RETRY_TIME = 3;
 constexpr size_t REQUEST_QUEUE_SIZE = 50;
-constexpr long LIVE_CONTENT_LENGTH = 2147483646;
+constexpr int64_t LIVE_CONTENT_LENGTH = 2147483646;
+constexpr int64_t MAX_FILE_CONTENT_LEN_FROM_SERVER = 100LL * 1024 * 1024 * 1024;
 constexpr int32_t DOWNLOAD_LOG_FEQUENCE = 10;
 constexpr int32_t LOOP_TIMES = 5;
 constexpr int32_t MAX_LEN = 128;
@@ -48,6 +54,7 @@ constexpr int SLEEP_TEN_MICRO_SEC = 10; // 10ms
 constexpr int APP_OPEN_RETRY_TIMES = 10;
 constexpr int32_t REDIRECT_CODE = 302;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
+constexpr size_t MAX_HEADER_LINE_LEN = 16 * 1024;
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -112,13 +119,23 @@ DownloadRequest::DownloadRequest(uint64_t keyIndex, KeyDataSaveFunc keySaveData,
     keyIndex_ = keyIndex;
 }
 
-size_t DownloadRequest::GetFileContentLength() const
+void DownloadRequest::SetRequestType(RequestType requestType)
+{
+    requestType_ = requestType;
+}
+
+RequestType DownloadRequest::GetRequestType()
+{
+    return requestType_;
+}
+
+int64_t DownloadRequest::GetFileContentLength() const
 {
     WaitHeaderUpdated();
     return headerInfo_.GetFileContentLength();
 }
 
-size_t DownloadRequest::GetFileContentLengthNoWait() const
+int64_t DownloadRequest::GetFileContentLengthNoWait() const
 {
     return headerInfo_.fileContentLen;
 }
@@ -147,12 +164,12 @@ Seekable DownloadRequest::IsChunked(bool isInterruptNeeded)
 
 bool DownloadRequest::IsEos() const
 {
-    return isEos_;
+    return isEos_.load();
 }
 
 int DownloadRequest::GetRetryTimes() const
 {
-    return retryTimes_;
+    return retryTimes_.load();
 }
 
 int32_t DownloadRequest::GetClientError() const
@@ -198,7 +215,7 @@ void DownloadRequest::SetStartTimePos(int64_t startTimePos)
 {
     startTimePos_ = startTimePos;
     if (startTimePos_ > 0) {
-        shouldSaveData_ = false;
+        shouldSaveData_.store(false);
     }
 }
 
@@ -246,6 +263,11 @@ bool DownloadRequest::IsM3u8Request() const
 void DownloadRequest::SetRequestProtocolType(RequestProtocolType protocolType)
 {
     protocolType_ = protocolType;
+}
+
+std::string DownloadRequest::GetDownloaderName() const
+{
+    return downloaderName_;
 }
 
 bool DownloadRequest::IsServerAcceptRange() const
@@ -365,11 +387,11 @@ std::string Downloader::GetContentType()
         MEDIA_LOG_E("Get " PUBLIC_LOG_S " content type failed, sourceId " PUBLIC_LOG_D64, name_.c_str(), sourceId_);
         return contentType_;
     }
-    FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_, contentType_);
+    FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_.load(), contentType_);
     AutoLock lock(sleepMutex_);
     MEDIA_LOG_I("GetContentType wait begin ");
     sleepCond_.WaitFor(lock, SLEEP_TIME * RETRY_TIMES, [this]() {
-        return isInterruptNeeded_.load() || isContentTypeUpdated_;
+        return isInterruptNeeded_.load() || isContentTypeUpdated_.load();
     });
     MEDIA_LOG_I("ContentType: %{public}s", contentType_.c_str());
     return contentType_;
@@ -397,7 +419,20 @@ void Downloader::Pause(bool isAsync)
     requestQue_->SetActive(false, false);
     if (client_ != nullptr) {
         isClientClose_ = true;
-        client_->Close(isAsync);
+        int retryCount = 0;
+        int retryTime = CLIENT_RETRY_TIME;
+        while (client_->Close(isAsync) != Status::OK && retryCount < CLIENT_RETRY_TIME_LIMIT) {
+            MEDIA_LOG_W("client close failed, retry count: %{public}d, delay: %{public}d", retryCount, retryTime);
+            if (!isAsync) {
+                Task::SleepInTask(retryTime);
+            }
+            retryCount++;
+            retryTime *= CLIENT_RETRY_TIME_FACTOR;
+        }
+        if (retryCount == CLIENT_RETRY_TIME_LIMIT) {
+            MEDIA_LOG_E("client close failed, retry limited");
+            return;
+        }
     }
     PauseLoop(true);
     if (!isAsync) {
@@ -409,8 +444,8 @@ void Downloader::Pause(bool isAsync)
 void Downloader::Cancel()
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Cancel Begin", FAKE_POINTER(this));
-    if (currentRequest_ != nullptr && currentRequest_->retryTimes_ > 0) {
-        currentRequest_->retryTimes_ = 0;
+    if (currentRequest_ != nullptr && currentRequest_->retryTimes_.load() > 0) {
+        currentRequest_->retryTimes_.store(0);
     }
     requestQue_->SetActive(false, true);
     shouldStartNextRequest_ = true;
@@ -436,9 +471,9 @@ void Downloader::Resume()
         }
         requestQue_->SetActive(true);
         if (currentRequest_ != nullptr) {
-            currentRequest_->isEos_ = false;
+            currentRequest_->isEos_.store(false);
 
-            int64_t fileLength = static_cast<int64_t>(currentRequest_->GetFileContentLength());
+            int64_t fileLength = currentRequest_->GetFileContentLength();
             if (currentRequest_->startPos_ + currentRequest_->requestSize_ > fileLength) {
                 int correctRequestSize = fileLength - currentRequest_->startPos_;
                 MEDIA_LOG_E("resume error startPos = " PUBLIC_LOG_D64 ", requestSize = " PUBLIC_LOG_D32
@@ -489,23 +524,23 @@ bool Downloader::Seek(int64_t offset)
     FALSE_RETURN_V_MSG(!isDestructor_ && !isInterruptNeeded_, false, "Seek fail, is Destructor or InterruptNeeded");
     AutoLock lock(operatorMutex_);
     FALSE_RETURN_V_MSG(currentRequest_ != nullptr, false, "Seek fail, currentRequest nullptr");
-    size_t contentLength = currentRequest_->GetFileContentLength();
-    MEDIA_LOG_I("Seek Begin, offset = " PUBLIC_LOG_D64 ", contentLength = " PUBLIC_LOG_ZU, offset, contentLength);
-    if (offset >= 0 && offset < static_cast<int64_t>(contentLength)) {
+    int64_t contentLength = currentRequest_->GetFileContentLength();
+    MEDIA_LOG_I("Seek Begin, offset = " PUBLIC_LOG_D64 ", contentLength = " PUBLIC_LOG_D64, offset, contentLength);
+    if (offset >= 0 && offset < contentLength) {
         currentRequest_->startPos_ = offset;
     }
-    size_t temp = currentRequest_->GetFileContentLength() - static_cast<size_t>(currentRequest_->startPos_);
+    int64_t temp = contentLength - currentRequest_->startPos_;
     currentRequest_->requestSize_ = static_cast<int>(std::min(temp,
-        static_cast<size_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
+        static_cast<int64_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
     if (downloadRequestSize_ > 0) {
         currentRequest_->requestSize_ = std::min(currentRequest_->requestSize_,
             static_cast<int>(downloadRequestSize_));
         downloadRequestSize_ = 0;
     }
-    currentRequest_->isEos_ = false;
+    currentRequest_->isEos_.store(false);
     shouldStartNextRequest_ = false; // Reuse last request when seek
-    if (currentRequest_->retryTimes_ > 0) {
-        currentRequest_->retryTimes_ = 0;
+    if (currentRequest_->retryTimes_.load() > 0) {
+        currentRequest_->retryTimes_.store(0);
     }
     return true;
 }
@@ -523,6 +558,28 @@ void Downloader::GetIp(std::string &ip)
 }
 
 // Pause download thread before use currentRequest_
+bool Downloader::RetryCore(const std::shared_ptr<DownloadRequest>& request)
+{
+    AutoLock lock(operatorMutex_);
+    FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
+    client_->Close(false);
+    if (currentRequest_ != nullptr) {
+        if (currentRequest_->IsSame(request) && !shouldStartNextRequest_) {
+            currentRequest_->retryTimes_.fetch_add(1);
+            currentRequest_->retryOnGoing_ = true;
+            currentRequest_->dropedDataLen_ = 0;
+        }
+        client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
+        requestQue_->SetActive(true);
+        currentRequest_->isEos_.store(false);
+        if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
+            currentRequest_->endPos_ >= currentRequest_->startPos_) {
+            currentRequest_->requestSize_ = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
+        }
+    }
+    return true;
+}
+
 bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
@@ -540,24 +597,8 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
     }
     PauseLoop(true);
     WaitLoopPause();
-    {
-        AutoLock lock(operatorMutex_);
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
-        client_->Close(false);
-        if (currentRequest_ != nullptr) {
-            if (currentRequest_->IsSame(request) && !shouldStartNextRequest_) {
-                currentRequest_->retryTimes_++;
-                currentRequest_->retryOnGoing_ = true;
-                currentRequest_->dropedDataLen_ = 0;
-            }
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
-            requestQue_->SetActive(true);
-            currentRequest_->isEos_ = false;
-            if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
-                currentRequest_->endPos_ >= currentRequest_->startPos_) {
-                currentRequest_->requestSize_ = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
-            }
-        }
+    if (!RetryCore(request)) {
+        return false;
     }
     task_->Start();
     MEDIA_LOG_I("Do retry.");
@@ -583,12 +624,14 @@ std::string GetUserAgent()
 
 std::string Downloader::GetCertIssuerNames()
 {
+    AutoLock lock(caMutex_);
     return ca_;
 }
 
 bool Downloader::BeginDownload()
 {
     MEDIA_LOG_I("BeginDownload %{public}s", name_.c_str());
+    currentRequest_->downloaderName_ = name_;
     std::string url = currentRequest_->url_;
     std::map<std::string, std::string> httpHeader = currentRequest_->httpHeader_;
 
@@ -612,9 +655,11 @@ bool Downloader::BeginDownload()
         currentRequest_->requestSize_ = static_cast<int>(std::min(temp,
             static_cast<int64_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
     }
-    currentRequest_->isEos_ = false;
-    currentRequest_->retryTimes_ = 0;
+    currentRequest_->isEos_.store(false);
+    currentRequest_->retryTimes_.store(0);
     currentRequest_->downloadStartTime_ = currentRequest_->GetNowTime();
+    currentRequest_->downloadStartSteadyTime_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
     MEDIA_LOG_I("End");
     return true;
 }
@@ -706,7 +751,10 @@ void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, const 
 {
     currentRequest_->clientError_ = clientCode;
     currentRequest_->serverError_ = serverCode;
-    ca_ = ca;
+    {
+        AutoLock lock(caMutex_);
+        ca_ = ca;
+    }
     HandleRedirect(ret);
 
     if (isDestructor_) {
@@ -743,7 +791,7 @@ void Downloader::RequestData()
     MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
         + std::to_string(currentRequest_->startPos_) + ", reqSize: " + std::to_string(currentRequest_->requestSize_));
     int64_t startPos = currentRequest_->startPos_;
-    if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_) {
+    if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_.load()) {
         startPos = -1;
     }
     RequestInfo sourceInfo;
@@ -807,29 +855,29 @@ void Downloader::HandlePlayingFinish()
 void Downloader::HandleRetOK()
 {
     FALSE_RETURN_MSG(currentRequest_ != nullptr, "currentRequest is nullptr");
-    if (currentRequest_->retryTimes_ > 0) {
-        currentRequest_->retryTimes_ = 0;
+    if (currentRequest_->retryTimes_.load() > 0) {
+        currentRequest_->retryTimes_.store(0);
     }
     if (currentRequest_->headerInfo_.isChunked && requestQue_->Empty()) {
-        currentRequest_->isEos_ = true;
+        currentRequest_->isEos_.store(true);
         PauseLoop(true);
         return;
     }
     int64_t remaining = 0;
     if (currentRequest_->endPos_ <= 0) {
-        int64_t fileContentLenTmp = static_cast<int64_t>(currentRequest_->headerInfo_.fileContentLen);
+        int64_t fileContentLenTmp = currentRequest_->headerInfo_.fileContentLen;
         remaining = fileContentLenTmp - std::min(fileContentLenTmp, currentRequest_->startPos_);
     } else {
         remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
     }
-    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 1) { // Check whether the playback ends.
+    if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
-        currentRequest_->isEos_ = true;
+        currentRequest_->isEos_.store(true);
         HandlePlayingFinish();
         return;
     }
     if (currentRequest_->headerInfo_.fileContentLen == 0 && remaining <= 0) {
-        currentRequest_->isEos_ = true;
+        currentRequest_->isEos_.store(true);
         currentRequest_->Close();
         HandlePlayingFinish();
         return;
@@ -855,10 +903,10 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
         info->isChunked = false;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
-    if (!mediaDownloader->isContentTypeUpdated_) {
+    if (!mediaDownloader->isContentTypeUpdated_.load()) {
         {
             AutoLock lock(mediaDownloader->sleepMutex_);
-            mediaDownloader->isContentTypeUpdated_ = true;
+            mediaDownloader->isContentTypeUpdated_.store(true);
             mediaDownloader->contentType_ = info->contentType;
         }
         mediaDownloader->sleepCond_.NotifyOne();
@@ -868,8 +916,7 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
 bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
 {
     bool isWholeFileRetry = mediaDownloader->currentRequest_->requestWholeFile_ &&
-                            mediaDownloader->currentRequest_->shouldSaveData_ &&
-                            mediaDownloader->currentRequest_->retryOnGoing_;
+        mediaDownloader->currentRequest_->shouldSaveData_.load() && mediaDownloader->currentRequest_->retryOnGoing_;
     if (!isWholeFileRetry) {
         return false;
     }
@@ -934,13 +981,13 @@ void Downloader::UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* heade
     int64_t hstTime = 0;
     Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
     int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
-    int64_t contenLen = static_cast<int64_t>(header->fileContentLen);
+    int64_t contenLen = header->fileContentLen;
     int64_t startPos = 0;
     if (hstTime != 0) {
         startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
     }
     mediaDownloader->currentRequest_->startPos_ = startPos;
-    mediaDownloader->currentRequest_->shouldSaveData_ = true;
+    mediaDownloader->currentRequest_->shouldSaveData_.store(true);
     mediaDownloader->currentRequest_->requestWholeFile_ = false;
     mediaDownloader->currentRequest_->requestSize_ =
         static_cast<int>(std::max(mediaDownloader->currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE));
@@ -951,9 +998,9 @@ void Downloader::HandleFileContentLen(HeaderInfo* header)
 {
     if (header->fileContentLen == 0) {
         if (header->contentLen > 0) {
-            MEDIA_LOG_W("Unsupported range, use content length as content file length, contentLen: " PUBLIC_LOG_D32,
-                static_cast<int32_t>(header->contentLen));
-            header->fileContentLen = static_cast<size_t>(header->contentLen);
+            MEDIA_LOG_W("Unsupported range, use content length as content file length, contentLen: " PUBLIC_LOG_D64,
+                header->contentLen);
+            header->fileContentLen = header->contentLen;
         } else {
             MEDIA_LOG_D("fileContentLen and contentLen are both zero.");
         }
@@ -964,7 +1011,7 @@ void Downloader::UpdateRequestSize(Downloader* mediaDownloader)
 {
     int64_t remaining = 0;
     if (mediaDownloader->currentRequest_->endPos_ <= 0) {
-        remaining = static_cast<int64_t>(mediaDownloader->currentRequest_->headerInfo_.fileContentLen) -
+        remaining = mediaDownloader->currentRequest_->headerInfo_.fileContentLen -
                     mediaDownloader->currentRequest_->startPos_;
     } else {
         remaining = mediaDownloader->currentRequest_->endPos_ - mediaDownloader->currentRequest_->startPos_ + 1;
@@ -979,34 +1026,44 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
 {
     FALSE_RETURN_V(userParam != nullptr, 0);
     auto mediaDownloader = static_cast<Downloader *>(userParam);
+    if (size != 0 && nitems > std::numeric_limits<size_t>::max() / size) {
+        MEDIA_LOG_E("RxBodyData: size overflow, size: " PUBLIC_LOG_ZU ", nitems: " PUBLIC_LOG_ZU, size, nitems);
+        return 0;
+    }
     size_t dataLen = size * nitems;
     int64_t curLen = mediaDownloader->currentRequest_->realRecvContentLen_;
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
-
     if (!mediaDownloader->currentRequest_->location_.empty() &&
         !mediaDownloader->currentRequest_->haveRedirectRetry_.load()) {
         MEDIA_LOG_W("Receive location, need retry.");
         return 0;
     }
-
     UpdateHeaderInfo(mediaDownloader);
     MediaAVCodec::AVCodecTrace trace("Downloader::RxBodyData, dataLen: " + std::to_string(dataLen)
         + ", realRecvContentLen: " + std::to_string(realRecvContentLen));
     mediaDownloader->currentRequest_->realRecvContentLen_ = realRecvContentLen;
- 
     if (IsDropDataRetryRequest(mediaDownloader) && !mediaDownloader->currentRequest_->IsIndexM3u8Request()) {
         return DropRetryData(buffer, dataLen, mediaDownloader);
     }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
-    if (!mediaDownloader->currentRequest_->shouldSaveData_) {
+    if (!mediaDownloader->currentRequest_->shouldSaveData_.load()) {
         UpdateCurRequest(mediaDownloader, header);
         return dataLen;
     }
     HandleFileContentLen(header);
-    if (!mediaDownloader->currentRequest_->isDownloading_) {
-        mediaDownloader->currentRequest_->isDownloading_ = true;
+    if (!mediaDownloader->currentRequest_->isDownloading_.load()) {
+        mediaDownloader->currentRequest_->isDownloading_.store(true);
     }
     UpdateDownloadInfo(mediaDownloader, dataLen);
+    size_t ret = SaveBodyData(mediaDownloader, buffer, dataLen);
+    if (ret == dataLen) {
+        mediaDownloader->currentRequest_->isDownloading_.store(false);
+    }
+    return ret;
+}
+
+size_t Downloader::SaveBodyData(Downloader* mediaDownloader, void* buffer, size_t dataLen)
+{
     uint64_t keyIndex = mediaDownloader->currentRequest_->keyIndex_;
     uint32_t writeLen = (keyIndex > 0) ? mediaDownloader->currentRequest_->keySaveData_(static_cast<uint8_t *>(buffer),
         static_cast<uint32_t>(dataLen), mediaDownloader->isNotBlock_, keyIndex) :
@@ -1017,7 +1074,6 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ +
                                                   static_cast<int64_t>(writeLen);
     UpdateRequestSize(mediaDownloader);
- 
     if (writeLen != dataLen) {
         if (mediaDownloader->sourceLoader_ != nullptr) {
             mediaDownloader->PauseLoop(true);
@@ -1027,8 +1083,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }
- 
-    mediaDownloader->currentRequest_->isDownloading_ = false;
+    mediaDownloader->currentRequest_->isDownloading_.store(false);
     return dataLen;
 }
 
@@ -1057,11 +1112,28 @@ bool Downloader::HandleContentRange(HeaderInfo* info, char* key, char* next, siz
         char* token = strtok_s(nullptr, ":", &next);
         FALSE_RETURN_V(token != nullptr, false);
         char* strRange = StringTrim(token);
-        size_t start;
-        size_t end;
-        size_t fileLen;
-        FALSE_LOG_MSG(sscanf_s(strRange, "bytes %lu-%lu/%lu", &start, &end, &fileLen) != -1,
-            "sscanf get range failed");
+        std::string rangeStr(strRange);
+        if (rangeStr.find("bytes ") != 0) {
+            MEDIA_LOG_W("Content-Range format invalid: " PUBLIC_LOG_S, rangeStr.c_str());
+            return false;
+        }
+        rangeStr = rangeStr.substr(6); // skip "bytes " prefix length 6
+        auto dashPos = rangeStr.find('-');
+        auto slashPos = rangeStr.find('/');
+        if (dashPos == std::string::npos || slashPos == std::string::npos) {
+            MEDIA_LOG_W("Content-Range separators missing: " PUBLIC_LOG_S, rangeStr.c_str());
+            return false;
+        }
+        int64_t start = 0;
+        int64_t end = 0;
+        int64_t fileLen = 0;
+        FALSE_RETURN_V(StringUtil::SafeStoInt64(rangeStr.substr(0, dashPos), start), false);
+        FALSE_RETURN_V(StringUtil::SafeStoInt64(rangeStr.substr(dashPos + 1, slashPos - dashPos - 1), end), false);
+        FALSE_RETURN_V(StringUtil::SafeStoInt64(rangeStr.substr(slashPos + 1), fileLen), false);
+        if (fileLen <= 0 || fileLen > MAX_FILE_CONTENT_LEN_FROM_SERVER) {
+            MEDIA_LOG_E("Content-Range fileLen invalid: " PUBLIC_LOG_D64, fileLen);
+            return false;
+        }
         if (info->fileContentLen > 0 && info->fileContentLen != fileLen) {
             MEDIA_LOG_E("FileContentLen doesn't equal to fileLen");
         }
@@ -1081,7 +1153,13 @@ bool Downloader::HandleContentType(HeaderInfo* info, char* key, char* next, size
         char* type = StringTrim(token);
         std::string headStr = (std::string)token;
         MEDIA_LOG_I("content-type: " PUBLIC_LOG_S, headStr.c_str());
-        NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, strlen(type)));
+        size_t typeLen = strlen(type);
+        size_t maxCopyLen = sizeof(info->contentType) - 1;
+        size_t copyLen = (typeLen < maxCopyLen) ? typeLen : maxCopyLen;
+        if (copyLen > 0) {
+            NZERO_LOG(memcpy_s(info->contentType, sizeof(info->contentType), type, copyLen));
+        }
+        info->contentType[copyLen] = '\0';
     }
     return true;
 }
@@ -1106,10 +1184,10 @@ bool Downloader::HandleContentLength(HeaderInfo* info, char* key, char* next, Do
         FALSE_RETURN_V(token != nullptr, false);
         if (info != nullptr && mediaDownloader != nullptr) {
             std::string strToken(StringTrim(token));
-            int32_t tempContentLen;
-            FALSE_RETURN_V(StringUtil::SafeStoInt32(strToken, tempContentLen), false);
-            info->contentLen = static_cast<long>(tempContentLen);
-            MEDIA_LOG_I("content-length: " PUBLIC_LOG_D32, static_cast<int32_t>(info->contentLen));
+            int64_t tempContentLen;
+            FALSE_RETURN_V(StringUtil::SafeStoInt64(strToken, tempContentLen), false);
+            info->contentLen = tempContentLen;
+            MEDIA_LOG_I("content-length: " PUBLIC_LOG_D64, info->contentLen);
             if (info->contentLen <= 0 && !mediaDownloader->currentRequest_->IsM3u8Request()) {
                 info->isChunked = true;
             }
@@ -1163,24 +1241,28 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     if (mediaDownloader->currentRequest_->isHeaderUpdated_) {
         return size * nitems;
     }
+    if (size != 0 && nitems > std::numeric_limits<size_t>::max() / size) {
+        MEDIA_LOG_E("RxHeaderData: size * nitems overflow");
+        return 0;
+    }
+    size_t totalLen = size * nitems;
+    if (totalLen == 0 || totalLen >= MAX_HEADER_LINE_LEN) {
+        MEDIA_LOG_W("RxHeaderData: invalid header line length " PUBLIC_LOG_ZU, totalLen);
+        return totalLen;
+    }
+    char headerBuf[MAX_HEADER_LINE_LEN] = {0};
+    if (memcpy_s(headerBuf, sizeof(headerBuf) - 1, buffer, totalLen) != EOK) {
+        return 0;
+    }
+    headerBuf[totalLen] = '\0';
     char* next = nullptr;
-    char* key = strtok_s(reinterpret_cast<char*>(buffer), ":", &next);
-    FALSE_RETURN_V(key != nullptr, size * nitems);
+    char* key = strtok_s(headerBuf, ":", &next);
+    FALSE_RETURN_V(key != nullptr, totalLen);
     ToLower(key);
 
     if (!strncmp(key, "transfer-encoding", strlen("transfer-encoding"))) {
-        char* token = strtok_s(nullptr, ":", &next);
-        FALSE_RETURN_V(token != nullptr, size * nitems);
-        if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
-            !mediaDownloader->currentRequest_->IsM3u8Request()) {
-            info->isChunked = true;
-            if (mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos) {
-                info->contentLen = LIVE_CONTENT_LENGTH;
-            } else {
-                info->contentLen = 0;
-            }
-            std::string headStr = (std::string)token;
-            MEDIA_LOG_I("transfer-encoding: " PUBLIC_LOG_S, headStr.c_str());
+        if (!HandleTransferEncoding(info, key, next, mediaDownloader)) {
+            return size * nitems;
         }
     }
     if (!strncmp(key, "location", strlen("location"))) {
@@ -1199,6 +1281,26 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     }
 
     return size * nitems;
+}
+
+bool Downloader::HandleTransferEncoding(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader)
+{
+    (void)key;
+    FALSE_RETURN_V(mediaDownloader != nullptr && mediaDownloader->currentRequest_ != nullptr, false);
+    char* token = strtok_s(nullptr, ":", &next);
+    FALSE_RETURN_V(token != nullptr, false);
+    if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
+        !mediaDownloader->currentRequest_->IsM3u8Request()) {
+        info->isChunked = true;
+        if (mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos) {
+            info->contentLen = LIVE_CONTENT_LENGTH;
+        } else {
+            info->contentLen = 0;
+        }
+        std::string headStr = (std::string)token;
+        MEDIA_LOG_I("transfer-encoding: " PUBLIC_LOG_S, headStr.c_str());
+    }
+    return true;
 }
 
 void Downloader::PauseLoop(bool isAsync)

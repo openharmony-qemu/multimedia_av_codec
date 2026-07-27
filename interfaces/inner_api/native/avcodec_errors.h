@@ -94,13 +94,14 @@ typedef enum AVCodecServiceErrCode : ErrCode {
 
     AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION,              // unsuported codec specification
     AVCS_ERR_ILLEGAL_PARAMETER_SETS,                       // illegal parameter sets
-    AVCS_ERR_MINSSING_PARAMETER_SETS,                      // missing parameter sets
+    AVCS_ERR_MISSING_PARAMETER_SETS,                      // missing parameter sets
     AVCS_ERR_INSUFFICIENT_HARDWARE_RESOURCES,              // insufficient hardware resources
 
     AVCS_ERR_EXTEND_START = AVCS_ERR_OFFSET + 0xF000,      // extend err start.
 } AVCodecServiceErrCode;
 
 __attribute__((visibility("default"))) std::string AVCSErrorToString(AVCodecServiceErrCode code);
+__attribute__((visibility("default"))) std::string AVCSErrorToEnumName(AVCodecServiceErrCode code);
 __attribute__((visibility("default"))) std::string OHAVErrCodeToString(OH_AVErrCode code);
 __attribute__((visibility("default"))) std::string AVCSErrorToOHAVErrCodeString(AVCodecServiceErrCode code);
 __attribute__((visibility("default"))) OH_AVErrCode AVCSErrorToOHAVErrCode(AVCodecServiceErrCode code);

@@ -392,6 +392,7 @@ Status SampleQueue::ReleaseBuffer(std::shared_ptr<AVBuffer>& sampleBuffer)
 
     // Remove the skip info to prevent anomalies caused by meta reuse.
     FALSE_GOON_NOEXEC(sampleBuffer->meta_ != nullptr, sampleBuffer->meta_->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO));
+    FALSE_GOON_NOEXEC(sampleBuffer->meta_ != nullptr, sampleBuffer->meta_->Remove(Tag::CHECK_CODEC_CHANGE));
     Status status = sampleBufferQueueConsumer_->ReleaseBuffer(sampleBuffer);
     FALSE_RETURN_V_MSG_E(
         status == Status::OK, status, PUBLIC_LOG_S "ReleaseBuffer failed ", config_.queueName_.c_str());
@@ -479,7 +480,7 @@ Status SampleQueue::DiscardSampleAfter(int64_t startPts)
         MEDIA_LOG_I("before DiscardSampleAfter keyFramePtsSet_ =" PUBLIC_LOG_S, SetToString(keyFramePtsSet_).c_str());
         auto it = keyFramePtsSet_.lower_bound(startPts);
         keyFramePtsSet_.erase(it, keyFramePtsSet_.end());
-        lastEndSamplePts_ = startPts;
+        lastEndSamplePts_.store(startPts);
     }
     FALSE_RETURN_V(sampleBufferQueueProducer_ != nullptr, Status::ERROR_NULL_POINT_BUFFER);
     auto isNewerSample = [startPts](const std::shared_ptr<AVBuffer>& buffer) {
@@ -538,7 +539,7 @@ Status SampleQueue::NotifySwitchBitrateOK()
 Status SampleQueue::UpdateLastEndSamplePts(int64_t lastEndSamplePts)
 {
     MEDIA_LOG_DD("UpdateLastEndSamplePts lastEndSamplePts=" PUBLIC_LOG_D64, lastEndSamplePts);
-    lastEndSamplePts_ = lastEndSamplePts;
+    lastEndSamplePts_.store(lastEndSamplePts);
     return Status::OK;
 }
 
@@ -600,12 +601,12 @@ bool SampleQueue::IsSwitchBitrateOK()
     if (!IsKeyFrameAvailable()) {
         return false;
     }
-    int64_t cacheDiff = startPtsToSwitch_ - lastEndSamplePts_;
+    int64_t cacheDiff = startPtsToSwitch_ - lastEndSamplePts_.load();
     MEDIA_LOG_I("IsSwitchBitrateOK cacheDiff=" PUBLIC_LOG_D64 ", startPtsToSwitch_=" PUBLIC_LOG_D64
                 ", lastEndSamplePts_=" PUBLIC_LOG_D64,
         cacheDiff,
         startPtsToSwitch_,
-        lastEndSamplePts_);
+        lastEndSamplePts_.load());
     return true;
 }
 
@@ -614,7 +615,7 @@ bool SampleQueue::IsKeyFrameAvailable()
 {
     std::lock_guard<std::mutex> ptsLock(ptsMutex_);
     MEDIA_LOG_I("keyFramePtsSet_ =" PUBLIC_LOG_S, SetToString(keyFramePtsSet_).c_str());
-    auto it = keyFramePtsSet_.lower_bound(lastEndSamplePts_ + MIN_SWITCH_BITRATE_TIME_US);
+    auto it = keyFramePtsSet_.lower_bound(lastEndSamplePts_.load() + MIN_SWITCH_BITRATE_TIME_US);
     if (it != keyFramePtsSet_.end()) {
         startPtsToSwitch_ = *it;
         MEDIA_LOG_I("ok cache MIN_SWITCH_BITRATE_TIME_US with keyframe startpts=" PUBLIC_LOG_D64, startPtsToSwitch_);

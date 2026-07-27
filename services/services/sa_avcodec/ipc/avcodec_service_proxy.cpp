@@ -107,6 +107,25 @@ int32_t AVCodecServiceProxy::SuspendActiveAll()
     return reply.ReadInt32();
 }
 
+int32_t AVCodecServiceProxy::VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool ret = data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
+    ret = data.WriteString(bundleName);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write bundleName");
+    ret = data.WriteBool(isFloatingWindow);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write isFloatingWindow");
+    int error =
+        Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::VIDEOCALL), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Create av_codec proxy failed, error: %{public}d", error);
+    return reply.ReadInt32();
+}
+
 int32_t AVCodecServiceProxy::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
 {
     MessageParcel data;

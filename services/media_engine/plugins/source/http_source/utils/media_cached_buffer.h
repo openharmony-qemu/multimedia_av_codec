@@ -178,6 +178,7 @@ protected:
     void HandleFragmentPos(FragmentIterator& fragmentIter);
     void UpdateFragment(FragmentIterator& fragmentPos, size_t hasReadSize, uint64_t offsetChunk);
     bool CheckLoopTimeout(int64_t loopStartTime);
+    bool AllocateAndInitChunks(int64_t chunkNum, size_t sizePerChunk, uint32_t chunkSize);
 
 protected:
     std::mutex mutex_;

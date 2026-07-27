@@ -16,6 +16,10 @@
 #ifndef FFMPEG_DEMUXER_PLUGIN_H
 #define FFMPEG_DEMUXER_PLUGIN_H
 
+#ifndef USE_FF_DEMUXER
+#define USE_FF_DEMUXER
+#endif
+
 #include <atomic>
 #include <vector>
 #include <thread>
@@ -246,6 +250,7 @@ private:
     static int HandleReadEOS(IOContext* ioContext);
     static int HandleReadError(int result);
     static void UpdateInitDownloadData(IOContext* ioContext, int dataSize);
+    static void UpdateReadSizeCnt(IOContext* ioContext, int dataSize);
     static int AVWritePacket(void* opaque, const uint8_t* buf, int bufSize);
     static int64_t AVSeek(void* opaque, int64_t offset, int whence);
     AVIOContext* AllocAVIOContext(int flags, IOContext *ioContext);
@@ -275,6 +280,10 @@ private:
         AVPacketWrapperPtr tempPktWrapper, uint32_t copySize, bool combined);
     Status ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuffer> sample,
         std::shared_ptr<SamplePacket> samplePacket, AVPacketWrapperPtr& tempPktWrapper);
+    Status SkipPacketAfterPacketConvertError(uint32_t trackId, const std::shared_ptr<SamplePacket>& samplePacket,
+        bool popSample, bool restoreCacheInfo);
+    Status ConvertPacketToAnnexbByCodec(std::shared_ptr<AVBuffer> sample, AVPacket& pkt,
+        std::shared_ptr<SamplePacket> dstSamplePacket, AVCodecID codecId);
     Status ConvertPacketToAnnexb(std::shared_ptr<AVBuffer> sample, AVPacketWrapperPtr avpacketWrapper,
         std::shared_ptr<SamplePacket> dstSamplePacket);
     Status ConvertPacketToAnnexb(AVPacketWrapperPtr srcWrapper, std::shared_ptr<SamplePacket> samplePacket,
@@ -399,6 +408,8 @@ private:
     Status AccumulateXpsPkt(AVPacketWrapperPtr pkt);
     void AccumulateXpsPktRelease(uint32_t trackIndex);
     void AccumulateXpsPktReleaseAll();
+    Status AccumulateXpsPktLocked(AVPacketWrapperPtr pkt);
+    void AccumulateXpsPktReleaseLocked(uint32_t trackIndex);
     enum class AccumulateAction {
         ERROR,
         NOT_SUPPORT_TYPE,
@@ -407,6 +418,7 @@ private:
     };
     AccumulateAction ProcessAccumulateXpsPkt(AVPacketWrapperPtr& pktWrapper,
         int ffmpegRet, Status& status);
+    std::mutex accumulatePktMutex_ {};
     std::map<int32_t, AVPacketWrapperPtr> accumulatePktMap_ {};
     std::map<int32_t, bool> accumulatePktFinishMap_ {};
     bool VideoFirstFrameValid(uint32_t trackIndex);
@@ -431,6 +443,7 @@ private:
     IOContext parserRefIoContext_;
     std::shared_ptr<AVFormatContext> parserRefCtx_{nullptr};
     int parserRefIdx_ = -1;
+    std::shared_mutex sharedReferenceParserMutex_;
     std::shared_ptr<ReferenceParserManager> referenceParser_{nullptr};
     int32_t parserCurGopId_ = 0;
     int64_t pendingSeekMsTime_ = -1;
@@ -438,7 +451,9 @@ private:
     std::list<uint32_t> processingIFrame_;
     std::vector<uint32_t> IFramePos_;
     int64_t minPts_ = 0;
-    int64_t startPts_ = 0;
+    std::unordered_map<int32_t, int64_t> trackMinPtsMap_;
+    std::unordered_map<int32_t, int64_t> trackMinDtsMap_;
+    std::mutex minTsMutex_;
     uint32_t ptsCnt_ = 0;
     bool isSdtpExist_ = false;
     std::mutex syncMutex_;
@@ -559,6 +574,8 @@ private:
     Status GetFileFirstPacket();
     void InitMinTsPacketInfo(AVPacket *pkt);
     void UpdMinTsPacketInfo(AVPacket *pkt);
+    void RecordTrackMinTs(AVPacket *pkt);
+    int64_t CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts);
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
     int RMSeekToStart();
@@ -586,14 +603,6 @@ private:
     Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
 };
 
-typedef struct DtsFinder {
-    explicit DtsFinder(int64_t dts) : dts_(dts) { }
-    bool operator ()(const std::map<int64_t, int64_t>::value_type &item)
-    {
-        return dts_ == item.second || dts_ == item.second - 1 || dts_ == item.second + 1;
-    }
-    int64_t dts_;
-} DtsFinder;
 } // namespace Ffmpeg
 } // namespace Plugins
 } // namespace Media

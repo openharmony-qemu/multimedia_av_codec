@@ -191,6 +191,11 @@ public:
     }
 
     virtual int32_t NotifyMemoryExchange(const bool exchangeFlag) = 0;
+
+    virtual bool IsServiceDied() const
+    {
+        return false;
+    }
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

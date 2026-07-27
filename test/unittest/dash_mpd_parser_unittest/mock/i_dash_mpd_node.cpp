@@ -14,19 +14,7 @@
  */
 
 #include "i_dash_mpd_node.h"
-#include "dash_mpd_node.h"
-#include "dash_period_node.h"
-#include "dash_adpt_set_node.h"
-#include "dash_content_comp_node.h"
-#include "dash_representation_node.h"
-#include "dash_seg_base_node.h"
-#include "dash_mult_seg_base_node.h"
-#include "dash_seg_list_node.h"
-#include "dash_seg_template_node.h"
-#include "dash_url_type_node.h"
-#include "dash_seg_tmline_node.h"
-#include "dash_descriptor_node.h"
-#include "dash_seg_url_node.h"
+#include "dash_generic_node.h"
 
 namespace OHOS {
 namespace Media {
@@ -35,60 +23,7 @@ namespace HttpPlugin {
 
 IDashMpdNode *IDashMpdNode::CreateNode(const std::string &nodeName)
 {
-    if (nodeName == "MPD") {
-        return new DashMpdNode();
-    }
-
-    if (nodeName == "Period") {
-        return nullptr;
-    }
-
-    if (nodeName == "AdaptationSet") {
-        return nullptr;
-    }
-
-    if (nodeName == "ContentComponent") {
-        return nullptr;
-    }
-
-    if (nodeName == "Representation") {
-        return nullptr;
-    }
-
-    if (nodeName == "SegmentBase") {
-        return nullptr;
-    }
-
-    if (nodeName == "MultipleSegmentBase") {
-        return new DashMultSegBaseNode();
-    }
-
-    if (nodeName == "SegmentList") {
-        return nullptr;
-    }
-
-    if (nodeName == "SegmentTemplate") {
-        return new DashSegTemplateNode();
-    }
-
-    if (nodeName == "Initialization" || nodeName == "RepresentationIndex" || nodeName == "BitstreamSwitching") {
-        return nullptr;
-    }
-
-    if (nodeName == "SegmentTimeline") {
-        return nullptr;
-    }
-
-    if (nodeName == "ContentProtection" || nodeName == "Role" || nodeName == "EssentialProperty" ||
-        nodeName == "AudioChannelConfiguration") {
-        return nullptr;
-    }
-
-    if (nodeName == "SegmentURL") {
-        return nullptr;
-    }
-
-    return nullptr;
+    return new DashGenericNode({}, {});
 }
 
 void IDashMpdNode::DestroyNode(IDashMpdNode *node)

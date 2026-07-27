@@ -51,6 +51,8 @@ std::pair<bool, AVColorSpace> ColorMatrix2AVColorSpace(MatrixCoefficient matrix)
 std::vector<uint8_t> GenerateAACCodecConfig(int32_t profile, int32_t sampleRate, int32_t channels);
 std::string hexEncode(const std::vector<uint8_t>& data);
 const uint8_t* FindNalStartCode(const uint8_t *start, const uint8_t *end, int32_t &startCodeLen);
+bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size);
+int32_t GetNaluSize(const uint8_t *nalStart);
 
 struct FlacCodecConfig {
     bool GenerateCodecConfig(const std::shared_ptr<Meta> &trackDesc);

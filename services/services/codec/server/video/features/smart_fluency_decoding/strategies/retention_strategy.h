@@ -34,6 +34,7 @@ public:
 
     virtual bool MakeRetentionDecision(const FrameRetentionContext& ctx) = 0;
     virtual void UpdatePlaybackSpeed(double /* speed */) {}
+    virtual void UpdateSourceFramerate(double /*sourceFps*/) {}
     virtual void Reset() {}
     virtual RetentionStrategyType GetMode() const = 0;
     virtual double GetRatio() const = 0;
@@ -42,6 +43,7 @@ public:
     virtual bool IsPassthrough() const { return false; }
     virtual bool RequiresMvAnalysis() const { return false; }
     virtual bool RequiresNaluAnalysis() const { return true; }
+    virtual bool ShouldReportDfx() const { return false; }
 };
 
 } // namespace SFD

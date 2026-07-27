@@ -21,11 +21,7 @@
 #include "avmuxer.h"
 #include "native_avbuffer.h"
 #include "native_audio_channel_layout.h"
-#ifdef FFMPEG_MUXER_TEST
-#include "avmuxer_ffmpeg_plugin_mock.h"
-#else
 #include "avmuxer_mpeg4_plugin_mock.h"
-#endif
 #include "native_avsource.h"
 #include "demuxer_mock.h"
 
@@ -35,11 +31,7 @@ using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
 using namespace OHOS;
 namespace {
-#ifdef FFMPEG_MUXER_TEST
-using UnitTestMuxerType = AVMuxerFfmpegPluginMock;
-#else
 using UnitTestMuxerType = AVMuxerMpeg4PluginMock;
-#endif
 constexpr int32_t TEST_CHANNEL_COUNT = 2;
 constexpr int32_t TEST_SAMPLE_RATE = 44100;
 constexpr int32_t TEST_WIDTH = 720;
@@ -1968,7 +1960,7 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Add_Multiple_Tracks, TestSize.Level0) {
  */
 HWTEST_F(Mpeg4MuxerUnitTest, Muxer_GENRE_001, TestSize.Level1)
 {
-    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_GENRE_001.mp4");
+    std::string outputFile = TEST_FILE_PATH + std::string("Mpeg4Muxer_GENRE_001.mp4");
     fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
     OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
     ASSERT_TRUE(avmuxer_->CreateMuxer(fd_, outputFormat));
@@ -3935,8 +3927,6 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_AddTrackNodata_003, TestSize.Level0)
     EXPECT_EQ(trackCount, 3);  // 3
 }
 
-#ifndef FFMPEG_MUXER_TEST
-
 /**
  * @tc.name: Muxer_Location_Altitude_001
  * @tc.desc: Muxer set location with latitude, longitude and altitude
@@ -4092,7 +4082,5 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_Location_Altitude_003, TestSize.Level0)
         EXPECT_FLOAT_EQ(altitude, 0.0f);
     }
 }
-
-#endif
 
 }

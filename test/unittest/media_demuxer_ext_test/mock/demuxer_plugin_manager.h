@@ -36,15 +36,10 @@
 #include "source.h"
 #include "demuxer_plugin.h"
 #include "stream_demuxer.h"
+#include "../../../../services/media_engine/modules/demuxer/demuxer_types.h"
 
 namespace OHOS {
 namespace Media {
-enum TrackType {
-    TRACK_VIDEO = 0,
-    TRACK_AUDIO,
-    TRACK_SUBTITLE,
-    TRACK_INVALID
-};
 
 enum class DemuxerCallerType : int32_t;
 
@@ -118,6 +113,9 @@ public:
     MOCK_METHOD1(SetIsHlsFmp4, void(bool isHlsFmp4));
     MOCK_METHOD2(GetCurrentCacheSize, Status(uint32_t trackId, uint32_t& size));
     MOCK_METHOD1(SetReadTimeoutForInitSeek, Status(int64_t timeoutMs));
+    MOCK_METHOD1(SetPlayerMode, void(bool isPlayerMode));
+    MOCK_METHOD1(GetTmpTrackIdByTrackId, int32_t(int32_t trackId));
+    MOCK_METHOD0(GetMediaInfo, Plugins::MediaInfo());
 };
 }
 }
