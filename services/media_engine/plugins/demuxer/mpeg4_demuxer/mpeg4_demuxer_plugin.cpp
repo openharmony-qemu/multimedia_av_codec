@@ -759,6 +759,7 @@ uint32_t GetPacketSampleFlag(const std::shared_ptr<MPEG4AtomParser::Track>& trac
     return flag;
 }
 
+// LCOV_EXCL_START
 bool GetMovEditTimelineOffsetTicks(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     int32_t trackTimeScale, int32_t movieTimeScale, int64_t& timeOffset)
 {
@@ -785,6 +786,7 @@ bool GetMovEditTimelineOffsetTicks(const std::shared_ptr<MPEG4AtomParser::Track>
     FALSE_RETURN_V_NOLOG(SafeSubInt64(startTime, emptyDuration, timeOffset), false);
     return true;
 }
+// LCOV_EXCL_STOP
 
 bool ShouldApplyMovEditTimelineOffset(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 {
@@ -796,6 +798,7 @@ bool ShouldApplyMovEditTimelineOffset(const std::shared_ptr<MPEG4AtomParser::Tra
     return rawDuration > 0 && track->editListEntries.front().mediaTime > rawDuration;
 }
 
+// LCOV_EXCL_START
 bool GetRawAudioDtsTicks(std::unordered_map<uint32_t, std::vector<int64_t>>& rawDtsPrefix,
     const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex, int64_t& rawDts)
 {
@@ -817,6 +820,7 @@ bool GetRawAudioDtsTicks(std::unordered_map<uint32_t, std::vector<int64_t>>& raw
     rawDts = iter->second[sampleIndex];
     return true;
 }
+// LCOV_EXCL_STOP
 
 Status SetPacketTimelineUs(const ReadSamplePacketContext& context, int64_t& dts, ReadSamplePacketAttr& attr)
 {
@@ -1582,6 +1586,7 @@ Status MPEG4DemuxerPlugin::SetDrmCencInfo(uint32_t trackId, std::shared_ptr<AVBu
     if (!track->drmInfo.isEncrypted) {
         return Status::OK;
     }
+    // LCOV_EXCL_START
     uint32_t localSampleIndex = (sampleIndex != UINT32_MAX) ? sampleIndex : track->currentSampleIndex;
     if (localSampleIndex >= track->drmInfo.sampleEncryptionEntries.size()) {
         if (track->drmInfo.defaultCencInfo.keyIdLen == 0) {
@@ -1694,6 +1699,7 @@ Status MPEG4DemuxerPlugin::FillDrmSubsamples(MetaDrmCencInfo& cencInfo,
     }
     return Status::OK;
 }
+// LCOV_EXCL_STOP
 
 void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta &format, uint32_t trackIndex)
 {

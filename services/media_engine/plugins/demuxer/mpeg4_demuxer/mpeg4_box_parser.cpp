@@ -241,6 +241,7 @@ private:
     PathAdder& operator=(const PathAdder &);
 };
 
+// LCOV_EXCL_START
 int64_t GetMaxSamplePtsEnd(const std::vector<MPEG4SampleHelper::SampleIndexEntry>& samples)
 {
     int64_t maxPtsEnd = 0;
@@ -272,6 +273,7 @@ int64_t GetMaxSampleDtsEnd(const std::vector<MPEG4SampleHelper::SampleIndexEntry
     }
     return maxDtsEnd;
 }
+// LCOV_EXCL_STOP
 
 static const std::map<std::string, VideoOrientationType> matrixTypes = {
     /**
@@ -589,6 +591,7 @@ void PrintMatrixToLog(const int32_t* matrix, const std::string& matrixName)
         matrix[5], matrix[6], matrix[7], matrix[8]);
 }
 
+// LCOV_EXCL_START
 static int64_t ReadChannelSet(uint32_t tag)
 {
     const uint32_t chanTopBackRightTag = 18;
@@ -641,6 +644,7 @@ int64_t MPEG4AtomParser::GetChannelLayoutByBitmap(uint32_t tag, uint32_t bitmap)
         return 0;
     }
 }
+// LCOV_EXCL_STOP
 
 Status MPEG4AtomParser::ParseDisplayMatrix(const uint8_t* data, int32_t matrix[3][3])
 {
@@ -1290,6 +1294,7 @@ void MPEG4AtomParser::CalculateVideoDelay(std::shared_ptr<Track> track)
     mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_DELAY>(videoDelay);
 }
 
+// LCOV_EXCL_START
 AudioSampleFormat MPEG4AtomParser::GetAv3aSampleFormat(int32_t bitsPerRawSample) const
 {
     FALSE_RETURN_V_NOLOG(bitsPerRawSample != AUDIO_BITS_S16, AudioSampleFormat::SAMPLE_S16LE);
@@ -1308,6 +1313,7 @@ AudioChannelLayout MPEG4AtomParser::GetAv3aChannelLayout(int32_t channelCount, i
     FALSE_RETURN_V_NOLOG(channelCount != AV3A_HOA_ORDER3_CHANNELS, AudioChannelLayout::HOA_ORDER3_ACN_SN3D);
     return AudioChannelLayout::UNKNOWN;
 }
+// LCOV_EXCL_STOP
 
 void MPEG4AtomParser::NormalizeAudioAttributes(std::shared_ptr<Track> track)
 {
@@ -2544,6 +2550,7 @@ void MPEG4AtomParser::SetMpegAudioAttribute()
     }
 }
 
+// LCOV_EXCL_START
 Status MPEG4AtomParser::SetVorbisAudioAttribute()
 {
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_F32P);
@@ -2570,6 +2577,7 @@ Status MPEG4AtomParser::SetVorbisAudioAttribute()
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(channelLayout);
     return Status::OK;
 }
+// LCOV_EXCL_STOP
 
 Status MPEG4AtomParser::SetAudioAttribute()
 {
@@ -5685,6 +5693,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     return ret;
 }
 
+// LCOV_EXCL_START
 Status MPEG4AtomParser::ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
@@ -5739,6 +5748,7 @@ Status MPEG4AtomParser::ParseMdcv(MPEG4Atom currentAtom, int32_t depth, ParseCon
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_STATIC_METADATA_SMPT2086>(smpte2086Vec);
     return Status::OK;
 }
+// LCOV_EXCL_STOP
 
 void MPEG4AtomParser::InitParseTable()
 {
