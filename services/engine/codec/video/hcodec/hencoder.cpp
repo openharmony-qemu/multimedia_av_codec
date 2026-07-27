@@ -28,6 +28,7 @@
 #include "v2_2/buffer_handle_meta_key_type.h"
 #include "v4_0/codec_ext_types.h"
 #include <algorithm>
+#include <charconv>
 #include <regex>
 
 namespace OHOS::MediaAVCodec {
@@ -1394,19 +1395,23 @@ int32_t HEncoder::CalculateFrameRateParamIntoOmxBuffer(int64_t curPts)
     return 0;
 }
 
-int32_t HEncoder::ParseKvpairs(const std::string& kvpairs)
+bool HEncoder::ParseKvpairs(const std::string& kvpairs, int32_t& dqp)
 {
     std::regex kvPat(R"((dqp|slb):(-?\d+))");
     std::smatch match;
-    int32_t dqp = DEFAULT_DELTAQP;
+    dqp = DEFAULT_DELTAQP;
     std::string temp = kvpairs;
     while (std::regex_search(temp, match, kvPat)) {
         if (match[1].str() == "dqp") {
-            dqp = std::stoi(match[2].str());      // 2: value
+            auto valStr = match[2].str(); // 2: value
+            if (std::from_chars(valStr.data(), valStr.data() + valStr.size(), dqp).ec != std::errc()) {
+                HLOGW("std::from_chars failed for dqp value");
+                return false;
+            }
         }
         temp = match.suffix().str();
     }
-    return dqp;
+    return true;
 }
 
 bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t width, int32_t height)
@@ -1421,16 +1426,37 @@ bool HEncoder::ParseOneRoi(const std::string& roi, RoiRect &roiRect, int32_t wid
         return false;
     }
     
-    roiRect.top = std::clamp(std::stoi(match[TOP_INDEX].str()), 0, height);
-    roiRect.left = std::clamp(std::stoi(match[LEFT_INDEX].str()), 0, width);
-    roiRect.bottom = std::clamp(std::stoi(match[BOTTOM_INDEX].str()), 0, height);
-    roiRect.right = std::clamp(std::stoi(match[RIGHT_INDEX].str()), 0, width);
+    int32_t topVal = 0;
+    int32_t leftVal = 0;
+    int32_t bottomVal = 0;
+    int32_t rightVal = 0;
+    auto topStr = match[TOP_INDEX].str();
+    auto leftStr = match[LEFT_INDEX].str();
+    auto bottomStr = match[BOTTOM_INDEX].str();
+    auto rightStr = match[RIGHT_INDEX].str();
+    if (std::from_chars(topStr.data(), topStr.data() + topStr.size(), topVal).ec != std::errc() ||
+        std::from_chars(leftStr.data(), leftStr.data() + leftStr.size(), leftVal).ec != std::errc() ||
+        std::from_chars(bottomStr.data(), bottomStr.data() + bottomStr.size(), bottomVal).ec != std::errc() ||
+        std::from_chars(rightStr.data(), rightStr.data() + rightStr.size(), rightVal).ec != std::errc()) {
+        HLOGW("std::from_chars failed for roi coordinates: %{public}s", roi.c_str());
+        return false;
+    }
+    roiRect.top = std::clamp(topVal, 0, height);
+    roiRect.left = std::clamp(leftVal, 0, width);
+    roiRect.bottom = std::clamp(bottomVal, 0, height);
+    roiRect.right = std::clamp(rightVal, 0, width);
     if (match[DELTAQP_INDEX].matched) {
         std::string kvStr = match[DELTAQP_INDEX].str();
         if (kvStr.find(":") != std::string::npos) {
-            roiRect.deltaQP = ParseKvpairs(kvStr);
+            if (!ParseKvpairs(kvStr, roiRect.deltaQP)) {
+                HLOGW("ParseKvpairs failed for roi: %{public}s", kvStr.c_str());
+                return false;
+            }
         } else {
-            roiRect.deltaQP = std::stoi(kvStr);
+            if (std::from_chars(kvStr.data(), kvStr.data() + kvStr.size(), roiRect.deltaQP).ec != std::errc()) {
+                HLOGW("std::from_chars failed for roi deltaQP: %{public}s", kvStr.c_str());
+                return false;
+            }
         }
     }
     return true;
@@ -1456,13 +1482,13 @@ void HEncoder::ParseRoiStringValid(const std::string& roiValue, shared_ptr<Codec
         if (count >= roiNum) {
             break;
         }
-        RoiRect roiRect;;
+        RoiRect roiRect;
         if (ParseOneRoi(reg, roiRect, static_cast<int32_t>(width_), static_cast<int32_t>(height_))) {
             param.roiInfo[count].regionEnable = true;
             param.roiInfo[count].absQp = 0;
             param.roiInfo[count].roiQp = roiRect.deltaQP;
-            param.roiInfo[count].roiStartX = roiRect.left;
-            param.roiInfo[count].roiStartY = roiRect.top;
+            param.roiInfo[count].roiStartX = static_cast<uint32_t>(roiRect.left);
+            param.roiInfo[count].roiStartY = static_cast<uint32_t>(roiRect.top);
             param.roiInfo[count].roiWidth = roiRect.right - roiRect.left;
             param.roiInfo[count].roiHeight = roiRect.bottom - roiRect.top;
             HLOGD("Get a valid roi: %d,%d-%d,%d qp=%d",
