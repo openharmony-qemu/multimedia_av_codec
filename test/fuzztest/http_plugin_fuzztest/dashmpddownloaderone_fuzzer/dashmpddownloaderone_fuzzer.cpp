@@ -57,6 +57,10 @@ public:
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override
     {
     }
+
+    void OnTimedMetaDataChanged(const std::shared_ptr<MediaAVCodec::AVTimedMetaData> &metadata) override
+    {
+    }
 };
 
 bool TestParseStartNumberFunctions(const std::string &url)
