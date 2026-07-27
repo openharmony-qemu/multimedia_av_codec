@@ -29,6 +29,8 @@
 #include "common/log.h"
 #include "data_sink_fd.h"
 #include "data_sink_file.h"
+#include "event_info_extented_key.h"
+#include "statistics_event_reporter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "HiStreamer" };
@@ -349,19 +351,6 @@ void MediaMuxer::StopThread()
     }
 }
 
-Status MediaMuxer::Reset()
-{
-    MEDIA_LOG_I("Reset");
-    if (state_ == State::STARTED) {
-        Stop();
-    }
-    state_ = State::UNINITIALIZED;
-    muxer_ = nullptr;
-    tracks_.clear();
-
-    return Status::NO_ERROR;
-}
-
 void MediaMuxer::ThreadProcessor()
 {
     MEDIA_LOG_D("Enter ThreadProcessor [%{public}s]", threadName_.c_str());
@@ -472,6 +461,9 @@ std::shared_ptr<Plugins::MuxerPlugin> MediaMuxer::CreatePlugin(Plugins::OutputFo
     if (plugin == nullptr) {
         return nullptr;
     }
+    Media::Meta meta;
+    meta.SetData(MediaAVCodec::EventInfoExtentedKey::MUXER_FORMAT.data(), table.at(format));
+    MediaAVCodec::StatisticsEventReporter::Report(MediaAVCodec::StatisticsEventType::CONTAINER_FORMAT_INFO, meta);
     return std::reinterpret_pointer_cast<Plugins::MuxerPlugin>(plugin);
 }
 

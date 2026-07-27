@@ -104,4 +104,40 @@ HWTEST_F(AudioDecoderFilterUnitTest, IsNeedProcessInput_001, TestSize.Level0)
     auto ret = audioDecoderFilter_->IsNeedProcessInput(isOutPort);
     EXPECT_EQ(ret, true);
 }
+
+/**
+ * @tc.name  : Test ResetOutputAudioMime
+ * @tc.number: ResetOutputAudioMime_001
+ * @tc.desc  : Test meta_ != nullptr
+ */
+HWTEST_F(AudioDecoderFilterUnitTest, ResetOutputAudioMime_001, TestSize.Level0)
+{
+    ASSERT_NE(audioDecoderFilter_, nullptr);
+    audioDecoderFilter_->isReleased_.store(true);
+    audioDecoderFilter_->meta_ = std::make_shared<Meta>();
+    audioDecoderFilter_->meta_->SetData(Tag::MIME_TYPE, "audio/mp3");
+    std::string mimeType = "audio/raw";
+    audioDecoderFilter_->ResetOutputAudioMime(mimeType);
+    EXPECT_TRUE(audioDecoderFilter_->isDecOnlyMode_);
+    ASSERT_NE(audioDecoderFilter_->outputMeta_, nullptr);
+    std::string outputMime;
+    EXPECT_TRUE(audioDecoderFilter_->outputMeta_->GetData(Tag::MIME_TYPE, outputMime));
+    EXPECT_EQ(outputMime, mimeType);
+}
+
+/**
+ * @tc.name  : Test ResetOutputAudioMime
+ * @tc.number: ResetOutputAudioMime_002
+ * @tc.desc  : Test meta_ == nullptr
+ */
+HWTEST_F(AudioDecoderFilterUnitTest, ResetOutputAudioMime_002, TestSize.Level0)
+{
+    ASSERT_NE(audioDecoderFilter_, nullptr);
+    audioDecoderFilter_->isReleased_.store(true);
+    audioDecoderFilter_->meta_ = nullptr;
+    std::string mimeType = "audio/raw";
+    audioDecoderFilter_->ResetOutputAudioMime(mimeType);
+    EXPECT_FALSE(audioDecoderFilter_->isDecOnlyMode_);
+    EXPECT_EQ(audioDecoderFilter_->outputMeta_, nullptr);
+}
 } // namespace OHOS::Media

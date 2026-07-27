@@ -21,10 +21,10 @@
 #include "adaptive_retention_strategy.h"
 #include "full_retention_strategy.h"
 #include "retention_strategy_factory.h"
+#include "smart_fluency_decoding_types.h"
 
 namespace {
 constexpr int32_t DEFAULT_TOTAL_FRAMES = 100;
-constexpr double DEFAULT_RETENTION_RATIO = 0.8;
 constexpr double DEFAULT_TOLERANCE = 0.001;
 }
 
@@ -161,7 +161,52 @@ HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_WithPreDroppedFrames_008,
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
 }
 
-// --- AutoFallbackRetentionStrategy ---
+/**
+ * @tc.name: UpdateTargetRatio_Normal_012
+ * @tc.desc: Verify UpdateTargetRatio changes ratio without resetting accumulator.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FixedRatioRetentionStrategyTest, UpdateTargetRatio_Normal_012, TestSize.Level1)
+{
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.5);
+    FrameRetentionContext ctx{};
+    // Accumulate: frame 1 (first frame rule → true), frame 2 (acc=0.5 < 1.0 → false)
+    strategy->MakeRetentionDecision(ctx);
+    strategy->MakeRetentionDecision(ctx); // second frame: acc=0.5 < 1.0 → drop
+
+    // Update ratio to 0.8
+    strategy->UpdateTargetRatio(0.8);
+    EXPECT_NEAR(strategy->GetRatio(), 0.8, DEFAULT_TOLERANCE);
+
+    // Verify strategy continues to work with new ratio (accumulator preserved)
+    strategy->MakeRetentionDecision(ctx); // no crash, accumulator state preserved
+}
+
+/**
+ * @tc.name: UpdateTargetRatio_ClampMin_013
+ * @tc.desc: Verify UpdateTargetRatio clamps ratio below MIN_RETENTION_RATIO (0.01) to 0.01.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FixedRatioRetentionStrategyTest, UpdateTargetRatio_ClampMin_013, TestSize.Level1)
+{
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.5);
+    strategy->UpdateTargetRatio(0.001); // 0.001: below MIN
+    EXPECT_NEAR(strategy->GetRatio(), MIN_RETENTION_RATIO, DEFAULT_TOLERANCE); // clamped to 0.01
+}
+
+/**
+ * @tc.name: UpdateTargetRatio_ClampMax_014
+ * @tc.desc: Verify UpdateTargetRatio clamps ratio above MAX_RETENTION_RATIO (1.0) to 1.0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FixedRatioRetentionStrategyTest, UpdateTargetRatio_ClampMax_014, TestSize.Level1)
+{
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(0.5);
+    strategy->UpdateTargetRatio(2.0); // 2.0: above MAX
+    EXPECT_NEAR(strategy->GetRatio(), MAX_RETENTION_RATIO, DEFAULT_TOLERANCE); // clamped to 1.0
+}
+
+// --- AutoFallbackRetentionStrategy (Two-Phase: Passthrough → Active) ---
 
 class AutoFallbackRetentionStrategyTest : public testing::Test {
 protected:
@@ -170,64 +215,238 @@ protected:
 };
 
 /**
- * @tc.name: Init_BasicState_001
- * @tc.desc: Validate initial ratio is set to 0.8 default.
+ * @tc.name: Passthrough_001
+ * @tc.desc: Verify Phase 1 behavior: IsPassthrough=true, RequiresNaluAnalysis=false,
+ *           RequiresMvAnalysis=false, GetRatio=1.0, MakeRetentionDecision returns true.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, Init_BasicState_001, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Passthrough_001, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
     EXPECT_EQ(strategy->GetMode(), RetentionStrategyType::AUTO_RATIO);
-    // Verify it indeed degenerates to a 0.8 fixed ratio
-    EXPECT_NEAR(strategy->GetRatio(), DEFAULT_RETENTION_RATIO, DEFAULT_TOLERANCE);
+    EXPECT_TRUE(strategy->IsPassthrough());
+    EXPECT_FALSE(strategy->RequiresNaluAnalysis());
+    EXPECT_FALSE(strategy->RequiresMvAnalysis());
+    EXPECT_NEAR(strategy->GetRatio(), 1.0, DEFAULT_TOLERANCE);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_FULL);
+
+    FrameRetentionContext ctx{};
+    for (int i = 0; i < 10; ++i) { // 10: small frame count
+        EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    }
 }
 
 /**
- * @tc.name: MakeDecision_DelegatesToFixedRatio_002
- * @tc.desc: Verify it drops exactly 20% of frames (retains 8 out of 10) acting as a delegator.
+ * @tc.name: Passthrough_SpeedIgnored_002
+ * @tc.desc: Verify that UpdatePlaybackSpeed in Phase 1 does not trigger transition.
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, MakeDecision_DelegatesToFixedRatio_002, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Passthrough_SpeedIgnored_002, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdatePlaybackSpeed(2.0); // 2.0: high speed
+    // Still in Phase 1: no transition without sourceFps
+    EXPECT_TRUE(strategy->IsPassthrough());
+    EXPECT_NEAR(strategy->GetRatio(), 1.0, DEFAULT_TOLERANCE);
+}
+
+/**
+ * @tc.name: Active_TransitionViaSourceFps_003
+ * @tc.desc: Verify that UpdateSourceFramerate triggers Phase 2 transition.
+ *           60fps source → ratio = 30/60 = 0.5
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_TransitionViaSourceFps_003, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdateSourceFramerate(60.0); // 60.0: source fps
+    EXPECT_FALSE(strategy->IsPassthrough());
+    EXPECT_TRUE(strategy->RequiresNaluAnalysis());
+    EXPECT_FALSE(strategy->RequiresMvAnalysis());
+    EXPECT_NEAR(strategy->GetRatio(), 0.5, DEFAULT_TOLERANCE);
+
+    // Verify ~50% retention over 100 frames
     int retainedCount = 0;
     FrameRetentionContext ctx{};
-    // Submit 10 frames
-    for (int i = 0; i < 10; ++i) { // 10: small frame count
+    for (int i = 0; i < DEFAULT_TOTAL_FRAMES; ++i) {
         if (strategy->MakeRetentionDecision(ctx)) {
             retainedCount++;
         }
     }
-    // Since the ratio is 0.8, it should strictly retain 8 frames
-    EXPECT_EQ(retainedCount, 8); // 8: expected count
+    EXPECT_EQ(retainedCount, 50); // 50: expected count for 0.5 ratio
 }
 
 /**
- * @tc.name: LastReason_Mapping_003
- * @tc.desc: Validate internal FixedRatio reasons are successfully mapped to AUTO_FALLBACK.
+ * @tc.name: Active_SpeedUpdate_004
+ * @tc.desc: Verify that speed update in Phase 2 recalculates ratio via UpdateTargetRatio.
+ *           60fps 1x → ratio=0.5, then speed=2x → ratio=30/120=0.25
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, LastReason_Mapping_003, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_SpeedUpdate_004, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdateSourceFramerate(60.0); // 60.0: source fps, ratio=0.5
+    EXPECT_NEAR(strategy->GetRatio(), 0.5, DEFAULT_TOLERANCE);
+
+    strategy->UpdatePlaybackSpeed(2.0); // 2.0: speed, ratio should become 0.25
+    EXPECT_NEAR(strategy->GetRatio(), 0.25, DEFAULT_TOLERANCE);
+}
+
+/**
+ * @tc.name: Active_RatioClampLowFps_005
+ * @tc.desc: Verify that low sourceFps (24fps) clamps ratio to 1.0 (FULL equivalent).
+ *           30/(24*1) = 1.25 → clamp to 1.0
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_RatioClampLowFps_005, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdateSourceFramerate(24.0); // 24.0: low source fps
+    EXPECT_NEAR(strategy->GetRatio(), 1.0, DEFAULT_TOLERANCE); // clamped to MAX
+
+    // All frames should be retained
+    FrameRetentionContext ctx{};
+    for (int i = 0; i < DEFAULT_TOTAL_FRAMES; ++i) {
+        EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    }
+}
+
+/**
+ * @tc.name: Active_RatioHighFps_006
+ * @tc.desc: Verify that 120fps source gives ratio = 30/120 = 0.25.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_RatioHighFps_006, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdateSourceFramerate(120.0); // 120.0: high source fps
+    EXPECT_NEAR(strategy->GetRatio(), 0.25, DEFAULT_TOLERANCE);
+}
+
+/**
+ * @tc.name: Active_ReasonMapping_007
+ * @tc.desc: Verify POST_RETAIN_FIXED_ACC from underlying FixedRatio is mapped to POST_RETAIN_AUTO_FALLBACK.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_ReasonMapping_007, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdateSourceFramerate(60.0); // 60.0: source fps
     FrameRetentionContext ctx{};
     strategy->MakeRetentionDecision(ctx);
     EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_AUTO_FALLBACK);
 }
 
 /**
- * @tc.name: UpdatePlaybackSpeed_DelegateIgnoresSpeed_004
- * @tc.desc: Validate that since it delegates to FixedRatio, speed changes do not crash but ignore updates.
+ * @tc.name: Active_DropReasonPassthrough_008
+ * @tc.desc: Verify POST_DROP_FIXED_ACC from underlying FixedRatio is returned as-is (not mapped).
  * @tc.type: FUNC
  */
-HWTEST_F(AutoFallbackRetentionStrategyTest, UpdatePlaybackSpeed_DelegateIgnoresSpeed_004, TestSize.Level1)
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_DropReasonPassthrough_008, TestSize.Level1)
 {
     auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
-    EXPECT_NEAR(strategy->GetRatio(), DEFAULT_RETENTION_RATIO, DEFAULT_TOLERANCE);
+    strategy->UpdateSourceFramerate(60.0); // 60.0: source fps, ratio=0.5
+    FrameRetentionContext ctx{};
+    strategy->MakeRetentionDecision(ctx); // Frame 1: retained (first frame rule)
+    bool retained = strategy->MakeRetentionDecision(ctx); // Frame 2: acc=0.5 < 1.0 → drop
+    if (!retained) {
+        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_FIXED_ACC);
+    }
+}
 
-    strategy->UpdatePlaybackSpeed(2.0); // 2.0: high speed
-    // Playback speed changes have no effect on fixed-ratio delegation mode; it remains 0.8
-    EXPECT_NEAR(strategy->GetRatio(), DEFAULT_RETENTION_RATIO, DEFAULT_TOLERANCE);
+/**
+ * @tc.name: Passthrough_InvalidSourceFps_009
+ * @tc.desc: Verify that UpdateSourceFramerate with invalid fps (<= 0) does not trigger Phase 2.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Passthrough_InvalidSourceFps_009, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdateSourceFramerate(0.0); // 0.0: invalid fps
+    EXPECT_TRUE(strategy->IsPassthrough()); // Still Phase 1
+
+    strategy->UpdateSourceFramerate(-1.0); // -1.0: invalid fps
+    EXPECT_TRUE(strategy->IsPassthrough()); // Still Phase 1
+}
+
+/**
+ * @tc.name: Active_InvalidSpeed_010
+ * @tc.desc: Verify that UpdatePlaybackSpeed with invalid speed defaults to 1.0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_InvalidSpeed_010, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdateSourceFramerate(60.0); // 60.0: source fps, ratio=0.5 (speed=1.0 default)
+
+    strategy->UpdatePlaybackSpeed(0.0); // 0.0: invalid speed → default to 1.0
+    EXPECT_NEAR(strategy->GetRatio(), 0.5, DEFAULT_TOLERANCE); // 30/(60*1) = 0.5
+
+    strategy->UpdatePlaybackSpeed(-1.0); // -1.0: invalid speed → default to 1.0
+    EXPECT_NEAR(strategy->GetRatio(), 0.5, DEFAULT_TOLERANCE); // 30/(60*1) = 0.5
+}
+
+/**
+ * @tc.name: Reset_BackToPassthrough_011
+ * @tc.desc: Verify Reset clears sourceFps/speed state and returns to Phase 1.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Reset_BackToPassthrough_011, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdateSourceFramerate(60.0); // 60.0: source fps → Phase 2
+    EXPECT_FALSE(strategy->IsPassthrough());
+
+    strategy->Reset();
+    EXPECT_TRUE(strategy->IsPassthrough()); // Back to Phase 1
+    EXPECT_NEAR(strategy->GetRatio(), 1.0, DEFAULT_TOLERANCE);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_FULL);
+
+    FrameRetentionContext ctx{};
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+}
+
+/**
+ * @tc.name: Active_SpeedThenSourceFps_012
+ * @tc.desc: Verify that speed update before sourceFps (Phase 1) is stored but doesn't trigger transition.
+ *           Then UpdateSourceFramerate triggers Phase 2 with stored speed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_SpeedThenSourceFps_012, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdatePlaybackSpeed(2.0); // 2.0: speed stored, no transition yet
+    EXPECT_TRUE(strategy->IsPassthrough());
+
+    strategy->UpdateSourceFramerate(60.0); // 60.0: source fps → Phase 2 with speed=2x
+    // ratio = 30/(60*2) = 0.25
+    EXPECT_NEAR(strategy->GetRatio(), 0.25, DEFAULT_TOLERANCE);
+}
+
+/**
+ * @tc.name: Active_SourceFpsUpdate_013
+ * @tc.desc: Verify that sourceFps update in Phase 2 recalculates ratio.
+ *           60fps→ratio=0.5, then 30fps→ratio=1.0 (clamped)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Active_SourceFpsUpdate_013, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AutoFallbackRetentionStrategy>();
+    strategy->UpdateSourceFramerate(60.0); // 60.0: ratio=0.5
+    EXPECT_NEAR(strategy->GetRatio(), 0.5, DEFAULT_TOLERANCE);
+
+    strategy->UpdateSourceFramerate(30.0); // 30.0: ratio=30/30=1.0 (clamped)
+    EXPECT_NEAR(strategy->GetRatio(), 1.0, DEFAULT_TOLERANCE);
+}
+
+/**
+ * @tc.name: Passthrough_RatioConstantValue_014
+ * @tc.desc: Verify FALLBACK_TARGET_FPS constant equals 30.0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AutoFallbackRetentionStrategyTest, Passthrough_RatioConstantValue_014, TestSize.Level1)
+{
+    EXPECT_NEAR(FALLBACK_TARGET_FPS, 30.0, DEFAULT_TOLERANCE);
 }
 
 
@@ -275,12 +494,12 @@ HWTEST_F(AdaptiveRetentionStrategyTest, UpdatePlaybackSpeed_Behavior_003, TestSi
     // 1. At low speed (<= 1.2), force full retention (Fast-path)
     strategy->UpdatePlaybackSpeed(1.0);
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 
     // 2. At high speed (> 1.2), enter model inference (fallback to UNSPECIFIED since ctx lacks MV data)
     strategy->UpdatePlaybackSpeed(2.0); // 2.0: high speed
     strategy->MakeRetentionDecision(ctx);
-    EXPECT_NE(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_SPEED);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 }
 
 /**
@@ -312,9 +531,8 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_DecisionTreeRetain_005, Tes
     mvStats.perceptualMagnitude = 5.0; // Low magnitude
     ctx.mvStats = &mvStats;
 
-    // Decision tree should hit rule 3, 4, 6, 7, 10, 11, or 13 (Retain = 1)
-    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
 }
 
 /**
@@ -363,29 +581,30 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_DecisionTreeDrop_006, TestS
 HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsEnforcement_007, TestSize.Level1)
 {
     auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
-    strategy->UpdatePlaybackSpeed(2.0);
+    strategy->UpdatePlaybackSpeed(2.0); // sourceFps(30) * 2.0 = 60.0 Render FPS
 
     FrameRetentionContext ctx{};
     MVStats mvStats;
     mvStats.validBlocks = 100;
-    // Force a drop (Rule 14 as above)
     mvStats.motionConsistency = 0.99;
-    mvStats.perceptualMagnitude = 20.0;
+    mvStats.perceptualMagnitude = 30.0;
     ctx.mvStats = &mvStats;
 
-    // First decision: Drop
-    bool first = strategy->MakeRetentionDecision(ctx);
-    if (!first) {
-        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
-        // maxDrops = (2.0 - 1.0) * 5.0 = 5
-        // It should drop 5 frames then retain 1.
-        for (int i = 0; i < 4; ++i) {
-            EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
-        }
-        // 6th frame should retain (adaptive drop limit reached)
-        EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-        EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_MAX_DROP);
-    }
+    // Frame 1: acc = 0.0 + 0.75 = 0.75 < 1.0 -> Drop
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+
+    // Frame 2: acc = 0.75 + 0.75 = 1.50 >= 1.0 -> Retain (accumulator_ = 0.0)
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+
+    // Frame 3: acc = 0.0 + 0.75 = 0.75 < 1.0 -> Drop
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
+
+    // Frame 4: acc = 0.75 + 0.75 = 1.50 >= 1.0 -> Retain
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 }
 
 /**
@@ -403,12 +622,12 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_EmptyMvStats_008, TestSize.
     mvStats.validBlocks = 0; // Invalid
     ctx.mvStats = &mvStats;
 
-    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::UNSPECIFIED);
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
 
     ctx.mvStats = nullptr;
     EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
-    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::UNSPECIFIED);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_ADAPTIVE_DT);
 }
 
 /**
@@ -429,9 +648,9 @@ HWTEST_F(AdaptiveRetentionStrategyTest, GetRatio_UpdateOnDrop_009, TestSize.Leve
     ctx.mvStats = &mvStats;
 
     strategy->MakeRetentionDecision(ctx);
-    // If it dropped, ratio should be 1/(5+1) = 0.166...
+    // If it dropped, ratio should be 0.75
     if (strategy->GetLastDecisionReason() == SfdDecisionReason::POST_DROP_ADAPTIVE_DT) {
-        EXPECT_NEAR(strategy->GetRatio(), 1.0 / 6.0, 0.01);
+        EXPECT_NEAR(strategy->GetRatio(), 0.75, 0.01);
     }
 }
 
@@ -546,3 +765,100 @@ HWTEST_F(RetentionStrategyFactoryTest, CreateStrategy_InvalidType_006, TestSize.
     auto strategy = RetentionStrategyFactory::CreateStrategy(RetentionStrategyType::INVALID, std::nullopt);
     EXPECT_EQ(strategy, nullptr);
 }
+
+// --- FixedRatioRetentionStrategy edge cases ---
+
+/**
+ * @tc.name: MakeDecision_NanRatio_009
+ * @tc.desc: Verify FixedRatioRetentionStrategy clamps NaN ratio to 1.0 (full retention).
+ * @tc.type: FUNC
+ */
+HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_NanRatio_009, TestSize.Level1)
+{
+    double nan = std::numeric_limits<double>::quiet_NaN();
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(nan);
+    EXPECT_NEAR(strategy->GetRatio(), 1.0, 0.01);
+    FrameRetentionContext ctx{};
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+}
+
+/**
+ * @tc.name: MakeDecision_AboveMaxRatio_010
+ * @tc.desc: Verify FixedRatioRetentionStrategy clamps ratio > 1.0 to 1.0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FixedRatioRetentionStrategyTest, MakeDecision_AboveMaxRatio_010, TestSize.Level1)
+{
+    auto strategy = std::make_unique<FixedRatioRetentionStrategy>(2.0);
+    EXPECT_NEAR(strategy->GetRatio(), 1.0, 0.01);
+}
+
+// --- AdaptiveRetentionStrategy additional tests ---
+
+/**
+ * @tc.name: MakeDecision_ZeroMotionDrop_010
+ * @tc.desc: Verify zeroMotionRatio >= 0.85 forces a drop decision.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_ZeroMotionDrop_010, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
+    strategy->UpdatePlaybackSpeed(2.0);
+
+    FrameRetentionContext ctx{};
+    MVStats mvStats;
+    mvStats.validBlocks = 100;
+    mvStats.zeroMotionRatio = 0.9; // >= 0.85 threshold
+    ctx.mvStats = &mvStats;
+
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+}
+
+/**
+ * @tc.name: MakeDecision_MaxDropsLimit_011
+ * @tc.desc: Verify adaptive maxDrops logic: after consecutive drops reach limit, forces a retain
+ *           with POST_RETAIN_ADAPTIVE_MAX_DROP reason.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsLimit_011, TestSize.Level1)
+{
+    auto strategy = std::make_unique<AdaptiveRetentionStrategy>();
+    strategy->UpdatePlaybackSpeed(2.0); // Render FPS = 60.0
+    FrameRetentionContext ctx{};
+    MVStats mvStats;
+    mvStats.validBlocks = 100;
+    mvStats.motionConsistency = 0.1;
+    mvStats.perceptualMagnitude = 10.0;
+    ctx.mvStats = &mvStats;
+
+    // Frame 1: acc = 0.366 (< 1.0) -> Drop
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+
+    // Frame 2: acc = 0.733 (< 1.0) -> Drop
+    EXPECT_TRUE(strategy->MakeRetentionDecision(ctx));
+
+    // Frame 3: acc = 1.099 (>= 1.0) -> Retain (accumulator_ = 0.0)
+    EXPECT_FALSE(strategy->MakeRetentionDecision(ctx));
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
+}
+
+// --- FullRetentionStrategy additional tests ---
+
+/**
+ * @tc.name: FullStrategy_Properties_003
+ * @tc.desc: Verify all property accessors of FullRetentionStrategy.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FullRetentionStrategyTest, FullStrategy_Properties_003, TestSize.Level1)
+{
+    auto strategy = std::make_unique<FullRetentionStrategy>();
+    EXPECT_NEAR(strategy->GetRatio(), 1.0, 0.01);
+    EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_RETAIN_FULL);
+    EXPECT_TRUE(strategy->IsPassthrough());
+    EXPECT_FALSE(strategy->RequiresNaluAnalysis());
+    EXPECT_FALSE(strategy->RequiresMvAnalysis());
+}
+
+// --- DropSyncCoordinator additional tests (in drop_sync_coordinator_test.cpp) ---

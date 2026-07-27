@@ -19,14 +19,8 @@
 #include <string>
 #include <thread>
 #include "dash_media_downloader.h"
-#include "dash_descriptor_node.h"
 #include "dash_adpt_set_manager.h"
 #include "dash_mpd_manager.h"
-#include "dash_mpd_node.h"
-#include "dash_period_node.h"
-#include "dash_representation_node.h"
-#include "dash_seg_base_node.h"
-#include "dash_url_type_node.h"
 #include <fuzzer/FuzzedDataProvider.h>
 #include "http_server_demo.h"
 #include "http_server_mock.h"
@@ -90,6 +84,27 @@ const std::string ATTR_BASE[] = {
     std::string("schemeIdUri"),
 };
 
+class DashCallbackMock1 : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                mpdDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                break;
+            }
+            default:break;
+        }
+    }
+    void SetDownload(std::shared_ptr<DashMpdDownloader> mpdloader)
+    {
+        mpdDownloader = mpdloader;
+    }
+    std::shared_ptr<DashMpdDownloader> mpdDownloader;
+};
 }
 
 static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\n"
@@ -133,9 +148,22 @@ static const std::string BASE_MPD = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
     "</MPD>";
 }
 
+void GetUsingStreamByType(std::shared_ptr<DashMpdDownloader> mpdMpddownload)
+{
+    if (mpdMpddownload != nullptr) {
+        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
+        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
+        mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_TIMED_METADATA);
+    }
+}
+
 void RunMpdDownloaderTests(DashMpdInfo *mpdInfo)
 {
     std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(mpdMpddownload);
+    mpdMpddownload->SetCallback(cb);
     std::shared_ptr<DashMpdManager> mpdManager = std::make_shared<DashMpdManager>(mpdInfo, "http://1.0.0.1/1.mpd");
     mpdManager->GetMpdInfo();
     mpdManager->GetPeriods();
@@ -171,10 +199,7 @@ void RunMpdDownloaderTests(DashMpdInfo *mpdInfo)
     uint32_t nextSegTime = GetData<uint32_t>();
     mpdMpddownload->UpdateCurrentNumberSeqByTime(streamDesc, nextSegTime);
     mpdMpddownload->GetInitSegmentByStreamId(streamId);
-    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
-    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
-    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
-    mpdMpddownload->GetUsingStreamByType(MediaAVCodec::MediaType::MEDIA_TYPE_TIMED_METADATA);
+    GetUsingStreamByType(mpdMpddownload);
     mpdMpddownload->GetStreamByStreamId(streamId);
     mpdMpddownload->GetInUseVideoStreamId();
     int64_t seekTime = GetData<int64_t>();
@@ -237,8 +262,8 @@ bool DashDescriptorNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashDescriptorNode> mpdMpddownload = std::make_shared<DashDescriptorNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Role"), IDashMpdNode::DestroyNode);
+        std::string addr = "schemeIdUri";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
@@ -284,8 +309,8 @@ bool DashMpdNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashMpdNode> mpdMpddownload = std::make_shared<DashMpdNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("MPD"), IDashMpdNode::DestroyNode);
+        std::string addr = "profiles";
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
         double dAttrVal = GetData<double>();
@@ -307,8 +332,8 @@ bool DashPeriodNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashPeriodNode> mpdMpddownload = std::make_shared<DashPeriodNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Period"), IDashMpdNode::DestroyNode);
+        std::string addr = "start";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
@@ -349,8 +374,9 @@ bool DashRepresentationNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashRepresentationNode> mpdMpddownload = std::make_shared<DashRepresentationNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Representation"),
+                                                     IDashMpdNode::DestroyNode);
+        std::string addr = "bandwidth";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
@@ -372,8 +398,9 @@ bool DashSegBaseNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashSegBaseNode> mpdMpddownload = std::make_shared<DashSegBaseNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("SegmentBase"),
+                                                     IDashMpdNode::DestroyNode);
+        std::string addr = "timescale";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
@@ -395,8 +422,9 @@ bool DashUrlTypeNodeRun(const uint8_t *data, size_t size)
     int32_t count = GetData<int32_t>();
     count = std::min(count, MAX_COUNT);
     while (count > 0) {
-        std::shared_ptr<DashUrlTypeNode> mpdMpddownload = std::make_shared<DashUrlTypeNode>();
-        std::string addr = "hev1.1.6.L93.90";
+        std::shared_ptr<IDashMpdNode> mpdMpddownload(IDashMpdNode::CreateNode("Initialization"),
+                                                     IDashMpdNode::DestroyNode);
+        std::string addr = "sourceURL";
         uint32_t uiAttrVal = GetData<uint32_t>();
         int32_t iAttrVal = GetData<int32_t>();
         uint64_t ullAttrVal = GetData<uint64_t>();
@@ -448,6 +476,9 @@ bool MpdParse(const uint8_t *data, size_t size)
     for (auto mpdUrl : MPD_BASE_URLS) {
         std::shared_ptr<DashMpdDownloader> mpdMpddownload = std::make_shared<DashMpdDownloader>();
         mpdMpddownload->Init();
+        auto cb = std::make_shared<DashCallbackMock1>();
+        cb->SetDownload(mpdMpddownload);
+        mpdMpddownload->SetCallback(cb);
         auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                                 std::shared_ptr<DownloadRequest>& request) {};
         mpdMpddownload->SetStatusCallback(statusCallback);
@@ -467,10 +498,29 @@ bool MpdParse(const uint8_t *data, size_t size)
 }
 }
 
+enum MpdDownTestType {
+    TEST_DASH_GET_ATTR = 0,
+    TEST_DASH_MEDIA_FUZZER,
+    TEST_DASH_ADPT_RUN,
+    TEST_DASH_DESCRIPTOR_NODE_RUN,
+    TEST_MPD_MANGER_RUN,
+    TEST_DASH_MPD_NODE_RUN,
+    TEST_DASH_PERIOD_NODE_RUN,
+    TEST_DASH_REPRESEN_RUN,
+    TEST_DASH_REPRESENTATION_NODE_RUN,
+    TEST_DASH_URL_TYPE_NODE_RUN,
+    TEST_DASH_SEG_BASE_NODE_RUN,
+    TEST_MPD_PARSE,
+    TEST_COUNT
+};
+
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
 {
     /* Run your code on data */
+    if (data == nullptr || size < sizeof(uint32_t)) {
+        return 0;
+    }
     if (!InitServer()) {
         cout << "Init server error" << endl;
         return -1;
@@ -478,18 +528,48 @@ extern "C" int LLVMFuzzerTestOneInput(uint8_t *data, size_t size)
     g_baseFuzzData = data;
     g_baseFuzzSize = size;
     g_baseFuzzPos = 0;
-    OHOS::Media::Plugins::DashGetAttr(data, size);
-    OHOS::Media::Plugins::DashMediaFuzzerTest(data, size);
-    OHOS::Media::Plugins::DashAdptRun(data, size);
-    OHOS::Media::Plugins::DashDescriptorNodeRun(data, size);
-    OHOS::Media::Plugins::MpdMangerRun(data, size);
-    OHOS::Media::Plugins::DashMpdNodeRun(data, size);
-    OHOS::Media::Plugins::DashPeriodNodeRun(data, size);
-    OHOS::Media::Plugins::DashRepresenRun(data, size);
-    OHOS::Media::Plugins::DashRepresentationNodeRun(data, size);
-    OHOS::Media::Plugins::DashUrlTypeNodeRun(data, size);
-    OHOS::Media::Plugins::DashSegBaseNodeRun(data, size);
-    OHOS::Media::Plugins::MpdParse(data, size);
+    int32_t testType = GetData<int32_t>();
+    testType = abs(testType) % TEST_COUNT;
+    switch (static_cast<MpdDownTestType>(testType)) {
+        case TEST_DASH_GET_ATTR:
+            OHOS::Media::Plugins::DashGetAttr(data, size);
+            break;
+        case TEST_DASH_MEDIA_FUZZER:
+            OHOS::Media::Plugins::DashMediaFuzzerTest(data, size);
+            break;
+        case TEST_DASH_ADPT_RUN:
+            OHOS::Media::Plugins::DashAdptRun(data, size);
+            break;
+        case TEST_DASH_DESCRIPTOR_NODE_RUN:
+            OHOS::Media::Plugins::DashDescriptorNodeRun(data, size);
+            break;
+        case TEST_MPD_MANGER_RUN:
+            OHOS::Media::Plugins::MpdMangerRun(data, size);
+            break;
+        case TEST_DASH_MPD_NODE_RUN:
+            OHOS::Media::Plugins::DashMpdNodeRun(data, size);
+            break;
+        case TEST_DASH_PERIOD_NODE_RUN:
+            OHOS::Media::Plugins::DashPeriodNodeRun(data, size);
+            break;
+        case TEST_DASH_REPRESEN_RUN:
+            OHOS::Media::Plugins::DashRepresenRun(data, size);
+            break;
+        case TEST_DASH_REPRESENTATION_NODE_RUN:
+            OHOS::Media::Plugins::DashRepresentationNodeRun(data, size);
+            break;
+        case TEST_DASH_URL_TYPE_NODE_RUN:
+            OHOS::Media::Plugins::DashUrlTypeNodeRun(data, size);
+            break;
+        case TEST_DASH_SEG_BASE_NODE_RUN:
+            OHOS::Media::Plugins::DashSegBaseNodeRun(data, size);
+            break;
+        case TEST_MPD_PARSE:
+            OHOS::Media::Plugins::MpdParse(data, size);
+            break;
+        default:
+            break;
+    }
     if (!CloseServer()) {
         cout << "Close server error" << endl;
         return -1;

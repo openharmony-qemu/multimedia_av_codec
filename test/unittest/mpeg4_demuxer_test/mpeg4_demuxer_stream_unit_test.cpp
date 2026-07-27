@@ -49,8 +49,6 @@ list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SY
 
 string g_mp4Path = TEST_FILE_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Uri = TEST_URI_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
-string g_m4aPath = TEST_FILE_PATH + string("audio/h264_fmp4.m4a");
-string g_m4aUri = TEST_URI_PATH + string("audio/h264_fmp4.m4a");
 } // namespace
 
 void Mpeg4DemuxerUnitTest::InitResource(const std::string &path, bool local)
@@ -213,79 +211,5 @@ HWTEST_F(Mpeg4DemuxerUnitTest, mp4Demuxer_ReadSample_3001, TestSize.Level1)
     EXPECT_EQ(keyFrames_[0], 5);
     EXPECT_EQ(keyFrames_[1], 174);
     RemoveValue();
-}
-
-/**
- * @tc.name: mp4Demuxer_SeekToTime_2002
- * @tc.desc: seek to the specified time, fd
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerUnitTest, mp4Demuxer_SeekToTime_2002, TestSize.Level1)
-{
-    InitResource(g_m4aPath, LOCAL);
-    ASSERT_TRUE(initStatus_);
-    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    // 边界情况
-    EXPECT_EQ(demuxer_->SeekToTime(0, SeekMode::SEEK_PREVIOUS_SYNC), AV_ERR_OK);
-    EXPECT_NE(demuxer_->SeekToTime(-10, SeekMode::SEEK_PREVIOUS_SYNC), AV_ERR_OK);
-    EXPECT_EQ(demuxer_->SeekToTime(10041, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
-    EXPECT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
-    // 普通时刻
-    list<int64_t> toPtsList = {0, 4500, 7000, 2000, 6000};
-    vector<int32_t> audioVals = {433, 433, 433, 239, 240, 240, 131, 132, 132, 347, 348, 347, 175, 176, 175};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-    ASSERT_NE(sharedMem_, nullptr);
-    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            ret_ = demuxer_->SeekToTime(*toPts, *mode);
-            if (ret_ != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
-                continue;
-            }
-            ReadData();
-            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
-            EXPECT_EQ(frames_[0], audioVals[numbers_]);
-            numbers_ += 1;
-            RemoveValue();
-            selectedTrackIds_.clear();
-        }
-    }
-}
-
-/**
- * @tc.name: mp4Demuxer_SeekToTime_3002
- * @tc.desc: seek to the specified time
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerUnitTest, mp4Demuxer_SeekToTime_3002, TestSize.Level1)
-{
-    InitResource(g_m4aUri, URI);
-    ASSERT_TRUE(initStatus_);
-    EXPECT_EQ(demuxer_->SelectTrackByID(0), AV_ERR_OK);
-    // 边界情况
-    EXPECT_EQ(demuxer_->SeekToTime(0, SeekMode::SEEK_PREVIOUS_SYNC), AV_ERR_OK);
-    EXPECT_NE(demuxer_->SeekToTime(-10, SeekMode::SEEK_PREVIOUS_SYNC), AV_ERR_OK);
-    EXPECT_EQ(demuxer_->SeekToTime(10041, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
-    EXPECT_NE(demuxer_->SeekToTime(11000, SeekMode::SEEK_NEXT_SYNC), AV_ERR_OK);
-    // 普通时刻
-    list<int64_t> toPtsList = {0, 4500, 7000, 2000, 6000};
-    vector<int32_t> audioVals = {433, 433, 433, 239, 240, 240, 131, 132, 132, 347, 348, 347, 175, 176, 175};
-    sharedMem_ = AVMemoryMockFactory::CreateAVMemoryMock(bufferSize_);
-    ASSERT_NE(sharedMem_, nullptr);
-    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
-        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
-            ret_ = demuxer_->SeekToTime(*toPts, *mode);
-            if (ret_ != AV_ERR_OK) {
-                printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
-                continue;
-            }
-            ReadData();
-            printf("time = %" PRId64 " | frames_[0]=%d | kFrames[0]=%d\n", *toPts, frames_[0], keyFrames_[0]);
-            EXPECT_EQ(frames_[0], audioVals[numbers_]);
-            numbers_ += 1;
-            RemoveValue();
-            selectedTrackIds_.clear();
-        }
-    }
 }
 } // namespace

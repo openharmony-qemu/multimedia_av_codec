@@ -28,6 +28,9 @@
 #include "audio_codec_factory.h"
 #include "media_description.h"
 #include "meta/meta_key.h"
+#include "codec_ability_singleton.h"
+#include "event_info_extented_key.h"
+#include "statistics_event_reporter.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AudioCodecServer"};
@@ -116,6 +119,11 @@ int32_t AudioCodecServer::Init(AVCodecType type, bool isMimeType, const std::str
     avBufCallback_ = std::make_shared<VCodecBaseCallback>(shared_from_this());
     ret = codecBase_->SetCallback(avBufCallback_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "SetCallback failed");
+    Media::Meta meta;
+    meta.SetData(Media::Tag::MIME_TYPE, codecMime_);
+    meta.SetData(EventInfoExtentedKey::CODEC_TYPE.data(), std::to_string(type));
+    StatisticsEventReporter::Report(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, meta);
+
     AVCODEC_LOGI("Create codec %{public}s by %{public}s success", codecName_.c_str(),
                  (isMimeType ? "mime" : "name"));
     StatusChanged(INITIALIZED);

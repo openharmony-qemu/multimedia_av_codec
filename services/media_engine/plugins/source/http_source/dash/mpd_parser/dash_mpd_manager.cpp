@@ -28,18 +28,21 @@ DashMpdManager::DashMpdManager(DashMpdInfo *mpdInfomation, const std::string &mp
 
 void DashMpdManager::Reset()
 {
+    std::lock_guard<std::mutex> lock(mpdMutex_);
     this->mpdInfo_ = nullptr;
     this->mpdUrl_ = "";
 }
 
 void DashMpdManager::SetMpdInfo(DashMpdInfo *mpdInfomation, const std::string &mpdUrlStr)
 {
+    std::lock_guard<std::mutex> lock(mpdMutex_);
     this->mpdInfo_ = mpdInfomation;
     this->mpdUrl_ = mpdUrlStr;
 }
 
 DashList<DashPeriodInfo *> DashMpdManager::GetPeriods() const
 {
+    std::lock_guard<std::mutex> lock(mpdMutex_);
     if (mpdInfo_ == nullptr) {
         return DashList<DashPeriodInfo *>();
     }
@@ -48,6 +51,7 @@ DashList<DashPeriodInfo *> DashMpdManager::GetPeriods() const
 
 DashPeriodInfo *DashMpdManager::GetFirstPeriod()
 {
+    std::lock_guard<std::mutex> lock(mpdMutex_);
     if (this->mpdInfo_ == nullptr || this->mpdInfo_->periodInfoList_.size() == 0) {
         return nullptr;
     }
@@ -62,6 +66,7 @@ DashPeriodInfo *DashMpdManager::GetCurrentPeriod()
 
 DashPeriodInfo *DashMpdManager::GetNextPeriod(const DashPeriodInfo *period)
 {
+    std::lock_guard<std::mutex> lock(mpdMutex_);
     if (this->mpdInfo_ == nullptr || this->mpdInfo_->periodInfoList_.size() == 0) {
         return nullptr;
     }
@@ -79,6 +84,7 @@ DashPeriodInfo *DashMpdManager::GetNextPeriod(const DashPeriodInfo *period)
 
 void DashMpdManager::GetBaseUrlList(std::list<std::string> &baseUrlList)
 {
+    std::lock_guard<std::mutex> lock(mpdMutex_);
     // if no BaseUrl in MPD Element, get base url from mpd url
     if (this->mpdInfo_ == nullptr) {
         return;
@@ -103,6 +109,7 @@ void DashMpdManager::GetBaseUrlList(std::list<std::string> &baseUrlList)
 
 std::string DashMpdManager::GetBaseUrl()
 {
+    std::lock_guard<std::mutex> lock(mpdMutex_);
     std::string mpdUrlBase = this->mpdUrl_;
     size_t sepCharIndex = mpdUrlBase.find('?');
     if (sepCharIndex != std::string::npos) {
@@ -128,7 +135,7 @@ std::string DashMpdManager::GetBaseUrl()
 
 void DashMpdManager::MakeBaseUrl(std::string &mpdUrlBase, std::string &urlSchem)
 {
-    if (mpdInfo_->baseUrl_.empty()) {
+    if (mpdInfo_ == nullptr || mpdInfo_->baseUrl_.empty()) {
         return;
     }
 
@@ -151,16 +158,19 @@ void DashMpdManager::MakeBaseUrl(std::string &mpdUrlBase, std::string &urlSchem)
 
 DashMpdInfo *DashMpdManager::GetMpdInfo()
 {
+    std::lock_guard<std::mutex> lock(mpdMutex_);
     return this->mpdInfo_;
 }
 
 void DashMpdManager::Update(DashMpdInfo *newMpdInfo)
 {
-    SetMpdInfo(newMpdInfo, this->mpdUrl_);
+    std::lock_guard<std::mutex> lock(mpdMutex_);
+    this->mpdInfo_ = newMpdInfo;
 }
 
 void DashMpdManager::GetDuration(uint32_t *duration)
 {
+    std::lock_guard<std::mutex> lock(mpdMutex_);
     if (duration == nullptr || this->mpdInfo_ == nullptr) {
         return;
     }

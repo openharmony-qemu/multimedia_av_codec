@@ -125,7 +125,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Start_0100, TestSi
 {
     surfaceEncoderAdapter_->codecServer_ = nullptr;
     Status ret = surfaceEncoderAdapter_->Start();
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    EXPECT_EQ(ret, Status::ERROR_FRAMEWORK_ERR);
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
     surfaceEncoderAdapter_->releaseBufferTask_ = nullptr;
     ret = surfaceEncoderAdapter_->Start();

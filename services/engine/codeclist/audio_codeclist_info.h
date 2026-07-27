@@ -49,6 +49,9 @@ public:
     CapabilityData GetWMAV2DecoderCapability();
     CapabilityData GetWMAProDecoderCapability();
     CapabilityData GetIlbcDecoderCapability();
+#ifdef SUPPORT_CODEC_AMRNB
+    CapabilityData GetAmrnbEncoderCapability();
+#endif
 #ifdef SUPPORT_CODEC_TRUEHD
     CapabilityData GetTruehdDecoderCapability();
 #endif
@@ -56,10 +59,11 @@ public:
 #ifdef SUPPORT_CODEC_EAC3
     CapabilityData GetEac3DecoderCapability();
 #endif
-#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
+#ifdef SUPPORT_CODEC_AUDIO_VIVID
     CapabilityData GetVividDecoderCapability();
     CapabilityData GetVividEncoderCapability();
-    CapabilityData GetAmrnbEncoderCapability();
+#endif
+#ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
     CapabilityData GetAmrwbEncoderCapability();
     CapabilityData GetL2hcEncoderCapability();
     CapabilityData GetL2hcDecoderCapability();

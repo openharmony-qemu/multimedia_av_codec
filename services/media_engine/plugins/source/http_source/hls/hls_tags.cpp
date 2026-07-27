@@ -17,6 +17,7 @@
 #include <sstream>
 #include <stack>
 #include <utility>
+#define HST_LOG_TAG "HlsTags"
 #include "hls_tags.h"
 #include <regex>
 #include <utility>
@@ -30,8 +31,10 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr size_t EXT_X_DEFINE_LEN = 14;
 constexpr size_t MIN_MATCH_GROUPS = 3;
+constexpr size_t QUOTE_PAIR_LEN = 2; // leading and trailing quotes
 }
 struct {
     const char* name;
@@ -56,6 +59,8 @@ struct {
     {"ext-x-session-key",            HlsTag::EXTXSESSIONKEY},
     {"ext-x-skip",                   HlsTag::EXTXSKIP},
     {"ext-x-daterange",              HlsTag::EXTXDATERANGE},
+    {"ext-x-cue-out",                HlsTag::EXTXCUEOUT},
+    {"ext-x-cue-in",                 HlsTag::EXTXCUEIN},
     {"extinf",                       HlsTag::EXTINF},
     {"",                             HlsTag::URI}
 };
@@ -71,6 +76,10 @@ uint64_t Attribute::Decimal() const
     is.imbue(std::locale("C"));
     uint64_t ret;
     is >> ret;
+    if (is.fail()) {
+        MEDIA_LOG_W("HLS Decimal parse failed, value: %{public}s", value_.c_str());
+        return 0;
+    }
     return ret;
 }
 
@@ -80,6 +89,10 @@ double Attribute::FloatingPoint() const
     is.imbue(std::locale("C"));
     double ret;
     is >> ret;
+    if (is.fail()) {
+        MEDIA_LOG_W("HLS FloatingPoint parse failed, value: %{public}s", value_.c_str());
+        return 0;
+    }
     return ret;
 }
 
@@ -129,7 +142,10 @@ std::pair<std::size_t, std::size_t> Attribute::GetByteRange() const
     if (value_.find("\"") == std::string::npos) {
         newValue = value_;
     } else {
-        newValue = value_.substr(1, value_.size() - 2); // 2
+        if (value_.size() < QUOTE_PAIR_LEN) {
+            return {0, 0};
+        }
+        newValue = value_.substr(1, value_.size() - QUOTE_PAIR_LEN);
     }
     std::istringstream is(newValue);
     is.imbue(std::locale("C"));
@@ -331,6 +347,8 @@ std::shared_ptr<Tag> TagFactory::CreateTagByName(const std::string& name, const 
             case HlsTag::EXTXDISCONTINUITY:
             case HlsTag::EXTXENDLIST:
             case HlsTag::EXTXIFRAMESONLY:
+            case HlsTag::EXTXCUEOUT:
+            case HlsTag::EXTXCUEIN:
                 return std::make_shared<Tag>(g_exttagmapping[i].type);
             case HlsTag::URI:
             case HlsTag::EXTXVERSION:
@@ -414,7 +432,7 @@ static void ParseTag(std::list<std::shared_ptr<Tag>>& entriesList, std::shared_p
 static void ParseURI(std::list<std::shared_ptr<Tag>>& entriesList,
                      std::shared_ptr<Tag>& lastTag, const std::string& line)
 {
-    if (lastTag && lastTag->GetType() == HlsTag::EXTXSTREAMINF) {
+    if (lastTag && lastTag->GetType() == HlsTag::EXTXSTREAMINF && IsAttributesSection(lastTag->GetType())) {
         auto streaminftag = std::static_pointer_cast<AttributesTag>(lastTag);
         /* master playlist uri, merge as attribute */
         auto uriAttr = std::make_shared<Attribute>("URI", line);

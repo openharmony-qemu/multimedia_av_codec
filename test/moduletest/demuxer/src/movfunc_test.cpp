@@ -526,6 +526,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0100, TestSize.Level0)
     const char *file = "/data/test/media/H264_base@5_1920_1080_30_AAC_48K_1.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 95, 95);
@@ -543,6 +545,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0200, TestSize.Level0)
     const char *file = "/data/test/media/H264_main@4_1280_720_60_MP2_44.1K_2.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(119, 12, 77, 77);
@@ -560,6 +564,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0300, TestSize.Level0)
     const char *file = "/data/test/media/H264_high@5.1_3840_2160_30_MP3_48K_1.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 85, 85);
@@ -577,6 +583,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0400, TestSize.Level2)
     const char *file = "/data/test/media/H264_h444@5.1_1920_1080_60_vorbis_32K_2.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(119, 12, 72, 72);
@@ -594,6 +602,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0500, TestSize.Level0)
     const char *file = "/data/test/media/H264_main@3_720_480_30_PCM_48K_24_1.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 144, 144);
@@ -614,6 +624,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0600, TestSize.Level0)
     const char *file = "/data/test/media/H265_main@4_1920_1080_30_AAC_44.1K_2.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 88, 88);
@@ -634,6 +646,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0700, TestSize.Level2)
     const char *file = "/data/test/media/H265_main10@4.1_1280_720_60_MP2_48K_1.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(119, 12, 84, 84);
@@ -654,6 +668,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0800, TestSize.Level2)
     const char *file = "/data/test/media/H265_main10@5_1920_1080_60_MP3_44.1K_2.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(119, 12, 78, 78);
@@ -674,6 +690,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_0900, TestSize.Level0)
     const char *file = "/data/test/media/H265_main@5_3840_2160_30_vorbis_48K_1.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 96, 96);
@@ -694,6 +712,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1000, TestSize.Level2)
     const char *file = "/data/test/media/H265_main10@5.1_3840_2160_60_PCM(mulaw)_48K_16_2.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(119, 12, 171, 171);
@@ -711,6 +731,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1100, TestSize.Level0)
     const char *file = "/data/test/media/MPEG4_SP@5_720_480_30_AAC_32K_1.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 64, 64);
@@ -728,6 +750,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1200, TestSize.Level0)
     const char *file = "/data/test/media/MPEG4_SP@6_1280_720_30_MP2_32K_2.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 56, 56);
@@ -745,6 +769,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1300, TestSize.Level2)
     const char *file = "/data/test/media/MPEG4_ASP@3_352_288_30_MP3_32K_1.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 57, 57);
@@ -762,6 +788,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1400, TestSize.Level2)
     const char *file = "/data/test/media/MPEG4_ASP@4_720_576_30_Vorbis_44.1K_2.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 91, 91);
@@ -779,6 +807,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_1500, TestSize.Level0)
     const char *file = "/data/test/media/MPEG4_Core@2_1920_1080_30_PCM(mulaw)_44.1K_16_1.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(45, 5, 65, 65);
@@ -1069,6 +1099,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3100, TestSize.Level2)
     const char *file = "/data/test/media/multi_trk.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 4);
     CheckTrackSelect();
     FramesMultiTrks(120, 12, 145, 145);
@@ -1109,6 +1141,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MOV_DEMUXER_FUNCTION_TEST_3300, TestSize.Level3)
     const char *file = "/data/test/media/zero_track.mov";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 0);
 
     ASSERT_EQ(AV_ERR_INVALID_VAL, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
@@ -1256,6 +1290,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0100, TestSize.Level0)
     const char *file = "/data/test/media/H264_base@5_1920_1080_30_MP2_44.1K_1.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 77, 77);
@@ -1273,6 +1309,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0200, TestSize.Level2)
     const char *file = "/data/test/media/H264_h444p@5.1_1920_1080_60_MP2_48K_2.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(119, 12, 84, 84);
@@ -1290,6 +1328,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0300, TestSize.Level2)
     const char *file = "/data/test/media/H264_high@5.1_3840_2160_30_MP3_44.1K_1.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 78, 78);
@@ -1307,6 +1347,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0400, TestSize.Level0)
     const char *file = "/data/test/media/H264_main@4.2_1280_720_60_MP3_32K_2.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(119, 12, 57, 57);
@@ -1324,6 +1366,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0500, TestSize.Level2)
     const char *file = "/data/test/media/MPEG2_422p_1280_720_60_MP3_32K_1.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(119, 12, 57, 57);
@@ -1341,6 +1385,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0600, TestSize.Level0)
     const char *file = "/data/test/media/MPEG2_high_720_480_30_MP2_32K_2.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 56, 56);
@@ -1358,6 +1404,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0700, TestSize.Level0)
     const char *file = "/data/test/media/MPEG2_main_352_288_30_MP2_44.1K_1.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 77, 77);
@@ -1375,6 +1423,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0800, TestSize.Level0)
     const char *file = "/data/test/media/MPEG2_main_1920_1080_30_MP3_48K_2.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(60, 6, 85, 85);
@@ -1392,6 +1442,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_0900, TestSize.Level0)
     const char *file = "/data/test/media/MPEG2_simple_320_240_24_MP3_48K_2.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 2);
     CheckTrackSelect();
     CheckFrames(48, 5, 85, 85);
@@ -1467,6 +1519,8 @@ HWTEST_F(DemuxerMovFuncNdkTest, MPG_DEMUXER_FUNCTION_TEST_1200, TestSize.Level2)
     const char *file = "/data/test/media/multi_trk.mpg";
     int fd = open(file, O_RDONLY);
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 4);
     CheckTrackSelect();
     FramesMultiTrks(167, 17, 142, 142);

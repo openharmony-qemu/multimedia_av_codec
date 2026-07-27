@@ -31,6 +31,7 @@
 #include "avsource_unit_test.h"
 #include "media_data_source.h"
 #include "native_avsource.h"
+#include "syspara/parameters.h"
 
 #define LOCAL true
 #define URI false
@@ -59,6 +60,7 @@ string g_tsPath = TEST_FILE_PATH + string("test_mpeg2_Gop25_4sec.ts");
 string g_aacPath = TEST_FILE_PATH + string("audio/aac_44100_1.aac");
 string g_flacPath = TEST_FILE_PATH + string("audio/flac_48000_1_cover.flac");
 string g_flacPath1 = TEST_FILE_PATH + string("audio/flac_48000_1_duplicate_information.flac");
+string g_mpeg4EncoderPath = TEST_FILE_PATH + string("mpeg4_encoder.mp4");
 string g_m4aPath = TEST_FILE_PATH + string("audio/m4a_48000_1_ut.m4a");
 string g_mp3Path = TEST_FILE_PATH + string("audio/mp3_48000_1_cover.mp3");
 string g_oggPath = TEST_FILE_PATH + string("audio/ogg_48000_1_ut.ogg");
@@ -144,6 +146,10 @@ string g_dtsPath = TEST_FILE_PATH + string("dts.dts");
 string g_dtsUri = TEST_URI_PATH + string("dts.dts");
 string g_dtshdPath = TEST_FILE_PATH + string("dtshd.dtshd");
 string g_truehdPath = TEST_FILE_PATH + string("truehd.thd");
+string g_movAltitude100Path = TEST_FILE_PATH + string("loci_altitude_100.mp4");
+string g_movAltitude102Path = TEST_FILE_PATH + string("loci_altitude_102.mp4");
+string g_movAltitudeEmptyPath = TEST_FILE_PATH + string("loci_altitude_empty.mp4");
+string g_mp4LargeTrefPath = TEST_FILE_PATH + string("large_tref.mp4");
 } // namespace
 
 void AVSourceUnitTest::SetUpTestCase(void)
@@ -1513,6 +1519,26 @@ HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1112, TestSize.Level1)
     printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
     ASSERT_TRUE(format_->GetStringValue(AVSourceFormat::SOURCE_ARTIST, formatVal_.artist));
     ASSERT_EQ(formatVal_.artist, "artist");
+}
+
+/**
+ * @tc.name: AVSource_GetFormat_1113
+ * @tc.desc: get metadata encoder when the mpeg4 file has encoder attribute
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_GetFormat_1113, TestSize.Level1)
+{
+    fd_ = OpenFile(g_mpeg4EncoderPath);
+    size_ = GetFileSize(g_mpeg4EncoderPath);
+    printf("---- %s ----\n", g_mpeg4EncoderPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[ sourceFormat ]: %s\n", format_->DumpInfo());
+    std::string encoder;
+    ASSERT_TRUE(format_->GetStringValue(Media::Tag::MEDIA_ENCODER, encoder));
+    ASSERT_EQ(encoder, "Lavf59.27.100");
 }
 
 /**
@@ -5144,5 +5170,81 @@ HWTEST_F(AVSourceUnitTest, AVSource_Unsupport_0001, TestSize.Level1)
     ASSERT_EQ(formatVal_.codecMime, Media::Plugins::MimeType::AUDIO_MPEG);
 
     ASSERT_EQ(source_->Destroy(), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: AVSource_MOV_ALTITUDE_0001
+ * @tc.desc: get track format(mov), local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_MOV_ALTITUDE_0001, TestSize.Level1)
+{
+    fd_ = OpenFile(g_movAltitude100Path);
+    size_ = GetFileSize(g_mp4InfoPath);
+    printf("---- %s ------\n", g_mp4InfoPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[source Format]: %s\n", format_->DumpInfo());
+
+    float altitude = 0.0;
+    ASSERT_TRUE(format_->GetFloatValue(Media::Tag::MEDIA_ALTITUDE, altitude));
+    ASSERT_EQ(altitude, float(100.0)); // longitude test
+}
+
+/**
+ * @tc.name: AVSource_MOV_ALTITUDE_0002
+ * @tc.desc: get track format(mov), local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_MOV_ALTITUDE_0002, TestSize.Level1)
+{
+    fd_ = OpenFile(g_movAltitude102Path);
+    size_ = GetFileSize(g_mp4InfoPath);
+    printf("---- %s ------\n", g_mp4InfoPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[source Format]: %s\n", format_->DumpInfo());
+
+    float altitude = 0.0;
+    ASSERT_TRUE(format_->GetFloatValue(Media::Tag::MEDIA_ALTITUDE, altitude));
+    ASSERT_EQ(altitude, float(102.0)); // longitude test
+}
+
+/**
+ * @tc.name: HWTEST_F(AVSourceUnitTest, AVSource_MOV_ALTITUDE_0003, TestSize.Level1)
+ * @tc.desc: get track format(mov), local
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_MOV_ALTITUDE_0003, TestSize.Level1)
+{
+    fd_ = OpenFile(g_movAltitudeEmptyPath);
+    size_ = GetFileSize(g_mp4InfoPath);
+    printf("---- %s ------\n", g_mp4InfoPath.c_str());
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
+    format_ = source_->GetSourceFormat();
+    ASSERT_NE(format_, nullptr);
+    printf("[source Format]: %s\n", format_->DumpInfo());
+
+    float altitude = 0.0;
+    ASSERT_FALSE(format_->GetFloatValue(Media::Tag::MEDIA_ALTITUDE, altitude));
+}
+
+/**
+ * @tc.name: AVSource_CreateSourceWithFD_2000
+ * @tc.desc: create source with fd with large tref
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithFD_2000, TestSize.Level1)
+{
+    printf("---- %s ----\n", g_mp4LargeTrefPath.c_str());
+    fd_ = OpenFile(g_mp4LargeTrefPath);
+    size_ = GetFileSize(g_mp4LargeTrefPath);
+    source_ = AVSourceMockFactory::CreateSourceWithFD(fd_, SOURCE_OFFSET, size_);
+    ASSERT_NE(source_, nullptr);
 }
 } // namespace

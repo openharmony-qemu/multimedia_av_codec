@@ -40,7 +40,9 @@ public:
     }
     static std::shared_ptr<AVBuffer> CreateAVBuffer(const AVBufferConfig &config)
     {
-        return std::make_shared<AVBuffer>();
+        auto buffer = std::make_shared<AVBuffer>();
+        buffer->memory_ = std::make_shared<AVMemory>();
+        return buffer;
     }
     static std::shared_ptr<AVBuffer> CreateAVBuffer(std::shared_ptr<AVAllocator> allocator, int32_t capacity = 0,
                                                     int32_t align = 0)

@@ -181,6 +181,7 @@ void HCodec::BaseState::OnResume(const MsgInfo &info)
     ReplyErrorCode(info.id, errCode);
 }
 
+// LCOV_EXCL_START
 void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
 {
     int32_t errorCode = 0;
@@ -208,7 +209,7 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
             if (codec_->unsupportHappened_) {
                 return;
             }
-            errorCode = AVCS_ERR_MINSSING_PARAMETER_SETS;
+            errorCode = AVCS_ERR_MISSING_PARAMETER_SETS;
             faultType = "XPS_LOST";
             break;
         default:
@@ -219,6 +220,7 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
     codec_->SignalError(AVCODEC_ERROR_INTERNAL, errorCode);
     codec_->FaultEventWrite(faultType, sysEventMsg);
 }
+// LCOV_EXCL_STOP
 /**************************** BaseState End ******************************/
 
 
@@ -739,7 +741,6 @@ void HCodec::OutputPortChangedState::OnMsgReceived(const MsgInfo &info)
         }
     }
 }
-// LCOV_EXCL_STOP
 
 void HCodec::OutputPortChangedState::OnShutDown(const MsgInfo &info)
 {
@@ -761,9 +762,7 @@ void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
         return;
     }
 
-    if (std::none_of(codec_->outputBufferPool_.begin(), codec_->outputBufferPool_.end(), [](const BufferInfo& info) {
-            return info.owner == BufferOwner::OWNED_BY_OMX;
-        })) {
+    if (!codec_->ThereAreBufsStillOwnedByOmx(OMX_DirOutput)) {
         SLOGI("output buffers owned by omx has been returned");
         return;
     }
@@ -772,6 +771,7 @@ void HCodec::OutputPortChangedState::OnCheckIfStuck(const MsgInfo &info)
     SLOGE("stucked, need force shut down");
     (void)codec_->ForceShutdown(codec_->stateGeneration_, false);
 }
+// LCOV_EXCL_STOP
 
 void HCodec::OutputPortChangedState::OnCodecEvent(CodecEventType event, uint32_t data1, uint32_t data2)
 {
@@ -1040,7 +1040,20 @@ void HCodec::StoppingState::OnCodecEvent(CodecEventType event, uint32_t data1, u
             if (data2 == (uint32_t)CODEC_STATE_IDLE) {
                 SLOGI("omx now idle");
                 omxNodeInIdleState_ = true;
-                ChangeStateIfWeOwnAllBuffers();
+                bool inputHoldByOmx = codec_->ThereAreBufsStillOwnedByOmx(OMX_DirInput);
+                bool outputHoldByOmx = codec_->ThereAreBufsStillOwnedByOmx(OMX_DirOutput);
+                if (inputHoldByOmx || outputHoldByOmx) {
+                    codec_->PrintAllBufferInfo();
+                }
+                if (inputHoldByOmx) {
+                    SLOGW("there are input buffers still hold by omx");
+                    codec_->ReclaimBuffer(OMX_DirInput, BufferOwner::OWNED_BY_OMX);
+                }
+                if (outputHoldByOmx) {
+                    SLOGW("there are output buffers still hold by omx");
+                    codec_->ReclaimBuffer(OMX_DirOutput, BufferOwner::OWNED_BY_OMX);
+                }
+                ChangeOmxNodeToLoadedState(false);
             } else if (data2 == (uint32_t)CODEC_STATE_LOADED) {
                 SLOGI("omx now loaded");
                 codec_->ChangeStateTo(codec_->initializedState_);

@@ -16,6 +16,7 @@
 #ifndef HISTREAMER_HLS_TAGS_H
 #define HISTREAMER_HLS_TAGS_H
 
+#include <cstdint>
 #include <list>
 #include <memory>
 #include <string>
@@ -30,6 +31,9 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+constexpr uint32_t SECTION_BIT_OFFSET = 16;
+
 class Attribute {
 public:
     Attribute(std::string name, std::string value);
@@ -55,10 +59,10 @@ enum struct HlsTagSection : uint8_t {
 };
 
 enum struct HlsTag : uint32_t {
-    SECTION_REGULAR_START = static_cast<uint8_t>(HlsTagSection::REGULAR) << 16U,  // regular tag
-    SECTION_SINGLE_VALUE_START = static_cast<uint8_t>(HlsTagSection::SINGLE_VALUE) << 16U,  // single value tag
-    SECTION_ATTRIBUTES_START = static_cast<uint8_t>(HlsTagSection::ATTRIBUTES) << 16U,  // attributes tag
-    SECTION_VALUES_LIST_START = static_cast<uint8_t>(HlsTagSection::VALUES_LIST) << 16U,  // values list tag
+    SECTION_REGULAR_START = static_cast<uint8_t>(HlsTagSection::REGULAR) << SECTION_BIT_OFFSET,
+    SECTION_SINGLE_VALUE_START = static_cast<uint8_t>(HlsTagSection::SINGLE_VALUE) << SECTION_BIT_OFFSET,
+    SECTION_ATTRIBUTES_START = static_cast<uint8_t>(HlsTagSection::ATTRIBUTES) << SECTION_BIT_OFFSET,
+    SECTION_VALUES_LIST_START = static_cast<uint8_t>(HlsTagSection::VALUES_LIST) << SECTION_BIT_OFFSET,
 
     EXTXDISCONTINUITY = SECTION_REGULAR_START,
     EXTXENDLIST,
@@ -72,6 +76,8 @@ enum struct HlsTag : uint32_t {
     EXTXMEDIASEQUENCE,
     EXTXDISCONTINUITYSEQUENCE,
     EXTXPLAYLISTTYPE,
+    EXTXCUEOUT,
+    EXTXCUEIN,
 
     EXTXKEY = SECTION_ATTRIBUTES_START,
     EXTXMAP,
@@ -85,6 +91,23 @@ enum struct HlsTag : uint32_t {
 
     EXTINF = SECTION_VALUES_LIST_START,
 };
+
+inline bool IsSingleValueSection(HlsTag type)
+{
+    return (static_cast<uint32_t>(type) >> SECTION_BIT_OFFSET) == static_cast<uint8_t>(HlsTagSection::SINGLE_VALUE);
+}
+
+inline bool IsAttributesSection(HlsTag type)
+{
+    uint32_t section = static_cast<uint32_t>(type) >> SECTION_BIT_OFFSET;
+    return section == static_cast<uint8_t>(HlsTagSection::ATTRIBUTES) ||
+           section == static_cast<uint8_t>(HlsTagSection::VALUES_LIST);
+}
+
+inline bool IsValuesListSection(HlsTag type)
+{
+    return (static_cast<uint32_t>(type) >> SECTION_BIT_OFFSET) == static_cast<uint8_t>(HlsTagSection::VALUES_LIST);
+}
 
 class Tag {
 public:
@@ -141,5 +164,4 @@ std::unordered_map<std::string, std::string> ParseUriQuery(const std::string& ur
 }
 }
 }
-
 #endif // HISTREAMER_HLS_TAGS_H

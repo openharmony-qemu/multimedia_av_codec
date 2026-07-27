@@ -60,7 +60,8 @@ int RetryNonReadAgainBounded(int& tryCount, int32_t sleepTimeMs, const std::stri
         MEDIA_LOG_I("%{public}s exceeds retry, offset:" PUBLIC_LOG_D64, logPrefix.c_str(), offset);
         return AV_READ_PACKET_READ_ERROR;
     }
-    MEDIA_LOG_I("%{public}s, retry count:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+    AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+        "%{public}s, retry count:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
         logPrefix.c_str(), tryCount, offset);
     std::this_thread::sleep_for(std::chrono::milliseconds(sleepTimeMs));
     return AV_READ_PACKET_READ_AGAIN;
@@ -113,7 +114,11 @@ int FFmpegDemuxerPlugin::AVReadPacket(void* opaque, uint8_t* buf, int bufSize)
 int FFmpegDemuxerPlugin::HandleReadOK(IOContext* ioContext, int dataSize)
 {
     if (dataSize > 0) {
+        UpdateReadSizeCnt(ioContext, dataSize);
         ioContext->offset += dataSize;
+        if (ioContext->readTimeoutMs > 0) {
+            ioContext->readStartTimeMs = 0;
+        }
         return dataSize;
     }
     return AV_READ_PACKET_READ_ERROR;
@@ -139,7 +144,9 @@ int FFmpegDemuxerPlugin::HandleNonReadAgain(IOContext* ioContext, int& tryCount)
                 MEDIA_LOG_I("AVReadPacket stopped");
                 return AV_READ_PACKET_READ_ERROR;
             case AVReadPacketStopState::FALSE:
-                MEDIA_LOG_I("Read again and retry, offset:" PUBLIC_LOG_D64, ioContext->offset);
+                AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+                    "Read again and retry, offset:" PUBLIC_LOG_D64,
+                    ioContext->offset);
                 std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
                 return AV_READ_PACKET_READ_AGAIN;
             case AVReadPacketStopState::UNSET:
@@ -165,7 +172,11 @@ int FFmpegDemuxerPlugin::HandleNonReadAgain(IOContext* ioContext, int& tryCount)
 int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int& tryCount)
 {
     if (dataSize > 0) {
+        UpdateReadSizeCnt(ioContext, dataSize);
         ioContext->offset += dataSize;
+        if (ioContext->readTimeoutMs > 0) {
+            ioContext->readStartTimeMs = 0;
+        }
         return dataSize;
     }
     if (ioContext->invokerType != InvokerType::READ) {
@@ -180,7 +191,9 @@ int FFmpegDemuxerPlugin::HandleReadAgain(IOContext* ioContext, int dataSize, int
         ioContext->readCbReady.store(false); // Reset the flag
         tryCount = 0;
     } else {
-        MEDIA_LOG_I("Read again, retry count: " PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, tryCount, ioContext->offset);
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "Read again, retry count: " PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64,
+            tryCount, ioContext->offset);
         std::this_thread::sleep_for(std::chrono::milliseconds(AV_READ_PACKET_SLEEP_TIME));
     }
     return AV_READ_PACKET_READ_AGAIN;
@@ -261,7 +274,8 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
         MEDIA_LOG_D("All partial sample has been copied");
         cacheQueue_.Pop(trackId);
     }
-    return ret;
+    return ret == Status::ERROR_PACKET_CONVERT_FAILED ?
+        SkipPacketAfterPacketConvertError(trackId, samplePacket, true, true) : ret;
 }
 
 Status FFmpegDemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> sample, uint32_t timeout)
@@ -310,7 +324,8 @@ Status FFmpegDemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr
     if (ret == Status::OK) {
         cacheQueue_.Pop(trackId);
     }
-    return ret;
+    return ret == Status::ERROR_PACKET_CONVERT_FAILED ?
+        SkipPacketAfterPacketConvertError(trackId, samplePacket, true, true) : ret;
 }
 
 Status FFmpegDemuxerPlugin::ConvertAVPacketToSampleMemory(
@@ -550,8 +565,14 @@ void FFmpegDemuxerPlugin::HandleAVPacketReadError(AVPacketWrapperPtr& pktWrapper
     AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_MSG(pkt != nullptr, "AVPacket is nullptr");
     pktWrapper.reset();
-    MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
-        AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
+    if (ioContext_.retry) {
+        AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+            "Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+            AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
+    } else {
+        MEDIA_LOG_E("Call av_read_frame failed:" PUBLIC_LOG_S ", retry: " PUBLIC_LOG_D32,
+            AVStrError(ffmpegRet).c_str(), int(ioContext_.retry));
+    }
     readLoopStatus_ = Status::ERROR_UNKNOWN;
 }
 
@@ -784,23 +805,21 @@ Status FFmpegDemuxerPlugin::ConvertPacketToAnnexb(AVPacketWrapperPtr srcWrapper,
     FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid,
         Status::ERROR_INVALID_OPERATION, "Stream snapshot is invalid");
     auto codecId = snapshot->codecId;
-    // H.264 (AVC)
-    if (codecId == AV_CODEC_ID_H264 && avbsfContexts_.count(srcAVPacket->stream_index) > 0 &&
+    // HEVC/VVC via streamParsers_
+    if ((codecId == AV_CODEC_ID_HEVC || codecId == AV_CODEC_ID_VVC) &&
+        streamParsers_ != nullptr && streamParsers_->ParserIsInited(srcAVPacket->stream_index)) {
+        return ConvertPacketToAnnexbWithParser(srcAVPacket, samplePacket, outWrapper, snapshot);
+    }
+    // H.264/HEVC fallback via avbsfContexts_
+    if ((codecId == AV_CODEC_ID_H264 || codecId == AV_CODEC_ID_HEVC) &&
+        avbsfContexts_.count(srcAVPacket->stream_index) > 0 &&
         avbsfContexts_[srcAVPacket->stream_index] != nullptr) {
         Status ret = ConvertAvcToAnnexb(*srcAVPacket);
         outWrapper = (ret == Status::OK) ? srcWrapper : nullptr;
         return ret;
     }
-    // HEVC and VVC
-    if (codecId != AV_CODEC_ID_HEVC && codecId != AV_CODEC_ID_VVC) {
-        outWrapper = nullptr;
-        return Status::OK;
-    }
-    if (streamParsers_ == nullptr || !streamParsers_->ParserIsInited(srcAVPacket->stream_index)) {
-        outWrapper = nullptr;
-        return Status::OK;
-    }
-    return ConvertPacketToAnnexbWithParser(srcAVPacket, samplePacket, outWrapper, snapshot);
+    outWrapper = nullptr;
+    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::ConvertPacketToAnnexbWithParser(AVPacket* srcAVPacket,
@@ -856,11 +875,12 @@ Status FFmpegDemuxerPlugin::ConvertToAnnexbAndUpdateSample(std::shared_ptr<AVBuf
     Status ret = ConvertPacketToAnnexb(tempPktWrapper, samplePacket, outPktWrapper);
     FALSE_RETURN_V_MSG_D(ret == Status::OK, ret, "Convert packet to annexb failed");
 
-    tempPktWrapper = (outPktWrapper != nullptr) ? outPktWrapper : tempPktWrapper;
+    bool annexbConverted = (outPktWrapper != nullptr);
+    tempPktWrapper = annexbConverted ? outPktWrapper : tempPktWrapper;
     AVPacket *tempPkt = (tempPktWrapper != nullptr) ? tempPktWrapper->GetAVPacket() : nullptr;
     FALSE_RETURN_V_MSG_E(tempPkt != nullptr, Status::ERROR_INVALID_OPERATION, "Output packet is nullptr");
     const AVStreamSnapshot* snapshot = GetStreamSnapshot(static_cast<uint32_t>(tempPkt->stream_index));
-    if (snapshot != nullptr && snapshot->valid &&
+    if (annexbConverted && snapshot != nullptr && snapshot->valid &&
         (snapshot->codecId == AV_CODEC_ID_HEVC || snapshot->codecId == AV_CODEC_ID_H264)) {
         SetDropTag(*tempPkt, sample, snapshot->codecId);
     }

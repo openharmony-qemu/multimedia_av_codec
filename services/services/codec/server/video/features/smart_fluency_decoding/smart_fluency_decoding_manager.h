@@ -41,12 +41,13 @@ public:
                       SmartFluencyDecoding::AsyncDropOutputCallback outputCb);
     void CleanResources();
     void Flush();
-    bool IsSfdActive() const;
+    bool ShouldReportDfx() const;
     void EnableMVOutput(Media::Format& format);
     void OnInputBufferAvailable(uint32_t index, const std::shared_ptr<AVBuffer>& buffer);
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, const std::shared_ptr<AVBuffer>& buffer, bool isSurfaceMode);
     void OnOutputBufferUnbinded();
+    void OnDecInfoUpdate(double sourceFps, double speed);
 
 private:
     void CacheCsdData(uint32_t index);
@@ -64,7 +65,7 @@ private:
     SmartFluencyDecoding::AsyncDropOutputCallback outputCb_;
     std::vector<uint8_t> cachedCsdData_;
     bool isCsdCached_ = false;
-    std::mutex tempCsdMutex_;
+    std::mutex csdMutex_;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> tempCsdBufferMap_;
     std::mutex surfaceBufMutex_;
     std::unordered_map<int64_t, sptr<SurfaceBuffer>> surfaceBufMap_;

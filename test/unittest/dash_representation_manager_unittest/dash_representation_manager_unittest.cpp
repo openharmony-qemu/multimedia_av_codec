@@ -152,6 +152,19 @@ HWTEST_F(DashRepresentationManagerUnittest, GetRepresentationInfo_001, TestSize.
     ret = dashPtr_->GetPreviousRepresentationInfo();
     EXPECT_EQ(ret, nullptr);
 }
+
+/**
+ * @tc.name  : Test GetPreviousRepresentationInfo with nullptr previous
+ * @tc.number: GetPreviousRepresentationInfo_002
+ * @tc.desc  : Test previousRepresentationInfo_ == nullptr returns nullptr
+ */
+HWTEST_F(DashRepresentationManagerUnittest, GetPreviousRepresentationInfo_002, TestSize.Level0)
+{
+    ASSERT_NE(dashPtr_, nullptr);
+    dashPtr_->previousRepresentationInfo_ = nullptr;
+    auto ret = dashPtr_->GetPreviousRepresentationInfo();
+    EXPECT_EQ(ret, nullptr);
+}
 }
 }
 }

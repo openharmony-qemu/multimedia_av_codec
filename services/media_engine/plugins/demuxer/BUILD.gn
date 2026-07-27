@@ -43,11 +43,12 @@ config("demuxer_config") {
     "$av_codec_root_dir/interfaces",
     "$av_codec_root_dir/services/media_engine/plugins/common",
     "$av_codec_root_dir/services/media_engine/plugins/demuxer/common",
-    "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer",
-    "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer",
   ]
 }
 
+config("ffmpeg_demuxer_public_config") {
+  include_dirs = [ "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer" ]
+}
 
 if (av_codec_support_demuxer) {
   ohos_shared_library("media_plugin_FFmpegDemuxer") {
@@ -61,10 +62,14 @@ if (av_codec_support_demuxer) {
     defines += [
       "OHOS_EXPAND_MP4_INFO",
       "OHOS_AV3A_DEMUXER",
+      "USE_FF_DEMUXER",
     ]
     defines += av_codec_defines
 
-    public_configs = [ ":demuxer_config" ]
+    public_configs = [
+      ":demuxer_config",
+      ":ffmpeg_demuxer_public_config"
+    ]
 
     if (build_variant != "user") {
       defines += [ "BUILD_ENG_VERSION" ]
@@ -79,6 +84,7 @@ if (av_codec_support_demuxer) {
       "common/avc_parser_impl.cpp",
       "common/converter.cpp",
       "common/demuxer_log_compressor.cpp",
+      "common/demuxer_utils.cpp",
       "common/reference_parser_manager.cpp",
       "common/multi_stream_parser_manager.cpp",
       "common/rbsp_context.cpp",
@@ -100,6 +106,7 @@ if (av_codec_support_demuxer) {
       "graphic_surface:surface",
       "hicollie:libhicollie",
       "hilog:libhilog",
+      "hitrace:hitrace_meter",
       "hisysevent:libhisysevent",
       "init:libbegetutil",
       "media_foundation:media_foundation",
@@ -116,15 +123,11 @@ if (av_codec_support_demuxer) {
 
     sanitize = av_codec_sanitize
 
-    defines = []
-
-    defines += [
-      "OHOS_EXPAND_MP4_INFO",
-      "OHOS_AV3A_DEMUXER",
-    ]
-    defines += av_codec_defines
+    defines = av_codec_defines
 
     public_configs = [ ":demuxer_config" ]
+
+    include_dirs = [ "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer" ]
 
     if (build_variant != "user") {
       defines += [ "BUILD_ENG_VERSION" ]
@@ -140,13 +143,17 @@ if (av_codec_support_demuxer) {
       "common/converter.cpp",
       "common/demuxer_data_reader.cpp",
       "common/demuxer_log_compressor.cpp",
+      "common/demuxer_utils.cpp",
       "common/reference_parser_manager.cpp",
       "common/multi_stream_parser_manager.cpp",
       "common/rbsp_context.cpp",
       "mpeg4_demuxer/mpeg4_audio_parser.cpp",
       "mpeg4_demuxer/mpeg4_box_parser.cpp",
       "mpeg4_demuxer/mpeg4_demuxer_plugin.cpp",
+      "mpeg4_demuxer/mpeg4_demuxer_thread.cpp",
+      "mpeg4_demuxer/mpeg4_format_checker.cpp",
       "mpeg4_demuxer/mpeg4_reference_parser.cpp",
+      "mpeg4_demuxer/mpeg4_sample_memory.cpp",
       "mpeg4_demuxer/mpeg4_sample_helper.cpp",
     ]
 
@@ -154,13 +161,14 @@ if (av_codec_support_demuxer) {
 
     external_deps = [
       "c_utils:utils",
-      "ffmpeg:libohosffmpeg",
       "graphic_surface:surface",
       "hicollie:libhicollie",
       "hilog:libhilog",
+      "hitrace:hitrace_meter",
       "hisysevent:libhisysevent",
       "init:libbegetutil",
       "media_foundation:media_foundation",
+      "qos_manager:qos",
     ]
 
     relative_install_dir = "media/media_plugins"

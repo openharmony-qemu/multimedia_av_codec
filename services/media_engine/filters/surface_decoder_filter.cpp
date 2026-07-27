@@ -122,7 +122,8 @@ void SurfaceDecoderFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
     MEDIA_LOG_E("AVCodec decoder error happened. ErrorType: %{public}d, errorCode: %{public}d",
         static_cast<int32_t>(errorType), errorCode);
     if (eventReceiver_ != nullptr) {
-        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_VID_DEC_FAILED});
+        eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_VID_DEC_FAILED)});
     }
 }
 
@@ -141,6 +142,15 @@ void SurfaceDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     filterCallback_ = callback;
 }
 
+void SurfaceDecoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
+    const std::string &bundleName, uint64_t instanceId)
+{
+    appUid_ = appUid;
+    appPid_ = appPid;
+    bundleName_ = bundleName;
+    instanceId_ = instanceId;
+}
+
 Status SurfaceDecoderFilter::ConfigureMediaCodecByMimeType(std::string codecMimeType, bool isHdrVivid)
 {
     FALSE_LOG_MSG_W(transcoderIsHdrVivid_ == isHdrVivid,
@@ -149,6 +159,7 @@ Status SurfaceDecoderFilter::ConfigureMediaCodecByMimeType(std::string codecMime
         static_cast<int32_t>(isHdrVivid));
     mediaCodec_ = std::make_shared<SurfaceDecoderAdapter>();
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER, "mediaCodec is nullptr");
+    mediaCodec_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
     Status ret = mediaCodec_->Init(codecMimeType);
     if (ret == Status::OK) {
         std::shared_ptr<DecoderAdapterCallback> decoderSurfaceCallback =
@@ -157,7 +168,8 @@ Status SurfaceDecoderFilter::ConfigureMediaCodecByMimeType(std::string codecMime
     } else {
         MEDIA_LOG_E("Init mediaCodec fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_DEC_TYPE});
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNSUPPORT_VID_DEC_TYPE)});
         }
     }
     return ret;
@@ -189,7 +201,8 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Configure fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_PARAMS});
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNSUPPORT_VID_PARAMS)});
         }
     }
     return ret;
@@ -207,7 +220,8 @@ Status SurfaceDecoderFilter::SetOutputSurface(sptr<Surface> surface)
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec SetOutputSurface fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNKNOWN)});
         }
     }
     return ret;
@@ -251,7 +265,8 @@ Status SurfaceDecoderFilter::DoStart()
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Start fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNKNOWN)});
         }
     }
     return ret;
@@ -268,7 +283,8 @@ Status SurfaceDecoderFilter::DoPause()
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Pause fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNKNOWN)});
         }
     }
     return ret;
@@ -285,7 +301,8 @@ Status SurfaceDecoderFilter::DoResume()
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Resume fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNKNOWN)});
         }
     }
     return ret;
@@ -301,7 +318,8 @@ Status SurfaceDecoderFilter::DoStop()
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Stop fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNKNOWN});
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNKNOWN)});
         }
         return ret;
     }
@@ -333,7 +351,8 @@ void SurfaceDecoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec SetParameter fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_VID_PARAMS});
+            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                static_cast<int32_t>(MSERR_UNSUPPORT_VID_PARAMS)});
         }
     }
 }

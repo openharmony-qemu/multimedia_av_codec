@@ -18,6 +18,9 @@
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
+#include "meta/meta_key.h"
+#include "native_avcodec_base.h"
+#include "preprocessor_format_utils.h"
 #ifdef BUILD_ENG_VERSION
 #include <fstream>
 #include <sys/stat.h>
@@ -70,10 +73,17 @@ void DumpSurfaceBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer, const std:
     EnsureDumpDir();
     int32_t w = buffer->GetWidth();
     int32_t h = buffer->GetHeight();
+    int32_t stride = buffer->GetStride();
+    int32_t sliceH = h; // default: sliceHeight == height
+    OH_NativeBuffer_Planes *planes = nullptr;
+    if (buffer->GetPlanesInfo(reinterpret_cast<void **>(&planes)) == OHOS::GSERROR_OK &&
+        planes != nullptr && planes->planeCount > 1 && stride > 0) {
+        sliceH = static_cast<int32_t>(planes->planes[1].offset / static_cast<uint64_t>(stride));
+    }
     int32_t fmt = buffer->GetFormat();
     char name[256];
-    int ret = sprintf_s(name, sizeof(name), "%s/%s_%s_%dx%d_fmt%d_pts%" PRIu64 ".bin",
-                        DUMP_PATH, encoderId.c_str(), prefix.c_str(), w, h, fmt, pts);
+    int ret = sprintf_s(name, sizeof(name), "%s/%s_%s_%dx%d(%dx%d)_fmt%d_pts%" PRIu64 ".bin",
+                        DUMP_PATH, encoderId.c_str(), prefix.c_str(), w, h, stride, sliceH, fmt, pts);
     if (ret > 0) {
         std::ofstream ofs(name, std::ios::binary | std::ios::app);
         if (ofs.is_open()) {
@@ -95,6 +105,7 @@ void DumpBuffers(const OHOS::sptr<OHOS::SurfaceBuffer> &, const OHOS::sptr<OHOS:
                  const std::string &, uint64_t) {}
 #endif
 }
+
 namespace OHOS {
 namespace MediaAVCodec {
 
@@ -105,8 +116,12 @@ PreprocessorManager::PreprocessorManager()
 
 PreprocessorManager::~PreprocessorManager()
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto &[encoderId, info] : encoders_) {
+    std::map<std::string, std::shared_ptr<EncoderInfo>> encoders;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        encoders.swap(encoders_);
+    }
+    for (auto &[encoderId, info] : encoders) {
         if (info) {
             info->Stop();
         }
@@ -115,10 +130,13 @@ PreprocessorManager::~PreprocessorManager()
 }
 
 void PreprocessorManager::RegisterEncoder(std::string_view encoderId, std::shared_ptr<Preprocessor> preprocessor,
-                                          sptr<Surface> encoderSurface)
+                                          sptr<Surface> encoderSurface, OnStreamChangedCallback streamChangedCb,
+                                          OnPreprocessErrorCallback errorCb)
 {
     auto info = std::make_shared<EncoderInfo>(std::string(encoderId));
     info->Init(preprocessor, encoderSurface);
+    info->SetStreamChangedCallback(std::move(streamChangedCb));
+    info->SetPreprocessErrorCallback(std::move(errorCb));
 
     std::lock_guard<std::mutex> lock(mutex_);
     encoders_.emplace(std::string(encoderId), info);
@@ -127,27 +145,44 @@ void PreprocessorManager::RegisterEncoder(std::string_view encoderId, std::share
 
 void PreprocessorManager::UnregisterEncoder(std::string_view encoderId)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    encoders_.erase(std::string(encoderId));
+    std::shared_ptr<EncoderInfo> encoderInfo;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto iter = encoders_.find(std::string(encoderId));
+        if (iter != encoders_.end()) {
+            encoderInfo = std::move(iter->second);
+            encoders_.erase(iter);
+        }
+    }
+    if (encoderInfo) {
+        encoderInfo->Stop();
+    }
     AVCODEC_LOGI("Encoder unregistered: %{public}s", std::string(encoderId).c_str());
 }
 
-void PreprocessorManager::SetEncoderRunning(std::string_view encoderId, bool isRunning)
+int32_t PreprocessorManager::SetEncoderRunning(std::string_view encoderId, bool isRunning)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    auto iter = encoders_.find(std::string(encoderId));
-    if (iter == encoders_.end() || !iter->second) {
-        AVCODEC_LOGE("Encoder not found: %{public}s", std::string(encoderId).c_str());
-        return;
+    std::shared_ptr<EncoderInfo> encoderInfo;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto iter = encoders_.find(std::string(encoderId));
+        if (iter == encoders_.end() || !iter->second) {
+            AVCODEC_LOGE("Encoder not found: %{public}s", std::string(encoderId).c_str());
+            return AVCS_ERR_INVALID_STATE;
+        }
+        encoderInfo = iter->second;
     }
 
     if (isRunning) {
-        iter->second->Start();
+        int32_t ret = encoderInfo->Start();
+        CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start encoder info failed: %{public}s",
+                                 std::string(encoderId).c_str());
         AVCODEC_LOGI("Encoder running: %{public}s", std::string(encoderId).c_str());
     } else {
-        iter->second->Stop();
+        encoderInfo->Stop();
         AVCODEC_LOGI("Encoder stopped: %{public}s", std::string(encoderId).c_str());
     }
+    return AVCS_ERR_OK;
 }
 
 void PreprocessorManager::CreateSharedSurface()
@@ -260,9 +295,8 @@ PreprocessorManager::EncoderInfo::~EncoderInfo()
 
 void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> preprocessor, sptr<Surface> surface)
 {
-    if (!preprocessor || !surface) {
-        AVCODEC_LOGE("Get a nullptr, %s %s", preprocessor ? "" : "preprocessor", surface ? "" : "surface");
-    }
+    CHECK_AND_RETURN_LOG(preprocessor && surface,
+        "Get a nullptr, %s %s", preprocessor ? "" : "preprocessor", surface ? "" : "surface");
     std::weak_ptr<EncoderInfo> weakThis = shared_from_this();
     encoderSurface_ = surface;
     encoderSurface_->Connect();
@@ -277,25 +311,56 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
     });
 
     preprocessor_ = preprocessor;
-    preprocessor_->SetOnBufferReallocCallback([this](sptr<SurfaceBuffer> oldBuf, sptr<SurfaceBuffer> newBuf) {
-        if (!oldBuf || !newBuf) {
-            AVCODEC_LOGE("Buffer is nullptr");
-            return;
+    preprocessor_->SetOnBufferReallocCallback(
+        [weakThis](sptr<SurfaceBuffer> &oldBuffer, const sptr<SurfaceBuffer> &newBuffer) -> bool {
+            auto encoderInfo = weakThis.lock();
+            return encoderInfo && encoderInfo->ReplaceOutputBuffer(oldBuffer, newBuffer);
+        });
+}
+
+bool PreprocessorManager::EncoderInfo::ReplaceOutputBuffer(
+    sptr<SurfaceBuffer> &oldBuffer, const sptr<SurfaceBuffer> &newBuffer)
+{
+    CHECK_AND_RETURN_RET_LOG(oldBuffer && newBuffer, false, "Buffer is nullptr");
+    bool fatalError = false;
+    {
+        std::lock_guard<std::mutex> lock(bufferQueueMutex_);
+        if (!encoderSurface_) {
+            encoderSurfaceBufferPool_.erase(oldBuffer->GetSeqNum());
+            oldBuffer = nullptr;
+            isRunning_ = false;
+            eosRequested_ = false;
+            notifyEosTask_ = nullptr;
+            fatalError = true;
+        } else {
+            uint32_t oldSeq = oldBuffer->GetSeqNum();
+            auto ret = encoderSurface_->DetachBufferFromQueue(oldBuffer);
+            CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, false,
+                "Detach surface buffer failed, GSError: %{public}d", ret);
+            ret = encoderSurface_->AttachBufferToQueue(newBuffer);
+            if (ret == GSERROR_OK) {
+                encoderSurfaceBufferPool_.erase(oldSeq);
+                encoderSurfaceBufferPool_.insert_or_assign(newBuffer->GetSeqNum(), newBuffer);
+                return true;
+            }
+            AVCODEC_LOGE("Attach new surface buffer failed, GSError: %{public}d", ret);
+            auto rollbackRet = encoderSurface_->AttachBufferToQueue(oldBuffer);
+            if (rollbackRet == GSERROR_OK) {
+                return false;
+            }
+            AVCODEC_LOGE("Rollback old surface buffer failed, GSError: %{public}d", rollbackRet);
+            encoderSurfaceBufferPool_.erase(oldSeq);
+            oldBuffer = nullptr;
+            isRunning_ = false;
+            eosRequested_ = false;
+            notifyEosTask_ = nullptr;
+            fatalError = true;
         }
-        std::unique_lock<std::mutex> lock(bufferQueueMutex_);
-        auto ret = encoderSurface_->DetachBufferFromQueue(oldBuf);
-        if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Dettach surfacebuffer from queue failed, GSError: %{public}d", ret);
-            return;
-        }
-        ret = encoderSurface_->AttachBufferToQueue(newBuf);
-        if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Attach surfacebuffer to queue failed, GSError: %{public}d", ret);
-            return;
-        }
-        encoderSurfaceBufferPool_.erase(oldBuf->GetSeqNum());
-        encoderSurfaceBufferPool_.emplace(newBuf->GetSeqNum(), newBuf);
-    });
+    }
+    if (fatalError) {
+        bufferQueueCv_.notify_all();
+    }
+    return false;
 }
 
 int32_t PreprocessorManager::EncoderInfo::Start()
@@ -305,13 +370,21 @@ int32_t PreprocessorManager::EncoderInfo::Start()
         AVCODEC_LOGW("Encoder already running: %{public}s", encoderId_.data());
         return AVCS_ERR_OK;
     }
-    if (!encoderSurface_ || !preprocessor_) {
-        AVCODEC_LOGE("EncoderSurface or Preprocessor not initialized for encoder: %{public}s", encoderId_.data());
-        return AVCS_ERR_UNKNOWN;
+    if (processThread_.joinable()) {
+        lock.unlock();
+        processThread_.join();
+        lock.lock();
     }
+    CHECK_AND_RETURN_RET_LOG(encoderSurface_ && preprocessor_, AVCS_ERR_UNKNOWN,
+        "EncoderSurface or Preprocessor not initialized for encoder: %{public}s", encoderId_.data());
     eosRequested_ = false;
     notifyEosTask_ = nullptr;
-    CheckAndAllocateSurfaceBufferFromEncSurface();
+    streamChangeNotified_ = false;
+    lastNotifiedWidth_ = 0;
+    lastNotifiedHeight_ = 0;
+    lastNotifiedFormat_ = static_cast<int32_t>(GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT);
+    int32_t ret = CheckAndAllocateSurfaceBufferFromEncSurface();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Allocate encoder surface buffer failed");
     isRunning_ = true;
     processThread_ = std::thread(&EncoderInfo::EncoderThreadLoop, this);
     if (!processThread_.joinable()) {
@@ -324,14 +397,15 @@ int32_t PreprocessorManager::EncoderInfo::Start()
 
 void PreprocessorManager::EncoderInfo::Stop()
 {
+    std::queue<std::shared_ptr<SurfaceBufferWrapper>> emptyQueue;
     {
         std::unique_lock<std::mutex> lock(bufferQueueMutex_);
         isRunning_ = false;
         eosRequested_ = false;
         notifyEosTask_ = nullptr;
-        std::queue<std::shared_ptr<SurfaceBufferWrapper>> emptyQueue;
         std::swap(pendingBuffers_, emptyQueue);
     }
+    emptyQueue = {};
     bufferQueueCv_.notify_all();
     if (processThread_.joinable()) {
         processThread_.join();
@@ -340,15 +414,17 @@ void PreprocessorManager::EncoderInfo::Stop()
 
 int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSurface()
 {
-    uint32_t allocTimes = encoderSurface_->GetQueueSize() - encoderSurfaceBufferPool_.size();
-    if (allocTimes == 0) {
-        return AV_ERR_OK;
+    uint32_t queueSize = encoderSurface_->GetQueueSize();
+    if (encoderSurfaceBufferPool_.size() >= queueSize) {
+        return AVCS_ERR_OK;
     }
+    uint32_t allocTimes = queueSize - static_cast<uint32_t>(encoderSurfaceBufferPool_.size());
 
+    auto config = preprocessor_->GetConfigSnapshot();
     BufferRequestConfig requestConfig = {
-        .width = preprocessor_->GetConfiguredWidth(),
-        .height = preprocessor_->GetConfiguredHeight(),
-        .format = preprocessor_->GetConfiguredPixelFormat(),
+        .width = config.configuredWidth,
+        .height = config.configuredHeight,
+        .format = config.configuredPixelFormat,
     };
     requestConfig.strideAlignment = BUFFER_REQUEST_STRIDE_ALIGNMENT;
     requestConfig.usage = encoderSurface_->GetDefaultUsage() |
@@ -358,22 +434,18 @@ int32_t PreprocessorManager::EncoderInfo::CheckAndAllocateSurfaceBufferFromEncSu
         auto surfaceBuffer = SurfaceBuffer::Create();
         if (!surfaceBuffer) {
             AVCODEC_LOGE("Create surface buffer failed");
-            return AV_ERR_NO_MEMORY;
+            return AVCS_ERR_NO_MEMORY;
         }
 
         auto ret = surfaceBuffer->Alloc(requestConfig);
-        if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Alloc surfacebuffer %{public}u failed, GSError: %{public}d, "
-                "%{public}dx%{public}d, format: %{public}d, usage: %{public}" PRId64,
-                idx, ret, requestConfig.width, requestConfig.height, requestConfig.format, requestConfig.usage);
-            return ret == GSERROR_NO_MEM ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, (ret == GSERROR_NO_MEM) ? AVCS_ERR_NO_MEMORY : AVCS_ERR_UNKNOWN,
+            "Alloc surfacebuffer %{public}u failed, GSError: %{public}d, "
+            "%{public}dx%{public}d, format: %{public}d, usage: %{public}" PRId64,
+            idx, ret, requestConfig.width, requestConfig.height, requestConfig.format, requestConfig.usage);
 
         ret = encoderSurface_->AttachBufferToQueue(surfaceBuffer);
-        if (ret != GSERROR_OK) {
-            AVCODEC_LOGE("Attach surfacebuffer %{public}u to queue failed, GSError: %{public}d", idx, ret);
-            return AVCS_ERR_UNKNOWN;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, AVCS_ERR_UNKNOWN,
+            "Attach surfacebuffer %{public}u to queue failed, GSError: %{public}d", idx, ret);
 
         encoderSurfaceBufferPool_.emplace(surfaceBuffer->GetSeqNum(), surfaceBuffer);
         auto bufferWrapper = std::make_shared<SurfaceBufferWrapper>(
@@ -414,10 +486,8 @@ void PreprocessorManager::EncoderInfo::OnNewEncoderSurfaceBufferAvailable(uint32
 bool PreprocessorManager::EncoderInfo::RequestNotifyEos(std::function<void()> notifyEosTask)
 {
     std::lock_guard<std::mutex> lock(bufferQueueMutex_);
-    if (!isRunning_) {
-        AVCODEC_LOGE("Encoder is not running when request eos: %{public}s", encoderId_.data());
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(isRunning_, false,
+        "Encoder is not running when request eos: %{public}s", encoderId_.data());
     eosRequested_ = true;
     notifyEosTask_ = std::move(notifyEosTask);
     bufferQueueCv_.notify_all();
@@ -444,13 +514,23 @@ void PreprocessorManager::EncoderInfo::NotifyEosNowIfPending()
     notifyEosTask();
 }
 
+void PreprocessorManager::EncoderInfo::RecycleOutputBuffer(
+    const std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
+{
+    if (!outputBuffer || !outputBuffer->buffer) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(bufferQueueMutex_);
+    availableInputBuffers_.push(outputBuffer);
+}
+
 void PreprocessorManager::EncoderInfo::SetBufferFlushConfig(std::shared_ptr<SurfaceBufferWrapper> &inputBuffer,
                                                             std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
 {
-    if (!(inputBuffer && inputBuffer->buffer) || !outputBuffer || !preprocessor_) {
+    if (!inputBuffer || !outputBuffer || !outputBuffer->buffer) {
         return;
     }
-    outputBuffer->flushConfig.damage = {0, 0, preprocessor_->GetOutputWidth(), preprocessor_->GetOutputHeight()};
+    outputBuffer->flushConfig.damage = { 0, 0, outputBuffer->buffer->GetWidth(), outputBuffer->buffer->GetHeight() };
     outputBuffer->flushConfig.timestamp = inputBuffer->timestamp;
 }
 
@@ -459,7 +539,8 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
     std::string threadName = std::string("OS_Preproc_") + (encoderId_.find("primary") != std::string::npos ? "P" : "S");
     pthread_setname_np(pthread_self(), threadName.c_str());
     AVCODEC_LOGI("EncoderThreadLoop started: %{public}s", encoderId_.data());
-    while (isRunning_) {
+    bool shouldExit = false;
+    while (!shouldExit) {
         std::unique_lock<std::mutex> lock(bufferQueueMutex_);
         bufferQueueCv_.wait(lock, [this]() {
             if (!isRunning_ || (eosRequested_ && pendingBuffers_.empty())) {
@@ -468,7 +549,8 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
             return !(pendingBuffers_.empty() || availableInputBuffers_.empty());
         });
         if (!isRunning_) {
-            break;
+            shouldExit = true;
+            continue;
         }
         if (eosRequested_ && pendingBuffers_.empty()) {
             std::function<void()> notifyEosTask{nullptr};
@@ -479,7 +561,8 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
             eosRequested_ = false;
             isRunning_ = false;
             AVCODEC_LOGI("Pending buffers drained, notify eos asynchronously: %{public}s", encoderId_.data());
-            break;
+            shouldExit = true;
+            continue;
         }
         if (pendingBuffers_.empty() || availableInputBuffers_.empty()) {
             continue;
@@ -491,15 +574,11 @@ void PreprocessorManager::EncoderInfo::EncoderThreadLoop()
         lock.unlock();
 
         if (!inputBuffer || !inputBuffer->buffer || !outputBuffer || !outputBuffer->buffer) {
-            if (outputBuffer) {
-                std::lock_guard<std::mutex> poolLock(bufferQueueMutex_);
-                availableInputBuffers_.push(outputBuffer);
-            }
+            RecycleOutputBuffer(outputBuffer);
             continue;
         }
         if (!ProcessFrame(inputBuffer, outputBuffer)) {
-            std::lock_guard<std::mutex> poolLock(bufferQueueMutex_);
-            availableInputBuffers_.push(outputBuffer);
+            RecycleOutputBuffer(outputBuffer);
             continue;
         }
         DumpBuffers(inputBuffer->buffer, outputBuffer->buffer, encoderId_, inputBuffer->timestamp);
@@ -511,17 +590,67 @@ bool PreprocessorManager::EncoderInfo::ProcessFrame(std::shared_ptr<SurfaceBuffe
                                                     std::shared_ptr<SurfaceBufferWrapper> &outputBuffer)
 {
     AVCODEC_SYNC_TRACE;
+
     if (preprocessor_->ShouldDropFrame(inputBuffer->timestamp)) {
         AVCODEC_LOGD("venc_%{public}s Frame dropped: pts=%{public}" PRId64, encoderId_.data(),
                      inputBuffer->timestamp);
         return false;
     }
-    if (preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer, inputBuffer->timestamp) == AV_ERR_OK) {
-        SetBufferFlushConfig(inputBuffer, outputBuffer);
-    } else {
+    CheckAndNotifyStreamChange(inputBuffer);
+    auto ret = preprocessor_->Process(inputBuffer->buffer, outputBuffer->buffer);
+    if (ret != static_cast<int32_t>(AVCS_ERR_OK)) {
+        ReportPreprocessError(ret);
         return false;
     }
+    SetBufferFlushConfig(inputBuffer, outputBuffer);
     return true;
+}
+
+void PreprocessorManager::EncoderInfo::SetStreamChangedCallback(OnStreamChangedCallback cb)
+{
+    onStreamChangedCallback_ = std::move(cb);
+}
+
+void PreprocessorManager::EncoderInfo::SetPreprocessErrorCallback(OnPreprocessErrorCallback cb)
+{
+    preprocessErrorCallback_ = std::move(cb);
+}
+
+void PreprocessorManager::EncoderInfo::CheckAndNotifyStreamChange(
+    const std::shared_ptr<SurfaceBufferWrapper>& inputBuffer)
+{
+    if (!onStreamChangedCallback_) {
+        AVCODEC_LOGW("OnStreamChangedCallback is not found.");
+        return;
+    }
+
+    bool shouldNotify = false;
+
+    if (!streamChangeNotified_) {
+        shouldNotify = true;
+        streamChangeNotified_ = true;
+    } else {
+        int32_t w = inputBuffer->buffer->GetWidth();
+        int32_t h = inputBuffer->buffer->GetHeight();
+        int32_t fmt = inputBuffer->buffer->GetFormat();
+        if (w != lastNotifiedWidth_ || h != lastNotifiedHeight_ || fmt != lastNotifiedFormat_) {
+            shouldNotify = true;
+        }
+    }
+    if (!shouldNotify) {
+        return;
+    }
+
+    int32_t inputW = inputBuffer->buffer->GetWidth();
+    int32_t inputH = inputBuffer->buffer->GetHeight();
+    int32_t inputFmt = inputBuffer->buffer->GetFormat();
+    int32_t inputStride = inputBuffer->buffer->GetStride();
+    Media::Format streamFormat = FillStreamDescription(inputW, inputH, inputFmt, inputStride);
+    lastNotifiedWidth_ = inputW;
+    lastNotifiedHeight_ = inputH;
+    lastNotifiedFormat_ = inputFmt;
+
+    onStreamChangedCallback_(streamFormat);
 }
 
 // === PreprocessorManager: Buffer data query for GetInputDescription ===
@@ -554,5 +683,43 @@ bool PreprocessorManager::EncoderInfo::PeekPendingBufferData(BufferDataInfo& out
     outInfo.stride = wrapper->buffer->GetStride();
     return true;
 }
+
+void PreprocessorManager::EncoderInfo::ReportPreprocessError(int32_t errorCode)
+{
+    if (preprocessErrorCallback_) {
+        preprocessErrorCallback_(errorCode);
+    }
+}
+
+Media::Format PreprocessorManager::EncoderInfo::FillStreamDescription(int32_t width, int32_t height,
+                                                                      int32_t pixelFormat, int32_t stride)
+{
+    Media::Format format;
+    format.PutIntValue(Media::Tag::VIDEO_WIDTH, width);
+    format.PutIntValue(Media::Tag::VIDEO_HEIGHT, height);
+    format.PutIntValue(Media::Tag::VIDEO_GRAPHIC_PIXEL_FORMAT, pixelFormat);
+    if (stride > 0) {
+        format.PutIntValue(Media::Tag::VIDEO_STRIDE, stride);
+    }
+
+    VideoPixelFormat mappedFmt;
+    if (GraphicPixelFmtToVideoPixelFmt(static_cast<GraphicPixelFormat>(pixelFormat), mappedFmt)) {
+        format.PutIntValue(Media::Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(mappedFmt));
+    }
+
+    auto config = preprocessor_->GetConfigSnapshot();
+    if (config.cropEnabled) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, config.cropLeft);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, config.cropRight);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, config.cropTop);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM, config.cropBottom);
+    }
+    if (config.downsamplingEnabled) {
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, config.downsamplingWidth);
+        format.PutIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, config.downsamplingHeight);
+    }
+    return format;
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

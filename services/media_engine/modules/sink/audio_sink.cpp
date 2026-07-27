@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <cinttypes>
 #include "audio_sink.h"
 #include "avcodec_trace.h"
 #include "syspara/parameters.h"
@@ -21,8 +22,7 @@
 #include "calc_max_amplitude.h"
 #include "scoped_timer.h"
 #include "avcodec_info.h"
-
-#include <cinttypes>
+#include "common/event.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "AudioSink" };
@@ -43,6 +43,7 @@ constexpr int64_t OVERTIME_WARNING_MS = 50;
 constexpr int64_t FORMAT_CHANGE_MS = 100;
 constexpr int64_t BUFFER_CONSUME_MS = 50;
 constexpr int64_t FIX_DELAY_MS_AUDIO_VIVID = 80;
+constexpr int64_t PTS_DISCONTINUE_THRESHOLD_US = 1000000;
 }
 
 namespace OHOS {
@@ -169,6 +170,7 @@ void AudioSink::HandleAudioRenderRequestPost()
     FALSE_RETURN(cacheBuffer != nullptr);
     FALSE_RETURN_NOLOG(IsEosBuffer(cacheBuffer));
     availOutputBuffers_.pop();
+    ReleaseDecodedBuffer();
     HandleEosBuffer(cacheBuffer);
 }
 
@@ -399,6 +401,9 @@ Status AudioSink::Pause()
 Status AudioSink::Resume()
 {
     lagDetector_.Reset();
+    lastPtsForDiscontinuity_ = HST_TIME_NONE;
+    seekFlag_.store(false);
+    isFirstFrameAfterSeek_ = true;
     FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
     Status ret = plugin_->Resume();
     if (ret != Status::OK) {
@@ -573,6 +578,7 @@ void AudioSink::SetThreadGroupId(const std::string& groupId)
 {
     eosTask_ = std::make_unique<Task>("OS_EOSa", groupId, TaskType::AUDIO, TaskPriority::HIGH, false);
     changeTrackTask_ = std::make_unique<Task>("CHANGE_TRACK", groupId, TaskType::GLOBAL, TaskPriority::HIGH, false);
+    bypassTask_ = std::make_unique<Task>("AudioBypass", groupId, TaskType::SINGLETON, TaskPriority::HIGH, false);
 }
 
 void AudioSink::HandleEosInner(bool drain)
@@ -826,6 +832,8 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
             if (!IsBufferDataDrained(bufferDesc, cacheBuffer, size, cacheBufferSize, isAudioVivid, bufferPts)) {
                 break;
             }
+            ReportTrackRenderStart(cacheBuffer);
+            HandleBypassOutput(cacheBuffer);
             CalcMaxAmplitude(cacheBuffer);
         }
         ReleaseCacheBuffer(isSwapBuffer);
@@ -836,6 +844,24 @@ bool AudioSink::CopyDataToBufferDesc(size_t size, bool isAudioVivid, AudioStanda
         return true;
     }
     return false;
+}
+
+void AudioSink::ReportTrackRenderStart(const std::shared_ptr<AVBuffer>& cacheBuffer)
+{
+    uint64_t frameChangeSeq = 0;
+    int32_t frameStreamType = -1;
+    if (cacheBuffer != nullptr && cacheBuffer->meta_ != nullptr) {
+        cacheBuffer->meta_->GetData(Tag::MEDIA_CHANGE_SEQ, frameChangeSeq);
+        cacheBuffer->meta_->GetData(Tag::MEDIA_CHANGE_STREAM_TYPE, frameStreamType);
+    }
+    if (frameChangeSeq <= 0 || frameChangeSeq <= lastRenderedChangeSeqNum_.load()) {
+        return;
+    }
+    lastRenderedChangeSeqNum_.store(frameChangeSeq);
+    if (playerEventReceiver_ != nullptr && frameStreamType == MEDIA_STREAM_TYPE_AUDIO) {
+        playerEventReceiver_->OnDfxEvent({"audio_sink",
+            DfxEventType::DFX_EVENT_NEW_TRACK_RENDER_START, frameChangeSeq});
+    }
 }
 
 Status AudioSink::MuteAudioBuffer(size_t size, AudioStandard::BufferDesc &bufferDesc, bool isEos)
@@ -983,20 +1009,21 @@ bool AudioSink::IsTimeAnchorNeedUpdate()
     if (isAudioPass_) {
         int64_t currentRenderPTS = innerSynchroizer_->GetCurrentRenderPTS();
         int64_t currentRenderClockTime = innerSynchroizer_->GetCurrentRenderClockTime();
-        Pipeline::IMediaSyncCenter::IMediaTime iPassMediaTime = {lastBufferPTS - firstPts_,
-            currentRenderPTS, lastBufferDuration};
+        Pipeline::IMediaSyncCenter::IMediaTime iPassMediaTime = {currentRenderPTS - firstPts_,
+            lastBufferPTS - firstPts_, lastBufferDuration};
         syncCenter->UpdateTimeAnchor(currentRenderClockTime, 0, iPassMediaTime, this);
         MEDIA_LOG_I("DolbyPassthrough AudioSink , pts-f: " PUBLIC_LOG_D64
-            " us, currentRenderPTS: " PUBLIC_LOG_D64 " us"
+            " us, currentRenderPTS: " PUBLIC_LOG_D64 " us, firstPts: " PUBLIC_LOG_D64
             " us, currentRenderClockTime: " PUBLIC_LOG_D64 " us",
-            lastBufferPTS - firstPts_, currentRenderPTS, currentRenderClockTime);
+            lastBufferPTS - firstPts_, currentRenderPTS, firstPts_, currentRenderClockTime);
         forceUpdateTimeAnchorNextTime_ = false;
         innerSynchroizer_->UpdateReportTime(currentRenderClockTime);
         return true;
     }
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {lastBufferPTS - firstPts_, lastBufferPTS,
         lastBufferDuration};
-    syncCenter->UpdateTimeAnchor(nowCt, latency + fixDelay_, iMediaTime, this);
+    int64_t delayTime = latency == 0 ? fixDelay_ : latency;
+    syncCenter->UpdateTimeAnchor(nowCt, delayTime, iMediaTime, this);
     MEDIA_LOG_I("AudioSink fixDelay_: " PUBLIC_LOG_D64
         " us, latency: " PUBLIC_LOG_D64
         " us, pts-f: " PUBLIC_LOG_D64
@@ -1047,8 +1074,7 @@ void AudioSink::ReleaseCacheBuffer(bool isSwapBuffer)
     availOutputBuffers_.pop();
     FALSE_RETURN_MSG(buffer != nullptr, "release buffer, but buffer is null");
     MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is release", buffer->pts_);
-    Status ret = inputBufferQueueConsumer_->ReleaseBuffer(buffer);
-    FALSE_RETURN_MSG(ret == Status::OK, "release avbuffer failed");
+    FALSE_RETURN_MSG(ReleaseDecodedBuffer() == Status::OK, "release avbuffer failed");
     std::unique_lock<std::mutex> formatLock(formatChangeMutex_);
     FALSE_RETURN_NOLOG(formatChange_.load() && swapOutputBuffers_.empty() && availOutputBuffers_.empty());
     formatChange_ = false;
@@ -1112,9 +1138,17 @@ void AudioSink::GetAvailableOutputBuffers()
             MEDIA_LOG_I("AudioSink Recv EOS");
             isEosBuffer_ = true;
         }
-        availOutputBuffers_.push(filledInputBuffer);
-        MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is push", filledInputBuffer->pts_);
-        availDataSize_.fetch_add(filledInputBuffer->memory_->GetSize());
+
+        auto processedBuffer = HandlePostProcessingOutput(filledInputBuffer);
+        if (filledInputBuffer->memory_->GetSize() <= 0 && !isEosBuffer_) {
+            inputBufferQueueConsumer_->ReleaseBuffer(processedBuffer);
+            continue;
+        }
+        UpdateSeekState(filledInputBuffer);
+        decodedBuffers_.push(filledInputBuffer);
+        availOutputBuffers_.push(processedBuffer);
+        MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is push", processedBuffer->pts_);
+        availDataSize_.fetch_add(processedBuffer->memory_->GetSize());
     }
     DriveBufferCircle();
     return;
@@ -1149,8 +1183,7 @@ void AudioSink::DriveBufferCircle()
         MEDIA_LOG_I("DriveBufferCircle availOutputBuffers_ size:%{public}d, swapOutputBuffers_ size:%{public}d",
             static_cast<int>(availOutputBuffers_.size()), static_cast<int>(swapOutputBuffers_.size()));
     }
-    FALSE_RETURN_MSG(inputBufferQueueConsumer_ != nullptr, "bufferQueue consumer is nullptr");
-    inputBufferQueueConsumer_->ReleaseBuffer(oldestBuffer);
+    FALSE_RETURN_MSG(ReleaseDecodedBuffer() == Status::OK, "bufferQueue consumer is nullptr");
 }
 
 std::shared_ptr<AVBuffer> AudioSink::CopyBuffer(const std::shared_ptr<AVBuffer> buffer)
@@ -1445,6 +1478,7 @@ int64_t AudioSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
     bool render = true; // audio sink always report time anchor and do not drop
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN_V(syncCenter != nullptr, 0);
+
     if (firstPts_ == HST_TIME_NONE) {
         if (syncCenter && syncCenter->GetMediaStartPts() != HST_TIME_NONE) {
             firstPts_ = syncCenter->GetMediaStartPts();
@@ -1684,6 +1718,7 @@ Status AudioSink::SetSeekTime(int64_t seekTime)
 {
     MEDIA_LOG_I("AudioSink SetSeekTime pts = " PUBLIC_LOG_D64, seekTime);
     seekTimeUs_ = seekTime;
+    SetSeekFlag();
     return Status::OK;
 }
 
@@ -1782,12 +1817,184 @@ Status AudioSink::CacheBuffer()
 
         availOutputBuffers_.pop();
         swapOutputBuffers_.push(swapBuffer);
-        FALSE_RETURN_V(inputBufferQueueConsumer_ != nullptr, Status::ERROR_UNKNOWN);
-        inputBufferQueueConsumer_->ReleaseBuffer(buffer);
+        FALSE_RETURN_V(ReleaseDecodedBuffer() == Status::OK, Status::ERROR_UNKNOWN);
     }
     MEDIA_LOG_I("cacheBuffer availOutputBuffers_ size:%{public}d, swapOutputBuffers_ size:%{public}d",
         static_cast<int>(availOutputBuffers_.size()), static_cast<int>(swapOutputBuffers_.size()));
     return Status::OK;
+}
+
+void AudioSink::SetPCMCallback(const std::shared_ptr<IPCMCallback> &callback)
+{
+    MEDIA_LOG_I("SetPCMCallback");
+    std::lock_guard<std::mutex> lock(pcmCallbackMutex_);
+    pcmCallback_ = callback;
+}
+
+void AudioSink::SetPCMOutputStatus(bool isEnable)
+{
+    MEDIA_LOG_I("SetPCMOutputStatus isEnable: %{public}d", isEnable);
+    std::lock_guard<std::mutex> lock(pcmCallbackMutex_);
+    isPcmOutputEnable_ = isEnable;
+}
+
+void AudioSink::SetPCMProcessorStatus(bool isEnable)
+{
+    MEDIA_LOG_I("SetPCMProcessorStatus isEnable: %{public}d", isEnable);
+    std::lock_guard<std::mutex> lock(pcmCallbackMutex_);
+    isPcmProcessorEnable_ = isEnable;
+}
+
+void AudioSink::SetPCMProcessorMaxLen(int32_t maxProcessedPcmLen)
+{
+    MEDIA_LOG_I("SetPCMProcessorMaxLen: %{public}d", maxProcessedPcmLen);
+    std::lock_guard<std::mutex> lock(pcmCallbackMutex_);
+    maxProcessedPcmLen_ = maxProcessedPcmLen;
+}
+
+void AudioSink::HandleBypassOutput(const std::shared_ptr<AVBuffer> &buffer)
+{
+    {
+        std::lock_guard<std::mutex> pcmLock(pcmCallbackMutex_);
+        FALSE_RETURN_NOLOG(pcmCallback_ != nullptr && isPcmOutputEnable_);
+    }
+    FALSE_RETURN_MSG(buffer != nullptr && buffer->memory_ != nullptr, "buffer is null.");
+    FALSE_RETURN_MSG(bypassTask_ != nullptr, "bypassTask_ is null.");
+
+    auto pcmBypassBuffer = CopyPcmBuffer(buffer);
+    FALSE_RETURN(pcmBypassBuffer != nullptr);
+
+    std::weak_ptr<AudioSink> weakPtr(shared_from_this());
+    bypassTask_->SubmitJobOnce([weakPtr, pcmBypassBuffer] {
+        auto strongPtr = weakPtr.lock();
+        FALSE_RETURN(strongPtr != nullptr);
+        FALSE_RETURN(strongPtr->state_.load() == Pipeline::FilterState::RUNNING);
+
+        std::shared_ptr<IPCMCallback> callback;
+        {
+            std::lock_guard<std::mutex> pcmLock(strongPtr->pcmCallbackMutex_);
+            FALSE_RETURN(strongPtr->pcmCallback_ != nullptr);
+            callback = strongPtr->pcmCallback_;
+        }
+
+        std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+        {
+            std::lock_guard<std::mutex> pluginLock(strongPtr->pluginMutex_);
+            FALSE_RETURN(strongPtr->plugin_ != nullptr);
+            strongPtr->plugin_->GetParameter(meta);
+        }
+
+        pcmBypassBuffer->meta_ = std::move(meta);
+        callback->OnPCMOutput(pcmBypassBuffer);
+    });
+}
+
+std::shared_ptr<AVBuffer> AudioSink::HandlePostProcessingOutput(const std::shared_ptr<AVBuffer> &buffer)
+{
+    std::shared_ptr<IPCMCallback> callback;
+    {
+        std::lock_guard<std::mutex> pcmLock(pcmCallbackMutex_);
+        FALSE_RETURN_V_NOLOG(pcmCallback_ != nullptr && isPcmProcessorEnable_, buffer);
+        callback = pcmCallback_;
+    }
+
+    FALSE_RETURN_V_MSG(buffer != nullptr && buffer->memory_ != nullptr, buffer, "buffer is null.");
+    bool needExpand = maxProcessedPcmLen_ > buffer->memory_->GetCapacity();
+    auto pcmBuffer = needExpand ? CopyPcmBuffer(buffer, maxProcessedPcmLen_) : buffer;
+    FALSE_RETURN_V(pcmBuffer != nullptr, buffer);
+
+    FALSE_RETURN_V(plugin_ != nullptr, buffer);
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    plugin_->GetParameter(meta);
+
+    pcmBuffer->meta_ = std::move(meta);
+    callback->OnPCMProcessor(pcmBuffer);
+
+    FALSE_RETURN_V_NOLOG(needExpand, buffer);
+    if (pcmBuffer->memory_ != nullptr && pcmBuffer->memory_->GetSize() <= 0) {
+        buffer->memory_->SetSize(0);
+        return buffer;
+    }
+    auto processedBuffer = CopyPcmBuffer(pcmBuffer);
+    FALSE_RETURN_V(processedBuffer != nullptr, buffer); // Copy buffer failed, use unprocessed buffer
+
+    return processedBuffer;
+}
+
+std::shared_ptr<AVBuffer> AudioSink::CopyPcmBuffer(const std::shared_ptr<AVBuffer> buffer, int32_t minCapacity)
+{
+    FALSE_RETURN_V_MSG_E(buffer != nullptr && buffer->memory_ != nullptr && buffer->memory_->GetSize() > 0, nullptr,
+        "buffer or memory is nullptr");
+    AVBufferConfig avBufferConfig;
+
+    // If minCapacity is default value or less than buffer size, use buffer size
+    avBufferConfig.capacity = std::max(minCapacity, static_cast<int32_t>(buffer->memory_->GetSize()));
+    avBufferConfig.memoryType = bufferMemoryType_;
+    std::shared_ptr<AVBuffer> swapBuffer = AVBuffer::CreateAVBuffer(avBufferConfig);
+    FALSE_RETURN_V_MSG_E(swapBuffer != nullptr && swapBuffer->memory_ != nullptr, nullptr, "create swapBuffer failed");
+    swapBuffer->pts_ = buffer->pts_;
+    swapBuffer->dts_ = buffer->dts_;
+    swapBuffer->duration_ = buffer->duration_;
+    swapBuffer->flag_ = buffer->flag_;
+    FALSE_RETURN_V_MSG_E(swapBuffer->memory_->GetCapacity() >= buffer->memory_->GetSize(), nullptr, "no enough memory");
+    errno_t res = memcpy_s(swapBuffer->memory_->GetAddr(),
+        swapBuffer->memory_->GetCapacity(),
+        buffer->memory_->GetAddr(),
+        buffer->memory_->GetSize());
+    FALSE_RETURN_V_MSG_E(res == EOK, nullptr, "copy data failed");
+    swapBuffer->memory_->SetSize(buffer->memory_->GetSize());
+    return swapBuffer;
+}
+
+Status AudioSink::ReleaseDecodedBuffer()
+{
+    FALSE_RETURN_V(inputBufferQueueConsumer_ != nullptr, Status::ERROR_UNKNOWN);
+    FALSE_RETURN_V(!decodedBuffers_.empty(), Status::OK);
+    auto decodedBuffer = std::move(decodedBuffers_.front());
+    decodedBuffers_.pop();
+    inputBufferQueueConsumer_->ReleaseBuffer(decodedBuffer);
+    return Status::OK;
+}
+
+void AudioSink::UpdateSeekState(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    if (seekFlag_.load()) {
+        isFirstFrameAfterSeek_ = true;
+    } else if (isFirstFrameAfterSeek_) {
+        isFirstFrameAfterSeek_ = false;
+    } else {
+        CheckPtsDiscontinuity(buffer);
+    }
+}
+
+void AudioSink::CheckPtsDiscontinuity(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
+{
+    FALSE_RETURN_NOLOG(playerEventReceiver_ != nullptr);
+    FALSE_RETURN_NOLOG(buffer != nullptr);
+    FALSE_RETURN_NOLOG(!(buffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)));
+    
+    int64_t curPts = buffer->pts_;
+    int64_t lastPts = lastPtsForDiscontinuity_;
+    lastPtsForDiscontinuity_ = curPts;
+    
+    int64_t ptsDiff = curPts > lastPts ? (curPts - lastPts) : (lastPts - curPts);
+    if (ptsDiff > PTS_DISCONTINUE_THRESHOLD_US && lastPts != HST_TIME_NONE) {
+        MEDIA_LOG_I("Audio PTS discontinuity detected, lastPts " PUBLIC_LOG_D64
+            ", curPts " PUBLIC_LOG_D64, lastPts, curPts);
+        MediaDiscontinueInfo discontinueInfo {
+            .streamType = 1,
+            .discontinueType = 2,
+            .ptsBefore = lastPts,
+            .ptsAfter = curPts
+        };
+        playerEventReceiver_->OnDfxEvent({"AudioSink", DfxEventType::DFX_EVENT_MEDIA_DISCONTINUE, discontinueInfo});
+    }
+}
+
+void AudioSink::SetSeekFlag()
+{
+    seekFlag_.store(true);
+    lastPtsForDiscontinuity_ = HST_TIME_NONE;
 }
 } // namespace MEDIA
 } // namespace OHOS

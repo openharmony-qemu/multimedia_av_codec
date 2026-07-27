@@ -48,7 +48,7 @@ void VDecCallbackTest::CheckDetailedErrorCode(int32_t errorCode)
     if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) {
         detailedErrorCode_.verification_ = false;
     }
-    if (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
+    if (errorCode == AVCS_ERR_MISSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
         detailedErrorCode_.verification_ = false;
     }
 }
@@ -111,7 +111,7 @@ void VDecCallbackTestExt::CheckDetailedErrorCode(int32_t errorCode)
     if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) {
         detailedErrorCode_.verification_ = false;
     }
-    if (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
+    if (errorCode == AVCS_ERR_MISSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
         detailedErrorCode_.verification_ = false;
     }
 }
@@ -257,6 +257,7 @@ int32_t VideoDecAsyncSample::SetOutputSurface()
     auto p = consumer_->GetProducer();
     producer_ = Surface::CreateSurfaceAsProducer(p);
     std::shared_ptr<SurfaceMock> surface = SurfaceMockFactory::CreateSurface(producer_);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surface != nullptr, AV_ERR_INVALID_VAL, "CreateSurface failed");
     int32_t ret = videoDec_->SetOutputSurface(surface);
     isSurfaceMode_ = (ret == AV_ERR_OK);
     return ret;

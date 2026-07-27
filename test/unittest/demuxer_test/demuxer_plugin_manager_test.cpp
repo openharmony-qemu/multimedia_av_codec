@@ -976,8 +976,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0025, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0026, TestSize.Level1)
 {
-    std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
-    if (enable != "1") {
+    if (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.skip", "0") == "1") {
         return;
     }
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MP4, DEF_PROB_SIZE), true);
@@ -989,8 +988,7 @@ HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0026, TestSize.
 
 HWTEST_F(DemuxerPluginManagerUnitTest, CreateDemuxerPluginByName_0027, TestSize.Level1)
 {
-    std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
-    if (enable != "1") {
+    if (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.skip", "0") == "1") {
         return;
     }
     ASSERT_EQ(CreateDemuxerPluginByName(DEMUXER_PLUGIN_NAME_MPEG4, TEST_FILE_URI_MATROSKA, DEF_PROB_SIZE), false);
@@ -1338,6 +1336,37 @@ HWTEST_F(DemuxerPluginManagerUnitTest, FastInit_0003, TestSize.Level1)
         RemoveValue();
     }
     ASSERT_EQ(metas[0], metas[1]);
+}
+
+/**
+ * @tc.name: GetTmpTrackIdByTrackId_001
+ * @tc.desc: Test GetTmpTrackIdByTrackId interface, trackId exists in temp2TrackInfoMap_
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginManagerUnitTest, GetTmpTrackIdByTrackId_001, TestSize.Level1)
+{
+    int32_t trackId = 1;
+    int32_t expectedTrackId = 5;
+    demuxerPluginManager_->temp2TrackInfoMap_[trackId].trackID = expectedTrackId;
+
+    int32_t result = demuxerPluginManager_->GetTmpTrackIdByTrackId(trackId);
+
+    EXPECT_EQ(result, expectedTrackId);
+}
+
+/**
+ * @tc.name: GetTmpTrackIdByTrackId_002
+ * @tc.desc: Test GetTmpTrackIdByTrackId interface, trackId does not exist in temp2TrackInfoMap_
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginManagerUnitTest, GetTmpTrackIdByTrackId_002, TestSize.Level1)
+{
+    int32_t trackId = 99;
+    demuxerPluginManager_->temp2TrackInfoMap_.clear();
+
+    int32_t result = demuxerPluginManager_->GetTmpTrackIdByTrackId(trackId);
+
+    EXPECT_EQ(result, -1);
 }
 }
 }

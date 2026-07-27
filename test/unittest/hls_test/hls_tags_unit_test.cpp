@@ -621,4 +621,44 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_GetByteRange_002, TestSize.Level1)
     EXPECT_EQ(byteRange.first, 0);
     EXPECT_EQ(byteRange.second, 0);
 }
+
+HWTEST_F(AttributeUnitTest, IsSingleValueSection_ValidTag, TestSize.Level0)
+{
+    EXPECT_TRUE(IsSingleValueSection(HlsTag::URI));
+    EXPECT_TRUE(IsSingleValueSection(HlsTag::EXTXTARGETDURATION));
+    EXPECT_TRUE(IsSingleValueSection(HlsTag::EXTXPLAYLISTTYPE));
+}
+
+HWTEST_F(AttributeUnitTest, IsSingleValueSection_InvalidTag, TestSize.Level0)
+{
+    EXPECT_FALSE(IsSingleValueSection(HlsTag::EXTXKEY));
+    EXPECT_FALSE(IsSingleValueSection(HlsTag::EXTXSTART));
+    EXPECT_FALSE(IsSingleValueSection(HlsTag::EXTXDISCONTINUITY));
+    EXPECT_FALSE(IsSingleValueSection(HlsTag::EXTINF));
+}
+
+HWTEST_F(AttributeUnitTest, IsAttributesSection_ValidTag, TestSize.Level0)
+{
+    EXPECT_TRUE(IsAttributesSection(HlsTag::EXTXKEY));
+    EXPECT_TRUE(IsAttributesSection(HlsTag::EXTXSTART));
+    EXPECT_TRUE(IsAttributesSection(HlsTag::EXTXSTREAMINF));
+    EXPECT_TRUE(IsAttributesSection(HlsTag::EXTINF));
+}
+
+HWTEST_F(AttributeUnitTest, IsAttributesSection_InvalidTag, TestSize.Level0)
+{
+    EXPECT_FALSE(IsAttributesSection(HlsTag::URI));
+    EXPECT_FALSE(IsAttributesSection(HlsTag::EXTXDISCONTINUITY));
+}
+
+HWTEST_F(AttributeUnitTest, IsValuesListSection_ValidTag, TestSize.Level0)
+{
+    EXPECT_TRUE(IsValuesListSection(HlsTag::EXTINF));
+}
+
+HWTEST_F(AttributeUnitTest, IsValuesListSection_InvalidTag, TestSize.Level0)
+{
+    EXPECT_FALSE(IsValuesListSection(HlsTag::EXTXKEY));
+    EXPECT_FALSE(IsValuesListSection(HlsTag::URI));
+}
 }

@@ -74,9 +74,18 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_SetInputSurface_001, Tes
     sptr<Surface> consumerSurface = nullptr;
     Status ret = videoCaptureFilter_->SetInputSurface(consumerSurface);
     EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
-    consumerSurface = Surface::CreateSurfaceAsConsumer();
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_SetInputSurface_002
+ * @tc.desc: SetInputSurface
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_SetInputSurface_002, TestSize.Level1)
+{
+    sptr<Surface> consumerSurface = Surface::CreateSurfaceAsConsumer();
     ASSERT_TRUE(consumerSurface);
-    ret = videoCaptureFilter_->SetInputSurface(consumerSurface);
+    Status ret = videoCaptureFilter_->SetInputSurface(consumerSurface);
     EXPECT_EQ(ret, Status::OK);
 }
 

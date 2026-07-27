@@ -20,15 +20,86 @@
 #include "media_codec/media_codec.h"
 #include "common/media_core.h"
 #include "avcodec_sysevent.h"
+#include "buffer/avbuffer_queue.h"
+#include "buffer/avbuffer_queue_define.h"
+#include "avcodec_trace.h"
+#ifdef SUPPORT_AUDIO_CONVERT
+#include "audio_format_converter.h"
+#include "audio_suite_pcm_buffer.h"
+#include "audio_stream_info.h"
+#endif
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioEncoderFilter" };
+
+// 比特率对应的采样率档位
+struct BitrateSampleRateMap {
+    std::vector<int64_t> bitrates;  // 离散的比特率值列表
+    std::vector<int32_t> supportedSampleRates;
+};
+
+// 音频格式参数配置
+struct AudioFormatConfig {
+    std::string mimeType;
+    std::vector<BitrateSampleRateMap> bitrateSampleRateMaps;
+    int32_t maxChannels;  // 最大声道数
+};
+
+// MP3格式配置表
+static const AudioFormatConfig MP3_FORMAT_CONFIG = {
+    "audio/mpeg",
+    {
+        {{8000, 16000}, {8000, 11025, 12000, 16000, 22050, 24000}},
+        {{32000, 40000, 48000, 56000, 64000}, {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000}},
+        {{80000, 96000, 112000, 128000, 160000}, {16000, 22050, 24000, 32000, 44100, 48000}},
+        {{192000, 224000, 256000, 320000}, {32000, 44100, 48000}}
+    },
+    2  // MP3最大支持2声道
+};
+
+// AAC格式配置表（暂不限制采样率和码率关系）
+static const AudioFormatConfig AAC_FORMAT_CONFIG = {
+    "audio/mp4a-latm",
+    {},  // AAC暂不限制采样率和码率关系
+    2   // AAC最大支持2声道
+};
+
+// RAW格式配置表
+static const AudioFormatConfig RAW_FORMAT_CONFIG = {
+    "audio/raw",
+    {},  // RAW不限制采样率和码率关系
+    8   // RAW支持多声道
+};
+
+// AMR_NB格式配置表
+static const AudioFormatConfig AMR_NB_FORMAT_CONFIG = {
+    "audio/3gpp",
+    {
+        {{4750, 5150, 5900, 6700, 7400, 7950, 10200, 12200}, {8000}}
+    },
+    1   // AMR_NB仅支持单声道
+};
+
+// AMR_WB格式配置表
+static const AudioFormatConfig AMR_WB_FORMAT_CONFIG = {
+    "audio/amr-wb",
+    {
+        {{6600, 8850, 12650, 14250, 15850, 18250, 19850, 23050, 23850}, {16000}}
+    },
+    1   // AMR_WB仅支持单声道
+};
+
 }
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
 using namespace OHOS::MediaAVCodec;
+#ifdef SUPPORT_AUDIO_CONVERT
+using namespace OHOS::AudioStandard;
+using namespace OHOS::AudioStandard::AudioSuite;
+#endif
+using namespace OHOS::Media::Plugins;
 static AutoRegisterFilter<AudioEncoderFilter> g_registerAudioEncoderFilter("builtin.recorder.audioencoder",
     FilterType::FILTERTYPE_AENC,
     [](const std::string& name, const FilterType type) {
@@ -74,6 +145,26 @@ private:
     std::weak_ptr<AudioEncoderFilter> audioEncoderFilter_;
 };
 
+class IntermediateBufferAvailableListener : public IConsumerListener {
+public:
+    explicit IntermediateBufferAvailableListener(std::shared_ptr<AudioEncoderFilter> audioEncoderFilter)
+        : audioEncoderFilter_(std::move(audioEncoderFilter))
+    {
+    }
+
+    ~IntermediateBufferAvailableListener() override = default;
+
+    void OnBufferAvailable() override
+    {
+        if (auto filter = audioEncoderFilter_.lock()) {
+            filter->NotifyProcessingThread();
+        }
+    }
+
+private:
+    std::weak_ptr<AudioEncoderFilter> audioEncoderFilter_;
+};
+
 AudioEncoderFilter::AudioEncoderFilter(std::string name, FilterType type): Filter(name, type)
 {
     filterType_ = type;
@@ -83,6 +174,29 @@ AudioEncoderFilter::AudioEncoderFilter(std::string name, FilterType type): Filte
 AudioEncoderFilter::~AudioEncoderFilter()
 {
     MEDIA_LOG_I("audio encoder filter destroy");
+
+    if (isTranscoderMode_) {
+        // 停止处理线程
+        StopProcessingThread();
+
+        if (mediaCodec_ != nullptr) {
+            mediaCodec_->Release();
+            mediaCodec_ = nullptr;
+        }
+        // 清理中间队列
+        intermediateBufferQueue_ = nullptr;
+        intermediateQueueProducer_ = nullptr;
+        intermediateQueueConsumer_ = nullptr;
+#ifdef SUPPORT_AUDIO_CONVERT
+        if (channelConverter_ != nullptr) {
+            channelConverter_->Destroy();
+            channelConverter_ = nullptr;
+        }
+#endif
+        if (mediaCodecInputProducer != nullptr) {
+            mediaCodecInputProducer = nullptr;
+        }
+    }
 }
 
 Status AudioEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
@@ -104,7 +218,8 @@ void AudioEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     if (ret != 0 && isTranscoderMode_) {
         MEDIA_LOG_I("TranscoderMode");
         FALSE_RETURN(eventReceiver_ != nullptr);
-        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR, MSERR_UNSUPPORT_AUD_ENC_TYPE});
+        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_UNSUPPORT_AUD_ENC_TYPE)});
     }
 }
 
@@ -156,7 +271,8 @@ Status AudioEncoderFilter::DoStart()
     int32_t ret = mediaCodec_->Start();
     if (ret != 0) {
         SetFaultEvent("AudioEncoderFilter::DoStart error", ret);
-        return Status::ERROR_UNKNOWN;
+        MEDIA_LOG_E("audioEncoder start fail");
+        return Status::ERROR_AUD_ENC_START_FAILED;
     }
     return Status::OK;
 }
@@ -180,7 +296,8 @@ Status AudioEncoderFilter::DoStop()
     int32_t ret = mediaCodec_->Stop();
     if (ret != 0) {
         SetFaultEvent("AudioEncoderFilter::DoStop error", ret);
-        return Status::ERROR_UNKNOWN;
+        MEDIA_LOG_E("audioEncoder stop fail");
+        return Status::ERROR_AUD_ENC_STOP_FAILED;
     }
     return Status::OK;
 }
@@ -201,10 +318,35 @@ Status AudioEncoderFilter::DoRelease()
 {
     FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("Release");
+
+    if (isTranscoderMode_) {
+        // 停止处理线程
+        StopProcessingThread();
+#ifdef SUPPORT_AUDIO_CONVERT
+        // 清理转换器
+        if (channelConverter_ != nullptr) {
+            channelConverter_->Destroy();
+            channelConverter_ = nullptr;
+        }
+#endif
+        needChannelConvert_.store(false);
+
+        // 清理中间队列
+        intermediateQueueProducer_ = nullptr;
+        intermediateQueueConsumer_ = nullptr;
+        intermediateBufferQueue_ = nullptr;
+
+        {
+            std::lock_guard<std::mutex> lock(producerMutex_);
+            mediaCodecInputProducer = nullptr;
+        }
+    }
+
     int32_t ret = mediaCodec_->Release();
     if (ret != 0) {
         SetFaultEvent("AudioEncoderFilter::DoRelease error", ret);
-        return Status::ERROR_UNKNOWN;
+        MEDIA_LOG_E("audioEncoder release fail");
+        return Status::ERROR_FRAMEWORK_ERR;
     }
     return Status::OK;
 }
@@ -294,6 +436,186 @@ Status AudioEncoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
     return Status::OK;
 }
 
+// 根据MIME类型获取格式配置
+static const AudioFormatConfig* GetFormatConfig(const std::string& mimeType)
+{
+    if (mimeType == MP3_FORMAT_CONFIG.mimeType) {
+        return &MP3_FORMAT_CONFIG;
+    } else if (mimeType == AAC_FORMAT_CONFIG.mimeType) {
+        return &AAC_FORMAT_CONFIG;
+    } else if (mimeType == RAW_FORMAT_CONFIG.mimeType) {
+        return &RAW_FORMAT_CONFIG;
+    } else if (mimeType == AMR_NB_FORMAT_CONFIG.mimeType) {
+        return &AMR_NB_FORMAT_CONFIG;
+    } else if (mimeType == AMR_WB_FORMAT_CONFIG.mimeType) {
+        return &AMR_WB_FORMAT_CONFIG;
+    }
+    return nullptr;
+}
+
+// 在支持的码率中查找最接近输入码率的值
+static int64_t FindClosestBitrate(const AudioFormatConfig* formatConfig, int64_t targetBitrate)
+{
+    if (formatConfig == nullptr || formatConfig->bitrateSampleRateMaps.empty()) {
+        return targetBitrate;
+    }
+
+    int64_t closestBitrate = targetBitrate;
+    int64_t minDiff = INT64_MAX;
+
+    // 遍历所有码率档位
+    for (const auto& map : formatConfig->bitrateSampleRateMaps) {
+        for (int64_t bitrate : map.bitrates) {
+            int64_t diff = std::abs(bitrate - targetBitrate);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestBitrate = bitrate;
+            }
+        }
+    }
+
+    return closestBitrate;
+}
+
+// 根据码率查找支持的采样率范围
+static std::vector<int32_t> FindSupportedSampleRates(const AudioFormatConfig* formatConfig, int64_t bitrate)
+{
+    if (formatConfig == nullptr || formatConfig->bitrateSampleRateMaps.empty()) {
+        return {};
+    }
+
+    // 先找到最接近的码率
+    int64_t closestBitrate = FindClosestBitrate(formatConfig, bitrate);
+
+    // 根据最接近的码率查找对应的采样率范围
+    for (const auto& map : formatConfig->bitrateSampleRateMaps) {
+        for (int64_t supportedBitrate : map.bitrates) {
+            if (supportedBitrate == closestBitrate) {
+                return map.supportedSampleRates;
+            }
+        }
+    }
+
+    // 如果没有匹配的码率，返回空
+    return {};
+}
+
+// 在支持的采样率中查找最接近输入采样率的值
+static int32_t FindClosestSampleRate(const std::vector<int32_t>& supportedRates, int32_t inputRate)
+{
+    if (supportedRates.empty()) {
+        return inputRate;
+    }
+
+    auto it = std::min_element(supportedRates.begin(), supportedRates.end(),
+        [inputRate](int32_t a, int32_t b) {
+            return std::abs(a - inputRate) < std::abs(b - inputRate);
+        });
+
+    return (it != supportedRates.end()) ? *it : inputRate;
+}
+
+// 根据格式和输入声道数调整输出声道数
+static int32_t AdjustChannelCount(const AudioFormatConfig* formatConfig, int32_t inputChannels)
+{
+    constexpr int32_t CHANNEL_MONO = 1;
+    constexpr int32_t CHANNEL_STEREO = 2;
+    if (formatConfig == nullptr) {
+        return CHANNEL_MONO;  // 默认单声道
+    }
+
+    // 输入为单声道时不调整
+    if (inputChannels <= CHANNEL_MONO) {
+        return inputChannels;
+    }
+
+    // 根据MIME类型调整声道数
+    if (formatConfig->mimeType == "audio/raw") {
+        // RAW格式不变化
+        return std::min(inputChannels, formatConfig->maxChannels);
+    } else if (formatConfig->mimeType == "audio/mpeg" || formatConfig->mimeType == "audio/mp4a-latm") {
+        // MP3/AAC格式转为双声道
+        return std::min(CHANNEL_STEREO, formatConfig->maxChannels);
+    } else if (formatConfig->mimeType == "audio/3gpp" || formatConfig->mimeType == "audio/amr-wb") {
+        // AMR格式转为单声道
+        return CHANNEL_MONO;
+    } else {
+        // 其余格式转为单声道
+        return CHANNEL_MONO;
+    }
+}
+
+void AudioEncoderFilter::GetAudioPCMConfigure(const std::shared_ptr<Meta> &meta,
+    std::shared_ptr<AudioConfigure> &pcmConfig, const std::string &inputMetaName)
+{
+    FALSE_RETURN_MSG(meta != nullptr, "meta is nullptr");
+    FALSE_RETURN_MSG(pcmConfig != nullptr, "pcmConfig is nullptr");
+    meta->GetData(Tag::AUDIO_SAMPLE_RATE, pcmConfig->sampleRate);
+    meta->GetData(Tag::AUDIO_CHANNEL_COUNT, pcmConfig->channelCount);
+    meta->GetData(Tag::MEDIA_BITRATE, pcmConfig->bitrate);
+    meta->GetData(Tag::MIME_TYPE, pcmConfig->mimeType);
+    meta->GetData(Tag::AUDIO_CHANNEL_LAYOUT, pcmConfig->channelLayout);
+    meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, pcmConfig->sampleFormat);
+    MEDIA_LOG_I("%{public}s mime=%{public}s, sampleRate=%{public}d",
+        inputMetaName.c_str(), pcmConfig->mimeType.c_str(), pcmConfig->sampleRate);
+    MEDIA_LOG_I("%{public}s audio format: channels=%{public}d, sampleRate=%{public}d",
+        inputMetaName.c_str(), pcmConfig->channelCount, pcmConfig->sampleRate);
+    MEDIA_LOG_I("%{public}s audio format: channellayout=%{public}u, sampleFormat=%{public}d", inputMetaName.c_str(),
+        static_cast<uint32_t>(pcmConfig->channelLayout), static_cast<int32_t>(pcmConfig->sampleFormat));
+}
+
+void AudioEncoderFilter::AdjustAudioConfigure(std::shared_ptr<AudioConfigure> &adjustedConfig,
+    std::shared_ptr<AudioConfigure> &inputPCM, std::shared_ptr<AudioConfigure> &outputPCM)
+{
+    // 获取格式配置
+    const AudioFormatConfig* formatConfig = GetFormatConfig(outputPCM->mimeType);
+
+    // 调整后的参数
+    adjustedConfig->sampleRate = inputPCM->sampleRate;
+    adjustedConfig->bitrate = outputPCM->bitrate;
+    adjustedConfig->channelCount = inputPCM->channelCount;
+
+    if (formatConfig != nullptr) {
+        // 1. 码率优先判断：若码率未设置，使用输入码率
+        if (adjustedConfig->bitrate <= 0 && inputPCM->bitrate > 0) {
+            adjustedConfig->bitrate = inputPCM->bitrate;
+        }
+
+        // 2. 查找最接近的离散码率值
+        int64_t originalBitrate = adjustedConfig->bitrate;
+        adjustedConfig->bitrate = FindClosestBitrate(formatConfig, adjustedConfig->bitrate);
+        if (originalBitrate != adjustedConfig->bitrate) {
+            MEDIA_LOG_I("Bitrate adjusted from %{public}lld to %{public}lld (closest standard bitrate)",
+                        static_cast<long long>(originalBitrate), static_cast<long long>(adjustedConfig->bitrate));
+        }
+
+        // 3. 根据码率查找支持的采样率范围
+        std::vector<int32_t> supportedSampleRates = FindSupportedSampleRates(formatConfig, adjustedConfig->bitrate);
+
+        // 4. 在支持的采样率中查找最接近输入采样率的值
+        if (!supportedSampleRates.empty()) {
+            adjustedConfig->sampleRate = FindClosestSampleRate(supportedSampleRates, inputPCM->sampleRate);
+        } else {
+            // 如果没有采样率限制，使用输出配置值或输入值
+            adjustedConfig->sampleRate = (outputPCM->sampleRate > 0) ? outputPCM->sampleRate : inputPCM->sampleRate;
+        }
+
+        // 5. 根据格式调整声道数
+        adjustedConfig->channelCount = AdjustChannelCount(formatConfig, inputPCM->channelCount);
+
+        MEDIA_LOG_I("FormatConfig: mime=%{public}s, adjustedConfig->sampleRate=%{public}d",
+            formatConfig->mimeType.c_str(), adjustedConfig->sampleRate);
+        MEDIA_LOG_I("FormatConfig: adjustedChannels=%{public}d, adjustedConfig->bitrate=%{public}lld",
+            adjustedConfig->channelCount, static_cast<long long>(adjustedConfig->bitrate));
+    } else {
+        // 未知格式，使用默认处理
+        MEDIA_LOG_I("Unknown format: %{public}s, using default values", outputPCM->mimeType.c_str());
+        adjustedConfig->sampleRate = (outputPCM->sampleRate > 0) ? outputPCM->sampleRate : inputPCM->sampleRate;
+        adjustedConfig->bitrate = (outputPCM->bitrate > 0) ? outputPCM->bitrate : inputPCM->bitrate;
+        adjustedConfig->channelCount = 1;  // 默认单声道
+    }
+}
+
 Status AudioEncoderFilter::UpdateParameterToConfigure(const std::shared_ptr<Meta> &meta)
 {
     Plugins::AudioSampleFormat dstSampleFormat = Plugins::AudioSampleFormat::INVALID_WIDTH;
@@ -304,6 +626,43 @@ Status AudioEncoderFilter::UpdateParameterToConfigure(const std::shared_ptr<Meta
             static_cast<int32_t>(oriSampleFormat), static_cast<int32_t>(dstSampleFormat));
         configureParameter_->SetData(Tag::AUDIO_SAMPLE_FORMAT, dstSampleFormat);
     }
+    if (isTranscoderMode_) {
+        int32_t outputbuffersize = 0;
+        if (meta->GetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize)) {
+            MEDIA_LOG_I("AUDIO_MAX_OUTPUT_SIZE is outputbuffersize: " PUBLIC_LOG_D32,
+                static_cast<int32_t>(outputbuffersize));
+        } else {
+            MEDIA_LOG_I("not get AUDIO_MAX_OUTPUT_SIZE");
+        }
+
+        // 获取输入PCM参数.
+        std::shared_ptr<AudioConfigure> inputPCM = std::make_shared<AudioConfigure>();
+        GetAudioPCMConfigure(transcoderMeta_, inputPCM, "UpdateParameterToConfigure input");
+
+        // 获取输出配置参数
+        std::shared_ptr<AudioConfigure> outputPCM = std::make_shared<AudioConfigure>();
+        GetAudioPCMConfigure(configureParameter_, outputPCM, "UpdateParameterToConfigure output");
+
+        std::shared_ptr<AudioConfigure> adjustedPCM = std::make_shared<AudioConfigure>();
+        AdjustAudioConfigure(adjustedPCM, inputPCM, outputPCM);
+        // 设置调整后的参数
+        FALSE_RETURN_V(configureParameter_ != nullptr, Status::ERROR_NULL_POINTER);
+        configureParameter_->Set<Tag::AUDIO_SAMPLE_RATE>(adjustedPCM->sampleRate);
+        configureParameter_->Set<Tag::MEDIA_BITRATE>(adjustedPCM->bitrate);
+        configureParameter_->Set<Tag::AUDIO_CHANNEL_COUNT>(adjustedPCM->channelCount);
+        configureParameter_->Set<Tag::AUDIO_CHANNEL_LAYOUT>(
+            adjustedPCM->channelCount == 1 ? AudioChannelLayout::MONO : AudioChannelLayout::STEREO);
+
+        int32_t buffersize = 4096 * adjustedPCM->channelCount * SAMPLE_FORMAT_16;
+        if (outputbuffersize != 0) {
+            configureParameter_->Set<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(outputbuffersize);
+        } else {
+            configureParameter_->Set<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(buffersize);
+            MEDIA_LOG_I("AUDIO_MAX_INPUT_BUFFER_SIZE buffersize is: " PUBLIC_LOG_D32,
+                static_cast<int32_t>(buffersize));
+        }
+    }
+
     FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     int32_t ret = mediaCodec_->Configure(configureParameter_);
     if (ret != 0) {
@@ -334,11 +693,97 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
     MEDIA_LOG_I("OnLinkedResult");
     mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     mediaCodec_->Prepare();
+
     if (isTranscoderMode_) {
-        onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), transcoderMeta_);
+        // 获取输入音频格式信息
+        std::shared_ptr<AudioConfigure> inputAudio = std::make_shared<AudioConfigure>();
+        GetAudioPCMConfigure(transcoderMeta_, inputAudio, "TranscoderMeta");
+
+        // 获取输出音频格式信息
+        std::shared_ptr<AudioConfigure> outputAudio = std::make_shared<AudioConfigure>();
+        GetAudioPCMConfigure(meta, outputAudio, "meta");
+
+        // Check if channel conversion is needed
+#ifdef SUPPORT_AUDIO_CONVERT
+        needChannelConvert_.store((inputAudio->channelCount != outputAudio->channelCount) ||
+            (inputAudio->sampleRate != outputAudio->sampleRate));
+
+        if (needChannelConvert_.load()) {
+            // 初始化转换器输入格式（使用 AudioStandard 命名空间的类型）
+            converterInputFormat_.sampleRate = static_cast<AudioStandard::AudioSamplingRate>(inputAudio->sampleRate);
+            converterInputFormat_.channelLayout =
+                static_cast<AudioStandard::AudioChannelLayout>(inputAudio->channelLayout);
+            converterInputFormat_.sampleFormat =
+                static_cast<AudioStandard::AudioSampleFormat>(inputAudio->sampleFormat);
+            converterInputFormat_.channelCount = static_cast<uint32_t>(inputAudio->channelCount);
+
+            // 初始化转换器输出格式（单声道）
+            converterOutputFormat_.sampleRate = static_cast<AudioStandard::AudioSamplingRate>(outputAudio->sampleRate);
+            converterOutputFormat_.channelLayout =
+                static_cast<AudioStandard::AudioChannelLayout>(outputAudio->channelLayout);
+            converterOutputFormat_.sampleFormat =
+                static_cast<AudioStandard::AudioSampleFormat>(outputAudio->sampleFormat);
+            converterOutputFormat_.channelCount = static_cast<uint32_t>(outputAudio->channelCount);
+
+            // 创建转换器
+            channelConverter_ = AudioFormatConverter::Create(
+                converterInputFormat_, converterOutputFormat_);
+            if (channelConverter_ == nullptr) {
+                MEDIA_LOG_E("Failed to create channel converter");
+                needChannelConvert_.store(false);
+            } else {
+                needChannelConvert_.store(true);
+                MEDIA_LOG_I("Created channel converter: %{public}d channels -> 1 channel",
+                            inputAudio->channelCount);
+            }
+        }
+#endif
+
+        if (needChannelConvert_.load()) {
+            AddInternalBufferQueue();
+            FALSE_RETURN_MSG(intermediateQueueProducer_ != nullptr, "intermediateBufferQueue_ is nullptr");
+            onLinkedResultCallback_->OnLinkedResult(intermediateQueueProducer_, transcoderMeta_);
+        } else {
+            onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), transcoderMeta_);
+        }
+
+        MEDIA_LOG_I("OnLinkedResult completed, processing thread started");
         return;
     }
     onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), meta);
+}
+
+void AudioEncoderFilter::AddInternalBufferQueue()
+{
+    // 创建中间缓存队列
+    constexpr int32_t INTERMEDIATE_BUFFER_NUM = 8;
+    intermediateBufferQueue_ = AVBufferQueue::Create(INTERMEDIATE_BUFFER_NUM,
+        MemoryType::SHARED_MEMORY, "AudioEncoderIntermediateQueue");
+    if (intermediateBufferQueue_ == nullptr) {
+        MEDIA_LOG_E("Create internal bufferQueue failed!");
+        FALSE_RETURN(eventReceiver_ != nullptr);
+        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_NO_MEMORY)});
+        return;
+    }
+
+    intermediateQueueProducer_ = intermediateBufferQueue_->GetProducer();
+    intermediateQueueConsumer_ = intermediateBufferQueue_->GetConsumer();
+
+    // 设置监听器（监听器会通知独立线程）
+    sptr<IConsumerListener> intermediateListener_ = new IntermediateBufferAvailableListener(shared_from_this());
+    intermediateQueueConsumer_->SetBufferAvailableListener(intermediateListener_);
+
+    // 获取 MediaCodec 的输入队列生产者（必须在启动处理线程前初始化）
+    {
+        std::lock_guard<std::mutex> lock(producerMutex_);
+        mediaCodecInputProducer = mediaCodec_->GetInputBufferQueue();
+        FALSE_RETURN_MSG(mediaCodecInputProducer != nullptr, "mediaCodecInputProducer is nullptr");
+    }
+
+    // 启动独立处理线程
+    isProcessingRunning_.store(true);
+    processingThread_ = std::thread(&AudioEncoderFilter::ProcessingThreadFunc, this);
 }
 
 void AudioEncoderFilter::OnUpdatedResult(std::shared_ptr<Meta> &meta)
@@ -377,6 +822,269 @@ void AudioEncoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     bundleName_ = bundleName;
     instanceId_ = instanceId;
 }
+
+void AudioEncoderFilter::NotifyProcessingThread()
+{
+    {
+        std::unique_lock<std::mutex> lock(processingMutex_);
+        hasPendingBuffer_.store(true);
+    }
+    processingCondVar_.notify_one();
+}
+
+void AudioEncoderFilter::ProcessingThreadFunc()
+{
+    MEDIA_LOG_I("ProcessingThreadFunc started");
+
+    while (isProcessingRunning_.load()) {
+        std::unique_lock<std::mutex> lock(processingMutex_);
+
+        // 等待有数据或停止信号
+        processingCondVar_.wait(lock, [this] {
+            return hasPendingBuffer_.load() || !isProcessingRunning_.load();
+        });
+
+        if (!isProcessingRunning_.load()) {
+            break;
+        }
+
+        // 处理所有待处理的 buffer
+        hasPendingBuffer_.store(false);
+        lock.unlock();
+
+        // 处理中间队列的数据
+        ProcessIntermediateBuffer();
+    }
+
+    MEDIA_LOG_I("ProcessingThreadFunc stopped");
+}
+
+Status AudioEncoderFilter::AcquireIntermediateBuffer(std::shared_ptr<AVBuffer>& buffer)
+{
+    FALSE_RETURN_V(intermediateQueueConsumer_ != nullptr, Status::ERROR_NULL_POINTER);
+    
+    buffer = nullptr;
+    Status ret = intermediateQueueConsumer_->AcquireBuffer(buffer);
+    if (ret != Status::OK || buffer == nullptr) {
+        MEDIA_LOG_E("AcquireBuffer failed, ret: %{public}d", ret);
+        buffer = nullptr;
+        return Status::ERROR_UNKNOWN;
+    }
+    
+    MEDIA_LOG_D("Processing buffer, before flag: 0x%{public}u", buffer->flag_);
+    return Status::OK;
+}
+
+Status AudioEncoderFilter::RequestCodecBuffer(std::shared_ptr<AVBuffer>& buffer, const AVBufferConfig& config)
+{
+    buffer = nullptr;
+    
+    std::lock_guard<std::mutex> lock(producerMutex_);
+    
+    FALSE_RETURN_V_MSG_E(mediaCodecInputProducer != nullptr,
+        Status::ERROR_NULL_POINTER, "mediaCodecInputProducer is nullptr");
+    
+    Status ret = mediaCodecInputProducer->RequestBuffer(buffer, config, AVTRANSCODER_MAX_BUFFER_WAIT);
+    if (ret != Status::OK || buffer == nullptr || buffer->memory_ == nullptr) {
+        MEDIA_LOG_E("RequestBuffer from mediaCodec failed, ret: %{public}d", ret);
+        buffer = nullptr;
+        return Status::ERROR_UNKNOWN;
+    }
+    
+    return Status::OK;
+}
+
+void AudioEncoderFilter::CopyBufferMetadata(const std::shared_ptr<AVBuffer>& srcBuffer,
+    const std::shared_ptr<AVBuffer>& dstBuffer)
+{
+    FALSE_RETURN_NOLOG(srcBuffer != nullptr && dstBuffer != nullptr);
+    
+    dstBuffer->flag_ = srcBuffer->flag_;
+    dstBuffer->pts_ = srcBuffer->pts_;
+    dstBuffer->dts_ = srcBuffer->dts_;
+    dstBuffer->duration_ = srcBuffer->duration_;
+}
+
+Status AudioEncoderFilter::ConvertAudioData(const std::shared_ptr<AVBuffer>& srcBuffer,
+    const std::shared_ptr<AVBuffer>& dstBuffer)
+{
+#ifdef SUPPORT_AUDIO_CONVERT
+    FALSE_RETURN_V_MSG_E(srcBuffer != nullptr && dstBuffer != nullptr,
+        Status::ERROR_INVALID_PARAMETER, "CopyAudioData: invalid buffer parameter");
+    FALSE_RETURN_V_MSG_E(srcBuffer->memory_ != nullptr && dstBuffer->memory_ != nullptr,
+        Status::ERROR_INVALID_PARAMETER, "CopyAudioData: invalid memory");
+    FALSE_RETURN_V_MSG_E(channelConverter_ != nullptr, Status::ERROR_NULL_POINTER, "channelConverter_ is nullptr");
+
+    MEDIA_LOG_I("is converting");
+    uint32_t outputSize = static_cast<uint32_t>(dstBuffer->memory_->GetCapacity());
+    auto callback = std::make_shared<ConverterInputCallback>(srcBuffer);
+    channelConverter_->SetInputCallback(callback);
+
+    uint32_t actualOutputSize = 0;
+    int32_t convertRet = channelConverter_->Process(
+        dstBuffer->memory_->GetAddr(), outputSize, &actualOutputSize);
+    FALSE_RETURN_V_MSG_E(convertRet == 0 && actualOutputSize != 0,
+        Status::ERROR_UNKNOWN, "Channel conversion failed, ret: %{public}d", convertRet);
+
+    actualOutputSize = actualOutputSize > static_cast<uint32_t>(dstBuffer->memory_->GetCapacity()) ?
+        static_cast<uint32_t>(dstBuffer->memory_->GetCapacity()) : actualOutputSize;
+    dstBuffer->memory_->SetSize(actualOutputSize);
+
+    CopyBufferMetadata(srcBuffer, dstBuffer);
+    return Status::OK;
+#else
+    MEDIA_LOG_E("ConvertAudioData: audio convert not supported");
+    return Status::ERROR_UNKNOWN;
+#endif
+}
+
+Status AudioEncoderFilter::CopyAudioData(const std::shared_ptr<AVBuffer>& srcBuffer,
+    const std::shared_ptr<AVBuffer>& dstBuffer)
+{
+    MEDIA_LOG_I("no need convert");
+    FALSE_RETURN_V_MSG_E(srcBuffer != nullptr && dstBuffer != nullptr,
+        Status::ERROR_INVALID_PARAMETER, "CopyAudioData: invalid buffer parameter");
+    FALSE_RETURN_V_MSG_E(srcBuffer->memory_ != nullptr && dstBuffer->memory_ != nullptr,
+        Status::ERROR_INVALID_PARAMETER, "CopyAudioData: invalid memory");
+
+    CopyBufferMetadata(srcBuffer, dstBuffer);
+
+    auto srcData = srcBuffer->memory_->GetAddr();
+    auto dstData = dstBuffer->memory_->GetAddr();
+    auto srcSize = srcBuffer->memory_->GetSize();
+    auto dstCapacity = dstBuffer->memory_->GetCapacity();
+
+    FALSE_RETURN_V_MSG_E(srcData != nullptr && dstData != nullptr,
+        Status::ERROR_INVALID_PARAMETER, "CopyAudioData: invalid data address");
+    FALSE_RETURN_V_MSG_E(srcSize > 0 && dstCapacity >= srcSize, Status::ERROR_INVALID_PARAMETER,
+        "Empty source buffer or insufficient space, dstCapacity=%{public}u, srcSize=%{public}u", dstCapacity, srcSize);
+
+    errno_t ret = memcpy_s(dstData, dstCapacity, srcData, srcSize);
+    FALSE_RETURN_V_MSG_E(ret == 0, Status::ERROR_INVALID_PARAMETER,
+        "memcpy_s failed, ret: %{public}d", ret);
+    dstBuffer->memory_->SetSize(srcSize);
+    
+    return Status::OK;
+}
+
+Status AudioEncoderFilter::PushBufferToCodec(const std::shared_ptr<AVBuffer>& buffer)
+{
+    std::lock_guard<std::mutex> lock(producerMutex_);
+    
+    FALSE_RETURN_V_MSG_E(mediaCodecInputProducer != nullptr,
+        Status::ERROR_NULL_POINTER, "mediaCodecInputProducer is nullptr when pushing buffer");
+    
+    Status ret = mediaCodecInputProducer->PushBuffer(buffer, true);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK,
+        ret, "PushBuffer to mediaCodec failed, ret: %{public}d", ret);
+    
+    return ret;
+}
+
+void AudioEncoderFilter::ProcessIntermediateBuffer()
+{
+    FALSE_RETURN_MSG(intermediateQueueConsumer_ != nullptr, "intermediateQueueConsumer_ is nullptr");
+
+    Status ret;
+    do {
+        MediaAVCodec::AVCodecTrace trace("AudioEncoderFilter::ProcessIntermediateBuffer");
+        std::shared_ptr<AVBuffer> intermediateBuffer;
+        ret = AcquireIntermediateBuffer(intermediateBuffer);
+        FALSE_BREAK_NOLOG(ret == Status::OK);
+
+        std::shared_ptr<AVBuffer> codecBuffer;
+        AVBufferConfig config;
+        ret = RequestCodecBuffer(codecBuffer, config);
+        if (ret != Status::OK) {
+            intermediateQueueConsumer_->ReleaseBuffer(intermediateBuffer);
+            continue;
+        }
+
+        Status processRet;
+#ifdef SUPPORT_AUDIO_CONVERT
+        if (needChannelConvert_.load() && channelConverter_ != nullptr) {
+            processRet = ConvertAudioData(intermediateBuffer, codecBuffer);
+        } else {
+            processRet = CopyAudioData(intermediateBuffer, codecBuffer);
+        }
+#else
+        processRet = CopyAudioData(intermediateBuffer, codecBuffer);
+#endif
+
+        intermediateQueueConsumer_->ReleaseBuffer(intermediateBuffer);
+        if (processRet != Status::OK) {
+            continue;
+        }
+
+        PushBufferToCodec(codecBuffer);
+    } while (ret == Status::OK);
+}
+
+void AudioEncoderFilter::StopProcessingThread()
+{
+    MediaAVCodec::AVCodecTrace trace("AudioEncoderFilter::StopProcessingThread");
+    MEDIA_LOG_I("StopProcessingThread called");
+
+    // 停止标志
+    isProcessingRunning_.store(false);
+
+    // 唤醒线程
+    {
+        std::unique_lock<std::mutex> lock(processingMutex_);
+        hasPendingBuffer_.store(true);
+    }
+    processingCondVar_.notify_all();
+
+    // 等待线程结束
+    if (processingThread_.joinable()) {
+        processingThread_.join();
+    }
+
+    MEDIA_LOG_I("StopProcessingThread completed");
+}
+
+#ifdef SUPPORT_AUDIO_CONVERT
+AudioEncoderFilter::ConverterInputCallback::ConverterInputCallback(const std::shared_ptr<AVBuffer>& buffer)
+    : sourceBuffer_(buffer), readOffset_(0) {}
+
+int32_t AudioEncoderFilter::ConverterInputCallback::OnRequestData(
+    const void** data, InputDataStatus* status)
+{
+    if (sourceBuffer_ == nullptr || sourceBuffer_->memory_ == nullptr) {
+        if (status != nullptr) {
+            *status = InputDataStatus::DATA_FINISHED;
+        }
+        return 0;
+    }
+
+    auto totalSize = sourceBuffer_->memory_->GetSize();
+    if (totalSize < 0 || readOffset_ >= static_cast<size_t>(totalSize)) {
+        if (status != nullptr) {
+            *status = InputDataStatus::DATA_FINISHED;
+        }
+        return 0;
+    }
+
+    if (data != nullptr) {
+        *data = static_cast<const uint8_t*>(sourceBuffer_->memory_->GetAddr()) + readOffset_;
+    }
+
+    size_t remainingSize = static_cast<size_t>(totalSize) - readOffset_;
+    readOffset_ = static_cast<size_t>(totalSize); // 下次调用返回 DATA_FINISHED
+
+    if (status != nullptr) {
+        // 根据 sourceBuffer 的 flag 判断是否为 EOS
+        // 如果是 EOS，返回 DATA_FINISHED；否则返回 HAVE_DATA
+        if (sourceBuffer_->flag_ & BUFFER_IS_EOS) {
+            *status = InputDataStatus::DATA_FINISHED;
+        } else {
+            *status = InputDataStatus::HAVE_DATA;
+        }
+    }
+
+    return static_cast<int32_t>(remainingSize);
+}
+#endif
 } // namespace Pipeline
 } // namespace MEDIA
 } // namespace OHOS

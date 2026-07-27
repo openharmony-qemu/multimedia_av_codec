@@ -140,6 +140,7 @@ void DemuxerPluginUnitTest::InitResourceURI(const std::string &filePath, std::st
     auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
     auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
     demuxerPlugin_ = std::reinterpret_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(basePlugin);
+    ASSERT_NE(demuxerPlugin_, nullptr);
     ASSERT_EQ(demuxerPlugin_->SetDataSource(dataSource), Status::OK);
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
     initStatus_ = true;
@@ -167,6 +168,7 @@ void DemuxerPluginUnitTest::InitWeakNetworkDemuxerPluginURI(
     auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
     auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
     demuxerPlugin_ = std::reinterpret_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(basePlugin);
+    ASSERT_NE(demuxerPlugin_, nullptr);
     ASSERT_EQ(demuxerPlugin_->SetDataSource(dataSource), Status::OK);
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
     initStatus_ = true;
@@ -197,6 +199,7 @@ void DemuxerPluginUnitTest::InitResource(const std::string &filePath, std::strin
     auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
     auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
     demuxerPlugin_ = std::reinterpret_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(basePlugin);
+    ASSERT_NE(demuxerPlugin_, nullptr);
     ASSERT_EQ(demuxerPlugin_->SetDataSource(dataSource), Status::OK);
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
     initStatus_ = true;
@@ -257,6 +260,7 @@ void DemuxerPluginUnitTest::InitResourceLargeFile(const std::string &filePath, s
     auto dataSource = std::make_shared<FakeLargeSizeDataSource>(streamDemuxer, 0);
     auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
     demuxerPlugin_ = std::reinterpret_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(basePlugin);
+    ASSERT_NE(demuxerPlugin_, nullptr);
     ASSERT_EQ(demuxerPlugin_->SetDataSource(dataSource), Status::OK);
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
     initStatus_ = true;
@@ -294,6 +298,7 @@ void DemuxerPluginUnitTest::InitWeakNetworkDemuxerPlugin(
     auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
     auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(pluginName);
     demuxerPlugin_ = std::reinterpret_pointer_cast<OHOS::Media::Plugins::Ffmpeg::FFmpegDemuxerPlugin>(basePlugin);
+    ASSERT_NE(demuxerPlugin_, nullptr);
     ASSERT_EQ(demuxerPlugin_->SetDataSource(dataSource), Status::OK);
     ASSERT_EQ(demuxerPlugin_->GetMediaInfo(mediaInfo_), Status::OK);
     initStatus_ = true;
@@ -823,6 +828,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_0001, TestSize.Level1)
             Status ret_ = demuxerPlugin_->SeekTo(-1, *toPts, *mode, seekTime);
             if (ret_ != Status::OK) {
                 printf("seek failed, time = %" PRId64 " | ret = %d\n", *toPts, ret_);
+                numbers_ += 1;
                 continue;
             }
             ReadData();

@@ -179,8 +179,10 @@ Status FileFdSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
             Status::ERROR_NO_MEMORY, "memory is not enough ringBuffer_");
         downloadTask_ = std::make_shared<Task>(std::string("downloadTaskFD"));
         FALSE_RETURN_V_MSG_E(downloadTask_ != nullptr, Status::ERROR_NO_MEMORY, "memory is not enough");
-        downloadTask_->RegisterJob([this] {
-            CacheDataLoop();
+        downloadTask_->RegisterJob([weakSelf = weak_from_this()] {
+            auto sourcePlugin = weakSelf.lock();
+            FALSE_RETURN_V_MSG_E(sourcePlugin != nullptr, 0, "sourcePlugin destroyed before task execytion.");
+            sourcePlugin->CacheDataLoop();
             return 0;
         });
         downloadTask_->Start();
@@ -887,6 +889,14 @@ int64_t FileFdSourcePlugin::GetCurrentMillisecond()
 bool FileFdSourcePlugin::IsCloudFd()
 {
     return isCloudFile_;
+}
+
+void FileFdSourcePlugin::PauseRead()
+{
+    FALSE_RETURN_MSG(fd_ != -1, "no valid fd");
+    FALSE_RETURN_MSG(isCloudFile_, "fd is not cloud");
+    ioctl(fd_, HMDFS_IOC_CANCEL_READ);
+    ioctl(fd_, HMDFS_IOC_RESTORE_READ);
 }
 } // namespace FileFdSource
 } // namespace Plugin

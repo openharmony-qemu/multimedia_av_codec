@@ -47,6 +47,12 @@ public:
     int32_t PushInputParameter(uint32_t index);
     int32_t FreeOutputBuffer(uint32_t index);
     int32_t CreateInputSurface();
+    int32_t GetSurfaceQueueSize();
+    int32_t GetMaxPendingInputCount();
+    int32_t GetIDRFrameCount();
+    int32_t GetIDRWithImmediateXPSCount();
+    int32_t GetMaxPendingFramesObserved();
+    void SetIsAVCCodec(bool isAVC);
     bool IsValid();
     int32_t SetCustomBuffer(std::shared_ptr<AVBufferMock> buffer);
 
@@ -58,9 +64,12 @@ public:
     bool isAVBufferMode_ = false;
     bool isTemporalScalabilitySyncIdr_ = false;
     bool isDiscardFrame_ = false;
+    
     std::string roiRects_ = "";
     bool enableVariableFrameRate_ = false;
     int32_t frameIndex_ = 0;
+    bool input8BitTo10Bit_ = false;
+    bool inputResizeWidthHeight_ = false;
 
 private:
     void FlushInner();
@@ -78,7 +87,10 @@ private:
     int32_t OutputLoopInnerExt();
     int32_t InputLoopInnerExt();
     void InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr);
+    void UpdateMaxPendingFramesObserved();
+    void UpdateMaxPendingInputCount();
     void CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_ptr<AVBufferMock> buffer);
+    void UpdateOutputNumOfXpsAndIdrframes(const char *bufferAddr, int32_t size);
     void InputLtrParam(OH_AVCodecBufferAttr &attr, int32_t frameInputCount, std::shared_ptr<AVBufferMock> buffer);
     void InputRoiParam(std::shared_ptr<AVBufferMock> buffer);
     void CheckSHA();
@@ -101,6 +113,7 @@ private:
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
     OHNativeWindow *nativeWindow_ = nullptr;
+    std::shared_ptr<SurfaceMock> surfaceMock_ = nullptr;
     LtrParam ltrParam;
 };
 } // namespace MediaAVCodec

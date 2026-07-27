@@ -29,6 +29,11 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServer"};
 constexpr uint32_t SERVER_MAX_IPC_THREAD_NUM = 64;
+constexpr int32_t RESO_144P_THRESHOLD = 129024;
+constexpr int32_t RESO_480P_THRESHOLD = 665760;
+constexpr int32_t RESO_720P_THRESHOLD = 1497600;
+constexpr int32_t BITRATE_300K_THRESHOLD = 300000;
+constexpr int32_t BITRATE_480K_THRESHOLD = 480000;
 } // namespace
 
 namespace OHOS {
@@ -155,6 +160,11 @@ int32_t AVCodecServer::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
     return AVCS_ERR_OK;
 }
 
+void AVCodecServer::ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta)
+{
+    EventManager::GetInstance().OnInstanceEvent(type, meta);
+}
+
 int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
 {
     if (fd <= 0) {
@@ -177,6 +187,70 @@ int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)
         EventManager::GetInstance().OnInstanceEvent(EventType::STATISTICS_EVENT_SUBMIT);
     }
     return OHOS::NO_ERROR;
+}
+
+int32_t AVCodecServer::VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow)
+{
+    auto codecParam = AVCodecServerManager::GetInstance().GetAndUpdateCodecParmInfoByProcessName(
+        bundleName, isFloatingWindow);
+    int32_t codecDecision = 0;
+    if (!codecParam.has_value())
+        codecDecision = 0;
+    else
+        codecDecision = DecidePowerMode(*codecParam);
+    AVCODEC_LOGD("AVCodecServer VideoCallNotifyPiPState: bundleName is %{public}s, isFloatingWindow is %{public}d, "
+                 "codecDecision is %{public}d",
+                 bundleName.c_str(), isFloatingWindow, codecDecision);
+    (void)codecDecision;
+    return AVCS_ERR_OK;
+}
+
+int32_t AVCodecServer::DecidePowerMode(const CodecParamInfo &codecParam)
+{
+    int32_t codecDecision = 0;
+    if (codecParam.encPowermode != 1)
+        codecDecision = 0;
+    else if (codecParam.encWidth <= 0 || codecParam.encHeight <= 0)
+        codecDecision = 0;
+    else {
+        int64_t resolution = static_cast<int64_t>(codecParam.encHeight) *
+                             static_cast<int64_t>(codecParam.encWidth);
+        if (resolution <= RESO_144P_THRESHOLD)
+            codecDecision = 1;
+        else if (resolution <= RESO_480P_THRESHOLD)
+            codecDecision = codecParam.encBitrate <= BITRATE_480K_THRESHOLD ? 1 : 0;
+        else if (resolution <= RESO_720P_THRESHOLD)
+            codecDecision = codecParam.encBitrate <= BITRATE_300K_THRESHOLD ? 1 : 0;
+    }
+    return codecDecision;
+}
+
+void AVCodecServer::OnOutputParamInfo(const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+                                      const std::string &callerName)
+{
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
+    int32_t codecDecision = 0;
+    codecDecision = DecidePowerMode(codecParam);
+    (void)codecDecision;
+    std::string bundleName = forwardCallerName.empty() ? callerName : forwardCallerName;
+}
+
+void AVCodecServer::NotifyCamRegister(const bool camRegisterFlag)
+{
+    camRegisterFlag_ = camRegisterFlag;
+    if (camRegisterFlag) {
+        wptr<AVCodecServer> weakThis = this;
+        AVCodecServerManager::GetInstance().RegisterCallback(
+            [weakThis](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+                       const std::string &callerName) {
+                sptr<AVCodecServer> strongThis = weakThis.promote();
+                if (strongThis != nullptr) {
+                    strongThis->OnOutputParamInfo(codecParam, forwardCallerName, callerName);
+                }
+            });
+    } else {
+        AVCodecServerManager::GetInstance().UnRegisterCallback();
+    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

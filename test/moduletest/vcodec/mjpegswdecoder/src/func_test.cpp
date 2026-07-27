@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
+
 #include <string>
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
@@ -83,7 +87,7 @@ namespace {
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0320, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -105,7 +109,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0320, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0330, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -128,7 +132,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0330, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0410, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -150,7 +154,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0410, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0700, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -175,7 +179,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0700, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0800, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -200,7 +204,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0800, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0900, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -226,7 +230,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_0900, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, SURF_CHANGE_FUNC_001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -252,7 +256,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, SURF_CHANGE_FUNC_001, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, SURF_CHANGE_FUNC_002, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -278,7 +282,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, SURF_CHANGE_FUNC_002, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, SURF_CHANGE_FUNC_003, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -302,7 +306,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, SURF_CHANGE_FUNC_003, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, SURF_CHANGE_FUNC_004, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -327,7 +331,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, SURF_CHANGE_FUNC_004, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -351,7 +355,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -375,7 +379,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, SUB_MEDIA_VIDEO_MJPEGSWDEC_H265_SWITCH_001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i <= 39; i++) {
             vdec_ = OH_VideoDecoder_CreateByMime("video/mjpeg");
             ASSERT_NE(nullptr, vdec_);
@@ -399,7 +403,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, SUB_MEDIA_VIDEO_MJPEGSWDEC_H265_SWITCH_001, Test
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, SUB_MEDIA_VIDEO_MJPEGSWDEC_H265_SWITCH_002, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i <= 30; i++) {
             if (i == 30) {
                 shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
@@ -437,7 +441,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, SUB_MEDIA_VIDEO_MJPEGSWDEC_H265_SWITCH_002, Test
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0310, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -460,7 +464,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0310, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0400, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -481,7 +485,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0400, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0410, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -503,7 +507,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0410, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0420, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -524,7 +528,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0420, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0430, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -546,7 +550,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0430, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0700, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -571,7 +575,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0700, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0800, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -596,7 +600,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0800, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0900, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -622,7 +626,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_0900, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_1300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_var;
         const char *file = "/data/test/media/95_71_Rext_gray.avi";
@@ -647,7 +651,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_1300, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -673,7 +677,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -699,7 +703,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -724,7 +728,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -748,7 +752,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -774,7 +778,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -798,7 +802,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -823,7 +827,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -847,7 +851,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -871,7 +875,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -898,7 +902,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -924,7 +928,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -949,7 +953,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < 2; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -975,7 +979,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_016, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_017, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1000,7 +1004,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_017, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1024,7 +1028,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_001, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1048,7 +1052,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_MAX_INPUT_SIZE_CHECK_002, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_001, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1070,7 +1074,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_001, TestSize.Level4)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_002, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1092,7 +1096,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_002, TestSize.Level4)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_003, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1114,7 +1118,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_003, TestSize.Level4)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_004, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1136,7 +1140,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_004, TestSize.Level4)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_005, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1158,7 +1162,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_005, TestSize.Level4)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_006, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
             format = OH_AVFormat_Create();
@@ -1180,7 +1184,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_006, TestSize.Level4)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_007, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1203,7 +1207,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_007, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_008, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1226,7 +1230,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_008, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_008_2, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1249,7 +1253,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_008_2, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_009, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1272,7 +1276,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_009, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_010, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1295,7 +1299,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_010, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_011, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1316,7 +1320,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_011, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_012, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1337,7 +1341,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_012, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_013, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1358,7 +1362,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_013, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_014, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1379,7 +1383,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_014, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_015, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         const char *file = "/data/test/media/1920_1080_30.avi";
@@ -1404,7 +1408,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_PARA_015, TestSize.Level0)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_STABILITY_FUNC_0010, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount100; i++) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
@@ -1432,7 +1436,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_STABILITY_FUNC_0010, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_STABILITY_FUNC_0020, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount100; i++) {
             vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
             ASSERT_NE(nullptr, vdec_);
@@ -1460,7 +1464,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_STABILITY_FUNC_0020, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_STABILITY_FUNC_0030, TestSize.Level4)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vdec_ = OH_VideoDecoder_CreateByName(g_codecNameMjpeg.c_str());
         ASSERT_NE(nullptr, vdec_);
         format = OH_AVFormat_Create();
@@ -1490,7 +1494,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_STABILITY_FUNC_0030, TestSize.L
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STAB_FUNC_0100, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_144;
@@ -1524,7 +1528,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STAB_FUNC_0100, TestSize.
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0110, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_1080_30;
@@ -1552,7 +1556,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0110, TestS
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0120, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_64;
@@ -1580,7 +1584,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0120, TestS
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0130, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < g_reliCount2; i++) {
             shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
             vDecSample->INP_DIR = INP_DIR_144;
@@ -1608,7 +1612,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_STABLITY_FUNC_0130, TestS
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_001, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SF_OUTPUT = false;
         vDecSample->INP_DIR = INP_DIR_1158;
@@ -1629,7 +1633,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_001, TestSize.Level3)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_002, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1440;
         const char *file = "/data/test/media/1920_1440_Main_HEIF.avi";
@@ -1650,7 +1654,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_002, TestSize.Level3)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_003, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SF_OUTPUT = false;
         vDecSample->INP_DIR = INP_DIR_1022;
@@ -1671,7 +1675,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_003, TestSize.Level3)
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_FUNCTION_004, TestSize.Level3)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->SF_OUTPUT = false;
         vDecSample->INP_DIR = INP_DIR_71;
@@ -1870,7 +1874,7 @@ HWTEST_F(MjpegSwdecFuncNdkTest, VIDEO_MJPEGSWDEC_H265_FLUSH_0020, TestSize.Level
  */
 HWTEST_F(MjpegSwdecFuncNdkTest, API11_VIDEO_MJPEGSWDEC_FUNCTION_1000, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = INP_DIR_1080_30;
         int32_t pixfmt[4] = {28, 24, 25, 12};

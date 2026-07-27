@@ -47,6 +47,7 @@ public:
     Status SetPerfRecEnabled(bool isPerfRecEnabled);
     void SetMediaMuted(bool isMuted);
     int64_t GetFrameInterval();
+    Status GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs);
 
 private:
     int64_t CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer,
@@ -60,6 +61,8 @@ private:
     void ReportPts(int64_t nowPts);
     void InitWaitPeriod();
     void RecordStallingTimestamp(AVBuffer& buffer, int64_t stage, int64_t timeStamp);
+    void UpdateSeekState(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
+    void CheckPtsDiscontinuity(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer);
 
     class VideoLagDetector : public LagDetector {
     public:
@@ -74,6 +77,29 @@ private:
         int64_t lastSystemTimeMs_ = 0;
         int64_t lastBufferTimeMs_ = 0;
         int64_t totalLagDuration_ = 0;
+        std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
+    };
+
+    class AVSyncDetector {
+    public:
+        void Reset();
+        void CheckSync(int64_t diffUs, int64_t pts);
+        void GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs);
+        void SetEventReceiver(const std::shared_ptr<EventReceiver> eventReceiver);
+        void OnPlaybackEnd(int64_t endPtsMs);
+    private:
+        void ReportLipAsyncEvent(int64_t endPtsMs);
+        static constexpr int64_t AV_SYNC_THRESHOLD_US = 200000; // 200ms
+        static constexpr int64_t AV_SYNC_CUMULATIVE_US = 1000000; // 1s
+        static constexpr int64_t VIDEO_AHEAD_FLAG = 1; // 1s
+        static constexpr int64_t VIDEO_BEHIND_FLAG = 2; // 1s
+        bool isInAVSync_ = false;
+        int64_t syncStartPts_ = 0;
+        int64_t syncEndPts_ = 0;
+        int64_t syncCount_ = 0;
+        int64_t totalSyncDurationUs_ = 0;
+        int32_t lipAsyncType_ = 0;
+        int64_t lipAsyncStartPtsMs_ = 0;
         std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
     };
 
@@ -107,6 +133,9 @@ private:
     PerfRecorder perfRecorder_ {};
     bool isMuted_ = false;
     std::atomic<bool> needDropOnMute_ {false};
+    AVSyncDetector avSyncDetector_ {};
+    int64_t lastPtsForDiscontinuity_ {HST_TIME_NONE};
+    std::atomic<bool> isFirstFrameAfterSeek_ {true};
 };
 } // namespace Pipeline
 } // namespace Media

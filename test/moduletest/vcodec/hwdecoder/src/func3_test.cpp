@@ -12,6 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
+
 #include <string>
 #include "gtest/gtest.h"
 #include "native_avcodec_videodecoder.h"
@@ -1726,7 +1730,7 @@ HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_8K_0370, TestSize.Level2)
             vDecSample->SF_OUTPUT = true;
             vDecSample->TRANSFER_FLAG = true;
             vDecSample->enbleSyncMode = 1;
-            if (!access("/system/lib64/media/", 0)) {
+            if (ONLY_FOR_FLAGSHIP_CHIP) {
                 ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
                 ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
                 ASSERT_EQ(AV_ERR_OK, vDecSample->DecodeSetSurface());

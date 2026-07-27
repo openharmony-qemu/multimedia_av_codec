@@ -48,7 +48,7 @@ using DeleteFuncType = uint32_t (*)(AVC_ENC_HANDLE hEncoder);
 
 #define SCOPED_TRACE_AVC(name) HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, name)
 
-class AvcEncoder : public CodecBase, public RefBase {
+class AvcEncoder : public CodecBase, public RefBase, public std::enable_shared_from_this<AvcEncoder> {
 public:
     explicit AvcEncoder(const std::string &name);
     ~AvcEncoder() override;
@@ -72,6 +72,7 @@ public:
     int32_t SignalRequestIDRFrame() override;
     void GetBufferFromSurface();
     static int32_t GetCodecCapability(std::vector<CapabilityData> &capaArray);
+    bool IsValid() const { return state_.load() != State::ERROR; }
 
     class FBuffer {
     public:
@@ -112,25 +113,28 @@ private:
     void GetColorAspects(const Format &format);
     void CheckIfEnableCb(const Format &format);
     int32_t SetupPort(const Format &format);
+    void GetIdrAppendXpsParam(const Format &format);
 
     void CheckBitRateSupport(int32_t &bitrate);
     void CheckFrameRateSupport(double &framerate);
-    void CheckIFrameIntervalTimeSupport(int32_t &interval);
 
     void AvcFuncMatch();
     void ReleaseHandle();
 
     void ReleaseSurfaceBuffer();
     void ClearDirtyList();
-    void WaitForInBuffer();
+    void WaitForInBuffer(std::unique_lock<std::mutex> &listLock);
     void FillEncodedBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
 
     void ReleaseSurfaceBufferByAVBuffer(std::shared_ptr<AVBuffer> &buffer);
     void NotifyUserToProcessBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
     void NotifyUserToFillBuffer(uint32_t index, std::shared_ptr<AVBuffer> &buffer);
 
-    void InitAvcEncoderParams();
+    int32_t InitAvcEncoderParams();
     void FillAvcInitParams(AVC_ENC_INIT_PARAM &param);
+
+    void WaitForFence(std::shared_ptr<FBuffer> &inputBuffer);
+    void ResetGopFrmIdx();
 
     struct InputFrame {
         uint8_t *buffer = nullptr;
@@ -165,6 +169,9 @@ private:
     int32_t Nv21ToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &inArgs);
     int32_t CheckBufferSize(int32_t bufferSize, int32_t stride, int32_t height, VideoPixelFormat pixelFormat);
 
+    int32_t StoreHeaderInfo();
+    int32_t CopyHeaderInfoToOutArgs();
+    int32_t ProcessHeaderInfo();
     void EncoderAvcHeader();
     void EncoderAvcTailer();
     int32_t EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &outArgs);
@@ -180,6 +187,21 @@ private:
         EOS,
         ERROR,
     };
+    static const char* StateToString(State state)
+    {
+        switch (state) {
+            case State::UNINITIALIZED: return "UNINITIALIZED";
+            case State::INITIALIZED: return "INITIALIZED";
+            case State::CONFIGURED: return "CONFIGURED";
+            case State::STOPPING: return "STOPPING";
+            case State::RUNNING: return "RUNNING";
+            case State::FLUSHED: return "FLUSHED";
+            case State::FLUSHING: return "FLUSHING";
+            case State::EOS: return "EOS";
+            case State::ERROR: return "ERROR";
+            default: return "UNKNOWN";
+        }
+    }
     bool IsActive() const;
     void CalculateBufferSize();
     int32_t AllocateBuffers();
@@ -195,10 +217,10 @@ private:
 private:
     class EncoderBuffersConsumerListener : public IBufferConsumerListener {
     public:
-        explicit EncoderBuffersConsumerListener(AvcEncoder *codec) : codec_(codec) {}
+        explicit EncoderBuffersConsumerListener(std::weak_ptr<AvcEncoder> codec) : codec_(codec) {}
         void OnBufferAvailable() override;
     private:
-        AvcEncoder *codec_ = nullptr;
+        std::weak_ptr<AvcEncoder> codec_;
     };
 
     AVC_ENC_HANDLE avcEncoder_ = nullptr;
@@ -208,6 +230,13 @@ private:
     AVC_ENC_INIT_PARAM initParams_;
     AVC_ENC_INARGS avcEncInputArgs_;
     AVC_ENC_OUTARGS avcEncOutputArgs_;
+    struct AVC_ENC_HEADER_ARGS {
+        uint32_t encodedFrameType;
+        void *streamBuf = nullptr;
+        uint32_t size;
+        uint32_t bytes;
+    };
+    AVC_ENC_HEADER_ARGS avcEncHeaderArgs_;
 
 private:
     std::string codecName_;
@@ -228,8 +257,9 @@ private:
     int32_t encQpMin_;
     int32_t encIperiod_;
     double encFrameRate_;
-    bool encIdrRequest_ = false;
+    std::atomic<bool> encIdrRequest_ = false;
     bool enableSurfaceModeInputCb_ = false;
+    bool enableIdrAppendXps_ = false;
     uint8_t srcRange_ = 0;
     ColorPrimary srcPrimary_ = ColorPrimary::COLOR_PRIMARY_UNSPECIFIED;
     TransferCharacteristic srcTransfer_ = TransferCharacteristic::TRANSFER_CHARACTERISTIC_UNSPECIFIED;
@@ -240,6 +270,7 @@ private:
     int32_t avcQuality_ = 0;
     int32_t inputBufferSize_ = 0;
     int32_t outputBufferSize_ = 0;
+    int32_t gopFrmIdx_ = 0;
 
     VideoPixelFormat srcPixelFmt_ = VideoPixelFormat::UNKNOWN;
     std::vector<std::shared_ptr<FBuffer>> buffers_[2];

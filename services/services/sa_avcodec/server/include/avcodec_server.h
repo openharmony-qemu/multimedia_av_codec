@@ -36,7 +36,10 @@ public:
     int32_t SuspendActive(const std::vector<pid_t> &pidList) override;
     int32_t SuspendActiveAll() override;
     int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) override;
-                            
+    int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) override;
+    void NotifyCamRegister(const bool camRegisterFlag);
+    void ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta) override;
+
 protected:
     // SystemAbility override
     void OnDump() override;
@@ -49,8 +52,12 @@ protected:
 
 private:
     void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
+    int32_t DecidePowerMode(const CodecParamInfo &codecParam);
+    void OnOutputParamInfo(const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+                           const std::string &callerName);
 
     std::mutex stateMutex_;
+    bool camRegisterFlag_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

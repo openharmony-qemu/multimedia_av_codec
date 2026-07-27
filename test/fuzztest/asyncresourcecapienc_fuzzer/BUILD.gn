@@ -66,8 +66,7 @@ ohos_fuzztest("AsyncResourceCapiEncFuzzTest") {
     "$MEDIA_ROOT_DIR/test/unittest/common/common_mock/drm_mock/capi/media_key_system_mock.cpp",
      ]
 
-  public_deps =
-      [ "$MEDIA_ROOT_DIR/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [ "$MEDIA_ROOT_DIR/test/unittest/common:av_codec_capi_unit_test" ]
 
   external_deps = [
     "c_utils:utils",
@@ -79,6 +78,7 @@ ohos_fuzztest("AsyncResourceCapiEncFuzzTest") {
     "ipc:ipc_single",
     "media_foundation:native_media_core",
     "googletest:gtest",
+    "openssl:libcrypto_shared",
   ]
 
   if (av_codec_support_drm) {

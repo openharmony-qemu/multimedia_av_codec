@@ -39,6 +39,38 @@ constexpr int32_t WAIT_FOR_SIDX_TIME = 1000 * 1000;
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
 constexpr uint32_t DEFAULT_DURATION = 20;
+class DashCallbackMock1 : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                mediaDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                break;
+            }
+            default:break;
+        }
+    }
+    void SetDownload(std::shared_ptr<DashMediaDownloader> downloader)
+    {
+        mediaDownloader = downloader;
+    }
+    std::shared_ptr<DashMediaDownloader> mediaDownloader;
+};
+}
+
+void SetDefaultPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy)
+{
+    if (playStrategy != nullptr) {
+        playStrategy->width = DEFAULT_WIDTH;
+        playStrategy->height = DEFAULT_HEIGHT;
+        playStrategy->duration = DEFAULT_DURATION;
+        playStrategy->audioLanguage = "eng";
+        playStrategy->subtitleLanguage = "en_GB";
+    }
 }
 
 bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
@@ -48,6 +80,9 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(mediaDownloader);
+    mediaDownloader->SetCallback(cb);
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
@@ -58,11 +93,7 @@ bool DashMediaDownSeekToTimeFuzzerTest(const uint8_t *data, size_t size)
     };
     mediaDownloader->SetStatusCallback(statusCallback);
     std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    playStrategy->width = DEFAULT_WIDTH;
-    playStrategy->height = DEFAULT_HEIGHT;
-    playStrategy->duration = DEFAULT_DURATION;
-    playStrategy->audioLanguage = "eng";
-    playStrategy->subtitleLanguage = "en_GB";
+    SetDefaultPlayStrategy(playStrategy);
     mediaDownloader->SetPlayStrategy(playStrategy);
 
     mediaDownloader->Open(testUrl, httpHeader);
@@ -82,6 +113,10 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     (void) size;
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(mediaDownloader);
+    mediaDownloader->SetCallback(cb);
+    mediaDownloader->SetIsTriggerAutoMode(true);
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
@@ -92,11 +127,7 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     };
     mediaDownloader->SetStatusCallback(statusCallback);
     std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    playStrategy->width = DEFAULT_WIDTH;
-    playStrategy->height = DEFAULT_HEIGHT;
-    playStrategy->duration = DEFAULT_DURATION;
-    playStrategy->audioLanguage = "eng";
-    playStrategy->subtitleLanguage = "en_GB";
+    SetDefaultPlayStrategy(playStrategy);
     mediaDownloader->SetPlayStrategy(playStrategy);
     mediaDownloader->Open(testUrl, httpHeader);
     mediaDownloader->GetSeekable();
@@ -135,6 +166,10 @@ bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
     }
     std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
     mediaDownloader->Init();
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(mediaDownloader);
+    mediaDownloader->SetCallback(cb);
+    mediaDownloader->SetIsTriggerAutoMode(true);
     std::string testUrl = MPD_MULTI_AUDIO_SUB;
     std::map<std::string, std::string> httpHeader = {
         {"User-Agent", "ABC"},
@@ -145,11 +180,7 @@ bool DashMediaDownGetFuzzerTest(const uint8_t *data, size_t size)
     };
     mediaDownloader->SetStatusCallback(statusCallback);
     std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    playStrategy->width = DEFAULT_WIDTH;
-    playStrategy->height = DEFAULT_HEIGHT;
-    playStrategy->duration = DEFAULT_DURATION;
-    playStrategy->audioLanguage = "eng";
-    playStrategy->subtitleLanguage = "en_GB";
+    SetDefaultPlayStrategy(playStrategy);
     mediaDownloader->SetPlayStrategy(playStrategy);
 
     mediaDownloader->Open(testUrl, httpHeader);

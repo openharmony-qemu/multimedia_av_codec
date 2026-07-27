@@ -272,6 +272,36 @@ public:
     ~SourcePluginMock()
     {
     }
+    Status SelectBitRate(uint32_t bitRate) override
+    {
+        lastSelectedBitRate_ = bitRate;
+        return selectBitRateStatus_;
+    }
+    Status GetStreamInfo(std::vector<StreamInfo> &streams, bool isUpdate = false) override
+    {
+        lastGetStreamInfoIsUpdate_ = isUpdate;
+        streams = streams_;
+        return streamInfoStatus_;
+    }
+    Status SelectStream(int32_t streamID) override
+    {
+        lastSelectedStreamId_ = streamID;
+        return selectStreamStatus_;
+    }
+    bool IsNeedPreDownload() override
+    {
+        return isNeedPreDownload_;
+    }
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override
+    {
+        lastDefaultVideoStreamId_ = videoStreamId;
+        lastDefaultAudioStreamId_ = audioStreamId;
+        lastDefaultSubtitleStreamId_ = subTitleStreamId;
+    }
+    bool IsCloudFd() override
+    {
+        return isCloudFd_;
+    }
     Status SetSource(std::shared_ptr<MediaSource> source) override
     {
         return mapStatus_[name_];
@@ -300,6 +330,18 @@ public:
     {
         return mapStatus_[name_];
     }
+    std::vector<StreamInfo> streams_;
+    Status streamInfoStatus_ = Status::OK;
+    Status selectStreamStatus_ = Status::OK;
+    Status selectBitRateStatus_ = Status::OK;
+    bool isNeedPreDownload_ = false;
+    bool isCloudFd_ = false;
+    bool lastGetStreamInfoIsUpdate_ = false;
+    int32_t lastSelectedStreamId_ = -1;
+    uint32_t lastSelectedBitRate_ = 0;
+    int32_t lastDefaultVideoStreamId_ = -1;
+    int32_t lastDefaultAudioStreamId_ = -1;
+    int32_t lastDefaultSubtitleStreamId_ = -1;
 private:
     std::map<std::string, Status> mapStatus_;
     std::string name_;

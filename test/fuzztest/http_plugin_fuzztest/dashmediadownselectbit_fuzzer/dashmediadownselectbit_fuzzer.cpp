@@ -31,6 +31,27 @@ using namespace OHOS::Media;
 
 namespace {
 static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:47777/test_dash/segment_base/index.mpd";
+class DashCallbackMock1 : public Plugins::Callback {
+public:
+    void OnEvent(const Plugins::PluginEvent &event) override
+    {
+        switch (event.type) {
+            case PluginEventType::STREAM_UPDATE: {
+                int videoId = -1;
+                int audioId = -1;
+                int textId = -1;
+                mediaDownloader->SetDefaultStreamId(videoId, audioId, textId);
+                break;
+            }
+            default:break;
+        }
+    }
+    void SetDownload(std::shared_ptr<DashMediaDownloader> downloader)
+    {
+        mediaDownloader = downloader;
+    }
+    std::shared_ptr<DashMediaDownloader> mediaDownloader;
+};
 }
 std::shared_ptr<DashMediaDownloader> g_mediaDownloader = nullptr;
 bool g_result = false;
@@ -41,6 +62,9 @@ bool DashMediaDownSelectBitFuzzerTest(const uint8_t *data, size_t size)
         return false;
     }
     g_mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
+    auto cb = std::make_shared<DashCallbackMock1>();
+    cb->SetDownload(g_mediaDownloader);
+    g_mediaDownloader->SetCallback(cb);
     auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
                               std::shared_ptr<DownloadRequest>& request) {};
     g_mediaDownloader->SetStatusCallback(statusCallback);

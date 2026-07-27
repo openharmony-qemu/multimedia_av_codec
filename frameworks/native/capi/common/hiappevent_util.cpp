@@ -48,11 +48,12 @@ AppEventReporter::AppEventReporter(uint32_t reportThd) : reportThd_(reportThd)
         ReportConfig config;
         config.name = "ha_app_event";
         config.configName = "SDK_OCG";
-        processorId_ = AppEventProcessorMgr::AddProcessor(config);
-    }
-    if (processorId_.load() == -200) { // -200：not app process
-        AVCODEC_LOGE("failed to AddProcessor, processorId %{public}" PRId64, processorId_.load());
-        return;
+        AppEventProcessorMgr::AddProcessorAsync(config, [](int64_t processorId) {
+            if (processorId == -200) { // -200：not app process
+                AVCODEC_LOGE("failed to AddProcessor, processorId %{public}" PRId64, processorId);
+            }
+            processorId_.store(processorId);
+        });
     }
 }
 

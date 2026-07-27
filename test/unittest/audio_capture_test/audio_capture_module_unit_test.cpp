@@ -221,8 +221,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0100, TestSize.Level1)
     ASSERT_TRUE(ret == Status::OK);
     std::shared_ptr<AVAllocator> avAllocator =
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
-    int32_t capacity = 1024;
-    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, bufferSize);
     sleep(1);
     ret = audioCaptureModule_->Read(buffer, bufferSize);
     ASSERT_TRUE(ret == Status::OK);
@@ -264,8 +263,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureRead_0400, TestSize.Level1)
     ASSERT_TRUE(ret == Status::OK);
     std::shared_ptr<AVAllocator> avAllocator =
     AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
-    int32_t capacity = 1024;
-    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, bufferSize);
     EXPECT_NE(Status::OK, audioCaptureModule_->Read(buffer, bufferSize));
     ret = audioCaptureModule_->Deinit();
     ASSERT_TRUE(ret == Status::OK);
@@ -297,9 +295,17 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureGetCurrentChangeInfo_0100, Test
  */
 HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureGetCurrentChangeInfo_0200, TestSize.Level1)
 {
+    audioCaptureModule_->SetAudioSource(AudioStandard::SourceType::SOURCE_TYPE_MIC);
+    Status ret = audioCaptureModule_->SetParameter(audioCaptureParameter_);
+    ASSERT_TRUE(ret == Status::OK);
+    ret = audioCaptureModule_->Init();
+    ASSERT_TRUE(ret == Status::OK);
+    ret = audioCaptureModule_->Prepare();
+    ASSERT_TRUE(ret == Status::OK);
     AudioStandard::AudioCapturerChangeInfo changeInfo;
-    audioCaptureModule_->GetCurrentCapturerChangeInfo(changeInfo);
-    Status ret = audioCaptureModule_->Deinit();
+    ret = audioCaptureModule_->GetCurrentCapturerChangeInfo(changeInfo);
+    ASSERT_TRUE(ret == Status::OK);
+    ret = audioCaptureModule_->Deinit();
     ASSERT_TRUE(ret == Status::OK);
 }
 
@@ -340,8 +346,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioCaptureGetMaxAmplitude_0100, TestSize.
     EXPECT_EQ(audioCaptureModule_->maxAmplitude_, audioCaptureModule_->GetMaxAmplitude());
     std::shared_ptr<AVAllocator> avAllocator =
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
-    int32_t capacity = 1024;
-    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, bufferSize);
     sleep(1);
     ret = audioCaptureModule_->Read(buffer, bufferSize);
     ASSERT_TRUE(ret == Status::OK);
@@ -514,8 +519,7 @@ HWTEST_F(AudioCaptureModuleUnitTest, AudioReset_0100, TestSize.Level1)
     ASSERT_TRUE(ret == Status::OK);
     std::shared_ptr<AVAllocator> avAllocator =
         AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
-    int32_t capacity = 1024;
-    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, capacity);
+    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(avAllocator, bufferSize);
     sleep(1);
     ret = audioCaptureModule_->Read(buffer, bufferSize);
     ASSERT_TRUE(ret == Status::OK);

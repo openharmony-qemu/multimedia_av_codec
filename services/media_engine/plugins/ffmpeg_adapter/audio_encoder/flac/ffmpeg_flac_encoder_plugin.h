@@ -61,6 +61,9 @@ private:
     Meta audioParameter_ ;
     DataCallback *dataCallback_{nullptr};
     std::unique_ptr<FFmpegBaseEncoder> basePlugin;
+    bool isEnableFormatConvert_ = false;
+    AudioSampleFormat audioSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
+    AudioSampleFormat convertSampleFormat_ = AudioSampleFormat::INVALID_WIDTH;
 };
 } // namespace Ffmpeg
 } // namespace Plugins

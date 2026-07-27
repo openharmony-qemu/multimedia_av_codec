@@ -70,6 +70,9 @@ void EventManager::OnInstanceEvent(EventType type, Media::Meta &meta)
         case EventType::STATISTICS_EVENT_SUBMIT:
             OnStatisticsEventSubmit();
             break;
+        case EventType::INSTANCE_UPDATE_INFO:
+            OnInstanceUpdateInfoEvent(meta);
+            break;
         case EventType::STATISTICS_EVENT_REGISTER_SUBMIT:
             OnStatisticsEventRegisterSubmit();
             break;
@@ -107,6 +110,25 @@ void EventManager::OnInstanceInitEvent(Media::Meta &meta)
     meta.GetData(Media::Tag::MEDIA_CODEC_NAME,                     instanceInfo.codecName);
     meta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(),    instanceInfo.videoCodecType);
     AVCodecServerManager::GetInstance().SetInstanceInfoByInstanceId(instanceId, instanceInfo);
+}
+
+void EventManager::OnInstanceUpdateInfoEvent(Media::Meta &meta)
+{
+    auto instanceId = GetInstanceIdFromMeta(meta);
+    auto instanceInfoOpt = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
+    CHECK_AND_RETURN_LOG(instanceInfoOpt != std::nullopt, "Can not find this instance, id: %{public}d", instanceId);
+    auto instanceInfo = instanceInfoOpt.value();
+
+    meta.GetData(Media::Tag::VIDEO_PIC_WIDTH,                    instanceInfo.codecParam.encWidth);
+    meta.GetData(Media::Tag::VIDEO_PIC_HEIGHT,                   instanceInfo.codecParam.encHeight);
+    meta.GetData(Media::Tag::MEDIA_BITRATE,                      instanceInfo.codecParam.encBitrate);
+    meta.GetData(Media::Tag::VIDEOCALL_LOWPOWER_MODE,            instanceInfo.codecParam.encPowermode);
+    AVCODEC_LOGD(
+        "OnInstanceUpdateInfoEvent: encWidth %{public}d, encHeight %{public}d, encBitrate %{public}d, "
+        "encPowermode %{public}d",
+        instanceInfo.codecParam.encWidth, instanceInfo.codecParam.encHeight, instanceInfo.codecParam.encBitrate,
+        instanceInfo.codecParam.encPowermode);
+    AVCodecServerManager::GetInstance().UpdateCodecParmInfoByInstanceId(instanceId, instanceInfo);
 }
 
 void EventManager::OnInstanceReleaseEvent(Media::Meta &meta)

@@ -149,8 +149,8 @@ bool FFmpegAC3DecoderPlugin::CheckSampleRate(int32_t sampleRate) const noexcept
 
 Status FFmpegAC3DecoderPlugin::CheckFormat(const std::shared_ptr<Meta> &format)
 {
-    int32_t channelCount;
-    int32_t sampleRate;
+    int32_t channelCount = 0;
+    int32_t sampleRate = 0;
     format->GetData(Tag::AUDIO_CHANNEL_COUNT, channelCount);
     format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate);
     if (!CheckSampleRate(sampleRate)) {

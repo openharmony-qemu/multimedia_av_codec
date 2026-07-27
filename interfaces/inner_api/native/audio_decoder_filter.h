@@ -104,6 +104,11 @@ public:
     void OnError(CodecErrorType errorType, int32_t errorCode);
 
     void OnOutputFormatChanged(const Format& format);
+
+    void ResetOutputAudioMime(std::string mimeType);
+
+    void UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta);
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -117,7 +122,6 @@ private:
     Status SetInputBufferQueueConsumerListener();
     Status SetOutputBufferQueueProducerListener();
     bool IsNeedProcessInput(bool isOutPort);
-    void UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta);
 
     std::string name_;
     FilterType filterType_;
@@ -138,6 +142,8 @@ private:
     bool svpFlag_ = false;
     bool isDump_ = false;
     bool refreshTotalPauseTime_{false};
+    bool isDecOnlyMode_ = false;
+    std::shared_ptr<Meta> outputMeta_;
     int64_t latestBufferTime_{HST_TIME_NONE};
     int64_t latestPausedTime_{HST_TIME_NONE};
     int64_t totalPausedTime_{0};

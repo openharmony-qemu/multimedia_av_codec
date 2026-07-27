@@ -912,3 +912,77 @@ HWTEST_F(MediaCachedBufferTest, Complex_Write_Read_Seek_Clear_Sequence, TestSize
     buffer_->Read(readData3, 0, sizeof(readData3));
     EXPECT_EQ(readData3[0], 0);
 }
+
+class TestCacheMediaChunkBuffer : public CacheMediaChunkBufferImpl {
+public:
+    void ForceLruCacheSize(size_t size) { lruCache_.ReCacheSize(size); }
+    bool CheckLruConsistency() { return lruCache_.Check(); }
+    bool IsLruEmpty()
+    {
+        int64_t key = -1;
+        FragmentIterator val = fragmentCacheBuffer_.end();
+        return !lruCache_.GetLruNode(key, val);
+    }
+    size_t GetLruSize() { return lruCache_.Size(); }
+    size_t GetFragmentCount() { return fragmentCacheBuffer_.size(); }
+    size_t GetFreeChunkCount() { return freeChunks_.size(); }
+};
+
+class TestCacheMediaChunkBufferTest : public testing::Test {
+public:
+    void SetUp(void) override { testBuffer_ = std::make_unique<TestCacheMediaChunkBuffer>(); }
+    void TearDown(void) override { testBuffer_.reset(); }
+protected:
+    std::unique_ptr<TestCacheMediaChunkBuffer> testBuffer_;
+    static constexpr uint32_t CHUNK_SIZE = 16 * 1024;
+};
+
+HWTEST_F(TestCacheMediaChunkBufferTest, Fix1_Seek_NotCrashWhenLruReturnsCurrWritePos, TestSize.Level1)
+{
+    const uint64_t SMALL_BUFFER = 5 * CHUNK_SIZE;
+    testBuffer_->Init(SMALL_BUFFER, CHUNK_SIZE);
+    testBuffer_->SetIsLargeOffsetSpan(true);
+    testBuffer_->ForceLruCacheSize(1);
+
+    uint8_t data[CHUNK_SIZE] = {0};
+    for (uint32_t i = 0; i < CHUNK_SIZE; i++) { data[i] = static_cast<uint8_t>(i % 256); }
+
+    testBuffer_->Write(data, 0, CHUNK_SIZE);
+    EXPECT_EQ(testBuffer_->GetLruSize(), 1);
+
+    testBuffer_->Write(data, CHUNK_SIZE, CHUNK_SIZE);
+    EXPECT_EQ(testBuffer_->GetLruSize(), 1);
+
+    testBuffer_->Write(data, 2 * CHUNK_SIZE, CHUNK_SIZE);
+    EXPECT_EQ(testBuffer_->GetLruSize(), 1);
+
+    testBuffer_->Write(data, 3 * CHUNK_SIZE, 256);
+    EXPECT_EQ(testBuffer_->GetFragmentCount(), 4);
+    EXPECT_EQ(testBuffer_->GetLruSize(), 1);
+
+    uint64_t seekOffset = 3 * CHUNK_SIZE + 2 * 1024;
+    (void)testBuffer_->Seek(seekOffset);
+    EXPECT_TRUE(testBuffer_->CheckLruConsistency());
+}
+
+HWTEST_F(TestCacheMediaChunkBufferTest, Fix4_Reset_ClearsLruStaleIterators, TestSize.Level1)
+{
+    const uint64_t BUFFER_SIZE = 5 * 1024 * 1024;
+    testBuffer_->Init(BUFFER_SIZE, CHUNK_SIZE);
+
+    uint8_t data[CHUNK_SIZE] = {0};
+    for (uint32_t i = 0; i < CHUNK_SIZE; i++) { data[i] = static_cast<uint8_t>(i % 256); }
+
+    testBuffer_->Write(data, 0, CHUNK_SIZE);
+    testBuffer_->Write(data, CHUNK_SIZE, CHUNK_SIZE);
+    EXPECT_GT(testBuffer_->GetLruSize(), 0);
+
+    testBuffer_->Reset();
+    EXPECT_TRUE(testBuffer_->IsLruEmpty());
+    EXPECT_TRUE(testBuffer_->CheckLruConsistency());
+
+    testBuffer_->Init(BUFFER_SIZE, CHUNK_SIZE);
+    testBuffer_->Write(data, 0, CHUNK_SIZE);
+    bool seekResult = testBuffer_->Seek(0);
+    EXPECT_TRUE(seekResult);
+}

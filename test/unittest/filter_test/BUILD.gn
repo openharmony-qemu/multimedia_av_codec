@@ -134,6 +134,7 @@ ohos_unittest("filter_unit_test") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:libhitracechain",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

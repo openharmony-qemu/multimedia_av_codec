@@ -24,7 +24,6 @@
 #include "http_curl_client.h"
 #include "osal/task/autolock.h"
 #include "net_conn_client.h"
-#include "cm_type.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -39,6 +38,7 @@ constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
 constexpr uint32_t MILLS_TO_SECOND = 1000;
 constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
+constexpr uint32_t CONNECT_TIMEOUT = 5;
 constexpr char S_ALPHA_NUM_LINE_E[] = "^[a-zA-Z0-9\\-_\\.*]+$";
 
 std::string ToString(const std::list<std::string> &lists, char tab)
@@ -62,7 +62,7 @@ std::string InsertCharBefore(std::string input, char from, char preChar, char ne
     std::size_t pos = output.find(from);
     std::size_t length = output.length();
     while (pos >= 0 && length >= 1 && pos <= length - 1 && pos != std::string::npos) {
-        char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
+        char nextCharTemp = (pos >= length - 1) ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
             output.replace(pos, 1, str);
             length += (strSize - 1);
@@ -105,6 +105,7 @@ std::string GetHostnameFromURL(const std::string &url)
     }
     return tempUrl.substr(posStart);
 }
+
 bool IsRegexValid(const std::string &regex)
 {
     if (Trim(regex).empty()) {
@@ -173,13 +174,20 @@ NetworkClient *CreateNetworkClient(RxHeader headCallback, RxBody bodyCallback, v
     return new HttpCurlClient(headCallback, bodyCallback, userParam);
 }
 
+NetworkClient *CreateNetworkClientExt(RxHeader headCallback, RxBody bodyCallback, void *userParam,
+    std::optional<uint32_t> connectTimeoutMs)
+{
+    return new HttpCurlClient(headCallback, bodyCallback, userParam, connectTimeoutMs);
+}
+
 std::shared_ptr<NetworkClient> NetworkClient::GetInstance(RxHeader headCallback, RxBody bodyCallback, void *userParam)
 {
     return std::make_shared<HttpCurlClient>(headCallback, bodyCallback, userParam);
 }
 
-HttpCurlClient::HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
-    : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam)
+HttpCurlClient::HttpCurlClient(RxHeader headCallback, RxBody bodyCallback, void *userParam,
+    std::optional<uint32_t> connectTimeoutMs)
+    : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam), connectTimeoutMs_(connectTimeoutMs)
 {
     MEDIA_LOG_I("HttpCurlClient ctor");
 }
@@ -212,6 +220,12 @@ void HttpCurlClient::HttpHeaderParse(const std::map<std::string, std::string>& h
         MEDIA_LOG_D("Set http header fail, http header is empty.");
         return;
     }
+    AutoLock lock(mutex_);
+    HttpHeaderParseLocked(httpHeader);
+}
+
+void HttpCurlClient::HttpHeaderParseLocked(const std::map<std::string, std::string>& httpHeader)
+{
     for (auto iter : httpHeader) {
         std::string setKey = iter.first;
         std::string setValue = iter.second;
@@ -222,7 +236,7 @@ void HttpCurlClient::HttpHeaderParse(const std::map<std::string, std::string>& h
             headerList_ = curl_slist_append(headerList_, str);
         } else {
             MEDIA_LOG_E("Set httpHeader fail, the length of key or value is too long, more than 512.");
-            MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: " PUBLIC_LOG_S, setKey.c_str(), setValue.c_str());
+            MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: %{private}s", setKey.c_str(), setValue.c_str());
         }
     }
 }
@@ -241,7 +255,10 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
     }
 
     if (isFirstOpen_) {
-        HttpHeaderParse(httpHeader);
+        AutoLock lock(mutex_);
+        if (!httpHeader.empty()) {
+            HttpHeaderParseLocked(httpHeader);
+        }
         isFirstOpen_ = false;
     }
     MEDIA_LOG_I("Open client out");
@@ -266,10 +283,14 @@ Status HttpCurlClient::Close(bool isAsync)
             curl_easy_cleanup(easyHandle_);
             easyHandle_ = nullptr;
         }
-    }
-    ipFlag_ = false;
-    if (!ip_.empty()) {
-        ip_.clear();
+        if (headerList_) {
+            curl_slist_free_all(headerList_);
+            headerList_ = nullptr;
+        }
+        ipFlag_ = false;
+        if (!ip_.empty()) {
+            ip_.clear();
+        }
     }
     MEDIA_LOG_I("Close client out");
     return Status::OK;
@@ -286,6 +307,10 @@ Status HttpCurlClient::Deinit()
         curl_easy_cleanup(easyHandle_);
         easyHandle_ = nullptr;
     }
+    if (headerList_) {
+        curl_slist_free_all(headerList_);
+        headerList_ = nullptr;
+    }
     ipFlag_ = false;
     if (!ip_.empty()) {
         ip_.clear();
@@ -297,6 +322,7 @@ Status HttpCurlClient::Deinit()
 
 Status HttpCurlClient::GetIp(std::string &ip)
 {
+    AutoLock lock(mutex_);
     if (!ip_.empty()) {
         std::string obj(ip_);
         ip = obj;
@@ -335,10 +361,11 @@ Status HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeo
     AutoLock lock(mutex_);
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     curl_easy_setopt(easyHandle_, CURLOPT_URL, UrlParse(url).c_str());
-    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, 5); // 5
+    uint32_t connectTimeoutMs = connectTimeoutMs_.has_value() ? *connectTimeoutMs_ : CONNECT_TIMEOUT;
+    MEDIA_LOG_I("connect timeout set: %{public}u", connectTimeoutMs);
+    curl_easy_setopt(easyHandle_, CURLOPT_CONNECTTIMEOUT, connectTimeoutMs);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_SSL_VERIFYHOST, 2L);
-    curl_easy_setopt(easyHandle_, CURLOPT_CAPATH, CA_STORE_PATH_SYSTEM);
     curl_easy_setopt(easyHandle_, CURLOPT_HTTPGET, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_FORBID_REUSE, 0L);
     curl_easy_setopt(easyHandle_, CURLOPT_FOLLOWLOCATION, 1L);
@@ -369,8 +396,14 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
     if (startPos >= 0) {
         char requestRange[128] = {0};
         if (len > 0) {
-            snprintf_s(requestRange, sizeof(requestRange), sizeof(requestRange) - 1, "%ld-%ld",
-                       startPos, startPos + len - 1);
+            if (startPos > std::numeric_limits<long>::max() - static_cast<long>(len - 1)) {
+                MEDIA_LOG_W("CheckRequestRange overflow, startPos " PUBLIC_LOG_D64 ", len " PUBLIC_LOG_D32,
+                    static_cast<int64_t>(startPos), len);
+                snprintf_s(requestRange, sizeof(requestRange), sizeof(requestRange) - 1, "%ld-", startPos);
+            } else {
+                snprintf_s(requestRange, sizeof(requestRange), sizeof(requestRange) - 1, "%ld-%ld",
+                    startPos, startPos + static_cast<long>(len) - 1);
+            }
         } else {
             snprintf_s(requestRange, sizeof(requestRange), sizeof(requestRange) - 1, "%ld-", startPos);
         }
@@ -392,11 +425,12 @@ Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& re
 {
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CheckRequestRange(startPos, len);
-    if (isFirstRequest_) {
+    if (isFirstRequest_.load()) {
+        AutoLock lock(mutex_);
         headerList_ = curl_slist_append(headerList_, "Accept: */*");
         headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
         headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
-        isFirstRequest_ = false;
+        isFirstRequest_.store(false);
     }
     int32_t clientCode = 0;
     int32_t serverCode = 0;
@@ -448,6 +482,7 @@ void HttpCurlClient::SetAppUid(int32_t appUid)
 {
     appUid_ = appUid;
 }
+
 }
 }
 }

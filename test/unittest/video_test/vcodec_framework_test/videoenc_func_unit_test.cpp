@@ -65,6 +65,10 @@ void TEST_SUIT::SetUpTestCase(void)
 {
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
+    if (!capability) {
+        capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), true,
+            AVCodecCategory::AVCODEC_SOFTWARE);
+    }
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
     g_vencName = capability->GetName();
 }
@@ -454,7 +458,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_001, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, bufferConfig.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, bufferConfig.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
 }
@@ -483,7 +487,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_002, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -510,7 +514,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_003, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_Y, 11);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -538,7 +542,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_004, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -574,7 +578,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_005, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -600,7 +604,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_006, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
 
@@ -651,7 +655,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_008, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, DEFAULT_CONFIG.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, DEFAULT_CONFIG.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     ASSERT_NE(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
 }
@@ -689,7 +693,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_009, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, bufferConfig.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, bufferConfig.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
@@ -728,7 +732,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetCustomBuffer_0010, TestSize.Level1)
     param->PutIntValue(Tag::VIDEO_COORDINATE_W, bufferConfig.width);
     param->PutIntValue(Tag::VIDEO_COORDINATE_H, bufferConfig.height);
     buffer->SetParameter(param);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->SetCustomBuffer(buffer));
     ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
@@ -818,6 +822,40 @@ HWTEST_P(TEST_SUIT, VideoEncoder_GetOutputDescription_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: VideoEncoder_GetInputDescription_NumberOfPendingFrames_001
+ * @tc.desc: GetInputDescription with OH_MD_KEY_VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES for HW encoder
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_NumberOfPendingFrames_001, TestSize.Level1)
+{
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+
+    auto inputDesc = videoEnc_->GetInputDescription();
+    ASSERT_NE(nullptr, inputDesc);
+    int32_t pendingFrames = -1;
+    bool hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    EXPECT_TRUE(hasKey);
+    EXPECT_EQ(pendingFrames, 0);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+
+    int32_t maxObserved = videoEnc_->GetMaxPendingFramesObserved();
+    EXPECT_GE(maxObserved, 0);
+
+    inputDesc = videoEnc_->GetInputDescription();
+    ASSERT_NE(nullptr, inputDesc);
+    hasKey = inputDesc->GetIntValue(Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames);
+    EXPECT_TRUE(hasKey);
+    EXPECT_EQ(pendingFrames, 0);
+}
+
+/**
  * @tc.name: VideoEncoder_HRDVivid2SDR_001
  * @tc.desc: set key output_color_space, value is INT32_MIN
  * @tc.type: FUNC
@@ -828,7 +866,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_001, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, INT32_MIN);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -844,7 +882,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_002, TestSize.Level1)
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE, INT32_MAX);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -861,7 +899,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_003, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -878,7 +916,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_HRDVivid2SDR_004, TestSize.Level1)
     PrepareSource(GetParam());
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
         OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
@@ -893,13 +931,13 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Freeze_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecSuspend::SuspendFreeze(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -912,15 +950,15 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecSuspend::SuspendFreeze(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
     ret = AVCodecSuspend::SuspendActive(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
 
 /**
@@ -933,16 +971,49 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
     CreateByNameWithParam(GetParam());
     SetFormatWithParam(GetParam());
     PrepareSource(GetParam());
-    ASSERT_EQ(AVCS_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Flush());
     pid_t pid = getpid();
     std::vector<pid_t> pidList = {pid};
     auto ret = AVCodecSuspend::SuspendFreeze(pidList);
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
     ret = AVCodecSuspend::SuspendActiveAll();
-    ASSERT_EQ(AVCS_ERR_OK, ret);
+    ASSERT_EQ(AV_ERR_OK, ret);
 }
+
+/**
+ * @tc.name: VideoEncoder_8BitTo10Bit_001
+ * @tc.desc: Test 8-bit to 10-bit format conversion
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_8BitTo10Bit_001, TestSize.Level1)
+{
+    CreateByNameWithParam(VCodecTestCode::HW_HEVC);
+    SetFormatWithParam(VCodecTestCode::HW_HEVC);
+    PrepareSource(VCodecTestCode::HW_HEVC);
+    videoEnc_->input8BitTo10Bit_ = true;
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
+ * @tc.name: VideoEncoder_ResizeWidthHeight_001
+ * @tc.desc: Test resizing width and height
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_ResizeWidthHeight_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    videoEnc_->inputResizeWidthHeight_ = true;
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
 #ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoEncoder_SetPTSParameter_001
@@ -962,6 +1033,129 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 #endif // ONLY_FOR_FLAGSHIP_CHIP
+
+/**
+ * @tc.name: VideoEncoder_MaxFrameDelayCount_Surface_001
+ * @tc.desc: HW encoder configure with max frame delay count in surface mode and verify buffer queue size
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Surface_001, TestSize.Level1)
+{
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+
+    int32_t expectedValue = 3;
+    format_->PutIntValue(Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+
+    int32_t queueSize = videoEnc_->GetSurfaceQueueSize();
+    EXPECT_EQ(queueSize, expectedValue);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_MaxFrameDelayCount_Buffer_001
+ * @tc.desc: HW encoder configure with max frame delay count in buffer mode and verify pending buffer count
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_MaxFrameDelayCount_Buffer_001, TestSize.Level1)
+{
+    videoEnc_->isAVBufferMode_ = true;
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+
+    int32_t expectedValue = 3;
+    format_->PutIntValue(Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, expectedValue);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    int32_t maxPending = videoEnc_->GetMaxPendingInputCount();
+    EXPECT_LE(maxPending, expectedValue);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatHeaderBeforeSyncFrames_001
+ * @tc.desc: HW encoder configure with repeat header before sync frames and verify XPS output
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_001, TestSize.Level1)
+{
+    videoEnc_->isAVBufferMode_ = true;
+    videoEnc_->SetIsAVCCodec(GetParam() == VCodecTestParam::HW_AVC);
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam());
+
+    format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    int32_t idrCount = videoEnc_->GetIDRFrameCount();
+    int32_t idrWithXPS = videoEnc_->GetIDRWithImmediateXPSCount();
+
+    EXPECT_GT(idrCount, 0);
+    EXPECT_EQ(idrWithXPS, idrCount);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_RepeatHeaderBeforeSyncFrames_002
+ * @tc.desc: SW AVC encoder configure with repeat header before sync frames and verify XPS output
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_002, TestSize.Level1)
+{
+    auto capability = CodecListMockFactory::GetCapabilityByCategory(CodecMimeType::VIDEO_AVC.data(), true,
+                                                                    AVCodecCategory::AVCODEC_SOFTWARE);
+    if (capability == nullptr) {
+        std::cout << "SOFTWARE encoder not available, skip test" << std::endl;
+        return;
+    }
+    std::string codecName = capability->GetName();
+    if (!videoEnc_->CreateVideoEncMockByName(codecName)) {
+        return;
+    }
+    videoEnc_->SetCallback(vencCallbackExt_);
+
+    videoEnc_->isAVBufferMode_ = true;
+    videoEnc_->SetIsAVCCodec(true);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, DEFAULT_WIDTH_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_HEIGHT_VENC);
+    format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV12);
+
+    format_->PutIntValue(Tag::VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, 0);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    int32_t idrCount = videoEnc_->GetIDRFrameCount();
+    int32_t idrWithXPS = videoEnc_->GetIDRWithImmediateXPSCount();
+
+    EXPECT_GT(idrCount, 0);
+    EXPECT_EQ(idrWithXPS, idrCount);
+
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
 } // namespace
 
 int main(int argc, char **argv)

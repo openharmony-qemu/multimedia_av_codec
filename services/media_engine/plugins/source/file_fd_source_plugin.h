@@ -35,7 +35,7 @@ struct HmdfsHasCache {
     int64_t readSize;
 };
 
-class FileFdSourcePlugin : public SourcePlugin {
+class FileFdSourcePlugin : public SourcePlugin, public std::enable_shared_from_this<FileFdSourcePlugin> {
 public:
     explicit FileFdSourcePlugin(std::string name);
     ~FileFdSourcePlugin();
@@ -63,6 +63,7 @@ public:
     bool IsLocalFd() override;
     Status GetDownloadInfo(DownloadInfo& downloadInfo) override;
     bool IsCloudFd() override;
+    void PauseRead() override;
 
 private:
     Status ParseUriInfo(const std::string& uri);

@@ -25,6 +25,8 @@
 #include "http_server_demo.h"
 #include "plugin/plugin_event.h"
 #include "demuxer/stream_demuxer.h"
+#include "interstitial_controller.h"
+#include "interstitial_scheduler.h"
 
 #define LOCAL true
 namespace OHOS::Media {
@@ -196,7 +198,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_001, TestSize.
     streamDemuxer->Init("");
 
     std::thread initPluginThread([demuxerPluginManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), Status::OK);
     });
     initPluginThread.join();
     TestPullDataFailReadSample(demuxerPluginManager);
@@ -228,7 +230,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_002, TestSize.
     streamDemuxer->Init("");
 
     std::thread initPluginThread([demuxerPluginManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+        EXPECT_EQ(demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0), Status::OK);
     });
     initPluginThread.join();
     TestPullDataFailReadSample(demuxerPluginManager);
@@ -258,13 +260,13 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_003, TestSize.
     streamDemuxer->SetSource(source);
     streamDemuxer->Init("");
 
-    bool ret = true;
+    Status ret = Status::OK;
     std::thread initPluginThread([&ret, demuxerPluginManager, streamDemuxer, pluginName]() {
         ret = demuxerPluginManager->InitPlugin(streamDemuxer, pluginName, 0);
     });
     streamDemuxer->SetInterruptState(true);
     initPluginThread.join();
-    EXPECT_EQ(ret, false);
+    EXPECT_NE(ret, Status::OK);
 }
 
 HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SelectTrack_003, TestSize.Level1)
@@ -1274,7 +1276,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_001, TestSize.Lev
 
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
     std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), Status::OK);
     });
     initPluginThread.join();
 }
@@ -1293,7 +1295,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_002, TestSize.Lev
 
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
     std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), true);
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), Status::OK);
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     demuxerManager->NotifyInitialBufferingEnd(true);
@@ -1314,7 +1316,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_003, TestSize.Lev
 
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
     std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), false);
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), Status::ERROR_NOT_ENOUGH_DATA);
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     demuxerManager->NotifyInitialBufferingEnd(false);
@@ -1335,7 +1337,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_InitPlugin_004, TestSize.Lev
 
     std::shared_ptr<StreamDemuxer> streamDemuxer = std::make_shared<StreamDemuxerMock>();
     std::thread initPluginThread([demuxerManager, streamDemuxer, pluginName]() {
-        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), false);
+        EXPECT_EQ(demuxerManager->InitPlugin(streamDemuxer, pluginName, 0), Status::ERROR_NOT_ENOUGH_DATA);
     });
     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     demuxerManager->NotifyInitialBufferingEnd(true);
@@ -2500,5 +2502,155 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_UpdateSegmentOffsetWithTwoTrackIds_0
     demuxer->currentSegmentOffsetMap_[oldTrackId] = 2048;
     demuxer->UpdateSegmentOffset(oldTrackId, invalidNewTrackId);
     EXPECT_EQ(demuxer->currentSegmentOffsetMap_.find(invalidNewTrackId), demuxer->currentSegmentOffsetMap_.end());
+}
+
+/**
+ * @tc.name  : Test SetInterstitialController and GetInterstitialController
+ * @tc.number: MediaDemuxer_InterstitialController_001
+ * @tc.desc  : Test Set/Get InterstitialController
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InterstitialController_001, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    auto controller = std::make_shared<InterstitialController>();
+    demuxer->SetInterstitialController(controller);
+    EXPECT_EQ(demuxer->GetInterstitialController(), controller);
+}
+
+/**
+ * @tc.name  : Test GetInterstitialController with no controller set
+ * @tc.number: MediaDemuxer_InterstitialController_002
+ * @tc.desc  : Test GetInterstitialController returns nullptr when not set
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InterstitialController_002, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->GetInterstitialController(), nullptr);
+}
+
+/**
+ * @tc.name  : Test SetInterstitialScheduler and GetInterstitialScheduler
+ * @tc.number: MediaDemuxer_InterstitialScheduler_001
+ * @tc.desc  : Test Set/Get InterstitialScheduler
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InterstitialScheduler_001, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    auto scheduler = std::make_shared<InterstitialScheduler>();
+    demuxer->SetInterstitialScheduler(scheduler);
+    EXPECT_EQ(demuxer->GetInterstitialScheduler(), scheduler);
+}
+
+/**
+ * @tc.name  : Test GetInterstitialScheduler with no scheduler set
+ * @tc.number: MediaDemuxer_InterstitialScheduler_002
+ * @tc.desc  : Test GetInterstitialScheduler returns nullptr when not set
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InterstitialScheduler_002, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    EXPECT_EQ(demuxer->GetInterstitialScheduler(), nullptr);
+}
+
+/**
+ * @tc.name  : Test ClearSampleQueues with empty map
+ * @tc.number: MediaDemuxer_ClearSampleQueues_001
+ * @tc.desc  : Test ClearSampleQueues with no sample queues
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ClearSampleQueues_001, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->ClearSampleQueues();
+}
+
+/**
+ * @tc.name  : Test ReselectTracks with invalid track IDs
+ * @tc.number: MediaDemuxer_ReselectTracks_001
+ * @tc.desc  : Test ReselectTracks when all track IDs are invalid
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_ReselectTracks_001, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->videoTrackId_ = -1;
+    demuxer->audioTrackId_ = -1;
+    demuxer->subtitleTrackId_ = -1;
+    demuxer->ReselectTracks();
+}
+
+/**
+ * @tc.name  : Test DriveInterstitialTicks with no controller or scheduler
+ * @tc.number: MediaDemuxer_DriveInterstitialTicks_001
+ * @tc.desc  : Test DriveInterstitialTicks returns early when no interstitial components
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_DriveInterstitialTicks_001, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->DriveInterstitialTicks();
+}
+
+/**
+ * @tc.name  : Test DriveInterstitialTicks with ads disabled
+ * @tc.number: MediaDemuxer_DriveInterstitialTicks_002
+ * @tc.desc  : Test DriveInterstitialTicks returns early when ads disabled
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_DriveInterstitialTicks_002, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    auto controller = std::make_shared<InterstitialController>();
+    controller->DisableAllAdsMediaSource();
+    demuxer->SetInterstitialController(controller);
+    demuxer->DriveInterstitialTicks();
+}
+
+/**
+ * @tc.name  : Test DriveInterstitialTicks with scheduler only
+ * @tc.number: MediaDemuxer_DriveInterstitialTicks_003
+ * @tc.desc  : Test DriveInterstitialTicks with scheduler but no controller
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_DriveInterstitialTicks_003, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    auto scheduler = std::make_shared<InterstitialScheduler>();
+    demuxer->SetInterstitialScheduler(scheduler);
+    demuxer->lastInterstitialCheckMs_ = 0;
+    demuxer->DriveInterstitialTicks();
+}
+
+/**
+ * @tc.name  : Test HandleForSourceSwitch
+ * @tc.number: MediaDemuxer_HandleForSourceSwitch_001
+ * @tc.desc  : Test HandleForSourceSwitch with null source and plugins
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_HandleForSourceSwitch_001, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->source_ = nullptr;
+    demuxer->streamDemuxer_ = nullptr;
+    demuxer->demuxerPluginManager_ = nullptr;
+    demuxer->HandleForSourceSwitch();
+}
+
+/**
+ * @tc.name  : Test SetInterstitialController with nullptr
+ * @tc.number: MediaDemuxer_InterstitialController_003
+ * @tc.desc  : Test SetInterstitialController with nullptr
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InterstitialController_003, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->SetInterstitialController(nullptr);
+    EXPECT_EQ(demuxer->GetInterstitialController(), nullptr);
+}
+
+/**
+ * @tc.name  : Test SetInterstitialScheduler with nullptr
+ * @tc.number: MediaDemuxer_InterstitialScheduler_003
+ * @tc.desc  : Test SetInterstitialScheduler with nullptr
+ */
+HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_InterstitialScheduler_003, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxer>();
+    demuxer->SetInterstitialScheduler(nullptr);
+    EXPECT_EQ(demuxer->GetInterstitialScheduler(), nullptr);
 }
 }

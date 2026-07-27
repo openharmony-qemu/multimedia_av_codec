@@ -96,7 +96,9 @@ AVCodecVideoEncoderImpl::AVCodecVideoEncoderImpl()
 AVCodecVideoEncoderImpl::~AVCodecVideoEncoderImpl()
 {
     if (codecClient_ != nullptr) {
-        (void)AVCodecServiceFactory::GetInstance().DestroyCodecService(codecClient_);
+        if (!codecClient_->IsServiceDied()) {
+            (void)AVCodecServiceFactory::GetInstance().DestroyCodecService(codecClient_);
+        }
         codecClient_ = nullptr;
     }
     AVCODEC_LOGD_WITH_TAG("AVCodecVideoEncoderImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));

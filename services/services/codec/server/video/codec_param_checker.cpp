@@ -103,10 +103,12 @@ int32_t TransferCharacteristicsChecker(CapabilityData &capData, Format &format, 
 int32_t MatrixCoefficientsChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t LTRFrameCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t OutputInDecodingOrderChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TransformTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t VideoCodecScenarioChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t MaxFrameDelayCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -128,6 +130,7 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     LTRFrameCountChecker,
     BFrameParamChecker,
     VideoCodecScenarioChecker,
+    MaxFrameDelayCountChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -146,6 +149,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
     VideoCodecScenarioChecker,
+    MaxFrameDelayCountChecker,
 };
 
 const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
@@ -156,6 +160,7 @@ const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     ScalingModeChecker,
     PostProcessingChecker,
     TransformTypeChecker,
+    OutputInDecodingOrderChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
@@ -244,7 +249,6 @@ std::optional<CodecScenario> BFrameScenarioChecker(CapabilityData &capData, cons
         return scenario;
     }
     if (!enableExist || !enable) {
-        AVCODEC_LOGW("Please enable key VIDEO_ENCODER_ENABLE_B_FRAME or set a correct value!");
         return scenario;
     }
     CHECK_AND_RETURN_RET_LOGW(capData.featuresMap.count(
@@ -794,6 +798,25 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
     return AVCS_ERR_OK;
 }
 
+int32_t OutputInDecodingOrderChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)scenario;
+
+    int32_t outputInDecodingOrder = 0;
+    bool outputInDecodingOrderExist = format.GetIntValue(Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER,
+        outputInDecodingOrder);
+    if (!outputInDecodingOrderExist || outputInDecodingOrder == 0) {
+        return AVCS_ERR_OK;
+    }
+    auto cap =
+        capData.featuresMap.find(static_cast<int32_t>(AVCapabilityFeature::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER));
+    if (cap == capData.featuresMap.end()) {
+        AVCODEC_LOGW("Not support AVCapabilityFeature::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
     (void)scenario;
@@ -881,6 +904,28 @@ int32_t VideoCodecScenarioChecker(CapabilityData &capData, Format &format, Codec
         AVCODEC_LOGE("Param invalid, %{public}s: %{public}d", Tag::VIDEO_CODEC_SCENARIO, videoCodecScenario);
         return AVCS_ERR_INVALID_VAL;
     }
+    return AVCS_ERR_OK;
+}
+
+int32_t MaxFrameDelayCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)scenario;
+    int32_t maxFrameDelayCount;
+    bool maxFrameDelayCountExist = format.GetIntValue(
+        Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, maxFrameDelayCount);
+    if (!maxFrameDelayCountExist) {
+        return AVCS_ERR_OK;
+    }
+
+    CHECK_AND_RETURN_RET_LOG(maxFrameDelayCount > 0 && maxFrameDelayCount <= 5, // 5: max buffer pool capacity
+        AVCS_ERR_INVALID_VAL, "Param invalid, %{public}s: %{public}d, should be in range [1, 5]",
+        Tag::VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, maxFrameDelayCount);
+
+    if (!capData.isVendor) {
+        AVCODEC_LOGW("Not support VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT for software encoder");
+        return AVCS_ERR_OK;
+    }
+
     return AVCS_ERR_OK;
 }
 } // namespace

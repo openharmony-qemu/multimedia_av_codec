@@ -68,6 +68,12 @@ bool FixedRatioRetentionStrategy::MakeRetentionDecision(const FrameRetentionCont
     return isRetain;
 }
 
+void FixedRatioRetentionStrategy::UpdateTargetRatio(double newRatio)
+{
+    targetRatio_ = std::clamp(newRatio, MIN_RETENTION_RATIO, MAX_RETENTION_RATIO);
+    AVCODEC_LOGD("FixedRatioRetentionStrategy targetRatio updated to: %{public}.3f", targetRatio_);
+}
+
 void FixedRatioRetentionStrategy::Reset()
 {
     accumulator_ = 0.0;
@@ -87,6 +93,11 @@ double FixedRatioRetentionStrategy::GetRatio() const
 SfdDecisionReason FixedRatioRetentionStrategy::GetLastDecisionReason() const
 {
     return lastReason_;
+}
+
+bool FixedRatioRetentionStrategy::ShouldReportDfx() const
+{
+    return true;
 }
 
 } // namespace SFD

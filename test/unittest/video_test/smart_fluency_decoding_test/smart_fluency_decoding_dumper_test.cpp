@@ -186,7 +186,7 @@ HWTEST_F(SFDDumperTest, RecordPreDecode_DropDecision_007, TestSize.Level1)
     SmartFluencyDecodingDumper::PreDecodeRecordCtx ctx;
     ctx.pts = 4000; // 4000: pts
     ctx.isRetained = false; // Drop decision
-    ctx.reason = SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED;
+    ctx.reason = SfdDecisionReason::PRE_DROP_RATIO_UNSATISFIED;
 
     dumper_->RecordPreDecode(ctx);
 
@@ -194,7 +194,7 @@ HWTEST_F(SFDDumperTest, RecordPreDecode_DropDecision_007, TestSize.Level1)
     EXPECT_EQ(dumper_->records_[0].isPreRetained, 0);
     EXPECT_EQ(dumper_->records_[0].isPostRetained, -1);
     EXPECT_EQ(dumper_->records_[0].postReason, SfdDecisionReason::POST_BYPASSED);
-    EXPECT_EQ(dumper_->records_[0].preReason, SfdDecisionReason::PRE_DROP_EMA_UNSATISFIED);
+    EXPECT_EQ(dumper_->records_[0].preReason, SfdDecisionReason::PRE_DROP_RATIO_UNSATISFIED);
 }
 
 /**

@@ -77,6 +77,7 @@ ohos_unittest("video_sa_avcodec_unit_test") {
   defines = av_codec_defines
 
   sources = [
+    "$av_codec_root_dir/frameworks/native/common/avcodec_errors.cpp",
     "$av_codec_root_dir/services/engine/codec/video/avc_encoder_loader.cpp",
     "$av_codec_root_dir/services/engine/codec/video/fcodec_loader.cpp",
     "$av_codec_root_dir/services/engine/codec/video/hcodec_loader.cpp",
@@ -157,10 +158,12 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "ffmpeg:libohosffmpeg",
     "googletest:gmock_main",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "hisysevent:libhisysevent",
     "hiview:libucollection_client",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "json:nlohmann_json_static",
     "media_foundation:media_foundation",
     "samgr:samgr_proxy",
   ]

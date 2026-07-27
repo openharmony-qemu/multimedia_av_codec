@@ -17,7 +17,9 @@
 #define HISTREAMER_SUBTITLE_SINK_H
 #include <mutex>
 #include <deque>
+#include <atomic>
 #include "common/status.h"
+#include "common/event.h"
 #include "meta/meta.h"
 #include "sink/media_synchronous_sink.h"
 #include "media_sync_manager.h"
@@ -126,6 +128,7 @@ private:
     uint32_t currentInfoIndex_ = 0;
     std::atomic<bool> isFlush_ = false;
     std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;
+    std::atomic<uint64_t> lastRenderedChangeSeqNum_{0};
 };
 }
 }

@@ -77,6 +77,16 @@ void TEST_SUIT::PrepareSource(int32_t param)
     videoEnc_->SetOutPath(prefix + fileName);
 }
 
+void TEST_SUIT::PrepareSource(int32_t param, int32_t index)
+{
+    const ::testing::TestInfo *testInfo_ = ::testing::UnitTest::GetInstance()->current_test_info();
+    string prefix = "/data/test/media/";
+    string fileName = testInfo_->name();
+    auto check = [](char it) { return it == '/'; };
+    (void)fileName.erase(std::remove_if(fileName.begin(), fileName.end(), check), fileName.end());
+    videoEnc_->SetOutPath(prefix + fileName + to_string(index));
+}
+
 void TEST_SUIT::SetFormatWithParam(int32_t param)
 {
     (void)param;
@@ -565,6 +575,64 @@ HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_UNIFORMLY_04, TestSize.Leve
                          static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
     format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
     ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_Switch_001
+ * @tc.desc: enable temporal scalability switch to disable temporal scalability
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_Switch_001, TestSize.Level1)
+{
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam(), 0);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Reset());
+    PrepareSource(GetParam(), 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 0);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Prepare());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
+}
+
+/**
+ * @tc.name: VideoEncoder_TemporalScalability_Switch_002
+ * @tc.desc: disable temporal scalability switch to enable temporal scalability
+ * expect level stream
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_TemporalScalability_Switch_002, TestSize.Level1)
+{
+    if (!GetTemporalScalabilityCapability(GetParam(), true)) {
+        return;
+    };
+    CreateByNameWithParam(GetParam());
+    SetFormatWithParam(GetParam());
+    PrepareSource(GetParam(), 0);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 0);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Reset());
+    PrepareSource(GetParam(), 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 1);
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                         static_cast<int32_t>(OH_TemporalGopReferenceMode::UNIFORMLY_SCALED_REFERENCE));
+    format_->PutIntValue(Media::Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE, 4);
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Prepare());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }

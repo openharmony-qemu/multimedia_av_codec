@@ -340,11 +340,11 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_SetBundleName_0100, TestSize.Level1)
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_getCacheTime_0100, TestSize.Level1)
 {
-    fileFdSourcePlugin_->GetCacheTime(0.0);
-    fileFdSourcePlugin_->GetCacheTime(0.2);
-    fileFdSourcePlugin_->GetCacheTime(0.5);
-    fileFdSourcePlugin_->GetCacheTime(1.0);
-    fileFdSourcePlugin_->GetCacheTime(2.0);
+    EXPECT_EQ(fileFdSourcePlugin_->GetCacheTime(0.0), 5);
+    EXPECT_EQ(fileFdSourcePlugin_->GetCacheTime(0.2), 5);
+    EXPECT_EQ(fileFdSourcePlugin_->GetCacheTime(0.5), 5);
+    EXPECT_EQ(fileFdSourcePlugin_->GetCacheTime(1.0), 0.3f);
+    EXPECT_EQ(fileFdSourcePlugin_->GetCacheTime(2.0), 0.3f);
     fileFdSourcePlugin_->HasCacheData(0, 0);
     ASSERT_NE(fileFdSourcePlugin_->HasCacheData(0, 0), true);
 }
@@ -654,6 +654,9 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_DeleteCacheBuffer_0100, TestSize.Lev
  */
 HWTEST_F(FileFdSourceUnitTest, FileFdSource_CheckReadTime_0100, TestSize.Level1)
 {
+    auto cb = std::make_shared<CallbackMock>();
+    fileFdSourcePlugin_->callback_ = cb;
+
     fileFdSourcePlugin_->curReadTime_ = 10;
     fileFdSourcePlugin_->CheckReadTime();
     EXPECT_EQ(10, fileFdSourcePlugin_->lastReadTime_);

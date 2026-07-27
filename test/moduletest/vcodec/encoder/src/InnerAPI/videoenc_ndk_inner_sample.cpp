@@ -243,8 +243,8 @@ int32_t VEncNdkInnerSample::Configure()
         format.PutIntValue(Media::Tag::VIDEO_I_FRAME_INTERVAL, DEFAULT_KEY_I_FRAME_INTERVAL);
     }
     format.PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, enbleSyncMode);
-    if (enbleBFrameMode) {
-        format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enbleBFrameMode);
+    if (enableBFrameMode) {
+        format.PutIntValue(Media::Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrameMode);
         format.PutIntValue(Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE,
             static_cast<int32_t>(Media::Plugins::VideoEncodeBFrameGopMode::VIDEO_ENCODE_GOP_H3B_MODE));
     }
@@ -684,7 +684,7 @@ int32_t VEncNdkInnerSample::CheckFlag(AVCodecBufferFlag flag)
 int32_t VEncNdkInnerSample::InputProcess(OH_NativeBuffer *nativeBuffer, OHNativeWindowBuffer *ohNativeWindowBuffer)
 {
     int32_t ret = 0;
-    struct Region region;
+    struct Region region = {};
     struct Region::Rect *rect = new Region::Rect();
     rect->x = 0;
     rect->y = 0;

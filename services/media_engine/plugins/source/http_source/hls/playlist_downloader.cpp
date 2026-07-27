@@ -137,7 +137,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
         if (isNeedReportError && eventCallback) {
             MEDIA_LOG_E("fail to download m3u8.");
             eventCallback->OnEvent({PluginEventType::CLIENT_ERROR,
-                {NetworkClientErrorCode::ERROR_TIME_OUT}, "download m3u8"});
+                {NetworkClientErrorCode::ERROR_TIME_OUT}, "errorMessage:HLS download m3u8 fail"});
 
             return;
         }
@@ -162,6 +162,7 @@ void PlayListDownloader::DoOpen(const std::string& url)
     downloadRequest_->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetIsIndexM3u8Request(true);
+    downloadRequest_->SetRequestType(RequestType::HLS_PLAYLIST);
     if (downloader_ != nullptr) {
         downloader_->Download(downloadRequest_, -1); // -1
         downloader_->Start();
@@ -182,8 +183,12 @@ void PlayListDownloader::DoOpenNative(const std::string& url)
         delete[] buf;
         return;
     }
-    buf[size_] = '\0';
-    std::string m3u8(buf);
+    size_t validLen = static_cast<size_t>(ret);
+    if (validLen > size_) {
+        validLen = static_cast<size_t>(size_);
+    }
+    buf[validLen] = '\0';
+    std::string m3u8(buf, validLen);
     MEDIA_LOG_I("Read success.");
     playList_ = m3u8;
     ParseManifest(playList_);
@@ -271,13 +276,19 @@ uint32_t PlayListDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock
     if (data == nullptr || len == 0 || len > PLAYLIST_MAX_SIZE) {
         return 0;
     }
+    // 限制 playList_ 累计总量，避免服务器持续下发导致内存无界增长
+    if (playList_.size() > PLAYLIST_MAX_SIZE || len > PLAYLIST_MAX_SIZE - playList_.size()) {
+        MEDIA_LOG_E("playList_ exceeds max size, drop data, current " PUBLIC_LOG_ZU ", incoming " PUBLIC_LOG_U32,
+            playList_.size(), len);
+        return 0;
+    }
     playList_.reserve(playList_.size() + len);
     playList_.append(reinterpret_cast<const char*>(data), len);
     startedDownloadStatus_ = true;
     FALSE_RETURN_V_MSG_E(downloader_ != nullptr, 0, "downloader nullptr");
     auto currentRequest = downloader_->GetCurrentRequest();
     FALSE_RETURN_V_MSG_E(currentRequest != nullptr, 0, "current request nullptr");
-    int32_t contentlen = static_cast<int32_t>(currentRequest->GetFileContentLengthNoWait());
+    int64_t contentlen = currentRequest->GetFileContentLengthNoWait();
     std::string location;
     currentRequest->GetLocation(location);
     if (contentlen > MIN_PRE_PARSE_CONTENT_LEN) {
@@ -442,6 +453,7 @@ void AesDecryptorManager::CreateAesDecryptorByKeyInfos(const std::unordered_map<
         std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
         tempAesDecryptor->OnSourceKeyChange(keyInfo.key_, keyInfo.keyLen_, keyInfo.iv_);
         aesDecryptorsMap_[index] = tempAesDecryptor;
+        hasExplicitIvMap_[index] = keyInfo.hasExplicitIv_;
     }
 }
 
@@ -451,6 +463,14 @@ void AesDecryptorManager::CreateOneAesDecryptor(const KeyInfo& keyInfo)
     tempAesDecryptor->OnSourceKeyChange(keyInfo.key_, keyInfo.keyLen_, keyInfo.iv_);
     std::unique_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
     aesDecryptorsMap_[keyInfo.index_] = tempAesDecryptor;
+    hasExplicitIvMap_[keyInfo.index_] = keyInfo.hasExplicitIv_;
+}
+
+bool AesDecryptorManager::HasExplicitIv(uint64_t keyIndex)
+{
+    std::shared_lock<std::shared_mutex> lock(aesDecryptorsMapMutex_);
+    auto it = hasExplicitIvMap_.find(keyIndex);
+    return (it != hasExplicitIvMap_.end()) ? it->second : false;
 }
 }
 }

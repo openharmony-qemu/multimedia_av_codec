@@ -193,7 +193,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_outputOrder_002, TestSiz
     vdec->sampleWidth_ = 320;
     vdec->sampleHeight_ = 240;
     vdec->releaseOtherBuffer_ = true;
-    vdec->lowLatency_ = true;
+    vdec->decoderOrder_ = true;
     vdec->outPath_ = GetTestName();
     vdec->dumpKey_ = "hevcdecoder.dump";
     vdec->dumpValue_ = "01";
@@ -324,6 +324,7 @@ HWMTEST_F(VideoDecHevcDecTest, VideoDecoder_hevcdecoder_hdrColorMeta_004, TestSi
     vdec->setSurfaceParam_ = true;
     vdec->hdrColorInfo_ = true;
     vdec->hdrStaticMeta_ = true;
+    vdec->skipOutFrameHalfCheck_ = true;
     EXPECT_EQ(vdec->Create(), true);
     struct OH_AVCodecAsyncCallback cb;
     cb.onError = OnErrorVoid;

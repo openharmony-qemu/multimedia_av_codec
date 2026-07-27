@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,10 +16,12 @@
 #define HISTREAMER_HTTP_SOURCE_PLUGIN_H
 
 #include <memory>
+#include <shared_mutex>
 #include "media_downloader.h"
 #include "meta/media_types.h"
 #include "plugin/source_plugin.h"
 #include "download/media_source_loading_request.h"
+#include <string_view>
 
 namespace OHOS {
 namespace Media {
@@ -87,24 +89,31 @@ private:
     void CloseUri(bool isAsync = false);
     std::shared_ptr<PlayStrategy> PlayStrategyInit(std::shared_ptr<MediaSource> source);
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
+    std::shared_ptr<MediaDownloader> CreateDashDownloader();
+    std::shared_ptr<MediaDownloader> CreateHlsDownloader();
+    void InitSourceLoader(std::shared_ptr<MediaSource> source);
     bool CheckIsM3U8Uri();
     void InitHttpSource(const std::shared_ptr<MediaSource>& source);
     void MediaStreamDfxTrace(std::shared_ptr<MediaSource> source);
     std::string GetCurUrl();
     Status InitSourcePlugin(const std::shared_ptr<MediaSource>& source);
     bool IsDash();
+    bool IsAllowedProtocol(std::string_view url);
+    std::shared_ptr<MediaDownloader> GetDownloader() const;
+    void SetDownloader(const std::shared_ptr<MediaDownloader>& downloader);
     uint32_t bufferSize_;
     uint32_t waterline_;
     uint32_t seekErrorCount_{0};
     std::weak_ptr<Callback> callback_;
     std::shared_ptr<MediaDownloader> downloader_;
-    Mutex mutex_ {};
+    mutable std::shared_mutex downloaderMutex_ {};
     bool delayReady_ {true};
     std::string uri_ {};
     std::map<std::string, std::string> httpHeader_ {};
     std::string mimeType_ {};
     std::atomic<bool> isInterruptNeeded_{false};
     std::shared_ptr<MediaSourceLoaderCombinations> loaderCombinations_ {nullptr};
+    std::shared_ptr<PlayStrategy> playStrategy_ {nullptr};
     std::string redirectUrl_ {};
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ =
         std::make_shared<OHOS::MediaAVCodec::SourceStatisticsReportInfo>();

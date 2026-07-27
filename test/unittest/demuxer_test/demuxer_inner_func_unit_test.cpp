@@ -116,8 +116,7 @@ bool DemuxerUnitTest::CheckCache(
 
 void UpdateCacheSizeForPlugin(std::vector<std::vector<int32_t>>& cacheCheckSteps)
 {
-    std::string enable = OHOS::system::GetParameter("Mpeg4DemuxerPlugin.enable", "0");
-    if (enable != "1") {
+    if (OHOS::system::GetParameter("Mpeg4DemuxerPlugin.skip", "0") == "1") {
         return;
     }
     printf("Using mpeg4 demuxer, update cache size for check");
@@ -226,7 +225,6 @@ HWTEST_F(DemuxerUnitTest, Demuxer_GetCurrentCacheSize_1003, TestSize.Level1)
         {0, -1, 0, 0}, // read to end
         {1, -1, 1, 0}, // read to end
     };
-    UpdateCacheSizeForPlugin(cacheCheckSteps);
     for (auto step : cacheCheckSteps) {
         ASSERT_TRUE(CheckCache(step[0], step[1], step[2], step[3]));
     }

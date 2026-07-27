@@ -121,6 +121,26 @@ private:
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
                          const std::shared_ptr<DashSegment> &seg);
     void HandleSeekReady(int32_t streamType, int32_t streamId, int64_t seekTimeMs, int32_t isEos);
+    bool NeedRestartDecoder(const std::shared_ptr<DashStreamDescription>& oldStream,
+        const std::shared_ptr<DashStreamDescription>& newStream);
+    void SwitchToPeriod(uint32_t newPeriodIndex);
+    void SwitchStreamToPeriod(uint32_t newPeriodIndex,
+        const std::shared_ptr<DashSegmentDownloader> &triggerDownloader);
+    void SwitchOtherStreamToPeriod(uint32_t newPeriodIndex, MediaAVCodec::MediaType otherType,
+        const std::shared_ptr<DashStreamDescription> &newVideoStream,
+        const std::shared_ptr<DashStreamDescription> &newAudioStream);
+    void SeekToSegment(const std::shared_ptr<DashSegmentDownloader> &segDownloader,
+    int64_t seekTimeMs, bool isSwitching);
+    bool ApplyPendingPeriodSwitch(const std::shared_ptr<DashSegmentDownloader> &segDownloader);
+    bool GetStreamsForPeriodSwitch(uint32_t newPeriodIndex,
+        std::shared_ptr<DashStreamDescription> &oldVideoStream,
+        std::shared_ptr<DashStreamDescription> &newVideoStream,
+        std::shared_ptr<DashStreamDescription> &newAudioStream);
+    void SwitchVideoStream(const std::shared_ptr<DashStreamDescription> &newVideoStream,
+        const std::shared_ptr<DashSegmentDownloader> &segDownloader);
+    void SwitchAudioStream(const std::shared_ptr<DashStreamDescription> &newAudioStream,
+        const std::shared_ptr<DashSegmentDownloader> &segDownloader);
+    Status HandleDownloadError();
 
 private:
 
@@ -138,16 +158,25 @@ private:
     DashMpdTrackParam trackParam_;
     DashPreparedAction preparedAction_;
     std::mutex switchMutex_;
+    struct PendingPeriodSwitch {
+        uint32_t targetPeriodIndex {0};
+        std::shared_ptr<DashStreamDescription> newStream {nullptr};
+        bool pending {false};
+    };
+    std::mutex pendingSwitchMutex_;
+    PendingPeriodSwitch pendingVideoSwitch_;
+    PendingPeriodSwitch pendingAudioSwitch_;
     std::mutex parseSidxMutex_;
     uint64_t expectDuration_{0};
     std::mutex bufferingMutex_;
     uint32_t bufferingFlag_{0};
-    uint32_t lastBufferingPercent_{0};
+    std::atomic<uint32_t> lastBufferingPercent_{0};
     double bufferDurationForPlaying_ {0};
 
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
+    std::atomic<uint32_t> currentPeriodIndex_ {0};
 };
 }
 }

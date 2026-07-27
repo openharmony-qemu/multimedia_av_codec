@@ -47,7 +47,6 @@ public:
 
     bool IsHdrVivid(uint32_t trackId);
     bool IsHdr10Plus(uint32_t trackId);
-    bool IsHdr(uint32_t trackId);
     bool IsSyncFrame(uint32_t trackId, const uint8_t *sample, int32_t size);
     bool GetColorRange(uint32_t trackId);
     uint8_t GetColorPrimaries(uint32_t trackId);
@@ -58,10 +57,11 @@ public:
     uint32_t GetChromaLocation(uint32_t trackId);
     uint32_t GetPicWidInLumaSamples(uint32_t trackId);
     uint32_t GetPicHetInLumaSamples(uint32_t trackId);
+    double GetSar(uint32_t trackId);
 
     void ResetXPSSendStatus(uint32_t trackId);
     bool ConvertExtraDataToAnnexb(uint32_t trackId, uint8_t *extraData, int32_t extraDataSize);
-    void ConvertPacketToAnnexb(uint32_t trackId, uint8_t **hvccPacket, int32_t &hvccPacketSize,
+    bool ConvertPacketToAnnexb(uint32_t trackId, uint8_t **hvccPacket, int32_t &hvccPacketSize,
         const PacketConvertInfo &packetInfo);
     bool ConvertPacketToAnnexb(uint32_t trackId, const PacketConvertToBufferInfo &convertInfo);
     void ParseAnnexbExtraData(uint32_t trackId, const uint8_t *sample, int32_t size);

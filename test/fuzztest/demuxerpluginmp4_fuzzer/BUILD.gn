@@ -40,8 +40,11 @@ ohos_fuzztest("DemuxerPluginMp4FuzzTest") {
   ]
   external_deps = [
     "c_utils:utils",
+    "ffmpeg:libohosffmpeg",
+    "graphic_surface:surface",
     "hilog:libhilog",
     "ipc:ipc_core",
+    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "window_manager:libwm",
   ]

@@ -14,16 +14,97 @@
  */
 
 #include "native_avmuxer.h"
-#include <regex>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avmuxer.h"
 #include "common/native_mfmagic.h"
 #include "native_avmagic.h"
 #include "hiappevent_util.h"
+#include "api_metrics_util.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_MUXER, "NativeAVMuxer"};
+
+static bool IsDigitsAt(const std::string &str, size_t pos, size_t count)
+{
+    if (pos + count > str.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < count; i++) {
+        if (!std::isdigit(static_cast<unsigned char>(str[pos + i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// YYYY-MM-DDTHH:MM:SS[*]<1..6>digits] [+HHMM | -HHMM] [Z]
+// 最少 19 字符 (YYYY-MM-DDTHH:MM:SS)
+// 最多 32 字符 (19 + 7(*fraction) + 5(-HHMM) + 1(Z))
+static bool IsValidCreationTime(const std::string &value)
+{
+    if (value.size() < 19 || value.size() > 32) {
+        return false;
+    }
+    // YYYY-MM: 位置 0-3 为4位年，位置 4 为分隔符 '-'
+    if (!IsDigitsAt(value, 0, 4) || value[4] != '-') {
+        return false;
+    }
+    // MM-DD: 位置 5-6 为2位月，位置 7 为分隔符 '-'
+    if (!IsDigitsAt(value, 5, 2) || value[7] != '-') {
+        return false;
+    }
+    // DDTHH: 位置 8-9 为2位日，位置 10 为分隔符 'T'
+    if (!IsDigitsAt(value, 8, 2) || value[10] != 'T') {
+        return false;
+    }
+    // HH:MM: 位置 11-12 为2位时，位置 13 为分隔符 ':'
+    if (!IsDigitsAt(value, 11, 2) || value[13] != ':') {
+        return false;
+    }
+    // MM:SS: 位置 14-15 为2位分，位置 16 为分隔符 ':'
+    if (!IsDigitsAt(value, 14, 2) || value[16] != ':') {
+        return false;
+    }
+    // SS: 位置 17-18 为2位秒
+    if (!IsDigitsAt(value, 17, 2)) {
+        return false;
+    }
+    size_t pos = 19;
+    // 可选小数秒: 位置 19 起为任意分隔符(1字符) + 1-6位小数，仅当分隔符后跟数字时才进入
+    // 对应原正则 (.\d{1,6})?，若下一字符非数字则跳过该可选组
+    if (pos + 1 < value.size() && std::isdigit(static_cast<unsigned char>(value[pos + 1]))) {
+        pos++;
+        size_t fracStart = pos;
+        while (pos < value.size() && std::isdigit(static_cast<unsigned char>(value[pos]))) {
+            pos++;
+        }
+        // 小数位数 1-6 (微秒精度)，位置 20 至 25
+        size_t fracLen = pos - fracStart;
+        if (fracLen < 1 || fracLen > 6) {
+            return false;
+        }
+    }
+    if (pos < value.size()) {
+        // 时区 '+': +0800 格式，占1字符
+        if (value[pos] == '+') {
+            pos++;
+        } else if (value[pos] == '-') {
+            // 时区 '-': -0700 格式，占1字符
+            // 位置 pos+1 起为4位时区偏移数字 (HHMM)
+            if (!IsDigitsAt(value, pos + 1, 4)) {
+                return false;
+            }
+            // '-'占 1 字符 + 4 位偏移数字 = 5 字符
+            pos += 5;
+        }
+    }
+    // 可选 UTC 标识 'Z'
+    if (pos < value.size() && value[pos] == 'Z') {
+        pos++;
+    }
+    return pos == value.size();
+}
 }
 
 using namespace OHOS::Media;
@@ -39,6 +120,7 @@ struct AVMuxerObject : public OH_AVMuxer {
 
 struct OH_AVMuxer *OH_AVMuxer_Create(int32_t fd, OH_AVOutputFormat format)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_Create.Time", TIMES);
     static AppEventReporter appEventReporter = AppEventReporter();
     ApiInvokeRecorder apiInvokeRecorder("OH_AVMuxer_Create", appEventReporter);
     std::shared_ptr<AVMuxer> avmuxer = AVMuxerFactory::CreateAVMuxer(fd, static_cast<Plugins::OutputFormat>(format));
@@ -49,6 +131,7 @@ struct OH_AVMuxer *OH_AVMuxer_Create(int32_t fd, OH_AVOutputFormat format)
 
 OH_AVErrCode OH_AVMuxer_SetRotation(OH_AVMuxer *muxer, int32_t rotation)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_SetRotation.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
 
@@ -136,9 +219,7 @@ static OH_AVErrCode SetCreationTimeMeta(std::shared_ptr<Meta> definedMeta, std::
     AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_CREATION_TIME);
     std::string value;
     definedMeta->Get<Tag::MEDIA_CREATION_TIME>(value);
-    std::regex pattern(R"((\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(.\d{1,6})?((\+|-\d{4})?)Z?)");
-    std::smatch match;
-    CHECK_AND_RETURN_RET_LOG(std::regex_match(value, match, pattern), AV_ERR_INVALID_VAL, "creation time is invalid");
+    CHECK_AND_RETURN_RET_LOG(IsValidCreationTime(value), AV_ERR_INVALID_VAL, "creation time is invalid");
 
     param->Set<Tag::MEDIA_CREATION_TIME>(value);
     return AV_ERR_OK;
@@ -153,9 +234,10 @@ static OH_AVErrCode SetCommentMeta(std::shared_ptr<Meta> definedMeta, std::share
     AVCODEC_LOGI("set format defined key %{public}s", Tag::MEDIA_COMMENT);
     std::string comment;
     definedMeta->Get<Tag::MEDIA_COMMENT>(comment);
-    std::regex pattern(R"(^.{1,256}$)");
-    std::smatch match;
-    CHECK_AND_RETURN_RET_LOG(std::regex_match(comment, match, pattern), AV_ERR_INVALID_VAL, "comment is invalid");
+    // 原正则 ^.{1,256}$ 中 . 不匹配换行符，长度 1-256 且不含 \n
+    bool isCommentValid = !comment.empty() && comment.length() <= 256 &&
+        comment.find('\n') == std::string::npos;
+    CHECK_AND_RETURN_RET_LOG(isCommentValid, AV_ERR_INVALID_VAL, "comment is invalid");
 
     param->Set<Tag::MEDIA_COMMENT>(comment);
     return AV_ERR_OK;
@@ -244,6 +326,7 @@ static OH_AVErrCode SetUserMetaParam(std::shared_ptr<Meta> userMeta, AVMuxerObje
 
 OH_AVErrCode OH_AVMuxer_SetFormat(OH_AVMuxer *muxer, OH_AVFormat *format)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_SetFormat.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
     CHECK_AND_RETURN_RET_LOG(format != nullptr, AV_ERR_INVALID_VAL, "input format is nullptr!");
@@ -275,6 +358,7 @@ OH_AVErrCode OH_AVMuxer_SetFormat(OH_AVMuxer *muxer, OH_AVFormat *format)
 
 OH_AVErrCode OH_AVMuxer_AddTrack(OH_AVMuxer *muxer, int32_t *trackIndex, OH_AVFormat *trackFormat)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_AddTrack.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
     CHECK_AND_RETURN_RET_LOG(trackIndex != nullptr, AV_ERR_INVALID_VAL, "input track index is nullptr!");
@@ -294,6 +378,7 @@ OH_AVErrCode OH_AVMuxer_AddTrack(OH_AVMuxer *muxer, int32_t *trackIndex, OH_AVFo
 
 OH_AVErrCode OH_AVMuxer_Start(OH_AVMuxer *muxer)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_Start.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
 
@@ -320,6 +405,7 @@ OH_AVErrCode OH_AVMuxer_WriteSample(OH_AVMuxer *muxer, uint32_t trackIndex,
         static_cast<int64_t>(info.offset) + static_cast<int64_t>(info.size),
         AV_ERR_INVALID_VAL, "invalid memory");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_WriteSample.Time", TIMES);
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
 
@@ -345,6 +431,7 @@ OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex
     CHECK_AND_RETURN_RET_LOG(sample->magic_ == MFMagic::MFMAGIC_AVBUFFER, AV_ERR_INVALID_VAL,
         "sample magic error!");
 
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_WriteSampleBuffer.Time", TIMES);
     struct AVMuxerObject *object = reinterpret_cast<AVMuxerObject *>(muxer);
     CHECK_AND_RETURN_RET_LOG(object->muxer_ != nullptr, AV_ERR_INVALID_VAL, "muxer_ is nullptr!");
 
@@ -357,6 +444,7 @@ OH_AVErrCode OH_AVMuxer_WriteSampleBuffer(OH_AVMuxer *muxer, uint32_t trackIndex
 
 OH_AVErrCode OH_AVMuxer_Stop(OH_AVMuxer *muxer)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_Stop.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
 
@@ -372,6 +460,7 @@ OH_AVErrCode OH_AVMuxer_Stop(OH_AVMuxer *muxer)
 
 OH_AVErrCode OH_AVMuxer_Destroy(OH_AVMuxer *muxer)
 {
+    ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVMuxer_Destroy.Time", TIMES);
     CHECK_AND_RETURN_RET_LOG(muxer != nullptr, AV_ERR_INVALID_VAL, "input muxer is nullptr!");
     CHECK_AND_RETURN_RET_LOG(muxer->magic_ == AVMagic::AVCODEC_MAGIC_AVMUXER, AV_ERR_INVALID_VAL, "magic error!");
 

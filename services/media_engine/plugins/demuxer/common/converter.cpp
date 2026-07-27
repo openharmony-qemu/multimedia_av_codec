@@ -17,6 +17,8 @@
 
 #include <vector>
 #include <algorithm>
+#include <limits>
+#include <new>
 #include <iconv.h>
 #include "avcodec_log.h"
 #include "common/log.h"
@@ -33,6 +35,7 @@ const int32_t MIN_BYTES = 2;
 const int32_t MAX_BYTES = 6;
 const uint32_t DOUBLE_BYTES = 2;
 
+#ifdef USE_FF_DEMUXER
 // ffmpeg channel layout to histreamer channel layout
 const std::vector<std::pair<AudioChannelLayout, uint64_t>> g_toFFMPEGChannelLayout = {
     {AudioChannelLayout::MONO, AV_CH_LAYOUT_MONO},
@@ -69,7 +72,9 @@ const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutM
     {AudioChannelLayout::MONO, 1},
     {AudioChannelLayout::STEREO, 2},
     {AudioChannelLayout::CH_4POINT0, 4},
+    {AudioChannelLayout::CH_5POINT0, 5},
     {AudioChannelLayout::CH_5POINT1, 6},
+    {AudioChannelLayout::CH_7POINT0, 7},
     {AudioChannelLayout::CH_7POINT1, 8},
     {AudioChannelLayout::CH_5POINT1POINT2, 8},
     {AudioChannelLayout::CH_5POINT1POINT4, 10},
@@ -79,11 +84,14 @@ const std::vector<std::pair<AudioChannelLayout, int>> g_audioVividChannelLayoutM
     {AudioChannelLayout::HOA_ORDER2_ACN_SN3D, 9},
     {AudioChannelLayout::HOA_ORDER3_ACN_SN3D, 16},
 };
+#endif
 
 const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaultMap = {
     {2, AudioChannelLayout::STEREO},             // 2: STEREO
     {4, AudioChannelLayout::CH_4POINT0},         // 4: CH_4POINT0
+    {5, AudioChannelLayout::CH_5POINT0},         // 5: CH_5POINT0
     {6, AudioChannelLayout::CH_5POINT1},         // 6: CH_5POINT1
+    {7, AudioChannelLayout::CH_7POINT0},         // 7: CH_7POINT0
     {8, AudioChannelLayout::CH_5POINT1POINT2},   // 8: CH_5POINT1POINT2
     {9, AudioChannelLayout::HOA_ORDER2_ACN_N3D}, // 9: HOA_ORDER2_ACN_N3D
     {10, AudioChannelLayout::CH_7POINT1POINT2},  // 10: CH_7POINT1POINT2 or CH_5POINT1POINT4 ?
@@ -93,6 +101,7 @@ const std::vector<std::pair<int, AudioChannelLayout>> g_channelLayoutDefaultMap 
     {24, AudioChannelLayout::CH_22POINT2},       // 24: CH_22POINT2
 };
 
+#ifdef USE_FF_DEMUXER
 const std::vector<std::pair<AVSampleFormat, AudioSampleFormat>> g_pFfSampleFmtMap = {
     {AVSampleFormat::AV_SAMPLE_FMT_U8, AudioSampleFormat::SAMPLE_U8},
     {AVSampleFormat::AV_SAMPLE_FMT_S16, AudioSampleFormat::SAMPLE_S16LE},
@@ -129,6 +138,7 @@ const std::vector<std::pair<AVCodecID, AudioSampleFormat>> g_pFfCodeIDToSampleFm
     {AVCodecID::AV_CODEC_ID_PCM_ALAW, AudioSampleFormat::SAMPLE_S16LE},
     {AVCodecID::AV_CODEC_ID_PCM_MULAW, AudioSampleFormat::SAMPLE_S16LE},
 };
+#endif
 
 const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayoutToString = {
     {AudioChannelLayout::UNKNOWN, "UNKNOW"},
@@ -183,80 +193,76 @@ const std::vector<std::pair<AudioChannelLayout, std::string_view>> g_ChannelLayo
     {AudioChannelLayout::HOA_ORDER3_FUMA, "HOA_ORDER3_FUMA"},
 };
 
-const std::vector<std::pair<AVColorPrimaries, ColorPrimary>> g_pFfColorPrimariesMap = {
-    {AVColorPrimaries::AVCOL_PRI_BT709, ColorPrimary::BT709},
-    {AVColorPrimaries::AVCOL_PRI_UNSPECIFIED, ColorPrimary::UNSPECIFIED},
-    {AVColorPrimaries::AVCOL_PRI_BT470M, ColorPrimary::BT470_M},
-    {AVColorPrimaries::AVCOL_PRI_BT470BG, ColorPrimary::BT601_625},
-    {AVColorPrimaries::AVCOL_PRI_SMPTE170M, ColorPrimary::BT601_525},
-    {AVColorPrimaries::AVCOL_PRI_SMPTE240M, ColorPrimary::SMPTE_ST240},
-    {AVColorPrimaries::AVCOL_PRI_FILM, ColorPrimary::GENERIC_FILM},
-    {AVColorPrimaries::AVCOL_PRI_BT2020, ColorPrimary::BT2020},
-    {AVColorPrimaries::AVCOL_PRI_SMPTE428, ColorPrimary::SMPTE_ST428},
-    {AVColorPrimaries::AVCOL_PRI_SMPTEST428_1, ColorPrimary::SMPTE_ST428},
-    {AVColorPrimaries::AVCOL_PRI_SMPTE431, ColorPrimary::P3DCI},
-    {AVColorPrimaries::AVCOL_PRI_SMPTE432, ColorPrimary::P3D65},
+const std::vector<std::pair<int32_t, ColorPrimary>> g_pFfColorPrimariesMap = {
+    {1, ColorPrimary::BT709},
+    {2, ColorPrimary::UNSPECIFIED},
+    {4, ColorPrimary::BT470_M},
+    {5, ColorPrimary::BT601_625},
+    {6, ColorPrimary::BT601_525},
+    {7, ColorPrimary::SMPTE_ST240},
+    {8, ColorPrimary::GENERIC_FILM},
+    {9, ColorPrimary::BT2020},
+    {10, ColorPrimary::SMPTE_ST428},
+    {11, ColorPrimary::P3DCI},
+    {12, ColorPrimary::P3D65},
 };
 
-const std::vector<std::pair<AVColorTransferCharacteristic, TransferCharacteristic>> g_pFfTransferCharacteristicMap = {
-    {AVColorTransferCharacteristic::AVCOL_TRC_BT709, TransferCharacteristic::BT709},
-    {AVColorTransferCharacteristic::AVCOL_TRC_UNSPECIFIED, TransferCharacteristic::UNSPECIFIED},
-    {AVColorTransferCharacteristic::AVCOL_TRC_GAMMA22, TransferCharacteristic::GAMMA_2_2},
-    {AVColorTransferCharacteristic::AVCOL_TRC_GAMMA28, TransferCharacteristic::GAMMA_2_8},
-    {AVColorTransferCharacteristic::AVCOL_TRC_SMPTE170M, TransferCharacteristic::BT601},
-    {AVColorTransferCharacteristic::AVCOL_TRC_SMPTE240M, TransferCharacteristic::SMPTE_ST240},
-    {AVColorTransferCharacteristic::AVCOL_TRC_LINEAR, TransferCharacteristic::LINEAR},
-    {AVColorTransferCharacteristic::AVCOL_TRC_LOG, TransferCharacteristic::LOG},
-    {AVColorTransferCharacteristic::AVCOL_TRC_LOG_SQRT, TransferCharacteristic::LOG_SQRT},
-    {AVColorTransferCharacteristic::AVCOL_TRC_IEC61966_2_4, TransferCharacteristic::IEC_61966_2_4},
-    {AVColorTransferCharacteristic::AVCOL_TRC_BT1361_ECG, TransferCharacteristic::BT1361},
-    {AVColorTransferCharacteristic::AVCOL_TRC_IEC61966_2_1, TransferCharacteristic::IEC_61966_2_1},
-    {AVColorTransferCharacteristic::AVCOL_TRC_BT2020_10, TransferCharacteristic::BT2020_10BIT},
-    {AVColorTransferCharacteristic::AVCOL_TRC_BT2020_12, TransferCharacteristic::BT2020_12BIT},
-    {AVColorTransferCharacteristic::AVCOL_TRC_SMPTE2084, TransferCharacteristic::PQ},
-    {AVColorTransferCharacteristic::AVCOL_TRC_SMPTEST2084, TransferCharacteristic::PQ},
-    {AVColorTransferCharacteristic::AVCOL_TRC_SMPTE428, TransferCharacteristic::SMPTE_ST428},
-    {AVColorTransferCharacteristic::AVCOL_TRC_SMPTEST428_1, TransferCharacteristic::SMPTE_ST428},
-    {AVColorTransferCharacteristic::AVCOL_TRC_ARIB_STD_B67, TransferCharacteristic::HLG},
+const std::vector<std::pair<int32_t, TransferCharacteristic>> g_pFfTransferCharacteristicMap = {
+    {1, TransferCharacteristic::BT709},
+    {2, TransferCharacteristic::UNSPECIFIED},
+    {4, TransferCharacteristic::GAMMA_2_2},
+    {5, TransferCharacteristic::GAMMA_2_8},
+    {6, TransferCharacteristic::BT601},
+    {7, TransferCharacteristic::SMPTE_ST240},
+    {8, TransferCharacteristic::LINEAR},
+    {9, TransferCharacteristic::LOG},
+    {10, TransferCharacteristic::LOG_SQRT},
+    {11, TransferCharacteristic::IEC_61966_2_4},
+    {12, TransferCharacteristic::BT1361},
+    {13, TransferCharacteristic::IEC_61966_2_1},
+    {14, TransferCharacteristic::BT2020_10BIT},
+    {15, TransferCharacteristic::BT2020_12BIT},
+    {16, TransferCharacteristic::PQ},
+    {17, TransferCharacteristic::SMPTE_ST428},
+    {18, TransferCharacteristic::HLG},
 };
 
-const std::vector<std::pair<AVColorSpace, MatrixCoefficient>> g_pFfMatrixCoefficientMap = {
-    {AVColorSpace::AVCOL_SPC_RGB, MatrixCoefficient::IDENTITY},
-    {AVColorSpace::AVCOL_SPC_BT709, MatrixCoefficient::BT709},
-    {AVColorSpace::AVCOL_SPC_UNSPECIFIED, MatrixCoefficient::UNSPECIFIED},
-    {AVColorSpace::AVCOL_SPC_FCC, MatrixCoefficient::FCC},
-    {AVColorSpace::AVCOL_SPC_BT470BG, MatrixCoefficient::BT601_625},
-    {AVColorSpace::AVCOL_SPC_SMPTE170M, MatrixCoefficient::BT601_525},
-    {AVColorSpace::AVCOL_SPC_SMPTE240M, MatrixCoefficient::SMPTE_ST240},
-    {AVColorSpace::AVCOL_SPC_YCGCO, MatrixCoefficient::YCGCO},
-    {AVColorSpace::AVCOL_SPC_YCOCG, MatrixCoefficient::YCGCO},
-    {AVColorSpace::AVCOL_SPC_BT2020_NCL, MatrixCoefficient::BT2020_NCL},
-    {AVColorSpace::AVCOL_SPC_BT2020_CL, MatrixCoefficient::BT2020_CL},
-    {AVColorSpace::AVCOL_SPC_SMPTE2085, MatrixCoefficient::SMPTE_ST2085},
-    {AVColorSpace::AVCOL_SPC_CHROMA_DERIVED_NCL, MatrixCoefficient::CHROMATICITY_NCL},
-    {AVColorSpace::AVCOL_SPC_CHROMA_DERIVED_CL, MatrixCoefficient::CHROMATICITY_CL},
-    {AVColorSpace::AVCOL_SPC_ICTCP, MatrixCoefficient::ICTCP},
+const std::vector<std::pair<int32_t, MatrixCoefficient>> g_pFfMatrixCoefficientMap = {
+    {0, MatrixCoefficient::IDENTITY},
+    {1, MatrixCoefficient::BT709},
+    {2, MatrixCoefficient::UNSPECIFIED},
+    {4, MatrixCoefficient::FCC},
+    {5, MatrixCoefficient::BT601_625},
+    {6, MatrixCoefficient::BT601_525},
+    {7, MatrixCoefficient::SMPTE_ST240},
+    {8, MatrixCoefficient::YCGCO},
+    {9, MatrixCoefficient::BT2020_NCL},
+    {10, MatrixCoefficient::BT2020_CL},
+    {11, MatrixCoefficient::SMPTE_ST2085},
+    {12, MatrixCoefficient::CHROMATICITY_NCL},
+    {13, MatrixCoefficient::CHROMATICITY_CL},
+    {14, MatrixCoefficient::ICTCP},
 };
 
-const std::vector<std::pair<AVColorRange, int>> g_pFfColorRangeMap = {
-    {AVColorRange::AVCOL_RANGE_MPEG, 0},
-    {AVColorRange::AVCOL_RANGE_JPEG, 1},
+const std::vector<std::pair<int32_t, int32_t>> g_pFfColorRangeMap = {
+    {1, 0},
+    {2, 1},
 };
 
-const std::vector<std::pair<AVChromaLocation, ChromaLocation>> g_pFfChromaLocationMap = {
-    {AVChromaLocation::AVCHROMA_LOC_UNSPECIFIED, ChromaLocation::UNSPECIFIED},
-    {AVChromaLocation::AVCHROMA_LOC_LEFT, ChromaLocation::LEFT},
-    {AVChromaLocation::AVCHROMA_LOC_CENTER, ChromaLocation::CENTER},
-    {AVChromaLocation::AVCHROMA_LOC_TOPLEFT, ChromaLocation::TOPLEFT},
-    {AVChromaLocation::AVCHROMA_LOC_TOP, ChromaLocation::TOP},
-    {AVChromaLocation::AVCHROMA_LOC_BOTTOMLEFT, ChromaLocation::BOTTOMLEFT},
-    {AVChromaLocation::AVCHROMA_LOC_BOTTOM, ChromaLocation::BOTTOM},
+const std::vector<std::pair<int32_t, ChromaLocation>> g_pFfChromaLocationMap = {
+    {0, ChromaLocation::UNSPECIFIED},
+    {1, ChromaLocation::LEFT},
+    {2, ChromaLocation::CENTER},
+    {3, ChromaLocation::TOPLEFT},
+    {4, ChromaLocation::TOP},
+    {5, ChromaLocation::BOTTOMLEFT},
+    {6, ChromaLocation::BOTTOM},
 };
 
 const std::vector<std::pair<int, HEVCProfile>> g_pFfHEVCProfileMap = {
-    {FF_PROFILE_HEVC_MAIN, HEVCProfile::HEVC_PROFILE_MAIN},
-    {FF_PROFILE_HEVC_MAIN_10, HEVCProfile::HEVC_PROFILE_MAIN_10},
-    {FF_PROFILE_HEVC_MAIN_STILL_PICTURE, HEVCProfile::HEVC_PROFILE_MAIN_STILL},
+    {1, HEVCProfile::HEVC_PROFILE_MAIN},
+    {2, HEVCProfile::HEVC_PROFILE_MAIN_10},
+    {3, HEVCProfile::HEVC_PROFILE_MAIN_STILL},
 };
 
 const std::vector<std::pair<int, HEVCLevel>> g_pFfHEVCLevelMap = {
@@ -289,53 +295,54 @@ HEVCProfile Converter::ConvertToOHHEVCProfile(int ffHEVCProfile)
     return ite->second;
 }
 
-ColorPrimary Converter::ConvertFFMpegToOHColorPrimaries(AVColorPrimaries ffColorPrimaries)
+ColorPrimary Converter::ConvertFFMpegToOHColorPrimaries(int32_t colorPrimaries)
 {
     auto ite = std::find_if(g_pFfColorPrimariesMap.begin(), g_pFfColorPrimariesMap.end(),
-                            [&ffColorPrimaries](const auto &item) -> bool { return item.first == ffColorPrimaries; });
+                            [colorPrimaries](const auto &item) -> bool { return item.first == colorPrimaries; });
     CHECK_AND_RETURN_RET_LOGW(ite != g_pFfColorPrimariesMap.end(), ColorPrimary::UNSPECIFIED,
-                             "Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffColorPrimaries));
+                             "Failed: " PUBLIC_LOG_D32, colorPrimaries);
     return ite->second;
 }
 
-TransferCharacteristic Converter::ConvertFFMpegToOHColorTrans(AVColorTransferCharacteristic ffColorTrans)
+TransferCharacteristic Converter::ConvertFFMpegToOHColorTrans(int32_t colorTransfer)
 {
     auto ite = std::find_if(g_pFfTransferCharacteristicMap.begin(), g_pFfTransferCharacteristicMap.end(),
-                            [&ffColorTrans](const auto &item) -> bool { return item.first == ffColorTrans; });
+                            [colorTransfer](const auto &item) -> bool { return item.first == colorTransfer; });
     CHECK_AND_RETURN_RET_LOGW(ite != g_pFfTransferCharacteristicMap.end(), TransferCharacteristic::UNSPECIFIED,
-                             "Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffColorTrans));
+                             "Failed: " PUBLIC_LOG_D32, colorTransfer);
     return ite->second;
 }
 
-MatrixCoefficient Converter::ConvertFFMpegToOHColorMatrix(AVColorSpace ffColorSpace)
+MatrixCoefficient Converter::ConvertFFMpegToOHColorMatrix(int32_t colorSpace)
 {
     auto ite = std::find_if(g_pFfMatrixCoefficientMap.begin(), g_pFfMatrixCoefficientMap.end(),
-                            [&ffColorSpace](const auto &item) -> bool { return item.first == ffColorSpace; });
+                            [colorSpace](const auto &item) -> bool { return item.first == colorSpace; });
     CHECK_AND_RETURN_RET_LOGW(ite != g_pFfMatrixCoefficientMap.end(), MatrixCoefficient::UNSPECIFIED,
-                             "Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffColorSpace));
+                             "Failed: " PUBLIC_LOG_D32, colorSpace);
     return ite->second;
 }
 
-int Converter::ConvertFFMpegToOHColorRange(AVColorRange ffColorRange)
+int32_t Converter::ConvertFFMpegToOHColorRange(int32_t colorRange)
 {
     auto ite = std::find_if(g_pFfColorRangeMap.begin(), g_pFfColorRangeMap.end(),
-                            [&ffColorRange](const auto &item) -> bool { return item.first == ffColorRange; });
+                            [colorRange](const auto &item) -> bool { return item.first == colorRange; });
     if (ite == g_pFfColorRangeMap.end()) {
-        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffColorRange));
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, colorRange);
         return 0;
     }
     return ite->second;
 }
 
-ChromaLocation Converter::ConvertFFMpegToOHChromaLocation(AVChromaLocation ffChromaLocation)
+ChromaLocation Converter::ConvertFFMpegToOHChromaLocation(int32_t chromaLocation)
 {
     auto ite = std::find_if(g_pFfChromaLocationMap.begin(), g_pFfChromaLocationMap.end(),
-                            [&ffChromaLocation](const auto &item) -> bool { return item.first == ffChromaLocation; });
+                            [chromaLocation](const auto &item) -> bool { return item.first == chromaLocation; });
     CHECK_AND_RETURN_RET_LOGW(ite != g_pFfChromaLocationMap.end(), ChromaLocation::UNSPECIFIED,
-                             "Failed: " PUBLIC_LOG_D32, static_cast<int32_t>(ffChromaLocation));
+                             "Failed: " PUBLIC_LOG_D32, chromaLocation);
     return ite->second;
 }
 
+#ifdef USE_FF_DEMUXER
 AudioSampleFormat Converter::ConvertFFMpegAVCodecIdToOHAudioFormat(AVCodecID codecId)
 {
     auto ite = std::find_if(g_pFfCodeIDToSampleFmtMap.begin(), g_pFfCodeIDToSampleFmtMap.end(),
@@ -357,6 +364,7 @@ AudioSampleFormat Converter::ConvertFFMpegToOHAudioFormat(AVSampleFormat ffSampl
     }
     return ite->second;
 }
+#endif
 
 AudioChannelLayout Converter::GetDefaultChannelLayout(int channels)
 {
@@ -370,6 +378,7 @@ AudioChannelLayout Converter::GetDefaultChannelLayout(int channels)
     return layout;
 }
 
+#ifdef USE_FF_DEMUXER
 AudioChannelLayout Converter::ConvertFFToOHAudioChannelLayoutV2(uint64_t ffChannelLayout, int channels)
 {
     auto ite = std::find_if(g_toFFMPEGChannelLayout.begin(), g_toFFMPEGChannelLayout.end(),
@@ -380,6 +389,7 @@ AudioChannelLayout Converter::ConvertFFToOHAudioChannelLayoutV2(uint64_t ffChann
     }
     return ite->first;
 }
+#endif
 
 std::string_view Converter::ConvertOHAudioChannelLayoutToString(AudioChannelLayout layout)
 {
@@ -390,6 +400,7 @@ std::string_view Converter::ConvertOHAudioChannelLayoutToString(AudioChannelLayo
     return ite->second;
 }
 
+#ifdef USE_FF_DEMUXER
 AudioChannelLayout Converter::ConvertAudioVividToOHAudioChannelLayout(uint64_t ffChannelLayout, int channels)
 {
     auto ite = std::find_if(g_audioVividChannelLayoutMap.begin(), g_audioVividChannelLayoutMap.end(),
@@ -401,11 +412,11 @@ AudioChannelLayout Converter::ConvertAudioVividToOHAudioChannelLayout(uint64_t f
                              ffChannelLayout);
     return ite->first;
 }
+#endif
 
 void Converter::ParseColorBoxInfo(HevcParseFormat parse, Meta &format)
 {
-    ColorPrimary colorPrimaries = ConvertFFMpegToOHColorPrimaries(
-        static_cast<AVColorPrimaries>(parse.colorPrimaries));
+    ColorPrimary colorPrimaries = ConvertFFMpegToOHColorPrimaries(parse.colorPrimaries);
     if (colorPrimaries != ColorPrimary::UNSPECIFIED) {
         format.Set<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
         format.Set<Tag::VIDEO_COLOR_RANGE>((bool)(parse.colorRange));
@@ -413,24 +424,21 @@ void Converter::ParseColorBoxInfo(HevcParseFormat parse, Meta &format)
         MEDIA_LOG_D("Parse colorPri from xps failed");
     }
 
-    TransferCharacteristic colorTrans = ConvertFFMpegToOHColorTrans(
-        static_cast<AVColorTransferCharacteristic>(parse.colorTransfer));
+    TransferCharacteristic colorTrans = ConvertFFMpegToOHColorTrans(parse.colorTransfer);
     if (colorTrans != TransferCharacteristic::UNSPECIFIED) {
         format.Set<Tag::VIDEO_COLOR_TRC>(colorTrans);
     } else {
         MEDIA_LOG_D("Parse colorTrc from xps failed");
     }
 
-    MatrixCoefficient colorMatrix = ConvertFFMpegToOHColorMatrix(
-        static_cast<AVColorSpace>(parse.colorMatrixCoeff));
+    MatrixCoefficient colorMatrix = ConvertFFMpegToOHColorMatrix(parse.colorMatrixCoeff);
     if (colorMatrix != MatrixCoefficient::UNSPECIFIED) {
         format.Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
     } else {
         MEDIA_LOG_D("Parse colorMatrix from xps failed");
     }
 
-    ChromaLocation chromaLoc = ConvertFFMpegToOHChromaLocation(
-        static_cast<AVChromaLocation>(parse.chromaLocation));
+    ChromaLocation chromaLoc = ConvertFFMpegToOHChromaLocation(static_cast<int32_t>(parse.chromaLocation));
     if (chromaLoc != ChromaLocation::UNSPECIFIED) {
         format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);
     } else {
@@ -455,13 +463,11 @@ void Converter::ParseHdrTypeInfo(HdrBoxInfo hdrBoxInfo, Meta &format, HevcParseF
         return;
     } else if (parse.isHdr10Plus) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
-        format.Set<Tag::VIDEO_HDR_COMPATIBILITY>(HDRType::HDR_10);
         return;
     }
 
     if (hdrBoxInfo.haveHdrDoblyVisionBox) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
-        format.Set<Tag::VIDEO_HDR_COMPATIBILITY>(HDRType::HDR_10);
         return;
     } else if (hdrBoxInfo.haveHdrVividBox) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_VIVID);
@@ -472,12 +478,7 @@ void Converter::ParseHdrTypeInfo(HdrBoxInfo hdrBoxInfo, Meta &format, HevcParseF
     format.Get<Tag::VIDEO_COLOR_TRC>(colorTrans);
     if (colorTrans == TransferCharacteristic::HLG) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HLG);
-    }
-    if (!hdrBoxInfo.isHdr && !parse.isHdr) {
-        return;
-    }
-    format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::OTHER);
-    if (colorTrans == TransferCharacteristic::PQ) {
+    } else if (colorTrans == TransferCharacteristic::PQ) {
         format.Set<Tag::VIDEO_HDR_TYPE>(HDRType::HDR_10);
     }
 }
@@ -541,15 +542,21 @@ std::string Converter::ConvertGBKToUTF8(const std::string &strGbk)
         MEDIA_LOG_D("Call iconv_open failed");
         return "";
     }
+    constexpr size_t maxUtf8BytesPerGbkChar = 4; // max for chinese character
     size_t inLen = strGbk.length();
-    size_t outLen = inLen * 4; // max for chinese character
+    if (inLen > std::numeric_limits<size_t>::max() / maxUtf8BytesPerGbkChar) {
+        MEDIA_LOG_D("Output buffer size overflow");
+        iconv_close(cd);
+        return "";
+    }
+    size_t outLen = inLen * maxUtf8BytesPerGbkChar;
     char* inBuf = const_cast<char*>(strGbk.c_str());
     if (inBuf == nullptr) {
         MEDIA_LOG_D("Get in buffer failed");
         iconv_close(cd);
         return "";
     }
-    char* outBuf = new char[outLen];
+    char* outBuf = new (std::nothrow) char[outLen];
     if (outBuf == nullptr) {
         MEDIA_LOG_D("Get out buffer failed");
         iconv_close(cd);
@@ -572,6 +579,9 @@ std::string Converter::ConvertGBKToUTF8(const std::string &strGbk)
 
 bool Converter::IsGBK(const char* data)
 {
+    if (data == nullptr) {
+        return false;
+    }
     int len = static_cast<int>(strlen(data));
     int i = 0;
     while (i < len) {

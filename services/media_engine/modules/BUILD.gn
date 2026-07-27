@@ -16,6 +16,8 @@ import("//foundation/multimedia/av_codec/config.gni")
 
 config("av_codec_media_engine_modules_pts_and_index_convert_config") {
   include_dirs = [
+    "$av_codec_root_dir/services/media_engine/modules",
+    "$av_codec_root_dir/services/media_engine/modules/demuxer",
     "$av_codec_root_dir/services/media_engine/modules/pts_index_conversion",
   ]
 }
@@ -63,6 +65,11 @@ config("av_codec_media_engine_modules_config") {
     "$av_codec_root_dir/services/engine/codeclist",
     "$av_codec_root_dir/services/engine/codec/include/video",
     "$av_codec_root_dir/services/engine/base/include",
+    "$av_codec_root_dir/services/services/sa_avcodec/client",
+    "$av_codec_root_dir/services/services/common/event_manager",
+    "$av_codec_root_dir/services/media_engine/modules/demuxer",
+    "$av_codec_root_dir/services/media_engine/modules/interstitial",
+    "$av_codec_root_dir/services/utils/include",
   ]
 }
 
@@ -86,6 +93,10 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "demuxer/sample_queue_controller.cpp",
     "demuxer/stream_demuxer.cpp",
     "demuxer/type_finder.cpp",
+    "interstitial/interstitial_controller.cpp",
+    "interstitial/interstitial_scheduler.cpp",
+    "interstitial/interstitial_vod_strategies.cpp",
+    "interstitial/interstitial_live_strategies.cpp",
     "media_codec/media_codec.cpp",
     "muxer/data_sink_fd.cpp",
     "muxer/data_sink_file.cpp",
@@ -110,7 +121,10 @@ ohos_shared_library("av_codec_media_engine_modules") {
     sources += [ "post_processor/super_resolution_post_processor.cpp" ]
   }
 
-  deps = [ "$av_codec_root_dir/services/engine/base:av_codec_codec_base" ]
+  deps = [
+    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
+    "$av_codec_root_dir/services/services/sa_avcodec/client:statistics_event_ipc",
+  ]
 
   public_configs =
       [ ":av_codec_media_engine_modules_pts_and_index_convert_config" ]
@@ -128,6 +142,7 @@ ohos_shared_library("av_codec_media_engine_modules") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "hitrace:libhitracechain",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "media_foundation:media_foundation",

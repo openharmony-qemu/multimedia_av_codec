@@ -60,10 +60,7 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
     }
     int64_t curPacketPts = sample->pts_;
     std::shared_ptr<MaintainBaseInfo> baseInfo = maintainBaseInfos_[trackId];
-    if (baseInfo == nullptr) {
-        MEDIA_LOG_E("BaseInfo is nullptr, track " PUBLIC_LOG_D32, trackId);
-        return;
-    }
+    FALSE_RETURN_MSG(baseInfo != nullptr, "BaseInfo is nullptr, track " PUBLIC_LOG_D32, trackId);
     int64_t diff = 0;
     diff = curPacketPts - baseInfo->lastPts;
     auto oldPts =  baseInfo->lastPts;
@@ -77,9 +74,11 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
         if (baseInfo->segmentOffset != offset) {
             baseInfo->segmentOffset = offset;
             baseInfo->basePts = curPacketPts;
+            InitVideoAudioBasePtsDiff();
         }
         sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts + mediaStartPts_;
     } else if (diff > MAX_PTS_DIFFER_THRESHOLD_US) {
+        videoAudioBasePtsDiff = -1;
         if (baseInfo->isLastPtsChange) {
             int64_t offset = GetCurrentSegmentOffset(trackId, baseInfo->segmentOffset);
             if (baseInfo->segmentOffset != offset) {
@@ -96,6 +95,8 @@ void MediaDemuxer::HandleAutoMaintainPts(int32_t trackId, std::shared_ptr<AVBuff
         }
     } else {
         sample->pts_ = baseInfo->segmentOffset + curPacketPts - baseInfo->basePts + mediaStartPts_;
+        FALSE_GOON_NOEXEC(videoAudioBasePtsDiff != -1 && trackId == videoTrackId_,
+            sample->pts_ += videoAudioBasePtsDiff);
         baseInfo->isLastPtsChange = false;
     }
     baseInfo->lastPtsModifyedMax = std::max(sample->pts_, baseInfo->lastPtsModifyedMax);
@@ -214,6 +215,15 @@ int64_t MediaDemuxer::GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmen
     std::lock_guard<std::mutex> lock(segmentOffsetMutex_);
     FALSE_RETURN_V_NOLOG(currentSegmentOffsetMap_.find(trackId) != currentSegmentOffsetMap_.end(), oldSegmentOffset);
     return currentSegmentOffsetMap_[trackId];
+}
+
+void MediaDemuxer::InitVideoAudioBasePtsDiff()
+{
+    FALSE_RETURN(IsAVInOneStream() && maintainBaseInfos_[audioTrackId_] != nullptr
+        && maintainBaseInfos_[videoTrackId_] != nullptr);
+    FALSE_RETURN(maintainBaseInfos_[audioTrackId_]->basePts != INVALID_PTS_DATA);
+    FALSE_RETURN(maintainBaseInfos_[videoTrackId_]->basePts != INVALID_PTS_DATA);
+    videoAudioBasePtsDiff = maintainBaseInfos_[videoTrackId_]->basePts - maintainBaseInfos_[audioTrackId_]->basePts;
 }
 } // namespace Media
 } // namespace OHOS

@@ -40,6 +40,7 @@ static mutex g_deviceCapsMtx;
 static bool g_deviceCapsInited = false;
 static std::vector<CodecCompCapability> g_deviceCaps;
 static uint32_t g_maxDecInstCnt = 0;
+static uint32_t g_maxEncInstCnt = 0;
 
 class Listener : public ServStatListenerStub {
 public:
@@ -136,6 +137,9 @@ static void InitCapsLocked()
         if ((one.type == VIDEO_DECODER) && IsSupportedVideoCodec(one)) {
             g_maxDecInstCnt = std::max<uint32_t>(g_maxDecInstCnt, one.maxInst);
         }
+        if ((one.type == VIDEO_ENCODER) && IsSupportedVideoCodec(one)) {
+            g_maxEncInstCnt = std::max<uint32_t>(g_maxEncInstCnt, one.maxInst);
+        }
     }
 }
 
@@ -157,6 +161,16 @@ uint32_t GetMaxDecInstCnt()
     }
     InitCapsLocked();
     return g_maxDecInstCnt;
+}
+
+uint32_t GetMaxEncInstCnt()
+{
+    lock_guard<mutex> lk(g_deviceCapsMtx);
+    if (g_deviceCapsInited) {
+        return g_maxEncInstCnt;
+    }
+    InitCapsLocked();
+    return g_maxEncInstCnt;
 }
 
 int32_t HCodecList::GetCapabilityList(std::vector<CapabilityData>& caps)

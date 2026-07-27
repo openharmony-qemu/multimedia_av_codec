@@ -164,7 +164,7 @@ static void SetVideoValue(OH_AVCodecBufferAttr attr, bool &videoIsEnd, int &vide
 static void IsHdrVivid(OH_AVFormat *paramFormat)
 {
     int32_t videoIsHdrvivid;
-    if (!access("/system/lib64/media/", 0)) {
+    if (!access("/system/lib64/libav_codec_hevc_parser.z.so", 0)) {
         ASSERT_TRUE(OH_AVFormat_GetIntValue(paramFormat, OH_MD_KEY_VIDEO_IS_HDR_VIVID, &videoIsHdrvivid));
         ASSERT_EQ(1, videoIsHdrvivid);
     } else {
@@ -1918,6 +1918,8 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0100, TestSize.Level2
     const char *file = INP_DIR_1;
     g_fd = open(file, O_RDONLY);
     CheckFile(file, g_fd, &source, &demuxer, &g_trackCount);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     int tarckType = 0;
     int auidoTrackCount = 2;
     bool videoIsEnd = false;
@@ -1972,6 +1974,8 @@ HWTEST_F(DemuxerProcNdkTest, SUB_MEDIA_DEMUXER_AVI_PROCESS_0200, TestSize.Level2
     const char *file = INP_DIR_2;
     g_fd = open(file, O_RDONLY);
     CheckFile(file, g_fd, &source, &demuxer, &g_trackCount);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     int tarckType = 0;
     int videoTrackCount = 2;
     bool audioIsEnd = false;

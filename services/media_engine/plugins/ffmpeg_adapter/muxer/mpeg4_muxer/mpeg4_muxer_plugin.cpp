@@ -22,7 +22,6 @@
 #include <iomanip>
 #include <sstream>
 #include <chrono>
-#include <regex>
 #ifndef _WIN32
 #include <unistd.h>
 #include "securec.h"
@@ -101,15 +100,60 @@ std::string GetCurrentDate() {
     return oss.str();
 }
 
+bool IsTimeOnly(const std::string &time)
+{
+    std::string s = time;
+    // 容忍末尾的时区标记 Z/z
+    if (!s.empty() && (s.back() == 'Z' || s.back() == 'z')) {
+        s.pop_back();
+    }
+    size_t pos = 0;
+    int comp = 0;
+    // 1~3段以':'分隔的1~2位数字
+    while (comp < 3) {  // 3
+        size_t colon = s.find(':', pos);
+        std::string part = (colon == std::string::npos) ? s.substr(pos) : s.substr(pos, colon - pos);
+        // 每段1~2位且全为数字
+        if (part.size() < 1 || part.size() > 2 ||
+            part.find_first_not_of("0123456789") != std::string::npos) {
+            return false;
+        }
+        comp++;
+        if (colon == std::string::npos) {
+            return comp >= 1 && comp <= 3;  // 3
+        }
+        pos = colon + 1;
+    }
+    return false; // 超过3段
+}
+
+std::string NormalizeCreationTime(const std::string &creationTime)
+{
+    // 去除最后一个'.'及其后连续的数字(如 .000 -> 删除), 非数字保留(0.012z -> 0z);
+    // 若'.'后无数字(0.z)则保持不变
+    std::string tmpCreationTime = creationTime;
+    size_t dotPos = creationTime.rfind('.');
+    if (dotPos != std::string::npos && dotPos + 1 < creationTime.size() &&
+        creationTime[dotPos + 1] >= '0' && creationTime[dotPos + 1] <= '9') {
+        size_t end = dotPos + 1;
+        while (end < creationTime.size() && creationTime[end] >= '0' && creationTime[end] <= '9') {
+            end++;
+        }
+        // 去掉 [dotPos, end): '.' 及其后连续数字
+        tmpCreationTime = creationTime.substr(0, dotPos) + creationTime.substr(end);
+    }
+    // 如果只输入时分秒(在去毫秒后的串上判断, 容忍末尾Z/z), 日期设置为今天
+    if (IsTimeOnly(tmpCreationTime)) {
+        tmpCreationTime = GetCurrentDate() + tmpCreationTime;
+    }
+    return tmpCreationTime;
+}
+
 uint64_t String2Uint64Timestamp(std::string &creationTime)
 {
     std::tm tm = {};
-    // 去除00:00:00.000毫秒部分 -> 00:00:00
-    std::string tmpCreationTime = std::regex_replace(creationTime, std::regex(R"(\.\d+)"), "");
-    // 如果只输入时分秒，日期设置为今天
-    if (std::regex_match(creationTime, std::regex(R"((\d{1,2})(:\d{1,2}){0,2})"))) {
-        tmpCreationTime = GetCurrentDate() + tmpCreationTime;
-    }
+    // 去除毫秒部分; 若仅输入时分秒则补当天日期前缀
+    std::string tmpCreationTime = NormalizeCreationTime(creationTime);
     MEDIA_LOG_I("mpeg4 muxer input time:%{public}s, %{public}s", creationTime.c_str(), tmpCreationTime.c_str());
     constexpr uint64_t timeSec = 0x7C25B080;  // 1904-01-01 00:00:00 UTC
 
@@ -130,8 +174,8 @@ uint64_t String2Uint64Timestamp(std::string &creationTime)
     }
     // 时间小于1904-01-01 00:00:00 UTC 用time now
     if (success) {
-        // 带 z 则用UTC时间戳
-        uint64_t timestamp = std::regex_search(creationTime, std::regex("[zZ]")) ?
+        // 带 z/Z 则用UTC时间戳
+        uint64_t timestamp = (creationTime.find_first_of("zZ") != std::string::npos) ?
             static_cast<uint64_t>(timegm(&tm)) : static_cast<uint64_t>(std::mktime(&tm));
         if (static_cast<int64_t>(timeSec) + static_cast<int64_t>(timestamp) >= 0) {
             tm.tm_isdst = -1;

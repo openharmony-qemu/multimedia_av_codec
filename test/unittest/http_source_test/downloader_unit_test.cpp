@@ -18,8 +18,11 @@
 #include "http/http_media_downloader.h"
 #include "utils/media_cached_buffer.h"
 #include "download/network_client/http_curl_client.h"
+#include "download/app_client.h"
 #include "gtest/gtest.h"
 #include "utils/string_utils.h"
+#include <future>
+#include <thread>
 
 using namespace std;
 using namespace testing::ext;
@@ -355,16 +358,16 @@ HWTEST_F(DownloaderUnitTest, cachedMediaBuffer, TestSize.Level1)
     EXPECT_EQ(writeLen, cachedMediaBuffer.GetBufferSize(offset1));
     EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset1));
 
-    int64_t offset2 = (int64_t)writeLen * 3;
+    int64_t offset2 = static_cast<int64_t>(writeLen) * 3;
     ASSERT_EQ(writeLen, cachedMediaBuffer.Write(mp4Data.get(), offset2, writeLen));
     EXPECT_EQ(writeLen, cachedMediaBuffer.GetBufferSize(offset1));
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1));
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen - 3));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset1));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen - 3));
 
     cachedMediaBuffer.Dump(0);
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen));
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen + 1));
-    EXPECT_EQ((size_t)offset2, cachedMediaBuffer.GetNextBufferOffset(offset2 - 2));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset1 + writeLen + 1));
+    EXPECT_EQ(static_cast<size_t>(offset2), cachedMediaBuffer.GetNextBufferOffset(offset2 - 2));
 
     EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset2));
     EXPECT_EQ(0u, cachedMediaBuffer.GetNextBufferOffset(offset2 + writeLen));
@@ -1966,7 +1969,10 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
     downloader->Init();
     auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->callback_ = sourceCallback;
-    downloader->NotifyError(52, 403);
+    NetworkErrorInfo networkErrorInfo;
+    networkErrorInfo.clientErrorCode_ = 52;
+    networkErrorInfo.serverErrorCode_ = 403;
+    downloader->NotifyError(networkErrorInfo);
     std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
     request->clientError_ = 992;
     EXPECT_EQ(downloader->NeedRetry(request), false);
@@ -2010,7 +2016,10 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     auto sourceCallback = std::make_shared<SourceCallback>();
     downloader->downloader_ = nullptr;
     downloader->callback_ = sourceCallback;
-    downloader->NotifyError(52, 403);
+    NetworkErrorInfo networkErrorInfo;
+    networkErrorInfo.clientErrorCode_ = 52;
+    networkErrorInfo.serverErrorCode_ = 403;
+    downloader->NotifyError(networkErrorInfo);
     std::shared_ptr<DownloadRequest> request = std::make_shared<DownloadRequest>("", nullptr, nullptr,  false);
     request->clientError_ = 992;
     EXPECT_EQ(downloader->NeedRetry(request), false);
@@ -2041,9 +2050,13 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     downloader->GetPlayable();
     EXPECT_EQ(downloader->downloader_, nullptr);
     downloader->callback_.reset();
-    downloader->NotifyError(52, 403);
-    downloader->NotifyError(52, 0);
-    downloader->NotifyError(0, 0);
+    networkErrorInfo.clientErrorCode_ = 52;
+    networkErrorInfo.serverErrorCode_ = 403;
+    downloader->NotifyError(networkErrorInfo);
+    networkErrorInfo.serverErrorCode_ = 0;
+    downloader->NotifyError(networkErrorInfo);
+    networkErrorInfo.clientErrorCode_ = 0;
+    downloader->NotifyError(networkErrorInfo);
     EXPECT_TRUE(downloader->callback_.expired());
 }
 
@@ -2109,6 +2122,240 @@ HWTEST_F(DownloaderUnitTest, APP_CLIENT_001, TestSize.Level1)
             threadRequestData.join();
         }
     }
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_001, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+    EXPECT_EQ(downloader->MaskUrl(""), "");
+    EXPECT_EQ(downloader->MaskUrl("example.com"), "example.com");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com?foo=bar"), "https://example.com");
+    EXPECT_EQ(downloader->MaskUrl("http://example.org#section"), "http://example.org");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/"), "https://example.com/");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/?q=1"), "https://example.com/");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/"), "https://example.com/***");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/file.txt"), "https://example.com/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/c/file.txt"), "https://example.com/***/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("https://baidu.com/a/b/c/abc.m3u8?a=6&b=8"), "https://baidu.com/***/abc.m3u8");
+    EXPECT_EQ(downloader->MaskUrl("example.com/x/y/z.pdf?v=2"), "example.com/***/z.pdf");
+    EXPECT_EQ(downloader->MaskUrl("example.com/index.html"), "example.com/index.html");
+    EXPECT_EQ(downloader->MaskUrl("http://a.b/c/d?x=1&y=2#top"), "http://a.b/***/d");
+    EXPECT_EQ(downloader->MaskUrl("a.b/"), "a.b/");
+    EXPECT_EQ(downloader->MaskUrl("a.b/c/"), "a.b/***");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com:8080/a/b/file.txt"), "https://example.com:8080/***/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("http://example.com:8080"), "http://example.com:8080");
+    EXPECT_EQ(downloader->MaskUrl("https://site.org/x/y/z/readme"), "https://site.org/***/readme");
+    EXPECT_EQ(downloader->MaskUrl("https://a.com/static/jquery.min.js"), "https://a.com/***/jquery.min.js");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/目录/文件.txt"), "https://example.com/***/文件.txt");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com:8443/api/v2/data.json?pretty=true"),
+        "https://example.com:8443/***/data.json");
+    EXPECT_EQ(downloader->MaskUrl("http://example.com/static/js/app"), "http://example.com/***/app");
+    EXPECT_EQ(downloader->MaskUrl("https://cdn.site.com/assets/videos/2024/summer/promo.mp4"),
+        "https://cdn.site.com/***/promo.mp4");
+}
+
+class MockCloseRetryClient : public NetworkClient {
+public:
+    std::atomic<int> closeCallCount_{0};
+    int closeFailTimes_{0};
+
+    MockCloseRetryClient() {}
+
+    Status Close(bool isAsync) override
+    {
+        closeCallCount_++;
+        if (closeCallCount_ <= closeFailTimes_) {
+            return Status::ERROR_CLIENT;
+        }
+        return Status::OK;
+    }
+    Status Init() override { return Status::OK; }
+    Status Open(const std::string&, const std::map<std::string, std::string>&, int32_t) override { return Status::OK; }
+    Status RequestData(long, int, const RequestInfo&, HandleResponseCbFunc) override { return Status::OK; }
+    Status Deinit() override { return Status::OK; }
+    Status GetIp(std::string&) override { return Status::OK; }
+    void SetAppUid(int32_t) override {}
+};
+
+HWTEST_F(DownloaderUnitTest, Pause_CloseRetry_Succeed, TestSize.Level0)
+{
+    auto mock = std::make_shared<MockCloseRetryClient>();
+    mock->closeFailTimes_ = 2;
+    downloader->client_ = mock;
+
+    auto future = std::async(std::launch::async, [&]() { downloader->Pause(); });
+    auto status = future.wait_for(std::chrono::seconds(5));
+    EXPECT_NE(status, std::future_status::timeout);
+    EXPECT_EQ(mock->closeCallCount_, 3);
+}
+
+HWTEST_F(DownloaderUnitTest, Pause_CloseRetry_AllFail, TestSize.Level0)
+{
+    auto mock = std::make_shared<MockCloseRetryClient>();
+    mock->closeFailTimes_ = 100;
+    downloader->client_ = mock;
+
+    auto future = std::async(std::launch::async, [&]() { downloader->Pause(); });
+    auto status = future.wait_for(std::chrono::seconds(30));
+    EXPECT_NE(status, std::future_status::timeout);
+    EXPECT_EQ(mock->closeCallCount_, 5);
+}
+
+HWTEST_F(DownloaderUnitTest, Pause_CloseNoRetry_Normal, TestSize.Level0)
+{
+    auto mock = std::make_shared<MockCloseRetryClient>();
+    mock->closeFailTimes_ = 0;
+    downloader->client_ = mock;
+
+    downloader->Pause();
+    EXPECT_EQ(mock->closeCallCount_, 1);
+}
+
+HWTEST_F(DownloaderUnitTest, HttpCurlClient_HeaderList_Free_In_dtor, TestSize.Level1)
+{
+    auto client = NetworkClient::GetInstance(
+        [](void *buffer, size_t size, size_t nitems, void *userParam) ->
+            size_t { (void)buffer; (void)userParam; return size * nitems; },
+        [](void *buffer, size_t size, size_t nitems, void *userParam) ->
+            size_t { (void)buffer; (void)userParam; return size * nitems; },
+        nullptr);
+    EXPECT_NE(client, nullptr);
+    (void)client->Init();
+    std::map<std::string, std::string> httpHeader = {{"Accpet", "*/*"}};
+    (void)client->Open("http://127.0.0.1:46666/test", httpHeader, 1000);
+    client.reset();
+}
+
+/**
+ * @tc.name  : Test SafeStoDouble API
+ * @tc.number: SafeStoDouble_001
+ * @tc.desc  : Test SafeStoDouble with valid double string
+ */
+HWTEST_F(DownloaderUnitTest, SafeStoDouble_001, TestSize.Level1)
+{
+    double value = 0.0;
+    EXPECT_TRUE(StringUtil::SafeStoDouble("3.14", value));
+    EXPECT_DOUBLE_EQ(value, 3.14);
+}
+
+/**
+ * @tc.name  : Test SafeStoDouble API
+ * @tc.number: SafeStoDouble_002
+ * @tc.desc  : Test SafeStoDouble with empty string returns false
+ */
+HWTEST_F(DownloaderUnitTest, SafeStoDouble_002, TestSize.Level1)
+{
+    double value = -1.0;
+    bool result = StringUtil::SafeStoDouble("", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+    result = StringUtil::SafeStoDouble("   ", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+}
+
+/**
+ * @tc.name  : Test SafeStoDouble API
+ * @tc.number: SafeStoDouble_003
+ * @tc.desc  : Test SafeStoDouble with overflow string returns false
+ */
+HWTEST_F(DownloaderUnitTest, SafeStoDouble_003, TestSize.Level1)
+{
+    double value = -1.0;
+    bool result = StringUtil::SafeStoDouble("1e999", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+    result = StringUtil::SafeStoDouble("-1e999", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+}
+
+/**
+ * @tc.name  : Test SafeStoDouble API
+ * @tc.number: SafeStoDouble_004
+ * @tc.desc  : Test SafeStoDouble with non-numeric string returns false
+ */
+HWTEST_F(DownloaderUnitTest, SafeStoDouble_004, TestSize.Level1)
+{
+    double value = -1.0;
+    bool result = StringUtil::SafeStoDouble("abc", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+    result = StringUtil::SafeStoDouble("!@#", value);
+    EXPECT_FALSE(result);
+    EXPECT_EQ(value, -1.0);
+}
+
+/**
+ * @tc.name  : Test RetryCore null client
+ * @tc.number: RetryCore_NullClient
+ * @tc.desc  : Test RetryCore returns false when client_ is null
+ */
+HWTEST_F(DownloaderUnitTest, RetryCore_NullClient, TestSize.Level1)
+{
+    auto downloader = std::make_shared<Downloader>("test_retry_null");
+    auto request = std::make_shared<DownloadRequest>("http://test.com",
+        [](uint8_t*, uint32_t, bool) { return (uint32_t)0; },
+        [](DownloadStatus, std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {});
+    downloader->client_ = nullptr;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    bool result = downloader->RetryCore(request);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name  : Test RetryCore null currentRequest
+ * @tc.number: RetryCore_NullCurrentRequest
+ * @tc.desc  : Test RetryCore with null currentRequest_ skips inner block
+ */
+HWTEST_F(DownloaderUnitTest, RetryCore_NullCurrentRequest, TestSize.Level1)
+{
+    auto downloader = std::make_shared<Downloader>("test_retry_nullreq");
+    auto request = std::make_shared<DownloadRequest>("http://test.com",
+        [](uint8_t*, uint32_t, bool) { return (uint32_t)0; },
+        [](DownloadStatus, std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {});
+    downloader->client_ = std::make_shared<AppClient>(
+        [](void*, size_t, size_t, void*) -> size_t { return 0; },
+        [](void*, size_t, size_t, void*) -> size_t { return 0; },
+        nullptr);
+    downloader->currentRequest_ = nullptr;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    bool result = downloader->RetryCore(request);
+    EXPECT_TRUE(result);
+}
+
+/**
+ * @tc.name  : Test RetryCore range request size update
+ * @tc.number: RetryCore_RangeSizeUpdate
+ * @tc.desc  : Test RetryCore updates requestSize for valid range (endPos > 0, startPos >= 0)
+ */
+HWTEST_F(DownloaderUnitTest, RetryCore_RangeSizeUpdate, TestSize.Level1)
+{
+    auto downloader = std::make_shared<Downloader>("test_retry_range");
+    auto request = std::make_shared<DownloadRequest>("http://test.com",
+        [](uint8_t*, uint32_t, bool) { return (uint32_t)0; },
+        [](DownloadStatus, std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {});
+    downloader->client_ = std::make_shared<AppClient>(
+        [](void*, size_t, size_t, void*) -> size_t { return 0; },
+        [](void*, size_t, size_t, void*) -> size_t { return 0; },
+        nullptr);
+    downloader->requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>("testQue");
+    downloader->currentRequest_ = request;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    downloader->currentRequest_->startPos_ = 100;
+    downloader->currentRequest_->endPos_ = 200;
+    downloader->currentRequest_->requestSize_ = 0;
+    bool result = downloader->RetryCore(request);
+    EXPECT_TRUE(result);
+    EXPECT_EQ(downloader->currentRequest_->requestSize_, 101);
 }
 }
 }

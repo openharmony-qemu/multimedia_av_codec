@@ -57,7 +57,30 @@ void VEncCallbackTestExt::OnStreamChanged(std::shared_ptr<FormatMock> format) {}
 
 void VEncCallbackTestExt::OnNeedInputData(uint32_t index, std::shared_ptr<AVBufferMock> data) {}
 
-void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data) {}
+static const uint8_t *GetNalTypeAddr(const uint8_t *bufferAddr, int32_t size)
+{
+    if (bufferAddr == nullptr || size < 4) { // minimum 4-byte start code: 00 00 00 01
+        return nullptr;
+    }
+    for (int32_t i = 0; i < size - 3; i++) { // 3: min size for start code
+        if (bufferAddr[i] == 0 && bufferAddr[i + 1] == 0) {
+            if (bufferAddr[i + 2] == 1) { // 3-byte start code: 00 00 01  2: offset
+                return bufferAddr + i + 3;
+            } else if (bufferAddr[i + 2] == 0 && i + 4 <= size && // 4-byte start code: 00 00 00 01, 2: offset
+                       bufferAddr[i + 3] == 1) { // 3: offset
+                return bufferAddr + i + 4; // 4: offset
+            }
+        }
+    }
+    return nullptr;
+}
+
+void VEncCallbackTestExt::OnNewOutputData(uint32_t index, std::shared_ptr<AVBufferMock> data)
+{
+    if (signal_ == nullptr) {
+        return;
+    }
+}
 
 VEncParamCallbackTest::VEncParamCallbackTest(std::shared_ptr<VEncSignal> signal) {}
 
@@ -273,10 +296,10 @@ int32_t VideoEncSyncSample::FreeOutputBuffer(uint32_t index)
 #ifdef VIDEOENC_CAPI_UNIT_TEST
 int32_t VideoEncSyncSample::CreateInputSurface()
 {
-    auto surfaceMock = videoEnc_->CreateInputSurface();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
+    surfaceMock_ = videoEnc_->CreateInputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_NO_MEMORY, "OH_VideoEncoder_GetSurface fail");
 
-    nativeWindow_ = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock)->GetSurface();
+    nativeWindow_ = std::static_pointer_cast<SurfaceCapiMock>(surfaceMock_)->GetSurface();
     nativeWindow_->IncStrongRef(nativeWindow_);
     int32_t ret = 0;
     ret = OH_NativeWindow_NativeWindowHandleOpt(nativeWindow_, SET_FORMAT, GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
@@ -296,12 +319,12 @@ int32_t VideoEncSyncSample::CreateInputSurface()
 #else
 int32_t VideoEncSyncSample::CreateInputSurface()
 {
-    auto surfaceMock = videoEnc_->CreateInputSurface();
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
+    surfaceMock_ = videoEnc_->CreateInputSurface();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_INVALID_VAL, "CreateInputSurface fail");
 
-    sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock)->GetSurface();
+    sptr<Surface> surface = std::static_pointer_cast<SurfaceInnerMock>(surfaceMock_)->GetSurface();
     nativeWindow_ = CreateNativeWindowFromSurface(&surface);
-    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock != nullptr, AV_ERR_INVALID_VAL,
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(surfaceMock_ != nullptr, AV_ERR_INVALID_VAL,
                                       "CreateNativeWindowFromSurface failed!");
 
     int32_t ret = AV_ERR_OK;
@@ -320,6 +343,53 @@ int32_t VideoEncSyncSample::CreateInputSurface()
     return AV_ERR_OK;
 }
 #endif
+
+int32_t VideoEncSyncSample::GetSurfaceQueueSize()
+{
+    if (surfaceMock_ == nullptr) {
+        return -1;
+    }
+    return surfaceMock_->GetQueueSize();
+}
+
+int32_t VideoEncSyncSample::GetMaxPendingInputCount()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->maxPendingInputCount_.load();
+}
+
+int32_t VideoEncSyncSample::GetIDRFrameCount()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->idrFrameCount_.load();
+}
+
+int32_t VideoEncSyncSample::GetIDRWithImmediateXPSCount()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->idrWithImmediateXPSCount_.load();
+}
+
+int32_t VideoEncSyncSample::GetMaxPendingFramesObserved()
+{
+    if (signal_ == nullptr) {
+        return -1;
+    }
+    return signal_->maxPendingFramesObserved_.load();
+}
+
+void VideoEncSyncSample::SetIsAVCCodec(bool isAVC)
+{
+    if (signal_ != nullptr) {
+        signal_->isAVCCodec_ = isAVC;
+    }
+}
 
 bool VideoEncSyncSample::IsValid()
 {
@@ -506,6 +576,41 @@ void VideoEncSyncSample::CheckFormatKey(OH_AVCodecBufferAttr attr, std::shared_p
     format->Destroy();
 }
 
+void VideoEncSyncSample::UpdateOutputNumOfXpsAndIdrframes(const char *bufferAddr, int32_t size)
+{
+    const uint8_t *nalAddr = GetNalTypeAddr(reinterpret_cast<const uint8_t *>(bufferAddr), size);
+    if (nalAddr == nullptr) {
+        return;
+    }
+
+    uint8_t nalType = 0;
+    bool isXPS = false;
+    bool isIDR = false;
+    if (signal_->isAVCCodec_) {
+        nalType = (*nalAddr) & 0x1F; // 0x1F: AVC NAL type mask
+        isXPS = (nalType == 7 || nalType == 8); // 7: SPS, 8: PPS
+        isIDR = (nalType == 5); // 5: IDR slice
+    } else {
+        nalType = ((*nalAddr) & 0x7E) >> 1; // 0x7E: HEVC NAL type mask, >> 1: shift to get type
+        isXPS = (nalType >= 32 && nalType <= 34); // 32: VPS, 33: SPS, 34: PPS
+        isIDR = (nalType == 19 || nalType == 20); // 19: IDR_W_RADL, 20: IDR_N_LP
+    }
+
+    if (isXPS) {
+        signal_->lastOutputWasXPS_.store(true);
+    }
+    if (isIDR) {
+        signal_->idrFrameCount_++;
+        if (signal_->lastOutputWasXPS_.load()) {
+            signal_->idrWithImmediateXPSCount_++;
+        }
+        signal_->lastOutputWasXPS_.store(false);
+    }
+    if (!isXPS && !isIDR) {
+        signal_->lastOutputWasXPS_.store(false);
+    }
+}
+
 int32_t VideoEncSyncSample::OutputLoopInnerExt()
 {
     UNITTEST_CHECK_AND_RETURN_RET_LOG(outFile_ != nullptr || !needDump_, AV_ERR_INVALID_VAL,
@@ -538,6 +643,8 @@ int32_t VideoEncSyncSample::OutputLoopInnerExt()
 #ifdef ONLY_FOR_FLAGSHIP_CHIP
     CheckFormatKey(attr, buffer);
 #endif // ONLY_FOR_FLAGSHIP_CHIP
+
+    UpdateOutputNumOfXpsAndIdrframes(bufferAddr, size);
 
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
@@ -583,6 +690,35 @@ void VideoEncSyncSample::InputLoopInnerFeatureExt(OH_AVCodecBufferAttr &attr)
     }
 }
 
+void VideoEncSyncSample::UpdateMaxPendingFramesObserved()
+{
+    auto inputDesc = videoEnc_->GetInputDescription();
+    if (inputDesc == nullptr) {
+        return;
+    }
+    int32_t pendingFrames = -1;
+    if (!inputDesc->GetIntValue(Media::Tag::VIDEO_ENCODER_NUMBER_OF_PENDING_FRAMES, pendingFrames)) {
+        return;
+    }
+    int32_t currentMax = signal_->maxPendingFramesObserved_.load();
+    while (pendingFrames > currentMax) {
+        if (signal_->maxPendingFramesObserved_.compare_exchange_weak(currentMax, pendingFrames)) {
+            break;
+        }
+    }
+}
+
+void VideoEncSyncSample::UpdateMaxPendingInputCount()
+{
+    int32_t current = signal_->pendingInputCount_.load();
+    int32_t max = signal_->maxPendingInputCount_.load();
+    while (current > max) {
+        if (signal_->maxPendingInputCount_.compare_exchange_weak(max, current)) {
+            break;
+        }
+    }
+}
+
 void VideoEncSyncSample::InputRoiParam(std::shared_ptr<AVBufferMock> buffer)
 {
     std::shared_ptr<FormatMock> format = buffer->GetParameter();
@@ -600,6 +736,11 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     }
 
     UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, ret, "Fatal: QueryInputBuffer fail");
+    signal_->pendingInputCount_++;
+    UpdateMaxPendingInputCount();
+
+    UpdateMaxPendingFramesObserved();
+
     auto buffer = videoEnc_->GetInputBuffer(index);
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetInputBuffer fail, index: %d", index);
@@ -624,6 +765,7 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     if (attr.flags & AVCODEC_BUFFER_FLAG_EOS) {
         buffer->SetBufferAttr(attr);
         int32_t res = PushInputBuffer(index);
+        signal_->pendingInputCount_--;
         cout << "Input EOS Frame, frameCount = " << frameInputCount_ << endl;
         if (inFile_ != nullptr && inFile_->is_open()) {
             inFile_->close();
@@ -638,6 +780,8 @@ int32_t VideoEncSyncSample::InputLoopInnerExt()
     }
     InputLoopInnerFeatureExt(attr);
     buffer->SetBufferAttr(attr);
+
+    signal_->pendingInputCount_--;
     return PushInputBuffer(index);
 }
 

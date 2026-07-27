@@ -45,7 +45,7 @@ struct FrameDumpRecord {
     int64_t postDecCostUs;        // PostDecode latency (us)
     size_t writeIndex;            // Write index in sync queue
     size_t readIndex;             // Read index from sync queue
-    double emaRatio;   // Current smoothed retention ratio
+    double actualRetentionRatio;   // Current smoothed retention ratio
     uint32_t validBlocks;         // Count of valid MV macroblocks
     double perceptualMagnitude;   // Perceptual motion magnitude
     double motionConsistency;     // Motion consistency metric
@@ -59,7 +59,7 @@ struct FrameDumpRecord {
                         preSysTimeMs(-1), postSysTimeMs(-1), preDropCount(0),
                         mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0),
                         preDecCostUs(-1), postDecCostUs(-1), writeIndex(0), readIndex(0),
-                        emaRatio(1.0), validBlocks(0), perceptualMagnitude(0.0),
+                        actualRetentionRatio(1.0), validBlocks(0), perceptualMagnitude(0.0),
                         motionConsistency(0.0), zeroMotionRatio(0.0), naluCostUs(-1),
                         copyMvCostUs(-1), analyzeMvCostUs(-1), updateDumperCostUs(-1) {}
 };
@@ -85,7 +85,7 @@ public:
         int64_t sysTimeMs{-1};
         int64_t preDecCostUs{-1};
         size_t writeIndex{0};
-        double emaRatio{1.0};
+        double actualRetentionRatio{1.0};
         int64_t naluCostUs{-1};
         SfdDecisionReason reason{SfdDecisionReason::UNSPECIFIED};
     };
@@ -97,7 +97,7 @@ public:
         int64_t sysTimeMs{-1};
         int64_t postDecCostUs{-1};
         size_t readIndex{0};
-        double emaRatio{1.0};
+        double actualRetentionRatio{1.0};
         MVStats mvStats;
         int64_t copyMvCostUs{-1};
         int64_t analyzeMvCostUs{-1};

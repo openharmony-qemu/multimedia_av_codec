@@ -640,8 +640,8 @@ uint32_t VDecNdkSample::SendData(uint32_t bufferSize, uint32_t index, OH_AVMemor
     OH_AVCodecBufferAttr attr;
     uint8_t *fileBuffer = new uint8_t[bufferSize + START_CODE_SIZE];
     if (fileBuffer == nullptr) {
-        delete[] fileBuffer;
-        return 0;
+        cout << "fileBuffer allocation failed" << endl;
+        return 1;
     }
     if (memcpy_s(fileBuffer, bufferSize + START_CODE_SIZE, START_CODE, START_CODE_SIZE) != EOK) {
         cout << "Fatal: memory copy failed" << endl;

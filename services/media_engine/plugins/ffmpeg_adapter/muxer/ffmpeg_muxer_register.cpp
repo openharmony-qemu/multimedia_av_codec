@@ -40,7 +40,7 @@ namespace Plugins {
 namespace Ffmpeg {
 std::map<std::string, std::shared_ptr<AVOutputFormat>> FFmpegMuxerRegister::pluginOutputFmt_;
 std::set<std::string> FFmpegMuxerRegister::supportedMuxer_ = {
-    "mp4", "ipod", "amr", "mp3", "wav", "adts", "flac", "ogg", "flv"
+    "amr", "mp3", "wav", "adts", "flac", "ogg", "flv"
 };
 
 bool FFmpegMuxerRegister::IsMuxerSupported(const char* name)
@@ -92,15 +92,7 @@ bool FFmpegMuxerRegister::CodecId2Cap(AVCodecID codecId, bool encoder, Capabilit
 
 bool FFmpegMuxerRegister::FormatName2OutCapability(const std::string &fmtName, MuxerPluginDef &pluginDef)
 {
-    if (fmtName == "mp4") {
-        auto cap = Capability(MimeType::MEDIA_MP4);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    } else if (fmtName == "ipod") {
-        auto cap = Capability(MimeType::MEDIA_M4A);
-        pluginDef.AddOutCaps(cap);
-        return true;
-    } else if (fmtName == "amr") {
+    if (fmtName == "amr") {
         auto cap = Capability(MimeType::MEDIA_AMR);
         pluginDef.AddOutCaps(cap);
         return true;

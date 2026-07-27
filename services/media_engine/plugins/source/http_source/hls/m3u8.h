@@ -81,8 +81,21 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
         std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {},
         std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~M3U8();
-    void InitTagUpdaters();
     void InitTagUpdatersMap();
+    void UpdatePlaylistType(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateTargetDuration(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateMediaSequence(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateDiscontSequence(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateExtInf(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateUri(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateByteRange(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateDiscontinuity(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateKey(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateMap(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateSkip(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateStart(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateProgramDateTime(std::shared_ptr<Tag>& tag, M3U8Info& info);
+    void UpdateDateRange(std::shared_ptr<Tag>& tag, M3U8Info& info);
     bool Update(const std::string& playList, bool isNeedCleanFiles, uint64_t totalKeyIndex = 0);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
     void AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration);
@@ -130,12 +143,15 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     void GetKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos);
     void ParseDateRange(const std::shared_ptr<AttributesTag>& tag);
     int64_t CalculateDateTimeOffset(const std::string& programDateTime, const std::string& startDate);
+    void InitializeDownloadHeader(const std::string& uri, size_t offset, size_t length);
+    void StartDownload();
 
     std::shared_ptr<std::string> method_;
     std::shared_ptr<std::string> keyUri_;
     uint8_t iv_[16] { 0 };
     uint8_t key_[16] { 0 };
     size_t keyLen_ { 0 };
+    std::atomic<bool> hasExplicitIv_ {false};
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;
     KeyDataSaveFunc keyDataSave_;
@@ -143,7 +159,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     PlayListChangeCallback *callback_ { nullptr };
     bool startedDownloadStatus_ { false };
     bool isDecryptAble_ { false };
-    bool isDecryptKeyReady_ { false };
+    std::atomic<bool> isDecryptKeyReady_ {false};
     std::multimap<std::string, std::vector<uint8_t>> localDrmInfos_;
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
@@ -153,6 +169,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::atomic<size_t> minFragDuration_ {0};
     std::atomic<bool> isInterruptNeeded_{false};
     uint8_t* fmp4Header_ {nullptr};
+    std::string fmp4HeaderUri_;     // 存XMAP下载链接
     std::shared_ptr<Downloader> downloaderHeader_;
     DataSaveFunc dataSaveHeader_;
     std::atomic<bool> isHeaderReady_ {false};
@@ -165,6 +182,7 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     StatusCallbackFunc monitorStatusCallback_;
     ConditionVariable sleepCond_ {};
     Mutex sleepMutex_ {};
+    Mutex headerMutex_ {};
     std::shared_ptr<DownloadMetricsInfo> downloadCallback_ {nullptr};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     uint64_t keyIndex_ {0};
@@ -263,10 +281,11 @@ struct M3U8MasterPlaylist {
     std::atomic<bool> isSimple_ {false};
     std::atomic<bool> bLive_ {false};
     bool isDecryptAble_ { false };
-    bool isDecryptKeyReady_ { false };
+    std::atomic<bool> isDecryptKeyReady_ {false};
     uint8_t iv_[16] { 0 };
     uint8_t key_[16] { 0 };
     size_t keyLen_ { 0 };
+    std::atomic<bool> hasExplicitIv_ {false};
     std::atomic<bool> isParseSuccess_ {true};
     bool hasDiscontinuity_ {false};
     std::vector<size_t> segmentOffsets_;

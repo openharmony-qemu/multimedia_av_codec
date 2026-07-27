@@ -16,6 +16,7 @@
 #ifndef DEMUXER_DATA_READER_H
 #define DEMUXER_DATA_READER_H
 
+#include <vector>
 #include "common/status.h"
 #include "plugin/plugin_definition.h"
 
@@ -25,9 +26,21 @@ namespace Plugins {
 class DemuxerDataReader {
 public:
     Status SetDataReader(const std::shared_ptr<DataSource>& source);
+    Status SetReadTimeoutForInitSeek(int64_t timeoutMs);
     Status ReadUintData(int64_t offset, uint8_t* buffer, size_t size);
+    Status ReadFully(int64_t offset, uint8_t* buffer, size_t size);
 private:
+    bool IsReadTimeoutExpired();
+    Status ReadFromCache(int64_t offset, uint8_t* buffer, size_t size);
+    Status FillReadCache(int64_t offset);
+
     std::shared_ptr<DataSource> dataSource_ {nullptr};
+    bool readTimeoutConfigured_ {false};
+    int64_t readTimeoutMs_ {0};
+    int64_t readStartTimeMs_ {0};
+    std::vector<uint8_t> readCache_;
+    int64_t readCacheOffset_ {-1};
+    size_t readCacheSize_ {0};
 };
 
 class DemuxerBitReader {

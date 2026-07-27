@@ -17,6 +17,7 @@
 #define DASH_MPD_PARSER_H
 
 #include <cstdint>
+#include <atomic>
 #include "dash_mpd_def.h"
 #include "i_dash_mpd_node.h"
 
@@ -173,7 +174,7 @@ private:
     static constexpr const char *MPD_LABEL_BREAK_DURATION = "BreakDuration";
 
     DashMpdInfo dashMpdInfo_;
-    int32_t stopFlag_{0};
+    std::atomic<int32_t> stopFlag_{0};
 };
 } // namespace HttpPlugin
 } // namespace Plugin

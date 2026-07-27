@@ -20,6 +20,7 @@
 #include <regex>
 #include <sstream>
 #include "converter.h"
+#include "demuxer_utils.h"
 #include "meta/meta_key.h"
 #include "meta/media_types.h"
 #include "meta/mime_type.h"
@@ -60,13 +61,14 @@ const int32_t AV3A_SAMPLE_8BITS = 8;
 const int32_t AV3A_SAMPLE_16BITS = 16;
 const int32_t AV3A_SAMPLE_24BITS = 24;
 
-const int32_t INVALID_VAL = -1;
-const int32_t POS_1 = 1;
-const int32_t VALUE_2 = 2;
-const int32_t VALUE_4 = 4;
-const int32_t VALUE_10 = 10;
+const int32_t SMPTE2086_RED_INDEX = 0;
+const int32_t SMPTE2086_GREEN_INDEX = 1;
+const int32_t SMPTE2086_BLUE_INDEX = 2;
+const int32_t CHANNEL_LAYOUT_ID_MAX = 64;
 
 const size_t BRAND_CODE_LEN = 4; // 4 is brand code length
+constexpr size_t MAX_EXTRADATA_SIZE = 10 * 1024 * 1024; //10MB上限
+constexpr size_t MAX_COVER_SIZE = 50 * 1024 * 1024; // 50MB上限
 
 static std::map<AVPixelFormat, RawVideoPixelFormat> g_convertFfmpegPixFmt = {
     {AVPixelFormat::AV_PIX_FMT_YUV420P, RawVideoPixelFormat::YUV420P},
@@ -389,102 +391,6 @@ std::string ConvertArrayToString(const int* array, size_t size)
     return result;
 }
 
-enum ValueType {
-    INT32 = 0,
-    FLOAT = 1,
-    BUFFER = 2,
-    INT64 = 3,
-};
-
-template <typename T>
-bool ConvertString(const std::string &str, T &result)
-{
-    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), result);
-    return ec == std::errc{} && ptr == str.data() + str.size();
-}
-
-bool StringConverterFloat(const std::string &str, float &result)
-{
-    char *end = nullptr;
-    errno = 0;
-    result = std::strtof(str.c_str(), &end);
-    return end != str.c_str() && *end == '\0' && errno == 0;
-}
-
-static int8_t HexCharToValue(char c)
-{
-    if (c >= '0' && c <= '9') {
-        return c - '0';
-    } else if (c >= 'a' && c <= 'f') {
-        return c - 'a' + VALUE_10;
-    } else if (c >= 'A' && c <= 'F') {
-        return c - 'A' + VALUE_10;
-    }
-    return INVALID_VAL;
-}
-
-static bool ConvertHexStrToBuffer(const std::string hexStr, std::vector<uint8_t> &buffer)
-{
-    if (hexStr.empty() || hexStr.size() % VALUE_2 != 0) {
-        return false;
-    }
-    int len = static_cast<int>(hexStr.size()) / VALUE_2;
-    buffer.resize(len);
-    for (int i = 0; i < len; i++) {
-        int8_t high = HexCharToValue(hexStr[i * VALUE_2]);
-        int8_t low = HexCharToValue(hexStr[i * VALUE_2 + POS_1]);
-        FALSE_RETURN_V_MSG_E(high >= 0 && low >= 0, false,
-            "invalid hexChar" PUBLIC_LOG_U8 " " PUBLIC_LOG_U8, hexStr[i * VALUE_2], hexStr[i * VALUE_2 + POS_1]);
-        buffer[i] = (static_cast<uint8_t>(high) << VALUE_4) | static_cast<uint8_t>(low);
-    }
-    return true;
-}
-
-static void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::string valueStr, ValueType valueType)
-{
-    bool convertSuccess = false;
-    switch (valueType) {
-        case ValueType::INT32: {
-            int32_t int32Value = -1;
-            if (ConvertString(valueStr, int32Value)) {
-                format.SetData<int32_t>(tag, int32Value);
-                convertSuccess = true;
-            }
-            break;
-        }
-        case ValueType::FLOAT: {
-            float floatValue = -1;
-            if (StringConverterFloat(valueStr, floatValue)) {
-                format.SetData<float>(tag, floatValue);
-                convertSuccess = true;
-            }
-            break;
-        }
-        case ValueType::BUFFER: {
-            std::vector<uint8_t> buffer;
-            if (ConvertHexStrToBuffer(valueStr, buffer)) {
-                format.SetData(tag, buffer);
-                convertSuccess = true;
-            }
-            break;
-        }
-        case ValueType::INT64: {
-            int64_t int64Value = -1;
-            if (ConvertString(valueStr, int64Value)) {
-                format.SetData<int64_t>(tag, int64Value);
-                convertSuccess = true;
-            }
-            break;
-        }
-        default:
-            MEDIA_LOG_W("Unsupport value type " PUBLIC_LOG_D32, static_cast<int32_t>(valueType));
-            break;
-    }
-    if (!convertSuccess) {
-        MEDIA_LOG_W("Parse failed key[" PUBLIC_LOG_S "] value[" PUBLIC_LOG_S "] type[" PUBLIC_LOG_D32 "]",
-            std::string(tag).c_str(), valueStr.c_str(), static_cast<int32_t>(valueType));
-    }
-}
 
 bool IsPCMStream(AVCodecID codecID)
 {
@@ -543,6 +449,10 @@ static uint64_t FfAv3aGetChannelLayoutMask(AVChannelLayout *channelLayout)
     for (int i = 0; i < nbChannels; i++) {
         if (channelLayout->u.map[i].id == AV3A_CH_AUDIO_OBJECT) {
             return mask;
+        }
+        if (channelLayout->u.map[i].id >= CHANNEL_LAYOUT_ID_MAX) {
+            MEDIA_LOG_E("Invalid channel id: %d", channelLayout->u.map[i].id);
+            return 0;
         }
         mask |= (1ULL << channelLayout->u.map[i].id);
     }
@@ -632,10 +542,10 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
         MEDIA_LOG_D("Info format error");
         return;
     }
-    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LATITUDE, numbers->str(), ValueType::FLOAT);
-    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, (++numbers)->str(), ValueType::FLOAT);
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LATITUDE, numbers->str(), ConvertValueType::FLOAT);
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, (++numbers)->str(), ConvertValueType::FLOAT);
     if (cnt > VALID_LOCATION_LEN) {
-        SetToFormatIfConvertSuccess(format, Tag::MEDIA_ALTITUDE, (++numbers)->str(), ValueType::FLOAT);
+        SetToFormatIfConvertSuccess(format, Tag::MEDIA_ALTITUDE, (++numbers)->str(), ConvertValueType::FLOAT);
     }
 }
 
@@ -653,18 +563,18 @@ void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, s
             if (StartWith(valPtr->value, "00000000")) { // reserved
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: reserved", (valPtr->key + KEY_PREFIX_LEN));
                 SetToFormatIfConvertSuccess(
-                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ValueType::BUFFER);
+                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ConvertValueType::BUFFER);
             } else if (StartWith(valPtr->value, "00000001")) { // string
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: string", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
             } else if (StartWith(valPtr->value, "00000017")) { // float
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: float", (valPtr->key + KEY_PREFIX_LEN));
                 SetToFormatIfConvertSuccess(
-                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ValueType::FLOAT);
+                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ConvertValueType::FLOAT);
             } else if (StartWith(valPtr->value, "00000043") || StartWith(valPtr->value, "00000015")) { // int
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: int", (valPtr->key + KEY_PREFIX_LEN));
                 SetToFormatIfConvertSuccess(
-                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ValueType::INT32);
+                    *format, valPtr->key + KEY_PREFIX_LEN, valPtr->value + VALUE_PREFIX_LEN, ConvertValueType::INT32);
             } else { // unknow
                 MEDIA_LOG_D("Key: " PUBLIC_LOG_S " | type: unknow", (valPtr->key + KEY_PREFIX_LEN));
                 format->SetData(valPtr->key + KEY_PREFIX_LEN, std::string(valPtr->value + VALUE_PREFIX_LEN));
@@ -698,6 +608,15 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, 
             ParseVideoTrackInfo(avStream, format, avFormatContext);
         } else if (IsAudioType(avStream)) {
             ParseAudioTrackInfo(avStream, format, avFormatContext);
+        }
+    } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+        ParseAVTrackInfo(avStream, format);
+        AVDictionaryEntry *valPtr = nullptr;
+        valPtr = av_dict_get(avStream.metadata, "title", nullptr, AV_DICT_MATCH_CASE);
+        if (valPtr != nullptr) {
+            format.Set<Tag::MEDIA_TITLE>(std::string(valPtr->value));
+        } else {
+            MEDIA_LOG_D("Parse track title failed");
         }
     }
     FileType fileType = GetFileTypeByName(avFormatContext);
@@ -788,7 +707,8 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
         MEDIA_LOG_D("Parse bitrate failed: " PUBLIC_LOG_D64, bitRate);
     }
 
-    if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata != nullptr) {
+    if (avStream.codecpar->extradata_size > 0 && avStream.codecpar->extradata_size <= MAX_EXTRADATA_SIZE
+        && avStream.codecpar->extradata != nullptr) {
         std::vector<uint8_t> extra(avStream.codecpar->extradata_size);
         extra.assign(avStream.codecpar->extradata, avStream.codecpar->extradata + avStream.codecpar->extradata_size);
         format.Set<Tag::MEDIA_CODEC_CONFIG>(extra);
@@ -804,13 +724,8 @@ void FFmpegFormatHelper::ParseAVTrackInfo(const AVStream& avStream, Meta &format
     }
 }
 
-void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format,
-                                             const AVFormatContext& avFormatContext)
+void FFmpegFormatHelper::ParseFrameRate(const AVStream& avStream, Meta &format)
 {
-    format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
-    format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
-    format.Set<Tag::VIDEO_DELAY>(static_cast<uint32_t>(avStream.codecpar->video_delay));
-
     double frameRate = 0;
     if (avStream.avg_frame_rate.den == 0 || avStream.avg_frame_rate.num == 0) {
         frameRate = static_cast<double>(av_q2d(avStream.r_frame_rate));
@@ -822,7 +737,15 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     } else {
         MEDIA_LOG_D("Parse frame rate failed: " PUBLIC_LOG_F, frameRate);
     }
+}
 
+void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &format,
+                                             const AVFormatContext& avFormatContext)
+{
+    format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
+    format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
+    format.Set<Tag::VIDEO_DELAY>(static_cast<uint32_t>(avStream.codecpar->video_delay));
+    ParseFrameRate(avStream, format);
     AVDictionaryEntry *valPtr = nullptr;
     valPtr = av_dict_get(avStream.metadata, "rotate", nullptr, AV_DICT_MATCH_CASE);
     if (valPtr == nullptr) {
@@ -852,6 +775,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
         ParseHvccBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
+        if (IsMpeg4File(fileType)) {
+            ParseHdrStaticMetadata(avStream, format);
+        }
     }
     if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         ParseRawvideoInfo(avStream, format);
@@ -863,8 +789,9 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
 
 void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta &format)
 {
-    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
-    if (displayMatrix) {
+    size_t sideDataSize = 0;
+    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, &sideDataSize);
+    if (displayMatrix && sideDataSize >= DISPLAY_MATRIX_SIZE) {
         float rotation = -round(av_display_rotation_get(displayMatrix));
         MEDIA_LOG_D("Parse rotate info from display matrix: " PUBLIC_LOG_F, rotation);
         if (isnan(rotation)) {
@@ -895,9 +822,10 @@ void FFmpegFormatHelper::ParseRotationFromMatrix(const AVStream& avStream, Meta 
 
 void FFmpegFormatHelper::ParseVideoHdrAndColorMetadata(const AVStream& avStream, Meta &format)
 {
+    size_t sideDataSize = 0;
     const uint8_t *sideData = (uint8_t *)av_stream_get_side_data(
-        &avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, NULL);
-    if (sideData) {
+        &avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, &sideDataSize);
+    if (sideData && sizeof(AVMasteringDisplayMetadata) <= sideDataSize) {
         std::vector<uint8_t> extra(sizeof(AVMasteringDisplayMetadata));
         extra.assign(sideData, sideData + sizeof(AVMasteringDisplayMetadata));
         format.Set<Tag::VIDEO_HDR_METADATA>(extra);
@@ -916,8 +844,9 @@ void PrintMatrixToLog(int32_t * matrix, const std::string& matrixName)
 void FFmpegFormatHelper::ParseOrientationFromMatrix(const AVStream& avStream, Meta &format)
 {
     VideoOrientationType orientationType = VideoOrientationType::ROTATE_NONE;
-    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, NULL);
-    if (displayMatrix) {
+    size_t sideDataSize = 0;
+    int32_t *displayMatrix = (int32_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_DISPLAYMATRIX, &sideDataSize);
+    if (displayMatrix && sideDataSize >= DISPLAY_MATRIX_SIZE) {
         PrintMatrixToLog(displayMatrix, "displayMatrix");
         int convertedMatrix[CONVERT_MATRIX_SIZE] = {0, 0, 0, 0};
         std::transform(&displayMatrix[0], &displayMatrix[0] + 1, // 0 is displayMatrix index, 1 is copy lenth
@@ -941,7 +870,7 @@ void FFmpegFormatHelper::ParseImageTrackInfo(const AVStream& avStream, Meta &for
     format.Set<Tag::VIDEO_WIDTH>(static_cast<uint32_t>(avStream.codecpar->width));
     format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(avStream.codecpar->height));
     AVPacket pkt = avStream.attached_pic;
-    if (pkt.size > 0 && pkt.data != nullptr) {
+    if (pkt.size > 0 && pkt.size <= MAX_COVER_SIZE && pkt.data != nullptr) {
         std::vector<uint8_t> cover(pkt.size);
         cover.assign(pkt.data, pkt.data + pkt.size);
         format.Set<Tag::MEDIA_COVER>(cover);
@@ -1176,6 +1105,45 @@ void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format
     }
 }
 
+void FFmpegFormatHelper::ParseHdrStaticMetadata(const AVStream& avStream, Meta &format)
+{
+    size_t sideDataSize = 0;
+    uint8_t *sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_CONTENT_LIGHT_LEVEL, &sideDataSize);
+    if (sideData != nullptr && sideDataSize >= sizeof(AVContentLightMetadata)) {
+        AVContentLightMetadata* cta861Data = reinterpret_cast<AVContentLightMetadata*>(sideData);
+        if (cta861Data != nullptr) {
+            Cta861 cta861;
+            cta861.maxContentLightLevel = static_cast<float>(cta861Data->MaxCLL);
+            cta861.maxFrameAverageLightLevel = static_cast<float>(cta861Data->MaxFALL);
+            std::vector<uint8_t> cta861Vec(sizeof(cta861));
+            cta861Vec.assign(reinterpret_cast<uint8_t*>(&cta861), reinterpret_cast<uint8_t*>(&cta861) + sizeof(cta861));
+            format.Set<Tag::VIDEO_STATIC_METADATA_CTA861>(cta861Vec);
+        }
+    }
+    
+    sideData = (uint8_t *)av_stream_get_side_data(&avStream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, &sideDataSize);
+    if (sideData != nullptr && sideDataSize >= sizeof(AVMasteringDisplayMetadata)) {
+        AVMasteringDisplayMetadata* smpte2086Data = reinterpret_cast<AVMasteringDisplayMetadata*>(sideData);
+        if (smpte2086Data != nullptr && smpte2086Data->has_luminance && smpte2086Data->has_primaries) {
+            Smpte2086 smpte2086;
+            smpte2086.displayPrimaryRedX = av_q2d(smpte2086Data->display_primaries[SMPTE2086_RED_INDEX][0]);
+            smpte2086.displayPrimaryRedY = av_q2d(smpte2086Data->display_primaries[SMPTE2086_RED_INDEX][1]);
+            smpte2086.displayPrimaryGreenX = av_q2d(smpte2086Data->display_primaries[SMPTE2086_GREEN_INDEX][0]);
+            smpte2086.displayPrimaryGreenY = av_q2d(smpte2086Data->display_primaries[SMPTE2086_GREEN_INDEX][1]);
+            smpte2086.displayPrimaryBlueX = av_q2d(smpte2086Data->display_primaries[SMPTE2086_BLUE_INDEX][0]);
+            smpte2086.displayPrimaryBlueY = av_q2d(smpte2086Data->display_primaries[SMPTE2086_BLUE_INDEX][1]);
+            smpte2086.whitePointX = av_q2d(smpte2086Data->white_point[0]);
+            smpte2086.whitePointY = av_q2d(smpte2086Data->white_point[1]);
+            smpte2086.maxLuminance = av_q2d(smpte2086Data->max_luminance);
+            smpte2086.minLuminance = av_q2d(smpte2086Data->min_luminance);
+            std::vector<uint8_t> smpte2086Vec(sizeof(smpte2086));
+            smpte2086Vec.assign(
+                reinterpret_cast<uint8_t*>(&smpte2086), reinterpret_cast<uint8_t*>(&smpte2086) + sizeof(smpte2086));
+            format.Set<Tag::VIDEO_STATIC_METADATA_SMPT2086>(smpte2086Vec);
+        }
+    }
+}
+
 void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &format)
 {
     int colorRange = Converter::ConvertFFMpegToOHColorRange(avStream.codecpar->color_range);
@@ -1222,20 +1190,13 @@ void FFmpegFormatHelper::ParseHevcInfo(
         format.Set<Tag::VIDEO_HEIGHT>(static_cast<uint32_t>(parse.picHetInLumaSamples));
     }
     if (IsMpeg4File(fileType)) {
-        HdrBoxInfo hdrBoxInfo {false, false, false};
+        HdrBoxInfo hdrBoxInfo {false, false};
         const AVDictionaryEntry *type = av_dict_get(avStream.metadata, "hdr_type", NULL, 0);
         if (type != nullptr && type->value != nullptr) {
             if (StartWith(type->value, "dolbyVision")) {
                 hdrBoxInfo.haveHdrDoblyVisionBox = true;
             } else if (StartWith(type->value, "hdrVivid")) {
                 hdrBoxInfo.haveHdrVividBox = true;
-            }
-        }
-
-        type = av_dict_get(avStream.metadata, "is_hdr", NULL, 0);
-        if (type != nullptr && type->value != nullptr) {
-            if (StartWith(type->value, "1")) {
-                hdrBoxInfo.isHdr = true;
             }
         }
         Converter::ParseHdrTypeInfo(hdrBoxInfo, format, parse);
@@ -1349,7 +1310,7 @@ void FFmpegFormatHelper::ParseGltfInfo(const AVFormatContext& avFormatContext, M
     auto idatPos = av_dict_get(avFormatContext.metadata, "idat_pos", NULL, 0);
     MEDIA_LOG_I("Valid glTF file and idat Pos: " PUBLIC_LOG_S, idatPos ? idatPos->value : "not found");
     if (idatPos && idatPos->value) {
-        SetToFormatIfConvertSuccess(format, Tag::GLTF_OFFSET, idatPos->value, ValueType::INT64);
+        SetToFormatIfConvertSuccess(format, Tag::GLTF_OFFSET, idatPos->value, ConvertValueType::INT64);
     }
 }
 void FFmpegFormatHelper::ParseRawvideoInfo(const AVStream& avStream, Meta &format)

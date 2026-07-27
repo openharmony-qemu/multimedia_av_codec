@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2023-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -11,6 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
 import("//build/ohos.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
@@ -28,7 +29,7 @@ config("http_source_plugin_config") {
     "-Wshadow",
     "-FPIC",
     "-FS",
-    "-O2",
+    "-Os",
     "-fvisibility=hidden",
     "-D_FORTIFY_SOURCE=2",
     "-Wformat=2",
@@ -73,6 +74,7 @@ ohos_shared_library("media_plugin_HttpSource") {
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
@@ -102,31 +104,13 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "dash/dash_mpd_downloader.cpp",
     "dash/dash_segment_downloader.cpp",
     "dash/mpd_parser/dash_adpt_set_manager.cpp",
-    "dash/mpd_parser/dash_adpt_set_node.cpp",
-    "dash/mpd_parser/dash_com_attrs_elements.cpp",
-    "dash/mpd_parser/dash_content_comp_node.cpp",
-    "dash/mpd_parser/dash_descriptor_node.cpp",
     "dash/mpd_parser/dash_manager_util.cpp",
     "dash/mpd_parser/dash_mpd_manager.cpp",
-    "dash/mpd_parser/dash_mpd_node.cpp",
     "dash/mpd_parser/dash_mpd_parser.cpp",
     "dash/mpd_parser/dash_mpd_util.cpp",
-    "dash/mpd_parser/dash_mult_seg_base_node.cpp",
     "dash/mpd_parser/dash_period_manager.cpp",
-    "dash/mpd_parser/dash_period_node.cpp",
     "dash/mpd_parser/dash_representation_manager.cpp",
-    "dash/mpd_parser/dash_representation_node.cpp",
-    "dash/mpd_parser/dash_seg_base_node.cpp",
-    "dash/mpd_parser/dash_seg_list_node.cpp",
-    "dash/mpd_parser/dash_seg_template_node.cpp",
-    "dash/mpd_parser/dash_seg_tmline_node.cpp",
-    "dash/mpd_parser/dash_seg_url_node.cpp",
-    "dash/mpd_parser/dash_url_type_node.cpp",
-    "dash/mpd_parser/dash_splice_info_section_node.cpp",
-    "dash/mpd_parser/dash_splice_insert_node.cpp",
-    "dash/mpd_parser/dash_break_duration_node.cpp",
-    "dash/mpd_parser/dash_event_stream_node.cpp",
-    "dash/mpd_parser/dash_event_node.cpp",
+    "dash/mpd_parser/dash_generic_node.cpp",
     "dash/mpd_parser/i_dash_mpd_node.cpp",
     "dash/mpd_parser/sidx_box_parser.cpp",
     "download/app_client.cpp",
@@ -140,6 +124,8 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "hls/hls_segment_manager.cpp",
     "http/http_media_downloader.cpp",
     "http_source_plugin.cpp",
+    "http_source_plugin_stream_protocol_sniffer.cpp",
+    "http_source_plugin_stream_resource_parser.cpp",
     "utils/http_media_utils.cpp",
     "monitor/download_monitor.cpp",
     "utils/aes_decryptor.cpp",
@@ -160,6 +146,7 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
+    "hitrace:hitrace_meter",
     "init:libbegetutil",
     "ipc:ipc_single",
     "libxml2:libxml2",
