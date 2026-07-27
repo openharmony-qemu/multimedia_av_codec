@@ -369,14 +369,14 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
     auto oldKeyUri = keyUri_;
     auto oldMethod = method_;
     uint8_t oldIv[sizeof(iv_)];
-    NZERO_LOG(memcpy_s(oldIv, sizeof(oldIv), iv_, sizeof(iv_)));
+    errno_t ivRet = memcpy_s(oldIv, sizeof(oldIv), iv_, sizeof(iv_));
     bool oldHasExplicitIv = hasExplicitIv_.load();
     ParseKey(std::static_pointer_cast<AttributesTag>(tag));
     auto keyTag = std::static_pointer_cast<AttributesTag>(tag);
     auto keyUri = keyTag ? keyTag->GetAttributeByName("URI") : nullptr;
     FALSE_RETURN(keyUri != nullptr);
-    if (isDecryptKeyReady_.load() && oldKeyUri != nullptr && keyUri_ != nullptr && *oldKeyUri == *keyUri_ &&
-        oldMethod != nullptr && method_ != nullptr && *oldMethod == * method_ &&
+    if (ivRet == EOK && isDecryptKeyReady_.load() && oldKeyUri != nullptr && keyUri_ != nullptr &&
+        *oldKeyUri == *keyUri_ && oldMethod != nullptr && method_ != nullptr && *oldMethod == *method_ &&
         oldHasExplicitIv == hasExplicitIv_.load() && memcmp(oldIv, iv_, sizeof(iv_)) == 0) {
         MEDIA_LOG_I("Same decryption key, skip redundant download");
         return;
