@@ -149,6 +149,7 @@ public:
     void FlushBuffer();
     void StopInloop();
     void StopOutloop();
+    void JoinLoops();
     void ReleaseInFile();
     void InputEnableRepeatSleep();
     void PushRandomDiscardIndex(uint32_t count, uint32_t max, uint32_t min);
@@ -180,16 +181,16 @@ public:
     int32_t DEFAULT_SQR_FACTOR_RUN = 30;
     int64_t DEFAULT_MAX_BITERATE_RUN = 4000000;
 
-    uint32_t errCount = 0;
-    uint32_t outCount = 0;
-    uint32_t inCount = 0;
-    uint32_t frameCount = 0;
+    std::atomic<uint32_t> errCount {0};
+    std::atomic<uint32_t> outCount {0};
+    std::atomic<uint32_t> inCount {0};
+    std::atomic<uint32_t> frameCount {0};
     bool enableForceIDR = false;
     bool sleepOnFPS = false;
     bool surfaceInput = false;
     bool repeatRun = false;
     bool enableRandomEos = false;
-    int64_t encodeCount = 0;
+    std::atomic<int64_t> encodeCount {0};
     uint32_t DEFAULT_BITRATE_MODE = CBR;
     bool enableRepeat = false;
     bool enableSeekEos = false;
@@ -203,8 +204,8 @@ public:
     std::vector<int32_t> discardFrameIndex;
     int32_t discardMaxIndex = -1;
     int32_t discardMinIndex = -1;
-    int32_t discardFrameCount = 0;
-    int32_t inputFrameCount = 0;
+    std::atomic<int32_t> discardFrameCount {0};
+    std::atomic<int32_t> inputFrameCount {0};
     bool setMaxCount = false;
     bool enableWaterMark = false;
     bool enableBFrameMode = false;

@@ -47,10 +47,6 @@ constexpr uint8_t LOOP_END = 0;
 constexpr uint32_t FIVE = 5;
 constexpr uint32_t SIX = 6;
 VEncNdkInnerSample *enc_sample = nullptr;
-int32_t g_picWidth;
-int32_t g_picHeight;
-int32_t g_keyWidth;
-int32_t g_keyHeight;
 
 void clearIntqueue(std::queue<uint32_t> &q)
 {
@@ -95,13 +91,17 @@ void VEncInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 void VEncInnerCallback::OnOutputFormatChanged(const Format& format)
 {
     cout << "Format Changed" << endl;
-    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_WIDTH, g_picWidth);
-    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_HEIGHT, g_picHeight);
-    format.GetIntValue(OH_MD_KEY_WIDTH, g_keyWidth);
-    format.GetIntValue(OH_MD_KEY_HEIGHT, g_keyHeight);
-    cout << "format info: " << format.Stringify() << ", OH_MD_KEY_VIDEO_PIC_WIDTH: " << g_picWidth
-    << ", OH_MD_KEY_VIDEO_PIC_HEIGHT: "<< g_picHeight << ", OH_MD_KEY_WIDTH: " << g_keyWidth
-    << ", OH_MD_KEY_HEIGHT: " << g_keyHeight << endl;
+    int32_t picWidth = 0;
+    int32_t picHeight = 0;
+    int32_t keyWidth = 0;
+    int32_t keyHeight = 0;
+    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_WIDTH, picWidth);
+    format.GetIntValue(OH_MD_KEY_VIDEO_PIC_HEIGHT, picHeight);
+    format.GetIntValue(OH_MD_KEY_WIDTH, keyWidth);
+    format.GetIntValue(OH_MD_KEY_HEIGHT, keyHeight);
+    cout << "format info: " << format.Stringify() << ", OH_MD_KEY_VIDEO_PIC_WIDTH: " << picWidth
+    << ", OH_MD_KEY_VIDEO_PIC_HEIGHT: "<< picHeight << ", OH_MD_KEY_WIDTH: " << keyWidth
+    << ", OH_MD_KEY_HEIGHT: " << keyHeight << endl;
 }
 
 void VEncInnerCallback::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer)
@@ -150,8 +150,32 @@ void VEncParamWithAttrCallbackTest::OnInputParameterWithAttrAvailable(uint32_t i
     signal_->inCond_.notify_all();
 }
 
+void VEncNdkInnerSample::JoinLoops()
+{
+    isRunning_.store(false);
+    if (signal_ != nullptr) {
+        {
+            unique_lock<mutex> lock(signal_->inMutex_);
+            signal_->inCond_.notify_all();
+        }
+        {
+            unique_lock<mutex> lock(signal_->outMutex_);
+            signal_->outCond_.notify_all();
+        }
+    }
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        inputLoop_->join();
+        inputLoop_ = nullptr;
+    }
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        outputLoop_->join();
+        outputLoop_ = nullptr;
+    }
+}
+
 VEncNdkInnerSample::~VEncNdkInnerSample()
 {
+    JoinLoops();
     Release();
 }
 
@@ -647,12 +671,12 @@ int32_t VEncNdkInnerSample::CheckResult(bool isRandomEosSuccess, int32_t pushRes
 {
     if (isRandomEosSuccess) {
         if (pushResult == 0) {
-            errCount = errCount + 1;
+            errCount += 1;
             cout << "push input after eos should be failed!  pushResult:" << pushResult << endl;
         }
         return -1;
     } else if (pushResult != 0) {
-        errCount = errCount + 1;
+        errCount += 1;
         cout << "push input data failed, error:" << pushResult << endl;
         return -1;
     }
@@ -676,7 +700,7 @@ int32_t VEncNdkInnerSample::CheckFlag(AVCodecBufferFlag flag)
     if (flag == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         cout << "enc AVCODEC_BUFFER_FLAG_CODEC_DATA" << endl;
     } else {
-        outCount = outCount + 1;
+        outCount += 1;
     }
     return 0;
 }
@@ -1031,7 +1055,7 @@ int32_t VEncNdkInnerSample::InitBuffer(OHNativeWindowBuffer *&ohNativeWindowBuff
 
 void VEncNdkInnerSample::InputEnableRepeatSleep()
 {
-    inCount = inCount + 1;
+    inCount += 1;
     int32_t inCountNum = 15;
     if (enableRepeat && inCount == inCountNum) {
         if (setMaxCount) {
@@ -1162,7 +1186,7 @@ void VEncNdkInnerSample::SyncInputFunc()
         std::shared_ptr<AVBuffer> buffer = venc_->GetInputBuffer(index);
         if (buffer == nullptr) {
             cout << "GetInputBuffer fail" << endl;
-            errCount = errCount + 1;
+            errCount += 1;
             continue;
         }
         if (!inFile_->eof()) {
@@ -1236,7 +1260,7 @@ void VEncNdkInnerSample::OutputFunc()
 
         if (venc_->ReleaseOutputBuffer(index) != AVCS_ERR_OK) {
             cout << "Fatal: ReleaseOutputBuffer fail" << endl;
-            errCount = errCount + 1;
+            errCount += 1;
         }
         if (errCount > 0) {
             OutputFuncFail();
@@ -1261,7 +1285,7 @@ void VEncNdkInnerSample::SyncOutputFunc()
         std::shared_ptr<AVBuffer> buffer = venc_->GetOutputBuffer(index);
         if (buffer == nullptr) {
             cout << "GetOutputBuffer fail" << endl;
-            errCount = errCount + 1;
+            errCount += 1;
             continue;
         }
         AVCodecBufferFlag flag = static_cast<AVCodecBufferFlag>(buffer->flag_);
@@ -1278,7 +1302,7 @@ void VEncNdkInnerSample::SyncOutputFunc()
 
         if (venc_->ReleaseOutputBuffer(index) != AVCS_ERR_OK) {
             cout << "Fatal: ReleaseOutputBuffer fail" << endl;
-            errCount = errCount + 1;
+            errCount += 1;
         }
         if (errCount > 0) {
             OutputFuncFail();
