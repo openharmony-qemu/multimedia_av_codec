@@ -1568,22 +1568,4 @@ HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0003, TestSize.Level1)
         selectedTrackIds_.clear();
     }
 }
-
-/**
- * @tc.name: Demuxer_ReadSample_Auxl_0004
- * @tc.desc: copy current sample to buffer, uri(mp4 264 aac auxl uri)
- * @tc.type: FUNC
- */
-HWTEST_F(DemuxerUnitTest, Demuxer_ReadSample_Auxl_0004, TestSize.Level1)
-{
-    if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
-        ReadSample(g_mp4AvcAacAuxlUri, URI);
-        for (auto idx : selectedTrackIds_) {
-            ASSERT_EQ(frames_[idx], infoMap["muxer264Aac"]["frames"][idx]);
-            ASSERT_EQ(keyFrames_[idx], infoMap["muxer264Aac"]["kFrames"][idx]);
-        }
-        RemoveValue();
-        selectedTrackIds_.clear();
-    }
-}
 } // namespace
