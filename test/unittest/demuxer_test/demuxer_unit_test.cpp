@@ -306,7 +306,7 @@ void DemuxerUnitTest::ReadData()
     ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
-            demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
+            ret_ = demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
             if (ret_ != AV_ERR_OK) {
                 break;
             }
