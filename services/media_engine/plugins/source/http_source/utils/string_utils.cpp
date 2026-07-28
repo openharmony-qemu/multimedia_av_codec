@@ -101,6 +101,69 @@ bool IsValidScheme(const std::string& url, size_t end)
     }
     return true;
 }
+
+size_t GetHierEnd(const std::string& url)
+{
+    size_t hierEnd = url.find_first_of("?#");
+    if (hierEnd == std::string::npos) {
+        hierEnd = url.size();
+    }
+    return hierEnd;
+}
+
+size_t ResolvePathBegin(const std::string& url, size_t hierEnd, bool& hasAuthority)
+{
+    size_t colon = url.find(':');
+    bool hasScheme = (colon != std::string::npos && colon < hierEnd && IsValidScheme(url, colon));
+    hasAuthority = false;
+    if (hasScheme &&
+        colon + SCHEME_AUTHORITY_SEP_LEN <= hierEnd &&
+        url.compare(colon, SCHEME_AUTHORITY_SEP_LEN, SCHEME_AUTHORITY_SEP) == 0) {
+        hasAuthority = true;
+        return colon + SCHEME_AUTHORITY_SEP_LEN;
+    }
+    if (hasScheme) {
+        return colon + COLON_LEN;
+    }
+    if (hierEnd >= NETWORK_PATH_PREFIX_LEN &&
+        url.compare(0, NETWORK_PATH_PREFIX_LEN, NETWORK_PATH_PREFIX) == 0) {
+        hasAuthority = true;
+        return NETWORK_PATH_PREFIX_LEN;
+    }
+    return 0;
+}
+
+void MaskAuthority(const std::string& url, size_t hierEnd, size_t& pathBegin, std::string& result)
+{
+    size_t authEnd = url.find_first_of("/?#", pathBegin);
+    if (authEnd == std::string::npos || authEnd > hierEnd) {
+        authEnd = hierEnd;
+    }
+    size_t atPos = url.find('@', pathBegin);
+    if (atPos != std::string::npos && atPos < authEnd) {
+        result += USERINFO_MASK;
+        result.append(url, atPos, authEnd - atPos);
+    } else {
+        result.append(url, pathBegin, authEnd - pathBegin);
+    }
+    pathBegin = authEnd;
+}
+
+void MaskPath(const std::string& url, size_t hierEnd, size_t pathBegin, std::string& result)
+{
+    size_t pathLen = hierEnd - pathBegin;
+    if (pathLen == 0) {
+        return;
+    }
+    size_t lastSlash = url.rfind('/', hierEnd);
+    if (lastSlash == std::string::npos || lastSlash == pathBegin) {
+        result.append(url, pathBegin, pathLen);
+    } else {
+        result += (url[pathBegin] == '/') ? MASKED_PATH_PREFIX_SLASH : MASKED_PATH_PREFIX;
+        size_t segStart = lastSlash + SLASH_LEN;
+        result.append(url, segStart, hierEnd - segStart);
+    }
+}
 } // namespace
 
 bool StringUtil::SafeStoInt32(const std::string& str, int32_t& value)
@@ -132,58 +195,16 @@ std::string StringUtil::MaskUrl(const std::string& url)
     if (url.empty()) {
         return url;
     }
-    size_t hierEnd = url.find_first_of("?#");
-    if (hierEnd == std::string::npos) {
-        hierEnd = url.size();
-    }
+    size_t hierEnd = GetHierEnd(url);
+    bool hasAuthority = false;
+    size_t pathBegin = ResolvePathBegin(url, hierEnd, hasAuthority);
     std::string result;
     result.reserve(hierEnd + RESERVE_PADDING);
-
-    size_t colon = url.find(':');
-    bool hasScheme = (colon != std::string::npos && colon < hierEnd && IsValidScheme(url, colon));
-    bool hasAuthority = false;
-    size_t pathBegin = 0;
-    if (hasScheme &&
-        colon + SCHEME_AUTHORITY_SEP_LEN <= hierEnd &&
-        url.compare(colon, SCHEME_AUTHORITY_SEP_LEN, SCHEME_AUTHORITY_SEP) == 0) {
-        pathBegin = colon + SCHEME_AUTHORITY_SEP_LEN;
-        hasAuthority = true;
-    } else if (hasScheme) {
-        pathBegin = colon + COLON_LEN;
-    } else if (hierEnd >= NETWORK_PATH_PREFIX_LEN &&
-        url.compare(0, NETWORK_PATH_PREFIX_LEN, NETWORK_PATH_PREFIX) == 0) {
-        pathBegin = NETWORK_PATH_PREFIX_LEN;
-        hasAuthority = true;
-    }
     result.append(url, 0, pathBegin);
-
     if (hasAuthority) {
-        size_t authEnd = url.find_first_of("/?#", pathBegin);
-        if (authEnd == std::string::npos || authEnd > hierEnd) {
-            authEnd = hierEnd;
-        }
-        size_t atPos = url.find('@', pathBegin);
-        if (atPos != std::string::npos && atPos < authEnd) {
-            result += USERINFO_MASK;
-            result.append(url, atPos, authEnd - atPos);
-        } else {
-            result.append(url, pathBegin, authEnd - pathBegin);
-        }
-        pathBegin = authEnd;
+        MaskAuthority(url, hierEnd, pathBegin, result);
     }
-
-    size_t pathLen = hierEnd - pathBegin;
-    if (pathLen == 0) {
-        return result;
-    }
-    size_t lastSlash = url.rfind('/', hierEnd);
-    if (lastSlash == std::string::npos || lastSlash == pathBegin) {
-        result.append(url, pathBegin, pathLen);
-    } else {
-        result += (url[pathBegin] == '/') ? MASKED_PATH_PREFIX_SLASH : MASKED_PATH_PREFIX;
-        size_t segStart = lastSlash + SLASH_LEN;
-        result.append(url, segStart, hierEnd - segStart);
-    }
+    MaskPath(url, hierEnd, pathBegin, result);
     return result;
 }
 }
