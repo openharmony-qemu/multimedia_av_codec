@@ -46,8 +46,8 @@ static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 static const string TEST_TIMED_METADATA = "com.openharmony.timed_metadata.test";
 const int64_t SOURCE_OFFSET = 0;
 
-string g_cafPcmPath = TEST_FILE_PATH + string("caf_pcm_s16le.caf");
-string g_cafPcmUri = TEST_URI_PATH + string("caf_pcm_s16le.caf");
+string g_cafPcmPath = TEST_FILE_PATH + string("caf_pcm_s16le_ut.caf");
+string g_cafPcmUri = TEST_URI_PATH + string("caf_pcm_s16le_ut.caf");
 string g_cafAlacPath = TEST_FILE_PATH + string("caf_alac.caf");
 string g_cafAlacUri = TEST_URI_PATH + string("caf_alac.caf");
 string g_cafOpusPath = TEST_FILE_PATH + string("caf_opus.caf");

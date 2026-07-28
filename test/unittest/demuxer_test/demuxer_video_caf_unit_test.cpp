@@ -43,8 +43,8 @@ static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,
     SeekMode::SEEK_CLOSEST_SYNC};
 
-string g_cafPcmPath = TEST_FILE_PATH + string("caf_pcm_s16le.caf");
-string g_cafPcmUri = TEST_URI_PATH + string("caf_pcm_s16le.caf");
+string g_cafPcmPath = TEST_FILE_PATH + string("caf_pcm_s16le_ut.caf");
+string g_cafPcmUri = TEST_URI_PATH + string("caf_pcm_s16le_ut.caf");
 string g_cafAlacPath = TEST_FILE_PATH + string("caf_alac.caf");
 string g_cafAlacUri = TEST_URI_PATH + string("caf_alac.caf");
 string g_cafOpusPath = TEST_FILE_PATH + string("caf_opus.caf");
