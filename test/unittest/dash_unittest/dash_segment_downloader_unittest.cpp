@@ -1200,6 +1200,8 @@ HWTEST_F(DashSegmentDownloaderUnitTest, NotifyInitSuccess_002, TestSize.Level1)
     segmentDownloader_->realTimeBitRate_ = 1024 * 1024;
     auto mockCallback = std::make_shared<MockCallback>();
     segmentDownloader_->callback_ = mockCallback;
+    segmentDownloader_->steadyClock_.Reset();
+    segmentDownloader_->steadyClock_.begin_ -= std::chrono::milliseconds(100);
     segmentDownloader_->NotifyInitSuccess();
     EXPECT_TRUE(segmentDownloader_->isDemuxerInitSuccess_.load());
     EXPECT_NE(segmentDownloader_->waterlineForPlaying_, 0u);
