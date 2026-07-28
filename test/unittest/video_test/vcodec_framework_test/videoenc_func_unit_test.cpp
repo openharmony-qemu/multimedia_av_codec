@@ -983,22 +983,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_Hardware_Active_All_001, TestSize.Level1)
 }
 
 /**
- * @tc.name: VideoEncoder_8BitTo10Bit_001
- * @tc.desc: Test 8-bit to 10-bit format conversion
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, VideoEncoder_8BitTo10Bit_001, TestSize.Level1)
-{
-    CreateByNameWithParam(VCodecTestCode::HW_HEVC);
-    SetFormatWithParam(VCodecTestCode::HW_HEVC);
-    PrepareSource(VCodecTestCode::HW_HEVC);
-    videoEnc_->input8BitTo10Bit_ = true;
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
-    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
-    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
-}
-
-/**
  * @tc.name: VideoEncoder_ResizeWidthHeight_001
  * @tc.desc: Test resizing width and height
  * @tc.type: FUNC
@@ -1016,6 +1000,22 @@ HWTEST_P(TEST_SUIT, VideoEncoder_ResizeWidthHeight_001, TestSize.Level1)
 
 #ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
+ * @tc.name: VideoEncoder_8BitTo10Bit_001
+ * @tc.desc: Test 8-bit to 10-bit format conversion
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoder_8BitTo10Bit_001, TestSize.Level1)
+{
+    CreateByNameWithParam(VCodecTestCode::HW_HEVC);
+    SetFormatWithParam(VCodecTestCode::HW_HEVC);
+    PrepareSource(VCodecTestCode::HW_HEVC);
+    videoEnc_->input8BitTo10Bit_ = true;
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->Configure(format_));
+    ASSERT_EQ(AV_ERR_OK, videoEnc_->CreateInputSurface());
+    EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
+}
+
+/**
  * @tc.name: VideoEncoder_SetPTSParameter_001
  * @tc.desc: SetPTSParameter, avbuffer mode
  * @tc.type: FUNC
@@ -1032,7 +1032,6 @@ HWTEST_P(TEST_SUIT, VideoEncoder_SetPTSParameter_001, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
-#endif // ONLY_FOR_FLAGSHIP_CHIP
 
 /**
  * @tc.name: VideoEncoder_MaxFrameDelayCount_Surface_001
@@ -1156,6 +1155,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_002, TestSize.Leve
 
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 } // namespace
 
 int main(int argc, char **argv)
