@@ -129,9 +129,13 @@ bool StringUtil::SafeStoDouble(const std::string& str, double& value)
 
 std::string StringUtil::MaskUrl(const std::string& url)
 {
-    if (url.empty()) return url;
+    if (url.empty()) {
+        return url;
+    }
     size_t hierEnd = url.find_first_of("?#");
-    if (hierEnd == std::string::npos) hierEnd = url.size();
+    if (hierEnd == std::string::npos) {
+        hierEnd = url.size();
+    }
     std::string result;
     result.reserve(hierEnd + RESERVE_PADDING);
 
@@ -139,24 +143,29 @@ std::string StringUtil::MaskUrl(const std::string& url)
     bool hasScheme = (colon != std::string::npos && colon < hierEnd && IsValidScheme(url, colon));
     bool hasAuthority = false;
     size_t pathBegin = 0;
-    if (hasScheme
-        && colon + SCHEME_AUTHORITY_SEP_LEN <= hierEnd
-        && url.compare(colon, SCHEME_AUTHORITY_SEP_LEN, SCHEME_AUTHORITY_SEP) == 0) {
-        pathBegin = colon + SCHEME_AUTHORITY_SEP_LEN; hasAuthority = true;
+    if (hasScheme &&
+        colon + SCHEME_AUTHORITY_SEP_LEN <= hierEnd &&
+        url.compare(colon, SCHEME_AUTHORITY_SEP_LEN, SCHEME_AUTHORITY_SEP) == 0) {
+        pathBegin = colon + SCHEME_AUTHORITY_SEP_LEN;
+        hasAuthority = true;
     } else if (hasScheme) {
         pathBegin = colon + COLON_LEN;
-    } else if (hierEnd >= NETWORK_PATH_PREFIX_LEN
-        && url.compare(0, NETWORK_PATH_PREFIX_LEN, NETWORK_PATH_PREFIX) == 0) {
-        pathBegin = NETWORK_PATH_PREFIX_LEN; hasAuthority = true;
+    } else if (hierEnd >= NETWORK_PATH_PREFIX_LEN &&
+        url.compare(0, NETWORK_PATH_PREFIX_LEN, NETWORK_PATH_PREFIX) == 0) {
+        pathBegin = NETWORK_PATH_PREFIX_LEN;
+        hasAuthority = true;
     }
     result.append(url, 0, pathBegin);
 
     if (hasAuthority) {
         size_t authEnd = url.find_first_of("/?#", pathBegin);
-        if (authEnd == std::string::npos || authEnd > hierEnd) authEnd = hierEnd;
+        if (authEnd == std::string::npos || authEnd > hierEnd) {
+            authEnd = hierEnd;
+        }
         size_t atPos = url.find('@', pathBegin);
         if (atPos != std::string::npos && atPos < authEnd) {
-            result += USERINFO_MASK; result.append(url, atPos, authEnd - atPos);
+            result += USERINFO_MASK;
+            result.append(url, atPos, authEnd - atPos);
         } else {
             result.append(url, pathBegin, authEnd - pathBegin);
         }
@@ -164,7 +173,9 @@ std::string StringUtil::MaskUrl(const std::string& url)
     }
 
     size_t pathLen = hierEnd - pathBegin;
-    if (pathLen == 0) return result;
+    if (pathLen == 0) {
+        return result;
+    }
     size_t lastSlash = url.rfind('/', hierEnd);
     if (lastSlash == std::string::npos || lastSlash == pathBegin) {
         result.append(url, pathBegin, pathLen);
