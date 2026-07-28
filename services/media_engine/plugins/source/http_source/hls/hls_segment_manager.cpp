@@ -71,7 +71,7 @@ constexpr uint32_t MAX_LOOP_TIMES = 100;
 constexpr uint64_t MAX_EXPECT_DURATION = 19;
 constexpr uint32_t POP_TIME_OUT_MS = 1;
 constexpr size_t ADJUST_SIZE = 200 * 1024;
-constexpr int64_t SEEK_WAIT_TIME = 5000;
+constexpr int64_t SEEK_WAIT_TIME = 5;
 constexpr int BITS_PER_BYTE = 8;
 constexpr size_t SEQ_IV_OFFSET = HlsSegmentManager::AES_BLOCK_LEN / 2;
 
@@ -963,7 +963,8 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
         int64_t now = loopInterruptClock_.ElapsedSeconds();
         int64_t duration = now - std::min(start, now);
         if (duration > SEEK_WAIT_TIME) {
-            break;
+            MEDIA_LOG_I("SeekToTime select timeout");
+            return false;
         }
     }
     AutoLock lock(switchMutex_);
@@ -1271,7 +1272,8 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
         int64_t now = loopInterruptClock_.ElapsedSeconds();
         int64_t duration = now - std::min(start, now);
         if (duration > SEEK_WAIT_TIME) {
-            break;
+            MEDIA_LOG_E("SaveData sourceloader timeout");
+            return 0;
         }
     }
     OnWriteCacheBuffer(len);
