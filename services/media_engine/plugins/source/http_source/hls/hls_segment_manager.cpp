@@ -337,10 +337,9 @@ void HlsSegmentManager::ConfigureAndDownload(const PlayInfo& playInfo, bool isRe
         AutoLock lock(tsInfoMutex_);
         tsStreamIdInfo_[writeTsIndex_] = playInfo.streamId_;
     }
-    if (!playInfo.rangeUrl_.empty()) {
-        if (!isRequestWholeFile) {
-            downloadRequest->SetRangePos(playInfo.offset_, playInfo.offset_ + playInfo.length_ - 1); // 1
-        }
+    if (!playInfo.rangeUrl_.empty() && !isRequestWholeFile) {
+        downloadRequest->SetRangePos(static_cast<int64_t>(playInfo.offset_),
+            static_cast<int64_t>(playInfo.offset_) + static_cast<int64_t>(playInfo.length_) - 1);
     }
     downloadRequest->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
