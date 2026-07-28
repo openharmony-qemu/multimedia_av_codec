@@ -16,7 +16,9 @@
 #ifndef PREPROCESSOR_H
 #define PREPROCESSOR_H
 
+#include <functional>
 #include <memory>
+#include <mutex>
 #include <string>
 #include "avcodec_info.h"
 #include "cpu_image_processor.h"
@@ -30,38 +32,34 @@ namespace MediaAVCodec {
 
 class Preprocessor {
 public:
+    using BufferReallocCallback =
+        std::function<bool(sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &)>;
+
+    struct ConfigSnapshot {
+        int32_t configuredWidth{0};
+        int32_t configuredHeight{0};
+        GraphicPixelFormat configuredPixelFormat{GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT};
+        bool cropEnabled{false};
+        int32_t cropLeft{0};
+        int32_t cropRight{0};
+        int32_t cropTop{0};
+        int32_t cropBottom{0};
+        bool downsamplingEnabled{false};
+        int32_t downsamplingWidth{0};
+        int32_t downsamplingHeight{0};
+    };
+
     explicit Preprocessor(const std::string &mime);
     ~Preprocessor();
 
-    static bool IsAvailable();
-
-    int32_t ValidateConfiguration(const Media::Format &format, bool configuring);
-    GraphicPixelFormat GetPixelFormatFromConfiguration(const Media::Format &format) const;
-    GraphicPixelFormat GetPixelFormatFromParameter(const Media::Format &format) const;
     int32_t Configure(const Media::Format &format);
     int32_t SetParameter(const Media::Format &format);
 
-    int32_t Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, uint64_t pts);
+    int32_t Process(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
     bool ShouldDropFrame(uint64_t pts);
     void FlushTimeStamp();
-    void SetOnBufferReallocCallback(std::function<void(sptr<SurfaceBuffer>, sptr<SurfaceBuffer>)> callback);
-
-    bool IsCropEnabled() const;
-    bool IsDownsamplingEnabled() const;
-
-    int32_t GetConfiguredWidth() const;
-    int32_t GetConfiguredHeight() const;
-    GraphicPixelFormat GetConfiguredPixelFormat() const;
-    int32_t GetOutputWidth() const;
-    int32_t GetOutputHeight() const;
-
-    // Field-level config getters for metadata query
-    int32_t GetCropLeft() const;
-    int32_t GetCropRight() const;
-    int32_t GetCropTop() const;
-    int32_t GetCropBottom() const;
-    int32_t GetDownsamplingWidth() const;
-    int32_t GetDownsamplingHeight() const;
+    void SetOnBufferReallocCallback(BufferReallocCallback callback);
+    ConfigSnapshot GetConfigSnapshot() const;
 
 private:
     enum class ConfigResult { NOT_SET, DISABLED, ENABLED };
@@ -116,7 +114,6 @@ private:
     struct DownsamplingConfig {
         int32_t width{0};
         int32_t height{0};
-        GraphicPixelFormat pixelFormat{GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT};
         bool enabled{false};
         DownsamplingConfig() = default;
         explicit DownsamplingConfig(const DownsamplingParams &params)
@@ -142,16 +139,28 @@ private:
         int32_t offsetLeft;
     };
 
+    struct RuntimeConfig {
+        CropConfig crop;
+        DownsamplingConfig downsampling;
+        BufferReallocCallback reallocCallback;
+    };
+
+    static bool IsAvailable();
     bool UsingAsyncMode(const Media::Format &format) const;
+    int32_t ValidateAndApplyConfiguration(const Media::Format &format, bool configuring);
+    int32_t ValidateConfiguration(const Media::Format &format, bool configuring);
+    int32_t ApplyConfiguration();
     int32_t ValidateCrop(const Media::Format &format);
     int32_t ValidateDownsampling(const Media::Format &format);
     int32_t ValidateDropFrame(const Media::Format &format);
-    const CropConfig &GetCropConfig() const;
-    const DownsamplingConfig &GetDownsamplingConfig() const;
-    const DropFrameConfig &GetDropFrameConfig() const;
-    int32_t Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
-    int32_t Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
-    int32_t Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output);
+    GraphicPixelFormat GetPixelFormatFromConfiguration(const Media::Format &format) const;
+    GraphicPixelFormat GetPixelFormatFromParameter(const Media::Format &format) const;
+    RuntimeConfig GetRuntimeConfigSnapshot() const;
+    int32_t Crop(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, const CropConfig &config,
+                 const BufferReallocCallback &callback);
+    int32_t Downsampling(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output,
+                         const DownsamplingConfig &config, const BufferReallocCallback &callback);
+    int32_t Copy(sptr<SurfaceBuffer> input, sptr<SurfaceBuffer> &output, const BufferReallocCallback &callback);
     void UpdateOutputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output,
                               const RoiTransform &roiTransform);
     void CopyInputMetadata(const sptr<SurfaceBuffer> &input, const sptr<SurfaceBuffer> &output);
@@ -163,7 +172,8 @@ private:
     void UpdateConfiguredValues(const Media::Format &format, bool configuring);
     bool GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight);
     bool CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t targetHeight,
-                                        int32_t targetFormat, sptr<SurfaceBuffer> &output);
+                                        int32_t targetFormat, sptr<SurfaceBuffer> &output,
+                                        const BufferReallocCallback &callback);
 
     EncoderConfig encoderParams_;               // for validation before configure
     CropParams cropParams_;                     // for validation before configure
@@ -173,14 +183,11 @@ private:
     DownsamplingConfig downsamplingConfig_;
     DropFrameConfig dropFrameConfig_;
     EncoderConfig encoderConfig_;
-    int32_t dAlgoWidthMin_{0};
-    int32_t dAlgoHeightMin_{0};
-    int32_t dAlgoWidthMax_{0};
-    int32_t dAlgoHeightMax_{0};
     std::string mime_;
     PreProcessing::FastKitsInterface &fastKitsInterface_ = PreProcessing::FastKitsInterface::GetInstance();
     PreProcessing::FrameDropFilter dropFilter_;
-    std::function<void(sptr<SurfaceBuffer>, sptr<SurfaceBuffer>)> onOutSurfaceBufferReallocCb_{};
+    BufferReallocCallback onOutSurfaceBufferReallocCb_{};
+    mutable std::mutex configMutex_;
 };
 
 } // namespace MediaAVCodec
