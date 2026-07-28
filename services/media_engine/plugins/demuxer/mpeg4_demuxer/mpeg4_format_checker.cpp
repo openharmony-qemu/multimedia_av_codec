@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <unordered_set>
 #include "mpeg4_format_checker.h"
 #include "mpeg4_utils.h"
 
@@ -160,37 +161,12 @@ static const std::vector<std::string_view> g_supportVideoMimeType = {
     MimeType::VIDEO_VVC,
 };
 
-static const std::vector<std::string_view> g_supportVideoMimeTypeTemp = {
-    MimeType::VIDEO_MPEG4,
-    MimeType::VIDEO_H263,
-    MimeType::VIDEO_AVC,
-    MimeType::VIDEO_HEVC,
-    MimeType::VIDEO_VVC,
-    MimeType::VIDEO_MPEG2,
-};
-
 static const std::vector<std::string_view> g_supportAudioMimeType = {
     MimeType::AUDIO_MPEG,
     MimeType::AUDIO_AAC,
     MimeType::AUDIO_AVS3DA,
     MimeType::AUDIO_AMR_NB,
     MimeType::AUDIO_AMR_WB,
-};
-
-static const std::vector<std::string_view> g_supportAudioMimeTypeTemp = {
-    MimeType::AUDIO_FLAC,
-    MimeType::AUDIO_MPEG,
-    MimeType::AUDIO_AAC,
-    MimeType::AUDIO_AVS3DA,
-    MimeType::AUDIO_G711A,
-    MimeType::AUDIO_G711MU,
-    MimeType::AUDIO_RAW,
-    MimeType::AUDIO_VORBIS,
-    MimeType::AUDIO_OPUS,
-    MimeType::AUDIO_AMR_NB,
-    MimeType::AUDIO_AMR_WB,
-    MimeType::AUDIO_ALAC,
-    MimeType::AUDIO_DTS,
 };
 
 static const std::map<TrackType, MediaType> g_supportMediaType = {

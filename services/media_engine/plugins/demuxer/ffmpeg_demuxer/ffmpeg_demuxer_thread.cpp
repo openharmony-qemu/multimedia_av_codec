@@ -14,23 +14,16 @@
  */
 
 #define MEDIA_PLUGIN
-#include <unistd.h>
 #include <chrono>
 #include <string>
 #include "avcodec_trace.h"
-#include "securec.h"
 #include "ffmpeg_format_helper.h"
 #include "ffmpeg_utils.h"
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_buffer.h"
-#include "plugin/plugin_definition.h"
 #include "avcodec_log.h"
 #include "common/log.h"
-#include "meta/video_types.h"
-#include "demuxer_log_compressor.h"
 #include "ffmpeg_demuxer_plugin.h"
-#include "meta/format.h"
-#include "syspara/parameters.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegDemuxerThread" };

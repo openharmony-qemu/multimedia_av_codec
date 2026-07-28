@@ -25,7 +25,6 @@
 #include <shared_mutex>
 #include <list>
 #include <unordered_map>
-#include <arpa/inet.h>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
 #include "mpeg4_box_parser.h"
@@ -33,7 +32,6 @@
 #include "multi_stream_parser_manager.h"
 #include "reference_parser_manager.h"
 #include "common/log.h"
-#include "meta/format.h"
 #include "meta/meta.h"
 #include "demuxer_data_reader.h"
 

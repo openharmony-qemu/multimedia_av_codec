@@ -19,9 +19,6 @@
 #include <string_view>
 #include <string>
 #include "meta/meta.h"
-#include "meta/meta_key.h"
-#include "meta/media_types.h"
-#include "meta/mime_type.h"
 #include "meta/video_types.h"
 #include "meta/audio_types.h"
 #include "stream_parser.h"
@@ -31,7 +28,6 @@ extern "C" {
 #endif
 #include "libavcodec/avcodec.h"
 #include "libavutil/pixfmt.h"
-#include "libavcodec/bsf.h"
 #include "libavutil/channel_layout.h"
 #ifdef __cplusplus
 }

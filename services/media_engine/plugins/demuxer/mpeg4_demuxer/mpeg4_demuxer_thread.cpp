@@ -23,11 +23,8 @@
 #include <vector>
 #include "avcodec_trace.h"
 #include "common/log.h"
-#include "meta/format.h"
-#include "meta/video_types.h"
 #include "mpeg4_demuxer_plugin.h"
 #include "mpeg4_sample_memory.h"
-#include "plugin/plugin_buffer.h"
 #include "qos.h"
 
 namespace {
@@ -197,9 +194,7 @@ Status MPEG4DemuxerPlugin::FindFirstSampleIndexByDts(
         [](const MPEG4SampleHelper::SampleIndexEntry& sample, int64_t dts) {
             return sample.dts < dts;
         });
-    if (iter == entry.end()) {
-        return Status::END_OF_STREAM;
-    }
+    FALSE_RETURN_V_NOLOG(iter != entry.end(), Status::END_OF_STREAM);
     sampleIndex = static_cast<uint32_t>(std::distance(entry.begin(), iter));
     MEDIA_LOG_I("sampleIndex is " PUBLIC_LOG_U32, sampleIndex);
     return Status::OK;

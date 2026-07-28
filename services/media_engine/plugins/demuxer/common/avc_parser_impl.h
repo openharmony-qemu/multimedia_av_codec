@@ -17,7 +17,6 @@
 #define AVC_PARSER_IMPL_H
 
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <vector>
 #include "stream_parser.h"

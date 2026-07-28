@@ -16,7 +16,6 @@
 #ifndef MPEG4_UTILS_H
 #define MPEG4_UTILS_H
 
-#include "common/log.h"
 #include "plugin/plugin_info.h"
 
 namespace OHOS {

@@ -36,7 +36,6 @@ private:
     uint32_t index_ = 0;
     Status ParseMpegAudio(MediaInfo& mediaInfo);
     Status ParseAacAudio(MediaInfo& mediaInfo);
-    Status ParseDtsAudio(MediaInfo& mediaInfo);
 };
 } // namespace MPEG4
 } // namespace Plugins

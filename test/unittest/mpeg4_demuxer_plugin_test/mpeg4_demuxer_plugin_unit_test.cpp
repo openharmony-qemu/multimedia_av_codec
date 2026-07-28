@@ -1281,7 +1281,8 @@ void Mpeg4DemuxerPluginUnitTest::ResetPlugin(std::shared_ptr<BaseDemuxerPlugin>&
 }
 
 void Mpeg4DemuxerPluginUnitTest::InitPlugin(
-    const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd, MediaInfo& mediaInfo)
+    const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd, MediaInfo& mediaInfo,
+    const std::shared_ptr<Meta>& configs)
 {
     struct stat fileStatus {};
     ASSERT_EQ(stat(filePath.c_str(), &fileStatus), 0);
@@ -1300,7 +1301,7 @@ void Mpeg4DemuxerPluginUnitTest::InitPlugin(
 
     auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
     ASSERT_NE(plugin, nullptr);
-    ASSERT_EQ(plugin->SetDataSource(dataSource), Status::OK);
+    ASSERT_EQ(plugin->SetDataSource(dataSource, configs), Status::OK);
     ASSERT_EQ(plugin->GetMediaInfo(mediaInfo), Status::OK);
 }
 
@@ -2122,6 +2123,45 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_InitSelectTrack_001, Tes
     ASSERT_GT(mpeg4MediaInfo_.tracks.size(), 0U);
     auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
     EXPECT_FALSE(selectedTrackIds.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_FastInitReadSample_001
+ * @tc.desc: Verify FAST_INIT keeps decoder metadata and sample reading available
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FastInitReadSample_001, TestSize.Level1)
+{
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(
+        std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto configs = std::make_shared<Meta>();
+    ASSERT_NE(configs, nullptr);
+    configs->Set<Tag::MEDIA_DEMUXER_MODE>(Plugins::DemuxerMode::FAST_INIT);
+    InitPlugin(TEST_MP4_PATH_H264_B, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_, configs);
+
+    int32_t trackCount = 0;
+    ASSERT_TRUE(mpeg4MediaInfo_.general.Get<Tag::MEDIA_TRACK_COUNT>(trackCount));
+    ASSERT_EQ(trackCount, static_cast<int32_t>(mpeg4MediaInfo_.tracks.size()));
+    bool videoChecked = false;
+    for (const auto& trackMeta : mpeg4MediaInfo_.tracks) {
+        std::string mime;
+        if (!trackMeta.Get<Tag::MIME_TYPE>(mime) || mime != MimeType::VIDEO_AVC) {
+            continue;
+        }
+        int32_t width = 0;
+        int32_t height = 0;
+        std::vector<uint8_t> codecConfig;
+        EXPECT_TRUE(trackMeta.Get<Tag::VIDEO_WIDTH>(width));
+        EXPECT_TRUE(trackMeta.Get<Tag::VIDEO_HEIGHT>(height));
+        EXPECT_GT(width, 0);
+        EXPECT_GT(height, 0);
+        EXPECT_TRUE(trackMeta.Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig));
+        EXPECT_FALSE(codecConfig.empty());
+        videoChecked = true;
+    }
+    ASSERT_TRUE(videoChecked);
+    auto sample = ReadFirstSample(mpeg4Plugin_, mpeg4MediaInfo_, ReadMode::COPY);
+    EXPECT_GT(sample.actualSize, 0);
 }
 
 /**
