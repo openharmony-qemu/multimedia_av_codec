@@ -119,11 +119,13 @@ sptr<IRemoteObject> SaAVCodecUnitTest::CreateCodecServiceStub(std::shared_ptr<AV
         return nullptr;
     }
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
+    EXPECT_CALL(*avcodecStubMock_, Init(listener)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    int32_t ret = server->Init(listener);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
     sptr<IRemoteObject> codecStub = nullptr;
-    EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener)).Times(1).WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecStubMock_, Create()).Times(AtLeast(1)).WillOnce(Return(new CodecServiceStub()));
     EXPECT_CALL(*codecStubMock_, CodecServiceStubDtor()).Times(AtLeast(1));
-    int32_t ret = server->GetSubSystemAbility(IStandardAVCodecService::AVCODEC_CODEC, listener, codecStub);
+    ret = server->GetSubSystemAbility(IStandardAVCodecService::AVCODEC_CODEC, codecStub);
     EXPECT_NE(codecStub, nullptr);
     EXPECT_EQ(ret, AVCS_ERR_OK);
     stubList_.emplace_back(AVCodecServerManager::StubType::CODEC, codecStub);
@@ -236,7 +238,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnAddSystemAbility_001, TestSize.Leve
 
 /**
  * @tc.name: AVCodec_Server_GetSubSystemAbility_001
- * @tc.desc: GetSubSystemAbility will twice SetDeathListener succuss
+ * @tc.desc: GetSubSystemAbility with Init success
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_001, TestSize.Level1)
 {
@@ -244,7 +246,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_001, TestSize.Lev
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
-    EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener)).Times(2).WillRepeatedly(Return(AVCS_ERR_OK));
+    EXPECT_CALL(*avcodecStubMock_, Init(listener)).Times(1).WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecStubMock_, Create()).Times(1).WillOnce(Return(new CodecServiceStub()));
     EXPECT_CALL(*codecStubMock_, CodecServiceStubDtor()).Times(1);
     EXPECT_CALL(*codeclistStubMock_, Create()).Times(1).WillOnce(Return(new CodecListServiceStub()));
@@ -253,16 +255,19 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_001, TestSize.Lev
     auto server = CreateAVCodecServer();
     ASSERT_NE(server, nullptr);
 
+    int32_t ret = server->Init(listener);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+
     subSystemId = IStandardAVCodecService::AVCODEC_CODEC;
     sptr<IRemoteObject> codecStub = nullptr;
-    int32_t ret = server->GetSubSystemAbility(subSystemId, listener, codecStub);
+    ret = server->GetSubSystemAbility(subSystemId, codecStub);
     EXPECT_NE(codecStub, nullptr);
     EXPECT_EQ(ret, AVCS_ERR_OK);
     manager.DestroyStubObject(AVCodecServerManager::StubType::CODEC, codecStub);
 
     subSystemId = IStandardAVCodecService::AVCODEC_CODECLIST;
     sptr<IRemoteObject> codeclistStub = nullptr;
-    ret = server->GetSubSystemAbility(subSystemId, listener, codeclistStub);
+    ret = server->GetSubSystemAbility(subSystemId, codeclistStub);
     EXPECT_NE(codeclistStub, nullptr);
     EXPECT_EQ(ret, AVCS_ERR_OK);
     manager.DestroyStubObject(AVCodecServerManager::StubType::CODECLIST, codeclistStub);
@@ -272,35 +277,22 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_001, TestSize.Lev
 
 /**
  * @tc.name: AVCodec_Server_GetSubSystemAbility_002
- * @tc.desc: GetSubSystemAbility will twice SetDeathListener fail
+ * @tc.desc: SetDeathListener returns error code
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_002, TestSize.Level1)
 {
-    IStandardAVCodecService::AVCodecSystemAbility subSystemId;
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
-    EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener))
-        .Times(2)
-        .WillRepeatedly(Return(AVCS_ERR_INVALID_OPERATION));
 
-    EXPECT_CALL(*codecStubMock_, Create()).Times(1).WillOnce(Return(new CodecServiceStub()));
-    EXPECT_CALL(*codecStubMock_, CodecServiceStubDtor()).Times(1);
-    EXPECT_CALL(*codeclistStubMock_, Create()).Times(1).WillOnce(Return(new CodecListServiceStub()));
-    EXPECT_CALL(*codeclistStubMock_, CodecListServiceStubDtor()).Times(1);
+    EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener))
+        .Times(1)
+        .WillOnce(Return(AVCS_ERR_INVALID_OPERATION));
 
     auto server = CreateAVCodecServer();
     ASSERT_NE(server, nullptr);
 
-    subSystemId = IStandardAVCodecService::AVCODEC_CODEC;
-    sptr<IRemoteObject> codecStub = nullptr;
-    int32_t ret = server->GetSubSystemAbility(subSystemId, listener, codecStub);
-    EXPECT_EQ(codecStub, nullptr);
+    int32_t ret = server->SetDeathListener(listener);
     EXPECT_NE(ret, AVCS_ERR_OK);
 
-    subSystemId = IStandardAVCodecService::AVCODEC_CODECLIST;
-    sptr<IRemoteObject> codeclistStub = nullptr;
-    ret = server->GetSubSystemAbility(subSystemId, listener, codeclistStub);
-    EXPECT_EQ(codeclistStub, nullptr);
-    EXPECT_NE(ret, AVCS_ERR_OK);
     server = nullptr;
 }
 
@@ -311,7 +303,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_002, TestSize.Lev
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_003, TestSize.Level1)
 {
     IStandardAVCodecService::AVCodecSystemAbility subSystemId;
-    sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
     EXPECT_CALL(*codecStubMock_, Create()).Times(1).WillOnce(nullptr);
     EXPECT_CALL(*codeclistStubMock_, Create()).Times(1).WillOnce(nullptr);
@@ -321,13 +312,13 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_003, TestSize.Lev
 
     subSystemId = IStandardAVCodecService::AVCODEC_CODEC;
     sptr<IRemoteObject> codecStub = nullptr;
-    int32_t ret = server->GetSubSystemAbility(subSystemId, listener, codecStub);
+    int32_t ret = server->GetSubSystemAbility(subSystemId, codecStub);
     EXPECT_EQ(codecStub, nullptr);
     EXPECT_NE(ret, AVCS_ERR_OK);
 
     subSystemId = IStandardAVCodecService::AVCODEC_CODECLIST;
     sptr<IRemoteObject> codeclistStub = nullptr;
-    ret = server->GetSubSystemAbility(subSystemId, listener, codeclistStub);
+    ret = server->GetSubSystemAbility(subSystemId, codeclistStub);
     EXPECT_EQ(codeclistStub, nullptr);
     EXPECT_NE(ret, AVCS_ERR_OK);
     server = nullptr;
@@ -340,7 +331,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_003, TestSize.Lev
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_004, TestSize.Level1)
 {
     auto subSystemId = static_cast<IStandardAVCodecService::AVCodecSystemAbility>(INVALID_NUM);
-    sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
 
     EXPECT_CALL(*codecStubMock_, Create()).Times(0);
     EXPECT_CALL(*codeclistStubMock_, Create()).Times(0);
@@ -349,7 +339,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_GetSubSystemAbility_004, TestSize.Lev
     ASSERT_NE(server, nullptr);
 
     sptr<IRemoteObject> codecStub = nullptr;
-    int32_t ret = server->GetSubSystemAbility(subSystemId, listener, codecStub);
+    int32_t ret = server->GetSubSystemAbility(subSystemId, codecStub);
     EXPECT_EQ(codecStub, nullptr);
     EXPECT_NE(ret, AVCS_ERR_OK);
     server = nullptr;
@@ -632,6 +622,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_NotifyProcessStatus_Retry_004,
 /**
  * @tc.name: AVCodec_Server_VideoCallNotifyPiPState_001
  * @tc.desc: VideoCallNotifyPiPState returns AVCS_ERR_OK when no matching instance is found
+ *           and camera register callback
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_VideoCallNotifyPiPState_001, TestSize.Level1)
 {
@@ -641,6 +632,21 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_VideoCallNotifyPiPState_001, TestSize
     EXPECT_EQ(ret, AVCS_ERR_OK);
     server = nullptr;
 }
+
+/**
+ * @tc.name: AVCodec_Server_VideoCallNotifyPiPState_001
+ * @tc.desc: VideoCallNotifyPiPState returns AVCS_ERR_OK when no matching instance is found
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_VideoCallNotifyPiPState_002, TestSize.Level1)
+{
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
+    server->NotifyCamRegister(true);
+    int32_t ret = server->VideoCallNotifyPiPState("com.nonexist.app", false);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
+    server = nullptr;
+}
+
 
 // ========== DecidePowerMode Tests ==========
 
@@ -805,6 +811,23 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnOutputParamInfo_002, TestSize.Level
     server = nullptr;
 }
 
+/**
+ * @tc.name: AVCodec_Server_OnOutputParamInfo_003
+ * @tc.desc: OnOutputParamInfo uses forwardCaller.processName
+ *           when forwardCaller.processName is not empty and camera register callback.
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnOutputParamInfo_003, TestSize.Level1)
+{
+    auto server = CreateAVCodecServer();
+    ASSERT_NE(server, nullptr);
+    server->NotifyCamRegister(true);
+    CodecParamInfo codecParam = {.encWidth = 640, .encHeight = 480, .encBitrate = 300000, .encPowermode = 1};
+    // forwardCallerName is not empty, so it should be used
+    server->OnOutputParamInfo(codecParam, "com.test.forward", "com.test.caller");
+    // No crash, function processes the instance info
+    EXPECT_NE(server, nullptr);
+    server = nullptr;
+}
 // ========== GetAndUpdateCodecParmInfoByProcessName Tests ==========
 
 /**

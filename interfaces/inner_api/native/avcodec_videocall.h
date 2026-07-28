@@ -22,6 +22,17 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+struct StrategyInfo {
+    std::string bundleName;
+    int32_t strategyId{0};
+};
+
+class MediaCodecLowPowerConsumptionCallback {
+public:
+    virtual void OnLowPowerConsumptionAvailable(std::shared_ptr<StrategyInfo> strategy) = 0;
+    virtual ~MediaCodecLowPowerConsumptionCallback() = default;
+};
+
 class AVCodecVideoCall {
 public:
     /**
@@ -34,7 +45,22 @@ public:
      * @version 1.0
      */
     static int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow);
+    
+    /**
+     * @brief Register callback for low power mode adjustment notification.
+     * @param callback The callbcak object for low power consumption notification.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error on failure.
+     * @since 7.0
+     * @version 1.0
+     */
+    static int32_t RegisterCallback(const std::shared_ptr<MediaCodecLowPowerConsumptionCallback> &callback);
 
+    /**
+     * @brief UnRegisterCallback the registered callback.
+     * @since 7.0
+     * @version 1.0
+     */
+    static void UnRegisterCallback();
 private:
     AVCodecVideoCall() = default;
     ~AVCodecVideoCall() = default;

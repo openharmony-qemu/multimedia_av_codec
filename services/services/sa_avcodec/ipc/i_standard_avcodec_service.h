@@ -36,13 +36,15 @@ public:
     };
 
     virtual int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-        const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject) = 0;
+        sptr<IRemoteObject> &stubObject) = 0;
     virtual int32_t SuspendFreeze(const std::vector<pid_t> &pidList) = 0;
     virtual int32_t SuspendActive(const std::vector<pid_t> &pidList) = 0;
     virtual int32_t SuspendActiveAll() = 0;
     virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
     virtual void ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta) {};
     virtual int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) = 0;
+    virtual int32_t NotifyCamRegister(const bool camRegisterFlag) = 0;
+    virtual int32_t Init(const sptr<IRemoteObject> &listener) = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardAVCodecServiceInterface");
 };

@@ -24,6 +24,10 @@ class AVCodecListenerStub : public IRemoteStub<IStandardAVCodecListener>, public
 public:
     AVCodecListenerStub();
     virtual ~AVCodecListenerStub();
+    int32_t OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
+private:
+    int32_t HandleOnOutputStrategyInfo(MessageParcel &data, MessageParcel &reply);
+    int32_t OnOutputStrategyInfo(const std::string &bundleName, int32_t codecDecision) override;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

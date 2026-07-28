@@ -25,7 +25,8 @@ enum class CodecListenerInterfaceCode {
     ON_INPUT_BUFFER_AVAILABLE,
     ON_OUTPUT_BUFFER_AVAILABLE,
     ON_OUTPUT_BUFFER_BINDED,
-    ON_OUTPUT_BUFFER_UN_BINDED
+    ON_OUTPUT_BUFFER_UN_BINDED,
+    ON_OUTPUT_STRATEGY_INFO
 };
 
 enum class CodecServiceInterfaceCode {
@@ -80,7 +81,9 @@ enum class AVCodecServiceInterfaceCode {
     ACTIVEALL,
     GET_ACTIVE_SECURE_DECODER_PIDS,
     REPORT_STATISTICS_EVENT,
-    VIDEOCALL
+    VIDEOCALL,
+    CAM_UPDATE_REGISTER_CALLBACK,
+    INIT
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

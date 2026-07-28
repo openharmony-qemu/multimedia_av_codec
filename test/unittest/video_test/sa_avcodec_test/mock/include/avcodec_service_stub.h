@@ -38,13 +38,15 @@ public:
     };
 
     virtual int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                        const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject) = 0;
+                                        sptr<IRemoteObject> &stubObject) = 0;
     virtual int32_t SuspendFreeze(const std::vector<pid_t> &pidList) = 0;
     virtual int32_t SuspendActive(const std::vector<pid_t> &pidList) = 0;
     virtual int32_t SuspendActiveAll() = 0;
     virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
     virtual void ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta) {};
     virtual int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) = 0;
+    virtual int32_t NotifyCamRegister(const bool camRegisterFlag) = 0;
+    virtual int32_t Init(const sptr<IRemoteObject> &listener) = 0;
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardAVCodecServiceInterface");
 };
 
@@ -56,8 +58,7 @@ public:
     MOCK_METHOD(void, AVCodecServiceStubCtor, ());
     MOCK_METHOD(void, AVCodecServiceStubDtor, ());
     MOCK_METHOD(int32_t, GetSubSystemAbility,
-                (IStandardAVCodecService::AVCodecSystemAbility subSystemId, const sptr<IRemoteObject> &listener,
-                 sptr<IRemoteObject> &stubObject));
+                (IStandardAVCodecService::AVCodecSystemAbility subSystemId, sptr<IRemoteObject> &stubObject));
     MOCK_METHOD(int32_t, SuspendFreeze, (const std::vector<pid_t> &pidList));
     MOCK_METHOD(int32_t, SuspendActive, (const std::vector<pid_t> &pidList));
     MOCK_METHOD(int32_t, SuspendActiveAll, ());
@@ -65,6 +66,9 @@ public:
     MOCK_METHOD(int32_t, SetDeathListener, (const sptr<IRemoteObject> &object));
     MOCK_METHOD(void, ReportStatisticsEvent, (StatisticsEventType type, Media::Meta &meta));
     MOCK_METHOD(int32_t, VideoCallNotifyPiPState, (const std::string &bundleName, const bool isFloatingWindow));
+    MOCK_METHOD(int32_t, NotifyCamRegister, (const bool camRegisterFlag));
+    MOCK_METHOD(int32_t, NotifyListenerByProcessName, (const std::string &bundleName, int32_t codecDecision));
+    MOCK_METHOD(int32_t, Init, (const sptr<IRemoteObject> &listener));
 };
 
 class AVCodecServiceStub : public IRemoteStub<IStandardAVCodecService>, public NoCopyable {
@@ -74,13 +78,16 @@ public:
     AVCodecServiceStub();
     ~AVCodecServiceStub();
     int32_t GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject) override;
+                                sptr<IRemoteObject> &stubObject) override;
     int32_t SuspendFreeze(const std::vector<pid_t> &pidList);
     int32_t SuspendActive(const std::vector<pid_t> &pidList);
     int32_t SuspendActiveAll();
     int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList);
     int32_t SetDeathListener(const sptr<IRemoteObject> &object);
     int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow);
+    int32_t NotifyCamRegister(const bool camRegisterFlag);
+    int32_t NotifyListenerByProcessName(const std::string &bundleName, int32_t codecDecision);
+    int32_t Init(const sptr<IRemoteObject> &listener);
     MOCK_METHOD(void, ReportStatisticsEvent, (StatisticsEventType type, Media::Meta &meta));
 };
 

@@ -112,7 +112,7 @@ std::optional<AVCodecServerManager::StubType> AVCodecServer::SwitchSystemId(
 }
 
 int32_t AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                           const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject)
+                                           sptr<IRemoteObject> &stubObject)
 {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
     bool saInActiveState = (GetAbilityState() != SystemAbilityState::IDLE) || CancelIdle();
@@ -124,14 +124,6 @@ int32_t AVCodecServer::GetSubSystemAbility(IStandardAVCodecService::AVCodecSyste
 
     int32_t ret = AVCodecServerManager::GetInstance().CreateStubObject(stubType.value(), stubObject);
     CHECK_AND_RETURN_RET_LOG(stubObject != nullptr, ret, "Create sub system failed, err: %{public}d", ret);
-
-    ret = AVCodecServiceStub::SetDeathListener(listener);
-    if (ret != AVCS_ERR_OK) {
-        AVCodecServerManager::GetInstance().DestroyStubObject(*stubType, stubObject);
-        stubObject = nullptr;
-        AVCODEC_LOGE("SetDeathListener failed");
-        return AVCS_ERR_IPC_SET_DEATH_LISTENER_FAILED;
-    }
 
     return AVCS_ERR_OK;
 }
@@ -193,6 +185,8 @@ int32_t AVCodecServer::VideoCallNotifyPiPState(const std::string &bundleName, co
 {
     auto codecParam = AVCodecServerManager::GetInstance().GetAndUpdateCodecParmInfoByProcessName(
         bundleName, isFloatingWindow);
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
+    if (camRegisterFlag_) {
     int32_t codecDecision = 0;
     if (!codecParam.has_value())
         codecDecision = 0;
@@ -201,7 +195,8 @@ int32_t AVCodecServer::VideoCallNotifyPiPState(const std::string &bundleName, co
     AVCODEC_LOGD("AVCodecServer VideoCallNotifyPiPState: bundleName is %{public}s, isFloatingWindow is %{public}d, "
                  "codecDecision is %{public}d",
                  bundleName.c_str(), isFloatingWindow, codecDecision);
-    (void)codecDecision;
+    return NotifyListenerByProcessName(bundleName, codecDecision);
+    }
     return AVCS_ERR_OK;
 }
 
@@ -229,15 +224,20 @@ void AVCodecServer::OnOutputParamInfo(const CodecParamInfo &codecParam, const st
                                       const std::string &callerName)
 {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
+    if (camRegisterFlag_) {
     int32_t codecDecision = 0;
     codecDecision = DecidePowerMode(codecParam);
-    (void)codecDecision;
     std::string bundleName = forwardCallerName.empty() ? callerName : forwardCallerName;
+    NotifyListenerByProcessName(bundleName, codecDecision);
+    }
 }
 
-void AVCodecServer::NotifyCamRegister(const bool camRegisterFlag)
+int32_t AVCodecServer::NotifyCamRegister(const bool camRegisterFlag)
 {
+    std::lock_guard<std::mutex> stateLock(stateMutex_);
     camRegisterFlag_ = camRegisterFlag;
+    AVCODEC_LOGI("Server:camera notify update camregister status: %{public}s",
+                 camRegisterFlag ? "registered" : "unregistered");
     if (camRegisterFlag) {
         wptr<AVCodecServer> weakThis = this;
         AVCodecServerManager::GetInstance().RegisterCallback(
@@ -251,6 +251,7 @@ void AVCodecServer::NotifyCamRegister(const bool camRegisterFlag)
     } else {
         AVCodecServerManager::GetInstance().UnRegisterCallback();
     }
+    return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

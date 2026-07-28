@@ -20,12 +20,14 @@
 #include "iremote_broker.h"
 #include "iremote_proxy.h"
 #include "iremote_stub.h"
+#include "av_codec_service_ipc_interface_code.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 class IStandardAVCodecListener : public IRemoteBroker {
 public:
     virtual ~IStandardAVCodecListener() = default;
+    virtual int32_t OnOutputStrategyInfo(const std::string &bundleName, int32_t codecDecision) = 0;
     DECLARE_INTERFACE_DESCRIPTOR(u"IStandardAVCodecListenerInterface");
 };
 } // namespace MediaAVCodec

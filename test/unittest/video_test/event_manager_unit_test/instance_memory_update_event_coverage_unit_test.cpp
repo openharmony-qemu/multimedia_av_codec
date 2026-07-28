@@ -114,11 +114,13 @@ sptr<IRemoteObject> TEST_SUIT::CreateCodecServiceStub(std::shared_ptr<AVCodecSer
         return nullptr;
     }
     sptr<IRemoteObject> listener = sptr<IRemoteObject>(new AVCodecListenerStub());
+    EXPECT_CALL(*avcodecStubMock_, Init(listener)).Times(1).WillOnce(Return(AVCS_ERR_OK));
+    int32_t ret = server->Init(listener);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
     sptr<IRemoteObject> codecStub = nullptr;
-    EXPECT_CALL(*avcodecStubMock_, SetDeathListener(listener)).Times(1).WillOnce(Return(AVCS_ERR_OK));
     EXPECT_CALL(*codecStubMock_, Create()).Times(AtLeast(1)).WillOnce(Return(new CodecServiceStub()));
     EXPECT_CALL(*codecStubMock_, CodecServiceStubDtor()).Times(AtLeast(1));
-    int32_t ret = server->GetSubSystemAbility(IStandardAVCodecService::AVCODEC_CODEC, listener, codecStub);
+    ret = server->GetSubSystemAbility(IStandardAVCodecService::AVCODEC_CODEC, codecStub);
     EXPECT_NE(codecStub, nullptr);
     EXPECT_EQ(ret, AVCS_ERR_OK);
     stubList_.emplace_back(AVCodecServerManager::StubType::CODEC, codecStub);

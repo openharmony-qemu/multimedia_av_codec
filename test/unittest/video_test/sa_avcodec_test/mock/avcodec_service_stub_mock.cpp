@@ -51,14 +51,13 @@ AVCodecServiceStub::~AVCodecServiceStub()
 }
 
 int32_t AVCodecServiceStub::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &stubObject)
+                                                sptr<IRemoteObject> &stubObject)
 {
     std::lock_guard<std::mutex> lock(g_mutex);
-    UNITTEST_INFO_LOG("subSystemId:%d, listener refCount:%d", static_cast<int32_t>(subSystemId),
-                      listener->GetSptrRefCount());
+    UNITTEST_INFO_LOG("subSystemId:%d", static_cast<int32_t>(subSystemId));
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
-    return mock->GetSubSystemAbility(subSystemId, listener, stubObject);
+    return mock->GetSubSystemAbility(subSystemId, stubObject);
 }
 
 int32_t AVCodecServiceStub::SetDeathListener(const sptr<IRemoteObject> &object)
@@ -114,6 +113,30 @@ int32_t AVCodecServiceStub::VideoCallNotifyPiPState(const std::string &bundleNam
     auto mock = g_mockObject.lock();
     UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
     return mock->VideoCallNotifyPiPState(bundleName, isFloatingWindow);
+}
+
+int32_t AVCodecServiceStub::NotifyCamRegister(const bool camRegisterFlag)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->NotifyCamRegister(camRegisterFlag);
+}
+
+int32_t AVCodecServiceStub::NotifyListenerByProcessName(const std::string &bundleName, int32_t codecDecision)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->NotifyListenerByProcessName(bundleName, codecDecision);
+}
+
+int32_t AVCodecServiceStub::Init(const sptr<IRemoteObject> &listener)
+{
+    std::lock_guard<std::mutex> lock(g_mutex);
+    auto mock = g_mockObject.lock();
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(mock != nullptr, AVCS_ERR_UNKNOWN, "mock object is nullptr");
+    return mock->Init(listener);
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

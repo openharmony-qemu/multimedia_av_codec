@@ -25,6 +25,7 @@ class AVCodecListenerProxy : public IRemoteProxy<IStandardAVCodecListener>, publ
 public:
     explicit AVCodecListenerProxy(const sptr<IRemoteObject> &impl);
     virtual ~AVCodecListenerProxy();
+    int32_t OnOutputStrategyInfo(const std::string &bundleName, int32_t codecDecision) override;
 
 private:
     static inline BrokerDelegator<AVCodecListenerProxy> delegator_;
