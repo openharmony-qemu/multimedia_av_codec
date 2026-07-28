@@ -98,6 +98,7 @@ public:
     std::string GetContentType() override;
     bool IsHlsEnd(int32_t streamId = -1) override;
     Status SelectStream(int32_t streamId) override;
+    std::string GetMaskedUrl(int32_t streamId) override;
     void PostAllEvent(HlsSegEvent event);
     void PostBufferingEvent(HlsSegmentType mediaType, BufferingInfoType type);
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;

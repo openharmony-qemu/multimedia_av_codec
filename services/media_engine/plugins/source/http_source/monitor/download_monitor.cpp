@@ -17,6 +17,7 @@
 #include "monitor/download_monitor.h"
 #include "cpp_ext/algorithm_ext.h"
 #include "common/event.h"
+#include "utils/string_utils.h"
 #include <sstream>
 
 namespace OHOS {
@@ -358,38 +359,7 @@ std::string DownloadMonitor::BuildErrorDescription(const NetworkErrorInfo& netwo
 
 std::string DownloadMonitor::MaskUrl(const std::string& url)
 {
-    if (url.empty()) return url;
-    size_t schemeEnd = url.find("://");
-    std::string prefix;
-    size_t hostStart = 0;
-    if (schemeEnd != std::string::npos) {
-        prefix = url.substr(0, schemeEnd + 3); // 3
-        hostStart = schemeEnd + 3; // 3
-    }
-    size_t pathSlash = url.find('/', hostStart);
-    if (pathSlash == std::string::npos) {
-        size_t query = url.find_first_of("?#", hostStart);
-        std::string host = url.substr(hostStart,
-            (query == std::string::npos ? url.length() : query) - hostStart);
-        return prefix + host;
-    }
-    std::string host = url.substr(hostStart, pathSlash - hostStart);
-    size_t queryStart = url.find_first_of("?#", pathSlash);
-    std::string path = (queryStart == std::string::npos)
-        ? url.substr(pathSlash) : url.substr(pathSlash, queryStart - pathSlash);
-    if (path == "/")
-        return prefix + host + "/";
-    size_t lastSlash = path.rfind('/');
-    std::string filename = path.substr(lastSlash + 1);
-    if (filename.empty()) {
-        return prefix + host + "/***";
-    } else {
-        if (path == "/" + filename) {
-            return prefix + host + path;
-        } else {
-            return prefix + host + "/***/" + filename;
-        }
-    }
+    return StringUtil::MaskUrl(url);
 }
 
 void DownloadMonitor::SetSourceStatisticsDfx(
@@ -741,6 +711,12 @@ std::string DownloadMonitor::GetCurUrl()
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
     return downloader_->GetCurUrl();
+}
+
+std::string DownloadMonitor::GetMaskedUrl(int32_t streamId)
+{
+    FALSE_RETURN_V(downloader_ != nullptr, "");
+    return downloader_->GetMaskedUrl(streamId);
 }
 
 void DownloadMonitor::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)

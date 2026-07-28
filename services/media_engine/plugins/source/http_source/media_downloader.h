@@ -245,6 +245,12 @@ public:
         return false;
     }
 
+    virtual std::string GetMaskedUrl(int32_t streamId)
+    {
+        (void)streamId;
+        return "";
+    }
+
     virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
 };
 }

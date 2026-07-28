@@ -2124,36 +2124,276 @@ HWTEST_F(DownloaderUnitTest, APP_CLIENT_001, TestSize.Level1)
     }
 }
 
-HWTEST_F(DownloaderUnitTest, MASKURL_001, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, MASKURL_001_EmptyInput, TestSize.Level1)
 {
     std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
         (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
     downloader->Init();
     EXPECT_EQ(downloader->MaskUrl(""), "");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_001_NoSchemeRelative, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
     EXPECT_EQ(downloader->MaskUrl("example.com"), "example.com");
+    EXPECT_EQ(downloader->MaskUrl("example.com/index.html"), "***/index.html");
+    EXPECT_EQ(downloader->MaskUrl("a.b/"), "***/");
+    EXPECT_EQ(downloader->MaskUrl("a.b/c/"), "***/");
+    // RFC 3986: no scheme and no leading "//" => no authority, the whole string is a relative path
+    EXPECT_EQ(downloader->MaskUrl("example.com/x/y/z.pdf?v=2"), "***/z.pdf");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_001_QueryFragmentRemoved, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
     EXPECT_EQ(downloader->MaskUrl("https://example.com?foo=bar"), "https://example.com");
     EXPECT_EQ(downloader->MaskUrl("http://example.org#section"), "http://example.org");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_001_RootPathAndTrailingSlash, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
     EXPECT_EQ(downloader->MaskUrl("https://example.com/"), "https://example.com/");
     EXPECT_EQ(downloader->MaskUrl("https://example.com/?q=1"), "https://example.com/");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/"), "https://example.com/***");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/"), "https://example.com/***/");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_001_FilenameAtRoot, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
     EXPECT_EQ(downloader->MaskUrl("https://example.com/file.txt"), "https://example.com/file.txt");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_001_FilenameInSubdir, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
     EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/c/file.txt"), "https://example.com/***/file.txt");
     EXPECT_EQ(downloader->MaskUrl("https://baidu.com/a/b/c/abc.m3u8?a=6&b=8"), "https://baidu.com/***/abc.m3u8");
-    EXPECT_EQ(downloader->MaskUrl("example.com/x/y/z.pdf?v=2"), "example.com/***/z.pdf");
-    EXPECT_EQ(downloader->MaskUrl("example.com/index.html"), "example.com/index.html");
     EXPECT_EQ(downloader->MaskUrl("http://a.b/c/d?x=1&y=2#top"), "http://a.b/***/d");
-    EXPECT_EQ(downloader->MaskUrl("a.b/"), "a.b/");
-    EXPECT_EQ(downloader->MaskUrl("a.b/c/"), "a.b/***");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com:8080/a/b/file.txt"), "https://example.com:8080/***/file.txt");
-    EXPECT_EQ(downloader->MaskUrl("http://example.com:8080"), "http://example.com:8080");
     EXPECT_EQ(downloader->MaskUrl("https://site.org/x/y/z/readme"), "https://site.org/***/readme");
     EXPECT_EQ(downloader->MaskUrl("https://a.com/static/jquery.min.js"), "https://a.com/***/jquery.min.js");
     EXPECT_EQ(downloader->MaskUrl("https://example.com/目录/文件.txt"), "https://example.com/***/文件.txt");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com:8443/api/v2/data.json?pretty=true"),
-        "https://example.com:8443/***/data.json");
     EXPECT_EQ(downloader->MaskUrl("http://example.com/static/js/app"), "http://example.com/***/app");
     EXPECT_EQ(downloader->MaskUrl("https://cdn.site.com/assets/videos/2024/summer/promo.mp4"),
         "https://cdn.site.com/***/promo.mp4");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_001_PortPreserved, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+    EXPECT_EQ(downloader->MaskUrl("https://example.com:8080/a/b/file.txt"), "https://example.com:8080/***/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("http://example.com:8080"), "http://example.com:8080");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com:8443/api/v2/data.json?pretty=true"),
+        "https://example.com:8443/***/data.json");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_001_UserinfoMasked, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+    EXPECT_EQ(downloader->MaskUrl("https://user:pass@example.com/a/b/file.txt"),
+        "https://***@example.com/***/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("https://user@example.com/path/?token=secret"), "https://***@example.com/***/");
+    EXPECT_EQ(downloader->MaskUrl("http://user:pass@host:8080/a/b/c/"), "http://***@host:8080/***/");
+}
+
+// Branch coverage for StringUtil::MaskUrl (RFC 3986 compliant). Each case
+// targets a specific branch; together with MASKURL_001 all branches are covered.
+HWTEST_F(DownloaderUnitTest, MASKURL_002_BasicStructure, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // B1: empty input -> early return
+    EXPECT_EQ(downloader->MaskUrl(""), "");
+
+    // B2: valid scheme + "://" authority
+    EXPECT_EQ(downloader->MaskUrl("https://example.com"), "https://example.com");
+
+    // B3: no scheme and no leading "//" -> relative path (no authority)
+    EXPECT_EQ(downloader->MaskUrl("example.com"), "example.com");
+
+    // B4a: no path, authority runs to end (authEnd == hierEnd)
+    EXPECT_EQ(downloader->MaskUrl("https://example.com:8080"), "https://example.com:8080");
+
+    // B4b: no path, url[authEnd] == '?' (query removed)
+    EXPECT_EQ(downloader->MaskUrl("https://example.com?foo=bar"), "https://example.com");
+
+    // B4c: no path, url[authEnd] == '#' (fragment removed)
+    EXPECT_EQ(downloader->MaskUrl("http://example.org#section"), "http://example.org");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_002_RootPathAndTrailingSlash, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // B5: path is "/" (pathLen == 1)
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/"), "https://example.com/");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/?q=1"), "https://example.com/");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/#frag"), "https://example.com/");
+
+    // B6: no filename, path ends with '/' (lastSegLen == 0) -> /***/
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/"), "https://example.com/***/");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/dir/"), "https://example.com/***/");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_002_FilenamePosition, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // B7: filename directly at path start (lastSlash == pathBegin)
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/file.txt"), "https://example.com/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/file.txt?q=1"), "https://example.com/file.txt");
+
+    // B8: filename in subdirectory (lastSlash != pathBegin) -> /***/<file>
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/c/file.txt"), "https://example.com/***/file.txt");
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/dir/file.txt"), "https://example.com/***/file.txt");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_002_UserinfoNoPath, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // C2: userinfo + no path (authEnd == hierEnd)
+    EXPECT_EQ(downloader->MaskUrl("https://user:pass@example.com"), "https://***@example.com");
+
+    // C3: userinfo + no path, url[authEnd] == '?'
+    EXPECT_EQ(downloader->MaskUrl("https://user@example.com?foo=bar"), "https://***@example.com");
+
+    // C4: userinfo + no path, url[authEnd] == '#'
+    EXPECT_EQ(downloader->MaskUrl("https://user:pass@example.com#section"), "https://***@example.com");
+
+    // C7: userinfo + port + no path
+    EXPECT_EQ(downloader->MaskUrl("http://user@host:8080"), "http://***@host:8080");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_002_UserinfoWithPath, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // C1: userinfo present (atPos < authEnd) -> ***@host
+    EXPECT_EQ(downloader->MaskUrl("https://user:pass@example.com/a/b/file.txt"),
+        "https://***@example.com/***/file.txt");
+
+    // C5: userinfo + path "/" (pathLen == 1)
+    EXPECT_EQ(downloader->MaskUrl("https://user@host.com/"), "https://***@host.com/");
+    EXPECT_EQ(downloader->MaskUrl("https://user@host.com/?q=1"), "https://***@host.com/");
+
+    // C6: userinfo + filename at path start (lastSlash == pathBegin)
+    EXPECT_EQ(downloader->MaskUrl("https://user@host.com/file.txt"), "https://***@host.com/file.txt");
+
+    // C8: userinfo + no filename (lastSegLen == 0)
+    EXPECT_EQ(downloader->MaskUrl("http://user:pass@host:8080/a/b/c/"), "http://***@host:8080/***/");
+
+    // C9: empty userinfo ('@' right at authStart)
+    EXPECT_EQ(downloader->MaskUrl("https://@example.com/a/b/file.txt"),
+        "https://***@example.com/***/file.txt");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_002_AtInPathOrQuery, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // D1: '@' in path (atPos >= authEnd) -> not masked as userinfo
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/u@v/file.txt"),
+        "https://example.com/***/file.txt");
+
+    // D2: '@' in path, no filename (lastSegLen == 0)
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/u@v/"), "https://example.com/***/");
+
+    // D3: '@' in query (atPos >= authEnd) -> not masked, query removed
+    EXPECT_EQ(downloader->MaskUrl("https://example.com/file.txt?u@t=1"),
+        "https://example.com/file.txt");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_002_ProtocolRelative, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // F1: protocol-relative reference "//authority/path" -> authority preserved, path masked
+    EXPECT_EQ(downloader->MaskUrl("//example.com/a/b/file.txt"), "//example.com/***/file.txt");
+
+    // F2: protocol-relative with userinfo -> ***@host
+    EXPECT_EQ(downloader->MaskUrl("//user:pass@example.com/a/b/file.txt"),
+        "//***@example.com/***/file.txt");
+
+    // F3: protocol-relative, no filename (trailing '/')
+    EXPECT_EQ(downloader->MaskUrl("//example.com/a/b/"), "//example.com/***/");
+
+    // F4: protocol-relative, port only, no path
+    EXPECT_EQ(downloader->MaskUrl("//example.com:8080"), "//example.com:8080");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_002_SchemeWithoutAuthority, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // G1: empty authority ("file:///path") -> authority empty, path masked
+    EXPECT_EQ(downloader->MaskUrl("file:///a/b/file.txt"), "file:///***/file.txt");
+
+    // G2: scheme without "//" => no authority; rootless path with no '/' is kept as-is
+    EXPECT_EQ(downloader->MaskUrl("mailto:user@example.com?subject=hi"),
+        "mailto:user@example.com");
+
+    // G2b: scheme without "//" but with a path-absolute (has '/') => path masked
+    EXPECT_EQ(downloader->MaskUrl("file:/a/b/file.txt"), "file:/***/file.txt");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_002_InvalidSchemeAndRelative, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // G3: invalid scheme (starts with digit) -> not a scheme, treated as relative path
+    EXPECT_EQ(downloader->MaskUrl("1abc://host.com/a/b/file.txt"), "***/file.txt");
+
+    // G4: "://" inside a schemeless path -> not mistaken for scheme separator
+    EXPECT_EQ(downloader->MaskUrl("example.com/path://seg/file.txt"), "***/file.txt");
+
+    // G5: single-segment relative path (no '/') -> kept as-is
+    EXPECT_EQ(downloader->MaskUrl("file.txt"), "file.txt");
+}
+
+HWTEST_F(DownloaderUnitTest, MASKURL_002_AbsolutePathNoAuthority, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
+        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
+    downloader->Init();
+
+    // G6: absolute path without authority (leading '/', no "//") -> path masked
+    EXPECT_EQ(downloader->MaskUrl("/a/b/file.txt"), "/***/file.txt");
+
+    // G7: absolute path, root only
+    EXPECT_EQ(downloader->MaskUrl("/"), "/");
 }
 
 class MockCloseRetryClient : public NetworkClient {
