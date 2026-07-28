@@ -340,7 +340,6 @@ void HlsSegmentManager::ConfigureAndDownload(const PlayInfo& playInfo, bool isRe
     if (!playInfo.rangeUrl_.empty() && !isRequestWholeFile) {
         downloadRequest->SetRangePos(static_cast<int64_t>(playInfo.offset_),
             static_cast<int64_t>(playInfo.offset_) + static_cast<int64_t>(playInfo.length_) - 1);
-        }
     }
     downloadRequest->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
