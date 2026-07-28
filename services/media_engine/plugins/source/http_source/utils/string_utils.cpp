@@ -18,24 +18,12 @@
 #include <cstdint>
 #include <charconv>
 #include <cmath>
-#include <cctype>
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-constexpr const char* SCHEME_AUTHORITY_SEP = "://";
-constexpr size_t SCHEME_AUTHORITY_SEP_LEN = 3;
-constexpr const char* NETWORK_PATH_PREFIX = "//";
-constexpr size_t NETWORK_PATH_PREFIX_LEN = 2;
-constexpr size_t COLON_LEN = 1;
-constexpr size_t SLASH_LEN = 1;
-constexpr const char* USERINFO_MASK = "***";
-constexpr const char* MASKED_PATH_PREFIX_SLASH = "/***/";
-constexpr const char* MASKED_PATH_PREFIX = "***/";
-constexpr size_t RESERVE_PADDING = 8;
-
 const char* ProcessPrefix(const char* str, bool& hasError)
 {
     hasError = false;
@@ -86,84 +74,6 @@ bool StringToInteger(const std::string& str, T& value)
     auto [ptr, ec] = std::from_chars(str.data() + startPos, str.data() + str.size(), value);
     return ec == std::errc();
 }
-
-// RFC 3986: scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-bool IsValidScheme(const std::string& url, size_t end)
-{
-    if (end == 0 || !std::isalpha(static_cast<unsigned char>(url[0]))) {
-        return false;
-    }
-    for (size_t i = 1; i < end; ++i) {
-        unsigned char c = static_cast<unsigned char>(url[i]);
-        if (!std::isalnum(c) && c != '+' && c != '-' && c != '.') {
-            return false;
-        }
-    }
-    return true;
-}
-
-size_t GetHierEnd(const std::string& url)
-{
-    size_t hierEnd = url.find_first_of("?#");
-    if (hierEnd == std::string::npos) {
-        hierEnd = url.size();
-    }
-    return hierEnd;
-}
-
-size_t ResolvePathBegin(const std::string& url, size_t hierEnd, bool& hasAuthority)
-{
-    size_t colon = url.find(':');
-    bool hasScheme = (colon != std::string::npos && colon < hierEnd && IsValidScheme(url, colon));
-    hasAuthority = false;
-    if (hasScheme &&
-        colon + SCHEME_AUTHORITY_SEP_LEN <= hierEnd &&
-        url.compare(colon, SCHEME_AUTHORITY_SEP_LEN, SCHEME_AUTHORITY_SEP) == 0) {
-        hasAuthority = true;
-        return colon + SCHEME_AUTHORITY_SEP_LEN;
-    }
-    if (hasScheme) {
-        return colon + COLON_LEN;
-    }
-    if (hierEnd >= NETWORK_PATH_PREFIX_LEN &&
-        url.compare(0, NETWORK_PATH_PREFIX_LEN, NETWORK_PATH_PREFIX) == 0) {
-        hasAuthority = true;
-        return NETWORK_PATH_PREFIX_LEN;
-    }
-    return 0;
-}
-
-void MaskAuthority(const std::string& url, size_t hierEnd, size_t& pathBegin, std::string& result)
-{
-    size_t authEnd = url.find_first_of("/?#", pathBegin);
-    if (authEnd == std::string::npos || authEnd > hierEnd) {
-        authEnd = hierEnd;
-    }
-    size_t atPos = url.find('@', pathBegin);
-    if (atPos != std::string::npos && atPos < authEnd) {
-        result += USERINFO_MASK;
-        result.append(url, atPos, authEnd - atPos);
-    } else {
-        result.append(url, pathBegin, authEnd - pathBegin);
-    }
-    pathBegin = authEnd;
-}
-
-void MaskPath(const std::string& url, size_t hierEnd, size_t pathBegin, std::string& result)
-{
-    size_t pathLen = hierEnd - pathBegin;
-    if (pathLen == 0) {
-        return;
-    }
-    size_t lastSlash = url.rfind('/', hierEnd);
-    if (lastSlash == std::string::npos || lastSlash == pathBegin) {
-        result.append(url, pathBegin, pathLen);
-    } else {
-        result += (url[pathBegin] == '/') ? MASKED_PATH_PREFIX_SLASH : MASKED_PATH_PREFIX;
-        size_t segStart = lastSlash + SLASH_LEN;
-        result.append(url, segStart, hierEnd - segStart);
-    }
-}
 } // namespace
 
 bool StringUtil::SafeStoInt32(const std::string& str, int32_t& value)
@@ -195,16 +105,36 @@ std::string StringUtil::MaskUrl(const std::string& url)
     if (url.empty()) {
         return url;
     }
-    size_t hierEnd = GetHierEnd(url);
-    bool hasAuthority = false;
-    size_t pathBegin = ResolvePathBegin(url, hierEnd, hasAuthority);
-    std::string result;
-    result.reserve(hierEnd + RESERVE_PADDING);
-    result.append(url, 0, pathBegin);
-    if (hasAuthority) {
-        MaskAuthority(url, hierEnd, pathBegin, result);
+    // Split URL into [scheme] + [authority] + [path] + [query/fragment]
+    // e.g. "https://" + "user:pass@example.com:8080" + "/a/b/file.txt" + "?q=1"
+    size_t schemeEnd = url.find("://"); // length of "://" is 3
+    size_t hostStart = (schemeEnd != std::string::npos) ? schemeEnd + 3 : 0;
+    size_t pathStart = url.find_first_of("/?#", hostStart);
+    // scheme + masked authority
+    std::string result = (schemeEnd != std::string::npos) ? url.substr(0, schemeEnd + 3) : "";
+    std::string authority = (pathStart != std::string::npos)
+        ? url.substr(hostStart, pathStart - hostStart) : url.substr(hostStart);
+    // mask userinfo: use find() to locate the first '@' per URL spec (RFC3986)
+    size_t atPos = authority.find('@');
+    if (atPos != std::string::npos) {
+        result += "***@";
+        authority = authority.substr(atPos + 1);
     }
-    MaskPath(url, hierEnd, pathBegin, result);
+    // host + port
+    result += authority;
+    if (pathStart == std::string::npos || url[pathStart] != '/') {
+        return result;
+    }
+    // path: mask directory with ***, keep filename; ?# params dropped
+    size_t queryStart = url.find_first_of("?#", pathStart);
+    std::string path = (queryStart != std::string::npos)
+        ? url.substr(pathStart, queryStart - pathStart) : url.substr(pathStart);
+    size_t lastSlash = path.rfind('/');
+    if (path == "/") {
+        result += "/";
+    } else {
+        result += "/***" + path.substr(lastSlash); // keep filename after last /
+    }
     return result;
 }
 }
