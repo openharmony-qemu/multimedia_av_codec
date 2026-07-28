@@ -91,7 +91,15 @@ ohos_unittest("mpeg4swdecoder_native_module_test") {
       "drm_framework:native_drm",
     ]
   }
+  
+  if (is_standard_system) {
+    external_deps += ["init:libbegetutil"]
+  }
 
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines = [ "ONLY_FOR_FLAGSHIP_CHIP" ]
+  }
+  
   resource_config_file =
       "$MEDIA_ROOT_DIR/test/moduletest/resources/ohos_test.xml"
 }

@@ -447,7 +447,7 @@ void VEncNdkSample::ReadOneFrameRGBA8888(uint8_t *dst)
 
 uint32_t VEncNdkSample::FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer)
 {
-    struct Region region;
+    struct Region region = {};
     struct Region::Rect *rect = new Region::Rect();
     rect->x = 0;
     rect->y = 0;

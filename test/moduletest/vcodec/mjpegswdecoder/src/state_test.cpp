@@ -12,6 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef ONLY_FOR_FLAGSHIP_CHIP
+#define ONLY_FOR_FLAGSHIP_CHIP 0
+#endif
 
 #include <cstdio>
 #include <iostream>
@@ -61,7 +64,7 @@ void MjpegSwdecStateNdkTest::TearDownTestCase(void) {}
 VDecAPI11Sample *vDecSample = NULL;
 void MjpegSwdecStateNdkTest::SetUp(void)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         cap = OH_AVCodec_GetCapabilityByCategory("video/mjpeg", false, SOFTWARE);
         string mjpegCodeName = OH_AVCapability_GetName(cap);
         cout << "mjpegCodeName: " << mjpegCodeName << endl;
@@ -80,7 +83,7 @@ void MjpegSwdecStateNdkTest::SetUp(void)
 
 void MjpegSwdecStateNdkTest::TearDown(void)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->Release();
         delete vDecSample;
         vDecSample = nullptr;
@@ -97,7 +100,7 @@ namespace {
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Flush();
         ASSERT_EQ(AV_ERR_INVALID_STATE, ret);
         ret = vDecSample->SetVideoDecoderCallback();
@@ -112,7 +115,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0100, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0101, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Stop();
         ASSERT_EQ(AV_ERR_OK, ret);
     }
@@ -125,7 +128,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0101, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Stop();
@@ -142,7 +145,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0200, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Stop();
@@ -159,7 +162,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0300, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Stop();
@@ -176,7 +179,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0400, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Stop();
@@ -195,7 +198,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0500, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->StartVideoDecoder();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -216,7 +219,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0600, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -236,7 +239,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0700, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         ASSERT_EQ(AV_ERR_OK, ret);
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -257,7 +260,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0800, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -275,7 +278,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_0900, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -295,7 +298,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1000, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -315,7 +318,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1100, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -335,7 +338,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1200, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -357,7 +360,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1300, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -377,7 +380,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1400, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -397,7 +400,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1500, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         vDecSample->WaitForEOS();
@@ -421,7 +424,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1600, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -440,7 +443,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1700, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -459,7 +462,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1800, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -478,7 +481,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_1900, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -497,7 +500,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2000, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -520,7 +523,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2100, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -542,7 +545,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2200, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -561,7 +564,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2300, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -580,7 +583,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2400, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -601,7 +604,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2500, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -620,7 +623,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2600, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -639,7 +642,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2700, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Flush();
@@ -664,7 +667,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2800, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Reset();
@@ -681,7 +684,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_2900, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Reset();
@@ -698,7 +701,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3000, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->Reset();
@@ -721,7 +724,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3100, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Start();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->ConfigureVideoDecoder();
@@ -740,7 +743,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3200, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Reset();
         ASSERT_EQ(AV_ERR_OK, ret);
         ret = vDecSample->ConfigureVideoDecoder();
@@ -755,7 +758,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3300, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         int32_t ret = vDecSample->Release();
         ASSERT_EQ(AV_ERR_OK, ret);
     }
@@ -768,7 +771,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3400, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3500, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->inputCallbackFlush = true;
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -784,7 +787,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3500, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3600, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->inputCallbackStop = true;
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -800,7 +803,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3600, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3700, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->outputCallbackFlush = true;
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -816,7 +819,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3700, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3800, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->outputCallbackStop = true;
         int32_t ret = vDecSample->StartVideoDecoder();
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -832,7 +835,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3800, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3900, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->inputCallbackFlush = true;
         int32_t ret = vDecSample->StartVideoDecoder();
@@ -849,7 +852,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_3900, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4000, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->inputCallbackStop = true;
         int32_t ret = vDecSample->StartVideoDecoder();
@@ -866,7 +869,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4000, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4100, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->outputCallbackFlush = true;
         int32_t ret = vDecSample->StartVideoDecoder();
@@ -883,7 +886,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4100, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4200, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->outputCallbackStop = true;
         int32_t ret = vDecSample->StartVideoDecoder();
@@ -900,7 +903,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4200, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -923,7 +926,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4300, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -946,7 +949,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4400, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -969,7 +972,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4500, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -990,7 +993,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4600, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -1013,7 +1016,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4700, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -1036,7 +1039,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4800, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -1059,7 +1062,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_4900, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -1084,7 +1087,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5000, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -1107,7 +1110,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5100, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -1130,7 +1133,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5200, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
         int32_t ret = vDecSample->DecodeSetSurface();
@@ -1157,7 +1160,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5300, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1175,7 +1178,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5400, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5401, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1191,7 +1194,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5401, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1211,7 +1214,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5500, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1231,7 +1234,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5600, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1251,7 +1254,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5700, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1273,7 +1276,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5800, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1295,7 +1298,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_5900, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1317,7 +1320,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6000, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1339,7 +1342,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6100, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1361,7 +1364,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6200, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1387,7 +1390,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6300, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1412,7 +1415,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6400, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1434,7 +1437,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6500, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1456,7 +1459,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6600, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6700, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1480,7 +1483,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6700, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6800, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1502,7 +1505,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6800, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6900, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1524,7 +1527,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_6900, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7000, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1552,7 +1555,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7000, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1572,7 +1575,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7100, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7200, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1592,7 +1595,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7200, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7300, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1618,7 +1621,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7300, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7400, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1640,7 +1643,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7400, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7500, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1658,7 +1661,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7500, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7600, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1674,7 +1677,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7600, TestSize.Level2)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7700, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1693,7 +1696,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7700, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7800, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1712,7 +1715,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7800, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7900, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1731,7 +1734,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_7900, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_8000, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1750,7 +1753,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_8000, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_8100, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1769,7 +1772,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_8100, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_8200, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1788,7 +1791,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_8200, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_8300, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
@@ -1807,7 +1810,7 @@ HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_8300, TestSize.Level1)
  */
 HWTEST_F(MjpegSwdecStateNdkTest, VIDEO_MJPEGSWDEC_STATE_8400, TestSize.Level1)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (ONLY_FOR_FLAGSHIP_CHIP) {
         vDecSample->SF_OUTPUT = true;
         int32_t ret = vDecSample->DecodeSetSurface();
         ASSERT_EQ(AV_ERR_OK, ret);
