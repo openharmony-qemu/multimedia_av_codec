@@ -20,7 +20,6 @@
 #include "meta/meta_key.h"
 #include "meta/meta.h"
 #include "common/log.h"
-#include "meta/format.h"
 #include "demuxer_log_compressor.h"
 
 namespace {

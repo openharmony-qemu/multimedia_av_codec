@@ -316,8 +316,6 @@ private:
     Status AppendSampleIndexEntry(const SttsEntry& sttsEntry, uint32_t& sampleInSttsEntry,
         SampleIndexBuildContext& buildCtx);
     Status AdvanceChunkIfNeeded(SampleIndexBuildContext& buildCtx);
-    bool GetSampleSize(uint32_t sampleIndex, uint32_t& samplesPerFrame, SampleIndexEntry& entry,
-        int64_t& remainSamples);
     Status UpdateSampleDurationAndDts(uint32_t sttsDelta, uint32_t samplesPerFrame, SampleIndexEntry& entry,
         int64_t& currentDts) const;
     void GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry& entry, uint32_t& syncIndex);

@@ -15,14 +15,11 @@
 
 #define MEDIA_PLUGIN
 #define HST_LOG_TAG "MPEG4DemuxerPlugin"
-#include <unistd.h>
 #include <algorithm>
-#include <cmath>
 #include <string>
 #include <sstream>
 #include <iomanip>
 #include <fstream>
-#include <chrono>
 #include <limits>
 
 #include "avcodec_trace.h"
@@ -33,8 +30,6 @@
 #include "mpeg4_demuxer_plugin.h"
 #include "mpeg4_format_checker.h"
 #include "mpeg4_utils.h"
-#include "plugin/plugin_buffer.h"
-#include "plugin/plugin_definition.h"
 #include "meta/mime_type.h"
 #include "meta/video_types.h"
 #include "demuxer_log_compressor.h"
@@ -719,9 +714,7 @@ bool ShouldClearAudioDiscardForSkipPacket(
         return false;
     }
     uint32_t skipSamples = GetSkipSamplesFromInfo(*skipSamplesInfo);
-    if (skipSamples == 0 || currentSample.duration <= 0) {
-        return false;
-    }
+    FALSE_RETURN_V_NOLOG((skipSamples != 0 && currentSample.duration > 0), false);
     if (sampleIndex == 0 && skipSamples >= static_cast<uint64_t>(currentSample.duration) &&
         IsSingleEditShortTailAudio(track) && !hasPlayableVideoTrack) {
         return true;
@@ -1064,6 +1057,7 @@ MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
     MEDIA_LOG_D("Out");
 }
 
+// LCOV_EXCL_START
 void MPEG4DemuxerPlugin::Dump(const DumpParam &dumpParam)
 {
     std::string path;
@@ -1093,6 +1087,7 @@ void MPEG4DemuxerPlugin::Dump(const DumpParam &dumpParam)
     }
     MEDIA_LOG_D("Dump path:" PUBLIC_LOG_S, path.c_str());
 }
+// LCOV_EXCL_STOP
 
 void MPEG4DemuxerPlugin::ReleaseReferenceParserState()
 {
@@ -1196,6 +1191,7 @@ void MPEG4DemuxerPlugin::InitBaseInfoByAtomParser(std::shared_ptr<MPEG4AtomParse
     hasMoofBox_ = parser->GetHasMoof();
     fragmentEntry_.clear();
     parser->GetFragmentEntry(fragmentEntry_);
+    mediaInfo_.general.Set<Tag::MEDIA_TRACK_COUNT>(CountTracks());
 }
 
 void MPEG4DemuxerPlugin::InitDrmInfoCacheByAtomParser(std::shared_ptr<MPEG4AtomParser> parser)
@@ -1224,29 +1220,32 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
     MEDIA_LOG_I("In");
     FALSE_RETURN_V_MSG_E(!inited_, Status::ERROR_WRONG_STATE, "Plugin has been initialized");
     FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "DataSource is nullptr");
-    
+
     seekable_ = source->IsDash() ? Seekable::UNSEEKABLE : source->GetSeekable();
     dataSource_ = source;
     demuxerMode_ = Plugins::DemuxerMode::FULL_PARSE;
     if (configs != nullptr && configs->Get<Tag::MEDIA_DEMUXER_MODE>(demuxerMode_)) {
         MEDIA_LOG_I("DemuxerMode: " PUBLIC_LOG_U32, static_cast<uint32_t>(demuxerMode_));
     }
-    auto parser = std::make_shared<MPEG4AtomParser>();
-    FALSE_RETURN_V_MSG_E(parser != nullptr, Status::ERROR_NO_MEMORY, "parser allocation failed");
+    Status ret = Status::OK;
+    auto atomParser = std::make_shared<MPEG4AtomParser>();
+    FALSE_RETURN_V_MSG_E(atomParser != nullptr, Status::ERROR_NO_MEMORY, "parser allocation failed");
     {
         auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_setdatasource", SETTIMER_TIMEOUT,
             nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
-        Status ret = parser->MPEG4ParseHeader(source, seekable_, readTimeoutMs_.load(std::memory_order_acquire));
+        ret = atomParser->MPEG4ParseHeader(
+            source, seekable_, readTimeoutMs_.load(std::memory_order_acquire), demuxerMode_);
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret, "MPEG4Demuxer unsupport type");
         FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
         HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     }
     
-    InitBaseInfoByAtomParser(parser);
-    InitDrmInfoCacheByAtomParser(parser);
+    InitBaseInfoByAtomParser(atomParser);
+    InitDrmInfoCacheByAtomParser(atomParser);
     InitParser();
     GetMediaInfo();
-
+    ret = ConvertElstTimescaleToMs();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ConvertElstTimescaleToMs is failed");
     if (HasCodecParameters() != Status::OK) {
         ResetParam();
         MEDIA_LOG_E("SetDataSource failed cause not enough data");
@@ -1302,8 +1301,6 @@ Status MPEG4DemuxerPlugin::HasCodecParameters()
     int32_t param;
     int32_t trackCount;
     auto track = firstTrack_;
-    Status ret = ConvertElstTimescaleToMs();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ConvertElstTimescaleToMs is failed");
     FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_TRACK_COUNT>(trackCount), Status::ERROR_INVALID_DATA,
         "GetData is failed");
     FALSE_RETURN_V_MSG_E(trackCount == static_cast<int32_t>(mediaInfo_.tracks.size()), Status::ERROR_INVALID_DATA,
@@ -1505,8 +1502,7 @@ Status MPEG4DemuxerPlugin::GetMediaInfo()
 {
     MEDIA_LOG_D("In");
     MediaAVCodec::AVCodecTrace trace("GetMediaInfo");
-    int32_t trackCount = CountTracks();
-    mediaInfo_.general.Set<Tag::MEDIA_TRACK_COUNT>(trackCount);
+    
     Status ret = ParseAVFirstFrames();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse first frames failed");
     DemuxerLogCompressor::StringifyMeta(mediaInfo_.general, -1);

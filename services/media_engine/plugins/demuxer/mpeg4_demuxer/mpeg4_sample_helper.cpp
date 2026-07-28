@@ -17,13 +17,7 @@
 #include <array>
 #include <algorithm>
 #include <limits>
-#include <regex>
-#include <iconv.h>
-#include <sstream>
-#include "meta/media_types.h"
 #include "meta/mime_type.h"
-#include "meta/video_types.h"
-#include "meta/audio_types.h"
 #include "common/log.h"
 #include "mpeg4_sample_helper.h"
 
@@ -40,7 +34,6 @@ constexpr int64_t MAX_TRUN_SAMPLES = 1000000; //需要确定讨论
 constexpr uint32_t MAX_SAMPLE_TABLE_SAMPLES = static_cast<uint32_t>(MAX_TRUN_SAMPLES);
 constexpr int64_t NEXT_FRAME = 1;
 constexpr int64_t PREVIOUS_FRAME = 0;
-constexpr int64_t MAX_SAMPLES_PER_FRAME = 1024;
 constexpr size_t MIN_DATA_SIZE = 8;
 constexpr int64_t MIN_DATA_SIZE_INT = 8;
 constexpr int64_t MIN_DATA_OFFSET = 0;
@@ -172,11 +165,8 @@ void MPEG4SampleHelper::SetSkipSamplesInfo(uint32_t sampleIndex, std::vector<uin
 
 int64_t MPEG4SampleHelper::GetSyncSamplePts(size_t stssIndex) const
 {
-    if (stssIndex >= stssEntry_.size() ||
-        stssEntry_[stssIndex].index >= sampleIndexEntry_.size()) {
-        return 0;
-    }
-    return sampleIndexEntry_[stssEntry_[stssIndex].index].pts;
+    return (stssIndex >= stssEntry_.size() || stssEntry_[stssIndex].index >= sampleIndexEntry_.size()) ?
+        0 : sampleIndexEntry_[stssEntry_[stssIndex].index].pts;
 }
 
 uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
@@ -853,9 +843,7 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
     FALSE_RETURN_V_MSG_E(numChunkOffsets <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid chunk offset count");
     currentOffset += sizeof(uint32_t);
     uint32_t unit = atomType == static_cast<uint32_t>(FourccType("stco")) ? sizeof(uint32_t) : sizeof(uint64_t);
-    if ((dataSize - sizeof(uint64_t)) / unit < numChunkOffsets) {
-        return Status::ERROR_UNKNOWN;
-    }
+    FALSE_RETURN_V_NOLOG((dataSize - sizeof(uint64_t)) / unit >= numChunkOffsets, Status::ERROR_UNKNOWN);
 
     size_t size = 0;
     FALSE_RETURN_V_MSG_E(!__builtin_mul_overflow(numChunkOffsets, unit, &size),
@@ -1406,20 +1394,6 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
     return Status::OK;
 }
 
-bool MPEG4SampleHelper::GetSampleSize(uint32_t sampleIndex, uint32_t &samplesPerFrame,
-    SampleIndexEntry &entry, int64_t &remainSamples)
-{
-    if (mimeType_ == MimeType::AUDIO_G711MU || mimeType_ == MimeType::AUDIO_G711A || mimeType_ == MimeType::AUDIO_RAW) {
-        int32_t sampleSize = sampleSizes_[0];
-        FALSE_RETURN_V_NOLOG(sampleSize <= INT32_MAX / MAX_SAMPLES_PER_FRAME, false);
-        samplesPerFrame = std::min(MAX_SAMPLES_PER_FRAME, remainSamples);
-        remainSamples -= static_cast<int64_t>(samplesPerFrame);
-        entry.size = static_cast<int32_t>(samplesPerFrame) * sampleSize;
-    } else {
-        entry.size = hasDefaultStszSize_ ? sampleSizes_[0] : sampleSizes_[sampleIndex];
-    }
-    return true;
-}
 
 Status MPEG4SampleHelper::UpdateSampleDurationAndDts(uint32_t sttsDelta, uint32_t samplesPerFrame,
     SampleIndexEntry& entry, int64_t& currentDts) const
@@ -1613,7 +1587,7 @@ Status MPEG4SampleHelper::BuildEditListSampleEntry(const SampleIndexEntry& oldEn
     processCtx.newEntry.duration = frameDuration;
     processCtx.skipSamplesInfo.clear();
     bool outsideEdit = currCts < edit.mediaTime || currCts >= processCtx.editEndTime;
-    bool crossedAudioStart = trackType_ == AUDIO_TYPE && mimeType_ != MimeType::AUDIO_VORBIS &&
+    bool crossedAudioStart = trackType_ == AUDIO_TYPE &&
         currCts < edit.mediaTime && processCtx.frameEndTime >= edit.mediaTime && buildCtx.firstNonZeroAudioEdit > 0;
     if (outsideEdit && crossedAudioStart) {
         int64_t packetSkipSamples = edit.mediaTime - currCts;
@@ -1805,8 +1779,7 @@ Status MPEG4SampleHelper::AppendSampleIndexEntry(const SttsEntry& sttsEntry, uin
         .size = 0,
         .duration = 0
     });
-    FALSE_RETURN_V_MSG_E(GetSampleSize(buildCtx.sampleIndex, buildCtx.samplesPerFrame,
-        sampleIndexEntry_.back(), buildCtx.remainSamples), Status::ERROR_INVALID_DATA, "Sample size is too large");
+    sampleIndexEntry_.back().size = hasDefaultStszSize_ ? sampleSizes_[0] : sampleSizes_[buildCtx.sampleIndex];
     Status ret = UpdateSampleDurationAndDts(sttsEntry.delta, buildCtx.samplesPerFrame, sampleIndexEntry_.back(),
         buildCtx.currentDts);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update sample duration failed");
