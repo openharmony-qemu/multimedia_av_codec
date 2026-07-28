@@ -72,11 +72,9 @@ public:
 
     int32_t GetSize(int64_t &size)
     {
-        if (isExt_) {
-            CHECK_AND_RETURN_RET_LOG(dataSourceExt_ != nullptr, 0, "dataSourceExt_ is nullptr");
+        if (isExt_ && dataSourceExt_ != nullptr) {
             size = dataSourceExt_->size;
-        } else {
-            CHECK_AND_RETURN_RET_LOG(dataSource_ != nullptr, 0, "dataSource_ is nullptr");
+        } else if (!isExt_ && dataSource_ != nullptr) {
             size = dataSource_->size;
         }
         return 0;
