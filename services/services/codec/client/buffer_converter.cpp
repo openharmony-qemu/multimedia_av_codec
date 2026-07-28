@@ -60,6 +60,9 @@ int32_t ConvertYUV420SP(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t 
     AVCodecRect &dstRect = rects[0];
     AVCodecRect &srcRect = rects[1];
     AVCodecRect &rect = rects[2]; // 2: index
+    CHECK_AND_RETURN_RET_LOG(
+        dstRect.wStride > 0 && dstRect.hStride > 0 && dstRect.hStride <= (INT32_MAX / OFFSET_3) / dstRect.wStride, 0,
+        "Invalid stride or size overflow. wStride:%{public}d, hStride:%{public}d", dstRect.wStride, dstRect.hStride);
     int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) / OFFSET_2;
     int32_t ret;
     CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
@@ -90,6 +93,9 @@ int32_t ConvertYUV420P(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t c
     AVCodecRect &dstRect = rects[0];
     AVCodecRect &srcRect = rects[1];
     AVCodecRect &rect = rects[2]; // 2: index
+    CHECK_AND_RETURN_RET_LOG(
+        dstRect.wStride > 0 && dstRect.hStride > 0 && dstRect.hStride <= (INT32_MAX / OFFSET_3) / dstRect.wStride, 0,
+        "Invalid stride or size overflow. wStride:%{public}d, hStride:%{public}d", dstRect.wStride, dstRect.hStride);
     int32_t dstSize = (OFFSET_3 * dstRect.wStride * dstRect.hStride) / OFFSET_2;
     int32_t ret;
     CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
@@ -135,6 +141,9 @@ int32_t ConvertRGBA8888(uint8_t *dst, uint8_t *src, AVCodecRect *rects, int32_t 
     AVCodecRect &dstRect = rects[0];
     AVCodecRect &srcRect = rects[1];
     AVCodecRect &rect = rects[2]; // 2: index
+    CHECK_AND_RETURN_RET_LOG(
+        dstRect.wStride > 0 && dstRect.hStride > 0 && dstRect.hStride <= INT32_MAX / dstRect.wStride, 0,
+        "Invalid stride or size overflow. wStride:%{public}d, hStride:%{public}d", dstRect.wStride, dstRect.hStride);
     int32_t dstSize = dstRect.wStride * dstRect.hStride;
     int32_t ret;
     CHECK_AND_RETURN_RET_LOG(dstSize <= capacity, 0, "No memory. dstSize:%{public}d, capacity:%{public}d", dstSize,
