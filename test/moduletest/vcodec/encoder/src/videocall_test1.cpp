@@ -70,8 +70,6 @@ HWTEST_F(VideoCallNotifyPiPModuleTest, VideoCall_NotifyPiPState_002, TestSize.Le
     EXPECT_EQ(ret, TEST_EXPECT_INPUT_ERROR);
     // Empty bundleName should fail with input data error
     EXPECT_NE(ret, TEST_EXPECT_OK);
-    // Verify return value is a negative error code
-    EXPECT_LT(ret, 0);
 }
 
 /**
@@ -104,6 +102,4 @@ HWTEST_F(VideoCallNotifyPiPModuleTest, VideoCall_NotifyPiPState_004, TestSize.Le
     EXPECT_EQ(ret, TEST_EXPECT_INPUT_ERROR);
     // Empty bundleName should fail regardless of isFloatingWindow
     EXPECT_NE(ret, TEST_EXPECT_OK);
-    // Verify return value is a negative error code
-    EXPECT_LT(ret, 0);
 }

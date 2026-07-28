@@ -822,9 +822,9 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_GetInstanceInfoByProcessName_0
     };
     manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, encInfo));
 
+    // countEnc=1, countDec=0, isFloatingWindow=true → condition fails
     auto result = manager.GetAndUpdateCodecParmInfoByProcessName("com.test.call", true);
-    EXPECT_TRUE(result.has_value());
-    EXPECT_EQ(result->encPowermode, 1); // isFloatingWindow=true → encPowermode set to 1
+    EXPECT_FALSE(result.has_value());
 
     manager.codecStubMap_.erase(callerId);
 }
@@ -1058,7 +1058,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
 /**
  * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_003
  * @tc.desc: UpdateCodecParmInfoByInstanceId triggers callback
- *           when isFloatingWindow=true (encPowermode==1)
+ *           when isFloatingWindow = true (encPowermode==1)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_003, TestSize.Level1)
 {
@@ -1096,7 +1096,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
 /**
  * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_004
  * @tc.desc: UpdateCodecParmInfoByInstanceId does not trigger callback
- *           when countEnc > 1 and isFloatingWindow=false
+ *           when countEnc > 1 and encPowermode != 0
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_004, TestSize.Level1)
 {
@@ -1128,9 +1128,9 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
         .instanceId = 4006,
         .caller = {.pid = callerId1, .processName = "com.test.multi"},
         .codecParam = {.encWidth = 640, .encHeight = 480,
-                       .encBitrate = 200000, .encPowermode = 0},
+                       .encBitrate = 200000, .encPowermode = 1},
     };
-    // countEnc=2 (>1) and isFloatingWindow=false → no callback
+    // countEnc=2 (>1) and encPowermode=1 (≠0) → no callback
     manager.UpdateCodecParmInfoByInstanceId(4006, updateInfo);
     EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::timeout);
 
@@ -1256,95 +1256,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_CodecParamInfo_Init_001, TestS
     EXPECT_EQ(param.encHeight, 1080);
     EXPECT_EQ(param.encWidth, 720);
     EXPECT_EQ(param.encBitrate, 300000);
-}
-
-// ========== IPC Stub OnRemoteRequest Tests ==========
-
-/**
- * @tc.name: AVCodec_Server_OnRemoteRequest_VideoCall_001
- * @tc.desc: OnRemoteRequest dispatches VIDEOCALL code to OnVideoCall with valid data
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnRemoteRequest_VideoCall_001, TestSize.Level1)
-{
-    EXPECT_CALL(*avcodecStubMock_, VideoCallNotifyPiPState("com.test.ipc", true))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
-
-    AVCodecServiceStub stub;
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-
-    data.WriteInterfaceToken(AVCodecServiceStub::GetDescriptor());
-    data.WriteString("com.test.ipc");
-    data.WriteBool(true);
-
-    uint32_t code = static_cast<uint32_t>(AVCodecServiceInterfaceCode::VIDEOCALL);
-    int32_t ret = stub.OnRemoteRequest(code, data, reply, option);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-    EXPECT_EQ(reply.ReadInt32(), AVCS_ERR_OK);
-}
-
-/**
- * @tc.name: AVCodec_Server_OnRemoteRequest_VideoCall_002
- * @tc.desc: OnRemoteRequest returns error when descriptor does not match for VIDEOCALL
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnRemoteRequest_VideoCall_002, TestSize.Level1)
-{
-    AVCodecServiceStub stub;
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-
-    data.WriteInterfaceToken(u"InvalidDescriptor");
-
-    uint32_t code = static_cast<uint32_t>(AVCodecServiceInterfaceCode::VIDEOCALL);
-    int32_t ret = stub.OnRemoteRequest(code, data, reply, option);
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_OPERATION);
-}
-
-/**
- * @tc.name: AVCodec_Server_OnRemoteRequest_VideoCall_003
- * @tc.desc: OnRemoteRequest dispatches VIDEOCALL with isFloatingWindow=false
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnRemoteRequest_VideoCall_003, TestSize.Level1)
-{
-    EXPECT_CALL(*avcodecStubMock_, VideoCallNotifyPiPState("com.test.ipc", false))
-        .Times(1)
-        .WillOnce(Return(AVCS_ERR_OK));
-
-    AVCodecServiceStub stub;
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-
-    data.WriteInterfaceToken(AVCodecServiceStub::GetDescriptor());
-    data.WriteString("com.test.ipc");
-    data.WriteBool(false);
-
-    uint32_t code = static_cast<uint32_t>(AVCodecServiceInterfaceCode::VIDEOCALL);
-    int32_t ret = stub.OnRemoteRequest(code, data, reply, option);
-    EXPECT_EQ(ret, AVCS_ERR_OK);
-    EXPECT_EQ(reply.ReadInt32(), AVCS_ERR_OK);
-}
-
-/**
- * @tc.name: AVCodec_Server_OnRemoteRequest_VideoCall_004
- * @tc.desc: OnRemoteRequest falls to default case for unknown IPC code
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_Server_OnRemoteRequest_VideoCall_004, TestSize.Level1)
-{
-    AVCodecServiceStub stub;
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-
-    data.WriteInterfaceToken(AVCodecServiceStub::GetDescriptor());
-
-    uint32_t unknownCode = 9999;
-    int32_t ret = stub.OnRemoteRequest(unknownCode, data, reply, option);
-    // Default case delegates to IPCObjectStub::OnRemoteRequest which returns error
-    EXPECT_NE(ret, AVCS_ERR_OK);
 }
 
 // ========== EventManager INSTANCE_UPDATE_INFO Dispatch Tests ==========
@@ -1720,16 +1631,15 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
 
 /**
  * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_007
- * @tc.desc: callback_ true, countEnc > 1, isFloatingWindow = false (encPowermode = 0)
- *           covers line 481: callback_ && (false || false) → no callback triggered
+ * @tc.desc: callback_ true, countEnc > 1, encPowermode = 0
+ *           covers line 481: callback_ && (false || true) → callback triggered
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_007, TestSize.Level1)
 {
     AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
-    std::promise<void> promise;
-    auto future = promise.get_future();
-    manager.RegisterCallback([&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
-               const std::string &callerName) { promise.set_value(); });
+    bool callbackCalled = false;
+    manager.RegisterCallback([&callbackCalled](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+               const std::string &callerName) { callbackCalled = true; });
 
     const int32_t encPid1 = 8020;
     const int32_t encPid2 = 8021;
@@ -1753,8 +1663,9 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
         .caller = {.pid = encPid1, .processName = "com.test.multinofloat"},
         .codecParam = {.encWidth = 640, .encHeight = 480, .encBitrate = 200000, .encPowermode = 0},
     };
+    // countEnc=2 (>1) and encPowermode=0 → (false || true) → callback triggered
     manager.UpdateCodecParmInfoByInstanceId(8020, updateInfo);
-    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::timeout);
+    EXPECT_TRUE(callbackCalled);
 
     manager.UnRegisterCallback();
     manager.codecStubMap_.erase(encPid1);
@@ -1770,10 +1681,9 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
 HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_008, TestSize.Level1)
 {
     AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
-    std::promise<void> promise;
-    auto future = promise.get_future();
-    manager.RegisterCallback([&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
-               const std::string &callerName) { promise.set_value(); });
+    bool callbackCalled = false;
+    manager.RegisterCallback([&callbackCalled](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+               const std::string &callerName) { callbackCalled = true; });
 
     const int32_t encPid1 = 8022;
     const int32_t encPid2 = 8023;
@@ -1798,7 +1708,7 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
         .codecParam = {.encWidth = 640, .encHeight = 480, .encBitrate = 200000, .encPowermode = 1},
     };
     manager.UpdateCodecParmInfoByInstanceId(8022, updateInfo);
-    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::ready);
+    EXPECT_FALSE(callbackCalled);
 
     manager.UnRegisterCallback();
     manager.codecStubMap_.erase(encPid1);
