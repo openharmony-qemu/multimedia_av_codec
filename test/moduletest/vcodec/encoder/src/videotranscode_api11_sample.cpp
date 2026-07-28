@@ -36,8 +36,6 @@ constexpr uint8_t H264_NALU_TYPE = 0x1f;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 constexpr uint8_t SPS = 7;
 constexpr uint8_t PPS = 8;
-FILE *g_outFile = nullptr;
-FILE *g_outFileSec = nullptr;
 }
 
 int64_t GetSystemTimeUs()
@@ -112,18 +110,12 @@ static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *b
 static void OnEncOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     VideoTransCodeApi11Sample *sample = static_cast<VideoTransCodeApi11Sample*>(userData);
-    if (g_outFile == nullptr) {
-        g_outFile = fopen(sample->OUT_DIR, "wb");
-    }
-    if (g_outFileSec == nullptr) {
-        g_outFileSec = fopen(sample->OUT_DIR_SEC, "wb");
-    }
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
-        if (!sample->dualEos) {
+        bool expected = false;
+        if (sample->dualEos.compare_exchange_strong(expected, true)) {
             cout << "CheckAttrFlag GET EOS 1" << endl;
-            sample->dualEos = true;
         } else {
             cout << "CheckAttrFlag GET EOS 2" << endl;
             g_isRunning.store(false);
@@ -136,19 +128,19 @@ static void OnEncOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer 
             sample->frameCountEncSecondary++;
         }
     }
-    int size = attr.size;
+    int32_t size = attr.size;
     if (codec == sample->venc_) {
-        if (g_outFile == nullptr) {
-            cout << "dump g_outFile data fail" << endl;
+        if (sample->outFile_ == nullptr) {
+            cout << "dump outFile_ data fail" << endl;
         } else {
-            fwrite(OH_AVBuffer_GetAddr(buffer), size, 1, g_outFile);
+            fwrite(OH_AVBuffer_GetAddr(buffer), size, 1, sample->outFile_);
         }
         OH_VideoEncoder_FreeOutputBuffer(sample->venc_, index);
     } else if (codec == sample->vencSecondary) {
-        if (g_outFileSec == nullptr) {
-            cout << "dump g_outFileSec data fail" << endl;
+        if (sample->outFileSec_ == nullptr) {
+            cout << "dump outFileSec_ data fail" << endl;
         } else {
-            fwrite(OH_AVBuffer_GetAddr(buffer), size, 1, g_outFileSec);
+            fwrite(OH_AVBuffer_GetAddr(buffer), size, 1, sample->outFileSec_);
         }
         OH_VideoEncoder_FreeOutputBuffer(sample->vencSecondary, index);
     }
@@ -225,12 +217,23 @@ int32_t VideoTransCodeApi11Sample::SendData(OH_AVCodec *codec, uint32_t index, O
 VideoTransCodeApi11Sample::~VideoTransCodeApi11Sample()
 {
     inputNum = 0;
-    Release();
-    if (g_outFile) {
-        (void)fclose(g_outFile);
+    g_isRunning.store(false);
+    if (decSignal != nullptr) {
+        unique_lock<mutex> lock(decSignal->inMutex_);
+        decSignal->inCond_.notify_all();
     }
-    if (g_outFileSec) {
-        (void)fclose(g_outFileSec);
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        inputLoop_->join();
+        inputLoop_ = nullptr;
+    }
+    Release();
+    if (outFile_) {
+        (void)fclose(outFile_);
+        outFile_ = nullptr;
+    }
+    if (outFileSec_) {
+        (void)fclose(outFileSec_);
+        outFileSec_ = nullptr;
     }
 }
 
@@ -363,6 +366,20 @@ int32_t VideoTransCodeApi11Sample::Start()
         return AV_ERR_UNKNOWN;
     }
     g_isRunning.store(true);
+    if (outFile_ == nullptr) {
+        outFile_ = fopen(OUT_DIR, "wb");
+        if (outFile_ == nullptr) {
+            cout << "Fatal: open outFile fail" << endl;
+            errorCount++;
+        }
+    }
+    if (outFileSec_ == nullptr) {
+        outFileSec_ = fopen(OUT_DIR_SEC, "wb");
+        if (outFileSec_ == nullptr) {
+            cout << "Fatal: open outFileSec fail" << endl;
+            errorCount++;
+        }
+    }
     ret = OH_VideoEncoder_Start(venc_);
     if (ret != AV_ERR_OK) {
         return ret;

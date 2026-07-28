@@ -114,10 +114,10 @@ public:
     void StopOutloop();
 
     VEncSignal *signal_;
-    uint32_t errCount = 0;
+    std::atomic<uint32_t> errCount {0};
     bool enableForceIDR = false;
-    uint32_t outCount = 0;
-    uint32_t frameCount = 0;
+    std::atomic<uint32_t> outCount {0};
+    std::atomic<uint32_t> frameCount {0};
     uint32_t switchParamsTimeSec = 3;
     bool sleepOnFPS = false;
     bool SURF_INPUT = false;
@@ -147,6 +147,7 @@ public:
     std::atomic<bool> isRunning_ { false };
     std::atomic<bool> isFlushing_ { false };
 private:
+    void JoinLoops();
     std::unique_ptr<std::ifstream> inFile_;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
