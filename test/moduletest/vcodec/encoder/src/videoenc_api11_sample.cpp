@@ -204,7 +204,6 @@ static void onEncInputParamRoi(OH_AVCodec *codec, uint32_t index, OH_AVFormat *p
 
 static void onEncInputParam(OH_AVCodec *codec, uint32_t index, OH_AVFormat *parameter, void *userData)
 {
-    static bool useLtrOnce = false;
     if (enc_sample->frameCount % enc_sample->ltrParam.ltrInterval == 0) {
         OH_AVFormat_SetIntValue(parameter, OH_MD_KEY_VIDEO_ENCODER_PER_FRAME_MARK_LTR, 1);
     }
@@ -1613,7 +1612,7 @@ void VEncAPI11Sample::FreeOutputBuffer(FILE *outFile, FILE *outFileSec, OH_AVBuf
     }
 }
 
-void VEncAPI11Sample::OutputFunc()
+bool VEncAPI11Sample::OpenOutputFile()
 {
     outFile_ = fopen(OUT_DIR, "wb");
     if (outFile_ == nullptr) {
@@ -1627,7 +1626,12 @@ void VEncAPI11Sample::OutputFunc()
             errCount += 1;
         }
     }
-    bool isPrimary = true;
+    return true;
+}
+
+void VEncAPI11Sample::OutputFunc()
+{
+    bool isPrimary = OpenOutputFile();
     while (true) {
         if (!isRunning_.load()) {
             break;
