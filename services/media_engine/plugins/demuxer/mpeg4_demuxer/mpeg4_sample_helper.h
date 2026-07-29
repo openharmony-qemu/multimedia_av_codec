@@ -167,6 +167,7 @@ public:
     size_t GetSampleCount() const;
     bool IsSampleIndexEmpty() const;
     Status GetSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const;
+    Status GetSampleSize(uint32_t sampleIndex, int32_t& size) const;
     Status GetSampleRange(uint32_t sampleIndex, int64_t& pos, int32_t& size) const;
     Status GetSamplePts(uint32_t sampleIndex, int64_t& pts) const;
     Status GetSampleDts(uint32_t sampleIndex, int64_t& dts) const;

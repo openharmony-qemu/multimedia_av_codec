@@ -178,6 +178,13 @@ Status MPEG4SampleHelper::GetSampleDts(uint32_t sampleIndex, int64_t& dts) const
     return Status::OK;
 }
 
+Status MPEG4SampleHelper::GetSampleSize(uint32_t sampleIndex, int32_t& size) const
+{
+    FALSE_RETURN_V_NOLOG(sampleIndex < sampleIndexEntry_.size(), Status::ERROR_INVALID_PARAMETER);
+    size = sampleIndexEntry_[sampleIndex].GetSize();
+    return Status::OK;
+}
+
 Status MPEG4SampleHelper::GetSampleRange(uint32_t sampleIndex, int64_t& pos, int32_t& size) const
 {
     FALSE_RETURN_V_NOLOG(sampleIndex < sampleIndexEntry_.size(), Status::ERROR_INVALID_PARAMETER);

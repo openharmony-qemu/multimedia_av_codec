@@ -227,8 +227,12 @@ int64_t GetMaxSamplePtsEnd(const std::shared_ptr<MPEG4SampleHelper>& sampleHelpe
     int64_t maxPtsEnd = 0;
     for (uint32_t i = 0; sampleHelper != nullptr && i < sampleHelper->GetSampleCount(); ++i) {
         MPEG4SampleHelper::SampleIndexView sample;
-        if (sampleHelper->GetSampleIndexView(i, sample) != Status::OK) {
-            continue;
+        Status ret = sampleHelper->GetSampleIndexView(i, sample);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Get sample index view failed when calculating max pts end, index=" PUBLIC_LOG_U32
+                ", count=" PUBLIC_LOG_ZU ", ret=" PUBLIC_LOG_D32,
+                i, sampleHelper->GetSampleCount(), static_cast<int32_t>(ret));
+            return 0;
         }
         if (sample.duration <= 0 || sample.pts < 0) {
             continue;
@@ -247,8 +251,12 @@ int64_t GetMaxSampleDtsEnd(const std::shared_ptr<MPEG4SampleHelper>& sampleHelpe
     int64_t maxDtsEnd = 0;
     for (uint32_t i = 0; sampleHelper != nullptr && i < sampleHelper->GetSampleCount(); ++i) {
         MPEG4SampleHelper::SampleIndexView sample;
-        if (sampleHelper->GetSampleIndexView(i, sample) != Status::OK) {
-            continue;
+        Status ret = sampleHelper->GetSampleIndexView(i, sample);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Get sample index view failed when calculating max dts end, index=" PUBLIC_LOG_U32
+                ", count=" PUBLIC_LOG_ZU ", ret=" PUBLIC_LOG_D32,
+                i, sampleHelper->GetSampleCount(), static_cast<int32_t>(ret));
+            return 0;
         }
         if (sample.duration <= 0 || sample.dts < 0) {
             continue;
@@ -1116,16 +1124,20 @@ int64_t MPEG4AtomParser::GetBitrateTotalSize(const std::shared_ptr<Track>& track
         return totalSize;
     }
     for (uint32_t i = 0; i < track->sampleHelper->GetSampleCount(); ++i) {
-        int64_t pos = 0;
         int32_t size = 0;
-        if (track->sampleHelper->GetSampleRange(i, pos, size) == Status::OK) {
-            int64_t newTotalSize = 0;
-            if (__builtin_add_overflow(totalSize, static_cast<int64_t>(size), &newTotalSize)) {
-                MEDIA_LOG_E("GetBitrateTotalSize overflow");
-                return 0;
-            }
-            totalSize = newTotalSize;
+        Status ret = track->sampleHelper->GetSampleSize(i, size);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Get sample size failed when calculating bitrate total size, index=" PUBLIC_LOG_U32
+                ", count=" PUBLIC_LOG_ZU ", ret=" PUBLIC_LOG_D32,
+                i, track->sampleHelper->GetSampleCount(), static_cast<int32_t>(ret));
+            return 0;
         }
+        int64_t newTotalSize = 0;
+        if (__builtin_add_overflow(totalSize, static_cast<int64_t>(size), &newTotalSize)) {
+            MEDIA_LOG_E("GetBitrateTotalSize overflow");
+            return 0;
+        }
+        totalSize = newTotalSize;
     }
     return totalSize;
 }
