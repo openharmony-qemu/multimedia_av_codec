@@ -34,6 +34,7 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AudioCodecServer"};
+constexpr uint8_t LOGD_FREQUENCY = 5;
 
 const std::map<OHOS::MediaAVCodec::AudioCodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
     {OHOS::MediaAVCodec::AudioCodecServer::UNINITIALIZED, "uninitialized"},
@@ -469,7 +470,7 @@ void AudioCodecServer::OnError(int32_t errorType, int32_t errorCode)
 {
     std::lock_guard<std::shared_mutex> lock(cbMutex_);
     lastErrMsg_ = AVCSErrorToString(static_cast<AVCodecServiceErrCode>(errorCode));
-    AVCODEC_LOGW("%{public}s", lastErrMsg_.c_str());
+    AVCODEC_LOGW_LIMIT(LOGD_FREQUENCY, "%{public}s", lastErrMsg_.c_str());
     if (codecCb_ != nullptr) {
         codecCb_->OnError(static_cast<AVCodecErrorType>(errorType), errorCode);
     }

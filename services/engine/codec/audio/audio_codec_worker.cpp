@@ -321,7 +321,7 @@ void AudioCodecWorker::ConsumerOutputBuffer()
             continue;
         }
         if (ret != AVCodecServiceErrCode::AVCS_ERR_OK && ret != AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM) {
-            AVCODEC_LOGE("input error!");
+            AVCODEC_LOGE_LIMIT(LOGD_FREQUENCY, "input error!");
             return;
         }
         uint32_t index;
