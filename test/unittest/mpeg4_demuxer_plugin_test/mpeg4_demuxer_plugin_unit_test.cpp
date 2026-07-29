@@ -74,7 +74,98 @@ constexpr size_t WEAK_NETWORK_THREAD_RETRY_FAIL_COUNT = 20;
 constexpr size_t MAX_WEBVTT_SAMPLE_READ_COUNT = 100000;
 constexpr int64_t TEST_MS_TO_US = 1000;
 constexpr int64_t TEST_US_TO_NS = 1000;
+constexpr uint32_t SAMPLE_INDEX_TEST_COUNT = 3;
+constexpr uint32_t SAMPLE_INDEX_TEST_SECOND = 1;
+constexpr uint32_t SAMPLE_INDEX_TEST_THIRD = 2;
+constexpr uint32_t SAMPLE_INDEX_TEST_INVALID = SAMPLE_INDEX_TEST_COUNT;
+constexpr int64_t SAMPLE_INDEX_TEST_FIRST_POS = 100;
+constexpr int64_t SAMPLE_INDEX_TEST_SECOND_POS = 200;
+constexpr int64_t SAMPLE_INDEX_TEST_THIRD_POS = 400;
+constexpr int64_t SAMPLE_INDEX_TEST_BEFORE_FIRST_POS = 99;
+constexpr int64_t SAMPLE_INDEX_TEST_AFTER_LAST_POS = 999;
+constexpr int64_t SAMPLE_INDEX_TEST_FIRST_DTS = 10;
+constexpr int64_t SAMPLE_INDEX_TEST_FIRST_PTS = 12;
+constexpr int64_t SAMPLE_INDEX_TEST_SECOND_DTS = 20;
+constexpr int64_t SAMPLE_INDEX_TEST_THIRD_DTS = 30;
+constexpr int64_t SAMPLE_INDEX_TEST_THIRD_PTS = 35;
+constexpr int64_t SAMPLE_INDEX_TEST_MIDDLE_DTS = 25;
+constexpr int64_t SAMPLE_INDEX_TEST_AFTER_LAST_DTS = 31;
+constexpr int64_t SAMPLE_INDEX_TEST_DURATION = 10;
+constexpr uint32_t SAMPLE_INDEX_TEST_FIRST_SIZE = 5;
+constexpr uint32_t SAMPLE_INDEX_TEST_SECOND_SIZE = 6;
+constexpr uint32_t SAMPLE_INDEX_TEST_THIRD_SIZE = 7;
+constexpr int64_t SAMPLE_INDEX_TEST_DURATION_OVERRIDE = 8;
 std::unique_ptr<FileServerDemo> g_server = nullptr;
+
+Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry MakeSampleIndexEntry(
+    int64_t pos, int64_t dts, int64_t pts, uint32_t size, bool discard = false)
+{
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry entry;
+    entry.pos = pos;
+    entry.dts = dts;
+    EXPECT_TRUE(entry.SetPts(pts));
+    EXPECT_TRUE(entry.SetSize(size));
+    entry.SetDiscard(discard);
+    return entry;
+}
+
+void VerifySampleIndexProperties(Plugins::MPEG4::MPEG4SampleHelper& helper)
+{
+    EXPECT_EQ(helper.GetSampleCount(), SAMPLE_INDEX_TEST_COUNT);
+    EXPECT_FALSE(helper.IsSampleIndexEmpty());
+    EXPECT_TRUE(helper.IsSyncSample(0));
+    EXPECT_FALSE(helper.IsSyncSample(SAMPLE_INDEX_TEST_SECOND));
+    EXPECT_TRUE(helper.IsSyncSample(SAMPLE_INDEX_TEST_THIRD));
+    EXPECT_TRUE(helper.IsDiscardSample(SAMPLE_INDEX_TEST_SECOND));
+    EXPECT_FALSE(helper.IsDiscardSample(SAMPLE_INDEX_TEST_INVALID));
+
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    ASSERT_EQ(helper.GetSampleIndexView(SAMPLE_INDEX_TEST_SECOND, view), Status::OK);
+    EXPECT_EQ(view.pos, SAMPLE_INDEX_TEST_SECOND_POS);
+    EXPECT_EQ(view.dts, SAMPLE_INDEX_TEST_SECOND_DTS);
+    EXPECT_EQ(view.pts, SAMPLE_INDEX_TEST_SECOND_DTS);
+    EXPECT_EQ(view.size, SAMPLE_INDEX_TEST_SECOND_SIZE);
+    EXPECT_EQ(view.duration, SAMPLE_INDEX_TEST_DURATION);
+    EXPECT_EQ(view.flag, Plugins::MPEG4::Sample::SampleFlag::DISCARD);
+}
+
+void VerifySampleIndexAccessors(Plugins::MPEG4::MPEG4SampleHelper& helper)
+{
+    int64_t pts = 0;
+    int64_t dts = 0;
+    int64_t pos = 0;
+    int32_t size = 0;
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    EXPECT_EQ(helper.GetSamplePts(SAMPLE_INDEX_TEST_THIRD, pts), Status::OK);
+    EXPECT_EQ(pts, SAMPLE_INDEX_TEST_THIRD_PTS);
+    EXPECT_EQ(helper.GetSampleDts(SAMPLE_INDEX_TEST_THIRD, dts), Status::OK);
+    EXPECT_EQ(dts, SAMPLE_INDEX_TEST_THIRD_DTS);
+    EXPECT_EQ(helper.GetSampleRange(SAMPLE_INDEX_TEST_THIRD, pos, size), Status::OK);
+    EXPECT_EQ(pos, SAMPLE_INDEX_TEST_THIRD_POS);
+    EXPECT_EQ(size, SAMPLE_INDEX_TEST_THIRD_SIZE);
+    EXPECT_EQ(helper.GetSampleIndexView(SAMPLE_INDEX_TEST_INVALID, view), Status::ERROR_INVALID_PARAMETER);
+    EXPECT_EQ(helper.GetSampleRange(SAMPLE_INDEX_TEST_INVALID, pos, size), Status::ERROR_INVALID_PARAMETER);
+}
+
+void VerifySampleIndexLookup(Plugins::MPEG4::MPEG4SampleHelper& helper)
+{
+    uint32_t index = 0;
+    EXPECT_EQ(helper.FindSampleIndexByPosition(SAMPLE_INDEX_TEST_BEFORE_FIRST_POS, index), Status::OK);
+    EXPECT_EQ(index, 0U);
+    EXPECT_EQ(helper.FindSampleIndexByPosition(SAMPLE_INDEX_TEST_SECOND_POS, index), Status::OK);
+    EXPECT_EQ(index, SAMPLE_INDEX_TEST_SECOND);
+    EXPECT_EQ(helper.FindSampleIndexByPosition(SAMPLE_INDEX_TEST_AFTER_LAST_POS, index), Status::OK);
+    EXPECT_EQ(index, SAMPLE_INDEX_TEST_THIRD);
+    EXPECT_EQ(helper.FindFirstSampleAfterPosition(SAMPLE_INDEX_TEST_SECOND_POS, index), Status::OK);
+    EXPECT_EQ(index, SAMPLE_INDEX_TEST_THIRD);
+    EXPECT_EQ(helper.FindFirstSampleAfterPosition(SAMPLE_INDEX_TEST_THIRD_POS, index), Status::OK);
+    EXPECT_EQ(index, SAMPLE_INDEX_TEST_INVALID);
+    EXPECT_EQ(helper.FindFirstSampleByDts(SAMPLE_INDEX_TEST_SECOND_DTS, index), Status::OK);
+    EXPECT_EQ(index, SAMPLE_INDEX_TEST_SECOND);
+    EXPECT_EQ(helper.FindFirstSampleByDts(SAMPLE_INDEX_TEST_MIDDLE_DTS, index), Status::OK);
+    EXPECT_EQ(index, SAMPLE_INDEX_TEST_THIRD);
+    EXPECT_EQ(helper.FindFirstSampleByDts(SAMPLE_INDEX_TEST_AFTER_LAST_DTS, index), Status::END_OF_STREAM);
+}
 
 static const std::vector<std::string> g_supportFiles = {
     "2obj_16bit_44100Hz_64kbps.mp4",
@@ -2951,9 +3042,10 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_WebVttSeekAndTimeScaleBo
     helper.mimeType_ = MimeType::TEXT_WEBVTT;
     helper.totalDuration_ = 5000;
     helper.sampleIndexEntry_ = {
-        {.dts = 0, .pts = 0, .flag = Plugins::MPEG4::Sample::SYNC_FRAME},
-        {.dts = 1000, .pts = 1000, .flag = Plugins::MPEG4::Sample::SYNC_FRAME},
+        MakeSampleIndexEntry(0, 0, 0, 1),
+        MakeSampleIndexEntry(1, 1000, 1000, 1),
     };
+    helper.allSamplesSync_ = true;
     int64_t currentIndex = 1;
     uint32_t sampleIndex = 99;
     EXPECT_TRUE(helper.ResolveTextWebVttSample(1000, currentIndex, sampleIndex));
@@ -3855,6 +3947,209 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     ctx.dataOffset = 0;
 
     EXPECT_EQ(parser.ParseContainerAtom(containerAtom, 0, &ctx), Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleIndexCompactLayout_001
+ * @tc.desc: Verify compact sample index layout and packed size/discard boundaries
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexCompactLayout_001, TestSize.Level1)
+{
+    using SampleIndexEntry = Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry;
+    static_assert(sizeof(SampleIndexEntry) == 24, "SampleIndexEntry layout changed");
+    SampleIndexEntry entry;
+    EXPECT_TRUE(entry.SetSize(SampleIndexEntry::sizeMask));
+    EXPECT_EQ(entry.GetSize(), std::numeric_limits<int32_t>::max());
+    entry.SetDiscard(true);
+    EXPECT_TRUE(entry.IsDiscard());
+    EXPECT_EQ(entry.GetSize(), std::numeric_limits<int32_t>::max());
+    entry.SetDiscard(false);
+    EXPECT_FALSE(entry.IsDiscard());
+    EXPECT_FALSE(entry.SetSize(static_cast<uint32_t>(std::numeric_limits<int32_t>::max()) + 1U));
+    EXPECT_EQ(entry.GetSize(), std::numeric_limits<int32_t>::max());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleIndexPtsOffset_001
+ * @tc.desc: Verify PTS offset encoding boundaries and overflow detection
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexPtsOffset_001, TestSize.Level1)
+{
+    using SampleIndexEntry = Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry;
+    SampleIndexEntry entry;
+    entry.dts = 0;
+    EXPECT_TRUE(entry.SetPts(static_cast<int64_t>(std::numeric_limits<uint32_t>::max())));
+    int64_t pts = 0;
+    EXPECT_TRUE(entry.GetPts(pts));
+    EXPECT_EQ(pts, static_cast<int64_t>(std::numeric_limits<uint32_t>::max()));
+    EXPECT_FALSE(entry.SetPts(-1));
+    EXPECT_FALSE(entry.SetPts(static_cast<int64_t>(std::numeric_limits<uint32_t>::max()) + 1));
+    entry.dts = std::numeric_limits<int64_t>::max();
+    entry.ptsOffset = 1;
+    EXPECT_FALSE(entry.GetPts(pts));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleIndexDurationOverride_001
+ * @tc.desc: Verify derived and overridden sample durations
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexDurationOverride_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.sampleIndexEntry_ = {
+        MakeSampleIndexEntry(0, 0, 0, 10),
+        MakeSampleIndexEntry(10, 100, 100, 10),
+    };
+    ASSERT_EQ(helper.AddDurationOverride(1, 40), Status::OK);
+    int64_t duration = 0;
+    EXPECT_EQ(helper.GetSampleDurationTicks(0, duration), Status::OK);
+    EXPECT_EQ(duration, 100);
+    EXPECT_EQ(helper.GetSampleDurationTicks(1, duration), Status::OK);
+    EXPECT_EQ(duration, 40);
+    EXPECT_EQ(helper.GetSampleDurationTicks(2, duration), Status::ERROR_INVALID_PARAMETER);
+    helper.lastPTS_ = 100;
+    EXPECT_FALSE(helper.IsAtOrBeyondLastSampleEnd(139));
+    EXPECT_TRUE(helper.IsAtOrBeyondLastSampleEnd(140));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_CttsRleValidation_001
+ * @tc.desc: Verify CTTS runs remain compressed while sample counts are validated
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CttsRleValidation_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.cttsEntry_ = {{3, 0}, {2, -1}};
+    EXPECT_EQ(helper.ValidateCttsEntries(5), Status::OK);
+    EXPECT_EQ(helper.cttsEntry_.size(), 2U);
+    EXPECT_EQ(helper.ValidateCttsEntries(4), Status::ERROR_INVALID_DATA);
+    helper.cttsEntry_ = {{0, 0}};
+    EXPECT_EQ(helper.ValidateCttsEntries(0), Status::ERROR_INVALID_DATA);
+    helper.cttsEntry_ = {{std::numeric_limits<uint32_t>::max(), 0}};
+    EXPECT_EQ(helper.ValidateCttsEntries(1), Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleIndexAccessAndLookup_001
+ * @tc.desc: Verify compact index accessors, sparse sync flags, and lookup boundaries
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexAccessAndLookup_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.sampleIndexEntry_ = {
+        MakeSampleIndexEntry(SAMPLE_INDEX_TEST_FIRST_POS, SAMPLE_INDEX_TEST_FIRST_DTS,
+            SAMPLE_INDEX_TEST_FIRST_PTS, SAMPLE_INDEX_TEST_FIRST_SIZE),
+        MakeSampleIndexEntry(SAMPLE_INDEX_TEST_SECOND_POS, SAMPLE_INDEX_TEST_SECOND_DTS,
+            SAMPLE_INDEX_TEST_SECOND_DTS, SAMPLE_INDEX_TEST_SECOND_SIZE, true),
+        MakeSampleIndexEntry(SAMPLE_INDEX_TEST_THIRD_POS, SAMPLE_INDEX_TEST_THIRD_DTS,
+            SAMPLE_INDEX_TEST_THIRD_PTS, SAMPLE_INDEX_TEST_THIRD_SIZE),
+    };
+    helper.allSamplesSync_ = false;
+    helper.stssEntry_ = {{0}, {SAMPLE_INDEX_TEST_THIRD}};
+    ASSERT_EQ(helper.AddDurationOverride(SAMPLE_INDEX_TEST_THIRD, SAMPLE_INDEX_TEST_DURATION_OVERRIDE), Status::OK);
+    VerifySampleIndexProperties(helper);
+    VerifySampleIndexAccessors(helper);
+    VerifySampleIndexLookup(helper);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleIndexSparseSyncAndOverride_001
+ * @tc.desc: Verify sparse sync conversion and duration override index maintenance after insertion
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexSparseSyncAndOverride_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.sampleIndexEntry_ = {
+        MakeSampleIndexEntry(0, 0, 0, 1),
+        MakeSampleIndexEntry(1, 10, 10, 1),
+        MakeSampleIndexEntry(2, 20, 20, 1),
+        MakeSampleIndexEntry(3, 30, 30, 1),
+    };
+    helper.allSamplesSync_ = true;
+    helper.UpdateSyncSamplesForInsert(0, true);
+    EXPECT_TRUE(helper.allSamplesSync_);
+    EXPECT_TRUE(helper.stssEntry_.empty());
+    ASSERT_EQ(helper.AddDurationOverride(1, 7), Status::OK);
+    ASSERT_EQ(helper.AddDurationOverride(3, 9), Status::OK);
+    EXPECT_EQ(helper.AddDurationOverride(0, -1), Status::ERROR_INVALID_DATA);
+
+    helper.ShiftDurationOverridesForInsert(2);
+    ASSERT_EQ(helper.durationOverrides_.size(), 2U);
+    EXPECT_EQ(helper.durationOverrides_[0].sampleIndex, 1U);
+    EXPECT_EQ(helper.durationOverrides_[1].sampleIndex, 4U);
+
+    helper.UpdateSyncSamplesForInsert(1, false);
+    EXPECT_FALSE(helper.allSamplesSync_);
+    ASSERT_EQ(helper.stssEntry_.size(), 3U);
+    EXPECT_EQ(helper.stssEntry_[0].index, 0U);
+    EXPECT_EQ(helper.stssEntry_[1].index, 2U);
+    EXPECT_EQ(helper.stssEntry_[2].index, 3U);
+    EXPECT_FALSE(helper.IsSyncSample(1));
+
+    helper.sampleIndexEntry_.insert(helper.sampleIndexEntry_.begin() + 2, MakeSampleIndexEntry(2, 15, 15, 1));
+    helper.UpdateSyncSamplesForInsert(2, true);
+    ASSERT_EQ(helper.stssEntry_.size(), 4U);
+    EXPECT_EQ(helper.stssEntry_[0].index, 0U);
+    EXPECT_EQ(helper.stssEntry_[1].index, 2U);
+    EXPECT_EQ(helper.stssEntry_[2].index, 3U);
+    EXPECT_EQ(helper.stssEntry_[3].index, 4U);
+    EXPECT_TRUE(helper.IsSyncSample(2));
+    EXPECT_FALSE(helper.IsSyncSample(1));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleIndexCttsRleConsume_001
+ * @tc.desc: Verify CTTS RLE consumption transitions and compact index duration overflow checks
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexCttsRleConsume_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.cttsEntry_ = {{2, 10}, {1, 20}};
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexBuildContext context;
+    context.cttsIndex = 0;
+    context.cttsSamplesRemaining = 2;
+    context.cttsDelta = 10;
+    int64_t ptsOffset = -1;
+    EXPECT_EQ(helper.ConsumeCttsSamples(context, 2, ptsOffset), Status::OK);
+    EXPECT_EQ(ptsOffset, 10);
+    EXPECT_EQ(context.cttsSamplesRemaining, 0U);
+    EXPECT_EQ(helper.ConsumeCttsSamples(context, 1, ptsOffset), Status::OK);
+    EXPECT_EQ(ptsOffset, 20);
+    EXPECT_EQ(context.cttsIndex, 1U);
+    EXPECT_EQ(context.cttsSamplesRemaining, 0U);
+    EXPECT_EQ(helper.ConsumeCttsSamples(context, 1, ptsOffset), Status::ERROR_INVALID_DATA);
+
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexBuildContext crossingContext;
+    crossingContext.cttsIndex = 0;
+    crossingContext.cttsSamplesRemaining = 1;
+    crossingContext.cttsDelta = 10;
+    EXPECT_EQ(helper.ConsumeCttsSamples(crossingContext, 2, ptsOffset), Status::OK);
+    EXPECT_EQ(ptsOffset, 10);
+    EXPECT_EQ(crossingContext.cttsIndex, 1U);
+    EXPECT_EQ(crossingContext.cttsSamplesRemaining, 0U);
+
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexBuildContext emptyContext;
+    emptyContext.cttsIndex = 1;
+    EXPECT_EQ(helper.ConsumeCttsSamples(emptyContext, 1, ptsOffset), Status::ERROR_INVALID_DATA);
+
+    int64_t duration = 0;
+    int64_t currentDts = 100;
+    EXPECT_EQ(helper.UpdateSampleDurationAndDts(10, 0, duration, currentDts), Status::ERROR_INVALID_DATA);
+    EXPECT_EQ(helper.UpdateSampleDurationAndDts(std::numeric_limits<uint32_t>::max(),
+        std::numeric_limits<uint32_t>::max(), duration, currentDts), Status::ERROR_INVALID_DATA);
+    currentDts = std::numeric_limits<int64_t>::max();
+    EXPECT_EQ(helper.UpdateSampleDurationAndDts(1, 1, duration, currentDts), Status::ERROR_INVALID_DATA);
+    currentDts = 100;
+    EXPECT_EQ(helper.UpdateSampleDurationAndDts(20, 2, duration, currentDts), Status::OK);
+    EXPECT_EQ(duration, 40);
+    EXPECT_EQ(currentDts, 140);
 }
 } // namespace Media
 } // namespace OHOS

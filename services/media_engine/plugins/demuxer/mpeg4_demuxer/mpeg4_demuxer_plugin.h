@@ -90,8 +90,8 @@ public:
     Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
     Status GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &frameId);
     Status RefParserInit();
-    Status ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex,
-        const std::vector<MPEG4SampleHelper::SampleIndexEntry>& sampleIndexEntries);
+    Status ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex);
+    Status PrepareRefParserSample(std::shared_ptr<Sample>& sample, uint32_t sampleIndex);
     Status UpdateParserGopId(int32_t syncSamplesPtsSize);
     Status SelectProGopId();
 
@@ -303,7 +303,7 @@ private:
     };
     Status PrepareSeekToFrameByDts(int32_t trackId, int64_t seekTime, SeekToFrameByDtsContext& context);
     Status FindValidSample(std::shared_ptr<MPEG4AtomParser::Track> &track,
-        std::shared_ptr<MPEG4SampleHelper::SampleIndexEntry> &sample);
+        std::shared_ptr<MPEG4SampleHelper::SampleIndexView> &sample);
     Status GetUnseekableSampleInfo(uint32_t &trackId, int64_t &pos, int32_t &size);
     Status GetSeekableSampleInfo(uint32_t trackId, int64_t &pos, int32_t &size);
     Status CheckReadSampleDataStopState(const std::shared_ptr<Sample>& sample);

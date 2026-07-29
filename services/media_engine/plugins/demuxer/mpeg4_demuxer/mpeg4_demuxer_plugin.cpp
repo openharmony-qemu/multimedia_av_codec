@@ -121,8 +121,7 @@ struct ReadSamplePacketContext {
 
 struct ReadSampleEntryContext {
     const ReadSamplePacketContext& packet;
-    const std::vector<MPEG4SampleHelper::SampleIndexEntry>& entries;
-    const MPEG4SampleHelper::SampleIndexEntry& currentSample;
+    const MPEG4SampleHelper::SampleIndexView& currentSample;
 };
 
 struct WebVttTailDurationContext {
@@ -141,6 +140,13 @@ bool SafeAddInt64(int64_t left, int64_t right, int64_t& result)
 bool SafeSubInt64(int64_t left, int64_t right, int64_t& result)
 {
     return !__builtin_sub_overflow(left, right, &result);
+}
+
+bool GetSampleView(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
+    MPEG4SampleHelper::SampleIndexView& view)
+{
+    return track != nullptr && track->sampleHelper != nullptr &&
+        track->sampleHelper->GetSampleIndexView(sampleIndex, view) == Status::OK;
 }
 
 Status RescaleRoundNearest(int64_t value, int64_t multiplier, int64_t divisor, int64_t& result)
@@ -268,30 +274,35 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
     uint32_t sampleIndex = context.sampleIndex;
     int32_t trackTimeScale = context.trackTimeScale;
     FALSE_RETURN_V_NOLOG(track != nullptr && track->sampleHelper != nullptr, false);
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    FALSE_RETURN_V_NOLOG(!entries.empty() && sampleIndex < entries.size(), false);
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
+    MPEG4SampleHelper::SampleIndexView currentSample;
+    FALSE_RETURN_V_NOLOG(sampleCount > 0 && GetSampleView(track, sampleIndex, currentSample), false);
     if (NeedsCttsFrameRateDuration(track)) {
         return GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale, durationUs);
     }
 
     int64_t duration = 0;
-    if (sampleIndex + 1 < entries.size()) {
+    if (sampleIndex + 1 < sampleCount) {
         // For normal packets, duration follows the distance to the next decode timestamp.
-        duration = entries[sampleIndex + 1].dts - entries[sampleIndex].dts;
+        MPEG4SampleHelper::SampleIndexView nextSample;
+        FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex + 1, nextSample), false);
+        duration = nextSample.dts - currentSample.dts;
         FALSE_RETURN_V_NOLOG(duration > 0, false);
     } else {
         // The final packet has no next DTS, so close it against the effective stream duration.
         int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
-        if (streamDuration < entries[sampleIndex].dts && entries[sampleIndex].duration != 0) {
+        if (streamDuration < currentSample.dts && currentSample.duration != 0) {
             durationUs = 0;
             return true;
         }
-        if (streamDuration <= entries[sampleIndex].dts) {
+        if (streamDuration <= currentSample.dts) {
             FALSE_RETURN_V_NOLOG(sampleIndex != 0, false);
-            duration = entries[sampleIndex].dts - entries[sampleIndex - 1].dts;
+            MPEG4SampleHelper::SampleIndexView previousSample;
+            FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
+            duration = currentSample.dts - previousSample.dts;
             FALSE_RETURN_V_NOLOG(duration > 0, false);
         } else {
-            duration = streamDuration - entries[sampleIndex].dts;
+            duration = streamDuration - currentSample.dts;
         }
     }
     return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
@@ -311,14 +322,15 @@ bool GetMpegAudioFrameDurationUs(const MediaInfo& mediaInfo,
         !mediaInfo.tracks[trackId].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) || samplesPerFrame <= 0) {
         return false;
     }
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    FALSE_RETURN_V_NOLOG(!entries.empty() && sampleIndex < entries.size(), false);
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
+    MPEG4SampleHelper::SampleIndexView currentSample;
+    FALSE_RETURN_V_NOLOG(sampleCount > 0 && GetSampleView(track, sampleIndex, currentSample), false);
     // A short final STTS run means the container already records a real tail duration.
     bool hasExplicitShortTailStts = track->sampleHelper->GetSttsEntryCount() == SHORT_TAIL_STTS_ENTRY_COUNT &&
         track->sampleHelper->GetSampleCountOfSttsEntry(1) == SINGLE_SAMPLE_RUN_COUNT &&
         track->sampleHelper->GetSampleDeltaOfSttsEntry(0) > track->sampleHelper->GetSampleDeltaOfSttsEntry(1);
-    if (hasExplicitShortTailStts && sampleIndex + 1 == entries.size() && entries[sampleIndex].duration > 0 &&
-        entries[sampleIndex].duration != samplesPerFrame) {
+    if (hasExplicitShortTailStts && sampleIndex + 1 == sampleCount && currentSample.duration > 0 &&
+        currentSample.duration != samplesPerFrame) {
         return false;
     }
     return ConvertTimeScale(samplesPerFrame, static_cast<int64_t>(S_TO_US), sampleRate, &durationUs) == Status::OK;
@@ -387,11 +399,13 @@ bool IsWebVttCueSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uin
 {
     FALSE_RETURN_V_NOLOG(track != nullptr && track->sampleHelper != nullptr &&
         track->sampleHelper->mimeType_ == MimeType::TEXT_WEBVTT && track->sampleHelper->dataReader_ != nullptr, false);
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    FALSE_RETURN_V_NOLOG(sampleIndex < entries.size() && entries[sampleIndex].size >= BOX_HEADER_SIZE, false);
+    int64_t samplePos = 0;
+    int32_t sampleSize = 0;
+    FALSE_RETURN_V_NOLOG(track->sampleHelper->GetSampleRange(sampleIndex, samplePos, sampleSize) == Status::OK &&
+        sampleSize >= BOX_HEADER_SIZE, false);
     // WebVTT sample payload starts with an ISO BMFF box header; cue samples use vttc.
     uint8_t header[BOX_HEADER_SIZE] = {0};
-    if (track->sampleHelper->dataReader_->ReadUintData(entries[sampleIndex].pos, header, sizeof(header)) !=
+    if (track->sampleHelper->dataReader_->ReadUintData(samplePos, header, sizeof(header)) !=
         Status::OK) {
         return false;
     }
@@ -402,8 +416,7 @@ bool HasFutureWebVttCueSample(const std::shared_ptr<MPEG4AtomParser::Track>& tra
 {
     FALSE_RETURN_V_NOLOG(track != nullptr && track->sampleHelper != nullptr &&
         track->sampleHelper->mimeType_ == MimeType::TEXT_WEBVTT, false);
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    for (uint32_t index = startIndex; index < entries.size(); ++index) {
+    for (uint32_t index = startIndex; index < track->sampleHelper->GetSampleCount(); ++index) {
         FALSE_RETURN_V_NOLOG(!IsWebVttCueSample(track, index), true);
     }
     return false;
@@ -459,7 +472,7 @@ void UpdateWebVttFinalPacketDurationFromMedia(const MediaInfo& mediaInfo,
 {
     if (track == nullptr || track->sampleHelper == nullptr ||
         track->sampleHelper->mimeType_ != MimeType::TEXT_WEBVTT ||
-        sampleIndex + 1 != track->sampleHelper->sampleIndexEntry_.size()) {
+        sampleIndex + 1 != track->sampleHelper->GetSampleCount()) {
         return;
     }
     int64_t mediaDurationUs = 0;
@@ -480,12 +493,15 @@ bool GetSingleEditShortTailAudioDurationUs(
     if (!IsSingleEditShortTailAudio(track)) {
         return false;
     }
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    if (entries.size() < MIN_TAIL_PACKET_COUNT || sampleIndex + 1 != entries.size()) {
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
+    if (sampleCount < MIN_TAIL_PACKET_COUNT || sampleIndex + 1 != sampleCount) {
         return false;
     }
-    const auto& currentSample = entries[sampleIndex];
-    int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
+    MPEG4SampleHelper::SampleIndexView currentSample;
+    MPEG4SampleHelper::SampleIndexView previousSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex, currentSample) &&
+        GetSampleView(track, sampleIndex - 1, previousSample), false);
+    int64_t previousDuration = currentSample.dts - previousSample.dts;
     FALSE_RETURN_V_NOLOG(currentSample.duration > 0 && previousDuration > 0, false);
     int64_t duration = hasPlayableVideoTrack ? currentSample.duration : currentSample.duration + previousDuration;
     return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
@@ -500,9 +516,10 @@ bool GetTrailingZeroEditedAudioDurationUs(const ReadSampleEntryContext& context,
     if (!track->sampleHelper->HasTrailingZeroSttsDuration() || sampleIndex == 0) {
         return false;
     }
-    const auto& entries = context.entries;
+    MPEG4SampleHelper::SampleIndexView previousSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
     // Trailing zero STTS entries borrow the previous packet spacing unless stream tail is shorter.
-    int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
+    int64_t previousDuration = currentSample.dts - previousSample.dts;
     FALSE_RETURN_V_NOLOG(previousDuration > 0, false);
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, packet.trackTimeScale, packet.movieTimeScale);
     int64_t tailDuration = streamDuration - currentSample.dts;
@@ -514,7 +531,6 @@ bool GetTrailingZeroEditedAudioDurationUs(const ReadSampleEntryContext& context,
 bool GetSkipInfoEditedAudioDurationUs(
     const ReadSampleEntryContext& context, int64_t rawTailDuration, int64_t& durationUs)
 {
-    const auto& entries = context.entries;
     const auto& currentSample = context.currentSample;
     const auto& track = context.packet.track;
     uint32_t sampleIndex = context.packet.sampleIndex;
@@ -523,7 +539,9 @@ bool GetSkipInfoEditedAudioDurationUs(
         !track->sampleHelper->HasSkipSamplesInfo(0) || sampleIndex == 0) {
         return false;
     }
-    int64_t previousDuration = currentSample.dts - entries[sampleIndex - 1].dts;
+    MPEG4SampleHelper::SampleIndexView previousSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
+    int64_t previousDuration = currentSample.dts - previousSample.dts;
     FALSE_RETURN_V_NOLOG(previousDuration > 0, false);
     int64_t duration = currentSample.duration + previousDuration;
     return RescaleTrackTimeToUsRoundNearest(duration, context.packet.trackTimeScale, durationUs) == Status::OK;
@@ -536,13 +554,14 @@ bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_
         track->sampleHelper->mimeType_ == MimeType::AUDIO_MPEG || track->elstInitEmptyEdit <= 0) {
         return false;
     }
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    if (entries.empty() || context.sampleIndex + 1 != entries.size()) {
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
+    if (sampleCount == 0 || context.sampleIndex + 1 != sampleCount) {
         return false;
     }
 
-    const auto& currentSample = entries[context.sampleIndex];
-    ReadSampleEntryContext entryContext { context, entries, currentSample };
+    MPEG4SampleHelper::SampleIndexView currentSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, context.sampleIndex, currentSample), false);
+    ReadSampleEntryContext entryContext { context, currentSample };
     FALSE_RETURN_V_NOLOG(!(GetTrailingZeroEditedAudioDurationUs(entryContext, durationUs)), true);
     FALSE_RETURN_V_NOLOG(currentSample.duration > 0, false);
     int64_t rawTotalDuration = track->sampleHelper->GetRawTotalDuration();
@@ -551,7 +570,9 @@ bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_
     FALSE_RETURN_V_NOLOG(rawTailDuration <= 0, false);
     int64_t duration = currentSample.duration;
     if (context.sampleIndex > 0) {
-        int64_t previousDuration = currentSample.dts - entries[context.sampleIndex - 1].dts;
+        MPEG4SampleHelper::SampleIndexView previousSample;
+        FALSE_RETURN_V_NOLOG(GetSampleView(track, context.sampleIndex - 1, previousSample), false);
+        int64_t previousDuration = currentSample.dts - previousSample.dts;
         if (previousDuration > 0 && rawTailDuration < 0) {
             duration = previousDuration;
         }
@@ -566,8 +587,8 @@ bool GetTimedMetaTailDurationUs(
         track->sampleHelper->mimeType_ == MimeType::TEXT_WEBVTT) {
         return false;
     }
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    if (entries.empty() || sampleIndex + 1 != entries.size() ||
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
+    if (sampleCount == 0 || sampleIndex + 1 != sampleCount ||
         !track->sampleHelper->HasTrailingZeroSttsDuration()) {
         return false;
     }
@@ -611,13 +632,16 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
     if (!IsVideoLikeTrackForDuration(track) || !track->sampleHelper->cttsEntry_.empty()) {
         return false;
     }
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
     uint32_t sampleIndex = context.sampleIndex;
-    if (entries.size() < MIN_TAIL_PACKET_COUNT || sampleIndex + 1 != entries.size()) {
+    if (sampleCount < MIN_TAIL_PACKET_COUNT || sampleIndex + 1 != sampleCount) {
         return false;
     }
 
-    const auto& currentSample = entries[sampleIndex];
+    MPEG4SampleHelper::SampleIndexView currentSample;
+    MPEG4SampleHelper::SampleIndexView previousSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex, currentSample) &&
+        GetSampleView(track, sampleIndex - 1, previousSample), false);
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
     if (GetNominalSttsFrameDurationUs(track, context.trackTimeScale, durationUs)) {
         return true;
@@ -627,7 +651,7 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
     }
     int64_t duration = currentSample.duration;
     if (duration <= 0 || streamDuration <= currentSample.dts) {
-        duration = currentSample.dts - entries[sampleIndex - 1].dts;
+        duration = currentSample.dts - previousSample.dts;
     }
     FALSE_RETURN_V_NOLOG(duration > 0, false);
     return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
@@ -651,7 +675,7 @@ uint8_t GetAvcNalLengthSize(const std::shared_ptr<MPEG4AtomParser::Track>& track
 }
 
 bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
-    const MPEG4SampleHelper::SampleIndexEntry& sample)
+    const MPEG4SampleHelper::SampleIndexView& sample)
 {
     if (track == nullptr || track->sampleHelper == nullptr || track->sampleHelper->dataReader_ == nullptr ||
         track->sampleHelper->mimeType_ != MimeType::VIDEO_AVC || sample.pos < 0 || sample.size <= 0 ||
@@ -683,7 +707,7 @@ bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
 bool ShouldApplyMovEditTimelineOffset(const std::shared_ptr<MPEG4AtomParser::Track>& track);
 
 bool ShouldMarkAvcIdrSampleKey(const std::shared_ptr<MPEG4AtomParser::Track>& track,
-    const MPEG4SampleHelper::SampleIndexEntry& currentSample)
+    const MPEG4SampleHelper::SampleIndexView& currentSample)
 {
     if (track == nullptr || track->codecParms.trackType != VIDEO_TYPE ||
         (currentSample.flag & Sample::SampleFlag::SYNC_FRAME) != 0) {
@@ -705,7 +729,7 @@ uint32_t GetSkipSamplesFromInfo(const std::vector<uint8_t>& skipSamplesInfo)
 
 bool ShouldClearAudioDiscardForSkipPacket(
     const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
-    const MPEG4SampleHelper::SampleIndexEntry& currentSample, bool hasPlayableVideoTrack)
+    const MPEG4SampleHelper::SampleIndexView& currentSample, bool hasPlayableVideoTrack)
 {
     const auto* skipSamplesInfo = track != nullptr && track->sampleHelper != nullptr ?
         track->sampleHelper->GetSkipSamplesInfo(sampleIndex) : nullptr;
@@ -726,7 +750,7 @@ bool ShouldClearAudioDiscardForSkipPacket(
 }
 
 uint32_t GetPacketSampleFlag(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
-    const MPEG4SampleHelper::SampleIndexEntry& currentSample, bool hasPlayableVideoTrack)
+    const MPEG4SampleHelper::SampleIndexView& currentSample, bool hasPlayableVideoTrack)
 {
     uint32_t flag = currentSample.flag;
     if (ShouldMarkAvcIdrSampleKey(track, currentSample)) {
@@ -746,7 +770,7 @@ uint32_t GetPacketSampleFlag(const std::shared_ptr<MPEG4AtomParser::Track>& trac
         flag &= ~static_cast<uint32_t>(Sample::SampleFlag::DISCARD);
     }
     if (track != nullptr && track->codecParms.trackType == AUDIO_TYPE && track->sampleHelper != nullptr &&
-        ShouldApplyMovEditTimelineOffset(track) && sampleIndex + 1 == track->sampleHelper->sampleIndexEntry_.size()) {
+        ShouldApplyMovEditTimelineOffset(track) && sampleIndex + 1 == track->sampleHelper->GetSampleCount()) {
         flag &= ~static_cast<uint32_t>(Sample::SampleFlag::DISCARD);
     }
     return flag;
@@ -799,10 +823,10 @@ bool GetRawAudioDtsTicks(std::unordered_map<uint32_t, std::vector<int64_t>>& raw
     uint32_t trackIndex = track->trackIndex;
     auto iter = rawDtsPrefix.find(trackIndex);
     if (iter == rawDtsPrefix.end()) {
-        const auto& entries = track->sampleHelper->sampleIndexEntry_;
-        std::vector<int64_t> prefix(entries.size() + 1, 0);
+        size_t sampleCount = track->sampleHelper->GetSampleCount();
+        std::vector<int64_t> prefix(sampleCount + 1, 0);
         // Prefix sums keep raw decode timestamps available in O(1) without repeated scans.
-        for (uint32_t i = 0; i < entries.size(); ++i) {
+        for (uint32_t i = 0; i < sampleCount; ++i) {
             uint32_t duration = 0;
             FALSE_RETURN_V_NOLOG(track->sampleHelper->GetSampleDuration(i, duration) == Status::OK &&
                 SafeAddInt64(prefix[i], static_cast<int64_t>(duration), prefix[i + 1]), false);
@@ -819,8 +843,8 @@ Status SetPacketTimelineUs(const ReadSamplePacketContext& context, int64_t& dts,
 {
     const auto& track = context.track;
     uint32_t sampleIndex = context.sampleIndex;
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    const auto& currentSample = entries[sampleIndex];
+    MPEG4SampleHelper::SampleIndexView currentSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex, currentSample), Status::ERROR_INVALID_DATA);
     int64_t timelineOffset = 0;
     if (ShouldApplyMovEditTimelineOffset(track)) {
         FALSE_RETURN_V_MSG_E(GetMovEditTimelineOffsetTicks(track, context.trackTimeScale, context.movieTimeScale,
@@ -854,7 +878,8 @@ bool UpdatePacketDurationUs(const ReadSamplePacketContext& context, ReadSamplePa
     const auto& track = context.track;
     uint32_t sampleIndex = context.sampleIndex;
     int32_t trackTimeScale = context.trackTimeScale;
-    const auto& currentSample = track->sampleHelper->sampleIndexEntry_[sampleIndex];
+    MPEG4SampleHelper::SampleIndexView currentSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex, currentSample), false);
     // Duration sources are ordered from container-specific corrections to generic sample-table fallback.
     bool hasDuration = GetSingleEditShortTailAudioDurationUs(track, sampleIndex, trackTimeScale,
         context.hasPlayableVideoTrack, attr.durationUs) ||
@@ -877,8 +902,8 @@ bool UpdatePacketDurationUs(const ReadSamplePacketContext& context, ReadSamplePa
 void UpdateMovEditTailDurationUs(const ReadSamplePacketContext& context, int64_t dts, ReadSamplePacketAttr& attr)
 {
     const auto& track = context.track;
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    if (!ShouldApplyMovEditTimelineOffset(track) || context.sampleIndex + 1 != entries.size()) {
+    if (!ShouldApplyMovEditTimelineOffset(track) ||
+        context.sampleIndex + 1 != track->sampleHelper->GetSampleCount()) {
         return;
     }
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
@@ -892,8 +917,8 @@ Status BuildReadSamplePacketAttr(const ReadSamplePacketContext& context, ReadSam
 {
     const auto& track = context.track;
     FALSE_RETURN_V_NOLOG(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_NULL_POINTER);
-    const auto& entries = track->sampleHelper->sampleIndexEntry_;
-    FALSE_RETURN_V_NOLOG(!(entries.empty()) && context.sampleIndex < entries.size(), Status::ERROR_INVALID_PARAMETER);
+    FALSE_RETURN_V_NOLOG(!track->sampleHelper->IsSampleIndexEmpty() &&
+        context.sampleIndex < track->sampleHelper->GetSampleCount(), Status::ERROR_INVALID_PARAMETER);
     int64_t dts = 0;
     FALSE_RETURN_V_MSG_E(SetPacketTimelineUs(context, dts, attr) == Status::OK,
         Status::ERROR_INVALID_DATA, "Set read sample packet timeline failed");
@@ -902,7 +927,8 @@ Status BuildReadSamplePacketAttr(const ReadSamplePacketContext& context, ReadSam
     UpdateMovEditTailDurationUs(context, dts, attr);
     UpdateWebVttFinalPacketDurationFromMedia(context.mediaInfo, track, context.sampleIndex, attr);
 
-    const auto& currentSample = entries[context.sampleIndex];
+    MPEG4SampleHelper::SampleIndexView currentSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, context.sampleIndex, currentSample), Status::ERROR_INVALID_DATA);
     attr.flag = GetPacketSampleFlag(track, context.sampleIndex, currentSample, context.hasPlayableVideoTrack);
     const auto* skipSamplesInfo = track != nullptr && track->sampleHelper != nullptr ?
         track->sampleHelper->GetSkipSamplesInfo(context.sampleIndex) : nullptr;
@@ -917,7 +943,7 @@ bool HasPlayableVideoTrack(const std::shared_ptr<MPEG4AtomParser::Track>& firstT
 {
     for (auto track = firstTrack; track != nullptr; track = track->next) {
         if (track->codecParms.trackType == VIDEO_TYPE && track->sampleHelper != nullptr &&
-            !track->sampleHelper->sampleIndexEntry_.empty()) {
+            !track->sampleHelper->IsSampleIndexEmpty()) {
             return true;
         }
     }
@@ -1375,7 +1401,7 @@ void MPEG4DemuxerPlugin::GetAVTrackIds()
     auto track = firstTrack_;
     while (track) {
         if ((IsAudioType(*track) || IsVideoType(*track))
-            && track->sampleHelper->sampleIndexEntry_.size() > 0) {
+            && !track->sampleHelper->IsSampleIndexEmpty()) {
             avTrackIds_.emplace_back(track->trackIndex);
             if (seekable_ == Seekable::UNSEEKABLE) {
                 trackMtx_[track->trackIndex] = std::make_shared<std::mutex>();
@@ -1838,9 +1864,11 @@ Status MPEG4DemuxerPlugin::DynamicBaseTrackSelect(int64_t seekTime, int64_t &max
             seekTimeToPts += track->elstShiftStartTime;
         }
 
-        FALSE_RETURN_V_MSG_E(track->sampleHelper->sampleIndexEntry_.size() != 0, Status::ERROR_NULL_POINTER,
+        FALSE_RETURN_V_MSG_E(!track->sampleHelper->IsSampleIndexEmpty(), Status::ERROR_NULL_POINTER,
             "sampleIndexEntry_ is empty");
-        int64_t firstPts = track->sampleHelper->sampleIndexEntry_[0].pts;  // 获取首帧pts
+        int64_t firstPts = 0;
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSamplePts(0, firstPts) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get first sample pts failed");
         int64_t lastPts = track->sampleHelper->lastPTS_;
         if (seekTimeToPts >= firstPts && seekTimeToPts < lastPts) {
             DynamicBaseTrackState state {minPts, baseTrackTimeBase, baseTrackIsVideo, baseTrackIndex};
@@ -1869,7 +1897,10 @@ Status MPEG4DemuxerPlugin::UpdateDynamicBaseTrack(const std::shared_ptr<MPEG4Ato
             Status::ERROR_INVALID_PARAMETER, "mul overflow");
     }
     bool isVideoTrack = IsVideoType(*track);
-    int64_t trackPtsWithDelay = track->sampleHelper->sampleIndexEntry_[0].pts + timeDelayToPts;
+    int64_t firstPts = 0;
+    FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSamplePts(0, firstPts) == Status::OK,
+        Status::ERROR_INVALID_DATA, "Get first sample pts failed");
+    int64_t trackPtsWithDelay = firstPts + timeDelayToPts;
     bool shouldUpdate = isVideoTrack ? (!state.baseTrackIsVideo || trackPtsWithDelay < convertedMinPts) :
         (!state.baseTrackIsVideo && trackPtsWithDelay < convertedMinPts);
     if (shouldUpdate) {
@@ -1919,12 +1950,10 @@ Status MPEG4DemuxerPlugin::FindFragmentSyncSample(uint32_t fragmentIndex, std::s
         uint32_t currentTrackId = selectedTrackId;
         auto currentTrack = FindTrackById(currentTrackId);
         FALSE_RETURN_V_MSG_E(currentTrack != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
-        auto& entry = currentTrack->sampleHelper->sampleIndexEntry_;
-        auto it = std::upper_bound(entry.begin(), entry.end(), moofOffset,
-            [](int64_t b, const MPEG4SampleHelper::SampleIndexEntry& a) { return b < a.pos; });
-
-        uint32_t sampleIndex = static_cast<uint32_t>(std::distance(entry.begin(), it));
-        if (sampleIndex < entry.size() - 1) {
+        uint32_t sampleIndex = 0;
+        FALSE_RETURN_V_MSG_E(currentTrack->sampleHelper->FindFirstSampleAfterPosition(moofOffset, sampleIndex) ==
+            Status::OK, Status::ERROR_INVALID_DATA, "Find fragment sample failed");
+        if (sampleIndex + 1 < currentTrack->sampleHelper->GetSampleCount()) {
             currentTrack->currentSampleIndex = sampleIndex;
         } else {
             return Status::ERROR_UNKNOWN;
@@ -2060,15 +2089,15 @@ Status MPEG4DemuxerPlugin::PrepareSeekTime(const std::shared_ptr<MPEG4AtomParser
 Status MPEG4DemuxerPlugin::FindSeekSampleIndex(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     SeekSampleIndexContext& context)
 {
-    auto& entry = track->sampleHelper->sampleIndexEntry_;
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
     Status ret = track->sampleHelper->FindSyncSampleByPts(
         context.trackSeekTime, context.isBaseTrack, context.mode, context.sampleIndex);
     // If seektime > last I-frame and within the track range, and the SeekMode is SEEK_NEXT_SYNC, seek to the EOS frame
     context.sampleIndex = (ret != Status::OK && context.mode == SeekMode::SEEK_NEXT_SYNC) ?
-        entry.size() : context.sampleIndex;
+        sampleCount : context.sampleIndex;
     bool isVideo = IsVideoType(*track);
     if (isVideo && context.seekTime - minElstInitEmptyEdit_ < static_cast<int64_t>(relativeEndPts_) &&
-        context.sampleIndex == entry.size()) {
+        context.sampleIndex == sampleCount) {
         context.isBaseTrack = false;
     }
     MEDIA_LOG_I("Find sync sample " PUBLIC_LOG_D32 " in track " PUBLIC_LOG_D32,
@@ -2123,15 +2152,17 @@ Status MPEG4DemuxerPlugin::DoSeekInternal(int32_t trackIndex, int64_t seekTime, 
 Status MPEG4DemuxerPlugin::GetVideoSyncSeekTime(
     const std::shared_ptr<MPEG4AtomParser::Track>& track, VideoSyncSeekContext& context)
 {
-    auto& entry = track->sampleHelper->sampleIndexEntry_;
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
     int64_t syncPts = 0;
     if (!context.isBaseTrack) {
-        FALSE_RETURN_V_MSG_E(!entry.empty(), Status::ERROR_INVALID_DATA, "Sample index entry is empty");
-        syncPts = entry.back().pts;
+        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Sample index entry is empty");
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSamplePts(static_cast<uint32_t>(sampleCount - 1), syncPts) ==
+            Status::OK, Status::ERROR_INVALID_DATA, "Get last sample pts failed");
     } else {
-        FALSE_RETURN_V_MSG_E(context.sampleIndex < entry.size(), Status::ERROR_INVALID_DATA,
+        FALSE_RETURN_V_MSG_E(context.sampleIndex < sampleCount, Status::ERROR_INVALID_DATA,
             "Invalid sync sample index");
-        syncPts = entry[context.sampleIndex].pts;
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSamplePts(context.sampleIndex, syncPts) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get sync sample pts failed");
     }
     if (!context.editListApplied) {
         syncPts -= track->elstShiftStartTime;
@@ -2275,7 +2306,7 @@ Status MPEG4DemuxerPlugin::ParseMoof(int64_t offset)
 // LCOV_EXCL_STOP
 
 Status MPEG4DemuxerPlugin::FindValidSample(std::shared_ptr<MPEG4AtomParser::Track> &track,
-    std::shared_ptr<MPEG4SampleHelper::SampleIndexEntry> &sample)
+    std::shared_ptr<MPEG4SampleHelper::SampleIndexView> &sample)
 {
     std::vector<uint32_t> trackIds = selectedTrackIds_.empty() ? avTrackIds_ : selectedTrackIds_;
     for (const auto& trackId : trackIds) {
@@ -2283,18 +2314,20 @@ Status MPEG4DemuxerPlugin::FindValidSample(std::shared_ptr<MPEG4AtomParser::Trac
         FALSE_RETURN_V_MSG_E(currentTrack != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
 
         uint32_t index = currentTrack->currentSampleIndex;
-        uint32_t numSamples = currentTrack->sampleHelper->sampleIndexEntry_.size();
+        uint32_t numSamples = static_cast<uint32_t>(currentTrack->sampleHelper->GetSampleCount());
         if (index >= numSamples) {
             continue;
         }
-        auto& entry = currentTrack->sampleHelper->sampleIndexEntry_;
+        MPEG4SampleHelper::SampleIndexView currentView;
+        FALSE_RETURN_V_MSG_E(GetSampleView(currentTrack, index, currentView), Status::ERROR_INVALID_DATA,
+            "Get sample view failed");
         if (!sample) {
             track = currentTrack;
-            sample = std::make_shared<MPEG4SampleHelper::SampleIndexEntry>(entry[index]);
-        } else if (entry[index].pos < sample->pos) {
-            if (index < numSamples && entry[index].pos < sample->pos) {
+            sample = std::make_shared<MPEG4SampleHelper::SampleIndexView>(currentView);
+        } else if (currentView.pos < sample->pos) {
+            if (index < numSamples && currentView.pos < sample->pos) {
                 track = currentTrack;
-                sample = std::make_shared<MPEG4SampleHelper::SampleIndexEntry>(entry[index]);
+                sample = std::make_shared<MPEG4SampleHelper::SampleIndexView>(currentView);
             }
         }
     }
@@ -2308,7 +2341,7 @@ Status MPEG4DemuxerPlugin::GetUnseekableSampleInfo(uint32_t &trackId, int64_t &p
     bool tryNextMoof = false;
     while (!hasFoundSample) {
         std::shared_ptr<MPEG4AtomParser::Track> track = nullptr;
-        std::shared_ptr<MPEG4SampleHelper::SampleIndexEntry> sample = nullptr;
+        std::shared_ptr<MPEG4SampleHelper::SampleIndexView> sample = nullptr;
         FALSE_RETURN_V(FindValidSample(track, sample) == Status::OK, Status::ERROR_NULL_POINTER);
         if (!sample && !fragmentEntry_.empty() && !tryNextMoof && !readToEnd_) {
             // All moof should be parsed during initialization now
@@ -2337,11 +2370,12 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleInfo(uint32_t trackId, int64_t &pos,
     bool checkedFragment = false;
 
     while (!hasFoundSample) {
-        uint32_t numSamples = track->sampleHelper->sampleIndexEntry_.size();
+        uint32_t numSamples = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
         uint32_t index = track->currentSampleIndex;
-        MPEG4SampleHelper::SampleIndexEntry sample;
+        MPEG4SampleHelper::SampleIndexView sample;
         if (index < numSamples) {
-            sample = track->sampleHelper->sampleIndexEntry_[index];
+            FALSE_RETURN_V_MSG_E(GetSampleView(track, index, sample), Status::ERROR_INVALID_DATA,
+                "Get sample view failed");
         }
         if (hasMoofBox_ && !checkedFragment) {
             int64_t nextMoofOffset = (currentFragment_ < fragmentEntry_.size() - 1) ?
@@ -2352,10 +2386,11 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleInfo(uint32_t trackId, int64_t &pos,
                 FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ParseMoof failed");
                 track = FindTrackById(trackId);
                 FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
-                numSamples = track->sampleHelper->sampleIndexEntry_.size();
+                numSamples = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
                 FALSE_RETURN_V_MSG_E(index < numSamples, Status::ERROR_INVALID_DATA,
                     "ParseMoof did not produce enough samples");
-                sample = track->sampleHelper->sampleIndexEntry_[index];
+                FALSE_RETURN_V_MSG_E(GetSampleView(track, index, sample), Status::ERROR_INVALID_DATA,
+                    "Get sample view failed");
                 ++currentFragment_;
             } else if (index >= numSamples && nextMoofOffset == -1) {
                 return Status::END_OF_STREAM;
@@ -2380,8 +2415,9 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sam
     auto track = FindTrackById(trackId);
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
     const uint32_t index = track->currentSampleIndex;
-    auto entry = track->sampleHelper->sampleIndexEntry_.data();
-    auto currentSample = entry[index];
+    MPEG4SampleHelper::SampleIndexView currentSample;
+    FALSE_RETURN_V_MSG_E(GetSampleView(track, index, currentSample), Status::ERROR_INVALID_DATA,
+        "Get sample view failed");
     int32_t trackTimeScale = track->timeScale;
     FALSE_RETURN_V_NOLOG(trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER);
 
@@ -2835,10 +2871,13 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
             Status::ERROR_NULL_POINTER, "Track is nullptr");
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get next sample info failed");
         uint32_t currentSampleIndex = track->currentSampleIndex;
-        FALSE_RETURN_V_MSG_E(currentSampleIndex < track->sampleHelper->sampleIndexEntry_.size(),
+        FALSE_RETURN_V_MSG_E(currentSampleIndex < track->sampleHelper->GetSampleCount(),
             Status::END_OF_STREAM, "Sample index out of range");
         sample->size = sampleSize;
-        sample->flag = track->sampleHelper->sampleIndexEntry_[currentSampleIndex].flag;
+        MPEG4SampleHelper::SampleIndexView currentSample;
+        FALSE_RETURN_V_MSG_E(GetSampleView(track, currentSampleIndex, currentSample), Status::ERROR_INVALID_DATA,
+            "Get sample view failed");
+        sample->flag = currentSample.flag;
         sampleTrackId = trackIndex;
     }
 

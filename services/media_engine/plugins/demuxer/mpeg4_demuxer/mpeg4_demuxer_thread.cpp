@@ -113,7 +113,8 @@ Status MPEG4DemuxerPlugin::PrepareSeekToFrameByDts(int32_t trackId, int64_t seek
         seekTime, targetDts);
     Status ret = FindFirstSampleIndexByDts(context.track, targetDts, context.sampleIndex);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find sample by dts failed");
-    context.actualDts = context.track->sampleHelper->sampleIndexEntry_[context.sampleIndex].dts;
+    FALSE_RETURN_V_MSG_E(context.track->sampleHelper->GetSampleDts(context.sampleIndex, context.actualDts) ==
+        Status::OK, Status::ERROR_INVALID_DATA, "Get sample dts failed");
     ret = SyncSelectedTracksByDts(trackId, context.actualDts);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Sync selected tracks failed");
     return Status::OK;
@@ -188,14 +189,10 @@ Status MPEG4DemuxerPlugin::FindFirstSampleIndexByDts(
 {
     FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr,
         Status::ERROR_NULL_POINTER, "Track or sampleHelper is nullptr");
-    const auto& entry = track->sampleHelper->sampleIndexEntry_;
-    FALSE_RETURN_V_MSG_E(!entry.empty(), Status::ERROR_INVALID_DATA, "Sample index entry is empty");
-    auto iter = std::lower_bound(entry.begin(), entry.end(), targetDts,
-        [](const MPEG4SampleHelper::SampleIndexEntry& sample, int64_t dts) {
-            return sample.dts < dts;
-        });
-    FALSE_RETURN_V_NOLOG(iter != entry.end(), Status::END_OF_STREAM);
-    sampleIndex = static_cast<uint32_t>(std::distance(entry.begin(), iter));
+    FALSE_RETURN_V_MSG_E(!track->sampleHelper->IsSampleIndexEmpty(), Status::ERROR_INVALID_DATA,
+        "Sample index entry is empty");
+    Status ret = track->sampleHelper->FindFirstSampleByDts(targetDts, sampleIndex);
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     MEDIA_LOG_I("sampleIndex is " PUBLIC_LOG_U32, sampleIndex);
     return Status::OK;
 }
@@ -227,7 +224,7 @@ Status MPEG4DemuxerPlugin::SyncSelectedTracksByDts(int32_t baseTrackId, int64_t 
         if (ret == Status::OK) {
             track->currentSampleIndex = sampleIndex;
         } else if (ret == Status::END_OF_STREAM) {
-            track->currentSampleIndex = static_cast<uint32_t>(track->sampleHelper->sampleIndexEntry_.size());
+            track->currentSampleIndex = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
         } else {
             return ret;
         }
@@ -260,8 +257,8 @@ Status MPEG4DemuxerPlugin::PrefetchSeekSample(
 {
     FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr,
         Status::ERROR_NULL_POINTER, "Track or sampleHelper is nullptr");
-    auto& entry = track->sampleHelper->sampleIndexEntry_;
-    FALSE_RETURN_V_MSG_E(sampleIndex < entry.size(), Status::ERROR_INVALID_PARAMETER, "Invalid sample index");
+    FALSE_RETURN_V_MSG_E(sampleIndex < track->sampleHelper->GetSampleCount(),
+        Status::ERROR_INVALID_PARAMETER, "Invalid sample index");
 
     uint32_t oldIndex = track->currentSampleIndex;
     track->currentSampleIndex = sampleIndex;
@@ -269,7 +266,11 @@ Status MPEG4DemuxerPlugin::PrefetchSeekSample(
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
     {
         std::unique_lock<std::mutex> sLock(syncMutex_);
-        Status ret = ReadSampleData(sample, entry[sampleIndex].pos, entry[sampleIndex].size, track->trackIndex);
+        int64_t pos = 0;
+        int32_t size = 0;
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleRange(sampleIndex, pos, size) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get sample range failed");
+        Status ret = ReadSampleData(sample, pos, size, track->trackIndex);
         if (ret != Status::OK) {
             track->currentSampleIndex = oldIndex;
             return ret;
@@ -280,7 +281,8 @@ Status MPEG4DemuxerPlugin::PrefetchSeekSample(
         track->currentSampleIndex = oldIndex;
         return ret;
     }
-    track->currentSampleIndex = std::min<uint32_t>(sampleIndex + 1, static_cast<uint32_t>(entry.size()));
+    track->currentSampleIndex = std::min<uint32_t>(sampleIndex + 1,
+        static_cast<uint32_t>(track->sampleHelper->GetSampleCount()));
     return Status::OK;
 }
 

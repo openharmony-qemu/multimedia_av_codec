@@ -155,6 +155,7 @@ if (av_codec_support_demuxer) {
       "mpeg4_demuxer/mpeg4_reference_parser.cpp",
       "mpeg4_demuxer/mpeg4_sample_memory.cpp",
       "mpeg4_demuxer/mpeg4_sample_helper.cpp",
+      "mpeg4_demuxer/mpeg4_sample_helper_index.cpp",
     ]
 
     deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
