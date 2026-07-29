@@ -2660,3 +2660,172 @@ HWTEST_F(TEST_SUIT, VideoEncoderObject_GetTransData_ReusesOutputAndInput_001, Te
     EXPECT_EQ(object.outputBufferMap_.size(), 1U);
     EXPECT_EQ(object.inputBufferMap_.size(), 1U);
 }
+
+/**
+ * @tc.name: Preprocessor_RuntimeConfigAndTimestampHelpers_001
+ * @tc.desc: Cover runtime snapshot, realloc callback setter, and disabled frame-drop helpers
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_RuntimeConfigAndTimestampHelpers_001, TestSize.Level1)
+{
+    bool callbackCalled = false;
+    preprocessor_->SetOnBufferReallocCallback(
+        [&callbackCalled](sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &) {
+            callbackCalled = true;
+            return true;
+        });
+    preprocessor_->cropConfig_.enabled = true;
+    preprocessor_->cropConfig_.width = 320;
+    preprocessor_->downsamplingConfig_.enabled = false;
+
+    auto config = preprocessor_->GetRuntimeConfigSnapshot();
+    EXPECT_TRUE(config.crop.enabled);
+    EXPECT_EQ(config.crop.width, 320);
+    ASSERT_TRUE(static_cast<bool>(config.reallocCallback));
+    sptr<SurfaceBuffer> oldBuffer;
+    sptr<SurfaceBuffer> newBuffer;
+    EXPECT_TRUE(config.reallocCallback(oldBuffer, newBuffer));
+    EXPECT_TRUE(callbackCalled);
+    EXPECT_FALSE(preprocessor_->ShouldDropFrame(1));
+    preprocessor_->FlushTimeStamp();
+}
+
+/**
+ * @tc.name: Preprocessor_PixelFormatAsyncAndProcessGuards_001
+ * @tc.desc: Cover async-mode and pixel-format helpers plus Process null-buffer guards
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_PixelFormatAsyncAndProcessGuards_001, TestSize.Level1)
+{
+    Media::Format format;
+    EXPECT_TRUE(preprocessor_->UsingAsyncMode(format));
+    format.PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+    EXPECT_FALSE(preprocessor_->UsingAsyncMode(format));
+
+    Media::Format pixelFormat;
+    EXPECT_EQ(preprocessor_->GetPixelFormatFromConfiguration(pixelFormat), GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    preprocessor_->encoderConfig_.pixelFormat = GRAPHIC_PIXEL_FMT_RGBA_8888;
+    EXPECT_EQ(preprocessor_->GetPixelFormatFromParameter(pixelFormat), GRAPHIC_PIXEL_FMT_RGBA_8888);
+
+    sptr<SurfaceBuffer> input;
+    sptr<SurfaceBuffer> output;
+    EXPECT_EQ(preprocessor_->Process(input, output), AVCS_ERR_INVALID_VAL);
+    input = SurfaceBuffer::Create();
+    ASSERT_NE(input, nullptr);
+    EXPECT_EQ(preprocessor_->Process(input, output), AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: PreprocManager_SetEncoderRunning_Guards_001
+ * @tc.desc: Cover unknown encoder and uninitialized EncoderInfo start failures
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_SetEncoderRunning_Guards_001, TestSize.Level1)
+{
+    EXPECT_EQ(preprocessorManager_->SetEncoderRunning("unknown_encoder", true), AVCS_ERR_INVALID_STATE);
+
+    const std::string encoderId = "uninitialized_encoder";
+    preprocessorManager_->RegisterEncoder(encoderId, nullptr, nullptr);
+    EXPECT_EQ(preprocessorManager_->SetEncoderRunning(encoderId, true), AVCS_ERR_UNKNOWN);
+    EXPECT_EQ(preprocessorManager_->SetEncoderRunning(encoderId, false), AVCS_ERR_OK);
+    preprocessorManager_->UnregisterEncoder(encoderId);
+    preprocessorManager_->UnregisterEncoder("unknown_encoder");
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_MagicSnapshotAndDetachHelpers_001
+ * @tc.desc: Cover magic classification, callback snapshot, and peer detachment helpers
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_MagicSnapshotAndDetachHelpers_001, TestSize.Level1)
+{
+    EXPECT_TRUE(PreprocessorEncoder::IsPrimaryEncoderMagic(AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER));
+    EXPECT_TRUE(PreprocessorEncoder::IsSecondaryEncoderMagic(AVMagic::AVCODEC_MAGIC_SECONDARY_VIDEO_ENCODER));
+    EXPECT_TRUE(PreprocessorEncoder::IsPreprocEncoderMagic(AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER));
+    EXPECT_FALSE(PreprocessorEncoder::IsPreprocEncoderMagic(AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER));
+
+    int32_t userData = 1;
+    preprocessorEncoder_->callback_.onError = OnErrorVoid;
+    preprocessorEncoder_->userData_ = &userData;
+    auto snapshot = preprocessorEncoder_->GetCallbackSnapshot();
+    EXPECT_EQ(snapshot.callback.onError, OnErrorVoid);
+    EXPECT_EQ(snapshot.userData, &userData);
+
+    PreprocessorEncoder secondary(AVMagic::AVCODEC_MAGIC_SECONDARY_VIDEO_ENCODER);
+    preprocessorEncoder_->secondary_ = &secondary;
+    secondary.primary_ = preprocessorEncoder_.get();
+    preprocessorEncoder_->DetachPeerEncoder();
+    EXPECT_EQ(preprocessorEncoder_->secondary_, nullptr);
+    EXPECT_EQ(secondary.primary_, nullptr);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_NullDispatcherLifecycleHelpers_001
+ * @tc.desc: Cover callback lifecycle helper branches without a dispatcher or backing encoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_NullDispatcherLifecycleHelpers_001, TestSize.Level1)
+{
+    preprocessorEncoder_->callbackDispatcher_ = nullptr;
+    preprocessorEncoder_->preprocMgr_ = nullptr;
+    preprocessorEncoder_->videoEncoderObject_ = nullptr;
+    preprocessorEncoder_->CloseCallbackGate();
+    preprocessorEncoder_->CloseAndWaitCallbackIfNeeded();
+    preprocessorEncoder_->PrepareCallbackShutdown();
+    preprocessorEncoder_->ShutdownCallbackDispatcher();
+    SUCCEED();
+}
+
+/**
+ * @tc.name: VideoEncoderObject_GetTransData_ReplacesMismatchedBuffer_001
+ * @tc.desc: Cover replacement of a cached OH_AVBuffer when an index is reused for another AVBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoderObject_GetTransData_ReplacesMismatchedBuffer_001, TestSize.Level1)
+{
+    VideoEncoderObject object(std::shared_ptr<AVCodecVideoEncoder>{});
+    auto firstBuffer = AVBuffer::CreateAVBuffer();
+    auto secondBuffer = AVBuffer::CreateAVBuffer();
+    ASSERT_NE(firstBuffer, nullptr);
+    ASSERT_NE(secondBuffer, nullptr);
+    sptr<OH_AVBuffer> firstObject;
+    object.GetTransData(9, firstBuffer, true, firstObject);
+    ASSERT_NE(firstObject, nullptr);
+
+    sptr<OH_AVBuffer> secondObject;
+    object.GetTransData(9, secondBuffer, true, secondObject);
+    ASSERT_NE(secondObject, nullptr);
+    EXPECT_NE(firstObject.GetRefPtr(), secondObject.GetRefPtr());
+    EXPECT_EQ(firstObject->magic_, MFMagic::MFMAGIC_UNKNOWN);
+    EXPECT_EQ(firstObject->buffer_, nullptr);
+    EXPECT_EQ(object.outputBufferMap_.at(9).GetRefPtr(), secondObject.GetRefPtr());
+    EXPECT_EQ(object.outputBufferStateMap_.at(9), 0); // OUTPUT_BUFFER_PENDING
+}
+
+/**
+ * @tc.name: NativeVideoEncoderCallback_PreprocessorOutputRoute_001
+ * @tc.desc: Cover non-null output-buffer routing from NativeVideoEncoderCallback to the async dispatcher
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, NativeVideoEncoderCallback_PreprocessorOutputRoute_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    auto videoEncoderObject = encoder->videoEncoderObject_;
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    CallbackTestContext context;
+    OH_AVCodecCallback callbackConfig = {};
+    callbackConfig.onNewOutputBuffer = OnOutputBufferForCallbackTest;
+    ASSERT_EQ(encoder->RegisterCallback(callbackConfig, &context), AV_ERR_OK);
+    ASSERT_EQ(encoder->Start(), AV_ERR_OK);
+    encoder->videoEncoderObject_ = videoEncoderObject;
+
+    NativeVideoEncoderCallback callback(codec, callbackConfig, &context);
+    auto buffer = AVBuffer::CreateAVBuffer();
+    ASSERT_NE(buffer, nullptr);
+    callback.OnOutputBufferAvailable(11, buffer);
+    EXPECT_TRUE(WaitForFinishedCount(context, 1));
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
+}
