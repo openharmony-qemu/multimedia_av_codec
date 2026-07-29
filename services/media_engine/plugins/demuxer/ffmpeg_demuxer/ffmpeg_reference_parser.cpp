@@ -286,7 +286,6 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
                          "eos or not video");
     int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
-    FALSE_RETURN_V_MSG_E(pkt->data != nullptr, Status::ERROR_UNKNOWN, "Packet data is nullptr!");
     std::unique_lock<std::shared_mutex> rLock(sharedReferenceParserMutex_);
     Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
     rLock.unlock();
