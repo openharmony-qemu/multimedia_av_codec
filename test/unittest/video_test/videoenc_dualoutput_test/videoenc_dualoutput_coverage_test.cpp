@@ -248,9 +248,13 @@ void OnOutputBufferForCallbackTest(OH_AVCodec *codec, uint32_t index, OH_AVBuffe
         return;
     }
     {
-        std::lock_guard<std::mutex> lock(context->mutex);
+        std::unique_lock<std::mutex> lock(context->mutex);
         ++context->callbackCount;
         context->callbackThreadId = std::this_thread::get_id();
+        context->cv.notify_all();
+        if (context->blockFirstCallback && context->callbackCount == 1) {
+            context->cv.wait(lock, [context]() { return context->allowFirstCallbackReturn; });
+        }
         ++context->finishedCount;
     }
     context->cv.notify_all();
@@ -2277,18 +2281,23 @@ HWTEST_F(TEST_SUIT, Preprocessor_ConfigurationConflict_ExistingModes_001, TestSi
  */
 HWTEST_F(TEST_SUIT, Preprocessor_CheckOrReallocOutputBuffer_Branches_001, TestSize.Level1)
 {
+    BufferRequestConfig supportedConfig = CONFIG;
+    supportedConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
     sptr<SurfaceBuffer> output = nullptr;
-    EXPECT_FALSE(preprocessor_->CheckOrReallocOutSurfaceBuffer(1280, 720, CONFIG.format, output, nullptr));
-    ASSERT_FALSE(preprocessor_->CheckOrReallocOutSurfaceBuffer(0, 720, CONFIG.format, output, [](
-        sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &) { return true; }));
+    EXPECT_FALSE(preprocessor_->CheckOrReallocOutSurfaceBuffer(
+        supportedConfig.width, supportedConfig.height, supportedConfig.format, output, nullptr));
+    ASSERT_FALSE(preprocessor_->CheckOrReallocOutSurfaceBuffer(0, supportedConfig.height, supportedConfig.format,
+        output, [](sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &) { return true; }));
 
     output = SurfaceBuffer::Create();
     ASSERT_NE(output, nullptr);
-    ASSERT_EQ(output->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_EQ(output->Alloc(supportedConfig), GSERROR_OK);
     auto callback = [](sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &) { return true; };
-    EXPECT_TRUE(preprocessor_->CheckOrReallocOutSurfaceBuffer(1280, 720, CONFIG.format, output, callback));
+    EXPECT_TRUE(preprocessor_->CheckOrReallocOutSurfaceBuffer(
+        supportedConfig.width, supportedConfig.height, supportedConfig.format, output, callback));
     auto rejectCallback = [](sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &) { return false; };
-    EXPECT_FALSE(preprocessor_->CheckOrReallocOutSurfaceBuffer(640, 360, CONFIG.format, output, rejectCallback));
+    EXPECT_FALSE(preprocessor_->CheckOrReallocOutSurfaceBuffer(
+        640, 360, supportedConfig.format, output, rejectCallback));
 }
 
 /**
@@ -2303,6 +2312,7 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_MalformedSegments_001, TestSi
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
     ASSERT_EQ(input->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_EQ(output->Alloc(CONFIG), GSERROR_OK);
     ASSERT_TRUE(SetRoiMetadata(input, ";bad;1,2-3;1,2-3,4=;5,6-7,8;;"));
     preprocessor_->UpdateRoiMetadata(input, output, {1.0, 1.0, 0, 0});
     std::string actual;
@@ -2322,6 +2332,7 @@ HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_NoTerminator_001, TestSize.Le
     ASSERT_NE(input, nullptr);
     ASSERT_NE(output, nullptr);
     ASSERT_EQ(input->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_EQ(output->Alloc(CONFIG), GSERROR_OK);
     std::vector<uint8_t> data{'1', ',', '2', '-', '3', ',', '4'};
     ASSERT_EQ(input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, data, false), GSERROR_OK);
     preprocessor_->UpdateRoiMetadata(input, output, {1.0, 1.0, 0, 0});
@@ -2595,7 +2606,8 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConcurrentDestroy_WaitsWorkerExit_001, T
     });
     ASSERT_TRUE(IsAsyncOperationBlocked(firstDestroy));
     std::thread secondThread([codec, &secondDestroy]() {
-        FinishAsyncOperation(secondDestroy, OH_VideoEncoder_Destroy(codec));
+        PreprocessorEncoder::Destroy(codec);
+        FinishAsyncOperation(secondDestroy, AV_ERR_OK);
     });
     EXPECT_TRUE(IsAsyncOperationBlocked(secondDestroy));
     AllowFirstCallbackToReturn(context);
