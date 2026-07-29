@@ -23,7 +23,10 @@ namespace HttpPlugin {
 
 IDashMpdNode *IDashMpdNode::CreateNode(const std::string &nodeName)
 {
-    return new DashGenericNode({}, {});
+    if (nodeName == "MPD" || nodeName == "MultipleSegmentBase" || nodeName == "SegmentTemplate") {
+        return new DashGenericNode({}, {});
+    }
+    return nullptr;
 }
 
 void IDashMpdNode::DestroyNode(IDashMpdNode *node)
