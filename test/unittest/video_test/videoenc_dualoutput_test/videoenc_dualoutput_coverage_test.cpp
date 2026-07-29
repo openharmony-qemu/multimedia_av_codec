@@ -2752,6 +2752,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_MagicSnapshotAndDetachHelpers_001, TestS
     EXPECT_EQ(snapshot.userData, &userData);
 
     PreprocessorEncoder secondary(AVMagic::AVCODEC_MAGIC_SECONDARY_VIDEO_ENCODER);
+    preprocessorEncoder_->isPrimary_ = true;
     preprocessorEncoder_->secondary_ = &secondary;
     secondary.primary_ = preprocessorEncoder_.get();
     preprocessorEncoder_->DetachPeerEncoder();
