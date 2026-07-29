@@ -1542,10 +1542,8 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
         std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
         sptr<SurfaceBuffer> surfacebuffer = bufferMemory->GetSurfaceBuffer();
         CHECK_AND_RETURN_RET_LOG(surfacebuffer != nullptr, AVCS_ERR_UNKNOWN, "surfacebuffer is nullptr");
-        GSError err = surfacebuffer->SetMetadata(ATTRKEY_CROP_REGION, cropVec);
-        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_CROP_REGION failed");
-        err = surfacebuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoData);
-        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_COLORSPACE_INFO failed");
+        surfacebuffer->SetMetadata(ATTRKEY_CROP_REGION, cropVec);
+        surfacebuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoData);
     }
     decNum_++;
     return AVCS_ERR_OK;
