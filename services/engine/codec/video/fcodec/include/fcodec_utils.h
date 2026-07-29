@@ -254,4 +254,16 @@ int32_t CMRangeToBoolean(CM_Range range)
     }
 }
 } // namespace
+
+namespace OHOS {
+namespace MediaAVCodec {
+namespace Codec {
+static bool IsValidRawVideoPixelFormat(int32_t val)
+{
+    return val >= static_cast<int32_t>(RawVideoPixelFormat::YUV420P) &&
+           val <= static_cast<int32_t>(RawVideoPixelFormat::RGBA);
+}
+} // namespace Codec
+} // namespace MediaAVCodec
+} // namespace OHOS
 #endif // FCODEC_UTILS_H
