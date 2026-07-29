@@ -370,9 +370,11 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         case CAT_APPEND_MISSING_KEYS:
             OHOS::RoiStringFuzzer::AppendRoiStringMissingKeysFuzzTest(&fdp);
             break;
-        case CAT_PARSE_RAW:
-            OHOS::RoiStringFuzzer::ParseRoiStringFuzzTest(data, size);
+        case CAT_PARSE_RAW: {
+            auto remaining = fdp.ConsumeRemainingBytes<uint8_t>();
+            OHOS::RoiStringFuzzer::ParseRoiStringFuzzTest(remaining.data(), remaining.size());
             break;
+        }
         case CAT_PARSE_MIXED:
             OHOS::RoiStringFuzzer::ParseRoiStringMixedFuzzTest(&fdp);
             break;

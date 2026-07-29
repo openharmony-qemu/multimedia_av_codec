@@ -65,7 +65,7 @@ private:
     SmartFluencyDecoding::AsyncDropOutputCallback outputCb_;
     std::vector<uint8_t> cachedCsdData_;
     bool isCsdCached_ = false;
-    std::mutex tempCsdMutex_;
+    std::mutex csdMutex_;
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> tempCsdBufferMap_;
     std::mutex surfaceBufMutex_;
     std::unordered_map<int64_t, sptr<SurfaceBuffer>> surfaceBufMap_;
