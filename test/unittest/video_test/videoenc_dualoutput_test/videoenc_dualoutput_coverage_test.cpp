@@ -2626,14 +2626,31 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConcurrentDestroy_WaitsWorkerExit_001, T
  */
 HWTEST_F(TEST_SUIT, NativeVideoEncoderCallback_PreprocessorRoutes_001, TestSize.Level1)
 {
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    auto videoEncoderObject = encoder->videoEncoderObject_;
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    CallbackTestContext context;
     OH_AVCodecCallback callbackConfig = {};
-    callbackConfig.onError = OnErrorVoid;
-    auto *codec = reinterpret_cast<OH_AVCodec *>(preprocessorEncoder_.get());
-    NativeVideoEncoderCallback callback(codec, callbackConfig, nullptr);
+    callbackConfig.onError = OnErrorForCallbackTest;
+    ASSERT_EQ(encoder->RegisterCallback(callbackConfig, &context), AV_ERR_OK);
+    ASSERT_EQ(encoder->Start(), AV_ERR_OK);
+    encoder->videoEncoderObject_ = videoEncoderObject;
+
+    NativeVideoEncoderCallback callback(codec, callbackConfig, &context);
     callback.OnError(static_cast<AVCodecErrorType>(0), AVCS_ERR_INVALID_VAL);
+    ASSERT_TRUE(WaitForFinishedCount(context, 1));
     callback.OnOutputFormatChanged(Media::Format());
     callback.OnOutputBufferUnbinded();
     callback.OnOutputBufferAvailable(0, std::shared_ptr<AVBuffer>{});
+    {
+        std::lock_guard<std::mutex> lock(context.mutex);
+        EXPECT_EQ(context.callbackCount, 1);
+        EXPECT_NE(context.callbackThreadId, std::this_thread::get_id());
+    }
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
 }
 
 /**
@@ -2767,14 +2784,25 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_MagicSnapshotAndDetachHelpers_001, TestS
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_NullDispatcherLifecycleHelpers_001, TestSize.Level1)
 {
+    int32_t userData = 1;
     preprocessorEncoder_->callbackDispatcher_ = nullptr;
     preprocessorEncoder_->preprocMgr_ = nullptr;
     preprocessorEncoder_->videoEncoderObject_ = nullptr;
+    preprocessorEncoder_->callback_.onError = OnErrorVoid;
+    preprocessorEncoder_->userData_ = &userData;
+    ASSERT_EQ(preprocessorEncoder_->callbackDispatcher_, nullptr);
+
     preprocessorEncoder_->CloseCallbackGate();
     preprocessorEncoder_->CloseAndWaitCallbackIfNeeded();
     preprocessorEncoder_->PrepareCallbackShutdown();
     preprocessorEncoder_->ShutdownCallbackDispatcher();
-    SUCCEED();
+
+    auto snapshot = preprocessorEncoder_->GetCallbackSnapshot();
+    EXPECT_EQ(preprocessorEncoder_->callbackDispatcher_, nullptr);
+    EXPECT_EQ(preprocessorEncoder_->preprocMgr_, nullptr);
+    EXPECT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
+    EXPECT_EQ(snapshot.callback.onError, OnErrorVoid);
+    EXPECT_EQ(snapshot.userData, &userData);
 }
 
 /**
