@@ -1156,6 +1156,7 @@ HWTEST_F(TEST_SUIT, VideoEncoder_RepeatHeaderBeforeSyncFrames_002, TestSize.Leve
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Stop());
 }
 #endif // ONLY_FOR_FLAGSHIP_CHIP
+
 } // namespace
 
 int main(int argc, char **argv)

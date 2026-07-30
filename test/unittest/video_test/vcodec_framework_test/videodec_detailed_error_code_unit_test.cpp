@@ -384,6 +384,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_Not_Exist_002, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoDec_->Stop());
     CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_HEVC);
 }
+
 #ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoDecoder_XPS_MBAFF_001
@@ -407,6 +408,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_XPS_MBAFF_001, TestSize.Level1)
     CheckDetailedErrorCode(vdecCallback_->detailedErrorCode_.verification_, CodecMimeType::VIDEO_AVC);
 }
 #endif // ONLY_FOR_FLAGSHIP_CHIP
+
 } // namespace
 
 int main(int argc, char **argv)
