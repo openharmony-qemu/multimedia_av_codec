@@ -532,6 +532,27 @@ HWTEST_F(AttributeUnitTest, ParseUriQuery_011, TestSize.Level1)
     EXPECT_TRUE(params.empty());
 }
 
+HWTEST_F(AttributeUnitTest, ParseUriQuery_012, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?key=a%4";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params["key"], "a%4");
+}
+ 
+HWTEST_F(AttributeUnitTest, ParseUriQuery_013, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?key=%4";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params["key"], "%4");
+}
+ 
+HWTEST_F(AttributeUnitTest, ParseUriQuery_014, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?key=a%";
+    auto params = ParseUriQuery(uri);
+    EXPECT_EQ(params["key"], "a%");
+}
+
 HWTEST_F(AttributeUnitTest, ParseEntries_001, TestSize.Level1)
 {
     std::string hlsContent = "#EXT-X-DEFINE:NAME=\"test\",VALUE=\"out\"\n"
