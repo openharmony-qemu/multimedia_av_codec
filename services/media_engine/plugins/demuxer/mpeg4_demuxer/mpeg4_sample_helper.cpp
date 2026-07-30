@@ -43,6 +43,94 @@ constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
 constexpr uint32_t HALF_BYTE_NUMBER = 2;
 
+struct MPEG4SampleHelper::SampleInfo {
+    uint32_t duration = 0;
+    uint32_t size = 0;
+    uint32_t flag = 0;
+    uint32_t ctsDelta = 0;
+    uint32_t byteLength = 0;
+    uint32_t dataOffset = 0;
+    uint32_t index = 0;
+};
+
+struct MPEG4SampleHelper::TrunSampleInitContext {
+    uint32_t trunFlag = 0;
+    const uint8_t* data = nullptr;
+    size_t dataSize = 0;
+    uint32_t bufferOffset = 0;
+    uint32_t firstSampleFlag = 0;
+};
+
+struct MPEG4SampleHelper::EditListBuildContext {
+    const std::vector<SampleIndexEntry>& oldEntries;
+    const std::vector<DurationOverride>& oldDurationOverrides;
+    const std::vector<StssEntry>& oldSyncSamples;
+    bool oldAllSamplesSync;
+    std::vector<SampleIndexEntry>& newEntries;
+    std::vector<int64_t>& newDurations;
+    std::vector<StssEntry>& newSyncSamples;
+    SkipSamplesInfoMap& newSkipSamplesInfo;
+    int64_t& editListDtsEntryEnd;
+    int64_t& emptyEditsDuration;
+    int64_t& minCorrectedPts;
+    bool& foundNonEmptyEdit;
+    int32_t& firstNonZeroAudioEdit;
+    int64_t startDts;
+};
+
+struct MPEG4SampleHelper::EditListProcessContext {
+    const EditListEntry* edit = nullptr;
+    int64_t editDuration = 0;
+    size_t startIndex = 0;
+    int64_t dtsCounter = 0;
+    int64_t editEndTime = 0;
+    bool skipEntry = false;
+    bool editListStartEncountered = false;
+    bool foundKeyframeAfterEdit = false;
+    bool continueAfterEdit = false;
+    bool shouldBreak = false;
+    bool newEntryIsSync = false;
+    SampleIndexEntry newEntry;
+    int64_t frameDuration = 0;
+    int64_t frameEndTime = 0;
+    std::vector<uint8_t> skipSamplesInfo;
+    std::vector<int64_t> leadingDurations;
+};
+
+struct MPEG4SampleHelper::EditListRestoreGuard {
+    std::vector<SampleIndexEntry>& entries;
+    std::vector<DurationOverride>& overrides;
+    std::vector<StssEntry>& syncSamples;
+    bool& allSamplesSync;
+    std::vector<SampleIndexEntry>& oldEntries;
+    std::vector<DurationOverride>& oldOverrides;
+    std::vector<StssEntry>& oldSyncSamples;
+    bool oldAllSamplesSync;
+    bool active = true;
+
+    ~EditListRestoreGuard();
+};
+
+struct MPEG4SampleHelper::SampleEntryCreateContext {
+    const SampleInfo& sampleInfo;
+    int64_t offset = 0;
+    int64_t currentDts = 0;
+    bool isOverlap = false;
+};
+
+struct MPEG4SampleHelper::TfhdParseContext {
+    uint32_t flag = 0;
+    const uint8_t* data = nullptr;
+    size_t dataSize = 0;
+    size_t dataOffset = 0;
+};
+
+struct MPEG4SampleHelper::TfhdOptionalUint32Field {
+    uint32_t flag = 0;
+    uint32_t defaultValue = 0;
+    uint32_t* output = nullptr;
+};
+
 Status ConvertTimeScaleRoundNearest(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result)
 {
     int64_t scaled = 0;

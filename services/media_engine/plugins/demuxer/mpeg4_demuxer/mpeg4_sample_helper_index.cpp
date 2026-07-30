@@ -23,16 +23,45 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "MPEG4SampleHelper"};
-constexpr uint32_t maxReorderDelay = 16;
-constexpr size_t maxSimpleEditEntryCount = 2;
-constexpr size_t skipSamplesInfoSize = 10;
-constexpr uint32_t bitsPerByte = 8;
+constexpr uint32_t MAX_REORDER_DELAY = 16;
+constexpr size_t MAX_SIMPLE_EDIT_ENTRY_COUNT = 2;
+constexpr size_t SKIP_SAMPLES_INFO_SIZE = 10;
+constexpr uint32_t BITS_PER_BYTE = 8;
 }
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace MPEG4 {
+struct MPEG4SampleHelper::SimpleEditProjectionBuildContext {
+    uint32_t rawStart = 0;
+    uint32_t rawEnd = 0;
+    uint32_t firstPlayableRaw = 0;
+    int64_t rawDtsAtFirstPlayable = 0;
+    int64_t anchorDts = 0;
+    int64_t minCorrectedPts = INT64_MAX;
+    int64_t maxCorrectedPts = INT64_MIN;
+    int64_t maxCorrectedPtsEnd = INT64_MIN;
+    int64_t maxOutputDtsEnd = INT64_MIN;
+    int64_t rawStartDts = 0;
+    int64_t rawStartPts = 0;
+    uint32_t skipOutputIndex = 0;
+    uint32_t skipSamples = 0;
+    bool hasSkipSamples = false;
+    bool started = false;
+    bool foundKeyframeAfterEdit = false;
+};
+
+struct MPEG4SampleHelper::SimpleEditProjectionSampleContext {
+    const EditListEntry& edit;
+    const SampleIndexView& view;
+    SimpleEditProjectionBuildContext& scanCtx;
+    int64_t baseDts = 0;
+    int64_t editEnd = 0;
+    uint32_t rawIndex = 0;
+    bool shouldBreak = false;
+};
+
 bool MPEG4SampleHelper::IsGroupedRawAudio() const
 {
     return mimeType_ == MimeType::AUDIO_G711MU || mimeType_ == MimeType::AUDIO_G711A ||
@@ -277,7 +306,7 @@ uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
 {
     FALSE_RETURN_V_NOLOG(!sttsEntry_.empty() && !cttsEntry_.empty() && sampleTableSummary_.rawSampleCount > 0, 0);
     // Keep metadata parsing index-free: VIDEO_DELAY only needs DTS plus CTTS order, not full sample offsets.
-    std::array<int64_t, maxReorderDelay + 1> ptsBuffer;
+    std::array<int64_t, MAX_REORDER_DELAY + 1> ptsBuffer;
     ptsBuffer.fill(INT64_MIN);
     uint32_t bufferStart = 0;
     uint32_t videoDelay = 0;
@@ -300,7 +329,7 @@ uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
         while (pos != bufferStart) {
             int32_t previous = static_cast<int32_t>(pos) - 1;
             if (previous < 0) {
-                previous = maxReorderDelay;
+                previous = MAX_REORDER_DELAY;
             }
             if (ptsBuffer[pos] >= ptsBuffer[previous]) {
                 break;
@@ -559,8 +588,8 @@ Status MPEG4SampleHelper::CalculateFlatSampleTimeSummary(int64_t initialDts, int
                 static_cast<int64_t>(sttsEntry_[sttsIndex].delta), &runDtsAdvance) &&
             !__builtin_add_overflow(currentDts, runDtsAdvance, &lastSampleDts) &&
             !__builtin_add_overflow(lastSampleDts, ptsOffset, &lastSamplePts) &&
-            !__builtin_add_overflow(lastSamplePts, static_cast<int64_t>(sttsEntry_[sttsIndex].delta),
-                &lastSamplePtsEnd), Status::ERROR_INVALID_DATA);
+        !__builtin_add_overflow(lastSamplePts, static_cast<int64_t>(sttsEntry_[sttsIndex].delta),
+            &lastSamplePtsEnd), Status::ERROR_INVALID_DATA);
         maxPts = std::max(maxPts, lastSamplePts);
         sampleTableSummary_.maxPtsEnd = std::max(sampleTableSummary_.maxPtsEnd, lastSamplePtsEnd);
         int64_t dtsAdvance = 0;
@@ -622,11 +651,11 @@ bool MPEG4SampleHelper::IsSimpleEditProjectionSupported() const
 {
     // Sparse ELST is intentionally limited to the common linear projection cases.
     // Complex edit lists still use the existing dense ApplyEditList path for exact compatibility.
-    if (editListEntries_.empty() || editListEntries_.size() > maxSimpleEditEntryCount ||
+    if (editListEntries_.empty() || editListEntries_.size() > MAX_SIMPLE_EDIT_ENTRY_COUNT ||
         IsGroupedRawAudio() || movieTimeScale_ <= 0 || trackTimeScale_ <= 0) {
         return false;
     }
-    bool hasLeadingEmptyEdit = editListEntries_.size() == maxSimpleEditEntryCount &&
+    bool hasLeadingEmptyEdit = editListEntries_.size() == MAX_SIMPLE_EDIT_ENTRY_COUNT &&
         editListEntries_[0].mediaTime == -1 && editListEntries_[1].mediaTime >= 0;
     bool hasSingleMediaEdit = editListEntries_.size() == 1 && editListEntries_[0].mediaTime >= 0;
     if (!hasLeadingEmptyEdit && !hasSingleMediaEdit) {
@@ -645,7 +674,7 @@ Status MPEG4SampleHelper::PrepareSimpleEditProjection(
 {
     FALSE_RETURN_V_NOLOG(ConvertEditDuration(edit, editDuration) == Status::OK && editDuration > 0,
         Status::ERROR_UNSUPPORTED_FORMAT);
-    if (editListEntries_.size() == maxSimpleEditEntryCount) {
+    if (editListEntries_.size() == MAX_SIMPLE_EDIT_ENTRY_COUNT) {
         FALSE_RETURN_V_NOLOG(ConvertEditDuration(editListEntries_[0], emptyDuration) == Status::OK,
             Status::ERROR_UNSUPPORTED_FORMAT);
     }
@@ -712,56 +741,55 @@ Status MPEG4SampleHelper::ScanSimpleEditProjectionSamples(const EditListEntry& e
         SampleIndexView view;
         FALSE_RETURN_V_NOLOG(ReadRawSampleAndAdvance(cursor, view) == Status::OK,
             Status::ERROR_UNSUPPORTED_FORMAT);
-        bool shouldBreak = false;
-        Status ret = ProcessSimpleEditProjectionSample(edit, baseDts, editEnd, rawIndex, view, scanCtx, shouldBreak);
+        SimpleEditProjectionSampleContext sampleCtx {edit, view, scanCtx, baseDts, editEnd, rawIndex};
+        Status ret = ProcessSimpleEditProjectionSample(sampleCtx);
         FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-        if (shouldBreak) {
+        if (sampleCtx.shouldBreak) {
             break;
         }
     }
     return Status::OK;
 }
 
-Status MPEG4SampleHelper::ProcessSimpleEditProjectionSample(const EditListEntry& edit, int64_t baseDts,
-    int64_t editEnd, uint32_t rawIndex, const SampleIndexView& view, SimpleEditProjectionBuildContext& scanCtx,
-    bool& shouldBreak) const
+Status MPEG4SampleHelper::ProcessSimpleEditProjectionSample(SimpleEditProjectionSampleContext& sampleCtx) const
 {
-    shouldBreak = false;
-    if (rawIndex == scanCtx.rawStart) {
-        scanCtx.rawStartDts = view.dts;
-        scanCtx.rawStartPts = view.pts;
+    sampleCtx.shouldBreak = false;
+    if (sampleCtx.rawIndex == sampleCtx.scanCtx.rawStart) {
+        sampleCtx.scanCtx.rawStartDts = sampleCtx.view.dts;
+        sampleCtx.scanCtx.rawStartPts = sampleCtx.view.pts;
     }
     int64_t frameEnd = 0;
-    FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(view.pts, view.duration, &frameEnd),
+    FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(sampleCtx.view.pts, sampleCtx.view.duration, &frameEnd),
         Status::ERROR_UNSUPPORTED_FORMAT);
-    bool outside = view.pts < edit.mediaTime || view.pts >= editEnd;
-    bool crossedAudioStart = trackType_ == AUDIO_TYPE && view.pts < edit.mediaTime && frameEnd >= edit.mediaTime;
-    if (!scanCtx.started && (!outside || crossedAudioStart)) {
-        Status ret = StartSimpleEditProjectionSample(edit, baseDts, rawIndex, view, scanCtx, crossedAudioStart);
+    bool outside = sampleCtx.view.pts < sampleCtx.edit.mediaTime || sampleCtx.view.pts >= sampleCtx.editEnd;
+    bool crossedAudioStart = trackType_ == AUDIO_TYPE && sampleCtx.view.pts < sampleCtx.edit.mediaTime &&
+        frameEnd >= sampleCtx.edit.mediaTime;
+    if (!sampleCtx.scanCtx.started && (!outside || crossedAudioStart)) {
+        Status ret = StartSimpleEditProjectionSample(sampleCtx, crossedAudioStart);
         FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     }
-    if (!scanCtx.started) {
+    if (!sampleCtx.scanCtx.started) {
         return Status::OK;
     }
-    Status ret = UpdateSimpleEditProjectionTimes(view, outside, scanCtx);
+    Status ret = UpdateSimpleEditProjectionTimes(sampleCtx.view, outside, sampleCtx.scanCtx);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    shouldBreak = ShouldStopSimpleEditProjectionScan(rawIndex, frameEnd, editEnd, scanCtx);
+    sampleCtx.shouldBreak = ShouldStopSimpleEditProjectionScan(sampleCtx, frameEnd);
     return Status::OK;
 }
 
-Status MPEG4SampleHelper::StartSimpleEditProjectionSample(const EditListEntry& edit, int64_t baseDts,
-    uint32_t rawIndex, const SampleIndexView& view, SimpleEditProjectionBuildContext& scanCtx,
-    bool crossedAudioStart) const
+Status MPEG4SampleHelper::StartSimpleEditProjectionSample(
+    SimpleEditProjectionSampleContext& sampleCtx, bool crossedAudioStart) const
 {
+    auto& scanCtx = sampleCtx.scanCtx;
     scanCtx.started = true;
-    scanCtx.firstPlayableRaw = rawIndex;
-    scanCtx.rawDtsAtFirstPlayable = view.dts;
-    int64_t skip = crossedAudioStart ? edit.mediaTime - view.pts : 0;
+    scanCtx.firstPlayableRaw = sampleCtx.rawIndex;
+    scanCtx.rawDtsAtFirstPlayable = sampleCtx.view.dts;
+    int64_t skip = crossedAudioStart ? sampleCtx.edit.mediaTime - sampleCtx.view.pts : 0;
     FALSE_RETURN_V_NOLOG(skip >= 0 && skip <= UINT32_MAX &&
-        !__builtin_sub_overflow(baseDts, skip, &scanCtx.anchorDts), Status::ERROR_UNSUPPORTED_FORMAT);
+        !__builtin_sub_overflow(sampleCtx.baseDts, skip, &scanCtx.anchorDts), Status::ERROR_UNSUPPORTED_FORMAT);
     if (crossedAudioStart && skip > 0) {
         scanCtx.hasSkipSamples = true;
-        scanCtx.skipOutputIndex = rawIndex - scanCtx.rawStart;
+        scanCtx.skipOutputIndex = sampleCtx.rawIndex - scanCtx.rawStart;
         scanCtx.skipSamples = static_cast<uint32_t>(skip);
     }
     return Status::OK;
@@ -792,10 +820,12 @@ Status MPEG4SampleHelper::UpdateSimpleEditProjectionTimes(
 }
 
 bool MPEG4SampleHelper::ShouldStopSimpleEditProjectionScan(
-    uint32_t rawIndex, int64_t frameEnd, int64_t editEnd, SimpleEditProjectionBuildContext& scanCtx) const
+    SimpleEditProjectionSampleContext& sampleCtx, int64_t frameEnd) const
 {
-    scanCtx.rawEnd = rawIndex;
-    if (frameEnd < editEnd || (!IsSyncSample(stssEntry_, allSamplesSync_, rawIndex) && trackType_ != AUDIO_TYPE)) {
+    auto& scanCtx = sampleCtx.scanCtx;
+    scanCtx.rawEnd = sampleCtx.rawIndex;
+    if (frameEnd < sampleCtx.editEnd ||
+        (!IsSyncSample(stssEntry_, allSamplesSync_, sampleCtx.rawIndex) && trackType_ != AUDIO_TYPE)) {
         return false;
     }
     if (trackType_ == VIDEO_TYPE && !cttsEntry_.empty() && !scanCtx.foundKeyframeAfterEdit) {
@@ -841,9 +871,9 @@ Status MPEG4SampleHelper::CommitSimpleEditProjection(const EditListEntry& edit, 
 
 void MPEG4SampleHelper::SaveSimpleEditSkipSamples(uint32_t skipOutputIndex, uint32_t skipSamples)
 {
-    std::vector<uint8_t> info(skipSamplesInfoSize, 0);
+    std::vector<uint8_t> info(SKIP_SAMPLES_INFO_SIZE, 0);
     for (size_t i = 0; i < sizeof(uint32_t); ++i) {
-        info[i] = static_cast<uint8_t>((skipSamples >> (bitsPerByte * i)) & 0xFF);
+        info[i] = static_cast<uint8_t>((skipSamples >> (BITS_PER_BYTE * i)) & 0xFF);
     }
     skipSamplesInfoMap_[skipOutputIndex] = std::move(info);
 }

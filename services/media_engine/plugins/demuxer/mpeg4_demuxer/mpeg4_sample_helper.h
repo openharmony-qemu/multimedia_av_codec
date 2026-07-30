@@ -249,24 +249,8 @@ private:
         int64_t editEndTime = 0;
         int64_t emptyDuration = 0;
     };
-    struct SimpleEditProjectionBuildContext {
-        uint32_t rawStart = 0;
-        uint32_t rawEnd = 0;
-        uint32_t firstPlayableRaw = 0;
-        int64_t rawDtsAtFirstPlayable = 0;
-        int64_t anchorDts = 0;
-        int64_t minCorrectedPts = INT64_MAX;
-        int64_t maxCorrectedPts = INT64_MIN;
-        int64_t maxCorrectedPtsEnd = INT64_MIN;
-        int64_t maxOutputDtsEnd = INT64_MIN;
-        int64_t rawStartDts = 0;
-        int64_t rawStartPts = 0;
-        uint32_t skipOutputIndex = 0;
-        uint32_t skipSamples = 0;
-        bool hasSkipSamples = false;
-        bool started = false;
-        bool foundKeyframeAfterEdit = false;
-    };
+    struct SimpleEditProjectionBuildContext;
+    struct SimpleEditProjectionSampleContext;
     struct DurationOverride {
         uint32_t sampleIndex = 0;
         int64_t duration = 0;
@@ -306,22 +290,8 @@ private:
         uint32_t defaultSampleDuration;
         uint32_t defaultSampleSize;
     };
-    struct SampleInfo {
-        uint32_t duration = 0;
-        uint32_t size = 0;
-        uint32_t flag = 0;
-        uint32_t ctsDelta = 0;
-        uint32_t byteLength = 0;
-        uint32_t dataOffset = 0;
-        uint32_t index = 0;
-    };
-    struct TrunSampleInitContext {
-        uint32_t trunFlag = 0;
-        const uint8_t* data = nullptr;
-        size_t dataSize = 0;
-        uint32_t bufferOffset = 0;
-        uint32_t firstSampleFlag = 0;
-    };
+    struct SampleInfo;
+    struct TrunSampleInitContext;
     struct SampleIndexBuildContext {
         int64_t currentOffset = 0;
         uint32_t chunkIndex = 0;
@@ -340,70 +310,12 @@ private:
         bool hasPreviousDuration = false;
     };
     using SkipSamplesInfoMap = std::unordered_map<uint32_t, std::vector<uint8_t>>;
-    struct EditListBuildContext {
-        const std::vector<SampleIndexEntry>& oldEntries;
-        const std::vector<DurationOverride>& oldDurationOverrides;
-        const std::vector<StssEntry>& oldSyncSamples;
-        bool oldAllSamplesSync;
-        std::vector<SampleIndexEntry>& newEntries;
-        std::vector<int64_t>& newDurations;
-        std::vector<StssEntry>& newSyncSamples;
-        SkipSamplesInfoMap& newSkipSamplesInfo;
-        int64_t& editListDtsEntryEnd;
-        int64_t& emptyEditsDuration;
-        int64_t& minCorrectedPts;
-        bool& foundNonEmptyEdit;
-        int32_t& firstNonZeroAudioEdit;
-        int64_t startDts;
-    };
-    struct EditListProcessContext {
-        const EditListEntry* edit = nullptr;
-        int64_t editDuration = 0;
-        size_t startIndex = 0;
-        int64_t dtsCounter = 0;
-        int64_t editEndTime = 0;
-        bool skipEntry = false;
-        bool editListStartEncountered = false;
-        bool foundKeyframeAfterEdit = false;
-        bool continueAfterEdit = false;
-        bool shouldBreak = false;
-        bool newEntryIsSync = false;
-        SampleIndexEntry newEntry;
-        int64_t frameDuration = 0;
-        int64_t frameEndTime = 0;
-        std::vector<uint8_t> skipSamplesInfo;
-        std::vector<int64_t> leadingDurations;
-    };
-    struct EditListRestoreGuard {
-        std::vector<SampleIndexEntry>& entries;
-        std::vector<DurationOverride>& overrides;
-        std::vector<StssEntry>& syncSamples;
-        bool& allSamplesSync;
-        std::vector<SampleIndexEntry>& oldEntries;
-        std::vector<DurationOverride>& oldOverrides;
-        std::vector<StssEntry>& oldSyncSamples;
-        bool oldAllSamplesSync;
-        bool active = true;
-
-        ~EditListRestoreGuard();
-    };
-    struct SampleEntryCreateContext {
-        const SampleInfo& sampleInfo;
-        int64_t offset = 0;
-        int64_t currentDts = 0;
-        bool isOverlap = false;
-    };
-    struct TfhdParseContext {
-        uint32_t flag = 0;
-        const uint8_t* data = nullptr;
-        size_t dataSize = 0;
-        size_t dataOffset = 0;
-    };
-    struct TfhdOptionalUint32Field {
-        uint32_t flag = 0;
-        uint32_t defaultValue = 0;
-        uint32_t* output = nullptr;
-    };
+    struct EditListBuildContext;
+    struct EditListProcessContext;
+    struct EditListRestoreGuard;
+    struct SampleEntryCreateContext;
+    struct TfhdParseContext;
+    struct TfhdOptionalUint32Field;
 
     std::vector<SttsEntry> sttsEntry_;
     std::vector<SampleIndexEntry> sampleIndexEntry_;
@@ -570,15 +482,11 @@ private:
     Status FindSimpleEditRawStart(const EditListEntry& edit, uint32_t& rawStart) const;
     Status ScanSimpleEditProjectionSamples(const EditListEntry& edit, int64_t emptyDuration, int64_t editEnd,
         SimpleEditProjectionBuildContext& scanCtx) const;
-    Status ProcessSimpleEditProjectionSample(const EditListEntry& edit, int64_t baseDts, int64_t editEnd,
-        uint32_t rawIndex, const SampleIndexView& view, SimpleEditProjectionBuildContext& scanCtx,
-        bool& shouldBreak) const;
-    Status StartSimpleEditProjectionSample(const EditListEntry& edit, int64_t baseDts, uint32_t rawIndex,
-        const SampleIndexView& view, SimpleEditProjectionBuildContext& scanCtx, bool crossedAudioStart) const;
+    Status ProcessSimpleEditProjectionSample(SimpleEditProjectionSampleContext& sampleCtx) const;
+    Status StartSimpleEditProjectionSample(SimpleEditProjectionSampleContext& sampleCtx, bool crossedAudioStart) const;
     Status UpdateSimpleEditProjectionTimes(const SampleIndexView& view, bool outside,
         SimpleEditProjectionBuildContext& scanCtx) const;
-    bool ShouldStopSimpleEditProjectionScan(uint32_t rawIndex, int64_t frameEnd, int64_t editEnd,
-        SimpleEditProjectionBuildContext& scanCtx) const;
+    bool ShouldStopSimpleEditProjectionScan(SimpleEditProjectionSampleContext& sampleCtx, int64_t frameEnd) const;
     Status CommitSimpleEditProjection(const EditListEntry& edit, int64_t editDuration, int64_t emptyDuration,
         int64_t editEnd, const SimpleEditProjectionBuildContext& scanCtx);
     void SaveSimpleEditSkipSamples(uint32_t skipOutputIndex, uint32_t skipSamples);
