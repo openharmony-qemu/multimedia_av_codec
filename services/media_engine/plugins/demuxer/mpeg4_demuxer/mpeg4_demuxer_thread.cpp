@@ -133,6 +133,8 @@ Status MPEG4DemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
 
     Status ret = CheckSeekToFrameByDtsParam(trackId, seekTime, mode);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Check seek by dts parameter failed");
+    ret = EnsureSelectedTracksDense();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build dense sample index failed");
     int64_t startMs = NowMs();
     ResetCacheForSeek();
     SeekToFrameByDtsContext context;

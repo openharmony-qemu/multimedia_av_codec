@@ -23,6 +23,7 @@
 #include <fstream>
 #include <chrono>
 #include <limits>
+#include <numeric>
 
 #include "avcodec_trace.h"
 #include "demuxer_utils.h"
@@ -58,6 +59,29 @@ using RefTrace = MediaAVCodec::AVCodecTrace;
 
 constexpr uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
 
+bool MPEG4DemuxerPlugin::GetReferenceParserCapability(int32_t& trackIndex, std::string& mimeType) const
+{
+    trackIndex = -1;
+    mimeType = MimeType::INVALID_TYPE;
+    uint32_t videoTrackCount = 0;
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        MediaType trackType = MediaType::UNKNOWN;
+        std::string currentMime = MimeType::INVALID_TYPE;
+        (void)mediaInfo_.tracks[i].Get<Tag::MEDIA_TYPE>(trackType);
+        (void)mediaInfo_.tracks[i].Get<Tag::MIME_TYPE>(currentMime);
+        if (trackType != MediaType::VIDEO || !StartWith(currentMime.c_str(), "video/")) {
+            continue;
+        }
+        ++videoTrackCount;
+        if (videoTrackCount == 1 && i <= static_cast<uint32_t>(INT32_MAX)) {
+            trackIndex = static_cast<int32_t>(i);
+            mimeType = currentMime;
+        }
+    }
+    return videoTrackCount == 1 &&
+        (mimeType == MimeType::VIDEO_AVC || mimeType == MimeType::VIDEO_HEVC);
+}
+
 bool MPEG4DemuxerPlugin::IsRefParserSupported()
 {
     FileType fileType = FileType::UNKNOW;
@@ -65,9 +89,64 @@ bool MPEG4DemuxerPlugin::IsRefParserSupported()
         "fileType does not exist in mediaInfo_");
     FALSE_RETURN_V_MSG_E(fileType == FileType::MP4 || fileType == FileType::MOV, false,
         "RefParser unsupported file type " PUBLIC_LOG_D32, fileType);
-    FALSE_RETURN_V_MSG_E(!IsMultiVideoTracks(), false, "multi-video-tracks video is unsupported");
-    FALSE_RETURN_V_MSG_W(IsSupportedCodec(), false, "RefParser unsupported stream type");
-    return true;
+    // Capability checks stay side-effect free; heavy GOP state is prepared on first ParserRefInfo().
+    int32_t trackIndex = -1;
+    std::string mimeType;
+    return GetReferenceParserCapability(trackIndex, mimeType);
+}
+
+Status MPEG4DemuxerPlugin::GetReferenceSampleTime(
+    uint32_t sampleIndex, int64_t& ptsUs, int64_t& dtsUs) const
+{
+    FALSE_RETURN_V_NOLOG(trackOfRefParser_ != nullptr && trackOfRefParser_->sampleHelper != nullptr,
+        Status::ERROR_INVALID_DATA);
+    MPEG4SampleHelper::SampleIndexView view;
+    FALSE_RETURN_V_NOLOG(trackOfRefParser_->sampleHelper->GetSampleIndexView(sampleIndex, view) == Status::OK,
+        Status::ERROR_INVALID_DATA);
+    int32_t timeScale = trackOfRefParser_->timeScale;
+    FALSE_RETURN_V_NOLOG(timeScale > 0, Status::ERROR_INVALID_DATA);
+    double scale = static_cast<double>(S_TO_US) / static_cast<double>(timeScale);
+    double pts = static_cast<double>(view.pts) * scale;
+    double dts = static_cast<double>(view.dts) * scale;
+    FALSE_RETURN_V_NOLOG(pts >= static_cast<double>(INT64_MIN) && pts <= static_cast<double>(INT64_MAX) &&
+        dts >= static_cast<double>(INT64_MIN) && dts <= static_cast<double>(INT64_MAX), Status::ERROR_INVALID_DATA);
+    ptsUs = static_cast<int64_t>(pts);
+    dtsUs = static_cast<int64_t>(dts);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::EnsureReferenceParserPrepared()
+{
+    std::lock_guard<std::mutex> lock(refPrepareMutex_);
+    if (refPrepareAttempted_) {
+        return refPrepareStatus_;
+    }
+    refPrepareAttempted_ = true;
+    int32_t trackIndex = -1;
+    std::string mimeType;
+    if (!GetReferenceParserCapability(trackIndex, mimeType)) {
+        refPrepareStatus_ = Status::ERROR_UNSUPPORTED_FORMAT;
+        return refPrepareStatus_;
+    }
+    auto track = FindTrackById(trackIndex);
+    if (track == nullptr || track->sampleHelper == nullptr || track->sampleHelper->GetSampleCount() == 0) {
+        refPrepareStatus_ = Status::ERROR_INVALID_DATA;
+        return refPrepareStatus_;
+    }
+    // Reference parsing needs stable random access and sync remapping, so it is the lazy dense trigger.
+    refPrepareStatus_ = track->sampleHelper->EnsureDenseIndex();
+    if (refPrepareStatus_ != Status::OK) {
+        return refPrepareStatus_;
+    }
+    refParserTrackIdx_ = trackIndex;
+    mimeTypeOfVideoStream_ = mimeType;
+    trackOfRefParser_ = track;
+    syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
+    int64_t firstDtsUs = 0;
+    refPrepareStatus_ = GetReferenceSampleTime(0, startPts_, firstDtsUs);
+    MEDIA_LOG_I("Reference parser prepared, track=" PUBLIC_LOG_D32 ", sync samples=" PUBLIC_LOG_ZU,
+        refParserTrackIdx_, syncSamplesIndex_.size());
+    return refPrepareStatus_;
 }
 
 Status MPEG4DemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForward)
@@ -100,6 +179,8 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
 {
     MEDIA_LOG_I("ParserRefInfo start, refParserCurGopId_ is " PUBLIC_LOG_D32, refParserCurGopId_);
     if (!isInit_) {
+        Status prepareRet = EnsureReferenceParserPrepared();
+        FALSE_RETURN_V_MSG_E(prepareRet == Status::OK, prepareRet, "Prepare reference parser failed");
         isInit_ = true;
         Status ret = RefParserInit();
         FALSE_RETURN_V_NOLOG(ret != Status::END_OF_STREAM, Status::OK);
@@ -177,32 +258,58 @@ Status MPEG4DemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLaye
 
 Status MPEG4DemuxerPlugin::GetIFramePos(std::vector<uint32_t> &IFramePos)
 {
-    FALSE_RETURN_V_MSG_E(syncSamplesIndex_.size() > 0, Status::ERROR_UNKNOWN, "syncSamplesIndex_ size is 0");
-    IFramePos = syncSamplesIndex_;
+    int32_t trackIndex = -1;
+    std::string mimeType;
+    FALSE_RETURN_V_MSG_E(GetReferenceParserCapability(trackIndex, mimeType), Status::ERROR_UNSUPPORTED_FORMAT,
+        "Unsupported reference parser");
+    auto track = FindTrackById(trackIndex);
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_INVALID_DATA,
+        "Reference parser track is invalid");
+    IFramePos = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
+    FALSE_RETURN_V_MSG_E(!IFramePos.empty(), Status::ERROR_UNKNOWN, "sync sample size is 0");
     return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
-    int64_t dtsBasedOnPtsZero = 0;  // dts starting from 0 for pts
-    FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(dts, startPts_, &dtsBasedOnPtsZero), Status::ERROR_INVALID_DATA,
-        "Overflow");
-    auto it = dts2SyncSampleIndex_.lower_bound(dtsBasedOnPtsZero);
-    FALSE_RETURN_V_MSG_E(it != dts2SyncSampleIndex_.end(), Status::ERROR_OUT_OF_RANGE, "Failed to find nearest frame");
-    frameId = it->second;
+    Status ret = EnsureReferenceParserPrepared();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare reference parser failed");
+    uint32_t left = 0;
+    uint32_t right = static_cast<uint32_t>(trackOfRefParser_->sampleHelper->GetSampleCount());
+    while (left < right) {
+        uint32_t middle = left + (right - left) / 2;
+        int64_t ptsUs = 0;
+        int64_t dtsUs = 0;
+        FALSE_RETURN_V_MSG_E(GetReferenceSampleTime(middle, ptsUs, dtsUs) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get sample time failed");
+        if (dtsUs < dts) {
+            left = middle + 1;
+        } else {
+            right = middle;
+        }
+    }
+    FALSE_RETURN_V_MSG_E(left < trackOfRefParser_->sampleHelper->GetSampleCount(),
+        Status::ERROR_OUT_OF_RANGE, "Failed to find nearest frame");
+    frameId = left;
     MEDIA_LOG_I("Dts2FrameId, dts is " PUBLIC_LOG_D64 ", frameId is " PUBLIC_LOG_U32, dts, frameId);
     return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
 {
-    FALSE_RETURN_V_MSG_E(sampleIndex2Pts_.find(frameId) != sampleIndex2Pts_.end(), Status::ERROR_UNKNOWN,
-        "frameId does not exist in syncSampleIndex2Pts_");
-    seekMs = sampleIndex2Pts_[frameId] / US_TO_MS;
+    Status ret = EnsureReferenceParserPrepared();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare reference parser failed");
+    int64_t ptsUs = 0;
+    int64_t dtsUs = 0;
+    FALSE_RETURN_V_MSG_E(GetReferenceSampleTime(frameId, ptsUs, dtsUs) == Status::OK,
+        Status::ERROR_UNKNOWN, "frameId is invalid");
+    FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(ptsUs, startPts_, &ptsUs),
+        Status::ERROR_INVALID_DATA, "Relative pts overflow");
+    seekMs = ptsUs / US_TO_MS;
     return Status::OK;
 }
 
-bool MPEG4DemuxerPlugin::IsMultiVideoTracks()
+bool MPEG4DemuxerPlugin::IsMultiVideoTracks() const
 {
     uint32_t videoTrackCount = 0;
     for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
@@ -213,8 +320,6 @@ bool MPEG4DemuxerPlugin::IsMultiVideoTracks()
         MEDIA_LOG_I("track index is " PUBLIC_LOG_U32 ", trackType is " PUBLIC_LOG_D32 ", mimeType is " PUBLIC_LOG_S, i,
             trackType, mimeType.c_str());
         if (trackType == MediaType::VIDEO && StartWith(mimeType.c_str(), "video/")) {
-            refParserTrackIdx_ =
-                (refParserTrackIdx_ == -1) && i <= INT32_MAX ? static_cast<int32_t>(i) : refParserTrackIdx_;
             videoTrackCount++;
             if (videoTrackCount > 1) {  // multi video tracks
                 return true;
@@ -224,7 +329,7 @@ bool MPEG4DemuxerPlugin::IsMultiVideoTracks()
     return false;
 }
 
-bool MPEG4DemuxerPlugin::IsSupportedCodec()
+bool MPEG4DemuxerPlugin::IsSupportedCodec() const
 {
     for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
         MediaType trackType = MediaType::UNKNOWN;
@@ -233,8 +338,6 @@ bool MPEG4DemuxerPlugin::IsSupportedCodec()
             std::string mimeType = MimeType::INVALID_TYPE;
             mediaInfo_.tracks[i].Get<Tag::MIME_TYPE>(mimeType);
             if (mimeType == MimeType::VIDEO_AVC || mimeType == MimeType::VIDEO_HEVC) {
-                mimeTypeOfVideoStream_ = (mimeTypeOfVideoStream_ == MimeType::INVALID_TYPE) ? mimeType :
-                mimeTypeOfVideoStream_;
                 return true;
             }
             return false;
@@ -258,22 +361,67 @@ Status MPEG4DemuxerPlugin::GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId)
     return Status::OK;
 }
 
+Status MPEG4DemuxerPlugin::EnsureReferencePtsOrder()
+{
+    Status ret = EnsureReferenceParserPrepared();
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+    std::lock_guard<std::mutex> lock(refPrepareMutex_);
+    if (refPtsOrderReady_) {
+        return Status::OK;
+    }
+    size_t sampleCount = trackOfRefParser_->sampleHelper->GetSampleCount();
+    FALSE_RETURN_V_NOLOG(sampleCount <= static_cast<size_t>(UINT32_MAX), Status::ERROR_INVALID_DATA);
+    std::vector<uint32_t> order(sampleCount);
+    std::iota(order.begin(), order.end(), 0U);
+    auto comparePts = [this](uint32_t left, uint32_t right) {
+        int64_t leftPts = 0;
+        int64_t leftDts = 0;
+        int64_t rightPts = 0;
+        int64_t rightDts = 0;
+        (void)GetReferenceSampleTime(left, leftPts, leftDts);
+        (void)GetReferenceSampleTime(right, rightPts, rightDts);
+        return leftPts != rightPts ? leftPts < rightPts : left < right;
+    };
+    std::sort(order.begin(), order.end(), comparePts);
+    auto duplicatePts = [this](uint32_t left, uint32_t right) {
+        int64_t leftPts = 0;
+        int64_t leftDts = 0;
+        int64_t rightPts = 0;
+        int64_t rightDts = 0;
+        return GetReferenceSampleTime(left, leftPts, leftDts) == Status::OK &&
+            GetReferenceSampleTime(right, rightPts, rightDts) == Status::OK && leftPts == rightPts;
+    };
+    order.erase(std::unique(order.begin(), order.end(), duplicatePts), order.end());
+    refPtsOrder_ = std::move(order);
+    refPtsOrderReady_ = true;
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
 {
     MEDIA_LOG_I("SeekMs2FrameId start, seekMs is " PUBLIC_LOG_D64, seekMs);
     FALSE_RETURN_V_MSG_E(seekMs >= 0, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
-    int64_t pts = 0;
-    // ms to us
-    FALSE_RETURN_V_MSG_E(!__builtin_mul_overflow(seekMs, MS_TO_US, &pts), Status::ERROR_INVALID_DATA, "Overflow");
-    auto iter = pts2Dts_.upper_bound(pts);
-    if (iter != pts2Dts_.begin()) {
+    Status ret = EnsureReferencePtsOrder();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare pts order failed");
+    int64_t relativePtsUs = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_mul_overflow(seekMs, MS_TO_US, &relativePtsUs),
+        Status::ERROR_INVALID_DATA, "Overflow");
+    auto iter = std::upper_bound(refPtsOrder_.begin(), refPtsOrder_.end(), relativePtsUs,
+        [this](int64_t targetPts, uint32_t sampleIndex) {
+            int64_t ptsUs = 0;
+            int64_t dtsUs = 0;
+            return GetReferenceSampleTime(sampleIndex, ptsUs, dtsUs) == Status::OK &&
+                targetPts < ptsUs - startPts_;
+        });
+    if (iter != refPtsOrder_.begin()) {
         --iter;
     }
-    // Add startPts_ to adjust the initial timestamp, making it the actual playback time
-    int64_t dts = iter->second + startPts_;
-    MEDIA_LOG_I("seekPtsMs is " PUBLIC_LOG_D64 ", ptsUs is " PUBLIC_LOG_D64 ", mapSize " PUBLIC_LOG_ZU
-        ", dts " PUBLIC_LOG_D64 ", startPts " PUBLIC_LOG_D64, seekMs, pts, pts2Dts_.size(), dts, startPts_);
-    return Dts2FrameId(dts, frameId);
+    FALSE_RETURN_V_MSG_E(iter != refPtsOrder_.end(), Status::ERROR_OUT_OF_RANGE, "No sample for pts");
+    int64_t ptsUs = 0;
+    int64_t dtsUs = 0;
+    FALSE_RETURN_V_MSG_E(GetReferenceSampleTime(*iter, ptsUs, dtsUs) == Status::OK,
+        Status::ERROR_INVALID_DATA, "Get sample time failed");
+    return Dts2FrameId(dtsUs, frameId);
 }
 
 Status MPEG4DemuxerPlugin::RefParserInit()
@@ -284,8 +432,7 @@ Status MPEG4DemuxerPlugin::RefParserInit()
     RefTrace trace("ParserRefCost_1_" + suffix);
     FALSE_RETURN_V_MSG_E(syncSamplesIndex_.size() > 0, Status::ERROR_UNKNOWN,
         "Init failed, syncSamplesIndex_ size is" PUBLIC_LOG_ZU, syncSamplesIndex_.size());
-    FALSE_RETURN_V_MSG_E(IsRefParserSupported(), Status::ERROR_UNSUPPORTED_FORMAT, "Unsupported ref parser");
-    
+
     processingSyncSamplesIndex_.assign(syncSamplesIndex_.begin(), syncSamplesIndex_.end());
     CodecType codecType = mimeTypeOfVideoStream_ == MimeType::VIDEO_HEVC ? CodecType::H265 : CodecType::H264;
     referenceParser_ = ReferenceParserManager::Create(codecType, syncSamplesIndex_);
@@ -319,15 +466,11 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
         MEDIA_LOG_I("get I frame pts from which had been decoded, seekDtsUs is " PUBLIC_LOG_D64, seekDtsUs);
     } else {
         uint32_t syncSampleIndex = syncSamplesIndex_[refParserCurGopId_];
-        FALSE_RETURN_V_MSG_E(sampleIndex2Pts_.find(syncSampleIndex) != sampleIndex2Pts_.end(),
+        int64_t ptsUs = 0;
+        FALSE_RETURN_V_MSG_E(GetReferenceSampleTime(syncSampleIndex, ptsUs, seekDtsUs) == Status::OK,
             Status::ERROR_UNKNOWN, "syncSampleIndex(" PUBLIC_LOG_U32 ") is invalid", syncSampleIndex);
-        int64_t ptsUs = sampleIndex2Pts_[syncSampleIndex];  // relative pts of sync sample
-        FALSE_RETURN_V_MSG_E(pts2Dts_.find(ptsUs) != pts2Dts_.end(), Status::ERROR_UNKNOWN,
-            "ptsUs(" PUBLIC_LOG_D64 ") is invalid", ptsUs);
-        seekDtsUs = pts2Dts_[ptsUs];  // relative dts of sync sample
-        seekDtsUs += startPts_;  // absolute dts of sync sample
-        MEDIA_LOG_I("SelectProGopId, ptsUs is " PUBLIC_LOG_D64 ", seekDtsUs is " PUBLIC_LOG_D64 ", startPts_ is "
-            PUBLIC_LOG_D64, ptsUs, seekDtsUs, startPts_);
+        MEDIA_LOG_I("SelectProGopId, ptsUs is " PUBLIC_LOG_D64 ", seekDtsUs is " PUBLIC_LOG_D64,
+            ptsUs, seekDtsUs);
     }
     int64_t realSeekTime = 0;
     // Using (seekDtsUs / US_TO_MS - 1) is to adapt to SeekToFrameByDts
@@ -560,7 +703,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MP
         FALSE_RETURN_V_MSG_E(timeScaleRate != 0 && static_cast<double>(INT64_MAX) / timeScaleRate >=
             static_cast<double>(dts), Status::ERROR_INVALID_DATA, "dts overflow");
         pts = static_cast<int64_t>(dts * timeScaleRate);
-        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex, static_cast<int64_t>(dts * timeScaleRate));
+        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
 
         if (sampleCountOfCurrentSttsEntry == 0) {
             break;
@@ -619,7 +762,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
             track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) - minSampleOffsetOfCttsEntry);
         FALSE_RETURN_V_MSG_E(UpdatePTSBySttsAndCtts(pts, dts, timeScaleRate, sampleOffsetOfCurrentCttsEntry) ==
             Status::OK, Status::ERROR_INVALID_DATA,  "dts overflow");
-        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex, static_cast<int64_t>(dts * timeScaleRate));
+        ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
         if (sampleCountOfCurrentSttsEntry == 0) {
             break;
         }
@@ -651,7 +794,7 @@ Status MPEG4DemuxerPlugin::UpdatePTSBySttsAndCtts(int64_t& pts, int64_t dts, dou
 }
 
 void MPEG4DemuxerPlugin::ProcessConversionByMode(IndexAndPTSConversionMode mode, int64_t pts, int64_t absolutePTS,
-    uint32_t sampleIndex, int64_t dts)
+    uint32_t sampleIndex)
 {
     switch (mode) {
         case IndexAndPTSConversionMode::GET_FIRST_SAMPLE_PTS:
@@ -662,9 +805,6 @@ void MPEG4DemuxerPlugin::ProcessConversionByMode(IndexAndPTSConversionMode mode,
             break;
         case IndexAndPTSConversionMode::RELATIVEPTS_TO_INDEX:
             ProcessRelativePTS2Index(pts, absolutePTS);
-            break;
-        case IndexAndPTSConversionMode::PTS_TO_DTS_MAPPING:
-            ProcessPts2DtsMap(pts, dts);
             break;
         default:
             MEDIA_LOG_E("mode(" PUBLIC_LOG_U32 ") is invalid", mode);
@@ -702,18 +842,6 @@ void MPEG4DemuxerPlugin::ProcessRelativePTS2Index(int64_t pts, int64_t absoluteP
     }
 }
 
-void MPEG4DemuxerPlugin::ProcessPts2DtsMap(int64_t pts, int64_t dts)
-{
-    if (dts == 0) {
-        ptsOfIndexZero_ = pts;
-        MEDIA_LOG_I("ProcessPts2DtsMap, ptsOfIndexZero_ is " PUBLIC_LOG_D64, ptsOfIndexZero_);
-    }
-    MEDIA_LOG_D("pts: " PUBLIC_LOG_D64 ", dts: " PUBLIC_LOG_D64 ", sample index: " PUBLIC_LOG_U32,
-        pts - ptsOfIndexZero_, dts - ptsOfIndexZero_, static_cast<uint32_t>(pts2Dts_.size()));
-    dts2SyncSampleIndex_[dts - ptsOfIndexZero_] = static_cast<uint32_t>(pts2Dts_.size());
-    sampleIndex2Pts_[static_cast<uint32_t>(pts2Dts_.size())] = pts - ptsOfIndexZero_;
-    pts2Dts_.emplace(pts - ptsOfIndexZero_, dts - ptsOfIndexZero_);
-}
 } // namespace MPEG4
 } // namespace Plugins
 } // namespace Media
