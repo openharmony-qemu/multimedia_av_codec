@@ -274,6 +274,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_012, TestSize.Level1)
     EXPECT_EQ(AV_ERR_OK, videoEnc_->Start());
     EXPECT_EQ(videoEnc_->frameInputCount_, videoEnc_->frameOutputCount_);
 }
+
 #ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoEncoder_RepeatPreviousFrame_010
@@ -321,6 +322,7 @@ HWTEST_P(TEST_SUIT, VideoEncoder_RepeatPreviousFrame_011, TestSize.Level1)
     EXPECT_GE(videoEnc_->frameOutputCount_, frameOutputCountMin);
 }
 #endif // ONLY_FOR_FLAGSHIP_CHIP
+
 } // namespace
 
 int main(int argc, char **argv)

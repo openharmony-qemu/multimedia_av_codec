@@ -18,6 +18,10 @@ ohos_unittest("video_codec_param_checker_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = "av_codec/AVCodec_Video/unittest"
 
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines = [ "ONLY_FOR_FLAGSHIP_CHIP" ]
+  }
+
   include_dirs = [
     "./",
     "$av_codec_root_dir/interfaces/kits/c",
