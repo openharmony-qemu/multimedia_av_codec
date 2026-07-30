@@ -867,16 +867,16 @@ HWTEST_F(CodecUtilsUnitTest, codec_utils_write_surface_data_03, TestSize.Level1)
     ASSERT_NE(buffer, nullptr);
     std::shared_ptr<AVMemory> memory = buffer->memory_;
     ASSERT_NE(memory, nullptr);
-    uint8_t* yData = new (std::nothrow) uint8_t[TEST_WIDTH * TEST_HEIGHT];
-    uint8_t* uData = new (std::nothrow) uint8_t[TEST_WIDTH * TEST_HEIGHT / 4]; // 4
-    uint8_t* vData = new (std::nothrow) uint8_t[TEST_WIDTH * TEST_HEIGHT / 4]; // 4
+    uint8_t* yData = new (std::nothrow) uint8_t[(TEST_WIDTH + 2) * TEST_HEIGHT]; // 2
+    uint8_t* uData = new (std::nothrow) uint8_t[(TEST_WIDTH + 2) * TEST_HEIGHT / 4]; // 4, 2
+    uint8_t* vData = new (std::nothrow) uint8_t[(TEST_WIDTH + 2) * TEST_HEIGHT / 4]; // 4, 2
     ASSERT_NE(yData, nullptr);
     ASSERT_NE(uData, nullptr);
     ASSERT_NE(vData, nullptr);
     uint8_t* scaleData[4] = {yData, uData, vData, nullptr}; // 4
-    int32_t scaleLineSize[4] = {TEST_WIDTH + 2, (TEST_WIDTH + 2) / 2, (TEST_WIDTH + 2) / 2, 0}; // 4, 2
+    int32_t scaleLineSize[4] = {TEST_WIDTH, TEST_WIDTH / 2, TEST_WIDTH / 2, 0}; // 4, 2
     SurfaceInfo surfaceInfo;
-    surfaceInfo.surfaceStride = TEST_WIDTH;
+    surfaceInfo.surfaceStride = TEST_WIDTH + 2; // 2
     surfaceInfo.scaleData = scaleData;
     surfaceInfo.scaleLineSize = scaleLineSize;
     Format format;
