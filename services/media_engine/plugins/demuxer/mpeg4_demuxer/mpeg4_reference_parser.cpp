@@ -122,12 +122,11 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
     SelectTrack(refParserTrackIdx_);
     FALSE_RETURN_V_MSG_E(trackOfRefParser_ && trackOfRefParser_->sampleHelper, Status::ERROR_INVALID_DATA,
         "trackOfRefParser_ or sampleHelper is nullptr");
-    const std::vector<MPEG4SampleHelper::SampleIndexEntry>& sampleIndexEntries_ =
-        trackOfRefParser_->sampleHelper->sampleIndexEntry_;
-    MEDIA_LOG_I("size of sampleIndexEntries_ is " PUBLIC_LOG_ZU, sampleIndexEntries_.size());
+    MEDIA_LOG_I("size of sampleIndexEntries_ is " PUBLIC_LOG_ZU,
+        trackOfRefParser_->sampleHelper->GetSampleCount());
 
     while (refParserState_ && refParserCurGopId_ != -1) {
-        Status rlt = ParserRefInfoLoop(sample, curSampleIndex, sampleIndexEntries_);
+        Status rlt = ParserRefInfoLoop(sample, curSampleIndex);
         if (rlt == Status::ERROR_EARLY_STOP) {  // 编码格式等不符合快速解析时，直接跳过
             MEDIA_LOG_I("Exiting reference parsing early due to simple first GOP structure.");
             refParserState_ = true;
@@ -352,16 +351,17 @@ static void InsertIframePtsMap(std::shared_ptr<Sample> sample, int32_t gopId,
     }
 }
 
-Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex,
-    const std::vector<MPEG4SampleHelper::SampleIndexEntry>& sampleIndexEntries)
+Status MPEG4DemuxerPlugin::PrepareRefParserSample(std::shared_ptr<Sample>& sample, uint32_t sampleIndex)
 {
-    MEDIA_LOG_I("ParserRefInfoLoop start, sampleIndex is " PUBLIC_LOG_U32, sampleIndex);
     std::unique_lock<std::mutex> sLock(syncMutex_);
-    if (sampleIndex > sampleIndexEntries.size()) {
+    FALSE_RETURN_V_MSG_E(trackOfRefParser_ != nullptr && trackOfRefParser_->sampleHelper != nullptr,
+        Status::ERROR_UNKNOWN, "trackOfRefParser_ or sampleHelper is nullptr");
+    size_t sampleCount = trackOfRefParser_->sampleHelper->GetSampleCount();
+    if (sampleIndex > sampleCount) {
         MEDIA_LOG_E("sample index(" PUBLIC_LOG_U32 ") out of range", sampleIndex);
         return Status::ERROR_UNKNOWN;
     }
-    if (sampleIndex == sampleIndexEntries.size()) {
+    if (sampleIndex == sampleCount) {
         sample->size = 0;
         sample->dts = INT64_MIN;
         sample->flag = Sample::SampleFlag::EOS;
@@ -370,7 +370,9 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uin
         sample = cacheSample_->sample;
         isReadSampleDataFromCache_ = false;
     } else {
-        const MPEG4SampleHelper::SampleIndexEntry& currentSample = sampleIndexEntries[sampleIndex];
+        MPEG4SampleHelper::SampleIndexView currentSample;
+        FALSE_RETURN_V_MSG_E(trackOfRefParser_->sampleHelper->GetSampleIndexView(sampleIndex, currentSample) ==
+            Status::OK, Status::ERROR_UNKNOWN, "Get sample view failed");
         Status ret = ReadSampleData(sample, currentSample.pos, currentSample.size, refParserTrackIdx_);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to read sample.");
         FALSE_RETURN_V_MSG_E(trackOfRefParser_ != nullptr, Status::ERROR_UNKNOWN, "trackOfRefParser_ is nullptr");
@@ -382,10 +384,17 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uin
         sample->flag = currentSample.flag;
         sample->size = currentSample.size;
     }
-    sLock.unlock();
-    InsertIframePtsMap(sample, refParserCurGopId_, gopId2DecodedSamplePts_);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex)
+{
+    MEDIA_LOG_I("ParserRefInfoLoop start, sampleIndex is " PUBLIC_LOG_U32, sampleIndex);
+    Status result = PrepareRefParserSample(sample, sampleIndex);
+    FALSE_RETURN_V_MSG_E(result == Status::OK, result, "Prepare reference parser sample failed");
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_UNKNOWN, "sample is nullptr!");
-    Status result = referenceParser_->ParserNalUnits(sample->data.get(), sample->size, sampleIndex, sample->dts);
+    InsertIframePtsMap(sample, refParserCurGopId_, gopId2DecodedSamplePts_);
+    result = referenceParser_->ParserNalUnits(sample->data.get(), sample->size, sampleIndex, sample->dts);
     FALSE_RETURN_V_MSG_E(result == Status::OK, result, "parse nal units end! ret is " PUBLIC_LOG_D32,
         static_cast<int32_t>(result));
     int32_t syncSampleNum = static_cast<int32_t>(syncSamplesIndex_.size());

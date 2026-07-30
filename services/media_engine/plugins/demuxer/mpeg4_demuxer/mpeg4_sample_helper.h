@@ -17,6 +17,7 @@
 #define MPEG4_SAMPLE_HELPER_H
 
 #include <cstdint>
+#include <limits>
 #include <unordered_map>
 #include <vector>
 #include "common/status.h"
@@ -77,12 +78,67 @@ public:
         int64_t duration = 0;
     };
     struct SampleIndexEntry {
+        int64_t pos = 0;
+        int64_t dts = 0;
+        uint32_t ptsOffset = 0;
+        uint32_t sizeAndDiscard = 0;
+
+        static constexpr uint32_t discardMask = 1U << 31;
+        static constexpr uint32_t sizeMask = discardMask - 1;
+
+        bool SetPts(int64_t value)
+        {
+            int64_t offset = 0;
+            return !__builtin_sub_overflow(value, dts, &offset) && offset >= 0 &&
+                static_cast<uint64_t>(offset) <= std::numeric_limits<uint32_t>::max() &&
+                (ptsOffset = static_cast<uint32_t>(offset), true);
+        }
+
+        bool GetPts(int64_t& value) const
+        {
+            return !__builtin_add_overflow(dts, static_cast<int64_t>(ptsOffset), &value);
+        }
+
+        int64_t GetPts() const
+        {
+            int64_t value = 0;
+            (void)__builtin_add_overflow(dts, static_cast<int64_t>(ptsOffset), &value);
+            return value;
+        }
+
+        bool SetSize(uint32_t value)
+        {
+            if (value > sizeMask) {
+                return false;
+            }
+            sizeAndDiscard = (sizeAndDiscard & discardMask) | value;
+            return true;
+        }
+
+        int32_t GetSize() const
+        {
+            return static_cast<int32_t>(sizeAndDiscard & sizeMask);
+        }
+
+        void SetDiscard(bool discard)
+        {
+            sizeAndDiscard = discard ? sizeAndDiscard | discardMask : sizeAndDiscard & sizeMask;
+        }
+
+        bool IsDiscard() const
+        {
+            return (sizeAndDiscard & discardMask) != 0;
+        }
+    };
+    static_assert(sizeof(SampleIndexEntry) == 24, "SampleIndexEntry must remain compact");
+
+    struct SampleIndexView {
+        int64_t pos = 0;
         int64_t dts = 0;
         int64_t pts = 0;
-        int64_t pos = 0;
+        int64_t duration = 0;
         uint32_t flag = 0;
         int32_t size = 0;
-        int64_t duration = 0;
     };
     struct CttsEntry {
         uint32_t count;
@@ -108,9 +164,21 @@ public:
     SdtpEntry GetSdtpEntry();
     bool HasSkipSamplesInfo(uint32_t sampleIndex) const;
     const std::vector<uint8_t>* GetSkipSamplesInfo(uint32_t sampleIndex) const;
+    size_t GetSampleCount() const;
+    bool IsSampleIndexEmpty() const;
+    Status GetSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const;
+    Status GetSampleSize(uint32_t sampleIndex, int32_t& size) const;
+    Status GetSampleRange(uint32_t sampleIndex, int64_t& pos, int32_t& size) const;
+    Status GetSamplePts(uint32_t sampleIndex, int64_t& pts) const;
+    Status GetSampleDts(uint32_t sampleIndex, int64_t& dts) const;
+    Status GetSampleDurationTicks(uint32_t sampleIndex, int64_t& duration) const;
+    bool IsSyncSample(uint32_t sampleIndex) const;
+    bool IsDiscardSample(uint32_t sampleIndex) const;
+    Status FindSampleIndexByPosition(int64_t position, uint32_t& sampleIndex) const;
+    Status FindFirstSampleAfterPosition(int64_t position, uint32_t& sampleIndex) const;
+    Status FindFirstSampleByDts(int64_t dts, uint32_t& sampleIndex) const;
 
     std::shared_ptr<DemuxerDataReader> dataReader_;
-    std::vector<SampleIndexEntry> sampleIndexEntry_;
     std::vector<CttsEntry> cttsEntry_;
     Seekable seekable_;
     TrackType trackType_;
@@ -121,6 +189,10 @@ public:
     int64_t lastPTS_ = 0;
 
 private:
+    struct DurationOverride {
+        uint32_t sampleIndex = 0;
+        int64_t duration = 0;
+    };
     struct TrackExtendsInfo {
         uint32_t trackId;
         uint32_t defaultSampleDescriptionIndex;
@@ -177,18 +249,27 @@ private:
         uint32_t chunkIndex = 0;
         uint32_t stscIndex = 0;
         uint32_t sampleIndex = 0;
-        uint32_t syncIndex = 0;
         int64_t currentDts = 0;
         uint32_t sampleInChunk = 0;
         uint32_t samplesPerFrame = 1;
         int64_t remainSamples = 0;
         uint64_t totalSttsSamples = 0;
         uint64_t processedSttsSamples = 0;
+        uint32_t cttsIndex = 0;
+        uint32_t cttsSamplesRemaining = 0;
+        int32_t cttsDelta = 0;
+        int64_t previousDuration = 0;
+        bool hasPreviousDuration = false;
     };
     using SkipSamplesInfoMap = std::unordered_map<uint32_t, std::vector<uint8_t>>;
     struct EditListBuildContext {
         const std::vector<SampleIndexEntry>& oldEntries;
+        const std::vector<DurationOverride>& oldDurationOverrides;
+        const std::vector<StssEntry>& oldSyncSamples;
+        bool oldAllSamplesSync;
         std::vector<SampleIndexEntry>& newEntries;
+        std::vector<int64_t>& newDurations;
+        std::vector<StssEntry>& newSyncSamples;
         SkipSamplesInfoMap& newSkipSamplesInfo;
         int64_t& editListDtsEntryEnd;
         int64_t& emptyEditsDuration;
@@ -208,10 +289,31 @@ private:
         bool foundKeyframeAfterEdit = false;
         bool continueAfterEdit = false;
         bool shouldBreak = false;
+        bool newEntryIsSync = false;
         SampleIndexEntry newEntry;
+        int64_t frameDuration = 0;
         int64_t frameEndTime = 0;
         std::vector<uint8_t> skipSamplesInfo;
         std::vector<int64_t> leadingDurations;
+    };
+    struct EditListRestoreGuard {
+        std::vector<SampleIndexEntry>& entries;
+        std::vector<DurationOverride>& overrides;
+        std::vector<StssEntry>& syncSamples;
+        bool& allSamplesSync;
+        std::vector<SampleIndexEntry>& oldEntries;
+        std::vector<DurationOverride>& oldOverrides;
+        std::vector<StssEntry>& oldSyncSamples;
+        bool oldAllSamplesSync;
+        bool active = true;
+
+        ~EditListRestoreGuard();
+    };
+    struct SampleEntryCreateContext {
+        const SampleInfo& sampleInfo;
+        int64_t offset = 0;
+        int64_t currentDts = 0;
+        bool isOverlap = false;
     };
     struct TfhdParseContext {
         uint32_t flag = 0;
@@ -226,6 +328,7 @@ private:
     };
 
     std::vector<SttsEntry> sttsEntry_;
+    std::vector<SampleIndexEntry> sampleIndexEntry_;
     std::vector<StscEntry> stscEntry_;
     std::vector<StssEntry> stssEntry_;
     std::vector<int32_t> sampleSizes_;
@@ -253,27 +356,25 @@ private:
     SkipSamplesInfoMap skipSamplesInfoMap_;
 
     void ProcessHalfByteSampleSizes(const uint8_t* data, uint32_t& entryIndex, uint32_t numSampleSizes);
-    Status ExpandCttsEntry(uint32_t sttsNum);
+    Status ValidateCttsEntries(uint32_t sttsNum);
     Status ApplyEditList();
-    Status RebuildSyncSamples();
     Status FindWithSyncSamplesByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& syncIndex);
     int64_t FindIndexWithoutSyncSamples(int64_t inputPTS) const;
     bool AssignSampleIndex(int64_t currentIndex, uint32_t& sampleIndex) const;
     bool AssignSampleIndexFromSize(size_t currentIndex, uint32_t& sampleIndex) const;
     bool ResolveDirectSyncSampleByPts(int64_t inputPts, int64_t currentIndex, uint32_t& sampleIndex) const;
     bool ResolveNonBaseTrackEosByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& sampleIndex) const;
+    bool IsAtOrBeyondLastSampleEnd(int64_t inputPts) const;
     bool ResolveTextWebVttSample(int64_t inputPTS, int64_t& currentIndex, uint32_t& sampleIndex) const;
     bool IsAudioSampleIndexInRange(int64_t currentIndex) const;
     bool IsInputCoveredByPreviousSample(int64_t inputPts, int64_t currentIndex) const;
-    bool ShouldStepBackForBaseAudioCoverage(int64_t inputPts, SeekMode flag, bool fromSyncSamples,
-        int64_t currentIndex) const;
-    bool ShouldStepBackForFirstNonBaseAudioSample(int64_t inputPts, bool isBaseTrack, bool fromSyncSamples,
-        int64_t currentIndex) const;
+    bool ShouldStepBackForBaseAudioCoverage(int64_t inputPts, SeekMode flag, int64_t currentIndex) const;
+    bool ShouldStepBackForFirstNonBaseAudioSample(int64_t inputPts, bool isBaseTrack, int64_t currentIndex) const;
     bool ShouldStepBackForSyncPrerollSample(int64_t inputPts, bool isBaseTrack, bool fromSyncSamples,
         int64_t currentIndex) const;
     bool ShouldStepBackForShiftedAudioCoverage(int64_t inputPts, int64_t currentIndex) const;
-    bool ShouldStepBackForNoSyncPrerollSample(int64_t inputPts, bool isBaseTrack, SeekMode flag,
-        bool fromSyncSamples, int64_t currentIndex) const;
+    bool ShouldStepBackForNoSyncPrerollSample(int64_t inputPts, SeekMode flag, bool fromSyncSamples,
+        int64_t currentIndex) const;
     bool ShouldStepBackForExactPtsPrerollSample(int64_t inputPts, bool isBaseTrack, SeekMode flag,
         bool fromSyncSamples, int64_t currentIndex) const;
     void AdjustAudioSeekSampleIndexByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag,
@@ -286,13 +387,13 @@ private:
     int64_t FindNextSyncByPts(int64_t inputPts, int64_t currentIndex) const;
     void SelectClosestSyncByPts(int64_t inputPts, int64_t& currentIndex) const;
     Status CheckSyncSampleByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, int64_t &currentIndex);
-    bool IsSyncSample(const SampleIndexEntry& entry) const;
+    bool IsSyncSample(const std::vector<StssEntry>& syncSamples, bool allSamplesSync, uint32_t sampleIndex) const;
     void SetSkipSamplesInfo(uint32_t sampleIndex, std::vector<uint8_t>&& skipSamplesInfo);
     int64_t GetSyncSamplePts(size_t stssIndex) const;
-    int64_t GetCttsDelta(size_t index) const;
-    int64_t GetFrameDuration(const std::vector<SampleIndexEntry>& entries, size_t index, int64_t editDuration) const;
-    int64_t FindPrevClosestIndex(const std::vector<SampleIndexEntry>& entries, int64_t timestampPts,
-        bool anyFrame) const;
+    int64_t GetFrameDuration(const std::vector<SampleIndexEntry>& entries,
+        const std::vector<DurationOverride>& durationOverrides, size_t index, int64_t editDuration) const;
+    int64_t FindPrevClosestIndex(const std::vector<SampleIndexEntry>& entries,
+        const std::vector<StssEntry>& syncSamples, bool allSamplesSync, int64_t timestampPts, bool anyFrame) const;
     void FixLeadingDiscardTimestamps(std::vector<SampleIndexEntry>& entries, size_t endIndex, int64_t endDts,
         const std::vector<int64_t>& leadingDurations) const;
     Status ConvertEditDuration(const EditListEntry& edit, int64_t& editDuration) const;
@@ -316,9 +417,10 @@ private:
     Status AppendSampleIndexEntry(const SttsEntry& sttsEntry, uint32_t& sampleInSttsEntry,
         SampleIndexBuildContext& buildCtx);
     Status AdvanceChunkIfNeeded(SampleIndexBuildContext& buildCtx);
-    Status UpdateSampleDurationAndDts(uint32_t sttsDelta, uint32_t samplesPerFrame, SampleIndexEntry& entry,
+    bool GetSampleSize(uint32_t sampleIndex, uint32_t& samplesPerFrame, SampleIndexEntry& entry,
+        int64_t& remainSamples);
+    Status UpdateSampleDurationAndDts(uint32_t sttsDelta, uint32_t samplesPerFrame, int64_t& duration,
         int64_t& currentDts) const;
-    void GetSampleFlag(uint32_t sampleIndex, SampleIndexEntry& entry, uint32_t& syncIndex);
     void InitMoofParam();
     Status ReadTrunRunData(int64_t dataOffset, int64_t dataSize, uint32_t& trunFlag, uint32_t& numSamples,
         std::unique_ptr<uint8_t[]>& data);
@@ -327,10 +429,27 @@ private:
     Status InitSampleInfo(SampleInfo& sampleInfo, TrunSampleInitContext& initContext);
     void UpdateSampleInfo(SampleInfo& sampleInfo, uint32_t& bufferOffset, uint32_t trunFlag,
         uint8_t* data, uint32_t firstSampleFlag);
-    SampleIndexEntry CreateSampleEntry(const SampleInfo& sampleInfo, int64_t offset, int64_t currentDts,
-        bool isOverlap) const;
-    bool InsertSampleEntry(SampleIndexEntry&& sample, uint32_t duration);
-    void UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts, bool isOverlap = false);
+    Status CreateSampleEntry(const SampleEntryCreateContext& context, SampleIndexEntry& sample, bool& isSync) const;
+    bool InsertSampleEntry(SampleIndexEntry&& sample, uint32_t duration, bool isSync);
+    Status UpdateSampleEntryInfo(SampleInfo sampleInfo, int64_t& offset, int64_t& currentDts,
+        bool isOverlap = false);
+    Status SetEntryPts(SampleIndexEntry& entry, int64_t pts) const;
+    Status SetEntrySize(SampleIndexEntry& entry, uint32_t size) const;
+    void SetEntryDiscard(SampleIndexEntry& entry, bool discard) const;
+    Status AddDurationOverride(uint32_t sampleIndex, int64_t duration);
+    Status AddDurationOverride(std::vector<DurationOverride>& overrides, uint32_t sampleIndex, int64_t duration) const;
+    const DurationOverride* FindDurationOverride(const std::vector<DurationOverride>& overrides,
+        uint32_t sampleIndex) const;
+    Status GetSampleDurationTicks(const std::vector<SampleIndexEntry>& entries,
+        const std::vector<DurationOverride>& overrides, uint32_t sampleIndex, int64_t& duration) const;
+    void ShiftDurationOverridesForInsert(uint32_t sampleIndex);
+    void ConvertAllSyncSamplesToSparse(uint32_t sampleIndex);
+    void ShiftSyncSampleIndices(uint32_t sampleIndex);
+    void UpdateSyncSamplesForInsert(uint32_t sampleIndex, bool isSync);
+    Status ConsumeCttsSamples(SampleIndexBuildContext& buildCtx, uint32_t sampleCount, int64_t& ptsOffset);
+
+    std::vector<DurationOverride> durationOverrides_;
+    bool allSamplesSync_ = false;
 };
 } // namespace MPEG4
 } // namespace Plugins

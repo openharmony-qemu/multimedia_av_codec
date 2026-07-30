@@ -222,10 +222,18 @@ private:
 };
 
 // LCOV_EXCL_START
-int64_t GetMaxSamplePtsEnd(const std::vector<MPEG4SampleHelper::SampleIndexEntry>& samples)
+int64_t GetMaxSamplePtsEnd(const std::shared_ptr<MPEG4SampleHelper>& sampleHelper)
 {
     int64_t maxPtsEnd = 0;
-    for (const auto& sample : samples) {
+    for (uint32_t i = 0; sampleHelper != nullptr && i < sampleHelper->GetSampleCount(); ++i) {
+        MPEG4SampleHelper::SampleIndexView sample;
+        Status ret = sampleHelper->GetSampleIndexView(i, sample);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Get sample index view failed when calculating max pts end, index=" PUBLIC_LOG_U32
+                ", count=" PUBLIC_LOG_ZU ", ret=" PUBLIC_LOG_D32,
+                i, sampleHelper->GetSampleCount(), static_cast<int32_t>(ret));
+            return 0;
+        }
         if (sample.duration <= 0 || sample.pts < 0) {
             continue;
         }
@@ -238,10 +246,18 @@ int64_t GetMaxSamplePtsEnd(const std::vector<MPEG4SampleHelper::SampleIndexEntry
     return maxPtsEnd;
 }
 
-int64_t GetMaxSampleDtsEnd(const std::vector<MPEG4SampleHelper::SampleIndexEntry>& samples)
+int64_t GetMaxSampleDtsEnd(const std::shared_ptr<MPEG4SampleHelper>& sampleHelper)
 {
     int64_t maxDtsEnd = 0;
-    for (const auto& sample : samples) {
+    for (uint32_t i = 0; sampleHelper != nullptr && i < sampleHelper->GetSampleCount(); ++i) {
+        MPEG4SampleHelper::SampleIndexView sample;
+        Status ret = sampleHelper->GetSampleIndexView(i, sample);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Get sample index view failed when calculating max dts end, index=" PUBLIC_LOG_U32
+                ", count=" PUBLIC_LOG_ZU ", ret=" PUBLIC_LOG_D32,
+                i, sampleHelper->GetSampleCount(), static_cast<int32_t>(ret));
+            return 0;
+        }
         if (sample.duration <= 0 || sample.dts < 0) {
             continue;
         }
@@ -986,7 +1002,7 @@ int64_t MPEG4AtomParser::GetTrackDuration(std::shared_ptr<Track> track, bool cal
         "Invalid track for duration calculation");
 
     int64_t duration = 0;
-    if (track->sampleHelper && !track->sampleHelper->sampleIndexEntry_.empty()) {
+    if (track->sampleHelper && !track->sampleHelper->IsSampleIndexEmpty()) {
         if (calculateBitrate) {
             duration = track->sampleHelper->totalDuration_;
             MEDIA_LOG_D("Using raw sample helper duration for bitrate: " PUBLIC_LOG_D64, duration);
@@ -1036,7 +1052,7 @@ int64_t GetEffectiveSampleCount(const std::shared_ptr<MPEG4SampleHelper>& sample
 {
     FALSE_RETURN_V_NOLOG(sampleHelper != nullptr, 0);
     int64_t rawSampleCount = sampleHelper->GetRawSampleCount();
-    return rawSampleCount > 0 ? rawSampleCount : static_cast<int64_t>(sampleHelper->sampleIndexEntry_.size());
+    return rawSampleCount > 0 ? rawSampleCount : static_cast<int64_t>(sampleHelper->GetSampleCount());
 }
 
 void MPEG4AtomParser::CalculateTrackBitrates(std::shared_ptr<Track> track)
@@ -1107,10 +1123,17 @@ int64_t MPEG4AtomParser::GetBitrateTotalSize(const std::shared_ptr<Track>& track
     if (totalSize > 0) {
         return totalSize;
     }
-    const auto& samples = track->sampleHelper->sampleIndexEntry_;
-    for (const auto& sample : samples) {
-        int64_t newTotalSize;
-        if (__builtin_add_overflow(totalSize, sample.size, &newTotalSize)) {
+    for (uint32_t i = 0; i < track->sampleHelper->GetSampleCount(); ++i) {
+        int32_t size = 0;
+        Status ret = track->sampleHelper->GetSampleSize(i, size);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("Get sample size failed when calculating bitrate total size, index=" PUBLIC_LOG_U32
+                ", count=" PUBLIC_LOG_ZU ", ret=" PUBLIC_LOG_D32,
+                i, track->sampleHelper->GetSampleCount(), static_cast<int32_t>(ret));
+            return 0;
+        }
+        int64_t newTotalSize = 0;
+        if (__builtin_add_overflow(totalSize, static_cast<int64_t>(size), &newTotalSize)) {
             MEDIA_LOG_E("GetBitrateTotalSize overflow");
             return 0;
         }
@@ -1266,11 +1289,13 @@ void MPEG4AtomParser::ParseImageTrackData(std::shared_ptr<Track> track)
     FALSE_RETURN_MSG(track != nullptr && track->sampleHelper != nullptr, "Invalid track");
     FALSE_RETURN_MSG(IsValidTrackIndex(mediaInfo_, track->trackIndex), "Invalid track index");
 
-    if (track->sampleHelper->sampleIndexEntry_.empty()) {
+    if (track->sampleHelper->IsSampleIndexEmpty()) {
         MEDIA_LOG_W("Image track " PUBLIC_LOG_U32 " has no sample entries", track->trackIndex);
         return;
     }
-    const auto& firstEntry = track->sampleHelper->sampleIndexEntry_[0];
+    MPEG4SampleHelper::SampleIndexView firstEntry;
+    FALSE_RETURN_MSG(track->sampleHelper->GetSampleIndexView(0, firstEntry) == Status::OK,
+        "Get image track sample failed");
     FALSE_RETURN_MSG_W(
         firstEntry.size > 0 && firstEntry.pos >= 0,
         "Image track " PUBLIC_LOG_U32 " first sample invalid", track->trackIndex);
@@ -3645,7 +3670,7 @@ void MPEG4AtomParser::ClearTrackSaizSaioState()
     auto track = firstTrack_;
     while (track) {
         track->currentFragmentIndexBase = track->sampleHelper ?
-            static_cast<uint32_t>(track->sampleHelper->sampleIndexEntry_.size()) : 0;
+            static_cast<uint32_t>(track->sampleHelper->GetSampleCount()) : 0;
         track->drmInfo.auxiliaryInfoDefaultSize = 0;
         track->drmInfo.auxiliaryInfoSizes.clear();
         track->drmInfo.auxiliaryOffsets.clear();
@@ -3660,7 +3685,7 @@ void MPEG4AtomParser::PadSampleEncryptionEntries()
     auto track = firstTrack_;
     while (track) {
         if (track->sampleHelper) {
-            size_t expectedSize = track->sampleHelper->sampleIndexEntry_.size();
+            size_t expectedSize = track->sampleHelper->GetSampleCount();
             if (track->drmInfo.sampleEncryptionEntries.size() < expectedSize) {
                 track->drmInfo.sampleEncryptionEntries.resize(expectedSize);
             }
@@ -5595,18 +5620,20 @@ int64_t MPEG4AtomParser::GetSidxTrackStartTime(const std::shared_ptr<Track>& tra
         }
         return 0;
     }
-    FALSE_RETURN_V_NOLOG(track->sampleHelper != nullptr && !track->sampleHelper->sampleIndexEntry_.empty() &&
+    FALSE_RETURN_V_NOLOG(track->sampleHelper != nullptr && !track->sampleHelper->IsSampleIndexEmpty() &&
         track->timeScale > 0, 0);
     timeScale = track->timeScale;
+    int64_t firstPts = 0;
+    FALSE_RETURN_V_NOLOG(track->sampleHelper->GetSamplePts(0, firstPts) == Status::OK, 0);
     return static_cast<int64_t>(std::round(
-        static_cast<double>(track->sampleHelper->sampleIndexEntry_.front().pts) * S_TO_US / timeScale));
+        static_cast<double>(firstPts) * S_TO_US / timeScale));
 }
 
 int64_t MPEG4AtomParser::GetSidxSampleEndTime(const std::shared_ptr<Track>& track, int32_t timeScale)
 {
     FALSE_RETURN_V_NOLOG(hasSidxBox_ && track->sampleHelper != nullptr &&
-        !track->sampleHelper->sampleIndexEntry_.empty(), 0);
-    int64_t sampleDtsEnd = GetMaxSampleDtsEnd(track->sampleHelper->sampleIndexEntry_);
+        !track->sampleHelper->IsSampleIndexEmpty(), 0);
+    int64_t sampleDtsEnd = GetMaxSampleDtsEnd(track->sampleHelper);
     FALSE_RETURN_V_NOLOG(sampleDtsEnd > 0 && timeScale > 0, 0);
     int64_t durationUs = 0;
     FALSE_RETURN_V_MSG_E(!(__builtin_mul_overflow(sampleDtsEnd, S_TO_US, &durationUs)), 0,
@@ -5658,12 +5685,14 @@ double MPEG4AtomParser::CalculateDuration(std::shared_ptr<Track> track, bool isR
 {
     FALSE_RETURN_V_MSG_E(track != nullptr, 0.0, "Track is null");
     FALSE_RETURN_V_MSG_E(track->sampleHelper != nullptr, 0.0, "SampleHelper is null");
-    FALSE_RETURN_V_MSG_E(!track->sampleHelper->sampleIndexEntry_.empty(), 0.0, "Sample data is empty");
+    FALSE_RETURN_V_MSG_E(!track->sampleHelper->IsSampleIndexEmpty(), 0.0, "Sample data is empty");
 
     int32_t timeScale = track->timeScale;
     FALSE_RETURN_V_MSG_W(timeScale > 0, 0.0, "Track " PUBLIC_LOG_U32 " has invalid time scale", track->trackIndex);
 
-    int64_t firstPts = track->sampleHelper->sampleIndexEntry_.front().pts;
+    int64_t firstPts = 0;
+    FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSamplePts(0, firstPts) == Status::OK, 0.0,
+        "Get first sample pts failed");
     int64_t baseDuration = 0;
     int64_t ctsTail = 0;
 
@@ -5676,7 +5705,7 @@ double MPEG4AtomParser::CalculateDuration(std::shared_ptr<Track> track, bool isR
     }
 
     if (hasMoofBox_) {
-        int64_t maxPtsEnd = GetMaxSamplePtsEnd(track->sampleHelper->sampleIndexEntry_);
+        int64_t maxPtsEnd = GetMaxSamplePtsEnd(track->sampleHelper);
         ctsTail = maxPtsEnd > track->sampleHelper->totalTrunDuration_ ?
             maxPtsEnd - track->sampleHelper->totalTrunDuration_ : 0;
         if (!hasSidxBox_ || track->sidxDuration <= 0) {
@@ -5735,8 +5764,10 @@ void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, 
             containerStartTimeForTrack = containerStartTime;
             return;
         }
-    } else if (track->sampleHelper && !track->sampleHelper->sampleIndexEntry_.empty()) {
-        int64_t firstPts = track->sampleHelper->sampleIndexEntry_.front().pts;
+    } else if (track->sampleHelper && !track->sampleHelper->IsSampleIndexEmpty()) {
+        int64_t firstPts = 0;
+        FALSE_RETURN_MSG(track->sampleHelper->GetSamplePts(0, firstPts) == Status::OK,
+            "Get first sample pts failed");
         int32_t timeScale = track->timeScale;
         if (timeScale > 0) {
             FALSE_RETURN_MSG(ConvertTimeScaleRound(firstPts, S_TO_US, timeScale, &trackStartTime) == Status::OK,
