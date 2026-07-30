@@ -216,9 +216,9 @@ public:
     int64_t lastPTS_ = 0;
 
 private:
-    static constexpr uint32_t SPARSE_CHECKPOINT_INTERVAL = 1024;
-    static constexpr uint32_t MAX_GROUPED_SAMPLES_PER_FRAME = 1024;
-    static constexpr uint32_t MAX_VALIDATED_SAMPLE_COUNT = 1000000;
+    static constexpr uint32_t sparseCheckpointInterval = 1024;
+    static constexpr uint32_t maxGroupedSamplesPerFrame = 1024;
+    static constexpr uint32_t maxValidatedSampleCount = 1000000;
 
     struct SampleTableCursor {
         uint32_t outputIndex = 0;
@@ -248,6 +248,24 @@ private:
         int64_t editMediaTime = 0;
         int64_t editEndTime = 0;
         int64_t emptyDuration = 0;
+    };
+    struct SimpleEditProjectionBuildContext {
+        uint32_t rawStart = 0;
+        uint32_t rawEnd = 0;
+        uint32_t firstPlayableRaw = 0;
+        int64_t rawDtsAtFirstPlayable = 0;
+        int64_t anchorDts = 0;
+        int64_t minCorrectedPts = INT64_MAX;
+        int64_t maxCorrectedPts = INT64_MIN;
+        int64_t maxCorrectedPtsEnd = INT64_MIN;
+        int64_t maxOutputDtsEnd = INT64_MIN;
+        int64_t rawStartDts = 0;
+        int64_t rawStartPts = 0;
+        uint32_t skipOutputIndex = 0;
+        uint32_t skipSamples = 0;
+        bool hasSkipSamples = false;
+        bool started = false;
+        bool foundKeyframeAfterEdit = false;
     };
     struct DurationOverride {
         uint32_t sampleIndex = 0;
@@ -526,11 +544,44 @@ private:
 
     Status EnsureSparseIndex() const;
     Status BuildDenseSampleIndexEntries();
+    bool UseSparseIndex() const;
     Status CreateInitialCursor(SampleTableCursor& cursor) const;
     Status ReadRawSampleAndAdvance(SampleTableCursor& cursor, SampleIndexView& view) const;
+    Status ResolveRawSampleSize(const SampleTableCursor& cursor, uint32_t samplesPerFrame, int32_t& sampleSize) const;
+    Status FillRawSampleView(const SampleTableCursor& cursor, uint32_t samplesPerFrame, int32_t sampleSize,
+        SampleIndexView& view) const;
+    Status AdvanceRawSampleCursor(SampleTableCursor& cursor, uint32_t samplesPerFrame, uint32_t samplesInChunk,
+        int32_t sampleSize) const;
+    Status ConsumeRawSampleCtts(SampleTableCursor& cursor, uint32_t samplesPerFrame) const;
     Status GetSparseSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const;
+    Status BuildSparseIndexLocked() const;
+    Status SkipSparseProjectionPrefix() const;
+    Status AdvanceSparseFrontierToSample(uint32_t sampleIndex, SampleIndexView& view) const;
+    Status ReadSparseSampleFromCheckpoint(uint32_t sampleIndex, SampleIndexView& view) const;
     Status CalculateSampleTableSummary();
+    Status CalculateGroupedSampleTableSummary(int64_t& maxPts);
+    Status CalculateFlatSampleSizeSummary(uint64_t rawCount);
+    Status CalculateFlatSampleTimeSummary(int64_t initialDts, int64_t& maxPts);
+    Status CalculateRawSampleDurationSummary();
     Status BuildSimpleEditProjection();
+    bool IsSimpleEditProjectionSupported() const;
+    Status PrepareSimpleEditProjection(const EditListEntry& edit, int64_t& editDuration, int64_t& emptyDuration,
+        int64_t& editEnd) const;
+    Status FindSimpleEditRawStart(const EditListEntry& edit, uint32_t& rawStart) const;
+    Status ScanSimpleEditProjectionSamples(const EditListEntry& edit, int64_t emptyDuration, int64_t editEnd,
+        SimpleEditProjectionBuildContext& scanCtx) const;
+    Status ProcessSimpleEditProjectionSample(const EditListEntry& edit, int64_t baseDts, int64_t editEnd,
+        uint32_t rawIndex, const SampleIndexView& view, SimpleEditProjectionBuildContext& scanCtx,
+        bool& shouldBreak) const;
+    Status StartSimpleEditProjectionSample(const EditListEntry& edit, int64_t baseDts, uint32_t rawIndex,
+        const SampleIndexView& view, SimpleEditProjectionBuildContext& scanCtx, bool crossedAudioStart) const;
+    Status UpdateSimpleEditProjectionTimes(const SampleIndexView& view, bool outside,
+        SimpleEditProjectionBuildContext& scanCtx) const;
+    bool ShouldStopSimpleEditProjectionScan(uint32_t rawIndex, int64_t frameEnd, int64_t editEnd,
+        SimpleEditProjectionBuildContext& scanCtx) const;
+    Status CommitSimpleEditProjection(const EditListEntry& edit, int64_t editDuration, int64_t emptyDuration,
+        int64_t editEnd, const SimpleEditProjectionBuildContext& scanCtx);
+    void SaveSimpleEditSkipSamples(uint32_t skipOutputIndex, uint32_t skipSamples);
     Status ApplySimpleEditProjection(uint32_t rawIndex, SampleIndexView& view) const;
     uint32_t CalculateLogicalSampleCount(uint32_t rawSampleCount) const;
     bool IsGroupedRawAudio() const;

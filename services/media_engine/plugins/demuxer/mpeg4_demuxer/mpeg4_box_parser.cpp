@@ -1384,20 +1384,16 @@ void MPEG4AtomParser::SetCodecConfig(std::shared_ptr<Track> track)
     }
 }
 
-Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+Status MPEG4AtomParser::InitCurrentTrackForTrak()
 {
-    FALSE_RETURN_V_MSG_E(depth == MPEG4_DEPTH_ONE, Status::ERROR_INVALID_DATA, "Invalid trak depth");
     auto track = std::make_shared<Track>();
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate memory for track");
-
     size_t originalTrackCount = mediaInfo_.tracks.size();
     Meta newTrackMeta;
     mediaInfo_.tracks.emplace_back(std::move(newTrackMeta));
-
     if (mediaInfo_.tracks.size() != originalTrackCount + 1) {
         return Status::ERROR_NO_MEMORY;
     }
-
     if (lastTrack_) {
         lastTrack_->next = track;
     } else {
@@ -1412,15 +1408,20 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
     lastTrack_->sampleHelper->seekable_ = seekable_;
     lastTrack_->sampleHelper->dataReader_ = dataReader_;
     lastTrack_->sampleHelper->SetFragmented(hasMoofBox_);
-    Status ret = ParseContainerAtom(currentAtom, depth, ctx);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse trak atom");
+    return Status::OK;
+}
 
+void MPEG4AtomParser::UpdateParsedTrackVideoInfo()
+{
     if (NeedParseVideoInfo(lastTrack_->sampleHelper->mimeType_, lastTrack_->codecParms.trackType)) {
         ParseOrientationFromMatrix(lastTrack_);
         ParseRotationTypeFromMatrix(lastTrack_);
         CalculateSARFromTrackInfo(lastTrack_);
     }
+}
 
+void MPEG4AtomParser::FinalizeParsedTrackSampleTables()
+{
     if (lastTrack_->sampleHelper) {
         int32_t movieTimeScale = 0;
         int32_t trackTimeScale = 0;
@@ -1438,6 +1439,17 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
             MEDIA_LOG_E("Build dense sample index failed");
         }
     }
+}
+
+Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+{
+    FALSE_RETURN_V_MSG_E(depth == MPEG4_DEPTH_ONE, Status::ERROR_INVALID_DATA, "Invalid trak depth");
+    Status ret = InitCurrentTrackForTrak();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to init track");
+    ret = ParseContainerAtom(currentAtom, depth, ctx);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse trak atom");
+    UpdateParsedTrackVideoInfo();
+    FinalizeParsedTrackSampleTables();
     SetCodecConfig(lastTrack_);
     AdapterFormat(lastTrack_);
     return Status::OK;
@@ -1633,8 +1645,14 @@ int64_t GetSignedU64Value(const uint8_t* data)
     return -static_cast<int64_t>((~value) + 1);
 }
 
-Status ParseElstEntry(const uint8_t* elstInfo, uint32_t index, uint8_t version,
-    int64_t& segmentDuration, int64_t& mediaTime, int16_t& mediaRateInteger, int16_t& mediaRateFraction)
+struct ElstEntryInfo {
+    int64_t segmentDuration = 0;
+    int64_t mediaTime = 0;
+    int16_t mediaRateInteger = 1;
+    int16_t mediaRateFraction = 0;
+};
+
+Status ParseElstEntry(const uint8_t* elstInfo, uint32_t index, uint8_t version, ElstEntryInfo& entryInfo)
 {
     constexpr uint32_t elstHeaderSize = 8;
     constexpr uint32_t entrySizeV0 = 12;
@@ -1642,22 +1660,63 @@ Status ParseElstEntry(const uint8_t* elstInfo, uint32_t index, uint8_t version,
     uint32_t entrySize = (version == 1) ? entrySizeV1 : entrySizeV0;
     uint32_t entryOffset = elstHeaderSize + index * entrySize;
     if (version == 1) {
-        segmentDuration = static_cast<int64_t>(GetU64Value(&elstInfo[entryOffset]));
-        mediaTime = GetSignedU64Value(&elstInfo[entryOffset + sizeof(uint64_t)]);
+        entryInfo.segmentDuration = static_cast<int64_t>(GetU64Value(&elstInfo[entryOffset]));
+        entryInfo.mediaTime = GetSignedU64Value(&elstInfo[entryOffset + sizeof(uint64_t)]);
     } else {
         uint32_t tempDuration = GetU32Value(&elstInfo[entryOffset]);
         int32_t tempMediaTime = static_cast<int32_t>(GetU32Value(&elstInfo[entryOffset + sizeof(uint32_t)]));
-        segmentDuration = tempDuration;
-        mediaTime = tempMediaTime;
+        entryInfo.segmentDuration = tempDuration;
+        entryInfo.mediaTime = tempMediaTime;
     }
     uint32_t rateOffset = entryOffset + (version == 1 ? sizeof(uint64_t) * 2 : sizeof(uint32_t) * 2);
-    mediaRateInteger = static_cast<int16_t>(GetU16Value(&elstInfo[rateOffset]));
-    mediaRateFraction = static_cast<int16_t>(GetU16Value(&elstInfo[rateOffset + sizeof(uint16_t)]));
+    entryInfo.mediaRateInteger = static_cast<int16_t>(GetU16Value(&elstInfo[rateOffset]));
+    entryInfo.mediaRateFraction = static_cast<int16_t>(GetU16Value(&elstInfo[rateOffset + sizeof(uint16_t)]));
     MEDIA_LOG_D("Parsed elst entry " PUBLIC_LOG_U32 ": segmentDuration=" PUBLIC_LOG_D64 ", mediaTime=" PUBLIC_LOG_D64,
-        index, segmentDuration, mediaTime);
-    FALSE_RETURN_V_MSG_E(mediaTime >= 0 || mediaTime == -1, Status::ERROR_INVALID_DATA,
-        "Invalid edit list media time: " PUBLIC_LOG_D64, mediaTime);
+        index, entryInfo.segmentDuration, entryInfo.mediaTime);
+    FALSE_RETURN_V_MSG_E(entryInfo.mediaTime >= 0 || entryInfo.mediaTime == -1, Status::ERROR_INVALID_DATA,
+        "Invalid edit list media time: " PUBLIC_LOG_D64, entryInfo.mediaTime);
 
+    return Status::OK;
+}
+
+Status AppendElstEntry(const uint8_t* elstInfo, uint32_t index, uint8_t version,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, bool& foundFirstMediaEdit)
+{
+    ElstEntryInfo entryInfo;
+    Status ret = ParseElstEntry(elstInfo, index, version, entryInfo);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse elst entry failed");
+    FALSE_RETURN_V_MSG_E(entryInfo.segmentDuration >= 0, Status::ERROR_INVALID_DATA,
+        "Invalid elst segment duration: " PUBLIC_LOG_D64, entryInfo.segmentDuration);
+    int64_t totalElstDuration = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(track->totalElstDuration, entryInfo.segmentDuration,
+        &totalElstDuration), Status::ERROR_INVALID_DATA, "Elst total duration overflow");
+    track->totalElstDuration = totalElstDuration;
+    track->editListEntries.emplace_back(MPEG4SampleHelper::EditListEntry {
+        .mediaTime = entryInfo.mediaTime,
+        .duration = entryInfo.segmentDuration,
+        .mediaRateInteger = entryInfo.mediaRateInteger,
+        .mediaRateFraction = entryInfo.mediaRateFraction
+    });
+    if (index == 0 && entryInfo.mediaTime == -1) {
+        track->elstInitEmptyEdit = entryInfo.segmentDuration;
+        return Status::OK;
+    }
+    if (!foundFirstMediaEdit && entryInfo.mediaTime >= 0) {
+        track->elstShiftStartTime = entryInfo.mediaTime;
+        foundFirstMediaEdit = true;
+    }
+    return Status::OK;
+}
+
+Status ParseElstEntries(const uint8_t* elstInfo, uint32_t entryCount, uint8_t version,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    track->editListEntries.clear();
+    bool foundFirstMediaEdit = false;
+    for (uint32_t i = 0; i < entryCount; ++i) {
+        Status ret = AppendElstEntry(elstInfo, i, version, track, foundFirstMediaEdit);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Append elst entry failed");
+    }
     return Status::OK;
 }
 
@@ -1684,42 +1743,7 @@ Status MPEG4AtomParser::ParseElst(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint32_t entrySize = (version == 1) ? entrySizeV1 : entrySizeV0;
     FALSE_RETURN_V_MSG_E((currentAtom.dataSize - elstHeaderSize) / entrySize >= entryCount,
         Status::ERROR_INVALID_DATA, "Invalid elst data size");
-
-    lastTrack_->editListEntries.clear();
-    bool foundFirstMediaEdit = false;
-    for (uint32_t i = 0; i < entryCount; ++i) {
-        int64_t segmentDuration = 0;
-        int64_t mediaTime = 0;
-        int16_t mediaRateInteger = 1;
-        int16_t mediaRateFraction = 0;
-
-        ret = ParseElstEntry(elstInfo.get(), i, version, segmentDuration, mediaTime,
-            mediaRateInteger, mediaRateFraction);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse elst entry failed");
-        FALSE_RETURN_V_MSG_E(segmentDuration >= 0, Status::ERROR_INVALID_DATA,
-            "Invalid elst segment duration: " PUBLIC_LOG_D64, segmentDuration);
-        int64_t totalElstDuration = 0;
-        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(lastTrack_->totalElstDuration, segmentDuration,
-            &totalElstDuration),
-            Status::ERROR_INVALID_DATA, "Elst total duration overflow");
-        lastTrack_->totalElstDuration = totalElstDuration;
-        lastTrack_->editListEntries.emplace_back(MPEG4SampleHelper::EditListEntry {
-            .mediaTime = mediaTime,
-            .duration = segmentDuration,
-            .mediaRateInteger = mediaRateInteger,
-            .mediaRateFraction = mediaRateFraction
-        });
-        if (i == 0 && mediaTime == -1) {
-            lastTrack_->elstInitEmptyEdit = segmentDuration;
-            continue;
-        }
-        if (!foundFirstMediaEdit && mediaTime >= 0) {
-            lastTrack_->elstShiftStartTime = mediaTime;
-            foundFirstMediaEdit = true;
-        }
-    }
-
-    return ret;
+    return ParseElstEntries(elstInfo.get(), entryCount, version, lastTrack_);
 }
 
 Status MPEG4AtomParser::ParseTref(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
