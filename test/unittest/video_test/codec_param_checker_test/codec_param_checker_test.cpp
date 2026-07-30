@@ -1590,6 +1590,7 @@ HWTEST_F(AVCodecParamCheckerTest, DECODE_KEY_OUTPUT_IN_DECODING_ORDER_VALID_TEST
     OH_VideoDecoder_Destroy(videoDec);
 }
 
+#ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: ENCODE_KEY_MAX_FRAME_DELAY_COUNT_VALID_TEST_1801
  * @tc.desc: HW AVC encoder configure with valid max frame delay count and verify it takes effect
@@ -1613,6 +1614,7 @@ HWTEST_F(AVCodecParamCheckerTest, ENCODE_KEY_MAX_FRAME_DELAY_COUNT_VALID_TEST_17
     g_format = OH_AVFormat_Create();
     ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Destroy(videoEnc));
 }
+#endif // ONLY_FOR_FLAGSHIP_CHIP
 
 /**
  * @tc.name: ENCODE_KEY_MAX_FRAME_DELAY_COUNT_INVALID_TEST_1802
