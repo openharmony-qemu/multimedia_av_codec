@@ -3140,6 +3140,12 @@ void MediaDemuxer::InitMediaMetaData(const Plugins::MediaInfo& mediaInfo)
     int32_t trackSize = static_cast<int32_t>(mediaInfo.tracks.size());
     for (int32_t index = 0; index < trackSize; index++) {
         auto trackMeta = mediaInfo.tracks[index];
+        Plugins::MediaType mediaType;
+        trackMeta.GetData(Tag::MEDIA_TYPE, mediaType);
+        if (!isPlayerMode_ && mediaType == Plugins::MediaType::SUBTITLE) {
+            trackMeta.Remove(Tag::MEDIA_LANGUAGE);
+            trackMeta.Remove(Tag::MEDIA_TITLE);
+        }
         mediaMetaData_.trackMetas.emplace_back(std::make_shared<Meta>(trackMeta));
     }
 }

@@ -602,6 +602,15 @@ void FFmpegFormatHelper::ParseTrackInfo(const AVStream& avStream, Meta& format, 
         } else if (IsAudioType(avStream)) {
             ParseAudioTrackInfo(avStream, format, avFormatContext);
         }
+    } else if (avStream.codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+        ParseAVTrackInfo(avStream, format);
+        AVDictionaryEntry *valPtr = nullptr;
+        valPtr = av_dict_get(avStream.metadata, "title", nullptr, AV_DICT_MATCH_CASE);
+        if (valPtr != nullptr) {
+            format.Set<Tag::MEDIA_TITLE>(std::string(valPtr->value));
+        } else {
+            MEDIA_LOG_D("Parse track title failed");
+        }
     }
     FileType fileType = GetFileTypeByName(avFormatContext);
     if (std::count(g_typeForTrackLevelBaseInfo.begin(), g_typeForTrackLevelBaseInfo.end(), fileType) > 0) {
