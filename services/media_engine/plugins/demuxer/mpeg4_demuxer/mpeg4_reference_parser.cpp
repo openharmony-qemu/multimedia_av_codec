@@ -179,6 +179,10 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
 {
     MEDIA_LOG_I("ParserRefInfo start, refParserCurGopId_ is " PUBLIC_LOG_D32, refParserCurGopId_);
     if (!isInit_) {
+        FileType fileType = FileType::UNKNOW;
+        // Keep the historical no-source behavior: RefParserInit() used to fail on an empty sync table first.
+        FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_FILE_TYPE>(fileType), Status::ERROR_UNKNOWN,
+            "fileType does not exist in mediaInfo_");
         Status prepareRet = EnsureReferenceParserPrepared();
         FALSE_RETURN_V_MSG_E(prepareRet == Status::OK, prepareRet, "Prepare reference parser failed");
         isInit_ = true;
@@ -258,20 +262,36 @@ Status MPEG4DemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLaye
 
 Status MPEG4DemuxerPlugin::GetIFramePos(std::vector<uint32_t> &IFramePos)
 {
-    int32_t trackIndex = -1;
-    std::string mimeType;
-    FALSE_RETURN_V_MSG_E(GetReferenceParserCapability(trackIndex, mimeType), Status::ERROR_UNSUPPORTED_FORMAT,
-        "Unsupported reference parser");
-    auto track = FindTrackById(trackIndex);
-    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_INVALID_DATA,
-        "Reference parser track is invalid");
-    IFramePos = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
+    if (!syncSamplesIndex_.empty()) {
+        IFramePos = syncSamplesIndex_;
+        return Status::OK;
+    }
+    auto track = firstTrack_;
+    for (uint32_t trackIndex = 0; track != nullptr && trackIndex < mediaInfo_.tracks.size(); ++trackIndex) {
+        MediaType trackType = MediaType::UNKNOWN;
+        std::string mimeType = MimeType::INVALID_TYPE;
+        (void)mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TYPE>(trackType);
+        (void)mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mimeType);
+        if (trackType != MediaType::VIDEO || !StartWith(mimeType.c_str(), "video/")) {
+            track = track->next;
+            continue;
+        }
+        FALSE_RETURN_V_MSG_E(track->sampleHelper != nullptr, Status::ERROR_INVALID_DATA,
+            "Reference parser track is invalid");
+        // GetIFramePos historically used the first video sync table and does not require RefParser preparation.
+        IFramePos = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
+        break;
+    }
     FALSE_RETURN_V_MSG_E(!IFramePos.empty(), Status::ERROR_UNKNOWN, "sync sample size is 0");
     return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
+    FileType fileType = FileType::UNKNOW;
+    // Preserve the empty-map result returned before reference-parser preparation became lazy.
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_FILE_TYPE>(fileType), Status::ERROR_OUT_OF_RANGE,
+        "fileType does not exist in mediaInfo_");
     Status ret = EnsureReferenceParserPrepared();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare reference parser failed");
     uint32_t left = 0;
@@ -297,6 +317,10 @@ Status MPEG4DemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
 
 Status MPEG4DemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
 {
+    FileType fileType = FileType::UNKNOW;
+    // Keep the previous no-source status from the empty sampleIndex2Pts_ lookup path.
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_FILE_TYPE>(fileType), Status::ERROR_UNKNOWN,
+        "fileType does not exist in mediaInfo_");
     Status ret = EnsureReferenceParserPrepared();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare reference parser failed");
     int64_t ptsUs = 0;
@@ -401,6 +425,10 @@ Status MPEG4DemuxerPlugin::SeekMs2FrameId(int64_t seekMs, uint32_t &frameId)
 {
     MEDIA_LOG_I("SeekMs2FrameId start, seekMs is " PUBLIC_LOG_D64, seekMs);
     FALSE_RETURN_V_MSG_E(seekMs >= 0, Status::ERROR_INVALID_PARAMETER, "SeekMs is less than 0");
+    FileType fileType = FileType::UNKNOW;
+    // Match the old empty dts lookup result without dereferencing an empty map.
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_FILE_TYPE>(fileType), Status::ERROR_OUT_OF_RANGE,
+        "fileType does not exist in mediaInfo_");
     Status ret = EnsureReferencePtsOrder();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare pts order failed");
     int64_t relativePtsUs = 0;
