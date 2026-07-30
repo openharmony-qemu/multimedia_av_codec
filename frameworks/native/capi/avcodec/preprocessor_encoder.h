@@ -21,10 +21,11 @@
 #include <memory>
 #include <mutex>
 #include <queue>
-#include <optional>
+#include <shared_mutex>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <vector>
 #include "native_avbuffer.h"
 #include "native_avcodec_base.h"
 #include "native_avmagic.h"
@@ -34,6 +35,8 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+class PreprocessorCallbackDispatcher;
+
 class PreprocessorEncoder : public OH_AVCodec {
 public:
     explicit PreprocessorEncoder(AVMagic magic);
@@ -60,15 +63,28 @@ public:
     OH_AVErrCode ReleaseOutputBuffer(uint32_t index);
     OH_AVErrCode Release();
 
-    std::optional<OH_AVBuffer*> GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput);
+    void OnEncoderError(int32_t errorCode);
+    void OnOutputBufferAvailable(uint32_t index, const std::shared_ptr<AVBuffer>& buffer);
+
+    OHOS::sptr<OH_AVBuffer> GetTransData(
+        const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput);
     std::shared_ptr<Preprocessor> GetPreprocessor();
     OH_AVFormat* GetOutputDescription();
     OH_AVFormat* GetInputDescription();
-    PreprocessorEncoder* DetachSecondaryEncoder();
-    void DetachFromPrimaryEncoder();
 private:
+    struct CallbackSnapshot {
+        OH_AVCodecCallback callback{};
+        void* userData{nullptr};
+    };
+
+    CallbackSnapshot GetCallbackSnapshot() const;
     void OnStreamChanged(const Media::Format& format);
     void OnPreprocessError(int32_t errorCode);
+    void PostError(int32_t errorCode);
+    void CloseCallbackGate();
+    void CloseAndWaitCallbackIfNeeded();
+    void PrepareCallbackShutdown();
+    void ShutdownCallbackDispatcher();
     static std::string GenerateEncoderId(const std::string& prefix);
     OH_AVErrCode InitAsPrimary(const char* mime);
     OH_AVErrCode InitAsSecondary(PreprocessorEncoder* primary);
@@ -82,6 +98,9 @@ private:
     void RegisterEncoderToManager();
     void UnregisterEncoderFromManager();
     void DetachPeerEncoder();
+    void DetachFromPrimaryEncoder();
+    void CollectDestroyTargets(std::vector<PreprocessorEncoder*>& encoders,
+        std::vector<std::shared_ptr<PreprocessorCallbackDispatcher>>& dispatchers);
 
     std::shared_ptr<VideoEncoderObject> videoEncoderObject_{nullptr};
 
@@ -99,8 +118,11 @@ private:
     OHOS::sptr<OHOS::Surface> encoderSurface_{nullptr};
     std::queue<sptr<SurfaceBuffer>> writableBufferQueue_{}; // queue of surface buffers for writing preprocessing result
 
-    OH_AVCodecAsyncCallback asyncCallback_{};
+    mutable std::shared_mutex callbackMutex_;
+    OH_AVCodecCallback callback_{};
     void* userData_{nullptr};
+    std::shared_ptr<PreprocessorCallbackDispatcher> callbackDispatcher_{nullptr};
+    std::atomic<bool> destroying_{false};
 };
 
 } // namespace MediaAVCodec
