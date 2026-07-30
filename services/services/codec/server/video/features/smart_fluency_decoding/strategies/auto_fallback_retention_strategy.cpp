@@ -134,6 +134,11 @@ bool AutoFallbackRetentionStrategy::RequiresMvAnalysis() const
     return false;
 }
 
+bool AutoFallbackRetentionStrategy::ShouldReportDfx() const
+{
+    return true;
+}
+
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS

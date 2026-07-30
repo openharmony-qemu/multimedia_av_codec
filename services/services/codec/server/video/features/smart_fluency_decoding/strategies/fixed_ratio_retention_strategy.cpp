@@ -95,6 +95,11 @@ SfdDecisionReason FixedRatioRetentionStrategy::GetLastDecisionReason() const
     return lastReason_;
 }
 
+bool FixedRatioRetentionStrategy::ShouldReportDfx() const
+{
+    return true;
+}
+
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
