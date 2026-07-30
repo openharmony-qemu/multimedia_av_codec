@@ -154,8 +154,10 @@ std::string GenerateRandomMime()
 void WaitForEventJson()
 {
     std::unique_lock<std::mutex> lock(g_mutex);
-    std::cv_status status = g_cv.wait_for(lock, std::chrono::milliseconds(STATISTIC_EVENT_INFO_TIMEOUT));
-    EXPECT_NE(status, std::cv_status::timeout) << "Expected timeout after " << STATISTIC_EVENT_INFO_TIMEOUT << " ms";
+    g_recordJson.clear();
+    bool received = g_cv.wait_for(lock, std::chrono::milliseconds(STATISTIC_EVENT_INFO_TIMEOUT),
+                                  [] { return !g_recordJson.empty(); });
+    EXPECT_TRUE(received) << "Expected event within " << STATISTIC_EVENT_INFO_TIMEOUT << " ms";
 }
 
 void OnEventTest(HiSysEventRecordC record)
@@ -243,6 +245,8 @@ void DfxStatisticsEventTest::SetUp(void)
     preRegisterMeta.SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "test");
     StatisticsEventInfo::GetInstance().OnAddEventInfo(
         StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, preRegisterMeta);
+
+    StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::BASIC_QUERY_CAP_INFO, *meta_);
 }
 
 void DfxStatisticsEventTest::TearDown(void)
@@ -364,7 +368,7 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_BasicQueryAndCreateInfo_001, TestS
     ASSERT_NE(nullptr, item);
     ASSERT_TRUE(cJSON_IsNumber(item));
     int32_t queryCapTimes = item->valueint;
-    ASSERT_EQ(1, queryCapTimes);
+    ASSERT_EQ(2, queryCapTimes);
 
     item = cJSON_GetObjectItem(data.get(), "CREATE_CODEC_TIMES");
     ASSERT_NE(nullptr, item);
