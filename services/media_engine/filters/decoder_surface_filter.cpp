@@ -1660,7 +1660,7 @@ void DecoderSurfaceFilter::HandleEosOutput(int index)
 
 void DecoderSurfaceFilter::ReportEosEvent()
 {
-    FALSE_RETURN_MSG_I(!eosReported_.exchange(true), "ReportEosEvent already reported, skip");
+    FALSE_RETURN_MSG_I(!eosReported_.exchange(true), "ReportEOSEvent already reported, skip");
     MEDIA_LOG_I("ReportEOSEvent");
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "ReportEOSEvent without eventReceiver_");
     Event event {
