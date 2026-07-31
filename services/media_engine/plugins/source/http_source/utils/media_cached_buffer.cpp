@@ -692,8 +692,13 @@ bool CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(FragmentIterat
     if (fragmentIterator == fragmentCacheBuffer_.end()) {
         return false;
     }
-    if (currWritePos == fragmentIterator) {
-        lruCache_.Refer(offset, currWritePos);
+    // Validate LRU consistency: offset must match the Fragment's actual offsetBegin
+    if (fragmentIterator->offsetBegin != static_cast<uint64_t>(offset)) {
+        lruCache_.Delete(offset);
+        return false;
+    }
+    if (currWritePos == fragmentIterator || writePos_ == fragmentIterator) {
+        lruCache_.Refer(offset, currWritePos == fragmentIterator ? currWritePos : writePos_);
         ret = lruCache_.GetLruNode(offset, fragmentIterator);
         if (!ret) {
             return false;
@@ -701,7 +706,7 @@ bool CacheMediaChunkBufferImpl::CheckThresholdFragmentCacheBuffer(FragmentIterat
         if (fragmentIterator == fragmentCacheBuffer_.end()) {
             return false;
         }
-        if (currWritePos == fragmentIterator) {
+        if (currWritePos == fragmentIterator || writePos_ == fragmentIterator) {
             return false;
         }
     }
@@ -765,9 +770,7 @@ void CacheMediaChunkBufferImpl::DeleteUnreadFragmentCacheBuffer(FragmentIterator
 
 CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue)
 {
-    if (writePos_ == fragmentCacheBuffer_.end()) {
-        return nullptr;
-    }
+    FALSE_RETURN_V_MSG_E(writePos_ != fragmentCacheBuffer_.end(), nullptr, "write pos invalid!");
     if (!freeChunks_.empty()) {
         return PopFreeCacheChunk(freeChunks_, offset);
     }
@@ -793,6 +796,9 @@ CacheChunk* CacheMediaChunkBufferImpl::GetFreeCacheChunk(uint64_t offset, bool c
         return PopFreeCacheChunk(freeChunks_, offset);
     }
     while (fragmentCacheBuffer_.size() > CACHE_FRAGMENT_MIN_NUM_DEFAULT) {
+        if (writePos_ == fragmentCacheBuffer_.end()) {
+            return nullptr;
+        }
         auto result = CheckThresholdFragmentCacheBuffer(currWritePos);
         if (!freeChunks_.empty()) {
             return PopFreeCacheChunk(freeChunks_, offset);
