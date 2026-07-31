@@ -378,7 +378,7 @@ private:
     Status ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status InitCurrentTrackForTrak();
     void UpdateParsedTrackVideoInfo();
-    void FinalizeParsedTrackSampleTables();
+    Status FinalizeParsedTrackSampleTables();
     Status ParseTkhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseEdts(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseElst(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);

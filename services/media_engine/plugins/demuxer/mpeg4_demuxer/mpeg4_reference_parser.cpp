@@ -48,6 +48,13 @@ int64_t GetDuration(int64_t startTime)
     return std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count() - startTime;
 }
+
+OHOS::Media::Status ConvertTrackTimeToUs(int64_t trackTime, int32_t timeScale, int64_t& timeUs)
+{
+    FALSE_RETURN_V_NOLOG(timeScale > 0, OHOS::Media::Status::ERROR_INVALID_DATA);
+    return OHOS::Media::Plugins::MPEG4::ConvertTimeScale(trackTime,
+        static_cast<int64_t>(OHOS::Media::Plugins::MPEG4::S_TO_US), static_cast<int64_t>(timeScale), &timeUs);
+}
 }
 
 namespace OHOS {
@@ -105,13 +112,8 @@ Status MPEG4DemuxerPlugin::GetReferenceSampleTime(
         Status::ERROR_INVALID_DATA);
     int32_t timeScale = trackOfRefParser_->timeScale;
     FALSE_RETURN_V_NOLOG(timeScale > 0, Status::ERROR_INVALID_DATA);
-    double scale = static_cast<double>(S_TO_US) / static_cast<double>(timeScale);
-    double pts = static_cast<double>(view.pts) * scale;
-    double dts = static_cast<double>(view.dts) * scale;
-    FALSE_RETURN_V_NOLOG(pts >= static_cast<double>(INT64_MIN) && pts <= static_cast<double>(INT64_MAX) &&
-        dts >= static_cast<double>(INT64_MIN) && dts <= static_cast<double>(INT64_MAX), Status::ERROR_INVALID_DATA);
-    ptsUs = static_cast<int64_t>(pts);
-    dtsUs = static_cast<int64_t>(dts);
+    FALSE_RETURN_V_NOLOG(ConvertTrackTimeToUs(view.pts, timeScale, ptsUs) == Status::OK &&
+        ConvertTrackTimeToUs(view.dts, timeScale, dtsUs) == Status::OK, Status::ERROR_INVALID_DATA);
     return Status::OK;
 }
 
@@ -557,9 +559,9 @@ Status MPEG4DemuxerPlugin::PrepareRefParserSample(std::shared_ptr<Sample>& sampl
         FALSE_RETURN_V_MSG_E(trackOfRefParser_ != nullptr, Status::ERROR_UNKNOWN, "trackOfRefParser_ is nullptr");
         int32_t timeScale = trackOfRefParser_->timeScale;
         FALSE_RETURN_V_MSG_E(timeScale > 0, Status::ERROR_UNKNOWN, "timeScale is invalid");
-        double timeScaleRate = static_cast<double>(S_TO_US) / static_cast<double>(timeScale);
-        sample->pts = static_cast<int64_t>(currentSample.pts * timeScaleRate);
-        sample->dts = static_cast<int64_t>(currentSample.dts * timeScaleRate);
+        FALSE_RETURN_V_MSG_E(ConvertTrackTimeToUs(currentSample.pts, timeScale, sample->pts) == Status::OK &&
+            ConvertTrackTimeToUs(currentSample.dts, timeScale, sample->dts) == Status::OK,
+            Status::ERROR_UNKNOWN, "Convert sample time failed");
         sample->flag = currentSample.flag;
         sample->size = currentSample.size;
     }
@@ -727,7 +729,6 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MP
 
     int32_t timeScale = track->timeScale;
     FALSE_RETURN_V_MSG_E(timeScale > 0, Status::ERROR_INVALID_DATA, "timescale is invalid");
-    double timeScaleRate = static_cast<double>(S_TO_US) / static_cast<double>(timeScale);
 
     uint32_t sttsEntryIndex = 0;
     uint32_t sttsEntryCount = track->sampleHelper->GetSttsEntryCount();
@@ -736,9 +737,8 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexOnlyByStts(const std::shared_ptr<MP
     int64_t dts = 0;
 
     while (sttsEntryIndex < sttsEntryCount) {
-        FALSE_RETURN_V_MSG_E(timeScaleRate != 0 && static_cast<double>(INT64_MAX) / timeScaleRate >=
-            static_cast<double>(dts), Status::ERROR_INVALID_DATA, "dts overflow");
-        pts = static_cast<int64_t>(dts * timeScaleRate);
+        FALSE_RETURN_V_MSG_E(ConvertTrackTimeToUs(dts, timeScale, pts) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Convert dts to pts failed");
         ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
 
         if (sampleCountOfCurrentSttsEntry == 0) {
@@ -767,7 +767,6 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
 
     int32_t timeScale = track->timeScale;
     FALSE_RETURN_V_MSG_E(timeScale > 0, Status::ERROR_INVALID_DATA, "timescale is invalid");
-    double timeScaleRate = static_cast<double>(S_TO_US) / static_cast<double>(timeScale);
 
     uint32_t sttsEntryIndex = 0;
     uint32_t sttsEntryCount = track->sampleHelper->GetSttsEntryCount();
@@ -796,7 +795,7 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
         
         int64_t sampleOffsetOfCurrentCttsEntry = static_cast<int64_t>(
             track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) - minSampleOffsetOfCttsEntry);
-        FALSE_RETURN_V_MSG_E(UpdatePTSBySttsAndCtts(pts, dts, timeScaleRate, sampleOffsetOfCurrentCttsEntry) ==
+        FALSE_RETURN_V_MSG_E(UpdatePTSBySttsAndCtts(pts, dts, timeScale, sampleOffsetOfCurrentCttsEntry) ==
             Status::OK, Status::ERROR_INVALID_DATA,  "dts overflow");
         ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
         if (sampleCountOfCurrentSttsEntry == 0) {
@@ -817,15 +816,16 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
     return Status::OK;
 }
 
-Status MPEG4DemuxerPlugin::UpdatePTSBySttsAndCtts(int64_t& pts, int64_t dts, double timeScaleRate,
+Status MPEG4DemuxerPlugin::UpdatePTSBySttsAndCtts(int64_t& pts, int64_t dts, int32_t timeScale,
     int64_t sampleOffsetOfCurrentCttsEntry)
 {
-    MEDIA_LOG_D("pts is " PUBLIC_LOG_D64 ", dts is " PUBLIC_LOG_D64 ", timeScaleRate is " PUBLIC_LOG_F
-        ", sampleOffsetOfCurrentCttsEntry is " PUBLIC_LOG_D64, pts, dts, timeScaleRate, sampleOffsetOfCurrentCttsEntry);
-    FALSE_RETURN_V_MSG_E(INT64_MAX - sampleOffsetOfCurrentCttsEntry >= dts, Status::ERROR_INVALID_DATA, "dts overflow");
-    FALSE_RETURN_V_MSG_E(timeScaleRate != 0 && static_cast<double>(INT64_MAX) / timeScaleRate >=
-        static_cast<double>(dts + sampleOffsetOfCurrentCttsEntry), Status::ERROR_INVALID_DATA, "dts overflow");
-    pts = static_cast<int64_t>((dts + sampleOffsetOfCurrentCttsEntry) * timeScaleRate);
+    MEDIA_LOG_D("pts is " PUBLIC_LOG_D64 ", dts is " PUBLIC_LOG_D64 ", timeScale is " PUBLIC_LOG_D32
+        ", sampleOffsetOfCurrentCttsEntry is " PUBLIC_LOG_D64, pts, dts, timeScale, sampleOffsetOfCurrentCttsEntry);
+    int64_t correctedPts = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(dts, sampleOffsetOfCurrentCttsEntry, &correctedPts),
+        Status::ERROR_INVALID_DATA, "pts overflow");
+    FALSE_RETURN_V_MSG_E(ConvertTrackTimeToUs(correctedPts, timeScale, pts) == Status::OK,
+        Status::ERROR_INVALID_DATA, "Convert pts failed");
     return Status::OK;
 }
 

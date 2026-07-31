@@ -1420,7 +1420,7 @@ void MPEG4AtomParser::UpdateParsedTrackVideoInfo()
     }
 }
 
-void MPEG4AtomParser::FinalizeParsedTrackSampleTables()
+Status MPEG4AtomParser::FinalizeParsedTrackSampleTables()
 {
     if (lastTrack_->sampleHelper) {
         int32_t movieTimeScale = 0;
@@ -1434,11 +1434,14 @@ void MPEG4AtomParser::FinalizeParsedTrackSampleTables()
         Status finalizeRet = lastTrack_->sampleHelper->FinalizeSampleTables();
         if (finalizeRet != Status::OK) {
             MEDIA_LOG_E("Finalize sample tables failed");
-        } else if (lastTrack_->sampleHelper->ShouldBuildDenseIndex() &&
-            lastTrack_->sampleHelper->BuildSampleIndexEntries() != Status::OK) {
-            MEDIA_LOG_E("Build dense sample index failed");
+            return finalizeRet;
+        }
+        if (lastTrack_->sampleHelper->ShouldBuildDenseIndex()) {
+            Status denseRet = lastTrack_->sampleHelper->BuildSampleIndexEntries();
+            FALSE_RETURN_V_MSG_E(denseRet == Status::OK, denseRet, "Build dense sample index failed");
         }
     }
+    return Status::OK;
 }
 
 Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
@@ -1449,7 +1452,8 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
     ret = ParseContainerAtom(currentAtom, depth, ctx);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse trak atom");
     UpdateParsedTrackVideoInfo();
-    FinalizeParsedTrackSampleTables();
+    ret = FinalizeParsedTrackSampleTables();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to finalize sample tables");
     SetCodecConfig(lastTrack_);
     AdapterFormat(lastTrack_);
     return Status::OK;

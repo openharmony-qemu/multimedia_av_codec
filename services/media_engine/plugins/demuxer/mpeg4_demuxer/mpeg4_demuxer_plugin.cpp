@@ -1117,6 +1117,7 @@ void MPEG4DemuxerPlugin::Dump(const DumpParam &dumpParam)
 
 void MPEG4DemuxerPlugin::ReleaseReferenceParserState()
 {
+    std::lock_guard<std::mutex> lock(refPrepareMutex_);
     referenceParser_ = nullptr;
     isInit_ = false;
     refPrepareAttempted_ = false;

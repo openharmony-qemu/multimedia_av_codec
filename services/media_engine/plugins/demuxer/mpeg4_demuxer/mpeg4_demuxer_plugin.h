@@ -383,7 +383,7 @@ private:
         IndexAndPTSConversionMode mode, int64_t absolutePTS, uint32_t sampleIndex);
     void ProcessConversionByMode(IndexAndPTSConversionMode mode, int64_t pts, int64_t absolutePTS,
         uint32_t sampleIndex);
-    Status UpdatePTSBySttsAndCtts(int64_t& pts, int64_t dts, double timeScaleRate,
+    Status UpdatePTSBySttsAndCtts(int64_t& pts, int64_t dts, int32_t timeScale,
         int64_t sampleOffsetOfCurrentCttsEntry);
     void ProcessIndex2RelativePTS(int64_t pts, uint32_t index);
     void ProcessRelativePTS2Index(int64_t pts, int64_t absolutePTS);
