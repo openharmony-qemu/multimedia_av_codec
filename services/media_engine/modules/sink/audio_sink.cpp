@@ -1147,7 +1147,7 @@ void AudioSink::GetAvailableOutputBuffers()
         }
         UpdateSeekState(filledInputBuffer);
         decodedBuffers_.push(filledInputBuffer);
-        if (isFirstPts_ && filledInputBuffer->flag_ & BUFFER_FLAG_EOS) {
+        if (isFirstPts_ && (filledInputBuffer->flag_ & BUFFER_FLAG_EOS)) {
             Event event {
                 .srcFilter = "Audio render first frame writing event",
                 .type = EventType::EVENT_AUDIO_FIRST_FRAME,
