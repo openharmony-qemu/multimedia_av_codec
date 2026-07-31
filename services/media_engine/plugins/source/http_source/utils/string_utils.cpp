@@ -31,7 +31,6 @@ constexpr char QUERY_SEPARATOR = '?';
 constexpr char FRAGMENT_SEPARATOR = '#';
 constexpr char USERINFO_SEPARATOR = '@';
 constexpr const char* PATH_MASK = "***";
-constexpr size_t PATH_MASK_LEN = 3;
 constexpr size_t CHAR_COUNT_ONE = 1;
 
 const char* ProcessPrefix(const char* str, bool& hasError)
