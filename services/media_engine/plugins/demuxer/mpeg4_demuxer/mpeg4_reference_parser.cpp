@@ -175,21 +175,29 @@ Status MPEG4DemuxerPlugin::ParserRefUpdatePos(int64_t timeStampMs, bool isForwar
     return Status::OK;
 }
 
+Status MPEG4DemuxerPlugin::EnsureParserRefInfoInitialized()
+{
+    if (isInit_) {
+        return Status::OK;
+    }
+    FileType fileType = FileType::UNKNOW;
+    // Keep the historical no-source behavior: RefParserInit() used to fail on an empty sync table first.
+    FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_FILE_TYPE>(fileType), Status::ERROR_UNKNOWN,
+        "fileType does not exist in mediaInfo_");
+    Status prepareRet = EnsureReferenceParserPrepared();
+    FALSE_RETURN_V_MSG_E(prepareRet == Status::OK, prepareRet, "Prepare reference parser failed");
+    isInit_ = true;
+    Status ret = RefParserInit();
+    FALSE_RETURN_V_NOLOG(ret != Status::END_OF_STREAM, Status::OK);
+    FALSE_RETURN_V(ret == Status::OK, Status::ERROR_UNKNOWN);
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::ParserRefInfo()
 {
     MEDIA_LOG_I("ParserRefInfo start, refParserCurGopId_ is " PUBLIC_LOG_D32, refParserCurGopId_);
-    if (!isInit_) {
-        FileType fileType = FileType::UNKNOW;
-        // Keep the historical no-source behavior: RefParserInit() used to fail on an empty sync table first.
-        FALSE_RETURN_V_MSG_E(mediaInfo_.general.Get<Tag::MEDIA_FILE_TYPE>(fileType), Status::ERROR_UNKNOWN,
-            "fileType does not exist in mediaInfo_");
-        Status prepareRet = EnsureReferenceParserPrepared();
-        FALSE_RETURN_V_MSG_E(prepareRet == Status::OK, prepareRet, "Prepare reference parser failed");
-        isInit_ = true;
-        Status ret = RefParserInit();
-        FALSE_RETURN_V_NOLOG(ret != Status::END_OF_STREAM, Status::OK);
-        FALSE_RETURN_V(ret == Status::OK, Status::ERROR_UNKNOWN);
-    }
+    Status initRet = EnsureParserRefInfoInitialized();
+    FALSE_RETURN_V(initRet == Status::OK, initRet);
     int64_t duration = GetDuration(refParserStartTime_);
     RefTrace trace("ParserRefCost_2_" + std::to_string(duration) + "_" + std::to_string(refParserCurGopId_));
     FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Reference parser timeout");

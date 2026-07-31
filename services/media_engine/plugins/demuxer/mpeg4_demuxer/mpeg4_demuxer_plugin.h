@@ -94,6 +94,7 @@ public:
     Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
     Status GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &frameId);
     Status RefParserInit();
+    Status EnsureParserRefInfoInitialized();
     Status ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex);
     Status PrepareRefParserSample(std::shared_ptr<Sample>& sample, uint32_t sampleIndex);
     Status UpdateParserGopId(int32_t syncSamplesPtsSize);
