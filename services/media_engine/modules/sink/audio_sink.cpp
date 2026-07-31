@@ -53,6 +53,7 @@ const int32_t DEFAULT_BUFFER_QUEUE_SIZE = 8;
 const int32_t APE_BUFFER_QUEUE_SIZE = 30;
 const int64_t DEFAULT_PLAY_RANGE_VALUE = -1;
 const int64_t MICROSECONDS_CONVERT_UNITS = 1000;
+const uint64_t AUDIO_FIRST_FRAME_LATENCY = 120; //ms
 
 int64_t GetAudioLatencyFixDelay()
 {
@@ -1146,7 +1147,17 @@ void AudioSink::GetAvailableOutputBuffers()
         }
         UpdateSeekState(filledInputBuffer);
         decodedBuffers_.push(filledInputBuffer);
+        if (isFirstPts_ && filledInputBuffer->flag_ & BUFFER_FLAG_EOS) {
+            Event event {
+                .srcFilter = "Audio render first frame writing event",
+                .type = EventType::EVENT_AUDIO_FIRST_FRAME,
+                .param = AUDIO_FIRST_FRAME_LATENCY
+            };
+            FALSE_RETURN(playerEventReceiver_ != nullptr);
+            playerEventReceiver_->OnEvent(event);
+        }
         availOutputBuffers_.push(processedBuffer);
+        isFirstPts_ = false;
         MEDIA_LOG_DD("the pts is " PUBLIC_LOG_D64 " buffer is push", processedBuffer->pts_);
         availDataSize_.fetch_add(processedBuffer->memory_->GetSize());
     }
