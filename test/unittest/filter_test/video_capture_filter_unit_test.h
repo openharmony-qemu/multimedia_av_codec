@@ -17,8 +17,10 @@
 
 #include <gmock/gmock.h>
 #include "consumer_surface.h"
+#include "surface.h"
 #include "gtest/gtest.h"
 #include "video_capture_filter.h"
+#include "buffer/avbuffer.h"
 #include "buffer_producer_listener.h"
 
 namespace OHOS {

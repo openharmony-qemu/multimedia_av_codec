@@ -71,6 +71,7 @@ protected:
 
 private:
     void UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp);
+    void AccumulatePausedTime();
     bool AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t& timestamp,
         int32_t& bufferSize);
     bool ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer, int64_t timestamp,
