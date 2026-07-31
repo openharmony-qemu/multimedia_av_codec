@@ -367,6 +367,12 @@ bool VideoCaptureFilter::AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t
         extraData->ExtraGet("isKeyFrame", isKeyFrame);
     }
 
+    if (bufferSize <= 0 || static_cast<uint32_t>(bufferSize) > buffer->GetSize()) {
+        MEDIA_LOG_E("dataSize %{public}d invalid, buffer real size %{public}u", bufferSize, buffer->GetSize());
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return false;
+    }
+
     return true;
 }
 
@@ -396,23 +402,38 @@ bool VideoCaptureFilter::ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer,
     return true;
 }
 
+void VideoCaptureFilter::AccumulatePausedTime()
+{
+    if (latestPausedTime_ == TIME_NONE || latestBufferTime_ <= latestPausedTime_) {
+        return;
+    }
+    if (latestPausedTime_ < 0 && latestBufferTime_ > INT64_MAX + latestPausedTime_) {
+        MEDIA_LOG_E("timeDiff overflow, skip accumulation");
+        return;
+    }
+    int64_t timeDiff = latestBufferTime_ - latestPausedTime_;
+    if (totalPausedTime_ > INT64_MAX - timeDiff) {
+        MEDIA_LOG_E("totalPausedTime_ overflow, skip accumulation");
+        return;
+    }
+    totalPausedTime_ += timeDiff;
+}
+
 void VideoCaptureFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp)
 {
     if (startBufferTime_ == TIME_NONE) {
-        startBufferTime_ = timestamp;
-        buffer->flag_ =
-            (uint32_t)Plugins::AVBufferFlag::SYNC_FRAME | (uint32_t)Plugins::AVBufferFlag::CODEC_DATA;
     }
     latestBufferTime_ = timestamp;
     if (refreshTotalPauseTime_) {
-        if (latestPausedTime_ != TIME_NONE && latestBufferTime_ > latestPausedTime_) {
-            totalPausedTime_ += latestBufferTime_ - latestPausedTime_;
-        }
+        AccumulatePausedTime();
+ 
+ 
         refreshTotalPauseTime_ = false;
     }
     constexpr int32_t NS_PER_US = 1000;
-    buffer->pts_ = timestamp - startBufferTime_ - totalPausedTime_;
-    buffer->pts_ = buffer->pts_ / NS_PER_US; // the unit of pts is us
+    int64_t elapsed = (startBufferTime_ >= 0 && timestamp >= startBufferTime_) ?
+        timestamp - startBufferTime_ : 0;
+    buffer->pts_ = (elapsed > totalPausedTime_) ? (elapsed - totalPausedTime_) / NS_PER_US : 0;
     MediaAVCodec::AVCodecTrace trace("VideoCaptureFilter::UpdateBufferConfig");
     MEDIA_LOG_I("UpdateBufferConfig buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
 }

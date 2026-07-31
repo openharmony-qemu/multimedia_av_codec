@@ -392,6 +392,133 @@ HWTEST_F(MuxerFilterUnitTest, MuxerFilter_SetOrGetParameter_0100, TestSize.Level
     muxerFilter_->SetParameter(userMeta);
     EXPECT_NE(muxerFilter_->mediaMuxer_->SetParameter(userMeta), Status::OK);
 }
+
+/**
+ * @tc.name: MuxerFilter_ConfigureTrackMeta_0100
+ * @tc.desc: ConfigureTrackMeta with audio MIME type
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_ConfigureTrackMeta_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->Set<Tag::MIME_TYPE>(std::string("audio/mp4a-latm"));
+    muxerFilter_->ConfigureTrackMeta(meta, "audio/mp4a-latm");
+    EXPECT_EQ(muxerFilter_->audioCodecMimeType_, "audio/mp4a-latm");
+}
+
+/**
+ * @tc.name: MuxerFilter_ConfigureTrackMeta_0200
+ * @tc.desc: ConfigureTrackMeta with video MIME type
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_ConfigureTrackMeta_0200, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    muxerFilter_->ConfigureTrackMeta(meta, "video/avc");
+    EXPECT_EQ(muxerFilter_->videoCodecMimeType_, "video/avc");
+}
+
+/**
+ * @tc.name: MuxerFilter_ConfigureTrackMeta_0300
+ * @tc.desc: ConfigureTrackMeta with metadata MIME type
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_ConfigureTrackMeta_0300, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    muxerFilter_->ConfigureTrackMeta(meta, "meta/timed");
+    EXPECT_EQ(muxerFilter_->metaDataCodecMimeType_, "meta/timed");
+}
+
+/**
+ * @tc.name: MuxerFilter_OnBufferFilled_MinOtherPts_0100
+ * @tc.desc: OnBufferFilled with multiple tracks, should use min pts of other tracks for comparison
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnBufferFilled_MinOtherPts_0100, TestSize.Level1)
+{
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer();
+    int32_t trackIndex = 1;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    muxerFilter_->isTransCoderMode = false;
+    muxerFilter_->preFilterCount_ = 2;
+    muxerFilter_->isReachMaxDuration_ = false;
+    muxerFilter_->maxDuration_ = INT32_MAX;
+    // Set up bufferPtsMap_ with two other tracks: one with small pts, one with large pts
+    {
+        std::lock_guard<std::mutex> lock(muxerFilter_->bufferPtsMutex_);
+        muxerFilter_->bufferPtsMap_[0] = 1000000;   // small pts (1ms)
+        muxerFilter_->bufferPtsMap_[2] = 5000000000; // large pts (5s)
+    }
+    // Current buffer has pts between them - should compare against min (1000000)
+    inputBuffer->pts_ = 4000000000; // 4s, diff from min = ~4s > 3s threshold
+    muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    // Verify the current track's pts was updated
+    {
+        std::lock_guard<std::mutex> lock(muxerFilter_->bufferPtsMutex_);
+        EXPECT_EQ(muxerFilter_->bufferPtsMap_[trackIndex], inputBuffer->pts_);
+    }
+}
+
+/**
+ * @tc.name: MuxerFilter_OnBufferFilled_MinOtherPts_0200
+ * @tc.desc: OnBufferFilled with single track (preFilterCount_ = 1), no pts comparison
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnBufferFilled_MinOtherPts_0200, TestSize.Level1)
+{
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer();
+    int32_t trackIndex = 0;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    muxerFilter_->isTransCoderMode = false;
+    muxerFilter_->preFilterCount_ = 1;
+    muxerFilter_->isReachMaxDuration_ = false;
+    muxerFilter_->maxDuration_ = INT32_MAX;
+    inputBuffer->pts_ = 1000000;
+    // No other tracks in bufferPtsMap_, minOtherPts remains INT64_MAX, no log triggered
+    muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    {
+        std::lock_guard<std::mutex> lock(muxerFilter_->bufferPtsMutex_);
+        EXPECT_EQ(muxerFilter_->bufferPtsMap_[trackIndex], inputBuffer->pts_);
+    }
+}
+
+/**
+ * @tc.name: MuxerFilter_OnBufferFilled_SameTrackInMap_0100
+ * @tc.desc: OnBufferFilled with bufferPtsMap_ containing same trackIndex, covers false branch of key comparison
+ * @tc.type: FUNC
+ */
+HWTEST_F(MuxerFilterUnitTest, MuxerFilter_OnBufferFilled_SameTrackInMap_0100, TestSize.Level1)
+{
+    muxerFilter_->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<AVBuffer> inputBuffer = AVBuffer::CreateAVBuffer();
+    int32_t trackIndex = 1;
+    StreamType streamType = StreamType::STREAMTYPE_ENCODED_VIDEO;
+    sptr<AVBufferQueueProducer> inputBufferQueue = new OHOS::Media::Pipeline::MyAVBufferQueueProducer();
+    muxerFilter_->mediaMuxer_ = std::make_shared<MediaMuxer>(0, 0);
+    muxerFilter_->isTransCoderMode = false;
+    muxerFilter_->preFilterCount_ = 2;
+    muxerFilter_->isReachMaxDuration_ = false;
+    muxerFilter_->maxDuration_ = INT32_MAX;
+    // Set up bufferPtsMap_ with same trackIndex and another track
+    {
+        std::lock_guard<std::mutex> lock(muxerFilter_->bufferPtsMutex_);
+        muxerFilter_->bufferPtsMap_[0] = 500000;    // other track, key != trackIndex -> true branch
+        muxerFilter_->bufferPtsMap_[1] = 800000;    // same track, key == trackIndex -> false branch
+    }
+    inputBuffer->pts_ = 1000000;
+    muxerFilter_->OnBufferFilled(inputBuffer, trackIndex, streamType, inputBufferQueue);
+    {
+        std::lock_guard<std::mutex> lock(muxerFilter_->bufferPtsMutex_);
+        EXPECT_EQ(muxerFilter_->bufferPtsMap_[trackIndex], inputBuffer->pts_);
+    }
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

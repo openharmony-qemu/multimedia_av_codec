@@ -18,6 +18,7 @@
 
 #include <cstring>
 #include <map>
+#include <atomic>
 
 #include "filter/filter.h"
 #include "common/status.h"
@@ -68,7 +69,7 @@ public:
 
 private:
     void HandleTransCoderComplete();
-    void UpdateTrackState(int32_t trackIndex);
+    void ConfigureTrackMeta(const std::shared_ptr<Meta> &meta, const std::string &mimeType);
 
     std::string name_;
 
@@ -93,14 +94,14 @@ private:
 
     int64_t lastVideoPts_{0};
     int64_t lastAudioPts_{0};
-    bool videoIsEos{false};
-    bool audioIsEos{false};
-    bool isTransCoderMode{false};
+    std::atomic<bool> videoIsEos{false};
+    std::atomic<bool> audioIsEos{false};
+    std::atomic<bool> isTransCoderMode{false};
  
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
     std::mutex eosMutex_;
-    std::mutex ptsMapMutex_;
+    std::mutex bufferPtsMutex_;
     
     bool isStarted{false};
 

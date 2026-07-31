@@ -498,6 +498,218 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_SetCodecFormat_001, Test
     Status ret = videoCaptureFilter_->SetCodecFormat(videoMeta);
     EXPECT_EQ(ret, Status::OK);
 }
+
+/**
+ * @tc.name: VideoCaptureFilter_ProcessAndPushOutputBuffer_001
+ * @tc.desc: RequestBuffer returns error, ProcessAndPushOutputBuffer should fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_ProcessAndPushOutputBuffer_001, TestSize.Level1)
+{
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
+    videoCaptureFilter_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(mockBuffer, nullptr);
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::ERROR_UNKNOWN)));
+
+    int64_t timestamp = 100;
+    int32_t bufferSize = 10;
+    int32_t isKeyFrame = 0;
+    bool result = videoCaptureFilter_->ProcessAndPushOutputBuffer(mockBuffer, timestamp, bufferSize, isKeyFrame);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_ProcessAndPushOutputBuffer_002
+ * @tc.desc: RequestBuffer OK but memory_ is nullptr, ProcessAndPushOutputBuffer should fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_ProcessAndPushOutputBuffer_002, TestSize.Level1)
+{
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
+    videoCaptureFilter_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(mockBuffer, nullptr);
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
+    mockEmptyOutputBuffer->memory_ = nullptr;
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::OK)));
+
+    int64_t timestamp = 100;
+    int32_t bufferSize = 10;
+    int32_t isKeyFrame = 0;
+    bool result = videoCaptureFilter_->ProcessAndPushOutputBuffer(mockBuffer, timestamp, bufferSize, isKeyFrame);
+    EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_ProcessAndPushOutputBuffer_003
+ * @tc.desc: RequestBuffer OK, memory_ valid, PushBuffer success
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_ProcessAndPushOutputBuffer_003, TestSize.Level1)
+{
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
+    videoCaptureFilter_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(mockBuffer, nullptr);
+    // Create output buffer with real allocated memory
+    uint8_t outputData[64];
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = AVBuffer::CreateAVBuffer(outputData, sizeof(outputData),
+                                                                                sizeof(outputData));
+    ASSERT_NE(mockEmptyOutputBuffer, nullptr);
+    ASSERT_NE(mockEmptyOutputBuffer->memory_, nullptr);
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::OK)));
+    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_))
+        .WillOnce(Return(Status::OK));
+
+    int64_t timestamp = 100;
+    int32_t bufferSize = 10;
+    int32_t isKeyFrame = 1;
+    bool result = videoCaptureFilter_->ProcessAndPushOutputBuffer(mockBuffer, timestamp, bufferSize, isKeyFrame);
+    EXPECT_TRUE(result);
+    // UpdateBufferConfig overwrites flag to SYNC_FRAME | CODEC_DATA when startBufferTime_ == TIME_NONE
+    EXPECT_EQ(mockEmptyOutputBuffer->flag_,
+              static_cast<uint32_t>(Plugins::AVBufferFlag::SYNC_FRAME) |
+              static_cast<uint32_t>(Plugins::AVBufferFlag::CODEC_DATA));
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_UpdateBufferConfig_012
+ * @tc.desc: UpdateBufferConfig with latestPausedTime_ == TIME_NONE, skip pause accumulation
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_012, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    videoCaptureFilter_->startBufferTime_ = 0;
+    videoCaptureFilter_->refreshTotalPauseTime_ = true;
+    videoCaptureFilter_->latestPausedTime_ = TIME_NONE;
+    videoCaptureFilter_->totalPausedTime_ = 50;
+    // latestPausedTime_ == TIME_NONE, skip accumulation
+    videoCaptureFilter_->UpdateBufferConfig(buffer, 100);
+    EXPECT_EQ(videoCaptureFilter_->totalPausedTime_, 50);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_UpdateBufferConfig_005
+ * @tc.desc: UpdateBufferConfig with totalPausedTime_ overflow, should skip accumulation
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_005, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    videoCaptureFilter_->startBufferTime_ = 50;
+    videoCaptureFilter_->refreshTotalPauseTime_ = true;
+    videoCaptureFilter_->latestPausedTime_ = 90;
+    // Set totalPausedTime_ near INT64_MAX to trigger overflow
+    videoCaptureFilter_->totalPausedTime_ = INT64_MAX - 5;
+    videoCaptureFilter_->UpdateBufferConfig(buffer, 100);
+    // timeDiff = 100 - 90 = 10, totalPausedTime_ + 10 overflows, skip accumulation
+    EXPECT_EQ(videoCaptureFilter_->totalPausedTime_, INT64_MAX - 5);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_UpdateBufferConfig_006
+ * @tc.desc: UpdateBufferConfig with normal totalPausedTime_, no overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_006, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    videoCaptureFilter_->startBufferTime_ = 50;
+    videoCaptureFilter_->refreshTotalPauseTime_ = true;
+    videoCaptureFilter_->latestPausedTime_ = 90;
+    videoCaptureFilter_->totalPausedTime_ = 100;
+    videoCaptureFilter_->UpdateBufferConfig(buffer, 200);
+    // pauseDuration = 200 - 90 = 110, totalPausedTime_ = 100 + 110 = 210, no overflow
+    EXPECT_EQ(videoCaptureFilter_->totalPausedTime_, 210);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_UpdateBufferConfig_007
+ * @tc.desc: UpdateBufferConfig with elapsed <= totalPausedTime_, pts should be 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_007, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    videoCaptureFilter_->startBufferTime_ = 100;
+    videoCaptureFilter_->refreshTotalPauseTime_ = false;
+    videoCaptureFilter_->totalPausedTime_ = 200;
+    // elapsed = 150 - 100 = 50, 50 <= 200, pts = 0
+    videoCaptureFilter_->UpdateBufferConfig(buffer, 150);
+    EXPECT_EQ(buffer->pts_, 0);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_UpdateBufferConfig_008
+ * @tc.desc: UpdateBufferConfig with latestBufferTime_ <= latestPausedTime_, skip accumulation
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_008, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    videoCaptureFilter_->startBufferTime_ = 0;
+    videoCaptureFilter_->refreshTotalPauseTime_ = true;
+    videoCaptureFilter_->latestPausedTime_ = 200;
+    videoCaptureFilter_->totalPausedTime_ = 50;
+    // latestBufferTime_(100) <= latestPausedTime_(200), skip accumulation
+    videoCaptureFilter_->UpdateBufferConfig(buffer, 100);
+    EXPECT_EQ(videoCaptureFilter_->totalPausedTime_, 50);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_UpdateBufferConfig_009
+ * @tc.desc: UpdateBufferConfig with timeDiff subtraction overflow, skip accumulation
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_009, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    videoCaptureFilter_->startBufferTime_ = 0;
+    videoCaptureFilter_->refreshTotalPauseTime_ = true;
+    videoCaptureFilter_->latestPausedTime_ = INT64_MIN;
+    videoCaptureFilter_->totalPausedTime_ = 50;
+    // latestPausedTime_ < 0 && latestBufferTime_ > INT64_MAX + INT64_MIN, timeDiff overflow
+    videoCaptureFilter_->UpdateBufferConfig(buffer, 100);
+    EXPECT_EQ(videoCaptureFilter_->totalPausedTime_, 50);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_UpdateBufferConfig_010
+ * @tc.desc: UpdateBufferConfig with startBufferTime_ < 0, elapsed = 0 (IPC defense)
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_010, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    videoCaptureFilter_->startBufferTime_ = -1;
+    videoCaptureFilter_->refreshTotalPauseTime_ = false;
+    videoCaptureFilter_->totalPausedTime_ = 0;
+    // startBufferTime_ < 0, elapsed = 0, pts = 0
+    videoCaptureFilter_->UpdateBufferConfig(buffer, 100);
+    EXPECT_EQ(buffer->pts_, 0);
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_UpdateBufferConfig_011
+ * @tc.desc: UpdateBufferConfig with timestamp < startBufferTime_, elapsed = 0 (IPC defense)
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateBufferConfig_011, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> buffer = std::make_shared<AVBuffer>();
+    videoCaptureFilter_->startBufferTime_ = 200;
+    videoCaptureFilter_->refreshTotalPauseTime_ = false;
+    videoCaptureFilter_->totalPausedTime_ = 0;
+    // timestamp(50) < startBufferTime_(200), elapsed = 0, pts = 0
+    videoCaptureFilter_->UpdateBufferConfig(buffer, 50);
+    EXPECT_EQ(buffer->pts_, 0);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

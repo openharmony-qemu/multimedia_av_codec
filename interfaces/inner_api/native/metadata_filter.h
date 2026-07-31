@@ -17,6 +17,7 @@
 #define FILTERS_METADATA_FILTER_H
 
 #include <cstring>
+#include <atomic>
 #include "filter/filter.h"
 #include "surface.h"
 #include "meta/meta.h"
@@ -91,7 +92,7 @@ private:
 
     sptr<Surface> inputSurface_;
 
-    bool isStop_{false};
+    std::atomic<bool> isStop_{false};
     bool refreshTotalPauseTime_{false};
     int64_t startBufferTime_{TIME_NONE};
     int64_t latestBufferTime_{TIME_NONE};

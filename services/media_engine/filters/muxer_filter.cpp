@@ -253,15 +253,8 @@ FilterType MuxerFilter::GetFilterType()
     return FilterType::FILTERTYPE_MUXER;
 }
 
-Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
-    const std::shared_ptr<FilterLinkCallback> &callback)
+void MuxerFilter::ConfigureTrackMeta(const std::shared_ptr<Meta> &meta, const std::string &mimeType)
 {
-    MEDIA_LOG_I("OnLinked");
-    MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnLinked");
-    int32_t trackIndex;
-    std::string mimeType;
-    FALSE_RETURN_V_MSG(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is nullptr.");
-    meta->Get<Tag::MIME_TYPE>(mimeType);
     if (mimeType.find("audio/") == 0) {
         audioCodecMimeType_ = mimeType;
         if (mimeType == "audio/mp4a-latm") {
@@ -281,34 +274,29 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
             meta->Set<Tag::TIMED_METADATA_SRC_TRACK>(sourceTrackIndex);
         }
     }
+}
+ 
+Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
+    const std::shared_ptr<FilterLinkCallback> &callback)
+{
+    MEDIA_LOG_I("OnLinked");
+    MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnLinked");
+    int32_t trackIndex;
+    std::string mimeType;
+    FALSE_RETURN_V_MSG(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is nullptr.");
+    meta->Get<Tag::MIME_TYPE>(mimeType);
+    ConfigureTrackMeta(meta, mimeType);
     FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK && eventReceiver_ != nullptr) {
-        if (isTransCoderMode) {
-            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, static_cast<int32_t>(MSERR_MUXER_FAILED)});
-        } else {
-            eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, static_cast<int32_t>(ret)});
-        }
-        SetFaultEvent("MuxerFilter::OnLinked error", (int32_t)ret);
-        return ret;
-    }
-    trackIndexMap_.emplace(std::make_pair(mimeType, trackIndex));
-    sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
-    FALSE_RETURN_V_MSG(inputBufferQueue != nullptr, Status::ERROR_NULL_POINTER, "inputBufferQueue is nullptr");
-    FALSE_RETURN_V_MSG(callback != nullptr, Status::ERROR_NULL_POINTER, "callback is nullptr");
-    callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(meta));
-    sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
         inType, inputBufferQueue);
     inputBufferQueue->SetBufferFilledListener(listener);
-    UpdateTrackState(trackIndex);
-    return Status::OK;
-}
-
-void MuxerFilter::UpdateTrackState(int32_t trackIndex)
-{
     preFilterCount_++;
-    std::lock_guard<std::mutex> lock(ptsMapMutex_);
-    bufferPtsMap_.insert(std::pair<int32_t, int64_t>(trackIndex, 0));
+    {
+        std::lock_guard<std::mutex> lock(bufferPtsMutex_);
+        bufferPtsMap_.insert(std::pair<int32_t, int64_t>(trackIndex, 0));
+    }
+    return Status::OK;
 }
 
 Status MuxerFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -332,16 +320,16 @@ void MuxerFilter::OnBufferFilled(std::shared_ptr<AVBuffer> &inputBuffer, int32_t
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::OnBufferFilled");
     if (!isTransCoderMode) {
         int64_t currentBufferPts = inputBuffer->pts_;
-        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_.load() == false) {
+        if (currentBufferPts / US_TO_MS > maxDuration_ * S_TO_MS && isReachMaxDuration_ == false) {
             MEDIA_LOG_I("MuxerFilter::OnBufferFilled currentBufferPts > maxDuration_ start to stop");
-            isReachMaxDuration_.store(true);
+            isReachMaxDuration_ = true;
             std::shared_ptr<MuxerFilter> self = this->shared_from_this();
             std::thread asyncThread(std::bind(&MuxerFilter::EventCompleteStopAsync, self));
             asyncThread.detach();
         }
         int64_t anotherBufferPts = 0;
         {
-            std::lock_guard<std::mutex> lock(ptsMapMutex_);
+            std::lock_guard<std::mutex> lock(bufferPtsMutex_);
             for (auto mapInterator = bufferPtsMap_.begin(); mapInterator != bufferPtsMap_.end(); mapInterator++) {
                 if (mapInterator->first != trackIndex) {
                     anotherBufferPts = mapInterator->second;
