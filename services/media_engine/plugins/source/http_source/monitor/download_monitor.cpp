@@ -347,13 +347,13 @@ std::string DownloadMonitor::BuildErrorDescription(const NetworkErrorInfo& netwo
     std::string errorType = isClient ? CLIENT_ERROR_MSG : SERVER_ERROR_MSG;
     int errorCode = isClient ? networkErrorInfo.clientErrorCode_ : networkErrorInfo.serverErrorCode_;
     std::string url = MaskUrl(networkErrorInfo.url_);
-    
+
     oss << "requestError: true"
         << ", errorType: " << errorType
         << ", errorCode: " << errorCode
         << ", contentType: " << contentType
         << ", maskUrl: " << url;
-    
+
     return oss.str();
 }
 
