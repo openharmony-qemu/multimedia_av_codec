@@ -346,7 +346,7 @@ std::string DownloadMonitor::BuildErrorDescription(const NetworkErrorInfo& netwo
     bool isClient = networkErrorInfo.isClient_;
     std::string errorType = isClient ? CLIENT_ERROR_MSG : SERVER_ERROR_MSG;
     int errorCode = isClient ? networkErrorInfo.clientErrorCode_ : networkErrorInfo.serverErrorCode_;
-    std::string url = MaskUrl(networkErrorInfo.url_);
+    std::string url = StringUtil::MaskUrl(networkErrorInfo.url_);
 
     oss << "requestError: true"
         << ", errorType: " << errorType
@@ -355,11 +355,6 @@ std::string DownloadMonitor::BuildErrorDescription(const NetworkErrorInfo& netwo
         << ", maskUrl: " << url;
 
     return oss.str();
-}
-
-std::string DownloadMonitor::MaskUrl(const std::string& url)
-{
-    return StringUtil::MaskUrl(url);
 }
 
 void DownloadMonitor::SetSourceStatisticsDfx(

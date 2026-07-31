@@ -719,7 +719,7 @@ std::string Source::GetMaskedUrl(int32_t streamId)
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, "", "GetMaskedUrl plugin_ is nullptr");
     if (!plugin_->IsHls()) {
-        MEDIA_LOG_D("GetMaskedUrl not hls, return empty");
+        MEDIA_LOG_W("GetMaskedUrl not hls, return empty");
         return "";
     }
     return plugin_->GetMaskedUrl(streamId);
