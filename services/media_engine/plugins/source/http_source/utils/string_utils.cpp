@@ -24,6 +24,16 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
+constexpr const char* SCHEME_SEPARATOR = "://";
+constexpr size_t SCHEME_SEPARATOR_LEN = 3;
+constexpr char PATH_SEPARATOR = '/';
+constexpr char QUERY_SEPARATOR = '?';
+constexpr char FRAGMENT_SEPARATOR = '#';
+constexpr char USERINFO_SEPARATOR = '@';
+constexpr const char* PATH_MASK = "***";
+constexpr size_t PATH_MASK_LEN = 3;
+constexpr size_t CHAR_COUNT_ONE = 1;
+
 const char* ProcessPrefix(const char* str, bool& hasError)
 {
     hasError = false;
@@ -74,6 +84,30 @@ bool StringToInteger(const std::string& str, T& value)
     auto [ptr, ec] = std::from_chars(str.data() + startPos, str.data() + str.size(), value);
     return ec == std::errc();
 }
+
+size_t FindPathEnd(const std::string& url, size_t pathPos)
+{
+    size_t pathEnd = url.size();
+    size_t qPos = url.find(QUERY_SEPARATOR, pathPos + CHAR_COUNT_ONE);
+    size_t fPos = url.find(FRAGMENT_SEPARATOR, pathPos + CHAR_COUNT_ONE);
+    if (qPos != std::string::npos) {
+        pathEnd = std::min(pathEnd, qPos);
+    }
+    if (fPos != std::string::npos) {
+        pathEnd = std::min(pathEnd, fPos);
+    }
+    return pathEnd;
+}
+
+size_t FindLastSlashInPath(const std::string& url, size_t pathPos, size_t pathEnd)
+{
+    for (size_t i = pathEnd; i > pathPos + CHAR_COUNT_ONE; --i) {
+        if (url[i - CHAR_COUNT_ONE] == PATH_SEPARATOR) {
+            return i - CHAR_COUNT_ONE;
+        }
+    }
+    return pathPos;
+}
 } // namespace
 
 bool StringUtil::SafeStoInt32(const std::string& str, int32_t& value)
@@ -103,38 +137,40 @@ bool StringUtil::SafeStoDouble(const std::string& str, double& value)
 std::string StringUtil::MaskUrl(const std::string& url)
 {
     if (url.empty()) {
+        return {};
+    }
+    size_t schemeEnd = url.find(SCHEME_SEPARATOR);
+    if (schemeEnd == std::string::npos) {
         return url;
     }
-    // Split URL into [scheme] + [authority] + [path] + [query/fragment]
-    // e.g. "https://" + "user:pass@example.com:8080" + "/a/b/file.txt" + "?q=1"
-    size_t schemeEnd = url.find("://"); // length of "://" is 3
-    size_t hostStart = (schemeEnd != std::string::npos) ? schemeEnd + 3 : 0;
-    size_t pathStart = url.find_first_of("/?#", hostStart);
-    // scheme + masked authority
-    std::string result = (schemeEnd != std::string::npos) ? url.substr(0, schemeEnd + 3) : "";
-    std::string authority = (pathStart != std::string::npos)
-        ? url.substr(hostStart, pathStart - hostStart) : url.substr(hostStart);
-    // mask userinfo: use find() to locate the first '@' per URL spec (RFC3986)
-    size_t atPos = authority.find('@');
-    if (atPos != std::string::npos) {
-        result += "***@";
-        authority = authority.substr(atPos + 1);
+    size_t hostStart = schemeEnd + SCHEME_SEPARATOR_LEN;
+    size_t pathPos = url.find(PATH_SEPARATOR, hostStart);
+    size_t hostEnd = (pathPos == std::string::npos) ? url.size() : pathPos;
+    size_t atPos = url.rfind(USERINFO_SEPARATOR, hostEnd - CHAR_COUNT_ONE);
+    if (atPos != std::string::npos && atPos >= hostStart) {
+        hostStart = atPos + CHAR_COUNT_ONE;
     }
-    // host + port
-    result += authority;
-    if (pathStart == std::string::npos || url[pathStart] != '/') {
+    // Build prefix: scheme://hostPort
+    std::string result;
+    result.reserve(url.size());
+    result.append(url, 0, schemeEnd)
+        .append(SCHEME_SEPARATOR)
+        .append(url, hostStart, hostEnd - hostStart);
+    // No path or path ends with '/' — just return prefix
+    if (pathPos == std::string::npos) {
         return result;
     }
-    // path: mask directory with ***, keep filename; ?# params dropped
-    size_t queryStart = url.find_first_of("?#", pathStart);
-    std::string path = (queryStart != std::string::npos)
-        ? url.substr(pathStart, queryStart - pathStart) : url.substr(pathStart);
-    size_t lastSlash = path.rfind('/');
-    if (path == "/") {
-        result += "/";
-    } else {
-        result += "/***" + path.substr(lastSlash); // keep filename after last /
+    size_t pathEnd = FindPathEnd(url, pathPos);
+    if (pathEnd <= pathPos + CHAR_COUNT_ONE || url[pathEnd - CHAR_COUNT_ONE] == PATH_SEPARATOR) {
+        return result;
     }
+    // Path has a last segment: prefix/ + [***/] + lastSegment
+    size_t lastSlash = FindLastSlashInPath(url, pathPos, pathEnd);
+    result += PATH_SEPARATOR;
+    if (lastSlash > pathPos) {
+        result.append(PATH_MASK).append(CHAR_COUNT_ONE, PATH_SEPARATOR);
+    }
+    result.append(url, lastSlash + CHAR_COUNT_ONE, pathEnd - lastSlash - CHAR_COUNT_ONE);
     return result;
 }
 }
