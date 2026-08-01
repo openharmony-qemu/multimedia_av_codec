@@ -116,8 +116,8 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_DoStart_001, TestSize.Le
 }
 
 /**
- * @tc.name: VideoCaptureFilter_SetInputSurface_001
- * @tc.desc: SetInputSurface
+ * @tc.name: VideoCaptureFilter_DoPause_001
+ * @tc.desc: DoPause
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_DoPause_001, TestSize.Level1)
@@ -202,8 +202,8 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_LinkNext_001, TestSize.L
 }
 
 /**
- * @tc.name: VideoCaptureFilter_DoStop_001
- * @tc.desc: DoStop
+ * @tc.name: VideoCaptureFilter_UpdateNext_001
+ * @tc.desc: UpdateNext
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_UpdateNext_001, TestSize.Level1)
@@ -364,37 +364,22 @@ sptr<MockConsumerSurface> MockConsumerSurface::CreateSurfaceAsConsumer(std::stri
 
 /**
  * @tc.name: VideoCaptureFilter_OnBufferAvailable_001
- * @tc.desc: OnBufferAvailable whole process
+ * @tc.desc: isStop_ = true, buffer should be released
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_001, TestSize.Level1)
 {
-    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
-    videoCaptureFilter_->SetParameter(parameter);
-    videoCaptureFilter_->GetParameter(parameter);
-    videoCaptureFilter_->OnUnlinkedResult(parameter);
-    videoCaptureFilter_->OnUpdatedResult(parameter);
-
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = videoCaptureFilter_->SetInputSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_NE(mockConsumerSurface->producer_, nullptr);
-    EXPECT_NE(mockConsumerSurface->consumer_, nullptr);
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
     sptr<SyncFence> mockFence = new SyncFence(-1);
     EXPECT_NE(mockBuffer, nullptr);
+    videoCaptureFilter_->isStop_ = true;
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), Return(OHOS::GSError::GSERROR_OK)));
-
-    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
-    videoCaptureFilter_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
-    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
-    mockEmptyOutputBuffer->memory_ = std::make_shared<AVMemory>();
-    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
-        .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::OK)));
-    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(1);
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
 
     videoCaptureFilter_->OnBufferAvailable();
@@ -402,7 +387,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_001, T
 
 /**
  * @tc.name: VideoCaptureFilter_OnBufferAvailable_002
- * @tc.desc: OnBufferAvailable ret == ok && buffer == nullptr
+ * @tc.desc: AcquireBuffer returns OK but buffer is nullptr
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_002, TestSize.Level1)
@@ -410,10 +395,9 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_002, T
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = videoCaptureFilter_->SetInputSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_NE(mockConsumerSurface->producer_, nullptr);
-    EXPECT_NE(mockConsumerSurface->consumer_, nullptr);
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
+    videoCaptureFilter_->isStop_ = false;
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(Return(OHOS::GSError::GSERROR_OK));
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(0);
@@ -423,7 +407,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_002, T
 
 /**
  * @tc.name: VideoCaptureFilter_OnBufferAvailable_003
- * @tc.desc: OnBufferAvailable ret ！= ok && buffer != nullptr
+ * @tc.desc: AcquireBuffer returns error
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_003, TestSize.Level1)
@@ -431,13 +415,10 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_003, T
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = videoCaptureFilter_->SetInputSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_NE(mockConsumerSurface->producer_, nullptr);
-    EXPECT_NE(mockConsumerSurface->consumer_, nullptr);
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
     EXPECT_NE(mockBuffer, nullptr);
-
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
         .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), Return(OHOS::GSError::GSERROR_NO_PERMISSION)));
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(0);
@@ -447,7 +428,7 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_003, T
 
 /**
  * @tc.name: VideoCaptureFilter_OnBufferAvailable_004
- * @tc.desc: OnBufferAvailable ret != ok && buffer == nullptr
+ * @tc.desc: bufferSize <= 0 should be rejected (dataSize not set, defaults to 0)
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_004, TestSize.Level1)
@@ -455,20 +436,25 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_004, T
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = videoCaptureFilter_->SetInputSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_NE(mockConsumerSurface->producer_, nullptr);
-    EXPECT_NE(mockConsumerSurface->consumer_, nullptr);
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
+    videoCaptureFilter_->isStop_ = false;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
+    // No dataSize set in extraData, bufferSize defaults to 0
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t)1);
+    EXPECT_NE(mockBuffer, nullptr);
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
-        .WillOnce(Return(OHOS::GSError::GSERROR_NO_PERMISSION));
-    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(0);
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        Return(OHOS::GSError::GSERROR_OK)));
+    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
 
     videoCaptureFilter_->OnBufferAvailable();
 }
 
 /**
  * @tc.name: VideoCaptureFilter_OnBufferAvailable_005
- * @tc.desc: OnBufferAvailable isStop == true
+ * @tc.desc: bufferSize > buffer->GetSize() should be rejected (OOB read prevention)
  * @tc.type: FUNC
  */
 HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_005, TestSize.Level1)
@@ -476,19 +462,102 @@ HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_005, T
     sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
     Status ret = videoCaptureFilter_->SetInputSurface(mockConsumerSurface);
     EXPECT_EQ(ret, Status::OK);
-    EXPECT_NE(mockConsumerSurface->producer_, nullptr);
-    EXPECT_NE(mockConsumerSurface->consumer_, nullptr);
     EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
 
+    videoCaptureFilter_->isStop_ = false;
     sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
     sptr<SyncFence> mockFence = new SyncFence(-1);
+    // SurfaceBuffer::Create() has GetSize()=0, dataSize=65536 > 0 triggers OOB check
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t)1);
+    mockBuffer->GetExtraData()->ExtraSet("dataSize", (int32_t)65536);
     EXPECT_NE(mockBuffer, nullptr);
-    videoCaptureFilter_->isStop_ = true;
-
     EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
-        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence), Return(OHOS::GSError::GSERROR_OK)));
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        Return(OHOS::GSError::GSERROR_OK)));
     EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
 
+    videoCaptureFilter_->OnBufferAvailable();
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_OnBufferAvailable_006
+ * @tc.desc: negative dataSize should be rejected
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_006, TestSize.Level1)
+{
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
+    Status ret = videoCaptureFilter_->SetInputSurface(mockConsumerSurface);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
+
+    videoCaptureFilter_->isStop_ = false;
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    sptr<SyncFence> mockFence = new SyncFence(-1);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t)1);
+    mockBuffer->GetExtraData()->ExtraSet("dataSize", (int32_t)-1);
+    EXPECT_NE(mockBuffer, nullptr);
+    EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        Return(OHOS::GSError::GSERROR_OK)));
+    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
+
+    videoCaptureFilter_->OnBufferAvailable();
+}
+
+/**
+ * @tc.name: VideoCaptureFilter_OnBufferAvailable_007
+ * @tc.desc: bufferSize validation passes, full happy path through OnBufferAvailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(VideoCaptureFilterUnitTest, VideoCaptureFilter_OnBufferAvailable_007, TestSize.Level1)
+{
+    sptr<MockConsumerSurface> mockConsumerSurface = MockConsumerSurface::CreateSurfaceAsConsumer("MockConsumerSurface");
+    Status ret = videoCaptureFilter_->SetInputSurface(mockConsumerSurface);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_NE(videoCaptureFilter_->inputSurface_, nullptr);
+
+    // Create a SurfaceBuffer with a manually allocated BufferHandle so GetSize() > 0
+    sptr<SurfaceBuffer> mockBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(mockBuffer, nullptr);
+    BufferHandle* handle = new BufferHandle();
+    memset_s(handle, sizeof(BufferHandle), 0, sizeof(BufferHandle));
+    handle->fd = -1;
+    handle->width = 64;
+    handle->stride = 64 * 4;
+    handle->height = 1;
+    handle->size = 64 * 4;
+    handle->format = GRAPHIC_PIXEL_FMT_RGBA_8888;
+    handle->usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE;
+    handle->virAddr = malloc(handle->size);
+    ASSERT_NE(handle->virAddr, nullptr);
+    mockBuffer->SetBufferHandle(handle);
+
+    sptr<SyncFence> mockFence = new SyncFence(-1);
+    // Set valid extraData with dataSize <= GetSize() so bufferSize check passes
+    uint32_t bufferSize = mockBuffer->GetSize();
+    ASSERT_GT(bufferSize, 0u);
+    mockBuffer->GetExtraData()->ExtraSet("timeStamp", (int64_t)1);
+    mockBuffer->GetExtraData()->ExtraSet("dataSize", (int32_t)bufferSize);
+    mockBuffer->GetExtraData()->ExtraSet("isKeyFrame", (int32_t)0);
+
+    EXPECT_CALL(*mockConsumerSurface, AcquireBuffer(testing::_, testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockBuffer), SetArgReferee<1>(mockFence),
+                        Return(OHOS::GSError::GSERROR_OK)));
+    EXPECT_CALL(*mockConsumerSurface, ReleaseBuffer(testing::_, testing::_)).Times(1);
+
+    // Set up output buffer queue producer mock
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new MockAVBufferQueueProducer();
+    videoCaptureFilter_->outputBufferQueueProducer_ = mockAVBufferQueueProducer;
+    uint8_t outputData[1024];
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = AVBuffer::CreateAVBuffer(outputData, sizeof(outputData),
+                                                                                sizeof(outputData));
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::OK)));
+    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_))
+        .WillOnce(Return(Status::OK));
+
+    videoCaptureFilter_->isStop_ = false;
     videoCaptureFilter_->OnBufferAvailable();
 }
 

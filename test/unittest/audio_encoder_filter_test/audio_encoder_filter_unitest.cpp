@@ -499,7 +499,6 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_ConverterInputCallback_On
 }
 #endif
 
-
 /**
  * @tc.name: AudioEncoderFilter_AddInternalBufferQueue_NullProducer_0100
  * @tc.desc: AddInternalBufferQueue with GetProducer returning nullptr, should cleanup and send error event
