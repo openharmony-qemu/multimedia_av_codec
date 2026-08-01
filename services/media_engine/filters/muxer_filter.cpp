@@ -113,13 +113,15 @@ Status MuxerFilter::SetTransCoderMode()
     isTransCoderMode.store(true);
     return Status::OK;
 }
- 
+
 int64_t MuxerFilter::GetCurrentPtsMs()
 {
-    if (lastVideoPts_.load() != 0) {
-        return lastVideoPts_.load() / US_TO_MS;
+    int64_t videoPts = lastVideoPts_.load();
+    int64_t audioPts = lastAudioPts_.load();
+    if (videoPts != 0) {
+        return videoPts / US_TO_MS;
     } else {
-        return lastAudioPts_.load() / US_TO_MS;
+        return audioPts / US_TO_MS;
     }
 }
 
@@ -380,10 +382,10 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
             eosCount_++;
             if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
                 MEDIA_LOG_I("video is eos");
-                videoIsEos = true;
+                videoIsEos.store(true);
             } else if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
                 MEDIA_LOG_I("audio is eos");
-                audioIsEos = true;
+                audioIsEos.store(true);
             }
             isCompleted = (eosCount_ == preFilterCount_) || (videoIsEos.load() && audioIsEos.load());
         }
