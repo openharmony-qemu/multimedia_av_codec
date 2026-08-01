@@ -422,12 +422,13 @@ void VideoCaptureFilter::AccumulatePausedTime()
 void VideoCaptureFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp)
 {
     if (startBufferTime_ == TIME_NONE) {
+        startBufferTime_ = timestamp;
+        buffer->flag_ =
+            (uint32_t)Plugins::AVBufferFlag::SYNC_FRAME | (uint32_t)Plugins::AVBufferFlag::CODEC_DATA;
     }
     latestBufferTime_ = timestamp;
     if (refreshTotalPauseTime_) {
         AccumulatePausedTime();
- 
- 
         refreshTotalPauseTime_ = false;
     }
     constexpr int32_t NS_PER_US = 1000;
