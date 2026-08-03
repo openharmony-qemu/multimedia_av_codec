@@ -128,7 +128,7 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
         int ret = MediaAVCodec::VideoDecoderFactory::CreateByMime(mime, format, codecServer_);
         if (ret != 0 || !codecServer_) {
             MEDIA_LOG_I("Create codecServer failed");
-            return Status::ERROR_UNKNOWN;
+            return Status::ERROR_VID_DEC_INIT_FAILED;
         }
     }
     if (!releaseBufferTask_) {
@@ -186,7 +186,7 @@ Status SurfaceDecoderAdapter::Configure(const Format &format)
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = codecServer_->Configure(format);
-    return ret == 0 ? Status::OK : Status::ERROR_UNKNOWN;
+    return ret == 0 ? Status::OK : Status::ERROR_VID_DEC_CONFIGURE_FAILED;
 }
 
 int64_t SurfaceDecoderAdapter::GetFrameNum()
@@ -409,7 +409,7 @@ void SurfaceDecoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         if ((buffer->flag_ & BUFFER_IS_EOS) == 1) {
             MEDIA_LOG_I("Buffer index: %{public}u" PRIu32 " flag: %{public}u" PRIu32, index, buffer->flag_);
             indexs_.push_back(index);
-            eosBufferIndex_ = index;
+            eosBufferIndex_.store(index);
         } else if (buffer->pts_ > lastBufferPts_.load()) {
             lastBufferPts_ = buffer->pts_;
             frameNum_.fetch_add(VARIABLE_INCREMENT_INTERVAL, std::memory_order_relaxed);
@@ -468,12 +468,14 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
             MEDIA_LOG_D("Release buffer, index: " PUBLIC_LOG_U32, index);
             std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
             codecServer_->ReleaseOutputBuffer(index, true);
-            if (index == eosBufferIndex_) {
+            if (index == eosBufferIndex_.load()) {
                 int64_t lastBufferPts = GetLastBufferPts();
                 int64_t frameNum = GetFrameNum();
                 MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64 " frameNum: " PUBLIC_LOG_D64,
                     lastBufferPts, frameNum);
-                decoderAdapterCallback_->OnBufferEos(lastBufferPts, frameNum);
+                if (decoderAdapterCallback_) {
+                    decoderAdapterCallback_->OnBufferEos(lastBufferPts, frameNum);
+                }
             }
         }
         for (auto &dropIndex : dropIndexs) {
