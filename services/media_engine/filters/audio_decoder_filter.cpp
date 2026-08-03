@@ -395,6 +395,12 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     meta_ = meta;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     Status ret = decoder_->ChangePlugin(mime, false, meta);
+#if defined(TV_STANDARD)
+    if (ret != Status::OK && eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), mime});
+    }
+#endif
     FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin failed");
 
     if (IsAsyncMode()) {
@@ -436,7 +442,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
         ScopedTimer timer("AudioDecoder Init", DECODER_INIT_WARNING_MS);
         ret = decoder_->Init(true, mime);
         if (ret != Status::OK && eventReceiver_ != nullptr) {
-            MEDIA_LOG_E("decoder init fail.");
+            MEDIA_LOG_I("decoder init fail.");
             eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
                 static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), ""});
         }
