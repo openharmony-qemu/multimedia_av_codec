@@ -62,12 +62,6 @@ Status TimedMetaTrack::Init(const std::shared_ptr<Meta> &trackDesc)
     srcTrackIds_->push_back(static_cast<uint32_t>(sourceTrackId));
     MEDIA_LOG_I("src track is track[%{public}d], src track id is:%{public}d", trackIndex, sourceTrackId);
     timeScale_ = tracks_[trackIndex]->GetTimeScale();  // use source track's time scale
-    auto mimeTypeOfSrcTrack = tracks_[trackIndex]->GetMimeType();
-    MEDIA_LOG_I("src track mime type:%{public}s", mimeTypeOfSrcTrack.c_str());
-    constexpr std::string_view AUDIO_PREFIX = "audio";
-    if (mimeTypeOfSrcTrack.compare(0, AUDIO_PREFIX.length(), AUDIO_PREFIX) == 0) {
-        hdlrName_ = "timed_audio_metadata";
-    }
 
     double tmpframeRate = 0;
     if (trackDesc->GetData(Tag::VIDEO_FRAME_RATE, tmpframeRate)) {  // video frame rate
