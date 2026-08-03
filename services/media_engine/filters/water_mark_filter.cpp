@@ -105,6 +105,26 @@ void main()
 }
 )delimiter";
 
+/**
+ * @brief 片段着色器：仅进行视频缩放，不进行水印叠加
+ * 用于仅需要视频缩放功能的场景
+ */
+std::string fragmentShaderResize = R"delimiter(
+#extension GL_OES_EGL_image_external : require
+precision highp float;
+ 
+varying vec2 vTexCoord;
+ 
+uniform samplerExternalOES texture;
+ 
+void main()
+{
+    vec2 flippedTexCoord = vec2(1.0 - vTexCoord.x, 1.0 - vTexCoord.y);
+    vec4 videoColor = texture2D(texture, flippedTexCoord);
+    gl_FragColor = vec4(videoColor.rgb, 1.0);
+}
+)delimiter";
+
 // 顶点数据：位置坐标(x, y, z) + 纹理坐标(u, v)
 GLfloat vertices[] = {
     -1.0f, 1.0f,  0.0f,    1.0f, 1.0f,  // 左上角
@@ -188,10 +208,14 @@ void WaterMarkFilter::ThreadMainLoop()
     // 初始化EGL上下文
     FALSE_RETURN_MSG(InitializeEGLContext(), "Failed to initialize EGL context");
     FALSE_RETURN_MSG(CreateGLResources(), "Failed to create GL resources");
-    FALSE_RETURN_MSG(CreateWatermarkTextures(), "Failed to create watermark textures");
-    FALSE_RETURN_MSG(MergeWaterMarksWithOpenGL(), "Failed to merge watermarks with OpenGL");
+    if (!watermarkList_.empty()) {
+        FALSE_RETURN_MSG(CreateWatermarkTextures(), "Failed to create watermark textures");
+        FALSE_RETURN_MSG(MergeWaterMarksWithOpenGL(), "Failed to merge watermarks with OpenGL");
+    }
     CreateVideoTexture();
-    FALSE_RETURN_MSG(CreateWatermarkTextureAndCopy(), "Failed to create watermark texture and copy");
+    if (!watermarkList_.empty()) {
+        FALSE_RETURN_MSG(CreateWatermarkTextureAndCopy(), "Failed to create watermark texture and copy");
+    }
     FALSE_RETURN_MSG(SetupShaderUniforms(), "Failed to setup shader uniforms");
 
     // 将Native Image与OpenGL纹理关联
@@ -308,14 +332,18 @@ bool WaterMarkFilter::SetupShaderUniforms()
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, nativeImageTexId_);
     shaderProgram_->SetInt("texture", 0);
 
-    // 设置着色器Uniform变量 - 水印纹理
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, textTexId_);
-    shaderProgram_->SetMatrix4v("matTransform", matrix_, 16, false);
-    shaderProgram_->SetInt("textTexture", 1);
-
-    MEDIA_LOG_I("SetupShaderUniforms video: %{public}dx%{public}d -> target: %{public}dx%{public}d",
-        videoWidth_.load(), videoHeight_.load(), targetWidth_.load(), targetHeight_.load());
+    // 仅在有水印时设置水印纹理相关uniform
+    if (!watermarkList_.empty()) {
+        // 设置着色器Uniform变量 - 水印纹理
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, textTexId_);
+        shaderProgram_->SetMatrix4v("matTransform", matrix_, 16, false);
+        shaderProgram_->SetInt("textTexture", 1);
+    }
+ 
+    MEDIA_LOG_I("SetShaderUniform video: %{public}dx%{public}d -> target: %{public}dx%{public}d, watermark: %{public}s",
+        videoWidth_.load(), videoHeight_.load(), targetWidth_.load(), targetHeight_.load(),
+        watermarkList_.empty() ? "no" : "yes");
 
     return true;
 }
@@ -326,7 +354,7 @@ void WaterMarkFilter::RenderLoop()
         MEDIA_LOG_I("RenderLoop availableFrameCnt_");
         bool flag = false;
         std::unique_lock<std::mutex> lock(wakeUpMutex_);
-        wakeUpCond_.wait(lock, [this]() { return availableFrameCnt_.load() > 0 || eosPts_.load() != -1;});
+        wakeUpCond_.wait(lock, [this]() { return availableFrameCnt_.load() > 0 || eosPts_.load() != -1 || !running_;});
         if (availableFrameCnt_.load() > 0) {
             availableFrameCnt_.fetch_sub(1, std::memory_order_relaxed);
             currentFrameNum_.fetch_add(1, std::memory_order_relaxed);
@@ -595,8 +623,14 @@ bool WaterMarkFilter::MergeWaterMarksWithOpenGL()
 
 bool WaterMarkFilter::CreateGLResources()
 {
-    // 创建着色器程序
-    shaderProgram_ = std::make_unique<ShaderProgram>(vertexShader, fragmentShader);
+    // 根据是否有水印选择不同的着色器
+    if (watermarkList_.empty()) {
+        shaderProgram_ = std::make_unique<ShaderProgram>(vertexShader, fragmentShaderResize);
+        MEDIA_LOG_I("CreateGLResources: using resize-only shader (no watermark)");
+    } else {
+        shaderProgram_ = std::make_unique<ShaderProgram>(vertexShader, fragmentShader);
+        MEDIA_LOG_I("CreateGLResources: using watermark shader");
+    }
     FALSE_RETURN_V_MSG(shaderProgram_->Valid(), false, "shaderProgram_->Valid()");
 
     glGenVertexArrays(1, &vertexArrayObject_);
@@ -648,7 +682,6 @@ Status WaterMarkFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer,
     std::unique_lock<std::mutex> lock(releaseMutex_);
     FALSE_RETURN_V_MSG(watermarkList_.size() < MAX_WATERMARK_NUMBER, 
         Status::ERROR_WATERMARK_NUM_OUT_OF_RANGE, "watermarkList_ has out");
-    InitOpenGl();
     int32_t hileft = 0;
     int32_t hitop = 0;
     int32_t hiwidth = 0; 
@@ -697,6 +730,7 @@ Status WaterMarkFilter::SetVideoResize(int32_t width, int32_t height)
     targetWidth_.store(width);
     MEDIA_LOG_I("WaterMarkFilter::SetVideoResize videoWidth_: %{public}d videoHeight_: %{public}d", 
         videoWidth_.load(), videoHeight_.load());
+    InitOpenGl();
     return Status::OK;
 }
 
