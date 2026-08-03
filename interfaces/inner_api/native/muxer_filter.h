@@ -18,6 +18,7 @@
 
 #include <cstring>
 #include <map>
+#include <atomic>
 
 #include "filter/filter.h"
 #include "common/status.h"
@@ -68,7 +69,7 @@ public:
 
 private:
     void HandleTransCoderComplete();
-    void UpdateTrackState(int32_t trackIndex);
+    void ConfigureTrackMeta(const std::shared_ptr<Meta> &meta, const std::string &mimeType);
 
     std::string name_;
 
@@ -78,7 +79,7 @@ private:
     std::shared_ptr<MediaMuxer> mediaMuxer_;
 
     int32_t preFilterCount_{0};
-    int32_t stopCount_{0};
+    std::atomic<int32_t> stopCount_{0};
     int32_t eosCount_{0};
     std::map<int32_t, int64_t> bufferPtsMap_;
     std::map<std::string, int32_t> trackIndexMap_;
@@ -91,22 +92,22 @@ private:
     int32_t appPid_ {0};
     Plugins::OutputFormat outputFormat_{Plugins::OutputFormat::DEFAULT};
 
-    int64_t lastVideoPts_{0};
-    int64_t lastAudioPts_{0};
-    bool videoIsEos{false};
-    bool audioIsEos{false};
-    bool isTransCoderMode{false};
+    std::atomic<int64_t> lastVideoPts_{0};
+    std::atomic<int64_t> lastAudioPts_{0};
+    std::atomic<bool> videoIsEos{false};
+    std::atomic<bool> audioIsEos{false};
+    std::atomic<bool> isTransCoderMode{false};
  
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
     std::mutex eosMutex_;
-    std::mutex ptsMapMutex_;
+    std::mutex bufferPtsMutex_;
     
     bool isStarted{false};
 
     int32_t maxDuration_ {INT32_MAX};
     std::atomic<bool> isReachMaxDuration_{false};
-
+    
     bool isAdts_{true};
     bool mediaProfile_{0}; // default value: AAC_LC
 };

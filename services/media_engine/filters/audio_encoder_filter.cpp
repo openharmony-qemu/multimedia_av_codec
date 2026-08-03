@@ -769,6 +769,16 @@ void AudioEncoderFilter::AddInternalBufferQueue()
 
     intermediateQueueProducer_ = intermediateBufferQueue_->GetProducer();
     intermediateQueueConsumer_ = intermediateBufferQueue_->GetConsumer();
+    if (intermediateQueueConsumer_ == nullptr || intermediateQueueProducer_ == nullptr) {
+        MEDIA_LOG_E("GetProducer or GetConsumer returned nullptr");
+        intermediateBufferQueue_ = nullptr;
+        intermediateQueueProducer_ = nullptr;
+        intermediateQueueConsumer_ = nullptr;
+        FALSE_RETURN(eventReceiver_ != nullptr);
+        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_NO_MEMORY)});
+        return;
+    }
 
     // 设置监听器（监听器会通知独立线程）
     sptr<IConsumerListener> intermediateListener_ = new IntermediateBufferAvailableListener(shared_from_this());

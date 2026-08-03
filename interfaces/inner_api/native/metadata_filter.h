@@ -17,6 +17,7 @@
 #define FILTERS_METADATA_FILTER_H
 
 #include <cstring>
+#include <atomic>
 #include "filter/filter.h"
 #include "surface.h"
 #include "meta/meta.h"
@@ -70,6 +71,7 @@ protected:
 
 private:
     void UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp);
+    void AccumulatePausedTime();
     bool AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t& timestamp,
         int32_t& bufferSize);
     bool ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer, int64_t timestamp,
@@ -91,7 +93,7 @@ private:
 
     sptr<Surface> inputSurface_;
 
-    bool isStop_{false};
+    std::atomic<bool> isStop_{false};
     bool refreshTotalPauseTime_{false};
     int64_t startBufferTime_{TIME_NONE};
     int64_t latestBufferTime_{TIME_NONE};

@@ -365,6 +365,12 @@ bool MetaDataFilter::AcquireInputBuffer(sptr<SurfaceBuffer>& buffer, int64_t& ti
         extraData->ExtraGet("dataSize", bufferSize);
     }
 
+    if (bufferSize <= 0 || static_cast<uint32_t>(bufferSize) > buffer->GetSize()) {
+        MEDIA_LOG_E("dataSize %{public}d invalid, buffer real size %{public}u", bufferSize, buffer->GetSize());
+        inputSurface_->ReleaseBuffer(buffer, -1);
+        return false;
+    }
+
     MEDIA_LOG_D("Input buffer timestamp:" PUBLIC_LOG_D64 ", size:%{public}d", timestamp, bufferSize);
 
     if (timestamp == 0 || timestamp <= latestBufferTime_) {
@@ -398,6 +404,23 @@ bool MetaDataFilter::ProcessAndPushOutputBuffer(sptr<SurfaceBuffer>& buffer, int
     return true;
 }
 
+void MetaDataFilter::AccumulatePausedTime()
+{
+    if (latestPausedTime_ == TIME_NONE || latestBufferTime_ <= latestPausedTime_) {
+        return;
+    }
+    if (latestPausedTime_ < 0 && latestBufferTime_ > INT64_MAX + latestPausedTime_) {
+        MEDIA_LOG_E("timeDiff overflow, skip accumulation");
+        return;
+    }
+    int64_t timeDiff = latestBufferTime_ - latestPausedTime_;
+    if (totalPausedTime_ > INT64_MAX - timeDiff) {
+        MEDIA_LOG_E("totalPausedTime_ overflow, skip accumulation");
+        return;
+    }
+    totalPausedTime_ += timeDiff;
+}
+
 void MetaDataFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_t timestamp)
 {
     if (startBufferTime_ == TIME_NONE) {
@@ -405,12 +428,12 @@ void MetaDataFilter::UpdateBufferConfig(std::shared_ptr<AVBuffer> buffer, int64_
     }
     latestBufferTime_ = timestamp;
     if (refreshTotalPauseTime_) {
-        if (latestPausedTime_ != TIME_NONE && latestBufferTime_ > latestPausedTime_) {
-            totalPausedTime_ += latestBufferTime_ - latestPausedTime_;
-        }
+        AccumulatePausedTime();
         refreshTotalPauseTime_ = false;
     }
-    buffer->pts_ = timestamp - startBufferTime_ - totalPausedTime_;
+    int64_t elapsed = (startBufferTime_ >= 0 && timestamp >= startBufferTime_) ?
+        timestamp - startBufferTime_ : 0;
+    buffer->pts_ = (elapsed > totalPausedTime_) ? (elapsed - totalPausedTime_) : 0;
     MediaAVCodec::AVCodecTrace trace("MetaDataFilter::UpdateBufferConfig");
     MEDIA_LOG_D("UpdateBufferConfig buffer->pts" PUBLIC_LOG_D64, buffer->pts_);
 }
