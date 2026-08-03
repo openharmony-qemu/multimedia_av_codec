@@ -708,10 +708,10 @@ std::string DownloadMonitor::GetCurUrl()
     return downloader_->GetCurUrl();
 }
 
-std::string DownloadMonitor::GetMaskedUrl(int32_t streamId)
+std::string DownloadMonitor::GetMaskUrlByReadIndex(int32_t streamId)
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
-    return downloader_->GetMaskedUrl(streamId);
+    return downloader_->GetMaskUrlByReadIndex(streamId);
 }
 
 void DownloadMonitor::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)

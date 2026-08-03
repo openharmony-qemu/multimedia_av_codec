@@ -148,7 +148,7 @@ public:
     Status StopBufferring(bool isAppBackground);
     bool IsHlsEnd(int32_t streamId = -1);
     bool IsHls();
-    std::string GetMaskedUrl(int32_t streamId);
+    std::string GetMaskUrlByReadIndex(int32_t streamId);
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
     bool IsCloudFd();
     void PauseRead();

@@ -558,10 +558,10 @@ bool HlsMediaDownloader::IsHlsEnd(int32_t streamId)
     return segManager->IsHlsEnd();
 }
 
-std::string HlsMediaDownloader::GetMaskedUrl(int32_t streamId)
+std::string HlsMediaDownloader::GetMaskUrlByReadIndex(int32_t streamId)
 {
     auto segManager = GetSegmentManager(streamId);
-    FALSE_RETURN_V_MSG(segManager != nullptr, "", "GetMaskedUrl no segment manager found!");
+    FALSE_RETURN_V_MSG(segManager != nullptr, "", "GetMaskUrlByReadIndex no segment manager found!");
     std::string url = segManager->GetCurUrl();
     return StringUtil::MaskUrl(url);
 }

@@ -113,7 +113,7 @@ public:
         lastSubtitleId_ = subTitleStreamId;
     }
 
-    std::string GetMaskedUrl(int32_t streamId) override
+    std::string GetMaskUrlByReadIndex(int32_t streamId) override
     {
         (void)streamId;
         getMaskedUrlCalled_ = true;
@@ -199,28 +199,28 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_SetDefaultStreamId, TestSize.Lev
 }
 
 /**
- * @tc.name  : Test DownloadMonitor GetMaskedUrl API
- * @tc.number: DownloadMonitor_GetMaskedUrl_NullDownloader
- * @tc.desc  : Test GetMaskedUrl returns empty when inner downloader is nullptr
+ * @tc.name  : Test DownloadMonitor GetMaskUrlByReadIndex API
+ * @tc.number: DownloadMonitor_GetMaskUrlByReadIndex_NullDownloader
+ * @tc.desc  : Test GetMaskUrlByReadIndex returns empty when inner downloader is nullptr
  */
-HWTEST_F(DownloaderUnitTest, DownloadMonitor_GetMaskedUrl_NullDownloader, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, DownloadMonitor_GetMaskUrlByReadIndex_NullDownloader, TestSize.Level1)
 {
     std::shared_ptr<DownloadMonitor> monitor = std::make_shared<DownloadMonitor>(nullptr);
-    EXPECT_EQ(monitor->GetMaskedUrl(1), "");
+    EXPECT_EQ(monitor->GetMaskUrlByReadIndex(1), "");
 }
 
 /**
- * @tc.name  : Test DownloadMonitor GetMaskedUrl API
- * @tc.number: DownloadMonitor_GetMaskedUrl_Delegate
- * @tc.desc  : Test GetMaskedUrl delegates to inner downloader and returns masked url
+ * @tc.name  : Test DownloadMonitor GetMaskUrlByReadIndex API
+ * @tc.number: DownloadMonitor_GetMaskUrlByReadIndex_Delegate
+ * @tc.desc  : Test GetMaskUrlByReadIndex delegates to inner downloader and returns masked url
  */
-HWTEST_F(DownloaderUnitTest, DownloadMonitor_GetMaskedUrl_Delegate, TestSize.Level1)
+HWTEST_F(DownloaderUnitTest, DownloadMonitor_GetMaskUrlByReadIndex_Delegate, TestSize.Level1)
 {
     auto innerDownloader = std::make_shared<TestMediaDownloaderForMonitor>();
     innerDownloader->maskedUrlResult_ = "https://host/***/file.ts";
     std::shared_ptr<DownloadMonitor> monitor = std::make_shared<DownloadMonitor>(innerDownloader);
 
-    EXPECT_EQ(monitor->GetMaskedUrl(1), "https://host/***/file.ts");
+    EXPECT_EQ(monitor->GetMaskUrlByReadIndex(1), "https://host/***/file.ts");
     EXPECT_TRUE(innerDownloader->getMaskedUrlCalled_);
 }
 

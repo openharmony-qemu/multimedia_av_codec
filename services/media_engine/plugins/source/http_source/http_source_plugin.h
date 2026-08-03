@@ -83,7 +83,7 @@ public:
     std::string GetContentType() override;
     bool IsHlsEnd(int32_t streamId = -1) override;
     bool IsHls() override;
-    std::string GetMaskedUrl(int32_t streamId) override;
+    std::string GetMaskUrlByReadIndex(int32_t streamId) override;
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
