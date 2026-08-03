@@ -1453,7 +1453,13 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse trak atom");
     UpdateParsedTrackVideoInfo();
     ret = FinalizeParsedTrackSampleTables();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to finalize sample tables");
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("Failed to finalize sample tables");
+        pendingSampleTableStatus_ = ret;
+        // Fragmented MP4 may keep empty placeholder sample tables in moov and be rejected later by
+        // mvex/moof/sidx as unsupported. Defer this error so the plugin manager can still fallback.
+        return Status::OK;
+    }
     SetCodecConfig(lastTrack_);
     AdapterFormat(lastTrack_);
     return Status::OK;
@@ -5044,6 +5050,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     dataSource_ = source;
     seekable_ = seekable;
     demuxerMode_ = mode;
+    pendingSampleTableStatus_ = Status::OK;
     dataReader_ = std::make_shared<DemuxerDataReader>();
     FALSE_RETURN_V_MSG_E(dataReader_ != nullptr, Status::ERROR_NO_MEMORY, "Failed create dataReader");
     dataReader_->SetDataReader(source);
@@ -5073,6 +5080,8 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
         }
     }
     FALSE_RETURN_V_MSG_E(moovFound_, Status::ERROR_INVALID_DATA, "MPEG4 parse failed");
+    FALSE_RETURN_V_MSG_E(pendingSampleTableStatus_ == Status::OK, pendingSampleTableStatus_,
+        "MPEG4 parse failed due to invalid sample tables");
     if (demuxerMode_ == Plugins::DemuxerMode::FAST_INIT) {
         CalculateFastInitAttributes();
     } else {
