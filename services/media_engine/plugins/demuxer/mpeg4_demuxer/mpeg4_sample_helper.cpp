@@ -1541,20 +1541,38 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     return Status::OK;
 }
 
-Status MPEG4SampleHelper::ValidateCttsEntries(uint32_t sttsNum)
+Status MPEG4SampleHelper::ValidateAndCountSttsSamples(uint32_t& sampleCount) const
 {
-    uint32_t cttsNum = 0;
-    for (const auto& entry : cttsEntry_) {
-        uint32_t temp;
+    sampleCount = 0;
+    for (const auto& entry : sttsEntry_) {
+        uint32_t temp = 0;
         if (entry.count == 0 || entry.count > MAX_SAMPLE_TABLE_SAMPLES ||
-            __builtin_add_overflow(cttsNum, entry.count, &temp) || temp > MAX_SAMPLE_TABLE_SAMPLES) {
-            MEDIA_LOG_E("CTTS count overflow: current=" PUBLIC_LOG_U32 ", add="
-                PUBLIC_LOG_U32, cttsNum, entry.count);
+            __builtin_add_overflow(sampleCount, entry.count, &temp) || temp > MAX_SAMPLE_TABLE_SAMPLES) {
+            MEDIA_LOG_E("STTS count overflow: current=" PUBLIC_LOG_U32 ", add="
+                PUBLIC_LOG_U32, sampleCount, entry.count);
             return Status::ERROR_INVALID_DATA;
         }
-        cttsNum = temp;
+        sampleCount = temp;
     }
-    FALSE_RETURN_V_MSG_E(sttsNum == cttsNum, Status::ERROR_INVALID_DATA, "ctts did not match stts");
+    FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::ValidateCttsEntries(uint32_t sttsSampleCount) const
+{
+    uint32_t cttsSampleCount = 0;
+    for (const auto& entry : cttsEntry_) {
+        uint32_t temp = 0;
+        if (entry.count == 0 || entry.count > MAX_SAMPLE_TABLE_SAMPLES ||
+            __builtin_add_overflow(cttsSampleCount, entry.count, &temp) || temp > MAX_SAMPLE_TABLE_SAMPLES) {
+            MEDIA_LOG_E("CTTS count overflow: current=" PUBLIC_LOG_U32 ", add="
+                PUBLIC_LOG_U32, cttsSampleCount, entry.count);
+            return Status::ERROR_INVALID_DATA;
+        }
+        cttsSampleCount = temp;
+    }
+    FALSE_RETURN_V_MSG_E(sttsSampleCount == cttsSampleCount, Status::ERROR_INVALID_DATA,
+        "ctts did not match stts");
     return Status::OK;
 }
 
@@ -1563,32 +1581,29 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
     if (isFragmented_) {
         return Status::OK;
     }
+    if (sttsEntry_.empty() && sampleSizeCount_ == 0 && sampleSizes_.empty() && chunkOffsets_.empty() &&
+        stscEntry_.empty()) {
+        // FFmpeg accepts an otherwise valid track that carries no samples. Keep it as a non-playable track
+        // instead of rejecting the whole container.
+        return Status::OK;
+    }
     FALSE_RETURN_V_MSG_E(!sttsEntry_.empty(), Status::ERROR_INVALID_DATA, "stts corrupted");
     FALSE_RETURN_V_MSG_E(!sampleSizes_.empty(), Status::ERROR_INVALID_DATA, "stsz corrupted");
     FALSE_RETURN_V_MSG_E(!chunkOffsets_.empty(), Status::ERROR_INVALID_DATA, "stco corrupted");
     FALSE_RETURN_V_MSG_E(!stscEntry_.empty(), Status::ERROR_INVALID_DATA, "stsc corrupted");
 
-    uint32_t sttsNum = 0;
-    for (const auto& entry : sttsEntry_) {
-        uint32_t temp = 0;
-        if (entry.count == 0 || entry.count > MAX_SAMPLE_TABLE_SAMPLES ||
-            __builtin_add_overflow(sttsNum, entry.count, &temp) || temp > MAX_SAMPLE_TABLE_SAMPLES) {
-            MEDIA_LOG_E("STTS count overflow: current=" PUBLIC_LOG_U32 ", add="
-                PUBLIC_LOG_U32, sttsNum, entry.count);
-            return Status::ERROR_INVALID_DATA;
-        }
-        sttsNum = temp;
-    }
-    FALSE_RETURN_V_MSG_E(sttsNum > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
+    uint32_t sttsSampleCount = 0;
+    Status ret = ValidateAndCountSttsSamples(sttsSampleCount);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ValidateAndCountSttsSamples failed");
 
     if (!hasDefaultStszSize_) {
         FALSE_RETURN_V_MSG_E(sampleSizes_.size() == sampleSizeCount_, Status::ERROR_INVALID_DATA,
             "Invalid stsz sample size count");
-        FALSE_RETURN_V_MSG_E(sttsNum <= sampleSizes_.size(), Status::ERROR_INVALID_DATA,
+        FALSE_RETURN_V_MSG_E(sttsSampleCount <= sampleSizes_.size(), Status::ERROR_INVALID_DATA,
             "stsz sample size count is less than stts");
-    } else if (sampleSizeCount_ != sttsNum) {
+    } else if (sampleSizeCount_ != sttsSampleCount) {
         MEDIA_LOG_W("stsz sample count " PUBLIC_LOG_U32 " does not match stts sample count " PUBLIC_LOG_U32,
-            sampleSizeCount_, sttsNum);
+            sampleSizeCount_, sttsSampleCount);
     }
     for (uint32_t i = 0; i < stscEntry_.size(); ++i) {
         const auto& entry = stscEntry_[i];
@@ -1603,7 +1618,7 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
     }
 
     if (!cttsEntry_.empty()) {
-        Status ret = ValidateCttsEntries(sttsNum);
+        ret = ValidateCttsEntries(sttsSampleCount);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ValidateCttsEntries failed");
         CalculateDtsShift();
     }

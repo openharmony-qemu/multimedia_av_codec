@@ -346,7 +346,8 @@ private:
     SkipSamplesInfoMap skipSamplesInfoMap_;
 
     void ProcessHalfByteSampleSizes(const uint8_t* data, uint32_t& entryIndex, uint32_t numSampleSizes);
-    Status ValidateCttsEntries(uint32_t sttsNum);
+    Status ValidateAndCountSttsSamples(uint32_t& sampleCount) const;
+    Status ValidateCttsEntries(uint32_t sttsSampleCount) const;
     Status ApplyEditList();
     Status FindWithSyncSamplesByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& syncIndex);
     int64_t FindIndexWithoutSyncSamples(int64_t inputPTS) const;

@@ -242,6 +242,7 @@ private:
     void GetSingleTrackInfo(const MPEG4AtomParser::Track& track, const uint32_t trackIndex);
     void ResetParam();
     void ReleaseReferenceParserState();
+    Status PrepareTrackMetadata();
     
     void InitStreamParsers();
     void InitBaseInfoByAtomParser(std::shared_ptr<MPEG4AtomParser> parser);

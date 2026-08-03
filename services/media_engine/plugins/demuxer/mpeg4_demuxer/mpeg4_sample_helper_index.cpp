@@ -913,7 +913,7 @@ Status MPEG4SampleHelper::FinalizeSampleTables()
     if (sampleTableStatus_ != Status::OK) {
         return sampleTableStatus_;
     }
-    if (isFragmented_ && sttsEntry_.empty()) {
+    if (sttsEntry_.empty()) {
         return Status::OK;
     }
     sampleTableStatus_ = CalculateSampleTableSummary();

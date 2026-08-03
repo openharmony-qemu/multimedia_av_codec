@@ -1244,6 +1244,30 @@ void MPEG4DemuxerPlugin::InitDrmInfoCacheByAtomParser(std::shared_ptr<MPEG4AtomP
     drmInfoCached_.store(!cachedDrmInfo_.empty());
 }
 
+Status MPEG4DemuxerPlugin::PrepareTrackMetadata()
+{
+    if (firstTrack_ == nullptr) {
+        // FFmpeg accepts a valid MP4 container without tracks and exposes an empty track list.
+        MEDIA_LOG_W("No track found in MPEG4 source");
+        return Status::OK;
+    }
+    InitStreamParsers();
+    GetMediaInfo();
+    if (avTrackIds_.empty()) {
+        // A track without playable AV samples does not require first-frame codec parameters.
+        MEDIA_LOG_W("No playable AV samples found in MPEG4 source");
+        return Status::OK;
+    }
+    Status ret = ConvertElstTimescaleToMs();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ConvertElstTimescaleToMs is failed");
+    if (HasCodecParameters() != Status::OK) {
+        ResetParam();
+        MEDIA_LOG_E("SetDataSource failed cause not enough data");
+        return Status::ERROR_NOT_ENOUGH_DATA;
+    }
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source,
     const std::shared_ptr<Media::Meta>& configs)
 {
@@ -1270,18 +1294,11 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
         FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
         HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     }
-    
+
     InitBaseInfoByAtomParser(atomParser);
     InitDrmInfoCacheByAtomParser(atomParser);
-    InitStreamParsers();
-    GetMediaInfo();
-    ret = ConvertElstTimescaleToMs();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ConvertElstTimescaleToMs is failed");
-    if (HasCodecParameters() != Status::OK) {
-        ResetParam();
-        MEDIA_LOG_E("SetDataSource failed cause not enough data");
-        return Status::ERROR_NOT_ENOUGH_DATA;
-    }
+    ret = PrepareTrackMetadata();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PrepareTrackMetadata failed");
 
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
     inited_ = true;
