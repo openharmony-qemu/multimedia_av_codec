@@ -397,12 +397,13 @@ Status MPEG4SampleHelper::ResolveRawSampleSize(
     const SampleTableCursor& cursor, uint32_t samplesPerFrame, int32_t& sampleSize) const
 {
     if (IsGroupedRawAudio()) {
-        int64_t groupedSize = static_cast<int64_t>(sampleSizes_[0]) * samplesPerFrame;
-        FALSE_RETURN_V_NOLOG(groupedSize >= 0 && groupedSize <= SampleIndexEntry::sizeMask,
+        int64_t groupedSize = static_cast<int64_t>(sampleSizes_.front()) * static_cast<int64_t>(samplesPerFrame);
+        FALSE_RETURN_V_NOLOG(groupedSize >= 0 &&
+            groupedSize <= static_cast<int64_t>(SampleIndexEntry::sizeMask),
             Status::ERROR_INVALID_DATA);
         sampleSize = static_cast<int32_t>(groupedSize);
     } else {
-        size_t sizeIndex = hasDefaultStszSize_ ? 0 : static_cast<size_t>(cursor.processedRawSamples);
+        size_t sizeIndex = hasDefaultStszSize_ ? size_t {0} : static_cast<size_t>(cursor.processedRawSamples);
         FALSE_RETURN_V_NOLOG(sizeIndex < sampleSizes_.size(), Status::ERROR_INVALID_DATA);
         sampleSize = sampleSizes_[sizeIndex];
     }
