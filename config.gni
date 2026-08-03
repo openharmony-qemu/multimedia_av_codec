@@ -41,7 +41,7 @@ declare_args() {
   av_codec_support_fcodec = true
   av_codec_support_avc_encoder = true
   av_codec_support_hevc_decoder = true
-  av_codec_support_av1_decoder = false
+  av_codec_support_av1_decoder = true
   av_codec_support_mp4v_decoder = true
   av_codec_support_vc1_decoder = false
   av_codec_enable_start_stop_on_demand = false
@@ -65,8 +65,8 @@ declare_args() {
       defined(global_parts_info.hdf_drivers_interface_camera_ext)) {
     av_codec_support_camera_post_processor = true
   }
-  av_codec_support_vp8_decoder = false
-  av_codec_support_vp9_decoder = false
+  av_codec_support_vp8_decoder = true
+  av_codec_support_vp9_decoder = true
   av_codec_enable_player_startup_optimization = false
   av_codec_support_10bit_test = false
   av_codec_enable_only_for_flagship_chip = false
