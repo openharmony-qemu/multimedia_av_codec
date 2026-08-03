@@ -48,6 +48,15 @@ public:
             itemList_.erase(it->second);
             itemMap_.erase(it);
         }
+        // Clean up orphan entries that point to the same value under a different key
+        for (auto listIt = itemList_.begin(); listIt != itemList_.end();) {
+            if (listIt->second == val && listIt->first != key) {
+                itemMap_.erase(listIt->first);
+                listIt = itemList_.erase(listIt);
+            } else {
+                ++listIt;
+            }
+        }
 
         itemList_.push_front(make_pair(key, val));
         itemMap_.insert(make_pair(key, itemList_.begin()));
@@ -71,11 +80,21 @@ public:
             Refer(keyNew, val);
             return;
         }
+        // If keyNew already exists and points to a different node, remove the conflicting entry first
+        // to prevent insert failure which would create an orphan itemList_ node
+        auto existIt = itemMap_.find(keyNew);
+        if (existIt != itemMap_.end() && existIt->second != listPos) {
+            itemList_.erase(existIt->second);
+            itemMap_.erase(existIt);
+        }
         listPos->first = keyNew;
         listPos->second = val;
-        it->second->first = keyNew;
         itemMap_.erase(it);
-        itemMap_.insert(make_pair(keyNew, listPos));
+        auto [insertIt, success] = itemMap_.insert(make_pair(keyNew, listPos));
+        if (!success) {
+            itemMap_.erase(keyNew);
+            itemMap_.insert(make_pair(keyNew, listPos));
+        }
     }
 
     void Delete(const KeyT& key)
