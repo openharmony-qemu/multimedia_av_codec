@@ -113,6 +113,13 @@ public:
         lastSubtitleId_ = subTitleStreamId;
     }
 
+    std::string GetMaskedUrl(int32_t streamId) override
+    {
+        (void)streamId;
+        getMaskedUrlCalled_ = true;
+        return maskedUrlResult_;
+    }
+
     bool getStreamInfoCalled_ {false};
     bool getStreamInfoIsUpdate_ {false};
     Status getStreamInfoReturn_ {Status::OK};
@@ -121,6 +128,9 @@ public:
     int32_t lastVideoId_ {-1};
     int32_t lastAudioId_ {-1};
     int32_t lastSubtitleId_ {-1};
+
+    bool getMaskedUrlCalled_ {false};
+    std::string maskedUrlResult_;
 };
 
 class DownloaderUnitTest : public testing::Test {
@@ -186,6 +196,32 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_SetDefaultStreamId, TestSize.Lev
     EXPECT_EQ(videoId, innerDownloader->lastVideoId_);
     EXPECT_EQ(audioId, innerDownloader->lastAudioId_);
     EXPECT_EQ(subtitleId, innerDownloader->lastSubtitleId_);
+}
+
+/**
+ * @tc.name  : Test DownloadMonitor GetMaskedUrl API
+ * @tc.number: DownloadMonitor_GetMaskedUrl_NullDownloader
+ * @tc.desc  : Test GetMaskedUrl returns empty when inner downloader is nullptr
+ */
+HWTEST_F(DownloaderUnitTest, DownloadMonitor_GetMaskedUrl_NullDownloader, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> monitor = std::make_shared<DownloadMonitor>(nullptr);
+    EXPECT_EQ(monitor->GetMaskedUrl(1), "");
+}
+
+/**
+ * @tc.name  : Test DownloadMonitor GetMaskedUrl API
+ * @tc.number: DownloadMonitor_GetMaskedUrl_Delegate
+ * @tc.desc  : Test GetMaskedUrl delegates to inner downloader and returns masked url
+ */
+HWTEST_F(DownloaderUnitTest, DownloadMonitor_GetMaskedUrl_Delegate, TestSize.Level1)
+{
+    auto innerDownloader = std::make_shared<TestMediaDownloaderForMonitor>();
+    innerDownloader->maskedUrlResult_ = "https://host/***/file.ts";
+    std::shared_ptr<DownloadMonitor> monitor = std::make_shared<DownloadMonitor>(innerDownloader);
+
+    EXPECT_EQ(monitor->GetMaskedUrl(1), "https://host/***/file.ts");
+    EXPECT_TRUE(innerDownloader->getMaskedUrlCalled_);
 }
 
 HWTEST_F(DownloaderUnitTest, ClearMiddleReadFragment, TestSize.Level0)

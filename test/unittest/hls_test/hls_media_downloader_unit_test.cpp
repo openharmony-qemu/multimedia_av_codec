@@ -1783,4 +1783,192 @@ HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_004, TestSize.Level1)
     EXPECT_TRUE(playlistDownloader->GetAesDecryptor(1) != nullptr);
     downloader = nullptr;
 }
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_VideoSegManagerNull
+ * @tc.desc  : Test GetMaskedUrl returns empty when videoSegManager_ is nullptr
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_VideoSegManagerNull, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    downloader->videoSegManager_ = nullptr;
+    EXPECT_EQ(downloader->GetMaskedUrl(1), "");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_EmptyUrl
+ * @tc.desc  : Test GetMaskedUrl returns empty when segment url is empty
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_EmptyUrl, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_.clear();
+    EXPECT_EQ(downloader->GetMaskedUrl(1), "");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_NoScheme
+ * @tc.desc  : Test MaskUrl branch: url without scheme separator returned unchanged
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_NoScheme, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "no-scheme";
+    EXPECT_EQ(downloader->GetMaskedUrl(1), "no-scheme");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_HostOnly
+ * @tc.desc  : Test MaskUrl branch: url with no path returns scheme://host
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_HostOnly, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host";
+    EXPECT_EQ(downloader->GetMaskedUrl(1), "https://host");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_RootPath
+ * @tc.desc  : Test MaskUrl branch: root path "/" stripped to scheme://host
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_RootPath, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host/";
+    EXPECT_EQ(downloader->GetMaskedUrl(1), "https://host");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_DirectoryPath
+ * @tc.desc  : Test MaskUrl branch: directory path ending with "/" stripped
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_DirectoryPath, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host/a/b/";
+    EXPECT_EQ(downloader->GetMaskedUrl(1), "https://host");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_SingleSegment
+ * @tc.desc  : Test MaskUrl branch: single-segment file path needs no mask
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_SingleSegment, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host/file.m3u8";
+    EXPECT_EQ(downloader->GetMaskedUrl(1), "https://host/file.m3u8");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_UserInfoStripped
+ * @tc.desc  : Test MaskUrl branch: userinfo (user:pass@) is stripped
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_UserInfoStripped, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "http://user:pass@host/dir/file";
+    EXPECT_EQ(downloader->GetMaskedUrl(1), "http://host/***/file");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_SegVideo
+ * @tc.desc  : Test GetMaskedUrl masks video segment url (SEG_VIDEO branch)
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_SegVideo, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host/dir/video.ts";
+    EXPECT_EQ(downloader->GetMaskedUrl(1), "https://host/***/video.ts");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_SegAudio
+ * @tc.desc  : Test GetMaskedUrl masks audio segment url (SEG_AUDIO branch)
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_SegAudio, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->audioSegManager_ != nullptr);
+    downloader->audioSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->audioSegManager_->curUrl_ = "https://host/dir/audio.aac";
+    EXPECT_EQ(downloader->GetMaskedUrl(3), "https://host/***/audio.aac");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_SegSubtitle
+ * @tc.desc  : Test GetMaskedUrl masks subtitle segment url (SEG_SUBTITLE branch)
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_SegSubtitle, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->subtitlesSegManager_ != nullptr);
+    downloader->subtitlesSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->subtitlesSegManager_->curUrl_ = "https://host/dir/sub.vtt";
+    EXPECT_EQ(downloader->GetMaskedUrl(4), "https://host/***/sub.vtt");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskedUrl API
+ * @tc.number: GetMaskedUrl_SegAudioManagerNull
+ * @tc.desc  : Test GetMaskedUrl returns empty when SEG_AUDIO maps to nullptr audioSegManager_
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskedUrl_SegAudioManagerNull, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    downloader->audioSegManager_ = nullptr;
+    EXPECT_EQ(downloader->GetMaskedUrl(3), "");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
 }
