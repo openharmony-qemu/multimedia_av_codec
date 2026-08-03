@@ -171,6 +171,7 @@ Status MPEG4DemuxerPlugin::SeekToStartInternal()
         auto track = FindTrackById(static_cast<int32_t>(selectedTrackId));
         FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
         track->currentSampleIndex = 0;
+        track->currentSamplePos = 0;
         cacheQueue_.RemoveTrackQueue(selectedTrackId);
         cacheQueue_.AddTrackQueue(selectedTrackId);
     }
@@ -221,6 +222,7 @@ Status MPEG4DemuxerPlugin::SyncSelectedTracksByDts(int32_t baseTrackId, int64_t 
             Status::ERROR_INVALID_PARAMETER, "Convert dts failed");
         uint32_t sampleIndex = 0;
         Status ret = FindFirstSampleIndexByDts(track, targetDts, sampleIndex);
+        track->currentSamplePos = 0;
         if (ret == Status::OK) {
             track->currentSampleIndex = sampleIndex;
         } else if (ret == Status::END_OF_STREAM) {
@@ -262,6 +264,7 @@ Status MPEG4DemuxerPlugin::PrefetchSeekSample(
 
     uint32_t oldIndex = track->currentSampleIndex;
     track->currentSampleIndex = sampleIndex;
+    track->currentSamplePos = 0;
     auto sample = std::make_shared<Sample>();
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
     {
@@ -311,7 +314,9 @@ Status MPEG4DemuxerPlugin::UpdateReadSampleDataTimeout(Status ret, std::shared_p
     } else if (nowMs - startMs > timeoutMs) {
         MEDIA_LOG_E("ReadSampleData timeout, elapsed: " PUBLIC_LOG_D64 "ms, limit: " PUBLIC_LOG_D64 "ms",
             nowMs - startMs, timeoutMs);
-        sample->data.reset();
+        if (sample != nullptr) {
+            sample->data.reset();
+        }
         return Status::ERROR_UNKNOWN;
     }
     return Status::OK;
@@ -324,7 +329,9 @@ Status MPEG4DemuxerPlugin::CheckReadSampleDataStopState(const std::shared_ptr<Sa
         return Status::OK;
     }
     MEDIA_LOG_I("ReadSampleData stopped");
-    sample->data.reset();
+    if (sample != nullptr) {
+        sample->data.reset();
+    }
     return Status::ERROR_WRONG_STATE;
 }
 
@@ -348,6 +355,56 @@ void MPEG4DemuxerPlugin::DumpAVPacketData(
     Dump(dumpParam);
 #endif
 }
+
+Status MPEG4DemuxerPlugin::FillBufferDirectly(std::shared_ptr<AVBuffer> sample, uint64_t pos, int32_t size)
+{
+    FALSE_RETURN_V_MSG_E(
+        size > 0 && size < READ_SIZE_LIMIT_DEFAULT, Status::ERROR_INVALID_BUFFER_SIZE, "Invalid read size");
+    size_t needSize = static_cast<size_t>(size);
+    Status ret = Status::ERROR_AGAIN;
+    uint32_t count = 0;
+    size_t totalRead = 0;
+    MediaAVCodec::AVCodecTrace trace("AVReadPacket_ReadAtDirectly");
+    while (totalRead < needSize && (readTimeoutMs_.load(std::memory_order_acquire) >= 0 || count < READ_RETRY_TIMES)) {
+        ret = CheckReadSampleDataStopState(nullptr);
+        FALSE_RETURN_V(ret == Status::OK, ret);
+        size_t remaining = needSize - totalRead;
+        auto buffer = std::make_shared<Buffer>();
+        FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "Buffer allocation failed");
+        auto bufferMemory = buffer->WrapMemory(sample->memory_->GetAddr() + totalRead, remaining, 0);
+        FALSE_RETURN_V_MSG_E(bufferMemory != nullptr, Status::ERROR_NO_MEMORY, "Memory allocation failed");
+        FALSE_RETURN_V_MSG_E(totalRead <= UINT64_MAX - pos,
+            Status::ERROR_INVALID_PARAMETER, "Read position overflow");
+        uint64_t currentPos = pos + static_cast<uint64_t>(totalRead);
+        ret = dataSource_->ReadAt(static_cast<int64_t>(currentPos), buffer, remaining);
+        FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
+        size_t readSize = std::min(buffer->GetMemory()->GetSize(), remaining);
+        MEDIA_LOG_D("Want:" PUBLIC_LOG_ZU ", Get:" PUBLIC_LOG_ZU ", offset:" PUBLIC_LOG_U64,
+            remaining, readSize, currentPos);
+        if (readSize > 0) {
+            DumpReadAtData(sample->memory_->GetAddr() + totalRead, currentPos, readSize);
+            totalRead += readSize;
+            readStartTimeMs_.store(0, std::memory_order_release);
+            count = 0;
+            continue;
+        }
+        FALSE_BREAK_NOLOG(ret == Status::OK || ret == Status::ERROR_AGAIN);
+        Status retryRet = UpdateReadSampleDataTimeout(Status::ERROR_AGAIN, nullptr);
+        FALSE_RETURN_V(retryRet == Status::OK, retryRet);
+        ++count;
+        usleep(READ_RETRY_SLEEP_TIME_US);
+    }
+    FALSE_RETURN_V_MSG_E(totalRead <= INT32_MAX, Status::ERROR_UNKNOWN, "TotalRead size too large");
+    int32_t dataSize = static_cast<int32_t>(totalRead);
+    MEDIA_LOG_D("Want:" PUBLIC_LOG_D32 ", Get:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, size, dataSize, pos);
+    if (totalRead != needSize && ret != Status::OK && ret != Status::ERROR_AGAIN) {
+        return ret;
+    }
+    FALSE_RETURN_V_MSG_E(totalRead == needSize, Status::ERROR_AGAIN, "No enough data");
+    sample->memory_->SetSize(size);
+    return Status::OK;
+}
+
 
 Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size)
 {
@@ -536,7 +593,7 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
         MEDIA_LOG_D("Set info failed");
     }
 
-    outBuffer->flag_ = GetFlags(mpeg4Sample->sample, false);
+    outBuffer->flag_ = GetFlags(mpeg4Sample->sample->flag, false);
     auto sampleMemory = std::make_shared<MPEG4SampleMemory>(mpeg4Sample->sample, mpeg4Sample->offset);
     FALSE_RETURN_V_MSG_E(sampleMemory != nullptr, Status::ERROR_NO_MEMORY, "Create sample memory failed");
     outBuffer->memory_ = std::static_pointer_cast<AVMemory>(sampleMemory);
