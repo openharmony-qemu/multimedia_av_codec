@@ -360,6 +360,11 @@ Status MPEG4DemuxerPlugin::FillBufferDirectly(std::shared_ptr<AVBuffer> sample, 
 {
     FALSE_RETURN_V_MSG_E(
         size > 0 && size < READ_SIZE_LIMIT_DEFAULT, Status::ERROR_INVALID_BUFFER_SIZE, "Invalid read size");
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr && sample->memory_->GetAddr() != nullptr,
+        Status::ERROR_INVALID_PARAMETER, "AVBuffer is invalid");
+    FALSE_RETURN_V_MSG_E(dataSource_ != nullptr, Status::ERROR_NULL_POINTER, "DataSource is nullptr");
+    int32_t capacity = sample->memory_->GetCapacity();
+    FALSE_RETURN_V_MSG_E(capacity >= size, Status::ERROR_INVALID_BUFFER_SIZE, "Buffer capacity is insufficient");
     size_t needSize = static_cast<size_t>(size);
     Status ret = Status::ERROR_AGAIN;
     uint32_t count = 0;
@@ -401,7 +406,6 @@ Status MPEG4DemuxerPlugin::FillBufferDirectly(std::shared_ptr<AVBuffer> sample, 
         return ret;
     }
     FALSE_RETURN_V_MSG_E(totalRead == needSize, Status::ERROR_AGAIN, "No enough data");
-    sample->memory_->SetSize(size);
     return Status::OK;
 }
 

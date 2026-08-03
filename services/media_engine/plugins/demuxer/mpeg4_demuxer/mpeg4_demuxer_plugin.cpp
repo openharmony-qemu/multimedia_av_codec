@@ -2646,12 +2646,14 @@ Status MPEG4DemuxerPlugin::ReadAndCacheWebVttSample(const WebVttReadContext& con
     return Status::OK;
 }
 
-Status MPEG4DemuxerPlugin::WriteBufferAttr(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer, bool memoryNotEnough)
+Status MPEG4DemuxerPlugin::WriteBufferAttr(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer,
+    int32_t dataSize, bool memoryNotEnough)
 {
     auto track = FindTrackById(trackId);
-    MPEG4SampleHelper::SampleIndexView currentSample;
-    FALSE_RETURN_V_MSG_E(GetSampleView(track, track->currentSampleIndex, currentSample), Status::ERROR_INVALID_DATA,
-        "Get sample view failed");
+    FALSE_RETURN_V_MSG_E(outBuffer != nullptr && outBuffer->memory_ != nullptr,
+        Status::ERROR_INVALID_PARAMETER, "AVBuffer is invalid");
+    FALSE_RETURN_V_MSG_E(dataSize >= 0 && dataSize <= outBuffer->memory_->GetCapacity(),
+        Status::ERROR_INVALID_BUFFER_SIZE, "Invalid buffer data size");
     int32_t trackTimeScale = track->timeScale;
     FALSE_RETURN_V_NOLOG(trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER);
     ReadSamplePacketAttr attr;
@@ -2665,9 +2667,9 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(uint32_t trackId, std::shared_ptr<AVB
     outBuffer->meta_->Set<Tag::BUFFER_DECODING_TIMESTAMP>(attr.dtsUs);
     outBuffer->duration_ = attr.durationUs;
     outBuffer->meta_->Set<Tag::BUFFER_DURATION>(attr.durationUs);
-    outBuffer->memory_->SetSize(currentSample.size);
+    outBuffer->memory_->SetSize(dataSize);
     MEDIA_LOG_D("[%{public}u]CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]", trackId, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_);
-    outBuffer->flag_ = GetFlags(outBuffer->flag_, memoryNotEnough);
+    outBuffer->flag_ = GetFlags(attr.flag, memoryNotEnough);
     return Status::OK;
 }
 
@@ -2688,12 +2690,6 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
         Status::ERROR_INVALID_PARAMETER, "Invalid current pos");
 
     int32_t capacity = outBuffer->memory_->GetCapacity();
-    if (capacity == 0) {
-        ret = WriteBufferAttr(trackId, outBuffer, true);
-        FALSE_RETURN_V(ret == Status::OK, ret);
-        (void)SetDrmCencInfo(trackId, outBuffer, sampleSize, sampleSize, track->currentSampleIndex);
-        return Status::OK;
-    }
     int32_t remainSize = sampleSize - track->currentSamplePos;
     int32_t readSize = std::min(remainSize, capacity);
     int64_t readPos = pos + track->currentSamplePos;
@@ -2702,14 +2698,13 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Invalid read state");
     ret = FillBufferDirectly(outBuffer, static_cast<uint64_t>(readPos), readSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sample data failed");
-    ret = WriteBufferAttr(trackId, outBuffer, !capacityEnough);
+    ret = WriteBufferAttr(trackId, outBuffer, readSize, !capacityEnough);
     FALSE_RETURN_V(ret == Status::OK, ret);
     MEDIA_LOG_D("Convert size [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
         sampleSize, remainSize, readSize, track->currentSamplePos);
     if (readSize > 0) {
         DumpAVBufferData(outBuffer->memory_->GetAddr(), trackId, readSize, outBuffer->pts_);
     }
-    SetDrmCencInfo(trackId, outBuffer, readSize, readSize, track->currentSampleIndex);
     if (!capacityEnough) {
         track->currentSamplePos += readSize;
         MEDIA_LOG_D("Buffer is not enough");
@@ -2912,12 +2907,15 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     FALSE_RETURN_V_MSG_E(IsValidTrack(track), Status::ERROR_INVALID_PARAMETER, "Track is invalid");
     readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
     bool useCache = cacheQueue_.HasCache(trackId);
-    if (!useCache && seekable_ == Seekable::SEEKABLE && !NeedReadPostProcessing(track->sampleHelper->mimeType_)) {
+    if (!useCache && seekable_ == Seekable::SEEKABLE && !NeedReadPostProcessing(track->sampleHelper->mimeType_) &&
+        !track->drmInfo.isEncrypted && outBuffer->memory_->GetCapacity() > 0) {
         return GetSeekableSampleDirectly(trackId, outBuffer);
     }
     std::shared_ptr<MPEG4Sample> mpeg4Sample = useCache ? cacheQueue_.Front(trackId) : std::make_shared<MPEG4Sample>();
     FALSE_RETURN_V_MSG_E(
-        IsValidMpeg4Sample(mpeg4Sample), Status::ERROR_NO_MEMORY, "Get mpeg4Sample failed[%{public}d]", useCache);
+        mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Get mpeg4Sample failed[%{public}d]", useCache);
+    FALSE_RETURN_V_MSG_E(!useCache || IsValidMpeg4Sample(mpeg4Sample), Status::ERROR_NO_MEMORY,
+        "Get mpeg4Sample failed[%{public}d]", useCache);
     Status ret = Status::OK;
     if (!useCache) {
         if (track->sampleHelper->mimeType_ == MimeType::TEXT_WEBVTT) {
@@ -2927,6 +2925,7 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
         }
         FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     }
+    FALSE_RETURN_V_MSG_E(IsValidMpeg4Sample(mpeg4Sample), Status::ERROR_NULL_POINTER, "Mpeg4Sample is invalid");
     ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
     FALSE_RETURN_V_NOLOG(ret != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
