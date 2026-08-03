@@ -378,14 +378,12 @@ Status MPEG4DemuxerPlugin::FillBufferDirectly(std::shared_ptr<AVBuffer> sample, 
         FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_NO_MEMORY, "Buffer allocation failed");
         auto bufferMemory = buffer->WrapMemory(sample->memory_->GetAddr() + totalRead, remaining, 0);
         FALSE_RETURN_V_MSG_E(bufferMemory != nullptr, Status::ERROR_NO_MEMORY, "Memory allocation failed");
-        FALSE_RETURN_V_MSG_E(totalRead <= UINT64_MAX - pos,
-            Status::ERROR_INVALID_PARAMETER, "Read position overflow");
+        FALSE_RETURN_V_MSG_E(totalRead <= UINT64_MAX - pos, Status::ERROR_INVALID_PARAMETER, "Read position overflow");
         uint64_t currentPos = pos + static_cast<uint64_t>(totalRead);
         ret = dataSource_->ReadAt(static_cast<int64_t>(currentPos), buffer, remaining);
         FALSE_RETURN_V_MSG_E(buffer->GetMemory() != nullptr, Status::ERROR_UNKNOWN, "Memory is nullptr");
         size_t readSize = std::min(buffer->GetMemory()->GetSize(), remaining);
-        MEDIA_LOG_D("Want:" PUBLIC_LOG_ZU ", Get:" PUBLIC_LOG_ZU ", offset:" PUBLIC_LOG_U64,
-            remaining, readSize, currentPos);
+        MEDIA_LOG_D("Part:Want[%{public}zu] Get[%{public}zu] offset:" PUBLIC_LOG_U64, remaining, readSize, currentPos);
         if (readSize > 0) {
             DumpReadAtData(sample->memory_->GetAddr() + totalRead, currentPos, readSize);
             totalRead += readSize;
@@ -402,9 +400,7 @@ Status MPEG4DemuxerPlugin::FillBufferDirectly(std::shared_ptr<AVBuffer> sample, 
     FALSE_RETURN_V_MSG_E(totalRead <= INT32_MAX, Status::ERROR_UNKNOWN, "TotalRead size too large");
     int32_t dataSize = static_cast<int32_t>(totalRead);
     MEDIA_LOG_D("Want:" PUBLIC_LOG_D32 ", Get:" PUBLIC_LOG_D32 ", offset:" PUBLIC_LOG_D64, size, dataSize, pos);
-    if (totalRead != needSize && ret != Status::OK && ret != Status::ERROR_AGAIN) {
-        return ret;
-    }
+    FALSE_RETURN_V_NOLOG((totalRead == needSize || ret == Status::OK || ret == Status::ERROR_AGAIN), ret);
     FALSE_RETURN_V_MSG_E(totalRead == needSize, Status::ERROR_AGAIN, "No enough data");
     return Status::OK;
 }

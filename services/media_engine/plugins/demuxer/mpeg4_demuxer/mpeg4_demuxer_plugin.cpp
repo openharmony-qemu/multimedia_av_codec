@@ -2668,7 +2668,8 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(uint32_t trackId, std::shared_ptr<AVB
     outBuffer->duration_ = attr.durationUs;
     outBuffer->meta_->Set<Tag::BUFFER_DURATION>(attr.durationUs);
     outBuffer->memory_->SetSize(dataSize);
-    MEDIA_LOG_D("[%{public}u]CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]", trackId, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_);
+    MEDIA_LOG_D("[%{public}u]CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
+        trackId, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_);
     outBuffer->flag_ = GetFlags(attr.flag, memoryNotEnough);
     return Status::OK;
 }
@@ -2914,8 +2915,6 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     std::shared_ptr<MPEG4Sample> mpeg4Sample = useCache ? cacheQueue_.Front(trackId) : std::make_shared<MPEG4Sample>();
     FALSE_RETURN_V_MSG_E(
         mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Get mpeg4Sample failed[%{public}d]", useCache);
-    FALSE_RETURN_V_MSG_E(!useCache || IsValidMpeg4Sample(mpeg4Sample), Status::ERROR_NO_MEMORY,
-        "Get mpeg4Sample failed[%{public}d]", useCache);
     Status ret = Status::OK;
     if (!useCache) {
         if (track->sampleHelper->mimeType_ == MimeType::TEXT_WEBVTT) {
@@ -2925,8 +2924,9 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
         }
         FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     }
-    FALSE_RETURN_V_MSG_E(IsValidMpeg4Sample(mpeg4Sample), Status::ERROR_NULL_POINTER, "Mpeg4Sample is invalid");
-    ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
+    if (IsValidMpeg4Sample(mpeg4Sample)) {
+        ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
+    }
     FALSE_RETURN_V_NOLOG(ret != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     if (seekable_ == Seekable::UNSEEKABLE || useCache) {
