@@ -72,9 +72,6 @@ group("av_codec_unit_test") {
         "unittest/audio_test:av_audio_inner_unit_test",
         "unittest/audio_test:av_audio_media_codec_unit_test",
         "unittest/audio_test:audio_mp3_encoder_plugin_unit_test",
-        "unittest/audio_test:audio_amrnb_encoder_plugin_unit_test",
-        "unittest/audio_test:audio_opus_encoder_plugin_unit_test",
-        "unittest/audio_test:audio_opus_decoder_plugin_unit_test",
         "unittest/audio_test:audio_sync_codec_adapter_unit_test",
         "unittest/audio_test:audio_gsm_ms_decoder_unit_test",
         "unittest/audio_test:audio_gsm_ms_capi_decoder_unit_test",
@@ -200,6 +197,15 @@ group("av_codec_unit_test") {
           "unittest/audio_vivid_test:audio_vivid_ability_unit_test",
           "unittest/audio_vivid_test:audio_vivid_capi_unit_test",
           "unittest/audio_vivid_test:audio_vivid_inner_unit_test",
+        ]
+      }
+      if (av_codec_enable_codec_amrnb) {
+        deps += [ "unittest/audio_test:audio_amrnb_encoder_plugin_unit_test" ]
+      }
+      if (av_codec_enable_codec_opus) {
+        deps += [
+          "unittest/audio_test:audio_opus_encoder_plugin_unit_test",
+          "unittest/audio_test:audio_opus_decoder_plugin_unit_test",
         ]
       }
     }
