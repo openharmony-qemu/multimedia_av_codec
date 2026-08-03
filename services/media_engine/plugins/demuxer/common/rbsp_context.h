@@ -17,9 +17,6 @@
 #define RBSP_CONTEXT_H
 
 #include <cstdint>
-#include <map>
-#include <memory>
-#include <vector>
 
 namespace OHOS {
 namespace Media {

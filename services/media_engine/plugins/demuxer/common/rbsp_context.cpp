@@ -12,9 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <algorithm>
 #include <limits>
-#include <set>
 #include "rbsp_context.h"
 
 namespace OHOS {

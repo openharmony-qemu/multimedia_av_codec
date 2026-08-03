@@ -114,10 +114,10 @@ int32_t AudioFfmpegDecoderPlugin::SendBuffer(const std::shared_ptr<AudioBufferIn
         AVCODEC_LOGW("eos send frame, msg:%{public}s", AVStrError(ret).data());
         return AVCodecServiceErrCode::AVCS_ERR_END_OF_STREAM;
     } else if (ret == AVERROR_INVALIDDATA) {
-        AVCODEC_LOGE("ffmpeg error message, msg:%{public}s", AVStrError(ret).data());
+        AVCODEC_LOGE_LIMIT(LOGD_FREQUENCY, "ffmpeg error message, msg:%{public}s", AVStrError(ret).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_DATA;
     } else {
-        AVCODEC_LOGE("ffmpeg error message, msg:%{public}s", AVStrError(ret).data());
+        AVCODEC_LOGE_LIMIT(LOGD_FREQUENCY, "ffmpeg error message, msg:%{public}s", AVStrError(ret).data());
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
 }

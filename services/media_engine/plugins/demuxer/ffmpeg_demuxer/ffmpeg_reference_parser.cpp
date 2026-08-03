@@ -41,6 +41,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "FfmpegReferenceParser" };
 constexpr int64_t REFERENCE_PARSER_TIMEOUT_MS = 10000;
 const uint32_t REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT = 200000u;
+constexpr int64_t DTS_EPSILON_US = 500;
 }
 
 int64_t GetDuration(int64_t startTime)
@@ -285,7 +286,9 @@ Status FFmpegDemuxerPlugin::ParserRefInfoLoop(AVPacket *pkt, uint32_t curStreamI
     FALSE_RETURN_V_MSG_D(pkt->stream_index == parserRefIdx_ || ffmpegRet == AVERROR_EOF, Status::OK,
                          "eos or not video");
     int64_t dts = AvTime2Us(ConvertTimeFromFFmpeg(pkt->dts, parserRefCtx_->streams[parserRefIdx_]->time_base));
+    std::unique_lock<std::shared_mutex> rLock(sharedReferenceParserMutex_);
     Status result = referenceParser_->ParserNalUnits(pkt->data, pkt->size, curStreamId, dts);
+    rLock.unlock();
     FALSE_RETURN_V_MSG_E(result == Status::OK, result, "parse nal units end! ret=" PUBLIC_LOG_D32,
                          static_cast<int32_t>(result));
     int32_t iFramePosSize = static_cast<int32_t>(IFramePos_.size());
@@ -402,6 +405,7 @@ Status FFmpegDemuxerPlugin::ParserRefInfo()
 
 Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
+    std::shared_lock<std::shared_mutex> rLock(sharedReferenceParserMutex_);
     FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
     MEDIA_LOG_D("In, dts: " PUBLIC_LOG_D64, videoSample->dts_);
     if (isSdtpExist_) {
@@ -415,6 +419,7 @@ Status FFmpegDemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSam
 
 Status FFmpegDemuxerPlugin::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo)
 {
+    std::shared_lock<std::shared_mutex> rLock(sharedReferenceParserMutex_);
     FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
     MEDIA_LOG_D("In, dts: " PUBLIC_LOG_U32, frameId);
     return referenceParser_->GetFrameLayerInfo(frameId, frameLayerInfo);
@@ -422,6 +427,7 @@ Status FFmpegDemuxerPlugin::GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &
 
 Status FFmpegDemuxerPlugin::GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo)
 {
+    std::shared_lock<std::shared_mutex> rLock(sharedReferenceParserMutex_);
     FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
     MEDIA_LOG_D("In, gopId: " PUBLIC_LOG_U32, gopId);
     return referenceParser_->GetGopLayerInfo(gopId, gopLayerInfo);
@@ -438,7 +444,7 @@ Status FFmpegDemuxerPlugin::Dts2FrameId(int64_t dts, uint32_t &frameId)
 {
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "formatContext_ is nullptr");
     auto avStream = formatContext_->streams[parserRefIdx_];
-    int64_t ffTimeDts = ConvertTimeToFFmpegByUs(dts, avStream->time_base);
+    int64_t ffTimeDts = ConvertTimeToFFmpegByUs(dts + DTS_EPSILON_US, avStream->time_base);
     int32_t tmpFrameId = av_index_search_timestamp(avStream, ffTimeDts,
         AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
     FALSE_RETURN_V_MSG_E(tmpFrameId >= 0, Status::ERROR_OUT_OF_RANGE, "find nearest frame failed");

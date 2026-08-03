@@ -81,6 +81,7 @@ private:
         std::atomic<Owner> owner_ = Owner::OWNED_BY_US;
         int32_t width_ = 0;
         int32_t height_ = 0;
+        int32_t stride_ = 0;
         int32_t format_ = 0;
         uint64_t usage_ = SURFACE_DEFAULT_USAGE;
         std::atomic<bool> hasSwapedOut_ = false;
@@ -124,10 +125,8 @@ private:
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif
-#ifndef EMULATOR_ENABLED
     void GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
     void GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
-#endif
     int32_t DecodedFrameProcess(uint32_t index);
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t inBufferSize);
@@ -136,7 +135,7 @@ private:
     int32_t ClearSurfaceAndSetQueueSize();
     int32_t AllocateOutputBuffersFromSurface();
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
-    bool CheckStrideChange(uint32_t index, bool& isChanged);
+    void CheckStrideChange(uint32_t index, bool isChanged);
     int32_t CheckFormatChange(uint32_t index, bool &isChanged);
     void SetSurfaceParameter();
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
@@ -167,9 +166,10 @@ private:
     bool CanSwapOut(bool isOutputBuffer, std::shared_ptr<FBuffer> &fBuffer);
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
-    void PutFormatValue();
-    int32_t pid_ = -1;
 
+    bool isEmulator_ = false;
+    bool isUsedSharedMem_ = false;
+    int32_t pid_ = -1;
     int32_t instanceId_ = -1;
     std::string decName_;
     std::string codecName_;
@@ -236,6 +236,7 @@ private:
 #ifdef BUILD_ENG_VERSION
     void OpenDumpFile();
     void DumpOutputBuffer();
+    void DumpOutputBuffer(const std::shared_ptr<AVMemory> &avmemory);
     std::shared_ptr<std::ofstream> dumpInFile_ = nullptr;
     std::shared_ptr<std::ofstream> dumpOutFile_ = nullptr;
 #endif // BUILD_ENG_VERSION

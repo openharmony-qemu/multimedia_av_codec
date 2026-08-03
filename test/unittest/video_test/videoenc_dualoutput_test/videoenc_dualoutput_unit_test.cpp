@@ -14,14 +14,19 @@
  */
 
 #include <avcodec_common.h>
+#include <chrono>
+#include <condition_variable>
 #include <cstring>
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
 #include "native_avcapability.h"
 #include "native_avcodec_base.h"
 #include "native_avcodec_videoencoder.h"
+#include "meta/any.h"
 #include "sample_callback.h"
 #include "unittest_utils.h"
 #include "vcodec_signal.h"
@@ -131,8 +136,8 @@ std::string FindAdditionalVideoEncoderMime()
     return "";
 }
 
-void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, EncoderType type,
-                                shared_ptr<VCodecSignal> &signal)
+bool TryRegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, EncoderType type,
+                                   shared_ptr<VCodecSignal> &signal)
 {
     struct OH_AVCodecCallback cb = {};
     cb.onError = OnError;
@@ -140,7 +145,246 @@ void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, En
     cb.onNeedInputBuffer = InBufferVoid;
     cb.onNewOutputBuffer = (type == EncoderType::SECONDARY) ? OutBufferHandleSecondary : OutBufferHandle;
     signal->isRunning_ = true;
-    ASSERT_EQ(AV_ERR_OK, sample->RegisterCallback(type, cb, signal)) << "RegisterCallback failed";
+    return sample->RegisterCallback(type, cb, signal) == AV_ERR_OK;
+}
+
+void RegisterCallbackWithSignal(shared_ptr<VideoEncDualOutputSample> &sample, EncoderType type,
+                                shared_ptr<VCodecSignal> &signal)
+{
+    ASSERT_TRUE(TryRegisterCallbackWithSignal(sample, type, signal)) << "RegisterCallback failed";
+}
+
+constexpr auto CALLBACK_WAIT_TIMEOUT = std::chrono::seconds(5);
+constexpr auto CALLBACK_BLOCK_CHECK_TIME = std::chrono::milliseconds(100);
+
+enum class CallbackStateOperation {
+    NONE,
+    STOP,
+    FLUSH,
+    RESET,
+};
+
+struct CallbackOperationContext {
+    std::mutex mutex;
+    std::condition_variable cv;
+    EncoderType type{EncoderType::PRIMARY};
+    CallbackStateOperation operation{CallbackStateOperation::NONE};
+    int32_t callbackCount{0};
+    int32_t finishedCount{0};
+    int32_t operationResult{AV_ERR_INVALID_VAL};
+    bool operationCalled{false};
+    bool operationFinished{false};
+    bool blockFirstCallback{false};
+    bool allowFirstCallback{false};
+    std::thread::id callbackThread{};
+};
+
+class CallbackTestSignal : public VCodecSignal {
+public:
+    CallbackTestSignal(const std::shared_ptr<VideoEncDualOutputSample> &sample,
+                       const std::shared_ptr<CallbackOperationContext> &context)
+        : VCodecSignal(sample), context_(context)
+    {
+    }
+
+    std::shared_ptr<CallbackOperationContext> context_;
+};
+
+struct AsyncOperationContext {
+    std::mutex mutex;
+    std::condition_variable cv;
+    int32_t result{AV_ERR_INVALID_VAL};
+    bool finished{false};
+};
+
+int32_t ExecuteCallbackStateOperation(OH_AVCodec *codec, CallbackStateOperation operation)
+{
+    switch (operation) {
+        case CallbackStateOperation::STOP:
+            return OH_VideoEncoder_Stop(codec);
+        case CallbackStateOperation::FLUSH:
+            return OH_VideoEncoder_Flush(codec);
+        case CallbackStateOperation::RESET:
+            return OH_VideoEncoder_Reset(codec);
+        default:
+            return AV_ERR_INVALID_VAL;
+    }
+}
+
+void OnOutputBufferForCallbackTest(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
+{
+    auto *signal = static_cast<CallbackTestSignal *>(userData);
+    if (signal == nullptr || signal->context_ == nullptr) {
+        return;
+    }
+    auto context = signal->context_;
+
+    auto sample = std::static_pointer_cast<VideoEncDualOutputSample>(signal->codecSample_.lock());
+    if (sample != nullptr) {
+        // Release the output through the existing sample path before invoking a state API.
+        (void)sample->HandleOutputFrameByEncoderType(context->type,
+            std::make_shared<CodecBufferInfo>(index, Any(buffer)));
+    }
+
+    CallbackStateOperation operation = CallbackStateOperation::NONE;
+    {
+        std::unique_lock<std::mutex> lock(context->mutex);
+        ++context->callbackCount;
+        context->callbackThread = std::this_thread::get_id();
+        context->cv.notify_all();
+        if (context->blockFirstCallback && context->callbackCount == 1) {
+            context->cv.wait(lock, [context]() { return context->allowFirstCallback; });
+        }
+        if (!context->operationCalled) {
+            context->operationCalled = true;
+            operation = context->operation;
+        }
+    }
+
+    if (operation == CallbackStateOperation::NONE) {
+        std::lock_guard<std::mutex> lock(context->mutex);
+        ++context->finishedCount;
+    } else {
+        int32_t result = ExecuteCallbackStateOperation(codec, operation);
+        std::lock_guard<std::mutex> lock(context->mutex);
+        context->operationResult = result;
+        context->operationFinished = true;
+        ++context->finishedCount;
+    }
+    context->cv.notify_all();
+}
+
+bool WaitForCallback(const std::shared_ptr<CallbackOperationContext> &context)
+{
+    std::unique_lock<std::mutex> lock(context->mutex);
+    return context->cv.wait_for(lock, CALLBACK_WAIT_TIMEOUT, [context]() { return context->operationFinished; });
+}
+
+bool WaitForCallbackCount(const std::shared_ptr<CallbackOperationContext> &context, int32_t count)
+{
+    std::unique_lock<std::mutex> lock(context->mutex);
+    return context->cv.wait_for(lock, CALLBACK_WAIT_TIMEOUT,
+        [context, count]() { return context->callbackCount >= count; });
+}
+
+bool WaitForFinishedCount(const std::shared_ptr<CallbackOperationContext> &context, int32_t count)
+{
+    std::unique_lock<std::mutex> lock(context->mutex);
+    return context->cv.wait_for(lock, CALLBACK_WAIT_TIMEOUT,
+        [context, count]() { return context->finishedCount >= count; });
+}
+
+void AllowBlockedCallback(const std::shared_ptr<CallbackOperationContext> &context)
+{
+    {
+        std::lock_guard<std::mutex> lock(context->mutex);
+        context->allowFirstCallback = true;
+    }
+    context->cv.notify_all();
+}
+
+bool RegisterCallbackForContext(std::shared_ptr<VideoEncDualOutputSample> &sample, EncoderType type,
+                                const std::shared_ptr<CallbackOperationContext> &context)
+{
+    OH_AVCodecCallback callback = {};
+    callback.onError = OnError;
+    callback.onStreamChanged = OnStreamChanged;
+    callback.onNeedInputBuffer = InBufferVoid;
+    callback.onNewOutputBuffer = OnOutputBufferForCallbackTest;
+    std::shared_ptr<VCodecSignal> signal = std::make_shared<CallbackTestSignal>(sample, context);
+    signal->isRunning_ = true;
+    return sample->RegisterCallback(type, callback, signal) == AV_ERR_OK;
+}
+
+bool PreparePrimaryForCallbackOperation(std::shared_ptr<VideoEncDualOutputSample> &sample,
+                                        const std::shared_ptr<CallbackOperationContext> &context)
+{
+    sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                           DEFAULT_FRAME_RATE);
+    context->type = EncoderType::PRIMARY;
+    if (!RegisterCallbackForContext(sample, EncoderType::PRIMARY, context)) {
+        return false;
+    }
+    return sample->Configure(EncoderType::PRIMARY) == AV_ERR_OK &&
+           sample->Prepare(EncoderType::PRIMARY) == AV_ERR_OK && sample->CreateSurface();
+}
+
+bool PrepareSecondaryForCallbackOperation(std::shared_ptr<VideoEncDualOutputSample> &sample,
+                                          const std::shared_ptr<CallbackOperationContext> &context)
+{
+    sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                           DEFAULT_FRAME_RATE);
+    auto primarySignal = std::make_shared<VCodecSignal>(sample);
+    if (!TryRegisterCallbackWithSignal(sample, EncoderType::PRIMARY, primarySignal)) {
+        return false;
+    }
+    if (sample->Configure(EncoderType::PRIMARY) != AV_ERR_OK ||
+        sample->Prepare(EncoderType::PRIMARY) != AV_ERR_OK || !sample->CreateSurface() ||
+        !sample->CreateSecondary()) {
+        return false;
+    }
+    sample->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                           DEFAULT_FRAME_RATE);
+    context->type = EncoderType::SECONDARY;
+    if (!RegisterCallbackForContext(sample, EncoderType::SECONDARY, context)) {
+        return false;
+    }
+    return sample->Configure(EncoderType::SECONDARY) == AV_ERR_OK &&
+           sample->Prepare(EncoderType::SECONDARY) == AV_ERR_OK;
+}
+
+bool RunCallbackStateOperation(const char *mime, CallbackStateOperation operation, EncoderType type)
+{
+    auto sample = std::make_shared<VideoEncDualOutputSample>();
+    if (!sample->CreatePrimary(mime)) {
+        return false;
+    }
+
+    auto context = std::make_shared<CallbackOperationContext>();
+    context->operation = operation;
+    bool prepared = type == EncoderType::PRIMARY
+        ? PreparePrimaryForCallbackOperation(sample, context)
+        : PrepareSecondaryForCallbackOperation(sample, context);
+    if (!prepared) {
+        return false;
+    }
+
+    if (type == EncoderType::SECONDARY && sample->Start(EncoderType::SECONDARY) != AV_ERR_OK) {
+        return false;
+    }
+    if (sample->Start(EncoderType::PRIMARY) != AV_ERR_OK) {
+        return false;
+    }
+
+    bool completed = WaitForCallback(context);
+    int32_t result = AV_ERR_INVALID_VAL;
+    {
+        std::lock_guard<std::mutex> lock(context->mutex);
+        result = context->operationResult;
+    }
+    sample->StopSurfaceInput();
+    if (type == EncoderType::SECONDARY) {
+        (void)sample->Stop(EncoderType::PRIMARY);
+    }
+    (void)sample->Release(EncoderType::SECONDARY);
+    (void)sample->Release(EncoderType::PRIMARY);
+    return completed && result == AV_ERR_OK;
+}
+
+bool WaitForAsyncOperation(AsyncOperationContext &context, std::chrono::milliseconds timeout)
+{
+    std::unique_lock<std::mutex> lock(context.mutex);
+    return context.cv.wait_for(lock, timeout, [&context]() { return context.finished; });
+}
+
+void FinishAsyncOperation(AsyncOperationContext &context, int32_t result)
+{
+    {
+        std::lock_guard<std::mutex> lock(context.mutex);
+        context.result = result;
+        context.finished = true;
+    }
+    context.cv.notify_all();
 }
 } // namespace
 
@@ -833,6 +1077,55 @@ HWTEST_P(TEST_SUIT, Primary_GetInputDescription_Normal_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
     auto desc = dualSample_->GetInputDescription(EncoderType::PRIMARY);
     ASSERT_NE(desc, nullptr);
+}
+
+/**
+ * @tc.name: VideoEncoder_GetInputDescription_PreprocMetadata_001
+ * @tc.desc: Test input description exposes configured crop and downsampling metadata
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, VideoEncoder_GetInputDescription_PreprocMetadata_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    dualSample_->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetCrop(EncoderType::PRIMARY, 10, 10, 629, 479);
+    auto primarySignal = make_shared<VCodecSignal>(dualSample_);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::PRIMARY, primarySignal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::PRIMARY));
+
+    auto primaryDescription = dualSample_->GetInputDescription(EncoderType::PRIMARY);
+    ASSERT_NE(primaryDescription, nullptr);
+    int32_t value = 0;
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(primaryDescription.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, &value));
+    EXPECT_EQ(value, 10);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(primaryDescription.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_TOP, &value));
+    EXPECT_EQ(value, 10);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(primaryDescription.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_RIGHT, &value));
+    EXPECT_EQ(value, 629);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(primaryDescription.get(), OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_BOTTOM,
+                                        &value));
+    EXPECT_EQ(value, 479);
+
+    ASSERT_TRUE(dualSample_->CreateSurface());
+    ASSERT_TRUE(dualSample_->CreateSecondary());
+    dualSample_->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                                DEFAULT_FRAME_RATE);
+    dualSample_->SetDownsampling(EncoderType::SECONDARY, 640, 480);
+    auto secondarySignal = make_shared<VCodecSignal>(dualSample_);
+    RegisterCallbackWithSignal(dualSample_, EncoderType::SECONDARY, secondarySignal);
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, dualSample_->Prepare(EncoderType::SECONDARY));
+
+    auto secondaryDescription = dualSample_->GetInputDescription(EncoderType::SECONDARY);
+    ASSERT_NE(secondaryDescription, nullptr);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(secondaryDescription.get(),
+                                        OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, &value));
+    EXPECT_EQ(value, 640);
+    ASSERT_TRUE(OH_AVFormat_GetIntValue(secondaryDescription.get(),
+                                        OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_HEIGHT, &value));
+    EXPECT_EQ(value, 480);
 }
 
 /**
@@ -2003,8 +2296,8 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_ReleasePrimary_DestroysSecondary_001, Tes
     ASSERT_TRUE(dualSample.CreatePrimary(GetCurMimeType()));
     ASSERT_TRUE(dualSample.CreateSecondary());
     ASSERT_EQ(AV_ERR_OK, dualSample.Release(EncoderType::PRIMARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample.Start(EncoderType::SECONDARY));
-    ASSERT_EQ(AV_ERR_INVALID_STATE, dualSample.Stop(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample.Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample.Stop(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_INVALID_VAL, dualSample.Configure(EncoderType::SECONDARY));
 }
 
@@ -2266,6 +2559,134 @@ HWTEST_P(TEST_SUIT, State_Machine_Dual_SetParam_Crop_001, TestSize.Level1)
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::SECONDARY));
     ASSERT_EQ(AV_ERR_OK, dualSample_->Release(EncoderType::PRIMARY));
     OH_AVFormat_Destroy(format);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_Callback_Stop_Primary_NoDeadlock_001
+ * @tc.desc: Test Stop invoked from the primary encoder callback returns without self-waiting
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, PreprocessorEncoder_Callback_Stop_Primary_NoDeadlock_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    ASSERT_TRUE(RunCallbackStateOperation(GetCurMimeType(), CallbackStateOperation::STOP, EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_Callback_Flush_Secondary_NoDeadlock_001
+ * @tc.desc: Test Flush invoked from the secondary encoder callback returns without self-waiting
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, PreprocessorEncoder_Callback_Flush_Secondary_NoDeadlock_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    ASSERT_TRUE(RunCallbackStateOperation(GetCurMimeType(), CallbackStateOperation::FLUSH, EncoderType::SECONDARY));
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_Callback_Reset_Primary_NoDeadlock_001
+ * @tc.desc: Test Reset invoked from the primary encoder callback returns without self-waiting
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, PreprocessorEncoder_Callback_Reset_Primary_NoDeadlock_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    ASSERT_TRUE(RunCallbackStateOperation(GetCurMimeType(), CallbackStateOperation::RESET, EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_CallbackThreads_PrimarySecondary_Independent_001
+ * @tc.desc: Test a blocked primary callback does not block the secondary callback thread
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, PreprocessorEncoder_CallbackThreads_PrimarySecondary_Independent_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    auto sample = make_shared<VideoEncDualOutputSample>();
+    ASSERT_TRUE(sample->CreatePrimary(GetCurMimeType()));
+
+    auto primaryContext = make_shared<CallbackOperationContext>();
+    auto secondaryContext = make_shared<CallbackOperationContext>();
+    primaryContext->blockFirstCallback = true;
+    primaryContext->type = EncoderType::PRIMARY;
+    secondaryContext->type = EncoderType::SECONDARY;
+
+    sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                           DEFAULT_FRAME_RATE);
+    ASSERT_TRUE(RegisterCallbackForContext(sample, EncoderType::PRIMARY, primaryContext));
+    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::PRIMARY));
+    ASSERT_TRUE(sample->CreateSurface());
+    ASSERT_TRUE(sample->CreateSecondary());
+
+    sample->SetBasicFormat(EncoderType::SECONDARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                           DEFAULT_FRAME_RATE);
+    ASSERT_TRUE(RegisterCallbackForContext(sample, EncoderType::SECONDARY, secondaryContext));
+    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Start(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Start(EncoderType::PRIMARY));
+
+    bool primaryCalled = WaitForCallbackCount(primaryContext, 1);
+    bool secondaryCalled = WaitForCallbackCount(secondaryContext, 1);
+    AllowBlockedCallback(primaryContext);
+
+    ASSERT_TRUE(primaryCalled);
+    ASSERT_TRUE(secondaryCalled);
+    {
+        std::lock_guard<std::mutex> primaryLock(primaryContext->mutex);
+        std::lock_guard<std::mutex> secondaryLock(secondaryContext->mutex);
+        EXPECT_NE(primaryContext->callbackThread, secondaryContext->callbackThread);
+    }
+    ASSERT_TRUE(WaitForFinishedCount(primaryContext, 1));
+    sample->StopSurfaceInput();
+    ASSERT_EQ(AV_ERR_OK, sample->Stop(EncoderType::SECONDARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Stop(EncoderType::PRIMARY));
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_Destroy_WaitsRunningCallback_001
+ * @tc.desc: Test Destroy waits for a running asynchronous callback before releasing encoder resources
+ * @tc.type: FUNC
+ */
+HWTEST_P(TEST_SUIT, PreprocessorEncoder_Destroy_WaitsRunningCallback_001, TestSize.Level1)
+{
+    IsSupportFastImage();
+    auto sample = make_shared<VideoEncDualOutputSample>();
+    ASSERT_TRUE(sample->CreatePrimary(GetCurMimeType()));
+
+    auto context = make_shared<CallbackOperationContext>();
+    context->type = EncoderType::PRIMARY;
+    context->blockFirstCallback = true;
+    sample->SetBasicFormat(EncoderType::PRIMARY, DEFAULT_WIDTH, DEFAULT_HEIGHT, AV_PIXEL_FORMAT_NV12,
+                           DEFAULT_FRAME_RATE);
+    ASSERT_TRUE(RegisterCallbackForContext(sample, EncoderType::PRIMARY, context));
+    ASSERT_EQ(AV_ERR_OK, sample->Configure(EncoderType::PRIMARY));
+    ASSERT_EQ(AV_ERR_OK, sample->Prepare(EncoderType::PRIMARY));
+    ASSERT_TRUE(sample->CreateSurface());
+    ASSERT_EQ(AV_ERR_OK, sample->Start(EncoderType::PRIMARY));
+    ASSERT_TRUE(WaitForCallbackCount(context, 1));
+    sample->StopSurfaceInput();
+
+    auto destroyContext = make_shared<AsyncOperationContext>();
+    std::thread destroyThread([sample, destroyContext]() {
+        FinishAsyncOperation(*destroyContext, sample->Release(EncoderType::PRIMARY));
+    });
+    EXPECT_FALSE(WaitForAsyncOperation(*destroyContext, CALLBACK_BLOCK_CHECK_TIME));
+    AllowBlockedCallback(context);
+    bool destroyFinished = WaitForAsyncOperation(*destroyContext, CALLBACK_WAIT_TIMEOUT);
+    EXPECT_TRUE(destroyFinished);
+    if (!destroyFinished) {
+        destroyThread.detach();
+        return;
+    }
+    destroyThread.join();
+    int32_t destroyResult = AV_ERR_INVALID_VAL;
+    {
+        std::lock_guard<std::mutex> lock(destroyContext->mutex);
+        destroyResult = destroyContext->result;
+    }
+    EXPECT_EQ(AV_ERR_OK, destroyResult);
 }
 
 int main(int argc, char **argv)

@@ -45,6 +45,7 @@ mpeg4_demuxer_plugin_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_reference_parser.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_sample_memory.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_sample_helper.cpp",
+  "$av_codec_root_dir/services/media_engine/plugins/demuxer/mpeg4_demuxer/mpeg4_sample_helper_index.cpp",
   "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
   "$av_codec_root_dir/test/unittest/common/statistics_event_reporter_mock.cpp",
 ]
@@ -54,6 +55,7 @@ config("mpeg4_demuxer_plugin_test_cfg") {
     "HST_ANY_WITH_NO_RTTI",
     "MEDIA_OHOS",
     "TESTING",
+    "USE_FF_DEMUXER",
   ]
 
   cflags = [

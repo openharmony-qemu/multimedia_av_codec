@@ -86,6 +86,7 @@ public:
         bool isFmp4 = false) override;
     bool IsLiveEnd() override;
     std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override;
+    bool HasExplicitIv(uint64_t keyIndex) override;
 private:
     bool IsLiveTimeShiftSeekable();
     void UpdateMasterInfo(bool isPreParse);

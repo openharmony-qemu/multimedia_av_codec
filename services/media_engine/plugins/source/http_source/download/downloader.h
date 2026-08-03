@@ -184,18 +184,18 @@ private:
     HeaderInfo headerInfo_;
     std::map<std::string, std::string> httpHeader_;
     RequestInfo requestInfo_ {};
-    bool isEos_ {false}; // file download finished
+    std::atomic<bool> isEos_ {false}; // file download finished
     int64_t startPos_ {0};
     int64_t endPos_ {-1};
     int64_t startTimePos_ {0};
-    bool isDownloading_ {false};
+    std::atomic<bool> isDownloading_ {false};
     bool requestWholeFile_ {false};
     int requestSize_ {0};
     int preRequestSize_ {0};
-    int retryTimes_ {0};
+    std::atomic<int> retryTimes_ {0};
     int32_t clientError_ {0};
     int32_t serverError_ {0};
-    bool shouldSaveData_ {true};
+    std::atomic<bool> shouldSaveData_ {true};
     int64_t downloadStartTime_ {0};
     int64_t downloadDoneTime_ {0};
     int64_t downloadStartSteadyTime_ {0};  // steady_clock时间，用于DFX上报
@@ -232,6 +232,7 @@ public:
     bool Seek(int64_t offset);
     void Cancel();
     bool Retry(const std::shared_ptr<DownloadRequest>& request);
+    bool RetryCore(const std::shared_ptr<DownloadRequest>& request);
     void SetRequestSize(size_t downloadRequestSize);
     void GetIp(std::string &ip);
     void SetAppUid(int32_t appUid);
@@ -307,7 +308,7 @@ private:
     bool isNotBlock_ {false};
     std::string appPreviousRequestUrl_ {};
     std::string contentType_;
-    bool isContentTypeUpdated_{false};
+    std::atomic<bool> isContentTypeUpdated_{false};
     ConditionVariable sleepCond_;
     FairMutex sleepMutex_;
     bool isFirstDownload_ {false};

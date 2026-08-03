@@ -47,12 +47,36 @@ void clearBufferqueue(std::queue<OH_AVCodecBufferAttr> &q)
 }
 } // namespace
 
+void VEncNdkSample::JoinLoops()
+{
+    isRunning_.store(false);
+    if (signal_ != nullptr) {
+        {
+            unique_lock<mutex> lock(signal_->inMutex_);
+            signal_->inCond_.notify_all();
+        }
+        {
+            unique_lock<mutex> lock(signal_->outMutex_);
+            signal_->outCond_.notify_all();
+        }
+    }
+    if (inputLoop_ != nullptr && inputLoop_->joinable()) {
+        inputLoop_->join();
+        inputLoop_ = nullptr;
+    }
+    if (outputLoop_ != nullptr && outputLoop_->joinable()) {
+        outputLoop_->join();
+        outputLoop_ = nullptr;
+    }
+}
+
 VEncNdkSample::~VEncNdkSample()
 {
     if (SURF_INPUT && nativeWindow) {
         OH_NativeWindow_DestroyNativeWindow(nativeWindow);
         nativeWindow = nullptr;
     }
+    JoinLoops();
     Release();
 }
 
@@ -682,12 +706,12 @@ int32_t VEncNdkSample::CheckResult(bool isRandomEosSuccess, int32_t pushResult)
 {
     if (isRandomEosSuccess) {
         if (pushResult == 0) {
-            errCount = errCount + 1;
+            errCount += 1;
             cout << "push input after eos should be failed!  pushResult:" << pushResult << endl;
         }
         return -1;
     } else if (pushResult != 0) {
-        errCount = errCount + 1;
+        errCount += 1;
         cout << "push input data failed, error:" << pushResult << endl;
         return -1;
     }
@@ -794,7 +818,7 @@ int32_t VEncNdkSample::CheckAttrFlag(OH_AVCodecBufferAttr attr)
     if (attr.flags == AVCODEC_BUFFER_FLAGS_CODEC_DATA) {
         cout << "enc AVCODEC_BUFFER_FLAGS_CODEC_DATA" << attr.pts << endl;
     }
-    outCount = outCount + 1;
+    outCount += 1;
     return 0;
 }
 
@@ -849,7 +873,7 @@ void VEncNdkSample::OutputFunc()
         
         if (OH_VideoEncoder_FreeOutputData(venc_, index) != AV_ERR_OK) {
             cout << "Fatal: ReleaseOutputBuffer fail" << endl;
-            errCount = errCount + 1;
+            errCount += 1;
         }
         if (errCount > 0) {
             OutputFuncFail();

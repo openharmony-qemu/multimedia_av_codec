@@ -108,6 +108,9 @@ int AVCodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Mess
             ret = AVCS_ERR_OK;
             OnReportStatisticsEvent(data, reply);
             break;
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::VIDEOCALL):
+            ret = OnVideoCall(data, reply);
+            break;
         default:
             AVCODEC_LOGW("AVCodecServiceStub: no member func supporting, applying default process");
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
@@ -229,6 +232,27 @@ void AVCodecServiceStub::OnReportStatisticsEvent(MessageParcel &data, MessagePar
     CHECK_AND_RETURN_LOG(meta.FromParcel(data), "Read statistics event meta failed");
 
     ReportStatisticsEvent(static_cast<StatisticsEventType>(eventType), meta);
+}
+
+int32_t AVCodecServiceStub::OnVideoCall(MessageParcel &data, MessageParcel &reply)
+{
+    auto tokenId = IPCSkeleton::GetCallingTokenID();
+    auto tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    CHECK_AND_RETURN_RET_LOG(tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL,
+                             AVCS_ERR_INVALID_OPERATION, "Only native|shell tokens allowed(%{public}d)",
+                             static_cast<int32_t>(tokenType));
+    std::string bundleName;
+    bool isFloatingWindow;
+    bool readRet = data.ReadString(bundleName);
+    CHECK_AND_RETURN_RET_LOG(readRet, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Failed to read bundleName from data");
+    readRet = data.ReadBool(isFloatingWindow);
+    CHECK_AND_RETURN_RET_LOG(readRet, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Failed to read isFloatingWindow from data");
+    int32_t result = VideoCallNotifyPiPState(bundleName, isFloatingWindow);
+    (void)reply.WriteInt32(result);
+
+    return AVCS_ERR_OK;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

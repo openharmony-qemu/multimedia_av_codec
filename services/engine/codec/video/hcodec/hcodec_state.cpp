@@ -209,7 +209,7 @@ void HCodec::BaseState::OnErrorEventHandler(uint32_t omxError)
             if (codec_->unsupportHappened_) {
                 return;
             }
-            errorCode = AVCS_ERR_MINSSING_PARAMETER_SETS;
+            errorCode = AVCS_ERR_MISSING_PARAMETER_SETS;
             faultType = "XPS_LOST";
             break;
         default:

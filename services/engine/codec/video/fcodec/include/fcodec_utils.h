@@ -16,14 +16,11 @@
 #ifndef FCODEC_UTILS_H
 #define FCODEC_UTILS_H
 
-#ifndef EMULATOR_ENABLED
 #include "v2_0/cm_color_space.h"
 #include "v2_0/buffer_handle_meta_key_type.h"
 #include "meta/video_types.h"
-#endif
 #include "codec_utils.h"
 
-#ifndef EMULATOR_ENABLED
 namespace {
 using namespace OHOS::HDI::Display::Graphic::Common::V2_0;
 using ColorPrimary = OHOS::Media::Plugins::ColorPrimary;
@@ -257,16 +254,51 @@ int32_t CMRangeToBoolean(CM_Range range)
     }
 }
 } // namespace
-#endif
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
-bool IsValidRawVideoPixelFormat(int32_t val)
+#ifdef BUILD_ENG_VERSION
+constexpr uint32_t PATH_MAX_LEN = 256;
+constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
+
+static std::string VideoPixelFormatToString(VideoPixelFormat fmt)
+{
+    switch (fmt) {
+        case VideoPixelFormat::YUV420P:
+            return "YUV420P";
+        case VideoPixelFormat::YUVI420:
+            return "YUVI420";
+        case VideoPixelFormat::NV12:
+            return "NV12";
+        case VideoPixelFormat::NV21:
+            return "NV21";
+        case VideoPixelFormat::RGBA:
+            return "RGBA";
+        case VideoPixelFormat::RGBA1010102:
+            return "RGBA1010102";
+        case VideoPixelFormat::SURFACE_FORMAT:
+            return "SURFACE_FORMAT";
+        default:
+            return "UNKNOWN";
+    }
+}
+#endif // BUILD_ENG_VERSION
+
+static bool IsValidRawVideoPixelFormat(int32_t val)
 {
     return val >= static_cast<int32_t>(RawVideoPixelFormat::YUV420P) &&
            val <= static_cast<int32_t>(RawVideoPixelFormat::RGBA);
 }
+
+static std::map<RawVideoPixelFormat, AVPixelFormat> g_convertFfmpegPixFmt = {
+    {RawVideoPixelFormat::YUV420P, AVPixelFormat::AV_PIX_FMT_YUV420P},
+    {RawVideoPixelFormat::NV12, AVPixelFormat::AV_PIX_FMT_NV12},
+    {RawVideoPixelFormat::NV21, AVPixelFormat::AV_PIX_FMT_NV21},
+    {RawVideoPixelFormat::RGBA, AVPixelFormat::AV_PIX_FMT_RGBA},
+};
+
+#define DMA_BUF_SET_LEAK_TYPE _IOW(DMA_BUF_BASE, 5, const char *)
 } // namespace Codec
 } // namespace MediaAVCodec
 } // namespace OHOS

@@ -145,9 +145,6 @@ string g_truehdPath = TEST_FILE_PATH + string("truehd.thd");
 
 void DemuxerUnitTest::SetUpTestCase(void)
 {
-#ifndef USE_MPEG4_DEMUXER
-    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.skip", "1");
-#endif
     server = make_unique<FileServerDemo>();
     server->StartServer();
     cout << "start" << endl;
@@ -156,9 +153,6 @@ void DemuxerUnitTest::SetUpTestCase(void)
 void DemuxerUnitTest::TearDownTestCase(void)
 {
     server->StopServer();
-#ifndef USE_MPEG4_DEMUXER
-    OHOS::system::SetParameter("Mpeg4DemuxerPlugin.skip", "0");
-#endif
 }
 
 void DemuxerUnitTest::SetUp(void)
@@ -312,7 +306,7 @@ void DemuxerUnitTest::ReadData()
     ASSERT_TRUE(SetInitValue());
     while (!isEOS(eosFlag_)) {
         for (auto idx : selectedTrackIds_) {
-            demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
+            ret_ = demuxer_->ReadSample(idx, sharedMem_, &info_, flag_);
             if (ret_ != AV_ERR_OK) {
                 break;
             }

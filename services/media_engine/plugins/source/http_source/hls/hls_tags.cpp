@@ -17,6 +17,7 @@
 #include <sstream>
 #include <stack>
 #include <utility>
+#define HST_LOG_TAG "HlsTags"
 #include "hls_tags.h"
 #include <regex>
 #include <utility>
@@ -30,8 +31,11 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "HiStreamer" };
 constexpr size_t EXT_X_DEFINE_LEN = 14;
 constexpr size_t MIN_MATCH_GROUPS = 3;
+constexpr size_t QUOTE_PAIR_LEN = 2; // leading and trailing quotes
+constexpr size_t HEX_ENCODE_LEN = 2; // percent-encoded hex digit count after '%'
 }
 struct {
     const char* name;
@@ -73,6 +77,10 @@ uint64_t Attribute::Decimal() const
     is.imbue(std::locale("C"));
     uint64_t ret;
     is >> ret;
+    if (is.fail()) {
+        MEDIA_LOG_W("HLS Decimal parse failed, value: %{public}s", value_.c_str());
+        return 0;
+    }
     return ret;
 }
 
@@ -82,6 +90,10 @@ double Attribute::FloatingPoint() const
     is.imbue(std::locale("C"));
     double ret;
     is >> ret;
+    if (is.fail()) {
+        MEDIA_LOG_W("HLS FloatingPoint parse failed, value: %{public}s", value_.c_str());
+        return 0;
+    }
     return ret;
 }
 
@@ -131,7 +143,10 @@ std::pair<std::size_t, std::size_t> Attribute::GetByteRange() const
     if (value_.find("\"") == std::string::npos) {
         newValue = value_;
     } else {
-        newValue = value_.substr(1, value_.size() - 2); // 2
+        if (value_.size() < QUOTE_PAIR_LEN) {
+            return {0, 0};
+        }
+        newValue = value_.substr(1, value_.size() - QUOTE_PAIR_LEN);
     }
     std::istringstream is(newValue);
     is.imbue(std::locale("C"));
@@ -519,12 +534,10 @@ static std::string ReplacePlaceholders(const std::string& s,
 
 static bool IsHexValid(const std::string& hex)
 {
-    if (hex.empty()) {
-        return true;
+    if (hex.size() != HEX_ENCODE_LEN) {
+        return false;
     }
-    auto it = std::find_if(hex.begin(), hex.end(),
-        [](char c) {return !std::isxdigit(static_cast<unsigned char>(c));});
-    return it == hex.end();
+    return std::isxdigit(static_cast<unsigned char>(hex[0])) && std::isxdigit(static_cast<unsigned char>(hex[1]));
 }
 
 static void UriInsert(std::string& result, std::string& hex, int base)
@@ -542,7 +555,7 @@ static std::string UriDecode(const std::string& uri)
     result.reserve(uri.size());
     uint64_t i = 0;
     while (i < uri.size()) {
-        if (uri[i] == '%' && i + 2 <= uri.size()) { // 2:“%20”
+        if (uri[i] == '%' && i + 3 <= uri.size()) { // 3:“%20”
             std::string hex = uri.substr(i + 1, 2); // 2
             if (IsHexValid(hex)) {
                 UriInsert(result, hex, 16); // 16:hex

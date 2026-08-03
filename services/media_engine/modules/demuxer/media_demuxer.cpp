@@ -651,13 +651,15 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
         if (duration_ != Plugins::HST_TIME_NONE) {
             MEDIA_LOG_I("Hls: " PUBLIC_LOG_D64, duration_);
             int64_t sourceDurationMs = Plugins::HstTime2Us(duration_);
+            FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
             mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(sourceDurationMs);
             if (sourceDurationMs < 0) {
-                sourceDurationMs *= -1;
+                sourceDurationMs = (sourceDurationMs == INT64_MIN) ? INT64_MAX : -sourceDurationMs;
             }
             (void)source_->SetMediaDuration(sourceDurationMs);
         }
         MEDIA_LOG_I("SeekToTime");
+        FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
         return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
     }
     
@@ -667,17 +669,20 @@ bool MediaDemuxer::GetDuration(int64_t& durationMs)
         if (duration_ != Plugins::HST_TIME_NONE) {
             MEDIA_LOG_I("Not hls: " PUBLIC_LOG_D64, duration_);
             int64_t sourceDurationMs = Plugins::HstTime2Us(duration_);
+            FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
             mediaMetaData_.globalMeta->Set<Tag::MEDIA_DURATION>(sourceDurationMs);
             if (sourceDurationMs < 0) {
-                sourceDurationMs *= -1;
+                sourceDurationMs = (sourceDurationMs == INT64_MIN) ? INT64_MAX : -sourceDurationMs;
             }
             (void)source_->SetMediaDuration(sourceDurationMs);
         }
         MEDIA_LOG_I("Seekble");
+        FALSE_RETURN_V_MSG_E(mediaMetaData_.globalMeta != nullptr, false, "globalMeta is nullptr");
         return mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs);
     }
     MEDIA_LOG_I("Other");
-    if (mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs)) {
+    if (mediaMetaData_.globalMeta != nullptr &&
+        mediaMetaData_.globalMeta->Get<Tag::MEDIA_DURATION>(durationMs)) {
         (void)source_->SetMediaDuration(durationMs);
         return true;
     }
@@ -1168,12 +1173,13 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running");
+    FALSE_RETURN_V_MSG_E(source != nullptr, Status::ERROR_INVALID_PARAMETER, "Source is nullptr");
 
     if (sampleQueueController_) {
         sampleQueueController_->SetBufferingDuration(source->GetPlayStrategy());
     }
     isPrepared_.store(false);
-    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER, "Source is nullptr");
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, Status::ERROR_INVALID_PARAMETER, "source_ is nullptr");
     source_->SetCallback(shared_from_this());
     auto res = source_->SetSource(source);
     FALSE_RETURN_V_MSG_E(res == Status::OK, res, "Plugin set source failed");
@@ -1359,7 +1365,6 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
     FALSE_RETURN_V_MSG_E(IsValidTrackId(trackId) &&
         static_cast<size_t>(trackId) < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Invalid track");
-    useBufferQueue_ = true;
     MEDIA_LOG_I("Set bufferQueue for track " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running");
     FALSE_RETURN_V_MSG_E(producer != nullptr, Status::ERROR_INVALID_PARAMETER, "BufferQueue is nullptr");
@@ -1381,6 +1386,7 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
         }
         bufferQueueMap_.insert(std::pair<int32_t, sptr<AVBufferQueueProducer>>(trackId, producer));
         bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(trackId, nullptr));
+        useBufferQueue_ = true;
         MEDIA_LOG_I("Set bufferQueue successfully");
         GenerateDfxBufferQueue(trackId);
         if (GetEnableSampleQueueFlag()) {
@@ -1429,6 +1435,8 @@ Status MediaDemuxer::InnerSelectTrack(int32_t trackId)
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Demuxer plugin is nullptr");
         innerTrackID = demuxerPluginManager_->GetTmpInnerTrackIDByTrackID(trackId);
     } else {
+        FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr,
+            Status::ERROR_INVALID_PARAMETER, "demuxerPluginManager_ is nullptr");
         pluginTemp = demuxerPluginManager_->GetPluginByStreamID(demuxerPluginManager_->GetStreamIDByTrackID(trackId));
         FALSE_RETURN_V_MSG_E(pluginTemp != nullptr, Status::ERROR_INVALID_PARAMETER, "Demuxer plugin is nullptr");
     }
@@ -2078,6 +2086,8 @@ Status MediaDemuxer::HandleSelectSubtitleStream(int64_t seekTime, Plugins::SeekM
 
 Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
+    FALSE_RETURN_V_MSG_E(seekTime <= (INT64_MAX / US_TO_MS),
+                         Status::ERROR_INVALID_DATA, "Millisecond is too large");
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     ProcessHistoryOnSeek();
     Status ret;
@@ -3050,6 +3060,7 @@ void MediaDemuxer::DriveInterstitialTicks()
 void MediaDemuxer::HandleTimedMetadataEvent(const Plugins::PluginEvent& event)
 {
     MEDIA_LOG_D("HandleTimedMetadataEvent");
+    FALSE_RETURN_MSG(Any::IsSameTypeWith<std::shared_ptr<MediaAVCodec::AVTimedMetaData>>(event.param), "is not same");
 
     auto controller = interstitialController_.lock();
     if (controller && controller->IsPlayingInterstitial()) {
@@ -4369,8 +4380,10 @@ void MediaDemuxer::HandleNotAllTrackEos(int32_t trackId)
     bool videoQueueExists = sampleQueueMap_.find(videoTrackId_) != sampleQueueMap_.end()
         && sampleQueueMap_[videoTrackId_] != nullptr;
     // if sampleQueue reached the limit.
-    if (GetTrackIsBuffering(trackId) && (!taskMap_[audioTrackId_]->IsTaskRunning() ||
-        !taskMap_[videoTrackId_]->IsTaskRunning() ||
+    bool audioTaskExists = taskMap_.find(audioTrackId_) != taskMap_.end() && taskMap_[audioTrackId_] != nullptr;
+    bool videoTaskExists = taskMap_.find(videoTrackId_) != taskMap_.end() && taskMap_[videoTrackId_] != nullptr;
+    if (GetTrackIsBuffering(trackId) && ((audioTaskExists && !taskMap_[audioTrackId_]->IsTaskRunning()) ||
+        (videoTaskExists && !taskMap_[videoTrackId_]->IsTaskRunning()) ||
         (audioQueueExists &&
             sampleQueueMap_[audioTrackId_]->GetFilledBufferSize() >= SampleQueue::DEFAULT_SAMPLE_QUEUE_SIZE - 1) ||
         (videoQueueExists &&
@@ -4542,7 +4555,8 @@ Status MediaDemuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> s
         sample->memory_->SetSize(0);
         return Status::END_OF_STREAM;
     }
-    Status ret = InnerReadSample(static_cast<int32_t>(trackIndex), sample, true);
+    Status ret = InnerReadSample(static_cast<int32_t>(trackIndex), sample,
+        readSampleMode_ == ReadSampleMode::READ_SAMPLE_SYNC);
     if (ret == Status::OK || ret == Status::END_OF_STREAM) {
         if (sample->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) {
             eosMap_[trackIndex] = true;
@@ -4822,6 +4836,16 @@ void MediaDemuxer::OnDfxEvent(const Plugins::PluginDfxEvent &event)
     auto it = DFX_EVENT_MAP.find(event.type);
     FALSE_RETURN_MSG(it != DFX_EVENT_MAP.end(), "No mapped dfx event type, src type %{public}d", event.type);
     eventReceiver_->OnDfxEvent({ it->second.first, it->second.second, event.param });
+}
+
+void MediaDemuxer::SetReadSampleMode(ReadSampleMode readSampleMode)
+{
+    readSampleMode_ = readSampleMode;
+}
+
+void MediaDemuxer::SetReadSampleTimeout(uint32_t timeoutMs)
+{
+    timeout_ = timeoutMs;
 }
 
 Status MediaDemuxer::OptimizeDecodeSlow(bool isDecodeOptimizationEnabled)
@@ -5296,7 +5320,7 @@ Status MediaDemuxer::RequestDstBuffer(int32_t trackId, int32_t size, std::shared
 Status MediaDemuxer::CopyAndPushBufferBySlices(int32_t trackId, std::shared_ptr<AVBuffer> &srcBuffer,
     std::shared_ptr<AVBuffer> &dstBuffer, int32_t sliceSize)
 {
-    auto srcBufferSize = sliceSize == 0 ? srcBuffer->memory_->GetSize() : sliceSize;
+    auto srcBufferSize = sliceSize == 0 ? srcBuffer->memory_->GetSize() - srcBuffer->memory_->GetOffset() : sliceSize;
     int32_t copySize = std::min(dstBuffer->memory_->GetCapacity(), srcBufferSize);
     MEDIA_LOG_D("prepare to copy: %{public}d, dest cap: %{public}d, src buf id: %{public}" PRIu64,
         copySize, dstBuffer->memory_->GetCapacity(), srcBuffer->GetUniqueId());

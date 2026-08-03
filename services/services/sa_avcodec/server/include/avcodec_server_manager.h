@@ -51,6 +51,14 @@ public:
     std::unordered_map<std::string, uint32_t> GetHDecUsageStatistics();
     void SetInstanceInfoByInstanceId(int32_t instanceId, const InstanceInfo &info);
     std::vector<pid_t> GetActiveSecureDecoderPids();
+    using InstanceInfoCallback = std::function<void(const CodecParamInfo &codecParam,
+                                                   const std::string &forwardCallerName,
+                                                   const std::string &callerName)>;
+    std::optional<CodecParamInfo> GetAndUpdateCodecParmInfoByProcessName(
+        const std::string &bundleName, const bool isFloatingWindow);
+    void UpdateCodecParmInfoByInstanceId(int32_t instanceId, const InstanceInfo &info);
+    void RegisterCallback(InstanceInfoCallback callback);
+    void UnRegisterCallback();
 
 private:
     void SetCriticalInner(const bool isKeyService);
@@ -98,6 +106,7 @@ private:
     std::atomic<bool> memMgrStarted_ = false;
     bool setCriticalFailed_ = false;
     bool lastSetCriticalValue_ = false;
+    InstanceInfoCallback callback_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

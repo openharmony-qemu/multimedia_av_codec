@@ -84,6 +84,7 @@ ohos_shared_library("hcodec") {
     "hiview:xperfservice_client",
     "init:libbegetutil",
     "ipc:ipc_single",
+    "json:nlohmann_json_static",
     "media_foundation:media_foundation",
     "memory_utils:libdmabufheap",
     "openmax:libopenmax_static",

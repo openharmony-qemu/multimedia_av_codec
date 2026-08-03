@@ -16,7 +16,6 @@
 #include <algorithm>
 #include <array>
 #include <limits>
-#include <set>
 #include "common/log.h"
 #include "meta/media_types.h"
 #include "avc_parser_impl.h"

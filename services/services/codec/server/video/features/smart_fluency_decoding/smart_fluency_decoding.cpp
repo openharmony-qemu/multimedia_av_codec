@@ -51,6 +51,18 @@ namespace MediaAVCodec {
 using namespace Media;
 namespace SFD {
 
+bool SmartFluencyDecoding::ShouldReportDfx() const
+{
+    std::lock_guard<std::mutex> lock(configMutex_);
+    return strategy_ ? strategy_->ShouldReportDfx() : false;
+}
+
+bool SmartFluencyDecoding::RequiresMvAnalysis() const
+{
+    std::lock_guard<std::mutex> lock(configMutex_);
+    return strategy_ ? strategy_->RequiresMvAnalysis() : false;
+}
+
 int32_t SmartFluencyDecoding::Initialize(const SFDConfig& config)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(config.width > 0 && config.height > 0, AVCS_ERR_INVALID_VAL,

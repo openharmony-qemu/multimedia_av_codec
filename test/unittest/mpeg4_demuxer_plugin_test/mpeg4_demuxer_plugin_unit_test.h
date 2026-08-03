@@ -135,7 +135,7 @@ protected:
         uint32_t failDelayMs = 0);
     void ResetPlugin(std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd);
     void InitPlugin(const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin, int& fd,
-        MediaInfo& mediaInfo);
+        MediaInfo& mediaInfo, const std::shared_ptr<Meta>& configs = nullptr);
     void InitPluginURI(const std::string& filePath, const std::shared_ptr<BaseDemuxerPlugin>& plugin,
         MediaInfo& mediaInfo);
     void InitWeakNetworkPlugin(const std::string& filePath, const WeakNetworkPluginContext& context,

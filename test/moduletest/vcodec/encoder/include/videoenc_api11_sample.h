@@ -194,6 +194,7 @@ public:
     int32_t OpenFileFail();
     int32_t CheckAttrFlag(OH_AVCodecBufferAttr attr);
     void OutputFuncFail();
+    bool OpenOutputFile();
     void OutputFunc();
     void SyncOutputFunc();
     uint32_t FlushSurf(OHNativeWindowBuffer *ohNativeWindowBuffer, OH_NativeBuffer *nativeBuffer);
@@ -233,13 +234,13 @@ public:
     bool isEncoder = true;
     const OH_NativeBuffer_Format *pixlFormats = nullptr;
     uint32_t pixlFormatNum = 0;
-    int firstCallBackKey = 0;
-    int onStreamChangedKey = 0;
+    std::atomic<int32_t> firstCallBackKey {0};
+    std::atomic<int32_t> onStreamChangedKey {0};
     VEncAPI11Signal *signal_;
-    uint32_t errCount = 0;
+    std::atomic<uint32_t> errCount {0};
     bool enableForceIDR = false;
-    uint32_t outCount = 0;
-    uint32_t frameCount = 0;
+    std::atomic<uint32_t> outCount {0};
+    std::atomic<uint32_t> frameCount {0};
     uint32_t switchParamsTimeSec = 3;
     uint32_t temporalGopSize = 4;
     bool sleepOnFPS = false;
@@ -256,7 +257,7 @@ public:
     bool enableLTR = false;
     bool enableLowLatency = false;
     bool getInputBufferIndexRepeat = false;
-    bool abnormalIndexValue = false;
+    std::atomic<bool> abnormalIndexValue {false};
     bool getOutputBufferIndexNoExisted = false;
     int64_t encode_count = 0;
     bool enable_random_eos = false;
@@ -265,6 +266,8 @@ public:
     int64_t start_time = 0;
     int64_t end_time = 0;
     LtrTestParameter ltrParam;
+    int32_t useLtrIndex_ {0};
+    bool useLtrOnce_ {false};
     bool TEMPORAL_CONFIG = false;
     bool TEMPORAL_ENABLE = false;
     bool TEMPORAL_JUMP_MODE = false;
@@ -290,7 +293,7 @@ public:
     uint32_t inCount = 0;
     int32_t enbleSyncMode = 0;
     int32_t enableBFrameMode = 0;
-    int32_t layerId = 0;
+    std::atomic<int32_t> layerId {0};
     int64_t syncInputWaitTime = -1;
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
@@ -305,13 +308,16 @@ public:
     int64_t DEFAULT_MAX_BITERATE = 4000000;
     bool enableRoi = false;
     bool setParameterFail = false;
-    bool dualEos = false;
+    std::atomic<bool> dualEos {false};
     bool repeatCreateSecondary = false;
     bool needStopInLoop = false;
     bool noStop = false;
     bool enableDualRoi = false;
 private:
+    void JoinLoops();
     std::unique_ptr<std::ifstream> inFile_;
+    FILE *outFile_ = nullptr;
+    FILE *outFileSec_ = nullptr;
     std::unique_ptr<std::thread> inputLoop_;
     std::unique_ptr<std::thread> outputLoop_;
     std::unordered_map<uint32_t, OH_AVBuffer *> inBufferMap_;

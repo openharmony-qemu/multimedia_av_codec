@@ -86,5 +86,13 @@ void AesDecryptor::Decrypt(uint8_t *in, uint8_t *out, uint32_t len)
     AES_cbc_encrypt(in, out, len, &aesKey_, iv_, AES_DECRYPT);
 }
 
+void AesDecryptor::SetIv(const uint8_t* iv, size_t ivLen)
+{
+    if (!iv || ivLen < BLOCK_LEN) {
+        return;
+    }
+    NZERO_LOG(memcpy_s(iv_, BLOCK_LEN, iv, BLOCK_LEN));
+    NZERO_LOG(memcpy_s(initIv_, BLOCK_LEN, iv, BLOCK_LEN));
+}
 } // namespace Media
 } // namespace OHOS

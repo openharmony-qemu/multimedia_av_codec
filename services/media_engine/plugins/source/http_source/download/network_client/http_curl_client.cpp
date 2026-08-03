@@ -62,7 +62,7 @@ std::string InsertCharBefore(std::string input, char from, char preChar, char ne
     std::size_t pos = output.find(from);
     std::size_t length = output.length();
     while (pos >= 0 && length >= 1 && pos <= length - 1 && pos != std::string::npos) {
-        char nextCharTemp = pos >= length ? '\0' : output[pos + 1];
+        char nextCharTemp = (pos >= length - 1) ? '\0' : output[pos + 1];
         if (nextChar == '\0' || nextCharTemp == '\0' || nextCharTemp != nextChar) {
             output.replace(pos, 1, str);
             length += (strSize - 1);
@@ -220,6 +220,12 @@ void HttpCurlClient::HttpHeaderParse(const std::map<std::string, std::string>& h
         MEDIA_LOG_D("Set http header fail, http header is empty.");
         return;
     }
+    AutoLock lock(mutex_);
+    HttpHeaderParseLocked(httpHeader);
+}
+
+void HttpCurlClient::HttpHeaderParseLocked(const std::map<std::string, std::string>& httpHeader)
+{
     for (auto iter : httpHeader) {
         std::string setKey = iter.first;
         std::string setValue = iter.second;
@@ -230,7 +236,7 @@ void HttpCurlClient::HttpHeaderParse(const std::map<std::string, std::string>& h
             headerList_ = curl_slist_append(headerList_, str);
         } else {
             MEDIA_LOG_E("Set httpHeader fail, the length of key or value is too long, more than 512.");
-            MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: " PUBLIC_LOG_S, setKey.c_str(), setValue.c_str());
+            MEDIA_LOG_E("key: " PUBLIC_LOG_S " value: %{private}s", setKey.c_str(), setValue.c_str());
         }
     }
 }
@@ -249,7 +255,10 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
     }
 
     if (isFirstOpen_) {
-        HttpHeaderParse(httpHeader);
+        AutoLock lock(mutex_);
+        if (!httpHeader.empty()) {
+            HttpHeaderParseLocked(httpHeader);
+        }
         isFirstOpen_ = false;
     }
     MEDIA_LOG_I("Open client out");
@@ -278,10 +287,10 @@ Status HttpCurlClient::Close(bool isAsync)
             curl_slist_free_all(headerList_);
             headerList_ = nullptr;
         }
-    }
-    ipFlag_ = false;
-    if (!ip_.empty()) {
-        ip_.clear();
+        ipFlag_ = false;
+        if (!ip_.empty()) {
+            ip_.clear();
+        }
     }
     MEDIA_LOG_I("Close client out");
     return Status::OK;
@@ -313,6 +322,7 @@ Status HttpCurlClient::Deinit()
 
 Status HttpCurlClient::GetIp(std::string &ip)
 {
+    AutoLock lock(mutex_);
     if (!ip_.empty()) {
         std::string obj(ip_);
         ip = obj;
@@ -415,11 +425,12 @@ Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& re
 {
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CheckRequestRange(startPos, len);
-    if (isFirstRequest_) {
+    if (isFirstRequest_.load()) {
+        AutoLock lock(mutex_);
         headerList_ = curl_slist_append(headerList_, "Accept: */*");
         headerList_ = curl_slist_append(headerList_, "Connection: Keep-alive");
         headerList_ = curl_slist_append(headerList_, "Keep-Alive: timeout=120");
-        isFirstRequest_ = false;
+        isFirstRequest_.store(false);
     }
     int32_t clientCode = 0;
     int32_t serverCode = 0;

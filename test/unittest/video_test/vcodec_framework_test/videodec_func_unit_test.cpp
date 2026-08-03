@@ -345,6 +345,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_004, TestSize.Level1)
     surface->GetTransform(transform);
     EXPECT_EQ(0, transform);
 }
+
 #ifdef ONLY_FOR_FLAGSHIP_CHIP
 /**
  * @tc.name: VideoDecoder_Configure_Transform_005
@@ -424,6 +425,7 @@ HWTEST_F(TEST_SUIT, VideoDecoder_Configure_Transform_006, TestSize.Level1)
     EXPECT_EQ(0, transform);
 }
 #endif // ONLY_FOR_FLAGSHIP_CHIP
+
 /**
  * @tc.name: VideoDecoder_Configure_Transform_007
  * @tc.desc: video codec Configure

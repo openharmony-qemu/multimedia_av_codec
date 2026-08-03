@@ -110,6 +110,7 @@ private:
 
 private:
     std::weak_ptr<Callback> callback_;
+    std::mutex callbackMutex_;
     std::shared_ptr<HlsSegmentManager> videoSegManager_ {nullptr};
     std::shared_ptr<HlsSegmentManager> audioSegManager_ {nullptr};
     std::shared_ptr<HlsSegmentManager> subtitlesSegManager_ {nullptr};

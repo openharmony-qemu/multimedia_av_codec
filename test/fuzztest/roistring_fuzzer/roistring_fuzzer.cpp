@@ -375,7 +375,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
             OHOS::RoiStringFuzzer::ParseRoiStringFuzzTest(remaining.data(), remaining.size());
             break;
         }
-            break;
         case CAT_PARSE_MIXED:
             OHOS::RoiStringFuzzer::ParseRoiStringMixedFuzzTest(&fdp);
             break;

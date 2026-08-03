@@ -15,7 +15,6 @@
 
 #define HST_LOG_TAG "ReferenceParserManager"
 
-#include <unistd.h>
 #include <dlfcn.h>
 #include "common/log.h"
 #include "reference_parser_manager.h"

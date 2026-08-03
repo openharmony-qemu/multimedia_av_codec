@@ -32,6 +32,7 @@ DashRepresentationManager::~DashRepresentationManager()
 
 void DashRepresentationManager::Reset()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     this->representationInfo_ = nullptr;
     this->previousRepresentationInfo_ = nullptr;
     Clear();
@@ -39,6 +40,7 @@ void DashRepresentationManager::Reset()
 
 void DashRepresentationManager::SetRepresentationInfo(DashRepresentationInfo *rep)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     representationInfo_ = rep;
     // if representationInfo changed, update it
     if (previousRepresentationInfo_ == nullptr || previousRepresentationInfo_ != rep) {
@@ -73,11 +75,13 @@ void DashRepresentationManager::Clear()
 void DashRepresentationManager::ParseInitSegment()
 {
     if (representationInfo_->representationSegBase_ && representationInfo_->representationSegBase_->initialization_) {
-        // first get initSegment from <Representation> <SegmentBase> <Initialization /> </SegmentBase> </Representation>
+        delete initSegment_;
+        initSegment_ = nullptr;
         initSegment_ = CloneUrlType(representationInfo_->representationSegBase_->initialization_);
     } else if (representationInfo_->representationSegList_ &&
                representationInfo_->representationSegList_->multSegBaseInfo_.segBaseInfo_.initialization_) {
-        // Second get initSegment from <SegmentList> <Initialization sourceURL="seg-m-init.mp4"/> </SegmentList>
+        delete initSegment_;
+        initSegment_ = nullptr;
         initSegment_ =
             CloneUrlType(representationInfo_->representationSegList_->multSegBaseInfo_.segBaseInfo_.initialization_);
     } else if (representationInfo_->representationSegTmplt_) {
@@ -93,9 +97,13 @@ void DashRepresentationManager::ParseInitSegment()
 void DashRepresentationManager::ParseInitSegmentBySegTmplt()
 {
     if (representationInfo_->representationSegTmplt_->multSegBaseInfo_.segBaseInfo_.initialization_) {
+        delete initSegment_;
+        initSegment_ = nullptr;
         initSegment_ =
             CloneUrlType(representationInfo_->representationSegTmplt_->multSegBaseInfo_.segBaseInfo_.initialization_);
     } else if (representationInfo_->representationSegTmplt_->segTmpltInitialization_.length() > 0) {
+        delete initSegment_;
+        initSegment_ = nullptr;
         initSegment_ = new DashUrlType;
         if (initSegment_ != nullptr) {
             initSegment_->sourceUrl_ = representationInfo_->representationSegTmplt_->segTmpltInitialization_;
@@ -109,17 +117,20 @@ void DashRepresentationManager::ParseInitSegmentBySegTmplt()
 
 DashUrlType *DashRepresentationManager::GetInitSegment(int32_t &flag)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     flag = this->segTmpltFlag_;
     return this->initSegment_;
 }
 
 DashRepresentationInfo *DashRepresentationManager::GetRepresentationInfo()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     return this->representationInfo_;
 }
 
 DashRepresentationInfo *DashRepresentationManager::GetPreviousRepresentationInfo()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     return this->previousRepresentationInfo_;
 }
 } // namespace HttpPluginLite

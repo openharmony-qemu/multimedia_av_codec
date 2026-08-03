@@ -54,7 +54,7 @@ ohos_shared_library("hevc_decoder") {
   ]
 
   external_deps = [
-    "bounds_checking_function:libsec_static",
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "drivers_interface_display:display_commontype_idl_headers",
     "ffmpeg:libohosffmpeg",

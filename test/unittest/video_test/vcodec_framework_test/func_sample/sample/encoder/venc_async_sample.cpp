@@ -1053,11 +1053,9 @@ int32_t VideoEncAsyncSample::OutputLoopInnerExt()
         frameOutputCount_++;
     }
     UpdateSHA(outFile_, bufferAddr, size, needCheckSHA_, needDump_);
-
 #ifdef ONLY_FOR_FLAGSHIP_CHIP
     CheckFormatKey(attr, buffer);
 #endif // ONLY_FOR_FLAGSHIP_CHIP
-
     if (attr.flags == AVCODEC_BUFFER_FLAG_CODEC_DATA) {
         frameOutputCount_--;
     }

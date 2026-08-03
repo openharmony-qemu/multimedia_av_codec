@@ -16,13 +16,19 @@
 #include <avcodec_common.h>
 #include <gtest/gtest.h>
 #include <gtest/hwext/gtest-multithread.h>
+#include <algorithm>
+#include <chrono>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
+#include <thread>
 #include "native_avcodec_base.h"
 #include "native_avcodec_videoencoder.h"
 #include "native_avmagic.h"
 #include "preprocessor.h"
 #include "preprocessor_encoder.h"
 #include "preprocessor_manager.h"
+#include "video_encoder_object.h"
 #include "sample_callback.h"
 #include "unittest_utils.h"
 #include "vcodec_signal.h"
@@ -46,11 +52,230 @@ BufferRequestConfig CONFIG = {
     .timeout = 0,           // 0: timeout
 };
 
+constexpr auto CALLBACK_WAIT_TIMEOUT = std::chrono::seconds(3);
+constexpr auto CALLBACK_BLOCK_CHECK_TIME = std::chrono::milliseconds(100);
+
+enum class CallbackAction {
+    NONE,
+    STOP,
+    FLUSH,
+    RESET,
+};
+
+struct CallbackTestContext {
+    std::mutex mutex;
+    std::condition_variable cv;
+    CallbackAction action{CallbackAction::NONE};
+    int32_t callbackCount{0};
+    int32_t finishedCount{0};
+    OH_AVErrCode operationResult{AV_ERR_INVALID_VAL};
+    std::thread::id callbackThreadId{};
+    bool blockFirstCallback{false};
+    bool allowFirstCallbackReturn{false};
+    std::shared_ptr<void> dispatcherKeepAlive;
+};
+
+struct AsyncOperationState {
+    std::mutex mutex;
+    std::condition_variable cv;
+    bool finished{false};
+    OH_AVErrCode result{AV_ERR_INVALID_VAL};
+};
+
 static void OnErrorVoid(OH_AVCodec *codec, int32_t errorCode, void *userData)
 {
     (void)codec;
     (void)errorCode;
     (void)userData;
+}
+
+void OnErrorForCallbackTest(OH_AVCodec *codec, int32_t errorCode, void *userData)
+{
+    (void)errorCode;
+    auto *context = static_cast<CallbackTestContext *>(userData);
+    if (context == nullptr) {
+        return;
+    }
+
+    {
+        std::unique_lock<std::mutex> lock(context->mutex);
+        ++context->callbackCount;
+        context->callbackThreadId = std::this_thread::get_id();
+        context->cv.notify_all();
+        if (context->blockFirstCallback && context->callbackCount == 1) {
+            context->cv.wait(lock, [context]() { return context->allowFirstCallbackReturn; });
+        }
+    }
+
+    OH_AVErrCode result = AV_ERR_OK;
+    switch (context->action) {
+        case CallbackAction::STOP:
+            result = OH_VideoEncoder_Stop(codec);
+            break;
+        case CallbackAction::FLUSH:
+            result = OH_VideoEncoder_Flush(codec);
+            break;
+        case CallbackAction::RESET:
+            result = OH_VideoEncoder_Reset(codec);
+            break;
+        default:
+            break;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(context->mutex);
+        context->operationResult = result;
+        ++context->finishedCount;
+    }
+    context->cv.notify_all();
+}
+
+void OnErrorReleaseDispatcherForCallbackTest(OH_AVCodec *codec, int32_t errorCode, void *userData)
+{
+    (void)errorCode;
+    auto *context = static_cast<CallbackTestContext *>(userData);
+    if (context == nullptr) {
+        return;
+    }
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    {
+        std::lock_guard<std::mutex> lock(context->mutex);
+        ++context->callbackCount;
+        ++context->finishedCount;
+    }
+    encoder->callbackDispatcher_.reset();
+    context->dispatcherKeepAlive.reset();
+    context->cv.notify_all();
+}
+
+bool WaitForCallbackCount(CallbackTestContext &context, int32_t expectedCount)
+{
+    std::unique_lock<std::mutex> lock(context.mutex);
+    return context.cv.wait_for(lock, CALLBACK_WAIT_TIMEOUT,
+        [&context, expectedCount]() { return context.callbackCount >= expectedCount; });
+}
+
+bool WaitForFinishedCount(CallbackTestContext &context, int32_t expectedCount)
+{
+    std::unique_lock<std::mutex> lock(context.mutex);
+    return context.cv.wait_for(lock, CALLBACK_WAIT_TIMEOUT,
+        [&context, expectedCount]() { return context.finishedCount >= expectedCount; });
+}
+
+void AllowFirstCallbackToReturn(CallbackTestContext &context)
+{
+    {
+        std::lock_guard<std::mutex> lock(context.mutex);
+        context.allowFirstCallbackReturn = true;
+    }
+    context.cv.notify_all();
+}
+
+bool WaitForAsyncOperation(AsyncOperationState &state)
+{
+    std::unique_lock<std::mutex> lock(state.mutex);
+    return state.cv.wait_for(lock, CALLBACK_WAIT_TIMEOUT, [&state]() { return state.finished; });
+}
+
+bool IsAsyncOperationBlocked(AsyncOperationState &state)
+{
+    std::unique_lock<std::mutex> lock(state.mutex);
+    return !state.cv.wait_for(lock, CALLBACK_BLOCK_CHECK_TIME, [&state]() { return state.finished; });
+}
+
+void FinishAsyncOperation(AsyncOperationState &state, OH_AVErrCode result)
+{
+    {
+        std::lock_guard<std::mutex> lock(state.mutex);
+        state.result = result;
+        state.finished = true;
+    }
+    state.cv.notify_all();
+}
+
+bool PrepareCallbackEncoder(OH_AVCodec *codec, CallbackTestContext &context)
+{
+    if (codec == nullptr) {
+        return false;
+    }
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    OH_AVCodecCallback callback = {};
+    callback.onError = OnErrorForCallbackTest;
+    return encoder->RegisterCallback(callback, &context) == AV_ERR_OK && encoder->Start() == AV_ERR_OK;
+}
+
+bool RunCallbackAction(OH_AVCodec *codec, CallbackAction action, CallbackTestContext &context)
+{
+    context.action = action;
+    if (!PrepareCallbackEncoder(codec, context)) {
+        return false;
+    }
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    encoder->OnEncoderError(0);
+    if (!WaitForFinishedCount(context, 1)) {
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(context.mutex);
+    return context.callbackCount == 1 && context.operationResult == AV_ERR_OK;
+}
+
+void OnStreamChangedForCallbackTest(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
+{
+    (void)codec;
+    (void)format;
+    auto *context = static_cast<CallbackTestContext *>(userData);
+    if (context == nullptr) {
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(context->mutex);
+        ++context->callbackCount;
+        context->callbackThreadId = std::this_thread::get_id();
+        ++context->finishedCount;
+    }
+    context->cv.notify_all();
+}
+
+void OnOutputBufferForCallbackTest(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
+{
+    (void)codec;
+    (void)index;
+    (void)buffer;
+    auto *context = static_cast<CallbackTestContext *>(userData);
+    if (context == nullptr) {
+        return;
+    }
+    {
+        std::unique_lock<std::mutex> lock(context->mutex);
+        ++context->callbackCount;
+        context->callbackThreadId = std::this_thread::get_id();
+        context->cv.notify_all();
+        if (context->blockFirstCallback && context->callbackCount == 1) {
+            context->cv.wait(lock, [context]() { return context->allowFirstCallbackReturn; });
+        }
+        ++context->finishedCount;
+    }
+    context->cv.notify_all();
+}
+
+bool SetRoiMetadata(const sptr<SurfaceBuffer> &buffer, const std::string &roi)
+{
+    std::vector<uint8_t> data(roi.begin(), roi.end());
+    data.push_back('\0');
+    return buffer->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, data, false) == GSERROR_OK;
+}
+
+bool GetRoiMetadata(const sptr<SurfaceBuffer> &buffer, std::string &roi)
+{
+    std::vector<uint8_t> data;
+    if (buffer->GetMetadata(V2_2::ATTRKEY_ROI_METADATA, data) != GSERROR_OK) {
+        return false;
+    }
+    auto end = std::find(data.begin(), data.end(), '\0');
+    roi.assign(data.begin(), end);
+    return true;
 }
 }
 
@@ -201,20 +426,34 @@ HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_UnknownId_001, TestSize
  */
 HWTEST_F(TEST_SUIT, PreprocManager_NotifyEosNowIfPending_WithPendingBuffers_001, TestSize.Level1)
 {
+    const std::string encoderId = "test_encoder";
     bool eosCalled = false;
     sptr<Surface> mockSurface = Surface::CreateSurfaceAsConsumer();
     ASSERT_NE(mockSurface, nullptr);
-    preprocessorManager_->RegisterEncoder("test_encoder", preprocessor_, mockSurface);
-    preprocessorManager_->CreateSharedSurface();
-    preprocessorManager_->SetEncoderRunning("test_encoder", true);
-    preprocessorManager_->NotifyNewBufferAvailable();
-    preprocessorManager_->NotifyNewBufferAvailable();  // Add multiple buffers
-    preprocessorManager_->RequestNotifyEos("test_encoder", [&eosCalled]() {
+    preprocessorManager_->RegisterEncoder(encoderId, preprocessor_, mockSurface);
+    auto iter = preprocessorManager_->encoders_.find(encoderId);
+    ASSERT_NE(iter, preprocessorManager_->encoders_.end());
+    auto encoderInfo = iter->second;
+    ASSERT_NE(encoderInfo, nullptr);
+    sptr<SurfaceBuffer> pendingBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(pendingBuffer, nullptr);
+    auto pendingWrapper = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>(
+        wptr<Surface>(), pendingBuffer, nullptr, PreprocessorManager::SurfaceBufferWrapper::SurfaceType::CONSUMER);
+    {
+        std::lock_guard<std::mutex> lock(encoderInfo->bufferQueueMutex_);
+        encoderInfo->isRunning_ = true;
+        encoderInfo->pendingBuffers_.push(pendingWrapper);
+    }
+    pendingWrapper.reset();
+
+    ASSERT_TRUE(preprocessorManager_->RequestNotifyEos(encoderId, [&eosCalled]() {
         eosCalled = true;
-    });
-    preprocessorManager_->NotifyEosNowIfPending("test_encoder");
-    ASSERT_TRUE(eosCalled);
-    preprocessorManager_->UnregisterEncoder("test_encoder");
+    }));
+    preprocessorManager_->NotifyEosNowIfPending(encoderId);
+    EXPECT_TRUE(eosCalled);
+    EXPECT_FALSE(encoderInfo->isRunning_);
+    EXPECT_FALSE(encoderInfo->eosRequested_);
+    preprocessorManager_->UnregisterEncoder(encoderId);
 }
 
 /**
@@ -710,7 +949,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_UnregisterEncoderFromManager_002, TestSi
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_001, TestSize.Level1)
 {
     Media::Format format;
-    preprocessorEncoder_->asyncCallback_.onStreamChanged = nullptr;
+    preprocessorEncoder_->callback_.onStreamChanged = nullptr;
     preprocessorEncoder_->OnStreamChanged(format);
 }
 
@@ -722,7 +961,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_001, TestSize.Level1)
 {
     int32_t errorCode = 0;
-    preprocessorEncoder_->asyncCallback_.onError = nullptr;
+    preprocessorEncoder_->callback_.onError = nullptr;
     preprocessorEncoder_->OnPreprocessError(errorCode);
 }
 
@@ -734,86 +973,8 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_001, TestSize.Level1)
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnPreprocessError_002, TestSize.Level1)
 {
     int32_t errorCode = 0;
-    preprocessorEncoder_->asyncCallback_.onError = OnErrorVoid;
+    preprocessorEncoder_->callback_.onError = OnErrorVoid;
     preprocessorEncoder_->OnPreprocessError(errorCode);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_DetachSecondaryEncoder_NullSecondary_001
- * @tc.desc: Test DetachSecondaryEncoder when secondary_ is nullptr
- *           This tests the case where no secondary encoder is attached
- *           Expected: Returns nullptr
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_NullSecondary_001, TestSize.Level1)
-{
-    ASSERT_EQ(preprocessorEncoder_->secondary_, nullptr);
-    auto* result = preprocessorEncoder_->DetachSecondaryEncoder();
-    ASSERT_EQ(result, nullptr);
-    ASSERT_EQ(preprocessorEncoder_->secondary_, nullptr);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_DetachSecondaryEncoder_ValidSecondary_001
- * @tc.desc: Test DetachSecondaryEncoder when secondary_ is valid and primary_ relationship is correct
- *           This tests the normal case where secondary_->primary_ == this
- *           Expected: Returns secondary encoder and clears bidirectional relationship
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_ValidSecondary_001, TestSize.Level1)
-{
-    OH_AVCodec* primaryCodec = nullptr;
-    auto ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primaryCodec);
-    if (ret != AV_ERR_OK || primaryCodec == nullptr) {
-        GTEST_SKIP() << "Cannot create primary encoder";
-    }
-    OH_AVCodec* secondaryCodec = nullptr;
-    ret = preprocessorEncoder_->CreateSecondary(primaryCodec, &secondaryCodec);
-    if (ret != AV_ERR_OK || secondaryCodec == nullptr) {
-        preprocessorEncoder_->Destroy(primaryCodec);
-        GTEST_SKIP() << "Cannot create secondary encoder";
-    }
-    auto* primaryEncoder = static_cast<PreprocessorEncoder*>(primaryCodec);
-    auto* secondaryEncoder = static_cast<PreprocessorEncoder*>(secondaryCodec);
-    ASSERT_EQ(primaryEncoder->secondary_, secondaryEncoder);
-    ASSERT_EQ(secondaryEncoder->primary_, primaryEncoder);
-    auto* result = primaryEncoder->DetachSecondaryEncoder();
-    ASSERT_EQ(result, secondaryEncoder);
-    ASSERT_EQ(primaryEncoder->secondary_, nullptr);
-    ASSERT_EQ(secondaryEncoder->primary_, nullptr);
-    preprocessorEncoder_->Destroy(primaryCodec);
-    preprocessorEncoder_->Destroy(secondaryCodec);
-}
-
-/**
- * @tc.name: PreprocessorEncoder_DetachSecondaryEncoder_InvalidPrimaryRef_001
- * @tc.desc: Test DetachSecondaryEncoder when secondary_->primary_ != this
- *           This tests edge case where bidirectional relationship is broken
- *           Expected: Returns secondary encoder but doesn't modify secondary->primary_
- * @tc.type: FUNC
- */
-HWTEST_F(TEST_SUIT, PreprocessorEncoder_DetachSecondaryEncoder_InvalidPrimaryRef_001, TestSize.Level1)
-{
-    OH_AVCodec* primaryCodec1 = nullptr;
-    auto ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primaryCodec1);
-    if (ret != AV_ERR_OK || primaryCodec1 == nullptr) {
-        GTEST_SKIP() << "Cannot create primary encoder 1";
-    }
-    OH_AVCodec* primaryCodec2 = nullptr;
-    ret = preprocessorEncoder_->CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primaryCodec2);
-    if (ret != AV_ERR_OK || primaryCodec2 == nullptr) {
-        preprocessorEncoder_->Destroy(primaryCodec1);
-        GTEST_SKIP() << "Cannot create primary encoder 2";
-    }
-    auto* primaryEncoder1 = static_cast<PreprocessorEncoder*>(primaryCodec1);
-    auto* primaryEncoder2 = static_cast<PreprocessorEncoder*>(primaryCodec2);
-    primaryEncoder1->secondary_ = primaryEncoder2;
-    auto* result = primaryEncoder1->DetachSecondaryEncoder();
-    ASSERT_EQ(result, primaryEncoder2);
-    ASSERT_EQ(primaryEncoder1->secondary_, nullptr);
-    ASSERT_EQ(primaryEncoder2->primary_, nullptr);
-    preprocessorEncoder_->Destroy(primaryCodec1);
-    preprocessorEncoder_->Destroy(primaryCodec2);
 }
 
 /**
@@ -1126,7 +1287,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_AfterConfigure_001, TestSize.Level
 
 /**
  * @tc.name: PreprocessorEncoder_Start_NullVideoEncoder_001
- * @tc.desc: Test Flush when preprocMgr_ exists and videoEncoderObject_ exists but videoEncoder_ is nullptr
+ * @tc.desc: Test Start when preprocMgr_ is nullptr and videoEncoderObject_ exists but videoEncoder_ is nullptr
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_NullVideoEncoder_001, TestSize.Level1)
@@ -1135,7 +1296,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Start_NullVideoEncoder_001, TestSize.Lev
     auto preprocessor = std::make_shared<Preprocessor>(OH_AVCODEC_MIMETYPE_VIDEO_AVC);
     ASSERT_NE(preprocessor, nullptr);
     preprocessorEncoder_->preprocessors_[preprocessorEncoder_->encoderId_] = preprocessor;
-    preprocessorEncoder_->preprocMgr_ = std::make_shared<PreprocessorManager>();
+    preprocessorEncoder_->preprocMgr_ = nullptr;
     preprocessorEncoder_->videoEncoderObject_ = std::make_shared<VideoEncoderObject>(nullptr);
     auto ret = preprocessorEncoder_->Start();
     EXPECT_EQ(ret, AV_ERR_OK);
@@ -1311,7 +1472,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Reset_NullVideoEncoderObject_001, TestSi
  * @tc.name: PreprocessorEncoder_Release_WithPreprocMgr_001
  * @tc.desc: Test Release when preprocMgr_ is set
  *           This tests the path where SetEncoderRunning(false) is called before release
- *           Expected: Calls SetEncoderRunning(false), then releases encoder and sets magic_ to INVALID_ENTITY
+ *           Expected: Calls SetEncoderRunning(false), releases encoder, and preserves the primary type magic
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_WithPreprocMgr_001, TestSize.Level1)
@@ -1325,7 +1486,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_WithPreprocMgr_001, TestSize.Lev
     encoder->preprocMgr_ = std::make_shared<PreprocessorManager>();
     OH_AVErrCode result = encoder->Release();
     (void)result;
-    ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_INVALID_ENTITY);
+    ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER);
     preprocessorEncoder_->Destroy(primaryCodec);
 }
 
@@ -1333,7 +1494,8 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_WithPreprocMgr_001, TestSize.Lev
  * @tc.name: PreprocessorEncoder_Release_ValidEncoder_001
  * @tc.desc: Test Release with valid videoEncoderObject_
  *           This tests the normal release path
- *           Expected: Calls videoEncoder_->Release(), StopCallback, ClearBufferList, and sets magic_ to INVALID_ENTITY
+ *           Expected: Calls videoEncoder_->Release(), StopCallback and ClearBufferList,
+ *           and preserves the primary type magic
  * @tc.type: FUNC
  */
 HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_ValidEncoder_001, TestSize.Level1)
@@ -1347,7 +1509,7 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_Release_ValidEncoder_001, TestSize.Level
     ASSERT_NE(encoder->videoEncoderObject_, nullptr);
     OH_AVErrCode result = encoder->Release();
     (void)result;
-    ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_INVALID_ENTITY);
+    ASSERT_EQ(encoder->magic_, AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER);
     delete encoder;
 }
 
@@ -1573,4 +1735,1126 @@ HWTEST_F(TEST_SUIT, PreprocessorEncoder_GetInputDescription_NullVideoEncoderObje
     if (result != nullptr) {
         OH_AVFormat_Destroy(result);
     }
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_Callback_Stop_PrimarySecondary_NoDeadlock_001
+ * @tc.desc: Stop called from primary and secondary callback threads does not self-wait
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_Callback_Stop_PrimarySecondary_NoDeadlock_001, TestSize.Level1)
+{
+    OH_AVCodec *primary = nullptr;
+    OH_AVCodec *secondary = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary), AV_ERR_OK);
+    ASSERT_EQ(PreprocessorEncoder::CreateSecondary(primary, &secondary), AV_ERR_OK);
+
+    CallbackTestContext primaryContext;
+    CallbackTestContext secondaryContext;
+    EXPECT_TRUE(RunCallbackAction(primary, CallbackAction::STOP, primaryContext));
+    EXPECT_TRUE(RunCallbackAction(secondary, CallbackAction::STOP, secondaryContext));
+    EXPECT_EQ(OH_VideoEncoder_Destroy(primary), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_Callback_Flush_PrimarySecondary_NoDeadlock_001
+ * @tc.desc: Flush called from primary and secondary callback threads does not self-wait
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_Callback_Flush_PrimarySecondary_NoDeadlock_001, TestSize.Level1)
+{
+    OH_AVCodec *primary = nullptr;
+    OH_AVCodec *secondary = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary), AV_ERR_OK);
+    ASSERT_EQ(PreprocessorEncoder::CreateSecondary(primary, &secondary), AV_ERR_OK);
+
+    CallbackTestContext primaryContext;
+    CallbackTestContext secondaryContext;
+    EXPECT_TRUE(RunCallbackAction(primary, CallbackAction::FLUSH, primaryContext));
+    EXPECT_TRUE(RunCallbackAction(secondary, CallbackAction::FLUSH, secondaryContext));
+    EXPECT_EQ(OH_VideoEncoder_Destroy(primary), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_Callback_Reset_PrimarySecondary_NoDeadlock_001
+ * @tc.desc: Reset called from primary and secondary callback threads does not self-wait
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_Callback_Reset_PrimarySecondary_NoDeadlock_001, TestSize.Level1)
+{
+    OH_AVCodec *primary = nullptr;
+    OH_AVCodec *secondary = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary), AV_ERR_OK);
+    ASSERT_EQ(PreprocessorEncoder::CreateSecondary(primary, &secondary), AV_ERR_OK);
+
+    CallbackTestContext primaryContext;
+    CallbackTestContext secondaryContext;
+    EXPECT_TRUE(RunCallbackAction(primary, CallbackAction::RESET, primaryContext));
+    EXPECT_TRUE(RunCallbackAction(secondary, CallbackAction::RESET, secondaryContext));
+    EXPECT_EQ(OH_VideoEncoder_Destroy(primary), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_Destroy_WaitsRunningCallback_001
+ * @tc.desc: Destroy waits until an executing asynchronous callback returns
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_Destroy_WaitsRunningCallback_001, TestSize.Level1)
+{
+    OH_AVCodec *primary = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary), AV_ERR_OK);
+    CallbackTestContext context;
+    context.blockFirstCallback = true;
+    ASSERT_TRUE(PrepareCallbackEncoder(primary, context));
+    reinterpret_cast<PreprocessorEncoder *>(primary)->OnEncoderError(0);
+    ASSERT_TRUE(WaitForCallbackCount(context, 1));
+
+    AsyncOperationState destroyState;
+    std::thread destroyThread([primary, &destroyState]() {
+        FinishAsyncOperation(destroyState, OH_VideoEncoder_Destroy(primary));
+    });
+    EXPECT_TRUE(IsAsyncOperationBlocked(destroyState));
+    AllowFirstCallbackToReturn(context);
+    EXPECT_TRUE(WaitForAsyncOperation(destroyState));
+    destroyThread.join();
+    EXPECT_EQ(destroyState.result, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_DestroyPrimary_WaitsPrimarySecondaryCallbacks_001
+ * @tc.desc: Destroying primary waits for callbacks executing on both independent encoders
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_DestroyPrimary_WaitsPrimarySecondaryCallbacks_001, TestSize.Level1)
+{
+    OH_AVCodec *primary = nullptr;
+    OH_AVCodec *secondary = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary), AV_ERR_OK);
+    ASSERT_EQ(PreprocessorEncoder::CreateSecondary(primary, &secondary), AV_ERR_OK);
+    CallbackTestContext primaryContext;
+    CallbackTestContext secondaryContext;
+    primaryContext.blockFirstCallback = true;
+    secondaryContext.blockFirstCallback = true;
+    ASSERT_TRUE(PrepareCallbackEncoder(primary, primaryContext));
+    ASSERT_TRUE(PrepareCallbackEncoder(secondary, secondaryContext));
+    reinterpret_cast<PreprocessorEncoder *>(primary)->OnEncoderError(0);
+    reinterpret_cast<PreprocessorEncoder *>(secondary)->OnEncoderError(0);
+    ASSERT_TRUE(WaitForCallbackCount(primaryContext, 1));
+    ASSERT_TRUE(WaitForCallbackCount(secondaryContext, 1));
+
+    AsyncOperationState destroyState;
+    std::thread destroyThread([primary, &destroyState]() {
+        FinishAsyncOperation(destroyState, OH_VideoEncoder_Destroy(primary));
+    });
+    EXPECT_TRUE(IsAsyncOperationBlocked(destroyState));
+    AllowFirstCallbackToReturn(primaryContext);
+    EXPECT_TRUE(IsAsyncOperationBlocked(destroyState));
+    AllowFirstCallbackToReturn(secondaryContext);
+    EXPECT_TRUE(WaitForAsyncOperation(destroyState));
+    destroyThread.join();
+    EXPECT_EQ(destroyState.result, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_PrimarySecondary_CallbackThreadsIndependent_001
+ * @tc.desc: A blocked primary callback does not prevent a secondary callback from executing
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_PrimarySecondary_CallbackThreadsIndependent_001, TestSize.Level1)
+{
+    OH_AVCodec *primary = nullptr;
+    OH_AVCodec *secondary = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary), AV_ERR_OK);
+    ASSERT_EQ(PreprocessorEncoder::CreateSecondary(primary, &secondary), AV_ERR_OK);
+    CallbackTestContext primaryContext;
+    CallbackTestContext secondaryContext;
+    primaryContext.blockFirstCallback = true;
+    ASSERT_TRUE(PrepareCallbackEncoder(primary, primaryContext));
+    ASSERT_TRUE(PrepareCallbackEncoder(secondary, secondaryContext));
+
+    reinterpret_cast<PreprocessorEncoder *>(primary)->OnEncoderError(0);
+    ASSERT_TRUE(WaitForCallbackCount(primaryContext, 1));
+    reinterpret_cast<PreprocessorEncoder *>(secondary)->OnEncoderError(0);
+    EXPECT_TRUE(WaitForFinishedCount(secondaryContext, 1));
+    EXPECT_NE(primaryContext.callbackThreadId, secondaryContext.callbackThreadId);
+
+    AllowFirstCallbackToReturn(primaryContext);
+    EXPECT_TRUE(WaitForFinishedCount(primaryContext, 1));
+    EXPECT_EQ(OH_VideoEncoder_Destroy(primary), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_Flush_DropsQueuedCallbacks_001
+ * @tc.desc: Flush closes the callback gate, drops queued events, and allows new events after restart
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_Flush_DropsQueuedCallbacks_001, TestSize.Level1)
+{
+    constexpr int32_t queuedEventCount = 8;
+    OH_AVCodec *primary = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &primary), AV_ERR_OK);
+    CallbackTestContext context;
+    context.blockFirstCallback = true;
+    ASSERT_TRUE(PrepareCallbackEncoder(primary, context));
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(primary);
+    encoder->OnEncoderError(0);
+    ASSERT_TRUE(WaitForCallbackCount(context, 1));
+    for (int32_t i = 0; i < queuedEventCount; ++i) {
+        encoder->OnEncoderError(0);
+    }
+
+    AsyncOperationState flushState;
+    std::thread flushThread([primary, &flushState]() {
+        FinishAsyncOperation(flushState, OH_VideoEncoder_Flush(primary));
+    });
+    EXPECT_TRUE(IsAsyncOperationBlocked(flushState));
+    AllowFirstCallbackToReturn(context);
+    EXPECT_TRUE(WaitForAsyncOperation(flushState));
+    flushThread.join();
+    EXPECT_EQ(flushState.result, AV_ERR_OK);
+    EXPECT_EQ(context.callbackCount, 1);
+
+    ASSERT_EQ(OH_VideoEncoder_Start(primary), AV_ERR_OK);
+    encoder->OnEncoderError(0);
+    EXPECT_TRUE(WaitForFinishedCount(context, 2));
+    EXPECT_EQ(context.callbackCount, 2);
+    EXPECT_EQ(OH_VideoEncoder_Destroy(primary), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: Preprocessor_UpdateRoiMetadata_Int32Max_001
+ * @tc.desc: The maximum valid int32 ROI coordinates are preserved
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_Int32Max_001, TestSize.Level1)
+{
+    sptr<SurfaceBuffer> input = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
+    ASSERT_NE(input, nullptr);
+    ASSERT_NE(output, nullptr);
+    ASSERT_EQ(input->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_EQ(output->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_TRUE(SetRoiMetadata(input, "0,0-2147483647,2147483647"));
+    Preprocessor::RoiTransform transform = {1.0, 1.0, 0, 0};
+    preprocessor_->UpdateRoiMetadata(input, output, transform);
+    std::string actual;
+    ASSERT_TRUE(GetRoiMetadata(output, actual));
+    EXPECT_EQ(actual, "0,0-2147483647,2147483647;");
+}
+
+/**
+ * @tc.name: Preprocessor_UpdateRoiMetadata_NegativeCoordinateSkipped_001
+ * @tc.desc: An ROI with a negative coordinate is skipped while a following valid ROI is retained
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_NegativeCoordinateSkipped_001, TestSize.Level1)
+{
+    sptr<SurfaceBuffer> input = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
+    ASSERT_NE(input, nullptr);
+    ASSERT_NE(output, nullptr);
+    ASSERT_EQ(input->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_EQ(output->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_TRUE(SetRoiMetadata(input, "-1,0-100,100;10,20-30,40"));
+    Preprocessor::RoiTransform transform = {1.0, 1.0, 0, 0};
+    preprocessor_->UpdateRoiMetadata(input, output, transform);
+    std::string actual;
+    ASSERT_TRUE(GetRoiMetadata(output, actual));
+    EXPECT_EQ(actual, "10,20-30,40;");
+}
+
+/**
+ * @tc.name: Preprocessor_UpdateRoiMetadata_OutOfRangeCoordinateSkipped_001
+ * @tc.desc: An out-of-int32 ROI is skipped while a following valid ROI is retained
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_OutOfRangeCoordinateSkipped_001, TestSize.Level1)
+{
+    sptr<SurfaceBuffer> input = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
+    ASSERT_NE(input, nullptr);
+    ASSERT_NE(output, nullptr);
+    ASSERT_EQ(input->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_EQ(output->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_TRUE(SetRoiMetadata(input, "2147483648,0-100,100;10,20-30,40"));
+    Preprocessor::RoiTransform transform = {1.0, 1.0, 0, 0};
+    preprocessor_->UpdateRoiMetadata(input, output, transform);
+    std::string actual;
+    ASSERT_TRUE(GetRoiMetadata(output, actual));
+    EXPECT_EQ(actual, "10,20-30,40;");
+}
+
+/**
+ * @tc.name: Preprocessor_UpdateRoiMetadata_ScaleAndOffset_001
+ * @tc.desc: ROI scaling, crop offset, and optional parameters are transformed together
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_ScaleAndOffset_001, TestSize.Level1)
+{
+    sptr<SurfaceBuffer> input = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
+    ASSERT_NE(input, nullptr);
+    ASSERT_NE(output, nullptr);
+    ASSERT_EQ(input->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_EQ(output->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_TRUE(SetRoiMetadata(input, "100,200-300,400=label"));
+    Preprocessor::RoiTransform transform = {0.5, 0.5, 10, 20};
+    preprocessor_->UpdateRoiMetadata(input, output, transform);
+    std::string actual;
+    ASSERT_TRUE(GetRoiMetadata(output, actual));
+    EXPECT_EQ(actual, "40,80-140,180=label;");
+}
+
+/**
+ * @tc.name: PreprocManager_Stop_WithPendingBuffers_NoDeadlock_001
+ * @tc.desc: Stop clears pending wrappers outside bufferQueueMutex and leaves the encoder stopped
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_Stop_WithPendingBuffers_NoDeadlock_001, TestSize.Level1)
+{
+    const std::string encoderId = "encoder_with_pending_buffer";
+    sptr<Surface> surface = Surface::CreateSurfaceAsConsumer();
+    ASSERT_NE(surface, nullptr);
+    preprocessorManager_->RegisterEncoder(encoderId, preprocessor_, surface);
+    auto iter = preprocessorManager_->encoders_.find(encoderId);
+    ASSERT_NE(iter, preprocessorManager_->encoders_.end());
+    auto encoderInfo = iter->second;
+    ASSERT_NE(encoderInfo, nullptr);
+
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    ASSERT_EQ(buffer->Alloc(CONFIG), GSERROR_OK);
+    auto wrapper = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>(surface, buffer, nullptr,
+        PreprocessorManager::SurfaceBufferWrapper::SurfaceType::CONSUMER);
+    {
+        std::lock_guard<std::mutex> lock(encoderInfo->bufferQueueMutex_);
+        encoderInfo->isRunning_ = true;
+        encoderInfo->pendingBuffers_.push(wrapper);
+    }
+    wrapper.reset();
+
+    encoderInfo->Stop();
+    EXPECT_FALSE(encoderInfo->isRunning_);
+    EXPECT_TRUE(encoderInfo->pendingBuffers_.empty());
+    preprocessorManager_->UnregisterEncoder(encoderId);
+}
+
+/**
+ * @tc.name: PreprocManager_EncoderInfo_BufferQueueGuards_001
+ * @tc.desc: Cover null and valid branches of pending/output buffer queue helpers
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_BufferQueueGuards_001, TestSize.Level1)
+{
+    auto encoderInfo = std::make_shared<PreprocessorManager::EncoderInfo>("queue_guard");
+    ASSERT_NE(encoderInfo, nullptr);
+
+    encoderInfo->RecycleOutputBuffer(nullptr);
+    auto nullBuffer = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>();
+    ASSERT_NE(nullBuffer, nullptr);
+    nullBuffer->surfaceType = PreprocessorManager::SurfaceBufferWrapper::SurfaceType::CONSUMER;
+    encoderInfo->RecycleOutputBuffer(nullBuffer);
+
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    ASSERT_EQ(buffer->Alloc(CONFIG), GSERROR_OK);
+    auto wrapper = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>(
+        wptr<Surface>(), buffer, nullptr, PreprocessorManager::SurfaceBufferWrapper::SurfaceType::CONSUMER);
+    encoderInfo->RecycleOutputBuffer(wrapper);
+    EXPECT_EQ(encoderInfo->availableInputBuffers_.size(), 1U);
+
+    encoderInfo->OnNewPendingBufferAvailable(nullptr);
+    EXPECT_TRUE(encoderInfo->pendingBuffers_.empty());
+    encoderInfo->isRunning_ = true;
+    encoderInfo->OnNewPendingBufferAvailable(wrapper);
+    EXPECT_EQ(encoderInfo->pendingBuffers_.size(), 1U);
+    encoderInfo->eosRequested_ = true;
+    encoderInfo->OnNewPendingBufferAvailable(wrapper);
+    EXPECT_EQ(encoderInfo->pendingBuffers_.size(), 1U);
+}
+
+/**
+ * @tc.name: PreprocManager_EncoderInfo_ReplaceOutputBuffer_Guards_001
+ * @tc.desc: Cover invalid arguments and fatal replacement path without an encoder surface
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_ReplaceOutputBuffer_Guards_001, TestSize.Level1)
+{
+    auto encoderInfo = std::make_shared<PreprocessorManager::EncoderInfo>("replace_guard");
+    ASSERT_NE(encoderInfo, nullptr);
+    sptr<SurfaceBuffer> oldBuffer;
+    sptr<SurfaceBuffer> newBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(newBuffer, nullptr);
+    ASSERT_EQ(newBuffer->Alloc(CONFIG), GSERROR_OK);
+    EXPECT_FALSE(encoderInfo->ReplaceOutputBuffer(oldBuffer, newBuffer));
+
+    oldBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(oldBuffer, nullptr);
+    ASSERT_EQ(oldBuffer->Alloc(CONFIG), GSERROR_OK);
+    EXPECT_FALSE(encoderInfo->ReplaceOutputBuffer(oldBuffer, nullptr));
+
+    newBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(newBuffer, nullptr);
+    ASSERT_EQ(newBuffer->Alloc(CONFIG), GSERROR_OK);
+    encoderInfo->encoderSurfaceBufferPool_.emplace(oldBuffer->GetSeqNum(), oldBuffer);
+    encoderInfo->isRunning_ = true;
+    EXPECT_FALSE(encoderInfo->ReplaceOutputBuffer(oldBuffer, newBuffer));
+    EXPECT_EQ(oldBuffer, nullptr);
+    EXPECT_FALSE(encoderInfo->isRunning_);
+    EXPECT_TRUE(encoderInfo->encoderSurfaceBufferPool_.empty());
+}
+
+/**
+ * @tc.name: PreprocManager_EncoderInfo_FlushConfigGuards_001
+ * @tc.desc: Cover null guards and timestamp/damage assignment in SetBufferFlushConfig
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_FlushConfigGuards_001, TestSize.Level1)
+{
+    auto encoderInfo = std::make_shared<PreprocessorManager::EncoderInfo>("flush_config");
+    ASSERT_NE(encoderInfo, nullptr);
+    std::shared_ptr<PreprocessorManager::SurfaceBufferWrapper> input;
+    std::shared_ptr<PreprocessorManager::SurfaceBufferWrapper> output;
+    encoderInfo->SetBufferFlushConfig(input, output);
+
+    input = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>();
+    output = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>();
+    encoderInfo->SetBufferFlushConfig(input, output);
+
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    ASSERT_EQ(buffer->Alloc(CONFIG), GSERROR_OK);
+    output->buffer = buffer;
+    input->timestamp = 123456;
+    encoderInfo->SetBufferFlushConfig(input, output);
+    EXPECT_EQ(output->flushConfig.timestamp, 123456);
+    EXPECT_EQ(output->flushConfig.damage.w, buffer->GetWidth());
+    EXPECT_EQ(output->flushConfig.damage.h, buffer->GetHeight());
+}
+
+/**
+ * @tc.name: PreprocManager_EncoderInfo_ProcessFrame_ErrorCallback_001
+ * @tc.desc: Cover preprocess failure and error reporting from ProcessFrame
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_ProcessFrame_ErrorCallback_001, TestSize.Level1)
+{
+    auto encoderInfo = std::make_shared<PreprocessorManager::EncoderInfo>("process_error");
+    ASSERT_NE(encoderInfo, nullptr);
+    encoderInfo->preprocessor_ = preprocessor_;
+    int32_t reportedError = AVCS_ERR_OK;
+    encoderInfo->SetPreprocessErrorCallback([&reportedError](int32_t errorCode) {
+        reportedError = errorCode;
+    });
+    auto input = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>();
+    auto output = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>();
+    ASSERT_NE(input, nullptr);
+    ASSERT_NE(output, nullptr);
+    input->timestamp = 1;
+    EXPECT_FALSE(encoderInfo->ProcessFrame(input, output));
+    EXPECT_EQ(reportedError, AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: PreprocManager_EncoderInfo_RequestNotifyEosGuards_001
+ * @tc.desc: Cover EOS request when stopped and when already requested
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_RequestNotifyEosGuards_001, TestSize.Level1)
+{
+    auto encoderInfo = std::make_shared<PreprocessorManager::EncoderInfo>("eos_guard");
+    ASSERT_NE(encoderInfo, nullptr);
+    EXPECT_FALSE(encoderInfo->RequestNotifyEos(nullptr));
+    encoderInfo->isRunning_ = true;
+    EXPECT_TRUE(encoderInfo->RequestNotifyEos(nullptr));
+    EXPECT_TRUE(encoderInfo->eosRequested_);
+    EXPECT_TRUE(encoderInfo->RequestNotifyEos([]() {}));
+    EXPECT_TRUE(encoderInfo->eosRequested_);
+    encoderInfo->isRunning_ = false;
+    encoderInfo->eosRequested_ = false;
+}
+
+/**
+ * @tc.name: PreprocManager_EncoderInfo_SurfaceBufferCallbackBranches_001
+ * @tc.desc: Cover unknown and known encoder surface buffer sequence branches
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_SurfaceBufferCallbackBranches_001, TestSize.Level1)
+{
+    auto encoderInfo = std::make_shared<PreprocessorManager::EncoderInfo>("surface_callback");
+    ASSERT_NE(encoderInfo, nullptr);
+    encoderInfo->OnNewEncoderSurfaceBufferAvailable(999, nullptr);
+
+    sptr<SurfaceBuffer> buffer = SurfaceBuffer::Create();
+    ASSERT_NE(buffer, nullptr);
+    ASSERT_EQ(buffer->Alloc(CONFIG), GSERROR_OK);
+    const uint32_t seq = buffer->GetSeqNum();
+    encoderInfo->encoderSurfaceBufferPool_.emplace(seq, buffer);
+    encoderInfo->OnNewEncoderSurfaceBufferAvailable(seq, nullptr);
+    EXPECT_EQ(encoderInfo->availableInputBuffers_.size(), 1U);
+}
+
+/**
+ * @tc.name: PreprocManager_EncoderInfo_StreamChangeDeduplication_001
+ * @tc.desc: Cover first, duplicate, and changed stream description notifications
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_EncoderInfo_StreamChangeDeduplication_001, TestSize.Level1)
+{
+    auto encoderInfo = std::make_shared<PreprocessorManager::EncoderInfo>("stream_change");
+    ASSERT_NE(encoderInfo, nullptr);
+    encoderInfo->preprocessor_ = preprocessor_;
+    int32_t callbackCount = 0;
+    encoderInfo->SetStreamChangedCallback([&callbackCount](const Media::Format &) {
+        ++callbackCount;
+    });
+    sptr<SurfaceBuffer> firstBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(firstBuffer, nullptr);
+    ASSERT_EQ(firstBuffer->Alloc(CONFIG), GSERROR_OK);
+    auto first = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>(
+        wptr<Surface>(), firstBuffer, nullptr, PreprocessorManager::SurfaceBufferWrapper::SurfaceType::CONSUMER);
+    encoderInfo->CheckAndNotifyStreamChange(first);
+    encoderInfo->CheckAndNotifyStreamChange(first);
+
+    BufferRequestConfig changedConfig = CONFIG;
+    changedConfig.width = 640;
+    sptr<SurfaceBuffer> secondBuffer = SurfaceBuffer::Create();
+    ASSERT_NE(secondBuffer, nullptr);
+    ASSERT_EQ(secondBuffer->Alloc(changedConfig), GSERROR_OK);
+    auto second = std::make_shared<PreprocessorManager::SurfaceBufferWrapper>(
+        wptr<Surface>(), secondBuffer, nullptr, PreprocessorManager::SurfaceBufferWrapper::SurfaceType::CONSUMER);
+    encoderInfo->CheckAndNotifyStreamChange(second);
+    EXPECT_EQ(callbackCount, 2);
+}
+
+/**
+ * @tc.name: Preprocessor_ConfigurationSnapshotAndValidation_001
+ * @tc.desc: Cover configure and SetParameter snapshot construction without FastKit processing
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_ConfigurationSnapshotAndValidation_001, TestSize.Level1)
+{
+    preprocessor_->encoderConfig_.width = 640;
+    preprocessor_->encoderConfig_.height = 480;
+    preprocessor_->encoderConfig_.pixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    preprocessor_->encoderConfig_.frameRate = 24.0;
+
+    Media::Format parameter;
+    parameter.PutDoubleValue(Media::Tag::VIDEO_FRAME_RATE, 29.97);
+    EXPECT_EQ(preprocessor_->ValidateConfiguration(parameter, false), AVCS_ERR_OK);
+    EXPECT_EQ(preprocessor_->encoderParams_.width, 640);
+    EXPECT_EQ(preprocessor_->encoderParams_.height, 480);
+
+    preprocessor_->cropParams_.result = Preprocessor::ConfigResult::DISABLED;
+    preprocessor_->downsamplingParams_.result = Preprocessor::ConfigResult::DISABLED;
+    preprocessor_->dropParams_.result = Preprocessor::ConfigResult::DISABLED;
+    preprocessor_->encoderParams_.width = 1280;
+    preprocessor_->encoderParams_.height = 720;
+    EXPECT_EQ(preprocessor_->ApplyConfiguration(), AVCS_ERR_OK);
+    auto snapshot = preprocessor_->GetConfigSnapshot();
+    EXPECT_EQ(snapshot.configuredWidth, 1280);
+    EXPECT_EQ(snapshot.configuredHeight, 720);
+    EXPECT_FALSE(snapshot.cropEnabled);
+    EXPECT_FALSE(snapshot.downsamplingEnabled);
+}
+
+/**
+ * @tc.name: Preprocessor_ConfigurationConflict_ExistingModes_001
+ * @tc.desc: Cover rejection when committed crop and downsampling modes conflict
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_ConfigurationConflict_ExistingModes_001, TestSize.Level1)
+{
+    preprocessor_->encoderConfig_.pixelFormat = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    preprocessor_->cropConfig_.enabled = true;
+    preprocessor_->downsamplingConfig_.enabled = true;
+    Media::Format parameter;
+    EXPECT_EQ(preprocessor_->ValidateConfiguration(parameter, false), AVCS_ERR_INVALID_VAL);
+    preprocessor_->cropConfig_.enabled = false;
+    preprocessor_->downsamplingConfig_.enabled = false;
+}
+
+/**
+ * @tc.name: Preprocessor_CheckOrReallocOutputBuffer_Branches_001
+ * @tc.desc: Cover invalid geometry, null callback, no-realloc, and realloc callback failure branches
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_CheckOrReallocOutputBuffer_Branches_001, TestSize.Level1)
+{
+    BufferRequestConfig supportedConfig = CONFIG;
+    supportedConfig.format = GRAPHIC_PIXEL_FMT_YCBCR_420_SP;
+    sptr<SurfaceBuffer> output = nullptr;
+    EXPECT_FALSE(preprocessor_->CheckOrReallocOutSurfaceBuffer(
+        supportedConfig.width, supportedConfig.height, supportedConfig.format, output, nullptr));
+    ASSERT_FALSE(preprocessor_->CheckOrReallocOutSurfaceBuffer(0, supportedConfig.height, supportedConfig.format,
+        output, [](sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &) { return true; }));
+
+    output = SurfaceBuffer::Create();
+    ASSERT_NE(output, nullptr);
+    ASSERT_EQ(output->Alloc(supportedConfig), GSERROR_OK);
+    auto callback = [](sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &) { return true; };
+    EXPECT_TRUE(preprocessor_->CheckOrReallocOutSurfaceBuffer(
+        supportedConfig.width, supportedConfig.height, supportedConfig.format, output, callback));
+    auto rejectCallback = [](sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &) { return false; };
+    EXPECT_FALSE(preprocessor_->CheckOrReallocOutSurfaceBuffer(
+        640, 360, supportedConfig.format, output, rejectCallback));
+}
+
+/**
+ * @tc.name: Preprocessor_UpdateRoiMetadata_MalformedSegments_001
+ * @tc.desc: Cover empty and malformed ROI entries while preserving valid entries
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_MalformedSegments_001, TestSize.Level1)
+{
+    sptr<SurfaceBuffer> input = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
+    ASSERT_NE(input, nullptr);
+    ASSERT_NE(output, nullptr);
+    ASSERT_EQ(input->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_EQ(output->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_TRUE(SetRoiMetadata(input, ";bad;1,2-3;1,2-3,4=;5,6-7,8;;"));
+    preprocessor_->UpdateRoiMetadata(input, output, {1.0, 1.0, 0, 0});
+    std::string actual;
+    ASSERT_TRUE(GetRoiMetadata(output, actual));
+    EXPECT_EQ(actual, "1,2-3,4=;5,6-7,8;");
+}
+
+/**
+ * @tc.name: Preprocessor_UpdateRoiMetadata_NoTerminator_001
+ * @tc.desc: Cover ROI metadata that has no embedded NUL terminator
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_UpdateRoiMetadata_NoTerminator_001, TestSize.Level1)
+{
+    sptr<SurfaceBuffer> input = SurfaceBuffer::Create();
+    sptr<SurfaceBuffer> output = SurfaceBuffer::Create();
+    ASSERT_NE(input, nullptr);
+    ASSERT_NE(output, nullptr);
+    ASSERT_EQ(input->Alloc(CONFIG), GSERROR_OK);
+    ASSERT_EQ(output->Alloc(CONFIG), GSERROR_OK);
+    std::vector<uint8_t> data{'1', ',', '2', '-', '3', ',', '4'};
+    ASSERT_EQ(input->SetMetadata(V2_2::ATTRKEY_ROI_METADATA, data, false), GSERROR_OK);
+    preprocessor_->UpdateRoiMetadata(input, output, {1.0, 1.0, 0, 0});
+    std::string actual;
+    ASSERT_TRUE(GetRoiMetadata(output, actual));
+    EXPECT_EQ(actual, "1,2-3,4;");
+}
+
+/**
+ * @tc.name: PreprocManager_FillStreamDescription_Snapshots_001
+ * @tc.desc: Cover crop/downsampling metadata insertion and stride/pixel mapping branches
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_FillStreamDescription_Snapshots_001, TestSize.Level1)
+{
+    auto encoderInfo = std::make_shared<PreprocessorManager::EncoderInfo>("format_snapshot");
+    ASSERT_NE(encoderInfo, nullptr);
+    encoderInfo->preprocessor_ = preprocessor_;
+    preprocessor_->cropConfig_.left = 10;
+    preprocessor_->cropConfig_.right = 100;
+    preprocessor_->cropConfig_.top = 20;
+    preprocessor_->cropConfig_.bottom = 200;
+    preprocessor_->cropConfig_.width = 91;
+    preprocessor_->cropConfig_.height = 181;
+    preprocessor_->cropConfig_.enabled = true;
+    preprocessor_->downsamplingConfig_.width = 320;
+    preprocessor_->downsamplingConfig_.height = 240;
+    preprocessor_->downsamplingConfig_.enabled = true;
+    Media::Format format = encoderInfo->FillStreamDescription(1280, 720,
+        static_cast<int32_t>(GRAPHIC_PIXEL_FMT_YCBCR_420_SP), 0);
+    int32_t value = 0;
+    EXPECT_TRUE(format.GetIntValue(Media::Tag::VIDEO_WIDTH, value));
+    EXPECT_EQ(value, 1280);
+    EXPECT_FALSE(format.GetIntValue(Media::Tag::VIDEO_STRIDE, value));
+    EXPECT_TRUE(format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_CROP_LEFT, value));
+    EXPECT_EQ(value, 10);
+    EXPECT_TRUE(format.GetIntValue(OH_MD_KEY_VIDEO_ENCODER_PREPROC_DOWNSAMPLING_WIDTH, value));
+    EXPECT_EQ(value, 320);
+}
+
+/**
+ * @tc.name: PreprocManager_ReportPreprocessError_DirectBranches_001
+ * @tc.desc: Cover direct null and non-null preprocess error callback branches
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_ReportPreprocessError_DirectBranches_001, TestSize.Level1)
+{
+    auto encoderInfo = std::make_shared<PreprocessorManager::EncoderInfo>("error_callback");
+    ASSERT_NE(encoderInfo, nullptr);
+    encoderInfo->ReportPreprocessError(AVCS_ERR_INVALID_VAL);
+    int32_t reported = 0;
+    encoderInfo->preprocessErrorCallback_ = [&reported](int32_t code) { reported = code; };
+    encoderInfo->ReportPreprocessError(AVCS_ERR_NO_MEMORY);
+    EXPECT_EQ(reported, AVCS_ERR_NO_MEMORY);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_CallbackGate_BeforeStart_001
+ * @tc.desc: Cover callback rejection before Start and callback acceptance after Start
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_CallbackGate_BeforeStart_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    CallbackTestContext context;
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    OH_AVCodecCallback callback = {};
+    callback.onError = OnErrorForCallbackTest;
+    ASSERT_EQ(encoder->RegisterCallback(callback, &context), AV_ERR_OK);
+    encoder->OnEncoderError(0);
+    std::this_thread::sleep_for(CALLBACK_BLOCK_CHECK_TIME);
+    {
+        std::lock_guard<std::mutex> lock(context.mutex);
+        EXPECT_EQ(context.callbackCount, 0);
+    }
+    ASSERT_EQ(encoder->Start(), AV_ERR_OK);
+    encoder->OnEncoderError(0);
+    EXPECT_TRUE(WaitForFinishedCount(context, 1));
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_CallbackQueueFull_DropsNewest_001
+ * @tc.desc: Cover callback queue full handling and newest-event dropping
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_CallbackQueueFull_DropsNewest_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    CallbackTestContext context;
+    context.blockFirstCallback = true;
+    ASSERT_TRUE(PrepareCallbackEncoder(codec, context));
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    encoder->OnEncoderError(0);
+    EXPECT_TRUE(WaitForCallbackCount(context, 1));
+    for (int32_t i = 0; i < 65; ++i) {
+        encoder->OnEncoderError(0);
+    }
+    AllowFirstCallbackToReturn(context);
+    EXPECT_TRUE(WaitForFinishedCount(context, 65));
+    std::this_thread::sleep_for(CALLBACK_BLOCK_CHECK_TIME);
+    {
+        std::lock_guard<std::mutex> lock(context.mutex);
+        EXPECT_EQ(context.callbackCount, 65);
+    }
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_OnStreamChanged_Asynchronous_001
+ * @tc.desc: Cover asynchronous stream-change callback dispatch
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnStreamChanged_Asynchronous_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    CallbackTestContext context;
+    OH_AVCodecCallback callback = {};
+    callback.onStreamChanged = OnStreamChangedForCallbackTest;
+    ASSERT_EQ(encoder->RegisterCallback(callback, &context), AV_ERR_OK);
+    ASSERT_EQ(encoder->Start(), AV_ERR_OK);
+    Media::Format format;
+    format.PutIntValue(Media::Tag::VIDEO_WIDTH, 640);
+    encoder->OnStreamChanged(format);
+    EXPECT_TRUE(WaitForFinishedCount(context, 1));
+    std::thread::id callbackThreadId;
+    {
+        std::lock_guard<std::mutex> lock(context.mutex);
+        callbackThreadId = context.callbackThreadId;
+    }
+    EXPECT_NE(callbackThreadId, std::this_thread::get_id());
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_OnOutputBuffer_NullGuards_001
+ * @tc.desc: Cover null callback and null output buffer guards
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_OnOutputBuffer_NullGuards_001, TestSize.Level1)
+{
+    auto encoder = preprocessorEncoder_.get();
+    encoder->OnOutputBufferAvailable(0, nullptr);
+    CallbackTestContext context;
+    OH_AVCodecCallback callback = {};
+    callback.onNewOutputBuffer = OnOutputBufferForCallbackTest;
+    encoder->RegisterCallback(callback, &context);
+    encoder->OnOutputBufferAvailable(0, nullptr);
+    std::this_thread::sleep_for(CALLBACK_BLOCK_CHECK_TIME);
+    std::lock_guard<std::mutex> lock(context.mutex);
+    EXPECT_EQ(context.callbackCount, 0);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_CallbackDispatcher_SelfDetach_001
+ * @tc.desc: Cover dispatcher self-detach when its last owner is released by callback thread
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_CallbackDispatcher_SelfDetach_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    CallbackTestContext context;
+    OH_AVCodecCallback callback = {};
+    callback.onError = OnErrorReleaseDispatcherForCallbackTest;
+    ASSERT_EQ(encoder->RegisterCallback(callback, &context), AV_ERR_OK);
+    ASSERT_EQ(encoder->Start(), AV_ERR_OK);
+    context.dispatcherKeepAlive = encoder->callbackDispatcher_;
+    encoder->OnEncoderError(0);
+    ASSERT_TRUE(WaitForFinishedCount(context, 1));
+    std::this_thread::sleep_for(CALLBACK_BLOCK_CHECK_TIME);
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_CallbackDispatcher_RejectAfterShutdown_001
+ * @tc.desc: Cover stopping guards in OpenGate and TryPost after dispatcher shutdown
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_CallbackDispatcher_RejectAfterShutdown_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    CallbackTestContext context;
+    OH_AVCodecCallback callback = {};
+    callback.onError = OnErrorForCallbackTest;
+    ASSERT_EQ(encoder->RegisterCallback(callback, &context), AV_ERR_OK);
+
+    encoder->ShutdownCallbackDispatcher();
+    ASSERT_EQ(encoder->Start(), AV_ERR_OK);
+    encoder->OnEncoderError(0);
+    std::this_thread::sleep_for(CALLBACK_BLOCK_CHECK_TIME);
+    {
+        std::lock_guard<std::mutex> lock(context.mutex);
+        EXPECT_EQ(context.callbackCount, 0);
+    }
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_OutputCallbackQueueFull_ReleasesNewest_001
+ * @tc.desc: Cover output callback queue-full cleanup callback for the newest buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_OutputCallbackQueueFull_ReleasesNewest_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    auto videoEncoderObject = encoder->videoEncoderObject_;
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    CallbackTestContext context;
+    context.blockFirstCallback = true;
+    OH_AVCodecCallback callback = {};
+    callback.onNewOutputBuffer = OnOutputBufferForCallbackTest;
+    ASSERT_EQ(encoder->RegisterCallback(callback, &context), AV_ERR_OK);
+    ASSERT_EQ(encoder->Start(), AV_ERR_OK);
+    encoder->videoEncoderObject_ = videoEncoderObject;
+
+    auto buffer = AVBuffer::CreateAVBuffer();
+    ASSERT_NE(buffer, nullptr);
+    encoder->OnOutputBufferAvailable(0, buffer);
+    ASSERT_TRUE(WaitForCallbackCount(context, 1));
+    for (uint32_t index = 1; index <= 65; ++index) {
+        encoder->OnOutputBufferAvailable(index, buffer);
+    }
+    AllowFirstCallbackToReturn(context);
+    EXPECT_TRUE(WaitForFinishedCount(context, 65));
+    {
+        std::lock_guard<std::mutex> lock(context.mutex);
+        EXPECT_EQ(context.callbackCount, 65);
+    }
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_ConcurrentDestroy_WaitsWorkerExit_001
+ * @tc.desc: Cover the concurrent-destroy path and callback worker exit wait
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_ConcurrentDestroy_WaitsWorkerExit_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    CallbackTestContext context;
+    context.blockFirstCallback = true;
+    ASSERT_TRUE(PrepareCallbackEncoder(codec, context));
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    encoder->OnEncoderError(0);
+    ASSERT_TRUE(WaitForCallbackCount(context, 1));
+
+    AsyncOperationState firstDestroy;
+    AsyncOperationState secondDestroy;
+    std::thread firstThread([codec, &firstDestroy]() {
+        FinishAsyncOperation(firstDestroy, OH_VideoEncoder_Destroy(codec));
+    });
+    ASSERT_TRUE(IsAsyncOperationBlocked(firstDestroy));
+    std::thread secondThread([codec, &secondDestroy]() {
+        PreprocessorEncoder::Destroy(codec);
+        FinishAsyncOperation(secondDestroy, AV_ERR_OK);
+    });
+    EXPECT_TRUE(IsAsyncOperationBlocked(secondDestroy));
+    AllowFirstCallbackToReturn(context);
+    EXPECT_TRUE(WaitForAsyncOperation(firstDestroy));
+    EXPECT_TRUE(WaitForAsyncOperation(secondDestroy));
+    firstThread.join();
+    secondThread.join();
+    EXPECT_EQ(firstDestroy.result, AV_ERR_OK);
+    EXPECT_EQ(secondDestroy.result, AV_ERR_OK);
+}
+
+/**
+ * @tc.name: NativeVideoEncoderCallback_PreprocessorRoutes_001
+ * @tc.desc: Cover fixed callback bridge routing for preprocess encoder callbacks
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, NativeVideoEncoderCallback_PreprocessorRoutes_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    auto videoEncoderObject = encoder->videoEncoderObject_;
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    CallbackTestContext context;
+    OH_AVCodecCallback callbackConfig = {};
+    callbackConfig.onError = OnErrorForCallbackTest;
+    ASSERT_EQ(encoder->RegisterCallback(callbackConfig, &context), AV_ERR_OK);
+    ASSERT_EQ(encoder->Start(), AV_ERR_OK);
+    encoder->videoEncoderObject_ = videoEncoderObject;
+
+    NativeVideoEncoderCallback callback(codec, callbackConfig, &context);
+    callback.OnError(static_cast<AVCodecErrorType>(0), AVCS_ERR_INVALID_VAL);
+    ASSERT_TRUE(WaitForFinishedCount(context, 1));
+    callback.OnOutputFormatChanged(Media::Format());
+    callback.OnOutputBufferUnbinded();
+    callback.OnOutputBufferAvailable(0, std::shared_ptr<AVBuffer>{});
+    {
+        std::lock_guard<std::mutex> lock(context.mutex);
+        EXPECT_EQ(context.callbackCount, 1);
+        EXPECT_NE(context.callbackThreadId, std::this_thread::get_id());
+    }
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
+}
+
+/**
+ * @tc.name: VideoEncoderObject_GetTransData_ReusesOutputAndInput_001
+ * @tc.desc: Cover strong-reference buffer object creation and reuse for both directions
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoderObject_GetTransData_ReusesOutputAndInput_001, TestSize.Level1)
+{
+    VideoEncoderObject object(std::shared_ptr<AVCodecVideoEncoder>{});
+    auto outputBuffer = OHOS::Media::AVBuffer::CreateAVBuffer();
+    auto inputBuffer = OHOS::Media::AVBuffer::CreateAVBuffer();
+    ASSERT_NE(outputBuffer, nullptr);
+    ASSERT_NE(inputBuffer, nullptr);
+    sptr<OH_AVBuffer> outputObject;
+    object.GetTransData(7, outputBuffer, true, outputObject);
+    ASSERT_NE(outputObject, nullptr);
+    sptr<OH_AVBuffer> outputObjectAgain;
+    object.GetTransData(7, outputBuffer, true, outputObjectAgain);
+    EXPECT_EQ(outputObject.GetRefPtr(), outputObjectAgain.GetRefPtr());
+    sptr<OH_AVBuffer> inputObject;
+    object.GetTransData(8, inputBuffer, false, inputObject);
+    EXPECT_NE(inputObject, nullptr);
+    EXPECT_EQ(object.outputBufferMap_.size(), 1U);
+    EXPECT_EQ(object.inputBufferMap_.size(), 1U);
+}
+
+/**
+ * @tc.name: Preprocessor_RuntimeConfigAndTimestampHelpers_001
+ * @tc.desc: Cover runtime snapshot, realloc callback setter, and disabled frame-drop helpers
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_RuntimeConfigAndTimestampHelpers_001, TestSize.Level1)
+{
+    bool callbackCalled = false;
+    preprocessor_->SetOnBufferReallocCallback(
+        [&callbackCalled](sptr<SurfaceBuffer> &, const sptr<SurfaceBuffer> &) {
+            callbackCalled = true;
+            return true;
+        });
+    preprocessor_->cropConfig_.enabled = true;
+    preprocessor_->cropConfig_.width = 320;
+    preprocessor_->downsamplingConfig_.enabled = false;
+
+    auto config = preprocessor_->GetRuntimeConfigSnapshot();
+    EXPECT_TRUE(config.crop.enabled);
+    EXPECT_EQ(config.crop.width, 320);
+    ASSERT_TRUE(static_cast<bool>(config.reallocCallback));
+    sptr<SurfaceBuffer> oldBuffer;
+    sptr<SurfaceBuffer> newBuffer;
+    EXPECT_TRUE(config.reallocCallback(oldBuffer, newBuffer));
+    EXPECT_TRUE(callbackCalled);
+    EXPECT_FALSE(preprocessor_->ShouldDropFrame(1));
+    preprocessor_->FlushTimeStamp();
+}
+
+/**
+ * @tc.name: Preprocessor_PixelFormatAsyncAndProcessGuards_001
+ * @tc.desc: Cover async-mode and pixel-format helpers plus Process null-buffer guards
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, Preprocessor_PixelFormatAsyncAndProcessGuards_001, TestSize.Level1)
+{
+    Media::Format format;
+    EXPECT_TRUE(preprocessor_->UsingAsyncMode(format));
+    format.PutIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, 1);
+    EXPECT_FALSE(preprocessor_->UsingAsyncMode(format));
+
+    Media::Format pixelFormat;
+    EXPECT_EQ(preprocessor_->GetPixelFormatFromConfiguration(pixelFormat), GRAPHIC_PIXEL_FMT_YCBCR_420_SP);
+    preprocessor_->encoderConfig_.pixelFormat = GRAPHIC_PIXEL_FMT_RGBA_8888;
+    EXPECT_EQ(preprocessor_->GetPixelFormatFromParameter(pixelFormat), GRAPHIC_PIXEL_FMT_RGBA_8888);
+
+    sptr<SurfaceBuffer> input;
+    sptr<SurfaceBuffer> output;
+    EXPECT_EQ(preprocessor_->Process(input, output), AVCS_ERR_INVALID_VAL);
+    input = SurfaceBuffer::Create();
+    ASSERT_NE(input, nullptr);
+    EXPECT_EQ(preprocessor_->Process(input, output), AVCS_ERR_INVALID_VAL);
+}
+
+/**
+ * @tc.name: PreprocManager_SetEncoderRunning_Guards_001
+ * @tc.desc: Cover unknown encoder and uninitialized EncoderInfo start failures
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocManager_SetEncoderRunning_Guards_001, TestSize.Level1)
+{
+    EXPECT_EQ(preprocessorManager_->SetEncoderRunning("unknown_encoder", true), AVCS_ERR_INVALID_STATE);
+
+    const std::string encoderId = "uninitialized_encoder";
+    preprocessorManager_->RegisterEncoder(encoderId, nullptr, nullptr);
+    EXPECT_EQ(preprocessorManager_->SetEncoderRunning(encoderId, true), AVCS_ERR_UNKNOWN);
+    EXPECT_EQ(preprocessorManager_->SetEncoderRunning(encoderId, false), AVCS_ERR_OK);
+    preprocessorManager_->UnregisterEncoder(encoderId);
+    preprocessorManager_->UnregisterEncoder("unknown_encoder");
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_MagicSnapshotAndDetachHelpers_001
+ * @tc.desc: Cover magic classification, callback snapshot, and peer detachment helpers
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_MagicSnapshotAndDetachHelpers_001, TestSize.Level1)
+{
+    EXPECT_TRUE(PreprocessorEncoder::IsPrimaryEncoderMagic(AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER));
+    EXPECT_TRUE(PreprocessorEncoder::IsSecondaryEncoderMagic(AVMagic::AVCODEC_MAGIC_SECONDARY_VIDEO_ENCODER));
+    EXPECT_TRUE(PreprocessorEncoder::IsPreprocEncoderMagic(AVMagic::AVCODEC_MAGIC_PRIMARY_VIDEO_ENCODER));
+    EXPECT_FALSE(PreprocessorEncoder::IsPreprocEncoderMagic(AVMagic::AVCODEC_MAGIC_VIDEO_ENCODER));
+
+    int32_t userData = 1;
+    preprocessorEncoder_->callback_.onError = OnErrorVoid;
+    preprocessorEncoder_->userData_ = &userData;
+    auto snapshot = preprocessorEncoder_->GetCallbackSnapshot();
+    EXPECT_EQ(snapshot.callback.onError, OnErrorVoid);
+    EXPECT_EQ(snapshot.userData, &userData);
+
+    PreprocessorEncoder secondary(AVMagic::AVCODEC_MAGIC_SECONDARY_VIDEO_ENCODER);
+    preprocessorEncoder_->isPrimary_ = true;
+    preprocessorEncoder_->secondary_ = &secondary;
+    secondary.primary_ = preprocessorEncoder_.get();
+    preprocessorEncoder_->DetachPeerEncoder();
+    EXPECT_EQ(preprocessorEncoder_->secondary_, nullptr);
+    EXPECT_EQ(secondary.primary_, nullptr);
+}
+
+/**
+ * @tc.name: PreprocessorEncoder_NullDispatcherLifecycleHelpers_001
+ * @tc.desc: Cover callback lifecycle helper branches without a dispatcher or backing encoder
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, PreprocessorEncoder_NullDispatcherLifecycleHelpers_001, TestSize.Level1)
+{
+    int32_t userData = 1;
+    preprocessorEncoder_->callbackDispatcher_ = nullptr;
+    preprocessorEncoder_->preprocMgr_ = nullptr;
+    preprocessorEncoder_->videoEncoderObject_ = nullptr;
+    preprocessorEncoder_->callback_.onError = OnErrorVoid;
+    preprocessorEncoder_->userData_ = &userData;
+    ASSERT_EQ(preprocessorEncoder_->callbackDispatcher_, nullptr);
+
+    preprocessorEncoder_->CloseCallbackGate();
+    preprocessorEncoder_->CloseAndWaitCallbackIfNeeded();
+    preprocessorEncoder_->PrepareCallbackShutdown();
+    preprocessorEncoder_->ShutdownCallbackDispatcher();
+
+    auto snapshot = preprocessorEncoder_->GetCallbackSnapshot();
+    EXPECT_EQ(preprocessorEncoder_->callbackDispatcher_, nullptr);
+    EXPECT_EQ(preprocessorEncoder_->preprocMgr_, nullptr);
+    EXPECT_EQ(preprocessorEncoder_->videoEncoderObject_, nullptr);
+    EXPECT_EQ(snapshot.callback.onError, OnErrorVoid);
+    EXPECT_EQ(snapshot.userData, &userData);
+}
+
+/**
+ * @tc.name: VideoEncoderObject_GetTransData_ReplacesMismatchedBuffer_001
+ * @tc.desc: Cover replacement of a cached OH_AVBuffer when an index is reused for another AVBuffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, VideoEncoderObject_GetTransData_ReplacesMismatchedBuffer_001, TestSize.Level1)
+{
+    VideoEncoderObject object(std::shared_ptr<AVCodecVideoEncoder>{});
+    auto firstBuffer = AVBuffer::CreateAVBuffer();
+    auto secondBuffer = AVBuffer::CreateAVBuffer();
+    ASSERT_NE(firstBuffer, nullptr);
+    ASSERT_NE(secondBuffer, nullptr);
+    sptr<OH_AVBuffer> firstObject;
+    object.GetTransData(9, firstBuffer, true, firstObject);
+    ASSERT_NE(firstObject, nullptr);
+
+    sptr<OH_AVBuffer> secondObject;
+    object.GetTransData(9, secondBuffer, true, secondObject);
+    ASSERT_NE(secondObject, nullptr);
+    EXPECT_NE(firstObject.GetRefPtr(), secondObject.GetRefPtr());
+    EXPECT_EQ(firstObject->magic_, MFMagic::MFMAGIC_UNKNOWN);
+    EXPECT_EQ(firstObject->buffer_, nullptr);
+    EXPECT_EQ(object.outputBufferMap_.at(9).GetRefPtr(), secondObject.GetRefPtr());
+    EXPECT_EQ(object.outputBufferStateMap_.at(9), 0); // OUTPUT_BUFFER_PENDING
+}
+
+/**
+ * @tc.name: NativeVideoEncoderCallback_PreprocessorOutputRoute_001
+ * @tc.desc: Cover non-null output-buffer routing from NativeVideoEncoderCallback to the async dispatcher
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, NativeVideoEncoderCallback_PreprocessorOutputRoute_001, TestSize.Level1)
+{
+    OH_AVCodec *codec = nullptr;
+    ASSERT_EQ(PreprocessorEncoder::CreatePrimary(OH_AVCODEC_MIMETYPE_VIDEO_AVC, &codec), AV_ERR_OK);
+    auto *encoder = reinterpret_cast<PreprocessorEncoder *>(codec);
+    auto videoEncoderObject = encoder->videoEncoderObject_;
+    encoder->videoEncoderObject_ = nullptr;
+    encoder->preprocMgr_ = nullptr;
+    CallbackTestContext context;
+    OH_AVCodecCallback callbackConfig = {};
+    callbackConfig.onNewOutputBuffer = OnOutputBufferForCallbackTest;
+    ASSERT_EQ(encoder->RegisterCallback(callbackConfig, &context), AV_ERR_OK);
+    ASSERT_EQ(encoder->Start(), AV_ERR_OK);
+    encoder->videoEncoderObject_ = videoEncoderObject;
+
+    NativeVideoEncoderCallback callback(codec, callbackConfig, &context);
+    auto buffer = AVBuffer::CreateAVBuffer();
+    ASSERT_NE(buffer, nullptr);
+    callback.OnOutputBufferAvailable(11, buffer);
+    EXPECT_TRUE(WaitForFinishedCount(context, 1));
+    EXPECT_EQ(OH_VideoEncoder_Destroy(codec), AV_ERR_OK);
 }

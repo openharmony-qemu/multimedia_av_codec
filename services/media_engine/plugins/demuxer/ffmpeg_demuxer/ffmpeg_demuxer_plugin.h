@@ -16,6 +16,10 @@
 #ifndef FFMPEG_DEMUXER_PLUGIN_H
 #define FFMPEG_DEMUXER_PLUGIN_H
 
+#ifndef USE_FF_DEMUXER
+#define USE_FF_DEMUXER
+#endif
+
 #include <atomic>
 #include <vector>
 #include <thread>
@@ -25,9 +29,7 @@
 #include <shared_mutex>
 #include <list>
 #include <set>
-#include <functional>
 #include <unordered_map>
-#include <chrono>
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
 #include "avpacket_memory.h"
@@ -439,6 +441,7 @@ private:
     IOContext parserRefIoContext_;
     std::shared_ptr<AVFormatContext> parserRefCtx_{nullptr};
     int parserRefIdx_ = -1;
+    std::shared_mutex sharedReferenceParserMutex_;
     std::shared_ptr<ReferenceParserManager> referenceParser_{nullptr};
     int32_t parserCurGopId_ = 0;
     int64_t pendingSeekMsTime_ = -1;

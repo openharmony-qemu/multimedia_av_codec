@@ -2560,6 +2560,63 @@ HWTEST_F(DashMpdDownloaderUnittest, SwitchStreamIfNeeded_002, TestSize.Level0)
     mpdDownloader_->SwitchStreamIfNeeded(currentStream, 1);
     EXPECT_EQ(currentStream->streamId_, 2);
 }
+
+/**
+ * @tc.name  : Test NotifyParseSidxResult
+ * @tc.number: NotifyParseSidxResult_001
+ * @tc.desc  : Test NotifyParseSidxResult with null callback does not crash
+ */
+HWTEST_F(DashMpdDownloaderUnittest, NotifyParseSidxResult_001, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    mpdDownloader_->callback_.reset();
+    mpdDownloader_->notifyOpenOk_ = false;
+    mpdDownloader_->NotifyParseSidxResult();
+    SUCCEED();
+}
+
+/**
+ * @tc.name  : Test NotifyParseSidxResult
+ * @tc.number: NotifyParseSidxResult_002
+ * @tc.desc  : Test NotifyParseSidxResult when notifyOpenOk_ is false and PutStreamToDownload returns true
+ */
+HWTEST_F(DashMpdDownloaderUnittest, NotifyParseSidxResult_002, TestSize.Level0)
+{
+    ASSERT_NE(mpdDownloader_, nullptr);
+    auto callback = std::make_shared<MockDashMpdCallback>();
+    mpdDownloader_->callback_ = callback;
+    mpdDownloader_->notifyOpenOk_ = false;
+    mpdDownloader_->NotifyParseSidxResult();
+    EXPECT_TRUE(mpdDownloader_->notifyOpenOk_);
+}
+
+/**
+ * @tc.name  : Test ParseSidx empty content
+ * @tc.number: ParseSidx_EmptyContent
+ * @tc.desc  : Test ParseSidx returns early when content is empty
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseSidx_EmptyContent, TestSize.Level1)
+{
+    mpdDownloader_->notifyOpenOk_ = false;
+    mpdDownloader_->downloadContent_ = "";
+    mpdDownloader_->currentDownloadStream_ = nullptr;
+    mpdDownloader_->ParseSidx();
+    EXPECT_FALSE(mpdDownloader_->notifyOpenOk_);
+}
+
+/**
+ * @tc.name  : Test ParseSidx null stream
+ * @tc.number: ParseSidx_NullStream
+ * @tc.desc  : Test ParseSidx returns early when currentDownloadStream_ is null
+ */
+HWTEST_F(DashMpdDownloaderUnittest, ParseSidx_NullStream, TestSize.Level1)
+{
+    mpdDownloader_->notifyOpenOk_ = false;
+    mpdDownloader_->downloadContent_ = "testcontent";
+    mpdDownloader_->currentDownloadStream_ = nullptr;
+    mpdDownloader_->ParseSidx();
+    EXPECT_FALSE(mpdDownloader_->notifyOpenOk_);
+}
 }
 }
 }

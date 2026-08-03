@@ -28,8 +28,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace MPEG4 {
-constexpr uint32_t DTS_SYNC_WORD = 0x7FFE8001;
-constexpr uint8_t MAX_DTS_AUDIO_MODE = 10;
 constexpr uint32_t MPEG_AUDIO_SYNC = 0x7FF;
 constexpr uint8_t MPEG_AUDIO_VERSION_RESERVED = 0x01;
 constexpr uint8_t MPEG_AUDIO_LAYER_RESERVED = 0x00;
@@ -257,8 +255,6 @@ Status MPEG4AudioParser::ParseAudioFrame(uint8_t* data, uint32_t size, std::stri
         ret = ParseMpegAudio(mediaInfo);
     } else if (mime == MimeType::AUDIO_AAC) {
         ret = ParseAacAudio(mediaInfo);
-    } else if (mime == "audio/dts") {
-        ret = ParseDtsAudio(mediaInfo);
     }
 
     return ret;
@@ -302,28 +298,6 @@ Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
     mediaInfo.tracks[index_].Set<Tag::AUDIO_OUTPUT_CHANNELS>(channels);
     mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
     mediaInfo.tracks[index_].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
-    return Status::OK;
-}
-
-Status MPEG4AudioParser::ParseDtsAudio(MediaInfo& mediaInfo)
-{
-    MEDIA_LOG_D("In");
-    constexpr uint32_t syncWordSize = 4;
-    constexpr uint32_t modeFirstByteOffset = 3;
-    constexpr uint32_t modeSecondByteOffset = 4;
-    constexpr uint32_t minDtsHeaderSize = syncWordSize + modeSecondByteOffset + 1;
-    uint32_t currentOffset = 0;
-    if (dataSize_ < minDtsHeaderSize || GetU32Value(&audioData_[currentOffset]) != DTS_SYNC_WORD) {
-        return Status::ERROR_INVALID_DATA;
-    }
-    currentOffset += syncWordSize;
-    uint8_t mode = ((audioData_[currentOffset + modeFirstByteOffset] & 0xF) << 4) +
-        (audioData_[currentOffset + modeSecondByteOffset] >> 6);
-    if (mode >= MAX_DTS_AUDIO_MODE) {
-        return Status::ERROR_INVALID_DATA;
-    }
-    AudioChannelLayout layout = g_dtsAudioMode2DtsChannelLayout[mode];
-    mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
     return Status::OK;
 }
 } // namespace MPEG4

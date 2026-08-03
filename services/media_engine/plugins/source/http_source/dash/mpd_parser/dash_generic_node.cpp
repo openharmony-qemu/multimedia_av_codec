@@ -222,13 +222,23 @@ void DashGenericNode::GetAttr(const std::string &attrName, double &val)
 {
     for (size_t i = 0; i < attrs_.size(); ++i) {
         if (attrs_[i] == attrName && !vals_[i].empty()) {
-            val = std::atof(vals_[i].c_str());
+            double tempVal = 0.0;
+            if (StringUtil::SafeStoDouble(vals_[i], tempVal)) {
+                val = tempVal;
+            } else {
+                val = 0.0;
+            }
             return;
         }
     }
     for (size_t i = 0; i < commonAttrs_.size(); ++i) {
         if (commonAttrs_[i] == attrName && !commonVals_[i].empty()) {
-            val = std::atof(commonVals_[i].c_str());
+            double tempVal = 0.0;
+            if (StringUtil::SafeStoDouble(commonVals_[i], tempVal)) {
+                val = tempVal;
+            } else {
+                val = 0.0;
+            }
             return;
         }
     }

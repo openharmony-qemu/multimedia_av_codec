@@ -151,12 +151,12 @@ public:
     std::shared_ptr<DashInitSegment> GetInitSegmentByStreamId(int streamId);
     uint32_t GetCurrentPeriodIndex() const
     {
-        return currentPeriodIndex_;
+        return currentPeriodIndex_.load();
     }
     void SetCurrentPeriodIndex(uint32_t index)
     {
         if (mpdInfo_ != nullptr && index < mpdInfo_->periodInfoList_.size()) {
-            currentPeriodIndex_ = index;
+            currentPeriodIndex_.store(index);
         }
     }
     DashMpdInfo* GetMpdInfo() const
@@ -180,6 +180,7 @@ public:
 private:
     void ParseManifest();
     void ParseSidx();
+    void NotifyParseSidxResult();
     void OpenStream(std::shared_ptr<DashStreamDescription> stream);
     void DoOpen(const std::string &url, int64_t startRange = -1, int64_t endRange = -1);
     uint32_t SaveData(uint8_t *data, uint32_t len, bool notBlock);
@@ -284,6 +285,7 @@ private:
 
 private:
     std::string url_ {};
+    std::mutex downloadContentMutex_;
     std::string downloadContent_ {}; // mpd content or sidx content
     std::string defaultAudioLang_ {};
     std::string defaultSubtitleLang_ {};
@@ -315,7 +317,7 @@ private:
     int32_t videoStreamId_ {-1};
     int32_t audioStreamId_ {-1};
     int32_t subTitleStreamId_ {-1};
-    uint32_t currentPeriodIndex_ {0};
+    std::atomic<uint32_t> currentPeriodIndex_ {0};
     mutable std::mutex seekRangeMutex_ {};
     std::vector<SeekRange> seekRanges_ {};
 };

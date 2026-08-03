@@ -48,7 +48,7 @@ void VDecCallbackTest::CheckDetailedErrorCode(int32_t errorCode)
     if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) {
         detailedErrorCode_.verification_ = false;
     }
-    if (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
+    if (errorCode == AVCS_ERR_MISSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
         detailedErrorCode_.verification_ = false;
     }
 }
@@ -111,7 +111,7 @@ void VDecCallbackTestExt::CheckDetailedErrorCode(int32_t errorCode)
     if (errorCode == AVCS_ERR_ILLEGAL_PARAMETER_SETS && detailedErrorCode_.illegalParam_) {
         detailedErrorCode_.verification_ = false;
     }
-    if (errorCode == AVCS_ERR_MINSSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
+    if (errorCode == AVCS_ERR_MISSING_PARAMETER_SETS && detailedErrorCode_.missingParam_) {
         detailedErrorCode_.verification_ = false;
     }
 }

@@ -18,7 +18,9 @@
 #include <vector>
 #include <map>
 #include <cstdint>
+#ifdef USE_FF_DEMUXER
 #include "avpacket_wrapper.h"
+#endif
 #include "block_queue.h"
 #include "common/log.h"
 #include "common/status.h"
@@ -28,6 +30,7 @@ namespace Media {
 namespace Plugins {
 constexpr uint32_t BLOCK_QUEUE_LOG_LIMIT_FREQUENCY = 100;
 
+#ifdef USE_FF_DEMUXER
 namespace Ffmpeg {
 struct SamplePacket {
     uint32_t offset = 0;
@@ -38,6 +41,7 @@ struct SamplePacket {
     ~SamplePacket() = default;
 };
 } // namespace Ffmpeg
+#endif
 
 namespace MPEG4 {
 struct Sample {
@@ -62,6 +66,7 @@ struct MPEG4Sample {
     bool isAnnexb = false;
     bool isVttc = false;
     uint32_t queueIndex = 0;
+    uint32_t sampleIndex = 0;
 };
 } // namespace MPEG4
 
@@ -71,7 +76,7 @@ struct BlockTraits {
     static void UpdateMaxPts(const std::shared_ptr<T>& block, int64_t& maxPts);
 };
 
-// 为SamplePacket特化
+#ifdef USE_FF_DEMUXER
 template<>
 struct BlockTraits<Ffmpeg::SamplePacket> {
     static inline constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "BlockQueuePool" };
@@ -95,6 +100,7 @@ struct BlockTraits<Ffmpeg::SamplePacket> {
         }
     }
 };
+#endif
 
 // 为MPEG4Sample特化
 template<>
@@ -558,7 +564,9 @@ Status BlockQueuePool<T>::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxP
 }
 
 using Mpeg4BlockQueuePool = BlockQueuePool<MPEG4::MPEG4Sample>;
+#ifdef USE_FF_DEMUXER
 using FfmpegBlockQueuePool = BlockQueuePool<Ffmpeg::SamplePacket>;
+#endif
 } // namespace Plugins
 } // namespace Media
 } // namespace OHOS

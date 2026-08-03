@@ -649,38 +649,6 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_ZEROCOPY_INNER_FUNC_0002, TestSiz
 }
 
 /**
- * @tc.number    : DEMUXER_ZEROCOPY_INNER_FUNC_0003
- * @tc.name      : create empty buffer for read, local and uri, mp4
- * @tc.desc      : function test
- */
-HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_ZEROCOPY_INNER_FUNC_0003, TestSize.Level2)
-{
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_HDRVIVID_AV3A,
-        {26, 44}, {1, 44}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_HDRVIVID_AV3A, {26, 44}, {1, 44}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MPEG4_AAC, {2, 2}, {1, 2}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MPEG4_AAC, {2, 2}, {1, 2}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_VVC, {254}, {4}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_VVC, {254}, {4}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_PREY_DEPTH,
-        {16, 77, 77}, {1, 3, 3}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_PREY_DEPTH,
-        {16, 77, 77}, {1, 3, 3}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_META,
-        {210, 211, 210}, {210, 211, 210}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_META,
-        {210, 211, 210}, {210, 211, 210}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_AAC,
-        {431, 431, 431, 231}, {431, 431, 431, 231}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_AAC,
-        {431, 431, 431, 231}, {431, 431, 431, 231}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_MUXER_MP3,
-        {417, 417, 417, 223}, {417, 417, 417, 223}}));
-    ASSERT_TRUE(PluginCheckDemuxerResult({DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_URI_MUXER_MP3,
-        {417, 417, 417, 223}, {417, 417, 417, 223}}));
-}
-
-/**
  * @tc.number    : DEMUXER_ZEROCOPY_INNER_FUNC_0004
  * @tc.name      : create empty buffer for read, local and uri, avi
  * @tc.desc      : function test

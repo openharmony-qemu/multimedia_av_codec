@@ -1321,6 +1321,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0100, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1341,6 +1343,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0200, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1361,6 +1365,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0300, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1381,6 +1387,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0400, TestSize.Level0)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1401,6 +1409,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0500, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1421,6 +1431,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0600, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1441,6 +1453,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0700, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1461,6 +1475,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0800, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1481,6 +1497,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_0900, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1501,6 +1519,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1000, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1521,6 +1541,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1100, TestSize.Level1)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1541,6 +1563,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1200, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1561,6 +1585,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1300, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1581,6 +1607,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1400, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1601,6 +1629,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1500, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1621,6 +1651,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1600, TestSize.Level1)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1641,6 +1673,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1700, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1661,6 +1695,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1800, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1681,6 +1717,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_1900, TestSize.Level0)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1701,6 +1739,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2000, TestSize.Level1)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1721,6 +1761,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2100, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     CheckTrackSelect(g_trackCount, demuxer);
@@ -1742,6 +1784,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2200, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 1);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bps));
@@ -1765,6 +1809,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2300, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bps));
@@ -1788,6 +1834,8 @@ HWTEST_F(DemuxerFunc2NdkTest, AUDIO_DEMUXER_FUNCTION_2400, TestSize.Level2)
     int fd = open(file, O_RDONLY);
 
     OpenFile(file, fd, &source, &demuxer);
+    ASSERT_NE(source, nullptr);
+    ASSERT_NE(demuxer, nullptr);
     CheckTrackCount(&sourceFormat, source, &g_trackCount, 1);
     CheckChannelCount(&trackFormat, source, 2);
     ASSERT_TRUE(OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_BITS_PER_CODED_SAMPLE, &bps));

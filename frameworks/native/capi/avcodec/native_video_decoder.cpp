@@ -38,6 +38,28 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "NativeVideoDecoder"};
 constexpr size_t MAX_TEMPNUM = 64;
 constexpr uint32_t MAX_LENGTH = 255;
+enum OutputBufferState : uint8_t {
+    OUTPUT_BUFFER_PENDING = 0,
+    OUTPUT_BUFFER_RELEASED = 1,
+    OUTPUT_BUFFER_UNBINDED = 2,
+    OUTPUT_BUFFER_RELEASE_READY = OUTPUT_BUFFER_RELEASED | OUTPUT_BUFFER_UNBINDED,
+};
+
+void ClearOutputWrapper(OHOS::sptr<OH_AVBuffer> &wrapper,
+    std::queue<OHOS::sptr<MFObjectMagic>> &tempList)
+{
+    wrapper->magic_ = MFMagic::MFMAGIC_UNKNOWN;
+    wrapper->buffer_ = nullptr;
+    tempList.push(std::move(wrapper));
+}
+
+void ClearOutputWrapper(OHOS::sptr<OH_AVMemory> &wrapper,
+    std::queue<OHOS::sptr<MFObjectMagic>> &tempList)
+{
+    wrapper->magic_ = MFMagic::MFMAGIC_UNKNOWN;
+    wrapper->memory_ = nullptr;
+    tempList.push(std::move(wrapper));
+}
 
 using namespace OHOS::MediaAVCodec;
 using namespace OHOS::Media;
@@ -52,8 +74,11 @@ struct VideoDecoderObject : public OH_AVCodec {
     ~VideoDecoderObject() = default;
 
     void ClearBufferList();
+    void UpdateOutputBufferState(uint32_t index, uint8_t state);
+    void ReleaseOutputBufferWrapper(uint32_t index);
+    void MarkOutputBufferPending(uint32_t index);
+    void ClearOutputBufferForUnbind();
     void StopCallback();
-    void ClearOutputBufferForStreamChange();
     void BufferToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> &tempMap);
     void MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> &tempMap);
     OH_AVBuffer *GetTransData(const uint32_t &index, std::shared_ptr<AVBuffer> &buffer, bool isOutput);
@@ -65,6 +90,7 @@ struct VideoDecoderObject : public OH_AVCodec {
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> inputMemoryMap_;
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> outputBufferMap_;
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> inputBufferMap_;
+    std::unordered_map<uint32_t, uint8_t> outputBufferStateMap_;
     std::shared_ptr<NativeVideoDecoderCallback> callback_ = nullptr;
     bool isSetMemoryCallback_ = false;
     bool isOutputSurfaceMode_ = false;
@@ -107,9 +133,6 @@ public:
         CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, "Codec magic error!");
         CHECK_AND_RETURN_LOG(asyncCallback_.onStreamChanged != nullptr || callback_.onStreamChanged != nullptr,
                              "Callback is nullptr");
-        struct VideoDecoderObject *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec_);
-        CHECK_AND_RETURN_LOG(videoDecObj->videoDecoder_ != nullptr, "Video decoder is nullptr!");
-        videoDecObj->ClearOutputBufferForStreamChange();
         OHOS::sptr<OH_AVFormat> object = new (std::nothrow) OH_AVFormat(format);
         CHECK_AND_RETURN_LOG(object != nullptr, "OH_AVFormat create failed");
         // The object lifecycle is controlled by the current function stack
@@ -118,6 +141,15 @@ public:
         } else if (callback_.onStreamChanged != nullptr) {
             callback_.onStreamChanged(codec_, reinterpret_cast<OH_AVFormat *>(object.GetRefPtr()), userData_);
         }
+    }
+
+    void OnOutputBufferUnbinded() override
+    {
+        std::shared_lock<std::shared_mutex> lock(mutex_);
+        CHECK_AND_RETURN_LOG(codec_ != nullptr, "Codec is nullptr");
+        CHECK_AND_RETURN_LOG(codec_->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, "Codec magic error!");
+        auto *videoDecObj = reinterpret_cast<VideoDecoderObject *>(codec_);
+        videoDecObj->ClearOutputBufferForUnbind();
     }
 
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override
@@ -223,9 +255,12 @@ OH_AVMemory *VideoDecoderObject::GetTransData(const uint32_t &index, std::shared
 {
     auto &memoryMap = isOutput ? this->outputMemoryMap_ : this->inputMemoryMap_;
     {
-        std::shared_lock<std::shared_mutex> lock(this->objListMutex_);
+        std::lock_guard<std::shared_mutex> lock(this->objListMutex_);
         auto iter = memoryMap.find(index);
         if (iter != memoryMap.end() && iter->second->IsEqualMemory(memory)) {
+            if (isOutput) {
+                this->outputBufferStateMap_[index] = OUTPUT_BUFFER_PENDING;
+            }
             return reinterpret_cast<OH_AVMemory *>(iter->second.GetRefPtr());
         }
     }
@@ -233,13 +268,12 @@ OH_AVMemory *VideoDecoderObject::GetTransData(const uint32_t &index, std::shared
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "AV memory create failed");
 
     std::lock_guard<std::shared_mutex> lock(this->objListMutex_);
+    if (isOutput) {
+        this->outputBufferStateMap_[index] = OUTPUT_BUFFER_PENDING;
+    }
     auto iterAndRet = memoryMap.emplace(index, object);
     if (!iterAndRet.second) {
         auto &temp = iterAndRet.first->second;
-        if (temp->memory_ == nullptr) {
-            temp->memory_ = memory;
-            return reinterpret_cast<OH_AVMemory *>(temp.GetRefPtr());
-        }
         temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
         temp->memory_ = nullptr;
         this->tempList_.push(std::move(temp));
@@ -255,9 +289,12 @@ OH_AVBuffer *VideoDecoderObject::GetTransData(const uint32_t &index, std::shared
 {
     auto &bufferMap = isOutput ? this->outputBufferMap_ : this->inputBufferMap_;
     {
-        std::shared_lock<std::shared_mutex> lock(this->objListMutex_);
+        std::lock_guard<std::shared_mutex> lock(this->objListMutex_);
         auto iter = bufferMap.find(index);
         if (iter != bufferMap.end() && iter->second->IsEqualBuffer(buffer)) {
+            if (isOutput) {
+                this->outputBufferStateMap_[index] = OUTPUT_BUFFER_PENDING;
+            }
             return reinterpret_cast<OH_AVBuffer *>(iter->second.GetRefPtr());
         }
     }
@@ -265,13 +302,12 @@ OH_AVBuffer *VideoDecoderObject::GetTransData(const uint32_t &index, std::shared
     CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVBuffer");
 
     std::lock_guard<std::shared_mutex> lock(this->objListMutex_);
+    if (isOutput) {
+        this->outputBufferStateMap_[index] = OUTPUT_BUFFER_PENDING;
+    }
     auto iterAndRet = bufferMap.emplace(index, object);
     if (!iterAndRet.second) {
         auto &temp = iterAndRet.first->second;
-        if (temp->buffer_ == nullptr) {
-            temp->buffer_ = buffer;
-            return reinterpret_cast<OH_AVBuffer *>(temp.GetRefPtr());
-        }
         temp->magic_ = MFMagic::MFMAGIC_UNKNOWN;
         temp->buffer_ = nullptr;
         this->tempList_.push(std::move(temp));
@@ -281,6 +317,54 @@ OH_AVBuffer *VideoDecoderObject::GetTransData(const uint32_t &index, std::shared
         }
     }
     return reinterpret_cast<OH_AVBuffer *>(object.GetRefPtr());
+}
+
+void VideoDecoderObject::UpdateOutputBufferState(uint32_t index, uint8_t state)
+{
+    auto &bufferState = outputBufferStateMap_[index];
+    bufferState |= state;
+    if (bufferState != OUTPUT_BUFFER_RELEASE_READY) {
+        return;
+    }
+    auto clearWrapper = [this, index](auto &bufferMap) {
+        auto iter = bufferMap.find(index);
+        if (iter == bufferMap.end()) {
+            return;
+        }
+        ClearOutputWrapper(iter->second, tempList_);
+        bufferMap.erase(iter);
+    };
+    isSetMemoryCallback_ ? clearWrapper(outputMemoryMap_) : clearWrapper(outputBufferMap_);
+    outputBufferStateMap_.erase(index);
+}
+
+void VideoDecoderObject::ReleaseOutputBufferWrapper(uint32_t index)
+{
+    std::lock_guard<std::shared_mutex> lock(objListMutex_);
+    UpdateOutputBufferState(index, OUTPUT_BUFFER_RELEASED);
+    while (tempList_.size() > MAX_TEMPNUM) {
+        tempList_.pop();
+    }
+}
+
+void VideoDecoderObject::MarkOutputBufferPending(uint32_t index)
+{
+    std::lock_guard<std::shared_mutex> lock(objListMutex_);
+    outputBufferStateMap_[index] = OUTPUT_BUFFER_PENDING;
+}
+
+void VideoDecoderObject::ClearOutputBufferForUnbind()
+{
+    std::lock_guard<std::shared_mutex> lock(objListMutex_);
+    auto clearBufferMap = [this](auto &bufferMap) {
+        for (auto iter = bufferMap.begin(); iter != bufferMap.end();) {
+            UpdateOutputBufferState(iter++->first, OUTPUT_BUFFER_UNBINDED);
+        }
+    };
+    isSetMemoryCallback_ ? clearBufferMap(outputMemoryMap_) : clearBufferMap(outputBufferMap_);
+    while (tempList_.size() > MAX_TEMPNUM) {
+        tempList_.pop();
+    }
 }
 
 void VideoDecoderObject::ClearBufferList()
@@ -302,36 +386,9 @@ void VideoDecoderObject::ClearBufferList()
         MemoryToTempFunc(outputMemoryMap_);
         outputMemoryMap_.clear();
     }
+    outputBufferStateMap_.clear();
     while (tempList_.size() > MAX_TEMPNUM) {
         tempList_.pop();
-    }
-}
-
-void VideoDecoderObject::ClearOutputBufferForStreamChange()
-{
-    std::lock_guard<std::shared_mutex> lock(objListMutex_);
-    for (auto it = outputBufferMap_.begin(); it != outputBufferMap_.end();) {
-        if (it->second->buffer_ == nullptr) {
-            it->second->magic_ = MFMagic::MFMAGIC_UNKNOWN;
-            this->tempList_.push(std::move(it->second));
-            it = outputBufferMap_.erase(it);
-        } else {
-            it->second->buffer_ = nullptr;
-            ++it;
-        }
-    }
-    for (auto it = outputMemoryMap_.begin(); it != outputMemoryMap_.end();) {
-        if (it->second->memory_ == nullptr) {
-            it->second->magic_ = MFMagic::MFMAGIC_UNKNOWN;
-            this->tempList_.push(std::move(it->second));
-            it = outputMemoryMap_.erase(it);
-        } else {
-            it->second->memory_ = nullptr;
-            ++it;
-        }
-    }
-    while (this->tempList_.size() > MAX_TEMPNUM) {
-        this->tempList_.pop();
     }
 }
 
@@ -559,6 +616,8 @@ OH_AVErrCode OH_VideoDecoder_SetSurface(OH_AVCodec *codec, OHNativeWindow *windo
     CHECK_AND_RETURN_RET_LOG(codec->magic_ == AVMagic::AVCODEC_MAGIC_VIDEO_DECODER, AV_ERR_INVALID_VAL,
                              "Codec magic error!");
     CHECK_AND_RETURN_RET_LOG(window != nullptr, AV_ERR_INVALID_VAL, "Window is nullptr!");
+    CHECK_AND_RETURN_RET_LOG(GetNativeObjectMagic(window) == NATIVE_OBJECT_MAGIC_WINDOW, AV_ERR_INVALID_VAL,
+                             "Window is invalid!");
     CHECK_AND_RETURN_RET_LOG(window->surface != nullptr, AV_ERR_INVALID_VAL, "Input window surface is nullptr!");
 
     ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_VideoDecoder_SetSurface.Time", TIMES);
@@ -662,6 +721,7 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputData(struct OH_AVCodec *codec, uint32_t
         AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder render output data failed!");
+    videoDecObj->ReleaseOutputBufferWrapper(index);
 
     return AV_ERR_OK;
 }
@@ -682,6 +742,7 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputData(struct OH_AVCodec *codec, uint32_t i
         AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder free output data failed!");
+    videoDecObj->ReleaseOutputBufferWrapper(index);
 
     return AV_ERR_OK;
 }
@@ -703,6 +764,7 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBuffer(struct OH_AVCodec *codec, uint32
         AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder render output data failed!");
+    videoDecObj->ReleaseOutputBufferWrapper(index);
 
     return AV_ERR_OK;
 }
@@ -725,6 +787,7 @@ OH_AVErrCode OH_VideoDecoder_RenderOutputBufferAtTime(OH_AVCodec *codec, uint32_
         ENUMERATION, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder render output buffer at time failed!");
+    videoDecObj->ReleaseOutputBufferWrapper(index);
     return AV_ERR_OK;
 }
 
@@ -745,6 +808,7 @@ OH_AVErrCode OH_VideoDecoder_FreeOutputBuffer(struct OH_AVCodec *codec, uint32_t
         AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     CHECK_AND_RETURN_RET_LOGD(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
         "Video decoder free output data failed!");
+    videoDecObj->ReleaseOutputBufferWrapper(index);
 
     return AV_ERR_OK;
 }
@@ -785,10 +849,12 @@ OH_AVErrCode OH_VideoDecoder_QueryOutputBuffer(struct OH_AVCodec *codec, uint32_
         AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     switch (ret) {
         case AVCS_ERR_OK:
+            videoDecObj->MarkOutputBufferPending(*index);
             return AV_ERR_OK;
         case AVCS_ERR_TRY_AGAIN:
             return AV_ERR_TRY_AGAIN_LATER;
         case AVCS_ERR_STREAM_CHANGED:
+            videoDecObj->ClearOutputBufferForUnbind();
             return AV_ERR_STREAM_CHANGED;
         default:
             AVCODEC_LOGD("Video decoder query output data failed!");

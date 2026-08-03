@@ -17,6 +17,7 @@
 #define DASH_REPRESENTATION_MANAGER_H
 
 #include <cstdint>
+#include <mutex>
 #include "dash_mpd_def.h"
 
 namespace OHOS {
@@ -44,6 +45,7 @@ private:
     DashRepresentationManager(const DashRepresentationManager &representationManager);
     DashRepresentationManager &operator=(const DashRepresentationManager &representationManager);
 
+    mutable std::mutex mutex_;
     DashUrlType *initSegment_{nullptr};
     DashRepresentationInfo *representationInfo_{nullptr};
     DashRepresentationInfo *previousRepresentationInfo_{nullptr};

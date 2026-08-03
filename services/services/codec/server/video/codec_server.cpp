@@ -237,6 +237,7 @@ int32_t CodecServer::Configure(const Format &format)
 
     UpdateConfiguredFramerate(format);
     ConfigureSfdManager(config);
+    UpdateCodecParamsFromFormat(format);
 
     ret = codecBase_->Configure(config);
     if (ret != AVCS_ERR_OK) {
@@ -280,15 +281,37 @@ void CodecServer::UpdateConfiguredFramerate(const Format &format)
     }
 }
 
+void CodecServer::UpdateCodecParamsFromFormat(const Format &format)
+{
+    int32_t width = 0;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_WIDTH, width)) {
+        codecWidth_ = width;
+    }
+    int32_t height = 0;
+    if (format.GetIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, height)) {
+        codecHeight_ = height;
+    }
+    int64_t bitRateLong{0};
+    if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong)) {
+        codecBitrate_ = static_cast<int32_t>(bitRateLong);
+    }
+    int32_t lowPower = -1;
+    if (format.GetIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, lowPower)) {
+        lowPower = (lowPower != 0 && lowPower != 1) ? -1 : lowPower;
+        oldcodecLowpower_ = lowPower;
+    }
+    UpdateInstanceInfo(codecWidth_, codecHeight_, codecBitrate_, oldcodecLowpower_);
+}
+
 void CodecServer::ConfigureSfdManager(Format &config)
 {
     InitSfdManager();
     if (sfdManager_) {
         sfdManager_->Configure(config);
-        if (sfdManager_->IsSfdActive()) {
+        sfdManager_->EnableMVOutput(config);
+        if (sfdManager_->ShouldReportDfx()) {
             OnInstanceAdvancedFeatureEvent("SmartFluencyDecoding", nullptr);
         }
-        sfdManager_->EnableMVOutput(config);
     }
 }
 
@@ -1034,11 +1057,32 @@ int32_t CodecServer::SetParameter(const Format &format)
     }
 
     if (sfdManager_) {
-        bool isEnabled = sfdManager_->IsSfdActive();
+        bool wasReportable = sfdManager_->ShouldReportDfx();
         sfdManager_->Configure(format);
-        if (!isEnabled && sfdManager_->IsSfdActive()) {
+        bool isReportable = sfdManager_->ShouldReportDfx();
+        if (!wasReportable && isReportable) {
             OnInstanceAdvancedFeatureEvent("SmartFluencyDecoding", nullptr);
         }
+    }
+
+    bool isCodecParmChange = false;
+    int64_t bitRateLong{0};
+    if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong)) {
+        codecBitrate_ = static_cast<int32_t>(bitRateLong);
+        isCodecParmChange = true;
+    }
+    int32_t lowPower = -1;
+    if (format.GetIntValue(Media::Tag::VIDEO_ENCODER_WITH_LOWPOWER_CAMERA, lowPower)) {
+        lowPower = (lowPower != 0 && lowPower != 1) ? -1 : lowPower;
+        if (oldcodecLowpower_ != lowPower) {
+            oldcodecLowpower_ = lowPower;
+            isCodecParmChange = true;
+        } else {
+            lowPower = -1;
+        }
+    }
+    if (isCodecParmChange) {
+        UpdateInstanceInfo(codecWidth_, codecHeight_, codecBitrate_, lowPower);
     }
     return codecBase_->SetParameter(format);
 }
@@ -1147,6 +1191,21 @@ void CodecServer::SetInstanceInfo(AVCodecType type, bool isMimeType, const std::
                              "Forward caller pid: %{public}d, process name: %{public}s", forwardCaller_.pid,
                              forwardCaller_.processName.c_str());
     AVCODEC_LOGI_WITH_TAG("Caller pid: %{public}d, process name: %{public}s", caller_.pid, caller_.processName.c_str());
+}
+
+void CodecServer::UpdateInstanceInfo(int32_t codecWidth, int32_t codecHeight, int32_t codecBitrate,
+                                     int32_t codecLowpower)
+{
+    Meta codecParamMeta;
+    codecParamMeta.SetData(Tag::VIDEO_PIC_WIDTH, codecWidth);
+    codecParamMeta.SetData(Tag::VIDEO_PIC_HEIGHT, codecHeight);
+    codecParamMeta.SetData(Tag::MEDIA_BITRATE, codecBitrate);
+    codecParamMeta.SetData(Tag::VIDEOCALL_LOWPOWER_MODE, codecLowpower);
+    codecParamMeta.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId_);
+    AVCODEC_LOGD("UpdateInstanceInfo:codecWidth %{public}d, codecHeight %{public}d, codecBitrate %{public}d, "
+                 "encPowermode %{public}d",
+                 codecWidth, codecHeight, codecBitrate, codecLowpower);
+    EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_UPDATE_INFO, codecParamMeta);
 }
 
 std::shared_ptr<Media::Meta> CodecServer::GetCallerInfo()

@@ -164,12 +164,12 @@ Seekable DownloadRequest::IsChunked(bool isInterruptNeeded)
 
 bool DownloadRequest::IsEos() const
 {
-    return isEos_;
+    return isEos_.load();
 }
 
 int DownloadRequest::GetRetryTimes() const
 {
-    return retryTimes_;
+    return retryTimes_.load();
 }
 
 int32_t DownloadRequest::GetClientError() const
@@ -215,7 +215,7 @@ void DownloadRequest::SetStartTimePos(int64_t startTimePos)
 {
     startTimePos_ = startTimePos;
     if (startTimePos_ > 0) {
-        shouldSaveData_ = false;
+        shouldSaveData_.store(false);
     }
 }
 
@@ -387,11 +387,11 @@ std::string Downloader::GetContentType()
         MEDIA_LOG_E("Get " PUBLIC_LOG_S " content type failed, sourceId " PUBLIC_LOG_D64, name_.c_str(), sourceId_);
         return contentType_;
     }
-    FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_, contentType_);
+    FALSE_RETURN_V_NOLOG(!isContentTypeUpdated_.load(), contentType_);
     AutoLock lock(sleepMutex_);
     MEDIA_LOG_I("GetContentType wait begin ");
     sleepCond_.WaitFor(lock, SLEEP_TIME * RETRY_TIMES, [this]() {
-        return isInterruptNeeded_.load() || isContentTypeUpdated_;
+        return isInterruptNeeded_.load() || isContentTypeUpdated_.load();
     });
     MEDIA_LOG_I("ContentType: %{public}s", contentType_.c_str());
     return contentType_;
@@ -444,8 +444,8 @@ void Downloader::Pause(bool isAsync)
 void Downloader::Cancel()
 {
     MEDIA_LOG_I("0x%{public}06" PRIXPTR " Cancel Begin", FAKE_POINTER(this));
-    if (currentRequest_ != nullptr && currentRequest_->retryTimes_ > 0) {
-        currentRequest_->retryTimes_ = 0;
+    if (currentRequest_ != nullptr && currentRequest_->retryTimes_.load() > 0) {
+        currentRequest_->retryTimes_.store(0);
     }
     requestQue_->SetActive(false, true);
     shouldStartNextRequest_ = true;
@@ -471,7 +471,7 @@ void Downloader::Resume()
         }
         requestQue_->SetActive(true);
         if (currentRequest_ != nullptr) {
-            currentRequest_->isEos_ = false;
+            currentRequest_->isEos_.store(false);
 
             int64_t fileLength = currentRequest_->GetFileContentLength();
             if (currentRequest_->startPos_ + currentRequest_->requestSize_ > fileLength) {
@@ -529,7 +529,7 @@ bool Downloader::Seek(int64_t offset)
     if (offset >= 0 && offset < contentLength) {
         currentRequest_->startPos_ = offset;
     }
-    int64_t temp = currentRequest_->GetFileContentLength() - currentRequest_->startPos_;
+    int64_t temp = contentLength - currentRequest_->startPos_;
     currentRequest_->requestSize_ = static_cast<int>(std::min(temp,
         static_cast<int64_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
     if (downloadRequestSize_ > 0) {
@@ -537,10 +537,10 @@ bool Downloader::Seek(int64_t offset)
             static_cast<int>(downloadRequestSize_));
         downloadRequestSize_ = 0;
     }
-    currentRequest_->isEos_ = false;
+    currentRequest_->isEos_.store(false);
     shouldStartNextRequest_ = false; // Reuse last request when seek
-    if (currentRequest_->retryTimes_ > 0) {
-        currentRequest_->retryTimes_ = 0;
+    if (currentRequest_->retryTimes_.load() > 0) {
+        currentRequest_->retryTimes_.store(0);
     }
     return true;
 }
@@ -558,6 +558,28 @@ void Downloader::GetIp(std::string &ip)
 }
 
 // Pause download thread before use currentRequest_
+bool Downloader::RetryCore(const std::shared_ptr<DownloadRequest>& request)
+{
+    AutoLock lock(operatorMutex_);
+    FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
+    client_->Close(false);
+    if (currentRequest_ != nullptr) {
+        if (currentRequest_->IsSame(request) && !shouldStartNextRequest_) {
+            currentRequest_->retryTimes_.fetch_add(1);
+            currentRequest_->retryOnGoing_ = true;
+            currentRequest_->dropedDataLen_ = 0;
+        }
+        client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
+        requestQue_->SetActive(true);
+        currentRequest_->isEos_.store(false);
+        if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
+            currentRequest_->endPos_ >= currentRequest_->startPos_) {
+            currentRequest_->requestSize_ = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
+        }
+    }
+    return true;
+}
+
 bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
     FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
@@ -575,24 +597,8 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
     }
     PauseLoop(true);
     WaitLoopPause();
-    {
-        AutoLock lock(operatorMutex_);
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
-        client_->Close(false);
-        if (currentRequest_ != nullptr) {
-            if (currentRequest_->IsSame(request) && !shouldStartNextRequest_) {
-                currentRequest_->retryTimes_++;
-                currentRequest_->retryOnGoing_ = true;
-                currentRequest_->dropedDataLen_ = 0;
-            }
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
-            requestQue_->SetActive(true);
-            currentRequest_->isEos_ = false;
-            if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
-                currentRequest_->endPos_ >= currentRequest_->startPos_) {
-                currentRequest_->requestSize_ = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
-            }
-        }
+    if (!RetryCore(request)) {
+        return false;
     }
     task_->Start();
     MEDIA_LOG_I("Do retry.");
@@ -649,8 +655,8 @@ bool Downloader::BeginDownload()
         currentRequest_->requestSize_ = static_cast<int>(std::min(temp,
             static_cast<int64_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
     }
-    currentRequest_->isEos_ = false;
-    currentRequest_->retryTimes_ = 0;
+    currentRequest_->isEos_.store(false);
+    currentRequest_->retryTimes_.store(0);
     currentRequest_->downloadStartTime_ = currentRequest_->GetNowTime();
     currentRequest_->downloadStartSteadyTime_ = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now().time_since_epoch()).count();
@@ -785,7 +791,7 @@ void Downloader::RequestData()
     MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
         + std::to_string(currentRequest_->startPos_) + ", reqSize: " + std::to_string(currentRequest_->requestSize_));
     int64_t startPos = currentRequest_->startPos_;
-    if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_) {
+    if (currentRequest_->requestWholeFile_ && currentRequest_->shouldSaveData_.load()) {
         startPos = -1;
     }
     RequestInfo sourceInfo;
@@ -849,11 +855,11 @@ void Downloader::HandlePlayingFinish()
 void Downloader::HandleRetOK()
 {
     FALSE_RETURN_MSG(currentRequest_ != nullptr, "currentRequest is nullptr");
-    if (currentRequest_->retryTimes_ > 0) {
-        currentRequest_->retryTimes_ = 0;
+    if (currentRequest_->retryTimes_.load() > 0) {
+        currentRequest_->retryTimes_.store(0);
     }
     if (currentRequest_->headerInfo_.isChunked && requestQue_->Empty()) {
-        currentRequest_->isEos_ = true;
+        currentRequest_->isEos_.store(true);
         PauseLoop(true);
         return;
     }
@@ -866,12 +872,12 @@ void Downloader::HandleRetOK()
     }
     if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
-        currentRequest_->isEos_ = true;
+        currentRequest_->isEos_.store(true);
         HandlePlayingFinish();
         return;
     }
     if (currentRequest_->headerInfo_.fileContentLen == 0 && remaining <= 0) {
-        currentRequest_->isEos_ = true;
+        currentRequest_->isEos_.store(true);
         currentRequest_->Close();
         HandlePlayingFinish();
         return;
@@ -897,10 +903,10 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
         info->isChunked = false;
     }
     mediaDownloader->currentRequest_->SaveHeader(info);
-    if (!mediaDownloader->isContentTypeUpdated_) {
+    if (!mediaDownloader->isContentTypeUpdated_.load()) {
         {
             AutoLock lock(mediaDownloader->sleepMutex_);
-            mediaDownloader->isContentTypeUpdated_ = true;
+            mediaDownloader->isContentTypeUpdated_.store(true);
             mediaDownloader->contentType_ = info->contentType;
         }
         mediaDownloader->sleepCond_.NotifyOne();
@@ -910,8 +916,7 @@ void Downloader::UpdateHeaderInfo(Downloader* mediaDownloader)
 bool Downloader::IsDropDataRetryRequest(Downloader* mediaDownloader)
 {
     bool isWholeFileRetry = mediaDownloader->currentRequest_->requestWholeFile_ &&
-                            mediaDownloader->currentRequest_->shouldSaveData_ &&
-                            mediaDownloader->currentRequest_->retryOnGoing_;
+        mediaDownloader->currentRequest_->shouldSaveData_.load() && mediaDownloader->currentRequest_->retryOnGoing_;
     if (!isWholeFileRetry) {
         return false;
     }
@@ -982,7 +987,7 @@ void Downloader::UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* heade
         startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
     }
     mediaDownloader->currentRequest_->startPos_ = startPos;
-    mediaDownloader->currentRequest_->shouldSaveData_ = true;
+    mediaDownloader->currentRequest_->shouldSaveData_.store(true);
     mediaDownloader->currentRequest_->requestWholeFile_ = false;
     mediaDownloader->currentRequest_->requestSize_ =
         static_cast<int>(std::max(mediaDownloader->currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE));
@@ -1041,18 +1046,18 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
         return DropRetryData(buffer, dataLen, mediaDownloader);
     }
     HeaderInfo* header = &(mediaDownloader->currentRequest_->headerInfo_);
-    if (!mediaDownloader->currentRequest_->shouldSaveData_) {
+    if (!mediaDownloader->currentRequest_->shouldSaveData_.load()) {
         UpdateCurRequest(mediaDownloader, header);
         return dataLen;
     }
     HandleFileContentLen(header);
-    if (!mediaDownloader->currentRequest_->isDownloading_) {
-        mediaDownloader->currentRequest_->isDownloading_ = true;
+    if (!mediaDownloader->currentRequest_->isDownloading_.load()) {
+        mediaDownloader->currentRequest_->isDownloading_.store(true);
     }
     UpdateDownloadInfo(mediaDownloader, dataLen);
     size_t ret = SaveBodyData(mediaDownloader, buffer, dataLen);
     if (ret == dataLen) {
-        mediaDownloader->currentRequest_->isDownloading_ = false;
+        mediaDownloader->currentRequest_->isDownloading_.store(false);
     }
     return ret;
 }
@@ -1078,7 +1083,7 @@ size_t Downloader::SaveBodyData(Downloader* mediaDownloader, void* buffer, size_
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }
-    mediaDownloader->currentRequest_->isDownloading_ = false;
+    mediaDownloader->currentRequest_->isDownloading_.store(false);
     return dataLen;
 }
 

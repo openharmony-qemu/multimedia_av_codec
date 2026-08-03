@@ -49,6 +49,7 @@ struct KeyInfo {
     uint8_t key_[16] {0};
     size_t keyLen_ {0};
     uint64_t index_ {0};
+    bool hasExplicitIv_ {false};
 };
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
@@ -69,9 +70,11 @@ public:
     std::shared_ptr<AesDecryptor> GetAesDecryptorByKeyIndex(uint64_t keyIndex);
     void CreateAesDecryptorByKeyInfos(const std::unordered_map<uint64_t, KeyInfo>& keyInfos);
     void CreateOneAesDecryptor(const KeyInfo& keyInfo);
+    bool HasExplicitIv(uint64_t keyIndex);
 
 private:
     std::unordered_map<uint64_t, std::shared_ptr<AesDecryptor>> aesDecryptorsMap_;
+    std::unordered_map<uint64_t, bool> hasExplicitIvMap_;
     std::shared_mutex aesDecryptorsMapMutex_;
 };
 class PlayListDownloader : public std::enable_shared_from_this<PlayListDownloader> {
@@ -166,6 +169,7 @@ public:
     void SetSourceLoader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader);
     virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
     virtual std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) = 0;
+    virtual bool HasExplicitIv(uint64_t keyIndex) = 0;
 
 protected:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);

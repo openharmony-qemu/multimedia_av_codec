@@ -40,12 +40,17 @@ struct VideoEncoderObject : public OH_AVCodec {
     ~VideoEncoderObject() = default;
 
     void ClearBufferList();
+    void UpdateOutputBufferState(uint32_t index, uint8_t state);
+    void ReleaseOutputBufferWrapper(uint32_t index);
+    void ClearOutputBufferForUnbind();
+    void MarkOutputBufferPending(uint32_t index);
     void StopCallback();
-    void ClearOutputBufferForStreamChange();
     void FormatToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVFormat>>& tempMap);
     void BufferToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>>& tempMap);
     void MemoryToTempFunc(std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>>& tempMap);
     OH_AVBuffer* GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput);
+    void GetTransData(const uint32_t& index, std::shared_ptr<AVBuffer>& buffer, bool isOutput,
+        OHOS::sptr<OH_AVBuffer>& object);
     OH_AVMemory* GetTransData(const uint32_t& index, std::shared_ptr<AVSharedMemory>& memory, bool isOutput);
     OH_AVFormat* GetTransData(const uint32_t& index, std::shared_ptr<Media::Format>& format);
 
@@ -56,6 +61,7 @@ struct VideoEncoderObject : public OH_AVCodec {
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVMemory>> inputMemoryMap_;
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> outputBufferMap_;
     std::unordered_map<uint32_t, OHOS::sptr<OH_AVBuffer>> inputBufferMap_;
+    std::unordered_map<uint32_t, uint8_t> outputBufferStateMap_;
     std::shared_ptr<NativeVideoEncoderCallback> callback_ = nullptr;
     bool isSetMemoryCallback_ = false;
     bool isInputSurfaceMode_ = false;
@@ -74,6 +80,7 @@ public:
 
     void OnError(AVCodecErrorType errorType, int32_t errorCode) override;
     void OnOutputFormatChanged(const Media::Format& format) override;
+    void OnOutputBufferUnbinded() override;
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVSharedMemory> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, AVCodecBufferInfo info, AVCodecBufferFlag flag,
                                  std::shared_ptr<AVSharedMemory> buffer) override;

@@ -18,7 +18,6 @@
 
 #include <cstdint>
 #include <string>
-#include <unordered_set>
 #include "meta/media_types.h"
 #include "mpeg4_utils.h"
 

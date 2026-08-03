@@ -220,9 +220,12 @@ std::shared_ptr<SubSegmentIndex> SidxBoxParser::ReadOneSubSegmentIndex(char *bit
         return nullptr;
     }
     subSegIndex->referenceType_ = static_cast<int32_t>(GetReferenceType(typeAndSize));
-    subSegIndex->referencedSize_ = static_cast<int32_t>(GetReferenceSize(typeAndSize));
+    subSegIndex->referencedSize_ = GetReferenceSize(typeAndSize);
     subSegIndex->startPos_ = mediaSegOffset;
-    subSegIndex->endPos_ = mediaSegOffset + subSegIndex->referencedSize_ - 1;
+ 
+    // No overflow check: referenceCount is uint16_t (max 65535) and referencedSize_ is 31-bit,
+    // so max accumulated mediaSegOffset is ~2^47, far below INT64_MAX.
+    subSegIndex->endPos_ = mediaSegOffset + static_cast<int64_t>(subSegIndex->referencedSize_) - 1;
     mediaSegOffset = subSegIndex->endPos_ + 1;
     subSegIndex->duration_ = 0;
     if (!GetBytes<uint32_t>(bitStream, currPos, streamSize, subSegIndex->duration_)) {

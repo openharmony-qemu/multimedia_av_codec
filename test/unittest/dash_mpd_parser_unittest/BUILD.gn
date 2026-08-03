@@ -14,7 +14,7 @@
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
 
-module_output_path = "av_codec/av_codec/unittest"
+module_output_path = "av_codec/stream_player_framework"
 dash_test_sources = [
   "./mock/xml_element.cpp",
   "./mock/i_dash_mpd_node.cpp",

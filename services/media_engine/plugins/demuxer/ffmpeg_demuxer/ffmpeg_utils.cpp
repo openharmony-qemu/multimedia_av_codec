@@ -266,8 +266,14 @@ bool IsBeginAsAnnexb(const uint8_t *sample, int32_t size)
 
 int32_t GetNaluSize(const uint8_t *nalStart)
 {
-    return static_cast<int32_t>(
-        (nalStart[POS_3]) | (nalStart[POS_2] << POS_8) | (nalStart[POS_1] << POS_16) | (nalStart[POS_0] << POS_24));
+    if (nalStart == nullptr) {
+        return 0;
+    }
+    uint32_t val = (static_cast<uint32_t>(nalStart[POS_0]) << POS_24) |
+                   (static_cast<uint32_t>(nalStart[POS_1]) << POS_16) |
+                   (static_cast<uint32_t>(nalStart[POS_2]) << POS_8)  |
+                   (static_cast<uint32_t>(nalStart[POS_3]));
+    return static_cast<int32_t>(val);
 }
 
 bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
@@ -285,6 +291,10 @@ bool IsHvccSyncFrame(const uint8_t *sample, int32_t size)
     }
     nalStart = nalStart + sizeLen;
     while (nalStart < end) {
+        auto remaining = end - nalStart;
+        if (naluSize > remaining || naluSize < 1) {
+            return false;
+        }
         uint8_t naluType = static_cast<uint8_t>((nalStart[0] & 0x7E) >> 1);
         if (naluType > 0x10 && naluType <= 0x17) {
             return true;

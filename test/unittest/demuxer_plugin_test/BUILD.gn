@@ -44,6 +44,7 @@ config("demuxer_plugin_test_unittest_cfg") {
     "HST_ANY_WITH_NO_RTTI",
     "MEDIA_OHOS",
     "TESTING",
+    "USE_FF_DEMUXER",
   ]
 
   cflags = [
@@ -116,6 +117,7 @@ ohos_unittest("demuxer_plugin_unit_test") {
   }
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
+    "USE_FF_DEMUXER",
   ]
   external_deps = [
     "c_utils:utils",

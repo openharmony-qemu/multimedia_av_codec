@@ -84,10 +84,10 @@ string g_srt = TEST_FILE_PATH + string("subtitle.srt");
 string g_nonStandardBomPath = TEST_FILE_PATH + string("nonstandard_bom.mp3");
 string g_vttPath = TEST_FILE_PATH + string("webvtt_test_ut.vtt");
 string g_mp4VvcPath = TEST_FILE_PATH + string("vvc.mp4");
-string g_mp4RotationNone = TEST_FILE_PATH + string("ROTATE_NONE.mp4");
-string g_mp4Rotation270 = TEST_FILE_PATH + string("ROTATE_270.mp4");
-string g_mp4FLIPV = TEST_FILE_PATH + string("FLIP_V.mp4");
-string g_mp4FLIPV90 = TEST_FILE_PATH + string("FLIP_V_90.mp4");
+string g_mp4RotationNone = TEST_FILE_PATH + string("ROTATE_NONE_ut.mp4");
+string g_mp4Rotation270 = TEST_FILE_PATH + string("ROTATE_270_ut.mp4");
+string g_mp4FLIPV = TEST_FILE_PATH + string("FLIP_V_ut.mp4");
+string g_mp4FLIPV90 = TEST_FILE_PATH + string("FLIP_V_90_ut.mp4");
 string g_rmvbPath = TEST_FILE_PATH + string("rv40_cook.rmvb");
 string g_ac3Path = TEST_FILE_PATH + string("audio/ac3_test.ac3");
 string g_webmPath = TEST_FILE_PATH + string("vp8_vorbis.webm");
@@ -2713,7 +2713,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_ValidateMimeType_1000, TestSize.Level1)
 
 /**
  * @tc.name: AVSourse_OrientationType_1000
- * @tc.desc: determine the orientation type of the video ROTATE_NONE.mp4
+ * @tc.desc: determine the orientation type of the video ROTATE_NONE_ut.mp4
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1000, TestSize.Level1)
@@ -2731,7 +2731,7 @@ HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1000, TestSize.Level1)
 
 /**
  * @tc.name: AVSourse_OrientationType_1001
- * @tc.desc: determine the orientation type of the video ROTATE_270.mp4
+ * @tc.desc: determine the orientation type of the video ROTATE_270_ut.mp4
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1001, TestSize.Level1)
@@ -2749,7 +2749,7 @@ HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1001, TestSize.Level1)
 
 /**
  * @tc.name: AVSourse_OrientationType_1002
- * @tc.desc: determine the orientation type of the video FLIP_V.mp4
+ * @tc.desc: determine the orientation type of the video FLIP_V_ut.mp4
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1002, TestSize.Level1)
@@ -2767,7 +2767,7 @@ HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1002, TestSize.Level1)
 
 /**
  * @tc.name: AVSourse_OrientationType_1003
- * @tc.desc: determine the orientation type of the video FLIP_V_90.mp4
+ * @tc.desc: determine the orientation type of the video FLIP_V_90_ut.mp4
  * @tc.type: FUNC
  */
 HWTEST_F(AVSourceUnitTest, AVSourse_OrientationType_1003, TestSize.Level1)

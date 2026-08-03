@@ -187,11 +187,14 @@ private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     void PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, const std::string &url);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
+    void CloseInternal(bool isAsync, bool isClean);
     bool UpdateInitSegmentFinish();
     uint32_t GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment);
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
     bool CleanAllSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
     void CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail, bool& isEnd);
+    void CalcClearPositionInSegment(const std::shared_ptr<DashBufferSegment> &segment,
+        uint32_t segmentKeepDuration, size_t &clearTail, bool &isEnd);
     void ClearReadSegmentList();
     void UpdateInitSegmentState(int32_t currentStreamId);
     bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
@@ -230,6 +233,7 @@ private:
     std::shared_ptr<DashBufferSegment> mediaSegment_;
     std::list<std::shared_ptr<DashBufferSegment>> segmentList_;
     std::vector<std::shared_ptr<DashInitSegment>> initSegments_;
+    std::mutex closeMutex_;
     std::mutex segmentMutex_;
     std::mutex initSegmentMutex_;
     mutable std::shared_mutex downloaderMutex_;
@@ -238,7 +242,7 @@ private:
     StatusCallbackFunc statusCallback_;
     SegmentDownloadDoneCbFunc downloadDoneCbFunc_;
     SegmentBufferingCbFunc bufferingCbFunc_;
-    bool startedPlayStatus_{false};
+    std::atomic<bool> startedPlayStatus_{false};
     int streamId_{0};
     MediaAVCodec::MediaType streamType_;
     std::atomic<bool> isCleaningBuffer_{false};
@@ -249,13 +253,13 @@ private:
     uint64_t expectDuration_{0};
 
     uint32_t ringBufferCapcity_ {0};
-    uint64_t lastCheckTime_ {0};
-    uint64_t totalBits_ {0};
-    uint64_t lastBits_ {0};
-    double downloadSpeed_ {0};
-    uint64_t downloadDuringTime_ {0};
-    uint64_t downloadBits_ {0};
-    uint64_t totalDownloadDuringTime_ {0};
+    std::atomic<uint64_t> lastCheckTime_ {0};
+    std::atomic<uint64_t> totalBits_ {0};
+    std::atomic<uint64_t> lastBits_ {0};
+    std::atomic<double> downloadSpeed_ {0};
+    std::atomic<uint64_t> downloadDuringTime_ {0};
+    std::atomic<uint64_t> downloadBits_ {0};
+    std::atomic<uint64_t> totalDownloadDuringTime_ {0};
     struct RecordData {
         double downloadRate {0};
         uint64_t bufferDuring {0};
@@ -265,16 +269,16 @@ private:
 
     // play water line
     std::weak_ptr<Callback> callback_;
-    uint32_t waterLineAbove_{0};
+    std::atomic<uint32_t> waterLineAbove_{0};
     std::atomic<bool> isBuffering_{false};
-    uint32_t downloadBiteRate_{0};
-    int64_t realTimeBitBate_{0};
-    uint64_t lastDurationRecord_{0};
-    uint32_t lastCachedSize_{0};
-    bool isFirstFrameArrived_{false};
+    std::atomic<uint32_t> downloadBitRate_{0};
+    std::atomic<int64_t> realTimeBitRate_{0};
+    std::atomic<uint64_t> lastDurationRecord_{0};
+    std::atomic<uint32_t> lastCachedSize_{0};
+    std::atomic<bool> isFirstFrameArrived_{false};
     std::atomic<bool> isAllSegmentFinished_{false};
-    double bufferDurationForPlaying_ {0};
-    volatile size_t bufferingTime_ {0};
+    std::atomic<double> bufferDurationForPlaying_ {0};
+    std::atomic<size_t> bufferingTime_ {0};
     uint64_t waterlineForPlaying_ {0};
     std::atomic<bool> isDemuxerInitSuccess_ {false};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};

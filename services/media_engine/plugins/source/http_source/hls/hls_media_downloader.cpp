@@ -254,6 +254,7 @@ std::vector<SeekRange> HlsMediaDownloader::GetSeekableRanges() const
 
 void HlsMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
 {
+    std::lock_guard<std::mutex> lock(callbackMutex_);
     callback_ = cb;
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "SetCallback no video segment manager found!");
     videoSegManager_->SetCallback(cb);
@@ -584,7 +585,11 @@ Status HlsMediaDownloader::SelectStream(int32_t streamId)
             return Status::ERROR_INVALID_PARAMETER;
         }
         SelectBitRate(streamInfo->bitRate);
-        auto callback = callback_.lock();
+        std::shared_ptr<Callback> callback;
+        {
+            std::lock_guard<std::mutex> lock(callbackMutex_);
+            callback = callback_.lock();
+        }
         if (callback) {
             callback->SetSelectBitRateFlag(true, streamInfo->bitRate);
         }
@@ -620,7 +625,11 @@ void HlsMediaDownloader::SetDefaultStreamId(int32_t &videoStreamId, int32_t &aud
 
 void HlsMediaDownloader::PostAllEvent(HlsSegEvent event)
 {
-    auto callback = callback_.lock();
+    std::shared_ptr<Callback> callback;
+    {
+        std::lock_guard<std::mutex> lock(callbackMutex_);
+        callback = callback_.lock();
+    }
     FALSE_RETURN_MSG(callback, "PostAllEvent no callback, %{public}d", event.type);
     MEDIA_LOG_I("PostAllEvent: %{public}d, msg: %{public}s", event.type, event.str.c_str());
     switch (event.type) {
@@ -660,7 +669,11 @@ void HlsMediaDownloader::PostAllEvent(HlsSegEvent event)
 
 void HlsMediaDownloader::PostBufferingEvent(HlsSegmentType mediaType, BufferingInfoType type)
 {
-    auto callback = callback_.lock();
+    std::shared_ptr<Callback> callback;
+    {
+        std::lock_guard<std::mutex> lock(callbackMutex_);
+        callback = callback_.lock();
+    }
     FALSE_RETURN_MSG(callback, "PostBufferingEvent no callback");
     std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
     uint32_t flag;

@@ -958,5 +958,53 @@ HWTEST_F(AesDecryptorUnitTest, KeyLenPreserved_001, TestSize.Level1)
     EXPECT_EQ(decryptor_->keyLen_, BLOCK_LEN);
 }
 
+/**
+ * @tc.name  : Test SetIv API
+ * @tc.number: SetIv_001
+ * @tc.desc  : Test SetIv with null iv pointer does not crash
+ */
+HWTEST_F(AesDecryptorUnitTest, SetIv_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, decryptor_);
+    uint8_t ivData[BLOCK_LEN] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    decryptor_->SetIv(ivData, BLOCK_LEN);
+    decryptor_->SetIv(nullptr, BLOCK_LEN);
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(decryptor_->iv_[i], ivData[i]);
+    }
+}
+
+/**
+ * @tc.name  : Test SetIv API
+ * @tc.number: SetIv_002
+ * @tc.desc  : Test SetIv with valid iv copies data correctly
+ */
+HWTEST_F(AesDecryptorUnitTest, SetIv_002, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, decryptor_);
+    uint8_t ivData[BLOCK_LEN] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    decryptor_->SetIv(ivData, BLOCK_LEN);
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(decryptor_->iv_[i], ivData[i]);
+    }
+}
+
+/**
+ * @tc.name  : Test SetIv with insufficient ivLen
+ * @tc.number: SetIv_003
+ * @tc.desc  : Test SetIv returns early when ivLen < BLOCK_LEN
+ */
+HWTEST_F(AesDecryptorUnitTest, SetIv_003, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, decryptor_);
+    uint8_t ivData[BLOCK_LEN] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
+    decryptor_->SetIv(ivData, BLOCK_LEN);
+    uint8_t shortIv[8] = {0};
+    decryptor_->SetIv(shortIv, sizeof(shortIv));
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(decryptor_->iv_[i], ivData[i]);
+    }
+}
+
 }
 }
