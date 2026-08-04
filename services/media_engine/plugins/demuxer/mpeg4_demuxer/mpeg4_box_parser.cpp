@@ -1384,20 +1384,16 @@ void MPEG4AtomParser::SetCodecConfig(std::shared_ptr<Track> track)
     }
 }
 
-Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+Status MPEG4AtomParser::InitCurrentTrackForTrak()
 {
-    FALSE_RETURN_V_MSG_E(depth == MPEG4_DEPTH_ONE, Status::ERROR_INVALID_DATA, "Invalid trak depth");
     auto track = std::make_shared<Track>();
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate memory for track");
-
     size_t originalTrackCount = mediaInfo_.tracks.size();
     Meta newTrackMeta;
     mediaInfo_.tracks.emplace_back(std::move(newTrackMeta));
-
     if (mediaInfo_.tracks.size() != originalTrackCount + 1) {
         return Status::ERROR_NO_MEMORY;
     }
-
     if (lastTrack_) {
         lastTrack_->next = track;
     } else {
@@ -1412,15 +1408,20 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
     lastTrack_->sampleHelper->seekable_ = seekable_;
     lastTrack_->sampleHelper->dataReader_ = dataReader_;
     lastTrack_->sampleHelper->SetFragmented(hasMoofBox_);
-    Status ret = ParseContainerAtom(currentAtom, depth, ctx);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse trak atom");
+    return Status::OK;
+}
 
+void MPEG4AtomParser::UpdateParsedTrackVideoInfo()
+{
     if (NeedParseVideoInfo(lastTrack_->sampleHelper->mimeType_, lastTrack_->codecParms.trackType)) {
         ParseOrientationFromMatrix(lastTrack_);
         ParseRotationTypeFromMatrix(lastTrack_);
         CalculateSARFromTrackInfo(lastTrack_);
     }
+}
 
+Status MPEG4AtomParser::FinalizeParsedTrackSampleTables()
+{
     if (lastTrack_->sampleHelper) {
         int32_t movieTimeScale = 0;
         int32_t trackTimeScale = 0;
@@ -1430,9 +1431,34 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
             lastTrack_->sampleHelper->SetEditListParams(
                 lastTrack_->editListEntries, movieTimeScale, trackTimeScale);
         }
-        if (lastTrack_->sampleHelper->BuildSampleIndexEntries() != Status::OK) {
-            MEDIA_LOG_E("BuildSampleIndexEntry failed");
+        Status finalizeRet = lastTrack_->sampleHelper->FinalizeSampleTables();
+        if (finalizeRet != Status::OK) {
+            MEDIA_LOG_E("Finalize sample tables failed");
+            return finalizeRet;
         }
+        if (lastTrack_->sampleHelper->ShouldBuildDenseIndex()) {
+            Status denseRet = lastTrack_->sampleHelper->BuildSampleIndexEntries();
+            FALSE_RETURN_V_MSG_E(denseRet == Status::OK, denseRet, "Build dense sample index failed");
+        }
+    }
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+{
+    FALSE_RETURN_V_MSG_E(depth == MPEG4_DEPTH_ONE, Status::ERROR_INVALID_DATA, "Invalid trak depth");
+    Status ret = InitCurrentTrackForTrak();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to init track");
+    ret = ParseContainerAtom(currentAtom, depth, ctx);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse trak atom");
+    UpdateParsedTrackVideoInfo();
+    ret = FinalizeParsedTrackSampleTables();
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("Failed to finalize sample tables");
+        pendingSampleTableStatus_ = ret;
+        // Fragmented MP4 may keep empty placeholder sample tables in moov and be rejected later by
+        // mvex/moof/sidx as unsupported. Defer this error so the plugin manager can still fallback.
+        return Status::OK;
     }
     SetCodecConfig(lastTrack_);
     AdapterFormat(lastTrack_);
@@ -1629,8 +1655,14 @@ int64_t GetSignedU64Value(const uint8_t* data)
     return -static_cast<int64_t>((~value) + 1);
 }
 
-Status ParseElstEntry(const uint8_t* elstInfo, uint32_t index, uint8_t version,
-    int64_t& segmentDuration, int64_t& mediaTime)
+struct ElstEntryInfo {
+    int64_t segmentDuration = 0;
+    int64_t mediaTime = 0;
+    int16_t mediaRateInteger = 1;
+    int16_t mediaRateFraction = 0;
+};
+
+Status ParseElstEntry(const uint8_t* elstInfo, uint32_t index, uint8_t version, ElstEntryInfo& entryInfo)
 {
     constexpr uint32_t elstHeaderSize = 8;
     constexpr uint32_t entrySizeV0 = 12;
@@ -1638,19 +1670,63 @@ Status ParseElstEntry(const uint8_t* elstInfo, uint32_t index, uint8_t version,
     uint32_t entrySize = (version == 1) ? entrySizeV1 : entrySizeV0;
     uint32_t entryOffset = elstHeaderSize + index * entrySize;
     if (version == 1) {
-        segmentDuration = static_cast<int64_t>(GetU64Value(&elstInfo[entryOffset]));
-        mediaTime = GetSignedU64Value(&elstInfo[entryOffset + sizeof(uint64_t)]);
+        entryInfo.segmentDuration = static_cast<int64_t>(GetU64Value(&elstInfo[entryOffset]));
+        entryInfo.mediaTime = GetSignedU64Value(&elstInfo[entryOffset + sizeof(uint64_t)]);
     } else {
         uint32_t tempDuration = GetU32Value(&elstInfo[entryOffset]);
         int32_t tempMediaTime = static_cast<int32_t>(GetU32Value(&elstInfo[entryOffset + sizeof(uint32_t)]));
-        segmentDuration = tempDuration;
-        mediaTime = tempMediaTime;
+        entryInfo.segmentDuration = tempDuration;
+        entryInfo.mediaTime = tempMediaTime;
     }
+    uint32_t rateOffset = entryOffset + (version == 1 ? sizeof(uint64_t) * 2 : sizeof(uint32_t) * 2);
+    entryInfo.mediaRateInteger = static_cast<int16_t>(GetU16Value(&elstInfo[rateOffset]));
+    entryInfo.mediaRateFraction = static_cast<int16_t>(GetU16Value(&elstInfo[rateOffset + sizeof(uint16_t)]));
     MEDIA_LOG_D("Parsed elst entry " PUBLIC_LOG_U32 ": segmentDuration=" PUBLIC_LOG_D64 ", mediaTime=" PUBLIC_LOG_D64,
-        index, segmentDuration, mediaTime);
-    FALSE_RETURN_V_MSG_E(mediaTime >= 0 || mediaTime == -1, Status::ERROR_INVALID_DATA,
-        "Invalid edit list media time: " PUBLIC_LOG_D64, mediaTime);
+        index, entryInfo.segmentDuration, entryInfo.mediaTime);
+    FALSE_RETURN_V_MSG_E(entryInfo.mediaTime >= 0 || entryInfo.mediaTime == -1, Status::ERROR_INVALID_DATA,
+        "Invalid edit list media time: " PUBLIC_LOG_D64, entryInfo.mediaTime);
 
+    return Status::OK;
+}
+
+Status AppendElstEntry(const uint8_t* elstInfo, uint32_t index, uint8_t version,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, bool& foundFirstMediaEdit)
+{
+    ElstEntryInfo entryInfo;
+    Status ret = ParseElstEntry(elstInfo, index, version, entryInfo);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse elst entry failed");
+    FALSE_RETURN_V_MSG_E(entryInfo.segmentDuration >= 0, Status::ERROR_INVALID_DATA,
+        "Invalid elst segment duration: " PUBLIC_LOG_D64, entryInfo.segmentDuration);
+    int64_t totalElstDuration = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(track->totalElstDuration, entryInfo.segmentDuration,
+        &totalElstDuration), Status::ERROR_INVALID_DATA, "Elst total duration overflow");
+    track->totalElstDuration = totalElstDuration;
+    track->editListEntries.emplace_back(MPEG4SampleHelper::EditListEntry {
+        .mediaTime = entryInfo.mediaTime,
+        .duration = entryInfo.segmentDuration,
+        .mediaRateInteger = entryInfo.mediaRateInteger,
+        .mediaRateFraction = entryInfo.mediaRateFraction
+    });
+    if (index == 0 && entryInfo.mediaTime == -1) {
+        track->elstInitEmptyEdit = entryInfo.segmentDuration;
+        return Status::OK;
+    }
+    if (!foundFirstMediaEdit && entryInfo.mediaTime >= 0) {
+        track->elstShiftStartTime = entryInfo.mediaTime;
+        foundFirstMediaEdit = true;
+    }
+    return Status::OK;
+}
+
+Status ParseElstEntries(const uint8_t* elstInfo, uint32_t entryCount, uint8_t version,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    track->editListEntries.clear();
+    bool foundFirstMediaEdit = false;
+    for (uint32_t i = 0; i < entryCount; ++i) {
+        Status ret = AppendElstEntry(elstInfo, i, version, track, foundFirstMediaEdit);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Append elst entry failed");
+    }
     return Status::OK;
 }
 
@@ -1677,37 +1753,7 @@ Status MPEG4AtomParser::ParseElst(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint32_t entrySize = (version == 1) ? entrySizeV1 : entrySizeV0;
     FALSE_RETURN_V_MSG_E((currentAtom.dataSize - elstHeaderSize) / entrySize >= entryCount,
         Status::ERROR_INVALID_DATA, "Invalid elst data size");
-
-    lastTrack_->editListEntries.clear();
-    bool foundFirstMediaEdit = false;
-    for (uint32_t i = 0; i < entryCount; ++i) {
-        int64_t segmentDuration = 0;
-        int64_t mediaTime = 0;
-
-        ret = ParseElstEntry(elstInfo.get(), i, version, segmentDuration, mediaTime);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse elst entry failed");
-        FALSE_RETURN_V_MSG_E(segmentDuration >= 0, Status::ERROR_INVALID_DATA,
-            "Invalid elst segment duration: " PUBLIC_LOG_D64, segmentDuration);
-        int64_t totalElstDuration = 0;
-        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(lastTrack_->totalElstDuration, segmentDuration,
-            &totalElstDuration),
-            Status::ERROR_INVALID_DATA, "Elst total duration overflow");
-        lastTrack_->totalElstDuration = totalElstDuration;
-        lastTrack_->editListEntries.emplace_back(MPEG4SampleHelper::EditListEntry {
-            .mediaTime = mediaTime,
-            .duration = segmentDuration
-        });
-        if (i == 0 && mediaTime == -1) {
-            lastTrack_->elstInitEmptyEdit = segmentDuration;
-            continue;
-        }
-        if (!foundFirstMediaEdit && mediaTime >= 0) {
-            lastTrack_->elstShiftStartTime = mediaTime;
-            foundFirstMediaEdit = true;
-        }
-    }
-
-    return ret;
+    return ParseElstEntries(elstInfo.get(), entryCount, version, lastTrack_);
 }
 
 Status MPEG4AtomParser::ParseTref(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
@@ -5004,6 +5050,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     dataSource_ = source;
     seekable_ = seekable;
     demuxerMode_ = mode;
+    pendingSampleTableStatus_ = Status::OK;
     dataReader_ = std::make_shared<DemuxerDataReader>();
     FALSE_RETURN_V_MSG_E(dataReader_ != nullptr, Status::ERROR_NO_MEMORY, "Failed create dataReader");
     dataReader_->SetDataReader(source);
@@ -5033,6 +5080,8 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
         }
     }
     FALSE_RETURN_V_MSG_E(moovFound_, Status::ERROR_INVALID_DATA, "MPEG4 parse failed");
+    FALSE_RETURN_V_MSG_E(pendingSampleTableStatus_ == Status::OK, pendingSampleTableStatus_,
+        "MPEG4 parse failed due to invalid sample tables");
     if (demuxerMode_ == Plugins::DemuxerMode::FAST_INIT) {
         CalculateFastInitAttributes();
     } else {

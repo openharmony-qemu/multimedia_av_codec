@@ -16,8 +16,10 @@
 #ifndef MPEG4_SAMPLE_HELPER_H
 #define MPEG4_SAMPLE_HELPER_H
 
+#include <atomic>
 #include <cstdint>
 #include <limits>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
 #include "common/status.h"
@@ -40,6 +42,24 @@ enum TrunFlag : uint32_t {
 
 class MPEG4SampleHelper {
 public:
+    enum class SampleIndexState : uint8_t {
+        UNBUILT,
+        SPARSE,
+        DENSE,
+    };
+
+    struct SampleTableSummary {
+        uint32_t rawSampleCount = 0;
+        uint32_t logicalSampleCount = 0;
+        int64_t rawTotalSize = 0;
+        int64_t rawTotalDuration = 0;
+        int64_t firstDts = 0;
+        int64_t firstPts = 0;
+        int64_t maxDtsEnd = 0;
+        int64_t maxPtsEnd = 0;
+        int32_t maxSampleSize = 0;
+    };
+
     MPEG4SampleHelper();
     ~MPEG4SampleHelper();
 
@@ -57,6 +77,10 @@ public:
     Status SetTrackFragmentRunParams(int64_t dataOffset, int64_t dataSize, int64_t sidxDts, int64_t &moofDts,
         int64_t &duration);
     Status BuildSampleIndexEntries();
+    Status FinalizeSampleTables();
+    Status EnsureDenseIndex();
+    SampleIndexState GetSampleIndexState() const;
+    bool ShouldBuildDenseIndex() const;
     void UpdateRawSampleStats();
     Status GetSampleDuration(uint32_t index, uint32_t &delta);
     void SetTimeOffset(int64_t timeOffset);
@@ -76,6 +100,8 @@ public:
     struct EditListEntry {
         int64_t mediaTime = 0;
         int64_t duration = 0;
+        int16_t mediaRateInteger = 1;
+        int16_t mediaRateFraction = 0;
     };
     struct SampleIndexEntry {
         int64_t pos = 0;
@@ -165,6 +191,7 @@ public:
     bool HasSkipSamplesInfo(uint32_t sampleIndex) const;
     const std::vector<uint8_t>* GetSkipSamplesInfo(uint32_t sampleIndex) const;
     size_t GetSampleCount() const;
+    bool HasSamples() const;
     bool IsSampleIndexEmpty() const;
     Status GetSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const;
     Status GetSampleSize(uint32_t sampleIndex, int32_t& size) const;
@@ -189,6 +216,41 @@ public:
     int64_t lastPTS_ = 0;
 
 private:
+    static constexpr uint32_t sparseCheckpointInterval = 1024;
+    static constexpr uint32_t maxGroupedSamplesPerFrame = 1024;
+    static constexpr uint32_t maxValidatedSampleCount = 1000000;
+
+    struct SampleTableCursor {
+        uint32_t outputIndex = 0;
+        uint64_t processedRawSamples = 0;
+        uint32_t chunkIndex = 0;
+        uint32_t stscIndex = 0;
+        uint32_t sttsIndex = 0;
+        uint32_t cttsIndex = 0;
+        uint32_t sampleInChunk = 0;
+        uint32_t sttsRemaining = 0;
+        uint32_t cttsRemaining = 0;
+        int64_t offset = 0;
+        int64_t dts = 0;
+    };
+
+    struct SparseCheckpoint {
+        uint32_t outputIndex = 0;
+        SampleTableCursor cursor;
+    };
+    struct SimpleEditProjection {
+        bool enabled = false;
+        uint32_t rawStart = 0;
+        uint32_t rawEnd = 0;
+        uint32_t outputCount = 0;
+        uint32_t firstPlayableRaw = 0;
+        int64_t dtsAdjustment = 0;
+        int64_t editMediaTime = 0;
+        int64_t editEndTime = 0;
+        int64_t emptyDuration = 0;
+    };
+    struct SimpleEditProjectionBuildContext;
+    struct SimpleEditProjectionSampleContext;
     struct DurationOverride {
         uint32_t sampleIndex = 0;
         int64_t duration = 0;
@@ -228,22 +290,8 @@ private:
         uint32_t defaultSampleDuration;
         uint32_t defaultSampleSize;
     };
-    struct SampleInfo {
-        uint32_t duration = 0;
-        uint32_t size = 0;
-        uint32_t flag = 0;
-        uint32_t ctsDelta = 0;
-        uint32_t byteLength = 0;
-        uint32_t dataOffset = 0;
-        uint32_t index = 0;
-    };
-    struct TrunSampleInitContext {
-        uint32_t trunFlag = 0;
-        const uint8_t* data = nullptr;
-        size_t dataSize = 0;
-        uint32_t bufferOffset = 0;
-        uint32_t firstSampleFlag = 0;
-    };
+    struct SampleInfo;
+    struct TrunSampleInitContext;
     struct SampleIndexBuildContext {
         int64_t currentOffset = 0;
         uint32_t chunkIndex = 0;
@@ -262,70 +310,12 @@ private:
         bool hasPreviousDuration = false;
     };
     using SkipSamplesInfoMap = std::unordered_map<uint32_t, std::vector<uint8_t>>;
-    struct EditListBuildContext {
-        const std::vector<SampleIndexEntry>& oldEntries;
-        const std::vector<DurationOverride>& oldDurationOverrides;
-        const std::vector<StssEntry>& oldSyncSamples;
-        bool oldAllSamplesSync;
-        std::vector<SampleIndexEntry>& newEntries;
-        std::vector<int64_t>& newDurations;
-        std::vector<StssEntry>& newSyncSamples;
-        SkipSamplesInfoMap& newSkipSamplesInfo;
-        int64_t& editListDtsEntryEnd;
-        int64_t& emptyEditsDuration;
-        int64_t& minCorrectedPts;
-        bool& foundNonEmptyEdit;
-        int32_t& firstNonZeroAudioEdit;
-        int64_t startDts;
-    };
-    struct EditListProcessContext {
-        const EditListEntry* edit = nullptr;
-        int64_t editDuration = 0;
-        size_t startIndex = 0;
-        int64_t dtsCounter = 0;
-        int64_t editEndTime = 0;
-        bool skipEntry = false;
-        bool editListStartEncountered = false;
-        bool foundKeyframeAfterEdit = false;
-        bool continueAfterEdit = false;
-        bool shouldBreak = false;
-        bool newEntryIsSync = false;
-        SampleIndexEntry newEntry;
-        int64_t frameDuration = 0;
-        int64_t frameEndTime = 0;
-        std::vector<uint8_t> skipSamplesInfo;
-        std::vector<int64_t> leadingDurations;
-    };
-    struct EditListRestoreGuard {
-        std::vector<SampleIndexEntry>& entries;
-        std::vector<DurationOverride>& overrides;
-        std::vector<StssEntry>& syncSamples;
-        bool& allSamplesSync;
-        std::vector<SampleIndexEntry>& oldEntries;
-        std::vector<DurationOverride>& oldOverrides;
-        std::vector<StssEntry>& oldSyncSamples;
-        bool oldAllSamplesSync;
-        bool active = true;
-
-        ~EditListRestoreGuard();
-    };
-    struct SampleEntryCreateContext {
-        const SampleInfo& sampleInfo;
-        int64_t offset = 0;
-        int64_t currentDts = 0;
-        bool isOverlap = false;
-    };
-    struct TfhdParseContext {
-        uint32_t flag = 0;
-        const uint8_t* data = nullptr;
-        size_t dataSize = 0;
-        size_t dataOffset = 0;
-    };
-    struct TfhdOptionalUint32Field {
-        uint32_t flag = 0;
-        uint32_t defaultValue = 0;
-        uint32_t* output = nullptr;
-    };
+    struct EditListBuildContext;
+    struct EditListProcessContext;
+    struct EditListRestoreGuard;
+    struct SampleEntryCreateContext;
+    struct TfhdParseContext;
+    struct TfhdOptionalUint32Field;
 
     std::vector<SttsEntry> sttsEntry_;
     std::vector<SampleIndexEntry> sampleIndexEntry_;
@@ -356,7 +346,8 @@ private:
     SkipSamplesInfoMap skipSamplesInfoMap_;
 
     void ProcessHalfByteSampleSizes(const uint8_t* data, uint32_t& entryIndex, uint32_t numSampleSizes);
-    Status ValidateCttsEntries(uint32_t sttsNum);
+    Status ValidateAndCountSttsSamples(uint32_t& sampleCount) const;
+    Status ValidateCttsEntries(uint32_t sttsSampleCount) const;
     Status ApplyEditList();
     Status FindWithSyncSamplesByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& syncIndex);
     int64_t FindIndexWithoutSyncSamples(int64_t inputPTS) const;
@@ -450,6 +441,59 @@ private:
 
     std::vector<DurationOverride> durationOverrides_;
     bool allSamplesSync_ = false;
+    SampleTableSummary sampleTableSummary_;
+    mutable std::atomic<SampleIndexState> sampleIndexState_ {SampleIndexState::UNBUILT};
+    mutable std::mutex indexMutex_;
+    mutable std::vector<SparseCheckpoint> sparseCheckpoints_;
+    mutable SampleTableCursor sparseFrontier_;
+    mutable bool sparseAttempted_ = false;
+    mutable Status sparseStatus_ = Status::OK;
+    bool denseAttempted_ = false;
+    Status denseStatus_ = Status::OK;
+    bool sampleTablesFinalized_ = false;
+    Status sampleTableStatus_ = Status::OK;
+    bool requiresDenseIndex_ = false;
+    SimpleEditProjection simpleEditProjection_;
+
+    Status EnsureSparseIndex() const;
+    Status BuildDenseSampleIndexEntries();
+    bool UseSparseIndex() const;
+    Status CreateInitialCursor(SampleTableCursor& cursor) const;
+    Status ReadRawSampleAndAdvance(SampleTableCursor& cursor, SampleIndexView& view) const;
+    Status ResolveRawSampleSize(const SampleTableCursor& cursor, uint32_t samplesPerFrame, int32_t& sampleSize) const;
+    Status FillRawSampleView(const SampleTableCursor& cursor, uint32_t samplesPerFrame, int32_t sampleSize,
+        SampleIndexView& view) const;
+    Status AdvanceRawSampleCursor(SampleTableCursor& cursor, uint32_t samplesPerFrame, uint32_t samplesInChunk,
+        int32_t sampleSize) const;
+    Status ConsumeRawSampleCtts(SampleTableCursor& cursor, uint32_t samplesPerFrame) const;
+    Status GetSparseSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const;
+    Status BuildSparseIndexLocked() const;
+    Status SkipSparseProjectionPrefix() const;
+    Status AdvanceSparseFrontierToSample(uint32_t sampleIndex, SampleIndexView& view) const;
+    Status ReadSparseSampleFromCheckpoint(uint32_t sampleIndex, SampleIndexView& view) const;
+    Status CalculateSampleTableSummary();
+    Status CalculateGroupedSampleTableSummary(int64_t& maxPts);
+    Status CalculateFlatSampleSizeSummary(uint64_t rawCount);
+    Status CalculateFlatSampleTimeSummary(int64_t initialDts, int64_t& maxPts);
+    Status CalculateRawSampleDurationSummary();
+    Status BuildSimpleEditProjection();
+    bool IsSimpleEditProjectionSupported() const;
+    Status PrepareSimpleEditProjection(const EditListEntry& edit, int64_t& editDuration, int64_t& emptyDuration,
+        int64_t& editEnd) const;
+    Status FindSimpleEditRawStart(const EditListEntry& edit, uint32_t& rawStart) const;
+    Status ScanSimpleEditProjectionSamples(const EditListEntry& edit, int64_t emptyDuration, int64_t editEnd,
+        SimpleEditProjectionBuildContext& scanCtx) const;
+    Status ProcessSimpleEditProjectionSample(SimpleEditProjectionSampleContext& sampleCtx) const;
+    Status StartSimpleEditProjectionSample(SimpleEditProjectionSampleContext& sampleCtx, bool crossedAudioStart) const;
+    Status UpdateSimpleEditProjectionTimes(const SampleIndexView& view, bool outside,
+        SimpleEditProjectionBuildContext& scanCtx) const;
+    bool ShouldStopSimpleEditProjectionScan(SimpleEditProjectionSampleContext& sampleCtx, int64_t frameEnd) const;
+    Status CommitSimpleEditProjection(const EditListEntry& edit, int64_t editDuration, int64_t emptyDuration,
+        int64_t editEnd, const SimpleEditProjectionBuildContext& scanCtx);
+    void SaveSimpleEditSkipSamples(uint32_t skipOutputIndex, uint32_t skipSamples);
+    Status ApplySimpleEditProjection(uint32_t rawIndex, SampleIndexView& view) const;
+    uint32_t CalculateLogicalSampleCount(uint32_t rawSampleCount) const;
+    bool IsGroupedRawAudio() const;
 };
 } // namespace MPEG4
 } // namespace Plugins

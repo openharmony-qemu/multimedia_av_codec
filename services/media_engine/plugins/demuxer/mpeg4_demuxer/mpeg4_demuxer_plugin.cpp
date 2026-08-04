@@ -1117,13 +1117,15 @@ void MPEG4DemuxerPlugin::Dump(const DumpParam &dumpParam)
 
 void MPEG4DemuxerPlugin::ReleaseReferenceParserState()
 {
+    std::lock_guard<std::mutex> lock(refPrepareMutex_);
     referenceParser_ = nullptr;
     isInit_ = false;
-    ptsOfIndexZero_ = 0;
-    std::map<int64_t, int64_t>().swap(pts2Dts_);
-    std::map<int64_t, uint32_t>().swap(dts2SyncSampleIndex_);
-    std::unordered_map<uint32_t, int64_t>().swap(sampleIndex2Pts_);
+    refPrepareAttempted_ = false;
+    refPrepareStatus_ = Status::OK;
+    std::vector<uint32_t>().swap(refPtsOrder_);
+    refPtsOrderReady_ = false;
     refParserTrackIdx_ = -1;
+    trackOfRefParser_.reset();
     std::vector<uint32_t>().swap(syncSamplesIndex_);
     refParserStartTime_ = -1;
     refParserPendingSeekMsTime_ = -1;
@@ -1134,6 +1136,9 @@ void MPEG4DemuxerPlugin::ReleaseReferenceParserState()
     mimeTypeOfVideoStream_ = MimeType::INVALID_TYPE;
     startPts_ = 0;
     updatePosIsForward_ = true;
+    isSdtpExist_ = false;
+    cacheSample_.reset();
+    isReadSampleDataFromCache_ = false;
     refParserState_.store(true, std::memory_order_release);
 }
 
@@ -1239,6 +1244,30 @@ void MPEG4DemuxerPlugin::InitDrmInfoCacheByAtomParser(std::shared_ptr<MPEG4AtomP
     drmInfoCached_.store(!cachedDrmInfo_.empty());
 }
 
+Status MPEG4DemuxerPlugin::PrepareTrackMetadata()
+{
+    if (firstTrack_ == nullptr) {
+        // FFmpeg accepts a valid MP4 container without tracks and exposes an empty track list.
+        MEDIA_LOG_W("No track found in MPEG4 source");
+        return Status::OK;
+    }
+    InitStreamParsers();
+    GetMediaInfo();
+    if (avTrackIds_.empty()) {
+        // A track without playable AV samples does not require first-frame codec parameters.
+        MEDIA_LOG_W("No playable AV samples found in MPEG4 source");
+        return Status::OK;
+    }
+    Status ret = ConvertElstTimescaleToMs();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ConvertElstTimescaleToMs is failed");
+    if (HasCodecParameters() != Status::OK) {
+        ResetParam();
+        MEDIA_LOG_E("SetDataSource failed cause not enough data");
+        return Status::ERROR_NOT_ENOUGH_DATA;
+    }
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source,
     const std::shared_ptr<Media::Meta>& configs)
 {
@@ -1265,18 +1294,11 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
         FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
         HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     }
-    
+
     InitBaseInfoByAtomParser(atomParser);
     InitDrmInfoCacheByAtomParser(atomParser);
-    InitParser();
-    GetMediaInfo();
-    ret = ConvertElstTimescaleToMs();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ConvertElstTimescaleToMs is failed");
-    if (HasCodecParameters() != Status::OK) {
-        ResetParam();
-        MEDIA_LOG_E("SetDataSource failed cause not enough data");
-        return Status::ERROR_NOT_ENOUGH_DATA;
-    }
+    ret = PrepareTrackMetadata();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "PrepareTrackMetadata failed");
 
     cachelimitSize_ = DEFAULT_CACHE_LIMIT;
     inited_ = true;
@@ -1355,12 +1377,11 @@ Status MPEG4DemuxerPlugin::HasCodecParameters()
     return Status::OK;
 }
 
-void MPEG4DemuxerPlugin::InitParser()
+void MPEG4DemuxerPlugin::InitStreamParsers()
 {
     auto track = firstTrack_;
     FALSE_RETURN_MSG(track != nullptr, "track is nullptr");
     streamParsers_ = std::make_shared<MultiStreamParserManager>();
-    uint32_t videoTrackCount = 0;
     for (uint32_t trackIndex = 0; track != nullptr; ++trackIndex) {
         std::string mime;
         mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
@@ -1373,26 +1394,8 @@ void MPEG4DemuxerPlugin::InitParser()
                 MEDIA_LOG_D("Track " PUBLIC_LOG_D32 " will be converted", trackIndex);
             }
         }
-        MediaType trackType = MediaType::UNKNOWN;
-        mediaInfo_.tracks[trackIndex].Get<Tag::MEDIA_TYPE>(trackType);
-        if (trackType == MediaType::VIDEO && StartWith(mime.c_str(), "video/") && videoTrackCount == 0) {
-            videoTrackCount++;
-            int32_t timeScale = track->timeScale;
-            if (timeScale > 0) {
-                FALSE_RETURN_MSG(track->sampleHelper, "sampleHelper is nullptr");
-                int64_t startPtsBasedOnTimescale = 0;
-                track->sampleHelper->GetPtsOfFirstSample(startPtsBasedOnTimescale);
-                startPts_ = static_cast<int64_t>(
-                    (static_cast<double>(startPtsBasedOnTimescale) / static_cast<double>(timeScale)) * S_TO_US);
-            }
-            syncSamplesIndex_ = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
-            MEDIA_LOG_I("syncSamplesIndex_ size is " PUBLIC_LOG_ZU, syncSamplesIndex_.size());
-        }
         track = track->next;
     }
-    FALSE_RETURN_MSG(!IsMultiVideoTracks(), "multi-video-tracks video is unsupported");
-    FALSE_RETURN_MSG(GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::PTS_TO_DTS_MAPPING,
-        refParserTrackIdx_, 0, 0) == Status::OK, "Failed to get pts and dts of all frames");
 }
 
 void MPEG4DemuxerPlugin::GetAVTrackIds()
@@ -2254,7 +2257,8 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
     FALSE_RETURN_V_MSG_E(CheckSeekTimeInFileDuration(mediaInfo_, seekTime), Status::ERROR_INVALID_PARAMETER,
         "Seek time out of file duration");
 
-    ReleaseReadLoop();
+    Status denseRet = EnsureSelectedTracksDense();
+    FALSE_RETURN_V_MSG_E(denseRet == Status::OK, denseRet, "Build dense sample index failed");
     for (const auto& selectedTrackId : selectedTrackIds_) {
         cacheQueue_.RemoveTrackQueue(selectedTrackId);
         cacheQueue_.AddTrackQueue(selectedTrackId);
@@ -2269,11 +2273,27 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
     return DoSeekInternal(trackId, seekTime, mode, realSeekTime);
 }
 
+Status MPEG4DemuxerPlugin::EnsureSelectedTracksDense()
+{
+    // Dense index construction mutates sample-helper state, so no async reader may access it concurrently.
+    ReleaseReadLoop();
+    for (uint32_t trackId : selectedTrackIds_) {
+        auto track = FindTrackById(static_cast<int32_t>(trackId));
+        FALSE_RETURN_V_NOLOG(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_INVALID_DATA);
+        Status ret = track->sampleHelper->EnsureDenseIndex();
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build dense index failed for track " PUBLIC_LOG_U32,
+            trackId);
+    }
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::SeekToStart()
 {
     MEDIA_LOG_D("In");
     MediaAVCodec::AVCodecTrace trace("SeekToStart");
-    auto ret = SeekToStartInternal();
+    auto ret = EnsureSelectedTracksDense();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build dense sample index failed");
+    ret = SeekToStartInternal();
     if (ret != Status::OK) {
         MEDIA_LOG_I("Use default seekto");
         int64_t realSeekTime = 0;

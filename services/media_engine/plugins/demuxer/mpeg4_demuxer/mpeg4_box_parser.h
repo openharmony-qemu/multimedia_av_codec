@@ -235,6 +235,7 @@ private:
     bool hasIncompleteSidxReference_;
     bool hasMoofBox_;
     bool moovFound_;
+    Status pendingSampleTableStatus_ {Status::OK};
     Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
     int32_t movieTimeScale_ = 1;
     MediaInfo mediaInfo_;
@@ -376,6 +377,9 @@ private:
         const size_t len);
     Status ParseMvhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status InitCurrentTrackForTrak();
+    void UpdateParsedTrackVideoInfo();
+    Status FinalizeParsedTrackSampleTables();
     Status ParseTkhd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseEdts(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseElst(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
