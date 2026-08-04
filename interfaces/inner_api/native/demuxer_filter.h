@@ -160,7 +160,6 @@ public:
     bool IsMimeInDolbyList(const std::string& mime);
     void OnNewTrackRender(uint64_t renderSeqNum);
     bool IsBuffering();
-    void NotifyClosestSeek();
     void SetTrackSelectionFilter(TrackSelectionFilter &filter);
     Status SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy);
     bool IsNeedSelectTrack(int32_t trackId);
