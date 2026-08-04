@@ -1831,7 +1831,7 @@ ohos_unittest("videodec_memrecycle_unit_test") {
   ]
   cflags_cc = cflags
 
-  if (av_codec_support_test) {
+  if (av_codec_support_test && av_codec_enable_only_for_flagship_chip) {
     sources = [
       "./memrecycleInnerAPI/serverdec_sample.cpp",
       "./videodec_memrecycle_unit_test.cpp",
