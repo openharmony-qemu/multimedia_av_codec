@@ -75,7 +75,6 @@ static std::unordered_map<TagType, std::string> g_formatToIndex = {
     {Tag::MEDIA_START_TIME,               "trackStartTime"},
     {Tag::MEDIA_TITLE,                    "title"},
     {Tag::MEDIA_TRACK_COUNT,              "trackCnt"},
-    {Tag::MEDIA_TIME_SCALE,               "timeScale"},
     {Tag::MEDIA_TYPE,                     "trackType"},
     {Tag::MIME_TYPE,                      "mime"},
     {Tag::TIMED_METADATA_KEY,             "metaKey"},

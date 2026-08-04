@@ -160,7 +160,6 @@ public:
     bool HasTrailingZeroSttsDuration() const;
     uint32_t EstimateVideoDelay() const;
     void SetFragmented(bool fragmented);
-    int64_t GetBaseDataOffset() const { return tfhd_.baseDataOffset; }
     SdtpEntry GetSdtpEntry();
     bool HasSkipSamplesInfo(uint32_t sampleIndex) const;
     const std::vector<uint8_t>* GetSkipSamplesInfo(uint32_t sampleIndex) const;

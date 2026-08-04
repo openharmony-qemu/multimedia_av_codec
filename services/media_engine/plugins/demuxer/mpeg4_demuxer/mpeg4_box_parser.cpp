@@ -2025,7 +2025,6 @@ void MPEG4AtomParser::InferTrackTypeFromMime(const std::string& mimeType)
     } else {
         return;
     }
-    lastTrack_->inferredTrackType = true;
     SetTrackMediaType(mediaInfo_.tracks[lastTrack_->trackIndex], lastTrack_->sampleHelper->trackType_);
 }
 
@@ -3034,24 +3033,6 @@ Status MPEG4AtomParser::ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx)
 
     return Status::OK;
 }
-
-// LCOV_EXCL_START
-AudioSampleFormat ConvertToLEFormat(AudioSampleFormat sampleFormat)
-{
-    switch (sampleFormat) {
-        case AudioSampleFormat::SAMPLE_S16BE:
-            return AudioSampleFormat::SAMPLE_S16LE;
-        case AudioSampleFormat::SAMPLE_S24BE:
-            return AudioSampleFormat::SAMPLE_S24LE;
-        case AudioSampleFormat::SAMPLE_S32BE:
-            return AudioSampleFormat::SAMPLE_S32LE;
-        case AudioSampleFormat::SAMPLE_F32BE:
-            return AudioSampleFormat::SAMPLE_F32LE;
-        default:
-            return sampleFormat; // No conversion needed
-    }
-}
-// LCOV_EXCL_STOP
 
 Status MPEG4AtomParser::ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType,
     ParseContext* ctx)
