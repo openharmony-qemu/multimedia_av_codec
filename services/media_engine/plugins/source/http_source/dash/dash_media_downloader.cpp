@@ -1522,8 +1522,8 @@ void DashMediaDownloader::SwitchVideoStream(const std::shared_ptr<DashStreamDesc
 void DashMediaDownloader::SwitchAudioStream(const std::shared_ptr<DashStreamDescription> &newAudioStream,
     const std::shared_ptr<DashSegmentDownloader> &segDownloader)
 {
-    if (newVideoStream == nullptr || segDownloader == nullptr) {
-        MEDIA_LOG_E("newVideoStream or segDownloader is null");
+    if (newAudioStream == nullptr || segDownloader == nullptr) {
+        MEDIA_LOG_E("newAudioStream or segDownloader is null");
         return;
     }
     int64_t remainLastNumberSeq = -1;
@@ -1676,8 +1676,8 @@ void DashMediaDownloader::SwitchStreamToPeriod(uint32_t newPeriodIndex,
     }
 
     MEDIA_LOG_I("SwitchStreamToPeriod: switch from period: " PUBLIC_LOG_U32 " to period: " PUBLIC_LOG_U32
-        ", trigger stream type: " PUBLIC_LOG_D32, currentPeriodIndex_.load(), newPeriodIndex,
-        static_cast<int32_t>(triggerDownloader->GetStreamType()));
+        ", trigger stream type: " PUBLIC_LOG_D32,
+        currentPeriodIndex_, newPeriodIndex, static_cast<int32_t>(triggerDownloader->GetStreamType()));
     
     bool needRestart = NeedRestartDecoder(oldVideoStream, newVideoStream);
 
@@ -1691,7 +1691,7 @@ void DashMediaDownloader::SwitchStreamToPeriod(uint32_t newPeriodIndex,
             newVideoStream, newAudioStream);
     }
 
-    currentPeriodIndex_.store(newPeriodIndex);
+    currentPeriodIndex_ = newPeriodIndex;
     mpdDownloader_->SetCurrentPeriodIndex(newPeriodIndex);
 
     if (needRestart) {
