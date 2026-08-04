@@ -1412,13 +1412,6 @@ bool DemuxerFilter::IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio,
     return isInvalid;
 }
 
-bool DemuxerFilter::IsNeedSelectTrack(int32_t trackId)
-{
-    FALSE_RETURN_V_MSG(demuxer_ != nullptr, true, "demuxer_ is nullptr");
-    return demuxer_->IsNeedSelectTrack(trackId);
-}
-
-
 int32_t DemuxerFilter::GetBuiltInSubtitleNum()
 {
     FALSE_RETURN_V_MSG(demuxer_ != nullptr, 0, "demuxer_ is nullptr");
