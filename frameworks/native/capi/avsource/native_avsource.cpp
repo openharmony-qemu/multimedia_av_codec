@@ -72,9 +72,9 @@ public:
 
     int32_t GetSize(int64_t &size)
     {
-        if (isExt_) {
+        if (isExt_ && dataSourceExt_ != nullptr) {
             size = dataSourceExt_->size;
-        } else {
+        } else if (!isExt_ && dataSource_ != nullptr) {
             size = dataSource_->size;
         }
         return 0;
