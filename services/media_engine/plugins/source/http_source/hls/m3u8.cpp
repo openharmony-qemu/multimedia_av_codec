@@ -363,11 +363,20 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
         sourceLoader_->Close(-1);
     }
     isDecryptAble_ = true;
-    isDecryptKeyReady_ = false;
+    auto oldKeyUri = keyUri_;
+    auto oldMethod = method_;
+    uint8_t oldIv[sizeof(iv_)];
+    NZERO_LOG(memcpy_s(oldIv, sizeof(oldIv), iv_, sizeof(iv_)));
     ParseKey(std::static_pointer_cast<AttributesTag>(tag));
-    auto keyTag = std::static_pointer_cast<AttributesTag>(tag);
-    auto keyUri = keyTag ? keyTag->GetAttributeByName("URI") : nullptr;
+    auto keyUri = std::static_pointer_cast<AttributesTag>(tag)->GetAttributeByName("URI");
     FALSE_RETURN(keyUri != nullptr);
+    if (isDecryptKeyReady_ && oldKeyUri != nullptr && keyUri_ != nullptr && *oldKeyUri == *keyUri_ &&
+        oldMethod != nullptr && method_ != nullptr && *oldMethod == *method_ &&
+        memcmp(oldIv, iv_, sizeof(iv_)) == 0) {
+        MEDIA_LOG_I("Same decryption key, skip redundant download");
+        return;
+    }
+    isDecryptKeyReady_ = false;
     if ((keyUri_->length() > DRM_PSSH_TITLE_LEN) && (keyUri_->substr(0, DRM_PSSH_TITLE_LEN) == DRM_PSSH_TITLE)) {
         ProcessDrmInfos();
     } else {
@@ -511,8 +520,8 @@ void M3U8::DownloadMap(const std::string& uri, size_t offset, size_t length)
     StartDownload();
 }
 
- void M3U8::InitializeDownloadHeader(const std::string& uri, size_t offset, size_t length)
- {
+void M3U8::InitializeDownloadHeader(const std::string& uri, size_t offset, size_t length)
+{
     if (uri.empty()) {
         return;
     }

@@ -18,15 +18,18 @@
 #include "cpp_ext/algorithm_ext.h"
 #include "common/event.h"
 #include <sstream>
-#include <iostream>
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 10;
-    constexpr int APP_DOWNLOAD_RETRY_TIMES = 60;
+    constexpr int RETRY_TIMES_TO_REPORT_ERROR = 5;
+    constexpr int APP_DOWNLOAD_RETRY_TIMES = 5;
+    constexpr int64_t RETRY_DELAY_TIME[] = {
+        20, 100, 200, 400, 800,
+        1600, 3200, 6400, 12800, 25600
+    };
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FEQUENCE = 50;
     constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
@@ -45,6 +48,8 @@ namespace {
         28, // Timeout was reached.
         56,
         18,
+        6,
+        7,
         0,
     };
     const std::set<int32_t> SERVER_RETRY_ERROR_CODES = {
@@ -58,6 +63,7 @@ namespace {
         500,
         0,
     };
+
     const std::unordered_map<RequestType, std::string> REQUEST_TYPE_MAP = {
         {RequestType::DEFAULT, "DEFAULT"},
         {RequestType::HTTP_MEDIA_DATA, "HTTP_MEDIA_DATA"},
@@ -104,10 +110,13 @@ int64_t DownloadMonitor::HttpMonitorLoop()
             retryTasks_.pop_front();
         }
     }
+    int64_t retryDelayTime = RETRY_SEG;
     if (task.request && task.function) {
         task.function();
+        auto retryTimes = task.request->GetRetryTimes();
+        retryDelayTime = retryTimes > APP_DOWNLOAD_RETRY_TIMES ? RETRY_SEG : RETRY_DELAY_TIME[retryTimes];
     }
-    return RETRY_SEG * MICROSECONDS_TO_MILLISECOND; // retry after 50ms
+    return retryDelayTime * MICROSECONDS_TO_MILLISECOND;
 }
 
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
@@ -458,6 +467,8 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         }
         return false;
     }
+    MEDIA_LOG_W("DoRetryL clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
+        ", retryTimes = " PUBLIC_LOG_D32 ",", clientError, serverError, retryTimes);
     return true;
 }
 
