@@ -725,9 +725,6 @@ bool AppendKnownEnumValue(const Meta& meta, const TagType& tag, std::stringstrea
     if (tag == Tag::VIDEO_COLOR_MATRIX_COEFF) {
         return AppendEnumValue<Plugins::MatrixCoefficient>(meta, tag, dumpStr);
     }
-    if (tag == Tag::VIDEO_HDR_TYPE || tag == Tag::VIDEO_HDR_COMPATIBILITY) {
-        return AppendEnumValue<Plugins::HDRType>(meta, tag, dumpStr);
-    }
     return false;
 }
 
