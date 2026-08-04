@@ -153,13 +153,13 @@ bool IsValidTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
     return track != nullptr && track->sampleHelper != nullptr;
 }
 
-bool IsValidBuffer(std::shared_ptr<AVBuffer> outBuffer)
+bool IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffer)
 {
     return outBuffer != nullptr && outBuffer->memory_ != nullptr &&
            outBuffer->memory_->GetCapacity() >= 0 && outBuffer->memory_->GetAddr() != nullptr;
 }
 
-bool IsValidMpeg4Sample(std::shared_ptr<MPEG4Sample> mpeg4Sample)
+bool IsValidMpeg4Sample(const std::shared_ptr<MPEG4Sample>& mpeg4Sample)
 {
     return mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr;
 }
