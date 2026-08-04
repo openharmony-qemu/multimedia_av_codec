@@ -306,6 +306,7 @@ private:
     bool isFirstStart_ = true;
     bool isBuffering_ {false};
     bool isFirstFrameWrite_ {false};
+    std::atomic<bool> isEosReported_ {false};
     std::atomic<bool> isClosestSeekDone_ {true};
     std::mutex closestSeekMutex_ {};
     std::condition_variable closestSeekCond_ {};

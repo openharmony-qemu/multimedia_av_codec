@@ -362,6 +362,7 @@ private:
     std::atomic<bool> seekFlag_ {false};
     std::atomic<bool> isFirstFrameAfterSeek_ {true};
     std::atomic<uint64_t> lastRenderedChangeSeqNum_{0};
+    bool isFirstPts_ = true;
 };
 }
 }

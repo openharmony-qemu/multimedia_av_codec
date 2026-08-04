@@ -526,6 +526,7 @@ Status DecoderSurfaceFilter::DoStart()
         MEDIA_LOG_I("DoStart after pause to execute resume.");
         return DoResume();
     }
+    isEosReported_.store(false);
     if (!IS_FILTER_ASYNC) {
         isThreadExit_ = false;
         isPaused_ = false;
@@ -610,6 +611,7 @@ Status DecoderSurfaceFilter::DoResume()
     MEDIA_LOG_I("Resume");
     refreshTotalPauseTime_ = true;
     isPaused_ = false;
+    isEosReported_.store(false);
     isFirstFrameAfterResume_ = true;
     isFirstRenderFrameAfterResume_ = true;
     if (!IS_FILTER_ASYNC) {
@@ -666,6 +668,7 @@ Status DecoderSurfaceFilter::DoStop()
     totalPausedTime_ = 0;
     refreshTotalPauseTime_ = false;
     isPaused_ = false;
+    isEosReported_.store(false);
     lastRenderTimeNs_ = HST_TIME_NONE;
     playRangeStartTime_ = PLAY_RANGE_DEFAULT_VALUE;
     playRangeEndTime_ = PLAY_RANGE_DEFAULT_VALUE;
@@ -696,6 +699,7 @@ Status DecoderSurfaceFilter::DoFlush()
 {
     MEDIA_LOG_D("Flush enter.");
     lastRenderTimeNs_ = HST_TIME_NONE;
+    isEosReported_.store(false);
     eosPts_ = INT64_MAX;
     videoDecoder_->Flush();
     if (postProcessor_) {
@@ -1656,6 +1660,7 @@ void DecoderSurfaceFilter::HandleEosOutput(int index)
 
 void DecoderSurfaceFilter::ReportEosEvent()
 {
+    FALSE_RETURN_MSG_I(!isEosReported_.exchange(true), "ReportEOSEvent already reported, skip");
     MEDIA_LOG_I("ReportEOSEvent");
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "ReportEOSEvent without eventReceiver_");
     Event event {
