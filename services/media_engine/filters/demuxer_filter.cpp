@@ -1412,11 +1412,6 @@ bool DemuxerFilter::IsAVTrackInvalid(bool hasInvalidVideo, bool hasInvalidAudio,
     return isInvalid;
 }
 
-int32_t DemuxerFilter::GetBuiltInSubtitleNum()
-{
-    FALSE_RETURN_V_MSG(demuxer_ != nullptr, 0, "demuxer_ is nullptr");
-    return demuxer_->GetBuiltInSubtitleNum();
-}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS
