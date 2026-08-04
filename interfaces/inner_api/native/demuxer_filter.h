@@ -56,11 +56,9 @@ public:
     Status DoWaitPrerollDone(bool render) override;
     Status DoSetPerfRecEnabled(bool isPerfRecEnabled) override;
     Status Reset();
- 
     Status PauseForSeek();
     Status ResumeForSeek();
     Status PrepareBeforeStart();
-    FilterState GetState();
 
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
@@ -78,7 +76,6 @@ public:
     Status GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo);
     Status GetFrameLayerInfo(uint32_t frameId, FrameLayerInfo &frameLayerInfo);
     Status GetGopLayerInfo(uint32_t gopId, GopLayerInfo &gopLayerInfo);
-
     Status GetIFramePos(std::vector<uint32_t> &IFramePos);
     Status Dts2FrameId(int64_t dts, uint32_t &frameId);
     Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId);
@@ -100,12 +97,12 @@ public:
     Status SelectBitRate(uint32_t bitRate, bool isAutoSelect = false);
     Status GetDownloadInfo(DownloadInfo& downloadInfo);
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
+
     FilterType GetFilterType();
 
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
     void OnUpdatedResult(std::shared_ptr<Meta> &meta);
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
-
     std::map<int32_t, sptr<AVBufferQueueProducer>> GetBufferQueueProducerMap();
     Status PauseTaskByTrackId(int32_t trackId);
     bool IsRenderNextVideoFrameSupported();
@@ -122,19 +119,18 @@ public:
     bool GetStartInfo(std::pair<int64_t, bool>& startInfo);
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetSpeed(float speed);
-    Status DisableMediaTrack(Plugins::MediaType mediaType);
     void SetDumpFlag(bool isdump);
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
     bool IsVideoEos();
     bool HasEosTrack();
+    Status DisableMediaTrack(Plugins::MediaType mediaType);
     void RegisterVideoStreamReadyCallback(const std::shared_ptr<VideoStreamReadyCallback> &callback);
     void DeregisterVideoStreamReadyCallback();
     Status ResumeDemuxerReadLoop();
     Status PauseDemuxerReadLoop();
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
-    int32_t GetCurrentAudioTrackId();
     Status AddAdsMediaSource(const std::shared_ptr<MediaSource>& source, int64_t startMs, bool isLive,
         std::string& outId);
     Status RemoveAdsMediaSource(const std::string& id);
@@ -142,6 +138,7 @@ public:
     Status SkipCurrentAdsMediaSource();
     using SpeedChangeCallback = std::function<void(float speed)>;
     void SetSpeedChangeCallback(SpeedChangeCallback cb);
+    int32_t GetCurrentAudioTrackId();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);
@@ -154,6 +151,7 @@ public:
     bool IsFlvLive();
     Status StopBufferring(bool isAppBackground);
     Status SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted);
+    void HandleDecoderErrorFrame(int64_t pts);
     bool IsVideoMuted();
     Status NotifyResumeUnMute();
     std::shared_ptr<Meta> GetGlobalInfo();
@@ -178,7 +176,6 @@ private:
         size_t index, std::shared_ptr<Meta> &meta);
     bool ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime, size_t index);
     void UpdateTrackIdMap(StreamType streamType, int32_t index);
-    void UpdateCinemaInfo(std::shared_ptr<Meta> &meta, std::shared_ptr<Meta> &userInfo);
     Status FaultDemuxerEventInfoWrite(StreamType& streamType);
     bool IsVideoMime(const std::string& mime);
     bool IsAudioMime(const std::string& mime);
@@ -192,9 +189,7 @@ private:
     bool HandleAdsStart();
     void HandleAdsStop();
     void HandleAdsSeek(int64_t seekTime);
-
     std::string uri_;
-
     std::atomic<bool> isLoopStarted{false};
 
     std::shared_ptr<Filter> nextFilter_;
@@ -206,7 +201,6 @@ private:
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};
-    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
 
     bool isDump_ = false;
     std::string bundleName_;
@@ -214,6 +208,7 @@ private:
     std::string videoMime_;
     std::string audioMime_;
     FileType fileType_ = FileType::UNKNOW;
+    std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
     bool isNotPrepareBeforeStart_ {true};
     bool isEnableReselectVideoTrack_ {false};
     int32_t apiVersion_ {0};
