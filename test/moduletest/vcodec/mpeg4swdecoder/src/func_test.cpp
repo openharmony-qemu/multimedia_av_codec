@@ -885,7 +885,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0100, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = -1;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SURFACE_OUTPUT = false;
-        vDecSample->checkOutPut = true;
+        vDecSample->checkOutPut = false;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
         ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
     }
@@ -905,7 +905,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0200, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 0;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SURFACE_OUTPUT = false;
-        vDecSample->checkOutPut = true;
+        vDecSample->checkOutPut = false;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
         ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
     }
@@ -925,7 +925,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0300, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 1;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SURFACE_OUTPUT = false;
-        vDecSample->checkOutPut = true;
+        vDecSample->checkOutPut = false;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
         ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
     }
@@ -945,7 +945,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0400, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 4097;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SURFACE_OUTPUT = false;
-        vDecSample->checkOutPut = true;
+        vDecSample->checkOutPut = false;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
         ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
     }
@@ -965,7 +965,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0500, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 10000;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SURFACE_OUTPUT = false;
-        vDecSample->checkOutPut = true;
+        vDecSample->checkOutPut = false;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
         ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->ConfigureVideoDecoder());
     }
@@ -985,7 +985,7 @@ HWTEST_F(Mpeg4SwdecFuncNdkTest, VIDEO_MPEG4SWDEC_PARA_0600, TestSize.Level2)
         vDecSample->DEFAULT_HEIGHT = 64;
         vDecSample->DEFAULT_FRAME_RATE = 30;
         vDecSample->SURFACE_OUTPUT = false;
-        vDecSample->checkOutPut = true;
+        vDecSample->checkOutPut = false;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameMpeg4));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());

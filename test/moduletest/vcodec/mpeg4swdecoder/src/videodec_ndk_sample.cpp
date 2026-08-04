@@ -84,6 +84,10 @@ private:
 };
 VDecNdkSample::~VDecNdkSample()
 {
+    isRunning_.store(false);
+    StopInloop();
+    StopOutloop();
+    ReleaseInFile();
     Release();
 }
 
@@ -809,6 +813,8 @@ void VDecNdkSample::StopOutloop()
         clearBufferqueue(signal_->attrQueue_);
         signal_->outCond_.notify_all();
         lock.unlock();
+        outputLoop_->join();
+        outputLoop_.reset();
     }
 }
 

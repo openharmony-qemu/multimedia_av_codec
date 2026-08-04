@@ -87,6 +87,10 @@ VDecAPI11Sample::~VDecAPI11Sample()
         }
     }
     Stop();
+    isRunning_.store(false);
+    StopInloop();
+    StopOutloop();
+    ReleaseInFile();
     Release();
 }
 
