@@ -745,7 +745,7 @@ void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, const 
     currentRequest_->clientError_ = clientCode;
     currentRequest_->serverError_ = serverCode;
     {
-        AutoLock loack(caMutex_);
+        AutoLock lock(caMutex_);
         ca_ = ca;
     }
     HandleRedirect(ret);
@@ -1077,6 +1077,7 @@ size_t Downloader::SaveBodyData(Downloader* mediaDownloader, void* buffer, size_
         MEDIA_LOG_W("Save data failed.");
         return 0; // save data failed, make perform finished.
     }
+    mediaDownloader->currentRequest_->isDownloading_ = false;
     return dataLen;
 }
 
