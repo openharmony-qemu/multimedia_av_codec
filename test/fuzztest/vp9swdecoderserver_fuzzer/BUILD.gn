@@ -42,9 +42,6 @@ ohos_fuzztest("Vp9SwdecoderServerFuzzTest") {
     "c_utils:utils",
     "hilog:libhilog",
     "ipc:ipc_single",
-    "ffmpeg:libohosffmpeg",
-    "graphic_surface:surface",
-    "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "window_manager:libwm",
   ]
