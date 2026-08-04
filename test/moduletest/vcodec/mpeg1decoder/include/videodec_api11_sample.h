@@ -152,6 +152,7 @@ public:
     const OH_NativeBuffer_Format *pixlFormats = nullptr;
     uint32_t pixlFormatNum = 0;
     int firstCallBackKey = 0;
+    bool skipStartDecoder = false;
 private:
     uint32_t originalWidth_ = 0;
     uint32_t originalHeight_ = 0;

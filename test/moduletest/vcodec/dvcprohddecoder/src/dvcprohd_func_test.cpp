@@ -626,6 +626,7 @@ HWTEST_F(DvcprohdDecFuncNdkTest, VIDEO_DVCPROHDDEC_FUNCTION_0024, TestSize.Level
     vDecSample->autoSwitchSurface = true;
     vDecSample->afterEosDestroyCodec = false;
     vDecSample->sleepOnFPS = true;
+    vDecSample->skipStartDecoder = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameDvcprohd.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
     ASSERT_EQ(AV_ERR_OK, vDecSample->Start());

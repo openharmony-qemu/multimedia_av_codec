@@ -468,6 +468,11 @@ int32_t VDecAPI11Sample::StartVideoDecoderReadStream()
 {
     isRunning.store(true);
     int ret = OH_VideoDecoder_Start(vdec_);
+    
+    if (skipStartDecoder) {
+        return AV_ERR_OK;
+    }
+    
     if (ret != AV_ERR_OK) {
         cout << "Failed to start codec" << endl;
         isRunning.store(false);
