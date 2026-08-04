@@ -2259,8 +2259,6 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
 
     Status denseRet = EnsureSelectedTracksDense();
     FALSE_RETURN_V_MSG_E(denseRet == Status::OK, denseRet, "Build dense sample index failed");
-
-    ReleaseReadLoop();
     for (const auto& selectedTrackId : selectedTrackIds_) {
         cacheQueue_.RemoveTrackQueue(selectedTrackId);
         cacheQueue_.AddTrackQueue(selectedTrackId);
@@ -2277,6 +2275,8 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
 
 Status MPEG4DemuxerPlugin::EnsureSelectedTracksDense()
 {
+    // Dense index construction mutates sample-helper state, so no async reader may access it concurrently.
+    ReleaseReadLoop();
     for (uint32_t trackId : selectedTrackIds_) {
         auto track = FindTrackById(static_cast<int32_t>(trackId));
         FALSE_RETURN_V_NOLOG(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_INVALID_DATA);
