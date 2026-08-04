@@ -1389,12 +1389,6 @@ bool DemuxerFilter::IsBuffering()
     return demuxer_->IsBuffering();
 }
 
-void DemuxerFilter::NotifyClosestSeek()
-{
-    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
-    demuxer_->NotifyClosestSeek();
-}
-
 void DemuxerFilter::SetTrackSelectionFilter(TrackSelectionFilter &filter)
 {
     FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
