@@ -158,6 +158,7 @@ public:
     int32_t inputoutputsyncloop();
     void GetVideoSupportedPixelFormats();
     void GetFormatKey();
+    bool skipStartDecoder = false;
     bool isGetVideoSupportedPixelFormats = false;
     bool isGetFormatKey = false;
     int isGetVideoSupportedPixelFormatsNum = 0;

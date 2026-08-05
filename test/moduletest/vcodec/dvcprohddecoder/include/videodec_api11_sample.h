@@ -159,6 +159,7 @@ public:
     const OH_NativeBuffer_Format *pixlFormats = nullptr;
     uint32_t pixlFormatNum = 0;
     int firstCallBackKey = 0;
+    bool skipStartDecoder = false;
 private:
     std::atomic<bool> isStarted_ = false;
     int32_t trackCount_ = 0;

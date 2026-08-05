@@ -529,6 +529,7 @@ HWTEST_F(Mpeg1decFuncNdkTest, VIDEO_MPEG1DEC_FUNCTION_0024, TestSize.Level0)
     vDecSample->autoSwitchSurface = true;
     vDecSample->afterEosDestroyCodec = false;
     vDecSample->sleepOnFPS = true;
+    vDecSample->skipStartDecoder = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMpeg1.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
     ASSERT_EQ(AV_ERR_OK, vDecSample->Start());

@@ -153,6 +153,7 @@ public:
     bool inputCallbackStop = false;
     bool outputCallbackFlush = false;
     bool outputCallbackStop = false;
+    bool skipStartDecoder = false;
     VDecAPI11Signal *signal = nullptr;
     std::atomic<bool> isRunning = false;
     uint32_t outCount = 0;
