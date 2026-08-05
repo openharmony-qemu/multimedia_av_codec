@@ -1146,10 +1146,9 @@ bool MPEG4AtomParser::GetBitrateDurationAndSize(std::shared_ptr<Track> track, in
 {
     FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, false, "Invalid track or sample helper");
     FALSE_RETURN_V_MSG_E(IsValidTrackIndex(mediaInfo_, track->trackIndex), false, "Invalid track index");
-    std::string mime;
     duration = GetBitrateDuration(track);
     totalSize = GetBitrateTotalSize(track);
-    if (!HasEnoughSamplesForBitrate(track, mime)) {
+    if (!HasEnoughSamplesForBitrate(track, track->sampleHelper->mimeType_)) {
         return false;
     }
     if (hasSidxBox_ && track->sidxDuration > 0 && track->sidxReferencedSize > 0) {
@@ -5082,11 +5081,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     FALSE_RETURN_V_MSG_E(moovFound_, Status::ERROR_INVALID_DATA, "MPEG4 parse failed");
     FALSE_RETURN_V_MSG_E(pendingSampleTableStatus_ == Status::OK, pendingSampleTableStatus_,
         "MPEG4 parse failed due to invalid sample tables");
-    if (demuxerMode_ == Plugins::DemuxerMode::FAST_INIT) {
-        CalculateFastInitAttributes();
-    } else {
-        CalculateMPEG4Attributes();
-    }
+    CalculateMPEG4Attributes();
     return ret;
 }
 
