@@ -136,7 +136,7 @@ private:
     std::atomic<bool> isFlush_ = false;
     std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;
     std::atomic<uint64_t> lastRenderedChangeSeqNum_{0};
-    int32_t subtitleTrackId = -1;
+    int32_t subtitleTrackId_ = -1;
     std::map<int32_t, std::deque<SubtitleInfo>> subtitleInfoMap_;
     int32_t bufferQueueSize_ = -1;
     std::atomic<bool> releasedAfterDisplay_{true};

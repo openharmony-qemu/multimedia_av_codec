@@ -292,7 +292,7 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
         if (iter != subtitleInfoMap_.end()) {
             iter->second.push_back(subtitleInfo);
         } else {
-            subtitle.try_emplace(trackId, std::deque<SubtitleInfo>(subtitleInfo));
+            subtitleInfoMap_.try_emplace(trackId, std::deque<SubtitleInfo>(subtitleInfo));
         }
     }
     updateCond_.notify_all();
@@ -324,16 +324,17 @@ void SubtitleSink::RenderLoop()
             FALSE_CONTINUE_NOLOG(!iter.second.empty());
 
             SubtitleInfo subtitleInfo = iter.second.front();
-            auto actionToDo ActionToDo(subtitleInfo);
+            auto actionToDo = ActionToDo(subtitleInfo);
             if (actionToDo == SubtitleBufferState::DROP) {
                 iter.second.pop_front();
                 inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
+                continue;
             } else if (actionTodo == SubtitleBufferState::WAIT) {
                 continue;
             }
             FALSE_CONTINUE_NOLOG(tempTrackId == subtitleTrackId_ && !subtitleInfo.isShow_);
             NotifyRender(subtitleInfo);
-            iter.second.front().isShow = true;
+            iter.second.front().isShow_ = true;
             FALSE_CONTINUE_NOLOG(releasedAfterDisplay_.load());
             iter.second.pop_front();
             inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
@@ -574,17 +575,16 @@ void SubtitleSink::SetBufferQueueSize(int32_t trackNum)
     FALSE_RETURN(trackNum > 0 && trackNum < (INT32_MAX / 2) - 1);
     bufferQueueSize_ = (trackNum + 1) * 2;
     MEDIA_LOG_I("bufferQueueSize:" PUBLIC_LOG_D32, bufferQueueSize_);
-    releasedAfterDisplay_.stroe(false);
+    releasedAfterDisplay_.store(false);
 }
 
 Status SubtitleSink::ClearByTrackId(int32_t trackId)
 {
     MEDIA_LOG_I("ClearByTrackId:" PUBLIC_LOG_D32, trackId);
-    Status SubtitleSink::Flush(bool isSeekFlush)
     if (inputBufferQueueConsumer_ != nullptr) {
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            shouldUpdate_.stroe(true);
+            shouldUpdate_.store(true);
             auto iter = subtitleInfoMap_.find(trackId);
             while (iter != subtitleInfoMap_.end() && !iter->second.empty()) {
                 inputBufferQueueConsumer_->ReleaseBuffer(iter->second.front().buffer_);

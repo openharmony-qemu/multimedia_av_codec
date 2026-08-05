@@ -5342,7 +5342,7 @@ Status MediaDemuxer::CopyAndPushBufferBySlices(int32_t trackId, std::shared_ptr<
         copySize, dstBuffer->memory_->GetCapacity(), srcBuffer->GetUniqueId());
     auto status = sampleQueueMap_[trackId]->CopyBufferSlice(srcBuffer, dstBuffer, copySize);
     FALSE_RETURN_V_MSG_E(status == Status::OK, status, "CopyPartBuffer failed, errCode: %{public}d", status);
-    if (dstBuffer->meta != nullptr && IsSubtitleTrackId(trackId)) {
+    if (dstBuffer->meta_ != nullptr && IsSubtitleTrackId(trackId)) {
         dstBuffer->meta_->SetData(Tag::REGULAR_TRACK_ID, trackId);
     }
     status = HandlePushBuffer(trackId, dstBuffer, bufferQueueMap_[trackId], Status::OK);
@@ -5415,7 +5415,7 @@ Status MediaDemuxer::PushDirectBuffer(int32_t trackId, std::shared_ptr<SampleQue
             return Status::OK;
         }
     }
-    if (dstBuffer->meta != nullptr && IsSubtitleTrackId(trackId)) {
+    if (dstBuffer->meta_ != nullptr && IsSubtitleTrackId(trackId)) {
         dstBuffer->meta_->SetData(Tag::REGULAR_TRACK_ID, trackId);
     }
     status = HandlePushBuffer(trackId, dstBuffer, bufferQueue, status);
@@ -7403,7 +7403,7 @@ int32_t MediaDemuxer::GetBuiltInSubtitleNum()
 bool MediaDemuxer::IsBuiltInSubtitleTrackId(int32_t trackId)
 {
     FALSE_RETURN_V(IsSubtitleTrackId(trackId), false);
-    FALSE_RETURN_V_MSG(demuxerPluginManager_ != nullptr, true, "plugin manager is nullptr");
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, true, "plugin manager is nullptr");
     int32_t audioStreamId = demuxerPluginManager_->GetStreamIDByTrackID(audioTrackId_);
     int32_t videoStreamId = demuxerPluginManager_->GetStreamIDByTrackID(videoTrackId_);
     int32_t subtitleStreamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
@@ -7438,7 +7438,7 @@ Status MediaDemuxer::InitBuiltInSubtitleBufferQueue(int32_t trackId, const sptr<
         int32_t tempTrackId = subtitleTrackIdVec_[i];
         MEDIA_LOG_I("Set bufferQueue for track" PUBLIC_LOG_D32, tempTrackId);
         if (bufferQueueMap_.find(tempTrackId) != bufferQueueMap_.end()) {
-            MEDIA_LOG_W("Has been set alredy");
+            MEDIA_LOG_W("Has been set already");
         }
         ret = InnerSelectTrack(tempTrackId);
         FALSE_CONTINUE_NOLOG(ret == Status::OK);
@@ -7451,7 +7451,7 @@ Status MediaDemuxer::InitBuiltInSubtitleBufferQueue(int32_t trackId, const sptr<
             }
         }
         bufferQueueMap_.insert(std::pair<int32_t, sptr<AVBufferQueueProducer>>(tempTrackId, producer));
-        bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(tempTrackId, producer));
+        bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(tempTrackId, nullptr));
         MEDIA_LOG_I("Set bufferQueue successfully");
         if (GetEnableSampleQueueFlag()) {
             ret = AddSampleBufferQueue(tempTrackId);
@@ -7476,9 +7476,6 @@ Status MediaDemuxer::SelectBuiltInSubtitleTrack(int32_t trackId, int32_t curTrac
             sampleConsumerTaskMap_[curTrackId] != nullptr) {
             sampleConsumerTaskMap_[curTrackId]->Stop();
         }
-        if (curTrackId == audioTrackId_ && sampleQueueMap_[curTrackId] != nullptr) {
-            sampleQueueMap_[curTrackId]->Clear();
-        }
         UnselectTrack(curTrackId);
 
         bufferQueueMap_.erase(curTrackId);
@@ -7492,7 +7489,7 @@ Status MediaDemuxer::SelectBuiltInSubtitleTrack(int32_t trackId, int32_t curTrac
         // 当前字幕是内置字幕，目标字幕不是内置字幕
         bufferQueueMap_.insert(
             std::pair<int32_t, sptr<AVBufferQueueProducer>>(trackId, bufferQueueMap_[curTrackId]));
-        bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(trackId, bufferMap_[curTrackId]));
+        bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(trackId, nullptr));
         demuxerPluginManager_->UpdateTempTrackMapInfo(trackId, trackId, -1);
         if (GetEnableSampleQueueFlag()) {
             AutoLock lock(mapMutex_);

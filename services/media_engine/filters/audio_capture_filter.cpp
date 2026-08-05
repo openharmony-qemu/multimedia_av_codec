@@ -19,7 +19,6 @@
 #include "source/audio_capture/audio_capture_module.h"
 #include "avcodec_trace.h"
 
-
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "AudioCaptureFilter" };
 static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000;
