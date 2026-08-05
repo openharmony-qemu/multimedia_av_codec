@@ -2431,12 +2431,12 @@ void HlsSegmentManager::ClearChunksInLargeSegment()
 
 bool HlsSegmentManager::IsHlsEnd()
 {
-    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) { 
-        if (lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ && 
-            tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0) { 
-            return true; 
-        } 
-        return false; 
+    if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
+        if (lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
+            tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0) {
+            return true;
+        }
+        return false;
     }
     if (CheckReadStatus() && GetBufferSize() == 0 && readTsIndex_ + 1 == backPlayList_.size() &&
         tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
