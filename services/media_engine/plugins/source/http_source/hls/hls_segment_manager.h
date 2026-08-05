@@ -234,8 +234,8 @@ private:
     void UpdateAesDecryptor(const PlayInfo& playInfo);
     bool IsAllDownloadFinish();
     bool IsDownloadLastSplice();
-    bool CheckLiveToVodEnd();
-    bool CheckVodEnd();
+    bool CheckLiveToVodEnd(); 
+    bool CheckVodEnd(); 
     bool CheckLiveLastSegment();
     std::shared_ptr<AesDecryptor> GetAesDecryptor();
     void SetAesDecryptor(std::shared_ptr<AesDecryptor> aesDecryptor);
