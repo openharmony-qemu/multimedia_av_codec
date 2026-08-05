@@ -85,6 +85,7 @@ private:
     std::deque<int64_t> ptsWin_;
     double decInSpeed_ = -1.0;
     double srcFps_ = 0.0;
+    int32_t instanceId_ = -1;
 #ifdef SUPPORT_FPS_FOR_MEMC
     int64_t lastOutPts_[3] = {0};
     size_t lastIndex_ = 0;
