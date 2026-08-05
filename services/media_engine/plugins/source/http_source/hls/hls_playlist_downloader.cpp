@@ -450,8 +450,8 @@ void HlsPlayListDownloader::UpdateLiveBaseOffset(const std::list<std::shared_ptr
                 liveBaseOffset_ = normalizedSeq * avgDuration;
             }
         } else if (firstSeq < lastFirstSeq_) {
-            MEDIA_LOG_W("Sequence number decreased. from: %{public}" ld
-                        "to: %{public}" ld, lastFirstSeq_, firstSeq);
+            MEDIA_LOG_W("Sequence number decreased. from: %{public}ld"
+                        "to: %{public}ld", lastFirstSeq_, firstSeq);
         } else if (lastFirstSeq_ >= 0 && firstSeq > lastFirstSeq_) {
             int64_t removedCount = firstSeq - lastFirstSeq_;
             int64_t avgDuration = GetAverageDuration(lastSegDurations_, files);
