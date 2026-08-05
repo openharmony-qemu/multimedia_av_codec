@@ -5085,36 +5085,6 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     return ret;
 }
 
-void MPEG4AtomParser::CalculateFastInitAttributes()
-{
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_VIDEO>(false);
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_AUDIO>(false);
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_SUBTITLE>(false);
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_TIMEDMETA>(false);
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_AUXILIARY>(false);
-    for (auto track = firstTrack_; track != nullptr; track = track->next) {
-        if (track->sampleHelper == nullptr || !IsValidTrackIndex(mediaInfo_, track->trackIndex)) {
-            continue;
-        }
-        if (NeedParseAudioInfo(track->sampleHelper->mimeType_, track->codecParms.trackType)) {
-            int32_t channelCount = 0;
-            AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
-            if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout) &&
-                mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
-                layout = Converter::GetDefaultChannelLayout(channelCount);
-                mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
-                mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
-            }
-            mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_BLOCK_ALIGN>(0);
-        }
-        NormalizeAudioAttributes(track);
-        SetTrackType(track);
-    }
-    SetStartTime();
-    SetFileDuration();
-    SetHEVCDefaultValue();
-}
-
 // LCOV_EXCL_START
 Status MPEG4AtomParser::ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
