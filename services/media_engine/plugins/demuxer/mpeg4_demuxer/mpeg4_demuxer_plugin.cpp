@@ -2664,10 +2664,12 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(uint32_t trackId, std::shared_ptr<AVB
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample attr failed");
     outBuffer->pts_ = attr.ptsUs;
     outBuffer->dts_ = attr.dtsUs;
-    outBuffer->meta_->Set<Tag::BUFFER_DECODING_TIMESTAMP>(attr.dtsUs);
     outBuffer->duration_ = attr.durationUs;
-    outBuffer->meta_->Set<Tag::BUFFER_DURATION>(attr.durationUs);
     outBuffer->memory_->SetSize(dataSize);
+    if (outBuffer->meta_ != nullptr) {
+        outBuffer->meta_->Set<Tag::BUFFER_DECODING_TIMESTAMP>(attr.dtsUs);
+        outBuffer->meta_->Set<Tag::BUFFER_DURATION>(attr.durationUs);
+    }
     MEDIA_LOG_D("[%{public}u]CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
         trackId, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_);
     outBuffer->flag_ = GetFlags(attr.flag, memoryNotEnough);
@@ -2682,12 +2684,13 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     int32_t sampleSize = 0;
     Status ret = GetSeekableSampleInfo(trackId, pos, sampleSize);
     if (ret == Status::END_OF_STREAM) {
+        track->currentSamplePos = 0;
         return SetEosSample(outBuffer);
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Get sample info failed");
     FALSE_RETURN_V_MSG_E(pos >= 0 && track->currentSamplePos <= INT64_MAX - pos,
         Status::ERROR_INVALID_PARAMETER, "Invalid sample pos");
-    FALSE_RETURN_V_MSG_E(track->currentSamplePos >= 0 && track->currentSamplePos < sampleSize,
+    FALSE_RETURN_V_MSG_E(track->currentSamplePos >= 0 && track->currentSamplePos <= sampleSize,
         Status::ERROR_INVALID_PARAMETER, "Invalid current pos");
 
     int32_t capacity = outBuffer->memory_->GetCapacity();
