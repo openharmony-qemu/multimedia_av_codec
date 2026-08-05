@@ -1275,7 +1275,7 @@ bool DashSegmentDownloader::IsNeedBufferForPlaying()
     auto callback = callback_.lock();
     if (GetBufferingTimeOut() && callback != nullptr) {
         callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-            "errorMessage: Dash buffer timeout due to request error"});
+            "errorMessage: dash buffer timeout due to request error"});
         isBuffering_.store(false);
         isDemuxerInitSuccess_.store(false);
         bufferingTime_ = 0;

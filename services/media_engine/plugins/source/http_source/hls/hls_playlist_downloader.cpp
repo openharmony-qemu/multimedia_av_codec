@@ -631,8 +631,8 @@ void HlsPlayListDownloader::ParseManifest(const std::string& location, bool isPr
         auto callback = eventCallback_.lock();
         if (callback) {
             MEDIA_LOG_E("ParseManifest parse failed.");
-            callback->OnEvent({PluginEventType::CLIENT_ERROR,
-                              {NetworkClientErrorCode::ERROR_TIME_OUT}, "errorMessage: Parse Invalid M3U8 file"});
+            callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
+                "errorMessage:Parse Invalid M3U8 file"});
         }
     }
 }
@@ -680,7 +680,7 @@ void HlsPlayListDownloader::SetDefaultStreamId(
     if (!master->isParseSuccess_ && callback != nullptr) {
         MEDIA_LOG_E("ParseManifest parse failed.");
         callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
-            "errorMessage: Invalid M3U8 file"});
+            "errorMessage:Invalid M3U8 file"});
     }
 }
 
@@ -1346,7 +1346,7 @@ void HlsPlayListDownloader::UpdateStreamInfo()
     audioStreamIds_.clear();
     subtitlesStreamIds_.clear();
     auto master = GetThreadSafeMaster();
-    FALSE_RETURN_NOLOG(master != nullptr);
+    FALSE_RETURN_MSG(master != nullptr, "master_ is nullptr");
     for (const auto &stream: master->variants_) {
         if (stream == nullptr) {
             continue;

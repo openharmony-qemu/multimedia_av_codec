@@ -175,6 +175,7 @@ private:
     uint32_t FillSingleBlock(uint8_t *&data, uint32_t &len);
     uint32_t DecryptDataLeft(uint8_t *&data, uint32_t &len, bool notBlock);
     uint32_t DecryptData(uint8_t *&data, uint32_t &len, bool notBlock);
+    void ResetDecryptBuffer();
     void InitMediaDownloader();
     void DownloadRecordHistory(int64_t nowTime);
     void OnWriteCacheBuffer(uint32_t len);
@@ -327,7 +328,7 @@ private:
     std::atomic<bool> isStopped = false;
     std::string mimeType_;
     size_t waterLineAbove_ {0};
-    std::atomic<bool> isInterrupt_ {false};
+    bool isInterrupt_ {false};
     bool isFirstFrameArrived_ {false};
     std::atomic<bool> isSeekingFlag {false};
     std::atomic<bool> isSourceLoaderSeeking_ {false};
