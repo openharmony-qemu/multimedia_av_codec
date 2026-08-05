@@ -113,6 +113,8 @@ ohos_unittest("video_sa_avcodec_unit_test") {
       "$av_codec_root_dir/services/engine/codec/video/av1decoder",
       "$av_codec_root_dir/services/engine/codec/video/decoderbase",
     ]
+
+    external_deps += [ "dav1d:dav1d_ohos" ]
   }
 
   if (av_codec_support_vp8_decoder) {
