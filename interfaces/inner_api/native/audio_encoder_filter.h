@@ -69,6 +69,7 @@ public:
     Status DoRelease() override;
     Status NotifyEos();
     Status SetTranscoderMode();
+    Status SetPureAudioMode();
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -114,9 +115,11 @@ private:
     std::string bundleName_;
     std::shared_ptr<Meta> transcoderMeta_ {nullptr};
     bool isTranscoderMode_ {false};
+    std::atomic<bool> isPureAudioMode_ {false};
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};
+    std::atomic<bool> shouldJudgeChange {false};
 
     // 中间队列相关成员变量
     std::shared_ptr<AVBufferQueue> intermediateBufferQueue_;
