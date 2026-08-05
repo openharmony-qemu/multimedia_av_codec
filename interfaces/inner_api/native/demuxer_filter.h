@@ -160,6 +160,8 @@ public:
     bool IsBuffering();
     void SetTrackSelectionFilter(TrackSelectionFilter &filter);
     Status SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy);
+    bool IsNeedSelectTrack(int32_t trackId);
+    int32_t GetBuiltInSubtitleNum();
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,

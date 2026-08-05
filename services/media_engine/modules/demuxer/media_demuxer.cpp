@@ -69,6 +69,7 @@ static constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 static constexpr int32_t SKIP_NEXT_OPEN_GOP_CNT = 2;
 constexpr uint32_t THREAD_PRIORITY_41 = 7;
 constexpr uint32_t MAX_VIDEO_LEAD_TIME_ON_MUTE_US = 10000000; // Maximum video frame advance time during video mute
+constexpr int64_t MAX_SUBTITLE_LEAD_TIME = 1000000;
 constexpr uint32_t SAMPLE_QUEUE_ADD_SIZE_ON_MUTE = 20; // When samplequeue is full on mute, samplequeue size add 20
 constexpr int64_t INTERSTITIAL_CHECK_INTERVAL_MS = 200;
 std::map<OHOS::Media::TrackType, OHOS::Media::Plugins::StreamType> TRACK_TO_STREAM_MAP = {
@@ -1029,6 +1030,7 @@ Status MediaDemuxer::InnerPrepare()
         InitVideoTrack();
         InitAudioTrack();
         InitSubtitleTrack();
+        InitBuiltInSubtitleTrack();
     } else {
         MEDIA_LOG_E("Parse meta failed, ret: " PUBLIC_LOG_D32, (int32_t)(ret));
     }
@@ -1395,6 +1397,7 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
                 ret == Status::OK, ret, "AddSampleBufferQueue failed for track " PUBLIC_LOG_D32, trackId);
         }
     }
+    InitBuiltInSubtitleBufferQueue(trackId, producer);
     return ret;
 }
 
@@ -1617,6 +1620,9 @@ void MediaDemuxer::ReportTrackChangeEvent(int32_t trackId)
 Status MediaDemuxer::DoSelectTrack(int32_t trackId, int32_t curTrackId)
 {
     if (IsValidTrackId(curTrackId)) {
+        if (IsSubtitleTrackId(trackId) && (!IsNeedSelectTrack(trackId) || !IsNeedSelectTrack(curTrackId))) {
+            return SelectBuiltInSubtitleTrack(trackId, curTrackId);
+        }
         if (taskMap_.find(curTrackId) != taskMap_.end() && taskMap_[curTrackId] != nullptr) {
             taskMap_[curTrackId]->Stop();
         }
@@ -2133,6 +2139,7 @@ void MediaDemuxer::ResetAfterSeek(Status ret)
         }
         lastVideoPts_ = -1;
     }
+    lastSubtitlePtsMap_.clear();
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
@@ -2181,6 +2188,7 @@ Status MediaDemuxer::SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64
         }
         lastVideoPts_ = -1;
     }
+    lastSubtitlePtsMap_.clear()
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
@@ -2232,6 +2240,7 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
         }
         lastVideoPts_ = -1;
     }
+    lastSubtitlePtsMap_.clear();
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
@@ -3222,6 +3231,9 @@ void MediaDemuxer::InitDefaultTrack(const Plugins::MediaInfo& mediaInfo, int32_t
             !IsTrackDisabled(Plugins::MediaType::SUBTITLE)) {
             dafaultTrack += "/S:";
             dafaultTrack += std::to_string(index);
+            if (IsBuiltInSubtitleTrackId(index)) {
+                subtitleTrackIdVec_.push_back(index);
+            }
             if (!IsValidTrackId(subtitleTrackId)) {
                 subtitleTrackId = index;
             }
@@ -3269,6 +3281,9 @@ bool MediaDemuxer::GetBufferFromUserQueue(int32_t queueIndex, int32_t size)
         }
     }
 
+    if (!subtitleTrackIdVec_.empty() && IsSubtitleTrackId(queueIndex)) {
+        FALSE_RETURN_V(IsSubtitleQueueStale(queueIndex), false);
+    }
     AVBufferConfig avBufferConfig;
     if (isTranscoderMode_ && isSkippingAudioDecAndEnc_ && queueIndex == audioTrackId_) {
         avBufferConfig.memoryType = MemoryType::SHARED_MEMORY;
@@ -3646,6 +3661,7 @@ Status MediaDemuxer::HandleReadSample(int32_t trackId)
         }
         lastVideoPts_ = trackId == videoTrackId_ ? bufferMap_[trackId]->pts_ : lastVideoPts_;
         lastAudioPtsInMute_ = trackId == audioTrackId_ ? bufferMap_[trackId]->pts_ : lastAudioPtsInMute_;
+        UpdateSubtitleLastPts(trackId);
         bool isDroppable = IsBufferDroppable(bufferMap_[trackId], trackId);
         if (ptsManagedFileTypes.find(fileType_) != ptsManagedFileTypes.end() && trackId == videoTrackId_) {
             SetOutputBufferPts(bufferMap_[trackId]);
@@ -5326,6 +5342,9 @@ Status MediaDemuxer::CopyAndPushBufferBySlices(int32_t trackId, std::shared_ptr<
         copySize, dstBuffer->memory_->GetCapacity(), srcBuffer->GetUniqueId());
     auto status = sampleQueueMap_[trackId]->CopyBufferSlice(srcBuffer, dstBuffer, copySize);
     FALSE_RETURN_V_MSG_E(status == Status::OK, status, "CopyPartBuffer failed, errCode: %{public}d", status);
+    if (dstBuffer->meta != nullptr && IsSubtitleTrackId(trackId)) {
+        dstBuffer->meta_->SetData(Tag::REGULAR_TRACK_ID, trackId);
+    }
     status = HandlePushBuffer(trackId, dstBuffer, bufferQueueMap_[trackId], Status::OK);
     FALSE_RETURN_V_MSG_E(status == Status::OK, status, "HandlePushBuffer failed, errCode: %{public}d", status);
     status = CheckAndReleaseRemainBuffer(srcBuffer, trackId);
@@ -5395,6 +5414,9 @@ Status MediaDemuxer::PushDirectBuffer(int32_t trackId, std::shared_ptr<SampleQue
             bufferQueue->PushBuffer(dstBuffer, false);
             return Status::OK;
         }
+    }
+    if (dstBuffer->meta != nullptr && IsSubtitleTrackId(trackId)) {
+        dstBuffer->meta_->SetData(Tag::REGULAR_TRACK_ID, trackId);
     }
     status = HandlePushBuffer(trackId, dstBuffer, bufferQueue, status);
     CHECK_AND_RETURN_RET_LOG(status == Status::OK, status, "HandlePushBuffer failed");
@@ -7358,6 +7380,148 @@ Status MediaDemuxer::PauseConsumerTaskByTrackId(int32_t trackId)
     iter->second->PauseAsync();
     iter->second->Pause();
     return Status::OK;
+}
+
+bool MediaDemuxer::IsNeedSelectTrack(int32_t trackId)
+{
+    if (subtitleTrackIdVec_.empty()) {
+        return true;
+    }
+    for (size_t i = 0; i < subtitleTrackIdVec_.size(); ++i) {
+        if (trackId == subtitleTrackIdVec_[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int32_t MediaDemuxer::GetBuiltInSubtitleNum()
+{
+    return subtitleTrackIdVec_.size();
+}
+
+bool MediaDemuxer::IsBuiltInSubtitleTrackId(int32_t trackId)
+{
+    FALSE_RETURN_V(IsSubtitleTrackId(trackId), false);
+    FALSE_RETURN_V_MSG(demuxerPluginManager_ != nullptr, true, "plugin manager is nullptr");
+    int32_t audioStreamId = demuxerPluginManager_->GetStreamIDByTrackID(audioTrackId_);
+    int32_t videoStreamId = demuxerPluginManager_->GetStreamIDByTrackID(videoTrackId_);
+    int32_t subtitleStreamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+    MEDIA_LOG_I("IsBuiltInSubtitleTrackId audioStreamId:" PUBLIC_LOG_D32 ",videoStreamId:" PUBLIC_LOG_D32
+        ",subtitleStreamId:" PUBLIC_LOG_D32, audioStreamId, videoStreamId, subtitleStreamId);
+    return audioStreamId == subtitleStreamId || videoStreamId == subtitleStreamId;
+}
+
+void MediaDemuxer::InitBuiltInSubtitleTrack()
+{
+    FALSE_RETURN(!subtitleTrackIdVec_.empty());
+    for (size_t i = 0; i < subtitleTrackIdVec_.size(); ++i) {
+        int32_t tempTrackId = subtitleTrackIdVec_[i];
+        if (tempTrackId == subtitleTrackId_) {
+            continue;
+        }
+        GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrackIfFilter(tempTrackId, DemuxerTrackType::SUBTITLE)
+            : AddDemuxerCopyTaskIfFilter(tempTrackId, TaskType::SUBTITLE);
+        demuxerPluginManager_->UpdateTempTrackMapInfo(tempTrackId, tempTrackId, -1);
+        int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(tempTrackId);
+        MEDIA_LOG_I("InnerPrepare streamID:" PUBLIC_LOG_D32, streamId);
+    }
+}
+
+Status MediaDemuxer::InitBuiltInSubtitleBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer)
+{
+    Status ret = Status::OK;
+    if (!IsSubtitleTrackId(trackId) || subtitleTrackIdVec_.empty()) {
+        return ret;
+    }
+    for (size_t i = 0; i < subtitleTrackIdVec_.size(); ++i) {
+        int32_t tempTrackId = subtitleTrackIdVec_[i];
+        MEDIA_LOG_I("Set bufferQueue for track" PUBLIC_LOG_D32, tempTrackId);
+        if (bufferQueueMap_.find(tempTrackId) != bufferQueueMap_.end()) {
+            MEDIA_LOG_W("Has been set alredy");
+        }
+        ret = InnerSelectTrack(tempTrackId);
+        FALSE_CONTINUE_NOLOG(ret == Status::OK);
+        auto track = trackMap_.find(tempTrackId);
+        if (track != trackMap_.end()) {
+            auto listener = track->second->GetProducerListener();
+            if (listener) {
+                MEDIA_LOG_W("Set listener");
+                producer->SetBufferAvailableListener(listener);
+            }
+        }
+        bufferQueueMap_.insert(std::pair<int32_t, sptr<AVBufferQueueProducer>>(tempTrackId, producer));
+        bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(tempTrackId, producer));
+        MEDIA_LOG_I("Set bufferQueue successfully");
+        if (GetEnableSampleQueueFlag()) {
+            ret = AddSampleBufferQueue(tempTrackId);
+            FALSE_RETURN_V_MSG_E(
+                ret == Status::OK, ret, "AddSampleBufferQueue failed for track " PUBLIC_LOG_D32, tempTrackId);
+        }
+    }
+    return ret;
+}
+
+Status MediaDemuxer::SelectBuiltInSubtitleTrack(int32_t trackId, int32_t curTrackId)
+{
+    if (!IsNeedSelectTrack(trackId) && !IsNeedSelectTrack(curTrackId)) {
+        return Status::OK;
+    }
+    if (IsNeedSelectTrack(curTrackId)) {
+        // 当前字幕不是内置字幕，目标字幕是内置字幕
+        if (taskMap_.find(curTrackId) != taskMap_.end() && taskMap_[curTrackId] != nullptr) {
+            taskMap_[curTrackId]->Stop();
+        }
+        if (sampleConsumerTaskMap_.find(curTrackId) != sampleConsumerTaskMap_.end() &&
+            sampleConsumerTaskMap_[curTrackId] != nullptr) {
+            sampleConsumerTaskMap_[curTrackId]->Stop();
+        }
+        if (curTrackId == audioTrackId_ && sampleQueueMap_[curTrackId] != nullptr) {
+            sampleQueueMap_[curTrackId]->Clear();
+        }
+        UnselectTrack(curTrackId);
+
+        bufferQueueMap_.erase(curTrackId);
+        bufferMap_.erase(curTrackId);
+        if (GetEnableSampleQueueFlag()) {
+            AutoLock lock(mapMutex_);
+            sampleQueueMap_.erase(curTrackId);
+        }
+        return Status::OK;
+    } else if (IsNeedSelectTrack(trackId)) {
+        // 当前字幕是内置字幕，目标字幕不是内置字幕
+        bufferQueueMap_.insert(
+            std::pair<int32_t, sptr<AVBufferQueueProducer>>(trackId, bufferQueueMap_[curTrackId]));
+        bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(trackId, bufferMap_[curTrackId]));
+        demuxerPluginManager_->UpdateTempTrackMapInfo(trackId, trackId, -1);
+        if (GetEnableSampleQueueFlag()) {
+            AutoLock lock(mapMutex_);
+            AddSampleBufferQueue(trackId);
+            if (sampleQueueMap_[trackId] != nullptr) {
+                sampleQueueMap_[trackId]->UpdateQueueId(trackId);
+            }
+        }
+        return InnerSelectTrack(trackId);
+    }
+    return Status::ERROR_UNKNOWN;
+}
+
+Status MediaDemuxer::UpdateSubtitleLastPts(int32_t trackId)
+{
+    if (!subtitleTrackIdVec_.empty() && IsSubtitleTrackId(trackId) && bufferMap_[trackId] != nullptr) {
+        lastSubtitlePtsMap_[trackId] = bufferMap_[trackId]->pts_;
+    }
+    return Status::OK;
+}
+
+bool MediaDemuxer::IsSubtitleQueueStale(int32_t queueIndex)
+{
+    auto iter = lastSubtitlePtsMap_.find(queueIndex);
+    if (iter != lastSubtitlePtsMap_.end() && syncCenter_ != nullptr
+        && iter->second - syncCenter_->GetMediaTimeNow() > MAX_SUBTITLE_LEAD_TIME) {
+        return false;
+    }
+    return true;
 }
 } // namespace Media
 } // namespace OHOS

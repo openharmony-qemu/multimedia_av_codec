@@ -95,6 +95,7 @@ Status SubtitleSink::Init(std::shared_ptr<Meta> &meta, const std::shared_ptr<Pip
     if (meta != nullptr) {
         meta->SetData(Tag::APP_PID, appPid_);
         meta->SetData(Tag::APP_UID, appUid_);
+        meta->GetData(Tag::REGULAR_TRACK_ID, subtitleTrackId_);
     }
     return Status::OK;
 }
@@ -218,7 +219,7 @@ Status SubtitleSink::PrepareInputBufferQueue()
         MEDIA_LOG_I("InputBufferQueue already create");
         return Status::ERROR_INVALID_OPERATION;
     }
-    int32_t inputBufferNum = 2;
+    int32_t inputBufferNum = bufferQueueSize_ == -1 ? 2 : bufferQueueSize_;
     int32_t capacity = 1024;
     MemoryType memoryType;
 #ifndef MEDIA_OHOS
@@ -272,13 +273,27 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
     if (filledOutputBuffer->flag_ & BUFFER_FLAG_EOS) {
         isEos_ = true;
     }
+    int32_t trackId = -1;
+    if (filledOutputBuffer->meta_ != nullptr) {
+        filledOutputBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, trackId);
+    }
+    if (trackId == -1) {
+        MEDIA_LOG_E("trackId is invaild");
+        inputBufferQueueConsumer_->ReleaseBuffer(filledOutputBuffer);
+        return;
+    }
     std::string subtitleText(reinterpret_cast<const char *>(filledOutputBuffer->memory_->GetAddr()),
                              filledOutputBuffer->memory_->GetSize());
     SubtitleInfo subtitleInfo{ RemoveTextTags(subtitleText), filledOutputBuffer->pts_, filledOutputBuffer->duration_,
             filledOutputBuffer };
     {
         std::unique_lock<std::mutex> lock(mutex_);
-        subtitleInfoVec_.push_back(subtitleInfo);
+        auto iter = subtitleInfoMap_.find(trackId);
+        if (iter != subtitleInfoMap_.end()) {
+            iter->second.push_back(subtitleInfo);
+        } else {
+            subtitle.try_emplace(trackId, std::deque<SubtitleInfo>(subtitleInfo));
+        }
     }
     updateCond_.notify_all();
 }
@@ -288,8 +303,15 @@ void SubtitleSink::RenderLoop()
     while (SUBTITME_LOOP_RUNNING) {
         std::unique_lock<std::mutex> lock(mutex_);
         updateCond_.wait(lock, [this] {
+            bool hasData = false;
+            for (const auto&iter : subtitleInfoMap_) {
+                if (!iter.second.empty()) {
+                    hasData = true;
+                    break;
+                }
+            }
             return isThreadExit_.load() ||
-                   (!subtitleInfoVec_.empty() && state_ == Pipeline::FilterState::RUNNING);
+                   (hasData && state_ == Pipeline::FilterState::RUNNING);
         });
         if (isFlush_) {
             MEDIA_LOG_I("SubtitleSink RenderLoop flush");
@@ -297,28 +319,28 @@ void SubtitleSink::RenderLoop()
             continue;
         }
         FALSE_RETURN(!isThreadExit_.load());
-        // wait timeout, seek or stop
-        SubtitleInfo subtitleInfo = subtitleInfoVec_.front();
-        int64_t waitTime = static_cast<int64_t>(CalcWaitTime(subtitleInfo));
-        updateCond_.wait_for(lock, std::chrono::microseconds(waitTime),
-                             [this] { return isThreadExit_.load() || shouldUpdate_; });
-        if (isFlush_) {
-            MEDIA_LOG_I("SubtitleSink RenderLoop flush");
-            isFlush_.store(false);
-            continue;
-        }
-        FALSE_RETURN(!isThreadExit_.load());
-        auto actionToDo = ActionToDo(subtitleInfo);
-        if (actionToDo == SubtitleBufferState::DROP) {
-            subtitleInfoVec_.pop_front();
+        for(auto &iter: subtitleInfoMap_) {
+            int32_t tempTrackId = iter.first;
+            FALSE_CONTINUE_NOLOG(!iter.second.empty());
+
+            SubtitleInfo subtitleInfo = iter.second.front();
+            auto actionToDo ActionToDo(subtitleInfo);
+            if (actionToDo == SubtitleBufferState::DROP) {
+                iter.second.pop_front();
+                inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
+            } else if (actionTodo == SubtitleBufferState::WAIT) {
+                continue;
+            }
+            FALSE_CONTINUE_NOLOG(tempTrackId == subtitleTrackId_ && !subtitleInfo.isShow_);
+            NotifyRender(subtitleInfo);
+            iter.second.front().isShow = true;
+            FALSE_CONTINUE_NOLOG(releasedAfterDisplay_.load());
+            iter.second.pop_front();
             inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
-            continue;
-        } else if (actionToDo == SubtitleBufferState::WAIT) {
-            continue;
-        } else {}
-        NotifyRender(subtitleInfo);
-        subtitleInfoVec_.pop_front();
-        inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
+        }
+        shouldUpdate_.store(false);
+        updateCond_.wait_for(lock, std::chrono::microseconds(100000),
+            [this] { return isThreadExit_.load() || shouldUpdate_;});
     }
 }
 
@@ -528,6 +550,57 @@ std::string SubtitleSink::RemoveTextTags(const std::string& text)
 
     RestoreUnsupportedTags(result, openTags);
     return result;
+}
+
+void SubtitleSink::SelectTrack(int32_t trackId)
+{
+    MEDIA_LOG_I("subtitle selectTrack trackId:" PUBLIC_LOG_D32, trackId);
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (subtitleTrackId_ == trackId) return;
+    subtitleTrackId_ = trackId;
+    for(auto &iter: subtitleInfoMap_) {
+        if (iter.second.empty()) {
+            continue;
+        }
+        SubtitleInfo& subtitleInfo = iter.second.front();
+        subtitleInfo.isShow_ = false;
+    }
+    shouldUpdate_.store(true);
+    updateCond_.notify_all();
+}
+
+void SubtitleSink::SetBufferQueueSize(int32_t trackNum)
+{
+    FALSE_RETURN(trackNum > 0 && trackNum < (INT32_MAX / 2) - 1);
+    bufferQueueSize_ = (trackNum + 1) * 2;
+    MEDIA_LOG_I("bufferQueueSize:" PUBLIC_LOG_D32, bufferQueueSize_);
+    releasedAfterDisplay_.stroe(false);
+}
+
+Status SubtitleSink::ClearByTrackId(int32_t trackId)
+{
+    MEDIA_LOG_I("ClearByTrackId:" PUBLIC_LOG_D32, trackId);
+    Status SubtitleSink::Flush(bool isSeekFlush)
+    if (inputBufferQueueConsumer_ != nullptr) {
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            shouldUpdate_.stroe(true);
+            auto iter = subtitleInfoMap_.find(trackId);
+            while (iter != subtitleInfoMap_.end() && !iter->second.empty()) {
+                inputBufferQueueConsumer_->ReleaseBuffer(iter->second.front().buffer_);
+                iter->second.pop_front();
+            }
+        }
+    }
+    isFlush_.store(true);
+    updateCond_.notify_all();
+    return Status::OK;
+}
+
+int32_t SubtitleSink::GetCurrentSubtitleTrackId()
+{
+    std::unique_lock<std::mutex> lock(mutex_);
+    return subtitleTrackId_;
 }
 }  // namespace MEDIA
 }  // namespace OHOS

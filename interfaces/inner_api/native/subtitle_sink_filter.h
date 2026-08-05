@@ -72,6 +72,14 @@ public:
     void NotifySeek();
 
     Status SetSpeed(float speed);
+
+    void SelectTrack(int32_t trackId);
+
+    void SetBufferQueueSize(int32_t trackNum);
+
+    Status ClearByTrackId(int32_t trackId);
+    
+    int32_t GetCurrentSubtitleTrackId();
 protected:
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
         const std::shared_ptr<FilterLinkCallback>& callback) override;
