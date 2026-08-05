@@ -954,29 +954,25 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
     }
     HLOGD("VPE CombineUsage app=%s", caller_.app.processName.c_str());
     if (!g_isVpeSupportListInit) {
-        auto vpeHandle = dlopen("libvideoprocessingengine.z.so", RTLD_NOW);
+        shared_ptr<void> vpeHandle = shared_ptr<void>(dlopen("libvideoprocessingengine.z.so", RTLD_NOW), dlclose);
         if (vpeHandle == nullptr) {
             HLOGE("dlopen libvideoprocessingengine.z.so failed, dlerror: %s", dlerror());
             return;
         }
         VpeVideoGetSupportedListByType getSupportedListByTypeFunc =
-            reinterpret_cast<VpeVideoGetSupportedListByType>(dlsym(vpeHandle, "VpeVideoGetSupportedListByTypeOnce"));
+            reinterpret_cast<VpeVideoGetSupportedListByType>(dlsym(vpeHandle.get(), "VpeVideoGetSupportedListByTypeOnce"));
         if (getSupportedListByTypeFunc == nullptr) {
             HLOGE("dlsym failed");
-            dlclose(vpeHandle);
             return;
         }
         if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_AIHDR_ENHANCER, g_vpeSupportList)) {
             HLOGE("get VPE list failed");
-            dlclose(vpeHandle);
         }
         if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_DETAIL_ENHANCER, g_srSupportList)) {
             HLOGE("get sr list failed");
-            dlclose(vpeHandle);
         }
         g_isVpeSupportListInit = true;
         HLOGD("VPE init support list ok");
-        dlclose(vpeHandle);
     }
     if (std::find(g_vpeSupportList.cbegin(), g_vpeSupportList.cend(), caller_.app.processName) !=
         g_vpeSupportList.cend()) {
