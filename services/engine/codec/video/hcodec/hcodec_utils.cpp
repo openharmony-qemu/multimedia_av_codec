@@ -16,7 +16,8 @@
 #include <sstream>
 #include <string>
 #include "hcodec_utils.h"
-#include "qos.h"
+#include "qos.h"  // foundation/resourceschedule/qos_manager/interfaces/inner_api
+#include "res_sched_client.h" // foundation/resourceschedule/resource_schedule_service/ressched/interfaces/innerkits/ressched_client/include
 
 namespace OHOS::MediaAVCodec {
 std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta)
@@ -48,6 +49,15 @@ std::string StringifyMeta(std::shared_ptr<Media::Meta> &meta)
         }
     }
     return dumpStream.str();
+}
+
+void SetThreadPriorityTo41()
+{
+    std::unordered_map<std::string, std::string> mapPayLoad;
+    mapPayLoad["pid"] = std::to_string(getpid());
+    mapPayLoad[std::to_string(gettid())] = "7"; // 7:设置优先级41
+    ResourceSchedule::ResSchedClient::GetInstance().ReportData(
+        ResourceSchedule::ResType::RES_TYPE_THREAD_QOS_CHANGE, 0, mapPayLoad);
 }
 
 void SetThreadInteractiveQos(bool enable)

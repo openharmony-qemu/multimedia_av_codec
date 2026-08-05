@@ -67,6 +67,7 @@ enum ShortOption {
     OPT_QP_MAP_VALUE,
     OPT_TARGET_QP,
     OPT_GOP_B_MODE,
+    OPT_CODEC_SCENARIO,
     OPT_ENABLE_ROI_BY_NB,
     OPT_MAX_INPUT_BUFFER_COUNT,
     OPT_INSERT_XPS_BEFORE_IDR,
@@ -121,6 +122,7 @@ static struct option g_longOptions[] = {
     {"qpMapValue",      required_argument,  nullptr, OPT_QP_MAP_VALUE},
     {"gopBMode",        required_argument,  nullptr, OPT_GOP_B_MODE},
     {"enableROIByNb",   required_argument,  nullptr, OPT_ENABLE_ROI_BY_NB},
+    {"scenario",        required_argument,  nullptr, OPT_CODEC_SCENARIO},
     {"maxInputBufferCount", required_argument, nullptr, OPT_MAX_INPUT_BUFFER_COUNT},
     {"insertXpsBeforeIdr", required_argument,  nullptr, OPT_INSERT_XPS_BEFORE_IDR},
     // decoder only
@@ -165,6 +167,7 @@ void ShowUsage()
     std::cout << "                      for 265: 0(main), 1(main 10)" << std::endl;
     std::cout << " --bitRateMode        bit rate mode for encoder. 0(CBR), 1(VBR), 2(CQ), 3(SQR), 4(CBR_HIGH_QUALITY)"
               << ", 11(CRF), 10(CBR_VIDEOCALL)" << std::endl;
+    std::cout << " --scenario,          Scenario for encoder. 0(record), 1(livephoto)" << std::endl;
     std::cout << " --bitRate            target encode bit rate (bps)" << std::endl;
     std::cout << " --quality            target encode quality" << std::endl;
     std::cout << " --sqrFactor           target encode QP" << std::endl;
@@ -317,6 +320,9 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_ENABLE_ROI_BY_NB:
                 opt.enableROIByNb = stol(optarg);
+                break;
+            case OPT_CODEC_SCENARIO:
+                opt.codecScenario = static_cast<VideoCodecScenario>(stol(optarg));
                 break;
             case OPT_MAX_INPUT_BUFFER_COUNT:
                 opt.maxInputBufferCount = stol(optarg);
@@ -551,6 +557,9 @@ void CommandOpt::Print() const
     }
     if (rateMode.has_value()) {
         TLOGI("rateMode %d", rateMode.value());
+    }
+    if (codecScenario.has_value()) {
+        TLOGI("codec Scenario %d", codecScenario.value());
     }
     if (bitRate.has_value()) {
         TLOGI("bitRate %u", bitRate.value());

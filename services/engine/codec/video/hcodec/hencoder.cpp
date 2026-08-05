@@ -426,14 +426,15 @@ int32_t HEncoder::OnConfigureBuffer(std::shared_ptr<AVBuffer> buffer)
 int HEncoder::SetCodecScenario(const Format &format)
 {
     int32_t scenario = static_cast<int32_t>(SCENARIO_INVALID);
-    if (format.GetIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, scenario)) {
-        HLOGI("user set Codec Scenario %d", scenario);
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, scenario)) {
+        return AVCS_ERR_OK;
     }
+    HLOGI("user set Codec Scenario %d", scenario);
     if (scenario < static_cast<int32_t>(SCENARIO_RECORDING) || scenario >= static_cast<int32_t>(SCENARIO_INVALID)) {
         HLOGW("invalid codec Scenario");
         return AVCS_ERR_INVALID_VAL;
     }
- 
+
     OMX_PARAM_U32TYPE config;
     InitOMXParam(config);
     config.nU32 = static_cast<uint32_t>(scenario);

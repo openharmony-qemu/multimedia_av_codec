@@ -241,6 +241,14 @@ CapabilityData HCodecList::HdiCapToUserCap(const CodecCompCapability &hdiCap)
     GetSupportedLtrFeatureParam(hdiVideoCap, userCap);
     GetSupportedBFrameFeatureParam(hdiVideoCap, userCap);
     LOGI("isSupportPassthrough: %d", FindFeature(hdiVideoCap.features, VIDEO_FEATURE_PASS_THROUGH).support);
+    if (hdiCap.type == VIDEO_DECODER) {
+        VideoFeature feature = FindFeature(hdiVideoCap.features, VIDEO_FEATURE_LOW_LATENCY);
+        if (feature.support) {
+            userCap.featuresMap[
+                static_cast<int32_t>(AVCapabilityFeature::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER)] = Format();
+        }
+        LOGI("isSupportDecOrder: %d", feature.support);
+    }
     return userCap;
 }
 
