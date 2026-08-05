@@ -2475,7 +2475,7 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     isInterruptNeeded_ = other->isInterruptNeeded_.load();
     httpHeader_ = other->httpHeader_;
     isStopped.store(other->isStopped.load());
-    isInterrupt_.store(other->isInterrupt_.load());
+    isInterrupt_ = other->isInterrupt_;
     isFirstFrameArrived_ = other->isFirstFrameArrived_;
     isReportedErrorCode_ = other->isReportedErrorCode_;
     bufferDurationForPlaying_ = other->bufferDurationForPlaying_;
