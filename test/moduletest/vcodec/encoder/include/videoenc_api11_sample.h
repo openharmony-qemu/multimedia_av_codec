@@ -130,6 +130,7 @@ public:
     uint32_t GOP_REFERENCE_MODE = UNIFORMLY_SCALED_REFERENCE;
     uint32_t repeat_time = 0;
     bool runDualEncoder = false;
+    bool enableFrameDelayCount = false;
     PreProcessParameter preProcessParameter;
     Parameter parameter;
     int32_t CreatePrimaryEncoder(const char *codecMime);
