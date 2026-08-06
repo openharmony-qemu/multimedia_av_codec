@@ -148,7 +148,6 @@ public:
     
 private:
     bool ShouldParseAtomForFastInit(uint32_t atomType) const;
-    void CalculateFastInitAttributes();
     std::shared_ptr<Track> firstTrack_;
     std::shared_ptr<Track> lastTrack_;
     std::shared_ptr<Track> currentTrack_;

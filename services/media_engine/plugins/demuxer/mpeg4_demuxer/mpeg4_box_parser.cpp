@@ -1146,10 +1146,9 @@ bool MPEG4AtomParser::GetBitrateDurationAndSize(std::shared_ptr<Track> track, in
 {
     FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, false, "Invalid track or sample helper");
     FALSE_RETURN_V_MSG_E(IsValidTrackIndex(mediaInfo_, track->trackIndex), false, "Invalid track index");
-    std::string mime;
     duration = GetBitrateDuration(track);
     totalSize = GetBitrateTotalSize(track);
-    if (!HasEnoughSamplesForBitrate(track, mime)) {
+    if (!HasEnoughSamplesForBitrate(track, track->sampleHelper->mimeType_)) {
         return false;
     }
     if (hasSidxBox_ && track->sidxDuration > 0 && track->sidxReferencedSize > 0) {
@@ -5063,42 +5062,8 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     FALSE_RETURN_V_MSG_E(moovFound_, Status::ERROR_INVALID_DATA, "MPEG4 parse failed");
     FALSE_RETURN_V_MSG_E(pendingSampleTableStatus_ == Status::OK, pendingSampleTableStatus_,
         "MPEG4 parse failed due to invalid sample tables");
-    if (demuxerMode_ == Plugins::DemuxerMode::FAST_INIT) {
-        CalculateFastInitAttributes();
-    } else {
-        CalculateMPEG4Attributes();
-    }
+    CalculateMPEG4Attributes();
     return ret;
-}
-
-void MPEG4AtomParser::CalculateFastInitAttributes()
-{
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_VIDEO>(false);
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_AUDIO>(false);
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_SUBTITLE>(false);
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_TIMEDMETA>(false);
-    mediaInfo_.general.Set<Tag::MEDIA_HAS_AUXILIARY>(false);
-    for (auto track = firstTrack_; track != nullptr; track = track->next) {
-        if (track->sampleHelper == nullptr || !IsValidTrackIndex(mediaInfo_, track->trackIndex)) {
-            continue;
-        }
-        if (NeedParseAudioInfo(track->sampleHelper->mimeType_, track->codecParms.trackType)) {
-            int32_t channelCount = 0;
-            AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
-            if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout) &&
-                mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
-                layout = Converter::GetDefaultChannelLayout(channelCount);
-                mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
-                mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
-            }
-            mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_BLOCK_ALIGN>(0);
-        }
-        NormalizeAudioAttributes(track);
-        SetTrackType(track);
-    }
-    SetStartTime();
-    SetFileDuration();
-    SetHEVCDefaultValue();
 }
 
 // LCOV_EXCL_START
