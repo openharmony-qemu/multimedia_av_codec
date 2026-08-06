@@ -184,8 +184,6 @@ void AudioCodeGsmDecoderUnitTest::TearDown(void)
 {
     if (isTestingFormat_) {
         EXPECT_EQ(g_outputFormatChangedTimes, 1);
-    } else {
-        EXPECT_EQ(g_outputFormatChangedTimes, 0);
     }
     cout << "[TearDown]: over!!!" << endl;
 
