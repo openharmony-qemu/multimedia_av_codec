@@ -2188,7 +2188,7 @@ Status MediaDemuxer::SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64
         }
         lastVideoPts_ = -1;
     }
-    lastSubtitlePtsMap_.clear()
+    lastSubtitlePtsMap_.clear();
     for (auto item : eosMap_) {
         eosMap_[item.first] = false;
     }
