@@ -104,41 +104,6 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "./sa_avcodec_unit_test.cpp",
   ]
 
-  if (av_codec_support_av1_decoder) {
-    sources += [
-      "$av_codec_root_dir/services/engine/codec/video/av1_decoder_loader.cpp",
-    ]
-
-    include_dirs += [
-      "$av_codec_root_dir/services/engine/codec/video/av1decoder",
-      "$av_codec_root_dir/services/engine/codec/video/decoderbase",
-    ]
-
-    external_deps += [ "dav1d:dav1d_ohos" ]
-  }
-
-  if (av_codec_support_vp8_decoder) {
-    sources += [
-      "$av_codec_root_dir/services/engine/codec/video/vp8_decoder_loader.cpp",
-    ]
-
-    include_dirs += [
-      "$av_codec_root_dir/services/engine/codec/video/vpxdecoder",
-      "$av_codec_root_dir/services/engine/codec/video/decoderbase",
-    ]
-  }
-
-  if (av_codec_support_vp9_decoder) {
-    sources += [
-      "$av_codec_root_dir/services/engine/codec/video/vp9_decoder_loader.cpp",
-    ]
-
-    include_dirs += [
-      "$av_codec_root_dir/services/engine/codec/video/vpxdecoder",
-      "$av_codec_root_dir/services/engine/codec/video/decoderbase",
-    ]
-  }
-
   cflags = av_codec_unittest_cflags
 
   cflags_cc = cflags
@@ -169,6 +134,45 @@ ohos_unittest("video_sa_avcodec_unit_test") {
     "media_foundation:media_foundation",
     "samgr:samgr_proxy",
   ]
+
+  if (av_codec_support_av1_decoder) {
+    sources += [
+      "$av_codec_root_dir/services/engine/codec/video/av1_decoder_loader.cpp",
+    ]
+
+    include_dirs += [
+      "$av_codec_root_dir/services/engine/codec/video/av1decoder",
+      "$av_codec_root_dir/services/engine/codec/video/decoderbase",
+    ]
+
+    external_deps += [ "dav1d:dav1d_ohos" ]
+  }
+
+  if (av_codec_support_vp8_decoder) {
+    sources += [
+      "$av_codec_root_dir/services/engine/codec/video/vp8_decoder_loader.cpp",
+    ]
+
+    include_dirs += [
+      "$av_codec_root_dir/services/engine/codec/video/vpxdecoder",
+      "$av_codec_root_dir/services/engine/codec/video/decoderbase",
+    ]
+
+    external_deps += [ "libvpx:vpxdec_ohos" ]
+  }
+
+  if (av_codec_support_vp9_decoder) {
+    sources += [
+      "$av_codec_root_dir/services/engine/codec/video/vp9_decoder_loader.cpp",
+    ]
+
+    include_dirs += [
+      "$av_codec_root_dir/services/engine/codec/video/vpxdecoder",
+      "$av_codec_root_dir/services/engine/codec/video/decoderbase",
+    ]
+
+    external_deps += [ "libvpx:vpxdec_ohos" ]
+  }
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
