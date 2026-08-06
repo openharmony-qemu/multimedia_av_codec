@@ -32,6 +32,8 @@ static const char SLASH = '/';
 static const char SPACE = ' ';
 namespace {
 constexpr bool SUBTITME_LOOP_RUNNING = true;
+constexpr int32_t DEFAULT_BUFFER_SIZE = 2;
+constexpr int32_t CHECK_SUBTITLE_TIME = 100000;
 }
 
 SubtitleSink::SubtitleSink()
@@ -304,7 +306,7 @@ void SubtitleSink::RenderLoop()
         std::unique_lock<std::mutex> lock(mutex_);
         updateCond_.wait(lock, [this] {
             bool hasData = false;
-            for (const auto&iter : subtitleInfoMap_) {
+            for (const auto& iter : subtitleInfoMap_) {
                 if (!iter.second.empty()) {
                     hasData = true;
                     break;
@@ -319,28 +321,9 @@ void SubtitleSink::RenderLoop()
             continue;
         }
         FALSE_RETURN(!isThreadExit_.load());
-        for(auto &iter: subtitleInfoMap_) {
-            int32_t tempTrackId = iter.first;
-            FALSE_CONTINUE_NOLOG(!iter.second.empty());
-
-            SubtitleInfo subtitleInfo = iter.second.front();
-            auto actionToDo = ActionToDo(subtitleInfo);
-            if (actionToDo == SubtitleBufferState::DROP) {
-                iter.second.pop_front();
-                inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
-                continue;
-            } else if (actionTodo == SubtitleBufferState::WAIT) {
-                continue;
-            }
-            FALSE_CONTINUE_NOLOG(tempTrackId == subtitleTrackId_ && !subtitleInfo.isShow_);
-            NotifyRender(subtitleInfo);
-            iter.second.front().isShow_ = true;
-            FALSE_CONTINUE_NOLOG(releasedAfterDisplay_.load());
-            iter.second.pop_front();
-            inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
-        }
+        CheckSubtitleInfoStatus();
         shouldUpdate_.store(false);
-        updateCond_.wait_for(lock, std::chrono::microseconds(100000),
+        updateCond_.wait_for(lock, std::chrono::microseconds(CHECK_SUBTITLE_TIME),
             [this] { return isThreadExit_.load() || shouldUpdate_;});
     }
 }
@@ -559,7 +542,7 @@ void SubtitleSink::SelectTrack(int32_t trackId)
     std::unique_lock<std::mutex> lock(mutex_);
     if (subtitleTrackId_ == trackId) return;
     subtitleTrackId_ = trackId;
-    for(auto &iter: subtitleInfoMap_) {
+    for (auto &iter: subtitleInfoMap_) {
         if (iter.second.empty()) {
             continue;
         }
@@ -572,8 +555,8 @@ void SubtitleSink::SelectTrack(int32_t trackId)
 
 void SubtitleSink::SetBufferQueueSize(int32_t trackNum)
 {
-    FALSE_RETURN(trackNum > 0 && trackNum < (INT32_MAX / 2) - 1);
-    bufferQueueSize_ = (trackNum + 1) * 2;
+    FALSE_RETURN(trackNum > 0 && trackNum < (INT32_MAX / DEFAULT_BUFFER_SIZE) - 1);
+    bufferQueueSize_ = (trackNum + 1) * DEFAULT_BUFFER_SIZE;
     MEDIA_LOG_I("bufferQueueSize:" PUBLIC_LOG_D32, bufferQueueSize_);
     releasedAfterDisplay_.store(false);
 }
@@ -601,6 +584,30 @@ int32_t SubtitleSink::GetCurrentSubtitleTrackId()
 {
     std::unique_lock<std::mutex> lock(mutex_);
     return subtitleTrackId_;
+}
+
+void SubtitleSink::CheckSubtitleInfoStatus()
+{
+    for (auto &iter: subtitleInfoMap_) {
+        int32_t tempTrackId = iter.first;
+        FALSE_CONTINUE_NOLOG(!iter.second.empty());
+
+        SubtitleInfo subtitleInfo = iter.second.front();
+        auto actionToDo = ActionToDo(subtitleInfo);
+        if (actionToDo == SubtitleBufferState::DROP) {
+            iter.second.pop_front();
+            inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
+            continue;
+        } else if (actionTodo == SubtitleBufferState::WAIT) {
+            continue;
+        }
+        FALSE_CONTINUE_NOLOG(tempTrackId == subtitleTrackId_ && !subtitleInfo.isShow_);
+        NotifyRender(subtitleInfo);
+        iter.second.front().isShow_ = true;
+        FALSE_CONTINUE_NOLOG(releasedAfterDisplay_.load());
+        iter.second.pop_front();
+        inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
+    }
 }
 }  // namespace MEDIA
 }  // namespace OHOS
