@@ -286,6 +286,28 @@ void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &e
     }
 }
 
+static void ParseCicpValue(DashDescriptor* descriptor, int32_t &matrixCoefficients,
+    int32_t &colourPrimaries, int32_t &transferCharacteristics)
+{
+    if (descriptor == nullptr || descriptor->value_.length() == 0) {
+        return;
+    }
+    int64_t tmp = 0;
+    if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_MATRIX_COEFFICIENTS) != std::string::npos) {
+        if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
+            matrixCoefficients = static_cast<int32_t>(tmp);
+        }
+    } else if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_COLOUR_PRIMARIES) != std::string::npos) {
+        if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
+            colourPrimaries = static_cast<int32_t>(tmp);
+        }
+    } else if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_TRANSFER_CHARACTERISTICS) != std::string::npos) {
+        if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
+            transferCharacteristics = static_cast<int32_t>(tmp);
+        }
+    }
+}
+
 bool DashStreamIsHdr(DashList<DashDescriptor*> essentialPropertyList)
 {
     int32_t matrixCoefficients = 1;
@@ -293,24 +315,7 @@ bool DashStreamIsHdr(DashList<DashDescriptor*> essentialPropertyList)
     int32_t transferCharacteristics = 1;
  
     for (auto descriptor : essentialPropertyList) {
-        if (descriptor != nullptr && descriptor->value_.length() > 0) {
-            if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_MATRIX_COEFFICIENTS) != std::string::npos) {
-                int64_t tmp = 0;
-                if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
-                    matrixCoefficients = static_cast<int32_t>(tmp);
-                }
-            } else if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_COLOUR_PRIMARIES) != std::string::npos) {
-                int64_t tmp = 0;
-                if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
-                    colourPrimaries = static_cast<int32_t>(tmp);
-                }
-            } else if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_TRANSFER_CHARACTERISTICS) != std::string::npos) {
-                int64_t tmp = 0;
-                if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
-                    transferCharacteristics = static_cast<int32_t>(tmp);
-                }
-            }
-        }
+        ParseCicpValue(descriptor, matrixCoefficients, colourPrimaries, transferCharacteristics);
     }
  
     if (matrixCoefficients >= MATRIX_COEFFICIENTS_BT_2020 &&
