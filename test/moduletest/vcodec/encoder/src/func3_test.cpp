@@ -1325,6 +1325,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0010, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1345,6 +1346,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0011, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1365,6 +1367,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0012, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1385,6 +1388,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0013, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1405,6 +1409,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0014, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1425,6 +1430,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0015, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1445,6 +1451,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0020, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT << 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
@@ -1462,6 +1469,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0021, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT << 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
@@ -1479,6 +1487,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0022, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = 0;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
@@ -1496,6 +1505,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0023, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = 0;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
@@ -1513,6 +1523,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0024, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = -1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
@@ -1530,6 +1541,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0025, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = -1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_INVALID_VAL, vEncSample->ConfigureVideoEncoder());
@@ -1547,6 +1559,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0030, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1568,6 +1581,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0031, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1589,6 +1603,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0032, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1610,6 +1625,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0033, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->enableFrameDelayCount = true;
         ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
@@ -1630,6 +1646,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0040, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->enableFrameDelayCount = true;
         vEncSample->DEFAULT_WIDTH = 1280;
         vEncSample->DEFAULT_HEIGHT = 720;
         vEncSample->DEFAULT_FRAME_RATE = 30;
@@ -1653,6 +1670,7 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_SET_MAX_FRAME_DELAY_COUNT_0041, TestSiz
         auto vEncSample = make_shared<VEncAPI11Sample>();
         vEncSample->INP_DIR = "/data/test/media/1282_720_nv.yuv";
         vEncSample->maxFrameDelayCount = MAX_INPUT_BUFFER_COUNT - 1;
+        vEncSample->enableFrameDelayCount = true;
         vEncSample->DEFAULT_WIDTH = 1280;
         vEncSample->DEFAULT_HEIGHT = 720;
         vEncSample->DEFAULT_FRAME_RATE = 30;
