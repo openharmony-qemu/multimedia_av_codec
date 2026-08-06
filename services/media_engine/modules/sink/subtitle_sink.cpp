@@ -298,7 +298,7 @@ void SubtitleSink::DrainOutputBuffer(bool flushed)
         if (iter != subtitleInfoMap_.end()) {
             iter->second.push_back(subtitleInfo);
         } else {
-            subtitleInfoMap_.try_emplace(trackId, std::deque<SubtitleInfo>(subtitleInfo));
+            subtitleInfoMap_.try_emplace(trackId, std::deque<SubtitleInfo>{subtitleInfo});
         }
     }
     updateCond_.notify_all();
@@ -607,7 +607,7 @@ void SubtitleSink::CheckSubtitleInfoStatus()
     }
 }
 
-bool HasSubtitleInfoData()
+bool SubtitleSink::HasSubtitleInfoData()
 {
     for (const auto& iter : subtitleInfoMap_) {
         if (!iter.second.empty()) {
