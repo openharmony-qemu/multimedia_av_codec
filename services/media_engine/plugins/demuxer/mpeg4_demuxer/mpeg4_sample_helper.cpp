@@ -683,8 +683,7 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
 
     for (uint32_t i = 0; i < numSttsEntries; ++i) {
         uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(SttsEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0 && sampleCount <= MAX_SAMPLE_TABLE_SAMPLES,
-            Status::ERROR_INVALID_DATA, "Invalid stts sample count");
+        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
         sttsEntry_.emplace_back(SttsEntry{
             .count = sampleCount,
             .delta = GetU32Value(data.get() + 4 + i * sizeof(SttsEntry))
@@ -729,8 +728,7 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
 
     for (uint32_t i = 0; i < numCttsEntries; ++i) {
         uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(CttsEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0 && sampleCount <= MAX_SAMPLE_TABLE_SAMPLES,
-            Status::ERROR_INVALID_DATA, "Invalid ctts sample count");
+        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid ctts sample count");
         uint32_t rawDelta = GetU32Value(data.get() + 4 + i * sizeof(CttsEntry));
         cttsEntry_.emplace_back(CttsEntry {
             .count = sampleCount,
@@ -889,10 +887,16 @@ Status MPEG4SampleHelper::SetSampleSizeParams(uint32_t atomType, int64_t dataOff
     if (!numSampleSizes) {
         return Status::OK;
     }
-    FALSE_RETURN_V_MSG_E(numSampleSizes <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid sample size count");
     if (hasDefaultStszSize_) {
         return Status::OK;
     }
+
+    constexpr uint32_t inputBufferPaddingSize = 64;
+    constexpr uint32_t maxSampleSizeDataBits = static_cast<uint32_t>(std::numeric_limits<int32_t>::max()) -
+        HALF_BYTE_BITS - BYTE_BITS * inputBufferPaddingSize;
+    const uint32_t maxSampleSizeCount = maxSampleSizeDataBits / fieldSize;
+    FALSE_RETURN_V_MSG_E(numSampleSizes < maxSampleSizeCount,
+        Status::ERROR_INVALID_DATA, "Invalid sample size count");
 
     constexpr uint32_t maxUint32 = std::numeric_limits<uint32_t>::max();
     uint32_t unit = atomType == static_cast<uint32_t>(FourccType("stsz")) ? sizeof(uint32_t) : fieldSize;
@@ -980,8 +984,7 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
         uint32_t tempFirst = GetU32Value(data.get() + i * sizeof(StscEntry));
         FALSE_RETURN_V_NOLOG(tempFirst > 0, Status::ERROR_INVALID_DATA);
         uint32_t sampleCount = GetU32Value(data.get() + sizeof(uint32_t) + i * sizeof(StscEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0 && sampleCount <= MAX_SAMPLE_TABLE_SAMPLES,
-            Status::ERROR_INVALID_DATA, "Invalid stsc sample count");
+        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stsc sample count");
 
         stscEntry_.emplace_back(StscEntry{
             .first = tempFirst - 1,
@@ -1546,8 +1549,7 @@ Status MPEG4SampleHelper::ValidateAndCountSttsSamples(uint32_t& sampleCount) con
     sampleCount = 0;
     for (const auto& entry : sttsEntry_) {
         uint32_t temp = 0;
-        if (entry.count == 0 || entry.count > MAX_SAMPLE_TABLE_SAMPLES ||
-            __builtin_add_overflow(sampleCount, entry.count, &temp) || temp > MAX_SAMPLE_TABLE_SAMPLES) {
+        if (entry.count == 0 || __builtin_add_overflow(sampleCount, entry.count, &temp)) {
             MEDIA_LOG_E("STTS count overflow: current=" PUBLIC_LOG_U32 ", add="
                 PUBLIC_LOG_U32, sampleCount, entry.count);
             return Status::ERROR_INVALID_DATA;
@@ -2126,8 +2128,7 @@ Status MPEG4SampleHelper::BuildDenseSampleIndexEntries()
 {
     FALSE_RETURN_V_MSG_E(PreBuildProcessAndCheck() == Status::OK, Status::ERROR_INVALID_DATA, "PreCheck failed");
     uint64_t expectedSampleCount = CountSttsSamples();
-    FALSE_RETURN_V_MSG_E(expectedSampleCount > 0 && expectedSampleCount <= MAX_SAMPLE_TABLE_SAMPLES,
-        Status::ERROR_INVALID_DATA, "Invalid sample index entry count");
+    FALSE_RETURN_V_MSG_E(expectedSampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid sample index entry count");
     SampleIndexBuildContext buildCtx = CreateSampleIndexBuildContext();
     for (const auto& sttsEntry : sttsEntry_) {  // 遍历sttsEntry
         FALSE_RETURN_V_MSG_E(sttsEntry.count > 0 && sttsEntry.count <= expectedSampleCount,
