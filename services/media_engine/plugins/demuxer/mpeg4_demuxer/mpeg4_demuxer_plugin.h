@@ -339,10 +339,18 @@ private:
     Status ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> dstMpeg4Sample, const uint32_t trackId);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory);
-    Status GetSampleBySeekableStatus(const Seekable seekable, uint32_t trackId,
-        std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
-    Status GetSampleByMimeType(const Seekable seekable, uint32_t trackId,
-        std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
+    Status GetSampleBySeekableStatus(
+        uint32_t trackId, std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
+    Status GetSeekableSample(
+        uint32_t trackId, std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
+    Status GetUnseekableSample(
+        uint32_t trackId, std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
+    Status GetSampleForWebvtt(
+        uint32_t trackId, std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
+    Status GetSeekableSampleDirectly(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer);
+    Status FillBufferDirectly(std::shared_ptr<AVBuffer> sample, uint64_t pos, int32_t size);
+    Status WriteBufferAttr(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer,
+        int32_t dataSize, bool memoryNotEnough);
     struct WebVttReadContext {
         Seekable seekable;
         uint32_t trackId = 0;
@@ -352,7 +360,7 @@ private:
     Status ReadAndCacheWebVttSample(const WebVttReadContext& context, bool& continueRead);
     Status UpdateWebVttCachedSampleDuration(const WebVttReadContext& context,
         const std::shared_ptr<MPEG4Sample>& tempSample, uint32_t nextSampleIndex);
-    uint32_t GetFlags(const std::shared_ptr<Sample> sample, bool memoryNotEnough);
+    uint32_t GetFlags(uint32_t sampleFlag, bool memoryNotEnough);
     Status WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sample> sample);
     Status ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg4Sample);
     Status WriteBuffer(

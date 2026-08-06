@@ -91,6 +91,7 @@ public:
         std::unique_ptr<int32_t[]> displayMatrix = nullptr;  // 3x3 display matrix (9个int32_t), 按行存储
         bool hasDisplayMatrix = false;  // 是否有有效的display matrix
         uint32_t currentSampleIndex = 0;
+        int32_t currentSamplePos = 0; // 当前帧读取拷贝位置
         uint32_t currentFragmentIndexBase = 0; // 当前fragment在全局sample中的起始索引
         int64_t duration = 0; // track的duration，mdhd box中定义的
         int32_t timeScale = 1; // mdhd timescale, kept internal and not exported to track meta
