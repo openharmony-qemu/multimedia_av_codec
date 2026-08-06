@@ -297,7 +297,8 @@ HWTEST_F(WaterMarkFilterTest, LinkNext_003, TestSize.Level1)
     auto parameterTest = std::make_shared<Meta>();
     ASSERT_TRUE(parameterTest != nullptr);
     waterMarkFilter_->OnLinked(StreamType::STREAMTYPE_ENCODED_VIDEO, parameterTest, onLinkedResultCallback_);
-    EXPECT_CALL(*(nextFilter_), OnLinked(testing::_, testing::_, testing::_)).WillOnce(testing::Return(Status::ERROR_UNKNOWN));
+    EXPECT_CALL(*(nextFilter_), OnLinked(testing::_, testing::_, testing::_))
+        .WillOnce(testing::Return(Status::ERROR_UNKNOWN));
     EXPECT_CALL(*(eventReceiver_), OnEvent(testing::_)).Times(TEST_TIMES_ONE);
 
     Status ret = waterMarkFilter_->LinkNext(nextFilterTest, StreamType::STREAMTYPE_ENCODED_VIDEO);
@@ -1438,7 +1439,8 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_008, TestSize.Level1)
 }  // namespace Media
 }  // namespace OHOS
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     testing::GTEST_FLAG(output) = "xml:./";
     testing::InitGoogleTest(&argc, argv);
     int result = RUN_ALL_TESTS();
