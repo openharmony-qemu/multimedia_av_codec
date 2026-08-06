@@ -106,6 +106,7 @@ private:
     bool FindAndRemoveMatchingTag(std::stack<std::pair<std::string, size_t>>& openTags, const std::string& tag);
     void RestoreUnsupportedTags(std::string& result, std::stack<std::pair<std::string, size_t>>& openTags);
     void CheckSubtitleInfoStatus();
+    bool HasSubtitleInfoData();
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
     int32_t appPid_{0};

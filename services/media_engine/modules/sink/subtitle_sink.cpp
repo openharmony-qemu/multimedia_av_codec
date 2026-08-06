@@ -305,15 +305,8 @@ void SubtitleSink::RenderLoop()
     while (SUBTITME_LOOP_RUNNING) {
         std::unique_lock<std::mutex> lock(mutex_);
         updateCond_.wait(lock, [this] {
-            bool hasData = false;
-            for (const auto& iter : subtitleInfoMap_) {
-                if (!iter.second.empty()) {
-                    hasData = true;
-                    break;
-                }
-            }
             return isThreadExit_.load() ||
-                   (hasData && state_ == Pipeline::FilterState::RUNNING);
+                   (HasSubtitleInfoData() && state_ == Pipeline::FilterState::RUNNING);
         });
         if (isFlush_) {
             MEDIA_LOG_I("SubtitleSink RenderLoop flush");
@@ -608,6 +601,16 @@ void SubtitleSink::CheckSubtitleInfoStatus()
         iter.second.pop_front();
         inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
     }
+}
+
+bool HasSubtitleInfoData()
+{
+    for (const auto& iter : subtitleInfoMap_) {
+        if (!iter.second.empty()) {
+            return true;
+        }
+    }
+    return false;
 }
 }  // namespace MEDIA
 }  // namespace OHOS
