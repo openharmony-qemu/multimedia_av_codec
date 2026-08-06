@@ -595,7 +595,7 @@ void SubtitleSink::CheckSubtitleInfoStatus()
             iter.second.pop_front();
             inputBufferQueueConsumer_->ReleaseBuffer(subtitleInfo.buffer_);
             continue;
-        } else if (actionTodo == SubtitleBufferState::WAIT) {
+        } else if (actionToDo == SubtitleBufferState::WAIT) {
             continue;
         }
         FALSE_CONTINUE_NOLOG(tempTrackId == subtitleTrackId_ && !subtitleInfo.isShow_);
