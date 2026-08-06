@@ -763,7 +763,7 @@ void HlsSegmentManager::RemoveFmp4PaddingData(unsigned char* buff, ReadDataInfo&
     }
     if ((IsHlsFmp4() && readDataInfo.streamId_ > 0) || IsPureByteRange()) {
         size_t endValue = buff[readDataInfo.realReadLength_ - 1];
-        size_t paddingStart = readDataInfo.realReadLength_  > endValue ? readDataInfo.realReadLength_ - endValue : 0;
+        size_t paddingStart = readDataInfo.realReadLength_ > endValue ? readDataInfo.realReadLength_ - endValue : 0;
         // PKCS#7 standard: if n bytes of padding are required, the value of each padding byte is n.
         if (paddingStart >= readDataInfo.wantReadLength_) {
             MEDIA_LOG_W("HLS buffer out-of-bounds read");
@@ -1052,8 +1052,8 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
         auto fragment = playList[i];
         PlaylistBackup(fragment);
         if (isSelectingBitrate_.load() && fragment.sequence_ > currentSequence_) {
-                isSelectingBitrate_.store(false);
-            }
+            isSelectingBitrate_.store(false);
+        }
         if (isSelectingBitrate_.load()) {
             fragmentDownloadStart[fragment.url_] = true;
             if (currentSequence_ == fragment.sequence_) {
@@ -1239,10 +1239,6 @@ uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool 
         return 0;
     }
 
-    // fill single block
-    uint32_t lastWrittenLen {singleBlockLen_};
-    FillSingleBlock(data, len);
-
     // Not enough data to fill singleBlock_ to a complete AES block, store and wait for more data
     if (singleBlockLen_ + len < AES_BLOCK_LEN) {
         MEDIA_LOG_I("HLS DecryptDataLeft not enough data, len: %{public}u, type: %{public}d",
@@ -1251,6 +1247,10 @@ uint32_t HlsSegmentManager::DecryptDataLeft(uint8_t *&data, uint32_t &len, bool 
     }
 
     // fill single block to 16 bytes and decrypt
+    uint32_t lastWrittenLen {singleBlockLen_};
+    FillSingleBlock(data, len);
+
+    // fill single block
     aesDecryptor->Decrypt(singleBlock_, decryptBuffer_, singleBlockLen_);
     decryptLen_ = singleBlockLen_;
     singleBlockLen_ = 0;
@@ -1496,6 +1496,7 @@ bool HlsSegmentManager::SelectBitRate(uint32_t bitRate)
         std::lock_guard<std::mutex> seekCandidatesLock(seekCandidatesMutex_);
         seekCandidates_.clear();
     }
+
     // switch to des bitrate
     playlistDownloader_->SelectBitRate(bitRate);
     playlistDownloader_->Start();
@@ -1763,7 +1764,7 @@ void HlsSegmentManager::SetDownloadErrorState()
     if (segEventCb_ && !isReportedErrorCode_) {
         HlsSegEvent event {.segType = type_, .type = PluginEventType::CLIENT_ERROR,
             .networkError = NetworkClientErrorCode::ERROR_TIME_OUT,
-            .str = "errorMessage: HLS download pause due to request failed"};
+            .str = "errorMessage:HLS download pause due to request failed"};
         segEventCb_(event);
         isTimeoutErrorNotified_.store(true);
     }
@@ -2472,7 +2473,7 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     seekTime_ = other->seekTime_;
     downloadErrorState_ = other->downloadErrorState_;
     autoBufferSize_ = other->autoBufferSize_;
-    isInterruptNeeded_ = other->isInterruptNeeded_.load();
+    isInterruptNeeded_.store(other->isInterruptNeeded_.load());
     httpHeader_ = other->httpHeader_;
     isStopped.store(other->isStopped.load());
     isInterrupt_ = other->isInterrupt_;
