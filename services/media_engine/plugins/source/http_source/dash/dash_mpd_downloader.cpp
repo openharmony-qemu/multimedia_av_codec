@@ -24,12 +24,6 @@
 #include <algorithm>
 #include "network/network_typs.h"
 #include "dash_mpd_downloader.h"
-#include "dash_mpd_parser.h"
-#include "dash_mpd_manager.h"
-#include "dash_period_manager.h"
-#include "dash_adpt_set_manager.h"
-#include "dash_representation_manager.h"
-#include "download/download_metrics_info.h"
 #include "dash_mpd_util.h"
 #include "sidx_box_parser.h"
 #include "utils/string_utils.h"

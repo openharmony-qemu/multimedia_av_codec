@@ -16,30 +16,30 @@
 #ifndef HISTREAMER_DASH_MPD_DOWNLOADER_H
 #define HISTREAMER_DASH_MPD_DOWNLOADER_H
 
+#include <cstddef>
 #include <memory>
 #include <shared_mutex>
 #include <string>
 #include <vector>
 #include <mutex>
+#include "avcodec_common.h"
 #include "dash_common.h"
 #include "dash_mpd_def.h"
+#include "dash_mpd_parser.h"
+#include "dash_mpd_manager.h"
+#include "dash_period_manager.h"
+#include "dash_adpt_set_manager.h"
+#include "dash_representation_manager.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
+#include "meta/media_types.h"
+#include "download/download_metrics_info.h"
+#include "plugin/plugin_base.h"
 
 namespace OHOS {
-namespace MediaAVCodec {
-struct AVTimedMetaData;
-}
-
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-class DashMpdParser;
-class DashMpdManager;
-class DashPeriodManager;
-class DashAdptSetManager;
-class DashRepresentationManager;
-class DownloadMetricsInfo;
 
 using DashMpdEvent = enum DashMpdEvent {
     DASH_MPD_EVENT_OPEN_OK,
