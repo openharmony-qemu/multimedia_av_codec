@@ -844,7 +844,8 @@ Status MPEG4SampleHelper::CommitSimpleEditProjection(const EditListEntry& edit, 
     int64_t correctionCandidate = 0;
     FALSE_RETURN_V_NOLOG(!__builtin_sub_overflow(scanCtx.minCorrectedPts, emptyDuration, &correctionCandidate),
         Status::ERROR_UNSUPPORTED_FORMAT);
-    int64_t correction = std::max<int64_t>(0, correctionCandidate);
+    // Keep the sparse projection consistent with ApplyEditList(): only video DTS is shifted by min corrected PTS.
+    int64_t correction = trackType_ == VIDEO_TYPE ? std::max<int64_t>(0, correctionCandidate) : 0;
     int64_t dtsAdjustment = 0;
     FALSE_RETURN_V_NOLOG(!__builtin_sub_overflow(scanCtx.anchorDts, scanCtx.rawDtsAtFirstPlayable, &dtsAdjustment) &&
         !__builtin_sub_overflow(dtsAdjustment, correction, &dtsAdjustment), Status::ERROR_UNSUPPORTED_FORMAT);
