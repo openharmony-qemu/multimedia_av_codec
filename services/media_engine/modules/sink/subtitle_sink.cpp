@@ -180,9 +180,9 @@ Status SubtitleSink::Flush(bool isSeekFlush)
             std::unique_lock<std::mutex> lock(mutex_);
             shouldUpdate_ = true;
             for (auto& iter: subtitleInfoMap_) {
-                while (!iter->second.empty()) {
-                    inputBufferQueueConsumer_->ReleaseBuffer(iter->second.front().buffer_);
-                    iter->second.pop_front();
+                while (!iter.second.empty()) {
+                    inputBufferQueueConsumer_->ReleaseBuffer(iter.second.front().buffer_);
+                    iter.second.pop_front();
                 }
             }
             int64_t currentTime = GetMediaTime();
