@@ -588,7 +588,6 @@ const std::vector<MetaDumpItem>& GetSourceDumpItems()
         {Tag::MEDIA_HAS_TIMEDMETA, "hasTimed"},
         {Tag::MEDIA_HAS_VIDEO, "hasVid"},
         {Tag::MEDIA_CONTAINER_START_TIME, "containStartTime"},
-        {Tag::MEDIA_TIME_SCALE, "timeScale"},
         {Tag::MEDIA_TRACK_COUNT, "trackCnt"},
         {Tag::MEDIA_ENCODER, "encoder"},
     };
@@ -606,7 +605,6 @@ const std::vector<MetaDumpItem>& GetVideoTrackDumpItems()
         {Tag::MEDIA_LANGUAGE, "lang"},
         {Tag::ORIGINAL_CODEC_NAME, "codecName"},
         {Tag::VIDEO_ROTATION, "rotate"},
-        {Tag::MEDIA_TIME_SCALE, "timeScale"},
         {Tag::MEDIA_START_TIME, "trackStartTime"},
         {Tag::MEDIA_TYPE, "trackType"},
         {Tag::VIDEO_DELAY, "delay"},
@@ -642,7 +640,6 @@ const std::vector<MetaDumpItem>& GetAudioTrackDumpItems()
         {Tag::MEDIA_LANGUAGE, "lang"},
         {Tag::ORIGINAL_CODEC_NAME, "codecName"},
         {Tag::AUDIO_SAMPLE_RATE, "smpRate"},
-        {Tag::MEDIA_TIME_SCALE, "timeScale"},
         {Tag::MEDIA_START_TIME, "trackStartTime"},
         {Tag::MEDIA_TYPE, "trackType"},
     };
@@ -656,7 +653,6 @@ const std::vector<MetaDumpItem>& GetTextTrackDumpItems()
         {Tag::MIME_TYPE, "mime"},
         {Tag::MEDIA_LANGUAGE, "lang"},
         {Tag::ORIGINAL_CODEC_NAME, "codecName"},
-        {Tag::MEDIA_TIME_SCALE, "timeScale"},
         {Tag::MEDIA_START_TIME, "trackStartTime"},
         {Tag::MEDIA_TYPE, "trackType"},
         {Tag::TIMED_METADATA_KEY, "metaKey"},
@@ -725,7 +721,7 @@ bool AppendKnownEnumValue(const Meta& meta, const TagType& tag, std::stringstrea
     if (tag == Tag::VIDEO_COLOR_MATRIX_COEFF) {
         return AppendEnumValue<Plugins::MatrixCoefficient>(meta, tag, dumpStr);
     }
-    if (tag == Tag::VIDEO_HDR_TYPE || tag == Tag::VIDEO_HDR_COMPATIBILITY) {
+    if (tag == Tag::VIDEO_HDR_TYPE) {
         return AppendEnumValue<Plugins::HDRType>(meta, tag, dumpStr);
     }
     return false;
@@ -2973,9 +2969,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_WebVttPendingCue_001, Te
     plugin->lastTrack_ = track1;
     plugin->mediaInfo_.tracks.resize(2);
     plugin->mediaInfo_.tracks[0].Set<Tag::MIME_TYPE>(WEBVTT_MIME);
-    plugin->mediaInfo_.tracks[0].Set<Tag::MEDIA_TIME_SCALE>(1000);
     plugin->mediaInfo_.tracks[1].Set<Tag::MIME_TYPE>(WEBVTT_MIME);
-    plugin->mediaInfo_.tracks[1].Set<Tag::MEDIA_TIME_SCALE>(1000);
     plugin->mediaInfo_.general.Set<Tag::MEDIA_DURATION>(60000);
     ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
     ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(1), Status::OK);

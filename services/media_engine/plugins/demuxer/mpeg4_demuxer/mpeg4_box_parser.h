@@ -58,7 +58,6 @@ public:
         uint32_t ivLen = 0;
         uint32_t encryptBlocks = 0;
         uint32_t skipBlocks = 0;
-        uint32_t firstEncryptOffset = 0;
         std::vector<Mpeg4DrmSubSample> subSamples;
         uint32_t subSampleNum = 0;
         uint32_t mode = 0;
@@ -108,7 +107,6 @@ public:
         uint32_t hSpacing = 0;
         uint32_t vSpacing = 0;
         bool hasPasp = false;
-        bool inferredTrackType = false;
         uint16_t audioSampleEntryChannelCount = 0;
         uint16_t audioSampleEntryBitsPerCodedSample = 0;
         CodecParams codecParms{};
@@ -204,13 +202,6 @@ private:
     struct FrameRate {
         double value;
         std::string name;
-    };
-
-    struct FrameRateRange {
-        double min;
-        double max;
-        double target;
-        const char* name;
     };
 
     struct MvhdInfo {
