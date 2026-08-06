@@ -20,6 +20,7 @@
 #include <regex>
 #include <utility>
 #include "hls_media_downloader.h"
+#include "download/download_metrics_info.h"
 #include "media_downloader.h"
 #include "common/media_core.h"
 

@@ -45,6 +45,7 @@ void DashMpdParser::ParsePeriod(std::shared_ptr<XmlParser> xmlParser, std::share
         IDashMpdNode *periodNode = IDashMpdNode::CreateNode("Period");
         if (periodNode == nullptr) {
             delete periodInfo;
+            periodInfo = nullptr;
             return;
         }
 
@@ -166,6 +167,7 @@ void DashMpdParser::ParseAdaptationSet(std::shared_ptr<XmlParser> xmlParser, std
         IDashMpdNode *adptSetNode = IDashMpdNode::CreateNode(MPD_LABEL_ADAPTATIONSET);
         if (adptSetNode == nullptr) {
             delete adptSetInfo;
+            adptSetInfo = nullptr;
             return;
         }
 
@@ -362,6 +364,7 @@ void DashMpdParser::ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::s
     IDashMpdNode *segUrlNode = IDashMpdNode::CreateNode(MPD_LABEL_SEGMENT_URL);
     if (segUrlNode == nullptr) {
         delete segUrl;
+        segUrl = nullptr;
         return;
     }
 
@@ -396,6 +399,7 @@ void DashMpdParser::ParseContentComponent(std::shared_ptr<XmlParser> xmlParser, 
     } else {
         MEDIA_LOG_E("ParseContentComponent contentCompNode == nullptr");
         delete contentCompInfo;
+        contentCompInfo = nullptr;
     }
 }
 
@@ -410,6 +414,7 @@ void DashMpdParser::ParseEventStream(std::shared_ptr<XmlParser> xmlParser, std::
     if (eventStreamNode == nullptr) {
         MEDIA_LOG_E("ParseEventStream eventStreamNode == nullptr");
         delete eventStreamInfo;
+        eventStreamInfo = nullptr;
         return;
     }
 
@@ -461,6 +466,7 @@ void DashMpdParser::ParseEvent(std::shared_ptr<XmlParser> xmlParser, std::shared
     if (eventNode == nullptr) {
         MEDIA_LOG_E("ParseEvent eventNode == nullptr");
         delete eventInfo;
+        eventInfo = nullptr;
         return;
     }
 
@@ -709,6 +715,7 @@ void DashMpdParser::ParseSegmentBase(std::shared_ptr<XmlParser> xmlParser, std::
     } else {
         MEDIA_LOG_E("ParseSegmentBase segBaseNode == nullptr");
         delete segBase;
+        segBase = nullptr;
     }
 }
 
@@ -766,6 +773,7 @@ void DashMpdParser::ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::
     } else {
         MEDIA_LOG_E("ParseSegmentList segListNode == nullptr");
         delete segList;
+        segList = nullptr;
     }
 }
 
@@ -834,6 +842,7 @@ void DashMpdParser::ParseSegmentTemplate(std::shared_ptr<XmlParser> xmlParser, s
         IDashMpdNode *segTmpltNode = IDashMpdNode::CreateNode(MPD_LABEL_SEGMENT_TEMPLATE);
         if (segTmpltNode == nullptr) {
             delete segTmplt;
+            segTmplt = nullptr;
             return;
         }
 
@@ -911,6 +920,7 @@ void DashMpdParser::ParseRepresentation(std::shared_ptr<XmlParser> xmlParser, st
     } else {
         MEDIA_LOG_E("ParseRepresentation representationNode == nullptr");
         delete representationInfo;
+        representationInfo = nullptr;
     }
 }
 
@@ -1057,6 +1067,7 @@ void DashMpdParser::ParseContentProtection(std::shared_ptr<XmlParser> xmlParser,
     } else {
         MEDIA_LOG_E("contentProtectionNode == nullptr");
         delete contentProtection;
+        contentProtection = nullptr;
     }
 }
 
@@ -1099,6 +1110,7 @@ void DashMpdParser::ParseEssentialProperty(std::shared_ptr<XmlParser> xmlParser,
     } else {
         MEDIA_LOG_E("essentialPropertyNode == nullptr");
         delete essentialProperty;
+        essentialProperty = nullptr;
     }
 }
 
@@ -1135,6 +1147,7 @@ void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xm
     } else {
         MEDIA_LOG_E("audioChannelConfigurationNode=null");
         delete channelProperty;
+        channelProperty = nullptr;
     }
 }
 
@@ -1174,6 +1187,7 @@ void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, s
             } else {
                 MEDIA_LOG_E("SegmentTimeline node == nullptr");
                 delete segTimeLine;
+                segTimeLine = nullptr;
                 break;
             }
         }
@@ -1204,6 +1218,7 @@ void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shar
     if (urlTypeNode == nullptr) {
         MEDIA_LOG_W("ParseUrlType urlTypeNode is nullptr, name=" PUBLIC_LOG_S, urlTypeName.c_str());
         delete urlType;
+        urlType = nullptr;
         return;
     }
     urlTypeNode->ParseNode(xmlParser, rootElement);
@@ -1367,6 +1382,7 @@ void DashMpdParser::Clear()
             FreeSegmentList(periodInfo->periodSegList_);
             FreeSegmentTemplate(periodInfo->periodSegTmplt_);
             delete periodInfo;
+            periodInfo = nullptr;
         }
         dashMpdInfo_.periodInfoList_.pop_front();
     }
@@ -1397,7 +1413,7 @@ void DashMpdParser::StopParseMpd()
     this->stopFlag_.store(1);
 }
 
-void DashMpdParser::FreeSegmentBase(DashSegBaseInfo *segBaseInfo) const
+void DashMpdParser::FreeSegmentBase(DashSegBaseInfo *&segBaseInfo) const
 {
     if (segBaseInfo != nullptr) {
         ClearSegmentBase(segBaseInfo);
@@ -1407,7 +1423,7 @@ void DashMpdParser::FreeSegmentBase(DashSegBaseInfo *segBaseInfo) const
     }
 }
 
-void DashMpdParser::FreeSegmentList(DashSegListInfo *segListInfo)
+void DashMpdParser::FreeSegmentList(DashSegListInfo *&segListInfo)
 {
     if (segListInfo != nullptr) {
         ClearMultSegBase(&segListInfo->multSegBaseInfo_);
@@ -1416,21 +1432,24 @@ void DashMpdParser::FreeSegmentList(DashSegListInfo *segListInfo)
             DashSegUrl *segUrl = segListInfo->segmentUrl_.front();
             if (segUrl != nullptr) {
                 delete segUrl;
+                segUrl = nullptr;
             }
 
             segListInfo->segmentUrl_.pop_front();
         }
 
         delete segListInfo;
+        segListInfo = nullptr;
     }
 }
 
-void DashMpdParser::FreeSegmentTemplate(DashSegTmpltInfo *segTmpltInfo)
+void DashMpdParser::FreeSegmentTemplate(DashSegTmpltInfo *&segTmpltInfo)
 {
     if (segTmpltInfo != nullptr) {
         ClearMultSegBase(&segTmpltInfo->multSegBaseInfo_);
 
         delete segTmpltInfo;
+        segTmpltInfo = nullptr;
     }
 }
 
@@ -1449,6 +1468,7 @@ void DashMpdParser::ClearAdaptationSet(DashList<DashAdptSetInfo *> &adptSetInfoL
             FreeSegmentTemplate(adptSetInfo->adptSetSegTmplt_);
 
             delete adptSetInfo;
+            adptSetInfo = nullptr;
         }
 
         adptSetInfoList.pop_front();
@@ -1463,6 +1483,7 @@ void DashMpdParser::ClearContentComp(DashList<DashContentCompInfo *> &contentCom
             ClearRoleList(contentCompInfo->roleList_);
 
             delete contentCompInfo;
+            contentCompInfo = nullptr;
         }
 
         contentCompList.pop_front();
@@ -1481,6 +1502,7 @@ void DashMpdParser::ClearRepresentation(DashList<DashRepresentationInfo *> &repr
             FreeSegmentTemplate(representationInfo->representationSegTmplt_);
 
             delete representationInfo;
+            representationInfo = nullptr;
         }
 
         representationList.pop_front();
@@ -1514,6 +1536,7 @@ void DashMpdParser::ClearMultSegBase(DashMultSegBaseInfo *multSegBaseInfo)
             DashSegTimeline *segTimeline = multSegBaseInfo->segTimeline_.front();
             if (segTimeline != nullptr) {
                 delete segTimeline;
+                segTimeline = nullptr;
             }
 
             multSegBaseInfo->segTimeline_.pop_front();
@@ -1529,6 +1552,7 @@ static void ClearPropertyList(DashList<DashDescriptor *> &propertyList)
         DashDescriptor *property = propertyList.front();
         if (property != nullptr) {
             delete property;
+            property = nullptr;
         }
         propertyList.pop_front();
     }
@@ -1550,6 +1574,7 @@ void DashMpdParser::ClearRoleList(DashList<DashDescriptor *> &roleList)
         DashDescriptor *role = roleList.front();
         if (role != nullptr) {
             delete role;
+            role = nullptr;
         }
 
         roleList.pop_front();
@@ -1569,8 +1594,10 @@ void DashMpdParser::ClearEventStream(DashList<DashEventStreamInfo *> &eventStrea
             DashEventInfo *eventInfo = eventStreamInfo->eventList_.front();
             eventStreamInfo->eventList_.pop_front();
             delete eventInfo;
+            eventInfo = nullptr;
         }
         delete eventStreamInfo;
+        eventStreamInfo = nullptr;
     }
 }
 } // namespace HttpPlugin

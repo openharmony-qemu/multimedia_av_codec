@@ -947,10 +947,7 @@ void HlsSegmentManager::PrepareToSeek()
     decryptLen_ = 0;
     auto aesDecryptor = GetAesDecryptor();
     FALSE_RETURN_MSG(aesDecryptor != nullptr, "aesDecryptor_ is nullptr");
-    auto ret = memcpy_s(aesDecryptor->iv_, AES_BLOCK_LEN, aesDecryptor->initIv_, AES_BLOCK_LEN);
-    if (ret != 0) {
-        MEDIA_LOG_E("iv copy error, type: %{public}d", type_);
-    }
+    aesDecryptor->ResetIv();
 }
 
 bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
@@ -1754,7 +1751,7 @@ void HlsSegmentManager::ResetDecryptBuffer()
     decryptLen_ = 0;
     auto aesDecryptor = GetAesDecryptor();
     if (aesDecryptor != nullptr) {
-        NZERO_LOG(memcpy_s(aesDecryptor->iv_, AES_BLOCK_LEN, aesDecryptor->initIv_, AES_BLOCK_LEN));
+        aesDecryptor->ResetIv();
     }
 }
 

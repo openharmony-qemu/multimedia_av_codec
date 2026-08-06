@@ -240,7 +240,7 @@ private:
     uint64_t downloadDuringTime_ {0}; // 有效下载时长 ms
     uint64_t totalDownloadDuringTime_ {0};
     int32_t currentBitRate_ {0};
-    uint64_t lastDurationReacord_ {0};
+    uint64_t lastDurationRecord_ {0};
     uint64_t lastCachedSize_ {0};
     std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;

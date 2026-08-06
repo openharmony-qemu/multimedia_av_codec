@@ -100,9 +100,9 @@ private:
     void ParseLocation(std::list<std::string> &locationStrlist) const;
     void ParseMetrics(std::list<std::string> &metricsStrList) const;
 
-    void FreeSegmentBase(DashSegBaseInfo *segBaseInfo) const;
-    void FreeSegmentList(DashSegListInfo *segListInfo);
-    void FreeSegmentTemplate(DashSegTmpltInfo *segTmpltInfo);
+    void FreeSegmentBase(DashSegBaseInfo *&segBaseInfo) const;
+    void FreeSegmentList(DashSegListInfo *&segListInfo);
+    void FreeSegmentTemplate(DashSegTmpltInfo *&segTmpltInfo);
     void ClearAdaptationSet(DashList<DashAdptSetInfo *> &adptSetInfoList);
     void ClearContentComp(DashList<DashContentCompInfo *> &contentCompList);
     void ClearRepresentation(DashList<DashRepresentationInfo *> &representationList);

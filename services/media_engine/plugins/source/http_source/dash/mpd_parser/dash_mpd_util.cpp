@@ -33,9 +33,9 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 
-static const int MATRIX_COEFFICIENTS_BT_2020 = 9;
-static const int COLOUR_PRIMARIES_BT_2020 = 9;
-static const int TRANSFER_CHARACTERISTICS_BT_2020 = 14;
+constexpr int32_t MATRIX_COEFFICIENTS_BT_2020 = 9;
+constexpr int32_t COLOUR_PRIMARIES_BT_2020 = 9;
+constexpr int32_t TRANSFER_CHARACTERISTICS_BT_2020 = 14;
 
 constexpr int32_t MAX_SUBSTITUTION_FORMAT_WIDTH = 32;
  
@@ -141,7 +141,11 @@ void GetSubstitutionStr(std::string &substitutionStr, std::string &str)
 {
     size_t strLength = strlen("%0");
     str = str.substr(strLength);
-    int32_t formatWidth = atoi(str.c_str());
+    int32_t formatWidth = 0;
+    int64_t tmpWidth = 0;
+    if (StringUtil::SafeStoInt64(str, tmpWidth) && tmpWidth > 0 && tmpWidth <= INT32_MAX) {
+        formatWidth = static_cast<int32_t>(tmpWidth);
+    }
     if (formatWidth <= 0) {
         MEDIA_LOG_W("Invalid format width " PUBLIC_LOG_D32 ", no padding applied", formatWidth);
         return;
@@ -284,18 +288,27 @@ void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &e
 
 bool DashStreamIsHdr(DashList<DashDescriptor*> essentialPropertyList)
 {
-    int matrixCoefficients = 1;
-    int colourPrimaries = 1;
-    int transferCharacteristics = 1;
+    int32_t matrixCoefficients = 1;
+    int32_t colourPrimaries = 1;
+    int32_t transferCharacteristics = 1;
  
     for (auto descriptor : essentialPropertyList) {
         if (descriptor != nullptr && descriptor->value_.length() > 0) {
             if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_MATRIX_COEFFICIENTS) != std::string::npos) {
-                matrixCoefficients = atoi(descriptor->value_.c_str());
+                int64_t tmp = 0;
+                if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
+                    matrixCoefficients = static_cast<int32_t>(tmp);
+                }
             } else if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_COLOUR_PRIMARIES) != std::string::npos) {
-                colourPrimaries = atoi(descriptor->value_.c_str());
+                int64_t tmp = 0;
+                if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
+                    colourPrimaries = static_cast<int32_t>(tmp);
+                }
             } else if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_TRANSFER_CHARACTERISTICS) != std::string::npos) {
-                transferCharacteristics = atoi(descriptor->value_.c_str());
+                int64_t tmp = 0;
+                if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
+                    transferCharacteristics = static_cast<int32_t>(tmp);
+                }
             }
         }
     }

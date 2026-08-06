@@ -90,10 +90,11 @@ IDashMpdNode *IDashMpdNode::CreateNode(const std::string &nodeName)
     return nullptr;
 }
 
-void IDashMpdNode::DestroyNode(IDashMpdNode *node)
+void IDashMpdNode::DestroyNode(IDashMpdNode *&node)
 {
     if (node != nullptr) {
         delete node;
+        node = nullptr;
     }
 }
 

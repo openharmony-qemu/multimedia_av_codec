@@ -24,6 +24,12 @@
 #include <algorithm>
 #include "network/network_typs.h"
 #include "dash_mpd_downloader.h"
+#include "dash_mpd_parser.h"
+#include "dash_mpd_manager.h"
+#include "dash_period_manager.h"
+#include "dash_adpt_set_manager.h"
+#include "dash_representation_manager.h"
+#include "download/download_metrics_info.h"
 #include "dash_mpd_util.h"
 #include "sidx_box_parser.h"
 #include "utils/string_utils.h"
@@ -800,7 +806,7 @@ void DashMpdDownloader::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audi
     }
 
     ProcessDrmInfos();
-    notifyOpenOk_ = true;
+    notifyOpenOk_.store(true);
 }
 
 void DashMpdDownloader::GetDrmInfos(std::vector<DashDrmInfo>& drmInfos)
@@ -962,12 +968,12 @@ void DashMpdDownloader::ParseSidx()
 void DashMpdDownloader::NotifyParseSidxResult()
 {
     auto callback = callback_.lock();
-    if (!notifyOpenOk_) {
+    if (!notifyOpenOk_.load()) {
         if (!PutStreamToDownload()) {
             if (callback) {
                 callback->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
             }
-            notifyOpenOk_ = true;
+            notifyOpenOk_.store(true);
         }
     } else {
         if (callback) {
@@ -1120,7 +1126,7 @@ Seekable DashMpdDownloader::GetSeekable() const
     // need wait mpdInfo_ not null
     size_t times = 0;
     while (times < RETRY_TIMES && !isInterruptNeeded_.load()) {
-        if (mpdInfo_ != nullptr && notifyOpenOk_) {
+        if (mpdInfo_ != nullptr && notifyOpenOk_.load()) {
             break;
         }
         OSAL::SleepFor(SLEEP_TIME);

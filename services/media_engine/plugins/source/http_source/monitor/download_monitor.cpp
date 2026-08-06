@@ -31,7 +31,7 @@ namespace {
         1600, 3200, 6400, 12800, 25600
     };
     constexpr int SERVER_ERROR_THRESHOLD = 500;
-    constexpr int32_t READ_LOG_FEQUENCE = 50;
+    constexpr int32_t READ_LOG_FREQUENCY = 50;
     constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
     constexpr int64_t RETRY_SEG = 50;
     constexpr int32_t REDIRECT_CODE = 302;
@@ -43,7 +43,7 @@ namespace {
     const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
         -1, // Application resource not ready for access
         23, // notBlock
-        25, // Upload faild.
+        25, // Upload failed.
         26, // Faild to open/read local data from file/application.
         28, // Timeout was reached.
         56,
@@ -166,7 +166,7 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     if (ULLONG_MAX - haveReadData_ > readDataInfo.realReadLength_) {
         haveReadData_ += readDataInfo.realReadLength_;
     }
-    MEDIA_LOGI_LIMIT(READ_LOG_FEQUENCE, "DownloadMonitor: haveReadData " PUBLIC_LOG_U64, haveReadData_);
+    MEDIA_LOGI_LIMIT(READ_LOG_FREQUENCY, "DownloadMonitor: haveReadData " PUBLIC_LOG_U64, haveReadData_);
     if (readDataInfo.isEos_ && ret == Status::END_OF_STREAM) {
         MEDIA_LOG_I("buffer is empty, read eos." PUBLIC_LOG_U64, haveReadData_);
     }
