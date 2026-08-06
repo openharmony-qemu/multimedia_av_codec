@@ -104,12 +104,12 @@ protected:
         X(QUERY_JANK_REASON) \
         X(XPERF_RESUME_EVENT) \
         X(XPERF_PAUSE_EVENT)
- 
+
     // 展开为 enum
     #define X(name) name,
     enum MsgWhat : MsgType { MSG_TYPES };
     #undef X
- 
+
     // 展开为字符串数组
     #define X(name) #name,
     static const char* ToString(MsgWhat what) {

@@ -184,6 +184,9 @@ bool TesterCodecBase::ConfigureEncoder()
     if (opt_.rateMode.has_value()) {
         fmt.PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, opt_.rateMode.value());
     }
+    if (opt_.codecScenario.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, opt_.codecScenario.value());
+    }
     if (opt_.bitRate.has_value()) {
         fmt.PutLongValue(MediaDescriptionKey::MD_KEY_BITRATE, opt_.bitRate.value());
     }

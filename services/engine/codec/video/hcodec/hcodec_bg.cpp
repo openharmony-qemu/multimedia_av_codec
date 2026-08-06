@@ -408,7 +408,7 @@ void HCodec::FrozenState::OnMsgReceived(const MsgInfo &info)
         }
     }
 }
-// // LCOV_EXCL_STOP
+// LCOV_EXCL_STOP
 
 void HCodec::FrozenState::OnBufferWriteback(const MsgInfo &info)
 {

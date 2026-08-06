@@ -128,6 +128,7 @@ struct CommandOpt {
     std::optional<int32_t> iFrameInterval;
     std::optional<int> profile;
     std::optional<VideoEncodeBitrateMode> rateMode;
+    std::optional<VideoCodecScenario> codecScenario;
     std::optional<uint32_t> bitRate;  // bps
     std::optional<uint32_t> quality;
     std::optional<QPRange> qpRange;
