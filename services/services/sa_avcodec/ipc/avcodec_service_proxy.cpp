@@ -34,10 +34,8 @@ AVCodecServiceProxy::~AVCodecServiceProxy()
 }
 
 int32_t AVCodecServiceProxy::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,
-                                                 const sptr<IRemoteObject> &listener, sptr<IRemoteObject> &object)
+                                                 sptr<IRemoteObject> &object)
 {
-    CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "listener is nullptr");
-
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
@@ -46,7 +44,6 @@ int32_t AVCodecServiceProxy::GetSubSystemAbility(IStandardAVCodecService::AVCode
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
 
     (void)data.WriteInt32(static_cast<int32_t>(subSystemId));
-    (void)data.WriteRemoteObject(listener);
     int error =
         Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::GET_SUBSYSTEM), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
@@ -122,7 +119,44 @@ int32_t AVCodecServiceProxy::VideoCallNotifyPiPState(const std::string &bundleNa
     int error =
         Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::VIDEOCALL), data, reply, option);
     CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
-        "Create av_codec proxy failed, error: %{public}d", error);
+        "SendRequest for VideoCallNotifyPiPState failed, error: %{public}d", error);
+    return reply.ReadInt32();
+}
+
+int32_t AVCodecServiceProxy::NotifyCamRegister(const bool camRegisterFlag)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool ret = data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
+    ret = data.WriteBool(camRegisterFlag);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write camRegisterFlag");
+    int error =
+        Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::CAM_UPDATE_REGISTER_CALLBACK),
+                              data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "SendRequest for NotifyCamRegister failed, error: %{public}d", error);
+    return reply.ReadInt32();
+}
+
+int32_t AVCodecServiceProxy::Init(const sptr<IRemoteObject> &listener)
+{
+    CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "listener is nullptr");
+
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool ret = data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
+    ret = data.WriteRemoteObject(listener);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write listener");
+    int error =
+        Remote()->SendRequest(static_cast<uint32_t>(AVCodecServiceInterfaceCode::INIT), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Init listener failed, error: %{public}d", error);
     return reply.ReadInt32();
 }
 

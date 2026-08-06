@@ -32,6 +32,7 @@ AVCodecServiceStub::AVCodecServiceStub()
 {
     deathRecipientMap_.clear();
     avCodecListenerMap_.clear();
+    registeredCallbackPid_ = -1;
     InitStub();
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
 }
@@ -71,6 +72,8 @@ int32_t AVCodecServiceStub::DestroyStubForPid(pid_t pid)
 
             (void)avCodecListenerMap_.erase(itListener);
         }
+
+        registeredCallbackPid_ = pid == registeredCallbackPid_ ? -1 : registeredCallbackPid_;
     }
 
     BackGroundEventHandler::GetInstance().ErasePid(pid);
@@ -110,6 +113,12 @@ int AVCodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Mess
             break;
         case static_cast<uint32_t>(AVCodecServiceInterfaceCode::VIDEOCALL):
             ret = OnVideoCall(data, reply);
+            break;
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::CAM_UPDATE_REGISTER_CALLBACK):
+            ret = OnNotifyRegisterCallback(data, reply);
+            break;
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::INIT):
+            ret = OnInit(data, reply);
             break;
         default:
             AVCODEC_LOGW("AVCodecServiceStub: no member func supporting, applying default process");
@@ -159,13 +168,12 @@ int32_t AVCodecServiceStub::SetDeathListener(const sptr<IRemoteObject> &object)
 int32_t AVCodecServiceStub::GetSystemAbility(MessageParcel &data, MessageParcel &reply)
 {
     AVCodecSystemAbility id = static_cast<AVCodecSystemAbility>(data.ReadInt32());
-    sptr<IRemoteObject> listenerObj = data.ReadRemoteObject();
 
     sptr<IRemoteObject> stubObj = nullptr;
-    int32_t ret = GetSubSystemAbility(id, listenerObj, stubObj);
+    int32_t ret = GetSubSystemAbility(id, stubObj);
     (void)reply.WriteRemoteObject(stubObj);
     (void)reply.WriteInt32(ret);
-    
+
     return AVCS_ERR_OK;
 }
 
@@ -253,6 +261,59 @@ int32_t AVCodecServiceStub::OnVideoCall(MessageParcel &data, MessageParcel &repl
     (void)reply.WriteInt32(result);
 
     return AVCS_ERR_OK;
+}
+
+int32_t AVCodecServiceStub::OnNotifyRegisterCallback(MessageParcel &data, MessageParcel &reply)
+{
+    auto tokenId = IPCSkeleton::GetCallingTokenID();
+    auto tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    CHECK_AND_RETURN_RET_LOG(tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL,
+                             AVCS_ERR_INVALID_OPERATION, "Only native|shell tokens allowed(%{public}d)",
+                             static_cast<int32_t>(tokenType));
+    bool camRegisterFlag{false};
+    bool readRet = data.ReadBool(camRegisterFlag);
+    CHECK_AND_RETURN_RET_LOG(readRet, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Failed to read camRegisterFlag from data");
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        pid_t pid = IPCSkeleton::GetCallingPid();
+        registeredCallbackPid_ = camRegisterFlag ? pid : -1;
+    }
+    int32_t ret = NotifyCamRegister(camRegisterFlag);
+    (void)reply.WriteInt32(ret);
+    return ret;
+}
+
+int32_t AVCodecServiceStub::NotifyListenerByProcessName(const std::string &bundleName, int32_t codecDecision)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(registeredCallbackPid_ != -1, AVCS_ERR_NO_MEMORY,
+                             "There is no valid registered callback pid");
+    auto it = avCodecListenerMap_.find(registeredCallbackPid_);
+    CHECK_AND_RETURN_RET_LOG(it != avCodecListenerMap_.end(), AVCS_ERR_NO_MEMORY,
+                             "failed to find listener for registered pid %{public}d", registeredCallbackPid_);
+    auto listener = it->second;
+    CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCS_ERR_NO_MEMORY,
+                             "failed to get correct listener from avCodecListenerMap_");
+    AVCODEC_LOGI(
+        "AVCodecService notify listener: processName=%{public}s, codecDecision=%{public}d",
+        bundleName.c_str(), codecDecision);
+    return listener->OnOutputStrategyInfo(bundleName, codecDecision);
+}
+
+int32_t AVCodecServiceStub::Init(const sptr<IRemoteObject> &listener)
+{
+    return SetDeathListener(listener);
+}
+
+int32_t AVCodecServiceStub::OnInit(MessageParcel &data, MessageParcel &reply)
+{
+    sptr<IRemoteObject> listener = data.ReadRemoteObject();
+    CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Failed to read listener from data");
+    int32_t ret = Init(listener);
+    (void)reply.WriteInt32(ret);
+    return ret;
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

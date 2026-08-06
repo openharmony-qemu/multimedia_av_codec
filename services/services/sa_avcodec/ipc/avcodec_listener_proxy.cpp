@@ -31,5 +31,26 @@ AVCodecListenerProxy::~AVCodecListenerProxy()
 {
     AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
 }
+
+int32_t AVCodecListenerProxy::OnOutputStrategyInfo(const std::string &bundleName, int32_t codecDecision)
+{
+    CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "bundleName is empty");
+
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_ASYNC);
+
+    bool ret = data.WriteInterfaceToken(AVCodecListenerProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
+    ret = data.WriteString(bundleName);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write bundleName");
+    ret = data.WriteInt32(codecDecision);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write codecDecision");
+    int error = Remote()->SendRequest(
+        static_cast<uint32_t>(CodecListenerInterfaceCode::ON_OUTPUT_STRATEGY_INFO), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+        "Create av_codec proxy failed, error: %{public}d", error);
+    return AVCS_ERR_OK;
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

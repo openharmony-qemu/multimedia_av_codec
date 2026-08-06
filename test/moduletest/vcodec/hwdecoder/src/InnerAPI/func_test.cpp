@@ -25,6 +25,7 @@
 #include "avcodec_codec_name.h"
 #include "native_avcapability.h"
 #include "avcodec_suspend.h"
+#include "avcodec_videocall.h"
 #include <unistd.h>
 #include "syspara/parameters.h"
 #include "avcodec_monitor.h"
@@ -1834,4 +1835,93 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_DECODE_INNER_GET_PIDS_0070, TestSize.Level
         }
     }
 }
+
+/**
+ * @tc.number    : VIDEO_HWDEC_INNER_VIDEOCALL_API_0010
+ * @tc.name      : VideoCallNotifyPiPState, bundleName is empty
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_VIDEOCALL_API_0010, TestSize.Level2)
+{
+    int32_t ret = AVCodecVideoCall::VideoCallNotifyPiPState("", false);
+    ASSERT_NE(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_INNER_VIDEOCALL_API_0020
+ * @tc.name      : VideoCallNotifyPiPState, bundleName is valid
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_VIDEOCALL_API_0020, TestSize.Level2)
+{
+    int32_t ret = AVCodecVideoCall::VideoCallNotifyPiPState("com.test.videocall", false);
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_INNER_VIDEOCALL_API_0030
+ * @tc.name      : VideoCallNotifyPiPState, isFloatingWindow true
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_VIDEOCALL_API_0030, TestSize.Level2)
+{
+    int32_t ret = AVCodecVideoCall::VideoCallNotifyPiPState("com.test.videocall", true);
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_INNER_VIDEOCALL_API_0040
+ * @tc.name      : RegisterCallback then UnRegisterCallback
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_VIDEOCALL_API_0040, TestSize.Level2)
+{
+    class TestCallback : public MediaCodecLowPowerConsumptionCallback {
+    public:
+        void OnLowPowerConsumptionAvailable(std::shared_ptr<StrategyInfo> strategy) override {}
+    };
+    auto callback = std::make_shared<TestCallback>();
+    int32_t ret = AVCodecVideoCall::RegisterCallback(callback);
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+    AVCodecVideoCall::UnRegisterCallback();
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_INNER_VIDEOCALL_API_0050
+ * @tc.name      : RegisterCallback with nullptr
+ * @tc.desc      : api test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_VIDEOCALL_API_0050, TestSize.Level2)
+{
+    int32_t ret = AVCodecVideoCall::RegisterCallback(nullptr);
+    ASSERT_NE(ret, AVCS_ERR_OK);
+}
+
+/**
+ * @tc.number    : VIDEO_HWDEC_INNER_VIDEOCALL_FUNC_0010
+ * @tc.name      : VideoCallNotifyPiPState then RegisterCallback
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_VIDEOCALL_FUNC_0010, TestSize.Level2)
+{
+    class TestCallback : public MediaCodecLowPowerConsumptionCallback {
+    public:
+        void OnLowPowerConsumptionAvailable(std::shared_ptr<StrategyInfo> strategy) override
+        {
+            lastBundleName = strategy->bundleName;
+            lastStrategyId = strategy->strategyId;
+        }
+        std::string lastBundleName;
+        int32_t lastStrategyId = -1;
+    };
+    auto callback = std::make_shared<TestCallback>();
+    int32_t ret = AVCodecVideoCall::RegisterCallback(callback);
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+
+    ret = AVCodecVideoCall::VideoCallNotifyPiPState("com.test.videocall", false);
+    ASSERT_EQ(ret, AVCS_ERR_OK);
+
+    AVCodecVideoCall::UnRegisterCallback();
+}
+
 } // namespace

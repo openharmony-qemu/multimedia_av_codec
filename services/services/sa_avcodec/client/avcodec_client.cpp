@@ -38,6 +38,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 
 namespace OHOS {
 namespace MediaAVCodec {
+std::shared_ptr<MediaCodecLowPowerConsumptionCallback> AVCodecClient::callback_ = nullptr;
 static bool g_isDestructed = false;
 static std::mutex g_avCodecClientMutex;
 static AVCodecClient g_avCodecClientInstance;
@@ -77,7 +78,7 @@ int32_t AVCodecClient::CreateInstanceAndTryInTimes(IStandardAVCodecService::AVCo
             continue;
         }
 
-        ret = avCodecProxy_->GetSubSystemAbility(subSystemId, listenerStub_->AsObject(), object);
+        ret = avCodecProxy_->GetSubSystemAbility(subSystemId, object);
         if (object != nullptr) {
             break;
         }
@@ -125,6 +126,37 @@ int32_t AVCodecClient::VideoCallNotifyPiPState(const std::string &bundleName, co
     auto avCodecProxy = GetTemporaryAVCodecProxy();
     CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
     return avCodecProxy->VideoCallNotifyPiPState(bundleName, isFloatingWindow);
+}
+
+int32_t AVCodecClient::OnOutputStrategyInfo(const std::string &bundleName, int32_t codecDecision)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCS_ERR_INPUT_DATA_ERROR, "callback object is nullptr");
+    AVCODEC_LOGI("Client OnOutputStrategyInfo: bundleName=%{public}s, codecDecision=%{public}d",
+                 bundleName.c_str(), codecDecision);
+    auto strategyInfo = std::make_shared<OHOS::MediaAVCodec::StrategyInfo>();
+    strategyInfo->bundleName = bundleName;
+    strategyInfo->strategyId = codecDecision;
+    callback_->OnLowPowerConsumptionAvailable(strategyInfo);
+    return AVCS_ERR_OK;
+}
+
+int32_t AVCodecClient::RegisterCallback(const std::shared_ptr<MediaCodecLowPowerConsumptionCallback> &callback)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INPUT_DATA_ERROR, "callback object is nullptr");
+    callback_ = callback;
+    auto avCodecProxy = GetAVCodecProxy();
+    CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+    return avCodecProxy->NotifyCamRegister(true);
+}
+void AVCodecClient::UnRegisterCallback()
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    callback_ = nullptr;
+    auto avCodecProxy = GetAVCodecProxy();
+    CHECK_AND_RETURN_LOG(avCodecProxy != nullptr, "AVCodec proxy does not exist");
+    avCodecProxy->NotifyCamRegister(false);
 }
 
 #ifdef SUPPORT_CODEC
@@ -231,6 +263,8 @@ sptr<IStandardAVCodecService> AVCodecClient::GetAVCodecProxy()
 
     listenerStub_ = new (std::nothrow) AVCodecListenerStub();
     CHECK_AND_RETURN_RET_LOG(listenerStub_ != nullptr, nullptr, "Failed to create AVCodecListenerStub");
+    int32_t ret = avCodecProxy_->Init(listenerStub_->AsObject());
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, nullptr, "Failed to init listener, err: %{public}d", ret);
     return avCodecProxy_;
 }
 
@@ -351,6 +385,7 @@ void AVCodecClient::TryReleaseResources()
         avCodecProxy_ = nullptr;
         listenerStub_ = nullptr;
         deathRecipient_ = nullptr;
+        callback_ = nullptr;
         AVCODEC_LOGI("Release resources due to all codec clients destroyed");
     }
     // Reset timer ID

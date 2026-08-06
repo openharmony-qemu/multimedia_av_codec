@@ -27,7 +27,20 @@ namespace MediaAVCodec {
 int32_t AVCodecVideoCall::VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow)
 {
     CHECK_AND_RETURN_RET_LOG(!bundleName.empty(), AVCS_ERR_INPUT_DATA_ERROR, "bundleName is empty");
+    AVCODEC_LOGI("VideoCallNotifyPiPState: bundleName=%{public}s, isFloatingWindow=%{public}s",
+                 bundleName.c_str(), isFloatingWindow ? "true" : "false");
     return AVCodecServiceFactory::GetInstance().VideoCallNotifyPiPState(bundleName, isFloatingWindow);
+}
+
+int32_t AVCodecVideoCall::RegisterCallback(const std::shared_ptr<MediaCodecLowPowerConsumptionCallback> &callback)
+{
+    CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INPUT_DATA_ERROR, "callback object is nullptr");
+    return AVCodecServiceFactory::GetInstance().RegisterCallback(callback);
+}
+
+void AVCodecVideoCall::UnRegisterCallback()
+{
+    AVCodecServiceFactory::GetInstance().UnRegisterCallback();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

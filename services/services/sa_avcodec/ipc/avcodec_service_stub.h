@@ -28,8 +28,10 @@ public:
     AVCodecServiceStub();
     virtual ~AVCodecServiceStub();
     int OnRemoteRequest(uint32_t code, MessageParcel &data, MessageParcel &reply, MessageOption &option) override;
+    int32_t NotifyListenerByProcessName(const std::string &bundleName, int32_t codecDecision);
 
 protected:
+    int32_t Init(const sptr<IRemoteObject> &listener) override;
     int32_t SetDeathListener(const sptr<IRemoteObject> &object);
 
 private:
@@ -39,6 +41,8 @@ private:
     int32_t OnSuspendActive(MessageParcel &data, MessageParcel &reply);
     int32_t OnSuspendActiveAll(MessageParcel &data, MessageParcel &reply);
     int32_t OnVideoCall(MessageParcel &data, MessageParcel &reply);
+    int32_t OnNotifyRegisterCallback(MessageParcel &data, MessageParcel &reply);
+    int32_t OnInit(MessageParcel &data, MessageParcel &reply);
     int32_t OnGetActiveSecureDecoderPids(MessageParcel &data, MessageParcel &reply);
     void OnReportStatisticsEvent(MessageParcel &data, MessageParcel &reply);
     void ClientDied(pid_t pid);
@@ -46,6 +50,7 @@ private:
 
     std::map<pid_t, sptr<AVCodecDeathRecipient>> deathRecipientMap_;
     std::map<pid_t, sptr<IStandardAVCodecListener>> avCodecListenerMap_;
+    pid_t registeredCallbackPid_ = -1;
     std::mutex mutex_;
 };
 } // namespace MediaAVCodec

@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <vector>
+#include "avcodec_videocall.h"
 
 #ifdef SUPPORT_CODEC
 #include "i_codec_service.h"
@@ -78,6 +79,29 @@ public:
      * @since 7.0
      */
     virtual int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) = 0;
+
+    /**
+     * @brief Callback the video call low power decision result to camera framework.
+     *
+     * @param bundleName The name of the HAP package.
+     * @param codecDecision The decision result for low power mode.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     * @since 7.0
+     */
+    virtual int32_t OnOutputStrategyInfo(const std::string &bundleName, int32_t codecDecision) = 0;
+    /**
+     * @brief Register callback for low power mode adjustment notification.
+     * @param callback The callbcak object for low power consumption notification.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error on failure.
+     * @since 7.0
+     */
+    virtual int32_t RegisterCallback(const std::shared_ptr<MediaCodecLowPowerConsumptionCallback> &callback) = 0;
+
+    /**
+     * @brief UnRegisterCallback the registered callback.
+     * @since 7.0
+     */
+    virtual void UnRegisterCallback() = 0;
 
 #ifdef SUPPORT_CODECLIST
     /**
