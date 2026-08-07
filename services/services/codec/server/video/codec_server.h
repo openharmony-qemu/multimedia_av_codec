@@ -154,6 +154,7 @@ private:
     std::shared_ptr<MediaCodecCallback> videoCb_;
     std::shared_mutex mutex_;
     std::shared_mutex cbMutex_;
+    std::shared_mutex drmDecryptorMutex_;
     std::string lastErrMsg_;
     std::string codecMime_;
     std::string codecName_;

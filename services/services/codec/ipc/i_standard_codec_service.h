@@ -57,13 +57,10 @@ public:
     virtual int32_t SetParameter(const Format &format) = 0;
     virtual int32_t GetInputFormat(Format &format) = 0;
     virtual int32_t GetCodecInfo(Format &format) = 0;
+#ifdef SUPPORT_DRM
     virtual int32_t SetDecryptConfig(const sptr<DrmStandard::IMediaKeySessionService> &keySession,
-        const bool svpFlag)
-    {
-        (void)keySession;
-        (void)svpFlag;
-        return 0;
-    }
+        const bool svpFlag) = 0;
+#endif
     virtual int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) = 0;
     virtual int32_t NotifyMemoryExchange(const bool exchangeFlag) = 0;
 
