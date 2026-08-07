@@ -30,7 +30,7 @@ public:
     virtual ~IDashMpdNode() = default;
 
     static IDashMpdNode *CreateNode(const std::string &nodeName);
-    static void DestroyNode(IDashMpdNode *&node);
+    static void DestroyNode(IDashMpdNode *node);
 
     virtual void ParseNode(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement) = 0;
     virtual void GetAttr(const std::string &attrName, std::string &val) = 0;
