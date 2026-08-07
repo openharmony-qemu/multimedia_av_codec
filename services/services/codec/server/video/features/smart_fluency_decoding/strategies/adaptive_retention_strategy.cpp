@@ -173,6 +173,11 @@ bool AdaptiveRetentionStrategy::RequiresMvAnalysis() const
 {
     return true;
 }
+
+bool AdaptiveRetentionStrategy::ShouldReportDfx() const
+{
+    return true;
+}
 } // namespace SFD
 } // namespace MediaAVCodec
 } // namespace OHOS
