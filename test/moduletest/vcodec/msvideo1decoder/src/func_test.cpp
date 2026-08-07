@@ -571,6 +571,7 @@ HWTEST_F(MsVideo1decFuncNdkTest, VIDEO_MSVIDEO1DEC_FUNCTION_0024, TestSize.Level
     vDecSample->autoSwitchSurface = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     vDecSample->sleepOnFPS = true;
+    vDecSample->skipStartDecoder = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameMsVideo1.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
     ASSERT_EQ(AV_ERR_OK, vDecSample->Start());

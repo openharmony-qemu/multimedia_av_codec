@@ -513,6 +513,7 @@ HWTEST_F(Rv40decFuncNdkTest, VIDEO_RV40DEC_FUNCTION_0024, TestSize.Level0)
     vDecSample->autoSwitchSurface = true;
     vDecSample->AFTER_EOS_DESTORY_CODEC = false;
     vDecSample->sleepOnFPS = true;
+    vDecSample->skipStartDecoder = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameRv40.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
     ASSERT_EQ(AV_ERR_OK, vDecSample->Start());

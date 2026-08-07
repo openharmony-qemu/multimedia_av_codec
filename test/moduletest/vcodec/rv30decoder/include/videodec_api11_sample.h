@@ -160,6 +160,7 @@ public:
     int32_t inputoutputsyncloop();
     void GetVideoSupportedPixelFormats();
     void GetFormatKey();
+    bool skipStartDecoder = false;
     VDecAPI11Signal *signal_;
     uint32_t errCount = 0;
     uint32_t outCount = 0;

@@ -411,6 +411,11 @@ int32_t VDecAPI11Sample::StartVideoDecoder()
 {
     isRunning.store(true);
     int ret = OH_VideoDecoder_Start(vdec_);
+    
+    if (skipStartDecoder) {
+        return AV_ERR_OK;
+    }
+    
     if (ret != AV_ERR_OK) {
         isRunning.store(false);
         ReleaseInFile();

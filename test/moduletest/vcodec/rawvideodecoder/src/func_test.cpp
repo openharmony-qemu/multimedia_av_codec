@@ -900,6 +900,7 @@ HWTEST_F(RawVideodecFuncNdkTest, VIDEO_RAWVIDEODEC_FUNCTION_0048, TestSize.Level
     vDecSample->autoSwitchSurface = true;
     vDecSample->afterEosDestroyCodec = false;
     vDecSample->sleepOnFPS = true;
+    vDecSample->skipStartDecoder = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameRawVideo.c_str()));
     ASSERT_EQ(AV_ERR_OK, vDecSample->Flush());
     ASSERT_EQ(AV_ERR_OK, vDecSample->Start());
