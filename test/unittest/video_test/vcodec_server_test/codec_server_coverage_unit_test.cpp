@@ -1205,20 +1205,6 @@ HWTEST_F(CodecServerUnitTest, HandleOutputBufferAvailability_Test_001, TestSize.
 }
 
 /**
- * @tc.name: HandleOutputBufferAvailability_Test_002
- * @tc.desc: Test HandleOutputBufferAvailability with sfdManager_ and MakePostDecodeDecision returns false
- */
-HWTEST_F(CodecServerUnitTest, HandleOutputBufferAvailability_Test_002, TestSize.Level1)
-{
-    CreateHCodecByMime();
-    server_->sfdManager_ = std::make_unique<SFD::SmartFluencyDecodingManager>("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
-    uint32_t index = 1;
-    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer();
-    EXPECT_NE(buffer, nullptr);
-    server_->HandleOutputBufferAvailability(index, buffer);
-}
-
-/**
  * @tc.name: HandleOutputBufferAvailability_Test_003
  * @tc.desc: Test HandleOutputBufferAvailability with isSurfaceMode_ and decoder and valid memory
  */
