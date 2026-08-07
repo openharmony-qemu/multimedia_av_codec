@@ -100,14 +100,23 @@ void AesDecryptor::SetIv(const uint8_t* iv, size_t ivLen)
     if (!iv || ivLen < BLOCK_LEN) {
         return;
     }
-    NZERO_LOG(memcpy_s(iv_, BLOCK_LEN, iv, BLOCK_LEN));
-    NZERO_LOG(memcpy_s(initIv_, BLOCK_LEN, iv, BLOCK_LEN));
+    auto ret = memcpy_s(iv_, BLOCK_LEN, iv, BLOCK_LEN);
+    if (ret != 0) {
+        MEDIA_LOG_E("set iv failed, ret: %{public}d", ret);
+    }
+    ret = memcpy_s(initIv_, BLOCK_LEN, iv, BLOCK_LEN);
+    if (ret != 0) {
+        MEDIA_LOG_E("set init iv failed, ret: %{public}d", ret);
+    }
 }
 
 void AesDecryptor::ResetIv()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    NZERO_LOG(memcpy_s(iv_, BLOCK_LEN, initIv_, BLOCK_LEN));
+    auto ret = memcpy_s(iv_, BLOCK_LEN, initIv_, BLOCK_LEN);	 
+    if (ret != 0) { 
+        MEDIA_LOG_E("reset iv failed, ret: %{public}d", ret); 
+    }
 }
 } // namespace Media
 } // namespace OHOS

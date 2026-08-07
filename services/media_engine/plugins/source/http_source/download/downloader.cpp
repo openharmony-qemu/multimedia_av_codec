@@ -1237,9 +1237,6 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     FALSE_RETURN_V(userParam != nullptr, 0);
     MediaAVCodec::AVCodecTrace trace("Downloader::RxHeaderData");
     auto mediaDownloader = static_cast<Downloader *>(userParam);
-    if (mediaDownloader->currentRequest_ == nullptr) {
-        return 0;
-    }
     HeaderInfo* info = &(mediaDownloader->currentRequest_->headerInfo_);
     if (mediaDownloader->currentRequest_->isHeaderUpdated_) {
         return size * nitems;
