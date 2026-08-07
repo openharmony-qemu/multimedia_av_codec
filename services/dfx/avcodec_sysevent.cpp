@@ -23,6 +23,7 @@
 #include <openssl/evp.h>
 #include "hisysevent.h"
 #include <nlohmann/json.hpp>
+#include <iomanip>
 
 using Json = nlohmann::json;
 namespace {
@@ -34,7 +35,10 @@ const std::unordered_map<OHOS::MediaAVCodec::FaultType, std::string> FAULT_TYPE_
     {OHOS::MediaAVCodec::FaultType::FAULT_TYPE_CRASH,           "Crash"},
     {OHOS::MediaAVCodec::FaultType::FAULT_TYPE_INNER_ERROR,     "Inner error"},
 };
-constexpr static int32_t SOURCE_STATISTICS_REPORT_HOURS = 4;
+constexpr static int32_t SOURCE_STATISTICS_REPORT_HOURS = 24;
+constexpr static int32_t SOURCE_STATISTICS_SIZE_MAX = 1000;
+constexpr static int32_t HIGH_BIT_RATE = 30000;
+constexpr static int32_t LOW_BIT_RATE = 10000;
 } // namespace
 
 namespace OHOS {
@@ -154,42 +158,142 @@ void FaultRecordAudioEventWrite(AudioSourceFaultInfo& audioSourceFaultInfo)
                     "ERROR_MESG",        audioSourceFaultInfo.errMsg);
 }
 
+std::vector<std::string> SplitStringFully(const std::string& str, const std::string& separator)
+{
+    std::vector<std::string> dest;
+    std::string substring;
+    std::string::size_type start = 0;
+    std::string::size_type index = str.find_first_of(separator, start);
+
+    while (index != std::string::npos) {
+        substring = str.substr(start, index - start);
+        dest.push_back(substring);
+        start = str.find_first_not_of(separator, index);
+        if (start == std::string::npos) {
+            return dest;
+        }
+        index = str.find_first_of(separator, start);
+    }
+    substring = str.substr(start);
+    dest.push_back(substring);
+
+    return dest;
+}
+
+std::string GetCA(const std::string& ca)
+{
+    static const std::string CA = "/CN=";
+    size_t caPos = ca.find(CA);
+    if (caPos == std::string::npos) {
+        return "";
+    }
+    caPos += CA.size();
+    return ca.substr(caPos, std::string::npos);
+}
+
+void PushReportInfoToMap(std::map<std::string, SourceStatisticsInfo>& reportMap,
+    const SourceStatisticsReportInfo& sourceReportInfo)
+{
+    std::vector<std::string> caNames = SplitStringFully(sourceReportInfo.ca_, "|");
+    for (auto ca : caNames) {
+        if (ca == "") {
+            continue;
+        }
+        reportMap[sourceReportInfo.appName_].caHash_.insert(GetCA(ca));
+    }
+    reportMap[sourceReportInfo.appName_].appCount_++;
+    reportMap[sourceReportInfo.appName_].videoStreamCnt_ += sourceReportInfo.videoStreamCnt_;
+    reportMap[sourceReportInfo.appName_].audioStreamCnt_ += sourceReportInfo.audioStreamCnt_;
+    reportMap[sourceReportInfo.appName_].subtitleStreamCnt_ += sourceReportInfo.subtitleCnt_;
+    reportMap[sourceReportInfo.appName_].typeCount_[static_cast<DfxSourceType>(sourceReportInfo.sourceType_)]++;
+    if (sourceReportInfo.bitRate_ > HIGH_BIT_RATE) {
+        reportMap[sourceReportInfo.appName_].bitRateCount_[BitRateType::HIGH]++;
+    } else if (sourceReportInfo.bitRate_ < LOW_BIT_RATE) {
+        reportMap[sourceReportInfo.appName_].bitRateCount_[BitRateType::LOW]++;
+    } else {
+        reportMap[sourceReportInfo.appName_].bitRateCount_[BitRateType::MEDIUM]++;
+    }
+}
+
+std::string SetToString(const std::set<std::string>& hashNames)
+{
+    std::ostringstream caHash;
+    bool first = true;
+
+    for (const auto& name : hashNames) {
+        if (!first) {
+            caHash << ",";
+        }
+        caHash << name;
+        first = false;
+    }
+
+    return caHash.str();
+}
+
+std::string BitRateMapToString(const std::map<BitRateType, int32_t>& bitRatemap)
+{
+    std::ostringstream bitRateCount;
+    bool isFirst = true;
+    for (auto& bitRate : bitRatemap) {
+        if (!isFirst) {
+            bitRateCount << ",";
+        }
+        isFirst = false;
+        bitRateCount << static_cast<int32_t>(bitRate.first) << ":" << bitRate.second;
+    }
+    return bitRateCount.str();
+}
+
+std::string SourceTypeMapToString(const std::map<DfxSourceType, int32_t>& sourceTypeMap)
+{
+    std::ostringstream sourceTypeCount;
+    bool isFirst = true;
+    for (auto sourceType : sourceTypeMap) {
+        if (!isFirst) {
+            sourceTypeCount << ",";
+        }
+        isFirst = false;
+        sourceTypeCount << static_cast<int32_t>(sourceType.first) << ":" << sourceType.second;
+    }
+    return sourceTypeCount.str();
+}
+
+std::string SourceStatisticsReportInfoMapToString(const std::map<std::string, SourceStatisticsInfo>& reportMap)
+{
+    std::string report;
+    auto iter = reportMap.begin();
+    while (iter != reportMap.end()) {
+        Json json;
+        json["APP_NAME"] = iter->first;
+        json["MEDIA_EVENTS"]["APP_CALL_TIMES"] = iter->second.appCount_;
+        json["MEDIA_EVENTS"]["VIDEO_STREAM_CNT"] = iter->second.videoStreamCnt_;
+        json["MEDIA_EVENTS"]["AUDIO_STREAM_CNT"] = iter->second.audioStreamCnt_;
+        json["MEDIA_EVENTS"]["SUBTITLE_STREAM_CNT"] = iter->second.subtitleStreamCnt_;
+        json["MEDIA_EVENTS"]["CERT_HASH"] = SetToString(iter->second.caHash_);
+        json["MEDIA_EVENTS"]["BITRATE_COUNT"] = BitRateMapToString(iter->second.bitRateCount_);
+        json["MEDIA_EVENTS"]["TYPE_COUNT"] = SourceTypeMapToString(iter->second.typeCount_);
+        report += json.dump();
+        iter++;
+    }
+    return report;
+}
+
 void SourceStatisticsEventWrite(SourceStatisticsReportInfo& sourceReportInfo)
 {
-    static std::list<std::string> reportInfoList;
     static std::chrono::system_clock::time_point lastUpdateTime = std::chrono::system_clock::now();
+    static std::map<std::string, SourceStatisticsInfo> reportMap;
     static std::mutex sourceMutex;
-
     std::lock_guard<std::mutex> lock(sourceMutex);
-    Json json;
-    uint8_t hash[EVP_MAX_MD_SIZE];
-    uint32_t hashLen;
-    EVP_Digest(sourceReportInfo.ca_.c_str(), sourceReportInfo.ca_.size(), hash, &hashLen, EVP_sha256(), NULL);
-    json["APP_NAME"] = sourceReportInfo.appName_;
-    json["MEDIA_EVENTS"]["SOURCE_TYPE"] = sourceReportInfo.sourceType_;
-    json["MEDIA_EVENTS"]["SOURCE_URI"] = sourceReportInfo.sourceUri_;
-    json["MEDIA_EVENTS"]["PLAY_STRATEGY_DURATION"] = sourceReportInfo.playStrategyDuration_;
-    json["MEDIA_EVENTS"]["PLAY_STRATEGY_BUFFER_DURATION_FOR_PLAYING"] =
-        sourceReportInfo.playStrateBufferDurationForPlaying_;
-    json["MEDIA_EVENTS"]["BITRATE"] = sourceReportInfo.bitRate_;
-    json["MEDIA_EVENTS"]["VIDEO_STREAM_CNT"] = sourceReportInfo.videoStreamCnt_;
-    json["MEDIA_EVENTS"]["AUDIO_STREAM_CNT"] = sourceReportInfo.audioStreamCnt_;
-    json["MEDIA_EVENTS"]["SUBTITLE_STREAM_CNT"] = sourceReportInfo.subtitleCnt_;
-    json["MEDIA_EVENTS"]["CERT_ISSUER_NAMES"] = sourceReportInfo.ca_;
-    json["MEDIA_EVENTS"]["CERT_HASH"] = hash;
-    std::string jsonString = json.dump();
-    reportInfoList.push_back(jsonString);
+    PushReportInfoToMap(reportMap, sourceReportInfo);
     auto currentTime = std::chrono::system_clock::now();
     auto diff = currentTime - lastUpdateTime;
     auto hour = std::chrono::duration_cast<std::chrono::hours>(diff).count();
-    if (hour >= SOURCE_STATISTICS_REPORT_HOURS) {
-        for (auto& report : reportInfoList) {
-            HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA,
-                "SOURCE_STATISTICS",
-                OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
-                "EVENTS", report);
-        }
-        reportInfoList.clear();
+    if (hour >= SOURCE_STATISTICS_REPORT_HOURS || reportMap.size() >= SOURCE_STATISTICS_SIZE_MAX) {
+        HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::MULTI_MEDIA,
+            "SOURCE_STATISTICS",
+            OHOS::HiviewDFX::HiSysEvent::EventType::STATISTIC,
+            "EVENTS", SourceStatisticsReportInfoMapToString(reportMap));
         lastUpdateTime = currentTime;
     }
 }
