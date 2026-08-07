@@ -24,6 +24,20 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioFfmpegDecoderPlugin"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
+
+// abs(cur - pre) with overflow guard. The signed subtraction may overflow when cur and pre have
+// opposite-sign extremes, and abs(INT64_MIN) is undefined behaviour; clamp those cases to INT64_MAX.
+int64_t BufferGroupPtsDistance(int64_t cur, int64_t pre)
+{
+    if ((pre > 0 && cur < INT64_MIN + pre) || (pre < 0 && cur > INT64_MAX + pre)) {
+        return INT64_MAX;
+    }
+    int64_t diff = cur - pre;
+    if (diff == INT64_MIN) {
+        return INT64_MAX;
+    }
+    return abs(diff);
+}
 } // namespace
 
 namespace OHOS {
@@ -144,7 +158,7 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
             preBufferGroupPts_ = curBufferGroupPts_;
             curBufferGroupPts_ = cachedFrame_->pts;
             if (bufferGroupPtsDistance == 0) {
-                bufferGroupPtsDistance = abs(curBufferGroupPts_ - preBufferGroupPts_);
+                bufferGroupPtsDistance = BufferGroupPtsDistance(curBufferGroupPts_, preBufferGroupPts_);
             }
             if (bufferIndex_ >= bufferNum_) {
                 bufferNum_ = bufferIndex_;
@@ -152,12 +166,16 @@ int32_t AudioFfmpegDecoderPlugin::ReceiveBuffer(std::shared_ptr<AudioBufferInfo>
             bufferIndex_ = 1;
         } else {
             bufferIndex_++;
-            if (abs(curBufferGroupPts_ - preBufferGroupPts_) > bufferGroupPtsDistance) {
+            if (BufferGroupPtsDistance(curBufferGroupPts_, preBufferGroupPts_) > bufferGroupPtsDistance) {
                 cachedFrame_->pts = curBufferGroupPts_;
                 preBufferGroupPts_ = curBufferGroupPts_;
             } else {
-                cachedFrame_->pts =
-                    curBufferGroupPts_ + abs(curBufferGroupPts_ - preBufferGroupPts_) * (bufferIndex_ - 1) / bufferNum_;
+                int64_t distance = BufferGroupPtsDistance(curBufferGroupPts_, preBufferGroupPts_);
+                int64_t indexNum = static_cast<int64_t>(bufferIndex_) - 1;
+                int64_t increment = (indexNum != 0 && distance > INT64_MAX / indexNum)
+                    ? INT64_MAX : distance * indexNum / bufferNum_;
+                cachedFrame_->pts = (curBufferGroupPts_ > 0 && increment > INT64_MAX - curBufferGroupPts_)
+                    ? INT64_MAX : (curBufferGroupPts_ + increment);
             }
         }
         status = ReceiveFrameSucc(outBuffer);
