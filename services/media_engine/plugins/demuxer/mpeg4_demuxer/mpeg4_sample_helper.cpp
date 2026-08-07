@@ -2109,6 +2109,7 @@ Status MPEG4SampleHelper::BuildSampleIndexEntries()
     denseStatus_ = BuildDenseSampleIndexEntries();
     if (denseStatus_ == Status::OK) {
         sampleTableSummary_.logicalSampleCount = static_cast<uint32_t>(sampleIndexEntry_.size());
+        ReleaseSparseStorageLocked();
         sampleIndexState_.store(SampleIndexState::DENSE, std::memory_order_release);
     } else {
         sampleIndexEntry_.clear();

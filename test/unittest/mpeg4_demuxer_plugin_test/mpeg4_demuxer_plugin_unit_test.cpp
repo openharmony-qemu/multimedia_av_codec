@@ -109,6 +109,19 @@ Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry MakeSampleIndexEntry(
     return entry;
 }
 
+void PrepareSparseSampleHelper(Plugins::MPEG4::MPEG4SampleHelper& helper, uint32_t sampleCount)
+{
+    helper.trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper.mimeType_ = Plugins::MimeType::VIDEO_AVC;
+    helper.sttsEntry_ = {{sampleCount, 10}};
+    helper.stscEntry_ = {{0, sampleCount, 1}};
+    helper.stssEntry_ = {{0}, {3}, {sampleCount - 1}};
+    helper.sampleSizes_.assign(sampleCount, 10);
+    helper.sampleSizeCount_ = sampleCount;
+    helper.chunkOffsets_ = {100};
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+}
+
 void VerifySampleIndexProperties(Plugins::MPEG4::MPEG4SampleHelper& helper)
 {
     EXPECT_EQ(helper.GetSampleCount(), SAMPLE_INDEX_TEST_COUNT);
@@ -4095,6 +4108,61 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexSparseSyncAnd
     EXPECT_EQ(helper.stssEntry_[3].index, 4U);
     EXPECT_TRUE(helper.IsSyncSample(2));
     EXPECT_FALSE(helper.IsSyncSample(1));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SparseViewCacheAndCursor_001
+ * @tc.desc: Verify repeated sparse access uses the fixed cache and preserves STSS cursor flags
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SparseViewCacheAndCursor_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    PrepareSparseSampleHelper(helper, 8);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    ASSERT_EQ(helper.GetSampleIndexView(5, view), Status::OK);
+    EXPECT_EQ(view.pos, 150);
+    EXPECT_TRUE((view.flag & Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME) == 0);
+    EXPECT_EQ(helper.sparseFrontier_.outputIndex, 6U);
+    EXPECT_EQ(helper.sparseViewCache_[1].sampleIndex, 5U);
+
+    auto frontier = helper.sparseFrontier_;
+    ASSERT_EQ(helper.GetSampleIndexView(5, view), Status::OK);
+    EXPECT_EQ(helper.sparseFrontier_.outputIndex, frontier.outputIndex);
+    EXPECT_EQ(helper.sparseFrontier_.processedRawSamples, frontier.processedRawSamples);
+    ASSERT_EQ(helper.GetSampleIndexView(3, view), Status::OK);
+    EXPECT_TRUE((view.flag & Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME) != 0);
+    uint32_t sampleIndex = 0;
+    EXPECT_EQ(helper.FindSampleIndexByPosition(155, sampleIndex), Status::OK);
+    EXPECT_EQ(sampleIndex, 5U);
+    EXPECT_EQ(helper.FindFirstSampleAfterPosition(155, sampleIndex), Status::OK);
+    EXPECT_EQ(sampleIndex, 6U);
+    EXPECT_EQ(helper.FindFirstSampleByDts(35, sampleIndex), Status::OK);
+    EXPECT_EQ(sampleIndex, 4U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SparseCheckpointAndDenseRelease_001
+ * @tc.desc: Verify direct checkpoint replay and sparse storage release after dense promotion
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SparseCheckpointAndDenseRelease_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    PrepareSparseSampleHelper(helper, 1026);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    ASSERT_EQ(helper.GetSampleIndexView(1025, view), Status::OK);
+    ASSERT_EQ(helper.sparseCheckpoints_.size(), 2U);
+    ASSERT_EQ(helper.GetSampleIndexView(1024, view), Status::OK);
+    EXPECT_EQ(view.pos, 10340);
+    EXPECT_EQ(view.dts, 10240);
+
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    EXPECT_EQ(helper.GetSampleIndexState(),
+        Plugins::MPEG4::MPEG4SampleHelper::SampleIndexState::DENSE);
+    EXPECT_TRUE(helper.sparseCheckpoints_.empty());
+    EXPECT_EQ(helper.sparseCheckpoints_.capacity(), 0U);
+    EXPECT_EQ(helper.sampleIndexEntry_.size(), 1026U);
 }
 
 /**

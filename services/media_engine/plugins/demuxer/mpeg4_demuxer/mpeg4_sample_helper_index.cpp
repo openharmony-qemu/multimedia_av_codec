@@ -213,17 +213,20 @@ Status MPEG4SampleHelper::FindSampleIndexByPosition(int64_t position, uint32_t& 
     if (UseSparseIndex()) {
         size_t sampleCount = GetSampleCount();
         FALSE_RETURN_V_NOLOG(sampleCount > 0, Status::ERROR_INVALID_DATA);
-        for (uint32_t i = 0; i < sampleCount; ++i) {
-            int64_t currentPos = 0;
-            int32_t currentSize = 0;
-            FALSE_RETURN_V_NOLOG(GetSampleRange(i, currentPos, currentSize) == Status::OK,
+        uint32_t left = 0;
+        uint32_t right = static_cast<uint32_t>(sampleCount);
+        while (left < right) {
+            uint32_t middle = left + (right - left) / 2;
+            SampleIndexView currentSample;
+            FALSE_RETURN_V_NOLOG(GetSampleIndexView(middle, currentSample) == Status::OK,
                 Status::ERROR_INVALID_DATA);
-            if (currentPos > position) {
-                sampleIndex = i == 0 ? 0 : i - 1;
-                return Status::OK;
+            if (currentSample.pos <= position) {
+                left = middle + 1;
+            } else {
+                right = middle;
             }
         }
-        sampleIndex = static_cast<uint32_t>(sampleCount - 1);
+        sampleIndex = left == 0 ? 0 : left - 1;
         return Status::OK;
     }
     auto it = std::upper_bound(sampleIndexEntry_.begin(), sampleIndexEntry_.end(), position,
@@ -240,17 +243,20 @@ Status MPEG4SampleHelper::FindFirstSampleAfterPosition(int64_t position, uint32_
 {
     if (UseSparseIndex()) {
         size_t sampleCount = GetSampleCount();
-        for (uint32_t i = 0; i < sampleCount; ++i) {
-            int64_t currentPos = 0;
-            int32_t currentSize = 0;
-            FALSE_RETURN_V_NOLOG(GetSampleRange(i, currentPos, currentSize) == Status::OK,
+        uint32_t left = 0;
+        uint32_t right = static_cast<uint32_t>(sampleCount);
+        while (left < right) {
+            uint32_t middle = left + (right - left) / 2;
+            SampleIndexView currentSample;
+            FALSE_RETURN_V_NOLOG(GetSampleIndexView(middle, currentSample) == Status::OK,
                 Status::ERROR_INVALID_DATA);
-            if (currentPos > position) {
-                sampleIndex = i;
-                return Status::OK;
+            if (currentSample.pos <= position) {
+                left = middle + 1;
+            } else {
+                right = middle;
             }
         }
-        sampleIndex = static_cast<uint32_t>(sampleCount);
+        sampleIndex = left;
         return Status::OK;
     }
     auto it = std::upper_bound(sampleIndexEntry_.begin(), sampleIndexEntry_.end(), position,
@@ -262,15 +268,21 @@ Status MPEG4SampleHelper::FindFirstSampleAfterPosition(int64_t position, uint32_
 Status MPEG4SampleHelper::FindFirstSampleByDts(int64_t dts, uint32_t& sampleIndex) const
 {
     if (UseSparseIndex()) {
-        for (uint32_t i = 0; i < GetSampleCount(); ++i) {
+        uint32_t left = 0;
+        uint32_t right = static_cast<uint32_t>(GetSampleCount());
+        while (left < right) {
+            uint32_t middle = left + (right - left) / 2;
             int64_t currentDts = 0;
-            FALSE_RETURN_V_NOLOG(GetSampleDts(i, currentDts) == Status::OK, Status::ERROR_INVALID_DATA);
-            if (currentDts >= dts) {
-                sampleIndex = i;
-                return Status::OK;
+            FALSE_RETURN_V_NOLOG(GetSampleDts(middle, currentDts) == Status::OK, Status::ERROR_INVALID_DATA);
+            if (currentDts < dts) {
+                left = middle + 1;
+            } else {
+                right = middle;
             }
         }
-        return Status::END_OF_STREAM;
+        FALSE_RETURN_V_NOLOG(left < GetSampleCount(), Status::END_OF_STREAM);
+        sampleIndex = left;
+        return Status::OK;
     }
     auto it = std::lower_bound(sampleIndexEntry_.begin(), sampleIndexEntry_.end(), dts,
         [](const SampleIndexEntry& entry, int64_t targetDts) { return entry.dts < targetDts; });
@@ -373,24 +385,32 @@ Status MPEG4SampleHelper::CreateInitialCursor(SampleTableCursor& cursor) const
 
 Status MPEG4SampleHelper::ReadRawSampleAndAdvance(SampleTableCursor& cursor, SampleIndexView& view) const
 {
+    RawSampleStep step;
+    Status ret = PrepareRawSampleStep(cursor, step);
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+    ret = FillRawSampleView(cursor, step, view);
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+    return AdvanceRawSampleCursor(cursor, step);
+}
+
+Status MPEG4SampleHelper::PrepareRawSampleStep(const SampleTableCursor& cursor, RawSampleStep& step) const
+{
     FALSE_RETURN_V_NOLOG(cursor.sttsIndex < sttsEntry_.size() && cursor.stscIndex < stscEntry_.size() &&
         cursor.chunkIndex < chunkOffsets_.size(), Status::ERROR_INVALID_DATA);
-    uint32_t samplesInChunk = stscEntry_[cursor.stscIndex].count;
-    FALSE_RETURN_V_NOLOG(cursor.sampleInChunk < samplesInChunk && cursor.sttsRemaining > 0,
+    step.samplesInChunk = stscEntry_[cursor.stscIndex].count;
+    FALSE_RETURN_V_NOLOG(cursor.sampleInChunk < step.samplesInChunk && cursor.sttsRemaining > 0,
         Status::ERROR_INVALID_DATA);
-    uint32_t samplesPerFrame = 1;
+    step.samplesPerFrame = 1;
     if (IsGroupedRawAudio()) {
-        samplesPerFrame = std::min({maxGroupedSamplesPerFrame, samplesInChunk - cursor.sampleInChunk,
+        step.samplesPerFrame = std::min({maxGroupedSamplesPerFrame, step.samplesInChunk - cursor.sampleInChunk,
             cursor.sttsRemaining});
     }
-    FALSE_RETURN_V_NOLOG(samplesPerFrame > 0, Status::ERROR_INVALID_DATA);
-
-    int32_t sampleSize = 0;
-    Status ret = ResolveRawSampleSize(cursor, samplesPerFrame, sampleSize);
+    FALSE_RETURN_V_NOLOG(step.samplesPerFrame > 0, Status::ERROR_INVALID_DATA);
+    Status ret = ResolveRawSampleSize(cursor, step.samplesPerFrame, step.sampleSize);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    ret = FillRawSampleView(cursor, samplesPerFrame, sampleSize, view);
-    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    return AdvanceRawSampleCursor(cursor, samplesPerFrame, samplesInChunk, sampleSize);
+    FALSE_RETURN_V_NOLOG(!__builtin_mul_overflow(static_cast<int64_t>(sttsEntry_[cursor.sttsIndex].delta),
+        static_cast<int64_t>(step.samplesPerFrame), &step.duration), Status::ERROR_INVALID_DATA);
+    return Status::OK;
 }
 
 Status MPEG4SampleHelper::ResolveRawSampleSize(
@@ -411,12 +431,12 @@ Status MPEG4SampleHelper::ResolveRawSampleSize(
 }
 
 Status MPEG4SampleHelper::FillRawSampleView(
-    const SampleTableCursor& cursor, uint32_t samplesPerFrame, int32_t sampleSize, SampleIndexView& view) const
+    const SampleTableCursor& cursor, const RawSampleStep& step, SampleIndexView& view) const
 {
     view = SampleIndexView {};
     view.pos = cursor.offset;
     view.dts = cursor.dts;
-    view.size = sampleSize;
+    view.size = step.sampleSize;
     int64_t ptsOffset = 0;
     if (!cttsEntry_.empty()) {
         FALSE_RETURN_V_NOLOG(cursor.cttsIndex < cttsEntry_.size() && cursor.cttsRemaining > 0,
@@ -426,35 +446,36 @@ Status MPEG4SampleHelper::FillRawSampleView(
             static_cast<uint64_t>(ptsOffset) <= UINT32_MAX, Status::ERROR_INVALID_DATA);
     }
     FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(view.dts, ptsOffset, &view.pts), Status::ERROR_INVALID_DATA);
-    FALSE_RETURN_V_NOLOG(!__builtin_mul_overflow(static_cast<int64_t>(sttsEntry_[cursor.sttsIndex].delta),
-        static_cast<int64_t>(samplesPerFrame), &view.duration), Status::ERROR_INVALID_DATA);
+    view.duration = step.duration;
     uint32_t rawSampleIndex = static_cast<uint32_t>(cursor.processedRawSamples);
-    view.flag = IsSyncSample(stssEntry_, allSamplesSync_, rawSampleIndex) ?
-        Sample::SampleFlag::SYNC_FRAME : Sample::SampleFlag::NONE;
+    bool isSync = allSamplesSync_ || (cursor.stssIndex < stssEntry_.size() &&
+        stssEntry_[cursor.stssIndex].index == rawSampleIndex);
+    view.flag = isSync ? Sample::SampleFlag::SYNC_FRAME : Sample::SampleFlag::NONE;
     return Status::OK;
 }
 
-Status MPEG4SampleHelper::AdvanceRawSampleCursor(
-    SampleTableCursor& cursor, uint32_t samplesPerFrame, uint32_t samplesInChunk, int32_t sampleSize) const
+Status MPEG4SampleHelper::AdvanceRawSampleCursor(SampleTableCursor& cursor, const RawSampleStep& step) const
 {
-    int64_t duration = 0;
-    FALSE_RETURN_V_NOLOG(!__builtin_mul_overflow(static_cast<int64_t>(sttsEntry_[cursor.sttsIndex].delta),
-        static_cast<int64_t>(samplesPerFrame), &duration), Status::ERROR_INVALID_DATA);
-    FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(cursor.offset, static_cast<int64_t>(sampleSize), &cursor.offset) &&
-        !__builtin_add_overflow(cursor.dts, duration, &cursor.dts), Status::ERROR_INVALID_DATA);
-    Status ret = ConsumeRawSampleCtts(cursor, samplesPerFrame);
+    FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(cursor.offset, static_cast<int64_t>(step.sampleSize),
+        &cursor.offset) && !__builtin_add_overflow(cursor.dts, step.duration, &cursor.dts),
+        Status::ERROR_INVALID_DATA);
+    Status ret = ConsumeRawSampleCtts(cursor, step.samplesPerFrame);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    cursor.sttsRemaining -= samplesPerFrame;
+    cursor.sttsRemaining -= step.samplesPerFrame;
     if (cursor.sttsRemaining == 0) {
         ++cursor.sttsIndex;
         if (cursor.sttsIndex < sttsEntry_.size()) {
             cursor.sttsRemaining = sttsEntry_[cursor.sttsIndex].count;
         }
     }
-    cursor.processedRawSamples += samplesPerFrame;
-    cursor.sampleInChunk += samplesPerFrame;
+    uint64_t nextRawSample = cursor.processedRawSamples + step.samplesPerFrame;
+    while (cursor.stssIndex < stssEntry_.size() && stssEntry_[cursor.stssIndex].index < nextRawSample) {
+        ++cursor.stssIndex;
+    }
+    cursor.processedRawSamples = nextRawSample;
+    cursor.sampleInChunk += step.samplesPerFrame;
     ++cursor.outputIndex;
-    if (cursor.sampleInChunk == samplesInChunk &&
+    if (cursor.sampleInChunk == step.samplesInChunk &&
         cursor.processedRawSamples < sampleTableSummary_.rawSampleCount) {
         ++cursor.chunkIndex;
         FALSE_RETURN_V_NOLOG(cursor.chunkIndex < chunkOffsets_.size(), Status::ERROR_INVALID_DATA);
@@ -631,6 +652,7 @@ Status MPEG4SampleHelper::CalculateRawSampleDurationSummary()
 
 Status MPEG4SampleHelper::BuildSimpleEditProjection()
 {
+    hasSimpleEditStartCursor_ = false;
     if (!IsSimpleEditProjectionSupported()) {
         return Status::ERROR_UNSUPPORTED_FORMAT;
     }
@@ -642,10 +664,16 @@ Status MPEG4SampleHelper::BuildSimpleEditProjection()
         Status::ERROR_UNSUPPORTED_FORMAT);
 
     SimpleEditProjectionBuildContext scanCtx;
-    FALSE_RETURN_V_NOLOG(FindSimpleEditRawStart(edit, scanCtx.rawStart) == Status::OK &&
-        ScanSimpleEditProjectionSamples(edit, emptyDuration, editEnd, scanCtx) == Status::OK,
+    SampleTableCursor startCursor;
+    FALSE_RETURN_V_NOLOG(FindSimpleEditRawStart(edit, scanCtx.rawStart, startCursor) == Status::OK &&
+        ScanSimpleEditProjectionSamples(edit, emptyDuration, editEnd, startCursor, scanCtx) == Status::OK,
         Status::ERROR_UNSUPPORTED_FORMAT);
-    return CommitSimpleEditProjection(edit, editDuration, emptyDuration, editEnd, scanCtx);
+    Status ret = CommitSimpleEditProjection(edit, editDuration, emptyDuration, editEnd, scanCtx);
+    if (ret == Status::OK) {
+        simpleEditStartCursor_ = startCursor;
+        hasSimpleEditStartCursor_ = true;
+    }
+    return ret;
 }
 
 bool MPEG4SampleHelper::IsSimpleEditProjectionSupported() const
@@ -684,10 +712,13 @@ Status MPEG4SampleHelper::PrepareSimpleEditProjection(
     return Status::OK;
 }
 
-Status MPEG4SampleHelper::FindSimpleEditRawStart(const EditListEntry& edit, uint32_t& rawStart) const
+Status MPEG4SampleHelper::FindSimpleEditRawStart(const EditListEntry& edit, uint32_t& rawStart,
+    SampleTableCursor& startCursor) const
 {
     SampleTableCursor cursor;
     FALSE_RETURN_V_NOLOG(CreateInitialCursor(cursor) == Status::OK, Status::ERROR_UNSUPPORTED_FORMAT);
+    SampleTableCursor lastAnyCursor = cursor;
+    SampleTableCursor lastSyncCursor = cursor;
     int64_t searchTimestamp = edit.mediaTime;
     if (trackType_ == AUDIO_TYPE) {
         int64_t audioSearch = 0;
@@ -703,6 +734,7 @@ Status MPEG4SampleHelper::FindSimpleEditRawStart(const EditListEntry& edit, uint
     bool hasAny = false;
     bool hasSync = false;
     while (cursor.processedRawSamples < sampleTableSummary_.rawSampleCount) {
+        SampleTableCursor currentCursor = cursor;
         uint32_t rawIndex = static_cast<uint32_t>(cursor.processedRawSamples);
         SampleIndexView view;
         FALSE_RETURN_V_NOLOG(ReadRawSampleAndAdvance(cursor, view) == Status::OK,
@@ -712,26 +744,23 @@ Status MPEG4SampleHelper::FindSimpleEditRawStart(const EditListEntry& edit, uint
         }
         hasAny = true;
         lastAny = rawIndex;
+        lastAnyCursor = currentCursor;
         if (IsSyncSample(stssEntry_, allSamplesSync_, rawIndex) && view.pts <= edit.mediaTime) {
             hasSync = true;
             lastSync = rawIndex;
+            lastSyncCursor = currentCursor;
         }
     }
     rawStart = hasSync ? lastSync : (hasAny ? lastAny : 0);
+    startCursor = hasSync ? lastSyncCursor : lastAnyCursor;
     return Status::OK;
 }
 
 Status MPEG4SampleHelper::ScanSimpleEditProjectionSamples(const EditListEntry& edit, int64_t emptyDuration,
-    int64_t editEnd, SimpleEditProjectionBuildContext& scanCtx) const
+    int64_t editEnd, const SampleTableCursor& startCursor, SimpleEditProjectionBuildContext& scanCtx) const
 {
-    SampleTableCursor cursor;
-    FALSE_RETURN_V_NOLOG(CreateInitialCursor(cursor) == Status::OK, Status::ERROR_UNSUPPORTED_FORMAT);
-    while (cursor.processedRawSamples < scanCtx.rawStart) {
-        SampleIndexView ignored;
-        FALSE_RETURN_V_NOLOG(ReadRawSampleAndAdvance(cursor, ignored) == Status::OK,
-            Status::ERROR_UNSUPPORTED_FORMAT);
-    }
-
+    SampleTableCursor cursor = startCursor;
+    FALSE_RETURN_V_NOLOG(cursor.processedRawSamples == scanCtx.rawStart, Status::ERROR_UNSUPPORTED_FORMAT);
     int64_t baseDts = 0;
     FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(-dtsShift_, emptyDuration, &baseDts),
         Status::ERROR_UNSUPPORTED_FORMAT);
@@ -956,14 +985,54 @@ Status MPEG4SampleHelper::BuildSparseIndexLocked() const
     }
     sparseStatus_ = SkipSparseProjectionPrefix();
     FALSE_RETURN_V_NOLOG(sparseStatus_ == Status::OK, sparseStatus_);
+    ClearSparseViewCacheLocked();
+    size_t checkpointCount = (static_cast<size_t>(sampleTableSummary_.logicalSampleCount) +
+        sparseCheckpointInterval - 1) / sparseCheckpointInterval;
+    sparseCheckpoints_.reserve(checkpointCount);
     sparseCheckpoints_.push_back(SparseCheckpoint {0, sparseFrontier_});
     sampleIndexState_.store(SampleIndexState::SPARSE, std::memory_order_release);
     return sparseStatus_;
 }
 
+bool MPEG4SampleHelper::FindSparseViewCacheLocked(uint32_t sampleIndex, SampleIndexView& view) const
+{
+    const auto& cache = sparseViewCache_[sampleIndex & (sparseViewCacheSize - 1)];
+    if (cache.sampleIndex != sampleIndex) {
+        return false;
+    }
+    view = cache.view;
+    return true;
+}
+
+void MPEG4SampleHelper::SaveSparseViewCacheLocked(uint32_t sampleIndex, const SampleIndexView& view) const
+{
+    auto& cache = sparseViewCache_[sampleIndex & (sparseViewCacheSize - 1)];
+    cache.sampleIndex = sampleIndex;
+    cache.view = view;
+}
+
+void MPEG4SampleHelper::ClearSparseViewCacheLocked() const
+{
+    for (auto& cache : sparseViewCache_) {
+        cache = SparseViewCacheEntry {};
+    }
+}
+
+void MPEG4SampleHelper::ReleaseSparseStorageLocked() const
+{
+    std::vector<SparseCheckpoint>().swap(sparseCheckpoints_);
+    sparseFrontier_ = SampleTableCursor {};
+    ClearSparseViewCacheLocked();
+}
+
 Status MPEG4SampleHelper::SkipSparseProjectionPrefix() const
 {
     if (!simpleEditProjection_.enabled) {
+        return Status::OK;
+    }
+    if (hasSimpleEditStartCursor_) {
+        sparseFrontier_ = simpleEditStartCursor_;
+        sparseFrontier_.outputIndex = 0;
         return Status::OK;
     }
     // Start sparse iteration at the projected raw sample while exposing output indices from zero.
@@ -982,10 +1051,18 @@ Status MPEG4SampleHelper::GetSparseSampleIndexView(uint32_t sampleIndex, SampleI
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     FALSE_RETURN_V_NOLOG(sampleIndex < sampleTableSummary_.logicalSampleCount, Status::ERROR_INVALID_PARAMETER);
     std::lock_guard<std::mutex> lock(indexMutex_);
-    if (sampleIndex >= sparseFrontier_.outputIndex) {
-        return AdvanceSparseFrontierToSample(sampleIndex, view);
+    if (FindSparseViewCacheLocked(sampleIndex, view)) {
+        return Status::OK;
     }
-    return ReadSparseSampleFromCheckpoint(sampleIndex, view);
+    if (sampleIndex >= sparseFrontier_.outputIndex) {
+        ret = AdvanceSparseFrontierToSample(sampleIndex, view);
+    } else {
+        ret = ReadSparseSampleFromCheckpoint(sampleIndex, view);
+    }
+    if (ret == Status::OK) {
+        SaveSparseViewCacheLocked(sampleIndex, view);
+    }
+    return ret;
 }
 
 Status MPEG4SampleHelper::AdvanceSparseFrontierToSample(uint32_t sampleIndex, SampleIndexView& view) const
@@ -1008,10 +1085,11 @@ Status MPEG4SampleHelper::AdvanceSparseFrontierToSample(uint32_t sampleIndex, Sa
 
 Status MPEG4SampleHelper::ReadSparseSampleFromCheckpoint(uint32_t sampleIndex, SampleIndexView& view) const
 {
-    auto it = std::upper_bound(sparseCheckpoints_.begin(), sparseCheckpoints_.end(), sampleIndex,
-        [](uint32_t index, const SparseCheckpoint& checkpoint) { return index < checkpoint.outputIndex; });
-    FALSE_RETURN_V_NOLOG(it != sparseCheckpoints_.begin(), Status::ERROR_INVALID_DATA);
-    SampleTableCursor cursor = std::prev(it)->cursor;
+    size_t checkpointIndex = sampleIndex / sparseCheckpointInterval;
+    FALSE_RETURN_V_NOLOG(checkpointIndex < sparseCheckpoints_.size(), Status::ERROR_INVALID_DATA);
+    const auto& checkpoint = sparseCheckpoints_[checkpointIndex];
+    FALSE_RETURN_V_NOLOG(checkpoint.outputIndex <= sampleIndex, Status::ERROR_INVALID_DATA);
+    SampleTableCursor cursor = checkpoint.cursor;
     while (cursor.outputIndex <= sampleIndex) {
         uint32_t rawIndex = static_cast<uint32_t>(cursor.processedRawSamples);
         Status ret = ReadRawSampleAndAdvance(cursor, view);

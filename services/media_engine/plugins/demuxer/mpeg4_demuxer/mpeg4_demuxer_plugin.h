@@ -308,13 +308,19 @@ private:
         int64_t actualDts = 0;
         int32_t trackTimeScale = 0;
     };
+    struct SampleReadInfo {
+        // Keep one resolved view across selection, I/O and attribute output to avoid sparse replay.
+        uint32_t trackId = 0;
+        uint32_t sampleIndex = 0;
+        MPEG4SampleHelper::SampleIndexView view;
+        bool found = false;
+    };
     Status PrepareSeekToFrameByDts(int32_t trackId, int64_t seekTime, SeekToFrameByDtsContext& context);
-    Status FindValidSample(std::shared_ptr<MPEG4AtomParser::Track> &track,
-        std::shared_ptr<MPEG4SampleHelper::SampleIndexView> &sample);
-    Status GetUnseekableSampleInfo(uint32_t &trackId, int64_t &pos, int32_t &size);
-    Status GetSeekableSampleInfo(uint32_t trackId, int64_t &pos, int32_t &size);
+    Status FindValidSample(SampleReadInfo& sampleInfo);
+    Status GetUnseekableSampleInfo(SampleReadInfo& sampleInfo);
+    Status GetSeekableSampleInfo(uint32_t trackId, SampleReadInfo& sampleInfo);
     Status CheckReadSampleDataStopState(const std::shared_ptr<Sample>& sample);
-    Status ReadSampleData(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size, uint32_t trackId);
+    Status ReadSampleData(std::shared_ptr<Sample> sample, const SampleReadInfo& sampleInfo);
     Status CheckReadSampleDataState(int32_t size);
     Status ReadSampleDataToBuffer(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size);
     Status UpdateReadSampleDataTimeout(Status ret, std::shared_ptr<Sample> sample);
@@ -324,7 +330,7 @@ private:
         uint32_t trackId [[maybe_unused]], uint64_t pos [[maybe_unused]]);
     void DumpAVBufferData(const uint8_t* data [[maybe_unused]], uint32_t trackId [[maybe_unused]],
         int32_t size [[maybe_unused]], int64_t pts [[maybe_unused]]);
-    Status ReadSampleData(std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint64_t pos, int32_t size, uint32_t trackId);
+    Status ReadSampleData(std::shared_ptr<MPEG4Sample>& mpeg4Sample, const SampleReadInfo& sampleInfo);
     Status AddSampleToCacheQueue(std::shared_ptr<Sample> sample,
         const uint32_t trackId, uint32_t sampleIndex = UINT32_MAX);
     void MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes);
@@ -349,7 +355,7 @@ private:
         uint32_t trackId, std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
     Status GetSeekableSampleDirectly(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer);
     Status FillBufferDirectly(std::shared_ptr<AVBuffer> sample, uint64_t pos, int32_t size);
-    Status WriteBufferAttr(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer,
+    Status WriteBufferAttr(const SampleReadInfo& sampleInfo, std::shared_ptr<AVBuffer> outBuffer,
         int32_t dataSize, bool memoryNotEnough);
     struct WebVttReadContext {
         Seekable seekable;
@@ -361,7 +367,7 @@ private:
     Status UpdateWebVttCachedSampleDuration(const WebVttReadContext& context,
         const std::shared_ptr<MPEG4Sample>& tempSample, uint32_t nextSampleIndex);
     uint32_t GetFlags(uint32_t sampleFlag, bool memoryNotEnough);
-    Status WriteSampleAttr(uint32_t trackId, std::shared_ptr<Sample> sample);
+    Status WriteSampleAttr(const SampleReadInfo& sampleInfo, std::shared_ptr<Sample> sample);
     Status ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg4Sample);
     Status WriteBuffer(
         uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer, std::shared_ptr<MPEG4Sample> mpeg4Sample);
