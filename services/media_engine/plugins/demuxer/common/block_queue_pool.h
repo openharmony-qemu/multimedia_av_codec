@@ -62,6 +62,7 @@ struct MPEG4Sample {
     bool isAnnexb = false;
     bool isVttc = false;
     uint32_t queueIndex = 0;
+    uint32_t sampleIndex = 0;
 };
 } // namespace MPEG4
 
