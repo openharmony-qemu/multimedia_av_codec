@@ -1838,6 +1838,10 @@ ohos_unittest("videodec_memrecycle_unit_test") {
     ]
   }
 
+  if (av_codec_enable_only_for_flagship_chip) {
+    defines = [ "ONLY_FOR_FLAGSHIP_CHIP" ]
+  }
+
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
