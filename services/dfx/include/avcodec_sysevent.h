@@ -18,6 +18,8 @@
 
 #include <string>
 #include <sys/types.h>
+#include <map>
+#include <set>
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -112,6 +114,22 @@ struct SourceStatisticsReportInfo {
     uint32_t audioStreamCnt_;
     uint32_t subtitleCnt_;
     std::string ca_;
+};
+
+enum class BitRateType :int8_t {
+    LOW = 0,
+    MEDIUM,
+    HIGH,
+};
+
+struct SourceStatisticsInfo {
+    uint32_t appCount_ = 0;
+    uint32_t videoStreamCnt_ = 0;
+    uint32_t audioStreamCnt_ = 0;
+    uint32_t subtitleStreamCnt_ = 0;
+    std::set<std::string> caHash_;
+    std::map<DfxSourceType, int32_t> typeCount_;
+    std::map<BitRateType, int32_t> bitRateCount_;
 };
 
 void FaultEventWrite(FaultType faultType, const std::string& msg,
