@@ -94,6 +94,7 @@ constexpr int64_t SAMPLE_INDEX_TEST_DURATION = 10;
 constexpr uint32_t SAMPLE_INDEX_TEST_FIRST_SIZE = 5;
 constexpr uint32_t SAMPLE_INDEX_TEST_SECOND_SIZE = 6;
 constexpr uint32_t SAMPLE_INDEX_TEST_THIRD_SIZE = 7;
+constexpr int32_t SPARSE_SAMPLE_TEST_SIZE = 10;
 constexpr int64_t SAMPLE_INDEX_TEST_DURATION_OVERRIDE = 8;
 std::unique_ptr<FileServerDemo> g_server = nullptr;
 
@@ -116,7 +117,7 @@ void PrepareSparseSampleHelper(Plugins::MPEG4::MPEG4SampleHelper& helper, uint32
     helper.sttsEntry_ = {{sampleCount, 10}};
     helper.stscEntry_ = {{0, sampleCount, 1}};
     helper.stssEntry_ = {{0}, {3}, {sampleCount - 1}};
-    helper.sampleSizes_.assign(sampleCount, 10);
+    helper.sampleSizes_.assign(sampleCount, SPARSE_SAMPLE_TEST_SIZE);
     helper.sampleSizeCount_ = sampleCount;
     helper.chunkOffsets_ = {100};
     ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
