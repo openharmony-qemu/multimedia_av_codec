@@ -379,8 +379,8 @@ void HttpSourcePlugin::InitHttpSource(const std::shared_ptr<MediaSource>& source
     if (cb) {
         downloader->SetCallback(cb);
     }
-    downloader->SetMediaStreams(playMediaStreams);
     SetDownloader(downloader);
+    downloader->SetMediaStreams(playMediaStreams);
 }
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
