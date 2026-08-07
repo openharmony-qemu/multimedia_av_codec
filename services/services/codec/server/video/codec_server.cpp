@@ -357,6 +357,7 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
             config.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_SIZE);
             config.RemoveKey(Tag::VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE);
             config.RemoveKey(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY);
+            OnInstanceAdvancedFeatureEvent("VENC_B_FRAME", nullptr);
             break;
         default:
             break;
@@ -418,6 +419,9 @@ int32_t CodecServer::Start()
         StatusChanged(ERROR);
     } else {
         StatusChanged(RUNNING);
+        if (framerateCalculator_) {
+            framerateCalculator_->SetFramerate2ConfiguredFramerate();
+        }
         if (!isModeConfirmed_) {
             isModeConfirmed_ = true;
             Media::Meta statisticsMeta;
@@ -701,6 +705,7 @@ int32_t CodecServer::SetLowPowerPlayerMode(bool isLpp)
 
 int32_t CodecServer::DrmVideoCencDecrypt(uint32_t index)
 {
+    std::shared_lock<std::shared_mutex> decryptorLock(drmDecryptorMutex_);
     int32_t ret = AVCS_ERR_OK;
     if (drmDecryptor_ != nullptr) {
         if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
@@ -1132,6 +1137,13 @@ void CodecServer::SetInstanceInfo(AVCodecType type, bool isMimeType, const std::
     EventManager::GetInstance().OnInstanceEvent(EventType::INSTANCE_INIT, callerInfo);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO, callerInfo);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::CODEC_INSTANCE_USAGE_INFO, callerInfo);
+    if (codecMime_ == CodecMimeType::VIDEO_VVC) {
+        if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+            OnInstanceAdvancedFeatureEvent("ENC_H266", nullptr);
+        } else if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
+            OnInstanceAdvancedFeatureEvent("DEC_H266", nullptr);
+        }
+    }
 
     EXPECT_AND_LOGI_WITH_TAG((forwardCaller_.pid >= 0) || (!forwardCaller_.processName.empty()),
                              "Forward caller pid: %{public}d, process name: %{public}s", forwardCaller_.pid,
@@ -1213,6 +1225,7 @@ void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffe
     if (sfdManager_) {
         sfdManager_->OnInputBufferAvailable(index, buffer);
     }
+    std::lock_guard<std::shared_mutex> decryptorLock(drmDecryptorMutex_);
     if (drmDecryptor_ != nullptr) {
         if (decryptVideoBufs_.find(index) != decryptVideoBufs_.end()) {
             videoCb_->OnInputBufferAvailable(index, decryptVideoBufs_[index].inBuf);

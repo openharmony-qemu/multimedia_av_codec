@@ -561,6 +561,8 @@ int32_t CodecDrmDecrypt::DrmVideoCencDecrypt(std::shared_ptr<AVBuffer> &inBuf, s
         MetaDrmCencInfo clearCencInfo;
         bool res = inBuf->meta_->GetData(Media::Tag::DRM_CENC_INFO, drmCencVec);
         if (res) {
+            CHECK_AND_RETURN_RET_LOG(drmCencVec.size() == sizeof(MetaDrmCencInfo),
+                ret, "drmCencVec.size() is invalid, drmCencVec.size() is %zu", drmCencVec.size());
             cencInfo = reinterpret_cast<MetaDrmCencInfo *>(&drmCencVec[0]);
             CHECK_AND_RETURN_RET_LOG(
                 (cencInfo->encryptBlocks <= DRM_CRYPT_BYTE_BLOCK && cencInfo->skipBlocks <= DRM_SKIP_BYTE_BLOCK),
