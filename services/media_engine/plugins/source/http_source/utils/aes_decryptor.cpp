@@ -113,7 +113,7 @@ void AesDecryptor::SetIv(const uint8_t* iv, size_t ivLen)
 void AesDecryptor::ResetIv()
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    auto ret = memcpy_s(iv_, BLOCK_LEN, initIv_, BLOCK_LEN);	 
+    auto ret = memcpy_s(iv_, BLOCK_LEN, initIv_, BLOCK_LEN);
     if (ret != 0) {
         MEDIA_LOG_E("reset iv failed, ret: %{public}d", ret);
     }
