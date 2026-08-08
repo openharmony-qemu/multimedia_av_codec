@@ -2007,6 +2007,7 @@
         <preparer>
             <option name="shell" value="mkdir -p /data/test/media"/>
             <option name="push" value="audio_res/OGG_44k_2c_with_header.dat -> /data/test/media" src="res"/>
+            <option name="push" value="audio_res/aac_2c_44100hz_199k.dat -> /data/test/media" src="res"/>
             <option name="shell" value="restorecon /data/test/media"/>
         </preparer>
     </target>
