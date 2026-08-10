@@ -271,11 +271,11 @@ Status MPEG4DemuxerPlugin::PrefetchSeekSample(
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
     {
         std::unique_lock<std::mutex> sLock(syncMutex_);
-        int64_t pos = 0;
-        int32_t size = 0;
-        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleRange(sampleIndex, pos, size) == Status::OK,
-            Status::ERROR_INVALID_DATA, "Get sample range failed");
-        Status ret = ReadSampleData(sample, pos, size, track->trackIndex);
+        SampleReadInfo sampleInfo {track->trackIndex, sampleIndex, {}, false};
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(sampleIndex, sampleInfo.view) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get sample view failed");
+        sampleInfo.found = true;
+        Status ret = ReadSampleData(sample, sampleInfo);
         if (ret != Status::OK) {
             track->currentSampleIndex = oldIndex;
             return ret;
@@ -463,16 +463,16 @@ Status MPEG4DemuxerPlugin::ReadSampleDataToBuffer(std::shared_ptr<Sample> sample
     return Status::OK;
 }
 
-Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, uint64_t pos, int32_t size, uint32_t trackId)
+Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, const SampleReadInfo& sampleInfo)
 {
     MEDIA_LOG_D("In");
-    Status ret = CheckReadSampleDataState(size);
+    Status ret = CheckReadSampleDataState(sampleInfo.view.size);
     FALSE_RETURN_V(ret == Status::OK, ret);
-    ret = ReadSampleDataToBuffer(sample, pos, size);
+    ret = ReadSampleDataToBuffer(sample, sampleInfo.view.pos, sampleInfo.view.size);
     if (ret == Status::OK) {
-        ret = WriteSampleAttr(trackId, sample);
+        ret = WriteSampleAttr(sampleInfo, sample);
         FALSE_RETURN_V(ret == Status::OK, ret);
-        DumpAVPacketData(sample, trackId, pos);
+        DumpAVPacketData(sample, sampleInfo.trackId, sampleInfo.view.pos);
         return Status::OK;
     }
     sample->data.reset();
@@ -945,10 +945,8 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId)
         return Status::END_OF_STREAM;
     }
     while (!cacheQueue_.HasCache(trackId)) {
-        uint32_t currentTrackId = trackId;
-        int64_t pos = 0;
-        int32_t size = 0;
-        Status ret = GetUnseekableSampleInfo(currentTrackId, pos, size);
+        SampleReadInfo sampleInfo;
+        Status ret = GetUnseekableSampleInfo(sampleInfo);
         FALSE_RETURN_V_MSG_E(ret == Status::OK || ret == Status::END_OF_STREAM, ret,
             "Get sample info failed");
         if (ret == Status::END_OF_STREAM) {
@@ -957,24 +955,23 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId)
             return cacheQueue_.HasCache(trackId) ? Status::OK : Status::END_OF_STREAM;
         }
 
-        auto currentTrack = FindTrackById(static_cast<int32_t>(currentTrackId));
+        auto currentTrack = FindTrackById(static_cast<int32_t>(sampleInfo.trackId));
         FALSE_RETURN_V_MSG_E(currentTrack != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
         auto sample = std::make_shared<Sample>();
         FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
         auto mpeg4Sample = std::make_shared<MPEG4Sample>();
         FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate MPEG4Sample");
         mpeg4Sample->sample = sample;
-        uint32_t currentSampleIndex = currentTrack->currentSampleIndex;
-        mpeg4Sample->sampleIndex = currentSampleIndex;
+        mpeg4Sample->sampleIndex = sampleInfo.sampleIndex;
         {
             std::unique_lock<std::mutex> sLock(syncMutex_);
-            ret = ReadSampleData(sample, pos, size, currentTrackId);
+            ret = ReadSampleData(sample, sampleInfo);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
         if (IsWebVTTTrack(currentTrack)) {
             ret = ProcessWebVTTSampleForCache(currentTrack, mpeg4Sample);
         } else {
-            ret = AddSampleToCacheQueue(sample, currentTrackId, currentSampleIndex);
+            ret = AddSampleToCacheQueue(sample, sampleInfo.trackId, sampleInfo.sampleIndex);
             AdvanceSampleIndex(currentTrack);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");

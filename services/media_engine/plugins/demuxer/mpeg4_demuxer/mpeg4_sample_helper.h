@@ -16,6 +16,7 @@
 #ifndef MPEG4_SAMPLE_HELPER_H
 #define MPEG4_SAMPLE_HELPER_H
 
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <limits>
@@ -216,8 +217,11 @@ public:
 
 private:
     static constexpr uint32_t sparseCheckpointInterval = 1024;
+    static constexpr uint32_t sparseViewCacheSize = 4;
     static constexpr uint32_t maxGroupedSamplesPerFrame = 1024;
     static constexpr uint32_t maxValidatedSampleCount = 1000000;
+    static_assert((sparseViewCacheSize & (sparseViewCacheSize - 1)) == 0,
+        "Sparse view cache size must be a power of two");
 
     struct SampleTableCursor {
         uint32_t outputIndex = 0;
@@ -229,14 +233,28 @@ private:
         uint32_t sampleInChunk = 0;
         uint32_t sttsRemaining = 0;
         uint32_t cttsRemaining = 0;
+        uint32_t stssIndex = 0;
         int64_t offset = 0;
         int64_t dts = 0;
+    };
+
+    struct RawSampleStep {
+        uint32_t samplesPerFrame = 0;
+        uint32_t samplesInChunk = 0;
+        int32_t sampleSize = 0;
+        int64_t duration = 0;
     };
 
     struct SparseCheckpoint {
         uint32_t outputIndex = 0;
         SampleTableCursor cursor;
     };
+
+    struct SparseViewCacheEntry {
+        uint32_t sampleIndex = UINT32_MAX;
+        SampleIndexView view;
+    };
+
     struct SimpleEditProjection {
         bool enabled = false;
         uint32_t rawStart = 0;
@@ -445,6 +463,8 @@ private:
     mutable std::mutex indexMutex_;
     mutable std::vector<SparseCheckpoint> sparseCheckpoints_;
     mutable SampleTableCursor sparseFrontier_;
+    // Direct mapping keeps repeated per-frame property queries allocation-free with bounded memory.
+    mutable std::array<SparseViewCacheEntry, sparseViewCacheSize> sparseViewCache_;
     mutable bool sparseAttempted_ = false;
     mutable Status sparseStatus_ = Status::OK;
     bool denseAttempted_ = false;
@@ -453,20 +473,26 @@ private:
     Status sampleTableStatus_ = Status::OK;
     bool requiresDenseIndex_ = false;
     SimpleEditProjection simpleEditProjection_;
+    SampleTableCursor simpleEditStartCursor_;
+    bool hasSimpleEditStartCursor_ = false;
 
     Status EnsureSparseIndex() const;
     Status BuildDenseSampleIndexEntries();
     bool UseSparseIndex() const;
     Status CreateInitialCursor(SampleTableCursor& cursor) const;
     Status ReadRawSampleAndAdvance(SampleTableCursor& cursor, SampleIndexView& view) const;
+    Status PrepareRawSampleStep(const SampleTableCursor& cursor, RawSampleStep& step) const;
     Status ResolveRawSampleSize(const SampleTableCursor& cursor, uint32_t samplesPerFrame, int32_t& sampleSize) const;
-    Status FillRawSampleView(const SampleTableCursor& cursor, uint32_t samplesPerFrame, int32_t sampleSize,
+    Status FillRawSampleView(const SampleTableCursor& cursor, const RawSampleStep& step,
         SampleIndexView& view) const;
-    Status AdvanceRawSampleCursor(SampleTableCursor& cursor, uint32_t samplesPerFrame, uint32_t samplesInChunk,
-        int32_t sampleSize) const;
+    Status AdvanceRawSampleCursor(SampleTableCursor& cursor, const RawSampleStep& step) const;
     Status ConsumeRawSampleCtts(SampleTableCursor& cursor, uint32_t samplesPerFrame) const;
     Status GetSparseSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const;
     Status BuildSparseIndexLocked() const;
+    bool FindSparseViewCacheLocked(uint32_t sampleIndex, SampleIndexView& view) const;
+    void SaveSparseViewCacheLocked(uint32_t sampleIndex, const SampleIndexView& view) const;
+    void ClearSparseViewCacheLocked() const;
+    void ReleaseSparseStorageLocked() const;
     Status SkipSparseProjectionPrefix() const;
     Status AdvanceSparseFrontierToSample(uint32_t sampleIndex, SampleIndexView& view) const;
     Status ReadSparseSampleFromCheckpoint(uint32_t sampleIndex, SampleIndexView& view) const;
@@ -479,9 +505,10 @@ private:
     bool IsSimpleEditProjectionSupported() const;
     Status PrepareSimpleEditProjection(const EditListEntry& edit, int64_t& editDuration, int64_t& emptyDuration,
         int64_t& editEnd) const;
-    Status FindSimpleEditRawStart(const EditListEntry& edit, uint32_t& rawStart) const;
+    Status FindSimpleEditRawStart(const EditListEntry& edit, uint32_t& rawStart,
+        SampleTableCursor& startCursor) const;
     Status ScanSimpleEditProjectionSamples(const EditListEntry& edit, int64_t emptyDuration, int64_t editEnd,
-        SimpleEditProjectionBuildContext& scanCtx) const;
+        const SampleTableCursor& startCursor, SimpleEditProjectionBuildContext& scanCtx) const;
     Status ProcessSimpleEditProjectionSample(SimpleEditProjectionSampleContext& sampleCtx) const;
     Status StartSimpleEditProjectionSample(SimpleEditProjectionSampleContext& sampleCtx, bool crossedAudioStart) const;
     Status UpdateSimpleEditProjectionTimes(const SampleIndexView& view, bool outside,
