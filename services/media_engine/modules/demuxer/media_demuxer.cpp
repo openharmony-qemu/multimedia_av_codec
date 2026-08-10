@@ -2078,6 +2078,8 @@ Status MediaDemuxer::HandleSelectSubtitleStream(int64_t seekTime, Plugins::SeekM
 
 Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& realSeekTime)
 {
+    FALSE_RETURN_V_MSG_E(seekTime <= (INT64_MAX / US_TO_MS),
+                         Status::ERROR_INVALID_DATA, "Millisecond is too large");
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     ProcessHistoryOnSeek();
     Status ret;

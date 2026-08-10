@@ -577,6 +577,9 @@ std::string Converter::ConvertGBKToUTF8(const std::string &strGbk)
 
 bool Converter::IsGBK(const char* data)
 {
+    if (data == nullptr) {
+        return false;
+    }
     int len = static_cast<int>(strlen(data));
     int i = 0;
     while (i < len) {
