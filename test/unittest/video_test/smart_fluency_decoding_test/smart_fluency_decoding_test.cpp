@@ -358,7 +358,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_InvalidSurface_020, Te
     SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
     sfd_->Initialize(cfg);
 
-    bool result = sfd_->MakePostDecodeDecision(0, 0, nullptr);
+    bool result = sfd_->MakePostDecodeDecision(0, 0, nullptr, false);
     EXPECT_TRUE(result);
 }
 
@@ -474,7 +474,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_NullSurface_ConsumePre
     sfd_->dropSyncCoordinator_->RecordPreDroppedFrame(3100); // Drop 3
 
     // Calling MakePostDecodeDecision with null should consume it internally
-    bool result = sfd_->MakePostDecodeDecision(0, 3500, nullptr);
+    bool result = sfd_->MakePostDecodeDecision(0, 3500, nullptr, false);
     EXPECT_TRUE(result);
 
     // Verify it was consumed
@@ -512,7 +512,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_NoStrategy_028, TestSi
     sfd_->Initialize(cfg);
     sfd_->strategy_ = nullptr;
 
-    bool result = sfd_->MakePostDecodeDecision(0, 1000, nullptr);
+    bool result = sfd_->MakePostDecodeDecision(0, 1000, nullptr, false);
     EXPECT_TRUE(result);
 }
 
@@ -584,7 +584,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_PassthroughPath_032, T
     sfd_->Initialize(cfg);
 
     // FULL mode → isPassthrough=true → HandlePostDecodePassthrough → returns true
-    bool result = sfd_->MakePostDecodeDecision(0, 1000, nullptr);
+    bool result = sfd_->MakePostDecodeDecision(0, 1000, nullptr, false);
     EXPECT_TRUE(result);
 }
 
@@ -608,7 +608,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePreDecodeDecision_Uninitialized_033, Test
 HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_Uninitialized_034, TestSize.Level1)
 {
     // sfd_ is created but not initialized
-    bool result = sfd_->MakePostDecodeDecision(0, 0, nullptr);
+    bool result = sfd_->MakePostDecodeDecision(0, 0, nullptr, false);
     EXPECT_TRUE(result);
 }
 
@@ -708,7 +708,7 @@ HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_FixedRatio_041, TestSi
     cfg.retentionRatio = 0.5;
     sfd_->Initialize(cfg);
 
-    bool result = sfd_->MakePostDecodeDecision(0, 1000, nullptr);
+    bool result = sfd_->MakePostDecodeDecision(0, 1000, nullptr, false);
     EXPECT_TRUE(result);
 }
 
@@ -815,7 +815,7 @@ HWTEST_F(SmartFluencyDecodingTest, ExtractMVStats_NoMvRequired_047, TestSize.Lev
     sfd_->Initialize(cfg);
 
     SmartFluencyDecoding::PostDecCost cost{};
-    auto stats = sfd_->ExtractMVStats({false, false, false}, 0, cost, nullptr);
+    auto stats = sfd_->ExtractMVStats({false, false, false}, 0, cost, nullptr, false);
     EXPECT_EQ(stats.validBlocks, 0u);
 }
 

@@ -188,7 +188,9 @@ bool SmartFluencyDecodingManager::MakePostDecodeDecision(uint32_t index,
                 surfaceBuffer = it->second;
             }
         }
-        if (!sfd_->MakePostDecodeDecision(index, buffer->pts_, surfaceBuffer)) {
+        bool mvCacheInvalidated = false;
+        buffer->meta_->GetData(Tag::VIDEO_DECODER_IS_MV_CACHE_INVALIDATED, mvCacheInvalidated);
+        if (!sfd_->MakePostDecodeDecision(index, buffer->pts_, surfaceBuffer, mvCacheInvalidated)) {
 #ifdef SFD_DEBUG
             AVCODEC_LOGD_WITH_TAG("Post-decode drop decision for index %{public}u, pts %{public}" PRId64,
                 index, buffer->pts_);
