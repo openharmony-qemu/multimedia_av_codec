@@ -1397,7 +1397,7 @@ void DashMpdParser::StopParseMpd()
     this->stopFlag_.store(1);
 }
 
-void DashMpdParser::FreeSegmentBase(DashSegBaseInfo *segBaseInfo) const
+void DashMpdParser::FreeSegmentBase(DashSegBaseInfo *&segBaseInfo) const
 {
     if (segBaseInfo != nullptr) {
         ClearSegmentBase(segBaseInfo);
@@ -1407,7 +1407,7 @@ void DashMpdParser::FreeSegmentBase(DashSegBaseInfo *segBaseInfo) const
     }
 }
 
-void DashMpdParser::FreeSegmentList(DashSegListInfo *segListInfo)
+void DashMpdParser::FreeSegmentList(DashSegListInfo *&segListInfo)
 {
     if (segListInfo != nullptr) {
         ClearMultSegBase(&segListInfo->multSegBaseInfo_);
@@ -1416,21 +1416,24 @@ void DashMpdParser::FreeSegmentList(DashSegListInfo *segListInfo)
             DashSegUrl *segUrl = segListInfo->segmentUrl_.front();
             if (segUrl != nullptr) {
                 delete segUrl;
+                segUrl = nullptr;
             }
 
             segListInfo->segmentUrl_.pop_front();
         }
 
         delete segListInfo;
+        segListInfo = nullptr;
     }
 }
 
-void DashMpdParser::FreeSegmentTemplate(DashSegTmpltInfo *segTmpltInfo)
+void DashMpdParser::FreeSegmentTemplate(DashSegTmpltInfo *&segTmpltInfo)
 {
     if (segTmpltInfo != nullptr) {
         ClearMultSegBase(&segTmpltInfo->multSegBaseInfo_);
 
         delete segTmpltInfo;
+        segTmpltInfo = nullptr;
     }
 }
 

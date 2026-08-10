@@ -92,9 +92,7 @@ IDashMpdNode *IDashMpdNode::CreateNode(const std::string &nodeName)
 
 void IDashMpdNode::DestroyNode(IDashMpdNode *node)
 {
-    if (node != nullptr) {
-        delete node;
-    }
+    delete node;
 }
 
 } // namespace HttpPlugin

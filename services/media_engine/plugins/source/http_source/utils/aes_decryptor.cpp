@@ -46,6 +46,12 @@ void AesDecryptor::Init()
 
 void AesDecryptor::Reset()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
+    ResetInner();
+}
+
+void AesDecryptor::ResetInner()
+{
     keyLen_ = 0;
     NZERO_LOG(memset_s(iv_, BLOCK_LEN, 0, BLOCK_LEN));
     NZERO_LOG(memset_s(initIv_, BLOCK_LEN, 0, BLOCK_LEN));
@@ -55,6 +61,7 @@ void AesDecryptor::Reset()
 
 void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (keyLen == 0 || !key || !iv) {
         keyLen_ = 0;
         MEDIA_LOG_W("invalid key or iv.");
@@ -67,12 +74,13 @@ void AesDecryptor::OnSourceKeyChange(const uint8_t* key, size_t keyLen, const ui
     int ret = AES_set_decrypt_key(key_, KEY_BITS, &aesKey_);
     if (ret != 0) {
         MEDIA_LOG_E("AES_set_decrypt_key failed, ret: " PUBLIC_LOG_D32, ret);
-        Reset();
+        ResetInner();
     }
 }
 
 void AesDecryptor::Decrypt(uint8_t *in, uint8_t *out, uint32_t len)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (!in || !out || !len) {
         return;
     }
@@ -88,11 +96,27 @@ void AesDecryptor::Decrypt(uint8_t *in, uint8_t *out, uint32_t len)
 
 void AesDecryptor::SetIv(const uint8_t* iv, size_t ivLen)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (!iv || ivLen < BLOCK_LEN) {
         return;
     }
-    NZERO_LOG(memcpy_s(iv_, BLOCK_LEN, iv, BLOCK_LEN));
-    NZERO_LOG(memcpy_s(initIv_, BLOCK_LEN, iv, BLOCK_LEN));
+    auto ret = memcpy_s(iv_, BLOCK_LEN, iv, BLOCK_LEN);
+    if (ret != 0) {
+        MEDIA_LOG_E("set iv failed, ret: %{public}d", ret);
+    }
+    ret = memcpy_s(initIv_, BLOCK_LEN, iv, BLOCK_LEN);
+    if (ret != 0) {
+        MEDIA_LOG_E("set init iv failed, ret: %{public}d", ret);
+    }
+}
+
+void AesDecryptor::ResetIv()
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto ret = memcpy_s(iv_, BLOCK_LEN, initIv_, BLOCK_LEN);
+    if (ret != 0) {
+        MEDIA_LOG_E("reset iv failed, ret: %{public}d", ret);
+    }
 }
 } // namespace Media
 } // namespace OHOS

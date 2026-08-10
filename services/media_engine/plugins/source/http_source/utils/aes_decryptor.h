@@ -34,16 +34,19 @@ public:
     void Decrypt(uint8_t *in, uint8_t *out, uint32_t len);
     void OnSourceKeyChange(const uint8_t* key, size_t keyLen, const uint8_t* iv);
     void SetIv(const uint8_t* iv, size_t ivLen = BLOCK_LEN);
+    void ResetIv();
     
     static constexpr uint64_t BLOCK_LEN = 16;
     static constexpr uint32_t KEY_BITS = 128;
+
+private:
+    std::mutex mutex_;
     uint8_t key_[AesDecryptor::BLOCK_LEN] = {0};
     size_t keyLen_ {0};
     uint8_t iv_[AesDecryptor::BLOCK_LEN] = {0};
     uint8_t initIv_[AesDecryptor::BLOCK_LEN] = {0};
-
-private:
     AES_KEY aesKey_;
+    void ResetInner();
 };
 
 } // namespace Media

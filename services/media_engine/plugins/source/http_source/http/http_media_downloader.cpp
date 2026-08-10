@@ -45,10 +45,10 @@ constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr size_t FLV_PLAY_WATER_LINE = 5 * 1024;
 constexpr size_t DEFAULT_WATER_LINE_ABOVE = 12 * 10 * 1024;
 constexpr int FIVE_MICROSECOND = 5;
-constexpr int32_t ONE_HUNDRED_MILLIONSECOND = 100;
-constexpr int32_t SAVE_DATA_LOG_FREQUENCE = 50;
+constexpr int32_t ONE_HUNDRED_MILLISECOND = 100;
+constexpr int32_t SAVE_DATA_LOG_FREQUENCY = 50;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
-constexpr uint32_t DURATION_CHANGE_AMOUT_MILLIONSECOND = 500;
+constexpr uint32_t DURATION_CHANGE_AMOUNT_MILLISECOND = 500;
 constexpr int32_t DEFAULT_BIT_RATE = 1638400;
 constexpr int UPDATE_CACHE_STEP = 5 * 1024;
 constexpr size_t MIN_WATER_LINE_ABOVE = 20 * 1024;
@@ -1216,12 +1216,12 @@ bool HttpMediaDownloader::CacheBufferFullLoop()
             expectOffset_.store(-1);
         }
     }
-    MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "HTTP CacheMediaBuffer full, waiting seek or read.");
+    MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HTTP CacheMediaBuffer full, waiting seek or read.");
     if (isHitSeeking_.load() || isNeedDropData_.load()) {
         canWrite_.store(true);
         return true;
     }
-    OSAL::SleepFor(ONE_HUNDRED_MILLIONSECOND);
+    OSAL::SleepFor(ONE_HUNDRED_MILLISECOND);
     return false;
 }
 
@@ -1235,12 +1235,12 @@ uint32_t HttpMediaDownloader::SaveCacheBufferDataNotblock(uint8_t* data, uint32_
     size_t res = cacheMediaBuffer_->Write(data, currentOffset, len);
     writeOffset_.store(currentOffset + res);
 
-    MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "SaveCacheBufferDataNotblock writeOffset " PUBLIC_LOG_ZU " res "
+    MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "SaveCacheBufferDataNotblock writeOffset " PUBLIC_LOG_ZU " res "
         PUBLIC_LOG_ZU, writeOffset_.load(), res);
 
     writeBitrateCaculator_->UpdateWriteBytes(res);
     uint64_t freeSize = cacheMediaBuffer_->GetFreeSize();
-    MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "SaveCacheBufferDataNotblock, freeSize: " PUBLIC_LOG_U64, freeSize);
+    MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "SaveCacheBufferDataNotblock, freeSize: " PUBLIC_LOG_U64, freeSize);
     HandleCachedDuration();
     writeBitrateCaculator_->StartClock();
     uint64_t writeTime  = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLISECONDS;
@@ -1273,7 +1273,7 @@ uint32_t HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len, b
     size_t hasWriteSize = 0;
     while (hasWriteSize < len && !isInterruptNeeded_.load() && !isInterrupt_.load()) {
         if (isNeedClean_.load()) {
-            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "isNeedClean true.");
+            MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "isNeedClean true.");
             return len;
         }
         size_t currentOffset = writeOffset_.load();
@@ -1281,7 +1281,7 @@ uint32_t HttpMediaDownloader::SaveCacheBufferData(uint8_t* data, uint32_t len, b
         writeOffset_.store(currentOffset + res);
         hasWriteSize += res;
         writeBitrateCaculator_->UpdateWriteBytes(res);
-        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCE, "HTTP writeOffset " PUBLIC_LOG_ZU " res "
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HTTP writeOffset " PUBLIC_LOG_ZU " res "
             PUBLIC_LOG_ZU, writeOffset_.load(), res);
         if ((isLargeOffsetSpan_.load() || canWrite_.load()) && (res > 0 || hasWriteSize == len)) {
             HandleCachedDuration();
@@ -1602,12 +1602,12 @@ void HttpMediaDownloader::HandleCachedDuration()
     cachedDuration_ = GetCurrentBufferSize() *
         BYTES_TO_BIT * SECOND_TO_MILLISECONDS / static_cast<uint64_t>(tmpBitRate);
     // Subtraction of unsigned integers requires size comparison first.
-    if ((cachedDuration_ > lastDurationReacord_ &&
-        cachedDuration_ - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLIONSECOND) ||
-        (lastDurationReacord_ > cachedDuration_ &&
-        lastDurationReacord_ - cachedDuration_ > DURATION_CHANGE_AMOUT_MILLIONSECOND)) {
+    if ((cachedDuration_ > lastDurationRecord_ &&
+        cachedDuration_ - lastDurationRecord_ > DURATION_CHANGE_AMOUNT_MILLISECOND) ||
+        (lastDurationRecord_ > cachedDuration_ &&
+        lastDurationRecord_ - cachedDuration_ > DURATION_CHANGE_AMOUNT_MILLISECOND)) {
         MEDIA_LOG_D("HTTP OnEvent cachedDuration: " PUBLIC_LOG_U64, cachedDuration_);
-        lastDurationReacord_ = cachedDuration_;
+        lastDurationRecord_ = cachedDuration_;
     }
 }
 
@@ -1645,7 +1645,7 @@ bool HttpMediaDownloader::CheckBufferingOneSeconds()
     MEDIA_LOG_I("HTTP CheckBufferingOneSeconds in");
     int32_t sleepTime = 0;
     // return error again 1 time 1s, avoid ffmpeg error
-    while (sleepTime < (isFirstFrameArrived_.load() ? TWO_SECONDS : ONE_HUNDRED_MILLIONSECOND) &&
+    while (sleepTime < (isFirstFrameArrived_.load() ? TWO_SECONDS : ONE_HUNDRED_MILLISECOND) &&
            !isInterruptNeeded_.load()) {
         if (!isBuffering_.load()) {
             break;

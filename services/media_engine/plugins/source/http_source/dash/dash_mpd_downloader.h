@@ -304,7 +304,7 @@ private:
     DataSaveFunc dataSave_ {nullptr};
     StatusCallbackFunc statusCallback_ {nullptr};
     bool ondemandSegBase_ {false};
-    bool notifyOpenOk_ {false};
+    std::atomic<bool> notifyOpenOk_ {false};
     bool isHdrStart_ {false};
     unsigned int initResolution_ {0};
     std::atomic<bool> isInterruptNeeded_{false};

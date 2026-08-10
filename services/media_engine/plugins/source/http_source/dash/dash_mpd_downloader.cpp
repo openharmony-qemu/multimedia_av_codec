@@ -800,7 +800,7 @@ void DashMpdDownloader::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audi
     }
 
     ProcessDrmInfos();
-    notifyOpenOk_ = true;
+    notifyOpenOk_.store(true);
 }
 
 void DashMpdDownloader::GetDrmInfos(std::vector<DashDrmInfo>& drmInfos)
@@ -962,12 +962,12 @@ void DashMpdDownloader::ParseSidx()
 void DashMpdDownloader::NotifyParseSidxResult()
 {
     auto callback = callback_.lock();
-    if (!notifyOpenOk_) {
+    if (!notifyOpenOk_.load()) {
         if (!PutStreamToDownload()) {
             if (callback) {
                 callback->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT);
             }
-            notifyOpenOk_ = true;
+            notifyOpenOk_.store(true);
         }
     } else {
         if (callback) {
@@ -1120,7 +1120,7 @@ Seekable DashMpdDownloader::GetSeekable() const
     // need wait mpdInfo_ not null
     size_t times = 0;
     while (times < RETRY_TIMES && !isInterruptNeeded_.load()) {
-        if (mpdInfo_ != nullptr && notifyOpenOk_) {
+        if (mpdInfo_ != nullptr && notifyOpenOk_.load()) {
             break;
         }
         OSAL::SleepFor(SLEEP_TIME);
