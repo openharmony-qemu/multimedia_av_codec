@@ -85,7 +85,7 @@ ohos_static_library("av_codec_audio_ffmpeg_codec") {
   ]
 
   external_deps = [
-    "bounds_checking_function:libsec_static",
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
