@@ -29,6 +29,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace Media {
 static OH_AVCapability *cap_hevc = nullptr;
+static OH_AVCapability *cap_hevc_hw = nullptr;
 static string g_codecNameHevc = "";
 static string g_codecNameHevcHw = "";
 constexpr int32_t SYS_MAX_INPUT_SIZE = 1024 * 1024 * 24;
@@ -48,8 +49,8 @@ void HevcSwdecCompNdkTest::SetUpTestCase(void)
 {
     cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
     g_codecNameHevc = OH_AVCapability_GetName(cap_hevc);
-    cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
-    g_codecNameHevcHw = OH_AVCapability_GetName(cap_hevc);
+    cap_hevc_hw = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, HARDWARE);
+    g_codecNameHevcHw = OH_AVCapability_GetName(cap_hevc_hw);
 }
 void HevcSwdecCompNdkTest::TearDownTestCase(void) {}
 void HevcSwdecCompNdkTest::SetUp(void) {}
@@ -65,7 +66,7 @@ namespace {
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRVivid_COMP_0010, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hlgHdrVivid_1080p.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -85,7 +86,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRVivid_COMP_0010, TestSize.Lev
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_SURFACE_EXPIRED_COMP_0010, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -106,7 +107,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_SURFACE_EXPIRED_COMP_0010, TestS
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_MAXINPUTSIZE_COMP_0010, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -127,7 +128,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_MAXINPUTSIZE_COMP_0010, TestSize
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_ONERROR_COMP_0010, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/profile0_level10_I_128x96.h263";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -147,7 +148,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_ONERROR_COMP_0010, TestSize.Leve
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_CROP_COMP_0010, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -168,7 +169,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_CROP_COMP_0010, TestSize.Level0)
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0010, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -190,7 +191,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0010, TestSize.
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0020, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -212,7 +213,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0020, TestSize.
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0030, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -234,7 +235,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0030, TestSize.
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0040, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -256,7 +257,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0040, TestSize.
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0050, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hlgHdrVivid_1080p.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -278,7 +279,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0050, TestSize.
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0060, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hlgHdrVivid_1080p.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -300,7 +301,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0060, TestSize.
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0070, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc_hw) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hlgHdrVivid_1080p.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -322,7 +323,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0070, TestSize.
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0080, TestSize.Level0)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc_hw) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hlgHdrVivid_1080p.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -344,7 +345,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_H265_HDRMETADATA_COMP_0080, TestSize.
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0010, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -364,7 +365,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0010, TestSize.Lev
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0020, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/test_continuous_b_4.hevc";
         vDecSample->DEFAULT_WIDTH = 320;
@@ -384,7 +385,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0020, TestSize.Lev
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0030, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/test_continuous_b_8.hevc";
         vDecSample->DEFAULT_WIDTH = 320;
@@ -404,7 +405,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0030, TestSize.Lev
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0050, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/test_ibbp.hevc";
         vDecSample->DEFAULT_WIDTH = 320;
@@ -424,7 +425,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0050, TestSize.Lev
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0060, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/test_ibpbp.hevc";
         vDecSample->DEFAULT_WIDTH = 320;
@@ -444,7 +445,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0060, TestSize.Lev
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0070, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -467,7 +468,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0070, TestSize.Lev
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0080, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/1920_1080_20M_30.h265";
         vDecSample->DEFAULT_WIDTH = 1920;
@@ -487,7 +488,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0080, TestSize.Lev
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0090, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         shared_ptr<VDecAPI11Sample> vDecSample = make_shared<VDecAPI11Sample>();
         vDecSample->INP_DIR = "/data/test/media/hlg_1280_720_10.h265";
         vDecSample->DEFAULT_WIDTH = 1280;
@@ -507,7 +508,7 @@ HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0090, TestSize.Lev
  */
 HWTEST_F(HevcSwdecCompNdkTest, VIDEO_SWDEC_SET_DECODING_ORDER_0100, TestSize.Level2)
 {
-    if (!access("/system/lib64/media/", 0)) {
+    if (cap_hevc) {
         cap_hevc = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, false, SOFTWARE);
         bool ret = OH_AVCapability_IsFeatureSupported(cap_hevc, VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER);
         ASSERT_TRUE(ret);
