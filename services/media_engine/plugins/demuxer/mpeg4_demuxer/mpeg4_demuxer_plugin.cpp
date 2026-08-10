@@ -2348,8 +2348,8 @@ Status MPEG4DemuxerPlugin::ParseMoof(int64_t offset)
 
 Status MPEG4DemuxerPlugin::FindValidSample(SampleReadInfo& sampleInfo)
 {
-    // The selected track list is stable while sharedMutex_ protects a read operation.
-    const auto& trackIds = selectedTrackIds_.empty() ? avTrackIds_ : selectedTrackIds_;
+    // Keep a stable snapshot because the asynchronous read loop does not hold sharedMutex_.
+    const std::vector<uint32_t> trackIds = selectedTrackIds_.empty() ? avTrackIds_ : selectedTrackIds_;
     for (const auto& trackId : trackIds) {
         auto currentTrack = FindTrackById(trackId);
         FALSE_RETURN_V_MSG_E(currentTrack != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");

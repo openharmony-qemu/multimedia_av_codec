@@ -271,9 +271,10 @@ Status MPEG4DemuxerPlugin::PrefetchSeekSample(
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
     {
         std::unique_lock<std::mutex> sLock(syncMutex_);
-        SampleReadInfo sampleInfo {track->trackIndex, sampleIndex, {}, true};
+        SampleReadInfo sampleInfo {track->trackIndex, sampleIndex, {}, false};
         FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(sampleIndex, sampleInfo.view) == Status::OK,
             Status::ERROR_INVALID_DATA, "Get sample view failed");
+        sampleInfo.found = true;
         Status ret = ReadSampleData(sample, sampleInfo);
         if (ret != Status::OK) {
             track->currentSampleIndex = oldIndex;
