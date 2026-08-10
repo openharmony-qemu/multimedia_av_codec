@@ -12,10 +12,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef FILTERS_WATER_MARK_FILTER_H
 #define FILTERS_WATER_MARK_FILTER_H
- 
+
+#include <atomic>
 #include <cstring>
 #include "filter/filter.h"
 #include "osal/task/task.h"
@@ -26,23 +27,24 @@
 #include "shader_program.h"
 #include "surface.h"
 #include "native_image.h"
- 
-namespace OHOS {
+
+namespace OHOS {//water_mark_filter
 namespace Media {
 namespace Pipeline {
 using RenderTask = std::function<void(EglRenderContext &renderContext)>;
 const GLuint DEFINED_VALUE = 9999U;
 struct WaterMarkConfig {
-    int32_t top;
-    int32_t left;
-    int32_t watermarkWidth ;
-    int32_t watermarkHeight ;
-    int32_t rawHeight ;
-    int32_t rawWidth ;
-    int64_t size;
-    unsigned char *buffer;
+   int32_t top; // 水印左上角在视频行数
+   int32_t left;// 水印左上角在视频列数
+   int32_t watermarkWidth ;// 水印缩放后的宽度
+   int32_t watermarkHeight ;// 水印缩放后的高度
+   int32_t rawHeight ;// 水印缩原始的高度
+   int32_t rawWidth ;// 水印缩原始的宽度
+   int64_t size; // 水印原始的buffer的size
+   unsigned char *buffer;// 水印原始的buffer
+   int32_t rotation = 0; // 水印旋转角度（0/90/180/270）
 };
- 
+
 class WaterMarkFilter : public Filter, public std::enable_shared_from_this<WaterMarkFilter> {
 public:
     explicit WaterMarkFilter(std::string name, FilterType type);
@@ -53,7 +55,7 @@ public:
     void InitOpenGl();
     Status Configure(const std::shared_ptr<Meta> &parameter);
     sptr<Surface> GetInputSurface();
-    Status SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height);
+    Status SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height, int32_t rotation);
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoPause() override;
@@ -76,16 +78,15 @@ public:
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
     Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer, int32_t width, int32_t height);
     Status SetVideoResize(int32_t width, int32_t height);  // 设置视频缩放的目标宽高
-    Status SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height, int32_t rotation);
     void SetAVRecorderMode();
- 
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
     Status OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
- 
+
 private:
     std::shared_ptr<EventReceiver> eventReceiver_;
     std::shared_ptr<FilterCallback> filterCallback_;
@@ -93,15 +94,15 @@ private:
     std::shared_ptr<Meta> configureParameter_;
     std::shared_ptr<Filter> nextFilter_;
     std::atomic<int64_t> eosPts_ {-1};
-    std::atomic<int64_t> lastPts_ {UINT64_MAX};
+    std::atomic<int64_t> lastPts_ {INT64_MAX};
     std::atomic<int64_t> currentFrameNum_ = 0;
     std::string bundleName_;
-    int64_t frameNum_ {UINT32_MAX};
+    int64_t frameNum_ {INT64_MAX};
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};
-    int32_t targetWidth_ = -1;      // 视频缩放后的目标宽度
-    int32_t targetHeight_ = -1;     // 视频缩放后的目标高度
+    std::atomic<int32_t> targetWidth_ = -1;      // 视频缩放后的目标宽度
+    std::atomic<int32_t> targetHeight_ = -1;     // 视频缩放后的目标高度
     std::atomic<int32_t> videoWidth_ = 0;
     std::atomic<int32_t> videoHeight_ = 0;
     OH_NativeImage *nativeImage_ = nullptr;
@@ -130,9 +131,9 @@ private:
     std::condition_variable wakeUpCond_;
     std::vector<GLuint> watermarkTexIds_;     // 每个水印的纹理ID
     std::unique_ptr<ShaderProgram> watermarkMergeShaderProgram_;  // 水印合成shader
-    int32_t rotation_ = 0;
-    bool isAVRecorderMode_ = false; //是否录制模式，默认否
- 
+    std::atomic<int32_t> rotation_ = 0;
+    std::atomic<bool> isAVRecorderMode_ = false; //是否录制模式，默认否
+
     bool CreateNativeImage();
     void UpdateNativeWindow(void *window, uint64_t width, uint64_t height);
     void ThreadMainLoop();
@@ -149,6 +150,10 @@ private:
     bool CreateWatermarkFBO(int32_t width, int32_t height);  // 创建水印合并用的FBO
     bool CreateWatermarkMergeShader();        // 创建水印合并着色器
     bool RenderWatermarksToFBO(int32_t width, int32_t height);  // 渲染水印到FBO
+    void CalculateRotatedWatermarkVertices(const WaterMarkConfig& config, int32_t width, int32_t height,
+                                          float wmVertices[16], size_t wmVerticesSize);  // 根据旋转角度计算水印顶点坐标
+    bool RenderSingleWatermarkToFBO(const WaterMarkConfig& config, GLuint texId, int32_t width,
+                                    int32_t height);  // 渲染单个水印到FBO
     void ReleaseCpuResources();
     void ReleaseGpuResources();
     void ReleaseEGLResources();

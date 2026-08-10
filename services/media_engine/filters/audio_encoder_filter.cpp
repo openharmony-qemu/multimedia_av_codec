@@ -370,6 +370,13 @@ Status AudioEncoderFilter::SetTranscoderMode()
     return Status::OK;
 }
 
+Status AudioEncoderFilter::SetPureAudioMode()
+{
+    MEDIA_LOG_I("SetPureAudioMode");
+    isPureAudioMode_.store(true);
+    return Status::OK;
+}
+
 void AudioEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     FALSE_RETURN_MSG(mediaCodec_ != nullptr, "mediaCodec is nullptr");
@@ -620,13 +627,16 @@ Status AudioEncoderFilter::UpdateParameterToConfigure(const std::shared_ptr<Meta
 {
     Plugins::AudioSampleFormat dstSampleFormat = Plugins::AudioSampleFormat::INVALID_WIDTH;
     Plugins::AudioSampleFormat oriSampleFormat = Plugins::AudioSampleFormat::INVALID_WIDTH;
+    std::string outputMime;
     if (meta != nullptr && configureParameter_ != nullptr && meta->GetData(Tag::AUDIO_SAMPLE_FORMAT, dstSampleFormat)) {
         configureParameter_->GetData(Tag::AUDIO_SAMPLE_FORMAT, oriSampleFormat);
         MEDIA_LOG_I("Configure, sampleFormat: " PUBLIC_LOG_D32 " -> " PUBLIC_LOG_D32,
             static_cast<int32_t>(oriSampleFormat), static_cast<int32_t>(dstSampleFormat));
         configureParameter_->SetData(Tag::AUDIO_SAMPLE_FORMAT, dstSampleFormat);
+        configureParameter_->GetData(Tag::MIME_TYPE, outputMime);
     }
-    if (isTranscoderMode_) {
+    shouldJudgeChange = isPureAudioMode_.load() || (!isPureAudioMode_.load() && outputMime == "audio/mpeg");
+    if (isTranscoderMode_ && shouldJudgeChange.load()) {
         int32_t outputbuffersize = 0;
         if (meta->GetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize)) {
             MEDIA_LOG_I("AUDIO_MAX_OUTPUT_SIZE is outputbuffersize: " PUBLIC_LOG_D32,
@@ -708,7 +718,7 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
         needChannelConvert_.store((inputAudio->channelCount != outputAudio->channelCount) ||
             (inputAudio->sampleRate != outputAudio->sampleRate));
 
-        if (needChannelConvert_.load()) {
+        if (needChannelConvert_.load() && shouldJudgeChange.load()) {
             // 初始化转换器输入格式（使用 AudioStandard 命名空间的类型）
             converterInputFormat_.sampleRate = static_cast<AudioStandard::AudioSamplingRate>(inputAudio->sampleRate);
             converterInputFormat_.channelLayout =
@@ -739,12 +749,13 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
         }
 #endif
 
-        if (needChannelConvert_.load()) {
+        if (needChannelConvert_.load() && shouldJudgeChange.load()) {
             AddInternalBufferQueue();
             FALSE_RETURN_MSG(intermediateQueueProducer_ != nullptr, "intermediateBufferQueue_ is nullptr");
             onLinkedResultCallback_->OnLinkedResult(intermediateQueueProducer_, transcoderMeta_);
         } else {
             onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), transcoderMeta_);
+            MEDIA_LOG_I("not pura audio mode");
         }
 
         MEDIA_LOG_I("OnLinkedResult completed, processing thread started");
@@ -769,6 +780,16 @@ void AudioEncoderFilter::AddInternalBufferQueue()
 
     intermediateQueueProducer_ = intermediateBufferQueue_->GetProducer();
     intermediateQueueConsumer_ = intermediateBufferQueue_->GetConsumer();
+    if (intermediateQueueConsumer_ == nullptr || intermediateQueueProducer_ == nullptr) {
+        MEDIA_LOG_E("GetProducer or GetConsumer returned nullptr");
+        intermediateBufferQueue_ = nullptr;
+        intermediateQueueProducer_ = nullptr;
+        intermediateQueueConsumer_ = nullptr;
+        FALSE_RETURN(eventReceiver_ != nullptr);
+        eventReceiver_->OnEvent({"audio_encoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_NO_MEMORY)});
+        return;
+    }
 
     // 设置监听器（监听器会通知独立线程）
     sptr<IConsumerListener> intermediateListener_ = new IntermediateBufferAvailableListener(shared_from_this());

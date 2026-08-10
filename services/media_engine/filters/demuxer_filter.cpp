@@ -341,8 +341,8 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
     }
     if (IsAVTrackInvalid(hasInvalidVideo, hasInvalidAudio, hasVideoFilter, hasAudioTrack)) {
         MEDIA_LOG_E("Only has invalid video or invalid audio track");
-        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR, static_cast<int32_t>(MSERR_DEMUXER_FAILED),
-            GetOriginalCodecName()});
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR,
+ 	        static_cast<int32_t>(MSERR_NO_VALID_TRACK_FOUND), GetOriginalCodecName()});
     }
     return ret;
 }

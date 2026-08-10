@@ -181,7 +181,7 @@ Status VideoResizeFilter::Configure(const std::shared_ptr<Meta> &parameter)
             eventReceiver_->OnEvent({"video_resize_filter", EventType::EVENT_ERROR,
                 static_cast<int32_t>(MSERR_UNSUPPORT_VID_PARAMS)});
         }
-        return Status::ERROR_UNKNOWN;
+        return Status::ERROR_VID_ENHANCER_CONFIGURE_FAILED;
     } else {
         return Status::OK;
     }
