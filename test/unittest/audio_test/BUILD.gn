@@ -77,6 +77,7 @@ ohos_unittest("av_audio_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -125,6 +126,7 @@ ohos_unittest("av_audio_codecbase_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -177,6 +179,7 @@ ohos_unittest("av_audio_decode_ability_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -230,6 +233,7 @@ ohos_unittest("av_audio_inner_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -282,6 +286,7 @@ ohos_unittest("av_audio_encoder_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -332,6 +337,7 @@ ohos_unittest("av_audio_encoder_avbuffer_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -388,6 +394,7 @@ ohos_unittest("av_audio_decoder_avbuffer_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -452,6 +459,7 @@ ohos_unittest("av_audio_media_codec_unit_test") {
   deps = [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -509,6 +517,7 @@ ohos_unittest("audio_codec_inner_avbuffer_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -562,6 +571,7 @@ ohos_unittest("audio_lbvc_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -605,6 +615,7 @@ ohos_unittest("audio_hdi_codec_inner_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "drivers_interface_codec:libcodec_proxy_4.0",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
@@ -659,6 +670,7 @@ ohos_unittest("audio_g711mu_encoder_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -719,6 +731,7 @@ ohos_unittest("audio_encoder_sample_format_convert_unit_test") {
   deps = [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -760,6 +773,7 @@ ohos_unittest("audio_resample_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -813,6 +827,7 @@ ohos_unittest("audio_decoder_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -865,6 +880,7 @@ ohos_unittest("audio_encoder_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -932,6 +948,7 @@ ohos_unittest("audio_raw_decoder_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -995,6 +1012,7 @@ ohos_unittest("audio_ffmpeg_base_codec_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -1056,6 +1074,7 @@ ohos_unittest("audio_g711a_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -1106,6 +1125,7 @@ ohos_unittest("audio_eac3_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -1149,6 +1169,7 @@ ohos_unittest("audio_truehd_decoder_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -1217,6 +1238,7 @@ ohos_unittest("audio_truehd_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -1262,6 +1284,7 @@ ohos_unittest("audio_sync_mode_truehd_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -1323,6 +1346,7 @@ ohos_unittest("audio_truehd_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -1384,6 +1408,7 @@ ohos_unittest("audio_eac3_decoder_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -1455,6 +1480,7 @@ ohos_unittest("audio_sync_codec_adapter_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "hilog:libhilog",
     "hitrace:hitrace_meter",
@@ -1518,6 +1544,7 @@ ohos_unittest("audio_alac_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -1563,6 +1590,7 @@ ohos_unittest("audio_sync_mode_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -1612,6 +1640,7 @@ ohos_unittest("audio_sync_mode_eac3_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -1660,6 +1689,7 @@ ohos_unittest("audio_sync_mode_gsm_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -1708,6 +1738,7 @@ ohos_unittest("audio_sync_mode_gsm_ms_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -1761,6 +1792,7 @@ ohos_unittest("audio_gsm_ms_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -1804,6 +1836,7 @@ ohos_unittest("audio_gsm_ms_capi_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -1872,6 +1905,7 @@ ohos_unittest("audio_gsm_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -1915,6 +1949,7 @@ ohos_unittest("audio_gsm_capi_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -1989,6 +2024,7 @@ ohos_unittest("audio_wma_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "c_utils:utils",
@@ -2054,6 +2090,7 @@ ohos_unittest("audio_adpcm_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -2110,6 +2147,7 @@ ohos_unittest("audio_gsm_ms_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -2158,6 +2196,7 @@ ohos_unittest("audio_eac3_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -2206,6 +2245,7 @@ ohos_unittest("audio_gsm_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -2269,6 +2309,7 @@ ohos_unittest("audio_pcm_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -2322,6 +2363,7 @@ ohos_unittest("audio_ilbc_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -2365,6 +2407,7 @@ ohos_unittest("audio_ilbc_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -2426,6 +2469,7 @@ ohos_unittest("audio_ilbc_decoder_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -2487,6 +2531,7 @@ ohos_unittest("audio_sync_mode_ilbc_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -2537,6 +2582,7 @@ ohos_unittest("audio_decoder_skip_info_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "ipc:ipc_single",
     "media_foundation:media_foundation",
@@ -2581,6 +2627,7 @@ ohos_unittest("audio_decoder_skip_info_innter_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "graphic_surface:surface",
     "ipc:ipc_single",
@@ -2645,6 +2692,7 @@ ohos_unittest("audio_twinvq_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -2693,6 +2741,7 @@ ohos_unittest("audio_sync_mode_twinvq_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -2754,6 +2803,7 @@ ohos_unittest("audio_twinvq_capi_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -2815,6 +2865,7 @@ ohos_unittest("audio_twinvq_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -2888,6 +2939,7 @@ ohos_unittest("audio_dvaudio_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -2961,6 +3013,7 @@ ohos_unittest("audio_dts_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -3030,6 +3083,7 @@ ohos_unittest("audio_cook_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -3078,6 +3132,7 @@ ohos_unittest("audio_dvaudio_capi_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -3139,6 +3194,7 @@ ohos_unittest("audio_cook_capi_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -3202,6 +3258,7 @@ ohos_unittest("audio_sync_mode_dvaudio_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -3250,6 +3307,7 @@ ohos_unittest("audio_sync_mode_dts_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -3298,6 +3356,7 @@ ohos_unittest("audio_sync_mode_cook_capi_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -3347,6 +3406,7 @@ ohos_unittest("audio_dvaudio_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -3395,6 +3455,7 @@ ohos_unittest("audio_cook_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -3443,6 +3504,7 @@ ohos_unittest("audio_dts_capi_decoder_unit_stable_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
   ]
@@ -3489,6 +3551,7 @@ ohos_unittest("audio_dts_capi_decoder_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "media_foundation:native_media_core",
@@ -3557,6 +3620,7 @@ ohos_unittest("audio_dts_decoder_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -3612,6 +3676,7 @@ ohos_unittest("audio_amrnb_multiframe_decode_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
@@ -3667,6 +3732,7 @@ ohos_unittest("audio_mp3_encoder_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
     "lame:lame",
@@ -3721,6 +3787,7 @@ ohos_unittest("audio_amrnb_encoder_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -3774,6 +3841,7 @@ ohos_unittest("audio_opus_encoder_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
@@ -3827,6 +3895,7 @@ ohos_unittest("audio_opus_decoder_plugin_unit_test") {
   ]
 
   external_deps = [
+    "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "media_foundation:media_foundation",
   ]
