@@ -147,6 +147,10 @@ struct SampleInfo {
     bool enableRoiByNativebuf = false;
     std::string roiFilePathByNativebuf;
     bool enableDecoderOrder = false;
+    int32_t quality = 25;
+    bool enableTemporalScalability = false;
+    int32_t temporalGopReferenceMode = UNIFORMLY_SCALED_REFERENCE;
+    int32_t temporalGopSize = 4;
 };
 
 struct CodecBufferInfo {
