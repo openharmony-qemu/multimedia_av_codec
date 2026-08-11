@@ -59,7 +59,8 @@
         "av_codec_enable_demuxer_truehd",
         "av_codec_enable_memc",
         "av_codec_enable_player_startup_optimization",
-        "av_codec_enable_audio_convert"
+        "av_codec_enable_audio_convert",
+        "av_codec_fcodec_enable_dmabuffer"
       ],
       "adapted_system_type": [ "standard" ],
       "rom": "10000KB",
