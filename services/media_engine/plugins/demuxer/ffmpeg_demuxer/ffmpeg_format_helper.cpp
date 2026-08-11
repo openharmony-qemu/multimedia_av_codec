@@ -67,8 +67,8 @@ const int32_t SMPTE2086_BLUE_INDEX = 2;
 const int32_t CHANNEL_LAYOUT_ID_MAX = 64;
 
 const size_t BRAND_CODE_LEN = 4; // 4 is brand code length
-constexpr size_t MAX_EXTRADATA_SIZE = 10 * 1024 * 1024; //10MB上限
-constexpr size_t MAX_COVER_SIZE = 50 * 1024 * 1024; // 50MB上限
+constexpr int32_t MAX_EXTRADATA_SIZE = 10 * 1024 * 1024; //10MB上限
+constexpr int32_t MAX_COVER_SIZE = 50 * 1024 * 1024; // 50MB上限
 
 static std::map<AVPixelFormat, RawVideoPixelFormat> g_convertFfmpegPixFmt = {
     {AVPixelFormat::AV_PIX_FMT_YUV420P, RawVideoPixelFormat::YUV420P},

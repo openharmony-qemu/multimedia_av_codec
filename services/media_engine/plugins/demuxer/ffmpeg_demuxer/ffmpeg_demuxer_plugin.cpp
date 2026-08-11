@@ -666,9 +666,10 @@ Status FFmpegDemuxerPlugin::WriteBuffer(
     FALSE_RETURN_V_MSG_E(outBuffer != nullptr, Status::ERROR_NULL_POINTER, "Buffer is nullptr");
     if (writeData != nullptr && writeSize > 0) {
         FALSE_RETURN_V_MSG_E(outBuffer->memory_ != nullptr, Status::ERROR_NULL_POINTER, "Memory is nullptr");
-        FALSE_RETURN_V_MSG_E(writeSize <= outBuffer->memory_->GetCapacity(),
+        const int32_t capacity = outBuffer->memory_->GetCapacity();
+        FALSE_RETURN_V_MSG_E(capacity >= 0 && writeSize <= static_cast<uint32_t>(capacity),
                              Status::ERROR_INVALID_OPERATION, "Write size exceeds buffer capacity");
-        int32_t ret = outBuffer->memory_->Write(writeData, writeSize, 0);
+        int32_t ret = outBuffer->memory_->Write(writeData, static_cast<int32_t>(writeSize), 0);
         FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_INVALID_OPERATION, "Memory write failed");
     }
 
