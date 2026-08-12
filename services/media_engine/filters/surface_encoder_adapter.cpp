@@ -417,10 +417,7 @@ Status SurfaceEncoderAdapter::Stop()
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
     }
-    if (!codecServer_) {
-        MEDIA_LOG_E("codecServer_ is nullptr");
-        return Status::OK;
-    }
+    FALSE_RETURN_V_MSG(codecServer_, Status::OK, "codecServer_ is nullptr");
     MEDIA_LOG_I("CodecServer Stop start");
     int32_t ret = codecServer_->Stop();
     isStart_ = false;
