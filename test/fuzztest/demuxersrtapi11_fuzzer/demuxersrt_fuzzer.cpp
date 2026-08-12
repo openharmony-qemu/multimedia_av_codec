@@ -93,7 +93,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     setLanguage[LANGUAGE_COUNT] = FLAG;
-    params.setCodecConfigSize = fdp.ConsumeIntegral<uint8_t>();
+    params.setCodecConfigSize = fdp.ConsumeIntegral<int64_t>();
     params.sampleRate = fdp.ConsumeIntegral<int32_t>();
     params.channelCount = fdp.ConsumeIntegral<int32_t>();
     params.setVideoHeight = fdp.ConsumeIntegral<int32_t>();

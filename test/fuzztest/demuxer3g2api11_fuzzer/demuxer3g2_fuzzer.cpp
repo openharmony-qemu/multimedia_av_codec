@@ -75,7 +75,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     }
     struct Params params;
     params.time = fdp.ConsumeIntegral<int64_t>();
-    std::unique_ptr<char[]> uri(new char[URI_BUFFER_SIZE]);
+    auto uri = std::make_unique<char[]>(URI_BUFFER_SIZE);
     if (strncpy_s(uri.get(), URI_BUFFER_SIZE, fdp.ConsumeBytesAsString(URI_COUNT).c_str(), URI_COUNT) != 0) {
         return false;
     }
@@ -84,7 +84,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     params.setDuration = fdp.ConsumeIntegral<int64_t>();
     params.setHeight = fdp.ConsumeIntegral<int64_t>();
     params.setFrameRate = fdp.ConsumeIntegral<int64_t>();
-    std::unique_ptr<char[]> setLanguage(new char[LANGUAGE_BUFFER_SIZE]);
+    auto setLanguage = std::make_unique<char[]>(LANGUAGE_BUFFER_SIZE);
     if (strncpy_s(setLanguage.get(), LANGUAGE_BUFFER_SIZE, fdp.ConsumeBytesAsString(LANGUAGE_COUNT).c_str(),
         LANGUAGE_COUNT) != 0) {
         return false;
@@ -102,7 +102,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     demuxerSample->RunNormalDemuxerApi11(createSize, uri.get(), setLanguage.get(), params);
     int ret = remove(THREE_G2_PATH);
     if (ret != 0) {
-        std::cerr << "Failed tp remove file: " << THREE_G2_PATH << std::endl;
+        std::cerr << "Failed to remove file: " << THREE_G2_PATH << std::endl;
         return false;
     }
     return true;
