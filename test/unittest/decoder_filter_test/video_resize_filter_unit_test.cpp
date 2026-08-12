@@ -194,6 +194,18 @@ HWTEST_F(VideoResizeFilterUnitTest, VideoResizeFilter_005, TestSize.Level1)
 #endif
 }
 
+HWTEST_F(VideoResizeFilterUnitTest, Configure_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::VideoResizeFilter> videoResize =
+        std::make_shared<Pipeline::VideoResizeFilter>("videoResizeFilter", Pipeline::FilterType::VIDEO_CAPTURE);
+    videoResize->eventReceiver_ = std::make_shared<MyEventReceiver>();
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    Status ret = videoResize->Configure(parameter);
+    videoResize->eventReceiver_ = nullptr;
+    ret = videoResize->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
 HWTEST_F(VideoResizeFilterUnitTest, GetInputSurface_001, TestSize.Level1)
 {
     std::shared_ptr<Pipeline::VideoResizeFilter> videoResize =
