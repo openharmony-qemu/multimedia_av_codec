@@ -429,7 +429,6 @@ int HEncoder::SetCodecScenario(const Format &format)
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, scenario)) {
         return AVCS_ERR_OK;
     }
-    HLOGI("user set Codec Scenario %d", scenario);
     if (scenario < static_cast<int32_t>(SCENARIO_RECORDING) || scenario >= static_cast<int32_t>(SCENARIO_INVALID)) {
         HLOGW("invalid codec Scenario");
         return AVCS_ERR_INVALID_VAL;
@@ -578,12 +577,12 @@ std::optional<uint32_t> HEncoder::GetBitRateFromUser(const Format &format)
     int64_t bitRateLong;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong) && bitRateLong > 0 &&
         bitRateLong <= UINT32_MAX) {
-        LOGI("user set bit rate %" PRId64 "", bitRateLong);
+        LOGD("user set bit rate %" PRId64 "", bitRateLong);
         return static_cast<uint32_t>(bitRateLong);
     }
     int32_t bitRateInt;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateInt) && bitRateInt > 0) {
-        LOGI("user set bit rate %d", bitRateInt);
+        LOGD("user set bit rate %d", bitRateInt);
         return static_cast<uint32_t>(bitRateInt);
     }
     return nullopt;
@@ -593,7 +592,7 @@ std::optional<uint32_t> HEncoder::GetSQRFactorFromUser(const Format &format)
 {
     int32_t sqrFactor;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor) && sqrFactor >= 0) {
-        LOGI("user set SQR factor is  %d", sqrFactor);
+        LOGD("user set SQR factor is  %d", sqrFactor);
         return static_cast<uint32_t>(sqrFactor);
     }
     return nullopt;
@@ -604,12 +603,12 @@ std::optional<uint32_t> HEncoder::GetSQRMaxBitrateFromUser(const Format &format)
     int64_t maxBitRateLong;
     if (format.GetLongValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitRateLong) &&
         maxBitRateLong > 0 && maxBitRateLong <= UINT32_MAX) {
-        LOGI("user set max bit rate %" PRId64 "", maxBitRateLong);
+        LOGD("user set max bit rate %" PRId64 "", maxBitRateLong);
         return static_cast<uint32_t>(maxBitRateLong);
     }
     int32_t maxBitRateInt;
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_MAX_BITRATE, maxBitRateInt) && maxBitRateInt > 0) {
-        LOGI("user set max bit rate %d", maxBitRateInt);
+        LOGD("user set max bit rate %d", maxBitRateInt);
         return static_cast<uint32_t>(maxBitRateInt);
     }
     return nullopt;
@@ -619,7 +618,7 @@ std::optional<uint32_t> HEncoder::GetCRFtagetQpFromUser(const Format &format)
 {
     int32_t targetQp;
     if (format.GetIntValue(OHOS::Media::Tag::VIDEO_ENCODER_TARGET_QP, targetQp) && targetQp > 0) {
-        LOGI("user set CRF target_qp %d", targetQp);
+        LOGD("user set CRF target_qp %d", targetQp);
         return static_cast<uint32_t>(targetQp);
     }
     return nullopt;
@@ -682,22 +681,22 @@ int32_t HEncoder::SetSQRMode(const Format &format)
     optional<uint32_t> bitRate = GetBitRateFromUser(format);
     if (sqrFactor.has_value()) {
         bitrateType.sqrFactor = sqrFactor.value();
-        LOGI("set sqr factor %u", bitrateType.sqrFactor);
+        HLOGD("set sqr factor %u", bitrateType.sqrFactor);
     }
     if (maxBitrate.has_value()) {
         bitrateType.sMaxBitrate = maxBitrate.value();
-        LOGI("set max bit rate %u bps", bitrateType.sMaxBitrate);
+        HLOGD("set max bit rate %u bps", bitrateType.sMaxBitrate);
     }
     if (bitRate.has_value() && !maxBitrate.has_value()) {
         bitrateType.sTargetBitrate = bitRate.value();
         bitrateType.bitrateEnabled = true;
-        LOGI("set target bitrate %u bps", bitrateType.sTargetBitrate);
+        HLOGD("set target bitrate %u bps", bitrateType.sTargetBitrate);
     }
     if (!SetParameter(OMX_IndexParamControlRateSQR, bitrateType)) {
         HLOGE("failed to set OMX_IndexParamControlRateSQR");
         return AVCS_ERR_UNKNOWN;
     }
-    HLOGI("set SQR mode succ");
+    HLOGD("set SQR mode succ");
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, SQR);
     outputFormat_->PutIntValue(MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, bitrateType.sqrFactor);
     if (bitrateType.bitrateEnabled) {
@@ -912,7 +911,7 @@ int32_t HEncoder::RequestIDRFrame()
         HLOGE("failed to request IDR frame");
         return AVCS_ERR_UNKNOWN;
     }
-    HLOGI("Set IDR Frame success");
+    HLOGD("Set IDR Frame success");
     return AVCS_ERR_OK;
 }
 
@@ -930,15 +929,15 @@ void HEncoder::SetSqrParam(const Format &format)
     optional<uint32_t> bitRate = GetBitRateFromUser(format);
     if (sqrFactor.has_value()) {
         bitrateType.sqrFactor = sqrFactor.value();
-        LOGI("set dynamic sqr factor %u", bitrateType.sqrFactor);
+        HLOGD("set dynamic sqr factor %u", bitrateType.sqrFactor);
     }
     if (maxBitrate.has_value() && !bitrateType.bitrateEnabled) {
         bitrateType.sMaxBitrate = maxBitrate.value();
-        LOGI("set dynamic max bitrate %u bps", bitrateType.sMaxBitrate);
+        HLOGD("set dynamic max bitrate %u bps", bitrateType.sMaxBitrate);
     }
     if (bitRate.has_value() && bitrateType.bitrateEnabled) {
         bitrateType.sTargetBitrate = bitRate.value();
-        LOGI("set dynamic target bitrate %u bps", bitrateType.sTargetBitrate);
+        HLOGD("set dynamic target bitrate %u bps", bitrateType.sTargetBitrate);
     }
     if (!SetParameter(OMX_IndexParamControlRateSQR, bitrateType, true)) {
         HLOGW("failed to set OMX_IndexParamControlRateSQR");
@@ -1088,7 +1087,7 @@ void HEncoder::ClearDirtyList()
 
 int32_t HEncoder::SubmitAllBuffersOwnedByUs()
 {
-    HLOGI(">>");
+    HLOGD(">>");
     if (isBufferCirculating_) {
         HLOGI("buffer is already circulating, no need to do again");
         return AVCS_ERR_OK;

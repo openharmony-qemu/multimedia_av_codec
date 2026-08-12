@@ -274,7 +274,7 @@ int32_t HCodec::SetParameter(const Format &format)
 
 int32_t HCodec::GetInputFormat(Format& format)
 {
-    HLOGI(">>");
+    HLOGD(">>");
     ParamSP reply;
     int32_t ret = DoSyncCallAndGetReply(MsgWhat::GET_INPUT_FORMAT, nullptr, reply);
     if (ret != AVCS_ERR_OK) {
@@ -937,7 +937,7 @@ optional<size_t> HCodec::FindBufferIndexByID(OMX_DIRTYPE portIndex, uint32_t buf
             return i;
         }
     }
-    HLOGE("unknown buffer id %u", bufferId);
+    HLOGD("unknown buffer id %u", bufferId);
     return nullopt;
 }
 
@@ -989,7 +989,7 @@ bool HCodec::WaitFence(const sptr<SyncFence>& fence, uint32_t seq, const std::st
         chrono::duration_cast<chrono::microseconds>(chrono::steady_clock::now() - before).count());
         return true;
     } else {
-        LOGW("wait fence time out, cost more than %u ms", WAIT_FENCE_MS);
+        PLOGW("[%s] WaitFence for seq=%u time out, cost more than %u ms", prefix.c_str(), seq, WAIT_FENCE_MS);
         costUs = WAIT_FENCE_MS * TIME_RATIO_S_TO_MS;
         return false;
     }
@@ -1481,7 +1481,7 @@ bool HCodec::RollOmxBackToLoaded()
         HLOGE("failed to get omx node status(ret=%d), can not perform state rollback", ret);
         return false;
     }
-    HLOGI("current omx state (%d)", state);
+    HLOGD("current omx state (%d)", state);
     switch (state) {
         case CODEC_STATE_EXECUTING: {
             ChangeOmxToTargetState(state, CODEC_STATE_IDLE);
@@ -1571,16 +1571,16 @@ int32_t HCodec::SetColorAspects(const Format &format)
     int matrix = static_cast<int>(MATRIX_COEFFICIENT_UNSPECIFIED);
 
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_RANGE_FLAG, range)) {
-        HLOGI("user set range flag %d", range);
+        HLOGD("user set range flag %d", range);
     }
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_COLOR_PRIMARIES, primary)) {
-        HLOGI("user set primary %d", primary);
+        HLOGD("user set primary %d", primary);
     }
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_TRANSFER_CHARACTERISTICS, transfer)) {
-        HLOGI("user set transfer %d", transfer);
+        HLOGD("user set transfer %d", transfer);
     }
     if (format.GetIntValue(MediaDescriptionKey::MD_KEY_MATRIX_COEFFICIENTS, matrix)) {
-        HLOGI("user set matrix %d", matrix);
+        HLOGD("user set matrix %d", matrix);
     }
     if (primary < 0 || primary > UINT8_MAX ||
         transfer < 0 || transfer > UINT8_MAX ||

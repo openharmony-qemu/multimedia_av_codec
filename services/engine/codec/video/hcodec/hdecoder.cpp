@@ -124,7 +124,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
         HLOGE("set output buffer type failed");
         return AVCS_ERR_UNKNOWN;
     }
-    int32_t ret  = SetDecOrder(format);
+    int32_t ret = SetDecOrder(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -1041,7 +1041,7 @@ int32_t HDecoder::AllocOutDynamicSurfaceBuf()
         info.bufferId = outBuffer->bufferId;
         outputBufferPool_.push_back(info);
     }
-    HLOGI("succ");
+    HLOGD("succ");
     return AVCS_ERR_OK;
 }
 
@@ -1246,7 +1246,7 @@ void HDecoder::DynamicModeSubmitBufferToSlot(std::vector<BufferInfo>::iterator n
 
 void HDecoder::DynamicModeSubmitBufferToSlot(sptr<SurfaceBuffer>& buffer, std::vector<BufferInfo>::iterator nullSlot)
 {
-    HLOGI("generation=%d, bufferId=%u, seq=%u", currGeneration_, nullSlot->bufferId, buffer->GetSeqNum());
+    HLOGD("generation=%d, bufferId=%u, seq=%u", currGeneration_, nullSlot->bufferId, buffer->GetSeqNum());
     std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(buffer);
     IF_TRUE_RETURN_VOID_WITH_MSG(avBuffer == nullptr || avBuffer->memory_ == nullptr, "CreateAVBuffer failed");
     nullSlot->avBuffer = avBuffer;
@@ -1477,7 +1477,7 @@ HDecoder::SurfaceItem::SurfaceItem(const sptr<Surface> &surface, std::string cod
 void HDecoder::SurfaceItem::Release(bool cleanAll)
 {
     if (surface_) {
-        LOGI("release surface(%" PRIu64 ")", surface_->GetUniqueId());
+        PLOGI("[%s] release surface(%" PRIu64 ")", compUniqueStr_.c_str(), surface_->GetUniqueId());
         if (originalTransform_.has_value()) {
             surface_->SetTransform(originalTransform_.value());
             originalTransform_ = std::nullopt;
@@ -1715,7 +1715,7 @@ std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecode
     if (it != g_insts.end()) {
         return it->second.token.lock();
     }
-    LOGI("no decoder is using this surfaceId=%" PRIu64, surfaceId);
+    LOGD("no decoder is using this surfaceId=%" PRIu64, surfaceId);
  
     it = std::find_if(g_insts.begin(), g_insts.end(), [&bundleName](const pair<HDecoder*, DecoderInst>& pair) {
         return pair.second.processName == bundleName;
@@ -1723,7 +1723,7 @@ std::shared_ptr<HDecoder::MsgToken> HDecoder::XperfConnector::FindSuitableDecode
     if (it != g_insts.end()) {
         return it->second.token.lock();
     }
-    LOGI("no decoder is created by this app=%s", bundleName.c_str());
+    LOGD("no decoder is created by this app=%s", bundleName.c_str());
     return nullptr;
 }
 

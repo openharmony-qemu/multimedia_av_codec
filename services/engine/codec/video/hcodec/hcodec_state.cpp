@@ -116,7 +116,7 @@ void HCodec::BaseState::OnCodecEvent(CodecEventType event, uint32_t data1, uint3
         SLOGE("omx report error event, data1 = %u, data2 = %u", data1, data2);
         OnErrorEventHandler(data1);
     } else {
-        SLOGW("ignore event %d, data1 = %u, data2 = %u", event, data1, data2);
+        SLOGI("ignore event %d, data1 = %u, data2 = %u", event, data1, data2);
     }
 }
 
@@ -295,7 +295,7 @@ void HCodec::InitializedState::ProcessShutDownFromRunning()
         codec_->ChangeStateTo(codec_->uninitializedState_);
     }
     if (codec_->notifyCallerAfterShutdownComplete_) {
-        SLOGI("reply to %s msg", keepComponentAllocated ? "stop" : "release");
+        SLOGD("reply to %s msg", keepComponentAllocated ? "stop" : "release");
         MsgInfo msg { keepComponentAllocated ? MsgWhat::STOP : MsgWhat::RELEASE, 0, nullptr };
         if (codec_->GetFirstSyncMsgToReply(msg)) {
             ReplyErrorCode(msg.id, AVCS_ERR_OK);
@@ -345,6 +345,8 @@ void HCodec::InitializedState::OnMsgReceived(const MsgInfo &info)
             OnStart(info);
             return;
         }
+        case MsgWhat::GET_BUFFER_FROM_SURFACE:
+            return;
         default: {
             BaseState::OnMsgReceived(info);
         }
@@ -1023,6 +1025,8 @@ void HCodec::StoppingState::OnMsgReceived(const MsgInfo &info)
             }
             return;
         }
+        case MsgWhat::GET_BUFFER_FROM_SURFACE:
+            return;
         default: {
             BaseState::OnMsgReceived(info);
         }
