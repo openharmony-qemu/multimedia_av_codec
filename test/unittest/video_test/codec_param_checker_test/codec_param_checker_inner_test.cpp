@@ -16,9 +16,11 @@
 #include <gtest/gtest.h>
 #include "avcodec_info.h"
 #include "avcodec_list.h"
+#include "avcodec_video_decoder.h"
 #include "avcodec_video_encoder.h"
 #include "format.h"
 #include "media_description.h"
+#include "meta/meta_key.h"
 #include "avcodec_errors.h"
 #include "av_common.h"
 using namespace OHOS::MediaAVCodec;
@@ -46,6 +48,71 @@ bool IsEncoderBitrateModeSupported(CapabilityData *capData, VideoEncodeBitrateMo
     std::shared_ptr<VideoCaps> codecInfo = std::make_shared<VideoCaps>(capData);
     const auto &bitrateModeVec = codecInfo->GetSupportedBitrateMode();
     return find(bitrateModeVec.begin(), bitrateModeVec.end(), bitrateMode) != bitrateModeVec.end();
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0101
+ * @tc.desc: codec dma tag with visible characters should be accepted through inner encoder configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0101, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, "a b\tc\n!");
+    ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0102
+ * @tc.desc: codec dma tag should be ignored if normalized tag is empty through inner encoder configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0102, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, " \t\n\r");
+    ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0103
+ * @tc.desc: codec dma tag should reject pure digits after normalization
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0103, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, "1 2\t3");
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0104
+ * @tc.desc: codec dma tag should reject non-string values for supported codecs
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0104, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, "123");
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0105
+ * @tc.desc: codec dma tag should be accepted through inner decoder configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0105, TestSize.Level3)
+{
+    auto videoDecInner = VideoDecoderFactory::CreateByMime("video/avc");
+    ASSERT_NE(nullptr, videoDecInner);
+
+    formatInner_ = Format();
+    formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_WIDTH, 1280); // 1280 w默认值
+    formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 720); // 720 h默认值
+    formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, "d e\tc");
+    ASSERT_EQ(AVCS_ERR_OK, videoDecInner->Configure(formatInner_));
 }
 
 /**

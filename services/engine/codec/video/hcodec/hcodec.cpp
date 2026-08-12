@@ -31,6 +31,7 @@
 #include "hcodec_log.h"
 #include "hcodec_dfx.h"
 #include "hcodec_utils.h"
+#include "meta/meta_key.h"
 #include <sys/ioctl.h>
 #include <linux/dma-buf.h>
 #define DMA_BUF_SET_LEAK_TYPE	_IOW(DMA_BUF_BASE, 5, const char *)
@@ -50,6 +51,9 @@ void HCodec::SetCallerToBuffer(int fd, uint32_t w, uint32_t h)
     
     string bufName = caller_.app.processName + '-' + to_string(w) + 'x' + to_string(h)
                      + '-' + mime_ + '-' + to_string(componentId_);
+    if (!codecDmaTag_.empty()) {
+        bufName += ":" + codecDmaTag_;
+    }
     ioctl(fd, DMA_BUF_SET_NAME_A, bufName.c_str());
 }
 
@@ -197,7 +201,12 @@ int32_t HCodec::Configure(const Format &format)
     std::function<void(ParamSP)> proc = [&](ParamSP msg) {
         msg->SetValue("format", format);
     };
-    return DoSyncCall(MsgWhat::CONFIGURE, proc);
+    int32_t ret = DoSyncCall(MsgWhat::CONFIGURE, proc);
+    if (ret == AVCS_ERR_OK) {
+        codecDmaTag_.clear();
+        (void)format.GetStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, codecDmaTag_);
+    }
+    return ret;
 }
 
 int32_t HCodec::SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)

@@ -18,6 +18,7 @@
 #include "avcodec_log.h"
 #include "avcodec_codec_name.h"
 #include "video_decoder.h"
+#include "meta/meta_key.h"
 #include <sstream>
 #include <sys/ioctl.h>
 #include <linux/dma-buf.h>
@@ -228,6 +229,8 @@ int32_t VideoDecoder::Configure(const Format &format)
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, DEFAULT_VIDEO_HEIGHT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, DEFAULT_OUT_BUFFER_CNT);
     format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, DEFAULT_IN_BUFFER_CNT);
+    decInfo_.codecDmaTag.clear();
+    (void)format.GetStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, decInfo_.codecDmaTag);
     isValidHdrSttMd_.store(false);
     int32_t val32;
     for (auto &it : format.GetFormatMap()) {
@@ -243,7 +246,8 @@ int32_t VideoDecoder::Configure(const Format &format)
         } else if (it.first == MediaDescriptionKey::MD_KEY_PIXEL_FORMAT ||
                    it.first == MediaDescriptionKey::MD_KEY_ROTATION_ANGLE ||
                    it.first == MediaDescriptionKey::MD_KEY_SCALE_TYPE ||
-                   it.first == OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE) {
+                   it.first == OHOS::Media::Tag::VIDEO_ORIENTATION_TYPE ||
+                   it.first == OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX) {
             continue;
         } else if (it.first == Tag::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER) {
             CHECK_AND_CONTINUE_LOG(format.GetIntValue(it.first, val32),
@@ -1069,6 +1073,9 @@ void VideoDecoder::SetCallerToBuffer(sptr<SurfaceBuffer> surfaceBuffer)
     }
     std::string name = decInfo_.processName + "-" + std::to_string(width_) + "x" + std::to_string(height_)
                        + "-" + mime + "-" + decInfo_.instanceId;
+    if (!decInfo_.codecDmaTag.empty()) {
+        name += ":" + decInfo_.codecDmaTag;
+    }
     ioctl(fd, DMA_BUF_SET_LEAK_TYPE, type.c_str());
     std::string pid = std::to_string(decInfo_.pid);
     ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());

@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <algorithm>
+#include <cctype>
 #include "avcodec_log.h"
 #include "avcodec_errors.h"
 #include "avcodec_trace.h"
@@ -109,6 +110,7 @@ int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenari
 int32_t TransformTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t VideoCodecScenarioChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t MaxFrameDelayCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t CodecDmaTagChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 
 // Checkers list define
 using ScenarioCheckerType =
@@ -131,6 +133,7 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     BFrameParamChecker,
     VideoCodecScenarioChecker,
     MaxFrameDelayCountChecker,
+    CodecDmaTagChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_LIST = {
@@ -150,6 +153,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     LTRFrameCountChecker,
     VideoCodecScenarioChecker,
     MaxFrameDelayCountChecker,
+    CodecDmaTagChecker,
 };
 
 const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
@@ -161,6 +165,7 @@ const ParamCheckerListType VIDEO_DECODER_CONFIGURE_CHECKER_LIST = {
     PostProcessingChecker,
     TransformTypeChecker,
     OutputInDecodingOrderChecker,
+    CodecDmaTagChecker,
 };
 
 const ParamCheckerListType VIDEO_ENCODER_PARAMETER_CHECKER_LIST = {
@@ -926,6 +931,49 @@ int32_t MaxFrameDelayCountChecker(CapabilityData &capData, Format &format, Codec
         return AVCS_ERR_OK;
     }
 
+    return AVCS_ERR_OK;
+}
+
+std::string NormalizeCodecDmaTag(const std::string &tag)
+{
+    std::string normalized;
+    for (unsigned char ch : tag) {
+        if (std::isgraph(ch)) {
+            normalized.push_back(static_cast<char>(ch));
+        }
+    }
+    return normalized;
+}
+
+bool IsPureDigits(const std::string &tag)
+{
+    return !tag.empty() && std::all_of(tag.begin(), tag.end(), [](unsigned char ch) {
+        return std::isdigit(ch);
+    });
+}
+
+int32_t CodecDmaTagChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)scenario;
+    std::string tag;
+    if (!format.GetStringValue(Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, tag)) {
+        return AVCS_ERR_OK;
+    }
+    AVCODEC_LOGI("input dmabuf tag: %{public}s", tag.c_str());
+
+    std::string normalized = NormalizeCodecDmaTag(tag);
+    if (normalized.empty()) {
+        format.RemoveKey(Tag::VIDEO_SET_DMABUF_NAME_SUFFIX);
+        return AVCS_ERR_OK;
+    }
+
+    if (IsPureDigits(normalized)) {
+        AVCODEC_LOGE("Param invalid, %{public}s should not be pure digits",
+            Tag::VIDEO_SET_DMABUF_NAME_SUFFIX);
+        return AVCS_ERR_INVALID_VAL;
+    }
+
+    format.PutStringValue(Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, normalized);
     return AVCS_ERR_OK;
 }
 } // namespace

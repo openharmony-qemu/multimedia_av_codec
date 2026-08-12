@@ -431,6 +431,7 @@ protected:
     uint32_t componentId_ = 0;
     std::string compUniqueStr_;
     std::string compUniqueStrWithMime_;
+    std::string codecDmaTag_;
     int32_t instanceId_ = -1;
     struct CallerInfo {
         int32_t pid = -1;

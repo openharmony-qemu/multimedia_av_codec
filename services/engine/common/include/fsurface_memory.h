@@ -41,6 +41,7 @@ struct CallerInfo {
     std::string instanceId = "";
     std::string processName = "";
     std::string_view mimeType = "";
+    std::string codecDmaTag = "";
     bool calledByAvcodec = true;
 };
 
