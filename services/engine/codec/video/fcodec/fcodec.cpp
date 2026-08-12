@@ -973,7 +973,7 @@ int32_t FCodec::AllocateOutputBuffer()
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface == nullptr, AVCS_ERR_UNKNOWN, "Not in buffer mode!");
     sptr<SurfaceBuffer> probeSb = nullptr;
     int32_t probeRet = AllocateSurfaceBuffer(probeSb);
-    if (probeRet == AVCS_ERR_OK && probeSb != nullptr) {
+    if (!isEmulator_ && (probeRet == AVCS_ERR_OK && probeSb != nullptr)) {
         isUsedSharedMem_ = false;
     } else {
         AVCODEC_LOGW("Allocate surface buffer failed, fall back to shared memory, ret=%{public}d", probeRet);
@@ -1542,8 +1542,10 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
         std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
         sptr<SurfaceBuffer> surfacebuffer = bufferMemory->GetSurfaceBuffer();
         CHECK_AND_RETURN_RET_LOG(surfacebuffer != nullptr, AVCS_ERR_UNKNOWN, "surfacebuffer is nullptr");
-        surfacebuffer->SetMetadata(ATTRKEY_CROP_REGION, cropVec);
-        surfacebuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoData);
+        GSError err = surfacebuffer->SetMetadata(ATTRKEY_CROP_REGION, cropVec);
+        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_CROP_REGION failed");
+        err = surfacebuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoData);
+        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_COLORSPACE_INFO failed");
     }
     decNum_++;
     return AVCS_ERR_OK;
