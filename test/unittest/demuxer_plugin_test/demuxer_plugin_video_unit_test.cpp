@@ -620,6 +620,27 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_FLV_AsyncZeroCopyMode_0002, T
 }
 
 /**
+ * @tc.name: Demuxer_SelectTrack_FLV_AsyncRead_0001
+ * @tc.desc: Select and unselect tracks while the async read thread is alive
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SelectTrack_FLV_AsyncRead_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_flv";
+    InitResource(g_flvPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_NE(demuxerPlugin_, nullptr);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+
+    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->UnselectTrack(1), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(1, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+}
+
+/**
  * @tc.name: Demuxer_BoostReadThreadPriority_0001
  * @tc.desc: Test BoostReadThreadPriority
  * @tc.type: FUNC
