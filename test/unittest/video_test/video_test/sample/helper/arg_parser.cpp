@@ -61,6 +61,10 @@ enum DemoArgumentType : int {
     DEMO_ARG_ENABLE_ROI_BY_NATIVEBUF,
     DEMO_ARG_ROI_FILE_PATH_BY_NATIVEBUF,
     DEMO_ARG_ENABLE_OUTPUT_ORDER,
+    DEMO_ARG_QUALITY,
+    DEMO_ARG_ENABLE_TEMPORAL_SCALABILITY,
+    DEMO_ARG_TEMPORAL_GOP_REFERENCE_MODE,
+    DEMO_ARG_TEMPORAL_GOP_SIZE,
     DEMO_ARG_END,
 };
 
@@ -103,6 +107,10 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_ENABLE_ROI_BY_NATIVEBUF,          "enable_roi_by_nativebuf"},
     {DEMO_ARG_ROI_FILE_PATH_BY_NATIVEBUF,       "roi_file_path_by_nativebuf"},
     {DEMO_ARG_ENABLE_OUTPUT_ORDER,              "output_order"},
+    {DEMO_ARG_QUALITY,                          "quality"},
+    {DEMO_ARG_ENABLE_TEMPORAL_SCALABILITY,      "enable_temporal_scalability"},
+    {DEMO_ARG_TEMPORAL_GOP_REFERENCE_MODE,      "temporal_gop_reference_mode"},
+    {DEMO_ARG_TEMPORAL_GOP_SIZE,                "temporal_gop_size"},
 };
 
 constexpr struct option DEMO_LONG_ARGUMENT[] = {
@@ -145,6 +153,10 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"enable_roi_by_nativebuf",          required_argument,  nullptr, DEMO_ARG_ENABLE_ROI_BY_NATIVEBUF},
     {"roi_file_path_by_nativebuf",       required_argument,  nullptr, DEMO_ARG_ROI_FILE_PATH_BY_NATIVEBUF},
     {"output_order",                     required_argument,  nullptr, DEMO_ARG_ENABLE_OUTPUT_ORDER},
+    {"quality",                          required_argument,  nullptr, DEMO_ARG_QUALITY},
+    {"enable_temporal_scalability",      required_argument,  nullptr, DEMO_ARG_ENABLE_TEMPORAL_SCALABILITY},
+    {"temporal_gop_reference_mode",      required_argument,  nullptr, DEMO_ARG_TEMPORAL_GOP_REFERENCE_MODE},
+    {"temporal_gop_size",                required_argument,  nullptr, DEMO_ARG_TEMPORAL_GOP_SIZE},
 };
 
 constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
@@ -198,6 +210,10 @@ Video codec demo help:
     --enable_roi_by_nativebuf           enable roi by nativebuf? (0: false; 1: true)
     --roi_file_path_by_nativebuf        roi file path by nativebuf
     --output_order                      enable low latency(0: false; 1: true), if true, meaning decoder order
+    --quality                           quality for CQ bitrate mode, range [1, 100]
+    --enable_temporal_scalability       enable temporal scalability? (0: false; 1: true)
+    --temporal_gop_reference_mode       temporal GOP reference mode (0: adjacent; 1: jump; 2: uniformly scaled)
+    --temporal_gop_size                 temporal GOP size, range [2, GOP)
 
 Example:
     --codec_type 0 --input input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
@@ -410,6 +426,26 @@ inline void SetEnableLowLatency(SampleInfo &info, const char * const value)
     info.enableDecoderOrder = std::stol(value);
 }
 
+inline void SetQuality(SampleInfo &info, const char * const value)
+{
+    info.quality = std::stol(value);
+}
+
+inline void SetEnableTemporalScalability(SampleInfo &info, const char * const value)
+{
+    info.enableTemporalScalability = std::stol(value);
+}
+
+inline void SetTemporalGopReferenceMode(SampleInfo &info, const char * const value)
+{
+    info.temporalGopReferenceMode = std::stol(value);
+}
+
+inline void SetTemporalGopSize(SampleInfo &info, const char * const value)
+{
+    info.temporalGopSize = std::stol(value);
+}
+
 const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char * const value)> ARG_OPT_MAP = {
     {DEMO_ARG_HELP,                             ShowHelp},
     {DEMO_ARG_SAMPLE_TYPE,                      SetSampleType},
@@ -450,6 +486,10 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_ENABLE_ROI_BY_NATIVEBUF,          SetEnableRoiByNativebuf},
     {DEMO_ARG_ROI_FILE_PATH_BY_NATIVEBUF,       SetRoiFilePathByNativebuf},
     {DEMO_ARG_ENABLE_OUTPUT_ORDER,              SetEnableLowLatency},
+    {DEMO_ARG_QUALITY,                          SetQuality},
+    {DEMO_ARG_ENABLE_TEMPORAL_SCALABILITY,      SetEnableTemporalScalability},
+    {DEMO_ARG_TEMPORAL_GOP_REFERENCE_MODE,      SetTemporalGopReferenceMode},
+    {DEMO_ARG_TEMPORAL_GOP_SIZE,                SetTemporalGopSize},
 };
 } // namespace
 

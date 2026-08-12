@@ -69,6 +69,8 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     if (sampleInfo.bitrateMode == SQR) {
         OH_AVFormat_SetLongValue(format.get(), OH_MD_KEY_MAX_BITRATE, sampleInfo.bitrate);
         OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_SQR_FACTOR, sampleInfo.sqrFactor);
+    } else if (sampleInfo.bitrateMode == CQ) {
+        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_QUALITY, sampleInfo.quality);
     } else {
         OH_AVFormat_SetLongValue(format.get(), OH_MD_KEY_BITRATE, sampleInfo.bitrate);
     }
@@ -76,6 +78,11 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_PROFILE, sampleInfo.profile);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_I_FRAME_INTERVAL, sampleInfo.iFrameInterval);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_ENABLE_SYNC_MODE, sampleInfo.syncMode);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY,
+                            sampleInfo.enableTemporalScalability);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE,
+                            sampleInfo.temporalGopReferenceMode);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, sampleInfo.temporalGopSize);
 
     int ret = OH_VideoEncoder_Configure(codec_.get(), format.get());
     CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AVCODEC_SAMPLE_ERR_ERROR, "Config failed, ret: %{public}d", ret);
