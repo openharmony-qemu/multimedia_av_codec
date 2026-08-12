@@ -954,6 +954,7 @@ bool IsPureDigits(const std::string &tag)
 
 int32_t CodecDmaTagChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
 {
+    (void)capData;
     (void)scenario;
     std::string tag;
     if (!format.GetStringValue(Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, tag)) {
