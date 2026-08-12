@@ -48,12 +48,6 @@ Status CodecCapabilityAdapter::GetAvailableEncoder(std::vector<MediaAVCodec::Cap
     return Status::OK;
 }
 
-Status CodecCapabilityAdapter::GetAvailableDecoder(std::vector<MediaAVCodec::CapabilityData*> &decoderInfo)
-{
-    GetVideoDecoder(decoderInfo);
-    return Status::OK;
-}
-
 Status CodecCapabilityAdapter::IsWatermarkSupported(std::string &codecMimeType, bool &isWatermarkSupported)
 {
     MediaAVCodec::CapabilityData *capabilityData = codeclist_->GetCapability(codecMimeType,
