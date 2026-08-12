@@ -1031,7 +1031,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, OnEvent_005, TestSize.Level1)
  */
 HWTEST_F(MediaDemuxerExtUnitTest, GetLastVideoBufferAbsPts_001, TestSize.Level1)
 {
-    auto mockMediaSyncManager = std::make_shared<Pipeline::MockMediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetLastVideoBufferAbsPts())
         .WillRepeatedly(Return(HST_TIME_BASE));
     mediaDemuxer_->syncCenter_ = nullptr;
@@ -1756,7 +1756,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_HandleSegmentMediaSelectTrack_
     mediaDemuxer_->source_ = std::make_shared<Source>();
     mediaDemuxer_->subtitleTrackId_ = NUM_1;
     mediaDemuxer_->isHls_ = true;
-    mediaDemuxer_->syncCenter_ = std::make_shared<Pipeline::MockMediaSyncManager>();
+    mediaDemuxer_->syncCenter_ = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mediaDemuxer_->source_), SelectStream(_)).WillRepeatedly(::testing::Return(Status::OK));
     auto result = mediaDemuxer_->HandleSegmentMediaSelectTrack(NUM_1);
     EXPECT_EQ(result, Status::OK);
