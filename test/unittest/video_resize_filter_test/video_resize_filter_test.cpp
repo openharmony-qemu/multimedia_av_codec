@@ -390,7 +390,7 @@ HWTEST_F(VideoResizeFilterTest, Configure_001, TestSize.Level1)
     EXPECT_CALL(*(videoEnhancer_),
         SetParameter(testing::_, testing::_)).WillOnce(testing::Return(VPEAlgoErrCode::VPE_ALGO_ERR_UNKNOWN));
     Status ret = videoResizeFilter_->Configure(parameterTest_);
-    EXPECT_NE(ret, Status::ERROR_VID_ENHANCER_CONFIGURE_FAILED);
+    EXPECT_EQ(ret, Status::ERROR_VID_ENHANCER_CONFIGURE_FAILED);
 }
 
 /**
@@ -406,7 +406,7 @@ HWTEST_F(VideoResizeFilterTest, Configure_002, TestSize.Level1)
     EXPECT_CALL(*(eventReceiver_), OnEvent(testing::_)).Times(TEST_TIMES_ONE);
 
     Status ret = videoResizeFilter_->Configure(parameterTest_);
-    EXPECT_NE(ret, Status::ERROR_VID_ENHANCER_CONFIGURE_FAILED);
+    EXPECT_EQ(ret, Status::ERROR_VID_ENHANCER_CONFIGURE_FAILED);
 }
 #endif
 
