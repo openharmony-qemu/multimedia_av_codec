@@ -973,7 +973,7 @@ int32_t FCodec::AllocateOutputBuffer()
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface == nullptr, AVCS_ERR_UNKNOWN, "Not in buffer mode!");
     sptr<SurfaceBuffer> probeSb = nullptr;
     int32_t probeRet = AllocateSurfaceBuffer(probeSb);
-    if (probeRet == AVCS_ERR_OK && probeSb != nullptr) {
+    if (!isEmulator_ && (probeRet == AVCS_ERR_OK && probeSb != nullptr)) {
         isUsedSharedMem_ = false;
     } else {
         AVCODEC_LOGW("Allocate surface buffer failed, fall back to shared memory, ret=%{public}d", probeRet);
