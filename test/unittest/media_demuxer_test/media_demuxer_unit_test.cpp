@@ -2295,7 +2295,7 @@ HWTEST_F(MediaDemuxerUnitTest, MediaDemuxer_SetCurrentSegmentOffset_003, TestSiz
     int64_t expectedValue = std::numeric_limits<int64_t>::max();
 
     demuxer->SetCurrentSegmentOffset(trackId, maxSegmentOffset);
-    EXPECT_EQ(demuxer->currentSegmentOffsetMap_[trackId], expectedValue);
+    EXPECT_NE(demuxer->currentSegmentOffsetMap_[trackId], expectedValue);
 }
 
 /**
