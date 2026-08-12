@@ -105,7 +105,6 @@ void VdecFormatChanged(OH_AVCodec *codec, OH_AVFormat *format, void *userData)
     int32_t currentHeight = 0;
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_WIDTH, &currentWidth);
     OH_AVFormat_GetIntValue(format, OH_MD_KEY_HEIGHT, &currentHeight);
-    std::cout << "currentWidth:" << currentWidth << " currentHeight:" << currentHeight << std::endl;
     dec_sample->DEFAULT_WIDTH = currentWidth;
     dec_sample->DEFAULT_HEIGHT = currentHeight;
 }
@@ -190,7 +189,6 @@ void VDecNdkSample::CheckOutputDescription()
         OH_AVFormat_GetIntValue(newFormat, OH_MD_KEY_VIDEO_PIC_HEIGHT, &picHeight);
         if (picWidth != DEFAULT_WIDTH || picHeight != DEFAULT_HEIGHT) {
             std::cout << "picWidth:" << picWidth << " picHeight:" << picHeight << std::endl;
-            std::cout << "DEFAULT_WIDTH:" << DEFAULT_WIDTH << " DEFAULT_HEIGHT:" << DEFAULT_HEIGHT << std::endl;
             std::cout << "errCount  !=:" << errCount << std::endl;
             errCount++;
         }
