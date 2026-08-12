@@ -78,7 +78,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     vEncSample->fuzzMode = true;
     vEncSample->enbleSyncMode = fdp.ConsumeIntegral<int32_t>();
     vEncSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();
-    vEncSample->syncOutputWaitTime = 1;
+    vEncSample->syncOutputWaitTime = fdp.ConsumeIntegralInRange<int32_t>(ONE, TWO);
     int32_t intval = fdp.ConsumeIntegral<uint32_t>();
     int32_t ret = vEncSample->CreateVideoEncoder(g_codeName.c_str());
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();

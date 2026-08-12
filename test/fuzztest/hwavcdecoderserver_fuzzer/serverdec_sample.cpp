@@ -180,7 +180,7 @@ void VDecServerSample::InputFunc()
             break;
         }
         uint8_t *bufferAddr = buffer->memory_->GetAddr();
-        if (memcpy_s(bufferAddr, buffer->memory_->GetCapacity(), fuzzData, fuzzSize) != EOK) {
+        if (memcpy_s(bufferAddr, buffer->memory_->GetCapacity(), fuzzDataVec.data(), fuzzDataVec.size()) != EOK) {
             break;
         }
         int32_t err = codec_->QueueInputBuffer(index);

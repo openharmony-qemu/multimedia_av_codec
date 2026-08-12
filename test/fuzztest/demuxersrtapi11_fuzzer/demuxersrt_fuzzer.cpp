@@ -44,7 +44,10 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    size_t framesize = dataSize - EXPECT_SIZE;
+    if (framesize == 0) {
+        return false;
+    }
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

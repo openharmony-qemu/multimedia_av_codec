@@ -37,9 +37,9 @@ void SetFormatValue(const uint8_t *data, size_t size)
     int intData1 = fdp.ConsumeIntegral<int32_t>();
     int intData2 = fdp.ConsumeIntegral<int32_t>();
     int intData3 = fdp.ConsumeIntegral<int32_t>();
-    int intData4 = fdp.ConsumeIntegral<int32_t>();
+    int intData4 = static_cast<int>(fdp.ConsumeIntegral<uint8_t>());
     int intData5 = fdp.ConsumeIntegral<int32_t>();
-    int intData6 = fdp.ConsumeIntegral<int32_t>();
+    int intData6 = static_cast<int>(fdp.ConsumeIntegral<uint8_t>());
     int intData7 = fdp.ConsumeIntegral<int32_t>();
     int intData8 = fdp.ConsumeIntegral<int32_t>();
     int longData = fdp.ConsumeIntegral<int64_t>();

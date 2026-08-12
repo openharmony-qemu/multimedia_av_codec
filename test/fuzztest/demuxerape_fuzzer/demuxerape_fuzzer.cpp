@@ -45,6 +45,10 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
     }
     uint8_t *pstream = nullptr;
     uint16_t framesize = dataSize - EXPECT_SIZE;
+    if (framesize == 0) {
+        close(fd);
+        return false;
+    }
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
@@ -68,6 +72,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdp(data, size);
     if (!CheckDataValidity(&fdp, size)) {
+        std::cerr << "Data validity check failed" << std::endl;
         return false;
     }
     struct Params params;

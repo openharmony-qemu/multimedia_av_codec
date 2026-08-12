@@ -35,7 +35,7 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
     demuxerTest->demuxerPluginName_ = "avdemux_aac";
     FuzzedDataProvider fdp(data, dataSize);
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, dataSize - EXPECT_SIZE);
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

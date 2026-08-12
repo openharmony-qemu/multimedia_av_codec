@@ -55,6 +55,7 @@ void RunNormalEncoder()
     }
     vEncSample->WaitForEOS();
     delete vEncSample;
+    vEncSample = nullptr;
 }
 bool g_needRunNormalEncoder = true;
 namespace OHOS {

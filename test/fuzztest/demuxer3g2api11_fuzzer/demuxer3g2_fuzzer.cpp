@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <fcntl.h>
 #include <fuzzer/FuzzedDataProvider.h>
 #include <iostream>
+#include <memory>
 #include <sys/stat.h>
 #include <unistd.h>
 #include "demuxer_sample.h"
@@ -34,6 +36,8 @@ const int64_t URI_COUNT = 20;
 const char FLAG = '\0';
 const size_t LANGUAGE_BUFFER_SIZE = 3;
 const size_t LANGUAGE_COUNT = 2;
+const uint32_t MIN_BUFFER_SIZE = 1;
+const uint32_t MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 
 bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
@@ -45,7 +49,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    size_t framesize = dataSize - EXPECT_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
@@ -71,9 +75,8 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     }
     struct Params params;
     params.time = fdp.ConsumeIntegral<int64_t>();
-    char *uri = new char[URI_BUFFER_SIZE];
-    if (strncpy_s(uri, URI_BUFFER_SIZE, fdp.ConsumeBytesAsString(URI_COUNT).c_str(), URI_COUNT) != 0) {
-        delete[] uri;
+    std::unique_ptr<char[]> uri(new char[URI_BUFFER_SIZE]);
+    if (strncpy_s(uri.get(), URI_BUFFER_SIZE, fdp.ConsumeBytesAsString(URI_COUNT).c_str(), URI_COUNT) != 0) {
         return false;
     }
     uri[URI_COUNT] = FLAG;
@@ -81,27 +84,25 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     params.setDuration = fdp.ConsumeIntegral<int64_t>();
     params.setHeight = fdp.ConsumeIntegral<int64_t>();
     params.setFrameRate = fdp.ConsumeIntegral<int64_t>();
-    char *setLanguage = new char[LANGUAGE_BUFFER_SIZE];
-    if (strncpy_s(setLanguage, LANGUAGE_BUFFER_SIZE, fdp.ConsumeBytesAsString(LANGUAGE_COUNT).c_str(),
+    std::unique_ptr<char[]> setLanguage(new char[LANGUAGE_BUFFER_SIZE]);
+    if (strncpy_s(setLanguage.get(), LANGUAGE_BUFFER_SIZE, fdp.ConsumeBytesAsString(LANGUAGE_COUNT).c_str(),
         LANGUAGE_COUNT) != 0) {
-        delete[] uri;
-        delete[] setLanguage;
         return false;
     }
     setLanguage[LANGUAGE_COUNT] = FLAG;
-    params.setCodecConfigSize = fdp.ConsumeIntegral<uint8_t>();
+    params.setCodecConfigSize = fdp.ConsumeIntegral<int64_t>();
     params.sampleRate = fdp.ConsumeIntegral<int32_t>();
     params.channelCount = fdp.ConsumeIntegral<int32_t>();
     params.setVideoHeight = fdp.ConsumeIntegral<int32_t>();
     params.setVideoWidth = fdp.ConsumeIntegral<int32_t>();
-    uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
+    uint32_t rawCreateSize = fdp.ConsumeIntegral<uint32_t>();
+    uint32_t createSize = std::max(MIN_BUFFER_SIZE, std::min(rawCreateSize, MAX_BUFFER_SIZE));
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = THREE_G2_PATH;
-    demuxerSample->RunNormalDemuxerApi11(createSize, uri, setLanguage, params);
-    delete[] uri;
-    delete[] setLanguage;
+    demuxerSample->RunNormalDemuxerApi11(createSize, uri.get(), setLanguage.get(), params);
     int ret = remove(THREE_G2_PATH);
     if (ret != 0) {
+        std::cerr << "Failed tp remove file: " << THREE_G2_PATH << std::endl;
         return false;
     }
     return true;

@@ -27,8 +27,9 @@ void PtsAndIndexConversionWithFunc(const uint8_t *data, size_t size)
 {
     std::shared_ptr<PtsAndIndexConversion> ptsandindexConversions = std::make_shared<PtsAndIndexConversion>();
     FuzzedDataProvider fdp(data, size);
-    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-    if (ptsandindexConversions->Init(remaining_data.data(), remaining_data.size())) {
+    auto remaining_data = fdp.ConsumeBytes<uint8_t>(fdp.ConsumeIntegralInRange<size_t>(0, 1024));
+    size_t remaining_size = remaining_data.size();
+    if (ptsandindexConversions->Init(remaining_data.data(), remaining_size)) {
         ptsandindexConversions->RunNormalTimeAndIndexConversions();
     }
 }

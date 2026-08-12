@@ -33,7 +33,7 @@ void DemuxerPluginFlvFuzzWithFunc(const uint8_t *data, size_t dataSize)
     std::shared_ptr<DemuxerPluginFlvTest> demuxerTest = std::make_shared<DemuxerPluginFlvTest>();
     FuzzedDataProvider fdp(data, dataSize);
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    uint16_t framesize = fdp.ConsumeIntegralInRange<uint16_t>(0, static_cast<uint16_t>(dataSize - EXPECT_SIZE));
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
