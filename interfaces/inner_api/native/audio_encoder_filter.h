@@ -31,9 +31,9 @@
 #include "audio_format_converter.h"
 #include "audio_suite_pcm_buffer.h"
 #include "audio_stream_info.h"
+#endif
 
 constexpr int32_t BUFFER_IS_EOS = 1;
-#endif
 
 namespace OHOS {
 namespace Media {
@@ -144,7 +144,7 @@ private:
     Status ConvertAudioData(const std::shared_ptr<AVBuffer>& srcBuffer, const std::shared_ptr<AVBuffer>& dstBuffer);
     Status CopyAudioData(const std::shared_ptr<AVBuffer>& srcBuffer, const std::shared_ptr<AVBuffer>& dstBuffer);
     void CopyBufferMetadata(const std::shared_ptr<AVBuffer>& srcBuffer, const std::shared_ptr<AVBuffer>& dstBuffer);
-    Status PushBufferToCodec(const std::shared_ptr<AVBuffer>& buffer);
+    Status PushBufferToCodec(const std::shared_ptr<AVBuffer>& buffer, bool available = true);
 
     // 声道转换相关
 #ifdef SUPPORT_AUDIO_CONVERT

@@ -944,8 +944,14 @@ Status AudioEncoderFilter::ConvertAudioData(const std::shared_ptr<AVBuffer>& src
     uint32_t actualOutputSize = 0;
     int32_t convertRet = channelConverter_->Process(
         dstBuffer->memory_->GetAddr(), outputSize, &actualOutputSize);
-    FALSE_RETURN_V_MSG_E(convertRet == 0 && actualOutputSize != 0,
+    FALSE_RETURN_V_MSG_E(convertRet == 0,
         Status::ERROR_UNKNOWN, "Channel conversion failed, ret: %{public}d", convertRet);
+
+    // converter成功但无输出：数据在内部累积中，等后续帧凑齐再输出
+    if (actualOutputSize == 0) {
+        dstBuffer->memory_->SetSize(0);
+        return Status::OK;
+    }
 
     actualOutputSize = actualOutputSize > static_cast<uint32_t>(dstBuffer->memory_->GetCapacity()) ?
         static_cast<uint32_t>(dstBuffer->memory_->GetCapacity()) : actualOutputSize;
@@ -988,17 +994,17 @@ Status AudioEncoderFilter::CopyAudioData(const std::shared_ptr<AVBuffer>& srcBuf
     return Status::OK;
 }
 
-Status AudioEncoderFilter::PushBufferToCodec(const std::shared_ptr<AVBuffer>& buffer)
+Status AudioEncoderFilter::PushBufferToCodec(const std::shared_ptr<AVBuffer>& buffer, bool available)
 {
     std::lock_guard<std::mutex> lock(producerMutex_);
-    
+
     FALSE_RETURN_V_MSG_E(mediaCodecInputProducer != nullptr,
         Status::ERROR_NULL_POINTER, "mediaCodecInputProducer is nullptr when pushing buffer");
-    
-    Status ret = mediaCodecInputProducer->PushBuffer(buffer, true);
+
+    Status ret = mediaCodecInputProducer->PushBuffer(buffer, available);
     FALSE_RETURN_V_MSG_E(ret == Status::OK,
         ret, "PushBuffer to mediaCodec failed, ret: %{public}d", ret);
-    
+
     return ret;
 }
 
@@ -1034,10 +1040,24 @@ void AudioEncoderFilter::ProcessIntermediateBuffer()
 
         intermediateQueueConsumer_->ReleaseBuffer(intermediateBuffer);
         if (processRet != Status::OK) {
+            PushBufferToCodec(codecBuffer, false);
             continue;
         }
 
-        PushBufferToCodec(codecBuffer);
+        // 有实际输出数据时推送到编码器
+        if (codecBuffer->memory_ != nullptr && codecBuffer->memory_->GetSize() > 0) {
+            PushBufferToCodec(codecBuffer);
+        } else if (intermediateBuffer->flag_ & BUFFER_IS_EOS) {
+            // converter无输出但源帧携带EOS：必须将EOS信号送达编码器
+            CopyBufferMetadata(intermediateBuffer, codecBuffer);
+            codecBuffer->memory_->SetSize(0);
+            PushBufferToCodec(codecBuffer);
+        } else {
+            // converter内部累积中（actualOutputSize=0），无数据可推送
+            // 必须将codecBuffer归还池（available=false：归还freeBufferList，不通知消费者）
+            // 否则buffer池会被耗尽导致RequestBuffer失败
+            PushBufferToCodec(codecBuffer, false);
+        }
     } while (ret == Status::OK);
 }
 
@@ -1081,7 +1101,13 @@ int32_t AudioEncoderFilter::ConverterInputCallback::OnRequestData(
     auto totalSize = sourceBuffer_->memory_->GetSize();
     if (totalSize < 0 || readOffset_ >= static_cast<size_t>(totalSize)) {
         if (status != nullptr) {
-            *status = InputDataStatus::DATA_FINISHED;
+            // 仅当源buffer携带EOS时才返回DATA_FINISHED，表示整个流结束
+            // 否则返回NO_AVAILABLE_DATA，让converter内部缓存数据等后续帧凑齐
+            if (sourceBuffer_->flag_ & BUFFER_IS_EOS) {
+                *status = InputDataStatus::DATA_FINISHED;
+            } else {
+                *status = InputDataStatus::NO_AVAILABLE_DATA;
+            }
         }
         return 0;
     }
