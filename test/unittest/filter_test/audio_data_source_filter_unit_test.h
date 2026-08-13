@@ -84,6 +84,7 @@ public:
         (std::shared_ptr<AVBuffer> buffer, uint32_t length), (override));
     MOCK_METHOD(int32_t, GetSize, (int64_t &size), (override));
     MOCK_METHOD(void, SetVideoFirstFramePts, (int64_t firstFramePts), (override));
+    MOCK_METHOD(void, SetListener, (std::shared_ptr<IAudioDataSourceListener> listener), (override));
 };
 
 class TestEventReceiver : public Pipeline::EventReceiver {

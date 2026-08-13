@@ -15,22 +15,25 @@
 #ifndef FILTERS_AUDIO_DATA_SOURCE_FILTER_H
 #define FILTERS_AUDIO_DATA_SOURCE_FILTER_H
 
-#include "filter/filter.h"
-#include "common/status.h"
-#include "osal/task/task.h"
 #include "audio_capturer.h"
+#include "common/status.h"
+#include "filter/filter.h"
 #include "media_data_source.h"
+#include "osal/task/task.h"
+#include <condition_variable>
+#include <mutex>
 
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
 
-class AudioDataSourceFilter : public Filter, public std::enable_shared_from_this<AudioDataSourceFilter> {
+class AudioDataSourceFilter : public Filter,
+                              public IAudioDataSourceListener,
+                              public std::enable_shared_from_this<AudioDataSourceFilter> {
 public:
     explicit AudioDataSourceFilter(std::string name, FilterType type);
     ~AudioDataSourceFilter() override;
-    void Init(const std::shared_ptr<EventReceiver>& receiver,
-        const std::shared_ptr<FilterCallback>& callback) override;
+    void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     Status DoPrepare() override;
     Status DoStart() override;
     Status DoPause() override;
@@ -38,37 +41,42 @@ public:
     Status DoStop() override;
     Status DoFlush() override;
     Status DoRelease() override;
-    void SetParameter(const std::shared_ptr<Meta>& meta) override;
-    void GetParameter(std::shared_ptr<Meta>& meta) override;
-    Status LinkNext(const std::shared_ptr<Filter>& nextFilter, StreamType outType) override;
-    Status UpdateNext(const std::shared_ptr<Filter>& nextFilter, StreamType outType) override;
-    Status UnLinkNext(const std::shared_ptr<Filter>& nextFilter, StreamType outType) override;
+    void SetParameter(const std::shared_ptr<Meta> &meta) override;
+    void GetParameter(std::shared_ptr<Meta> &meta) override;
+    Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
+    Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
+    Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
     Status SendEos();
     FilterType GetFilterType();
-    void SetAudioDataSource(const std::shared_ptr<IAudioDataSource>& audioSource);
-    void OnLinkedResult(const sptr<AVBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta);
-    Status OnLinked(StreamType inType, const std::shared_ptr<Meta>& meta,
-        const std::shared_ptr<FilterLinkCallback>& callback) override;
-    Status OnUpdated(StreamType inType, const std::shared_ptr<Meta>& meta,
-        const std::shared_ptr<FilterLinkCallback>& callback) override;
-    Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
-    void OnUnlinkedResult(const std::shared_ptr<Meta>& meta);
-    void OnUpdatedResult(const std::shared_ptr<Meta>& meta);
+    void SetAudioDataSource(const std::shared_ptr<IAudioDataSource> &audioSource);
+    void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta);
+    Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
+        const std::shared_ptr<FilterLinkCallback> &callback) override;
+    Status OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
+        const std::shared_ptr<FilterLinkCallback> &callback) override;
+    Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback> &callback) override;
+    void OnUnlinkedResult(const std::shared_ptr<Meta> &meta);
+    void OnUpdatedResult(const std::shared_ptr<Meta> &meta);
     void SetVideoFirstFramePts(int64_t firstFramePts);
+    void OnAudioDataReady() override;
+
 private:
-    void ReadLoop();
-    int32_t RelativeSleep(int64_t nanoTime);
-    std::shared_ptr<Task> taskPtr_{ nullptr };
+    void ProcessLoop();
+    AudioDataSourceReadAtActionState DoReadAndPush();
+    std::shared_ptr<Task> taskPtr_{nullptr};
     sptr<AVBufferQueueProducer> outputBufferQueue_;
-    std::shared_ptr<IAudioDataSource> audioDataSource_{ nullptr };
+    std::shared_ptr<IAudioDataSource> audioDataSource_{nullptr};
 
     std::shared_ptr<EventReceiver> receiver_;
     std::shared_ptr<FilterCallback> callback_;
 
     std::shared_ptr<Filter> nextFilter_;
-    std::atomic<bool> eos_{ false };
+    std::atomic<bool> eos_{false};
 
-    Mutex captureMutex_{};
+    std::mutex mutex_;
+    std::condition_variable dataCond_;
+    bool dataReady_ = false;
+    std::atomic<bool> stopped_{false};
 };
 } // namespace Pipeline
 } // namespace Media
