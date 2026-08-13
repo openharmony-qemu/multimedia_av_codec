@@ -523,7 +523,7 @@ HWTEST_F(FileFdSourceUnitTest, FileFdSource_NotifyBufferingEnd_0200, TestSize.Le
 
     fileFdSourcePlugin_->isInterrupted_ = false;
     fileFdSourcePlugin_->NotifyBufferingEnd();
-    EXPECT_NE("end", cb->description_);
+    EXPECT_EQ("end", cb->description_);
 }
 
 /**
