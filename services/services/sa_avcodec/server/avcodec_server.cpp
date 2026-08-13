@@ -187,15 +187,14 @@ int32_t AVCodecServer::VideoCallNotifyPiPState(const std::string &bundleName, co
         bundleName, isFloatingWindow);
     std::lock_guard<std::mutex> stateLock(stateMutex_);
     if (camRegisterFlag_) {
-    int32_t codecDecision = 0;
-    if (!codecParam.has_value())
-        codecDecision = 0;
-    else
-        codecDecision = DecidePowerMode(*codecParam);
-    AVCODEC_LOGD("AVCodecServer VideoCallNotifyPiPState: bundleName is %{public}s, isFloatingWindow is %{public}d, "
-                 "codecDecision is %{public}d",
-                 bundleName.c_str(), isFloatingWindow, codecDecision);
-    return NotifyListenerByProcessName(bundleName, codecDecision);
+        int32_t codecDecision = 0;
+        if (!codecParam.has_value())
+            codecDecision = 0;
+        else
+            codecDecision = DecidePowerMode(*codecParam);
+        AVCODEC_LOGD("AVCodecServer VideoCallNotifyPiPState: bundleName is %{public}s, isFloatingWindow is %{public}d, "
+                     "codecDecision is %{public}d", bundleName.c_str(), isFloatingWindow, codecDecision);
+        return NotifyListenerByProcessName(bundleName, codecDecision);
     }
     return AVCS_ERR_OK;
 }

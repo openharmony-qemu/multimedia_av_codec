@@ -26,6 +26,8 @@
 #include "native_avcapability.h"
 #include "avcodec_suspend.h"
 #include "avcodec_videocall.h"
+#include <chrono>
+#include <iostream>
 #include <unistd.h>
 #include "syspara/parameters.h"
 #include "avcodec_monitor.h"
@@ -1871,8 +1873,8 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_VIDEOCALL_API_0030, TestSize.L
 
 /**
  * @tc.number    : VIDEO_HWDEC_INNER_VIDEOCALL_API_0040
- * @tc.name      : RegisterCallback then UnRegisterCallback
- * @tc.desc      : api test
+ * @tc.name      : RegisterCallback then UnRegisterCallback repeatedly with latency
+ * @tc.desc      : repeatedly register and unregister callback with 200ms interval, 100 times, measure latency
  */
 HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_VIDEOCALL_API_0040, TestSize.Level2)
 {
@@ -1881,9 +1883,32 @@ HWTEST_F(HwdecInnerFuncNdkTest, VIDEO_HWDEC_INNER_VIDEOCALL_API_0040, TestSize.L
         void OnLowPowerConsumptionAvailable(std::shared_ptr<StrategyInfo> strategy) override {}
     };
     auto callback = std::make_shared<TestCallback>();
-    int32_t ret = AVCodecVideoCall::RegisterCallback(callback);
-    ASSERT_EQ(ret, AVCS_ERR_OK);
-    AVCodecVideoCall::UnRegisterCallback();
+    int64_t totalRegUs = 0;
+    int64_t totalUnregUs = 0;
+    int64_t maxRegUs = 0;
+    int64_t maxUnregUs = 0;
+    for (int32_t i = 0; i < 100; i++) {
+        auto regStart = std::chrono::steady_clock::now();
+        int32_t ret = AVCodecVideoCall::RegisterCallback(callback);
+        auto regEnd = std::chrono::steady_clock::now();
+        ASSERT_EQ(ret, AVCS_ERR_OK);
+        int64_t regUs = std::chrono::duration_cast<std::chrono::microseconds>(regEnd - regStart).count();
+        totalRegUs += regUs;
+        maxRegUs = std::max(maxRegUs, regUs);
+
+        auto unregStart = std::chrono::steady_clock::now();
+        AVCodecVideoCall::UnRegisterCallback();
+        auto unregEnd = std::chrono::steady_clock::now();
+        int64_t unregUs = std::chrono::duration_cast<std::chrono::microseconds>(unregEnd - unregStart).count();
+        totalUnregUs += unregUs;
+        maxUnregUs = std::max(maxUnregUs, unregUs);
+
+        usleep(200000);
+    }
+    std::cout << "RegisterCallback:   avg=" << totalRegUs / 100.0 / 1000.0
+              << " ms, max=" << maxRegUs / 1000.0 << " ms" << std::endl;
+    std::cout << "UnRegisterCallback: avg=" << totalUnregUs / 100.0 / 1000.0
+              << " ms, max=" << maxUnregUs / 1000.0 << " ms" << std::endl;
 }
 
 /**

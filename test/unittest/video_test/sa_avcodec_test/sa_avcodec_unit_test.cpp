@@ -998,170 +998,6 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_GetInstanceInfoByProcessName_0
     manager.codecStubMap_.erase(decCallerId);
 }
 
-// ========== UpdateCodecParmInfoByInstanceId Tests ==========
-
-/**
- * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_001
- * @tc.desc: UpdateCodecParmInfoByInstanceId updates codecParam fields
- *           when encPowermode != -1
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_001, TestSize.Level1)
-{
-    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
-    const int32_t callerId = 4003;
-    InstanceInfo initInfo = {
-        .instanceId = 4003,
-        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
-        .caller = {.pid = callerId, .processName = "com.test.update"},
-        .codecParam = {.encWidth = 320, .encHeight = 240,
-                       .encBitrate = 100000, .encPowermode = -1},
-    };
-    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo));
-
-    InstanceInfo updateInfo = {
-        .instanceId = 4003,
-        .caller = {.pid = callerId, .processName = "com.test.update"},
-        .codecParam = {.encWidth = 640, .encHeight = 480,
-                       .encBitrate = 300000, .encPowermode = 1},
-    };
-    // encPowermode=1 != -1 → encPowermode field is updated
-    manager.UpdateCodecParmInfoByInstanceId(4003, updateInfo);
-
-    auto it = manager.codecStubMap_.find(callerId);
-    ASSERT_NE(it, manager.codecStubMap_.end());
-    auto &stored = it->second.second;
-    EXPECT_EQ(stored.codecParam.encWidth, 640);
-    EXPECT_EQ(stored.codecParam.encHeight, 480);
-    EXPECT_EQ(stored.codecParam.encBitrate, 300000);
-    // encPowermode != -1 → updated to 1
-    EXPECT_EQ(stored.codecParam.encPowermode, 1);
-
-    manager.codecStubMap_.erase(callerId);
-}
-
-/**
- * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_002
- * @tc.desc: UpdateCodecParmInfoByInstanceId preserves encPowermode
- *           when encPowermode == -1 (skip update branch)
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_002, TestSize.Level1)
-{
-    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
-    const int32_t callerId = 4004;
-    InstanceInfo initInfo = {
-        .instanceId = 4004,
-        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
-        .caller = {.pid = callerId, .processName = "com.test.preserve"},
-        .codecParam = {.encWidth = 320, .encHeight = 240,
-                       .encBitrate = 100000, .encPowermode = 1},
-    };
-    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo));
-
-    InstanceInfo updateInfo = {
-        .instanceId = 4004,
-        .caller = {.pid = callerId, .processName = "com.test.preserve"},
-        .codecParam = {.encWidth = 1280, .encHeight = 720,
-                       .encBitrate = 500000, .encPowermode = -1},
-    };
-    // encPowermode=-1 → encPowermode field NOT updated, stays at 1
-    manager.UpdateCodecParmInfoByInstanceId(4004, updateInfo);
-
-    auto it = manager.codecStubMap_.find(callerId);
-    ASSERT_NE(it, manager.codecStubMap_.end());
-    auto &stored = it->second.second;
-    EXPECT_EQ(stored.codecParam.encWidth, 1280);
-    EXPECT_EQ(stored.codecParam.encHeight, 720);
-    EXPECT_EQ(stored.codecParam.encBitrate, 500000);
-    // encPowermode=-1 → preserved old value 1
-    EXPECT_EQ(stored.codecParam.encPowermode, 1);
-
-    manager.codecStubMap_.erase(callerId);
-}
-
-/**
- * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_003
- * @tc.desc: UpdateCodecParmInfoByInstanceId triggers callback
- *           when isFloatingWindow = true (encPowermode==1)
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_003, TestSize.Level1)
-{
-    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
-    std::promise<void> promise;
-    auto future = promise.get_future();
-    manager.RegisterCallback(
-        [&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
-               const std::string &callerName) { promise.set_value(); });
-
-    const int32_t callerId = 4005;
-    InstanceInfo initInfo = {
-        .instanceId = 4005,
-        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
-        .caller = {.pid = callerId, .processName = "com.test.cb2"},
-        .codecParam = {.encWidth = 320, .encHeight = 240,
-                       .encBitrate = 100000, .encPowermode = -1},
-    };
-    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo));
-
-    InstanceInfo updateInfo = {
-        .instanceId = 4005,
-        .caller = {.pid = callerId, .processName = "com.test.cb2"},
-        .codecParam = {.encWidth = 640, .encHeight = 480,
-                       .encBitrate = 200000, .encPowermode = 1},
-    };
-    // encPowermode=1 → isFloatingWindow=true → callback triggered
-    manager.UpdateCodecParmInfoByInstanceId(4005, updateInfo);
-    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::ready);
-
-    manager.UnRegisterCallback();
-    manager.codecStubMap_.erase(callerId);
-}
-
-/**
- * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_004
- * @tc.desc: UpdateCodecParmInfoByInstanceId does not trigger callback
- *           when countEnc > 1 and encPowermode != 0
- */
-HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_004, TestSize.Level1)
-{
-    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
-    std::promise<void> promise;
-    auto future = promise.get_future();
-    manager.RegisterCallback(
-        [&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
-               const std::string &callerName) { promise.set_value(); });
-
-    const int32_t callerId1 = 4006;
-    const int32_t callerId2 = 4007;
-    InstanceInfo enc1 = {
-        .instanceId = 4006,
-        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
-        .caller = {.pid = callerId1, .processName = "com.test.multi"},
-        .codecParam = {.encWidth = 320, .encHeight = 240, .encPowermode = -1},
-    };
-    InstanceInfo enc2 = {
-        .instanceId = 4007,
-        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
-        .caller = {.pid = callerId2, .processName = "com.test.multi"},
-        .codecParam = {.encWidth = 320, .encHeight = 240, .encPowermode = -1},
-    };
-    manager.codecStubMap_.emplace(callerId1, std::make_pair(nullptr, enc1));
-    manager.codecStubMap_.emplace(callerId2, std::make_pair(nullptr, enc2));
-
-    InstanceInfo updateInfo = {
-        .instanceId = 4006,
-        .caller = {.pid = callerId1, .processName = "com.test.multi"},
-        .codecParam = {.encWidth = 640, .encHeight = 480,
-                       .encBitrate = 200000, .encPowermode = 1},
-    };
-    // countEnc=2 (>1) and encPowermode=1 (≠0) → no callback
-    manager.UpdateCodecParmInfoByInstanceId(4006, updateInfo);
-    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::timeout);
-
-    manager.UnRegisterCallback();
-    manager.codecStubMap_.erase(callerId1);
-    manager.codecStubMap_.erase(callerId2);
-}
-
 // ========== RegisterCallback / UnRegisterCallback Tests ==========
 
 /**
@@ -1575,12 +1411,180 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_GetInstanceInfoByProcessName_0
     manager.codecStubMap_.erase(audioPid);
 }
 
-// ========== UpdateCodecParmInfoByInstanceId Additional Branch Coverage Tests ==========
+// ========== UpdateCodecParmInfoByInstanceId Tests ==========
+
+/**
+ * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_001
+ * @tc.desc: encPowermode=1 != -1 → B_true: all codecParam fields updated including encPowermode
+ *           A_true(found), B_true(encPowermode updated), C_true(countEnc=1), D_false(no decoder)
+ *           F_true(encPowermode==1&&countEnc==1→valid=true), H_false2(callback_=nullptr→no callback)
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_001, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    const int32_t callerId = 4003;
+    InstanceInfo initInfo = {
+        .instanceId = 4003,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = callerId, .processName = "com.test.update"},
+        .codecParam = {.encWidth = 320, .encHeight = 240,
+                       .encBitrate = 100000, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo));
+
+    InstanceInfo updateInfo = {
+        .instanceId = 4003,
+        .caller = {.pid = callerId, .processName = "com.test.update"},
+        .codecParam = {.encWidth = 640, .encHeight = 480,
+                       .encBitrate = 300000, .encPowermode = 1},
+    };
+    // encPowermode=1 != -1 → encPowermode field is updated
+    manager.UpdateCodecParmInfoByInstanceId(4003, updateInfo);
+
+    auto it = manager.codecStubMap_.find(callerId);
+    ASSERT_NE(it, manager.codecStubMap_.end());
+    auto &stored = it->second.second;
+    EXPECT_EQ(stored.codecParam.encWidth, 640);
+    EXPECT_EQ(stored.codecParam.encHeight, 480);
+    EXPECT_EQ(stored.codecParam.encBitrate, 300000);
+    // encPowermode != -1 → updated to 1
+    EXPECT_EQ(stored.codecParam.encPowermode, 1);
+
+    manager.codecStubMap_.erase(callerId);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_002
+ * @tc.desc: encPowermode=-1 → B_false: encPowermode preserved, other fields updated
+ *           A_true(found), B_false(encPowermode NOT updated), C_true(countEnc=1), D_false(no decoder)
+ *           G_false(encPowermode==-1&&countEnc==1&&countDec==0→valid=false), H_false3(valid=false→no callback)
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_002, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    const int32_t callerId = 4004;
+    InstanceInfo initInfo = {
+        .instanceId = 4004,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = callerId, .processName = "com.test.preserve"},
+        .codecParam = {.encWidth = 320, .encHeight = 240,
+                       .encBitrate = 100000, .encPowermode = 1},
+    };
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo));
+
+    InstanceInfo updateInfo = {
+        .instanceId = 4004,
+        .caller = {.pid = callerId, .processName = "com.test.preserve"},
+        .codecParam = {.encWidth = 1280, .encHeight = 720,
+                       .encBitrate = 500000, .encPowermode = -1},
+    };
+    // encPowermode=-1 → encPowermode field NOT updated, stays at 1
+    manager.UpdateCodecParmInfoByInstanceId(4004, updateInfo);
+
+    auto it = manager.codecStubMap_.find(callerId);
+    ASSERT_NE(it, manager.codecStubMap_.end());
+    auto &stored = it->second.second;
+    EXPECT_EQ(stored.codecParam.encWidth, 1280);
+    EXPECT_EQ(stored.codecParam.encHeight, 720);
+    EXPECT_EQ(stored.codecParam.encBitrate, 500000);
+    // encPowermode=-1 → preserved old value 1
+    EXPECT_EQ(stored.codecParam.encPowermode, 1);
+
+    manager.codecStubMap_.erase(callerId);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_003
+ * @tc.desc: encPowermode=1 with callback_ → callback triggered
+ *           A_true(found), B_true(encPowermode updated to 1), C_true(countEnc=1), D_false(no decoder)
+ *           F_true(encPowermode==1&&countEnc==1→valid=true), H_true(found&&callback_&&valid&&stored!=-1)
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_003, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    std::promise<void> promise;
+    auto future = promise.get_future();
+    manager.RegisterCallback(
+        [&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+               const std::string &callerName) { promise.set_value(); });
+
+    const int32_t callerId = 4005;
+    InstanceInfo initInfo = {
+        .instanceId = 4005,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = callerId, .processName = "com.test.cb2"},
+        .codecParam = {.encWidth = 320, .encHeight = 240,
+                       .encBitrate = 100000, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo));
+
+    InstanceInfo updateInfo = {
+        .instanceId = 4005,
+        .caller = {.pid = callerId, .processName = "com.test.cb2"},
+        .codecParam = {.encWidth = 640, .encHeight = 480,
+                       .encBitrate = 200000, .encPowermode = 1},
+    };
+    // encPowermode=1 → isFloatingWindow=true → callback triggered
+    manager.UpdateCodecParmInfoByInstanceId(4005, updateInfo);
+    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::ready);
+
+    manager.UnRegisterCallback();
+    manager.codecStubMap_.erase(callerId);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_004
+ * @tc.desc: countEnc=2, encPowermode=1 → valid=false → callback NOT triggered
+ *           A_true(found), B_true(encPowermode updated), C_true(countEnc=2), D_false(no decoder)
+ *           F_false(encPowermode==1&&countEnc!=1), H_false3(valid=false→no callback)
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_004, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    std::promise<void> promise;
+    auto future = promise.get_future();
+    manager.RegisterCallback(
+        [&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+               const std::string &callerName) { promise.set_value(); });
+
+    const int32_t callerId1 = 4006;
+    const int32_t callerId2 = 4007;
+    InstanceInfo enc1 = {
+        .instanceId = 4006,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = callerId1, .processName = "com.test.multi"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encPowermode = -1},
+    };
+    InstanceInfo enc2 = {
+        .instanceId = 4007,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = callerId2, .processName = "com.test.multi"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(callerId1, std::make_pair(nullptr, enc1));
+    manager.codecStubMap_.emplace(callerId2, std::make_pair(nullptr, enc2));
+
+    InstanceInfo updateInfo = {
+        .instanceId = 4006,
+        .caller = {.pid = callerId1, .processName = "com.test.multi"},
+        .codecParam = {.encWidth = 640, .encHeight = 480,
+                       .encBitrate = 200000, .encPowermode = 1},
+    };
+    // countEnc=2 (>1) and encPowermode=1 (≠0) → no callback
+    manager.UpdateCodecParmInfoByInstanceId(4006, updateInfo);
+    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::timeout);
+
+    manager.UnRegisterCallback();
+    manager.codecStubMap_.erase(callerId1);
+    manager.codecStubMap_.erase(callerId2);
+}
 
 /**
  * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_005
  * @tc.desc: Matching instanceId + non-matching processName entry
- *           covers line 468 false branch, line 477 C_false (processName mismatch)
+ *           A_true(found for target), A_false(not for other), B_true(encPowermode=0 updated),
+ *           C_true(target processName match→countEnc=1), C_false(other processName mismatch),
+ *           D_false(no decoder), E_true(encPowermode==0→valid=true), H_false2(callback_=nullptr)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_005, TestSize.Level1)
 {
@@ -1620,8 +1624,9 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
 
 /**
  * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_006
- * @tc.desc: callback_ true, countEnc == 1, isFloatingWindow = false (encPowermode = 0)
- *           covers line 481: callback_ && (countEnc==1 || false) → triggers callback
+ * @tc.desc: countEnc=1, encPowermode=0 with callback_ → callback triggered
+ *           A_true(found), B_true(encPowermode=0 updated), C_true(countEnc=1), D_false(no decoder)
+ *           E_true(encPowermode==0→valid=true), H_true(found&&callback_&&valid&&stored!=−1)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_006, TestSize.Level1)
 {
@@ -1654,8 +1659,9 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
 
 /**
  * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_007
- * @tc.desc: callback_ true, countEnc > 1, encPowermode = 0
- *           covers line 481: callback_ && (false || true) → callback triggered
+ * @tc.desc: countEnc=2, encPowermode=0 with callback_ → callback triggered (encPowermode==0 always valid)
+ *           A_true(found), B_true(encPowermode=0 updated), C_true(countEnc=2), D_false(no decoder)
+ *           E_true(encPowermode==0→valid=true), H_true(found&&callback_&&valid&&stored!=−1)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_007, TestSize.Level1)
 {
@@ -1697,9 +1703,9 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
 
 /**
  * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_008
- * @tc.desc: callback_ true, countEnc > 1, isFloatingWindow = true (encPowermode = 1)
- *           covers line 481: callback_ && (false || true) → callback triggered
- *           This exercises the isFloatingWindow=true branch when countEnc != 1
+ * @tc.desc: countEnc=2, encPowermode=1 with callback_ → valid=false → callback NOT triggered
+ *           A_true(found), B_true(encPowermode=1 updated), C_true(countEnc=2), D_false(no decoder)
+ *           F_false(encPowermode==1&&countEnc!=1), H_false3(valid=false→no callback)
  */
 HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_008, TestSize.Level1)
 {
@@ -1822,5 +1828,318 @@ HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId
     EXPECT_EQ(it->second.second.codecParam.encWidth, 640);
     manager.codecStubMap_.erase(encPid);
     manager.codecStubMap_.erase(audioPid);
+}
+
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_011, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    const int32_t callerId = 4003;
+    InstanceInfo initInfo = {
+        .instanceId = 4003,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = callerId, .processName = "com.test.update"},
+        .codecParam = {.encWidth = 320, .encHeight = 240,
+                       .encBitrate = 100000, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo));
+    InstanceInfo initInfo1 = {
+        .instanceId = 4004,
+        .codecType = AVCODEC_TYPE_VIDEO_DECODER,
+        .caller = {.pid = callerId, .processName = "com.test.update"},
+        .codecParam = {.encWidth = 320, .encHeight = 240,
+                       .encBitrate = 100000, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo1));
+    InstanceInfo updateInfo = {
+        .instanceId = 4003,
+        .caller = {.pid = callerId, .processName = "com.test.update"},
+        .codecParam = {.encWidth = 640, .encHeight = 480,
+                       .encBitrate = 300000, .encPowermode = 1},
+    };
+    // encPowermode=1 != -1 → encPowermode field is updated
+    manager.UpdateCodecParmInfoByInstanceId(4003, updateInfo);
+
+    auto it = manager.codecStubMap_.find(callerId);
+    ASSERT_NE(it, manager.codecStubMap_.end());
+    auto &stored = it->second.second;
+    EXPECT_EQ(stored.codecParam.encWidth, 640);
+    EXPECT_EQ(stored.codecParam.encHeight, 480);
+    EXPECT_EQ(stored.codecParam.encBitrate, 300000);
+    // encPowermode != -1 → updated to 1
+    EXPECT_EQ(stored.codecParam.encPowermode, 1);
+
+    manager.codecStubMap_.erase(callerId);
+}
+
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_012, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    std::promise<void> promise;
+    auto future = promise.get_future();
+    manager.RegisterCallback(
+        [&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+               const std::string &callerName) { promise.set_value(); });
+
+    const int32_t callerId = 4003;
+    InstanceInfo initInfo = {
+        .instanceId = 4003,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = callerId, .processName = "com.test.update"},
+        .codecParam = {.encWidth = 320, .encHeight = 240,
+                       .encBitrate = 100000, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo));
+    InstanceInfo initInfo1 = {
+        .instanceId = 4004,
+        .codecType = AVCODEC_TYPE_VIDEO_DECODER,
+        .caller = {.pid = callerId, .processName = "com.test.update"},
+        .codecParam = {.encWidth = 320, .encHeight = 240,
+                       .encBitrate = 100000, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(callerId, std::make_pair(nullptr, initInfo1));
+    InstanceInfo updateInfo = {
+        .instanceId = 4003,
+        .caller = {.pid = callerId, .processName = "com.test.update"},
+        .codecParam = {.encWidth = 640, .encHeight = 480,
+                       .encBitrate = 300000, .encPowermode = 1},
+    };
+    // encPowermode=1 != -1 → encPowermode field is updated
+    // countEnc=1, countDec=1, encPowermode=1 && countEnc==1 → valid=true
+    // callback_ != nullptr, found=true, valid=true, encPowermode=1 != -1 → callback triggered
+    manager.UpdateCodecParmInfoByInstanceId(4003, updateInfo);
+    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::ready);
+
+    manager.UnRegisterCallback();
+    manager.codecStubMap_.erase(callerId);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_013
+ * @tc.desc: processName mismatch + VIDEO_DECODER entry
+ *           covers branch 5: processName not match, codecType == VIDEO_DECODER
+ *           C1=false → short-circuit, countDec not incremented
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_013, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    const int32_t encPid = 8030;
+    const int32_t decPid = 8031;
+    InstanceInfo encInfo = {
+        .instanceId = 8030,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = encPid, .processName = "com.test.branch5"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encBitrate = 100000, .encPowermode = -1},
+    };
+    InstanceInfo decInfo = {
+        .instanceId = 8031,
+        .codecType = AVCODEC_TYPE_VIDEO_DECODER,
+        .caller = {.pid = decPid, .processName = "com.test.other5"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encBitrate = 100000, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(encPid, std::make_pair(nullptr, encInfo));
+    manager.codecStubMap_.emplace(decPid, std::make_pair(nullptr, decInfo));
+
+    InstanceInfo updateInfo = {
+        .instanceId = 8030,
+        .caller = {.pid = encPid, .processName = "com.test.branch5"},
+        .codecParam = {.encWidth = 640, .encHeight = 480, .encBitrate = 300000, .encPowermode = 0},
+    };
+    // decoder processName "com.test.other5" != "com.test.branch5" → C1=false → countDec not incremented
+    // encPowermode=0 → valid=true, callback_ is null → no callback
+    manager.UpdateCodecParmInfoByInstanceId(8030, updateInfo);
+
+    auto it = manager.codecStubMap_.find(encPid);
+    ASSERT_NE(it, manager.codecStubMap_.end());
+    EXPECT_EQ(it->second.second.codecParam.encWidth, 640);
+
+    manager.codecStubMap_.erase(encPid);
+    manager.codecStubMap_.erase(decPid);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_014
+ * @tc.desc: processName mismatch + AUDIO_ENCODER entry
+ *           covers branch 6: processName not match, codecType neither ENCODER nor DECODER
+ *           C1=false → short-circuit, neither countEnc nor countDec incremented
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_014, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    const int32_t encPid = 8032;
+    const int32_t audioPid = 8033;
+    InstanceInfo encInfo = {
+        .instanceId = 8032,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = encPid, .processName = "com.test.branch6"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encBitrate = 100000, .encPowermode = -1},
+    };
+    InstanceInfo audioInfo = {
+        .instanceId = 8033,
+        .codecType = AVCODEC_TYPE_AUDIO_ENCODER,
+        .caller = {.pid = audioPid, .processName = "com.test.other6"},
+    };
+    manager.codecStubMap_.emplace(encPid, std::make_pair(nullptr, encInfo));
+    manager.codecStubMap_.emplace(audioPid, std::make_pair(nullptr, audioInfo));
+
+    InstanceInfo updateInfo = {
+        .instanceId = 8032,
+        .caller = {.pid = encPid, .processName = "com.test.branch6"},
+        .codecParam = {.encWidth = 640, .encHeight = 480, .encBitrate = 300000, .encPowermode = 0},
+    };
+    // audio processName "com.test.other6" != "com.test.branch6" → C1=false → short-circuit
+    // encPowermode=0 → valid=true, callback_ is null → no callback
+    manager.UpdateCodecParmInfoByInstanceId(8032, updateInfo);
+
+    auto it = manager.codecStubMap_.find(encPid);
+    ASSERT_NE(it, manager.codecStubMap_.end());
+    EXPECT_EQ(it->second.second.codecParam.encWidth, 640);
+
+    manager.codecStubMap_.erase(encPid);
+    manager.codecStubMap_.erase(audioPid);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_015
+ * @tc.desc: branch 8: encPowermode==-1, countEnc==1, countDec==1 → valid=true,
+ *           but stored encPowermode==-1 → callback NOT triggered
+ *           covers H_false4: found && callback_ && valid but storedEncPowermode==-1
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_015, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    std::promise<void> promise;
+    auto future = promise.get_future();
+    manager.RegisterCallback(
+        [&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+               const std::string &callerName) { promise.set_value(); });
+
+    const int32_t encPid = 8040;
+    const int32_t decPid = 8041;
+    InstanceInfo encInfo = {
+        .instanceId = 8040,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = encPid, .processName = "com.test.branch8"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encBitrate = 100000, .encPowermode = -1},
+    };
+    InstanceInfo decInfo = {
+        .instanceId = 8041,
+        .codecType = AVCODEC_TYPE_VIDEO_DECODER,
+        .caller = {.pid = decPid, .processName = "com.test.branch8"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encBitrate = 100000, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(encPid, std::make_pair(nullptr, encInfo));
+    manager.codecStubMap_.emplace(decPid, std::make_pair(nullptr, decInfo));
+
+    InstanceInfo updateInfo = {
+        .instanceId = 8040,
+        .caller = {.pid = encPid, .processName = "com.test.branch8"},
+        .codecParam = {.encWidth = 640, .encHeight = 480, .encBitrate = 300000, .encPowermode = -1},
+    };
+    // encPowermode=-1 → B_false, stored encPowermode preserved as -1
+    // countEnc=1, countDec=1 → G_true → valid=true
+    // but stored encPowermode==-1 → H_false4 → callback NOT triggered
+    manager.UpdateCodecParmInfoByInstanceId(8040, updateInfo);
+    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::timeout);
+
+    auto it = manager.codecStubMap_.find(encPid);
+    ASSERT_NE(it, manager.codecStubMap_.end());
+    EXPECT_EQ(it->second.second.codecParam.encWidth, 640);
+    // encPowermode=-1 preserved
+    EXPECT_EQ(it->second.second.codecParam.encPowermode, -1);
+
+    manager.UnRegisterCallback();
+    manager.codecStubMap_.erase(encPid);
+    manager.codecStubMap_.erase(decPid);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_016
+ * @tc.desc: branch 11: encPowermode==-1, countEnc!=1 → valid=false → no callback
+ *           E_1=true, C1=false(countEnc=2) → valid=false
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_016, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    std::promise<void> promise;
+    auto future = promise.get_future();
+    manager.RegisterCallback(
+        [&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+               const std::string &callerName) { promise.set_value(); });
+
+    const int32_t encPid1 = 8042;
+    const int32_t encPid2 = 8043;
+    InstanceInfo enc1 = {
+        .instanceId = 8042,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = encPid1, .processName = "com.test.branch11"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encBitrate = 100000, .encPowermode = 1},
+    };
+    InstanceInfo enc2 = {
+        .instanceId = 8043,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = encPid2, .processName = "com.test.branch11"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encBitrate = 100000, .encPowermode = -1},
+    };
+    manager.codecStubMap_.emplace(encPid1, std::make_pair(nullptr, enc1));
+    manager.codecStubMap_.emplace(encPid2, std::make_pair(nullptr, enc2));
+
+    InstanceInfo updateInfo = {
+        .instanceId = 8042,
+        .caller = {.pid = encPid1, .processName = "com.test.branch11"},
+        .codecParam = {.encWidth = 640, .encHeight = 480, .encBitrate = 300000, .encPowermode = -1},
+    };
+    // encPowermode=-1, countEnc=2 → E_1=true, C1=false → valid=false → no callback
+    manager.UpdateCodecParmInfoByInstanceId(8042, updateInfo);
+    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::timeout);
+
+    // encPowermode=-1 preserved original value 1
+    auto it = manager.codecStubMap_.find(encPid1);
+    ASSERT_NE(it, manager.codecStubMap_.end());
+    EXPECT_EQ(it->second.second.codecParam.encPowermode, 1);
+
+    manager.UnRegisterCallback();
+    manager.codecStubMap_.erase(encPid1);
+    manager.codecStubMap_.erase(encPid2);
+}
+
+/**
+ * @tc.name: AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_017
+ * @tc.desc: branch 12: encPowermode==-1, countEnc==1, countDec!=1 → valid=false → no callback
+ *           E_1=true, C1=true, D1=false(countDec=0) → valid=false
+ */
+HWTEST_F(SaAVCodecUnitTest, AVCodec_ServerManager_UpdateInstanceInfoByInstanceId_017, TestSize.Level1)
+{
+    AVCodecServerManager &manager = AVCodecServerManager::GetInstance();
+    std::promise<void> promise;
+    auto future = promise.get_future();
+    manager.RegisterCallback(
+        [&promise](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
+               const std::string &callerName) { promise.set_value(); });
+
+    const int32_t encPid = 8044;
+    InstanceInfo encInfo = {
+        .instanceId = 8044,
+        .codecType = AVCODEC_TYPE_VIDEO_ENCODER,
+        .caller = {.pid = encPid, .processName = "com.test.branch12"},
+        .codecParam = {.encWidth = 320, .encHeight = 240, .encBitrate = 100000, .encPowermode = 1},
+    };
+    manager.codecStubMap_.emplace(encPid, std::make_pair(nullptr, encInfo));
+
+    InstanceInfo updateInfo = {
+        .instanceId = 8044,
+        .caller = {.pid = encPid, .processName = "com.test.branch12"},
+        .codecParam = {.encWidth = 640, .encHeight = 480, .encBitrate = 300000, .encPowermode = -1},
+    };
+    // encPowermode=-1, countEnc=1, countDec=0 → E_1=true, C1=true, D1=false → valid=false → no callback
+    manager.UpdateCodecParmInfoByInstanceId(8044, updateInfo);
+    EXPECT_EQ(future.wait_for(std::chrono::milliseconds(500)), std::future_status::timeout);
+
+    // encPowermode=-1 preserved original value 1
+    auto it = manager.codecStubMap_.find(encPid);
+    ASSERT_NE(it, manager.codecStubMap_.end());
+    EXPECT_EQ(it->second.second.codecParam.encPowermode, 1);
+
+    manager.UnRegisterCallback();
+    manager.codecStubMap_.erase(encPid);
 }
 } // namespace

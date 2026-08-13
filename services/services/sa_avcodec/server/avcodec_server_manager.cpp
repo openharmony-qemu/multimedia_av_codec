@@ -463,6 +463,7 @@ void AVCodecServerManager::UpdateCodecParmInfoByInstanceId(int32_t instanceId, c
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     int32_t countEnc = 0;
+    int32_t countDec = 0;
     InstanceInfo instanceInfo;
     bool found = false;
     for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
@@ -478,8 +479,14 @@ void AVCodecServerManager::UpdateCodecParmInfoByInstanceId(int32_t instanceId, c
         if (iter->second.second.caller.processName == info.caller.processName &&
             iter->second.second.codecType == AVCODEC_TYPE_VIDEO_ENCODER)
             countEnc++;
+        if (iter->second.second.caller.processName == info.caller.processName &&
+            iter->second.second.codecType == AVCODEC_TYPE_VIDEO_DECODER)
+            countDec++;
     }
-    if (found && callback_ && (countEnc == 1 || info.codecParam.encPowermode == 0)) {
+    bool valid = (info.codecParam.encPowermode == 0 ||
+                 (info.codecParam.encPowermode == 1 && countEnc == 1) ||
+                 (info.codecParam.encPowermode == -1 && countEnc == 1 && countDec == 1));
+    if (found && callback_ && valid && instanceInfo.codecParam.encPowermode != -1) {
         callback_(instanceInfo.codecParam,
                   instanceInfo.forwardCaller.processName,
                   instanceInfo.caller.processName);
