@@ -17,7 +17,7 @@
 #define HCODEC_HDECODER_H
 
 #include "hcodec.h"
-#include "v1_0/buffer_handle_meta_key_type.h"
+#include "v2_0/buffer_handle_meta_key_type.h"
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 #include "video_refreshrate_prediction.h"
 #endif
