@@ -810,7 +810,7 @@ HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_CRF_bitrate_ok, TestSize.Leve
     int32_t ret = testObj->Configure(format);
     ASSERT_EQ(AVCS_ERR_OK, ret);
 }
- 
+
 HWTEST_F(HEncoderPreparingUnitTest, configure_hevc_CRF_bitrate_invalid_targetQp, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(true, "video/hevc"));

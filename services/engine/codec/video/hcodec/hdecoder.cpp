@@ -122,8 +122,7 @@ int32_t HDecoder::OnConfigure(const Format &format)
         HLOGE("set output buffer type failed");
         return AVCS_ERR_UNKNOWN;
     }
-
-    int32_t ret  = SetDecOrder(format);
+    int32_t ret = SetDecOrder(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -964,11 +963,9 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
         }
         if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_AIHDR_ENHANCER, g_vpeSupportList)) {
             HLOGE("get VPE list failed");
-            dlclose(vpeHandle);
         }
         if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_DETAIL_ENHANCER, g_srSupportList)) {
             HLOGE("get sr list failed");
-            dlclose(vpeHandle);
         }
         g_isVpeSupportListInit = true;
         HLOGD("VPE init support list ok");
@@ -982,7 +979,7 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
     if (std::find(g_srSupportList.cbegin(), g_srSupportList.cend(), caller_.app.processName) !=
         g_srSupportList.cend()) {
         consumerUsage |= (BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
-        HLOGI("VPE Aihdr update usage = 0x%" PRIx64 "", consumerUsage);
+        HLOGI("VPE Aihsr update usage = 0x%" PRIx64 "", consumerUsage);
     }
 }
 #endif

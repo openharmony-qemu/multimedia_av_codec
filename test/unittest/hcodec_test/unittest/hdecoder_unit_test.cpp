@@ -1338,12 +1338,12 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_configured_valid
     ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
- 
+
     ret = testObj->NotifySuspend();
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
- 
+
 HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_flush_valid_001, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
@@ -1355,19 +1355,18 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_flush_valid_001,
     ASSERT_TRUE(SetOutputSurfaceToDecoder(testObj));
     ASSERT_TRUE(SetCallbackToDecoder(testObj));
     ASSERT_TRUE(ConfigureDecoder(testObj));
- 
+
     int32_t ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
- 
+
     ret = testObj->Flush();
     EXPECT_EQ(AVCS_ERR_OK, ret);
- 
-    ret = testObj->NotifySuspend();
 
+    ret = testObj->NotifySuspend();
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
- 
+
 HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_running_valid_001, TestSize.Level1)
 {
     std::shared_ptr<HCodec> testObj = HCodec::Create(GetCodecName(false, "video/hevc"));
@@ -1386,11 +1385,10 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_running_valid_00
     ret = testObj->NotifySuspend();
 
     ret = testObj->NotifyResume();
-
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
- 
+
 HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_frozen_valid_001, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
@@ -1415,7 +1413,6 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_frozen_valid_001
         ret = testObj->NotifySuspend();
 
         ret = testObj->NotifyResume();
-
         ret = testObj->NotifyMemoryWriteBack();
         EXPECT_EQ(AVCS_ERR_OK, ret);
     }
@@ -1423,7 +1420,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_frozen_valid_001
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
- 
+
 HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_frozen_valid_002, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
@@ -1446,17 +1443,15 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_suspend_when_codec_is_frozen_valid_002
         EXPECT_EQ(AVCS_ERR_OK, ret);
  
         ret = testObj->NotifySuspend();
-
         ret = testObj->NotifyMemoryWriteBack();
         EXPECT_EQ(AVCS_ERR_OK, ret);
- 
         ret = testObj->NotifyResume();
     }
  
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
- 
+
 HWTEST_F(HDecoderUserCallingUnitTest, set_resume_when_codec_is_running_valid_001, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
@@ -1472,16 +1467,16 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_resume_when_codec_is_running_valid_001
  
     int32_t ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
- 
+
     ret = testObj->NotifySuspend();
     bool isSupportFreeze = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     if (isSupportFreeze) {
         ret = testObj->NotifyMemoryRecycle();
         EXPECT_EQ(AVCS_ERR_OK, ret);
- 
+
         ret = testObj->NotifyMemoryWriteBack();
         EXPECT_EQ(AVCS_ERR_OK, ret);
- 
+
         ret = testObj->NotifyResume();
     } else {
         ret = testObj->NotifyResume();
@@ -1490,7 +1485,7 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_resume_when_codec_is_running_valid_001
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
- 
+
 HWTEST_F(HDecoderUserCallingUnitTest, set_resume_when_codec_is_frozen_valid_001, TestSize.Level1)
 {
     OHOS::system::SetParameter("hcodec.dmaswap.disable", "0");
@@ -1506,14 +1501,14 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_resume_when_codec_is_frozen_valid_001,
  
     int32_t ret = testObj->Start();
     EXPECT_EQ(AVCS_ERR_OK, ret);
- 
+
     ret = testObj->NotifySuspend();
  
     bool isSupportFreeze = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     if (isSupportFreeze) {
         ret = testObj->NotifyMemoryRecycle();
         EXPECT_EQ(AVCS_ERR_OK, ret);
- 
+
         ret = testObj->NotifyResume();
  
         ret = testObj->NotifyMemoryWriteBack();
@@ -1525,5 +1520,4 @@ HWTEST_F(HDecoderUserCallingUnitTest, set_resume_when_codec_is_frozen_valid_001,
     ret = testObj->Release();
     EXPECT_EQ(AVCS_ERR_OK, ret);
 }
- 
 }
