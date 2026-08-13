@@ -334,6 +334,13 @@ Status SurfaceEncoderAdapter::SetWatermarkMode()
     return Status::OK;
 }
 
+Status SurfaceEncoderAdapter::SetScreenCaptureMode()
+{
+    MEDIA_LOG_I("SetScreenCaptureMode");
+    isScreenCaptureMode_ = true;
+    return Status::OK;
+}
+
 sptr<Surface> SurfaceEncoderAdapter::GetInputSurface()
 {
     FALSE_RETURN_V_MSG(codecServer_ != nullptr, nullptr, "codecServer_ is nullptr");
@@ -384,8 +391,8 @@ Status SurfaceEncoderAdapter::Stop()
     // operate stop when it is paused state.
     if (curState_ == ProcessStateCode::PAUSED && !isTransCoderMode) {
         stopTime_ = pauseTime_;
-        // current frame is not the last frame before the pasue time, wait for stop
-        if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_)) {
+        // current frame is not the last frame before the pause time, wait for stop
+        if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_) && !isScreenCaptureMode_) {
             MEDIA_LOG_D("paused state -> stop, wait for stop.");
             HandleWaitforStop();
         }
@@ -394,8 +401,10 @@ Status SurfaceEncoderAdapter::Stop()
     }
     // operate stop when it is recording state.
     if (curState_ == ProcessStateCode::RECORDING && !isTransCoderMode) {
-        MEDIA_LOG_D("recording state -> stop, wait for stop.");
-        HandleWaitforStop();
+        if (!isScreenCaptureMode_) {
+            MEDIA_LOG_D("recording state -> stop, wait for stop.");
+            HandleWaitforStop();
+        }
         AddStopPts();
     }
 
@@ -408,10 +417,7 @@ Status SurfaceEncoderAdapter::Stop()
         releaseBufferTask_->Stop();
         MEDIA_LOG_I("releaseBufferTask_ Stop");
     }
-    if (!codecServer_) {
-        MEDIA_LOG_E("codecServer_ is nullptr");
-        return Status::OK;
-    }
+    FALSE_RETURN_V_MSG(codecServer_, Status::OK, "codecServer_ is nullptr");
     MEDIA_LOG_I("CodecServer Stop start");
     int32_t ret = codecServer_->Stop();
     isStart_ = false;

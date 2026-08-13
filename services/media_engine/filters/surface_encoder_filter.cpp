@@ -249,6 +249,14 @@ Status SurfaceEncoderFilter::SetWatermarkMode()
     return Status::OK;
 }
 
+Status SurfaceEncoderFilter::SetScreenCaptureMode()
+{
+    MEDIA_LOG_I("SetScreenCaptureMode");
+    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
+    mediaCodec_->SetScreenCaptureMode();
+    return Status::OK;
+}
+
 sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
 {
     MEDIA_LOG_I("GetInputSurface");
