@@ -4430,8 +4430,7 @@ void MediaDemuxer::CheckAndReportBufferingStatus(EventType type)
 
 int64_t MediaDemuxer::ReadLoop(int32_t trackId)
 {
-    if (isStopped_ || isPaused_ || isSeekError_ || isFlvLiveSelectingBitRate_ ||
-        (streamDemuxer_ != nullptr && streamDemuxer_->GetIsIgnoreParse())) {
+    if (isStopped_ || isPaused_ || isSeekError_ || isFlvLiveSelectingBitRate_ || (streamDemuxer_ != nullptr && streamDemuxer_->GetIsIgnoreParse())) {
         MEDIA_LOG_D("ReadLoop pausing or error, track " PUBLIC_LOG_D32, trackId);
         perfRecorder_.Reset();
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
@@ -4477,8 +4476,7 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
         }
         return GetEnableSampleQueueFlag() ? NEXT_DELAY_TIME_US : 0;
     }
-    MEDIA_LOG_DD("ReadLoop wait, track:" PUBLIC_LOG_D32 ", ret:" PUBLIC_LOG_D32,
-        trackId, static_cast<int32_t>(ret));
+    MEDIA_LOG_DD("ReadLoop wait, track:" PUBLIC_LOG_D32 ", ret:" PUBLIC_LOG_D32, trackId, static_cast<int32_t>(ret));
     return RETRY_DELAY_TIME_US; // delay to retry if no frame
 }
 
