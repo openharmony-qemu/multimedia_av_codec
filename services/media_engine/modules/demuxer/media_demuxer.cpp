@@ -4430,7 +4430,7 @@ void MediaDemuxer::CheckAndReportBufferingStatus(EventType type)
 
 int64_t MediaDemuxer::ReadLoop(int32_t trackId)
 {
-    if (streamDemuxer_->GetIsIgnoreParse() || isStopped_ || isPaused_ || isSeekError_ || isFlvLiveSelectingBitRate_) {
+    if (isStopped_ || isPaused_ || isSeekError_ || isFlvLiveSelectingBitRate_ || streamDemuxer_->GetIsIgnoreParse()) {
         MEDIA_LOG_D("ReadLoop pausing or error, track " PUBLIC_LOG_D32, trackId);
         perfRecorder_.Reset();
         return 6 * 1000; // sleep 6ms in pausing to avoid useless reading
