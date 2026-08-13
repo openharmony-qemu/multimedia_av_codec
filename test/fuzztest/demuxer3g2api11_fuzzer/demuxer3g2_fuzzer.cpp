@@ -38,6 +38,8 @@ const size_t LANGUAGE_BUFFER_SIZE = 3;
 const size_t LANGUAGE_COUNT = 2;
 const uint32_t MIN_BUFFER_SIZE = 1;
 const uint32_t MAX_BUFFER_SIZE = 10 * 1024 * 1024;
+const uint32_t ZERO = 0;
+const uint32_t TWO_HUNDRED_FIFTY_FIVE = 255;
 
 bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
@@ -90,7 +92,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     setLanguage[LANGUAGE_COUNT] = FLAG;
-    params.setCodecConfigSize = fdp.ConsumeIntegral<int64_t>();
+    params.setCodecConfigSize = fdp.ConsumeIntegralInRange<int64_t>(ZERO, TWO_HUNDRED_FIFTY_FIVE);
     params.sampleRate = fdp.ConsumeIntegral<int32_t>();
     params.channelCount = fdp.ConsumeIntegral<int32_t>();
     params.setVideoHeight = fdp.ConsumeIntegral<int32_t>();

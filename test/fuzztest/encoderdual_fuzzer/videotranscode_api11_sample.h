@@ -82,6 +82,7 @@ public:
     int32_t inputNum = 0;
     bool dualEos = false;
     bool enableDownsampling = true;
+    std::atomic<bool> isReleasing_{false};
     int32_t downsamplingWidth = 360;
     int32_t downsamplingHeight = 280;
     int32_t cropLeft = 10;
