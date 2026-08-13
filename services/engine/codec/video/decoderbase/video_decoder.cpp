@@ -396,15 +396,21 @@ int32_t VideoDecoder::Reset()
 void VideoDecoder::ReleaseResource()
 {
     StopThread();
-    ReleaseBuffers();
-    format_ = Format();
-    if (sInfo_.surface != nullptr) {
-        transform_.store(GraphicTransformType::GRAPHIC_ROTATE_NONE);
-        sInfo_.surface->SetTransform(transform_.load());
-        UnRegisterListenerToSurface(sInfo_.surface);
-        StopRequestSurfaceBufferThread();
+    {
+        std::lock_guard<std::mutex> sLock(surfaceMutex_);
+        if (sInfo_.surface != nullptr) {
+            transform_.store(GraphicTransformType::GRAPHIC_ROTATE_NONE);
+            sInfo_.surface->SetTransform(transform_.load());
+            UnRegisterListenerToSurface(sInfo_.surface);
+            StopRequestSurfaceBufferThread();
+        }
     }
-    sInfo_.surface = nullptr;
+    ReleaseBuffers();
+    {
+        std::lock_guard<std::mutex> sLock(surfaceMutex_);
+        sInfo_.surface = nullptr;
+    }
+    format_ = Format();
     DeleteDecoder();
 }
 
@@ -816,31 +822,33 @@ void VideoDecoder::ReleaseBuffers()
 
     std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
-    if (sInfo_.surface != nullptr) {
-        {
-            std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    {
+        std::lock_guard<std::mutex> sLock(surfaceMutex_);
+        if (sInfo_.surface != nullptr) {
             StopRequestSurfaceBufferThread();
             sInfo_.surface->CleanCache();
-        }
-        renderAvailQue_->Clear();
-        requestSurfaceBufferQue_->Clear();
-        {
-            std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
-            renderSurfaceBufferMap_.clear();
-        }
-        for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
-            std::shared_ptr<CodecBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
-            if (outputBuffer->owner_ == Owner::OWNED_BY_CODEC) {
-                std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
-                surfaceMemory->ReleaseSurfaceBuffer();
-                outputBuffer->owner_ = Owner::OWNED_BY_SURFACE;
+
+            renderAvailQue_->Clear();
+            requestSurfaceBufferQue_->Clear();
+            {
+                std::lock_guard<std::mutex> mLock(renderBufferMapMutex_);
+                renderSurfaceBufferMap_.clear();
             }
+            for (uint32_t i = 0; i < buffers_[INDEX_OUTPUT].size(); i++) {
+                std::shared_ptr<CodecBuffer> outputBuffer = buffers_[INDEX_OUTPUT][i];
+                if (outputBuffer->owner_ == Owner::OWNED_BY_CODEC) {
+                    std::shared_ptr<FSurfaceMemory> surfaceMemory = outputBuffer->sMemory;
+                    surfaceMemory->ReleaseSurfaceBuffer();
+                    outputBuffer->owner_ = Owner::OWNED_BY_SURFACE;
+                }
+            }
+            AVCODEC_LOGI("Num %{public}u surface cleancache success", decInstanceID_);
+        
+            buffers_[INDEX_OUTPUT].clear();
+            outputBufferCnt_ = 0;
+            outAVBuffer4Surface_.clear();
         }
-        AVCODEC_LOGI("Num %{public}u surface cleancache success", decInstanceID_);
     }
-    buffers_[INDEX_OUTPUT].clear();
-    outputBufferCnt_ = 0;
-    outAVBuffer4Surface_.clear();
     oLock.unlock();
     isBufferAllocated_ = false;
 }

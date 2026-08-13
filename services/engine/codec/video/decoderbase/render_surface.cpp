@@ -326,10 +326,11 @@ int32_t RenderSurface::SetSurfaceCfg()
 
 GSError RenderSurface::BufferReleasedByConsumer(uint64_t surfaceId)
 {
+    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING || state_ == State::EOS || state_ == State::FLUSHING ||
                              state_ == State::FLUSHED, GSERROR_NO_PERMISSION, "Invalid state");
-    std::lock_guard<std::mutex> sLock(surfaceMutex_);
     CHECK_AND_RETURN_RET_LOG(renderAvailQue_->Size() > 0, GSERROR_NO_BUFFER, "No available buffer");
+    CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, GSERROR_INVALID_ARGUMENTS, "Surface is nullptr");
     CHECK_AND_RETURN_RET_LOG(surfaceId == sInfo_.surface->GetUniqueId(), GSERROR_INVALID_ARGUMENTS,
                              "Ignore callback from old surface");
     RequestBufferFromConsumer();
