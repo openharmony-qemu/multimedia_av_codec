@@ -265,7 +265,7 @@ private:
     bool TrackIsSelectedLocked(const uint32_t trackId) const;
     Status HandleReadFrameResult(int ffmpegRet);
     Status ReadPacketToCacheQueue(const uint32_t readId);
-    Status AddPacketToCacheQueue(AVPacketWrapperPtr pkt);
+    Status AddPacketToCacheQueue(AVPacketWrapperPtr pkt, bool requireSelectedTrack = false);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);

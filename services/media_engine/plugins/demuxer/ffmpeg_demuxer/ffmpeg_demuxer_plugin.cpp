@@ -2185,7 +2185,7 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     }
 }
 
-Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper)
+Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper, bool requireSelectedTrack)
 {
     FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
         Status::ERROR_NULL_POINTER, "Pkt is nullptr");
@@ -2199,7 +2199,7 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper)
     Status ret = Status::OK;
     uint32_t cacheBytes = UINT32_MAX;
     std::unique_lock<std::mutex> lock(selectedTrackMutex_);
-    if (!TrackIsSelectedLocked(static_cast<uint32_t>(trackId))) {
+    if (requireSelectedTrack && !TrackIsSelectedLocked(static_cast<uint32_t>(trackId))) {
         lock.unlock();
         AccumulateXpsPktRelease(trackId);
         return Status::OK;

@@ -511,7 +511,7 @@ bool FFmpegDemuxerPlugin::HandleAVPacketNormal(AVPacketWrapperPtr& pktWrapper)
     if (isWebVTT && WebvttPktProcess(pkt)) {
         return true;
     }
-    Status ret = AddPacketToCacheQueue(pktWrapper);
+    Status ret = AddPacketToCacheQueue(pktWrapper, true);
     if (ret != Status::OK) {
         MEDIA_LOG_E("Add cache failed");
         readLoopStatus_ = ret;
