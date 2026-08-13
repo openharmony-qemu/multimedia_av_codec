@@ -877,7 +877,7 @@ void HDecoder::BeforeCbOutToUser(BufferInfo &info)
                 using namespace OHOS::HDI::Display::Graphic::Common::V2_0;
                 std::vector<uint8_t> v(sizeof(BlobDataType), 0);
                 BlobDataType* data = reinterpret_cast<BlobDataType*>(v.data());
-                data.cacheOp = CacheOption::CHACHE_INVALIDATE;
+                data->cacheOp = CacheOption::CACHE_INVALIDATE;
                 info.surfaceBuffer->SetMetadata(ATTRKEY_VIDEO_DECODER_MV, v);
                 info.avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_DECODER_IS_MV_CACHE_INVALIDATED, true);
                 (void)VrrPrediction(info);
