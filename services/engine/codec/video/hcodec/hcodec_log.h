@@ -96,6 +96,7 @@ inline constexpr const char* StrLevel(LogLevel level)
     }
 }
 
+#define PLOGW(...) RE_FORMAT(LOG_WARN, __VA_ARGS__)
 #define PLOGI(...) RE_FORMAT(LOG_INFO, __VA_ARGS__)
 
 #define LOG(level, s, ...) RE_FORMAT(level, "[%s] " s, __FUNCTION__, ##__VA_ARGS__)
