@@ -1199,7 +1199,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateLastVideoBufferAbsPts_001, TestSize.Leve
 HWTEST_F(MediaDemuxerExtUnitTest, UpdateLastVideoBufferAbsPts_002, TestSize.Level1)
 {
     mediaDemuxer_->isFlvLiveStream_ = true;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetLastVideoBufferAbsPts())
         .WillRepeatedly(Return(HST_TIME_BASE));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
@@ -1217,7 +1217,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, UpdateLastVideoBufferAbsPts_003, TestSize.Leve
 {
     mediaDemuxer_->isFlvLiveStream_ = true;
     mediaDemuxer_->videoTrackId_ = NUM_0;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetLastVideoBufferAbsPts())
         .WillRepeatedly(Return(HST_TIME_BASE));
     mediaDemuxer_->sampleQueueMap_.insert(
@@ -5684,7 +5684,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_BuildNetworkLoadedRange_006, Test
     mediaDemuxer_->enableSampleQueue_ = true;
     mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
     mediaDemuxer_->isTranscoderMode_ = false;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow())
         .WillRepeatedly(Return(NUM_0));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
@@ -5710,7 +5710,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_BuildNetworkLoadedRange_007, Test
     mediaDemuxer_->enableSampleQueue_ = true;
     mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
     mediaDemuxer_->isTranscoderMode_ = false;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow())
         .WillRepeatedly(Return(NEG_1));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
@@ -5736,7 +5736,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_BuildNetworkLoadedRange_008, Test
     mediaDemuxer_->enableSampleQueue_ = true;
     mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
     mediaDemuxer_->isTranscoderMode_ = false;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow())
         .WillRepeatedly(Return(NUM_2000));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
@@ -5785,7 +5785,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_BuildNetworkLoadedRange_010, Test
     mediaDemuxer_->enableSampleQueue_ = true;
     mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
     mediaDemuxer_->isTranscoderMode_ = false;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow())
         .WillRepeatedly(Return(NUM_0));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
@@ -5811,7 +5811,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_BuildNetworkLoadedRange_011, Test
     mediaDemuxer_->enableSampleQueue_ = true;
     mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
     mediaDemuxer_->isTranscoderMode_ = false;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow())
         .WillRepeatedly(Return(NUM_0));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
@@ -5837,7 +5837,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_BuildNetworkLoadedRange_012, Test
     mediaDemuxer_->enableSampleQueue_ = true;
     mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
     mediaDemuxer_->isTranscoderMode_ = false;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow())
         .WillRepeatedly(Return(NUM_0));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
@@ -5866,7 +5866,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxer_BuildNetworkLoadedRange_013, Test
     mediaDemuxer_->enableSampleQueue_ = true;
     mediaDemuxer_->isAudioDemuxDecodeAsync_ = true;
     mediaDemuxer_->isTranscoderMode_ = false;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow())
         .WillRepeatedly(Return(NUM_0));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
@@ -6753,7 +6753,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_021, TestSize.Level1)
     mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
     mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
     mediaDemuxer_->isHls_ = true;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow()).WillRepeatedly(Return(NUM_0));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
     EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
@@ -6785,7 +6785,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, SetTrackSelectionFilter_022, TestSize.Level1)
     mediaDemuxer_->defaultVideoStreamId_ = FILTER_VIDEO_STREAM_ID_1;
     mediaDemuxer_->defaultSubtitleStreamId_ = FILTER_SUBTITLE_STREAM_ID_1;
     mediaDemuxer_->isHls_ = false;
-    auto mockMediaSyncManager = std::make_shared<MediaSyncManager>();
+    auto mockMediaSyncManager = std::make_shared<MockMediaSyncManager>();
     EXPECT_CALL(*(mockMediaSyncManager), GetMediaTimeNow()).WillRepeatedly(Return(NUM_0));
     mediaDemuxer_->syncCenter_ = mockMediaSyncManager;
     EXPECT_CALL(*(mediaDemuxer_->source_), SelectBitRate(_)).Times(0);
