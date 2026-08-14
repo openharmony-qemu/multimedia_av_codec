@@ -1188,9 +1188,7 @@ void HCodec::OutBufUsToUser(BufferInfo &info)
         gotFirstOutput_ = true;
     }
 #ifndef AV_CODEC_HCODEC_ENABLE_QOS_THE_WHOLE_TIME
-    if (!isEncoder_ || codecRate_ < HIGH_FPS) {
-        SetThreadInteractiveQos(false);
-    }
+    SetThreadInteractiveQos(false);
 #endif
     info.BeginCpuAccess();
 #ifdef BUILD_ENG_VERSION
