@@ -762,7 +762,7 @@ bool MPEG4DemuxerPlugin::NeedWaitForRead(uint32_t trackId)
 
 bool MPEG4DemuxerPlugin::IsWebVTTTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track) const
 {
-    return track != nullptr && track->sampleHelper == nullptr &&
+    return track != nullptr && track->sampleHelper != nullptr &&
         track->sampleHelper->mimeType_ == MimeType::TEXT_WEBVTT;
 }
 
