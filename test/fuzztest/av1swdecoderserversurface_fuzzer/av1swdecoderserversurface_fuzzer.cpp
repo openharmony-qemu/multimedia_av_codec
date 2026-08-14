@@ -33,6 +33,7 @@ bool Av1SwdecoderServerSurfaceFuzzTest(const uint8_t *data, size_t size)
     vDecSample->RunVideoServerSurfaceDecoder();
     vDecSample->WaitForEos();
     delete vDecSample;
+    vDecSample = nullptr;
     return false;
 }
 
