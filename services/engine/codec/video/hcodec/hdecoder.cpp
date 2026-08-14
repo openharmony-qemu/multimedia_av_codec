@@ -793,7 +793,7 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
         layout.alignedHeight = currLayout_->alignedHeight;
     }
 
-    using namespace OHOS::HDI::Display::Graphic::Common::V1_0;
+    using namespace OHOS::HDI::Display::Graphic::Common::V2_0;
     vector<uint8_t> vec;
     GSError err = buffer->GetMetadata(ATTRKEY_CROP_REGION, vec);
     if (err == GSERROR_OK && vec.size() == sizeof(BufferHandleMetaRegion)) {
@@ -872,6 +872,17 @@ void HDecoder::BeforeCbOutToUser(BufferInfo &info)
 {
     ProcSurfaceBufferToUser(info.surfaceBuffer);
     ProcAVBufferToUser(info.avBuffer, info.omxBuffer);
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+    if (isVrrInitialized_) {
+        using namespace OHOS::HDI::Display::Graphic::Common::V2_0;
+        std::vector<uint8_t> v(sizeof(BlobDataType), 0);
+        BlobDataType* data = reinterpret_cast<BlobDataType*>(v.data());
+        data->cacheOp = CacheOption::CACHE_INVALIDATE;
+        info.surfaceBuffer->SetMetadata(ATTRKEY_VIDEO_DECODER_MV, v);
+        info.avBuffer->meta_->SetData(OHOS::Media::Tag::VIDEO_DECODER_IS_MV_CACHE_INVALIDATED, true);
+        (void)VrrPrediction(info);
+    }
+#endif
 }
 
 int32_t HDecoder::SubmitAllBuffersOwnedByUs()

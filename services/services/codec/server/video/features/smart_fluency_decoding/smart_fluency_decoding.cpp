@@ -495,7 +495,8 @@ void SmartFluencyDecoding::UpdateRetentionFeedback(bool shouldRetain)
     }
 }
 
-bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer)
+bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts,
+    const sptr<SurfaceBuffer> surfaceBuffer, bool mvCacheInvalidated)
 {
     PostDecCost cost;
 #ifdef SFD_DEBUG
@@ -518,7 +519,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts, c
         return HandlePostDecodePassthrough(pts, preDropCount, cost);
     }
 
-    MVStats mvStats = ExtractMVStats(caps, pts, cost, surfaceBuffer);
+    MVStats mvStats = ExtractMVStats(caps, pts, cost, surfaceBuffer, mvCacheInvalidated);
     PostDecResult res;
     FrameRetentionContext ctx { preDropCount, caps.requiresMv ? &mvStats : nullptr };
     {
@@ -548,7 +549,7 @@ int64_t SmartFluencyDecoding::GetCurrentSysTimeMs()
 }
 
 void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats,
-    int64_t& copyCostUs, int64_t& analyzeCostUs)
+    int64_t& copyCostUs, int64_t& analyzeCostUs, bool mvCacheInvalidated)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(mvAnalyzer_ != nullptr, "mvAnalyzer_ is null, skipping MV analysis");
     CHECK_AND_RETURN_LOG_WITH_TAG(surfaceBuffer != nullptr, "surfaceBuffer is null");
@@ -556,6 +557,10 @@ void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, 
     int64_t copyStart = GetCurrentSysTimeUs();
 #endif
     using namespace HDI::Display::Graphic::Common;
+    if (!mvCacheInvalidated) {
+        AVCODEC_LOGD_WITH_TAG("MV cache not invalidated upstream, invalidating manually");
+        InvalidateMvCache(surfaceBuffer);
+    }
     std::vector<uint8_t> vec;
     V2_0::BlobDataType data;
     int32_t ret = surfaceBuffer->GetMetadata(V2_0::ATTRKEY_VIDEO_DECODER_MV, vec);
@@ -576,6 +581,15 @@ void SmartFluencyDecoding::ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, 
 #ifdef SFD_DEBUG
     analyzeCostUs = GetCurrentSysTimeUs() - analyzeStart;
 #endif
+}
+
+void SmartFluencyDecoding::InvalidateMvCache(const sptr<SurfaceBuffer>& surfaceBuffer) const
+{
+    using namespace HDI::Display::Graphic::Common;
+    std::vector<uint8_t> v(sizeof(V2_0::BlobDataType), 0);
+    V2_0::BlobDataType* data = reinterpret_cast<V2_0::BlobDataType*>(v.data());
+    data->cacheOp = V2_0::CacheOption::CACHE_INVALIDATE;
+    surfaceBuffer->SetMetadata(V2_0::ATTRKEY_VIDEO_DECODER_MV, v);
 }
 
 void SmartFluencyDecoding::EnsureNaluAnalyzer()
@@ -652,7 +666,7 @@ bool SmartFluencyDecoding::GetNoRefFrameFromMap(int64_t pts)
 }
 
 MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts,
-                                             PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer)
+    PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer, bool mvCacheInvalidated)
 {
     if (!caps.requiresMv || surfaceBuffer == nullptr) {
         return MVStats{};
@@ -664,7 +678,7 @@ MVStats SmartFluencyDecoding::ExtractMVStats(StrategyCaps caps, int64_t pts,
     }
 
     MVStats mvStats{};
-    ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs);
+    ParseMVData(surfaceBuffer, mvStats, cost.copyMvCostUs, cost.analyzeMvCostUs, mvCacheInvalidated);
     if (mvStats.validBlocks > 0) {
         lastValidMVStats_ = mvStats;
         hasValidMVStats_ = true;

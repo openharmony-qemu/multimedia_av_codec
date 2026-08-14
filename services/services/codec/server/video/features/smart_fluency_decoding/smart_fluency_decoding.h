@@ -61,7 +61,8 @@ public:
     bool InjectCsdData(const std::vector<uint8_t>& csdData);
     bool ReplayCsdToAnalyzer();
     bool MakePreDecodeDecision(uint32_t index);
-    bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer);
+    bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer,
+                                bool mvCacheInvalidated);
     void Flush();
     void OnDecInfoUpdate(double sourceFps, double speed);
     
@@ -93,14 +94,16 @@ private:
     };
 
     std::shared_ptr<AVBuffer> FetchInputBufferAndCapabilities(uint32_t index, StrategyCaps& caps);
-    MVStats ExtractMVStats(StrategyCaps caps, int64_t pts, PostDecCost& cost, const sptr<SurfaceBuffer> surfaceBuffer);
+    MVStats ExtractMVStats(StrategyCaps caps, int64_t pts, PostDecCost& cost,
+                           const sptr<SurfaceBuffer> surfaceBuffer, bool mvCacheInvalidated);
     void RecordPreDecodeDump(const std::shared_ptr<AVBuffer>& buffer, const PreDecResult& res, int64_t startUs);
     void RecordPostDecodeDump(int64_t pts, uint32_t preDropCount, const PostDecResult& res,
                               const MVStats& mvStats, const PostDecCost& cost);
     int32_t InitializeInternal();
     int64_t GetCurrentSysTimeMs();
     void ParseMVData(const sptr<SurfaceBuffer> surfaceBuffer, MVStats& mvStats,
-                     int64_t& copyCostUs, int64_t& analyzeCostUs);
+                     int64_t& copyCostUs, int64_t& analyzeCostUs, bool mvCacheInvalidated);
+    void InvalidateMvCache(const sptr<SurfaceBuffer>& surfaceBuffer) const;
     void EnsureNaluAnalyzer();
     void EnsureMvAnalyzer();
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);

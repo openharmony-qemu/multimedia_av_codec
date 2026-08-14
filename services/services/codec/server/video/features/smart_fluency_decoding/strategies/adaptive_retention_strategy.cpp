@@ -30,8 +30,8 @@ constexpr double LOW_RISK_TH = 0.2;
 constexpr double CON_LOW_TH = 0.33;
 constexpr double CON_HIGH_TH = 0.66;
 constexpr double MAG_LOW_TH = 20.0;
-constexpr double MAG_HIGH_TH = 55.0;
-constexpr double MAG_CAP = 80.0;
+constexpr double MAG_HIGH_TH = 65.0;
+constexpr double MAG_CAP = 100.0;
 constexpr double MAG_WEIGHT_MIN = 0.4;
 constexpr double MAG_WEIGHT_RANGE = 0.6;
 constexpr double MAG_WEIGHT_REDUCTION = 0.7;
@@ -84,7 +84,8 @@ double AdaptiveRetentionStrategy::CalculateTargetRatio(const FrameRetentionConte
         return 1.0;
     }
     double baseRatioCeiling = std::clamp(TARGET_SAFE_FPS / renderFps, 0.0, 1.0);
-    double fallbackRatioCeiling = std::clamp(FALLBACK_SAFE_FPS / renderFps, 0.0, 1.0);
+    double fallBackFps = std::max(FALLBACK_SAFE_FPS, sourceFps_);
+    double fallbackRatioCeiling = std::clamp(fallBackFps / renderFps, 0.0, 1.0);
     double maxDropFloor = std::clamp(TARGET_EXTREME_FPS / renderFps, 0.0, 1.0);
     if (!ctx.mvStats) {
         return baseRatioCeiling;

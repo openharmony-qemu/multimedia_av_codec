@@ -337,6 +337,8 @@ Status DecoderSurfaceFilter::Configure(const std::shared_ptr<Meta> &parameter)
         MEDIA_LOG_I("height update 0 -> 512");
         configFormat_.PutIntValue(Tag::VIDEO_HEIGHT, VIDEO_HEIGHT);
     }
+    configFormat_.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE,
+        OH_FRAME_RETENTION_MODE_FULL);
     Status ret = videoDecoder_->Configure(configFormat_);
 
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> mediaCodecCallback = nullptr;
