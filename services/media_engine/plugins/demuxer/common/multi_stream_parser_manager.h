@@ -65,8 +65,7 @@ public:
         const PacketConvertInfo &packetInfo);
     bool ConvertPacketToAnnexb(uint32_t trackId, const PacketConvertToBufferInfo &convertInfo);
     void ParseAnnexbExtraData(uint32_t trackId, const uint8_t *sample, int32_t size);
-    static void ParseMetadataInfo(uint32_t trackIndex, std::shared_ptr<MultiStreamParserManager> streamParsers,
-         HevcParseFormat &parse);
+    void ParseMetadataInfo(uint32_t trackIndex, HevcParseFormat &parse);
 private:
     static std::mutex mtx_;
 

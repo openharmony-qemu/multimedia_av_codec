@@ -1200,6 +1200,7 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> MakeWebVttTrack(uint32_t
     auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
     track->trackIndex = trackIndex;
     track->duration = duration;
+    track->cache = std::make_shared<Plugins::MPEG4::SampleCache>();
     track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
     track->sampleHelper->mimeType_ = MimeType::TEXT_WEBVTT;
     return track;
@@ -2985,25 +2986,25 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_WebVttPendingCue_001, Te
     plugin->mediaInfo_.tracks[0].Set<Tag::MIME_TYPE>(WEBVTT_MIME);
     plugin->mediaInfo_.tracks[1].Set<Tag::MIME_TYPE>(WEBVTT_MIME);
     plugin->mediaInfo_.general.Set<Tag::MEDIA_DURATION>(60000);
-    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
-    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(1), Status::OK);
 
     plugin->pendingWebVttSamples_[0] = MakePendingWebVttSample(1000, 2000);
     plugin->pendingWebVttSamples_[1] = MakePendingWebVttSample(5000, 1000);
     ASSERT_EQ(plugin->FlushPendingWebVTTSample(0), Status::OK);
     EXPECT_EQ(plugin->pendingWebVttSamples_.count(0), 0U);
     EXPECT_EQ(plugin->pendingWebVttSamples_.count(1), 1U);
-    ASSERT_TRUE(plugin->cacheQueue_.HasCache(0));
-    ASSERT_FALSE(plugin->cacheQueue_.HasCache(1));
-    auto flushedTrack0 = plugin->cacheQueue_.Front(0);
+    ASSERT_NE(track0->cache, nullptr);
+    ASSERT_NE(track1->cache, nullptr);
+    ASSERT_TRUE(track0->cache->HasCache());
+    ASSERT_FALSE(track1->cache->HasCache());
+    auto flushedTrack0 = track0->cache->Front();
     ASSERT_NE(flushedTrack0, nullptr);
     ASSERT_NE(flushedTrack0->sample, nullptr);
     EXPECT_EQ(flushedTrack0->sample->duration, 2000);
 
     ASSERT_EQ(plugin->FlushPendingWebVTTSamples(), Status::OK);
     EXPECT_TRUE(plugin->pendingWebVttSamples_.empty());
-    ASSERT_TRUE(plugin->cacheQueue_.HasCache(1));
-    auto flushedTrack1 = plugin->cacheQueue_.Front(1);
+    ASSERT_TRUE(track1->cache->HasCache());
+    auto flushedTrack1 = track1->cache->Front();
     ASSERT_NE(flushedTrack1, nullptr);
     ASSERT_NE(flushedTrack1->sample, nullptr);
     EXPECT_EQ(flushedTrack1->sample->duration, 1000);
@@ -3023,15 +3024,15 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_WebVttContinuousCue_001,
     plugin->lastTrack_ = track;
     plugin->mediaInfo_.tracks.resize(1);
     plugin->mediaInfo_.tracks[0].Set<Tag::MIME_TYPE>(WEBVTT_MIME);
-    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
 
     auto firstCue = MakeWebVttCueSample(1000, 100, "first");
     auto secondCue = MakeWebVttCueSample(2500, 100, "second");
     ASSERT_EQ(plugin->ProcessWebVTTSampleForCache(track, firstCue), Status::OK);
-    EXPECT_FALSE(plugin->cacheQueue_.HasCache(0));
+    ASSERT_NE(track->cache, nullptr);
+    EXPECT_FALSE(track->cache->HasCache());
     ASSERT_EQ(plugin->ProcessWebVTTSampleForCache(track, secondCue), Status::OK);
-    ASSERT_TRUE(plugin->cacheQueue_.HasCache(0));
-    auto flushedFirstCue = plugin->cacheQueue_.Front(0);
+    ASSERT_TRUE(track->cache->HasCache());
+    auto flushedFirstCue = track->cache->Front();
     ASSERT_NE(flushedFirstCue, nullptr);
     ASSERT_NE(flushedFirstCue->sample, nullptr);
     EXPECT_EQ(flushedFirstCue->sample->pts, 1000);

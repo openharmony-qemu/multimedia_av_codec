@@ -16,12 +16,14 @@
 #ifndef MPEG4_BOX_PARSER_H
 #define MPEG4_BOX_PARSER_H
 
+#include <cstdint>
 #include <memory>
 #include <set>
 #include <map>
 #include <string>
 #include "converter.h"
 #include "mpeg4_audio_parser.h"
+#include "mpeg4_sample.h"
 #include "mpeg4_sample_helper.h"
 #include "plugin/plugin_definition.h"
 #include "plugin/plugin_info.h"
@@ -111,6 +113,7 @@ public:
         uint16_t audioSampleEntryBitsPerCodedSample = 0;
         CodecParams codecParms{};
         Mpeg4TrackDrmInfo drmInfo;
+        std::shared_ptr<SampleCache> cache = nullptr;
 
         Track() = default;
     };
@@ -147,7 +150,6 @@ public:
     const std::vector<Mpeg4PsshInfo>& GetPsshList() const;
     
 private:
-    bool ShouldParseAtomForFastInit(uint32_t atomType) const;
     std::shared_ptr<Track> firstTrack_;
     std::shared_ptr<Track> lastTrack_;
     std::shared_ptr<Track> currentTrack_;

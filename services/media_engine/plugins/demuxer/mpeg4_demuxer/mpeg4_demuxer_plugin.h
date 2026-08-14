@@ -28,7 +28,6 @@
 #include "buffer/avbuffer.h"
 #include "plugin/demuxer_plugin.h"
 #include "mpeg4_box_parser.h"
-#include "block_queue_pool.h"
 #include "multi_stream_parser_manager.h"
 #include "reference_parser_manager.h"
 #include "common/log.h"
@@ -157,7 +156,6 @@ private:
     uint32_t currentFragment_ = 0;
     Seekable seekable_;
     std::vector<uint32_t> selectedTrackIds_ = {};
-    Mpeg4BlockQueuePool cacheQueue_;
     MediaInfo mediaInfo_;
     std::shared_ptr<Meta> userformat_ = nullptr;
     uint32_t cachelimitSize_ = 0;
@@ -333,6 +331,18 @@ private:
     Status ReadSampleData(std::shared_ptr<MPEG4Sample>& mpeg4Sample, const SampleReadInfo& sampleInfo);
     Status AddSampleToCacheQueue(std::shared_ptr<Sample> sample,
         const uint32_t trackId, uint32_t sampleIndex = UINT32_MAX);
+    void ClearTrackCache(uint32_t trackId);
+    bool HasTrackCache(uint32_t trackId);
+    bool HasTrackCache(const std::shared_ptr<MPEG4AtomParser::Track>& track) const;
+    uint32_t GetTrackCacheDataSize(uint32_t trackId);
+    uint32_t GetTrackCacheFrameCount(uint32_t trackId);
+    bool ResetTrackCacheInfo(const std::shared_ptr<MPEG4Sample>& mpeg4Sample);
+    bool SetTrackCacheInfo(const std::shared_ptr<MPEG4Sample>& mpeg4Sample);
+    bool PushTrackCache(uint32_t trackId, const std::shared_ptr<MPEG4Sample>& mpeg4Sample);
+    std::shared_ptr<MPEG4Sample> PopTrackCache(uint32_t trackId);
+    std::shared_ptr<MPEG4Sample> FrontTrackCache(uint32_t trackId);
+    std::shared_ptr<MPEG4Sample> BackTrackCache(uint32_t trackId);
+    Status GetTrackCacheLastPTS(uint32_t trackId, int64_t& maxPts);
     void MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes);
     int64_t NowMs() const;
     Status FindFirstSampleIndexByDts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
@@ -406,6 +416,7 @@ private:
     Status WaitForLoop(uint32_t trackId, uint32_t timeout);
     Status EnsureReadLoopStarted();
     bool ShouldWaitForRead(uint32_t trackId);
+    bool ShouldWaitForRead(const std::shared_ptr<MPEG4AtomParser::Track>& track);
     void MPEG4ReadLoop();
     bool NeedWaitForRead(uint32_t trackId);
     void HandleReadWait();

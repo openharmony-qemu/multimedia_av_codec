@@ -26,6 +26,7 @@
 #include <array>
 #include "avc_parser_impl.h"
 #include "avcodec_trace.h"
+#include "common/log.h"
 #include "demuxer_utils.h"
 #include "securec.h"
 #include "mpeg4_box_parser.h"
@@ -1387,6 +1388,8 @@ Status MPEG4AtomParser::InitCurrentTrackForTrak()
 {
     auto track = std::make_shared<Track>();
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate memory for track");
+    track->cache = std::make_shared<SampleCache>();
+    FALSE_RETURN_V_MSG_E(track->cache != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate track cache");
     size_t originalTrackCount = mediaInfo_.tracks.size();
     Meta newTrackMeta;
     mediaInfo_.tracks.emplace_back(std::move(newTrackMeta));
@@ -3655,10 +3658,8 @@ Status MPEG4AtomParser::ParseMoof(const std::shared_ptr<Track>& track, int64_t o
             [this](const FragmentEntry& entry) { return entry.moofOffset == moofOffset_; });
         if (it != fragmentEntry_.end()) {
             inEntry = true;
+            FALSE_RETURN_V_NOLOG(!it->hasRead, Status::OK);
             fragIndex = static_cast<uint32_t>(std::distance(fragmentEntry_.begin(), it));
-            if (it->hasRead) {
-                return Status::OK;
-            }
         }
     }
     int64_t sidxDts = inEntry ? fragmentEntry_[fragIndex].firstDts : -1;
@@ -3840,6 +3841,8 @@ Status MPEG4AtomParser::ParseCover(MPEG4Atom currentAtom, uint32_t dataType, uin
 
     auto coverTrack = std::make_shared<Track>();
     FALSE_RETURN_V_MSG_E(coverTrack != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate cover track");
+    coverTrack->cache = std::make_shared<SampleCache>();
+    FALSE_RETURN_V_MSG_E(coverTrack->cache != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate cover track cache");
 
     coverTrack->trackIndex = trackCount_;
     coverTrack->codecParms.trackType = VIDEO_TYPE;
@@ -4434,8 +4437,7 @@ Status MPEG4AtomParser::ParseFrma(MPEG4Atom currentAtom, int32_t depth, ParseCon
          lastTrack_->sampleHelper->mimeType_ == MimeType::INVALID_TYPE)) {
         std::string mimeType = GetMimeType(originalFormat);
         if (mimeType != MimeType::INVALID_TYPE) {
-            lastTrack_->sampleHelper->mimeType_ = mimeType;
-            mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MIME_TYPE>(mimeType);
+            SetMime(mimeType);
         }
     }
     return Status::OK;
@@ -5283,10 +5285,6 @@ Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
     FALSE_RETURN_V_MSG_E(atom.dataSize >= 0, Status::ERROR_INVALID_DATA, "Invalid atom data size");
     FALSE_RETURN_V_MSG_W(!IsUnsupportedFmp4Atom(atom.type),
         Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, "Unsupported file: fmp4");
-    if (demuxerMode_ == Plugins::DemuxerMode::FAST_INIT && !ShouldParseAtomForFastInit(atom.type)) {
-        ctx->offset = atomEndOffset;
-        return Status::OK;
-    }
     // 使用函数指针查找和调用解析函数
     ParseFunction parseFunc = FindAtomParser(atom, ctx);
     if (parseFunc) {
@@ -5298,30 +5296,6 @@ Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
         ctx->offset += atom.size;
     }
     return ret;
-}
-
-bool MPEG4AtomParser::ShouldParseAtomForFastInit(uint32_t atomType) const
-{
-    static const std::set<uint32_t> fastInitAtoms = {
-        // File and track structure.
-        FourccType("ftyp"), FourccType("moov"), FourccType("wide"), FourccType("mdat"),
-        FourccType("trak"), FourccType("mvhd"), FourccType("tkhd"), FourccType("edts"),
-        FourccType("elst"), FourccType("mdia"), FourccType("mdhd"), FourccType("hdlr"),
-        FourccType("minf"), FourccType("stbl"), FourccType("stsd"),
-        // Codec configuration and playback-related track attributes.
-        FourccType("avcC"), FourccType("hvcC"), FourccType("vvcC"), FourccType("esds"),
-        FourccType("glbl"), FourccType("wave"), FourccType("pasp"), FourccType("chan"),
-        FourccType("colr"), FourccType("aclr"), FourccType("clli"), FourccType("mdcv"),
-        // Sample location, size and timing tables.
-        FourccType("stts"), FourccType("stss"), FourccType("ctts"), FourccType("stsc"),
-        FourccType("stsz"), FourccType("stz2"), FourccType("stco"), FourccType("co64"),
-        // Encrypted track and DRM information.
-        FourccType("frma"), FourccType("sinf"), FourccType("schm"), FourccType("schi"),
-        FourccType("tenc"), FourccType("senc"), FourccType("pssh"),
-        // This box is handled by SetHdrTypeInfo instead of a dedicated parser.
-        FourccType("cuvv")
-    };
-    return fastInitAtoms.count(atomType) != 0;
 }
 
 auto MPEG4AtomParser::FindAtomParser(const MPEG4Atom& atom, ParseContext* ctx) -> ParseFunction
