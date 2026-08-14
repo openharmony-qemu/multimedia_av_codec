@@ -1473,6 +1473,10 @@ int32_t VDecAPI11Sample::RepeatCallSetSurface()
 int32_t VDecAPI11Sample::DecodeSetSurface()
 {
     CreateSurface();
+    if (needDestroySurface) {
+        OH_NativeWindow_DestroyNativeWindow(nativeWindow[0]);
+        nativeWindow[0] = nullptr;
+    }
     return OH_VideoDecoder_SetSurface(vdec_, nativeWindow[0]);
 }
 

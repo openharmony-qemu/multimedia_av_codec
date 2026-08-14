@@ -1890,4 +1890,27 @@ HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_8K_0410, TestSize.Level2)
         }
     }
 }
+
+/**
+ * @tc.number    : VIDEO_DECODE_DESTROY_SURFACE
+ * @tc.name      : 创建surface-销毁surface-设置surface
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_DESTROY_SURFACE_0010, TestSize.Level0)
+{
+    if (cap != nullptr) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = true;
+        vDecSample->outputYuvFlag = false;
+        vDecSample->needDestroySurface = true;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->DecodeSetSurface());
+    }
+}
 }
