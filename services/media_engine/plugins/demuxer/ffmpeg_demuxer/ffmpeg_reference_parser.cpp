@@ -223,7 +223,7 @@ Status FFmpegDemuxerPlugin::ParserRefInit()
     CodecType codecType = videoStream->codecpar->codec_id == AV_CODEC_ID_HEVC ? CodecType::H265 : CodecType::H264;
     referenceParser_ = ReferenceParserManager::Create(codecType, IFramePos_);
     FALSE_RETURN_V_MSG_E(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "Reference is nullptr");
-    ParserSdtpInfo *sc = (ParserSdtpInfo *)videoStream->priv_data;
+    ParserSdtpInfo *sc = static_cast<ParserSdtpInfo *>(videoStream->priv_data);
     if (sc->sdtpCount > 0 && sc->sdtpData != nullptr) {
         MEDIA_LOG_E("Sdtp exist: " PUBLIC_LOG_D32, sc->sdtpCount);
         if (referenceParser_->ParserSdtpData(sc->sdtpData, sc->sdtpCount) == Status::OK) {
