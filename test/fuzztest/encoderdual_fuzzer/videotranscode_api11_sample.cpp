@@ -64,6 +64,9 @@ static void OnDecInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *
 static void OnDecOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     VideoTransCodeApi11Sample *sample = static_cast<VideoTransCodeApi11Sample *>(userData);
+    if (sample->isReleasing_.load()) {
+        return;
+    }
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
@@ -109,6 +112,9 @@ static void VencInputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *b
 static void OnEncOutputDataReady(OH_AVCodec *codec, uint32_t index, OH_AVBuffer *buffer, void *userData)
 {
     VideoTransCodeApi11Sample *sample = static_cast<VideoTransCodeApi11Sample*>(userData);
+    if (sample->isReleasing_.load()) {
+        return;
+    }
     OH_AVCodecBufferAttr attr;
     OH_AVBuffer_GetBufferAttr(buffer, &attr);
     if (attr.flags & AVCODEC_BUFFER_FLAGS_EOS) {
@@ -334,9 +340,10 @@ int32_t VideoTransCodeApi11Sample::Start()
     inFile_->open(inpDir, ios::in | ios::binary);
     if (!inFile_->is_open()) {
         (void)OH_VideoDecoder_Destroy(vdec_);
-        (void)OH_VideoEncoder_Destroy(venc_);
-        (void)OH_VideoEncoder_Destroy(vencSecondary);
         vdec_ = nullptr;
+        (void)OH_VideoEncoder_Destroy(vencSecondary);
+        vencSecondary = nullptr;
+        (void)OH_VideoEncoder_Destroy(venc_);
         venc_ = nullptr;
         inFile_->close();
         inFile_.reset();
@@ -392,9 +399,12 @@ void VideoTransCodeApi11Sample::WaitForEos()
     g_cv.wait(lock, []() {
         return !(g_isRunning.load());
     });
-    if (inputLoop_) {
+    g_isRunning.store(false);
+    if (inputLoop_ && inputLoop_->joinable()) {
+        decSignal->inCond_.notify_all();
         inputLoop_->join();
     }
+    inputLoop_.reset();
     OH_VideoDecoder_Stop(vdec_);
     OH_VideoEncoder_Stop(venc_);
     OH_VideoEncoder_Stop(vencSecondary);
@@ -402,6 +412,7 @@ void VideoTransCodeApi11Sample::WaitForEos()
 
 int32_t VideoTransCodeApi11Sample::Release()
 {
+    isReleasing_.store(true);
     if (decSignal != nullptr) {
         delete decSignal;
         decSignal = nullptr;
@@ -410,13 +421,13 @@ int32_t VideoTransCodeApi11Sample::Release()
         OH_VideoDecoder_Destroy(vdec_);
         vdec_ = nullptr;
     }
-    if (venc_ != nullptr) {
-        OH_VideoEncoder_Destroy(venc_);
-        venc_ = nullptr;
-    }
     if (vencSecondary != nullptr) {
         OH_VideoEncoder_Destroy(vencSecondary);
         vencSecondary = nullptr;
+    }
+    if (venc_ != nullptr) {
+        OH_VideoEncoder_Destroy(venc_);
+        venc_ = nullptr;
     }
     return 0;
 }

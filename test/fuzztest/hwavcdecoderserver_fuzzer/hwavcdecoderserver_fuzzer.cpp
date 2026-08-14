@@ -40,9 +40,7 @@ bool HwavcdecoderServerFuzzTest(const uint8_t *data, size_t size)
     std::vector<int32_t> pixelFormats = { 1, 2, 3, 4, 5 };
     size_t pfIndex = fdp.ConsumeIntegralInRange<size_t>(0, pixelFormats.size() - 1);
     vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
-    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-    vDecSample->fuzzData = remaining_data.data();
-    vDecSample->fuzzSize = remaining_data.size();
+    vDecSample->fuzzDataVec = fdp.ConsumeRemainingBytes<uint8_t>();
     vDecSample->RunVideoServerDecoder();
     vDecSample->WaitForEos();
     delete vDecSample;

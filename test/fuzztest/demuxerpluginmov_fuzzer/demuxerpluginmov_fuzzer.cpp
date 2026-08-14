@@ -24,9 +24,10 @@ using namespace std;
 using namespace OHOS::Media;
 
 namespace OHOS {
-constexpr uint32_t WIDTH = 1920;
-constexpr uint32_t HEIGHT = 1080;
 const int64_t EXPECT_SIZE = 4;
+const int64_t MAX_HEIGHT = 2160;
+const int64_t MAX_WIDTH = 2160;
+const int64_t ZERO = 0;
 void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
 {
     if (dataSize < EXPECT_SIZE) {
@@ -35,9 +36,9 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
     std::shared_ptr<DemuxerPluginTypeTest> demuxerTest = std::make_shared<DemuxerPluginTypeTest>();
     demuxerTest->testFilePath_ = "/data/test/demuxerpluginmov.mov";
     demuxerTest->demuxerPluginName_ = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
-    demuxerTest->videoHeightDefault_ = HEIGHT;
-    demuxerTest->videoWidthDefault_ = WIDTH;
     FuzzedDataProvider fdp(data, dataSize);
+    demuxerTest->videoHeightDefault_ = fdp.ConsumeIntegralInRange<uint32_t>(ZERO, MAX_HEIGHT);
+    demuxerTest->videoWidthDefault_ = fdp.ConsumeIntegralInRange<uint32_t>(ZERO, MAX_WIDTH);
     uint8_t *pstream = nullptr;
     uint16_t framesize = dataSize - EXPECT_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));

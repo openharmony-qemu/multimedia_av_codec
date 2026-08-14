@@ -42,14 +42,14 @@ bool DoReferenceParserWithDemuxerAPI(const uint8_t *data, size_t size)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = size - EXPECT_MIN_SIZE;
+    size_t framesize = size - EXPECT_MIN_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
         return false;
     }
     fdp.ConsumeData(pstream, framesize);
-    int len = write(fd, data, size);
+    int len = write(fd, pstream, framesize);
     if (len <= EXPECT_SIZE) {
         close(fd);
         free(pstream);

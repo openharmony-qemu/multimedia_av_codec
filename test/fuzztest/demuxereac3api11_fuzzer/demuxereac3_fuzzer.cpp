@@ -34,6 +34,7 @@ const int64_t URI_COUNT = 20;
 const char FLAG = '\0';
 const size_t LANGUAGE_BUFFER_SIZE = 3;
 const size_t LANGUAGE_COUNT = 2;
+const uint16_t MIN_FRAME_SIZE = 1;
 bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
     if (dataSize <= EXPECT_SIZE) {
@@ -44,7 +45,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(0, 0xfff);
+    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(MIN_FRAME_SIZE, 0xfff);
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         close(fd);

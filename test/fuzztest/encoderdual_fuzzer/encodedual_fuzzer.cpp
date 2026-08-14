@@ -30,7 +30,7 @@ using namespace OHOS::Media;
 namespace OHOS {
 const char *CAF_PATH = "/data/test/fuzz_create.h265";
 const int64_t EXPECT_SIZE = 4;
-bool CheckDataValidity(const uint8_t *data, size_t dataSize)
+bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
     if (dataSize <= EXPECT_SIZE) {
         return false;
@@ -39,18 +39,35 @@ bool CheckDataValidity(const uint8_t *data, size_t dataSize)
     if (fd < 0) {
         return false;
     }
-    int len = write(fd, data, dataSize);
-    if (len <= 0) {
+    uint8_t *pstream = nullptr;
+    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(0, static_cast<uint16_t>(dataSize - EXPECT_SIZE));
+    if (framesize == 0) {
+        return false;
+    }
+    pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
+    if (!pstream) {
+        std::cerr << "Memory alloction failed" << std::endl;
         close(fd);
         return false;
     }
+    fdp->ConsumeData(pstream, framesize);
+    int len = write(fd, pstream, framesize);
+    if (len <= 0) {
+        close(fd);
+        free(pstream);
+        pstream = nullptr;
+        return false;
+    }
     close(fd);
+    free(pstream);
+    pstream = nullptr;
     return true;
 }
 bool EncodeDualFuzzTest(const uint8_t *data, size_t size)
 {
     cout << "EncodeDualFuzzTest in" << endl;
-    if (!CheckDataValidity(data, size)) {
+    FuzzedDataProvider fdp(data, size);
+    if (!CheckDataValidity(&fdp, size)) {
         cout << "EncodeDualFuzzTest out1" << endl;
         return false;
     }

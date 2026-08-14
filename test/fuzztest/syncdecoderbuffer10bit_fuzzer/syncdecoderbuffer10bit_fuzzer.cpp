@@ -50,8 +50,8 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     FuzzedDataProvider fdp(data, size);
-    int data0 = fdp.ConsumeIntegral<int32_t>();
-    int data1 = fdp.ConsumeIntegral<int32_t>();
+    int32_t data0 = fdp.ConsumeIntegral<int32_t>();
+    int32_t data1 = fdp.ConsumeIntegral<int32_t>();
     g_vDecSample = new VDecSyncSample();
     g_vDecSample->defaultWidth = DEFAULT_WIDTH;
     g_vDecSample->defaultHeight = DEFAULT_HEIGHT;

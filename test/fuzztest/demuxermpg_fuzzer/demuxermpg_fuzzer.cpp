@@ -51,7 +51,13 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
         close(fd);
         return false;
     }
-    fdp->ConsumeData(pstream, framesize);
+    size_t consumed = fdp->ConsumeData(pstream, framesize);
+    if (consumed != framesize) {
+        close(fd);
+        free(pstream);
+        pstream = nullptr;
+        return false;
+    }
     int len = write(fd, pstream, framesize);
     if (len <= 0) {
         close(fd);

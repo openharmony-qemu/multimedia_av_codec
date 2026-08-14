@@ -56,9 +56,9 @@ bool HwEncoderSetParamFuzzTest(const uint8_t *data, size_t size)
     SaveCorpus(data, size, filename);
     FuzzedDataProvider fdp(data, size);
     bool data2 = fdp.ConsumeBool();
+    int64_t maxBite = fdp.ConsumeIntegralInRange<int64_t>(0, 100000000);
+    int32_t sqrFactor = fdp.ConsumeIntegralInRange<int64_t>(0, 51);
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-    int64_t maxBite = 100000000;
-    int32_t sqrFactor = 32;
     g_vEncSample = new VEncAPI11FuzzSample();
     g_vEncSample->fuzzData = remaining_data.data();
     g_vEncSample->fuzzSize = remaining_data.size();

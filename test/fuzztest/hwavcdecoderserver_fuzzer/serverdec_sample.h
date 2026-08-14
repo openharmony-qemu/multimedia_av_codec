@@ -26,6 +26,7 @@
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
+#include <vector>
 #include "hcodec.h"
 namespace OHOS {
 namespace MediaAVCodec {
@@ -53,8 +54,7 @@ public:
     void InputFunc();
     void WaitForEos();
     VDecSignal *signal_;
-    const uint8_t *fuzzData;
-    size_t fuzzSize;
+    std::vector<uint8_t> fuzzDataVec;
     int sendFrameIndex = 0;
     int32_t defaultWidth = 1920;
     int32_t defaultHeight = 1080;
