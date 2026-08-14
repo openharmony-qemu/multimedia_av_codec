@@ -62,6 +62,7 @@ const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const std::string TEST_RELATIVE_PATH = "/data/test/media/";
 const std::string TEST_DEMUXER_RESOURCE_DIR = "/data/test/media";
 const std::string FFMPEG_MP4_PLUGIN_NAME = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+const std::string MPEG4_PLUGIN_NAME = "avdemux_mpeg4";
 const std::string WEBVTT_MIME = "text/vtt";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 constexpr int32_t WAIT_RETRY_TIMES = 20;
@@ -1476,13 +1477,17 @@ void Mpeg4DemuxerPluginUnitTest::InitFfmpegPluginURI(const std::string& filePath
 
 void Mpeg4DemuxerPluginUnitTest::InitMpeg4Plugin(const std::string& filePath)
 {
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     InitPlugin(filePath, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
 }
 
 void Mpeg4DemuxerPluginUnitTest::InitMpeg4PluginURI(const std::string& filePath)
 {
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     InitPluginURI(filePath, mpeg4Plugin_, mpeg4MediaInfo_);
 }
 
@@ -1499,7 +1504,9 @@ void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkFfmpegPlugin(
 void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkMpeg4Plugin(
     const std::string& filePath, int64_t failOffset, size_t maxFailCount)
 {
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     WeakNetworkPluginContext context {mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_};
     InitWeakNetworkPlugin(filePath, context, failOffset, maxFailCount);
 }
@@ -1529,7 +1536,9 @@ void Mpeg4DemuxerPluginUnitTest::InitDeferredWeakNetworkMpeg4Plugin(
     streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
 
     auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     ASSERT_EQ(mpeg4Plugin_->SetDataSource(dataSource), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->GetMediaInfo(mpeg4MediaInfo_), Status::OK);
     streamDemuxer->ResetFailState();
@@ -3460,7 +3469,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0002,
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0003, TestSize.Level1)
 {
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     Status ret = mpeg4Plugin_->ParserRefUpdatePos(0, true);
     EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
 }
@@ -3544,7 +3555,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0001, TestS
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0002, TestSize.Level1)
 {
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     std::vector<uint32_t> IFramePos;
     mpeg4Plugin_->GetIFramePos(IFramePos);
     EXPECT_EQ(IFramePos.size(), 0);
