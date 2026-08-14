@@ -84,7 +84,8 @@ double AdaptiveRetentionStrategy::CalculateTargetRatio(const FrameRetentionConte
         return 1.0;
     }
     double baseRatioCeiling = std::clamp(TARGET_SAFE_FPS / renderFps, 0.0, 1.0);
-    double fallbackRatioCeiling = std::clamp(FALLBACK_SAFE_FPS / renderFps, 0.0, 1.0);
+    double fallBackFps = std::max(FALLBACK_SAFE_FPS, sourceFps_);
+    double fallbackRatioCeiling = std::clamp(fallBackFps / renderFps, 0.0, 1.0);
     double maxDropFloor = std::clamp(TARGET_EXTREME_FPS / renderFps, 0.0, 1.0);
     if (!ctx.mvStats) {
         return baseRatioCeiling;
