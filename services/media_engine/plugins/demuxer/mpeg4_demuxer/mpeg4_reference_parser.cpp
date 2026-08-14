@@ -516,7 +516,7 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
         0);
     MEDIA_LOG_I("realSeekTime is " PUBLIC_LOG_D64, realSeekTime);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "SeekToFrameByDts failed");
-    cacheSample_ = cacheQueue_.Front(refParserTrackIdx_);
+    cacheSample_ = FrontTrackCache(refParserTrackIdx_);
     isReadSampleDataFromCache_ = true;
     return Status::OK;
 }

@@ -18,7 +18,7 @@
 
 #include <memory>
 #include "buffer/avbuffer.h"
-#include "block_queue_pool.h"
+#include "mpeg4_sample.h"
 
 namespace OHOS {
 namespace Media {

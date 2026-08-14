@@ -581,7 +581,7 @@ bool AvcParserImpl::ParseNalUnits(std::vector<NalUnitInfo> &nalUnits, const uint
         if (nalSize == 0) {
             continue;
         }
-        if (nalSize < 0x02 || nalSize > MAX_RBSP_SKIP_BYTES ||
+        if (nalSize < 0x01 || nalSize > MAX_RBSP_SKIP_BYTES ||
             static_cast<int64_t>(nalSize) > bufEnd - buf) {
             return false;
         }

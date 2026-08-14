@@ -19,6 +19,7 @@
 #include <limits>
 
 #include "common/log.h"
+#include "mpeg4_sample.h"
 #include "mpeg4_sample_helper.h"
 
 namespace {

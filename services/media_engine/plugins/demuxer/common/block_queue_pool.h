@@ -43,33 +43,6 @@ struct SamplePacket {
 } // namespace Ffmpeg
 #endif
 
-namespace MPEG4 {
-struct Sample {
-    enum SampleFlag : uint32_t {
-        NONE = 0,
-        EOS = 1 << 0,
-        SYNC_FRAME = 1 << 1,
-        DISCARD = 1 << 4,
-    };
-    int64_t pts;
-    int64_t dts;
-    int64_t duration;
-    uint32_t flag;
-    int32_t size;
-    std::vector<uint8_t> skipSamplesInfo;
-    std::unique_ptr<uint8_t[]> data;
-};
-
-struct MPEG4Sample {
-    int32_t offset = 0;
-    std::shared_ptr<Sample> sample = nullptr;
-    bool isAnnexb = false;
-    bool isVttc = false;
-    uint32_t queueIndex = 0;
-    uint32_t sampleIndex = 0;
-};
-} // namespace MPEG4
-
 template<typename T>
 struct BlockTraits {
     static uint32_t GetDataSize(const std::shared_ptr<T>& block);
@@ -101,22 +74,6 @@ struct BlockTraits<Ffmpeg::SamplePacket> {
     }
 };
 #endif
-
-// 为MPEG4Sample特化
-template<>
-struct BlockTraits<MPEG4::MPEG4Sample> {
-    static uint32_t GetDataSize(const std::shared_ptr<MPEG4::MPEG4Sample>& block)
-    {
-        return block->sample != nullptr ? static_cast<uint32_t>(block->sample->size) : 0;
-    }
-    
-    static void UpdateMaxPts(const std::shared_ptr<MPEG4::MPEG4Sample>& block, int64_t& maxPts)
-    {
-        if (block->sample != nullptr && block->sample->pts > maxPts) {
-            maxPts = block->sample->pts;
-        }
-    }
-};
 
 template <typename T>
 class BlockQueuePool {
@@ -563,7 +520,6 @@ Status BlockQueuePool<T>::GetLastPTSByTrackId(uint32_t trackIndex, int64_t& maxP
     return Status::ERROR_NOT_EXISTED;
 }
 
-using Mpeg4BlockQueuePool = BlockQueuePool<MPEG4::MPEG4Sample>;
 #ifdef USE_FF_DEMUXER
 using FfmpegBlockQueuePool = BlockQueuePool<Ffmpeg::SamplePacket>;
 #endif

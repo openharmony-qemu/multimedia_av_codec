@@ -2833,7 +2833,9 @@ Status FFmpegDemuxerPlugin::ParseVideoFirstFramesLimited()
 void FFmpegDemuxerPlugin::ParseHEVCMetadataInfo(const AVStream& avStream, Meta& format)
 {
     HevcParseFormat parse;
-    MultiStreamParserManager::ParseMetadataInfo(avStream.index, streamParsers_, parse);
+    if (streamParsers_ != nullptr) {
+        streamParsers_->ParseMetadataInfo(avStream.index, parse);
+    }
     FFmpegFormatHelper::ParseHevcInfo(*formatContext_, avStream, parse, format);
 }
 

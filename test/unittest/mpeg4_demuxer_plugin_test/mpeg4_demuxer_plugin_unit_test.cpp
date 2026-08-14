@@ -62,6 +62,7 @@ const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const std::string TEST_RELATIVE_PATH = "/data/test/media/";
 const std::string TEST_DEMUXER_RESOURCE_DIR = "/data/test/media";
 const std::string FFMPEG_MP4_PLUGIN_NAME = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+const std::string MPEG4_PLUGIN_NAME = "avdemux_mpeg4";
 const std::string WEBVTT_MIME = "text/vtt";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 constexpr int32_t WAIT_RETRY_TIMES = 20;
@@ -1200,6 +1201,7 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> MakeWebVttTrack(uint32_t
     auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
     track->trackIndex = trackIndex;
     track->duration = duration;
+    track->cache = std::make_shared<Plugins::MPEG4::SampleCache>();
     track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
     track->sampleHelper->mimeType_ = MimeType::TEXT_WEBVTT;
     return track;
@@ -1475,13 +1477,17 @@ void Mpeg4DemuxerPluginUnitTest::InitFfmpegPluginURI(const std::string& filePath
 
 void Mpeg4DemuxerPluginUnitTest::InitMpeg4Plugin(const std::string& filePath)
 {
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     InitPlugin(filePath, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
 }
 
 void Mpeg4DemuxerPluginUnitTest::InitMpeg4PluginURI(const std::string& filePath)
 {
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     InitPluginURI(filePath, mpeg4Plugin_, mpeg4MediaInfo_);
 }
 
@@ -1498,7 +1504,9 @@ void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkFfmpegPlugin(
 void Mpeg4DemuxerPluginUnitTest::InitWeakNetworkMpeg4Plugin(
     const std::string& filePath, int64_t failOffset, size_t maxFailCount)
 {
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     WeakNetworkPluginContext context {mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_};
     InitWeakNetworkPlugin(filePath, context, failOffset, maxFailCount);
 }
@@ -1528,7 +1536,9 @@ void Mpeg4DemuxerPluginUnitTest::InitDeferredWeakNetworkMpeg4Plugin(
     streamDemuxer->SetDemuxerState(0, DemuxerState::DEMUXER_STATE_PARSE_FRAME);
 
     auto dataSource = std::make_shared<DataSourceImpl>(streamDemuxer, 0);
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     ASSERT_EQ(mpeg4Plugin_->SetDataSource(dataSource), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->GetMediaInfo(mpeg4MediaInfo_), Status::OK);
     streamDemuxer->ResetFailState();
@@ -2985,25 +2995,25 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_WebVttPendingCue_001, Te
     plugin->mediaInfo_.tracks[0].Set<Tag::MIME_TYPE>(WEBVTT_MIME);
     plugin->mediaInfo_.tracks[1].Set<Tag::MIME_TYPE>(WEBVTT_MIME);
     plugin->mediaInfo_.general.Set<Tag::MEDIA_DURATION>(60000);
-    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
-    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(1), Status::OK);
 
     plugin->pendingWebVttSamples_[0] = MakePendingWebVttSample(1000, 2000);
     plugin->pendingWebVttSamples_[1] = MakePendingWebVttSample(5000, 1000);
     ASSERT_EQ(plugin->FlushPendingWebVTTSample(0), Status::OK);
     EXPECT_EQ(plugin->pendingWebVttSamples_.count(0), 0U);
     EXPECT_EQ(plugin->pendingWebVttSamples_.count(1), 1U);
-    ASSERT_TRUE(plugin->cacheQueue_.HasCache(0));
-    ASSERT_FALSE(plugin->cacheQueue_.HasCache(1));
-    auto flushedTrack0 = plugin->cacheQueue_.Front(0);
+    ASSERT_NE(track0->cache, nullptr);
+    ASSERT_NE(track1->cache, nullptr);
+    ASSERT_TRUE(track0->cache->HasCache());
+    ASSERT_FALSE(track1->cache->HasCache());
+    auto flushedTrack0 = track0->cache->Front();
     ASSERT_NE(flushedTrack0, nullptr);
     ASSERT_NE(flushedTrack0->sample, nullptr);
     EXPECT_EQ(flushedTrack0->sample->duration, 2000);
 
     ASSERT_EQ(plugin->FlushPendingWebVTTSamples(), Status::OK);
     EXPECT_TRUE(plugin->pendingWebVttSamples_.empty());
-    ASSERT_TRUE(plugin->cacheQueue_.HasCache(1));
-    auto flushedTrack1 = plugin->cacheQueue_.Front(1);
+    ASSERT_TRUE(track1->cache->HasCache());
+    auto flushedTrack1 = track1->cache->Front();
     ASSERT_NE(flushedTrack1, nullptr);
     ASSERT_NE(flushedTrack1->sample, nullptr);
     EXPECT_EQ(flushedTrack1->sample->duration, 1000);
@@ -3023,15 +3033,15 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_WebVttContinuousCue_001,
     plugin->lastTrack_ = track;
     plugin->mediaInfo_.tracks.resize(1);
     plugin->mediaInfo_.tracks[0].Set<Tag::MIME_TYPE>(WEBVTT_MIME);
-    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
 
     auto firstCue = MakeWebVttCueSample(1000, 100, "first");
     auto secondCue = MakeWebVttCueSample(2500, 100, "second");
     ASSERT_EQ(plugin->ProcessWebVTTSampleForCache(track, firstCue), Status::OK);
-    EXPECT_FALSE(plugin->cacheQueue_.HasCache(0));
+    ASSERT_NE(track->cache, nullptr);
+    EXPECT_FALSE(track->cache->HasCache());
     ASSERT_EQ(plugin->ProcessWebVTTSampleForCache(track, secondCue), Status::OK);
-    ASSERT_TRUE(plugin->cacheQueue_.HasCache(0));
-    auto flushedFirstCue = plugin->cacheQueue_.Front(0);
+    ASSERT_TRUE(track->cache->HasCache());
+    auto flushedFirstCue = track->cache->Front();
     ASSERT_NE(flushedFirstCue, nullptr);
     ASSERT_NE(flushedFirstCue->sample, nullptr);
     EXPECT_EQ(flushedFirstCue->sample->pts, 1000);
@@ -3459,7 +3469,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0002,
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefUpdatePos_0003, TestSize.Level1)
 {
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     Status ret = mpeg4Plugin_->ParserRefUpdatePos(0, true);
     EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
 }
@@ -3543,7 +3555,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0001, TestS
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIFramePos_0002, TestSize.Level1)
 {
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
-    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4"));
+    auto basePlugin = Plugins::PluginManagerV2::Instance().CreatePluginByName(MPEG4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::reinterpret_pointer_cast<FFmpegDemuxerPlugin>(basePlugin);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(mpeg4Plugin);
     std::vector<uint32_t> IFramePos;
     mpeg4Plugin_->GetIFramePos(IFramePos);
     EXPECT_EQ(IFramePos.size(), 0);

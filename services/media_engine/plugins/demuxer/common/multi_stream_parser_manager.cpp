@@ -258,6 +258,7 @@ bool MultiStreamParserManager::ConvertExtraDataToAnnexb(uint32_t trackId, uint8_
 bool MultiStreamParserManager::ConvertPacketToAnnexb(
     uint32_t trackId, uint8_t **hvccPacket, int32_t &hvccPacketSize, const PacketConvertInfo &packetInfo)
 {
+    FALSE_RETURN_V_MSG_W(hvccPacket != nullptr && hvccPacketSize > 0, false, "Packet is invalid");
     FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
     return streamMap_[trackId].parser->ConvertPacketToAnnexb(hvccPacket, hvccPacketSize, packetInfo.sideData,
         packetInfo.sideDataSize, packetInfo.isExtradata);
@@ -266,30 +267,31 @@ bool MultiStreamParserManager::ConvertPacketToAnnexb(
 bool MultiStreamParserManager::ConvertPacketToAnnexb(
     uint32_t trackId, const PacketConvertToBufferInfo &convertInfo)
 {
+    FALSE_RETURN_V_MSG_W(convertInfo.srcData != nullptr && convertInfo.srcDataSize > 0, false, "Packet is invalid");
     FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), false, "Stream parser is invalid");
     return streamMap_[trackId].parser->ConvertPacketToAnnexb(convertInfo);
 }
 
 void MultiStreamParserManager::ParseAnnexbExtraData(uint32_t trackId, const uint8_t *sample, int32_t size)
 {
+    FALSE_RETURN_MSG(sample != nullptr && size > 0, "Invalid extra data");
     FALSE_RETURN_MSG(ParserIsInited(trackId), "Stream parser is invalid");
     streamMap_[trackId].parser->ParseAnnexbExtraData(sample, size);
 }
 
-void MultiStreamParserManager::ParseMetadataInfo(uint32_t trackIndex,
-    std::shared_ptr<MultiStreamParserManager> streamParsers, HevcParseFormat& parse)
+void MultiStreamParserManager::ParseMetadataInfo(uint32_t trackIndex, HevcParseFormat& parse)
 {
-    parse.isHdrVivid = streamParsers->IsHdrVivid(trackIndex);
-    parse.isHdr10Plus = streamParsers->IsHdr10Plus(trackIndex);
-    parse.colorRange = streamParsers->GetColorRange(trackIndex);
-    parse.colorPrimaries = streamParsers->GetColorPrimaries(trackIndex);
-    parse.colorTransfer = streamParsers->GetColorTransfer(trackIndex);
-    parse.colorMatrixCoeff = streamParsers->GetColorMatrixCoeff(trackIndex);
-    parse.profile = streamParsers->GetProfileIdc(trackIndex);
-    parse.level = streamParsers->GetLevelIdc(trackIndex);
-    parse.chromaLocation = streamParsers->GetChromaLocation(trackIndex);
-    parse.picWidInLumaSamples = streamParsers->GetPicWidInLumaSamples(trackIndex);
-    parse.picHetInLumaSamples = streamParsers->GetPicHetInLumaSamples(trackIndex);
+    parse.isHdrVivid = IsHdrVivid(trackIndex);
+    parse.isHdr10Plus = IsHdr10Plus(trackIndex);
+    parse.colorRange = GetColorRange(trackIndex);
+    parse.colorPrimaries = GetColorPrimaries(trackIndex);
+    parse.colorTransfer = GetColorTransfer(trackIndex);
+    parse.colorMatrixCoeff = GetColorMatrixCoeff(trackIndex);
+    parse.profile = GetProfileIdc(trackIndex);
+    parse.level = GetLevelIdc(trackIndex);
+    parse.chromaLocation = GetChromaLocation(trackIndex);
+    parse.picWidInLumaSamples = GetPicWidInLumaSamples(trackIndex);
+    parse.picHetInLumaSamples = GetPicHetInLumaSamples(trackIndex);
 }
 } // namespace Plugins
 } // namespace Media
