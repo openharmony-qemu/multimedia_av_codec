@@ -15,6 +15,7 @@
 
 #ifndef MOCK_MEDIA_SYNC_MANAGER_H
 #define MOCK_MEDIA_SYNC_MANAGER_H
+
 #include <condition_variable>
 #include <gmock/gmock.h>
 #include <memory>
@@ -35,7 +36,7 @@ using namespace OHOS::Media::Plugins;
 class MockMediaSyncManager : public MediaSyncManager {
 public:
     MockMediaSyncManager() = default;
-     ~MockMediaSyncManager() override = default;
+    ~MockMediaSyncManager() override = default;
     MOCK_METHOD(void, AddSynchronizer, (IMediaSynchronizer* syncer), ());
     MOCK_METHOD(void, RemoveSynchronizer, (IMediaSynchronizer* syncer), ());
     MOCK_METHOD(void, ReportPrerolled, (IMediaSynchronizer* supplier), ());
@@ -70,7 +71,7 @@ public:
     MOCK_METHOD(bool, InSeeking, (), ());
 };
 } // namespace Pipeline
-using MockMediaSyncManager = Pipleline::MockMediaSyncManager;
+using MockMediaSyncManager = Pipeline::MockMediaSyncManager;
 } // namespace Media
 } // namespace OHOS
 #endif // MOCK_MEDIA_SYNC_MANAGER_H
