@@ -120,6 +120,14 @@ int32_t AVCodecClient::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
     return avCodecProxy->GetActiveSecureDecoderPids(pidList);
 }
 
+int32_t AVCodecClient::SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level)
+{
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    auto avCodecProxy = GetTemporaryAVCodecProxy();
+    CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+    return avCodecProxy->SetCodecPerformanceWithPid(pid, level);
+}
+
 int32_t AVCodecClient::VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);

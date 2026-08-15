@@ -224,6 +224,13 @@ int32_t CodecClient::NotifyMemoryExchange(const bool exchangeFlag)
     return ret;
 }
 
+int32_t CodecClient::SetCodecPerformance(CodecPerformanceLevel level)
+{
+    (void)level;
+    AVCODEC_LOGW("Use AVCodecSuspend::SetCodecPerformanceWithPid instead");
+    return AVCS_ERR_UNSUPPORT;
+}
+
 int32_t CodecClient::Start()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);

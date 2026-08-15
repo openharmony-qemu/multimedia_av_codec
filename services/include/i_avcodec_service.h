@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include "avcodec_videocall.h"
+#include "avcodec_suspend.h"
 
 #ifdef SUPPORT_CODEC
 #include "i_codec_service.h"
@@ -68,6 +69,8 @@ public:
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
      */
     virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
+
+    virtual int32_t SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level) = 0;
 
     /**
      * @brief RSS notify video call PIP status for low power mode adjustment.

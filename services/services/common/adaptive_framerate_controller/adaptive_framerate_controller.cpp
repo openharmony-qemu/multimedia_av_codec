@@ -23,17 +23,21 @@ auto afcEnable = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.AFC.E
 auto allowLowFps = OHOS::system::GetBoolParameter("persist.OHOS.MediaAVCodec.AFC.AllowLowFps.Enable", true);
 using namespace std::chrono_literals;
 constexpr auto MIN_FRAMERATE = 1.0;
+constexpr auto MAX_FRAMERATE = 1000.0; // 解除帧率上限进入高性能模式
+constexpr auto INCREASE_CHECK_WINDOW_L0 = 1;
+constexpr auto DECREASE_CHECK_WINDOW_L1 = 2;
+constexpr auto DECREASE_CHECK_WINDOW_L2 = 10;
 constexpr auto CHECK_INTERVAL = 1000ms;
 constexpr auto CHECK_INTERVAL_FILTER = (CHECK_INTERVAL / 2).count(); // CHECK_INTERVAL / 2: filter out short intervals
 constexpr double DEFAULT_FRAMERATE = 60;
-constexpr uint8_t MAX_INCREASE_CHECK_TIMES = 1;
-constexpr uint8_t MAX_DECREASE_CHECK_TIMES = 2;
+
 } // namespace
 
 namespace OHOS {
 namespace MediaAVCodec {
 FramerateCalculator::FramerateCalculator(int32_t instanceId, bool isEnc, std::function<void(double)> &&handler)
-    : instanceId_(instanceId), resetFramerateHandler_(std::move(handler))
+    : instanceId_(instanceId), resetFramerateHandler_(std::move(handler)),
+      maxIncreaseCheckTimes_(INCREASE_CHECK_WINDOW_L0), maxDecreaseCheckTimes_(DECREASE_CHECK_WINDOW_L1)
 {
     if (!isEnc) {
         behaviorAnalyzer_ = std::make_unique<DecodingBehaviorAnalyzer>(instanceId);
@@ -89,12 +93,14 @@ void FramerateCalculator::OnStopped(bool isDecEnd)
 
 bool FramerateCalculator::CheckAndResetFramerate()
 {
+    std::lock_guard<std::recursive_mutex> lock(afcMutex_);
     auto frameCount = frameCount_.exchange(0);
     auto now = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastAdjustmentTime_).count();
     lastAdjustmentTime_ = now;
     CHECK_AND_RETURN_RET_LOGD_WITH_TAG(elapsedTime > CHECK_INTERVAL_FILTER, false,
         "Elapsed time is invalid, cannot calculate framerate");
+    CHECK_AND_RETURN_RET_LOGD_WITH_TAG(resetFramerateHandler_, false, "resetFramerateHandler_ is null");
 
     auto actualFramerate = static_cast<double>(frameCount) / elapsedTime * 1000;  // 1000: milliseconds to seconds
     if (behaviorAnalyzer_) {
@@ -106,17 +112,13 @@ bool FramerateCalculator::CheckAndResetFramerate()
     }
     auto fluctuationFramerate = std::abs(actualFramerate - lastFramerate_);
     if (!(fluctuationFramerate > 3 && (fluctuationFramerate / lastFramerate_ > 0.1))) { // 3/0.1: reset threshold
-        if (decreseCheckTimes_ != MAX_DECREASE_CHECK_TIMES) {
-            decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
-        }
-        if (increseCheckTimes_ != MAX_INCREASE_CHECK_TIMES) {
-            increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
-        }
+        decreseCheckTimes_ = maxDecreaseCheckTimes_;
+        increseCheckTimes_ = maxIncreaseCheckTimes_;
         return false;
     }
     auto resetFramerate = actualFramerate;
     if (actualFramerate > lastFramerate_) {
-        decreseCheckTimes_ = MAX_DECREASE_CHECK_TIMES;
+        decreseCheckTimes_ = maxDecreaseCheckTimes_;
         if (actualFramerate <= configuredFramerate_) {
             resetFramerate = configuredFramerate_;
         } else if (increseCheckTimes_ > 0) {
@@ -127,14 +129,13 @@ bool FramerateCalculator::CheckAndResetFramerate()
         }
     } else if (decreseCheckTimes_ > 0) {
         decreseCheckTimes_--;
-        increseCheckTimes_ = MAX_INCREASE_CHECK_TIMES;
+        increseCheckTimes_ = maxIncreaseCheckTimes_;
         return false;
     }
     if (resetFramerate < MIN_FRAMERATE) {
         resetFramerate = MIN_FRAMERATE;
     }
     resetFramerateHandler_(resetFramerate);
-
     char direction = (resetFramerate > lastFramerate_) ? '+' : '-';
     AVCODEC_LOGD_WITH_TAG("Reset framerate: %{public}.2f -> %{public}.2ffps(%{public}.2f) %{public}c",
         lastFramerate_.load(), resetFramerate, actualFramerate, direction);
@@ -144,6 +145,7 @@ bool FramerateCalculator::CheckAndResetFramerate()
 
 void FramerateCalculator::SetConfiguredFramerate(double framerate)
 {
+    std::lock_guard<std::recursive_mutex> lock(afcMutex_);
     if (framerate >= MIN_FRAMERATE) {
         configuredFramerate_ = framerate;
         lastFramerate_ = configuredFramerate_;
@@ -152,6 +154,8 @@ void FramerateCalculator::SetConfiguredFramerate(double framerate)
 
 bool FramerateCalculator::SetFramerate2ConfiguredFramerate()
 {
+    std::lock_guard<std::recursive_mutex> lock(afcMutex_);
+    CHECK_AND_RETURN_RET_LOGD_WITH_TAG(resetFramerateHandler_, false, "resetFramerateHandler_ is null");
     resetFramerateHandler_(configuredFramerate_);
     lastFramerate_ = configuredFramerate_;
     return true;
@@ -162,6 +166,25 @@ void FramerateCalculator::SetDecInfoCallBack(DecInfoCallBack cb)
     if (behaviorAnalyzer_) {
         behaviorAnalyzer_->SetDecInfoCallBack(std::move(cb));
     }
+}
+
+void FramerateCalculator::SetCodecPerformance(CodecPerformanceLevel level)
+{
+    std::lock_guard<std::recursive_mutex> lock(afcMutex_);
+    CHECK_AND_RETURN_LOG_WITH_TAG(resetFramerateHandler_, "resetFramerateHandler_ is null");
+    if (level == CodecPerformanceLevel::HIGH) {
+        maxDecreaseCheckTimes_ = DECREASE_CHECK_WINDOW_L2;
+        maxIncreaseCheckTimes_ = INCREASE_CHECK_WINDOW_L0;
+        resetFramerateHandler_(MAX_FRAMERATE);
+        lastFramerate_ = MAX_FRAMERATE;
+    } else {
+        maxDecreaseCheckTimes_ = DECREASE_CHECK_WINDOW_L1;
+        maxIncreaseCheckTimes_ = INCREASE_CHECK_WINDOW_L0;
+        resetFramerateHandler_(configuredFramerate_);
+        lastFramerate_ = configuredFramerate_;
+    }
+    decreseCheckTimes_ = maxDecreaseCheckTimes_;
+    increseCheckTimes_ = maxIncreaseCheckTimes_;
 }
 
 void FramerateCalculator::Register2AFC()

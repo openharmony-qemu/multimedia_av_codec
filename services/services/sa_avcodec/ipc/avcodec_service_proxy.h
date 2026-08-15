@@ -31,6 +31,7 @@ public:
     int32_t SuspendActive(const std::vector<pid_t> &pidList) override;
     int32_t SuspendActiveAll() override;
     int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) override;
+    int32_t SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level) override;
     int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) override;
     int32_t NotifyCamRegister(const bool camRegisterFlag) override;
     int32_t Init(const sptr<IRemoteObject> &listener) override;

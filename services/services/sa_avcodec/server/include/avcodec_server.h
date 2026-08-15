@@ -39,6 +39,7 @@ public:
     int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) override;
     int32_t NotifyCamRegister(const bool camRegisterFlag) override;
     void ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta) override;
+    int32_t SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level) override;
 
 protected:
     // SystemAbility override

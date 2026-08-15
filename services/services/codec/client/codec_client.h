@@ -70,6 +70,7 @@ public:
 #endif
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer) override;
     int32_t NotifyMemoryExchange(const bool exchangeFlag) override;
+    int32_t SetCodecPerformance(CodecPerformanceLevel level) override;
 
     void AVCodecServerDied();
     bool IsServiceDied() const override;

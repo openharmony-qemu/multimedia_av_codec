@@ -79,6 +79,7 @@ ohos_unittest("encoder_native_module_test") {
       "./src/state_test.cpp",
       "./src/videocall_test1.cpp",
       "./src/videocall_test2.cpp",
+      "./src/adjustment_rate_test.cpp",
       "./src/videoenc_api11_sample.cpp",
       "./src/videoenc_ndk_sample.cpp",
       "./src/videotranscode_api11_sample.cpp",

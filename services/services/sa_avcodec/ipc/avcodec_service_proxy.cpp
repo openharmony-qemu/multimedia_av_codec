@@ -177,5 +177,25 @@ int32_t AVCodecServiceProxy::GetActiveSecureDecoderPids(std::vector<pid_t> &pidL
     (void)reply.ReadInt32Vector(&pidList);
     return reply.ReadInt32();
 }
+
+int32_t AVCodecServiceProxy::SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    bool ret = data.WriteInterfaceToken(AVCodecServiceProxy::GetDescriptor());
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write descriptor");
+
+    ret = data.WriteInt32(pid);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write pid");
+    ret = data.WriteUint8(static_cast<uint8_t>(level));
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to write level");
+    int error = Remote()->SendRequest(static_cast<uint32_t>(
+        AVCodecServiceInterfaceCode::SET_CODEC_PERFORMANCE_WITH_PID), data, reply, option);
+    CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
+                             "SetCodecPerformanceWithPid failed, error: %{public}d", error);
+    return reply.ReadInt32();
+}
 } // namespace MediaAVCodec
 } // namespace OHOS

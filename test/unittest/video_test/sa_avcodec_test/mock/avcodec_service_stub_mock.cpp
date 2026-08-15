@@ -107,6 +107,13 @@ int32_t AVCodecServiceStub::GetActiveSecureDecoderPids(std::vector<pid_t> &pidLi
     return mock->GetActiveSecureDecoderPids(pidList);
 }
 
+int32_t AVCodecServiceStub::SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level)
+{
+    (void)pid;
+    (void)level;
+    return AVCS_ERR_OK;
+}
+
 int32_t AVCodecServiceStub::VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow)
 {
     std::lock_guard<std::mutex> lock(g_mutex);

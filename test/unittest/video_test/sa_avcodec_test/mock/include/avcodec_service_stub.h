@@ -18,7 +18,8 @@
 #include <gmock/gmock.h>
 #include <map>
 #include "avcodec_errors.h"
-#include "ipc/av_codec_service_ipc_interface_code.h"
+#include "avcodec_suspend.h"
+#include <unistd.h>
 #include "iremote_broker.h"
 #include "iremote_stub.h"
 #include "nocopyable.h"
@@ -44,6 +45,7 @@ public:
     virtual int32_t SuspendActiveAll() = 0;
     virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
     virtual void ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta) {};
+    virtual int32_t SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level) = 0;
     virtual int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) = 0;
     virtual int32_t NotifyCamRegister(const bool camRegisterFlag) = 0;
     virtual int32_t Init(const sptr<IRemoteObject> &listener) = 0;
@@ -65,6 +67,7 @@ public:
     MOCK_METHOD(int32_t, GetActiveSecureDecoderPids, (std::vector<pid_t> &pidList));
     MOCK_METHOD(int32_t, SetDeathListener, (const sptr<IRemoteObject> &object));
     MOCK_METHOD(void, ReportStatisticsEvent, (StatisticsEventType type, Media::Meta &meta));
+    MOCK_METHOD(int32_t, SetCodecPerformanceWithPid, (pid_t pid, CodecPerformanceLevel level));
     MOCK_METHOD(int32_t, VideoCallNotifyPiPState, (const std::string &bundleName, const bool isFloatingWindow));
     MOCK_METHOD(int32_t, NotifyCamRegister, (const bool camRegisterFlag));
     MOCK_METHOD(int32_t, NotifyListenerByProcessName, (const std::string &bundleName, int32_t codecDecision));
@@ -84,6 +87,7 @@ public:
     int32_t SuspendActiveAll();
     int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList);
     int32_t SetDeathListener(const sptr<IRemoteObject> &object);
+    int32_t SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level);
     int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow);
     int32_t NotifyCamRegister(const bool camRegisterFlag);
     int32_t NotifyListenerByProcessName(const std::string &bundleName, int32_t codecDecision);
