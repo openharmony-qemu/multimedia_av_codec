@@ -116,6 +116,7 @@ public:
     bool setTransform = false;
     int32_t DEFAULT_TRANSFORM = 0;
     bool needAutoSwitch = true;
+    bool needDestroySurface = false;
     int32_t beforeSwitchTransform = -1;
     int32_t afterSwitchTransform = -2;
     int32_t Start();

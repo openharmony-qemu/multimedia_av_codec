@@ -109,6 +109,9 @@ VDecInnerCallback::VDecInnerCallback(std::shared_ptr<VDecInnerSignal> signal) : 
 
 void VDecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 {
+    if (dec_sample == nullptr) {
+        return;
+    }
     if (errorCode == AVCS_ERR_VIDEO_UNSUPPORT_COLOR_SPACE_CONVERSION && dec_sample->HDR2SDR) {
         dec_sample->isRunning_.store(false);
         innersignal_->inCond_.notify_all();
@@ -135,6 +138,9 @@ void VDecInnerCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
 
 void VDecInnerCallback::OnOutputFormatChanged(const Format& format)
 {
+    if (dec_sample == nullptr) {
+        return;
+    }
     cout << "Format Changed" << endl;
     int32_t currentWidth = 0;
     int32_t currentHeight = 0;

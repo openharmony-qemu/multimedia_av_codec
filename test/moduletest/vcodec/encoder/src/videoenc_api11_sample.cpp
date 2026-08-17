@@ -85,15 +85,13 @@ VEncAPI11Sample::~VEncAPI11Sample()
     }
     abnormalIndexValue = false;
     JoinLoops();
-    Release();
-    if (vencPrimary != nullptr) {
-        (void)OH_VideoEncoder_Destroy(vencPrimary);
-        vencPrimary = nullptr;
-    }
     if (vencSecondary != nullptr) {
-        (void)OH_VideoEncoder_Destroy(vencSecondary);
-        vencSecondary = nullptr;
+        (void)OH_VideoEncoder_Stop(vencSecondary);
     }
+    if (vencPrimary != nullptr) {
+        (void)OH_VideoEncoder_Stop(vencPrimary);
+    }
+    (void)Release();
     if (outFile_) {
         (void)fclose(outFile_);
         outFile_ = nullptr;
@@ -358,7 +356,9 @@ int32_t VEncAPI11Sample::ConfigureVideoEncoder()
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrameMode);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, maxFrameDelayCount);
+    if (enableFrameDelayCount) {
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT, maxFrameDelayCount);
+    }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES, repeatHeaderXPS);
     int ret = OH_VideoEncoder_Configure(venc_, format);
     OH_AVFormat_Destroy(format);
@@ -1822,8 +1822,25 @@ int32_t VEncAPI11Sample::NotifyEndOfStreamSecondary()
 
 int32_t VEncAPI11Sample::Release()
 {
-    int ret = OH_VideoEncoder_Destroy(venc_);
-    venc_ = nullptr;
+    int ret = AV_ERR_OK;
+    if (vencSecondary != nullptr) {
+        ret = OH_VideoEncoder_Destroy(vencSecondary);
+        if (venc_ == vencSecondary) {
+            venc_ = nullptr;
+        }
+        vencSecondary = nullptr;
+    }
+    if (vencPrimary != nullptr) {
+        (void)OH_VideoEncoder_Destroy(vencPrimary);
+        if (venc_ == vencPrimary) {
+            venc_ = nullptr;
+        }
+        vencPrimary = nullptr;
+    }
+    if (venc_ != nullptr) {
+        ret = OH_VideoEncoder_Destroy(venc_);
+        venc_ = nullptr;
+    }
     if (signal_ != nullptr) {
         delete signal_;
         signal_ = nullptr;
