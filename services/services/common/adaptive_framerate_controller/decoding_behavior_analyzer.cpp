@@ -62,12 +62,8 @@ namespace MediaAVCodec {
 DecodingBehaviorAnalyzer::DecodingBehaviorAnalyzer(int32_t instanceId)
 {
     startTime_ = std::chrono::steady_clock::now();
-    auto instanceInfoOpt = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId);
-    CHECK_AND_RETURN_LOG(instanceInfoOpt != std::nullopt, "Can not find this instance, id:%{public}d", instanceId);
-    auto instanceInfo = instanceInfoOpt.value();
-
+    instanceId_ = instanceId;
 #ifndef SUPPORT_FPS_FOR_MEMC
-    eventData_.insert(std::make_pair("pid", std::to_string(instanceInfo.caller.pid)));
     eventData_.insert(std::make_pair("decRate", "0"));
 #endif
 #ifdef SUPPORT_FPS_FOR_MEMC
@@ -427,6 +423,18 @@ void DecodingBehaviorAnalyzer::ReportFpsIfSignificantChange(double decFps, doubl
                      reportRenderFps, reportDecFps, srcFps);
         lastReportedRenderFps_ = reportRenderFps;
         lastReportedFps_ = reportDecFps;
+        if (eventData_.count("pid") == 0) {
+            auto instanceInfoOpt = AVCodecServerManager::GetInstance().GetInstanceInfoByInstanceId(instanceId_);
+            CHECK_AND_RETURN_LOG(instanceInfoOpt != std::nullopt,
+                "Can not find this instance, id:%{public}d", instanceId_);
+            auto instanceInfo = instanceInfoOpt.value();
+            if (instanceInfo.forwardCaller.pid == -1) {
+                eventData_["pid"] = std::to_string(instanceInfo.caller.pid);
+            } else {
+                eventData_["pid"] = std::to_string(instanceInfo.forwardCaller.pid);
+            }
+            AVCODEC_LOGD("Instance caller pid: %{public}s", eventData_.at("pid").c_str());
+        }
         eventData_["decRate"] = std::to_string(static_cast<int>(reportDecFps));
         RSInterfaceAdapter::GetInstance().NotifyFrameRateEvent(eventData_);
     }
