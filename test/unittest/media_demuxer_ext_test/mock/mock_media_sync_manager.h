@@ -13,12 +13,14 @@
  * limitations under the License.
  */
 
-#ifndef HISTREAMER_PIPELINE_CORE_PIPELINE_CLOCK_H
-#define HISTREAMER_PIPELINE_CORE_PIPELINE_CLOCK_H
+#ifndef MOCK_MEDIA_SYNC_MANAGER_H
+#define MOCK_MEDIA_SYNC_MANAGER_H
+
 #include <condition_variable>
 #include <gmock/gmock.h>
 #include <memory>
 #include <vector>
+#include <media_sync_manager.h>
 #include "sink/i_media_sync_center.h"
 #include "osal/task/mutex.h"
 #include "osal/task/autolock.h"
@@ -31,10 +33,10 @@ namespace OHOS {
 namespace Media {
 namespace Pipeline {
 using namespace OHOS::Media::Plugins;
-class MediaSyncManager : public IMediaSyncCenter, public std::enable_shared_from_this<MediaSyncManager> {
+class MockMediaSyncManager : public MediaSyncManager {
 public:
-    MediaSyncManager() = default;
-    virtual ~MediaSyncManager() = default;
+    MockMediaSyncManager() = default;
+    ~MockMediaSyncManager() override = default;
     MOCK_METHOD(void, AddSynchronizer, (IMediaSynchronizer* syncer), ());
     MOCK_METHOD(void, RemoveSynchronizer, (IMediaSynchronizer* syncer), ());
     MOCK_METHOD(void, ReportPrerolled, (IMediaSynchronizer* supplier), ());
@@ -59,6 +61,9 @@ public:
     MOCK_METHOD(Status, Reset, (), ());
     MOCK_METHOD(void, SetLastVideoBufferAbsPts, (int64_t lastVideoBufferAbsPts), ());
     MOCK_METHOD(int64_t, GetLastVideoBufferAbsPts, (), (const));
+    MOCK_METHOD(void, SetPlayRateSwitchMediaTime, (int64_t mediaTime), ());
+    MOCK_METHOD(void, SetPlayRateSwitchClockTime, (int64_t clockTime), ());
+    MOCK_METHOD(int64_t, GetPlayRateSwitchMediaTime, (), ());
     MOCK_METHOD(Status, Pause, (), ());
     MOCK_METHOD(Status, Resume, (), ());
     MOCK_METHOD(Status, Seek, (int64_t mediaTime, bool isClosest), ());
@@ -66,6 +71,7 @@ public:
     MOCK_METHOD(bool, InSeeking, (), ());
 };
 } // namespace Pipeline
+using MockMediaSyncManager = Pipeline::MockMediaSyncManager;
 } // namespace Media
 } // namespace OHOS
-#endif // HISTREAMER_PIPELINE_CORE_PIPELINE_CLOCK_H
+#endif // MOCK_MEDIA_SYNC_MANAGER_H
