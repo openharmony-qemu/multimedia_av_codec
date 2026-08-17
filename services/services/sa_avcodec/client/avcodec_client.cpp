@@ -21,6 +21,7 @@
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
+#include "avcodec_service_proxy.h"
 
 #ifdef SUPPORT_CODEC
 #include "i_standard_codec_service.h"

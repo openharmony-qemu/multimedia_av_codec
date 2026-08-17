@@ -78,7 +78,8 @@ int32_t SendRequest2CodecStub(sptr<IRemoteObject> &instance, CodecServiceInterfa
     return reply.ReadInt32();
 }
 
-void MemoryRecycleHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance)
+void MemoryRecycleHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance,
+    std::unique_lock<std::recursive_mutex> &lock)
 {
     static bool supportMemoryRecycle = OHOS::system::GetBoolParameter("resourceschedule.memmgr.dma.reclaimable", false);
     if (!supportMemoryRecycle) {
@@ -89,14 +90,17 @@ void MemoryRecycleHandler(ObjectList &list, pid_t actualPid, CodecInstance &code
     if (GetObjectFromList(list, actualPid, instanceInfo.instanceId) != list.end()) {
         return;
     }
+    lock.unlock();
     auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_MEMORY_RECYCLE);
+    lock.lock();
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
     list.emplace(actualPid, std::make_pair(instanceInfo.instanceId, std::chrono::system_clock::now()));
 
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
-void MemoryWriteBackHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance)
+void MemoryWriteBackHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance,
+    std::unique_lock<std::recursive_mutex> &lock)
 {
     auto &[instance, instanceInfo] = codecInstance;
     CHECK_AND_RETURN_LOG(instance != nullptr, "instance is nullptr");
@@ -104,28 +108,37 @@ void MemoryWriteBackHandler(ObjectList &list, pid_t actualPid, CodecInstance &co
     if (recordedInfo == list.end()) {
         return;
     }
+    lock.unlock();
     auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_MEMORY_WRITE_BACK);
+    lock.lock();
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
-    list.erase(recordedInfo);
+    recordedInfo = GetObjectFromList(list, actualPid, instanceInfo.instanceId);
+    if (recordedInfo != list.end()) {
+        list.erase(recordedInfo);
+    }
 
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
-void SuspendHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance)
+void SuspendHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance,
+    std::unique_lock<std::recursive_mutex> &lock)
 {
     auto &[instance, instanceInfo] = codecInstance;
     CHECK_AND_RETURN_LOG(instance != nullptr, "instance is nullptr");
     if (GetObjectFromList(list, actualPid, instanceInfo.instanceId) != list.end()) {
         return;
     }
+    lock.unlock();
     auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_SUSPEND);
+    lock.lock();
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
     list.emplace(actualPid, std::make_pair(instanceInfo.instanceId, std::chrono::system_clock::now()));
 
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
 
-void ResumeHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance)
+void ResumeHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstance,
+    std::unique_lock<std::recursive_mutex> &lock)
 {
     auto &[instance, instanceInfo] = codecInstance;
     CHECK_AND_RETURN_LOG(instance != nullptr, "instance is nullptr");
@@ -133,9 +146,14 @@ void ResumeHandler(ObjectList &list, pid_t actualPid, CodecInstance &codecInstan
     if (recordedInfo == list.end()) {
         return;
     }
+    lock.unlock();
     auto ret = SendRequest2CodecStub(instance, CodecServiceInterfaceCode::NOTIFY_RESUME);
+    lock.lock();
     CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Error, ret: %{public}d", ret);
-    list.erase(recordedInfo);
+    recordedInfo = GetObjectFromList(list, actualPid, instanceInfo.instanceId);
+    if (recordedInfo != list.end()) {
+        list.erase(recordedInfo);
+    }
 
     AVCODEC_LOGI("Done, pid: %{public}d, instanceId: %{public}d", actualPid, instanceInfo.instanceId);
 }
@@ -150,45 +168,44 @@ BackGroundEventHandler &BackGroundEventHandler::GetInstance()
 
 void BackGroundEventHandler::NotifyFreeze(InstanceId instanceId)
 {
-    if (!mutex_.try_lock()) {
+    std::unique_lock<std::recursive_mutex> lock(mutex_, std::try_to_lock);
+    if (!lock.owns_lock()) {
         return;
     }
     auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
     if (codecInstance == std::nullopt) {
-        mutex_.unlock();
         return;
     }
     auto actualPid = codecInstance->second.GetActualCallerPid();
-    MemoryRecycleHandler(memoryRecycleList_, actualPid, codecInstance.value());
-    SuspendHandler(suspendList_, actualPid, codecInstance.value());
-    mutex_.unlock();
+    MemoryRecycleHandler(memoryRecycleList_, actualPid, codecInstance.value(), lock);
+    SuspendHandler(suspendList_, actualPid, codecInstance.value(), lock);
 }
 
 void BackGroundEventHandler::NotifyFreeze(const std::vector<pid_t> &pidList)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
     for (auto &codecInstance : GetDirectlyInvokedCodecInstanceListByPidList(pidList)) {
         auto actualPid = codecInstance.second.GetActualCallerPid();
-        MemoryRecycleHandler(memoryRecycleList_, actualPid, codecInstance);
-        SuspendHandler(suspendList_, actualPid, codecInstance);
+        MemoryRecycleHandler(memoryRecycleList_, actualPid, codecInstance, lock);
+        SuspendHandler(suspendList_, actualPid, codecInstance, lock);
     }
 }
 
 void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
 {
-    if (!mutex_.try_lock()) {
+    std::unique_lock<std::recursive_mutex> lock(mutex_, std::try_to_lock);
+    if (!lock.owns_lock()) {
         return;
     }
     auto codecInstance = AVCodecServerManager::GetInstance().GetCodecInstanceByInstanceId(instanceId);
     if (codecInstance == std::nullopt) {
-        mutex_.unlock();
         return;
     }
     auto actualPid = codecInstance->second.GetActualCallerPid();
     auto freezeStartTime = GetObjectFreezeStartTime(suspendList_, actualPid, codecInstance->second.instanceId);
 
-    MemoryWriteBackHandler(memoryRecycleList_, actualPid, codecInstance.value());
-    ResumeHandler(suspendList_, actualPid, codecInstance.value());
+    MemoryWriteBackHandler(memoryRecycleList_, actualPid, codecInstance.value(), lock);
+    ResumeHandler(suspendList_, actualPid, codecInstance.value(), lock);
 
     auto actualProcessName = codecInstance->second.GetActualCallerProcessName();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(
@@ -200,18 +217,17 @@ void BackGroundEventHandler::NotifyActive(InstanceId instanceId)
         EventManager::GetInstance().OnInstanceEvent(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_LONG_TIME_IN_BG_INFO, eventMeta);
     }
-    mutex_.unlock();
 }
 
 void BackGroundEventHandler::NotifyActive(const std::vector<pid_t> &pidList)
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
     std::unordered_map<std::string, int32_t> activeAppList; //  AppName, elapsedTime
     for (auto &codecInstance : GetDirectlyInvokedCodecInstanceListByPidList(pidList)) {
         auto actualPid = codecInstance.second.GetActualCallerPid();
         auto freezeStartTime = GetObjectFreezeStartTime(suspendList_, actualPid, codecInstance.second.instanceId);
-        MemoryWriteBackHandler(memoryRecycleList_, actualPid, codecInstance);
-        ResumeHandler(suspendList_, actualPid, codecInstance);
+        MemoryWriteBackHandler(memoryRecycleList_, actualPid, codecInstance, lock);
+        ResumeHandler(suspendList_, actualPid, codecInstance, lock);
 
         auto elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(
             std::chrono::system_clock::now() - freezeStartTime).count();
@@ -230,16 +246,18 @@ void BackGroundEventHandler::NotifyActive(const std::vector<pid_t> &pidList)
 
 void BackGroundEventHandler::NotifyActiveAll()
 {
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    if (memoryRecycleList_.empty() && suspendList_.empty()) {
-        return;
-    }
     std::unordered_set<pid_t> pidSet;
-    for (const auto &[pid, instanceId] : memoryRecycleList_) {
-        pidSet.insert(pid);
+    {
+        std::unique_lock<std::recursive_mutex> lock(mutex_);
+        for (const auto &[pid, instanceId] : memoryRecycleList_) {
+            pidSet.insert(pid);
+        }
+        for (const auto &[pid, instanceId] : suspendList_) {
+            pidSet.insert(pid);
+        }
     }
-    for (const auto &[pid, instanceId] : suspendList_) {
-        pidSet.insert(pid);
+    if (pidSet.empty()) {
+        return;
     }
     std::vector<pid_t> pidList(pidSet.begin(), pidSet.end());
     NotifyActive(pidList);
@@ -263,10 +281,8 @@ void BackGroundEventHandler::ErasePid(pid_t pid)
 
 void BackGroundEventHandler::EraseInstance(InstanceId instanceId)
 {
-    if (!mutex_.try_lock()) {
-        return;
-    }
-    auto eraser = [instanceId](ObjectList &list, std::string_view name) {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
+    const auto eraser = [instanceId](ObjectList &list, std::string_view name) {
         for (auto iter = list.begin(); iter != list.end();) {
             if (iter->second.first == instanceId) {
                 list.erase(iter);
@@ -279,7 +295,6 @@ void BackGroundEventHandler::EraseInstance(InstanceId instanceId)
     };
     eraser(memoryRecycleList_, "MemoryRecycleList");
     eraser(suspendList_, "SuspendedList");
-    mutex_.unlock();
 }
 } // namespace MediaAVCodec
 } // namespace OHOS
