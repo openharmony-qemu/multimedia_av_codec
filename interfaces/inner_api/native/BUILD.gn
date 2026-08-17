@@ -371,6 +371,8 @@ ohos_shared_library("av_codec_suspend_client") {
     "$av_codec_root_dir/services/dfx/avcodec_dfx_component.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/client/avcodec_client.cpp",
     "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_listener_stub.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_parcel.cpp",
+    "$av_codec_root_dir/services/services/sa_avcodec/ipc/avcodec_service_proxy.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
