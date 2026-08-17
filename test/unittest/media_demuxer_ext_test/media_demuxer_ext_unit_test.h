@@ -21,7 +21,7 @@
 
 #include "mock/avbuffer.h"
 #include "demuxer_plugin_manager.h"
-#include "mock/media_sync_manager.h"
+#include "mock/mock_media_sync_manager.h"
 #include "mock/sample_queue.h"
 #include "demuxer/media_demuxer.cpp"
 
