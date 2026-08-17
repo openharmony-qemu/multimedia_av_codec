@@ -84,7 +84,7 @@ VEncAPI11Sample::~VEncAPI11Sample()
         nativeWindow = nullptr;
     }
     abnormalIndexValue = false;
-	JoinLoops();
+    JoinLoops();
     if (vencSecondary != nullptr) {
         (void)OH_VideoEncoder_Stop(vencSecondary);
     }
