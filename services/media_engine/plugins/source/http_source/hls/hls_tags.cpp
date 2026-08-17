@@ -325,7 +325,7 @@ void ValuesListTag::ParseAttributes(const std::string& field)
         if (attr) {
             AddAttribute(attr);
         }
-        attr = std::make_shared<Attribute>("TITLE", field.substr(pos));
+        attr = std::make_shared<Attribute>("TITLE", field.substr(pos + 1));
         if (attr) {
             AddAttribute(attr);
         }
