@@ -16,6 +16,7 @@
 #define I_STANDARD_AVCODEC_SERVICE_H
 
 #include "av_codec_service_ipc_interface_code.h"
+#include "avcodec_suspend.h"
 #include "event_type.h"
 #include "ipc_types.h"
 #include "iremote_broker.h"
@@ -42,6 +43,7 @@ public:
     virtual int32_t SuspendActiveAll() = 0;
     virtual int32_t GetActiveSecureDecoderPids(std::vector<pid_t> &pidList) = 0;
     virtual void ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta) {};
+    virtual int32_t SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level) = 0;
     virtual int32_t VideoCallNotifyPiPState(const std::string &bundleName, const bool isFloatingWindow) = 0;
     virtual int32_t NotifyCamRegister(const bool camRegisterFlag) = 0;
     virtual int32_t Init(const sptr<IRemoteObject> &listener) = 0;

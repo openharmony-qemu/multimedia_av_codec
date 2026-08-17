@@ -111,6 +111,9 @@ int AVCodecServiceStub::OnRemoteRequest(uint32_t code, MessageParcel &data, Mess
             ret = AVCS_ERR_OK;
             OnReportStatisticsEvent(data, reply);
             break;
+        case static_cast<uint32_t>(AVCodecServiceInterfaceCode::SET_CODEC_PERFORMANCE_WITH_PID):
+            ret = OnSetCodecPerformanceWithPid(data, reply);
+            break;
         case static_cast<uint32_t>(AVCodecServiceInterfaceCode::VIDEOCALL):
             ret = OnVideoCall(data, reply);
             break;
@@ -240,6 +243,25 @@ void AVCodecServiceStub::OnReportStatisticsEvent(MessageParcel &data, MessagePar
     CHECK_AND_RETURN_LOG(meta.FromParcel(data), "Read statistics event meta failed");
 
     ReportStatisticsEvent(static_cast<StatisticsEventType>(eventType), meta);
+}
+
+int32_t AVCodecServiceStub::OnSetCodecPerformanceWithPid(MessageParcel &data, MessageParcel &reply)
+{
+    auto tokenId = IPCSkeleton::GetCallingTokenID();
+    auto tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    CHECK_AND_RETURN_RET_LOG(tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL,
+                             AVCS_ERR_INVALID_OPERATION, "Only native|shell tokens allowed(%{public}d)",
+                             static_cast<int32_t>(tokenType));
+    pid_t pid = data.ReadInt32();
+    uint8_t levelValue = data.ReadUint8();
+    CHECK_AND_RETURN_RET_LOG(
+        levelValue == static_cast<uint8_t>(CodecPerformanceLevel::DEFAULT) ||
+        levelValue == static_cast<uint8_t>(CodecPerformanceLevel::HIGH),
+        AVCS_ERR_INVALID_VAL, "Invalid CodecPerformanceLevel: %{public}u", levelValue);
+    CodecPerformanceLevel level = static_cast<CodecPerformanceLevel>(levelValue);
+    int32_t ret = SetCodecPerformanceWithPid(pid, level);
+    reply.WriteInt32(ret);
+    return AVCS_ERR_OK;
 }
 
 int32_t AVCodecServiceStub::OnVideoCall(MessageParcel &data, MessageParcel &reply)

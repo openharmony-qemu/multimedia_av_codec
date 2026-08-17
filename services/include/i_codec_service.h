@@ -20,6 +20,7 @@
 #include "avcodec_log_ex.h"
 #include "avcodec_common.h"
 #include "avcodec_info.h"
+#include "avcodec_suspend.h"
 #include "buffer/avsharedmemory.h"
 #include "refbase.h"
 #include "surface.h"
@@ -191,6 +192,8 @@ public:
     }
 
     virtual int32_t NotifyMemoryExchange(const bool exchangeFlag) = 0;
+
+    virtual int32_t SetCodecPerformance(CodecPerformanceLevel level) = 0;
 
     virtual bool IsServiceDied() const
     {

@@ -111,5 +111,11 @@ void CodecServiceStub::NotifyMemoryWriteBack()
     mock->NotifyMemoryWriteBack();
 }
 
+int32_t CodecServiceStub::NotifySetCodecPerformance(CodecPerformanceLevel level)
+{
+    (void)level;
+    return AVCS_ERR_OK;
+}
+
 } // namespace MediaAVCodec
 } // namespace OHOS

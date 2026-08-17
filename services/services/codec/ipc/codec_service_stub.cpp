@@ -68,6 +68,7 @@ const std::map<CodecServiceInterfaceCode, std::string> CODEC_FUNC_NAME = {
     {CodecServiceInterfaceCode::NOTIFY_MEMORY_WRITE_BACK, "NotifyMemoryWriteBack"},
     {CodecServiceInterfaceCode::NOTIFY_SUSPEND, "NotifySuspend"},
     {CodecServiceInterfaceCode::NOTIFY_RESUME, "NotifyResume"},
+    {CodecServiceInterfaceCode::NOTIFY_SET_CODEC_PERFORMANCE, "NotifySetCodecPerformance"},
 };
 
 class QosTool {
@@ -149,6 +150,8 @@ int32_t CodecServiceStub::InitStub(int32_t instanceId)
     recFuncs_[CodecServiceInterfaceCode::NOTIFY_MEMORY_WRITE_BACK] = &CodecServiceStub::NotifyMemoryWriteBack;
     recFuncs_[CodecServiceInterfaceCode::NOTIFY_SUSPEND] = &CodecServiceStub::NotifySuspend;
     recFuncs_[CodecServiceInterfaceCode::NOTIFY_RESUME] = &CodecServiceStub::NotifyResume;
+    recFuncs_[CodecServiceInterfaceCode::NOTIFY_SET_CODEC_PERFORMANCE] =
+        &CodecServiceStub::NotifySetCodecPerformance;
     return AVCS_ERR_OK;
 }
 
@@ -276,6 +279,13 @@ int32_t CodecServiceStub::NotifyActive()
 {
     BackGroundEventHandler::GetInstance().NotifyActive(instanceId_);
     return AV_ERR_OK;
+}
+
+int32_t CodecServiceStub::NotifySetCodecPerformance(CodecPerformanceLevel level)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
+    return codecServer_->SetCodecPerformance(level);
 }
 
 int32_t CodecServiceStub::Start()
@@ -837,6 +847,20 @@ int32_t CodecServiceStub::NotifyActive([[maybe_unused]] MessageParcel &data, [[m
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     return NotifyActive();
+}
+
+int32_t CodecServiceStub::NotifySetCodecPerformance(MessageParcel &data, MessageParcel &reply)
+{
+    AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    uint8_t levelValue = data.ReadUint8();
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(
+        levelValue == static_cast<uint8_t>(CodecPerformanceLevel::DEFAULT) ||
+        levelValue == static_cast<uint8_t>(CodecPerformanceLevel::HIGH),
+        AVCS_ERR_INVALID_VAL, "Invalid CodecPerformanceLevel: %{public}u", levelValue);
+    CodecPerformanceLevel level = static_cast<CodecPerformanceLevel>(levelValue);
+    int32_t ret = NotifySetCodecPerformance(level);
+    reply.WriteInt32(ret);
+    return AVCS_ERR_OK;
 }
 
 void CodecServiceStub::OnActive()

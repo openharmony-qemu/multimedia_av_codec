@@ -21,7 +21,7 @@
 #include <refbase.h>
 #include "avcodec_errors.h"
 #include "hilog/log.h"
-#include "ipc/av_codec_service_ipc_interface_code.h"
+#include "av_codec_service_ipc_interface_code.h"
 #include "iremote_broker.h"
 #include "iremote_object.h"
 #include "iremote_stub.h"

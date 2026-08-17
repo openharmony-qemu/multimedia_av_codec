@@ -1914,6 +1914,15 @@ int32_t CodecServer::NotifyResume()
     return codecBase_->NotifyResume();
 }
 
+int32_t CodecServer::SetCodecPerformance(CodecPerformanceLevel level)
+{
+    std::lock_guard<std::shared_mutex> lock(mutex_);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(framerateCalculator_ != nullptr, AVCS_ERR_INVALID_OPERATION,
+        "framerateCalculator_ is nullptr");
+    framerateCalculator_->SetCodecPerformance(level);
+    return AVCS_ERR_OK;
+}
+
 CodecServer::DecodedBufferInfo::DecodedBufferInfo(uint32_t index, AVBuffer &buffer)
 {
     this->index = index;

@@ -64,6 +64,7 @@ enum class CodecServiceInterfaceCode {
     NOTIFY_MEMORY_WRITE_BACK,
     NOTIFY_SUSPEND,
     NOTIFY_RESUME,
+    NOTIFY_SET_CODEC_PERFORMANCE,
 };
 
 enum class AVCodecListServiceInterfaceCode {
@@ -83,7 +84,8 @@ enum class AVCodecServiceInterfaceCode {
     REPORT_STATISTICS_EVENT,
     VIDEOCALL,
     CAM_UPDATE_REGISTER_CALLBACK,
-    INIT
+    INIT,
+    SET_CODEC_PERFORMANCE_WITH_PID,
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

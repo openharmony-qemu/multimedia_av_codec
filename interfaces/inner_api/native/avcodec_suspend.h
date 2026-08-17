@@ -22,6 +22,11 @@
 
 namespace OHOS {
 namespace MediaAVCodec {
+enum class CodecPerformanceLevel {
+    DEFAULT,
+    HIGH = UINT8_MAX,
+};
+
 class AVCodecSuspend {
 public:
     /**
@@ -49,6 +54,8 @@ public:
         * @since 5.1
         */
     static int32_t SuspendActiveAll();
+
+    static int32_t SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level);
 
 private:
     AVCodecSuspend() = default;

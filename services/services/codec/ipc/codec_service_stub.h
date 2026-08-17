@@ -70,6 +70,7 @@ public:
     int32_t NotifyMemoryExchange(const bool exchangeFlag) override;
     int32_t NotifyFreeze();
     int32_t NotifyActive();
+    int32_t NotifySetCodecPerformance(CodecPerformanceLevel level);
 
 private:
     CodecServiceStub();
@@ -105,6 +106,7 @@ private:
     int32_t NotifyResume(MessageParcel &data, MessageParcel &reply);
     int32_t NotifyFreeze(MessageParcel &data, MessageParcel &reply);
     int32_t NotifyActive(MessageParcel &data, MessageParcel &reply);
+    int32_t NotifySetCodecPerformance(MessageParcel &data, MessageParcel &reply);
     int32_t InnerRelease();
     void OnActive();
 

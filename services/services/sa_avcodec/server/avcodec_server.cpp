@@ -25,6 +25,7 @@
 #include "event_manager.h"
 #include "codec_ability_singleton.h"
 #include "avcodec_xcollie.h"
+#include "codec_service_stub.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServer"};
@@ -155,6 +156,19 @@ int32_t AVCodecServer::GetActiveSecureDecoderPids(std::vector<pid_t> &pidList)
 void AVCodecServer::ReportStatisticsEvent(StatisticsEventType type, Media::Meta &meta)
 {
     EventManager::GetInstance().OnInstanceEvent(type, meta);
+}
+
+int32_t AVCodecServer::SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level)
+{
+    auto instanceList = AVCodecServerManager::GetInstance().GetInstanceInfoListByPid(pid);
+    for (auto &instance : instanceList) {
+        auto stubObj = instance.first;
+        auto stub = static_cast<CodecServiceStub *>(stubObj.GetRefPtr());
+        if (stub != nullptr) {
+            stub->NotifySetCodecPerformance(level);
+        }
+    }
+    return AVCS_ERR_OK;
 }
 
 int32_t AVCodecServer::Dump(int32_t fd, const std::vector<std::u16string> &args)

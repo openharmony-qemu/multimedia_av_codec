@@ -121,6 +121,7 @@ public:
     int32_t NotifyMemoryWriteBack();
     int32_t NotifySuspend();
     int32_t NotifyResume();
+    int32_t SetCodecPerformance(CodecPerformanceLevel level) override;
 
 private:
     int32_t InitByName(const std::string &codecName, Meta &callerInfo);

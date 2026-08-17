@@ -18,7 +18,7 @@
 
 #include <gmock/gmock.h>
 #include "avcodec_errors.h"
-#include "ipc/av_codec_service_ipc_interface_code.h"
+#include "av_codec_service_ipc_interface_code.h"
 #include "iremote_broker.h"
 #include "iremote_stub.h"
 #include "nocopyable.h"

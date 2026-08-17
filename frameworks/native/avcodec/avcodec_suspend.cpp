@@ -40,6 +40,11 @@ int32_t AVCodecSuspend::SuspendActiveAll()
 {
     return AVCodecServiceFactory::GetInstance().SuspendActiveAll();
 }
+
+int32_t AVCodecSuspend::SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level)
+{
+    return AVCodecServiceFactory::GetInstance().SetCodecPerformanceWithPid(pid, level);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
 

@@ -24,6 +24,7 @@
 #include <mutex>
 #include <memory>
 #include "avcodec_log_ex.h"
+#include "avcodec_suspend.h"
 #include "decoding_behavior_analyzer.h"
 
 namespace OHOS {
@@ -40,6 +41,7 @@ public:
     void SetConfiguredFramerate(double framerate);
     bool SetFramerate2ConfiguredFramerate();
     void SetDecInfoCallBack(DecInfoCallBack cb);
+    void SetCodecPerformance(CodecPerformanceLevel level);
 
 private:
     enum class Status {
@@ -60,6 +62,9 @@ private:
     std::chrono::steady_clock::time_point lastAdjustmentTime_{};
     std::function<void(double)> resetFramerateHandler_;
     std::unique_ptr<DecodingBehaviorAnalyzer> behaviorAnalyzer_;
+    int32_t maxIncreaseCheckTimes_;
+    int32_t maxDecreaseCheckTimes_;
+    std::recursive_mutex afcMutex_;
 };
 
 class AdaptiveFramerateController {

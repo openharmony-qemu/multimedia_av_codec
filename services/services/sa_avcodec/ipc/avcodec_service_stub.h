@@ -45,6 +45,7 @@ private:
     int32_t OnInit(MessageParcel &data, MessageParcel &reply);
     int32_t OnGetActiveSecureDecoderPids(MessageParcel &data, MessageParcel &reply);
     void OnReportStatisticsEvent(MessageParcel &data, MessageParcel &reply);
+    int32_t OnSetCodecPerformanceWithPid(MessageParcel &data, MessageParcel &reply);
     void ClientDied(pid_t pid);
     int32_t DestroyStubForPid(pid_t pid);
 

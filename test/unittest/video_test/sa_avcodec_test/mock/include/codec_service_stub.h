@@ -21,7 +21,7 @@
 #include <string>
 #include "avcodec_errors.h"
 #include "avcodec_info.h"
-#include "ipc/av_codec_service_ipc_interface_code.h"
+#include "avcodec_suspend.h"
 #include "meta/format.h"
 #include "iremote_broker.h"
 #include "iremote_stub.h"
@@ -53,6 +53,7 @@ public:
         (std::string &statusStr, std::string &lastErrorStr, std::string &codecBaseHiDumperInfo));
     MOCK_METHOD(void, NotifyMemoryRecycle, ());
     MOCK_METHOD(void, NotifyMemoryWriteBack, ());
+    MOCK_METHOD(int32_t, NotifySetCodecPerformance, (CodecPerformanceLevel level));
 };
 
 class CodecServiceStub : public IRemoteStub<IStandardCodecService>, public NoCopyable {
@@ -68,6 +69,7 @@ public:
     void GetHiDumperInfo(std::string &statusStr, std::string &lastErrorStr, std::string &codecBaseHiDumperInfo);
     void NotifyMemoryRecycle();
     void NotifyMemoryWriteBack();
+    int32_t NotifySetCodecPerformance(CodecPerformanceLevel level);
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
