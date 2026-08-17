@@ -203,7 +203,7 @@ HWTEST_F(AttributeUnitTest, ParseAttributes, TestSize.Level1)
     EXPECT_NE(durationAttr, nullptr);
     EXPECT_EQ(durationAttr->QuotedString(), "10");
     EXPECT_NE(titleAttr, nullptr);
-    EXPECT_EQ(titleAttr->QuotedString(), ",Segment Title");
+    EXPECT_EQ(titleAttr->QuotedString(), "Segment Title");
 }
 
 HWTEST_F(AttributeUnitTest, CreateTagByName, TestSize.Level1)
