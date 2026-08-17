@@ -92,13 +92,13 @@ VEncAPI11Sample::~VEncAPI11Sample()
         (void)OH_VideoEncoder_Stop(vencPrimary);
     }
     (void)Release();
-    if (g_outFile) {
-        (void)fclose(g_outFile);
-        g_outFile = nullptr;
+    if (outFile_) {
+        (void)fclose(outFile_);
+        outFile_ = nullptr;
     }
-    if (g_outFileSec) {
-        (void)fclose(g_outFileSec);
-        g_outFileSec = nullptr;
+    if (outFileSec_) {
+        (void)fclose(outFileSec_);
+        outFileSec_ = nullptr;
     }
 }
 
