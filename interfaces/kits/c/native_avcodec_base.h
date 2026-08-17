@@ -1548,6 +1548,28 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_MAX_FRAME_DELAY_COUNT;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES;
 
 /**
+ * @brief Key for setting the suffix that will be appended to the video codec's
+ * DMABUF name. The value type is char *.
+ *
+ * The suffix is concatenated after the codec's internal DMABUF name using ':' as
+ * a separator. The final DMABUF name format is: {system-defined string}:{suffix}
+ * Note: The prefix is a system-defined string and may change across different system versions.
+ *
+ * Constraints on the suffix value:
+ * 1. Only ASCII printable characters (same as C library isgraph()) are allowed.
+ *    Whitespace, newline, tab and other control characters will be stripped out.
+ * 2. After stripping, the suffix must contain at least one non-digit character,
+ *    otherwise {@link AV_ERR_INVALID_VAL} will be returned.
+ *
+ * This key is optional. When not set, the DMABUF name remains unchanged.
+ * It can be configured via {@link OH_VideoDecoder_Configure} or
+ * {@link OH_VideoEncoder_Configure}.
+ *
+ * @since 26.1.0
+ */
+extern const char *OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX;
+
+/**
  * @brief Media type.
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since 9

@@ -29,6 +29,7 @@
 #include "avcodec_codec_name.h"
 #include "dma_swap.h"
 #include "fcodec_surport_codec.h"
+#include "meta/meta_key.h"
 #include "fcodec_utils.h"
 
 namespace OHOS {
@@ -386,6 +387,8 @@ int32_t FCodec::Configure(const Format &format)
     format_.PutIntValue(FMTKey::VIDEO_HEIGHT, DEFAULT_VIDEO_HEIGHT);
     format_.PutIntValue(FMTKey::REQUIRED_OUT_BUFFER_CNT, DEFAULT_OUT_BUFFER_CNT);
     format_.PutIntValue(FMTKey::REQUIRED_IN_BUFFER_CNT, DEFAULT_IN_BUFFER_CNT);
+    fDecInfo_.codecDmaTag.clear();
+    (void)format.GetStringValue(FMTKey::VIDEO_SET_DMABUF_NAME_SUFFIX, fDecInfo_.codecDmaTag);
     for (auto &it : format.GetFormatMap()) {
         if (it.first == FMTKey::REQUIRED_OUT_BUFFER_CNT) {
             isOutBufSetted_ = true;
@@ -408,7 +411,8 @@ int32_t FCodec::Configure(const Format &format)
             format_.PutDoubleValue(FMTKey::VIDEO_FRAME_RATE, val);
         } else if (it.first == FMTKey::VIDEO_PIXEL_FORMAT || it.first == FMTKey::VIDEO_ROTATION ||
                    it.first == FMTKey::VIDEO_ORIENTATION_TYPE || it.first == FMTKey::VIDEO_SCALE_TYPE ||
-                   it.first == FMTKey::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER) {
+                   it.first == FMTKey::VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER ||
+                   it.first == FMTKey::VIDEO_SET_DMABUF_NAME_SUFFIX) {
             continue;
         } else {
             AVCODEC_LOGW("Set parameter failed: %{public}s, unsupport key", it.first.data());
@@ -959,8 +963,13 @@ int32_t FCodec::AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer)
     if (!splitMime.empty()) {
         mime = splitMime.back();
     }
-    std::string name = fDecInfo_.processName + "-" + std::to_string(width_) + "x" + std::to_string(height_) + "-" +
-                       mime + "-" + fDecInfo_.instanceId;
+
+    std::string name = fDecInfo_.processName + "-" + std::to_string(width_) + "x" + std::to_string(height_)
+                       + "-" + mime + "-" + fDecInfo_.instanceId;
+    if (!fDecInfo_.codecDmaTag.empty()) {
+        name += ":" + fDecInfo_.codecDmaTag;
+    }
+
     ioctl(fd, DMA_BUF_SET_LEAK_TYPE, type.c_str());
     std::string pid = std::to_string(fDecInfo_.pid);
     ioctl(fd, DMA_BUF_SET_NAME_A, pid.c_str());
