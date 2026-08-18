@@ -576,11 +576,14 @@ void CodecBufferCircular::ConvertToSharedMemory(const std::shared_ptr<AVBuffer> 
     // Api9
     using Flags = AVSharedMemory::Flags;
     std::shared_ptr<AVMemory> &bufferMem = buffer->memory_;
-    if (bufferMem == nullptr || memory != nullptr) {
+    if (bufferMem == nullptr) {
+        return;
+    }
+    int32_t capacity = bufferMem->GetCapacity();
+    if (memory != nullptr && memory->GetSize() == capacity) {
         return;
     }
     MemoryType type = bufferMem->GetMemoryType();
-    int32_t capacity = bufferMem->GetCapacity();
     if (type == MemoryType::SHARED_MEMORY) {
         std::string name = std::string("SharedMem_") + std::to_string(buffer->GetUniqueId());
         int32_t fd = bufferMem->GetFileDescriptor();

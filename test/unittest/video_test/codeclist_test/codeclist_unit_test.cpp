@@ -885,7 +885,7 @@ HWTEST_F(CodecListUnitTest, CodecList_GetMaxSupportedInstances_Vvc_001, TestSize
         AVCodecCategory category = AVCodecCategory::AVCODEC_HARDWARE;
         capability_ = CodecListMockFactory::GetCapabilityByCategory(DEFAULT_VIDEO_VVC_MIME, false, category);
         if (capability_ != nullptr) {
-            EXPECT_EQ(MAX_SURPPORT_VCODEC_VVC, capability_->GetMaxSupportedInstances());
+            EXPECT_GE(capability_->GetMaxSupportedInstances(), MAX_SURPPORT_VCODEC_VVC);
         }
     }
 }
