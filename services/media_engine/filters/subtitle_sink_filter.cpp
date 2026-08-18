@@ -264,6 +264,30 @@ Status SubtitleSinkFilter::SetSpeed(float speed)
 {
     return subtitleSink_->SetSpeed(speed);
 }
+
+void SubtitleSinkFilter::SelectTrack(int32_t trackId)
+{
+    FALSE_RETURN(subtitleSink_ != nullptr);
+    subtitleSink_->SelectTrack(trackId);
+}
+
+void SubtitleSinkFilter::SetBufferQueueSize(int32_t trackNum)
+{
+    FALSE_RETURN(subtitleSink_ != nullptr);
+    subtitleSink_->SetBufferQueueSize(trackNum);
+}
+
+Status SubtitleSinkFilter::ClearByTrackId(int32_t trackId)
+{
+    FALSE_RETURN_V_MSG(subtitleSink_ != nullptr, Status::ERROR_NULL_POINTER, "subtitleSink_ is nullptr");
+    return subtitleSink_->ClearByTrackId(trackId);
+}
+    
+int32_t SubtitleSinkFilter::GetCurrentSubtitleTrackId()
+{
+    FALSE_RETURN_V_MSG(subtitleSink_ != nullptr, -1, "subtitleSink_ is nullptr");
+    return subtitleSink_->GetCurrentSubtitleTrackId();
+}
 } // namespace Pipeline
 } // namespace Media
 } // namespace OHOS

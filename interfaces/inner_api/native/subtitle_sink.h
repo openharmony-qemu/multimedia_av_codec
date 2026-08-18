@@ -58,6 +58,10 @@ public:
     void NotifySeek();
     virtual void OnInterrupted(bool isInterruptNeeded) override;
     Status SetSpeed(float speed);
+    void SelectTrack(int32_t trackId);
+    void SetBufferQueueSize(int32_t trackNum);
+    Status ClearByTrackId(int32_t trackId);
+    int32_t GetCurrentSubtitleTrackId();
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
 private:
@@ -66,6 +70,7 @@ private:
         int64_t pts_;
         int64_t duration_;
         std::shared_ptr<AVBuffer> buffer_ {nullptr};
+        bool isShow_ = false;
 
         SubtitleInfo(std::string text, int64_t pts, int64_t duration) : text_(text), pts_(pts), duration_(duration) {}
 
@@ -73,7 +78,8 @@ private:
             : text_(text), pts_(pts), duration_(duration), buffer_(buffer) {}
 
         SubtitleInfo(const SubtitleInfo& other)
-            : text_(other.text_), pts_(other.pts_), duration_(other.duration_), buffer_(other.buffer_) {}
+            : text_(other.text_), pts_(other.pts_), duration_(other.duration_), buffer_(other.buffer_),
+            isShow_(other.isShow_) {}
 
         SubtitleInfo& operator=(const SubtitleInfo& other)
         {
@@ -82,6 +88,7 @@ private:
                 pts_ = other.pts_;
                 duration_ = other.duration_;
                 buffer_ = other.buffer_;
+                isShow_ = other.isShow_;
             }
             return *this;
         }
@@ -98,6 +105,8 @@ private:
     std::pair<std::string, bool> ParseTag(const std::string& tagContent);
     bool FindAndRemoveMatchingTag(std::stack<std::pair<std::string, size_t>>& openTags, const std::string& tag);
     void RestoreUnsupportedTags(std::string& result, std::stack<std::pair<std::string, size_t>>& openTags);
+    void CheckSubtitleInfoStatus();
+    bool HasSubtitleInfoData();
     std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
     int32_t appUid_{0};
     int32_t appPid_{0};
@@ -129,6 +138,10 @@ private:
     std::atomic<bool> isFlush_ = false;
     std::vector<std::shared_ptr<AVBuffer>> inputBufferVector_;
     std::atomic<uint64_t> lastRenderedChangeSeqNum_{0};
+    int32_t subtitleTrackId_ = -1;
+    std::map<int32_t, std::deque<SubtitleInfo>> subtitleInfoMap_;
+    int32_t bufferQueueSize_ = -1;
+    std::atomic<bool> releasedAfterDisplay_{true};
 };
 }
 }

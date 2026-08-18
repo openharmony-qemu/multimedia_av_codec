@@ -283,6 +283,9 @@ public:
     bool IsCloudFd();
     void SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList> &codecList);
     void OnNewTrackRender(uint64_t renderSeqNum);
+    bool IsNeedSelectTrack(int32_t trackId);
+    int32_t GetBuiltInSubtitleNum();
+    bool IsBuiltInSubtitleTrackId(int32_t trackId);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -588,6 +591,8 @@ private:
     void CheckCodecChange(const std::shared_ptr<SampleQueue> &sampleQueue, int32_t trackId, bool& needRelease);
     void CheckCodecChange(const std::shared_ptr<AVBuffer>& buffer, int32_t trackId, bool& needRelease);
     Status PauseConsumerTaskByTrackId(int32_t trackId);
+    void InitBuiltInSubtitleTrack();
+    Status InitBuiltInSubtitleBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -789,6 +794,7 @@ private:
     std::string lastReportedCodecs_;
     std::string lastReportedOriginCodecs_;
     int32_t lastReportedVideoType_{0};
+    std::map<int32_t, int64_t> lastSubtitlePtsMap_;
     
     void RecordMediaChange(const MediaChangeParams& params);
     bool IsBackToOriginalStream(const MediaChangeRecord& firstRecord, const MediaChangeRecord& lastRecord);
@@ -798,6 +804,7 @@ private:
     void CleanUpReportedRecords();
     void ClearMediaChangeHistory();
     void UpdateLastReportedState(const MediaChangeRecord& record);
+    std::vector<int32_t> subtitleTrackIdVec_ {};
     
 private:
     std::deque<MediaChangeRecord>::iterator GetLatestUnreportedRecord();
@@ -830,6 +837,9 @@ private:
     
     int32_t GetInnerTrackId(int32_t trackId);
     void TagSampleWithLatestChange(std::shared_ptr<AVBuffer> sample, int32_t trackId);
+    Status SelectBuiltInSubtitleTrack(int32_t trackId, int32_t curTrackId);
+    Status UpdateSubtitleLastPts(int32_t trackId);
+    bool IsSubtitleQueueStale(int32_t queueIndex);
 };
 } // namespace Media
 } // namespace OHOS
