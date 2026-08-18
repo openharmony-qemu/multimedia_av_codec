@@ -237,7 +237,9 @@ int32_t CodecServer::Configure(const Format &format)
 
     UpdateConfiguredFramerate(format);
     ConfigureSfdManager(config);
-    UpdateCodecParamsFromFormat(format);
+    if (codecType_ == AVCODEC_TYPE_VIDEO_ENCODER) {
+        UpdateCodecParamsFromFormat(format);
+    }
 
     ret = codecBase_->Configure(config);
     if (ret != AVCS_ERR_OK) {

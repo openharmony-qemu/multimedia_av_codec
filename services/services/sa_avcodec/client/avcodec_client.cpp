@@ -155,17 +155,18 @@ int32_t AVCodecClient::RegisterCallback(const std::shared_ptr<MediaCodecLowPower
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INPUT_DATA_ERROR, "callback object is nullptr");
     callback_ = callback;
-    auto avCodecProxy = GetAVCodecProxy();
-    CHECK_AND_RETURN_RET_LOG(avCodecProxy != nullptr, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
-    return avCodecProxy->NotifyCamRegister(true);
+    int32_t ret = IsAlived();
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+    return avCodecProxy_->NotifyCamRegister(true);
 }
+
 void AVCodecClient::UnRegisterCallback()
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     callback_ = nullptr;
-    auto avCodecProxy = GetAVCodecProxy();
-    CHECK_AND_RETURN_LOG(avCodecProxy != nullptr, "AVCodec proxy does not exist");
-    avCodecProxy->NotifyCamRegister(false);
+    int32_t ret = IsAlived();
+    CHECK_AND_RETURN_LOG(ret, "AVCodec proxy does not exist");
+    avCodecProxy_->NotifyCamRegister(false);
 }
 
 #ifdef SUPPORT_CODEC
