@@ -476,7 +476,10 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
 #ifndef _WIN32
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 #endif
-    formatContext_ = nullptr;
+    {
+        std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
+        formatContext_ = nullptr;
+    }
     pluginImpl_ = nullptr;
     for (auto &item : avbsfContexts_) {
         if (item.second != nullptr) {
@@ -486,7 +489,10 @@ FFmpegDemuxerPlugin::~FFmpegDemuxerPlugin()
     streamParsers_ = nullptr;
     referenceParser_ = nullptr;
     parserRefCtx_ = nullptr;
-    selectedTrackIds_.clear();
+    {
+        std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
+        selectedTrackIds_.clear();
+    }
     videoFirstFrameMap_.clear();
     MEDIA_LOG_D("Out");
 }
@@ -538,13 +544,19 @@ void FFmpegDemuxerPlugin::ResetParam()
     ioContext_.eos = false;
     ioContext_.initDownloadDataSize = 0;
     mediaInfo_ = MediaInfo();
-    for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
-        cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
+    {
+        std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
+        for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
+            cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
+        }
+        selectedTrackIds_.clear();
     }
-    selectedTrackIds_.clear();
     checkedTrackIds_.clear();
     pluginImpl_.reset();
-    formatContext_.reset();
+    {
+        std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
+        formatContext_.reset();
+    }
     streamSnapshots_.clear();
 
     streamParsers_.reset();
@@ -1163,6 +1175,7 @@ Status FFmpegDemuxerPlugin::ConvertAVPacketToSample(
 
 Status FFmpegDemuxerPlugin::PushEOSToAllCache()
 {
+    std::lock_guard<std::mutex> lock(selectedTrackMutex_);
     Status ret = Status::OK;
     for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
         auto streamIndex = selectedTrackIds_[i];
@@ -1686,7 +1699,10 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
     }
     FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
-    formatContext_ = InitAVFormatContext(&ioContext_);
+    {
+        std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
+        formatContext_ = InitAVFormatContext(&ioContext_);
+    }
     if (formatContext_ == nullptr) {
         if (ioContext_.retry) {
             MEDIA_LOG_E("SetDataSource failed cause not enough data");
@@ -2184,7 +2200,7 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     }
 }
 
-Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper)
+Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper, bool requireSelectedTrack)
 {
     FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
         Status::ERROR_NULL_POINTER, "Pkt is nullptr");
@@ -2196,15 +2212,19 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper)
 #endif
     auto trackId = pktWrapper->GetStreamIndex();
     Status ret = Status::OK;
+    uint32_t cacheBytes = UINT32_MAX;
+    std::unique_lock<std::mutex> lock(selectedTrackMutex_);
+    if (requireSelectedTrack && !TrackIsSelectedLocked(static_cast<uint32_t>(trackId))) {
+        lock.unlock();
+        AccumulateXpsPktRelease(trackId);
+        return Status::OK;
+    }
     if (NeedCombineFrame(trackId) && !IsBeginAsAnnexb(pktWrapper->GetData(), pktWrapper->GetSize())
         && cacheQueue_.HasCache(trackId)) {
         std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
         if (cacheSamplePacket != nullptr) {
             cacheSamplePacket->pkts.push_back(pktWrapper);
-            uint32_t cacheBytes = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
-            if (cacheBytes < UINT32_MAX) {
-                MaybeNotifyCachePressure(static_cast<uint32_t>(trackId), cacheBytes);
-            }
+            cacheBytes = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
         }
     } else {
         std::shared_ptr<SamplePacket> cacheSamplePacket = std::make_shared<SamplePacket>();
@@ -2213,11 +2233,12 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper)
             cacheSamplePacket->offset = 0;
             cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
             ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
-            uint32_t cacheBytes = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
-            if (cacheBytes < UINT32_MAX) { // only notify when size is valid
-                MaybeNotifyCachePressure(static_cast<uint32_t>(trackId), cacheBytes);
-            }
+            cacheBytes = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
         }
+    }
+    lock.unlock();
+    if (cacheBytes < UINT32_MAX) { // The callback must run without selectedTrackMutex_.
+        MaybeNotifyCachePressure(static_cast<uint32_t>(trackId), cacheBytes);
     }
     AccumulateXpsPktRelease(trackId);
     return ret;
@@ -2841,6 +2862,12 @@ void FFmpegDemuxerPlugin::ParseHEVCMetadataInfo(const AVStream& avStream, Meta& 
 
 bool FFmpegDemuxerPlugin::TrackIsSelected(const uint32_t trackId)
 {
+    std::lock_guard<std::mutex> lock(selectedTrackMutex_);
+    return TrackIsSelectedLocked(trackId);
+}
+
+bool FFmpegDemuxerPlugin::TrackIsSelectedLocked(const uint32_t trackId) const
+{
     return std::any_of(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                        [trackId](uint32_t id) { return id == trackId; });
 }
@@ -2868,7 +2895,8 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    if (!TrackIsSelected(trackId)) {
+    std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
+    if (!TrackIsSelectedLocked(trackId)) {
         selectedTrackIds_.push_back(trackId);
         trackMtx_[trackId] = std::make_shared<std::mutex>();
         trackDfxInfoMap_[trackId] = {0, -1, -1, -1, false};
@@ -2884,6 +2912,7 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("Unselect " PUBLIC_LOG_D32, trackId);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
+    std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
     auto index = std::find_if(selectedTrackIds_.begin(), selectedTrackIds_.end(),
                               [trackId](uint32_t selectedId) {return trackId == selectedId; });
     if (index != selectedTrackIds_.end()) {
@@ -3706,9 +3735,12 @@ void FFmpegDemuxerPlugin::SetCacheLimit(uint32_t limitSize)
 Status FFmpegDemuxerPlugin::GetCurrentCacheSize(uint32_t trackId, uint32_t& size)
 {
     MEDIA_LOG_D("TrackId " PUBLIC_LOG_U32, trackId);
+    // Cache-pressure callbacks can query cache state while a read API holds sharedMutex_.
+    std::lock_guard<std::mutex> lock(selectedTrackMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
-    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
+    FALSE_RETURN_V_MSG_E(TrackIsSelectedLocked(trackId), Status::ERROR_INVALID_PARAMETER,
+        "Track has not been selected");
     uint32_t dataSize = cacheQueue_.GetCacheDataSize(trackId);
     FALSE_RETURN_V_MSG_E(dataSize < UINT32_MAX, Status::ERROR_WRONG_STATE, "CacheSize is invalid");
     size = dataSize;
@@ -3718,9 +3750,11 @@ Status FFmpegDemuxerPlugin::GetCurrentCacheSize(uint32_t trackId, uint32_t& size
 Status FFmpegDemuxerPlugin::GetCurrentCacheFrameCount(uint32_t trackId, uint32_t& frameCount)
 {
     MEDIA_LOG_D("TrackId " PUBLIC_LOG_U32, trackId);
+    std::lock_guard<std::mutex> lock(selectedTrackMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
-    FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
+    FALSE_RETURN_V_MSG_E(TrackIsSelectedLocked(trackId), Status::ERROR_INVALID_PARAMETER,
+        "Track has not been selected");
 
     uint32_t cachedFrames = cacheQueue_.GetCacheFrameCount(trackId); // 返回对应缓存的samplePacket个数
     FALSE_RETURN_V_MSG_E(cachedFrames <= UINT32_MAX, Status::ERROR_WRONG_STATE, "FrameCount is invalid");
@@ -3759,28 +3793,32 @@ int64_t FFmpegDemuxerPlugin::NowMs() const
 
 void FFmpegDemuxerPlugin::MaybeNotifyCachePressure(uint32_t trackId, uint32_t cacheBytes)
 {
-    std::lock_guard<std::mutex> lock(cachePressureMutex_);
-    if (!cachePressureCb_) {
-        return;
+    CachePressureCallback callback;
+    {
+        std::lock_guard<std::mutex> lock(cachePressureMutex_);
+        if (!cachePressureCb_) {
+            return;
+        }
+        auto limitIt = trackCacheLimitMap_.find(trackId);
+        if (limitIt == trackCacheLimitMap_.end() || limitIt->second == 0) {
+            return;
+        }
+        if (cacheBytes < limitIt->second) {
+            return;
+        }
+        uint32_t windowMs = DEFAULT_CACHE_PRESSURE_WINDOW_MS;
+        auto windowIt = trackThrottleWindowMs_.find(trackId);
+        if (windowIt != trackThrottleWindowMs_.end() && windowIt->second > 0) {
+            windowMs = windowIt->second;
+        }
+        int64_t now = NowMs();
+        auto lastIt = trackLastNotifyMs_.find(trackId);
+        if (lastIt != trackLastNotifyMs_.end() && now - lastIt->second < static_cast<int64_t>(windowMs)) {
+            return; // throttled
+        }
+        trackLastNotifyMs_[trackId] = now;
+        callback = cachePressureCb_;
     }
-    auto limitIt = trackCacheLimitMap_.find(trackId);
-    if (limitIt == trackCacheLimitMap_.end() || limitIt->second == 0) {
-        return;
-    }
-    if (cacheBytes < limitIt->second) {
-        return;
-    }
-    uint32_t windowMs = DEFAULT_CACHE_PRESSURE_WINDOW_MS;
-    auto windowIt = trackThrottleWindowMs_.find(trackId);
-    if (windowIt != trackThrottleWindowMs_.end() && windowIt->second > 0) {
-        windowMs = windowIt->second;
-    }
-    int64_t now = NowMs();
-    auto lastIt = trackLastNotifyMs_.find(trackId);
-    if (lastIt != trackLastNotifyMs_.end() && now - lastIt->second < static_cast<int64_t>(windowMs)) {
-        return; // throttled
-    }
-    trackLastNotifyMs_[trackId] = now;
 
     /**
      * Warning: The callback is executed in the read thread, which may cause lock contention
@@ -3796,7 +3834,7 @@ void FFmpegDemuxerPlugin::MaybeNotifyCachePressure(uint32_t trackId, uint32_t ca
      * 3. The callback should remain lightweight, reentrant, and non-blocking. It should
      *    only mark or notify, and must not perform time-consuming operations.
      */
-    cachePressureCb_(trackId, cacheBytes);
+    callback(trackId, cacheBytes);
 }
 
 void FFmpegDemuxerPlugin::SetInterruptState(bool isInterruptNeeded)

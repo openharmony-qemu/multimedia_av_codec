@@ -262,9 +262,10 @@ private:
     Status ConvertAvcToAnnexb(AVPacket& pkt);
     Status PushEOSToAllCache();
     bool TrackIsSelected(const uint32_t trackId);
+    bool TrackIsSelectedLocked(const uint32_t trackId) const;
     Status HandleReadFrameResult(int ffmpegRet);
     Status ReadPacketToCacheQueue(const uint32_t readId);
-    Status AddPacketToCacheQueue(AVPacketWrapperPtr pkt);
+    Status AddPacketToCacheQueue(AVPacketWrapperPtr pkt, bool requireSelectedTrack = false);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
@@ -364,6 +365,8 @@ private:
 
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
+    // Read-thread paths use this mutex directly and must never acquire sharedMutex_ while holding it.
+    std::mutex selectedTrackMutex_;
     std::unordered_map<uint32_t, std::shared_ptr<std::mutex>> trackMtx_;
     Seekable seekable_;
     IOContext ioContext_;
