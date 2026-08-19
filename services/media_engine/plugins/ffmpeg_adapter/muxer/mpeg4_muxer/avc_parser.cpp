@@ -181,7 +181,7 @@ int32_t AvcParser::ParseSpsInfo(const std::shared_ptr<RbspContext>& rbspContext)
     } else {
         avccBox_->chromaFormat_ = 0xFD;
         avccBox_->bitDepthLuma_ = 0xF8;
-        avccBox_->bitDepthLuma_ = 0xF8;
+        avccBox_->bitDepthChroma_ = 0xF8;
     }
 
     return 0;
