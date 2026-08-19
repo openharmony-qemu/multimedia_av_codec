@@ -2075,6 +2075,10 @@ Status MPEG4SampleHelper::AppendSampleIndexEntry(const SttsEntry& sttsEntry, uin
     int64_t duration = 0;
     Status ret = UpdateSampleDurationAndDts(sttsEntry.delta, buildCtx.samplesPerFrame, duration, buildCtx.currentDts);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update sample duration failed");
+    if (duration == 0) {
+        FALSE_RETURN_V_NOLOG(AddDurationOverride(buildCtx.sampleIndex, 0) == Status::OK,
+            Status::ERROR_INVALID_DATA);
+    }
     lastPTS_ = std::max(lastPTS_, sampleIndexEntry_.back().GetPts());
     FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(buildCtx.currentOffset,
         static_cast<int64_t>(sampleIndexEntry_.back().GetSize()), &buildCtx.currentOffset),
