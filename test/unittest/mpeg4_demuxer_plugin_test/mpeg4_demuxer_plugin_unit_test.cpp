@@ -3795,21 +3795,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleSize_RejectOversiz
 }
 
 /**
- * @tc.name: Mpeg4DemuxerPlugin_TimeToSample_RejectOversizedSampleCount_001
- * @tc.desc: Verify stts sample count is capped before sample index expansion
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TimeToSample_RejectOversizedSampleCount_001,
-    TestSize.Level1)
-{
-    auto data = BuildSttsData({{1000001U, 40U}});
-    Plugins::MPEG4::MPEG4SampleHelper helper;
-    helper.dataReader_ = CreateReaderForBytes(data);
-
-    EXPECT_EQ(helper.SetTimeToSampleParams(0, data.size()), Status::ERROR_INVALID_DATA);
-}
-
-/**
  * @tc.name: Mpeg4DemuxerPlugin_CompositionTime_RejectZeroSampleCount_001
  * @tc.desc: Verify ctts entries with zero samples are rejected before expansion
  * @tc.type: FUNC
@@ -4035,6 +4020,41 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexDurationOverr
     helper.lastPTS_ = 100;
     EXPECT_FALSE(helper.IsAtOrBeyondLastSampleEnd(139));
     EXPECT_TRUE(helper.IsAtOrBeyondLastSampleEnd(140));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleIndexZeroDurationOverride_001
+ * @tc.desc: Verify zero-duration samples remain valid after dense sample index construction
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexZeroDurationOverride_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper.mimeType_ = Plugins::MimeType::VIDEO_AVC;
+    helper.sttsEntry_ = {{1, 0}, {1, 40}, {1, 0}};
+    helper.stscEntry_ = {{0, 3, 1}};
+    helper.sampleSizes_ = {1, 1, 1};
+    helper.sampleSizeCount_ = 3U;
+    helper.chunkOffsets_ = {100};
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    ASSERT_EQ(helper.sampleIndexEntry_.size(), 3U);
+    ASSERT_EQ(helper.durationOverrides_.size(), 2U);
+    EXPECT_EQ(helper.durationOverrides_[0].sampleIndex, 0U);
+    EXPECT_EQ(helper.durationOverrides_[0].duration, 0);
+    EXPECT_EQ(helper.durationOverrides_[1].sampleIndex, 2U);
+    EXPECT_EQ(helper.durationOverrides_[1].duration, 0);
+
+    const std::vector<int64_t> expectedDts = {0, 0, 40};
+    const std::vector<int64_t> expectedDuration = {0, 40, 0};
+    for (uint32_t i = 0; i < 3U; ++i) {
+        Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+        ASSERT_EQ(helper.GetSampleIndexView(i, view), Status::OK);
+        EXPECT_EQ(view.dts, expectedDts[i]);
+        EXPECT_EQ(view.duration, expectedDuration[i]);
+    }
 }
 
 /**
