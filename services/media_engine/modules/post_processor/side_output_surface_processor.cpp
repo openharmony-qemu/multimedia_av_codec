@@ -873,7 +873,7 @@ void SideOutputSurfaceProcessor::HandleSampleTask()
 
     {
         std::lock_guard<std::mutex> lock(sampleMutex_);
-        sampleResult_ = copyResult ? 1 : 0;
+        sampleResult_ = copyResult ? 0 : 1;
         sampleDone_ = true;
         sampleDoneCond_.notify_all();
     }
