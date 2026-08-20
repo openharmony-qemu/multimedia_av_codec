@@ -1927,8 +1927,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
     if (segmentDuration == 0) {
         return DASH_SEGMENT_INIT_FAILED;
     }
-
-    if(segmentDuration < MIN_SEGMENT_DURATION_MS) {
+    if (segmentDuration < MIN_SEGMENT_DURATION_MS) {
         MEDIA_LOG_W("segmentDuration " PUBLIC_LOG_U32 "ms is below minimum " PUBLIC_LOG_U32
             " ms, reject to prevent OOM", segmentDuration, MIN_SEGMENT_DURATION_MS);
         return DASH_SEGMENT_INIT_FAILED;
@@ -2173,7 +2172,6 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithSegList(const DashSegList
         if (*it == nullptr) {
             continue;
         }
-
         std::string mediaUrl;
         if ((*it)->media_.length() > 0) {
             mediaUrl = (*it)->media_;
