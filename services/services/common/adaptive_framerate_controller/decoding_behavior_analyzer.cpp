@@ -365,6 +365,8 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
 #else
     double srcFps = GetSrcFps();
 #endif
+    double renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
+    ReportFpsIfSignificantChange(decFps, renderFps, srcFps);
     if (srcFps < 1.0) {
         return;
     }
@@ -373,8 +375,6 @@ void DecodingBehaviorAnalyzer::OnChecked(double decFps)
     }
     double speed = decInFps / srcFps_;
     size_t newSpeedIdx = UpdateSpeedEstimates(speed);
-    double renderFps = decFps * static_cast<double>(renderCnt_) / frameCnt_;
-    ReportFpsIfSignificantChange(decFps, renderFps, srcFps_);
     size_t lastDecSpeedIdx = maxPossibleDecSpeedIdx_;
 #ifdef SUPPORT_FPS_FOR_MEMC
     if ((lastDecSpeedIdx != 0 && lastDecSpeedIdx != NORMAL_SPEED && isSingleSpeed_) ||
