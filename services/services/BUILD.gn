@@ -175,6 +175,7 @@ ohos_shared_library("av_codec_service") {
   ]
 
   external_deps = [
+    "access_token:libaccesstoken_sdk",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",

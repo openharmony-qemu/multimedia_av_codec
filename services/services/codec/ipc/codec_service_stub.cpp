@@ -28,6 +28,7 @@
 #endif
 #include "event_manager.h"
 #include "ipc_skeleton.h"
+#include "accesstoken_kit.h"
 #include "background_event_handler.h"
 #include "qos.h"
 #include "surface_utils.h"
@@ -475,24 +476,61 @@ int32_t CodecServiceStub::SetListenerObject(MessageParcel &data, MessageParcel &
     return AVCS_ERR_OK;
 }
 
+int32_t CodecServiceStub::CheckInitCaller(AVCodecType type, const Media::Meta &callerInfo)
+{
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(type > AVCodecType::AVCODEC_TYPE_NONE &&
+                                          type <= AVCodecType::AVCODEC_TYPE_AUDIO_DECODER,
+                                      AVCS_ERR_INVALID_VAL, "Init type invalid %{public}d", static_cast<int32_t>(type));
+    pid_t callerPid = 0;
+    uid_t callerUid = 0;
+    bool idRet = callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, callerPid) &&
+                 callerInfo.GetData(Tag::AV_CODEC_CALLER_UID, callerUid);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(
+        idRet && callerPid == static_cast<pid_t>(IPCSkeleton::GetCallingPid()) &&
+            callerUid == static_cast<uid_t>(IPCSkeleton::GetCallingUid()),
+        AVCS_ERR_INVALID_OPERATION,
+        "Init caller pid/uid mismatch, caller %{public}d/%{public}u, ipc %{public}d/%{public}u", callerPid, callerUid,
+        IPCSkeleton::GetCallingPid(), static_cast<uid_t>(IPCSkeleton::GetCallingUid()));
+
+    int32_t forwardPid = 0;
+    std::string forwardProcessName;
+    bool hasForward = (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardPid) && forwardPid >= 0) ||
+                      (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName) &&
+                       !forwardProcessName.empty());
+    if (hasForward) {
+        auto tokenType = Security::AccessToken::AccessTokenKit::GetTokenTypeFlag(IPCSkeleton::GetCallingTokenID());
+        CHECK_AND_RETURN_RET_LOG_WITH_TAG(tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE ||
+                                              tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_SHELL,
+                                          AVCS_ERR_INVALID_OPERATION,
+                                          "Forward caller requires native|shell token, got %{public}d",
+                                          static_cast<int32_t>(tokenType));
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Meta callerInfo;
-    int32_t instanceId = 0;
-    std::string codecName = "";
     callerInfo.FromParcel(data);
     AVCodecType type = static_cast<AVCodecType>(data.ReadInt32());
     bool isMimeType = data.ReadBool();
     std::string name = data.ReadString();
-    bool parcelRet = reply.WriteInt32(Init(type, isMimeType, name, callerInfo)) &&
-                     callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId) &&
-                     callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName);
+
+    int32_t ret = CheckInitCaller(type, callerInfo);
+    if (ret == AVCS_ERR_OK) {
+        ret = Init(type, isMimeType, name, callerInfo);
+    }
+
+    int32_t instanceId = 0;
+    std::string codecName = "";
+    (void)callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
+    (void)callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName);
     Meta replyCallerInfo;
     replyCallerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
     replyCallerInfo.SetData(Tag::MEDIA_CODEC_NAME, codecName);
-    parcelRet = parcelRet && replyCallerInfo.ToParcel(reply);
+    bool parcelRet = reply.WriteInt32(ret) && replyCallerInfo.ToParcel(reply);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
 }
