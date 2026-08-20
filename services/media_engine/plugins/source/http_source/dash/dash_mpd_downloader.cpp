@@ -2265,6 +2265,9 @@ void DashMpdDownloader::GetSegDurationFromTimeline(unsigned int periodDuration, 
 void DashMpdDownloader::ExpandSegDuration(const DashSegTimeline *timeline, int segCount, unsigned int timeScale,
                                           uint64_t &startTime, DashList<unsigned int> &durationList)
 {
+    if (timeline == nullptr || timeScale == 0) {
+        return;
+    }
     unsigned int segDuration = (timeline->d_ * 1000) / timeScale;
     for (int repeat = 0; repeat <= segCount; repeat++) {
         if (durationList.size() >= MAX_DURATION_LIST_SIZE) {
