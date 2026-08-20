@@ -2245,22 +2245,37 @@ void DashMpdDownloader::GetSegDurationFromTimeline(unsigned int periodDuration, 
                 continue;
             }
             // calculate segment duration by SegmentTimeline
-            unsigned int segDuration = ((*it)->d_ * 1000) / timeScale;
-            for (int repeat = 0; repeat <= segCount; repeat++) {
-                if (durationList.size() >= MAX_DURATION_LIST_SIZE) {
-                    MEDIA_LOG_W("durationList size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
-                        ", stop expanding", durationList.size(), MAX_DURATION_LIST_SIZE);
-                    break;
-                }
-                durationList.push_back(segDuration);
-                startTime += (*it)->d_;
-            }
+            ExpandSegDuration(*it, segCount, timeScale, startTime, durationList);
         }
     }
     if (mpdInfo_->type_ == DashType::DASH_TYPE_DYNAMIC) {
         if (sourceLoader_ && sourceLoader_->GetenableOfflineCache()) {
             sourceLoader_->Close(-1);
         }
+    }
+}
+
+/**
+ * @brief    Expand Segment Duration From SegmentTimeline
+ *
+ * @param    timeline          the segment timeline entry
+ * @param    segCount          the repeat count of this timeline entry
+ * @param    timeScale        the timeScale of this period, duration / timescale = seconds
+ * @param    startTime[in,out] the start time of this timeline entry
+ * @param    durationList[out] the list to store segment duration
+ */
+void DashMpdDownloader::ExpandSegDuration(const DashSegTimeline *timeline, int segCount, unsigned int timeScale,
+                                          uint64_t &startTime, DashList<unsigned int> &durationList)
+{
+    unsigned int segDuration = (timeline->d_ * 1000) / timeScale;
+    for (int repeat = 0; repeat <= segCount; repeat++) {
+        if (durationList.size() >= MAX_DURATION_LIST_SIZE) {
+            MEDIA_LOG_W("durationList size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
+                ", stop expanding", durationList.size(), MAX_DURATION_LIST_SIZE);
+            break;
+        }
+        durationList.push_back(segDuration);
+        startTime += timeline->d_;
     }
 }
 

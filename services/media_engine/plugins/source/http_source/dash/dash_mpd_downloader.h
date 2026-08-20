@@ -235,6 +235,8 @@ private:
                                                 std::shared_ptr<DashStreamDescription> streamDesc);
     void GetSegDurationFromTimeline(unsigned int periodDuration, unsigned int timeScale,
                                     const DashMultSegBaseInfo *multSegBaseInfo, std::list<unsigned int> &durationList);
+    void ExpandSegDuration(const DashSegTimeline *timeline, int segCount, unsigned int timeScale,
+                           uint64_t &startTime, DashList<unsigned int> &durationList);
     int GetSegCountFromTimeline(DashList<DashSegTimeline *>::iterator &it,
                                 const DashList<DashSegTimeline *>::iterator &end,
                                 unsigned int periodDuration, unsigned int timeScale, uint64_t startTime);
