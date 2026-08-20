@@ -869,11 +869,11 @@ void SideOutputSurfaceProcessor::HandleSampleTask()
         return;
     }
 
-    int32_t copyResult = CopyBufferToSideSurface(srcBuffer, srcTimestamp);
+    bool copyResult = CopyBufferToSideSurface(srcBuffer, srcTimestamp);
 
     {
         std::lock_guard<std::mutex> lock(sampleMutex_);
-        sampleResult_ = copyResult;
+        sampleResult_ = copyResult ? 0 : 1;
         sampleDone_ = true;
         sampleDoneCond_.notify_all();
     }
