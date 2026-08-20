@@ -87,7 +87,7 @@ public:
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
     Status SetWatermarkMode();
-    Status setStabilizationMode(bool enableStabilization);
+    Status SetStabilizationMode(bool enableStabilization);
     sptr<Surface> GetInputSurface();
     Status Start();
     Status Stop();
