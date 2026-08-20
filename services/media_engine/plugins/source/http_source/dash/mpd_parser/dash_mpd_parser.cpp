@@ -757,7 +757,7 @@ void DashMpdParser::ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::
             if (this->stopFlag_.load()) {
                 break;
             }
-            if (segList->segmentUrl.size() >= MAX_SEGMENT_URL_COUNT) {
+            if (segList->segmentUrl_.size() >= MAX_SEGMENT_URL_COUNT) {
                 MEDIA_LOG_W("SegmentURL count " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
                     ", stop parsing", segList->segmentUrl_.size(), MAX_SEGMENT_URL_COUNT);
                 break;

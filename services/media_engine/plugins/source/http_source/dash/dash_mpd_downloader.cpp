@@ -1930,7 +1930,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
 
     if(segmentDuration < MIN_SEGMENT_DURATION_MS) {
         MEDIA_LOG_W("segmentDuration " PUBLIC_LOG_U32 "ms is below minimum " PUBLIC_LOG_U32
-            ", ms, reject to prevent OOM", segmentDuration, MIN_SEGMENT_DURATION_MS);
+            " ms, reject to prevent OOM", segmentDuration, MIN_SEGMENT_DURATION_MS);
         return DASH_SEGMENT_INIT_FAILED;
     }
 
@@ -1940,7 +1940,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
 
     while (accumulateDuration < desc->duration_) {
         if (desc->mediaSegments_.size() >= MAX_MEDIA_SEGMENTS) {
-            MEDIA_LOG_W("mediaSegments_ size " PUBLIC_LOG_ZU " exceed max " PUBLIC_LOG_ZU
+            MEDIA_LOG_W("mediaSegments_ size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
                 ", stop expanding", desc->mediaSegments_.size(), MAX_MEDIA_SEGMENTS);
             break;
         }
@@ -2248,7 +2248,7 @@ void DashMpdDownloader::GetSegDurationFromTimeline(unsigned int periodDuration, 
             unsigned int segDuration = ((*it)->d_ * 1000) / timeScale;
             for (int repeat = 0; repeat <= segCount; repeat++) {
                 if (durationList.size() >= MAX_DURATION_LIST_SIZE) {
-                    MEIDA_LOG_W("durationList size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
+                    MEDIA_LOG_W("durationList size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
                         ", stop expanding", durationList.size(), MAX_DURATION_LIST_SIZE);
                     break;
                 }
