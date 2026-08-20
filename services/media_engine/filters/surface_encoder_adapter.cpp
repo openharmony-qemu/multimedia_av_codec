@@ -334,10 +334,10 @@ Status SurfaceEncoderAdapter::SetWatermarkMode()
     return Status::OK;
 }
 
-Status SurfaceEncoderAdapter::SetScreenCaptureMode()
+Status SurfaceEncoderAdapter::setStabilizationMode(bool enableStabilization)
 {
-    MEDIA_LOG_I("SetScreenCaptureMode");
-    isScreenCaptureMode_ = true;
+    MEDIA_LOG_I("enableStabilization");
+    enableStabilization_ = enableStabilization;
     return Status::OK;
 }
 
@@ -392,7 +392,7 @@ Status SurfaceEncoderAdapter::Stop()
     if (curState_ == ProcessStateCode::PAUSED && !isTransCoderMode) {
         stopTime_ = pauseTime_;
         // current frame is not the last frame before the pause time, wait for stop
-        if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_) && !isScreenCaptureMode_) {
+        if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_) && enableStabilization_) {
             MEDIA_LOG_D("paused state -> stop, wait for stop.");
             HandleWaitforStop();
         }
@@ -401,7 +401,7 @@ Status SurfaceEncoderAdapter::Stop()
     }
     // operate stop when it is recording state.
     if (curState_ == ProcessStateCode::RECORDING && !isTransCoderMode) {
-        if (!isScreenCaptureMode_) {
+        if (enableStabilization_) {
             MEDIA_LOG_D("recording state -> stop, wait for stop.");
             HandleWaitforStop();
         }

@@ -87,7 +87,7 @@ public:
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
     Status SetWatermarkMode();
-    Status SetScreenCaptureMode();
+    Status setStabilizationMode(bool enableStabilization);
     sptr<Surface> GetInputSurface();
     Status Start();
     Status Stop();
@@ -182,7 +182,7 @@ private:
     bool hasBoostVideoFrameRate_ = false;
     bool isSupportBoostFrameRate_ = false;
     bool isWatermarkMode_ = false;
-    bool isScreenCaptureMode_ = false;
+    bool enableStabilization_ = true;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
