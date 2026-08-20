@@ -336,7 +336,7 @@ Status SurfaceEncoderAdapter::SetWatermarkMode()
 
 Status SurfaceEncoderAdapter::setStabilizationMode(bool enableStabilization)
 {
-    MEDIA_LOG_I("enableStabilization");
+    MEDIA_LOG_I("setStabilizationMode");
     enableStabilization_ = enableStabilization;
     return Status::OK;
 }
