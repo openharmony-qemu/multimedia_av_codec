@@ -32,6 +32,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 constexpr uint64_t S_TO_MS = 1000;
+constexpr size_t MAX_SEGMENT_URL_COUNT = 100000;
 
 DashMpdParser::~DashMpdParser()
 {
@@ -754,6 +755,11 @@ void DashMpdParser::ParseSegmentList(std::shared_ptr<XmlParser> xmlParser, std::
         std::shared_ptr<XmlElement> childElement = rootElement->GetChild();
         while (childElement != nullptr) {
             if (this->stopFlag_.load()) {
+                break;
+            }
+            if (segList->segmentUrl.size() >= MAX_SEGMENT_URL_COUNT) {
+                MEDIA_LOG_W("SegmentURL count " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
+                    ", stop parsing", segList->segmentUrl_.size(), MAX_SEGMENT_URL_COUNT);
                 break;
             }
 

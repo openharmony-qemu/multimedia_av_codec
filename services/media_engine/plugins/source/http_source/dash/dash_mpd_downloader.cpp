@@ -42,6 +42,10 @@ constexpr uint32_t MPD_MAX_SIZE = 100 * 1024 * 1024;
 constexpr unsigned int SEGMENT_DURATION_DELTA = 100; // ms
 constexpr double TOLERANCE = 1e-15;
 constexpr uint32_t MAX_PSSH_BASE64_LEN = 2730;
+constexpr int MAX_SEG_COUNT_PER_S = 100000;
+constexpr size_t MAX_MEDIA_SEGMENTS = 100000;
+constexpr unsigned int MIN_SEGMENT_DURATION_MS = 10;
+constexpr size_t MAX_DURATION_LIST_SIZE = 100000;
 
 namespace {
 void CollectPeriodRanges(const DashMpdInfo *mpdInfo, uint64_t fallbackDurationMs,
@@ -1093,6 +1097,10 @@ uint32_t DashMpdDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock)
     std::lock_guard<std::mutex> lock(downloadContentMutex_);
     MEDIA_LOG_D("SaveData:size=%{public}zu len=%{public}u", downloadContent_.size(), len);
     FALSE_RETURN_V_MSG(data != nullptr && len <= MPD_MAX_SIZE, 0, "SaveData failed, dash mpd data too large.");
+    if (downloadContent_.size() + len > MPD_MAX_SIZE) {
+        MEDIA_LOG_W("downloadContent_ size exceeds max, reject to prevent OOM");
+        return 0;
+    }
     downloadContent_.append(reinterpret_cast<const char*>(data), len);
     return len;
 }
@@ -1920,11 +1928,22 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
         return DASH_SEGMENT_INIT_FAILED;
     }
 
+    if(segmentDuration < MIN_SEGMENT_DURATION_MS) {
+        MEDIA_LOG_W("segmentDuration " PUBLIC_LOG_U32 "ms is below minimum " PUBLIC_LOG_U32
+            ", ms, reject to prevent OOM", segmentDuration, MIN_SEGMENT_DURATION_MS);
+        return DASH_SEGMENT_INIT_FAILED;
+    }
+
     uint64_t segmentBaseDurationSum = 0;
     uint64_t accumulateDuration = 0;
     int64_t segmentSeq = -1;
 
     while (accumulateDuration < desc->duration_) {
+        if (desc->mediaSegments_.size() >= MAX_MEDIA_SEGMENTS) {
+            MEDIA_LOG_W("mediaSegments_ size " PUBLIC_LOG_ZU " exceed max " PUBLIC_LOG_ZU
+                ", stop expanding", desc->mediaSegments_.size(), MAX_MEDIA_SEGMENTS);
+            break;
+        }
         segmentBaseDurationSum += segTmpltInfo->multSegBaseInfo_.duration_;
         // the sum of segment duration(ms), devide timescale
         uint64_t durationSumWithScaleTmp = (segmentBaseDurationSum <= std::numeric_limits<uint64_t>::max() / S_2_MS ?
@@ -2022,6 +2041,11 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsInOneTimeline(const DashSegTi
     int repeat = 0;
     int segCountTmp = sampleInfo.segCount_;
     while (repeat <= segCountTmp) {
+        if (streamDesc->mediaSegments_.size() >= MAX_MEDIA_SEGMENTS) {
+            MEDIA_LOG_W("mediaSegments_ size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU ", stop expanding",
+                streamDesc->mediaSegments_.size(), MAX_MEDIA_SEGMENTS);
+            break;
+        }
         repeat++;
         if (segmentSeq == -1) {
             segmentSeq = streamDesc->startNumberSeq_;
@@ -2105,6 +2129,12 @@ int DashMpdDownloader::GetSegCountFromTimeline(DashList<DashSegTimeline *>::iter
         segCount -= 1;
     }
 
+    if (segCount > MAX_SEG_COUNT_PER_S) {
+        MEDIA_LOG_W("S@r " PUBLIC_LOG_D32 " exceeds max limit " PUBLIC_LOG_D32 ", clamped",
+            segCount, MAX_SEG_COUNT_PER_S);
+        segCount = MAX_SEG_COUNT_PER_S;
+    }
+
     return segCount;
 }
 
@@ -2135,6 +2165,11 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithSegList(const DashSegList
 
     std::list<DashSegUrl*> segUrlList = segListInfo->segmentUrl_;
     for (std::list<DashSegUrl*>::iterator it = segUrlList.begin(); it != segUrlList.end(); ++it) {
+        if (streamDesc->mediaSegments_.size() >= MAX_MEDIA_SEGMENTS) {
+            MEDIA_LOG_W("mediaSegments_ size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
+                ", stop expanding", streamDesc->mediaSegments_.size(), MAX_MEDIA_SEGMENTS);
+            break;
+        }
         if (*it == nullptr) {
             continue;
         }
@@ -2212,6 +2247,11 @@ void DashMpdDownloader::GetSegDurationFromTimeline(unsigned int periodDuration, 
             // calculate segment duration by SegmentTimeline
             unsigned int segDuration = ((*it)->d_ * 1000) / timeScale;
             for (int repeat = 0; repeat <= segCount; repeat++) {
+                if (durationList.size() >= MAX_DURATION_LIST_SIZE) {
+                    MEIDA_LOG_W("durationList size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
+                        ", stop expanding", durationList.size(), MAX_DURATION_LIST_SIZE);
+                    break;
+                }
                 durationList.push_back(segDuration);
                 startTime += (*it)->d_;
             }
