@@ -16,6 +16,7 @@
 #include "http_server_demo.h"
 
 #include <new>
+#include <limits>
 #define LOCAL true
 
 using namespace OHOS;
@@ -1418,5 +1419,85 @@ HWTEST_F(M3u8UnitTest, SaveData_Invalid_Length, TestSize.Level1)
 
     result = m3u8->SaveData(data, 0, false, 0);
     EXPECT_FALSE(result);
+}
+
+/**
+ * @tc.name  : Test ProcessInfo sequence normal increment
+ * @tc.number: ProcessInfo_Sequence_Normal_Increment
+ * @tc.desc  : Test ProcessInfo increments sequence_ when sequence_ < uint64 max
+ */
+HWTEST_F(M3u8UnitTest, ProcessInfo_Sequence_Normal_Increment, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    m3u8->isDecryptAble_ = false;
+    m3u8->sequence_ = 1;
+    M3U8Info info;
+    info.uri = "http://example.com/seg1.ts";
+    info.duration = 10.0;
+    info.discontinuity = false;
+    size_t duration = 0;
+    m3u8->ProcessInfo(info, duration);
+    EXPECT_EQ(m3u8->sequence_, 2u);
+    EXPECT_EQ(m3u8->files_.size(), 1u);
+}
+
+/**
+ * @tc.name  : Test ProcessInfo sequence overflow skips increment
+ * @tc.number: ProcessInfo_Sequence_Overflow
+ * @tc.desc  : Test ProcessInfo skips increment when sequence_ == uint64 max
+ */
+HWTEST_F(M3u8UnitTest, ProcessInfo_Sequence_Overflow, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    m3u8->isDecryptAble_ = false;
+    m3u8->sequence_ = std::numeric_limits<uint64_t>::max();
+    M3U8Info info;
+    info.uri = "http://example.com/seg1.ts";
+    info.duration = 10.0;
+    info.discontinuity = false;
+    size_t duration = 0;
+    m3u8->ProcessInfo(info, duration);
+    EXPECT_EQ(m3u8->sequence_, std::numeric_limits<uint64_t>::max());
+    EXPECT_EQ(m3u8->files_.size(), 1u);
+}
+
+/**
+ * @tc.name  : Test ProcessInfo duration normal accumulation
+ * @tc.number: ProcessInfo_Duration_Normal_Accumulation
+ * @tc.desc  : Test ProcessInfo accumulates duration when no overflow
+ */
+HWTEST_F(M3u8UnitTest, ProcessInfo_Duration_Normal_Accumulation, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    m3u8->isDecryptAble_ = false;
+    m3u8->sequence_ = 1;
+    M3U8Info info;
+    info.uri = "http://example.com/seg1.ts";
+    info.duration = 10.0;
+    info.discontinuity = false;
+    size_t duration = 0;
+    m3u8->ProcessInfo(info, duration);
+    EXPECT_EQ(duration, static_cast<size_t>(10.0 * 1000.0 * 1000.0));
+    EXPECT_EQ(m3u8->files_.size(), 1u);
+}
+
+/**
+ * @tc.name  : Test ProcessInfo duration overflow skips accumulation
+ * @tc.number: ProcessInfo_Duration_Overflow
+ * @tc.desc  : Test ProcessInfo skips duration accumulation when overflow would occur
+ */
+HWTEST_F(M3u8UnitTest, ProcessInfo_Duration_Overflow, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    m3u8->isDecryptAble_ = false;
+    m3u8->sequence_ = 1;
+    M3U8Info info;
+    info.uri = "http://example.com/seg1.ts";
+    info.duration = 10.0;
+    info.discontinuity = false;
+    size_t duration = std::numeric_limits<size_t>::max();
+    m3u8->ProcessInfo(info, duration);
+    EXPECT_EQ(duration, std::numeric_limits<size_t>::max());
+    EXPECT_EQ(m3u8->files_.size(), 1u);
 }
 }
