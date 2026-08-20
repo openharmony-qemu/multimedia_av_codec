@@ -1939,8 +1939,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithTmpltDurationStatic(const
 
     while (accumulateDuration < desc->duration_) {
         if (desc->mediaSegments_.size() >= MAX_MEDIA_SEGMENTS) {
-            MEDIA_LOG_W("mediaSegments_ size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
-                ", stop expanding", desc->mediaSegments_.size(), MAX_MEDIA_SEGMENTS);
+            MEDIA_LOG_W("mediaSegments_ size exceeds max");
             break;
         }
         segmentBaseDurationSum += segTmpltInfo->multSegBaseInfo_.duration_;
@@ -2165,8 +2164,7 @@ DashSegmentInitValue DashMpdDownloader::GetSegmentsWithSegList(const DashSegList
     std::list<DashSegUrl*> segUrlList = segListInfo->segmentUrl_;
     for (std::list<DashSegUrl*>::iterator it = segUrlList.begin(); it != segUrlList.end(); ++it) {
         if (streamDesc->mediaSegments_.size() >= MAX_MEDIA_SEGMENTS) {
-            MEDIA_LOG_W("mediaSegments_ size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
-                ", stop expanding", streamDesc->mediaSegments_.size(), MAX_MEDIA_SEGMENTS);
+            MEDIA_LOG_W("mediaSegments_ size exceeds max");
             break;
         }
         if (*it == nullptr) {
