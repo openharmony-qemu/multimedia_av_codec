@@ -32,6 +32,7 @@
 #include "block_queue.h"
 #include "codec_utils.h"
 #include "codecbase.h"
+#include "fcodec_frame_converter.h"
 #include "media_description.h"
 #include "fsurface_memory.h"
 #include "surface_tools.h"
@@ -190,10 +191,7 @@ private:
     std::shared_ptr<AVPacket> avPacket_ = nullptr;
     std::shared_ptr<AVFrame> cachedFrame_ = nullptr;
     // Receive frame
-    uint8_t *scaleData_[AV_NUM_DATA_POINTERS] = {nullptr};
-    int32_t scaleLineSize_[AV_NUM_DATA_POINTERS] = {0};
-    std::shared_ptr<Scale> scale_ = nullptr;
-    bool isConverted_ = false;
+    std::shared_ptr<FCodecFrameConverter> scale_ = nullptr;
     bool isOutBufSetted_ = false;
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN;
     RawVideoPixelFormat rawvideoPixFmt_ = RawVideoPixelFormat::UNKNOWN;
