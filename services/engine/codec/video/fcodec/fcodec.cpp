@@ -1358,6 +1358,21 @@ void FCodec::SendFrame()
     }
 }
 
+int32_t FCodec::ConvertFrame(AVPixelFormat srcPixfmt, AVPixelFormat dstPixfmt)
+{
+    int32_t ret;
+    if (converter_ == nullptr) {
+        converter_ = std::make_shared<FCodecFrameConverter>();
+        ret = converter_->Init(cachedFrame_->width, cachedFrame_->height, srcPixfmt, dstPixfmt);
+        if (ret != AVCS_ERR_OK) {
+            converter_.reset();
+            return ret;
+        }
+    }
+    ret = converter_->Convert(cachedFrame_->data, cachedFrame_->linesize);
+    return ret;
+}
+
 int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
 {
     AVPixelFormat ffmpegTargetPixfmt = ConvertPixelFormatToFFmpeg(outputPixelFmt_);
@@ -1371,12 +1386,7 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
         frameData = cachedFrame_->data;
         frameLineSize = reinterpret_cast<int32_t *>(cachedFrame_->linesize);
     } else {
-        if (converter_ == nullptr) {
-            converter_ = std::make_shared<FCodecFrameConverter>();
-            ret = converter_->Init(cachedFrame_->width, cachedFrame_->height, ffmpegOutputPixfmt, ffmpegTargetPixfmt);
-            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale init failed: %{public}d", ret);
-        }
-        ret = converter_->Convert(cachedFrame_->data, cachedFrame_->linesize);
+        ret = ConvertFrame(ffmpegOutputPixfmt, ffmpegTargetPixfmt);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
         frameData = converter_->GetData();
         frameLineSize = converter_->GetLineSize();

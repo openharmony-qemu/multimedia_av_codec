@@ -29,6 +29,9 @@ namespace MediaAVCodec {
 namespace Codec {
 class FCodecFrameConverter {
 public:
+    FCodecFrameConverter() = default;
+    FCodecFrameConverter(const FCodecFrameConverter &) = delete;
+    FCodecFrameConverter &operator=(const FCodecFrameConverter &) = delete;
     ~FCodecFrameConverter();
     int32_t Init(int32_t w, int32_t h, AVPixelFormat srcFmt, AVPixelFormat dstFmt);
     int32_t Convert(uint8_t **srcData, const int32_t *srcLineSize);
