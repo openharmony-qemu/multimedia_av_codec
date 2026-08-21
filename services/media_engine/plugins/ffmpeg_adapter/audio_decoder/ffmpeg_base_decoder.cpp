@@ -323,6 +323,7 @@ Status FfmpegBaseDecoder::Reset()
     CloseCtxLocked();
     nextPts_ = 0;
     inputPts_ = 0;
+    againIndex_ = 0;
     return Status::OK;
 }
 
@@ -341,6 +342,7 @@ Status FfmpegBaseDecoder::Flush()
     }
     nextPts_ = 0;
     inputPts_ = 0;
+    againIndex_ = 0;
     return Status::OK;
 }
 
