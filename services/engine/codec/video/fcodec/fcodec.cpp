@@ -340,10 +340,13 @@ int32_t FCodec::ConfigureContext(const Format &format)
     ConfigureThread(format);
 
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
-    return SetCodecExtradata(format);
-#else
-    return AVCS_ERR_OK;
+    ret = SetCodecExtradata(format);
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set extra data failed");
 #endif
+
+    state_ = State::CONFIGURED;
+    AVCODEC_LOGI("Configured codec successful: state: Initialized -> Configured");
+    return AVCS_ERR_OK;
 }
 
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
@@ -426,10 +429,7 @@ int32_t FCodec::Configure(const Format &format)
         format_.PutIntValue(FMTKey::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     }
     AVCODEC_LOGI("%{public}s output pixel format %{public}d", decName_.c_str(), static_cast<int32_t>(outputPixelFmt_));
-    int32_t ret = ConfigureContext(format);
-    state_ = State::CONFIGURED;
-    AVCODEC_LOGI("Configured codec successful: state: Initialized -> Configured");
-    return ret;
+    return ConfigureContext(format);
 }
 
 bool FCodec::IsActive() const
