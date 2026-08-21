@@ -212,11 +212,11 @@ int32_t FCodec::Initialize()
     return AVCS_ERR_OK;
 }
 
-void FCodec::GetSurfaceCfgFromFmt(const Format &format)
+void FCodec::GetSurfaceCfgFromFmt(const Format &format, bool update)
 {
     int32_t val = -1;
     std::lock_guard<std::mutex> fLock(formatMutex_);
-    if (format.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val) && state_ == State::INITIALIZED) {
+    if (format.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val) && update) {
         if (IsValidPixelFormat(val)) {
             outputPixelFmt_ = static_cast<VideoPixelFormat>(val);
             GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
@@ -340,13 +340,10 @@ int32_t FCodec::ConfigureContext(const Format &format)
     ConfigureThread(format);
 
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
-    ret = SetCodecExtradata(format);
-    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Set extra data failed");
-#endif
-
-    state_ = State::CONFIGURED;
-    AVCODEC_LOGI("Configured codec successful: state: Initialized -> Configured");
+    return SetCodecExtradata(format);
+#else
     return AVCS_ERR_OK;
+#endif
 }
 
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
@@ -424,12 +421,13 @@ int32_t FCodec::Configure(const Format &format)
     GetSurfaceCfgFromFmt(format);
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
         outputPixelFmt_ = VideoPixelFormat::NV12;
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
         format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-        format_.PutIntValue(FMTKey::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     }
     AVCODEC_LOGI("%{public}s output pixel format %{public}d", decName_.c_str(), static_cast<int32_t>(outputPixelFmt_));
-    return ConfigureContext(format);
+    int32_t ret = ConfigureContext(format);
+    state_ = State::CONFIGURED;
+    AVCODEC_LOGI("Configured codec successful: state: Initialized -> Configured");
+    return ret;
 }
 
 bool FCodec::IsActive() const
@@ -676,7 +674,7 @@ int32_t FCodec::SetParameter(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
     if (sInfo_.surface != nullptr) {
-        GetSurfaceCfgFromFmt(format);
+        GetSurfaceCfgFromFmt(format, false);
         SetSurfaceParameter();
     }
     AVCODEC_LOGI("Set parameter successful");
@@ -1382,6 +1380,12 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
         frameData = converter_->GetData();
         frameLineSize = converter_->GetLineSize();
+    }
+    {
+        std::lock_guard<std::mutex> lock(formatMutex_);
+        format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(outputPixelFmt_));
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
+        format_.PutIntValue(FMTKey::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     }
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_UNKNOWN, "bufferMemory is nullptr");

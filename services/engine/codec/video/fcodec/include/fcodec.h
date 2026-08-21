@@ -148,7 +148,7 @@ private:
     int32_t Detach(sptr<SurfaceBuffer> surfaceBuffer);
     void CombineConsumerUsage();
     // surface config
-    void GetSurfaceCfgFromFmt(const Format &format);
+    void GetSurfaceCfgFromFmt(const Format &format, bool update = true);
     // surface listener callback
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
