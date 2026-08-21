@@ -216,7 +216,7 @@ void FCodec::GetSurfaceCfgFromFmt(const Format &format)
 {
     int32_t val = -1;
     std::lock_guard<std::mutex> fLock(formatMutex_);
-    if (format.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val)) {
+    if (format.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val) && state_ == State::INITIALIZED) {
         if (IsValidPixelFormat(val)) {
             outputPixelFmt_ = static_cast<VideoPixelFormat>(val);
             GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
@@ -421,7 +421,9 @@ int32_t FCodec::Configure(const Format &format)
     GetSurfaceCfgFromFmt(format);
     if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
         outputPixelFmt_ = VideoPixelFormat::NV12;
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
         format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
+        format_.PutIntValue(FMTKey::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
     }
     AVCODEC_LOGI("%{public}s output pixel format %{public}d", decName_.c_str(), static_cast<int32_t>(outputPixelFmt_));
     int32_t ret = ConfigureContext(format);
@@ -522,11 +524,6 @@ void FCodec::InitBuffers()
     }
 }
 
-void FCodec::ResetData()
-{
-    scale_.reset(); // 外壳析构 → av_free(data_[0])（RAII）
-}
-
 void FCodec::FlushBuffers()
 {
     inputAvailQue_->Clear();
@@ -534,7 +531,7 @@ void FCodec::FlushBuffers()
     synIndex_ = std::nullopt;
     iLock.unlock();
     codecAvailQue_->Clear();
-    ResetData();
+    converter_.reset();
     av_frame_unref(cachedFrame_.get());
     av_packet_unref(avPacket_.get());
 }
@@ -1206,7 +1203,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
         CHECK_AND_RETURN_RET_LOG(ValidateVideoResolution(codecName_, width_, height_), AVCS_ERR_INVALID_VAL,
             "Current decoder:%{public}s dosn't support width of %{public}d and height of %{public}d!",
             codecName_.c_str(), width_, height_);
-        ResetData();
+        converter_.reset();
         CalculateBufferSize();
         CHECK_AND_RETURN_RET_LOG(inputBufferSize_ > 0 && outputBufferSize_ > 0, AVCS_ERR_INVALID_VAL,
                                  "new buffer with input size=%{public}d, output size=%{public}d failed",
@@ -1224,7 +1221,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
 
 void FCodec::ReleaseBuffers()
 {
-    ResetData();
+    converter_.reset();
     if (!isBufferAllocated_) {
         return;
     }
@@ -1322,8 +1319,6 @@ void FCodec::SendFrame()
     CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
-    // int64_t pts = inputAVBuffer->pts_;
-    // AVCODEC_LOGI("[qhn debug] input pts: %{public}ld", pts);
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
         avPacket_->data = nullptr;
         avPacket_->size = 0;
@@ -1367,41 +1362,26 @@ void FCodec::SendFrame()
 
 int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
 {
-    AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(outputPixelFmt_);
-    int32_t ffpixfmt = cachedFrame_->format;
+    AVPixelFormat ffmpegTargetPixfmt = ConvertPixelFormatToFFmpeg(outputPixelFmt_);
+    AVPixelFormat ffmpegOutputPixfmt = static_cast<AVPixelFormat>(cachedFrame_->format);
     AVCODEC_LOGD("%{public}s decode output ffmpeg pixfmt: %{public}d, target output ffmpeg pixfmt: %{public}d",
-                 decName_.c_str(), ffpixfmt, static_cast<int32_t>(ffmpegFormat));
+                 decName_.c_str(), cachedFrame_->format, static_cast<int32_t>(ffmpegTargetPixfmt));
     int32_t ret;
     uint8_t **frameData = nullptr;
     int32_t *frameLineSize = nullptr;
-    if (ffmpegFormat == static_cast<AVPixelFormat>(ffpixfmt)) {
-        AVCODEC_LOGI("[qhn debug] %{public}s not convert", decName_.c_str());
-        // 源即解码帧：直接引用 cachedFrame_ 的平面，其生命周期由 cachedFrame_ 管理
+    if (ffmpegOutputPixfmt == ffmpegTargetPixfmt) {
         frameData = cachedFrame_->data;
         frameLineSize = reinterpret_cast<int32_t *>(cachedFrame_->linesize);
     } else {
-        AVCODEC_LOGI("[qhn debug] %{public}s need convert", decName_.c_str());
-        if (scale_ == nullptr) {
-            scale_ = std::make_shared<FCodecFrameConverter>();
-            ret = scale_->Init(static_cast<int32_t>(cachedFrame_->width),
-                               static_cast<int32_t>(cachedFrame_->height),
-                               static_cast<AVPixelFormat>(cachedFrame_->format),
-                               static_cast<int32_t>(cachedFrame_->width),
-                               static_cast<int32_t>(cachedFrame_->height),
-                               ffmpegFormat);
+        if (converter_ == nullptr) {
+            converter_ = std::make_shared<FCodecFrameConverter>();
+            ret = converter_->Init(cachedFrame_->width, cachedFrame_->height, ffmpegOutputPixfmt, ffmpegTargetPixfmt);
             CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale init failed: %{public}d", ret);
         }
-        ret = scale_->Convert(cachedFrame_->data, cachedFrame_->linesize);
+        ret = converter_->Convert(cachedFrame_->data, cachedFrame_->linesize);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
-        // 转换后的数据位于外壳自持缓冲，其生命周期由 scale_ 管理（RAII）
-        frameData = scale_->GetData();
-        frameLineSize = scale_->GetLineSize();
-    }
-    {
-        std::lock_guard<std::mutex> lock(formatMutex_);
-        format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(outputPixelFmt_));
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
-        format_.PutIntValue(FMTKey::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
+        frameData = converter_->GetData();
+        frameLineSize = converter_->GetLineSize();
     }
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_UNKNOWN, "bufferMemory is nullptr");
@@ -1421,9 +1401,8 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
 #ifdef BUILD_ENG_VERSION
     DumpOutputBuffer(bufferMemory);
 #endif // BUILD_ENG_VERSION
-    int64_t pts = cachedFrame_->pts;
-    frameBuffer->avBuffer_->pts_ = pts;
-    AVCODEC_LOGD("Fill frame buffer successful, ffmpeg output pts:%{public}ld", pts);
+    frameBuffer->avBuffer_->pts_ = cachedFrame_->pts;
+    AVCODEC_LOGD("Fill frame buffer successful");
     return ret;
 }
 

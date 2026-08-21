@@ -20,7 +20,6 @@
 #include <memory>
 extern "C" {
 #include "libavutil/imgutils.h"
-#include "libavutil/mem.h"
 #include "libswscale/swscale.h"
 }
 #include "avcodec_errors.h"
@@ -28,13 +27,12 @@ extern "C" {
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
-// fcodec 内部 RAII 转换器：直接持有 SwsContext 与输出缓冲，析构统一释放，仅 fcodec 使用。
 class FCodecFrameConverter {
 public:
     ~FCodecFrameConverter();
-    int32_t Init(int32_t srcWidth, int32_t srcHeight, AVPixelFormat srcFmt, int32_t dstWidth, int32_t dstHeight,
-                 AVPixelFormat dstFmt);
+    int32_t Init(int32_t w, int32_t h, AVPixelFormat srcFmt, AVPixelFormat dstFmt);
     int32_t Convert(uint8_t **srcData, const int32_t *srcLineSize);
+
     uint8_t **GetData()
     {
         return data_;
@@ -46,11 +44,11 @@ public:
     }
 
 private:
-    std::shared_ptr<SwsContext> swsCtx_ = nullptr;
-    int32_t srcHeight_ = 0;
+    int32_t height_ = 0;
+    bool isAllocated_ = false;
     uint8_t *data_[AV_NUM_DATA_POINTERS] = {nullptr};
     int32_t lineSize_[AV_NUM_DATA_POINTERS] = {0};
-    bool isAllocated_ = false;
+    std::shared_ptr<SwsContext> swsCtx_ = nullptr;
 };
 } // namespace Codec
 } // namespace MediaAVCodec

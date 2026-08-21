@@ -28,14 +28,12 @@ FCodecFrameConverter::~FCodecFrameConverter()
         av_free(data_[0]);
     }
 }
-int32_t FCodecFrameConverter::Init(int32_t srcWidth, int32_t srcHeight, AVPixelFormat srcFmt,
-                                   int32_t dstWidth, int32_t dstHeight, AVPixelFormat dstFmt)
+
+int32_t FCodecFrameConverter::Init(int32_t w, int32_t h, AVPixelFormat srcFmt, AVPixelFormat dstFmt)
 {
-    srcHeight_ = srcHeight;
+    height_ = h;
     swsCtx_ = std::shared_ptr<SwsContext>(
-        sws_getContext(srcWidth, srcHeight, srcFmt, dstWidth, dstHeight, dstFmt,
-                       SWS_FAST_BILINEAR, nullptr, nullptr, nullptr),
-        [](SwsContext *ptr) {
+        sws_getContext(w, h, srcFmt, w, h, dstFmt, SWS_FAST_BILINEAR, nullptr, nullptr, nullptr), [](SwsContext *ptr) {
             if (ptr != nullptr) {
                 sws_freeContext(ptr);
             }
@@ -43,7 +41,7 @@ int32_t FCodecFrameConverter::Init(int32_t srcWidth, int32_t srcHeight, AVPixelF
     if (swsCtx_ == nullptr) {
         return AVCS_ERR_UNKNOWN;
     }
-    int32_t ret = av_image_alloc(data_, lineSize_, dstWidth, dstHeight, dstFmt, FRAME_CONVERT_ALIGN);
+    int32_t ret = av_image_alloc(data_, lineSize_, w, h, dstFmt, FRAME_CONVERT_ALIGN);
     isAllocated_ = (ret >= 0);
     return isAllocated_ ? AVCS_ERR_OK : AVCS_ERR_UNKNOWN;
 }
@@ -51,9 +49,9 @@ int32_t FCodecFrameConverter::Init(int32_t srcWidth, int32_t srcHeight, AVPixelF
 int32_t FCodecFrameConverter::Convert(uint8_t **srcData, const int32_t *srcLineSize)
 {
     if (swsCtx_ == nullptr || srcData == nullptr) {
-        return AVCS_ERR_INVALID_VAL;
+        return AVCS_ERR_UNKNOWN;
     }
-    int32_t res = sws_scale(swsCtx_.get(), srcData, srcLineSize, 0, srcHeight_, data_, lineSize_);
+    int32_t res = sws_scale(swsCtx_.get(), srcData, srcLineSize, 0, height_, data_, lineSize_);
     return res < 0 ? AVCS_ERR_UNKNOWN : AVCS_ERR_OK;
 }
 } // namespace Codec
