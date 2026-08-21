@@ -34,6 +34,7 @@ public:
     FCodecFrameConverter &operator=(const FCodecFrameConverter &) = delete;
     ~FCodecFrameConverter();
     int32_t Init(int32_t w, int32_t h, AVPixelFormat srcFmt, AVPixelFormat dstFmt);
+    int32_t Prepare(int32_t w, int32_t h, AVPixelFormat srcFmt, AVPixelFormat dstFmt);
     int32_t Convert(uint8_t **srcData, const int32_t *srcLineSize);
 
     uint8_t **GetData()
@@ -47,7 +48,10 @@ public:
     }
 
 private:
+    int32_t width_ = 0;
     int32_t height_ = 0;
+    AVPixelFormat srcFmt_ = AVPixelFormat::AV_PIX_FMT_NONE;
+    AVPixelFormat dstFmt_ = AVPixelFormat::AV_PIX_FMT_NONE;
     bool isAllocated_ = false;
     uint8_t *data_[AV_NUM_DATA_POINTERS] = {nullptr};
     int32_t lineSize_[AV_NUM_DATA_POINTERS] = {0};

@@ -1363,11 +1363,11 @@ int32_t FCodec::ConvertFrame(AVPixelFormat srcPixfmt, AVPixelFormat dstPixfmt)
     int32_t ret;
     if (converter_ == nullptr) {
         converter_ = std::make_shared<FCodecFrameConverter>();
-        ret = converter_->Init(cachedFrame_->width, cachedFrame_->height, srcPixfmt, dstPixfmt);
-        if (ret != AVCS_ERR_OK) {
-            converter_.reset();
-            return ret;
-        }
+    }
+    ret = converter_->Prepare(cachedFrame_->width, cachedFrame_->height, srcPixfmt, dstPixfmt);
+    if (ret != AVCS_ERR_OK) {
+        converter_.reset();
+        return ret;
     }
     ret = converter_->Convert(cachedFrame_->data, cachedFrame_->linesize);
     return ret;
