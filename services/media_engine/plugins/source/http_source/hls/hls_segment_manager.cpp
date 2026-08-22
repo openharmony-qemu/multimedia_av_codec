@@ -280,7 +280,8 @@ void HlsSegmentManager::SetDownloaderRequestCb(
     };
 }
 
-void HlsSegmentManager::EvictFragmentMapIfNeeded(std::map<std::string, bool>& fragmentMap, const std::string& tag) {
+void HlsSegmentManager::EvictFragmentMapIfNeeded(std::map<std::string, bool>& fragmentMap, const std::string& tag)
+{
     if (fragmentMap.size() >= MAX_FRAGMENT_TRACKING) {
         MEDIA_LOG_W("%{public}s size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
             ", evict oldest, type: %{public}d", tag.c_str(), fragmentMap.size(), MAX_FRAGMENT_TRACKING, type_);
