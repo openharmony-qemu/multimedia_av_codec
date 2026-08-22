@@ -246,6 +246,8 @@ private:
     std::vector<PlayInfo> SeekListHelper(bool isLive);
     void ConfigureAndDownload(const PlayInfo& playInfo, bool isRequestWholeFile, int64_t startTimePos,
         DownloadDoneCbFunc downloadDoneCallback);
+    void EvictFragmentMapIfNeeded(std::map<std::string, bool>& fragmentMap, const std::string& tag);
+    bool HandleBitrateSelectFragment(const PlayInfo& fragment);
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
