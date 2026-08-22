@@ -212,11 +212,11 @@ int32_t FCodec::Initialize()
     return AVCS_ERR_OK;
 }
 
-void FCodec::GetSurfaceCfgFromFmt(const Format &format)
+void FCodec::GetSurfaceCfgFromFmt(const Format &format, bool update)
 {
     int32_t val = -1;
     std::lock_guard<std::mutex> fLock(formatMutex_);
-    if (format.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val)) {
+    if (format.GetIntValue(FMTKey::VIDEO_PIXEL_FORMAT, val) && update) {
         if (IsValidPixelFormat(val)) {
             outputPixelFmt_ = static_cast<VideoPixelFormat>(val);
             GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
@@ -476,11 +476,6 @@ int32_t FCodec::Start()
         avPacket_ = std::shared_ptr<AVPacket>(av_packet_alloc(), [](AVPacket *p) { av_packet_free(&p); });
         CHECK_AND_RETURN_RET_LOG((cachedFrame_ != nullptr && avPacket_ != nullptr), AVCS_ERR_UNKNOWN,
                                  "Start codec failed: cannot allocate frame or packet");
-        for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-            scaleData_[i] = nullptr;
-            scaleLineSize_[i] = 0;
-        }
-        isConverted_ = false;
         int32_t ret = AllocateBuffers();
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Start codec failed: cannot allocate buffers");
         isBufferAllocated_ = true;
@@ -527,21 +522,6 @@ void FCodec::InitBuffers()
     }
 }
 
-void FCodec::ResetData()
-{
-    if (scaleData_[0] != nullptr) {
-        if (isConverted_) {
-            av_free(scaleData_[0]);
-            isConverted_ = false;
-            scale_.reset();
-        }
-        for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
-            scaleData_[i] = nullptr;
-            scaleLineSize_[i] = 0;
-        }
-    }
-}
-
 void FCodec::FlushBuffers()
 {
     inputAvailQue_->Clear();
@@ -549,7 +529,7 @@ void FCodec::FlushBuffers()
     synIndex_ = std::nullopt;
     iLock.unlock();
     codecAvailQue_->Clear();
-    ResetData();
+    converter_.reset();
     av_frame_unref(cachedFrame_.get());
     av_packet_unref(avPacket_.get());
 }
@@ -694,7 +674,7 @@ int32_t FCodec::SetParameter(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
     if (sInfo_.surface != nullptr) {
-        GetSurfaceCfgFromFmt(format);
+        GetSurfaceCfgFromFmt(format, false);
         SetSurfaceParameter();
     }
     AVCODEC_LOGI("Set parameter successful");
@@ -1221,8 +1201,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
         CHECK_AND_RETURN_RET_LOG(ValidateVideoResolution(codecName_, width_, height_), AVCS_ERR_INVALID_VAL,
             "Current decoder:%{public}s dosn't support width of %{public}d and height of %{public}d!",
             codecName_.c_str(), width_, height_);
-        ResetData();
-        scale_ = nullptr;
+        converter_.reset();
         CalculateBufferSize();
         CHECK_AND_RETURN_RET_LOG(inputBufferSize_ > 0 && outputBufferSize_ > 0, AVCS_ERR_INVALID_VAL,
                                  "new buffer with input size=%{public}d, output size=%{public}d failed",
@@ -1240,7 +1219,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
 
 void FCodec::ReleaseBuffers()
 {
-    ResetData();
+    converter_.reset();
     if (!isBufferAllocated_) {
         return;
     }
@@ -1379,22 +1358,38 @@ void FCodec::SendFrame()
     }
 }
 
+int32_t FCodec::ConvertFrame(AVPixelFormat srcPixfmt, AVPixelFormat dstPixfmt)
+{
+    int32_t ret;
+    if (converter_ == nullptr) {
+        converter_ = std::make_shared<FCodecFrameConverter>();
+    }
+    ret = converter_->Prepare(cachedFrame_->width, cachedFrame_->height, srcPixfmt, dstPixfmt);
+    if (ret != AVCS_ERR_OK) {
+        converter_.reset();
+        return ret;
+    }
+    ret = converter_->Convert(cachedFrame_->data, cachedFrame_->linesize);
+    return ret;
+}
+
 int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
 {
-    AVPixelFormat ffmpegFormat = ConvertPixelFormatToFFmpeg(outputPixelFmt_);
-    int32_t ffpixfmt = cachedFrame_->format;
+    AVPixelFormat ffmpegTargetPixfmt = ConvertPixelFormatToFFmpeg(outputPixelFmt_);
+    AVPixelFormat ffmpegOutputPixfmt = static_cast<AVPixelFormat>(cachedFrame_->format);
     AVCODEC_LOGD("%{public}s decode output ffmpeg pixfmt: %{public}d, target output ffmpeg pixfmt: %{public}d",
-                 decName_.c_str(), ffpixfmt, static_cast<int32_t>(ffmpegFormat));
+                 decName_.c_str(), cachedFrame_->format, static_cast<int32_t>(ffmpegTargetPixfmt));
     int32_t ret;
-    if (ffmpegFormat == static_cast<AVPixelFormat>(ffpixfmt)) {
-        for (int32_t i = 0; i < AV_NUM_DATA_POINTERS && cachedFrame_->linesize[i] > 0; i++) {
-            scaleData_[i] = cachedFrame_->data[i];
-            scaleLineSize_[i] = cachedFrame_->linesize[i];
-        }
+    uint8_t **frameData = nullptr;
+    int32_t *frameLineSize = nullptr;
+    if (ffmpegOutputPixfmt == ffmpegTargetPixfmt) {
+        frameData = cachedFrame_->data;
+        frameLineSize = reinterpret_cast<int32_t *>(cachedFrame_->linesize);
     } else {
-        ret = ConvertVideoFrame(&scale_, cachedFrame_, scaleData_, scaleLineSize_, ffmpegFormat);
+        ret = ConvertFrame(ffmpegOutputPixfmt, ffmpegTargetPixfmt);
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Scale video frame failed: %{public}d", ret);
-        isConverted_ = true;
+        frameData = converter_->GetData();
+        frameLineSize = converter_->GetLineSize();
     }
     {
         std::lock_guard<std::mutex> lock(formatMutex_);
@@ -1406,12 +1401,12 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_UNKNOWN, "bufferMemory is nullptr");
     bufferMemory->SetSize(0);
     if (isUsedSharedMem_) {
-        ret = WriteBufferData(bufferMemory, scaleData_, scaleLineSize_, format_);
+        ret = WriteBufferData(bufferMemory, frameData, frameLineSize, format_);
     } else {
         struct SurfaceInfo surfaceInfo;
         surfaceInfo.surfaceStride = static_cast<uint32_t>(frameBuffer->stride_);
-        surfaceInfo.scaleData = scaleData_;
-        surfaceInfo.scaleLineSize = scaleLineSize_;
+        surfaceInfo.scaleData = frameData;
+        surfaceInfo.scaleLineSize = frameLineSize;
         if (sInfo_.surface) {
             surfaceInfo.surfaceFence = frameBuffer->sMemory_->GetFence();
         }

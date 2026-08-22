@@ -36,6 +36,7 @@
 #include "fsurface_memory.h"
 #include "surface_tools.h"
 #include "task_thread.h"
+#include "fcodec_frame_converter.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -107,7 +108,6 @@ private:
     int32_t AllocateBuffers();
     void InitBuffers();
     void FlushBuffers();
-    void ResetData();
     void ReleaseBuffers();
     void StopThread();
     void ReleaseResource();
@@ -135,6 +135,7 @@ private:
     int32_t ClearSurfaceAndSetQueueSize();
     int32_t AllocateOutputBuffersFromSurface();
     int32_t FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer);
+    int32_t ConvertFrame(AVPixelFormat srcPixfmt, AVPixelFormat dstPixfmt);
     void CheckStrideChange(uint32_t index, bool isChanged);
     int32_t CheckFormatChange(uint32_t index, bool &isChanged);
     void SetSurfaceParameter();
@@ -148,7 +149,7 @@ private:
     int32_t Detach(sptr<SurfaceBuffer> surfaceBuffer);
     void CombineConsumerUsage();
     // surface config
-    void GetSurfaceCfgFromFmt(const Format &format);
+    void GetSurfaceCfgFromFmt(const Format &format, bool update = true);
     // surface listener callback
     GSError BufferReleasedByConsumer(uint64_t surfaceId);
     int32_t RegisterListenerToSurface(const sptr<Surface> &surface);
@@ -190,10 +191,7 @@ private:
     std::shared_ptr<AVPacket> avPacket_ = nullptr;
     std::shared_ptr<AVFrame> cachedFrame_ = nullptr;
     // Receive frame
-    uint8_t *scaleData_[AV_NUM_DATA_POINTERS] = {nullptr};
-    int32_t scaleLineSize_[AV_NUM_DATA_POINTERS] = {0};
-    std::shared_ptr<Scale> scale_ = nullptr;
-    bool isConverted_ = false;
+    std::shared_ptr<FCodecFrameConverter> converter_ = nullptr;
     bool isOutBufSetted_ = false;
     VideoPixelFormat outputPixelFmt_ = VideoPixelFormat::UNKNOWN;
     RawVideoPixelFormat rawvideoPixFmt_ = RawVideoPixelFormat::UNKNOWN;
