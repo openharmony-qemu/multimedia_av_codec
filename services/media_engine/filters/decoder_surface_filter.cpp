@@ -1081,7 +1081,7 @@ void DecoderSurfaceFilter::HandleRender(
     RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);
     std::shared_ptr<Meta> metaCopy;
     if (outBuffer->meta_ != nullptr) {
-        metaCopy = std::shared_ptr<Meta>(*(outBuffer->meta_));
+        metaCopy = std::make_shared<Meta>(*(outBuffer->meta_));
     }
     DoRenderOutputBufferAtTime(index, renderTime, outBuffer->pts_);
 
