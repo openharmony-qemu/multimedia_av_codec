@@ -138,6 +138,7 @@ public:
     MOCK_METHOD(void, SetDefaultStreamId,
         (int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId), ());
     MOCK_METHOD(bool, IsCloudFd, (), ());
+    MOCK_METHOD(std::string, GetMaskUrlByReadIndex, (int32_t streamId), ());
 };
 }  // namespace Media
 }  // namespace OHOS

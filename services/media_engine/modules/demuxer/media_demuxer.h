@@ -521,7 +521,7 @@ private:
     void InitAudioTrack();
     void InitVideoTrack();
     void InitSubtitleTrack();
-    void HandlePacketConvertError();
+    void HandlePacketConvertError(int32_t trackId);
     void HandleVideoTrack(int32_t trackId);
     Status HandlePushBuffer(int32_t trackId, std::shared_ptr<AVBuffer>& dstBuffer,
                             sptr<AVBufferQueueProducer>& bufferQueue, Status status);
@@ -542,6 +542,7 @@ private:
     int32_t GetMainTrackId();
     void RecordDemuxerTimeStamp(AVBuffer& buffer, StallingStage stage);
     std::string GetMime();
+    std::string GetMarkedUrl(int32_t trackId);
     void CachePressuredCallback(int32_t trackId, uint32_t cachedBytes);
     bool NeedDroped(int32_t trackId);
     void AfterDrop(int32_t trackId);
