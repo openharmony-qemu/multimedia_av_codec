@@ -130,6 +130,7 @@ public:
     bool GetReadTimeOut(bool isDelay);
     void SetAppUid(int32_t appUid);
     size_t GetSegmentOffset();
+    std::string GetCurUrl();
     bool GetHLSDiscontinuity();
     Status StopBufferring(bool isAppBackground);
     void WaitForBufferingEnd();

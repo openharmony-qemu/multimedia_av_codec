@@ -245,6 +245,13 @@ public:
         return false;
     }
 
+    virtual std::string GetMaskUrlByReadIndex(int32_t streamId)
+    {
+        (void)streamId;
+        MEDIA_LOG_E("GetMaskUrlByReadIndex is unimplemented.");
+        return "";
+    }
+
     virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
 };
 }

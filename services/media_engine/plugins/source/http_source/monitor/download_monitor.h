@@ -115,6 +115,7 @@ public:
     std::string GetContentType() override;
     std::string GetCurUrl() override;
     bool IsHlsEnd(int32_t streamId = -1) override;
+    std::string GetMaskUrlByReadIndex(int32_t streamId) override;
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
@@ -131,7 +132,6 @@ private:
     void GetClientMediaServiceErrorCode(int32_t errorCode, int32_t& clientCode);
     NetworkErrorInfo BuildNetworkErrorInfo(const std::shared_ptr<DownloadRequest>& request);
     std::string BuildErrorDescription(const NetworkErrorInfo& networkErrorInfo);
-    std::string MaskUrl(const std::string& url);
 
     std::atomic<bool> isClosed_{false};
     std::shared_ptr<MediaDownloader> downloader_;

@@ -2275,6 +2275,18 @@ size_t HlsSegmentManager::GetSegmentOffset()
     return 0;
 }
 
+std::string HlsSegmentManager::GetCurUrl()
+{
+    {
+        std::lock_guard<std::mutex> lock(infoIndexMapMutex_);
+        auto it = InfoIndexMap_.writeMap.find(readTsIndex_.load());
+        if (it != InfoIndexMap_.writeMap.end() && !it->second.empty()) {
+            return it->second;
+        }
+    }
+    return curUrl_;
+}
+
 bool HlsSegmentManager::GetHLSDiscontinuity()
 {
     if (playlistDownloader_) {

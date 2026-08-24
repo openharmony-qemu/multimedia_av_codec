@@ -365,6 +365,12 @@ public:
         return false;
     }
 
+    virtual std::string GetMaskUrlByReadIndex(int32_t streamId)
+    {
+        (void)streamId;
+        return "";
+    }
+
     virtual bool IsHls()
     {
         return false;

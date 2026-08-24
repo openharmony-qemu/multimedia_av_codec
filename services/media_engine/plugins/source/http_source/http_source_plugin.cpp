@@ -822,6 +822,13 @@ bool HttpSourcePlugin::IsHls()
     return true;
 }
 
+std::string HttpSourcePlugin::GetMaskUrlByReadIndex(int32_t streamId)
+{
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_E(downloader != nullptr, "", "GetMaskUrlByReadIndex downloader is nullptr");
+    return downloader->GetMaskUrlByReadIndex(streamId);
+}
+
 bool HttpSourcePlugin::IsAllowedProtocol(std::string_view url)
 {
     for (auto& protocol : UNALLOWED_PROTOCOLS) {

@@ -715,6 +715,20 @@ bool Source::IsHls()
     return plugin_->IsHls();
 }
 
+std::string Source::GetMaskUrlByReadIndex(int32_t streamId)
+{
+    FALSE_RETURN_V_MSG_E(plugin_ != nullptr, "", "GetMaskUrlByReadIndex plugin_ is nullptr");
+    if (streamId < 0) {
+        MEDIA_LOG_W("GetMaskUrlByReadIndex invalid streamId=%{public}d, return empty", streamId);
+        return "";
+    }
+    if (!plugin_->IsHls()) {
+        MEDIA_LOG_W("GetMaskUrlByReadIndex not hls, streamId=%{public}d, return empty", streamId);
+        return "";
+    }
+    return plugin_->GetMaskUrlByReadIndex(streamId);
+}
+
 bool Source::IsCloudFd()
 {
     FALSE_RETURN_V_MSG_E(plugin_ != nullptr, false, "plugin_ is nullptr");

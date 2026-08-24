@@ -22,6 +22,7 @@
 #include "hls_media_downloader.h"
 #include "media_downloader.h"
 #include "common/media_core.h"
+#include "utils/string_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -555,6 +556,14 @@ bool HlsMediaDownloader::IsHlsEnd(int32_t streamId)
     auto segManager = GetSegmentManager(streamId);
     FALSE_RETURN_V_MSG(segManager != nullptr, false, "IsHlsEnd no segment manager found!");
     return segManager->IsHlsEnd();
+}
+
+std::string HlsMediaDownloader::GetMaskUrlByReadIndex(int32_t streamId)
+{
+    auto segManager = GetSegmentManager(streamId);
+    FALSE_RETURN_V_MSG(segManager != nullptr, "", "GetMaskUrlByReadIndex no segment manager found!");
+    std::string url = segManager->GetCurUrl();
+    return StringUtil::MaskUrl(url);
 }
 
 std::shared_ptr<HlsSegmentManager> HlsMediaDownloader::GetSegmentManager(uint32_t streamId)

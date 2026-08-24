@@ -113,6 +113,13 @@ public:
         lastSubtitleId_ = subTitleStreamId;
     }
 
+    std::string GetMaskUrlByReadIndex(int32_t streamId) override
+    {
+        (void)streamId;
+        getMaskedUrlCalled_ = true;
+        return maskedUrlResult_;
+    }
+
     bool getStreamInfoCalled_ {false};
     bool getStreamInfoIsUpdate_ {false};
     Status getStreamInfoReturn_ {Status::OK};
@@ -121,6 +128,9 @@ public:
     int32_t lastVideoId_ {-1};
     int32_t lastAudioId_ {-1};
     int32_t lastSubtitleId_ {-1};
+
+    bool getMaskedUrlCalled_ {false};
+    std::string maskedUrlResult_;
 };
 
 class DownloaderUnitTest : public testing::Test {
@@ -186,6 +196,32 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_SetDefaultStreamId, TestSize.Lev
     EXPECT_EQ(videoId, innerDownloader->lastVideoId_);
     EXPECT_EQ(audioId, innerDownloader->lastAudioId_);
     EXPECT_EQ(subtitleId, innerDownloader->lastSubtitleId_);
+}
+
+/**
+ * @tc.name  : Test DownloadMonitor GetMaskUrlByReadIndex API
+ * @tc.number: DownloadMonitor_GetMaskUrlByReadIndex_NullDownloader
+ * @tc.desc  : Test GetMaskUrlByReadIndex returns empty when inner downloader is nullptr
+ */
+HWTEST_F(DownloaderUnitTest, DownloadMonitor_GetMaskUrlByReadIndex_NullDownloader, TestSize.Level1)
+{
+    std::shared_ptr<DownloadMonitor> monitor = std::make_shared<DownloadMonitor>(nullptr);
+    EXPECT_EQ(monitor->GetMaskUrlByReadIndex(1), "");
+}
+
+/**
+ * @tc.name  : Test DownloadMonitor GetMaskUrlByReadIndex API
+ * @tc.number: DownloadMonitor_GetMaskUrlByReadIndex_Delegate
+ * @tc.desc  : Test GetMaskUrlByReadIndex delegates to inner downloader and returns masked url
+ */
+HWTEST_F(DownloaderUnitTest, DownloadMonitor_GetMaskUrlByReadIndex_Delegate, TestSize.Level1)
+{
+    auto innerDownloader = std::make_shared<TestMediaDownloaderForMonitor>();
+    innerDownloader->maskedUrlResult_ = "https://host/***/file.ts";
+    std::shared_ptr<DownloadMonitor> monitor = std::make_shared<DownloadMonitor>(innerDownloader);
+
+    EXPECT_EQ(monitor->GetMaskUrlByReadIndex(1), "https://host/***/file.ts");
+    EXPECT_TRUE(innerDownloader->getMaskedUrlCalled_);
 }
 
 HWTEST_F(DownloaderUnitTest, ClearMiddleReadFragment, TestSize.Level0)
@@ -2124,36 +2160,176 @@ HWTEST_F(DownloaderUnitTest, APP_CLIENT_001, TestSize.Level1)
     }
 }
 
-HWTEST_F(DownloaderUnitTest, MASKURL_001, TestSize.Level1)
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_EmptyString
+ * @tc.desc  : Test empty input returns empty string (B1)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_EmptyString, TestSize.Level1)
 {
-    std::shared_ptr<DownloadMonitor> downloader = std::make_shared<DownloadMonitor>
-        (std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>("http", 100, nullptr)));
-    downloader->Init();
-    EXPECT_EQ(downloader->MaskUrl(""), "");
-    EXPECT_EQ(downloader->MaskUrl("example.com"), "example.com");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com?foo=bar"), "https://example.com");
-    EXPECT_EQ(downloader->MaskUrl("http://example.org#section"), "http://example.org");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com/"), "https://example.com/");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com/?q=1"), "https://example.com/");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/"), "https://example.com/***");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com/file.txt"), "https://example.com/file.txt");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com/a/b/c/file.txt"), "https://example.com/***/file.txt");
-    EXPECT_EQ(downloader->MaskUrl("https://baidu.com/a/b/c/abc.m3u8?a=6&b=8"), "https://baidu.com/***/abc.m3u8");
-    EXPECT_EQ(downloader->MaskUrl("example.com/x/y/z.pdf?v=2"), "example.com/***/z.pdf");
-    EXPECT_EQ(downloader->MaskUrl("example.com/index.html"), "example.com/index.html");
-    EXPECT_EQ(downloader->MaskUrl("http://a.b/c/d?x=1&y=2#top"), "http://a.b/***/d");
-    EXPECT_EQ(downloader->MaskUrl("a.b/"), "a.b/");
-    EXPECT_EQ(downloader->MaskUrl("a.b/c/"), "a.b/***");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com:8080/a/b/file.txt"), "https://example.com:8080/***/file.txt");
-    EXPECT_EQ(downloader->MaskUrl("http://example.com:8080"), "http://example.com:8080");
-    EXPECT_EQ(downloader->MaskUrl("https://site.org/x/y/z/readme"), "https://site.org/***/readme");
-    EXPECT_EQ(downloader->MaskUrl("https://a.com/static/jquery.min.js"), "https://a.com/***/jquery.min.js");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com/目录/文件.txt"), "https://example.com/***/文件.txt");
-    EXPECT_EQ(downloader->MaskUrl("https://example.com:8443/api/v2/data.json?pretty=true"),
-        "https://example.com:8443/***/data.json");
-    EXPECT_EQ(downloader->MaskUrl("http://example.com/static/js/app"), "http://example.com/***/app");
-    EXPECT_EQ(downloader->MaskUrl("https://cdn.site.com/assets/videos/2024/summer/promo.mp4"),
-        "https://cdn.site.com/***/promo.mp4");
+    EXPECT_EQ(StringUtil::MaskUrl(""), "");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_NoScheme
+ * @tc.desc  : Test URL without scheme separator returns unchanged (B2)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_NoScheme, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("no-scheme"), "no-scheme");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_HostOnly
+ * @tc.desc  : Test URL with no path returns scheme://hostPort (B3)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_HostOnly, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com"), "https://example.com");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_RootPath
+ * @tc.desc  : Test root path "/" is stripped, returns scheme://hostPort (B4)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_RootPath, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/"), "https://example.com");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_DirectoryPath
+ * @tc.desc  : Test directory path ending with "/" is stripped (B5)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_DirectoryPath, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/a/b/"), "https://example.com");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_MultiSegmentFilePath
+ * @tc.desc  : Test multi-segment file path: hidden segments masked with *** (B6)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_MultiSegmentFilePath, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/dir/file"), "https://example.com/***/file");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_SingleSegmentFilePath
+ * @tc.desc  : Test single-segment file path: no mask needed (B7)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_SingleSegmentFilePath, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/file.m3u8"), "https://example.com/file.m3u8");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_UserInfoStripped
+ * @tc.desc  : Test userinfo (user:pass@) is stripped (B8)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_UserInfoStripped, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("http://user:pass@host/dir/file"), "http://host/***/file");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_QueryStripped
+ * @tc.desc  : Test query parameters are stripped (B9)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_QueryStripped, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/a/b/file?q=1"), "https://example.com/***/file");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_FragmentStripped
+ * @tc.desc  : Test fragment is stripped (B10)
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_FragmentStripped, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/a/b/file#frag"), "https://example.com/***/file");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_DirWithQueryStripped
+ * @tc.desc  : Test directory path with query is stripped entirely
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_DirWithQueryStripped, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/a/b/?q=1"), "https://example.com");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_RootWithQueryStripped
+ * @tc.desc  : Test root path with query is stripped entirely
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_RootWithQueryStripped, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/?q=1"), "https://example.com");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_PortPreserved
+ * @tc.desc  : Test port number is preserved in output
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_PortPreserved, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("http://host:8080/dir/file"), "http://host:8080/***/file");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_UserInfoAndPort
+ * @tc.desc  : Test userinfo stripped and port preserved together
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_UserInfoAndPort, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("http://user:pass@host:8080/dir/file"), "http://host:8080/***/file");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_IPv6Host
+ * @tc.desc  : Test IPv6 host address is preserved
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_IPv6Host, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("http://[::1]:8080/dir/file"), "http://[::1]:8080/***/file");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_DeepPath
+ * @tc.desc  : Test deeply nested path shows only last segment
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_DeepPath, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/a/b/c/d/e/f/v.mp4"),
+              "https://example.com/***/v.mp4");
+}
+
+/**
+ * @tc.name  : Test MaskUrl API
+ * @tc.number: MaskUrl_QueryAndFragmentStripped
+ * @tc.desc  : Test both query and fragment are stripped
+ */
+HWTEST_F(DownloaderUnitTest, MaskUrl_QueryAndFragmentStripped, TestSize.Level1)
+{
+    EXPECT_EQ(StringUtil::MaskUrl("https://example.com/v/s.mp4?q=1#f"),
+              "https://example.com/***/s.mp4");
 }
 
 class MockCloseRetryClient : public NetworkClient {

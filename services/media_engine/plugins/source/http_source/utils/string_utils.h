@@ -28,6 +28,7 @@ public:
     static bool SafeStoInt32(const std::string& str, int32_t& value);
     static bool SafeStoInt64(const std::string& str, int64_t& value);
     static bool SafeStoDouble(const std::string& str, double& value);
+    static std::string MaskUrl(const std::string& url);
 };
 }
 }
