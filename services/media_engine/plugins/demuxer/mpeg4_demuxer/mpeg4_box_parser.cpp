@@ -60,6 +60,9 @@ constexpr int64_t HDR_VIVID_TAG_LENGTH = 31;
 constexpr int64_t HDR_VIVID_TAG_OFFSET = 43;
 constexpr int32_t MATRIX_SIZE = 4;
 constexpr int32_t MAX_DEPTH = 10;
+// Maximum payload size for non-mdat atoms; excludes the atom header.
+constexpr uint64_t MAX_NON_MDAT_ATOM_PAYLOAD_SIZE = 64ULL * 1024 * 1024;
+constexpr int32_t MDAT_ATOM_TYPE = FourccType("mdat");
 constexpr uint64_t MAX_TITLE_SIZE = 24;
 constexpr uint64_t MAX_EXTRA_DATA_SIZE = 1024 * 1024;
 constexpr uint64_t MAX_DATA_SIZE = 256;
@@ -5283,6 +5286,11 @@ Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
     PathAdder pathAdder(&ctx->path, atom.type);
     atom.dataSize = atom.size - (ctx->dataOffset - ctx->offset);
     FALSE_RETURN_V_MSG_E(atom.dataSize >= 0, Status::ERROR_INVALID_DATA, "Invalid atom data size");
+    if (atom.type != MDAT_ATOM_TYPE && atom.dataSize > MAX_NON_MDAT_ATOM_PAYLOAD_SIZE) {
+        MEDIA_LOG_E("Non-mdat atom payload too large: type " PUBLIC_LOG_S ", payload " PUBLIC_LOG_U64
+            ", max " PUBLIC_LOG_U64, atomTypeStr.c_str(), atom.dataSize, MAX_NON_MDAT_ATOM_PAYLOAD_SIZE);
+        return Status::ERROR_INVALID_DATA;
+    }
     FALSE_RETURN_V_MSG_W(!IsUnsupportedFmp4Atom(atom.type),
         Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, "Unsupported file: fmp4");
     // 使用函数指针查找和调用解析函数
