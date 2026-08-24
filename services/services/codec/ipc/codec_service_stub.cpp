@@ -483,23 +483,14 @@ int32_t CodecServiceStub::CheckInitCaller(AVCodecType type, const Media::Meta &c
                                       AVCS_ERR_INVALID_VAL, "type invalid %{public}d", static_cast<int32_t>(type));
     pid_t callerPid = 0;
     uid_t callerUid = 0;
-    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, callerPid);
-    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_UID, callerUid);
+    bool ret = callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, callerPid) &&
+               callerInfo.GetData(Tag::AV_CODEC_CALLER_UID, callerUid);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "pid/uid missing");
     pid_t ipcPid = static_cast<pid_t>(IPCSkeleton::GetCallingPid());
     uid_t ipcUid = static_cast<uid_t>(IPCSkeleton::GetCallingUid());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(callerPid == ipcPid && callerUid == ipcUid, AVCS_ERR_INVALID_OPERATION,
                                       "pid/uid mismatch, caller %{public}d/%{public}u, ipc %{public}d/%{public}u",
                                       callerPid, callerUid, ipcPid, ipcUid);
-
-    int32_t forwardPid = 0;
-    std::string forwardProcessName;
-    bool hasForward = (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PID, forwardPid) && forwardPid >= 0) ||
-                      (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName) &&
-                       !forwardProcessName.empty());
-    if (hasForward) {
-        CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
-                                          "Forward caller requires native|shell token");
-    }
     return AVCS_ERR_OK;
 }
 

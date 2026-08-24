@@ -42,7 +42,7 @@ const std::string &GetBundleNameOrDefault()
     if (!bundleName.empty()) {
         return bundleName;
     }
-    bundleName = std::string(program_invocation_name != nullptr ? program_invocation_name : ""); // default: process name
+    bundleName = std::string(program_invocation_name); // default: process name
     auto systemAbilityManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     CHECK_AND_RETURN_RET_LOG(systemAbilityManager != nullptr, bundleName, "systemAbilityManager is nullptr");
 
