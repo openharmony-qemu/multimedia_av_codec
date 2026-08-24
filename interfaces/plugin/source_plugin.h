@@ -413,7 +413,7 @@ struct SourcePluginDef : public PluginDefBase {
 #endif // AVCODEC_SOURCE_PLUGIN_H
 
 
-static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime() + GetMarkedUrl(trackId)});
+({static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime() + GetMarkedUrl(trackId)});
 FALSE_GOON_NOEXEC(ret == Status::ERROR_PACKET_CONVERT_FAILED, HandlePacketConvertError(trackId));
 std::string MediaDemuxer::GetMarkedUrl(int32_t trackId)
 {       
