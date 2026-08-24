@@ -463,16 +463,18 @@ void AppendU32(std::vector<uint8_t>& data, uint32_t value)
 
 void AppendU64(std::vector<uint8_t>& data, uint64_t value)
 {
-    for (int32_t shift = 56; shift >= 0; shift -= 8) {
+    constexpr int32_t byteBitWidth = 8;
+    constexpr int32_t maxUint64Shift = 56;
+    for (int32_t shift = maxUint64Shift; shift >= 0; shift -= byteBitWidth) {
         data.emplace_back(static_cast<uint8_t>((value >> shift) & 0xFF));
     }
 }
 
 std::vector<uint8_t> BuildAtomHeader(uint64_t payloadSize, uint32_t atomType, bool isExtendedSize)
 {
-    constexpr uint64_t NORMAL_ATOM_HEADER_SIZE = 8;
-    constexpr uint64_t EXTENDED_ATOM_HEADER_SIZE = 16;
-    const uint64_t headerSize = isExtendedSize ? EXTENDED_ATOM_HEADER_SIZE : NORMAL_ATOM_HEADER_SIZE;
+    constexpr uint64_t normalAtomHeaderSize = 8;
+    constexpr uint64_t extendedAtomHeaderSize = 16;
+    const uint64_t headerSize = isExtendedSize ? extendedAtomHeaderSize : normalAtomHeaderSize;
     const uint64_t atomSize = payloadSize + headerSize;
     std::vector<uint8_t> data;
     if (isExtendedSize) {
@@ -3982,9 +3984,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomHeader_TrimTrailingU
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_AcceptUnknownAtomBoundary_001,
     TestSize.Level1)
 {
-    constexpr uint64_t MAX_PAYLOAD_SIZE = 64ULL * 1024 * 1024;
-    constexpr uint64_t NORMAL_HEADER_SIZE = 8;
-    for (uint64_t payloadSize : {MAX_PAYLOAD_SIZE - 1, MAX_PAYLOAD_SIZE}) {
+    constexpr uint64_t maxPayloadSize = 64ULL * 1024 * 1024;
+    constexpr uint64_t normalHeaderSize = 8;
+    for (uint64_t payloadSize : {maxPayloadSize - 1, maxPayloadSize}) {
         auto data = BuildAtomHeader(payloadSize, static_cast<uint32_t>(Plugins::MPEG4::FourccType("zzzz")), false);
         auto dataSource = CreateUnknownSizeDataSourceForBytes(data);
         auto reader = std::make_shared<DemuxerDataReader>();
@@ -3995,7 +3997,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_AcceptU
         Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
 
         EXPECT_EQ(parser.MPEG4ParseAtom(0, &ctx), Status::OK);
-        EXPECT_EQ(ctx.offset, static_cast<int64_t>(payloadSize + NORMAL_HEADER_SIZE));
+        EXPECT_EQ(ctx.offset, static_cast<int64_t>(payloadSize + normalHeaderSize));
     }
 }
 
@@ -4007,8 +4009,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_AcceptU
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_RejectUnknownAtomBeforeSkip_001,
     TestSize.Level1)
 {
-    constexpr uint64_t MAX_PAYLOAD_SIZE = 64ULL * 1024 * 1024;
-    auto data = BuildAtomHeader(MAX_PAYLOAD_SIZE + 1,
+    constexpr uint64_t maxPayloadSize = 64ULL * 1024 * 1024;
+    auto data = BuildAtomHeader(maxPayloadSize + 1,
         static_cast<uint32_t>(Plugins::MPEG4::FourccType("zzzz")), false);
     auto dataSource = CreateUnknownSizeDataSourceForBytes(data);
     auto reader = std::make_shared<DemuxerDataReader>();
@@ -4030,9 +4032,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_RejectU
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_ExtendedHeaderBoundary_001,
     TestSize.Level1)
 {
-    constexpr uint64_t MAX_PAYLOAD_SIZE = 64ULL * 1024 * 1024;
-    constexpr uint64_t EXTENDED_HEADER_SIZE = 16;
-    for (uint64_t payloadSize : {MAX_PAYLOAD_SIZE, MAX_PAYLOAD_SIZE + 1}) {
+    constexpr uint64_t maxPayloadSize = 64ULL * 1024 * 1024;
+    constexpr uint64_t extendedHeaderSize = 16;
+    for (uint64_t payloadSize : {maxPayloadSize, maxPayloadSize + 1}) {
         auto data = BuildAtomHeader(payloadSize, static_cast<uint32_t>(Plugins::MPEG4::FourccType("zzzz")), true);
         auto dataSource = CreateUnknownSizeDataSourceForBytes(data);
         auto reader = std::make_shared<DemuxerDataReader>();
@@ -4042,9 +4044,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_Extende
         parser.dataSource_ = dataSource;
         Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
 
-        const Status expected = payloadSize == MAX_PAYLOAD_SIZE ? Status::OK : Status::ERROR_INVALID_DATA;
+        const Status expected = payloadSize == maxPayloadSize ? Status::OK : Status::ERROR_INVALID_DATA;
         EXPECT_EQ(parser.MPEG4ParseAtom(0, &ctx), expected);
-        EXPECT_EQ(ctx.offset, expected == Status::OK ? static_cast<int64_t>(payloadSize + EXTENDED_HEADER_SIZE) : 0);
+        EXPECT_EQ(ctx.offset, expected == Status::OK ? static_cast<int64_t>(payloadSize + extendedHeaderSize) : 0);
     }
 }
 
@@ -4055,9 +4057,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_Extende
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_ExemptMdat_001, TestSize.Level1)
 {
-    constexpr uint64_t MAX_PAYLOAD_SIZE = 64ULL * 1024 * 1024;
-    constexpr uint64_t NORMAL_HEADER_SIZE = 8;
-    auto data = BuildAtomHeader(MAX_PAYLOAD_SIZE + 1,
+    constexpr uint64_t maxPayloadSize = 64ULL * 1024 * 1024;
+    constexpr uint64_t normalHeaderSize = 8;
+    auto data = BuildAtomHeader(maxPayloadSize + 1,
         static_cast<uint32_t>(Plugins::MPEG4::FourccType("mdat")), false);
     auto dataSource = CreateUnknownSizeDataSourceForBytes(data);
     auto reader = std::make_shared<DemuxerDataReader>();
@@ -4069,7 +4071,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_ExemptM
 
     EXPECT_EQ(parser.MPEG4ParseAtom(0, &ctx), Status::OK);
     EXPECT_TRUE(parser.hasMdatBox_);
-    EXPECT_EQ(ctx.offset, static_cast<int64_t>(MAX_PAYLOAD_SIZE + 1 + NORMAL_HEADER_SIZE));
+    EXPECT_EQ(ctx.offset, static_cast<int64_t>(maxPayloadSize + 1 + normalHeaderSize));
 }
 
 /**
