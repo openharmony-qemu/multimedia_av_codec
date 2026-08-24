@@ -674,7 +674,8 @@ int32_t FCodec::SetParameter(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
     if (sInfo_.surface != nullptr) {
-        GetSurfaceCfgFromFmt(format, false);
+        bool isRunning = isAcitve();
+        GetSurfaceCfgFromFmt(format, !isRunning);
         SetSurfaceParameter();
     }
     AVCODEC_LOGI("Set parameter successful");
