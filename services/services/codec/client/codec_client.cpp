@@ -42,7 +42,7 @@ const std::string &GetBundleNameOrDefault()
     if (!bundleName.empty()) {
         return bundleName;
     }
-    bundleName = std::string(program_invocation_name); // default: process name
+    bundleName = std::string(program_invocation_name != nullptr ? program_invocation_name : ""); // default: process name
     auto systemAbilityManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     CHECK_AND_RETURN_RET_LOG(systemAbilityManager != nullptr, bundleName, "systemAbilityManager is nullptr");
 
@@ -53,11 +53,10 @@ const std::string &GetBundleNameOrDefault()
     CHECK_AND_RETURN_RET_LOG(bundleMgrProxy != nullptr, bundleName, "bundleMgrProxy is nullptr");
 
     BundleInfo bundleInfo;
-    (void)bundleMgrProxy->GetBundleInfoV9(bundleName,
-                                          static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_HAP_MODULE) |
-                                              static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_METADATA) |
-                                              static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_DISABLE),
-                                          bundleInfo, Constants::ALL_USERID);
+    if (bundleMgrProxy->GetBundleInfoForSelf(static_cast<int32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_DEFAULT),
+                                             bundleInfo) == ERR_OK) {
+        bundleName = bundleInfo.name;
+    }
     return bundleName;
 }
 constexpr int64_t  LOG_INTERVAL_MS = 2000;  // 2s
