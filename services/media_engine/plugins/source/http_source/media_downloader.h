@@ -248,6 +248,7 @@ public:
     virtual std::string GetMaskUrlByReadIndex(int32_t streamId)
     {
         (void)streamId;
+        MEDIA_LOG_E("GetMaskUrlByReadIndex is unimplemented.");
         return "";
     }
 
