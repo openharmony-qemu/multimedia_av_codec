@@ -15,12 +15,14 @@
 
 #include "codec_service_stub.h"
 #include <unistd.h>
+#include "accesstoken_kit.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "avcodec_parcel.h"
 #include "avcodec_server_manager.h"
 #include "avcodec_trace.h"
 #include "avcodec_xcollie.h"
+#include "background_event_handler.h"
 #include "codec_listener_proxy.h"
 #include "codec_server.h"
 #ifdef SUPPORT_DRM
@@ -28,8 +30,6 @@
 #endif
 #include "event_manager.h"
 #include "ipc_skeleton.h"
-#include "accesstoken_kit.h"
-#include "background_event_handler.h"
 #include "qos.h"
 #include "surface_utils.h"
 
@@ -37,6 +37,16 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CodecServiceStub"};
 constexpr int32_t UID_MEDIA_SERVICE = 1013;
 using namespace OHOS::MediaAVCodec;
+bool IsCallerNativeOrShell()
+{
+    using namespace OHOS::Security::AccessToken;
+    auto tokenType = AccessTokenKit::GetTokenTypeFlag(OHOS::IPCSkeleton::GetCallingTokenID());
+    bool ok = tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL;
+    if (!ok) {
+        AVCODEC_LOGE("Caller requires native|shell token, got %{public}d", static_cast<int32_t>(tokenType));
+    }
+    return ok;
+}
 const std::map<CodecServiceInterfaceCode, std::string> CODEC_FUNC_NAME = {
     {CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER, "QueueInputBuffer"},
     {CodecServiceInterfaceCode::RELEASE_OUTPUT_BUFFER, "ReleaseOutputBuffer"},
@@ -480,17 +490,16 @@ int32_t CodecServiceStub::CheckInitCaller(AVCodecType type, const Media::Meta &c
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(type > AVCodecType::AVCODEC_TYPE_NONE &&
                                           type <= AVCodecType::AVCODEC_TYPE_AUDIO_DECODER,
-                                      AVCS_ERR_INVALID_VAL, "Init type invalid %{public}d", static_cast<int32_t>(type));
+                                      AVCS_ERR_INVALID_VAL, "type invalid %{public}d", static_cast<int32_t>(type));
     pid_t callerPid = 0;
     uid_t callerUid = 0;
-    bool idRet = callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, callerPid) &&
-                 callerInfo.GetData(Tag::AV_CODEC_CALLER_UID, callerUid);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(
-        idRet && callerPid == static_cast<pid_t>(IPCSkeleton::GetCallingPid()) &&
-            callerUid == static_cast<uid_t>(IPCSkeleton::GetCallingUid()),
-        AVCS_ERR_INVALID_OPERATION,
-        "Init caller pid/uid mismatch, caller %{public}d/%{public}u, ipc %{public}d/%{public}u", callerPid, callerUid,
-        IPCSkeleton::GetCallingPid(), static_cast<uid_t>(IPCSkeleton::GetCallingUid()));
+    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_PID, callerPid);
+    (void)callerInfo.GetData(Tag::AV_CODEC_CALLER_UID, callerUid);
+    pid_t ipcPid = static_cast<pid_t>(IPCSkeleton::GetCallingPid());
+    uid_t ipcUid = static_cast<uid_t>(IPCSkeleton::GetCallingUid());
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callerPid == ipcPid && callerUid == ipcUid, AVCS_ERR_INVALID_OPERATION,
+                                      "pid/uid mismatch, caller %{public}d/%{public}u, ipc %{public}d/%{public}u",
+                                      callerPid, callerUid, ipcPid, ipcUid);
 
     int32_t forwardPid = 0;
     std::string forwardProcessName;
@@ -498,12 +507,8 @@ int32_t CodecServiceStub::CheckInitCaller(AVCodecType type, const Media::Meta &c
                       (callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName) &&
                        !forwardProcessName.empty());
     if (hasForward) {
-        auto tokenType = Security::AccessToken::AccessTokenKit::GetTokenTypeFlag(IPCSkeleton::GetCallingTokenID());
-        CHECK_AND_RETURN_RET_LOG_WITH_TAG(tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_NATIVE ||
-                                              tokenType == Security::AccessToken::ATokenTypeEnum::TOKEN_SHELL,
-                                          AVCS_ERR_INVALID_OPERATION,
-                                          "Forward caller requires native|shell token, got %{public}d",
-                                          static_cast<int32_t>(tokenType));
+        CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
+                                          "Forward caller requires native|shell token");
     }
     return AVCS_ERR_OK;
 }
@@ -833,6 +838,8 @@ int32_t CodecServiceStub::InnerRelease()
 
 int32_t CodecServiceStub::NotifyMemoryRecycle([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
+                                      "requires native|shell token");
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
@@ -844,6 +851,8 @@ int32_t CodecServiceStub::NotifyMemoryRecycle([[maybe_unused]]MessageParcel &dat
 
 int32_t CodecServiceStub::NotifyMemoryWriteBack([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
+                                      "requires native|shell token");
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
@@ -855,6 +864,8 @@ int32_t CodecServiceStub::NotifyMemoryWriteBack([[maybe_unused]]MessageParcel &d
 
 int32_t CodecServiceStub::NotifySuspend([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
+                                      "requires native|shell token");
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
@@ -866,6 +877,8 @@ int32_t CodecServiceStub::NotifySuspend([[maybe_unused]]MessageParcel &data, Mes
 
 int32_t CodecServiceStub::NotifyResume([[maybe_unused]]MessageParcel &data, MessageParcel &reply)
 {
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
+                                      "requires native|shell token");
     std::lock_guard<std::shared_mutex> lock(mutex_);
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
@@ -878,18 +891,24 @@ int32_t CodecServiceStub::NotifyResume([[maybe_unused]]MessageParcel &data, Mess
 int32_t CodecServiceStub::NotifyFreeze([[maybe_unused]] MessageParcel &data, [[maybe_unused]] MessageParcel &reply)
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
+                                      "requires native|shell token");
     return NotifyFreeze();
 }
 
 int32_t CodecServiceStub::NotifyActive([[maybe_unused]] MessageParcel &data, [[maybe_unused]] MessageParcel &reply)
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
+                                      "requires native|shell token");
     return NotifyActive();
 }
 
 int32_t CodecServiceStub::NotifySetCodecPerformance(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
+                                      "requires native|shell token");
     uint8_t levelValue = data.ReadUint8();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(
         levelValue == static_cast<uint8_t>(CodecPerformanceLevel::DEFAULT) ||
