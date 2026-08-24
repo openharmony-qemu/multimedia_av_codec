@@ -411,26 +411,3 @@ struct SourcePluginDef : public PluginDefBase {
 } // namespace Media
 } // namespace OHOS
 #endif // AVCODEC_SOURCE_PLUGIN_H
-
-
-({static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime() + GetMarkedUrl(trackId)});
-FALSE_GOON_NOEXEC(ret == Status::ERROR_PACKET_CONVERT_FAILED, HandlePacketConvertError(trackId));
-std::string MediaDemuxer::GetMarkedUrl(int32_t trackId)
-{       
-    std::string curUrl = "-";
-    if (isHls_ && demuxerPluginManager_!= nullptr && source_ != nullptr) {
-        int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
-        curUrl += source_->GetMaskUrlByReadIndex(streamId);
-    }
-    return curUrl;
-}
-
-void MediaDemuxer::HandlePacketConvertError(int32_t trackId)
-
-static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime() + GetMarkedUrl(trackId)});
-
-void HandlePacketConvertError(int32_t trackId);
-
-std::string GetMarkedUrl(int32_t trackId);
-
-MOCK_METHOD(std::string, GetMaskUrlByReadIndex, (int32_t streamId), ());
