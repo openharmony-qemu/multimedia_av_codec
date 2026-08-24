@@ -946,20 +946,11 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
 
         CHECK_AND_RETURN_RET_LOG(codecPlugin_ != nullptr, Status::ERROR_INVALID_PARAMETER, "createPlugin failed");
         ret = codecPlugin_->SetParameter(meta);
-        if (ret != Status::OK) {
-            AVCODEC_LOGE("codecPlugin SetParameter ret %{public}d", ret);
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "codecPlugin SetParameter ret %{public}d", ret);
         ret = codecPlugin_->Init();
-        if (ret != Status::OK) {
-            AVCODEC_LOGE("codecPlugin Init ret %{public}d", ret);
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "codecPlugin Init ret %{public}d", ret);
         ret = codecPlugin_->SetDataCallback(this);
-        if (ret != Status::OK) {
-            AVCODEC_LOGE("codecPlugin SetDataCallback ret %{public}d", ret);
-            return ret;
-        }
+        CHECK_AND_RETURN_RET_LOG(ret == Status::OK, ret, "codecPlugin SetDataCallback ret %{public}d", ret);
     }
 
     // discard undecoded data and unconsumed decoded data.
@@ -972,6 +963,12 @@ Status MediaCodec::ChangePlugin(const std::string &mime, bool isEncoder, const s
     ResetBufferStatusInfo();
 
     AutoLock lock(stateMutex_);
+    if (outputBufferQueueProducer_ != nullptr) {
+        for (const auto &buffer : outputBufferVector_) {
+            outputBufferQueueProducer_->DetachBuffer(buffer);
+        }
+        outputBufferVector_.clear();
+    }
     PrepareInputBufferQueue();
     PrepareOutputBufferQueue();
     if (state_ == CodecState::RUNNING) {
