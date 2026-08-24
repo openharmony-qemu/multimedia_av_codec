@@ -442,12 +442,50 @@ private:
     size_t maxReadSize_ = 0;
 };
 
+class UnknownSizeDataSource final : public ShortReadDataSource {
+public:
+    using ShortReadDataSource::ShortReadDataSource;
+
+    Status GetSize(uint64_t& size) override
+    {
+        size = 0;
+        return Status::ERROR_UNKNOWN;
+    }
+};
+
 void AppendU32(std::vector<uint8_t>& data, uint32_t value)
 {
     data.emplace_back(static_cast<uint8_t>((value >> 24) & 0xFF));
     data.emplace_back(static_cast<uint8_t>((value >> 16) & 0xFF));
     data.emplace_back(static_cast<uint8_t>((value >> 8) & 0xFF));
     data.emplace_back(static_cast<uint8_t>(value & 0xFF));
+}
+
+void AppendU64(std::vector<uint8_t>& data, uint64_t value)
+{
+    constexpr int32_t byteBitWidth = 8;
+    constexpr int32_t maxUint64Shift = 56;
+    for (int32_t shift = maxUint64Shift; shift >= 0; shift -= byteBitWidth) {
+        data.emplace_back(static_cast<uint8_t>((value >> shift) & 0xFF));
+    }
+}
+
+std::vector<uint8_t> BuildAtomHeader(uint64_t payloadSize, uint32_t atomType, bool isExtendedSize)
+{
+    constexpr uint64_t normalAtomHeaderSize = 8;
+    constexpr uint64_t extendedAtomHeaderSize = 16;
+    const uint64_t headerSize = isExtendedSize ? extendedAtomHeaderSize : normalAtomHeaderSize;
+    const uint64_t atomSize = payloadSize + headerSize;
+    std::vector<uint8_t> data;
+    if (isExtendedSize) {
+        AppendU32(data, 1);
+        AppendU32(data, atomType);
+        AppendU64(data, atomSize);
+    } else {
+        AppendU32(data, static_cast<uint32_t>(atomSize));
+        AppendU32(data, atomType);
+    }
+    return data;
 }
 
 void WriteU16(std::vector<uint8_t>& data, size_t offset, uint16_t value)
@@ -467,6 +505,11 @@ std::shared_ptr<DemuxerDataReader> CreateReaderForBytes(const std::vector<uint8_
 std::shared_ptr<ShortReadDataSource> CreateDataSourceForBytes(const std::vector<uint8_t>& data)
 {
     return std::make_shared<ShortReadDataSource>(data, std::max<size_t>(data.size(), 1));
+}
+
+std::shared_ptr<UnknownSizeDataSource> CreateUnknownSizeDataSourceForBytes(const std::vector<uint8_t>& data)
+{
+    return std::make_shared<UnknownSizeDataSource>(data, std::max<size_t>(data.size(), 1));
 }
 
 std::vector<uint8_t> BuildStszData(uint32_t defaultSampleSize, uint32_t sampleCount,
@@ -3931,6 +3974,104 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomHeader_TrimTrailingU
     ASSERT_EQ(parser.ParseAtomHeader(atom, typeStr, 0, isZeroSizeAtom, &ctx), Status::OK);
     EXPECT_EQ(atom.size, data.size());
     EXPECT_FALSE(isZeroSizeAtom);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomPayloadLimit_AcceptUnknownAtomBoundary_001
+ * @tc.desc: Verify unknown non-mdat atom payloads up to 64 MiB are skipped when source size is unknown
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_AcceptUnknownAtomBoundary_001,
+    TestSize.Level1)
+{
+    constexpr uint64_t maxPayloadSize = 64ULL * 1024 * 1024;
+    constexpr uint64_t normalHeaderSize = 8;
+    for (uint64_t payloadSize : {maxPayloadSize - 1, maxPayloadSize}) {
+        auto data = BuildAtomHeader(payloadSize, static_cast<uint32_t>(Plugins::MPEG4::FourccType("zzzz")), false);
+        auto dataSource = CreateUnknownSizeDataSourceForBytes(data);
+        auto reader = std::make_shared<DemuxerDataReader>();
+        ASSERT_EQ(reader->SetDataReader(dataSource), Status::OK);
+        Plugins::MPEG4::MPEG4AtomParser parser;
+        parser.dataReader_ = reader;
+        parser.dataSource_ = dataSource;
+        Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+
+        EXPECT_EQ(parser.MPEG4ParseAtom(0, &ctx), Status::OK);
+        EXPECT_EQ(ctx.offset, static_cast<int64_t>(payloadSize + normalHeaderSize));
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomPayloadLimit_RejectUnknownAtomBeforeSkip_001
+ * @tc.desc: Verify an oversized unknown atom is rejected before unknown atom skipping
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_RejectUnknownAtomBeforeSkip_001,
+    TestSize.Level1)
+{
+    constexpr uint64_t maxPayloadSize = 64ULL * 1024 * 1024;
+    auto data = BuildAtomHeader(maxPayloadSize + 1,
+        static_cast<uint32_t>(Plugins::MPEG4::FourccType("zzzz")), false);
+    auto dataSource = CreateUnknownSizeDataSourceForBytes(data);
+    auto reader = std::make_shared<DemuxerDataReader>();
+    ASSERT_EQ(reader->SetDataReader(dataSource), Status::OK);
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    parser.dataReader_ = reader;
+    parser.dataSource_ = dataSource;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+
+    EXPECT_EQ(parser.MPEG4ParseAtom(0, &ctx), Status::ERROR_INVALID_DATA);
+    EXPECT_EQ(ctx.offset, 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomPayloadLimit_ExtendedHeaderBoundary_001
+ * @tc.desc: Verify the 64 MiB limit excludes the 16-byte extended atom header
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_ExtendedHeaderBoundary_001,
+    TestSize.Level1)
+{
+    constexpr uint64_t maxPayloadSize = 64ULL * 1024 * 1024;
+    constexpr uint64_t extendedHeaderSize = 16;
+    for (uint64_t payloadSize : {maxPayloadSize, maxPayloadSize + 1}) {
+        auto data = BuildAtomHeader(payloadSize, static_cast<uint32_t>(Plugins::MPEG4::FourccType("zzzz")), true);
+        auto dataSource = CreateUnknownSizeDataSourceForBytes(data);
+        auto reader = std::make_shared<DemuxerDataReader>();
+        ASSERT_EQ(reader->SetDataReader(dataSource), Status::OK);
+        Plugins::MPEG4::MPEG4AtomParser parser;
+        parser.dataReader_ = reader;
+        parser.dataSource_ = dataSource;
+        Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+
+        const Status expected = payloadSize == maxPayloadSize ? Status::OK : Status::ERROR_INVALID_DATA;
+        EXPECT_EQ(parser.MPEG4ParseAtom(0, &ctx), expected);
+        EXPECT_EQ(ctx.offset, expected == Status::OK ? static_cast<int64_t>(payloadSize + extendedHeaderSize) : 0);
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomPayloadLimit_ExemptMdat_001
+ * @tc.desc: Verify large mdat payloads keep the existing skip behavior
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_ExemptMdat_001, TestSize.Level1)
+{
+    constexpr uint64_t maxPayloadSize = 64ULL * 1024 * 1024;
+    constexpr uint64_t normalHeaderSize = 8;
+    auto data = BuildAtomHeader(maxPayloadSize + 1,
+        static_cast<uint32_t>(Plugins::MPEG4::FourccType("mdat")), false);
+    auto dataSource = CreateUnknownSizeDataSourceForBytes(data);
+    auto reader = std::make_shared<DemuxerDataReader>();
+    ASSERT_EQ(reader->SetDataReader(dataSource), Status::OK);
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    parser.dataReader_ = reader;
+    parser.dataSource_ = dataSource;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+
+    EXPECT_EQ(parser.MPEG4ParseAtom(0, &ctx), Status::OK);
+    EXPECT_TRUE(parser.hasMdatBox_);
+    EXPECT_EQ(ctx.offset, static_cast<int64_t>(maxPayloadSize + 1 + normalHeaderSize));
 }
 
 /**
