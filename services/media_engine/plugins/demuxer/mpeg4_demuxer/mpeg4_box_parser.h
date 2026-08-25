@@ -40,6 +40,7 @@ public:
     explicit MPEG4AtomParser();
     ~MPEG4AtomParser();
     struct CodecParams {
+        bool hasValidExtradata = false;
         std::unique_ptr<uint8_t[]> data = nullptr;
         int64_t extradataSize = 0;
         TrackType trackType = INVALID_TYPE;

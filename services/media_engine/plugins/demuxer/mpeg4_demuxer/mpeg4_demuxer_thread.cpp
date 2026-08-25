@@ -46,27 +46,28 @@ bool HaveValidParserForThread(const std::string& mime)
 {
     return mime == "video/avc" || mime == "video/hevc" || mime == "video/vvc";
 }
+} // namespace
 
-int32_t GetSampleSizeWithCodecConfigForThread(const MediaInfo& mediaInfo,
+int32_t MPEG4DemuxerPlugin::GetSampleSizeWithCodecConfig(const MediaInfo& mediaInfo,
     const std::shared_ptr<Sample>& sample, uint32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr, 0, "Sample is nullptr");
+    auto track = FindTrackById(trackId);
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, 0, "Track is nullptr");
     int32_t sampleSize = sample->size;
     std::string mime;
     std::vector<uint8_t> extradata {};
-    if (mediaInfo.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && HaveValidParserForThread(mime) &&
-        mediaInfo.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata) &&
-        (sample->flag & Sample::SampleFlag::SYNC_FRAME)) {
-        FALSE_RETURN_V_MSG_E(extradata.size() < INT32_MAX, 0, "extradata.size() overflow");
+    FALSE_RETURN_V_NOLOG(sample->flag & Sample::SampleFlag::SYNC_FRAME, sampleSize);
+    if (HaveValidParserForThread(track->sampleHelper->mimeType_) && track->codecParms.hasValidExtradata) {
+        int64_t extradataSize = track->codecParms.extradataSize;
+        FALSE_RETURN_V_MSG_E(extradataSize >= 0 && extradataSize < INT32_MAX, 0, "extradataSize overflow");
         int32_t newSampleSize = 0;
-        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(sampleSize,
-                                                     static_cast<int32_t>(extradata.size()), &newSampleSize),
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(sampleSize, static_cast<int32_t>(extradataSize), &newSampleSize),
                              0, "SampleSize overflow");
         sampleSize = newSampleSize;
     }
     return sampleSize;
 }
-} // namespace
 
 Status MPEG4DemuxerPlugin::CheckSeekToFrameByDtsParam(int32_t trackId, int64_t seekTime, SeekMode mode)
 {
@@ -360,8 +361,6 @@ Status MPEG4DemuxerPlugin::FillBufferDirectly(std::shared_ptr<AVBuffer> sample, 
 {
     FALSE_RETURN_V_MSG_E(
         size > 0 && size < READ_SIZE_LIMIT_DEFAULT, Status::ERROR_INVALID_BUFFER_SIZE, "Invalid read size");
-    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->memory_ != nullptr && sample->memory_->GetAddr() != nullptr,
-        Status::ERROR_INVALID_PARAMETER, "AVBuffer is invalid");
     FALSE_RETURN_V_MSG_E(dataSource_ != nullptr, Status::ERROR_NULL_POINTER, "DataSource is nullptr");
     int32_t capacity = sample->memory_->GetCapacity();
     FALSE_RETURN_V_MSG_E(capacity >= size, Status::ERROR_INVALID_BUFFER_SIZE, "Buffer capacity is insufficient");
@@ -541,12 +540,6 @@ void MPEG4DemuxerPlugin::MaybeNotifyCachePressure(uint32_t trackId, uint32_t cac
 
 Status MPEG4DemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> outBuffer, bool replaceMemory)
 {
-    FALSE_RETURN_V_MSG_E(outBuffer != nullptr, Status::ERROR_INVALID_PARAMETER, "Eos buffer is nullptr");
-    if (!replaceMemory) {
-        FALSE_RETURN_V_MSG_E(outBuffer->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
-            "Eos memory is nullptr");
-    }
-
     outBuffer->pts_ = 0;
     outBuffer->dts_ = 0;
     outBuffer->duration_ = 0;
@@ -569,15 +562,12 @@ Status MPEG4DemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> outBuffer, boo
 Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer,
     std::shared_ptr<MPEG4Sample> mpeg4Sample)
 {
-    FALSE_RETURN_V_MSG_E(outBuffer != nullptr, Status::ERROR_NULL_POINTER, "Buffer is nullptr");
     FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr, Status::ERROR_NULL_POINTER,
         "Sample is nullptr");
 
     outBuffer->pts_ = mpeg4Sample->sample->pts;
     outBuffer->dts_ = mpeg4Sample->sample->dts;
-    outBuffer->meta_->Set<Tag::BUFFER_DECODING_TIMESTAMP>(mpeg4Sample->sample->dts);
     outBuffer->duration_ = mpeg4Sample->sample->duration;
-    outBuffer->meta_->Set<Tag::BUFFER_DURATION>(mpeg4Sample->sample->duration);
     MEDIA_LOG_D("CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "], track: "
         PUBLIC_LOG_U32, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_, trackIndex);
 
@@ -609,8 +599,7 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(outBuffer != nullptr && outBuffer->memory_ != nullptr, Status::ERROR_INVALID_PARAMETER,
-        "AVBuffer or memory is nullptr");
+    FALSE_RETURN_V_MSG_E(IsValidBuffer(outBuffer), Status::ERROR_INVALID_PARAMETER, "AVBuffer is invalid");
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
         Status::ERROR_INVALID_OPERATION, "Cannot use sync and async Read together");
     readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
@@ -680,7 +669,7 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
     if ((mpeg4Sample->sample->flag & Sample::SampleFlag::EOS) != 0) {
         return Status::END_OF_STREAM;
     }
-    sampleSize = GetSampleSizeWithCodecConfigForThread(mediaInfo_, mpeg4Sample->sample, trackId);
+    sampleSize = GetSampleSizeWithCodecConfig(mediaInfo_, mpeg4Sample->sample, trackId);
     return Status::OK;
 }
 
@@ -846,7 +835,7 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
     if (mpeg4Sample->isVttc) {
         if (pending != pendingWebVttSamples_.end()) {
             UpdateWebVTTDuration(pending->second->sample, mpeg4Sample->sample->pts);
-            ret = AddSampleToCacheQueue(pending->second->sample, trackId, pending->second->sampleIndex);
+            ret = AddMPEG4SampleToCacheQueue(pending->second, trackId, pending->second->sampleIndex);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add pending WebVTT cache failed");
         }
         pendingWebVttSamples_[trackId] = mpeg4Sample;
@@ -857,7 +846,7 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
         return Status::OK;
     }
     UpdateWebVTTDuration(pending->second->sample, mpeg4Sample->sample->pts);
-    ret = AddSampleToCacheQueue(pending->second->sample, trackId, pending->second->sampleIndex);
+    ret = AddMPEG4SampleToCacheQueue(pending->second, trackId, pending->second->sampleIndex);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add WebVTT cache failed");
     pendingWebVttSamples_.erase(pending);
     return Status::OK;
@@ -874,7 +863,7 @@ Status MPEG4DemuxerPlugin::FlushPendingWebVTTSample(uint32_t trackId)
     if (endPts > 0) {
         UpdateWebVTTDuration(iter->second->sample, endPts);
     }
-    Status ret = AddSampleToCacheQueue(iter->second->sample, trackId, iter->second->sampleIndex);
+    Status ret = AddMPEG4SampleToCacheQueue(iter->second, trackId, iter->second->sampleIndex);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add pending WebVTT cache failed");
     pendingWebVttSamples_.erase(iter);
     return Status::OK;
@@ -972,7 +961,7 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId)
         if (IsWebVTTTrack(currentTrack)) {
             ret = ProcessWebVTTSampleForCache(currentTrack, mpeg4Sample);
         } else {
-            ret = AddSampleToCacheQueue(sample, sampleInfo.trackId, sampleInfo.sampleIndex);
+            ret = AddMPEG4SampleToCacheQueue(mpeg4Sample, sampleInfo.trackId, sampleInfo.sampleIndex);
             AdvanceSampleIndex(currentTrack);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
@@ -1101,7 +1090,8 @@ Status MPEG4DemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(outBuffer != nullptr, Status::ERROR_INVALID_PARAMETER, "AVBuffer is nullptr");
+    FALSE_RETURN_V_MSG_E(
+        outBuffer != nullptr && outBuffer->meta_ != nullptr, Status::ERROR_INVALID_PARAMETER, "AVBuffer is nullptr");
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
         Status::ERROR_INVALID_OPERATION, "Cannot use sync and async Read together");
     readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);

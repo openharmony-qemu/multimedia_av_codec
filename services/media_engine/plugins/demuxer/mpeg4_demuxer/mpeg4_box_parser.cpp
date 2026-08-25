@@ -1382,6 +1382,7 @@ void MPEG4AtomParser::SetCodecConfig(std::shared_ptr<Track> track)
         std::vector<uint8_t> extra(track->codecParms.extradataSize);
         extra.assign(track->codecParms.data.get(), track->codecParms.data.get() + track->codecParms.extradataSize);
         mediaInfo_.tracks[track->trackIndex].Set<Tag::MEDIA_CODEC_CONFIG>(extra);
+        track->codecParms.hasValidExtradata = true;
     } else {
         MEDIA_LOG_E("Set codec config failed");
     }

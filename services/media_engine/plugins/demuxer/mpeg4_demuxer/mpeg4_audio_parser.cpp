@@ -119,19 +119,6 @@ const std::vector<AudioChannelLayout> g_supportChannelLayout = {
     AudioChannelLayout::CH_3POINT0POINT2
 };
 
-const std::vector<AudioChannelLayout> g_dtsAudioMode2DtsChannelLayout = {
-    AudioChannelLayout::MONO,
-    AudioChannelLayout::STEREO,
-    AudioChannelLayout::STEREO,
-    AudioChannelLayout::STEREO,
-    AudioChannelLayout::STEREO,
-    AudioChannelLayout::SURROUND,
-    AudioChannelLayout::CH_2_1,
-    AudioChannelLayout::CH_4POINT0,
-    AudioChannelLayout::CH_2_2,
-    AudioChannelLayout::CH_5POINT0,
-};
-
 MpegAudioFrameInfo ParseMpegAudioFrameHeader(const uint8_t* data, uint32_t size)
 {
     MpegAudioFrameInfo info;

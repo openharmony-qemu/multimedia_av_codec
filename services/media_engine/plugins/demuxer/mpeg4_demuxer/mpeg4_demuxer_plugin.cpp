@@ -154,12 +154,6 @@ bool IsValidTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
     return track != nullptr && track->sampleHelper != nullptr;
 }
 
-bool IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffer)
-{
-    return outBuffer != nullptr && outBuffer->memory_ != nullptr &&
-           outBuffer->memory_->GetCapacity() >= 0 && outBuffer->memory_->GetAddr() != nullptr;
-}
-
 bool IsValidMpeg4Sample(const std::shared_ptr<MPEG4Sample>& mpeg4Sample)
 {
     return mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr;
@@ -952,7 +946,7 @@ Status BuildReadSamplePacketAttr(const ReadSamplePacketContext& context, ReadSam
         context.hasPlayableVideoTrack);
     const auto* skipSamplesInfo = IsValidTrack(track) ?
         track->sampleHelper->GetSkipSamplesInfo(context.sampleIndex) : nullptr;
-    if (skipSamplesInfo != nullptr) {
+    if (skipSamplesInfo != nullptr && !skipSamplesInfo->empty()) {
         attr.skipSamplesInfo = *skipSamplesInfo;
     }
     attr.sourceSampleIndex = context.sampleIndex;
@@ -983,20 +977,6 @@ bool CheckSeekTimeInFileDuration(const MediaInfo& mediaInfo, int64_t seekTime)
     return true;
 }
 
-int32_t GetSampleSizeWithCodecConfig(const MediaInfo& mediaInfo,
-    const std::shared_ptr<Sample>& sample, uint32_t trackId)
-{
-    FALSE_RETURN_V_MSG_E(sample != nullptr, 0, "Sample is nullptr");
-    int32_t sampleSize = sample->size;
-    std::string mime;
-    std::vector<uint8_t> extradata {};
-    if (mediaInfo.tracks[trackId].Get<Tag::MIME_TYPE>(mime) && HaveValidParser(mime) &&
-        mediaInfo.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(extradata) &&
-        (sample->flag & Sample::SampleFlag::SYNC_FRAME)) {
-        sampleSize += static_cast<int32_t>(extradata.size());
-    }
-    return sampleSize;
-}
 
 enum AtomLevel {
     LEVEL_0 = 0,
@@ -1100,6 +1080,12 @@ MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
     inited_ = false;
     readModeFlags_.store(0, std::memory_order_release);
     MEDIA_LOG_D("Out");
+}
+
+bool MPEG4DemuxerPlugin::IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffer)
+{
+    return outBuffer != nullptr && outBuffer->meta_ != nullptr && outBuffer->memory_ != nullptr &&
+           outBuffer->memory_->GetCapacity() >= 0 && outBuffer->memory_->GetAddr() != nullptr;
 }
 
 // LCOV_EXCL_START
@@ -1511,7 +1497,7 @@ void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& trac
     }
 }
 
-void MPEG4DemuxerPlugin::GetSingleTrackInfo(const MPEG4AtomParser::Track& track, const uint32_t trackIndex)
+void MPEG4DemuxerPlugin::GetSingleTrackInfo(MPEG4AtomParser::Track& track, const uint32_t trackIndex)
 {
     Meta meta = mediaInfo_.tracks[trackIndex];
     std::string mime;
@@ -1743,7 +1729,7 @@ Status MPEG4DemuxerPlugin::FillDrmSubsamples(MetaDrmCencInfo& cencInfo,
 }
 // LCOV_EXCL_STOP
 
-void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta &format, uint32_t trackIndex)
+void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta &format, uint32_t trackIndex)
 {
     uint8_t *extradata = track.codecParms.data.get();
     int32_t extradataSize = track.codecParms.extradataSize;
@@ -1758,6 +1744,8 @@ void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track,
         std::vector<uint8_t> extra(extradataSize);
         extra.assign(extradata, extradata + extradataSize);
         format.Set<Tag::MEDIA_CODEC_CONFIG>(extra);
+        track.codecParms.extradataSize = extradataSize;
+        track.codecParms.hasValidExtradata = true;
     }
 }
 
@@ -2275,7 +2263,7 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
 
     Status check = CheckSeekParams(seekTime, mode);
     FALSE_RETURN_V_MSG_E(check == Status::OK, check, "CheckSeekParams failed");
-    FALSE_RETURN_V_MSG_E(CheckSeekTimeInFileDuration(mediaInfo_, seekTime), Status::ERROR_INVALID_PARAMETER,
+    FALSE_RETURN_V_MSG_E(CheckSeekTimeInFileDuration(mediaInfo_, seekTime), Status::ERROR_INVALID_OPERATION,
         "Seek time out of file duration");
 
     Status denseRet = EnsureSelectedTracksDense();
@@ -2465,7 +2453,7 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(const SampleReadInfo& sampleInfo, std
     sample->duration = attr.durationUs;
     sample->flag = attr.flag;
     sample->size = currentSample.size;
-    sample->skipSamplesInfo = attr.skipSamplesInfo;
+    sample->skipSamplesInfo = std::move(attr.skipSamplesInfo);
     // When the sample is copied in the seekable case, add it up again
     if (seekable_ == Seekable::UNSEEKABLE) {
         ++track->currentSampleIndex;
@@ -2616,32 +2604,36 @@ Status MPEG4DemuxerPlugin::GetTrackCacheLastPTS(uint32_t trackId, int64_t& maxPt
     return track->cache->GetLastPTS(maxPts);
 }
 
+Status MPEG4DemuxerPlugin::AddMPEG4SampleToCacheQueue(
+    std::shared_ptr<MPEG4Sample> cacheSample, const uint32_t trackId, uint32_t sampleIndex)
+{
+    Status ret = Status::OK;
+    cacheSample->offset = 0;
+    cacheSample->trackId = trackId;
+    if (sampleIndex == UINT32_MAX) {
+        auto track = FindTrackById(static_cast<int32_t>(trackId));
+        cacheSample->sampleIndex = track ? track->currentSampleIndex : 0;
+    } else {
+        cacheSample->sampleIndex = sampleIndex;
+    }
+    (void)PushTrackCache(trackId, cacheSample);
+    ret = CheckCacheDataLimit(trackId);
+    uint32_t cacheBytes = GetTrackCacheDataSize(trackId);
+    if (cacheBytes < UINT32_MAX) {
+        MaybeNotifyCachePressure(trackId, cacheBytes);
+    }
+    return ret;
+}
+
 Status MPEG4DemuxerPlugin::AddSampleToCacheQueue(std::shared_ptr<Sample> sample,
     const uint32_t trackId, uint32_t sampleIndex)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NULL_POINTER, "sample is nullptr");
 
-    Status ret = Status::OK;
     std::shared_ptr<MPEG4Sample> cacheSample = std::make_shared<MPEG4Sample>();
     FALSE_RETURN_V_MSG_E(cacheSample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate MPEG4Sample");
-    if (cacheSample != nullptr) {
-        cacheSample->sample = sample;
-        cacheSample->offset = 0;
-        cacheSample->trackId = trackId;
-        if (sampleIndex == UINT32_MAX) {
-            auto track = FindTrackById(static_cast<int32_t>(trackId));
-            cacheSample->sampleIndex = track ? track->currentSampleIndex : 0;
-        } else {
-            cacheSample->sampleIndex = sampleIndex;
-        }
-        (void)PushTrackCache(trackId, cacheSample);
-        ret = CheckCacheDataLimit(trackId);
-        uint32_t cacheBytes = GetTrackCacheDataSize(trackId);
-        if (cacheBytes < UINT32_MAX) {
-            MaybeNotifyCachePressure(trackId, cacheBytes);
-        }
-    }
-    return ret;
+    cacheSample->sample = sample;
+    return AddMPEG4SampleToCacheQueue(cacheSample, trackId, sampleIndex);
 }
 
 Status MPEG4DemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
@@ -2685,7 +2677,6 @@ Status MPEG4DemuxerPlugin::ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> ds
 
 Status MPEG4DemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> outBuffer)
 {
-    FALSE_RETURN_V_MSG_E(outBuffer != nullptr, Status::ERROR_NULL_POINTER, "Eos buffer is nullptr");
     outBuffer->pts_ = 0;
     outBuffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
     MEDIA_LOG_D("Read to end");
@@ -2744,8 +2735,6 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(const SampleReadInfo& sampleInfo,
     std::shared_ptr<AVBuffer> outBuffer, int32_t dataSize, bool memoryNotEnough)
 {
     auto track = FindTrackById(sampleInfo.trackId);
-    FALSE_RETURN_V_MSG_E(outBuffer != nullptr && outBuffer->memory_ != nullptr,
-        Status::ERROR_INVALID_PARAMETER, "AVBuffer is invalid");
     FALSE_RETURN_V_MSG_E(dataSize >= 0 && dataSize <= outBuffer->memory_->GetCapacity(),
         Status::ERROR_INVALID_BUFFER_SIZE, "Invalid buffer data size");
     int32_t trackTimeScale = track->timeScale;
@@ -2760,10 +2749,8 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(const SampleReadInfo& sampleInfo,
     outBuffer->dts_ = attr.dtsUs;
     outBuffer->duration_ = attr.durationUs;
     outBuffer->memory_->SetSize(dataSize);
-    if (outBuffer->meta_ != nullptr) {
-        outBuffer->meta_->Set<Tag::BUFFER_DECODING_TIMESTAMP>(attr.dtsUs);
-        outBuffer->meta_->Set<Tag::BUFFER_DURATION>(attr.durationUs);
-    }
+    outBuffer->meta_->Set<Tag::BUFFER_DECODING_TIMESTAMP>(attr.dtsUs);
+    outBuffer->meta_->Set<Tag::BUFFER_DURATION>(attr.durationUs);
     MEDIA_LOG_D("[%{public}u]CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "]",
         sampleInfo.trackId, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_);
     outBuffer->flag_ = GetFlags(attr.flag, memoryNotEnough);
@@ -2947,15 +2934,11 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
     // copy data
     const uint8_t *writeData = mpeg4Sample->sample->data.get() + mpeg4Sample->offset;
     if (writeData != nullptr && copySize > 0) {
-        FALSE_RETURN_V_MSG_E(outBuffer->memory_ != nullptr, Status::ERROR_NULL_POINTER, "Memory is nullptr");
         int32_t writeResult = outBuffer->memory_->Write(writeData, copySize, 0);
         FALSE_RETURN_V_MSG_E(writeResult >= 0, Status::ERROR_INVALID_OPERATION, "Memory write failed");
         DumpAVBufferData(writeData, trackIndex, copySize, outBuffer->pts_);
     }
-
-    auto track = FindTrackById(trackIndex);
     SetDrmCencInfo(trackIndex, outBuffer, mpeg4Sample->sample->size, oldSize, mpeg4Sample->sampleIndex);
-
     if (copySize < remainSize) {
         FALSE_RETURN_V_MSG_E(mpeg4Sample->offset <= INT32_MAX - copySize, Status::ERROR_INVALID_DATA,
             "Invalid offset [" PUBLIC_LOG_D32 "] copySize [" PUBLIC_LOG_D32 "]", mpeg4Sample->offset, copySize);
