@@ -116,7 +116,7 @@ extern const char *OH_MD_KEY_VIDEO_METADATA_ROI_SEM_LABEL;
  * Set the value to 1 to enable low-power video call mode, or 0 to disable it.
  * If this key is not set, the encoder uses its default (non-low-power) mode.
  *
- * @since 26.0.0
+ * @since 26.1.0
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_WITH_LOWPOWER_CAMERA;
 

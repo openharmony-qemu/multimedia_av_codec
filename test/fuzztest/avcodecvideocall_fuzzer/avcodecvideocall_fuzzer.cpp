@@ -101,12 +101,12 @@ bool AvcodecVideoCall004FuzzTest(FuzzedDataProvider *fdp)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
     FuzzedDataProvider fdp(data, size);
-    int32_t choose = fdp.ConsumeIntegralInRange<int32_t>(ONE, FOUR);
-    if (choose == ONE) {
+    int32_t choose = fdp.ConsumeIntegralInRange<int32_t>(OHOS::ONE, OHOS::FOUR);
+    if (choose == OHOS::ONE) {
         OHOS::AvcodecVideoCall001FuzzTest(&fdp);
-    } else if (choose == TWO) {
+    } else if (choose == OHOS::TWO) {
         OHOS::AvcodecVideoCall002FuzzTest(&fdp);
-    } else if (choose == THREE) {
+    } else if (choose == OHOS::THREE) {
         OHOS::AvcodecVideoCall003FuzzTest(&fdp);
     } else {
         OHOS::AvcodecVideoCall004FuzzTest(&fdp);
