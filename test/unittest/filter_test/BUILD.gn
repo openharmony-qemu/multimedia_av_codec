@@ -96,7 +96,6 @@ ohos_unittest("filter_unit_test") {
       "./audio_decoder_adapter_unit_test.cpp",
       "./audio_sink_filter_unit_test.cpp",
       "./codec_capability_adapter_unit_test.cpp",
-      "./decoder_surface_filter_unit_test.cpp",
       "./demuxer_filter_unit_test.cpp",
       "./muxer_filter_unit_test.cpp",
       "./sei_parser_helper_unit_test.cpp",
@@ -107,6 +106,7 @@ ohos_unittest("filter_unit_test") {
       "./video_resize_filter_unit_test.cpp",
       "./surface_decoder_adapter_mock_unit_test.cpp",
       "./video_capture_filter_unit_test.cpp",
+      "./decoder_surface_filter_unit_test.cpp",
     ]
   }
 
