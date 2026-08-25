@@ -52,9 +52,6 @@ bool Vc1SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     vDecSample->defaultWidth = (width % EVEN_ADJUSTMENT != 0) ? width - 1 : width;
     int32_t height = std::clamp(fdp.ConsumeIntegral<int32_t>(), lengthMin, lengthMax);
     vDecSample->defaultHeight = (height % EVEN_ADJUSTMENT != 0) ? height - 1 : height;
-    size_t maxStrSize = 128;
-    vDecSample->randomName = fdp.ConsumeRandomLengthString(maxStrSize);
-    vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxStrSize);
     std::vector<int32_t> rotations = {0, 90, 180, 270};
     size_t index = fdp.ConsumeIntegralInRange<size_t>(0, rotations.size() - 1);
     vDecSample->defaultRotation = rotations[index];

@@ -53,9 +53,9 @@ void SetFormatValue(const uint8_t *data, size_t size)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MAX_INPUT_SIZE, intData1);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_WIDTH, intData2);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, intData3);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, intData4);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, intData5);
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, intData6);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, intData4 % 256);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, intData5 % 256);
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_PROFILE, intData6 % 256);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, intData7);
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_ROTATION, intData8);
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_DURATION, longData);
