@@ -23,8 +23,6 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecSuspend"};
 
-using OHOS::MediaAVCodec::CodecPerformanceLevel;
-
 const std::map<CodecPerformanceLevel, std::string> CODEC_PERFORMANCE_LEVEL_MAP = {
     {CodecPerformanceLevel::DEFAULT, "DEFAULT"},
     {CodecPerformanceLevel::HIGH,    "HIGH"},
