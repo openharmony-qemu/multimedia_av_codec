@@ -251,7 +251,7 @@ int32_t AVCodecServer::NotifyCamRegister(const bool camRegisterFlag)
     camRegisterFlag_ = camRegisterFlag;
     AVCODEC_LOGI("Server:camera notify update camregister status: %{public}s",
                  camRegisterFlag ? "registered" : "unregistered");
-    if (camRegisterFlag) {
+    if (camRegisterFlag_) {
         wptr<AVCodecServer> weakThis = this;
         AVCodecServerManager::GetInstance().RegisterCallback(
             [weakThis](const CodecParamInfo &codecParam, const std::string &forwardCallerName,
