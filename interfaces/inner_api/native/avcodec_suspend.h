@@ -18,6 +18,8 @@
 #define MEDIA_AVCODEC_SUSPEND_H
 
 #include <cstdint>
+#include <map>
+#include <string>
 #include <vector>
 
 namespace OHOS {
@@ -26,6 +28,17 @@ enum class CodecPerformanceLevel {
     DEFAULT,
     HIGH = UINT8_MAX,
 };
+
+inline const std::map<CodecPerformanceLevel, std::string> CODEC_PERFORMANCE_LEVEL_MAP = {
+    {CodecPerformanceLevel::DEFAULT, "DEFAULT"},
+    {CodecPerformanceLevel::HIGH,    "HIGH"},
+};
+
+inline std::string CodecPerformanceLevelToString(CodecPerformanceLevel level)
+{
+    auto it = CODEC_PERFORMANCE_LEVEL_MAP.find(level);
+    return it != CODEC_PERFORMANCE_LEVEL_MAP.end() ? it->second : "UNKNOWN";
+}
 
 class AVCodecSuspend {
 public:

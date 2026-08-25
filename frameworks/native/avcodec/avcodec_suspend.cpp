@@ -17,6 +17,7 @@
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
 #include "i_avcodec_service.h"
+#include <unistd.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecSuspend"};
@@ -43,6 +44,8 @@ int32_t AVCodecSuspend::SuspendActiveAll()
 
 int32_t AVCodecSuspend::SetCodecPerformanceWithPid(pid_t pid, CodecPerformanceLevel level)
 {
+    AVCODEC_LOGI("SetCodecPerformanceWithPid: callerPid=%{public}d, targetPid=%{public}d, level=%{public}s",
+        getpid(), pid, CodecPerformanceLevelToString(level).c_str());
     return AVCodecServiceFactory::GetInstance().SetCodecPerformanceWithPid(pid, level);
 }
 } // namespace MediaAVCodec
