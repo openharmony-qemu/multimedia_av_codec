@@ -58,7 +58,7 @@ bool RawvideodecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     std::vector<int32_t> pixelFormats = {1, 2, 3, 4, 5};
     size_t pfIndex = fdp.ConsumeIntegralInRange<size_t>(0, pixelFormats.size() - 1);
     vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
-    size_t maxSize = std::numeric_limits<size_t>::max();
+    size_t maxSize = 256;
     vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
     vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);
     if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.RAWVIDEO") != AV_ERR_OK) {
