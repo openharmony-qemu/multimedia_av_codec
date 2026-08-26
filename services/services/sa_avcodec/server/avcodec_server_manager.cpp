@@ -459,37 +459,37 @@ std::optional<CodecParamInfo> AVCodecServerManager::GetAndUpdateCodecParmInfoByP
     return std::nullopt;
 }
 
-void AVCodecServerManager::UpdateCodecParmInfoByInstanceId(int32_t instanceId, const InstanceInfo &info)
+void AVCodecServerManager::UpdateCodecParmInfoByInstanceId(int32_t instanceId, const InstanceInfo &updateInfo)
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     int32_t countEnc = 0;
     int32_t countDec = 0;
-    InstanceInfo instanceInfo;
+    InstanceInfo matchedInstance;
     bool found = false;
     for (auto iter = codecStubMap_.begin(); iter != codecStubMap_.end(); iter++) {
         if (iter->second.second.instanceId == instanceId) {
             found = true;
-            iter->second.second.codecParam.encWidth = info.codecParam.encWidth;
-            iter->second.second.codecParam.encHeight = info.codecParam.encHeight;
-            iter->second.second.codecParam.encBitrate = info.codecParam.encBitrate;
-            if (info.codecParam.encPowermode != -1)
-                iter->second.second.codecParam.encPowermode = info.codecParam.encPowermode;
-            instanceInfo = iter->second.second;
+            iter->second.second.codecParam.encWidth = updateInfo.codecParam.encWidth;
+            iter->second.second.codecParam.encHeight = updateInfo.codecParam.encHeight;
+            iter->second.second.codecParam.encBitrate = updateInfo.codecParam.encBitrate;
+            if (updateInfo.codecParam.encPowermode != -1)
+                iter->second.second.codecParam.encPowermode = updateInfo.codecParam.encPowermode;
+            matchedInstance = iter->second.second;
         }
-        if (iter->second.second.caller.processName == info.caller.processName &&
+        if (iter->second.second.caller.processName == updateInfo.caller.processName &&
             iter->second.second.codecType == AVCODEC_TYPE_VIDEO_ENCODER)
             countEnc++;
-        if (iter->second.second.caller.processName == info.caller.processName &&
+        if (iter->second.second.caller.processName == updateInfo.caller.processName &&
             iter->second.second.codecType == AVCODEC_TYPE_VIDEO_DECODER)
             countDec++;
     }
-    bool valid = (info.codecParam.encPowermode == 0 ||
-                 (info.codecParam.encPowermode == 1 && countEnc == 1) ||
-                 (info.codecParam.encPowermode == -1 && countEnc == 1 && countDec == 1));
-    if (found && callback_ && valid && instanceInfo.codecParam.encPowermode != -1) {
-        callback_(instanceInfo.codecParam,
-                  instanceInfo.forwardCaller.processName,
-                  instanceInfo.caller.processName);
+    bool valid = (updateInfo.codecParam.encPowermode == 0 ||
+                 (updateInfo.codecParam.encPowermode == 1 && countEnc == 1) ||
+                 (updateInfo.codecParam.encPowermode == -1 && countEnc == 1 && countDec == 1));
+    if (found && callback_ && valid && matchedInstance.codecParam.encPowermode != -1) {
+        callback_(matchedInstance.codecParam,
+                  matchedInstance.forwardCaller.processName,
+                  matchedInstance.caller.processName);
         }
 }
 
