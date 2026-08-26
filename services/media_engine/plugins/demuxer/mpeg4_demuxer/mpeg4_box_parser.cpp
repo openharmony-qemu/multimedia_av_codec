@@ -2299,6 +2299,7 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
         dataOffset += FULLBOX_PREFIX_SIZE;
         dataSize -= FULLBOX_PREFIX_SIZE;
     }
+    lastTrack_->codecParms.hasValidExtradata = false;
     if (lastTrack_->codecParms.data != nullptr) {
         MEDIA_LOG_W("CodecConfig already exists, replacing with new data. Old size: " PUBLIC_LOG_D64 ", New size: "
             PUBLIC_LOG_D64, lastTrack_->codecParms.extradataSize, dataSize);

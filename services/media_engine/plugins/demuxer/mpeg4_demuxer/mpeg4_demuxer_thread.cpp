@@ -52,11 +52,9 @@ int32_t MPEG4DemuxerPlugin::GetSampleSizeWithCodecConfig(const MediaInfo& mediaI
     const std::shared_ptr<Sample>& sample, uint32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr, 0, "Sample is nullptr");
-    auto track = FindTrackById(trackId);
-    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, 0, "Track is nullptr");
     int32_t sampleSize = sample->size;
-    std::string mime;
-    std::vector<uint8_t> extradata {};
+    auto track = FindTrackById(trackId);
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, sampleSize, "Track is nullptr");
     FALSE_RETURN_V_NOLOG(sample->flag & Sample::SampleFlag::SYNC_FRAME, sampleSize);
     if (HaveValidParserForThread(track->sampleHelper->mimeType_) && track->codecParms.hasValidExtradata) {
         int64_t extradataSize = track->codecParms.extradataSize;

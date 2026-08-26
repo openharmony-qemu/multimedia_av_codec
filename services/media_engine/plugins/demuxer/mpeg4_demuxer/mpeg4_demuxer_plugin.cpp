@@ -1731,6 +1731,7 @@ Status MPEG4DemuxerPlugin::FillDrmSubsamples(MetaDrmCencInfo& cencInfo,
 
 void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta &format, uint32_t trackIndex)
 {
+    track.codecParms.hasValidExtradata = false;
     uint8_t *extradata = track.codecParms.data.get();
     int32_t extradataSize = track.codecParms.extradataSize;
     std::string mime;
@@ -2932,8 +2933,12 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
     outBuffer->flag_ = GetFlags(mpeg4Sample->sample->flag, copySize != remainSize);
 
     // copy data
-    const uint8_t *writeData = mpeg4Sample->sample->data.get() + mpeg4Sample->offset;
-    if (writeData != nullptr && copySize > 0) {
+    if (copySize > 0) {
+        FALSE_RETURN_V_MSG_E(mpeg4Sample->sample->data != nullptr && mpeg4Sample->offset >= 0 &&
+            mpeg4Sample->offset <= mpeg4Sample->sample->size &&
+            copySize <= mpeg4Sample->sample->size - mpeg4Sample->offset,
+            Status::ERROR_INVALID_DATA, "Invalid sample data range");
+        const uint8_t *writeData = mpeg4Sample->sample->data.get() + mpeg4Sample->offset;
         int32_t writeResult = outBuffer->memory_->Write(writeData, copySize, 0);
         FALSE_RETURN_V_MSG_E(writeResult >= 0, Status::ERROR_INVALID_OPERATION, "Memory write failed");
         DumpAVBufferData(writeData, trackIndex, copySize, outBuffer->pts_);
