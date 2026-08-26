@@ -43,6 +43,7 @@ public:
         bool hasValidExtradata = false;
         std::unique_ptr<uint8_t[]> data = nullptr;
         int64_t extradataSize = 0;
+        int64_t annexbExtradataSize = 0;
         TrackType trackType = INVALID_TYPE;
         HdrBoxInfo hdrBoxInfo {false, false};
         CodecParams() = default;

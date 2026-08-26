@@ -1732,6 +1732,7 @@ Status MPEG4DemuxerPlugin::FillDrmSubsamples(MetaDrmCencInfo& cencInfo,
 void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta &format, uint32_t trackIndex)
 {
     track.codecParms.hasValidExtradata = false;
+    track.codecParms.annexbExtradataSize = 0;
     uint8_t *extradata = track.codecParms.data.get();
     int32_t extradataSize = track.codecParms.extradataSize;
     std::string mime;
@@ -1745,7 +1746,7 @@ void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta 
         std::vector<uint8_t> extra(extradataSize);
         extra.assign(extradata, extradata + extradataSize);
         format.Set<Tag::MEDIA_CODEC_CONFIG>(extra);
-        track.codecParms.extradataSize = extradataSize;
+        track.codecParms.annexbExtradataSize = extradataSize;
         track.codecParms.hasValidExtradata = true;
     }
 }

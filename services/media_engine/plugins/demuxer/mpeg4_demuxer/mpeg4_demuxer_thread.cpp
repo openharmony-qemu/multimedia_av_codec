@@ -56,7 +56,7 @@ int32_t MPEG4DemuxerPlugin::GetSampleSizeWithCodecConfig(const std::shared_ptr<S
     FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, sampleSize, "Track is nullptr");
     FALSE_RETURN_V_NOLOG(sample->flag & Sample::SampleFlag::SYNC_FRAME, sampleSize);
     if (HaveValidParserForThread(track->sampleHelper->mimeType_) && track->codecParms.hasValidExtradata) {
-        int64_t extradataSize = track->codecParms.extradataSize;
+        int64_t extradataSize = track->codecParms.annexbExtradataSize;
         FALSE_RETURN_V_MSG_E(extradataSize >= 0 && extradataSize < INT32_MAX, 0, "extradataSize overflow");
         int32_t newSampleSize = 0;
         FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(sampleSize, static_cast<int32_t>(extradataSize), &newSampleSize),
