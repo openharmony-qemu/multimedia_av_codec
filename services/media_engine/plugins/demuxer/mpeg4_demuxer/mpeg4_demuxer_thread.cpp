@@ -830,7 +830,7 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
 
     auto pending = pendingWebVttSamples_.find(trackId);
     if (mpeg4Sample->isVttc) {
-        if (pending != pendingWebVttSamples_.end()) {
+        if (pending != pendingWebVttSamples_.end() && pending->second != nullptr) {
             UpdateWebVTTDuration(pending->second->sample, mpeg4Sample->sample->pts);
             ret = AddMPEG4SampleToCacheQueue(pending->second, trackId, pending->second->sampleIndex);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add pending WebVTT cache failed");
@@ -839,7 +839,7 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
         return Status::OK;
     }
 
-    if (pending == pendingWebVttSamples_.end()) {
+    if (pending == pendingWebVttSamples_.end() || pending->second == nullptr) {
         return Status::OK;
     }
     UpdateWebVTTDuration(pending->second->sample, mpeg4Sample->sample->pts);
@@ -852,7 +852,7 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
 Status MPEG4DemuxerPlugin::FlushPendingWebVTTSample(uint32_t trackId)
 {
     auto iter = pendingWebVttSamples_.find(trackId);
-    if (iter == pendingWebVttSamples_.end()) {
+    if (iter == pendingWebVttSamples_.end() || iter->second == nullptr) {
         return Status::OK;
     }
     auto track = FindTrackById(static_cast<int32_t>(trackId));
