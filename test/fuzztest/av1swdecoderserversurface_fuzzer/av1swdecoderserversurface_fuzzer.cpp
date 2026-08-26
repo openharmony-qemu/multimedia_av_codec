@@ -14,6 +14,7 @@
  */
 #include <cstddef>
 #include <cstdint>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "av1serverdec_sample.h"
 using namespace std;
 using namespace OHOS;
