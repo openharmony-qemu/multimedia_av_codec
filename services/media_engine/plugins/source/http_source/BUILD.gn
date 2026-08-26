@@ -84,6 +84,13 @@ ohos_shared_library("media_plugin_HttpSource") {
     "netmanager_base:net_conn_manager_if",
    ]
 
+  version_script = "libmedia_plugin_HttpSource.map"
+ 
+  ldflags = [
+    "-Wl,--exclude-libs=libc++_static.a",
+    "-Wl,--exclude-libs=libhttp_curl_client.a",
+  ]
+
   relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
   part_name = "av_codec"
