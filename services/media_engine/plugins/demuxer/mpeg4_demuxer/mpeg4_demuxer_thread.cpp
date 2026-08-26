@@ -48,8 +48,7 @@ bool HaveValidParserForThread(const std::string& mime)
 }
 } // namespace
 
-int32_t MPEG4DemuxerPlugin::GetSampleSizeWithCodecConfig(const MediaInfo& mediaInfo,
-    const std::shared_ptr<Sample>& sample, uint32_t trackId)
+int32_t MPEG4DemuxerPlugin::GetSampleSizeWithCodecConfig(const std::shared_ptr<Sample>& sample, uint32_t trackId)
 {
     FALSE_RETURN_V_MSG_E(sample != nullptr, 0, "Sample is nullptr");
     int32_t sampleSize = sample->size;
@@ -667,7 +666,7 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
     if ((mpeg4Sample->sample->flag & Sample::SampleFlag::EOS) != 0) {
         return Status::END_OF_STREAM;
     }
-    sampleSize = GetSampleSizeWithCodecConfig(mediaInfo_, mpeg4Sample->sample, trackId);
+    sampleSize = GetSampleSizeWithCodecConfig(mpeg4Sample->sample, trackId);
     return Status::OK;
 }
 

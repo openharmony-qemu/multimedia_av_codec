@@ -3055,7 +3055,7 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
         sampleTrackId = sampleInfo.trackId;
     }
 
-    sampleSize = GetSampleSizeWithCodecConfig(mediaInfo_, sample, sampleTrackId);
+    sampleSize = GetSampleSizeWithCodecConfig(sample, sampleTrackId);
     return Status::OK;
 }
 

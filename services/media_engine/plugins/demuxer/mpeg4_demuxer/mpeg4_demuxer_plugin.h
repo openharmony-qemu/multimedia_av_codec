@@ -233,8 +233,7 @@ private:
     Status PrepareRefParserSample(std::shared_ptr<Sample>& sample, uint32_t sampleIndex);
     Status UpdateParserGopId(int32_t syncSamplesPtsSize);
     Status SelectProGopId();
-    int32_t GetSampleSizeWithCodecConfig(
-        const MediaInfo& mediaInfo, const std::shared_ptr<Sample>& sample, uint32_t trackId);
+    int32_t GetSampleSizeWithCodecConfig(const std::shared_ptr<Sample>& sample, uint32_t trackId);
 
     Status ParseMoof(int64_t offset);
     Status HasCodecParameters();
