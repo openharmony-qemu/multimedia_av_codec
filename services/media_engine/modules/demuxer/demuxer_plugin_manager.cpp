@@ -607,7 +607,14 @@ Status DemuxerPluginManager::InitPlugin(std::shared_ptr<BaseStreamDemuxer> strea
     if (isPlayerMode_) {
         configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
     }
-    
+
+    const int64_t readTimeoutMs = readTimeoutForInitSeekMs_.load(std::memory_order_acquire);
+    if (readTimeoutMs >= 0) {
+        Status timeoutRet = streamInfoMap_[id].plugin->SetReadTimeoutForInitSeek(readTimeoutMs);
+        if (timeoutRet != Status::OK) {
+            MEDIA_LOG_E("Set read timeout failed, ret: " PUBLIC_LOG_D32, static_cast<int32_t>(timeoutRet));
+        }
+    }
     Status st = streamInfoMap_[id].plugin->SetDataSource(streamInfoMap_[id].dataSource, configs);
     if (st == Status::ERROR_NOT_ENOUGH_DATA) {
         int32_t offset = 0;
@@ -791,6 +798,9 @@ Status DemuxerPluginManager::SingleStreamSeekTo(int64_t seekTime, Plugins::SeekM
 
 Status DemuxerPluginManager::SetReadTimeoutForInitSeek(int64_t timeoutMs)
 {
+    if (timeoutMs >= 0) {
+        readTimeoutForInitSeekMs_.store(timeoutMs, std::memory_order_release);
+    }
     Status firstError = Status::OK;
     if (curVideoStreamID_ != INVALID_STREAM_OR_TRACK_ID &&
         streamInfoMap_.count(curVideoStreamID_) > 0 &&
