@@ -89,6 +89,20 @@ public:
     }
 };
 
+class RecordableEventReceiver : public Pipeline::EventReceiver {
+public:
+    explicit RecordableEventReceiver() {}
+
+    void OnEvent(const Event &event) override
+    {
+        lastEvent_ = event;
+        eventCount_++;
+    }
+
+    Event lastEvent_{};
+    int eventCount_ {0};
+};
+
 class MyAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
 public:
     uint32_t GetQueueSize()

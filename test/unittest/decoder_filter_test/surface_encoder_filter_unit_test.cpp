@@ -219,4 +219,40 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, SetWatermarkMode_001, TestSize.Level1)
     surfaceEncoder->mediaCodec_ = std::make_shared<OHOS::Media::SurfaceEncoderAdapter>();
     EXPECT_EQ(Status::OK, surfaceEncoder->SetWatermarkMode());
 }
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportFirstFramePts_001, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    surfaceEncoder->eventReceiver_ = nullptr;
+    int64_t firstFramePts = 1000;
+    surfaceEncoder->OnReportFirstFramePts(firstFramePts);
+    EXPECT_EQ(surfaceEncoder->eventReceiver_, nullptr);
+}
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportFirstFramePts_002, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    std::shared_ptr<RecordableEventReceiver> receiver = std::make_shared<RecordableEventReceiver>();
+    surfaceEncoder->eventReceiver_ = receiver;
+    int64_t firstFramePts = 1000;
+    surfaceEncoder->OnReportFirstFramePts(firstFramePts);
+    EXPECT_EQ(receiver->eventCount_, 1);
+    EXPECT_EQ(receiver->lastEvent_.param, firstFramePts);
+}
+
+HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportFirstFramePts_003, TestSize.Level1)
+{
+    std::shared_ptr<Pipeline::SurfaceEncoderFilter> surfaceEncoder = std::make_shared<Pipeline::SurfaceEncoderFilter>(
+        "test", Pipeline::FilterType::FILTERTYPE_VIDRESIZE);
+    std::shared_ptr<RecordableEventReceiver> receiver = std::make_shared<RecordableEventReceiver>();
+    surfaceEncoder->eventReceiver_ = receiver;
+    int64_t firstFramePts1 = 1000;
+    surfaceEncoder->OnReportFirstFramePts(firstFramePts1);
+    int64_t firstFramePts2 = 2000;
+    surfaceEncoder->OnReportFirstFramePts(firstFramePts2);
+    EXPECT_EQ(receiver->eventCount_, 2);
+    EXPECT_EQ(receiver->lastEvent_.param, firstFramePts2);
+}
 }
