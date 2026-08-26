@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include "vp9serverdec_sample.h"
+#include <fuzzer/FuzzedDataProvider.h>
 using namespace std;
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -27,9 +28,11 @@ bool Vp9SwdecoderServerSurfaceFuzzTest(const uint8_t *data, size_t size)
     if (size < sizeof(int32_t)) {
         return false;
     }
+    FuzzedDataProvider fdp(data, size);
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     Vp9VDecServerSample *vDecSample = new Vp9VDecServerSample();
-    vDecSample->fuzzData = data;
-    vDecSample->fuzzSize = size;
+    vDecSample->fuzzData = remaining_data.data();
+    vDecSample->fuzzSize = remaining_data.size();
     vDecSample->RunVideoServerSurfaceDecoder();
     vDecSample->WaitForEos();
     delete vDecSample;
