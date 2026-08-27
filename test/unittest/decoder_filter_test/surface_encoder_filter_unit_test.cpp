@@ -239,7 +239,7 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportFirstFramePts_002, TestSize.Level
     int64_t firstFramePts = 1000;
     surfaceEncoder->OnReportFirstFramePts(firstFramePts);
     EXPECT_EQ(receiver->eventCount_, 1);
-    EXPECT_EQ(receiver->lastEvent_.param, firstFramePts);
+    EXPECT_EQ(AnyCast<int64_t>(receiver->lastEvent_.param), firstFramePts);
 }
 
 HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportFirstFramePts_003, TestSize.Level1)
@@ -253,6 +253,24 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportFirstFramePts_003, TestSize.Level
     int64_t firstFramePts2 = 2000;
     surfaceEncoder->OnReportFirstFramePts(firstFramePts2);
     EXPECT_EQ(receiver->eventCount_, 2);
-    EXPECT_EQ(receiver->lastEvent_.param, firstFramePts2);
+    EXPECT_EQ(AnyCast<int64_t>(receiver->lastEvent_.param), firstFramePts2);
 }
 }
+
+class FilterTestAtExitGuard : public testing::Environment {
+public:
+    void SetUp() override
+    {
+        atexit([]() {
+            fflush(stdout);
+            fflush(stderr);
+            sync();
+            _exit(0);
+        });
+    }
+};
+
+static const int g_envReg = []() {
+    testing::AddGlobalTestEnvironment(new FilterTestAtExitGuard());
+    return 0;
+}();
