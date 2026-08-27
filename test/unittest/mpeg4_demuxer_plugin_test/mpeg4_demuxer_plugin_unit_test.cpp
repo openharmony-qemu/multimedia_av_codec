@@ -31,6 +31,7 @@
 
 #include "demuxer_data_reader.h"
 #include "file_server_demo.h"
+#include "avc_parser_impl.h"
 #include "mpeg4_sample_memory.h"
 #include "rbsp_context.h"
 
@@ -56,6 +57,7 @@ const std::string TEST_MP4_PATH_H264_B = "/data/test/media/test_264_B_Gop25_4sec
 const std::string TEST_MP4_PATH_H265_B = "/data/test/media/test_265_B_Gop25_4sec.mp4";
 const std::string TEST_MP4_PATH_HEVC_AUX = "/data/test/media/muxer_auxl_265.mp4";
 const std::string TEST_MP4_PATH_HEVC_AVC_AAC = "/data/test/media/muxer_auxl_265_264_aac.mp4";
+const std::string TEST_MP4_PATH_VVC = "/data/test/media/vvc_1280_720_8.mp4";
 const std::string TEST_MP4_PATH_WEBVTT = "/data/test/media/webvtt.mp4";
 const std::string TEST_MP4_MULTIPLE_VIDEO_TRACKS = "/data/test/media/h264_double_video_audio.mp4";
 const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
@@ -65,6 +67,7 @@ const std::string FFMPEG_MP4_PLUGIN_NAME = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
 const std::string MPEG4_PLUGIN_NAME = "avdemux_mpeg4";
 const std::string WEBVTT_MIME = "text/vtt";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
+const std::string VVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_vvc_parser.z.so";
 constexpr int32_t WAIT_RETRY_TIMES = 20;
 constexpr uint32_t INVALID_TRACK_ID = static_cast<uint32_t>(-1);
 constexpr uint32_t WEAK_NETWORK_SHORT_TIMEOUT_MS = 10;
@@ -2975,6 +2978,160 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleMemoryInvalidBranc
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParser_BufferConvert_001
+ * @tc.desc: Verify AVC pointer and caller-buffer AnnexB conversions produce identical data
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_BufferConvert_001, TestSize.Level1)
+{
+    const std::vector<uint8_t> avcc = {
+        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
+    };
+    const std::vector<uint8_t> packet = {0x00, 0x00, 0x00, 0x02, 0x65, 0x88};
+
+    Plugins::AvcParserImpl legacyParser;
+    auto legacyConfig = avcc;
+    ASSERT_TRUE(legacyParser.ConvertExtraDataToAnnexb(legacyConfig.data(), static_cast<int32_t>(legacyConfig.size())));
+    auto legacyPacket = packet;
+    uint8_t* legacyData = legacyPacket.data();
+    int32_t legacySize = static_cast<int32_t>(legacyPacket.size());
+    ASSERT_TRUE(legacyParser.ConvertPacketToAnnexb(&legacyData, legacySize, nullptr, 0, false));
+    const std::vector<uint8_t> expected(legacyData, legacyData + legacySize);
+
+    Plugins::AvcParserImpl bufferParser;
+    auto bufferConfig = avcc;
+    ASSERT_TRUE(bufferParser.ConvertExtraDataToAnnexb(bufferConfig.data(), static_cast<int32_t>(bufferConfig.size())));
+    std::vector<uint8_t> output(expected.size(), 0);
+    int32_t outputSize = 0;
+    Plugins::PacketConvertToBufferInfo convertInfo(outputSize);
+    convertInfo.srcData = packet.data();
+    convertInfo.srcDataSize = static_cast<int32_t>(packet.size());
+    convertInfo.outBuffer = output.data();
+    convertInfo.outBufferSize = static_cast<int32_t>(output.size());
+    ASSERT_TRUE(bufferParser.ConvertPacketToAnnexb(convertInfo));
+    EXPECT_EQ(outputSize, legacySize);
+    EXPECT_EQ(output, expected);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParser_BufferConvert_002
+ * @tc.desc: Verify an insufficient AVC output buffer does not advance parser state
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_BufferConvert_002, TestSize.Level1)
+{
+    const std::vector<uint8_t> avcc = {
+        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
+    };
+    const std::vector<uint8_t> packet = {0x00, 0x00, 0x00, 0x02, 0x65, 0x88};
+
+    Plugins::AvcParserImpl parser;
+    auto config = avcc;
+    ASSERT_TRUE(parser.ConvertExtraDataToAnnexb(config.data(), static_cast<int32_t>(config.size())));
+    std::vector<uint8_t> smallOutput(1, 0xA5);
+    int32_t outputSize = 0;
+    Plugins::PacketConvertToBufferInfo smallInfo(outputSize);
+    smallInfo.srcData = packet.data();
+    smallInfo.srcDataSize = static_cast<int32_t>(packet.size());
+    smallInfo.outBuffer = smallOutput.data();
+    smallInfo.outBufferSize = static_cast<int32_t>(smallOutput.size());
+    EXPECT_FALSE(parser.ConvertPacketToAnnexb(smallInfo));
+    EXPECT_GT(outputSize, smallInfo.outBufferSize);
+    EXPECT_EQ(smallOutput[0], 0xA5);
+
+    std::vector<uint8_t> output(static_cast<size_t>(outputSize), 0);
+    Plugins::PacketConvertToBufferInfo retryInfo(outputSize);
+    retryInfo.srcData = packet.data();
+    retryInfo.srcDataSize = static_cast<int32_t>(packet.size());
+    retryInfo.outBuffer = output.data();
+    retryInfo.outBufferSize = static_cast<int32_t>(output.size());
+    ASSERT_TRUE(parser.ConvertPacketToAnnexb(retryInfo));
+    EXPECT_EQ(outputSize, static_cast<int32_t>(output.size()));
+    EXPECT_EQ(output[0], 0x00);
+    EXPECT_EQ(output[3], 0x01);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParser_BufferConvert_003
+ * @tc.desc: Verify AVC buffer conversion preserves in-band parameter-set and frame-to-frame state
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_BufferConvert_003, TestSize.Level1)
+{
+    const std::vector<uint8_t> avcc = {
+        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
+    };
+    const std::vector<std::vector<uint8_t>> packets = {
+        {0x00, 0x00, 0x00, 0x02, 0x67, 0x4D, 0x00, 0x00, 0x00, 0x02, 0x68, 0xEF,
+            0x00, 0x00, 0x00, 0x02, 0x65, 0x88},
+        {0x00, 0x00, 0x00, 0x02, 0x41, 0x80},
+        {0x00, 0x00, 0x00, 0x02, 0x65, 0x88},
+    };
+
+    Plugins::AvcParserImpl legacyParser;
+    Plugins::AvcParserImpl bufferParser;
+    auto legacyConfig = avcc;
+    auto bufferConfig = avcc;
+    ASSERT_TRUE(legacyParser.ConvertExtraDataToAnnexb(legacyConfig.data(), static_cast<int32_t>(legacyConfig.size())));
+    ASSERT_TRUE(bufferParser.ConvertExtraDataToAnnexb(bufferConfig.data(), static_cast<int32_t>(bufferConfig.size())));
+
+    for (const auto& packet : packets) {
+        auto legacyPacket = packet;
+        uint8_t* legacyData = legacyPacket.data();
+        int32_t legacySize = static_cast<int32_t>(legacyPacket.size());
+        ASSERT_TRUE(legacyParser.ConvertPacketToAnnexb(&legacyData, legacySize, nullptr, 0, false));
+
+        std::vector<uint8_t> output(packet.size() + avcc.size(), 0);
+        int32_t outputSize = 0;
+        Plugins::PacketConvertToBufferInfo convertInfo(outputSize);
+        convertInfo.srcData = packet.data();
+        convertInfo.srcDataSize = static_cast<int32_t>(packet.size());
+        convertInfo.outBuffer = output.data();
+        convertInfo.outBufferSize = static_cast<int32_t>(output.size());
+        ASSERT_TRUE(bufferParser.ConvertPacketToAnnexb(convertInfo));
+        ASSERT_EQ(outputSize, legacySize);
+        EXPECT_TRUE(std::equal(output.begin(), output.begin() + outputSize, legacyData));
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParser_BufferConvert_004
+ * @tc.desc: Verify empty and malformed AVC packets fail without writing caller memory
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_BufferConvert_004, TestSize.Level1)
+{
+    const std::vector<uint8_t> avcc = {
+        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
+    };
+    const std::vector<uint8_t> malformedPacket = {0x00, 0x00, 0x00, 0x03, 0x65, 0x88};
+    Plugins::AvcParserImpl parser;
+    auto config = avcc;
+    ASSERT_TRUE(parser.ConvertExtraDataToAnnexb(config.data(), static_cast<int32_t>(config.size())));
+
+    std::vector<uint8_t> output(16, 0xA5);
+    int32_t outputSize = 0;
+    Plugins::PacketConvertToBufferInfo malformedInfo(outputSize);
+    malformedInfo.srcData = malformedPacket.data();
+    malformedInfo.srcDataSize = static_cast<int32_t>(malformedPacket.size());
+    malformedInfo.outBuffer = output.data();
+    malformedInfo.outBufferSize = static_cast<int32_t>(output.size());
+    EXPECT_FALSE(parser.ConvertPacketToAnnexb(malformedInfo));
+    EXPECT_EQ(outputSize, 0);
+    EXPECT_EQ(output, std::vector<uint8_t>(output.size(), 0xA5));
+
+    uint8_t emptyPacket = 0;
+    Plugins::PacketConvertToBufferInfo emptyInfo(outputSize);
+    emptyInfo.srcData = &emptyPacket;
+    emptyInfo.srcDataSize = 0;
+    emptyInfo.outBuffer = output.data();
+    emptyInfo.outBufferSize = static_cast<int32_t>(output.size());
+    EXPECT_FALSE(parser.ConvertPacketToAnnexb(emptyInfo));
+    EXPECT_EQ(outputSize, 0);
+    EXPECT_EQ(output, std::vector<uint8_t>(output.size(), 0xA5));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MP4_CompareWithFfmpeg_001
  * @tc.desc: Compare MPEG4 and FFmpeg demuxer full-frame read results on h264 mp4
  * @tc.type: FUNC
@@ -3157,6 +3314,44 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSampleZeroCopy_Compa
     auto ffmpegDigest = ReadFirstSample(ffmpegPlugin_, ffmpegMediaInfo_, ReadMode::ZERO_COPY);
     auto mpeg4Digest = ReadFirstSample(mpeg4Plugin_, mpeg4MediaInfo_, ReadMode::ZERO_COPY);
     ASSERT_NO_FATAL_FAILURE(CompareSampleDigest(mpeg4Digest, ffmpegDigest));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ReadSampleZeroCopy_Hevc_001
+ * @tc.desc: Verify HEVC copy and zero-copy reads produce the same first sample
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSampleZeroCopy_Hevc_001, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        GTEST_SKIP() << "hevc parser library not found";
+    }
+    InitMpeg4Plugin(TEST_MP4_PATH_H265_B);
+    auto copyDigest = ReadFirstSample(mpeg4Plugin_, mpeg4MediaInfo_, ReadMode::COPY);
+
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_H265_B);
+    auto zeroCopyDigest = ReadFirstSample(mpeg4Plugin_, mpeg4MediaInfo_, ReadMode::ZERO_COPY);
+    ASSERT_NO_FATAL_FAILURE(CompareSampleDigest(zeroCopyDigest, copyDigest));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ReadSampleZeroCopy_Vvc_001
+ * @tc.desc: Verify VVC copy and zero-copy reads produce the same first sample
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSampleZeroCopy_Vvc_001, TestSize.Level1)
+{
+    if (access(VVC_LIB_PATH.c_str(), F_OK) != 0) {
+        GTEST_SKIP() << "vvc parser library not found";
+    }
+    InitMpeg4Plugin(TEST_MP4_PATH_VVC);
+    auto copyDigest = ReadFirstSample(mpeg4Plugin_, mpeg4MediaInfo_, ReadMode::COPY);
+
+    ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
+    InitMpeg4Plugin(TEST_MP4_PATH_VVC);
+    auto zeroCopyDigest = ReadFirstSample(mpeg4Plugin_, mpeg4MediaInfo_, ReadMode::ZERO_COPY);
+    ASSERT_NO_FATAL_FAILURE(CompareSampleDigest(zeroCopyDigest, copyDigest));
 }
 
 /**

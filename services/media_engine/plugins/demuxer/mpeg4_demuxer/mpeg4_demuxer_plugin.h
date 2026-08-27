@@ -315,6 +315,14 @@ private:
         MPEG4SampleHelper::SampleIndexView view;
         bool found = false;
     };
+    struct AnnexbBufferConvertContext {
+        uint8_t* outputBuffer = nullptr;
+        int32_t outputBufferSize = 0;
+        int32_t outputDataSize = 0;
+        bool handled = false;
+        bool shouldConvert = false;
+        std::string mime;
+    };
     Status PrepareSeekToFrameByDts(int32_t trackId, int64_t seekTime, SeekToFrameByDtsContext& context);
     Status FindValidSample(SampleReadInfo& sampleInfo);
     Status GetUnseekableSampleInfo(SampleReadInfo& sampleInfo);
@@ -357,6 +365,18 @@ private:
     Status PrefetchSeekSample(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         uint32_t sampleIndex);
     Status ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> dstMpeg4Sample, const uint32_t trackId);
+    bool GetAnnexbOutputBufferSize(uint32_t trackId, const std::shared_ptr<Sample>& sample,
+        int32_t& outputBufferSize) const;
+    bool CanConvertSampleToAnnexbDirectly(const std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint32_t trackId,
+        std::string& mime) const;
+    Status PrepareAnnexbBufferConversion(const std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint32_t trackId,
+        AnnexbBufferConvertContext& context);
+    Status HandleAnnexbBufferConversionResult(const std::shared_ptr<Sample>& srcSample,
+        AnnexbBufferConvertContext& context, bool convertRet);
+    Status CopyOriginalSampleToAnnexbBuffer(const std::shared_ptr<Sample>& srcSample,
+        AnnexbBufferConvertContext& context);
+    Status TryConvertSampleToAnnexbToBuffer(const std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint32_t trackId,
+        AnnexbBufferConvertContext& context);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample);
     Status SetEosSample(std::shared_ptr<AVBuffer> sample, bool replaceMemory);
     Status GetSampleBySeekableStatus(
@@ -385,6 +405,13 @@ private:
     Status ProcessWebVTTSample(std::shared_ptr<MPEG4Sample> mpeg4Sample);
     Status WriteBuffer(
         uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer, std::shared_ptr<MPEG4Sample> mpeg4Sample);
+    void SetOutputBufferTiming(uint32_t trackIndex, const std::shared_ptr<AVBuffer>& outBuffer,
+        const std::shared_ptr<Sample>& sample);
+    void FinishDirectAnnexbBufferWrite(uint32_t trackIndex, const std::shared_ptr<AVBuffer>& outBuffer,
+        const std::shared_ptr<MPEG4Sample>& mpeg4Sample, int32_t oldSize,
+        const AnnexbBufferConvertContext& context);
+    Status WriteConvertedSampleToBuffer(uint32_t trackIndex, const std::shared_ptr<AVBuffer>& outBuffer,
+        const std::shared_ptr<MPEG4Sample>& mpeg4Sample, int32_t oldSize);
     Status WriteSampleMemory(
         uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer, std::shared_ptr<MPEG4Sample> mpeg4Sample);
     void CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<Sample> sample);
