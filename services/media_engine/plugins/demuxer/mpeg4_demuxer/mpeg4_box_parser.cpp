@@ -1382,6 +1382,8 @@ void MPEG4AtomParser::SetCodecConfig(std::shared_ptr<Track> track)
         std::vector<uint8_t> extra(track->codecParms.extradataSize);
         extra.assign(track->codecParms.data.get(), track->codecParms.data.get() + track->codecParms.extradataSize);
         mediaInfo_.tracks[track->trackIndex].Set<Tag::MEDIA_CODEC_CONFIG>(extra);
+        track->codecParms.annexbExtradataSize = track->codecParms.extradataSize;
+        track->codecParms.hasValidExtradata = true;
     } else {
         MEDIA_LOG_E("Set codec config failed");
     }
@@ -2298,6 +2300,8 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
         dataOffset += FULLBOX_PREFIX_SIZE;
         dataSize -= FULLBOX_PREFIX_SIZE;
     }
+    lastTrack_->codecParms.hasValidExtradata = false;
+    lastTrack_->codecParms.annexbExtradataSize = 0;
     if (lastTrack_->codecParms.data != nullptr) {
         MEDIA_LOG_W("CodecConfig already exists, replacing with new data. Old size: " PUBLIC_LOG_D64 ", New size: "
             PUBLIC_LOG_D64, lastTrack_->codecParms.extradataSize, dataSize);

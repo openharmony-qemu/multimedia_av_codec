@@ -66,13 +66,6 @@ public:
     Status GetLastPTSByTrackId(uint32_t trackId, int64_t &lastPTS) override;
     Status GetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo) override;
     void ResetEosStatus() override {}
-    Status SetDrmCencInfo(uint32_t trackId, std::shared_ptr<AVBuffer> sample, int32_t sampleSize,
-        int32_t oldSampleSize = -1, uint32_t sampleIndex = UINT32_MAX);
-    Status BuildDrmCencBaseInfo(const std::shared_ptr<MPEG4AtomParser::Track>& track, MetaDrmCencInfo& cencInfo);
-    Status FillDrmSampleEncryption(const std::shared_ptr<MPEG4AtomParser::Track>& track,
-        MetaDrmCencInfo& cencInfo, uint32_t localSampleIndex, int32_t sampleSize, int32_t oldSampleSize);
-    Status FillDrmSubsamples(MetaDrmCencInfo& cencInfo,
-        const MPEG4AtomParser::Mpeg4SampleEncryptionEntry& entry, int32_t sampleSize, int32_t oldSampleSize);
     bool IsRefParserSupported() override;
     Status ParserRefUpdatePos(int64_t timeStampMs, bool isForward = true) override;
     Status ParserRefInfo() override;
@@ -83,21 +76,6 @@ public:
     Status Dts2FrameId(int64_t dts, uint32_t &frameId) override;
     Status SeekMs2FrameId(int64_t seekMs, uint32_t &frameId) override;
     Status FrameId2SeekMs(uint32_t frameId, int64_t &seekMs) override;
-
-    bool IsMultiVideoTracks() const;
-    bool IsSupportedCodec() const;
-    bool GetReferenceParserCapability(int32_t& trackIndex, std::string& mimeType) const;
-    Status EnsureReferenceParserPrepared();
-    Status EnsureReferencePtsOrder();
-    Status GetReferenceSampleTime(uint32_t sampleIndex, int64_t& ptsUs, int64_t& dtsUs) const;
-    Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
-    Status GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &frameId);
-    Status RefParserInit();
-    Status EnsureParserRefInfoInitialized();
-    Status ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex);
-    Status PrepareRefParserSample(std::shared_ptr<Sample>& sample, uint32_t sampleIndex);
-    Status UpdateParserGopId(int32_t syncSamplesPtsSize);
-    Status SelectProGopId();
 
     Status GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
         const uint64_t relativePresentationTimeUs, uint32_t &index) override;
@@ -232,12 +210,36 @@ private:
     void GetAVTrackIds();
     Status ParseAVFirstFrames();
     bool FirstFrameValid(uint32_t trackIndex);
+    bool IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffer);
+
+    Status SetDrmCencInfo(uint32_t trackId, std::shared_ptr<AVBuffer> sample, int32_t sampleSize,
+        int32_t oldSampleSize = -1, uint32_t sampleIndex = UINT32_MAX);
+    Status BuildDrmCencBaseInfo(const std::shared_ptr<MPEG4AtomParser::Track>& track, MetaDrmCencInfo& cencInfo);
+    Status FillDrmSampleEncryption(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        MetaDrmCencInfo& cencInfo, uint32_t localSampleIndex, int32_t sampleSize, int32_t oldSampleSize);
+    Status FillDrmSubsamples(MetaDrmCencInfo& cencInfo,
+        const MPEG4AtomParser::Mpeg4SampleEncryptionEntry& entry, int32_t sampleSize, int32_t oldSampleSize);
+    bool IsMultiVideoTracks() const;
+    bool IsSupportedCodec() const;
+    bool GetReferenceParserCapability(int32_t& trackIndex, std::string& mimeType) const;
+    Status EnsureReferenceParserPrepared();
+    Status EnsureReferencePtsOrder();
+    Status GetReferenceSampleTime(uint32_t sampleIndex, int64_t& ptsUs, int64_t& dtsUs) const;
+    Status GetGopIdFromSeekPos(int64_t seekMs, int32_t &gopId);
+    Status GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &frameId);
+    Status RefParserInit();
+    Status EnsureParserRefInfoInitialized();
+    Status ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex);
+    Status PrepareRefParserSample(std::shared_ptr<Sample>& sample, uint32_t sampleIndex);
+    Status UpdateParserGopId(int32_t syncSamplesPtsSize);
+    Status SelectProGopId();
+    int32_t GetSampleSizeWithCodecConfig(const std::shared_ptr<Sample>& sample, uint32_t trackId);
 
     Status ParseMoof(int64_t offset);
     Status HasCodecParameters();
     Status ConvertElstTimescaleToMs();
     Status GetMediaInfo();
-    void GetSingleTrackInfo(const MPEG4AtomParser::Track& track, const uint32_t trackIndex);
+    void GetSingleTrackInfo(MPEG4AtomParser::Track& track, const uint32_t trackIndex);
     void ResetParam();
     void ReleaseReferenceParserState();
     Status PrepareTrackMetadata();
@@ -331,6 +333,8 @@ private:
     Status ReadSampleData(std::shared_ptr<MPEG4Sample>& mpeg4Sample, const SampleReadInfo& sampleInfo);
     Status AddSampleToCacheQueue(std::shared_ptr<Sample> sample,
         const uint32_t trackId, uint32_t sampleIndex = UINT32_MAX);
+    Status AddMPEG4SampleToCacheQueue(std::shared_ptr<MPEG4Sample> cacheSample,
+        const uint32_t trackId, uint32_t sampleIndex = UINT32_MAX);
     void ClearTrackCache(uint32_t trackId);
     bool HasTrackCache(uint32_t trackId);
     bool HasTrackCache(const std::shared_ptr<MPEG4AtomParser::Track>& track) const;
@@ -388,7 +392,7 @@ private:
     Status CheckCacheDataLimit(uint32_t trackId);
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ParseAVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
-    void ConvertCsdToAnnexb(const MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
+    void ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex);
     int SelectSeekTrack();
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
 
