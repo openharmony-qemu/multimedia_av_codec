@@ -241,6 +241,11 @@ void AVCodecServiceStub::OnReportStatisticsEvent(MessageParcel &data, MessagePar
     CHECK_AND_RETURN_LOG(data.ReadUint32(eventType), "Read statistics event type failed");
     Media::Meta meta;
     CHECK_AND_RETURN_LOG(meta.FromParcel(data), "Read statistics event meta failed");
+    pid_t callerPid = 0;
+    CHECK_AND_RETURN_LOG(meta.GetData(Media::Tag::AV_CODEC_CALLER_PID, callerPid), "Read caller pid failed");
+    pid_t ipcPid = static_cast<pid_t>(IPCSkeleton::GetCallingPid());
+    CHECK_AND_RETURN_LOG(callerPid == ipcPid, "Caller pid mismatch, caller %{public}d, ipc %{public}d", callerPid,
+                         ipcPid);
 
     ReportStatisticsEvent(static_cast<StatisticsEventType>(eventType), meta);
 }
