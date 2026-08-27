@@ -3,6 +3,7 @@
 .history
 .idea
 .clang-format
+.docs
 services/engine/plugin/plugins/parser
 services/media_engine/plugins/parser
 .opencode

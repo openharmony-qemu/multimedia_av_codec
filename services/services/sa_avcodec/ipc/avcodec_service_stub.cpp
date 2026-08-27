@@ -213,6 +213,11 @@ int32_t AVCodecServiceStub::OnSuspendActiveAll(MessageParcel &data, MessageParce
 
 int32_t AVCodecServiceStub::OnGetActiveSecureDecoderPids(MessageParcel &data, MessageParcel &reply)
 {
+    auto tokenId = IPCSkeleton::GetCallingTokenID();
+    auto tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    CHECK_AND_RETURN_RET_LOG(tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL,
+                             AVCS_ERR_INVALID_OPERATION, "Only native|shell tokens allowed(%{public}d)",
+                             static_cast<int32_t>(tokenType));
     std::vector<pid_t> pidList;
     int32_t ret = GetActiveSecureDecoderPids(pidList);
     (void)reply.WriteInt32Vector(pidList);
