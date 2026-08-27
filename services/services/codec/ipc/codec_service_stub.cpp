@@ -451,6 +451,8 @@ int32_t CodecServiceStub::GetInputFormat(Format &format)
 
 int32_t CodecServiceStub::GetCodecInfo(Format &format)
 {
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(IsCallerNativeOrShell(), AVCS_ERR_INVALID_OPERATION,
+                                      "requires native|shell token");
     std::shared_lock<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecServer_ != nullptr, AVCS_ERR_NO_MEMORY, "Codec server is nullptr");
     return codecServer_->GetCodecInfo(format);
