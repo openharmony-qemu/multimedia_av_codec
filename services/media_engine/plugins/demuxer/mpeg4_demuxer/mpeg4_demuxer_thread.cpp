@@ -562,13 +562,16 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
     FALSE_RETURN_V_MSG_E(outBuffer != nullptr, Status::ERROR_NULL_POINTER, "Buffer is nullptr");
     FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr, Status::ERROR_NULL_POINTER,
         "Sample is nullptr");
-    SetOutputBufferTiming(trackIndex, outBuffer, mpeg4Sample->sample);
+    outBuffer->pts_ = mpeg4Sample->sample->pts;
+    outBuffer->dts_ = mpeg4Sample->sample->dts;
+    outBuffer->duration_ = mpeg4Sample->sample->duration;
+    MEDIA_LOG_D("CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "], track: "
+        PUBLIC_LOG_U32, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_, trackIndex);
     CheckResetXPSSendStatus(trackIndex, mpeg4Sample->sample);
     int32_t oldSize = mpeg4Sample->sample->size;
     std::unique_ptr<uint8_t[]> directData;
     AnnexbBufferConvertContext context;
-    std::string mime;
-    if (CanConvertSampleToAnnexbDirectly(mpeg4Sample, trackIndex, mime)) {
+    if (CanConvertSampleToAnnexbDirectly(mpeg4Sample, trackIndex, context.isAvc)) {
         int32_t directBufferSize = 0;
         FALSE_RETURN_V_MSG_E(GetAnnexbOutputBufferSize(trackIndex, mpeg4Sample->sample, directBufferSize) &&
             directBufferSize > 0, Status::ERROR_INVALID_DATA, "Invalid annexb output buffer size");
@@ -576,6 +579,8 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
         FALSE_RETURN_V_MSG_E(directData != nullptr, Status::ERROR_NO_MEMORY, "Allocate annexb data failed");
         context.outputBuffer = directData.get();
         context.outputBufferSize = directBufferSize;
+        context.shouldConvert = true;
+        context.isPrepared = true;
     }
     if (ResetTrackCacheInfo(mpeg4Sample) == false) {
         MEDIA_LOG_D("Reset info failed");

@@ -2652,47 +2652,63 @@ Status MPEG4DemuxerPlugin::CheckCacheDataLimit(uint32_t trackId)
 }
 
 bool MPEG4DemuxerPlugin::GetAnnexbOutputBufferSize(uint32_t trackId, const std::shared_ptr<Sample>& sample,
-    int32_t& outputBufferSize) const
+    int32_t& outputBufferSize)
 {
     outputBufferSize = 0;
     if (sample == nullptr || sample->size < 0) {
         return false;
     }
-    std::vector<uint8_t> codecConfig;
-    (void)mediaInfo_.tracks[trackId].Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig);
-    if (codecConfig.size() > static_cast<size_t>(INT32_MAX) ||
-        sample->size > INT32_MAX - static_cast<int32_t>(codecConfig.size())) {
-        MEDIA_LOG_E("Annexb output buffer size overflow, sample=" PUBLIC_LOG_D32 ", config=" PUBLIC_LOG_ZU,
-            sample->size, codecConfig.size());
+    auto track = FindTrackById(trackId);
+    if (track == nullptr) {
         return false;
     }
-    outputBufferSize = sample->size + static_cast<int32_t>(codecConfig.size());
+    int32_t codecConfigSize = 0;
+    if (track->codecParms.hasValidExtradata) {
+        if (track->codecParms.annexbExtradataSize < 0 || track->codecParms.annexbExtradataSize > INT32_MAX) {
+            return false;
+        }
+        codecConfigSize = static_cast<int32_t>(track->codecParms.annexbExtradataSize);
+    }
+    if (sample->size > INT32_MAX - codecConfigSize) {
+        MEDIA_LOG_E("Annexb output buffer size overflow, sample=" PUBLIC_LOG_D32 ", config=" PUBLIC_LOG_D32,
+            sample->size, codecConfigSize);
+        return false;
+    }
+    outputBufferSize = sample->size + codecConfigSize;
     return true;
 }
 
 bool MPEG4DemuxerPlugin::CanConvertSampleToAnnexbDirectly(const std::shared_ptr<MPEG4Sample>& mpeg4Sample,
-    uint32_t trackId, std::string& mime) const
+    uint32_t trackId, bool& isAvc)
 {
-    mime.clear();
+    isAvc = false;
     if (mpeg4Sample == nullptr || mpeg4Sample->sample == nullptr || mpeg4Sample->isAnnexb ||
         mpeg4Sample->offset != 0 || mpeg4Sample->sample->data == nullptr) {
         return false;
     }
-    mediaInfo_.tracks[trackId].Get<Tag::MIME_TYPE>(mime);
+    auto track = FindTrackById(trackId);
+    if (track == nullptr || track->sampleHelper == nullptr) {
+        return false;
+    }
+    const std::string& mime = track->sampleHelper->mimeType_;
+    isAvc = mime == MimeType::VIDEO_AVC;
     return HaveValidParser(mime) && streamParsers_ != nullptr && streamParsers_->ParserIsInited(trackId);
 }
 
 Status MPEG4DemuxerPlugin::PrepareAnnexbBufferConversion(const std::shared_ptr<MPEG4Sample>& mpeg4Sample,
     uint32_t trackId, AnnexbBufferConvertContext& context)
 {
+    if (context.isPrepared) {
+        return Status::OK;
+    }
     context.handled = false;
     context.shouldConvert = false;
     context.outputDataSize = 0;
-    context.mime.clear();
+    context.isAvc = false;
     FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr,
         Status::ERROR_NULL_POINTER, "Sample is nullptr");
     if (context.outputBuffer == nullptr || context.outputBufferSize < 0 ||
-        !CanConvertSampleToAnnexbDirectly(mpeg4Sample, trackId, context.mime)) {
+        !CanConvertSampleToAnnexbDirectly(mpeg4Sample, trackId, context.isAvc)) {
         return Status::OK;
     }
 
@@ -2700,6 +2716,7 @@ Status MPEG4DemuxerPlugin::PrepareAnnexbBufferConversion(const std::shared_ptr<M
     FALSE_RETURN_V_MSG_E(GetAnnexbOutputBufferSize(trackId, mpeg4Sample->sample, requiredBufferSize),
         Status::ERROR_INVALID_DATA, "Invalid annexb output buffer size");
     context.shouldConvert = context.outputBufferSize >= requiredBufferSize;
+    context.isPrepared = true;
     return Status::OK;
 }
 
@@ -2726,13 +2743,13 @@ Status MPEG4DemuxerPlugin::HandleAnnexbBufferConversionResult(const std::shared_
         context.handled = true;
         return Status::OK;
     }
-    if (!convertRet && context.mime == MimeType::VIDEO_AVC && context.outputDataSize > context.outputBufferSize) {
+    if (!convertRet && context.isAvc && context.outputDataSize > context.outputBufferSize) {
         return Status::OK;
     }
     FALSE_RETURN_V_MSG_E(context.outputDataSize <= context.outputBufferSize, Status::ERROR_PACKET_CONVERT_FAILED,
         "Invalid annexb output size:" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32,
         context.outputDataSize, context.outputBufferSize);
-    FALSE_RETURN_V_MSG_E(context.mime != MimeType::VIDEO_AVC, Status::ERROR_PACKET_CONVERT_FAILED,
+    FALSE_RETURN_V_MSG_E(!context.isAvc, Status::ERROR_PACKET_CONVERT_FAILED,
         "Convert avc packet to annexb failed");
     FALSE_RETURN_V_MSG_E(convertRet || context.outputDataSize == 0, Status::ERROR_PACKET_CONVERT_FAILED,
         "Annexb conversion failed after producing output");
@@ -2762,8 +2779,12 @@ Status MPEG4DemuxerPlugin::ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> ds
 {
     Status ret = Status::OK;
     FALSE_RETURN_V_MSG_D(!dstMpeg4Sample->isAnnexb, ret, "Has converted");
-    std::string mime;
-    mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
+    auto track = FindTrackById(trackIndex);
+    if (track == nullptr || track->sampleHelper == nullptr) {
+        dstMpeg4Sample->isAnnexb = true;
+        return ret;
+    }
+    const std::string& mime = track->sampleHelper->mimeType_;
     if (HaveValidParser(mime) && streamParsers_ != nullptr &&
         streamParsers_->ParserIsInited(trackIndex)) {
         auto srcSample = dstMpeg4Sample->sample;

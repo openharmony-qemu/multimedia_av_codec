@@ -321,7 +321,8 @@ private:
         int32_t outputDataSize = 0;
         bool handled = false;
         bool shouldConvert = false;
-        std::string mime;
+        bool isPrepared = false;
+        bool isAvc = false;
     };
     Status PrepareSeekToFrameByDts(int32_t trackId, int64_t seekTime, SeekToFrameByDtsContext& context);
     Status FindValidSample(SampleReadInfo& sampleInfo);
@@ -366,9 +367,9 @@ private:
         uint32_t sampleIndex);
     Status ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> dstMpeg4Sample, const uint32_t trackId);
     bool GetAnnexbOutputBufferSize(uint32_t trackId, const std::shared_ptr<Sample>& sample,
-        int32_t& outputBufferSize) const;
+        int32_t& outputBufferSize);
     bool CanConvertSampleToAnnexbDirectly(const std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint32_t trackId,
-        std::string& mime) const;
+        bool& isAvc);
     Status PrepareAnnexbBufferConversion(const std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint32_t trackId,
         AnnexbBufferConvertContext& context);
     Status HandleAnnexbBufferConversionResult(const std::shared_ptr<Sample>& srcSample,
