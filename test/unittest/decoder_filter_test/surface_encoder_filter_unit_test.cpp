@@ -256,21 +256,3 @@ HWTEST_F(SurfaceEncoderFilterUnitTest, OnReportFirstFramePts_003, TestSize.Level
     EXPECT_EQ(AnyCast<int64_t>(receiver->lastEvent_.param), firstFramePts2);
 }
 }
-
-class FilterTestAtExitGuard : public testing::Environment {
-public:
-    void SetUp() override
-    {
-        atexit([]() {
-            fflush(stdout);
-            fflush(stderr);
-            sync();
-            _exit(0);
-        });
-    }
-};
-
-static const int g_envReg = []() {
-    testing::AddGlobalTestEnvironment(new FilterTestAtExitGuard());
-    return 0;
-}();
