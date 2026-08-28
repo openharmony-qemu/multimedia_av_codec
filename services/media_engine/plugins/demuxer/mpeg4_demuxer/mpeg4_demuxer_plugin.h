@@ -413,6 +413,8 @@ private:
         const AnnexbBufferConvertContext& context);
     Status WriteConvertedSampleToBuffer(uint32_t trackIndex, const std::shared_ptr<AVBuffer>& outBuffer,
         const std::shared_ptr<MPEG4Sample>& mpeg4Sample, int32_t oldSize);
+    Status ConvertSampleMemoryToAnnexb(uint32_t trackIndex, const std::shared_ptr<MPEG4Sample>& mpeg4Sample,
+        std::unique_ptr<uint8_t[]>& directData, AnnexbBufferConvertContext& context);
     Status WriteSampleMemory(
         uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer, std::shared_ptr<MPEG4Sample> mpeg4Sample);
     void CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<Sample> sample);

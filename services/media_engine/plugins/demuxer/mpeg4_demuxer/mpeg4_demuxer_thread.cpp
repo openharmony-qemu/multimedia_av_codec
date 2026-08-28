@@ -571,6 +571,24 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
     int32_t oldSize = mpeg4Sample->sample->size;
     std::unique_ptr<uint8_t[]> directData;
     AnnexbBufferConvertContext context;
+    Status ret = ConvertSampleMemoryToAnnexb(trackIndex, mpeg4Sample, directData, context);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert annexb failed");
+
+    outBuffer->flag_ = GetFlags(mpeg4Sample->sample->flag, false);
+    auto sampleMemory = std::make_shared<MPEG4SampleMemory>(mpeg4Sample->sample, mpeg4Sample->offset);
+    FALSE_RETURN_V_MSG_E(sampleMemory != nullptr, Status::ERROR_NO_MEMORY, "Create sample memory failed");
+    outBuffer->memory_ = std::static_pointer_cast<AVMemory>(sampleMemory);
+    if (context.handled) {
+        DumpAVBufferData(mpeg4Sample->sample->data.get(), trackIndex, context.outputDataSize, outBuffer->pts_);
+    }
+    SetDrmCencInfo(trackIndex, outBuffer, mpeg4Sample->sample->size, oldSize, mpeg4Sample->sampleIndex);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::ConvertSampleMemoryToAnnexb(uint32_t trackIndex,
+    const std::shared_ptr<MPEG4Sample>& mpeg4Sample, std::unique_ptr<uint8_t[]>& directData,
+    AnnexbBufferConvertContext& context)
+{
     if (CanConvertSampleToAnnexbDirectly(mpeg4Sample, trackIndex, context.isAvc)) {
         int32_t directBufferSize = 0;
         FALSE_RETURN_V_MSG_E(GetAnnexbOutputBufferSize(trackIndex, mpeg4Sample->sample, directBufferSize) &&
@@ -600,15 +618,6 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
     if (SetTrackCacheInfo(mpeg4Sample) == false) {
         MEDIA_LOG_D("Set info failed");
     }
-
-    outBuffer->flag_ = GetFlags(mpeg4Sample->sample->flag, false);
-    auto sampleMemory = std::make_shared<MPEG4SampleMemory>(mpeg4Sample->sample, mpeg4Sample->offset);
-    FALSE_RETURN_V_MSG_E(sampleMemory != nullptr, Status::ERROR_NO_MEMORY, "Create sample memory failed");
-    outBuffer->memory_ = std::static_pointer_cast<AVMemory>(sampleMemory);
-    if (context.handled) {
-        DumpAVBufferData(mpeg4Sample->sample->data.get(), trackIndex, context.outputDataSize, outBuffer->pts_);
-    }
-    SetDrmCencInfo(trackIndex, outBuffer, mpeg4Sample->sample->size, oldSize, mpeg4Sample->sampleIndex);
     return Status::OK;
 }
 
