@@ -456,6 +456,56 @@ HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetCallingInfo_001, Test
  * @tc.desc: SetWillMuteWhenInterrupted
  * @tc.type: FUNC
  */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetVideoFirstFramePts_001, TestSize.Level1)
+{
+    audioCaptureFilter_->hasCalculateAVTime_ = false;
+    audioCaptureFilter_->startTime_ = 0;
+    audioCaptureFilter_->firstVideoFramePts_.store(-1);
+    int64_t testPts = 1000;
+    audioCaptureFilter_->SetVideoFirstFramePts(testPts);
+    EXPECT_EQ(audioCaptureFilter_->firstVideoFramePts_.load(), testPts);
+}
+
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetVideoFirstFramePts_002, TestSize.Level1)
+{
+    audioCaptureFilter_->hasCalculateAVTime_ = true;
+    audioCaptureFilter_->startTime_ = 500;
+    audioCaptureFilter_->firstVideoFramePts_.store(-1);
+    int64_t testPts = 1000;
+    audioCaptureFilter_->SetVideoFirstFramePts(testPts);
+    EXPECT_EQ(audioCaptureFilter_->firstVideoFramePts_.load(), testPts);
+}
+
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetVideoFirstFramePts_003, TestSize.Level1)
+{
+    audioCaptureFilter_->hasCalculateAVTime_ = true;
+    audioCaptureFilter_->startTime_ = 500;
+    audioCaptureFilter_->firstVideoFramePts_.store(-1);
+    int64_t testPts = 100;
+    audioCaptureFilter_->SetVideoFirstFramePts(testPts);
+    EXPECT_EQ(audioCaptureFilter_->firstVideoFramePts_.load(), -1);
+}
+
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetVideoFirstFramePts_004, TestSize.Level1)
+{
+    audioCaptureFilter_->hasCalculateAVTime_ = true;
+    audioCaptureFilter_->startTime_ = 500;
+    audioCaptureFilter_->firstVideoFramePts_.store(200);
+    int64_t testPts = 600;
+    audioCaptureFilter_->SetVideoFirstFramePts(testPts);
+    EXPECT_EQ(audioCaptureFilter_->firstVideoFramePts_.load(), 600);
+}
+
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetVideoFirstFramePts_005, TestSize.Level1)
+{
+    audioCaptureFilter_->hasCalculateAVTime_ = true;
+    audioCaptureFilter_->startTime_ = 500;
+    audioCaptureFilter_->firstVideoFramePts_.store(200);
+    int64_t testPts = 500;
+    audioCaptureFilter_->SetVideoFirstFramePts(testPts);
+    EXPECT_EQ(audioCaptureFilter_->firstVideoFramePts_.load(), 200);
+}
+
 HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetWillMuteWhenInterrupted_001, TestSize.Level1)
 {
     ASSERT_NE(audioCaptureFilter_, nullptr);
