@@ -31,6 +31,10 @@ namespace MPEG4 {
 constexpr uint32_t DEFAULT_FIELD_SIZE = 32;
 constexpr int64_t MAX_TRUN_SAMPLES = 1000000; //需要确定讨论
 constexpr uint32_t MAX_SAMPLE_TABLE_SAMPLES = static_cast<uint32_t>(MAX_TRUN_SAMPLES);
+constexpr uint32_t MAX_STTS_ENTRY_COUNT = 4 * 1024 * 1024;
+constexpr uint32_t MAX_STTS_SAMPLE_COUNT = 4 * 1024 * 1024;
+constexpr uint32_t MAX_CTTS_ENTRY_COUNT = 4 * 1024 * 1024;
+constexpr uint32_t MAX_CTTS_SAMPLE_COUNT = 4 * 1024 * 1024;
 constexpr int64_t NEXT_FRAME = 1;
 constexpr int64_t PREVIOUS_FRAME = 0;
 constexpr int64_t MAX_SAMPLES_PER_FRAME = 1024;
@@ -665,7 +669,8 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     }
 
     uint32_t numSttsEntries = GetU32Value(&header[4]);
-    FALSE_RETURN_V_MSG_E(numSttsEntries <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid stts entry count");
+    FALSE_RETURN_V_MSG_E(numSttsEntries <= MAX_STTS_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
+        "Invalid stts entry count");
     currentOffset += sizeof(uint64_t);
 
     if ((dataSize - sizeof(header)) / sizeof(SttsEntry) < numSttsEntries) {
@@ -712,7 +717,8 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
     }
 
     uint32_t numCttsEntries = GetU32Value(&header[4]);
-    FALSE_RETURN_V_MSG_E(numCttsEntries <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid ctts entry count");
+    FALSE_RETURN_V_MSG_E(numCttsEntries <= MAX_CTTS_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
+        "Invalid ctts entry count");
     currentOffset += sizeof(header);
 
     if ((dataSize - sizeof(header)) / sizeof(CttsEntry) < numCttsEntries) {
@@ -1549,7 +1555,8 @@ Status MPEG4SampleHelper::ValidateAndCountSttsSamples(uint32_t& sampleCount) con
     sampleCount = 0;
     for (const auto& entry : sttsEntry_) {
         uint32_t temp = 0;
-        if (entry.count == 0 || __builtin_add_overflow(sampleCount, entry.count, &temp)) {
+        if (entry.count == 0 || entry.count > MAX_STTS_SAMPLE_COUNT ||
+            __builtin_add_overflow(sampleCount, entry.count, &temp) || temp > MAX_STTS_SAMPLE_COUNT) {
             MEDIA_LOG_E("STTS count overflow: current=" PUBLIC_LOG_U32 ", add="
                 PUBLIC_LOG_U32, sampleCount, entry.count);
             return Status::ERROR_INVALID_DATA;
@@ -1565,8 +1572,8 @@ Status MPEG4SampleHelper::ValidateCttsEntries(uint32_t sttsSampleCount) const
     uint32_t cttsSampleCount = 0;
     for (const auto& entry : cttsEntry_) {
         uint32_t temp = 0;
-        if (entry.count == 0 || entry.count > MAX_SAMPLE_TABLE_SAMPLES ||
-            __builtin_add_overflow(cttsSampleCount, entry.count, &temp) || temp > MAX_SAMPLE_TABLE_SAMPLES) {
+        if (entry.count == 0 || entry.count > MAX_CTTS_SAMPLE_COUNT ||
+            __builtin_add_overflow(cttsSampleCount, entry.count, &temp) || temp > MAX_CTTS_SAMPLE_COUNT) {
             MEDIA_LOG_E("CTTS count overflow: current=" PUBLIC_LOG_U32 ", add="
                 PUBLIC_LOG_U32, cttsSampleCount, entry.count);
             return Status::ERROR_INVALID_DATA;
@@ -2215,8 +2222,8 @@ uint32_t MPEG4SampleHelper::CalculateSampleCount()
     uint32_t sampleCount = 0;
     for (const auto& entry : sttsEntry_) {
         uint32_t temp = 0;
-        FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_SAMPLE_TABLE_SAMPLES &&
-            !__builtin_add_overflow(sampleCount, entry.count, &temp) && temp <= MAX_SAMPLE_TABLE_SAMPLES,
+        FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_STTS_SAMPLE_COUNT &&
+            !__builtin_add_overflow(sampleCount, entry.count, &temp) && temp <= MAX_STTS_SAMPLE_COUNT,
             0, "sampleCount overflow");
         sampleCount = temp;
     }
