@@ -108,7 +108,7 @@ private:
     int32_t NotifyActive(MessageParcel &data, MessageParcel &reply);
     int32_t NotifySetCodecPerformance(MessageParcel &data, MessageParcel &reply);
     int32_t InnerRelease();
-    int32_t CheckInitCaller(AVCodecType type, const Media::Meta &callerInfo);
+    int32_t CheckInitCaller(AVCodecType type, Media::Meta &callerInfo);
     void OnActive();
 
     bool isServerReleased_ = false;
