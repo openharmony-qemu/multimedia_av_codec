@@ -23,6 +23,8 @@
 #include "native_avcodec_base.h"
 #include "avcodec_trace.h"
 #include "avcodec_sysevent.h"
+#include "avcodec_info.h"
+#include "codec_capability_adapter.h"
 #include "common/log.h"
 #include "parameter.h"
 
@@ -136,6 +138,12 @@ Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
         SetFaultEvent("SurfaceEncoderAdapter::Init Create codecServer failed", ret);
         return Status::ERROR_UNKNOWN;
     }
+    Format codecInfo;
+    if (codecServer_->GetCodecInfo(codecInfo) == 0) {
+        int32_t isHardware = 0;
+        codecInfo.GetIntValue(Media::Tag::MEDIA_IS_HARDWARE, isHardware);
+        isHardwareCodec_ = (isHardware == 1);
+    }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceEncoder");
         releaseBufferTask_->RegisterJob([this] {
@@ -236,11 +244,35 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
     if (!isTransCoderMode) {
         format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrame_);
     }
+    if (ret == 0 && isTransCoderMode) {
+        Status capRet = CheckTransCoderResolution();
+        FALSE_RETURN_V_MSG(capRet == Status::OK, capRet, "CheckTransCoderResolution failed");
+    }
     ret = codecServer_->Configure(format);
     if (ret != 0) {
         SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
     }
     return ret == 0 ? Status::OK : Status::ERROR_UNKNOWN;
+}
+
+Status SurfaceEncoderAdapter::CheckTransCoderResolution()
+{
+    auto capAdapter = std::make_shared<Pipeline::CodecCapabilityAdapter>();
+    capAdapter->Init();
+    MediaAVCodec::CapabilityData* capData = nullptr;
+    MediaAVCodec::AVCodecCategory category = isHardwareCodec_
+        ? MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE
+        : MediaAVCodec::AVCodecCategory::AVCODEC_SOFTWARE;
+    Status capRet = capAdapter->GetCapabilityByMime(codecMimeType_, true, category, capData);
+    if (capRet == Status::OK && capData != nullptr) {
+        MediaAVCodec::VideoCaps videoCaps(capData);
+        if (!videoCaps.IsSizeSupported(transCoderWidth_, transCoderHeight_)) {
+            MEDIA_LOG_E("Encoder does not support resolution in transcoder mode, "
+                "width: %{public}d, height: %{public}d", transCoderWidth_, transCoderHeight_);
+            return Status::ERROR_VID_ENC_RESOLUTION_UNSUPPORTED;
+        }
+    }
+    return Status::OK;
 }
 
 Status SurfaceEncoderAdapter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer)
@@ -1060,6 +1092,13 @@ void SurfaceEncoderAdapter::Clear()
 bool SurfaceEncoderAdapter::GetIsTransCoderMode()
 {
     return isTransCoderMode;
+}
+
+void SurfaceEncoderAdapter::SetTransCoderCapabilityCheckInfo(int32_t width, int32_t height)
+{
+    MEDIA_LOG_I("SetTransCoderCapabilityCheckInfo width: %{public}d, height: %{public}d", width, height);
+    transCoderWidth_ = width;
+    transCoderHeight_ = height;
 }
 } // namespace MEDIA
 } // namespace OHOS
