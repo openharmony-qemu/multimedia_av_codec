@@ -306,5 +306,13 @@ int32_t AVCodecVideoEncoderImpl::GetInputFormat(Format &format)
     AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
     return codecClient_->GetInputFormat(format);
 }
+
+int32_t AVCodecVideoEncoderImpl::GetCodecInfo(Format &format)
+{
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecClient_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Codec service is nullptr");
+ 
+    AVCODEC_FUNC_TRACE_WITH_TAG_CLIENT;
+    return codecClient_->GetCodecInfo(format);
+}
 } // namespace MediaAVCodec
 } // namespace OHOS
