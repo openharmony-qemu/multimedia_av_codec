@@ -169,6 +169,14 @@ public:
     virtual int32_t GetOutputFormat(Format &format) = 0;
 
     /**
+     * @brief Gets the codec info of the encoder.
+     *
+     * @param format Contains codec info such as MEDIA_IS_HARDWARE.
+     * @return Returns {@link AVCS_ERR_OK} if success; returns an error code otherwise.
+     */
+    virtual int32_t GetCodecInfo(Format &format) = 0;
+ 
+    /**
      * @brief Returns the output buffer to the encoder.
      *
      * This function must be called during running
