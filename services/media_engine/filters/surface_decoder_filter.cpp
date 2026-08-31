@@ -151,6 +151,13 @@ void SurfaceDecoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     instanceId_ = instanceId;
 }
 
+Status SurfaceDecoderFilter::SetTransCoderMode()
+{
+    MEDIA_LOG_I("SetTransCoderMode");
+    isTranscoderMode_ = true;
+    return Status::OK;
+}
+
 Status SurfaceDecoderFilter::ConfigureMediaCodecByMimeType(std::string codecMimeType, bool isHdrVivid)
 {
     FALSE_LOG_MSG_W(transcoderIsHdrVivid_ == isHdrVivid,
@@ -201,8 +208,13 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     if (ret != Status::OK) {
         MEDIA_LOG_E("mediaCodec Configure fail");
         if (eventReceiver_ != nullptr) {
-            eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
-                static_cast<int32_t>(MSERR_UNSUPPORT_VID_PARAMS)});
+            if (isTranscoderMode_ && ret == Status::ERROR_VID_DEC_RESOLUTION_UNSUPPORTED) {
+                eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                    static_cast<int32_t>(MSERR_VIDEO_RESOLUTION_OUT_OF_RANGE)});
+            } else {
+                eventReceiver_->OnEvent({"surface_decoder_filter", EventType::EVENT_ERROR,
+                    static_cast<int32_t>(MSERR_UNSUPPORT_VID_PARAMS)});
+            }
         }
     }
     return ret;
@@ -402,9 +414,14 @@ Status SurfaceDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<M
     Status ret = ConfigureMediaCodecByMimeType(codecMimeType_, isHdrVivid);
     FALSE_RETURN_V(ret == Status::OK, ret);
     meta_ = meta;
+    if (isTranscoderMode_ && mediaCodec_ != nullptr) {
+        mediaCodec_->SetTransCoderMode();
+    }
     ret = Configure(meta);
     if (ret != Status::OK) {
-        MEDIA_LOG_E("mediaCodec Configure fail");
+        MEDIA_LOG_E("mediaCodec Configure fail, ret: %{public}d", ret);
+        FALSE_RETURN_V_MSG(!isTranscoderMode_ || ret != Status::ERROR_VID_DEC_RESOLUTION_UNSUPPORTED,
+            ret, "decoder resolution out of range.");
     }
     onLinkedResultCallback_ = callback;
     return Status::OK;
