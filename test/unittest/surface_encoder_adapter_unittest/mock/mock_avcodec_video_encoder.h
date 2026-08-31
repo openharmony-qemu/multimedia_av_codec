@@ -38,6 +38,7 @@ public:
     MOCK_METHOD(int32_t, QueueInputBuffer, (uint32_t index), (override));
     MOCK_METHOD(int32_t, QueueInputParameter, (uint32_t index), (override));
     MOCK_METHOD(int32_t, GetOutputFormat, (Format &format), (override));
+    MOCK_METHOD(int32_t, GetCodecInfo, (Format &format), (override));
     MOCK_METHOD(int32_t, ReleaseOutputBuffer, (uint32_t index), (override));
     MOCK_METHOD(int32_t, SetParameter, (const Format &format), (override));
     MOCK_METHOD(int32_t, SetCallback, (const std::shared_ptr<MediaAVCodec::AVCodecCallback>
