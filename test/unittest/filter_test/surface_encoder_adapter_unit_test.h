@@ -178,6 +178,10 @@ public:
     {
         return 0;
     }
+    int32_t GetCodecInfo(Format &format)
+    {
+        return 0;
+    }
     int32_t SetCustomBuffer(std::shared_ptr<AVBuffer> buffer)
     {
         if (nullptr == buffer) {
