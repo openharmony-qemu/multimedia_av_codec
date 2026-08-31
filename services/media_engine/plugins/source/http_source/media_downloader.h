@@ -62,7 +62,6 @@ public:
     {
         return false;
     }
-    virtual bool GetBufferingTimeOut() = 0;
     virtual size_t GetContentLength() const = 0;
     virtual int64_t GetDuration() const = 0;
     virtual Seekable GetSeekable() const = 0;
@@ -76,7 +75,6 @@ public:
     }
     virtual void SetCallback(const std::shared_ptr<Callback>& cb) = 0;
     virtual void SetStatusCallback(StatusCallbackFunc cb) = 0;
-    virtual bool GetStartedStatus() = 0;
     virtual void GetDownloadInfo(DownloadInfo& downloadInfo)
     {
         MEDIA_LOG_E("GetDownloadInfo is unimplemented.");
@@ -179,9 +177,9 @@ public:
     }
 
     virtual void WaitForBufferingEnd() {}
-     
+
     virtual void SetIsReportedErrorCode() {}
-    
+
     virtual bool GetReadTimeOut(bool isDelay)
     {
         return false;

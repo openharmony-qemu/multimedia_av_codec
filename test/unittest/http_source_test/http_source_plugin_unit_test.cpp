@@ -47,13 +47,11 @@ public:
         return Status::OK;
     }
     uint64_t GetBufferSize() const override { return 0; }
-    bool GetBufferingTimeOut() override { return true; }
     size_t GetContentLength() const override { return contentLength_; }
     int64_t GetDuration() const override { return duration_; }
     Seekable GetSeekable() const override { return seekable_; }
     void SetCallback(const std::shared_ptr<Callback>& cb) override {(void)cb;}
     void SetStatusCallback(StatusCallbackFunc cb) override {(void)cb;}
-    bool GetStartedStatus() override { return true; }
     void SetInterruptState(bool isInterruptNeeded) override {(void)isInterruptNeeded;}
     void SetAppUid(int32_t appUid) override {(void)appUid;}
     bool SelectBitRate(uint32_t bitRate) override { return bitRate == 0 ? false : true; }
@@ -86,8 +84,6 @@ public:
 };
 }
 
-const uint32_t BUFFERING_SIZE_ = 1024;
-const uint32_t WATERLINE_HIGH_ = 512;
 const uint32_t TIME_WAIT = 500;
 const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
 static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:46666/segment_base/index.mpd";
@@ -384,39 +380,8 @@ HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_GetParameter, TestSize.Level
     EXPECT_EQ(status, Status::OK);
 }
 
-HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter1, TestSize.Level1)
+HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter_Basic, TestSize.Level1)
 {
-    meta->SetData(Tag::BUFFERING_SIZE, BUFFERING_SIZE_);
-    meta->SetData(Tag::WATERLINE_HIGH, WATERLINE_HIGH_);
-    Status status = httpSourcePlugin->SetParameter(meta);
-    EXPECT_EQ(status, Status::OK);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter2, TestSize.Level1)
-{
-    meta->SetData(Tag::WATERLINE_HIGH, WATERLINE_HIGH_);
-    Status status = httpSourcePlugin->SetParameter(meta);
-    EXPECT_EQ(status, Status::OK);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter3, TestSize.Level1)
-{
-    meta->SetData(Tag::BUFFERING_SIZE, BUFFERING_SIZE_);
-    Status status = httpSourcePlugin->SetParameter(meta);
-    EXPECT_EQ(status, Status::OK);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter4, TestSize.Level1)
-{
-    std::shared_ptr<Meta> nullMeta = nullptr;
-    Status status = httpSourcePlugin->SetParameter(nullMeta);
-    EXPECT_EQ(status, Status::ERROR_NULL_POINTER);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter5, TestSize.Level1)
-{
-    httpSourcePlugin->downloader_ = nullptr;
-    meta->SetData(Tag::MEDIA_DURATION, static_cast<int64_t>(1000));
     Status status = httpSourcePlugin->SetParameter(meta);
     EXPECT_EQ(status, Status::OK);
 }

@@ -76,7 +76,6 @@ public:
     void SetMediaDuration(int64_t duration) override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
-    bool GetStartedStatus() override;
     bool SeekToTime(int64_t seekTime, SeekMode mode) override;
     bool MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId) override;
     std::vector<uint32_t> GetBitRates() override;
@@ -95,7 +94,6 @@ public:
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     uint64_t GetBufferSize() const override;
     bool GetPlayable() override;
-    bool GetBufferingTimeOut() override;
     bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
@@ -125,6 +123,8 @@ private:
     void ReportErrorAndClose(const std::shared_ptr<DownloadRequest>& request,
         int32_t clientError, int32_t serverError);
     bool CheckRetryLimitReached(int32_t clientError, int32_t retryTimes);
+    void ReportAndStopDownload(const std::shared_ptr<DownloadRequest>& request,
+        int32_t clientError, int32_t serverError, const NetworkErrorInfo& networkErrorInfo);
     void NotifyError(NetworkErrorInfo networkErrorInfo);
     void ReportLoadingErrorEvent(const std::shared_ptr<DownloadRequest>& request,
         int32_t clientErrorCode, int32_t serverErrorCode);

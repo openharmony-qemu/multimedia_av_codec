@@ -60,10 +60,6 @@ public:
     {
         return 0;
     }
-    bool GetBufferingTimeOut() override
-    {
-        return false;
-    }
     size_t GetContentLength() const override
     {
         return 0;
@@ -83,10 +79,6 @@ public:
     void SetStatusCallback(StatusCallbackFunc cb) override
     {
         (void)cb;
-    }
-    bool GetStartedStatus() override
-    {
-        return false;
     }
     void SetInterruptState(bool isInterruptNeeded) override
     {
@@ -2014,7 +2006,6 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
     EXPECT_EQ(downloader->NeedRetry(request), false);
     downloader->GetDownloadInfo();
     downloader->GetBufferSize();
-    downloader->GetBufferingTimeOut();
     downloader->GetReadTimeOut(true);
     downloader->GetSegmentOffset();
     downloader->GetHLSDiscontinuity();
@@ -2028,7 +2019,6 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_001, TestSize.Level1)
     downloader->IsFlvLive();
     downloader->IsHlsFmp4();
     downloader->GetContentType();
-    downloader->GetStartedStatus();
     downloader->AutoSelectBitRate(bitRate);
     downloader->SetStartPts(1);
     downloader->SetExtraCache(1);
@@ -2061,12 +2051,10 @@ HWTEST_F(DownloaderUnitTest, DOWNLOADER_MONITOR_002, TestSize.Level1)
     EXPECT_EQ(downloader->NeedRetry(request), false);
     downloader->GetDownloadInfo();
     downloader->GetBufferSize();
-    downloader->GetBufferingTimeOut();
     downloader->GetReadTimeOut(true);
     downloader->GetSegmentOffset();
     downloader->GetHLSDiscontinuity();
     downloader->StopBufferring(true);
-    downloader->WaitForBufferingEnd();
     int32_t serverCode = 0;
     downloader->GetServerMediaServiceErrorCode(400, serverCode);
     downloader->GetServerMediaServiceErrorCode(101, serverCode);

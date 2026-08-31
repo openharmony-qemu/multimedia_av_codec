@@ -70,10 +70,6 @@ public:
     {
         return 0;
     }
-    bool GetBufferingTimeOut() override
-    {
-        return true;
-    }
     size_t GetContentLength() const override
     {
         return contentLength_;
@@ -95,10 +91,6 @@ public:
     {
         (void)cb;
         return;
-    }
-    bool GetStartedStatus() override
-    {
-        return true;
     }
     void SetInterruptState(bool isInterruptNeeded) override
     {

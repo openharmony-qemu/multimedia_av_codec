@@ -60,7 +60,6 @@ public:
     void SetMediaDuration(int64_t duration) override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
-    bool GetStartedStatus() override;
     void SetReadBlockingFlag(bool isReadBlockingAllowed) override;
     void SetDemuxerState(int32_t streamId) override;
     void SetDownloadErrorState() override;
@@ -76,10 +75,8 @@ public:
     void OnWriteBuffer(uint32_t len);
     void DownloadReport();
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
-    void UpdateCachedPercent(BufferingInfoType infoType);
     uint64_t GetBufferSize() const override;
     bool GetPlayable() override;
-    bool GetBufferingTimeOut() override;
     bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
     Status StopBufferring(bool isAppBackground) override;
@@ -126,7 +123,6 @@ private:
     uint32_t SaveCacheBufferData(uint8_t* data, uint32_t len, bool notBlock);
     Status ReadDelegate(unsigned char* buff, ReadDataInfo& readDataInfo);
     uint32_t SaveRingBufferData(uint8_t* data, uint32_t len);
-    void OnClientErrorEvent();
     Status CheckIsEosRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status CheckIsEosCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     bool HandleSeekHit(int64_t offset);
@@ -141,29 +137,18 @@ private:
     Status HandleRingBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
     Status HandleCacheBuffer(unsigned char* buff, ReadDataInfo& readDataInfo);
 
-    bool HandleBuffering();
-    bool StartBuffering(unsigned int& wantReadLength);
     uint64_t GetCurrentBufferSize() const;
-    bool HandleBreak();
     bool ChangeDownloadPos(bool isSeekHit);
-    void UpdateWaterLineAbove();
     void HandleCachedDuration();
-    bool CheckBufferingOneSeconds();
     double CalculateCurrentDownloadSpeed();
-    float GetCacheDuration(float ratio);
     void HandleDownloadWaterLine();
     void UpdateMinAndMaxReadOffset();
     void UpdateOffsetThresholds(uint64_t readOffsetTmp);
-    bool IsStartDurationOfFlvMultiStream();
-    bool StartBufferingCheck(unsigned int& wantReadLength);
-    bool CheckFirstFrameBuffering(unsigned int& wantReadLength);
-    size_t CalcCacheWaterLine(unsigned int wantReadLength);
     bool ClearHasReadBuffer();
     void ClearCacheBuffer();
     void CheckDownloadPos(unsigned int wantReadLength);
-    void HandleWaterline();
     bool CacheBufferFullLoop();
-    bool IsNeedBufferForPlaying();
+    bool HandleCacheBufferFull();
     uint32_t SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len);
     void AddParamForUrl(std::string& url, const std::string& key, const std::string& value);
     void ChooseStreamByResolution();
@@ -171,9 +156,6 @@ private:
         const std::shared_ptr<PlayMediaStream> &currentStream);
     uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
     bool CheckLoopTimeout(int64_t startLoopTime);
-    bool CheckAutoSelectBitrate();
-    uint64_t CalcAverageSpeed();
-    uint32_t CalcDesiredBitRate(uint64_t aveSpeed);
     void ReportBitRate();
     bool IsAutoSelectConditionOk();
     void WaitCacheBufferInit();
@@ -194,9 +176,6 @@ private:
     ConditionVariable cvReadWrite_;
     std::weak_ptr<Callback> callback_;
     StatusCallbackFunc statusCallback_ {nullptr};
-    std::atomic<bool> aboveWaterline_ {false};
-    std::atomic<bool> startedPlayStatus_ {false};
-    std::atomic<bool> isTimeOut_ {false};
     std::atomic<bool> downloadErrorState_ {false};
     size_t totalBufferSize_ {0};
     SteadyClock steadyClock_;
@@ -224,8 +203,6 @@ private:
     std::atomic<bool> isInterrupt_ {false};
     std::atomic<bool> isInterruptNeeded_{false};
 
-    std::atomic<size_t> waterLineAbove_ {0};
-    std::atomic<bool> isBuffering_ {false};
     std::atomic<bool> isFirstFrameArrived_ {false};
 
     struct RecordData {
@@ -241,14 +218,11 @@ private:
     uint64_t totalDownloadDuringTime_ {0};
     int32_t currentBitRate_ {0};
     uint64_t lastDurationRecord_ {0};
-    uint64_t lastCachedSize_ {0};
-    std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 
     std::atomic<int64_t> mediaDuration_ {0};
 
     std::atomic<size_t> wantedReadLength_ {0};
-    std::atomic<size_t> bufferingTime_ {0};
     std::atomic<size_t> readTime_ {0};
 
     uint64_t minReadOffset_ {0};
@@ -259,17 +233,9 @@ private:
 
     std::atomic<bool> isLargeOffsetSpan_ {false};
     int32_t stateChangeCount_ {0};
-    FairMutex bufferingEndMutex_ {};
-    ConditionVariable bufferingEndCond_;
     std::atomic<bool> isSeekWait_ {false};
     std::atomic<bool> isReportedErrorCode_ {false};
     std::atomic<bool> isNeedClearHasRead_ {false};
-    std::atomic<int32_t> expectOffset_ {-1};
-    std::atomic<int32_t> initCacheSize_ {-1};
-    Mutex initCacheMutex_ {};
-    double bufferDurationForPlaying_ {0};
-    uint64_t waterlineForPlaying_ {0};
-    std::atomic<bool> isDemuxerInitSuccess_ {false};
     std::atomic<bool> isTimeoutErrorNotified_ {false};
     size_t timeoutInterval_ = 0;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
@@ -282,7 +248,6 @@ private:
     uint64_t cachedDuration_ {0};
     std::atomic<bool> isAllowResume_ {false};
     int64_t flvStartPts_ {0};
-    uint64_t extraCache_ {0};
     MediaStreamList playMediaStreams_;
     std::atomic<bool> isSelectingBitrate_ {false};
     std::shared_ptr<PlayMediaStream> defaultStream_ {nullptr};

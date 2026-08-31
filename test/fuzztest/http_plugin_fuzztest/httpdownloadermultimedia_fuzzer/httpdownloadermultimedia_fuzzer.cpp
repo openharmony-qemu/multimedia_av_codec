@@ -178,8 +178,6 @@ void CallHttpDownloaderFuncs(std::shared_ptr<HttpMediaDownloader> httpMediaDownl
         return;
     }
     httpMediaDownloader->isFirstFrameArrived_ = true;
-    httpMediaDownloader->UpdateWaterLineAbove();
-    httpMediaDownloader->GetStartedStatus();
     httpMediaDownloader->GetBuffer();
     httpMediaDownloader->GetReadFrame();
     httpMediaDownloader->SetIsReportedErrorCode();
@@ -196,14 +194,8 @@ void CallHttpDownloaderFuncs(std::shared_ptr<HttpMediaDownloader> httpMediaDownl
     httpMediaDownloader->GetPlayable();
     httpMediaDownloader->GetReadTimeOut(true);
     httpMediaDownloader->SetAppUid(fdp.ConsumeIntegral<int32_t>());
-    httpMediaDownloader->GetCacheDuration(0);
-    httpMediaDownloader->GetCacheDuration(1);
     httpMediaDownloader->SetIsTriggerAutoMode(fdp.ConsumeIntegral<bool>());
-    httpMediaDownloader->CheckAutoSelectBitrate();
-    httpMediaDownloader->SetIsTriggerAutoMode(true);
-    httpMediaDownloader->CheckAutoSelectBitrate();
     httpMediaDownloader->IsAutoSelectConditionOk();
-    httpMediaDownloader->OnClientErrorEvent();
     httpMediaDownloader->GetMemorySize();
     httpMediaDownloader->GetCurUrl();
     httpMediaDownloader->SetInterruptState(fdp.ConsumeIntegral<bool>());
@@ -291,7 +283,6 @@ void HttpDownloaderFlvRun(FuzzedDataProvider &fdp)
     httpMediaDownloader->ChangeDownloadPos(false);
     DownloadInfo downloadInfo;
     httpMediaDownloader->GetDownloadInfo(downloadInfo);
-    httpMediaDownloader->OnClientErrorEvent();
     httpMediaDownloader->IsFlvLive();
     httpMediaDownloader->SetInterruptState(fdp.ConsumeIntegral<bool>());
     httpMediaDownloader->SeekRingBuffer(fdp.ConsumeIntegralInRange<int64_t>(0, 10240));  // 10240

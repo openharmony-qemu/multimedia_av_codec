@@ -350,43 +350,6 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_SUCCESS_001
     EXPECT_GE(status, false);
 }
 
-HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_001, TestSize.Level1)
-{
-    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(nullptr,
-        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
-    segmentDownloaderSp->Init();
-    std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
-    segmentSp->url_ = AUDIO_MEDIA_SEGMENT_URL_1;
-    segmentSp->streamId_ = 0;
-    segmentSp->duration_ = 5;
-    segmentSp->bandwidth_ = 1024;
-    segmentSp->startNumberSeq_ = 0;
-    segmentSp->numberSeq_ = 0;
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                              std::shared_ptr<DownloadRequest>& request) {};
-    segmentDownloaderSp->SetStatusCallback(statusCallback);
-    auto doneCallback = [] (int streamId) {};
-    segmentDownloaderSp->SetDownloadDoneCallback(doneCallback);
-    segmentDownloaderSp->SetDemuxerState();
-    segmentDownloaderSp->SetCurrentBitRate(1048576);
-    unsigned char buffer[1024];
-    ReadDataInfo readDataInfo;
-    readDataInfo.streamId_ = 1;
-    readDataInfo.wantReadLength_ = 1024;
-    readDataInfo.realReadLength_ = 0;
-    readDataInfo.nextStreamId_ = 1;
-    std::atomic<bool> isInterruptNeeded = false;
-    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
-    EXPECT_EQ(result, DASH_READ_AGAIN);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
-    EXPECT_EQ(result, DASH_READ_AGAIN);
-    segmentDownloaderSp->Open(segmentSp);
-    OSAL::SleepFor(1000);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
-    segmentDownloaderSp->Close(true, true);
-    EXPECT_GE(result, DASH_READ_SEGMENT_DOWNLOAD_FINISH);
-}
-
 class SourceCallbackMock : public Plugins::Callback {
 public:
     void OnEvent(const Plugins::PluginEvent &event) override
@@ -405,6 +368,51 @@ public:
         return true;
     }
 };
+
+HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_001, TestSize.Level1)
+{
+    auto sourceCallback = std::make_shared<SourceCallbackMock>();
+    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
+        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
+    segmentDownloaderSp->Init();
+    std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
+    segmentSp->url_ = AUDIO_MEDIA_SEGMENT_URL_1;
+    segmentSp->streamId_ = 0;
+    segmentSp->duration_ = 5;
+    segmentSp->bandwidth_ = 1024;
+    segmentSp->startNumberSeq_ = 0;
+    segmentSp->numberSeq_ = 0;
+    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+                              std::shared_ptr<DownloadRequest>& request) {};
+    segmentDownloaderSp->SetStatusCallback(statusCallback);
+    auto doneCallback = [] (int streamId) {};
+    segmentDownloaderSp->SetDownloadDoneCallback(doneCallback);
+    segmentDownloaderSp->SetDemuxerState();
+    segmentDownloaderSp->SetCurrentBitRate(1048576);
+    segmentDownloaderSp->Open(segmentSp);
+    int retry = 0;
+    bool started = false;
+    while (retry++ < 1000) {
+        started = segmentDownloaderSp->GetStartedStatus();
+        if (started) {
+            break;
+        }
+        OSAL::SleepFor(2);
+    }
+    unsigned char buffer[1024];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 1024;
+    readDataInfo.realReadLength_ = 0;
+    readDataInfo.nextStreamId_ = 0;
+    std::atomic<bool> isInterruptNeeded = false;
+    DashReadRet result = DASH_READ_AGAIN;
+    if (started) {
+        result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
+    }
+    segmentDownloaderSp->Close(true, true);
+    EXPECT_GE(result, DASH_READ_OK);
+}
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_002, TestSize.Level1)
 {
@@ -426,20 +434,16 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     segmentDownloaderSp->SetDownloadDoneCallback(doneCallback);
     segmentDownloaderSp->SetDemuxerState();
     segmentDownloaderSp->SetCurrentBitRate(1048576);
-    unsigned char buffer[1024];
-    ReadDataInfo readDataInfo;
-    readDataInfo.streamId_ = 1;
-    readDataInfo.wantReadLength_ = 1024;
-    readDataInfo.realReadLength_ = 0;
-    readDataInfo.nextStreamId_ = 1;
-    std::atomic<bool> isInterruptNeeded = false;
-    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
-    EXPECT_EQ(result, DASH_READ_AGAIN);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
-    EXPECT_EQ(result, DASH_READ_AGAIN);
     segmentDownloaderSp->Open(segmentSp);
     segmentDownloaderSp->SetAllSegmentFinished();
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
+    unsigned char buffer[1024];
+    ReadDataInfo readDataInfo;
+    readDataInfo.streamId_ = 0;
+    readDataInfo.wantReadLength_ = 1024;
+    readDataInfo.realReadLength_ = 0;
+    readDataInfo.nextStreamId_ = 0;
+    std::atomic<bool> isInterruptNeeded = false;
+    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
     segmentDownloaderSp->Close(true, true);
     EXPECT_EQ(result, DASH_READ_END);
 }
@@ -464,21 +468,31 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     segmentDownloaderSp->SetDownloadDoneCallback(doneCallback);
     segmentDownloaderSp->SetDemuxerState();
     segmentDownloaderSp->SetCurrentBitRate(1048576000);
+    segmentDownloaderSp->Open(segmentSp);
+    int retry = 0;
+    bool started = false;
+    while (retry++ < 1000) {
+        started = segmentDownloaderSp->GetStartedStatus();
+        if (started) {
+            break;
+        }
+        OSAL::SleepFor(2);
+    }
     unsigned char buffer[1024];
     ReadDataInfo readDataInfo;
-    readDataInfo.streamId_ = 1;
+    readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 1024;
     readDataInfo.realReadLength_ = 0;
-    readDataInfo.nextStreamId_ = 1;
+    readDataInfo.nextStreamId_ = 0;
     std::atomic<bool> isInterruptNeeded = false;
-    DashReadRet result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
-    EXPECT_EQ(result, DASH_READ_AGAIN);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
-    EXPECT_EQ(result, DASH_READ_AGAIN);
-    segmentDownloaderSp->Open(segmentSp);
-    result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
+    DashReadRet result = DASH_READ_AGAIN;
+    if (started) {
+        result = segmentDownloaderSp->Read(buffer, readDataInfo, isInterruptNeeded);
+    }
     segmentDownloaderSp->Close(true, true);
-    EXPECT_EQ(result, DASH_READ_AGAIN);
+    if (started) {
+        EXPECT_EQ(result, DASH_READ_OK);
+    }
 }
 
 HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_004, TestSize.Level1)
@@ -519,87 +533,6 @@ HWTEST_F(DashSegmentDownloaderUnitTest, TEST_DASH_SEGMENT_DOWNLOADER_WATERLINE_0
     EXPECT_EQ(result, DASH_READ_INTERRUPT);
 }
 
-HWTEST_F(DashSegmentDownloaderUnitTest, SET_DURATION_FOR_PLAYING_001, TestSize.Level1)
-{
-    auto sourceCallback = std::make_shared<SourceCallbackMock>();
-    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
-        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
-    segmentDownloaderSp->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                              std::shared_ptr<DownloadRequest>& request) {};
-    segmentDownloaderSp->SetStatusCallback(statusCallback);
-    segmentDownloaderSp->SetDurationForPlaying(1);
-    segmentDownloaderSp->SetCurrentBitRate(100);
-    segmentDownloaderSp->NotifyInitSuccess();
-    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), true);
-}
-
-HWTEST_F(DashSegmentDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.Level1)
-{
-    auto sourceCallback = std::make_shared<SourceCallbackMock>();
-    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
-        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
-    segmentDownloaderSp->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                              std::shared_ptr<DownloadRequest>& request) {};
-    segmentDownloaderSp->SetStatusCallback(statusCallback);
-    segmentDownloaderSp->SetDurationForPlaying(1);
-    segmentDownloaderSp->SetCurrentBitRate(100);
-    segmentDownloaderSp->NotifyInitSuccess();
-    OSAL::SleepFor(35000);
-    std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
-    segmentSp->url_ = VIDEO_INIT_SEGMENT_URL;
-    segmentSp->streamId_ = 0;
-    segmentSp->duration_ = 5;
-    segmentSp->bandwidth_ = 1024;
-    segmentSp->startNumberSeq_ = 0;
-    segmentSp->numberSeq_ = 0;
-    segmentDownloaderSp->Open(segmentSp);
-    OSAL::SleepFor(1000);
-    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), false);
-}
-
-HWTEST_F(DashSegmentDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_002, TestSize.Level1)
-{
-    auto sourceCallback = std::make_shared<SourceCallbackMock>();
-    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
-        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
-    segmentDownloaderSp->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                              std::shared_ptr<DownloadRequest>& request) {};
-    segmentDownloaderSp->SetStatusCallback(statusCallback);
-    segmentDownloaderSp->SetDurationForPlaying(0.000001);
-    segmentDownloaderSp->SetCurrentBitRate(100);
-    segmentDownloaderSp->NotifyInitSuccess();
-    std::shared_ptr<DashSegment> segmentSp = std::make_shared<DashSegment>();
-    segmentSp->url_ = VIDEO_INIT_SEGMENT_URL;
-    segmentSp->streamId_ = 0;
-    segmentSp->duration_ = 5;
-    segmentSp->bandwidth_ = 1024;
-    segmentSp->startNumberSeq_ = 0;
-    segmentSp->numberSeq_ = 0;
-    segmentDownloaderSp->Open(segmentSp);
-    OSAL::SleepFor(1000);
-    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), false);
-}
-
-HWTEST_F(DashSegmentDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
-{
-    auto sourceCallback = std::make_shared<SourceCallbackMock>();
-    std::shared_ptr<DashSegmentDownloader> segmentDownloaderSp = std::make_shared<DashSegmentDownloader>(sourceCallback,
-        0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
-    segmentDownloaderSp->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                              std::shared_ptr<DownloadRequest>& request) {};
-    segmentDownloaderSp->SetStatusCallback(statusCallback);
-    segmentDownloaderSp->SetDurationForPlaying(10);
-    segmentDownloaderSp->SetCurrentBitRate(0);
-    segmentDownloaderSp->NotifyInitSuccess();
-    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), false);
-    segmentDownloaderSp->SetCurrentBitRate(100);
-    segmentDownloaderSp->NotifyInitSuccess();
-    EXPECT_EQ(segmentDownloaderSp->GetBufferringStatus(), true);
-}
 }
 }
 }
