@@ -71,11 +71,13 @@ public:
     int64_t GetFrameNum();
     int64_t GetLastBufferPts();
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+    void SetTransCoderMode();
 
     std::shared_ptr<DecoderAdapterCallback> decoderAdapterCallback_;
 
 private:
     void ReleaseBuffer();
+    Status CheckTransCoderResolution(int32_t width, int32_t height);
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoDecoder> codecServer_;
     std::shared_ptr<Media::AVBufferQueue> inputBufferQueue_;
@@ -96,6 +98,9 @@ private:
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};
+    bool isTransCoderMode_ = false;
+    std::string codecMimeType_;
+    bool isHardwareCodec_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
