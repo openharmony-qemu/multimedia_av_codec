@@ -258,3 +258,38 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, AddStartPts_001, TestSize.Level1)
     bool ret = surfaceEncoderAdapter_->AddPauseResumePts(TEST_PAUSE_TIME_DEFAULT);
     EXPECT_TRUE(!ret);
 }
+
+/**
+ * @tc.name  : Test SetTransCoderCapabilityCheckInfo
+ * @tc.number: SetTransCoderCapabilityCheckInfo_001
+ * @tc.desc  : Test SetTransCoderCapabilityCheckInfo sets transCoderWidth_ and transCoderHeight_
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SetTransCoderCapabilityCheckInfo_001, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->SetTransCoderCapabilityCheckInfo(3840, 2160);
+    EXPECT_EQ(surfaceEncoderAdapter_->transCoderWidth_, 3840);
+    EXPECT_EQ(surfaceEncoderAdapter_->transCoderHeight_, 2160);
+}
+
+/**
+ * @tc.name  : Test SetTransCoderCapabilityCheckInfo
+ * @tc.number: SetTransCoderCapabilityCheckInfo_002
+ * @tc.desc  : Test SetTransCoderCapabilityCheckInfo with zero dimensions
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SetTransCoderCapabilityCheckInfo_002, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->SetTransCoderCapabilityCheckInfo(0, 0);
+    EXPECT_EQ(surfaceEncoderAdapter_->transCoderWidth_, 0);
+    EXPECT_EQ(surfaceEncoderAdapter_->transCoderHeight_, 0);
+}
+
+/**
+ * @tc.name  : Test SetTransCoderMode
+ * @tc.number: SetTransCoderMode_001
+ * @tc.desc  : Test SetTransCoderMode sets isTransCoderMode to true
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SetTransCoderMode_001, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_TRUE(surfaceEncoderAdapter_->GetIsTransCoderMode());
+}
