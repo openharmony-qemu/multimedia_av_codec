@@ -77,6 +77,18 @@ Status CodecCapabilityAdapter::IsWatermarkSupported(std::string &codecMimeType, 
     return Status::ERROR_UNKNOWN;
 }
 
+Status CodecCapabilityAdapter::GetCapabilityByMime(const std::string &mime, bool isEncoder,
+    MediaAVCodec::AVCodecCategory category, MediaAVCodec::CapabilityData* &capabilityData)
+{
+    capabilityData = codeclist_->GetCapability(mime, isEncoder, category);
+    if (capabilityData != nullptr) {
+        return Status::OK;
+    }
+    MEDIA_LOG_W("No matching capability found for mime: %{public}s, isEncoder: %{public}d, category: %{public}d",
+        mime.c_str(), static_cast<int32_t>(isEncoder), static_cast<int32_t>(category));
+    return Status::ERROR_UNKNOWN;
+}
+
 Status CodecCapabilityAdapter::GetAudioEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo)
 {
     MediaAVCodec::CapabilityData *capabilityData = codeclist_->GetCapability(
