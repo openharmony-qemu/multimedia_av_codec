@@ -33,8 +33,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-constexpr uint32_t BUFFERING_PERCENT_FULL = 100;
-
 enum DashReadRet {
     DASH_READ_FAILED = 0,
     DASH_READ_OK = 1,
@@ -135,7 +133,6 @@ struct DashBufferSegment {
 };
 
 using SegmentDownloadDoneCbFunc = std::function<void(int streamId)>;
-using SegmentBufferingCbFunc = std::function<void(int, BufferingInfoType)>;
 
 class DashSegmentDownloader : public std::enable_shared_from_this<DashSegmentDownloader> {
 public:
@@ -152,7 +149,6 @@ public:
     DashReadRet Read(uint8_t *buff, ReadDataInfo &readDataInfo, const std::atomic<bool> &isInterruptNeeded);
     void SetStatusCallback(StatusCallbackFunc statusCallbackFunc);
     void SetDownloadDoneCallback(SegmentDownloadDoneCbFunc doneCbFunc);
-    void SetSegmentBufferingCallback(SegmentBufferingCbFunc bufferingCbFunc);
     bool CleanSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
     bool CleanBufferByTime(int64_t& remainLastNumberSeq, bool& isEnd);
     bool SeekToTime(const std::shared_ptr<DashSegment>& segment, int32_t& streamId);
@@ -174,13 +170,9 @@ public:
     void SetInterruptState(bool isInterruptNeeded);
     void SetAppUid(int32_t appUid);
     uint64_t GetBufferSize() const;
-    bool GetBufferringStatus() const;
-    uint32_t GetCachedPercent();
     bool IsAllSegmentFinished() const;
-    void SetDurationForPlaying(double duration);
     void NotifyInitSuccess();
     size_t GetRingBufferInitSize(MediaAVCodec::MediaType streamType) const;
-    void SetAppState(bool isAppBackground);
     Status StopBufferring(bool isAppBackground);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 private:
@@ -203,20 +195,13 @@ private:
     bool IsSegmentFinished(uint32_t &realReadLength, DashReadRet &readRet);
     bool CheckReadInterrupt(uint32_t &realReadLength, uint32_t wantReadLength, DashReadRet &readRet,
                             const std::atomic<bool> &isInterruptNeeded);
+    DashReadRet WaitForBufferReady(uint32_t maxReadLength, const std::atomic<bool> &isInterruptNeeded);
+    DashReadRet HandleReadResult(uint32_t realReadLength, int32_t currentStreamId);
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
                               int32_t currentStreamId) const;
     void OnWriteRingBuffer(uint32_t len);
-    bool HandleBuffering(const std::atomic<bool> &isInterruptNeeded);
-    void SaveDataHandleBuffering();
-    bool HandleCache();
-    void HandleCachedDuration();
-    int32_t GetWaterLineAbove();
     void CalculateBitRate(size_t fragmentSize, double duration);
-    void UpdateCachedPercent(BufferingInfoType infoType);
     void UpdateBufferSegment(const std::shared_ptr<DashBufferSegment> &mediaSegment, uint32_t len);
-    void DoBufferingEndEvent();
-    bool GetBufferingTimeOut();
-    bool IsNeedBufferForPlaying();
     void UpdateMediaSegments(size_t bufferTail, uint32_t len);
     bool CheckLoopTimeout(int64_t startLoopTime);
     void SetDownloadRequest(std::shared_ptr<DownloadRequest> downloadRequest);
@@ -241,7 +226,6 @@ private:
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
     SegmentDownloadDoneCbFunc downloadDoneCbFunc_;
-    SegmentBufferingCbFunc bufferingCbFunc_;
     std::atomic<bool> startedPlayStatus_{false};
     int streamId_{0};
     MediaAVCodec::MediaType streamType_;
@@ -269,18 +253,8 @@ private:
 
     // play water line
     std::weak_ptr<Callback> callback_;
-    std::atomic<uint32_t> waterLineAbove_{0};
-    std::atomic<bool> isBuffering_{false};
-    std::atomic<uint32_t> downloadBitRate_{0};
     std::atomic<int64_t> realTimeBitRate_{0};
-    std::atomic<uint64_t> lastDurationRecord_{0};
-    std::atomic<uint32_t> lastCachedSize_{0};
-    std::atomic<bool> isFirstFrameArrived_{false};
     std::atomic<bool> isAllSegmentFinished_{false};
-    std::atomic<double> bufferDurationForPlaying_ {0};
-    std::atomic<size_t> bufferingTime_ {0};
-    uint64_t waterlineForPlaying_ {0};
-    std::atomic<bool> isDemuxerInitSuccess_ {false};
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::atomic<bool> canWrite_{true};
     SteadyClock loopInterruptClock_;

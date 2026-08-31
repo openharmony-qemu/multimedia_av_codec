@@ -25,11 +25,7 @@ namespace HttpPlugin {
 using namespace testing;
 using namespace testing::ext;
 const static int32_t ID_TEST = 1;
-const static int32_t NUM_TEST = 0;
 const static int32_t NUM_10 = 10;
-const static int32_t NUM_20 = 20;
-const static int32_t NUM_25 = 25;
-const static int32_t NUM_80 = 80;
 void DashMediaDownloaderUnittest::SetUpTestCase(void) {}
 void DashMediaDownloaderUnittest::TearDownTestCase(void) {}
 void DashMediaDownloaderUnittest::SetUp(void)
@@ -109,386 +105,6 @@ HWTEST_F(DashMediaDownloaderUnittest, Read_002, TestSize.Level0)
 }
 
 /**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_001
- * @tc.desc  : Test callback_ == nullptr || mpdDownloader_ == nullptr
- */
-HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_001, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    mediaDownloader_->callback_.reset();
-    mediaDownloader_->mpdDownloader_ = nullptr;
-    mediaDownloader_->PostBufferingEvent(NUM_TEST, BufferingInfoType::BUFFERING_START);
-    EXPECT_TRUE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    mediaDownloader_->PostBufferingEvent(NUM_TEST, BufferingInfoType::BUFFERING_START);
-    EXPECT_TRUE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    mediaDownloader_->mpdDownloader_ = nullptr;
-    mediaDownloader_->PostBufferingEvent(NUM_TEST, BufferingInfoType::BUFFERING_START);
-    EXPECT_TRUE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_002
- * @tc.desc  : Test !(callback_ == nullptr || mpdDownloader_ == nullptr)
- *             Test streamDesc == nullptr
- */
-HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_002, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(NUM_TEST);
-    EXPECT_EQ(streamDesc, nullptr);
-    mediaDownloader_->PostBufferingEvent(NUM_TEST, BufferingInfoType::BUFFERING_START);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_003
- * @tc.desc  : streamDesc != nullptr && streamDesc->type_ != MEDIA_TYPE_SUBTITLE
- *             Test type != BufferingInfoType::BUFFERING_PERCENT
- *             Test type == BufferingInfoType::BUFFERING_START
- *             Test bufferingFlag_ == 0
- */
-HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_003, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    EXPECT_NE(streamDesc, nullptr);
-    mediaDownloader_->bufferingFlag_ = 0;
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_START);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_004
- * @tc.desc  : Test bufferingFlag_ == 1
- */
-HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_004, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    EXPECT_NE(streamDesc, nullptr);
-    mediaDownloader_->bufferingFlag_ = 1;
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_START);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_005
- * @tc.desc  : Test type == BufferingInfoType::BUFFERING_END
- *             Test (bufferingFlag_ & flag) == 0
- *             Test lastBufferingFlag == 0
- */
-HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_005, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    EXPECT_NE(streamDesc, nullptr);
-    mediaDownloader_->bufferingFlag_ = 0;
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_END);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_006
- * @tc.desc  : Test type == BufferingInfoType::BUFFERING_END
- *             Test (bufferingFlag_ & flag) == 1
- *             Test lastBufferingFlag > 0 && bufferingFlag_ > 0
- */
-HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_006, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    EXPECT_NE(streamDesc, nullptr);
-    mediaDownloader_->bufferingFlag_ = 1;
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_END);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_007
- * @tc.desc  : Test type == BufferingInfoType::CACHED_DURATION
- */
-HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_007, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    EXPECT_NE(streamDesc, nullptr);
-    mediaDownloader_->bufferingFlag_ = 1;
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::CACHED_DURATION);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_008
- * @tc.desc  : streamDesc->type_ == MEDIA_TYPE_SUBTITLE
- */
-HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_008, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE;
-    EXPECT_NE(streamDesc, nullptr);
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_START);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_009
- * @tc.desc  : Test type == BufferingInfoType::BUFFERING_PERCENT
- *             Test downloader == nullptr
- *             Test downloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE
- *             Test downloader->GetStreamType() != MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE
- */
-HWTEST_F(DashMediaDownloaderUnittest, PostBufferingEvent_009, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    EXPECT_NE(streamDesc, nullptr);
-    std::shared_ptr<DashSegmentDownloader> segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
-            1, MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    mediaDownloader_->segmentDownloaders_.Clear();
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-    EXPECT_EQ(mediaDownloader_->segmentDownloaders_.Size(), 0);
-
-    mediaDownloader_->segmentDownloaders_.PushBack(segmentDownloader);
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-    EXPECT_EQ(mediaDownloader_->segmentDownloaders_.Size(), 1);
-
-    segmentDownloader = std::make_shared<DashSegmentDownloader>(nullptr,
-            1, MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE, NUM_10, nullptr);
-    mediaDownloader_->segmentDownloaders_.Clear();
-    mediaDownloader_->segmentDownloaders_.PushBack(segmentDownloader);
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
-    EXPECT_FALSE(mediaDownloader_->callback_.expired() || mediaDownloader_->mpdDownloader_ == nullptr);
-    EXPECT_EQ(mediaDownloader_->segmentDownloaders_.Size(), 1);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_010
- * @tc.desc  : Test percent > 0 && percent < 100 && last != percent
- */
-HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_010, TestSize.Level0) {
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    EXPECT_FALSE(mediaDownloader_->callback_.expired());
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    EXPECT_EQ(streamDesc->type_, MediaAVCodec::MediaType::MEDIA_TYPE_VID);
-    EXPECT_NE(streamDesc, nullptr);
-
-    auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
-        MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    downloader->waterLineAbove_ = NUM_25;
-    downloader->buffer_ = std::make_shared<RingBuffer>(NUM_10);
-    downloader->buffer_->tail_ = NUM_20;
-    downloader->buffer_->head_ = 0;
-    mediaDownloader_->segmentDownloaders_.Clear();
-    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
-    mediaDownloader_->PostBufferingEvent(streamId, BufferingInfoType::BUFFERING_PERCENT);
-    EXPECT_EQ(mediaDownloader_->lastBufferingPercent_, NUM_80);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: PostBufferingEvent_011
- * @tc.desc  : Test percent > 0 && percent < 100 && last == percent
- */
-HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_011, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    EXPECT_FALSE(mediaDownloader_->callback_.expired());
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    EXPECT_NE(streamDesc, nullptr);
-    mediaDownloader_->lastBufferingPercent_ = 50;
-    auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
-        MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    downloader->waterLineAbove_ = NUM_20;
-    downloader->buffer_ = std::make_shared<RingBuffer>(NUM_10);
-    downloader->buffer_->tail_ = NUM_10;
-    downloader->buffer_->head_ = 0;
-    
-    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
-    mediaDownloader_->PostBufferingEvent(ID_TEST, BufferingInfoType::BUFFERING_PERCENT);
-
-    EXPECT_EQ(callback->eventTriggered, false);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: BufferConditionCase_012
- * @tc.desc  : Test percent > 0 && percent == 100
- */
-HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_012, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    EXPECT_FALSE(mediaDownloader_->callback_.expired());
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    EXPECT_NE(streamDesc, nullptr);
-    mediaDownloader_->lastBufferingPercent_ = 50;
-    auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
-        MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    downloader->waterLineAbove_ = 5;
-    downloader->buffer_ = std::make_shared<RingBuffer>(5);
-    downloader->buffer_->tail_ = 5;
-    downloader->buffer_->head_ = 0;
-    
-    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
-    mediaDownloader_->PostBufferingEvent(ID_TEST, BufferingInfoType::BUFFERING_PERCENT);
-
-    EXPECT_EQ(callback->eventTriggered, false);
-}
-
-/**
- * @tc.name  : Test PostBufferingEvent
- * @tc.number: BufferConditionCase_013
- * @tc.desc  : Test percent == 0
- */
-HWTEST_F(DashMediaDownloaderUnittest, BufferConditionCase_013, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    int streamId = ID_TEST;
-    mediaDownloader_->mpdDownloader_ = std::make_shared<DashMpdDownloader>(nullptr);
-    auto callback = std::make_shared<TestCallback>();
-    mediaDownloader_->callback_ = callback;
-    EXPECT_FALSE(mediaDownloader_->callback_.expired());
-    auto ptr = std::make_shared<DashStreamDescription>();
-    ptr->segsState_ = DashSegsState::DASH_SEGS_STATE_NONE;
-    ptr->streamId_ = streamId;
-    mediaDownloader_->mpdDownloader_->streamDescriptions_.push_back(ptr);
-    std::shared_ptr<DashStreamDescription> streamDesc =
-        mediaDownloader_->mpdDownloader_->GetStreamByStreamId(streamId);
-    streamDesc->type_ = MediaAVCodec::MediaType::MEDIA_TYPE_VID;
-    EXPECT_NE(streamDesc, nullptr);
-    mediaDownloader_->lastBufferingPercent_ = NUM_20;
-    auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
-        MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
-    downloader->waterLineAbove_ = 0;
-    downloader->buffer_ = std::make_shared<RingBuffer>(NUM_10);
-    
-    mediaDownloader_->segmentDownloaders_.PushBack(downloader);
-    mediaDownloader_->PostBufferingEvent(ID_TEST, BufferingInfoType::BUFFERING_PERCENT);
-    
-    EXPECT_EQ(callback->eventTriggered, false);
-}
-
-/**
  * @tc.name  : Test AutoSelectBitrateInternal
  * @tc.number: AutoSelectBitrateInternal_001
  * @tc.desc  : Test mpdDownloader_ == nullptr
@@ -565,6 +181,9 @@ HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_002, TestSize.Level0)
     ASSERT_NE(mediaDownloader_, nullptr);
     auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
+    downloader->buffer_ = std::make_shared<RingBuffer>(NUM_10);
+    downloader->buffer_->tail_ = NUM_10;
+    downloader->buffer_->head_ = 0;
     mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     auto ret = mediaDownloader_->GetPlayable();
     EXPECT_NE(mediaDownloader_->GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID), nullptr);
@@ -582,6 +201,9 @@ HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_003, TestSize.Level0)
     mediaDownloader_->segmentDownloaders_.Clear();
     auto downloader = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_AUD, NUM_10, nullptr);
+    downloader->buffer_ = std::make_shared<RingBuffer>(NUM_10);
+    downloader->buffer_->tail_ = NUM_10;
+    downloader->buffer_->head_ = 0;
     mediaDownloader_->segmentDownloaders_.PushBack(downloader);
     auto ret = mediaDownloader_->GetPlayable();
     EXPECT_NE(mediaDownloader_->GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD), nullptr);
@@ -599,26 +221,20 @@ HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_004, TestSize.Level0)
     mediaDownloader_->segmentDownloaders_.Clear();
     auto downloader1 = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_AUD, NUM_10, nullptr);
+    downloader1->buffer_ = std::make_shared<RingBuffer>(NUM_10);
+    downloader1->buffer_->tail_ = NUM_10;
+    downloader1->buffer_->head_ = 0;
     auto downloader2 = std::make_shared<DashSegmentDownloader>(nullptr, 1,
         MediaAVCodec::MediaType::MEDIA_TYPE_VID, NUM_10, nullptr);
+    downloader2->buffer_ = std::make_shared<RingBuffer>(NUM_10);
+    downloader2->buffer_->tail_ = NUM_10;
+    downloader2->buffer_->head_ = 0;
     mediaDownloader_->segmentDownloaders_.PushBack(downloader1);
     mediaDownloader_->segmentDownloaders_.PushBack(downloader2);
     auto ret = mediaDownloader_->GetPlayable();
     EXPECT_NE(mediaDownloader_->GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD), nullptr);
     EXPECT_NE(mediaDownloader_->GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID), nullptr);
     EXPECT_EQ(ret, true);
-}
-
-/**
- * @tc.name  : Test GetBufferingTimeOut
- * @tc.number: GetBufferingTimeOut_001
- * @tc.desc  : Test all
- */
-HWTEST_F(DashMediaDownloaderUnittest, GetBufferingTimeOut_001, TestSize.Level0)
-{
-    ASSERT_NE(mediaDownloader_, nullptr);
-    auto ret = mediaDownloader_->GetBufferingTimeOut();
-    EXPECT_EQ(ret, false);
 }
 
 /**
@@ -724,11 +340,6 @@ HWTEST_F(DashMediaDownloaderUnittest, STOP_BUFFERING, TestSize.Level1)
     std::shared_ptr<DashSegmentDownloader> downloader = std::make_shared<DashSegmentDownloader>(
         callback, 0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 0, nullptr);
     downloader->Init();
-    auto bufferingCallback = [] (int streamId, BufferingInfoType type) {
-        (void)streamId;
-        (void)type;
-    };
-    downloader->SetSegmentBufferingCallback(bufferingCallback);
     mediaDownloader->segmentDownloaders_.PushBack(downloader);
     mediaDownloader->segmentDownloaders_.PushBack(nullptr);
     mediaDownloader->NotifyInitSuccess();
@@ -1872,44 +1483,6 @@ HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_NoDownloaders, TestSize.Level1
     EXPECT_FALSE(result);
 }
 
-/**
- * @tc.name  : Test GetPlayable vid only not buffering
- * @tc.number: GetPlayable_VidOnly_NotBuffering
- * @tc.desc  : Test GetPlayable with vid downloader not buffering
- */
-HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_VidOnly_NotBuffering, TestSize.Level1)
-{
-    auto callback = std::make_shared<TestCallback>();
-    auto vidDownloader = std::make_shared<DashSegmentDownloader>(
-        callback, 0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
-    vidDownloader->Init();
-    vidDownloader->isBuffering_.store(false);
-    mediaDownloader_->segmentDownloaders_.PushBack(vidDownloader);
-    bool result = mediaDownloader_->GetPlayable();
-    EXPECT_TRUE(result);
-}
-
-/**
- * @tc.name  : Test GetPlayable both downloaders buffering
- * @tc.number: GetPlayable_Both_Buffering
- * @tc.desc  : Test GetPlayable returns false when both downloaders are buffering
- */
-HWTEST_F(DashMediaDownloaderUnittest, GetPlayable_Both_Buffering, TestSize.Level1)
-{
-    auto callback = std::make_shared<TestCallback>();
-    auto vidDownloader = std::make_shared<DashSegmentDownloader>(
-        callback, 0, MediaAVCodec::MediaType::MEDIA_TYPE_VID, 10, nullptr);
-    vidDownloader->Init();
-    vidDownloader->isBuffering_.store(true);
-    mediaDownloader_->segmentDownloaders_.PushBack(vidDownloader);
-    auto audDownloader = std::make_shared<DashSegmentDownloader>(
-        callback, 1, MediaAVCodec::MediaType::MEDIA_TYPE_AUD, 10, nullptr);
-    audDownloader->Init();
-    audDownloader->isBuffering_.store(true);
-    mediaDownloader_->segmentDownloaders_.PushBack(audDownloader);
-    bool result = mediaDownloader_->GetPlayable();
-    EXPECT_FALSE(result);
-}
 }
 }
 }

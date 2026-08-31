@@ -102,8 +102,6 @@ private:
     bool IsAllowedProtocol(std::string_view url);
     std::shared_ptr<MediaDownloader> GetDownloader() const;
     void SetDownloader(const std::shared_ptr<MediaDownloader>& downloader);
-    uint32_t bufferSize_;
-    uint32_t waterline_;
     uint32_t seekErrorCount_{0};
     std::weak_ptr<Callback> callback_;
     std::shared_ptr<MediaDownloader> downloader_;

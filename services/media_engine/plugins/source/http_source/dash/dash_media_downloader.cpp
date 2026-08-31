@@ -29,8 +29,6 @@ constexpr double BUFFER_LOW_LIMIT  = 0.3;
 constexpr double BYTE_TO_BIT = 8.0;
 constexpr size_t RETRY_TIMES = 15000;
 constexpr unsigned int SLEEP_TIME = 1;
-constexpr uint32_t AUDIO_BUFFERING_FLAG = 1;
-constexpr uint32_t VIDEO_BUFFERING_FLAG = 2;
 
 DashMediaDownloader::DashMediaDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
 {
@@ -227,59 +225,6 @@ void DashMediaDownloader::UpdateDownloadFinished(int streamId)
     }
 }
 
-void DashMediaDownloader::PostBufferingEvent(int streamId, BufferingInfoType type)
-{
-    if (callback_.lock() == nullptr || mpdDownloader_ == nullptr) {
-        MEDIA_LOG_I("PostBufferingEvent streamId: " PUBLIC_LOG_D32 " type: " PUBLIC_LOG_D32, streamId, type);
-        return;
-    }
-
-    std::shared_ptr<DashStreamDescription> streamDesc = mpdDownloader_->GetStreamByStreamId(streamId);
-    if (streamDesc == nullptr || streamDesc->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
-        return;
-    }
-
-    if (type == BufferingInfoType::BUFFERING_PERCENT) {
-        uint32_t percent = 0;
-        segmentDownloaders_.Foreach([&percent](const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
-            if (segDownloader == nullptr ||
-                segDownloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
-                return;
-            }
-            uint32_t segPercent = segDownloader->GetCachedPercent();
-            percent = (percent == 0 || segPercent < percent) ? segPercent : percent;
-        });
-        if (percent > 0 && percent < BUFFERING_PERCENT_FULL && lastBufferingPercent_ != percent) {
-            MEDIA_LOG_I("PostBufferingEvent buffering percent " PUBLIC_LOG_U32, percent);
-            lastBufferingPercent_ = percent;
-        }
-        return;
-    }
-
-    // ensure the order of the buffering_start and buffering_end, must use lock, this lock can not use in other scene
-    // OnEvent can not block and lock other resource
-    std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
-    // audio or video buffering start will post event, audio and video buffering end will post event
-    uint32_t flag =
-        streamDesc->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_VID ? VIDEO_BUFFERING_FLAG : AUDIO_BUFFERING_FLAG;
-    if (type == BufferingInfoType::BUFFERING_START) {
-        if (bufferingFlag_ == 0) {
-            MEDIA_LOG_I("PostBufferingEvent buffering start");
-        }
-        bufferingFlag_ |= flag;
-        return;
-    } else if (type == BufferingInfoType::BUFFERING_END) {
-        uint32_t lastBufferingFlag = bufferingFlag_;
-        if ((bufferingFlag_ & flag) > 0) {
-            bufferingFlag_ ^= flag;
-        }
-        if (lastBufferingFlag > 0 && bufferingFlag_ == 0) {
-            MEDIA_LOG_I("PostBufferingEvent buffering end");
-        }
-        return;
-    }
-}
-
 bool DashMediaDownloader::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     MEDIA_LOG_I("DashMediaDownloader SeekToTime: " PUBLIC_LOG_D64, seekTime);
@@ -342,11 +287,6 @@ void DashMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
     if (mpdDownloader_ != nullptr) {
         mpdDownloader_->SetCallback(cb);
     }
-}
-
-bool DashMediaDownloader::GetStartedStatus()
-{
-    return true;
 }
 
 void DashMediaDownloader::SetStatusCallback(StatusCallbackFunc cb)
@@ -466,7 +406,6 @@ void DashMediaDownloader::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& p
         mpdDownloader_->SetDefaultLang(playStrategy->audioLanguage, MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
         mpdDownloader_->SetDefaultLang(playStrategy->subtitleLanguage, MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE);
         expectDuration_ = static_cast<uint64_t>(playStrategy->duration);
-        bufferDurationForPlaying_ = playStrategy->bufferDurationForPlaying;
     }
 }
 
@@ -540,19 +479,12 @@ void DashMediaDownloader::OpenInitSegment(
         shareDownloader->UpdateDownloadFinished(streamId);
     };
     downloader->SetDownloadDoneCallback(doneCallback);
-    auto bufferingCallback = [weakDownloader] (int streamId, BufferingInfoType type) {
-        auto shareDownloader = weakDownloader.lock();
-        FALSE_RETURN_MSG(shareDownloader != nullptr, "bufferingCb, dash media downloader already destructed.");
-        shareDownloader->PostBufferingEvent(streamId, type);
-    };
-    downloader->SetSegmentBufferingCallback(bufferingCallback);
     segmentDownloaders_.PushBack(downloader);
     std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
         streamDesc->streamId_);
     if (initSeg != nullptr) {
         downloader->SetInitSegment(initSeg);
     }
-    downloader->SetDurationForPlaying(bufferDurationForPlaying_);
     downloader->Open(seg);
     MEDIA_LOG_I("dash first get segment in streamId " PUBLIC_LOG_D32 ", type "
         PUBLIC_LOG_D32, streamDesc->streamId_, streamDesc->type_);
@@ -1355,24 +1287,15 @@ uint64_t DashMediaDownloader::GetBufferSize() const
 
 bool DashMediaDownloader::GetPlayable()
 {
-    std::shared_ptr<DashSegmentDownloader> vidSegmentDownloader =
-        GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
-    std::shared_ptr<DashSegmentDownloader> audSegmentDownloader =
-        GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
-    if (vidSegmentDownloader != nullptr && audSegmentDownloader != nullptr) {
-        return !vidSegmentDownloader->GetBufferringStatus() && !audSegmentDownloader->GetBufferringStatus();
-    } else if (vidSegmentDownloader != nullptr) {
-        return !vidSegmentDownloader->GetBufferringStatus();
-    } else if (audSegmentDownloader != nullptr) {
-        return !audSegmentDownloader->GetBufferringStatus();
-    } else {
-        MEDIA_LOG_E("GetPlayable error.");
-        return false;
+    auto vid = GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
+    auto aud = GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_AUD);
+    if (vid && aud) {
+        return vid->GetBufferSize() > 0 && aud->GetBufferSize() > 0;
+    } else if (vid) {
+        return vid->GetBufferSize() > 0;
+    } else if (aud) {
+        return aud->GetBufferSize() > 0;
     }
-}
-
-bool DashMediaDownloader::GetBufferingTimeOut()
-{
     return false;
 }
 

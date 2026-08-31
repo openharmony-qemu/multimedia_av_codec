@@ -109,14 +109,18 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RINGBUFFER, TestSize.Level1)
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
+    int retry = 0;
+    while (retry++ < 600 && httpMediaDownloader->GetBufferSize() == 0) {
+        OSAL::SleepFor(10);
+    }
     unsigned char buff[5 * 1024 * 1024];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 5 * 1024 * 1024;
     readDataInfo.isEos_ = true;
+    httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->Read(buff, readDataInfo);
     httpMediaDownloader->SetDownloadErrorState();
-    OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -132,7 +136,10 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
     httpMediaDownloader->SetStatusCallback(statusCallback);
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
-    OSAL::SleepFor(6 * 1000);
+    int retry = 0;
+    while (retry++ < 600 && httpMediaDownloader->GetBufferSize() == 0) {
+        OSAL::SleepFor(10);
+    }
     httpMediaDownloader->DownloadReport();
     httpMediaDownloader->GetSeekable();
     unsigned char buff[5 * 1024 * 1024];
@@ -140,9 +147,9 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 5 * 1024 * 1024;
     readDataInfo.isEos_ = true;
+    httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->Read(buff, readDataInfo);
     httpMediaDownloader->SetDownloadErrorState();
-    OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -158,7 +165,10 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4, TestSize.Level1)
     httpMediaDownloader->SetStatusCallback(statusCallback);
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
-    OSAL::SleepFor(6 * 1000);
+    int retry = 0;
+    while (retry++ < 600 && httpMediaDownloader->GetBufferSize() == 0) {
+        OSAL::SleepFor(10);
+    }
     httpMediaDownloader->DownloadReport();
     httpMediaDownloader->GetSeekable();
     unsigned char buff[5 * 1024 * 1024];
@@ -166,9 +176,9 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_DownloadReport_MP4, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 5 * 1024 * 1024;
     readDataInfo.isEos_ = true;
+    httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->Read(buff, readDataInfo);
     httpMediaDownloader->SetDownloadErrorState();
-    OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -231,7 +241,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_mp4_read_all, TestSize.Level1)
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
-
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level0)
 {
     MP4httpMediaDownloader->GetSeekable();
@@ -241,7 +250,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL, TestSize.Level0)
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
     MP4httpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
@@ -264,7 +272,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_FLV, TestSize.Level1)
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
     FLVhttpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
@@ -279,13 +286,17 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_FLV_DUA, TestSize.Level1)
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
+    int retry = 0;
+    while (retry++ < 600 && httpMediaDownloader->GetBufferSize() == 0) {
+        OSAL::SleepFor(10);
+    }
     unsigned char buff[10];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
+    httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -302,13 +313,17 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_FLV_MAX_BUFFER, TestSize.Lev
     std::map<std::string, std::string> httpHeader;
     httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
     httpMediaDownloader->GetSeekable();
+    int retry = 0;
+    while (retry++ < 600 && httpMediaDownloader->GetBufferSize() == 0) {
+        OSAL::SleepFor(10);
+    }
     unsigned char buff[10];
     ReadDataInfo readDataInfo;
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
+    httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -330,8 +345,8 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_MP4_DUA, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
+    httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -353,7 +368,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN_URL_MP4_DOWNLOADINFO, TestSize.L
     httpMediaDownloader->GetDownloadInfo(downloadInfo);
     httpMediaDownloader->recordSpeedCount_ = 10;
     httpMediaDownloader->GetDownloadInfo(downloadInfo);
-    httpMediaDownloader->OnClientErrorEvent();
     httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->SetInterruptState(false);
     httpMediaDownloader->Close(true);
@@ -367,35 +381,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_SEEK_FLV, TestSize.Level1)
     bool result = FLVhttpMediaDownloader->SeekToPos(100, isSeekHit);
     FLVhttpMediaDownloader->SetReadBlockingFlag(true);
     EXPECT_TRUE(result);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5, nullptr);
-    httpMediaDownloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    httpMediaDownloader->SetStatusCallback(statusCallback);
-    std::map<std::string, std::string> httpHeader;
-    httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
-    httpMediaDownloader->GetSeekable();
-    unsigned char buff[10];
-    ReadDataInfo readDataInfo;
-    readDataInfo.streamId_ = 0;
-    readDataInfo.wantReadLength_ = 10;
-    readDataInfo.isEos_ = true;
-    httpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
-    httpMediaDownloader->UpdateWaterLineAbove();
-    httpMediaDownloader->SetDownloadErrorState();
-    httpMediaDownloader->SetCurrentBitRate(-1, 0);
-    httpMediaDownloader->SetCurrentBitRate(1000, 0);
-    httpMediaDownloader->UpdateWaterLineAbove();
-    httpMediaDownloader->ChangeDownloadPos(false);
-    httpMediaDownloader->Close(true);
-    httpMediaDownloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_ERROR, TestSize.Level1)
@@ -415,8 +400,8 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_ERROR, TestSize.Level1)
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
     httpMediaDownloader->downloadErrorState_ = true;
+    httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->CheckIsEosCacheBuffer(buff, readDataInfo);
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
@@ -441,41 +426,9 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLV_ERROR, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
+    httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
     httpMediaDownloader->CheckIsEosRingBuffer(buff, readDataInfo);
-    httpMediaDownloader->OnClientErrorEvent();
-    httpMediaDownloader->Close(true);
-    httpMediaDownloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, TEST_MP4_NULL, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(MP4_NULL_SEGMENT_BASE, MAX_CACHE_BUFFER_SIZE, nullptr);
-    httpMediaDownloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    httpMediaDownloader->SetStatusCallback(statusCallback);
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    httpMediaDownloader->SetCallback(sourceCallback);
-    std::map<std::string, std::string> httpHeader;
-    httpMediaDownloader->Open(MP4_NULL_SEGMENT_BASE, httpHeader);
-    httpMediaDownloader->GetSeekable();
-    unsigned char buff[10];
-    ReadDataInfo readDataInfo;
-    readDataInfo.streamId_ = 0;
-    readDataInfo.wantReadLength_ = 10;
-    readDataInfo.isEos_ = true;
-    httpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1 * 1000);
-    httpMediaDownloader->UpdateWaterLineAbove();
-    httpMediaDownloader->SetDownloadErrorState();
-    httpMediaDownloader->SetCurrentBitRate(-1, 0);
-    httpMediaDownloader->SetCurrentBitRate(1000, 0);
-    httpMediaDownloader->UpdateWaterLineAbove();
-    httpMediaDownloader->HandleCachedDuration();
     httpMediaDownloader->Close(true);
     httpMediaDownloader = nullptr;
     EXPECT_GE(readDataInfo.realReadLength_, 0);
@@ -498,8 +451,8 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLC_SEEK, TestSize.Level1)
     readDataInfo.wantReadLength_ = 5 * 1024 * 1024;
     readDataInfo.isEos_ = true;
     httpMediaDownloader->downloadErrorState_ = true;
+    httpMediaDownloader->SetInterruptState(true);
     httpMediaDownloader->Read(buff, readDataInfo);
-    OSAL::SleepFor(1000);
     bool isSeekHit = false;
     httpMediaDownloader->SeekToPos(100 * 1024 * 1024, isSeekHit);
     httpMediaDownloader->Close(true);
@@ -507,19 +460,10 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_FLC_SEEK, TestSize.Level1)
     EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
-
 HWTEST_F(HttpMediaDownloaderUnitTest, GetContentLength, TestSize.Level1)
 {
     EXPECT_GE(MP4httpMediaDownloader->GetContentLength(), 0);
     EXPECT_GE(FLVhttpMediaDownloader->GetContentLength(), 0);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, GetStartedStatus, TestSize.Level1)
-{
-    MP4httpMediaDownloader->startedPlayStatus_ = false;
-    FLVhttpMediaDownloader->startedPlayStatus_ = false;
-    EXPECT_FALSE(MP4httpMediaDownloader->GetStartedStatus());
-    EXPECT_FALSE(FLVhttpMediaDownloader->GetStartedStatus());
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_OPEN, TestSize.Level1)
@@ -538,12 +482,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_PAUSE_RESUME, TestSize.Level1)
     FLVhttpMediaDownloader->Resume();
     EXPECT_FALSE(MP4httpMediaDownloader->isInterrupt_);
     EXPECT_FALSE(FLVhttpMediaDownloader->isInterrupt_);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering1, TestSize.Level1)
-{
-    MP4httpMediaDownloader->isBuffering_ = false;
-    EXPECT_FALSE(MP4httpMediaDownloader->HandleBuffering());
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, GET_PLAYBACK_INFO_001, TestSize.Level1)
@@ -589,53 +527,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
     EXPECT_EQ(playbackInfo.bufferDuration, 0);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, HANDLE_WATER_LINE_001, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5, nullptr);
-    httpMediaDownloader->Init();
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    httpMediaDownloader->callback_ = sourceCallback;
-    httpMediaDownloader->canWrite_ = false;
-    httpMediaDownloader->waterLineAbove_ = 0;
-    httpMediaDownloader->readOffset_ = 0;
-    httpMediaDownloader->initCacheSize_ = 5000;
-    httpMediaDownloader->HandleWaterline();
-    EXPECT_EQ(httpMediaDownloader->initCacheSize_, -1);
-    EXPECT_EQ(httpMediaDownloader->isBuffering_, false);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5, nullptr);
-    httpMediaDownloader->Init();
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    httpMediaDownloader->callback_ = sourceCallback;
-    httpMediaDownloader->isHitSeeking_ = true;
-    httpMediaDownloader->initCacheSize_ = 1;
-    EXPECT_EQ(httpMediaDownloader->CacheBufferFullLoop(), true);
-    httpMediaDownloader->isHitSeeking_ = false;
-    EXPECT_EQ(httpMediaDownloader->CacheBufferFullLoop(), false);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, SET_INITIAL_BUFFER_SIZE_001, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5, nullptr);
-    httpMediaDownloader->Init();
-    std::map<std::string, std::string> httpHeader;
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                        std::shared_ptr<DownloadRequest>& request) {};
-    httpMediaDownloader->SetStatusCallback(statusCallback);
-    httpMediaDownloader->Open(MP4_SEGMENT_BASE, httpHeader);
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    httpMediaDownloader->callback_ = sourceCallback;
-    httpMediaDownloader->isBuffering_ = false;
-    EXPECT_EQ(httpMediaDownloader->SetInitialBufferSize(0, 0), false);
-    EXPECT_EQ(httpMediaDownloader->SetInitialBufferSize(0, 20000000), true);
-}
-
 HWTEST_F(HttpMediaDownloaderUnitTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
 {
     std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
@@ -649,52 +540,9 @@ HWTEST_F(HttpMediaDownloaderUnitTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
     auto sourceCallback = std::make_shared<SourceCallback>();
     httpMediaDownloader->callback_ = sourceCallback;
     httpMediaDownloader->SetPlayStrategy(nullptr);
-    EXPECT_EQ(httpMediaDownloader->waterlineForPlaying_, 0);
     std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
     playStrategy->bufferDurationForPlaying = 5;
     httpMediaDownloader->SetPlayStrategy(playStrategy);
-    EXPECT_NE(httpMediaDownloader->waterlineForPlaying_, 0);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, IS_NEED_BUFFER_FOR_PLAYING_001, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5, nullptr);
-    httpMediaDownloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                        std::shared_ptr<DownloadRequest>& request) {};
-    httpMediaDownloader->SetStatusCallback(statusCallback);
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    httpMediaDownloader->callback_ = sourceCallback;
-    EXPECT_EQ(httpMediaDownloader->IsNeedBufferForPlaying(), false);
-    httpMediaDownloader->bufferDurationForPlaying_ = 5;
-    httpMediaDownloader->isDemuxerInitSuccess_ = true;
-    httpMediaDownloader->isBuffering_ = true;
-    httpMediaDownloader->bufferingTime_ = static_cast<size_t>(httpMediaDownloader->
-                        steadyClock_.ElapsedMilliseconds()) - 100 * 1000;
-    EXPECT_EQ(httpMediaDownloader->IsNeedBufferForPlaying(), false);
-    httpMediaDownloader->bufferingTime_ = 0;
-    httpMediaDownloader->waterlineForPlaying_ = 0;
-    EXPECT_EQ(httpMediaDownloader->IsNeedBufferForPlaying(), false);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 5, nullptr);
-    httpMediaDownloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                        std::shared_ptr<DownloadRequest>& request) {};
-    httpMediaDownloader->SetStatusCallback(statusCallback);
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    httpMediaDownloader->callback_ = sourceCallback;
-    httpMediaDownloader->isBuffering_ = false;
-    httpMediaDownloader->NotifyInitSuccess();
-    EXPECT_EQ(httpMediaDownloader->isBuffering_, false);
-    httpMediaDownloader->bufferDurationForPlaying_ = 5;
-    httpMediaDownloader->currentBitRate_ = 1000000;
-    httpMediaDownloader->NotifyInitSuccess();
-    EXPECT_EQ(httpMediaDownloader->isBuffering_, true);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, SET_PLAY_STRATEGY_002, TestSize.Level1)
@@ -791,49 +639,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, SELECT_BIT_RATE_001, TestSize.Level1)
     EXPECT_EQ(httpMediaDownloader->defaultStream_->bitrate, 4000);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, CHECK_AUTO_SELECT_BITRATE_001, TestSize.Level1)
-{
-    std::shared_ptr<HttpMediaDownloader> httpMediaDownloader =
-        std::make_shared<HttpMediaDownloader>(FLV_SEGMENT_BASE, 5, nullptr);
-    httpMediaDownloader->Init();
-    std::map<std::string, std::string> httpHeader;
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                        std::shared_ptr<DownloadRequest>& request) {};
-    httpMediaDownloader->SetStatusCallback(statusCallback);
-    httpMediaDownloader->Open(FLV_SEGMENT_BASE, httpHeader);
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    httpMediaDownloader->callback_ = sourceCallback;
-    MediaStreamList mediaStreams;
-    std::shared_ptr<PlayMediaStream> mediaStreamA = std::make_shared<PlayMediaStream>();
-    mediaStreamA->width = 480;
-    mediaStreamA->height = 360;
-    mediaStreamA->bitrate = 3200;
-    mediaStreamA->url = FLV_SEGMENT_BASE;
-    mediaStreams.push_back(mediaStreamA);
-    std::shared_ptr<PlayMediaStream> mediaStreamB = std::make_shared<PlayMediaStream>();
-    mediaStreamB->width = 640;
-    mediaStreamB->height = 480;
-    mediaStreamB->bitrate = 4800;
-    mediaStreamB->url = FLV_SEGMENT_BASE;
-    mediaStreams.push_back(mediaStreamB);
-    std::shared_ptr<PlayMediaStream> mediaStreamC = std::make_shared<PlayMediaStream>();
-    mediaStreamC->width = 640;
-    mediaStreamC->height = 480;
-    mediaStreamC->bitrate = 4000;
-    mediaStreamC->url = FLV_SEGMENT_BASE;
-    mediaStreams.push_back(mediaStreamC);
-    std::sort(mediaStreams.begin(), mediaStreams.end(),
-        [](const std::shared_ptr<PlayMediaStream>& streamA, const std::shared_ptr<PlayMediaStream>& streamB) {
-            return (streamA->bitrate < streamB->bitrate) ||
-                (streamA->bitrate == streamB->bitrate &&
-                    streamA->width * streamA->height < streamB->width * streamB->height);
-    });
-    httpMediaDownloader->SetMediaStreams(mediaStreams);
-    httpMediaDownloader->downloadSpeeds_.push_back(5100);
-    EXPECT_EQ(httpMediaDownloader->CheckAutoSelectBitrate(), true);
-    httpMediaDownloader->downloadSpeeds_.push_back(3200);
-    EXPECT_EQ(httpMediaDownloader->CheckAutoSelectBitrate(), false);
-}
 
 HWTEST_F(HttpMediaDownloaderUnitTest, GetReadTimeOut, TestSize.Level1)
 {
@@ -855,7 +660,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, StopBufferring, TestSize.Level1)
     httpMediaDownloader->StopBufferring(false);
     EXPECT_GE(httpMediaDownloader->StopBufferring(true), Status::OK);
 }
-
 
 HWTEST_F(HttpMediaDownloaderUnitTest, ClearHasReadBuffer, TestSize.Level1)
 {
@@ -901,34 +705,11 @@ HWTEST_F(HttpMediaDownloaderUnitTest, IsFlvLive, TestSize.Level1)
     EXPECT_FALSE(ret);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, GetPlayable, TestSize.Level1)
-{
-    MP4httpMediaDownloader->isBuffering_ = true;
-    EXPECT_FALSE(MP4httpMediaDownloader->GetPlayable());
-
-    MP4httpMediaDownloader->isBuffering_ = false;
-    MP4httpMediaDownloader->isFirstFrameArrived_ = true;
-    MP4httpMediaDownloader->GetPlayable();
-    
-    MP4httpMediaDownloader->isBuffering_ = false;
-    MP4httpMediaDownloader->isFirstFrameArrived_ = false;
-    MP4httpMediaDownloader->GetPlayable();
-    MP4httpMediaDownloader->SetAppUid(1);
-}
-
-HWTEST_F(HttpMediaDownloaderUnitTest, GetCacheDuration, TestSize.Level1)
-{
-    float num = MP4httpMediaDownloader->GetCacheDuration(1);
-    num = MP4httpMediaDownloader->GetCacheDuration(0);
-    EXPECT_EQ(num, 1.0);
-}
-
 HWTEST_F(HttpMediaDownloaderUnitTest, IsAutoSelectConditionOk_1, TestSize.Level1)
 {
     FLVhttpMediaDownloader->downloadSpeeds_.clear();
  
     EXPECT_FALSE(FLVhttpMediaDownloader->IsAutoSelectConditionOk());
-    EXPECT_FALSE(FLVhttpMediaDownloader->CheckAutoSelectBitrate());
 
     FLVhttpMediaDownloader->ClearBuffer();
     MP4httpMediaDownloader->ClearBuffer();
@@ -1704,15 +1485,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, GET_SEEKABLE_RANGES_016, TestSize.Level1)
     EXPECT_EQ(res.size(), 0);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, HandleBuffering_001, TestSize.Level1)
-{
-    size_t now = static_cast<size_t>(MP4httpMediaDownloader->steadyClock_.ElapsedMilliseconds());
-    MP4httpMediaDownloader->bufferingTime_ = now - 1000;
-    MP4httpMediaDownloader->timeoutInterval_ = 100;
-    MP4httpMediaDownloader->isBuffering_ = true;
-    EXPECT_FALSE(MP4httpMediaDownloader->HandleBuffering());
-}
-
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_RARE_SPEED_NORMAL, TestSize.Level1)
 {
     auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
@@ -1898,50 +1670,6 @@ HWTEST_F(HttpMediaDownloaderUnitTest, UpdateOffsetThresholds_003, TestSize.Level
     downloader->stateChangeCount_ = 0;
     downloader->UpdateOffsetThresholds(5000000);
     EXPECT_TRUE(downloader->isLargeOffsetSpan_.load());
-}
-
-/**
- * @tc.name  : Test CalcAverageSpeed
- * @tc.number: CalcAverageSpeed_001
- * @tc.desc  : Test CalcAverageSpeed with empty downloadSpeeds returns 0
- */
-HWTEST_F(HttpMediaDownloaderUnitTest, CalcAverageSpeed_001, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
-    downloader->Init();
-    downloader->downloadSpeeds_.clear();
-    auto speed = downloader->CalcAverageSpeed();
-    EXPECT_EQ(speed, 0);
-}
-
-/**
- * @tc.name  : Test CalcAverageSpeed
- * @tc.number: CalcAverageSpeed_002
- * @tc.desc  : Test CalcAverageSpeed with valid speeds
- */
-HWTEST_F(HttpMediaDownloaderUnitTest, CalcAverageSpeed_002, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
-    downloader->Init();
-    downloader->downloadSpeeds_ = {1000, 2000, 3000};
-    auto speed = downloader->CalcAverageSpeed();
-    EXPECT_EQ(speed, 2000);
-}
-
-/**
- * @tc.name  : Test CalcDesiredBitRate
- * @tc.number: CalcDesiredBitRate_001
- * @tc.desc  : Test CalcDesiredBitRate returns 0 when no stream matches
- */
-HWTEST_F(HttpMediaDownloaderUnitTest, CalcDesiredBitRate_001, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
-    downloader->Init();
-    downloader->defaultStream_ = std::make_shared<PlayMediaStream>();
-    downloader->defaultStream_->bitrate = 500;
-    downloader->playMediaStreams_ = {downloader->defaultStream_};
-    auto result = downloader->CalcDesiredBitRate(1000);
-    EXPECT_EQ(result, 0);
 }
 
 /**

@@ -30,9 +30,6 @@ namespace Plugins {
 namespace HttpPlugin {
 
 namespace {
-    constexpr uint32_t AUDIO_BUFFERING_FLAG = 1;
-    constexpr uint32_t VIDEO_BUFFERING_FLAG = 2;
-    constexpr uint32_t SUBTITLES_BUFFERING_FLAG = 4;
 }
 
 //   hls manifest, m3u8 --- content get from m3u8 url, we get play list from the content
@@ -71,12 +68,6 @@ void HlsMediaDownloader::Init()
         shareDownloader->OnMasterReady(needAudioManager, needSubtitlesManager);
     };
     videoSegManager_->SetMasterReadyCallback(callback);
-    auto bufferingCallback = [weakDownloader] (HlsSegmentType mediaType, BufferingInfoType type) {
-        auto shareDownloader = weakDownloader.lock();
-        FALSE_RETURN_MSG(shareDownloader != nullptr, "bufferingEventCb, Hls Media Downloader already destoryed.");
-        shareDownloader->PostBufferingEvent(mediaType, type);
-    };
-    videoSegManager_->SetSegmentBufferingCallback(bufferingCallback);
     auto segEventCallback = [weakDownloader] (HlsSegEvent event) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "allEventCb, Hls Media Downloader already destoryed.");
@@ -265,19 +256,6 @@ void HlsMediaDownloader::SetCallback(const std::shared_ptr<Callback>& cb)
     subtitlesSegManager_->SetCallback(cb);
 }
 
-bool HlsMediaDownloader::GetStartedStatus()
-{
-    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "GetStartedStatus no video segment manager found!");
-    auto isVideoStarted = videoSegManager_->GetStartedStatus();
-    if (audioSegManager_ != nullptr) {
-        isVideoStarted = isVideoStarted && audioSegManager_->GetStartedStatus();
-    }
-    if (subtitlesSegManager_ != nullptr) {
-        isVideoStarted = isVideoStarted && subtitlesSegManager_->GetStartedStatus();
-    }
-    return isVideoStarted;
-}
-
 void HlsMediaDownloader::SetStatusCallback(StatusCallbackFunc cb)
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "SetStatusCallback no video segment manager found!");
@@ -420,12 +398,6 @@ bool HlsMediaDownloader::GetPlayable()
     return videoSegManager_->GetPlayable();
 }
 
-bool HlsMediaDownloader::GetBufferingTimeOut()
-{
-    FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, true, "GetBufferingTimeOut no video segment manager found!");
-    return videoSegManager_->GetBufferingTimeOut();
-}
-
 bool HlsMediaDownloader::GetReadTimeOut(bool isDelay)
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, true, "GetReadTimeOut no video segment manager found!");
@@ -472,7 +444,7 @@ Status HlsMediaDownloader::StopBufferring(bool isAppBackground)
 void HlsMediaDownloader::WaitForBufferingEnd()
 {
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "WaitForBufferingEnd no video segment manager found!");
-    return videoSegManager_->WaitForBufferingEnd();
+    videoSegManager_->WaitForBufferingEnd();
 }
 
 void HlsMediaDownloader::SetIsReportedErrorCode()
@@ -676,51 +648,6 @@ void HlsMediaDownloader::PostAllEvent(HlsSegEvent event)
     }
 }
 
-void HlsMediaDownloader::PostBufferingEvent(HlsSegmentType mediaType, BufferingInfoType type)
-{
-    std::shared_ptr<Callback> callback;
-    {
-        std::lock_guard<std::mutex> lock(callbackMutex_);
-        callback = callback_.lock();
-    }
-    FALSE_RETURN_MSG(callback, "PostBufferingEvent no callback");
-    std::lock_guard<std::mutex> bufferingLock(bufferingMutex_);
-    uint32_t flag;
-    switch (mediaType) {
-        case HlsSegmentType::SEG_VIDEO:
-            flag = VIDEO_BUFFERING_FLAG;
-            break;
-        case HlsSegmentType::SEG_AUDIO:
-            flag = AUDIO_BUFFERING_FLAG;
-            break;
-        case HlsSegmentType::SEG_SUBTITLE:
-            flag = SUBTITLES_BUFFERING_FLAG;
-            break;
-        default:
-            MEDIA_LOG_D("PostBufferingEvent unknown media type");
-            return;
-    }
-    MEDIA_LOG_I("PostBufferingEvent flag: %{public}u, start: %{public}d, end: %{public}d, type: %{public}d",
-        bufferingFlag_, type == BufferingInfoType::BUFFERING_START, type == BufferingInfoType::BUFFERING_END, type);
-    if (type == BufferingInfoType::BUFFERING_START) {
-        if (bufferingFlag_ == 0) {
-            MEDIA_LOG_I("PostBufferingEvent buffering start");
-            callback->OnEvent({PluginEventType::BUFFERING_START, {BufferingInfoType::BUFFERING_START}, "start"});
-        }
-        bufferingFlag_ |= flag;
-    } else if (type == BufferingInfoType::BUFFERING_END) {
-        uint32_t lastBufferingFlag = bufferingFlag_;
-        if ((bufferingFlag_ & flag) > 0) {
-            bufferingFlag_ ^= flag;
-        }
-        if (lastBufferingFlag > 0 && bufferingFlag_ == 0) {
-            MEDIA_LOG_I("PostBufferingEvent buffering end");
-            callback->OnEvent({PluginEventType::BUFFERING_END, {BufferingInfoType::BUFFERING_END}, "end"});
-        }
-    } else {
-        MEDIA_LOG_D("PostBufferingEvent unknown type");
-    }
-}
 }
 }
 }

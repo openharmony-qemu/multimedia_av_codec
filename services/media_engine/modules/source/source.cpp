@@ -51,8 +51,6 @@ Source::Source()
       uri_(),
       seekable_(Seekable::INVALID),
       plugin_(nullptr),
-      isPluginReady_(false),
-      isAboveWaterline_(false),
       mediaDemuxerCallback_(std::make_shared<CallbackImpl>())
 {
     MEDIA_LOG_D("Source called");
@@ -78,8 +76,6 @@ void Source::ClearData()
     protocol_.clear();
     uri_.clear();
     seekable_ = Seekable::INVALID;
-    isPluginReady_ = false;
-    isAboveWaterline_ = false;
     seekToTimeFlag_ = false;
 }
 
@@ -186,12 +182,6 @@ Status Source::Prepare()
     Status ret = plugin_->Prepare();
     if (ret == Status::OK) {
         MEDIA_LOG_D("media source send EVENT_READY");
-    } else if (ret == Status::ERROR_DELAY_READY) {
-        if (isAboveWaterline_) {
-            MEDIA_LOG_D("media source send EVENT_READY");
-            isPluginReady_ = false;
-            isAboveWaterline_ = false;
-        }
     }
     return ret;
 }
@@ -339,13 +329,6 @@ void Source::OnEvent(const Plugins::PluginEvent& event)
     MEDIA_LOG_D("OnEvent");
     if (protocol_ == "http" && isInterruptNeeded_) {
         MEDIA_LOG_I("http OnEvent isInterruptNeeded, return");
-        return;
-    }
-    if (event.type == PluginEventType::ABOVE_LOW_WATERLINE) {
-        if (isPluginReady_ && isAboveWaterline_) {
-            isPluginReady_ = false;
-            isAboveWaterline_ = false;
-        }
         return;
     }
     OnMediaDemuxerEvent(event);

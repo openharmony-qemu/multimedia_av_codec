@@ -166,14 +166,12 @@ void PostDownloadSetup(std::shared_ptr<HttpMediaDownloader> httpMediaDownloader)
     httpMediaDownloader->SetInitialBufferSize(offset, cursize);
     httpMediaDownloader->IsNotRetry(httpMediaDownloader->downloadRequest_);
     httpMediaDownloader->SetIsReportedErrorCode();
-    httpMediaDownloader->WaitForBufferingEnd();
     bool isAppBackground = GetData<bool>();
     httpMediaDownloader->StopBufferring(isAppBackground);
     int32_t appUid = GetData<int32_t>();
     httpMediaDownloader->SetAppUid(appUid);
     bool isDelay = GetData<bool>();
     httpMediaDownloader->GetReadTimeOut(isDelay);
-    httpMediaDownloader->GetBufferingTimeOut();
     httpMediaDownloader->GetPlayable();
     httpMediaDownloader->GetBufferSize();
     int32_t curbitRate = GetData<int32_t>();
@@ -199,7 +197,6 @@ void PostDownloadCleanup(std::shared_ptr<HttpMediaDownloader> httpMediaDownloade
     httpMediaDownloader->SetDemuxerState(streamId);
     bool isReadBlockingAllowed = GetData<bool>();
     httpMediaDownloader->SetReadBlockingFlag(isReadBlockingAllowed);
-    httpMediaDownloader->GetStartedStatus();
     httpMediaDownloader->GetSeekable();
     httpMediaDownloader->GetDuration();
     httpMediaDownloader->GetContentLength();

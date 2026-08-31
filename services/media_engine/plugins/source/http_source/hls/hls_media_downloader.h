@@ -67,7 +67,6 @@ public:
     Seekable GetSeekable() const override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
-    bool GetStartedStatus() override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitRate) override;
     void SetIsTriggerAutoMode(bool isAuto) override;
@@ -80,7 +79,6 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     uint64_t GetBufferSize() const override;
     bool GetPlayable() override;
-    bool GetBufferingTimeOut() override;
     bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
     size_t GetSegmentOffset() override;
@@ -100,7 +98,6 @@ public:
     Status SelectStream(int32_t streamId) override;
     std::string GetMaskUrlByReadIndex(int32_t streamId) override;
     void PostAllEvent(HlsSegEvent event);
-    void PostBufferingEvent(HlsSegmentType mediaType, BufferingInfoType type);
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
@@ -115,8 +112,6 @@ private:
     std::shared_ptr<HlsSegmentManager> videoSegManager_ {nullptr};
     std::shared_ptr<HlsSegmentManager> audioSegManager_ {nullptr};
     std::shared_ptr<HlsSegmentManager> subtitlesSegManager_ {nullptr};
-    uint32_t bufferingFlag_ {0};
-    std::mutex bufferingMutex_;
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};
 };

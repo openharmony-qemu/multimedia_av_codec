@@ -221,11 +221,6 @@ HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_CONTENT_LENGTH, TestSize.Level1)
     EXPECT_EQ(g_mediaDownloader->GetContentLength(), 0);
 }
 
-HWTEST_F(DashMediaDownloaderUnitTest, TEST_GET_STARTED_STATUS, TestSize.Level1)
-{
-    EXPECT_TRUE(g_mediaDownloader->GetStartedStatus());
-}
-
 HWTEST_F(DashMediaDownloaderUnitTest, TEST_SET_CALLBACK, TestSize.Level1)
 {
     auto mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);

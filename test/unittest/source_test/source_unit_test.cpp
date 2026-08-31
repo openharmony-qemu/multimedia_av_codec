@@ -270,11 +270,8 @@ HWTEST_F(SourceUnitTest, Source_OnEvent_0100, TestSize.Level1)
     source_->OnEvent(event);
     event.type = PluginEventType::EVENT_CHANNEL_CLOSED;
     source_->OnEvent(event);
-    source_->isPluginReady_ = true;
-    source_->isAboveWaterline_ = true;
     event.type = PluginEventType::ABOVE_LOW_WATERLINE;
     source_->OnEvent(event);
-    EXPECT_FALSE(source_->isPluginReady_ && source_->isAboveWaterline_);
 }
 /**
  * @tc.name: Source_GetUriSuffix_0100

@@ -113,8 +113,6 @@ void IncreaseCoverageRead(std::shared_ptr<HlsSegmentManager> &hlsSegmentManager)
 
     hlsSegmentManager->GetPlayable();
 
-    hlsSegmentManager->GetStartedStatus();
-
     PlaybackInfo playbackInfo;
     hlsSegmentManager->GetPlaybackInfo(playbackInfo);
 
