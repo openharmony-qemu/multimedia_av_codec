@@ -31,6 +31,8 @@ public:
 
     Status GetAvailableEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo);
     Status IsWatermarkSupported(std::string &CodecMimeType, bool &isWatermarkSupported);
+    Status GetCapabilityByMime(const std::string &mime, bool isEncoder,
+        MediaAVCodec::AVCodecCategory category, MediaAVCodec::CapabilityData* &capabilityData);
 private:
     Status GetVideoEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo);
 
