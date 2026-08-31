@@ -41,6 +41,7 @@ public:
     int32_t QueueInputBuffer(uint32_t index) override;
     int32_t QueueInputParameter(uint32_t index) override;
     int32_t GetOutputFormat(Format &format) override;
+    int32_t GetCodecInfo(Format &format) override;
     int32_t ReleaseOutputBuffer(uint32_t index) override;
     int32_t QueryInputBuffer(uint32_t &index, int64_t timeoutUs) override;
     int32_t QueryOutputBuffer(uint32_t &index, int64_t timeoutUs) override;
