@@ -5075,6 +5075,13 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     return ret;
 }
 
+void MPEG4AtomParser::NotifyInitializationCompleted()
+{
+    if (dataReader_ != nullptr) {
+        dataReader_->NotifyInitializationCompleted();
+    }
+}
+
 // LCOV_EXCL_START
 Status MPEG4AtomParser::ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {

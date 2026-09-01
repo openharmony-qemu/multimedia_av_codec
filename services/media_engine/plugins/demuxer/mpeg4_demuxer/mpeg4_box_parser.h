@@ -150,6 +150,7 @@ public:
     void ClearTrackSaizSaioState();
     void PadSampleEncryptionEntries();
     const std::vector<Mpeg4PsshInfo>& GetPsshList() const;
+    void NotifyInitializationCompleted();
     
 private:
     std::shared_ptr<Track> firstTrack_;

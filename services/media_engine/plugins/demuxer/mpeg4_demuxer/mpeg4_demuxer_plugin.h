@@ -210,7 +210,7 @@ private:
     void GetAVTrackIds();
     Status ParseAVFirstFrames();
     bool FirstFrameValid(uint32_t trackIndex);
-    bool IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffer);
+    bool IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffer, bool replaceMemory);
 
     Status SetDrmCencInfo(uint32_t trackId, std::shared_ptr<AVBuffer> sample, int32_t sampleSize,
         int32_t oldSampleSize = -1, uint32_t sampleIndex = UINT32_MAX);

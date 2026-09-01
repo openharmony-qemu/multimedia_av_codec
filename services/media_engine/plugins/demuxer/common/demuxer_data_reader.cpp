@@ -18,6 +18,7 @@
 #include <chrono>
 #include <cstring>
 #include <thread>
+#include "avcodec_log.h"
 #include "avcodec_trace.h"
 #include "common/log.h"
 #include "demuxer_data_reader.h"
@@ -33,6 +34,9 @@ constexpr uint8_t BYTE_LENGTH = 8;
 constexpr uint8_t READ_RETRY_TIMES = 10;
 constexpr uint32_t READ_RETRY_SLEEP_TIME_US = 5000;
 constexpr size_t READ_CACHE_SIZE = 4096;
+constexpr uint64_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
+constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
+constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 
 Status DemuxerDataReader::SetDataReader(const std::shared_ptr<DataSource>& source)
 {
@@ -130,7 +134,9 @@ Status DemuxerDataReader::FillReadCache(int64_t offset)
     while (ret == Status::ERROR_AGAIN &&
         (readTimeoutConfigured_ || count < READ_RETRY_TIMES)) {
         ret = dataSource_->ReadAt(offset, bufferInfo, readCache_.size());
-        if (bufferMemory->GetSize() > 0) {
+        size_t readSize = bufferMemory->GetSize();
+        UpdateInitDownloadData(readSize);
+        if (readSize > 0) {
             readStartTimeMs_ = 0;
             hasProgress = true;
             break;
@@ -171,6 +177,7 @@ Status DemuxerDataReader::ReadFully(int64_t offset, uint8_t* buffer, size_t size
         while (ret == Status::ERROR_AGAIN && (readTimeoutConfigured_ || count < READ_RETRY_TIMES)) {
             ret = dataSource_->ReadAt(offset + static_cast<int64_t>(totalRead), bufferInfo, remaining);
             size_t readSize = bufferMemory->GetSize();
+            UpdateInitDownloadData(readSize);
             if (readSize > 0) {
                 readSize = readSize > remaining ? remaining : readSize;
                 totalRead += readSize;
@@ -192,6 +199,26 @@ Status DemuxerDataReader::ReadFully(int64_t offset, uint8_t* buffer, size_t size
     }
 
     return Status::OK;
+}
+
+void DemuxerDataReader::UpdateInitDownloadData(size_t dataSize)
+{
+    if (!initCompleted_) {
+        if (initDownloadDataSize_ <= UINT64_MAX - static_cast<uint64_t>(dataSize)) {
+            initDownloadDataSize_ += static_cast<uint64_t>(dataSize);
+        } else {
+            AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGW, LOG_INTERVAL_MS, LOG_MAX_COUNT,
+                "DataSize " PUBLIC_LOG_U64 " is invalid", static_cast<uint64_t>(dataSize));
+        }
+    }
+}
+
+void DemuxerDataReader::NotifyInitializationCompleted()
+{
+    initCompleted_ = true;
+    if (initDownloadDataSize_ >= INIT_DOWNLOADS_DATA_SIZE_THRESHOLD) {
+        MEDIA_LOG_I("Large init size " PUBLIC_LOG_U64, initDownloadDataSize_);
+    }
 }
 
 bool DemuxerBitReader::HasBits(size_t numBits) const
