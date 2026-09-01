@@ -361,11 +361,11 @@ void HlsSegmentManager::UpdateAesDecryptor(const PlayInfo& playInfo)
     auto decryptor = playlistDownloader_->GetAesDecryptor(playInfo.keyIndex_);
     if (decryptor == nullptr && playInfo.keyIndex_ > 0) {
         constexpr uint32_t KEY_WAIT_TIMEOUT_MS = 5000;
-        bool ready = playlistDownloader_->WaitForKeyReady(playInfo.keyIndex, KEY_WAIT_TIMEOUT_MS);
+        bool ready = playlistDownloader_->WaitForKeyReady(playInfo.keyIndex_, KEY_WAIT_TIMEOUT_MS);
         if (ready) {
             decryptor = playlistDownloader_->GetAesDecryptor(playInfo.keyIndex_);
         } else {
-            MEDIA_LOG_E("key not ready");
+            MEDIA_LOG_E("Key not ready for keyIndex" PUBLIC_LOG_U64, playInfo.keyIndex_);
         }
     }
     SetAesDecryptor(decryptor);

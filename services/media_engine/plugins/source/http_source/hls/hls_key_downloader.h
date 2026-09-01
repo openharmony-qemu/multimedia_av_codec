@@ -32,9 +32,9 @@
 namespace OHOS {
 namespace Media {
 namespace Plugins {
-namespace HttpPlugin{
+namespace HttpPlugin {
 
-class KeyDownloader ：public std::enable_shared_from_this<KeyDownloader> {
+class KeyDownloader : public std::enable_shared_from_this<KeyDownloader> {
 public:
     KeyDownloader(std::shared_ptr<AesDecryptorManager> aesDecryptorManager,
                   const std::map<std::string, std::string>& httpHeader,
@@ -48,19 +48,19 @@ public:
 
 private:
     void DownloadNextKey();
-    uint32_t OnKeyDataSaved(uint8_t data, uint32_t len, bool noBlock, uint64_t keyIndex);
+    uint32_t OnKeyDataSaved(uint8_t* data, uint32_t len, bool notBlock, uint64_t keyIndex);
     void OnKeyDownloadDone(const std::string& url, const std::string& location);
 
     std::shared_ptr<Downloader> downloader_;
-    std::shared_ptr<AesDecryptorManager> aesDecrytorManager_;
+    std::shared_ptr<AesDecryptorManager> aesDecryptorManager_;
     std::map<std::string, std::string> httpHeader_;
     std::string baseUri_;
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_;
     std::queue<KeyInfo> pendingKeys_;
     std::mutex queueMutex_;
     KeyInfo currentKey_;
-    std::atomice<bool> isInterruptNeeded_ {false};
-    std::atomice<bool> isDownloading_ {false};
+    std::atomic<bool> isInterruptNeeded_ {false};
+    std::atomic<bool> isDownloading_ {false};
 
     std::mutex readyMutex_;
     std::condition_variable readyCond_;
