@@ -34,7 +34,7 @@ constexpr uint8_t BYTE_LENGTH = 8;
 constexpr uint8_t READ_RETRY_TIMES = 10;
 constexpr uint32_t READ_RETRY_SLEEP_TIME_US = 5000;
 constexpr size_t READ_CACHE_SIZE = 4096;
-const uint64_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
+constexpr uint64_t INIT_DOWNLOADS_DATA_SIZE_THRESHOLD = 2 * 1024 * 1024;
 constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 
