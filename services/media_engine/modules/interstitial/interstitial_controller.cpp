@@ -119,8 +119,10 @@ Status InterstitialController::AddAdsMediaSource(const std::shared_ptr<MediaSour
 
     if (startMs == 0 && playState_ == InterstitialPlayState::IDLE) {
         std::lock_guard<std::mutex> lock(adMutex_);
-        MEDIA_LOG_I("AddAdsMediaSource: pre-roll ad detected, will trigger on DoStart");
-        preRollAdId_ = id;
+        if (preRollAdId_.empty()) {
+            MEDIA_LOG_I("AddAdsMediaSource: pre-roll ad detected, will trigger on DoStart");
+            preRollAdId_ = id;
+        }
     }
 
     return Status::OK;
