@@ -1877,5 +1877,291 @@ HWTEST_F(InterstitialControllerUnitTest, Continuous_004, TestSize.Level1)
     EXPECT_EQ(controller_->GetPlayState(), InterstitialPlayState::IDLE);
 }
 
+// ==================== Thread Safety (Race Condition Fixes) ====================
+
+/**
+ * @tc.name  : Test EmitAdStartEvent with entry removed before call
+ * @tc.number: RaceSafe_001
+ * @tc.desc  : Test EmitAdStartEvent returns early when entry is removed
+ *             between setting currentAdId_ and invoking EmitAdStartEvent
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_001, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->currentAdId_ = "removed_ad";
+
+    bool callbackInvoked = false;
+    controller_->SetAdsEventCallback([&callbackInvoked](const AdsChangeEvent& event) {
+        callbackInvoked = true;
+    });
+
+    controller_->EmitAdStartEvent();
+    EXPECT_FALSE(callbackInvoked);
+}
+
+/**
+ * @tc.name  : Test EmitAdStartEvent with empty currentAdId_
+ * @tc.number: RaceSafe_002
+ * @tc.desc  : Test EmitAdStartEvent returns early when currentAdId_ is empty
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_002, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->currentAdId_.clear();
+
+    bool callbackInvoked = false;
+    controller_->SetAdsEventCallback([&callbackInvoked](const AdsChangeEvent& event) {
+        callbackInvoked = true;
+    });
+
+    controller_->EmitAdStartEvent();
+    EXPECT_FALSE(callbackInvoked);
+}
+
+/**
+ * @tc.name  : Test EmitAdStartEvent updates duration and emits event
+ * @tc.number: RaceSafe_003
+ * @tc.desc  : Test EmitAdStartEvent reads duration from demuxer,
+ *             updates entries_, and emits STARTED event
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_003, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->SetMainContentUri("http://example.com/main.mp4");
+
+    auto source = std::make_shared<Plugins::MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    controller_->AddAdsMediaSource(source, 1000, outId);
+
+    controller_->currentAdId_ = outId;
+    mockDemuxer_->source_ = nullptr;
+
+    AdsChangeEvent receivedEvent;
+    controller_->SetAdsEventCallback([&receivedEvent](const AdsChangeEvent& event) {
+        receivedEvent = event;
+    });
+
+    controller_->EmitAdStartEvent();
+    EXPECT_EQ(receivedEvent.type, AdsEventType::STARTED);
+    EXPECT_EQ(receivedEvent.eventId, outId);
+}
+
+/**
+ * @tc.name  : Test DoSwitch clears currentAdId_ on failure under lock
+ * @tc.number: RaceSafe_004
+ * @tc.desc  : Test DoSwitch error path clears currentAdId_ safely
+ *             and emits ERROR event with the pre-copied entry
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_004, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->SetMainContentUri("http://example.com/main.mp4");
+    mockDemuxer_->source_ = nullptr;
+
+    auto source = std::make_shared<Plugins::MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    controller_->AddAdsMediaSource(source, 1000, outId);
+
+    AdsChangeEvent receivedEvent;
+    controller_->SetAdsEventCallback([&receivedEvent](const AdsChangeEvent& event) {
+        receivedEvent = event;
+    });
+
+    EXPECT_FALSE(controller_->DoSwitch(outId));
+    EXPECT_TRUE(controller_->currentAdId_.empty());
+    EXPECT_EQ(controller_->GetPlayState(), InterstitialPlayState::IDLE);
+    EXPECT_EQ(receivedEvent.type, AdsEventType::ERROR);
+    EXPECT_EQ(receivedEvent.eventId, outId);
+}
+
+/**
+ * @tc.name  : Test DoResume clears currentAdId_ under lock
+ * @tc.number: RaceSafe_005
+ * @tc.desc  : Test DoResume error path (empty URI) clears currentAdId_ under lock
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_005, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->mainContentUri_ = "";
+    controller_->syncMgr_ = nullptr;
+    controller_->playState_ = InterstitialPlayState::PLAYING;
+    controller_->currentAdId_ = "test_ad";
+    controller_->resumePointMs_ = 5000;
+
+    controller_->DoResume();
+    EXPECT_TRUE(controller_->currentAdId_.empty());
+    EXPECT_EQ(controller_->GetPlayState(), InterstitialPlayState::IDLE);
+}
+
+/**
+ * @tc.name  : Test DoResume normal path clears currentAdId_ under lock
+ * @tc.number: RaceSafe_006
+ * @tc.desc  : Test DoResume normal path clears currentAdId_ under lock
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_006, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->SetMainContentUri("http://example.com/main.mp4");
+    controller_->playState_ = InterstitialPlayState::PLAYING;
+    controller_->currentAdId_ = "test_ad";
+    controller_->resumePointMs_ = 5000;
+    controller_->originalSpeed_ = 1.0f;
+
+    controller_->DoResume();
+    EXPECT_TRUE(controller_->currentAdId_.empty());
+    EXPECT_EQ(controller_->GetPlayState(), InterstitialPlayState::IDLE);
+}
+
+/**
+ * @tc.name  : Test preRollAdId_ is set under lock in AddAdsMediaSource
+ * @tc.number: RaceSafe_007
+ * @tc.desc  : Test AddAdsMediaSource sets preRollAdId_ under adMutex_
+ *             when startMs=0 and state is IDLE
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_007, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->SetMainContentUri("http://example.com/main.mp4");
+
+    auto source = std::make_shared<Plugins::MediaSource>("http://example.com/preroll.mp4");
+    std::string outId;
+    auto ret = controller_->AddAdsMediaSource(source, 0, outId);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(controller_->preRollAdId_, outId);
+}
+
+/**
+ * @tc.name  : Test preRollAdId_ not overwritten by second pre-roll
+ * @tc.number: RaceSafe_008
+ * @tc.desc  : Test AddAdsMediaSource does not overwrite preRollAdId_
+ *             when it is already set (lock-protected check)
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_008, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->SetMainContentUri("http://example.com/main.mp4");
+
+    auto source1 = std::make_shared<Plugins::MediaSource>("http://example.com/preroll1.mp4");
+    auto source2 = std::make_shared<Plugins::MediaSource>("http://example.com/preroll2.mp4");
+    std::string outId1, outId2;
+
+    controller_->AddAdsMediaSource(source1, 0, outId1);
+    EXPECT_EQ(controller_->preRollAdId_, outId1);
+
+    controller_->AddAdsMediaSource(source2, 0, outId2);
+    EXPECT_EQ(controller_->preRollAdId_, outId1);
+}
+
+/**
+ * @tc.name  : Test TryPreRollAd accesses preRollAdId_ under lock
+ * @tc.number: RaceSafe_009
+ * @tc.desc  : Test TryPreRollAd clears preRollAdId_ under lock when disabled
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_009, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->SetMainContentUri("http://example.com/main.mp4");
+
+    auto source = std::make_shared<Plugins::MediaSource>("http://example.com/preroll.mp4");
+    std::string outId;
+    controller_->AddAdsMediaSource(source, 0, outId);
+    EXPECT_FALSE(controller_->preRollAdId_.empty());
+
+    controller_->DisableAllAdsMediaSource();
+    controller_->TryPreRollAd();
+    EXPECT_TRUE(controller_->preRollAdId_.empty());
+}
+
+/**
+ * @tc.name  : Test TryPreRollAd clears preRollAdId_ when entry already played
+ * @tc.number: RaceSafe_010
+ * @tc.desc  : Test TryPreRollAd clears preRollAdId_ under lock
+ *             when the entry has already been played
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_010, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->SetMainContentUri("http://example.com/main.mp4");
+
+    auto source = std::make_shared<Plugins::MediaSource>("http://example.com/preroll.mp4");
+    std::string outId;
+    controller_->AddAdsMediaSource(source, 0, outId);
+    controller_->entries_[outId].played = true;
+
+    controller_->TryPreRollAd();
+    EXPECT_TRUE(controller_->preRollAdId_.empty());
+}
+
+/**
+ * @tc.name  : Test callback reentrancy does not deadlock in DoSwitch error
+ * @tc.number: RaceSafe_011
+ * @tc.desc  : Test DoSwitch error path: EmitEndEvent callback calls back
+ *             into controller (e.g. AddAdsMediaSource) without deadlock
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_011, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->SetMainContentUri("http://example.com/main.mp4");
+    mockDemuxer_->source_ = nullptr;
+
+    auto source = std::make_shared<Plugins::MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    controller_->AddAdsMediaSource(source, 1000, outId);
+
+    bool reentrantCalled = false;
+    controller_->SetAdsEventCallback([&](const AdsChangeEvent& event) {
+        if (event.type == AdsEventType::ERROR) {
+            auto src2 = std::make_shared<Plugins::MediaSource>("http://example.com/ad2.mp4");
+            std::string outId2;
+            controller_->AddAdsMediaSource(src2, 2000, outId2);
+            reentrantCalled = true;
+        }
+    });
+
+    EXPECT_FALSE(controller_->DoSwitch(outId));
+    EXPECT_TRUE(reentrantCalled);
+}
+
+/**
+ * @tc.name  : Test callback reentrancy does not deadlock in EmitAdStartEvent
+ * @tc.number: RaceSafe_012
+ * @tc.desc  : Test EmitAdStartEvent: EmitStartEvent callback calls back
+ *             into controller (e.g. AddAdsMediaSource) without deadlock
+ */
+HWTEST_F(InterstitialControllerUnitTest, RaceSafe_012, TestSize.Level1)
+{
+    controller_->Init(mockDemuxer_, mockSyncMgr_);
+    controller_->SetLiveSource(false);
+    controller_->SetMainContentUri("http://example.com/main.mp4");
+    mockDemuxer_->source_ = nullptr;
+
+    auto source = std::make_shared<Plugins::MediaSource>("http://example.com/ad1.mp4");
+    std::string outId;
+    controller_->AddAdsMediaSource(source, 1000, outId);
+    controller_->currentAdId_ = outId;
+
+    bool reentrantCalled = false;
+    controller_->SetAdsEventCallback([&](const AdsChangeEvent& event) {
+        if (event.type == AdsEventType::STARTED) {
+            auto src2 = std::make_shared<Plugins::MediaSource>("http://example.com/ad2.mp4");
+            std::string outId2;
+            controller_->AddAdsMediaSource(src2, 2000, outId2);
+            reentrantCalled = true;
+        }
+    });
+
+    controller_->EmitAdStartEvent();
+    EXPECT_TRUE(reentrantCalled);
+}
+
 } // namespace Media
 } // namespace OHOS
