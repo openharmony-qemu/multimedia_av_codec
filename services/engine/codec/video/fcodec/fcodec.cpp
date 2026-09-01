@@ -60,10 +60,8 @@ using FMTKey = Media::Tag;
 
 FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::UNINITIALIZED)
 {
-#ifdef EMULATOR_ENABLED
-    isEmulator_ = true;
-#else
-    isEmulator_ = false;
+#ifdef DISABLE_DMABUFF
+    isShieldDmaBuffer_ = true;
 #endif
 }
 
@@ -328,6 +326,14 @@ void FCodec::ConfigureThread(const Format &format)
 
 int32_t FCodec::ConfigureContext(const Format &format)
 {
+    if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+        outputPixelFmt_ = VideoPixelFormat::NV12;
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
+        format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(outputPixelFmt_));
+        format_.PutIntValue(FMTKey::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
+    }
+    AVCODEC_LOGI("%{public}s output pixel format %{public}d", decName_.c_str(), static_cast<int32_t>(outputPixelFmt_));
+
     int32_t ret = AllocateCodecContext();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Configure codec failed: Allocate context error");
 
@@ -419,11 +425,6 @@ int32_t FCodec::Configure(const Format &format)
         }
     }
     GetSurfaceCfgFromFmt(format);
-    if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
-        outputPixelFmt_ = VideoPixelFormat::NV12;
-        format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(VideoPixelFormat::NV12));
-    }
-    AVCODEC_LOGI("%{public}s output pixel format %{public}d", decName_.c_str(), static_cast<int32_t>(outputPixelFmt_));
     int32_t ret = ConfigureContext(format);
     state_ = State::CONFIGURED;
     AVCODEC_LOGI("Configured codec successful: state: Initialized -> Configured");
@@ -961,44 +962,32 @@ int32_t FCodec::AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer)
 int32_t FCodec::AllocateOutputBuffer()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface == nullptr, AVCS_ERR_UNKNOWN, "Not in buffer mode!");
-    sptr<SurfaceBuffer> probeSb = nullptr;
-    int32_t probeRet = AllocateSurfaceBuffer(probeSb);
-    if (!isEmulator_ && (probeRet == AVCS_ERR_OK && probeSb != nullptr)) {
-        isUsedSharedMem_ = false;
-    } else {
-        AVCODEC_LOGW("Allocate surface buffer failed, fall back to shared memory, ret=%{public}d", probeRet);
-        isUsedSharedMem_ = true;
-    }
+    isUsedSharedMem_ = isShieldDmaBuffer_;
     int32_t valBufferCnt = 0;
     for (uint32_t i = 0u; i < outputBufferCnt_; i++) {
         std::shared_ptr<FBuffer> buf = std::make_shared<FBuffer>();
         CHECK_AND_RETURN_RET_LOG(buf != nullptr, AVCS_ERR_UNKNOWN, "Creata output buffer failed!");
         buf->width_ = width_;
         buf->height_ = height_;
-        if (!isUsedSharedMem_) {
-            if (i == 0u) {
-                buf->stride_ = probeSb->GetStride();
-                buf->avBuffer_ = AVBuffer::CreateAVBuffer(probeSb);
-            } else {
-                sptr<SurfaceBuffer> sb = nullptr;
-                int32_t ret = AllocateSurfaceBuffer(sb);
-                CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && sb != nullptr, ret,
-                                         "Alloc surface buffer failed, ret=%{public}d", ret);
-                buf->stride_ = sb->GetStride();
-                buf->avBuffer_ = AVBuffer::CreateAVBuffer(sb);
-            }
-        } else {
-            buf->stride_ = width_;
+        if (isUsedSharedMem_) {
             std::shared_ptr<AVAllocator> allocator =
-                AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+            AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
             CHECK_AND_CONTINUE_LOG(allocator != nullptr, "output buffer %{public}u allocator is nullptr", i);
             buf->avBuffer_ = AVBuffer::CreateAVBuffer(allocator, outputBufferSize_);
+            buf->stride_ = width_;
+        } else {
+            sptr<SurfaceBuffer> sb = nullptr;
+            int32_t ret = AllocateSurfaceBuffer(sb);
+            CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK && sb != nullptr, ret,
+                "Alloc surface buffer failed, ret=%{public}d", ret);
+            buf->avBuffer_ = AVBuffer::CreateAVBuffer(sb);
+            buf->stride_ = sb->GetStride();
         }
         CHECK_AND_CONTINUE_LOG(buf->avBuffer_ != nullptr && buf->avBuffer_->memory_ != nullptr,
                                "create output avbuffer failed, index=%{public}u", i);
         int32_t curBufSize = buf->avBuffer_->memory_->GetCapacity();
-        AVCODEC_LOGI("Allocate output buffer success: index=%{public}u, size=%{public}d, use shared memory: %{public}d",
-                     i, curBufSize, isUsedSharedMem_);
+        AVCODEC_LOGI("Allocate output buffer success: index=%{public}u, size=%{public}d, use %{public}s",
+                     i, curBufSize, isUsedSharedMem_ ? "shared memory" : "dma buffer");
         buffers_[INDEX_OUTPUT].emplace_back(buf);
         valBufferCnt++;
     }
@@ -1036,6 +1025,7 @@ int32_t FCodec::ClearSurfaceAndSetQueueSize()
 int32_t FCodec::AllocateOutputBuffersFromSurface()
 {
     CHECK_AND_RETURN_RET_LOG(sInfo_.surface != nullptr, AVCS_ERR_UNKNOWN, "Not in surface mode!");
+    isUsedSharedMem_ = false; // surface mode, must use dma buffer
     int32_t ret = ClearSurfaceAndSetQueueSize();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Clean surface and set queue size failed!");
     StartRequestSurfaceBufferThread();
@@ -1252,7 +1242,6 @@ void FCodec::ReleaseBuffers()
     outputBufferCnt_ = 0u;
     oLock.unlock();
     isBufferAllocated_ = false;
-    isUsedSharedMem_ = false;
 }
 
 int32_t FCodec::QueueInputBuffer(uint32_t index)
@@ -1392,12 +1381,6 @@ int32_t FCodec::FillFrameBuffer(const std::shared_ptr<FBuffer> &frameBuffer)
         frameData = converter_->GetData();
         frameLineSize = converter_->GetLineSize();
     }
-    {
-        std::lock_guard<std::mutex> lock(formatMutex_);
-        format_.PutIntValue(FMTKey::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(outputPixelFmt_));
-        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(outputPixelFmt_);
-        format_.PutIntValue(FMTKey::VIDEO_GRAPHIC_PIXEL_FORMAT, static_cast<int32_t>(surfacePixelFmt));
-    }
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
     CHECK_AND_RETURN_RET_LOG(bufferMemory != nullptr, AVCS_ERR_UNKNOWN, "bufferMemory is nullptr");
     bufferMemory->SetSize(0);
@@ -1522,10 +1505,10 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Check format change failed");
     std::vector<uint8_t> cropVec(sizeof(BufferHandleMetaRegion));
     std::vector<uint8_t> colorSpaceInfoData(sizeof(CM_ColorSpaceInfo));
-    if (!isEmulator_ && !isUsedSharedMem_) {
-        GetCropInfo(cropVec, isChanged);
-        GetColorAspectsInfo(colorSpaceInfoData, isChanged);
-    }
+#ifndef DISABLE_DMABUFF
+    GetCropInfo(cropVec, isChanged);
+    GetColorAspectsInfo(colorSpaceInfoData, isChanged);
+#endif
     if (decNum_ == 0) {
         callback_->OnOutputFormatChanged(format_);
     }
@@ -1542,16 +1525,16 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
     }
     oLock.unlock();
     CheckStrideChange(index, isChanged);
-    if (!isEmulator_ && !isUsedSharedMem_) {
-        std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
-        std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
-        sptr<SurfaceBuffer> surfacebuffer = bufferMemory->GetSurfaceBuffer();
-        CHECK_AND_RETURN_RET_LOG(surfacebuffer != nullptr, AVCS_ERR_UNKNOWN, "surfacebuffer is nullptr");
-        GSError err = surfacebuffer->SetMetadata(ATTRKEY_CROP_REGION, cropVec);
-        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_CROP_REGION failed");
-        err = surfacebuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoData);
-        CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_COLORSPACE_INFO failed");
-    }
+#ifndef DISABLE_DMABUFF
+    std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
+    std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
+    sptr<SurfaceBuffer> surfacebuffer = bufferMemory->GetSurfaceBuffer();
+    CHECK_AND_RETURN_RET_LOG(surfacebuffer != nullptr, AVCS_ERR_UNKNOWN, "surfacebuffer is nullptr");
+    GSError err = surfacebuffer->SetMetadata(ATTRKEY_CROP_REGION, cropVec);
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_CROP_REGION failed");
+    err = surfacebuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoData);
+    CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_COLORSPACE_INFO failed");
+#endif
     decNum_++;
     return AVCS_ERR_OK;
 }
