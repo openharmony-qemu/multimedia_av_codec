@@ -52,7 +52,7 @@ bool IsEncoderBitrateModeSupported(CapabilityData *capData, VideoEncodeBitrateMo
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0101
- * @tc.desc: codec dma tag with ascii visible characters should be accepted (non-ascii/whitespace filtered) through inner encoder configure
+ * @tc.desc: codec dma tag ascii visible accepted after non-ascii/whitespace filtering through inner encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0101, TestSize.Level3)
@@ -64,7 +64,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0101, TestS
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0102
- * @tc.desc: codec dma tag should be rejected if empty after filtering non-ascii/whitespace through inner encoder configure
+ * @tc.desc: codec dma tag rejected if empty after non-ascii/whitespace filtering through inner encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0102, TestSize.Level3)
@@ -76,7 +76,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0102, Tes
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0103
- * @tc.desc: codec dma tag should reject pure digits after filtering non-ascii/whitespace through inner encoder configure
+ * @tc.desc: codec dma tag reject pure digits after non-ascii/whitespace filtering through inner encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0103, TestSize.Level3)
@@ -117,7 +117,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0105, TestS
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0106
- * @tc.desc: codec dma tag with non-ascii chars should be filtered, remaining non-digit accepted through inner encoder configure
+ * @tc.desc: codec dma tag non-ascii filtered, remaining non-digit accepted through inner encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0106, TestSize.Level3)
@@ -129,7 +129,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0106, TestS
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0107
- * @tc.desc: codec dma tag with non-ascii chars filtered to pure digits should be rejected through inner encoder configure
+ * @tc.desc: codec dma tag non-ascii filtered to pure digits, rejected through inner encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0107, TestSize.Level3)
@@ -141,7 +141,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0107, Tes
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0108
- * @tc.desc: codec dma tag with only non-ascii chars filtered to empty should be rejected through inner encoder configure
+ * @tc.desc: codec dma tag only non-ascii filters to empty, rejected through inner encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0108, TestSize.Level3)

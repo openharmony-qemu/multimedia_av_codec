@@ -132,7 +132,7 @@ void SetFormatBasicParam(bool isDecoder)
 namespace {
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0101
- * @tc.desc: codec dma tag with ascii visible characters should be accepted (non-ascii/whitespace filtered) through C encoder configure
+ * @tc.desc: codec dma tag ascii visible accepted after non-ascii/whitespace filtering through C encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0101, TestSize.Level3)
@@ -192,7 +192,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0105, 
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0106
- * @tc.desc: codec dma tag with non-ascii chars should be filtered, remaining non-digit accepted through C encoder configure
+ * @tc.desc: codec dma tag non-ascii filtered, remaining non-digit accepted through C encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0106, TestSize.Level3)
