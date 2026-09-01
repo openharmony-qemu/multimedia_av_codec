@@ -22,6 +22,7 @@
 #include "playlist_downloader.h"
 #include "m3u8.h"
 #include "utils/aes_decryptor.h"
+#include "hls_key_downloader.h"
 #include <shared_mutex>
 #include <atomic>
 
@@ -87,6 +88,7 @@ public:
     bool IsLiveEnd() override;
     std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override;
     bool HasExplicitIv(uint64_t keyIndex) override;
+    bool WaitForKeyReady(uint64_t keyIndex, uint32_t timeoutMs) override;
 private:
     bool IsLiveTimeShiftSeekable();
     void UpdateMasterInfo(bool isPreParse);
@@ -149,6 +151,7 @@ private:
     bool isLiveEnd_ {false};
     std::atomic<bool> isPreParseFinished_ {false};
     std::shared_ptr<AesDecryptorManager> aesDecryptorManager_;
+    std::shared_ptr<KeyDownloader> keyDownloader_;
     mutable std::mutex seekRangeMutex_;
     std::vector<SeekRange> seekRanges_ {};
     int64_t liveBaseOffset_ {0};

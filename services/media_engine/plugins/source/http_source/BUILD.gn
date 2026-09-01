@@ -116,6 +116,7 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "download/app_client.cpp",
     "download/downloader.cpp",
     "download/media_source_loading_request.cpp",
+    "hls/hls_key_downloader.cpp",
     "hls/hls_media_downloader.cpp",
     "hls/hls_playlist_downloader.cpp",
     "hls/hls_tags.cpp",

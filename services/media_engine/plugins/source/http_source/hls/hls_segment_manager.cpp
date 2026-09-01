@@ -352,17 +352,24 @@ void HlsSegmentManager::ConfigureAndDownload(const PlayInfo& playInfo, bool isRe
 void HlsSegmentManager::UpdateAesDecryptor(const PlayInfo& playInfo)
 {
     FALSE_RETURN(playlistDownloader_ != nullptr);
-    SetAesDecryptor(playlistDownloader_->GetAesDecryptor(playInfo.keyIndex_));
-    if (!playlistDownloader_->HasExplicitIv(playInfo.keyIndex_)) {
+    auto decryptor = playlistDownloader_->GetAesDecryptor(playInfo.keyIndex_);
+    if (decryptor == nullptr && playInfo.keyIndex_ > 0) {
+        constexpr uint32_t KEY_WAIT_TIMEOUT_MS = 5000;
+        bool ready = playlistDownloader_->WaitForKeyReady(playInfo.keyIndex, KEY_WAIT_TIMEOUT_MS);
+        if (ready) {
+            decryptor = playlistDownloader_->GetAesDecryptor(playInfo.keyIndex_);
+        } else {
+            MEDIA_LOG_E("key not ready");
+        }
+    }
+    SetAesDecryptor(decryptor);
+    if (decryptor && !playlistDownloader_->HasExplicitIv(playInfo.keyIndex_)) {
         uint8_t fragmentIv[AES_BLOCK_LEN] = {0};
         uint64_t seq = static_cast<uint64_t>(playInfo.sequence_);
         for (size_t i = 0; i < SEQ_IV_OFFSET; i++) {
             fragmentIv[SEQ_IV_OFFSET + i] = static_cast<uint8_t>(seq >> ((SEQ_IV_OFFSET - 1 - i) * BITS_PER_BYTE));
         }
-        auto dec = GetAesDecryptor();
-        if (dec) {
-            dec->SetIv(fragmentIv, sizeof(fragmentIv));
-        }
+        decryptor->SetIv(fragmentIv, sizeof(fragmentIv));
     }
 }
 

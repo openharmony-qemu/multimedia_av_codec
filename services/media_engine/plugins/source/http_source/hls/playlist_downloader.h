@@ -50,6 +50,7 @@ struct KeyInfo {
     size_t keyLen_ {0};
     uint64_t index_ {0};
     bool hasExplicitIv_ {false};
+    std::string uri_;
 };
 struct PlayListChangeCallback {
     virtual ~PlayListChangeCallback() = default;
@@ -170,6 +171,7 @@ public:
     virtual void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) {}
     virtual std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) = 0;
     virtual bool HasExplicitIv(uint64_t keyIndex) = 0;
+    virtual bool WaitForKeyReady(uint64_t keyIndex, uint32_t timeoutMs) {return true; }
 
 protected:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
