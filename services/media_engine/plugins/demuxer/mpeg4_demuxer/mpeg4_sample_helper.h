@@ -218,7 +218,6 @@ private:
     static constexpr uint32_t sparseCheckpointInterval = 1024;
     static constexpr uint32_t sparseViewCacheSize = 4;
     static constexpr uint32_t maxGroupedSamplesPerFrame = 1024;
-    static constexpr uint32_t maxValidatedSampleCount = 1000000;
     static_assert((sparseViewCacheSize & (sparseViewCacheSize - 1)) == 0,
         "Sparse view cache size must be a power of two");
 

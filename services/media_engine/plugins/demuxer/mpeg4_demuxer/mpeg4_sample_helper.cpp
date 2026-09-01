@@ -30,9 +30,10 @@ namespace Plugins {
 namespace MPEG4 {
 constexpr uint32_t DEFAULT_FIELD_SIZE = 32;
 constexpr int64_t MAX_TRUN_SAMPLES = 1000000; //需要确定讨论
-constexpr uint32_t MAX_SAMPLE_TABLE_SAMPLES = static_cast<uint32_t>(MAX_TRUN_SAMPLES);
 constexpr uint32_t MAX_TIMING_TABLE_ENTRY_COUNT = 4 * 1024 * 1024;
 constexpr uint32_t MAX_TIMING_TABLE_SAMPLE_COUNT = 4 * 1024 * 1024;
+constexpr uint32_t MAX_SAMPLE_TABLE_ENTRY_COUNT = MAX_TIMING_TABLE_SAMPLE_COUNT;
+constexpr uint32_t MAX_SAMPLE_TABLE_SAMPLES = MAX_TIMING_TABLE_SAMPLE_COUNT;
 constexpr int64_t NEXT_FRAME = 1;
 constexpr int64_t PREVIOUS_FRAME = 0;
 constexpr int64_t MAX_SAMPLES_PER_FRAME = 1024;
@@ -760,7 +761,8 @@ Status MPEG4SampleHelper::SetSyncSampleParams(int64_t dataOffset, size_t dataSiz
     }
 
     uint32_t numSyncs = GetU32Value(&header[4]);
-    FALSE_RETURN_V_MSG_E(numSyncs <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid sync sample count");
+    FALSE_RETURN_V_MSG_E(numSyncs <= MAX_SAMPLE_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
+        "Invalid sync sample count");
     currentOffset += sizeof(header);
 
     FALSE_RETURN_V_NOLOG((dataSize - sizeof(header)) / sizeof(uint32_t) >= numSyncs, Status::ERROR_UNKNOWN);
@@ -933,7 +935,8 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
     ret = dataReader_->ReadUintData(currentOffset, entryBuffer, sizeof(entryBuffer));
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     uint32_t numChunkOffsets = GetU32Value(entryBuffer, sizeof(entryBuffer));
-    FALSE_RETURN_V_MSG_E(numChunkOffsets <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid chunk offset count");
+    FALSE_RETURN_V_MSG_E(numChunkOffsets <= MAX_SAMPLE_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
+        "Invalid chunk offset count");
     currentOffset += sizeof(uint32_t);
     uint32_t unit = atomType == static_cast<uint32_t>(FourccType("stco")) ? sizeof(uint32_t) : sizeof(uint64_t);
     FALSE_RETURN_V_NOLOG((dataSize - sizeof(uint64_t)) / unit >= numChunkOffsets, Status::ERROR_UNKNOWN);
@@ -972,7 +975,8 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
     FALSE_RETURN_V_NOLOG(!GetU32Value(header, sizeof(header)), Status::ERROR_INVALID_DATA);
 
     uint32_t numStscEntries = GetU32Value(&header[4]);
-    FALSE_RETURN_V_MSG_E(numStscEntries <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid stsc entry count");
+    FALSE_RETURN_V_MSG_E(numStscEntries <= MAX_SAMPLE_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
+        "Invalid stsc entry count");
     currentOffset += sizeof(header);
 
     FALSE_RETURN_V_NOLOG((dataSize - sizeof(header)) / sizeof(StscEntry) >= numStscEntries, Status::ERROR_UNKNOWN);
