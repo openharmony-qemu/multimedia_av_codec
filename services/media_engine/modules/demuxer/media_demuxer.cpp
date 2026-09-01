@@ -1014,6 +1014,9 @@ Status MediaDemuxer::InnerPrepare()
 {
     Plugins::MediaInfo mediaInfo;
     demuxerPluginManager_->SetPlayerMode(isPlayerMode_);
+    if (isPlayerMode_ || isTranscoderMode_ || isMetadataMode_) {
+        demuxerPluginManager_->SetReadTimeoutForInitSeek(seekTimeoutMs_);
+    }
     Status ret = demuxerPluginManager_->LoadCurrentAllPlugin(streamDemuxer_, mediaInfo);
     if (ret == Status::OK) {
         if (isTranscoderMode_ || isPlayerMode_) {
@@ -1209,9 +1212,6 @@ Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
     bool isGotPlugin = demuxerPluginManager_->GetPluginName(snifferPluginName);
     source_->NotifyInitSuccess();
     ProcessDrmInfos();
-    if (isPlayerMode_ || isTranscoderMode_ || isMetadataMode_) {
-        demuxerPluginManager_->SetReadTimeoutForInitSeek(seekTimeoutMs_);
-    }
     FALSE_RETURN_V_NOLOG(eventReceiver_ != nullptr, res);
     eventReceiver_->OnMemoryUsageEvent({"SOURCE",
         DfxEventType::DFX_INFO_MEMORY_USAGE, source_->GetMemorySize()});
@@ -4473,12 +4473,12 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
         MEDIA_LOG_E("Invalid data source, can not get frame");
         if (eventReceiver_ != nullptr) {
             eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR,
-                static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime()});
+                static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime() + GetMarkedUrl(trackId)});
         } else {
             MEDIA_LOG_D("EventReceiver is nullptr");
         }
     }
-    FALSE_GOON_NOEXEC(ret == Status::ERROR_PACKET_CONVERT_FAILED, HandlePacketConvertError());
+    FALSE_GOON_NOEXEC(ret == Status::ERROR_PACKET_CONVERT_FAILED, HandlePacketConvertError(trackId));
     FALSE_GOON_NOEXEC(ret == Status::OK, convertErrorTime_.store(0));
     bool isNeedRetry = ret == Status::OK || ret == Status::ERROR_AGAIN || ret == Status::ERROR_WAIT_TIMEOUT;
     if (isNeedRetry) {
@@ -4495,6 +4495,16 @@ int64_t MediaDemuxer::ReadLoop(int32_t trackId)
     }
     MEDIA_LOG_DD("ReadLoop wait, track:" PUBLIC_LOG_D32 ", ret:" PUBLIC_LOG_D32, trackId, static_cast<int32_t>(ret));
     return RETRY_DELAY_TIME_US; // delay to retry if no frame
+}
+
+std::string MediaDemuxer::GetMarkedUrl(int32_t trackId)
+{
+    std::string curUrl = "-";
+    if (isHls_ && demuxerPluginManager_!= nullptr && source_ != nullptr) {
+        int32_t streamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+        curUrl += source_->GetMaskUrlByReadIndex(streamId);
+    }
+    return curUrl;
 }
 
 int64_t MediaDemuxer::HandleFrameDropForTrack(int32_t trackId)
@@ -4546,7 +4556,7 @@ void MediaDemuxer::AfterSeekNeedDrop(int32_t trackId)
     }
 }
 
-void MediaDemuxer::HandlePacketConvertError()
+void MediaDemuxer::HandlePacketConvertError(int32_t trackId)
 {
     ++convertErrorTime_;
     TRUE_LOG(convertErrorTime_.load() == 1, MEDIA_LOG_W, "PacketConvert error once");
@@ -4554,7 +4564,7 @@ void MediaDemuxer::HandlePacketConvertError()
     MEDIA_LOG_E("PacketConvertError happened %{public}d times, stream is unsupported!", convertErrorTime_.load());
     FALSE_RETURN_MSG(eventReceiver_ != nullptr, "eventReceiver_ is nullptr");
     eventReceiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR,
-        static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime()});
+        static_cast<int32_t>(MSERR_DATA_SOURCE_ERROR_UNKNOWN), GetMime() + GetMarkedUrl(trackId)});
 }
 
 Status MediaDemuxer::ReadSample(uint32_t trackIndex, std::shared_ptr<AVBuffer> sample)

@@ -16,10 +16,7 @@
 #define MEDIA_PLUGIN
 #include <unistd.h>
 #include <algorithm>
-#include <malloc.h>
 #include <string>
-#include <sstream>
-#include <map>
 #include <fstream>
 #include <chrono>
 #include <limits>
@@ -246,6 +243,7 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
 Status MPEG4DemuxerPlugin::GetFrameLayerInfo(std::shared_ptr<AVBuffer> videoSample, FrameLayerInfo &frameLayerInfo)
 {
     FALSE_RETURN_V_MSG_W(referenceParser_ != nullptr, Status::ERROR_NULL_POINTER, "referenceParser_ is nullptr");
+    FALSE_RETURN_V_MSG_W(videoSample != nullptr, Status::ERROR_NULL_POINTER, "videoSample is nullptr");
     MEDIA_LOG_I("GetFrameLayerInfo start, dts is " PUBLIC_LOG_D64, videoSample->dts_);
     if (isSdtpExist_) {
         uint32_t frameId = 0;

@@ -227,6 +227,11 @@ int32_t AVCodecServiceStub::OnSuspendActiveAll(MessageParcel &data, MessageParce
 
 int32_t AVCodecServiceStub::OnGetActiveSecureDecoderPids(MessageParcel &data, MessageParcel &reply)
 {
+    auto tokenId = IPCSkeleton::GetCallingTokenID();
+    auto tokenType = AccessTokenKit::GetTokenTypeFlag(tokenId);
+    CHECK_AND_RETURN_RET_LOG(tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL,
+                             AVCS_ERR_INVALID_OPERATION, "Only native|shell tokens allowed(%{public}d)",
+                             static_cast<int32_t>(tokenType));
     std::vector<pid_t> pidList;
     int32_t ret = GetActiveSecureDecoderPids(pidList);
     (void)reply.WriteInt32Vector(pidList);
@@ -241,6 +246,11 @@ void AVCodecServiceStub::OnReportStatisticsEvent(MessageParcel &data, MessagePar
     CHECK_AND_RETURN_LOG(data.ReadUint32(eventType), "Read statistics event type failed");
     Media::Meta meta;
     CHECK_AND_RETURN_LOG(meta.FromParcel(data), "Read statistics event meta failed");
+    pid_t callerPid = 0;
+    CHECK_AND_RETURN_LOG(meta.GetData(Media::Tag::AV_CODEC_CALLER_PID, callerPid), "Read caller pid failed");
+    pid_t ipcPid = static_cast<pid_t>(IPCSkeleton::GetCallingPid());
+    CHECK_AND_RETURN_LOG(callerPid == ipcPid, "Caller pid mismatch, caller %{public}d, ipc %{public}d", callerPid,
+                         ipcPid);
 
     ReportStatisticsEvent(static_cast<StatisticsEventType>(eventType), meta);
 }

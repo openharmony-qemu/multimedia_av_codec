@@ -66,7 +66,6 @@ struct HlsSegEvent {
     std::string str;
 };
 
-using HlsSegmentBufferingCbFunc = std::function<void(HlsSegmentType, BufferingInfoType)>;
 using HlsSegmentEventCbFunc = std::function<void(HlsSegEvent)>;
 constexpr uint32_t CHUNK_SIZE = 16 * 1024;
 class HlsMediaDownloader;
@@ -100,7 +99,6 @@ public:
     void OnPlayListChanged(const std::vector<PlayInfo>& playList) override;
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager) override;
     void SetStatusCallback(StatusCallbackFunc cb);
-    bool GetStartedStatus();
     std::vector<uint32_t> GetBitRates();
     bool SelectBitRate(uint32_t bitRate);
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>>& drmInfos) override;
@@ -126,10 +124,10 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID);
     uint64_t GetBufferSize() const;
     bool GetPlayable();
-    bool GetBufferingTimeOut();
     bool GetReadTimeOut(bool isDelay);
     void SetAppUid(int32_t appUid);
     size_t GetSegmentOffset();
+    std::string GetCurUrl();
     bool GetHLSDiscontinuity();
     Status StopBufferring(bool isAppBackground);
     void WaitForBufferingEnd();
@@ -153,7 +151,6 @@ public:
     int32_t GetDefaultMediaStreamId(HlsSegmentType mediaType);
     void SetDemuxerState(int32_t streamId);
     void SetDownloadErrorState();
-    void SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc);
     void SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback);
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
@@ -203,11 +200,8 @@ private:
     void ResetPlaylistCapacity(size_t size);
     void PlaylistBackup(const PlayInfo& fragment);
     void HandleCachedDuration();
-    void UpdateWaterLineAbove();
     void CalculateBitRate(size_t fragmentSize, double duration);
     double CalculateCurrentDownloadSpeed();
-    void UpdateCachedPercent(BufferingInfoType infoType);
-    float GetCacheDuration(float ratio);
     void HandleFfmpegReadback(uint64_t ffmpegOffset);
     void SeekToTsForRead(uint32_t currentTsIndex);
     int64_t RequestNewTsForRead(const PlayInfo& item);
@@ -218,9 +212,7 @@ private:
     uint32_t SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len);
     bool ClearChunksOfFragment();
     uint64_t GetCrossTsBuffersize();
-    bool IsCachedInitSizeReady(int32_t wantInitSize);
     bool CacheBufferFullLoop();
-    bool IsNeedBufferForPlaying();
     bool CheckLoopTimeout(int64_t loopStartTime);
     void HandleSaveDataLoopContinue();
     bool ReadHeaderData(unsigned char* buff, ReadDataInfo& readDataInfo);
@@ -246,6 +238,8 @@ private:
     std::vector<PlayInfo> SeekListHelper(bool isLive);
     void ConfigureAndDownload(const PlayInfo& playInfo, bool isRequestWholeFile, int64_t startTimePos,
         DownloadDoneCbFunc downloadDoneCallback);
+    void EvictFragmentMapIfNeeded(std::map<std::string, bool>& fragmentMap, const std::string& tag);
+    bool HandleBitrateSelectFragment(const PlayInfo& fragment);
 
 private:
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
@@ -258,8 +252,6 @@ private:
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
     std::function<void(bool, bool)> masterReadyCallback_;
-    bool startedPlayStatus_ {false};
-
     std::shared_ptr<PlayListDownloader> playlistDownloader_;
 
     std::shared_ptr<BlockingQueue<PlayInfo>> playList_;
@@ -288,7 +280,6 @@ private:
     uint64_t seekTime_ = 0;
 
     bool isReadFrame_ {false};
-    bool isTimeOut_ {false};
     bool downloadErrorState_ {false};
     uint64_t bufferedDuration_ {0};
     uint64_t readBitrate_ {1 * 1024 * 1024}; // bps
@@ -332,7 +323,6 @@ private:
     std::map<std::string, std::string> httpHeader_ {};
     std::atomic<bool> isStopped = false;
     std::string mimeType_;
-    size_t waterLineAbove_ {0};
     std::atomic<bool> isInterrupt_ {false};
     bool isFirstFrameArrived_ {false};
     std::atomic<bool> isSeekingFlag {false};
@@ -347,8 +337,6 @@ private:
     int32_t currentBitRate_ {0};
     int32_t fragmentBitRate_ {0};
     uint64_t lastDurationReacord_ {0};
-    uint64_t lastCachedSize_ {0};
-    std::atomic<bool> isBufferingStart_ {false};
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     uint64_t readOffset_ {0};
     uint64_t writeOffset_ {0};
@@ -357,20 +345,11 @@ private:
     std::atomic<bool> canWrite_ {true};
     uint64_t ffmpegOffset_ = 0;
     std::atomic<size_t> wantedReadLength_ {0};
-    std::atomic<size_t> bufferingTime_ {0};
     std::atomic<size_t> readTime_ {0};
     FairMutex tsInfoMutex_ {};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_ {nullptr};
 
-    FairMutex bufferingEndMutex_ {};
-    ConditionVariable bufferingEndCond_;
     bool isReportedErrorCode_ {false};
-    std::atomic<int32_t> expectOffset_ {-1};
-    std::atomic<int32_t> initCacheSize_ {-1};
-    Mutex initCacheMutex_ {};
-    double bufferDurationForPlaying_ {0};
-    uint64_t waterlineForPlaying_ {0};
-    std::atomic<bool> isDemuxerInitSuccess_ {false};
     std::atomic<bool> isTimeoutErrorNotified_ {false};
 	
     size_t timeoutInterval_ {0};
@@ -389,7 +368,6 @@ private:
     std::atomic<bool> isTsEnd_ {false};
     std::atomic<bool> notNeedReadBack_ {false};
     HlsSegmentEventCbFunc segEventCb_;
-    HlsSegmentBufferingCbFunc bufferingCbFunc_;
     std::string masterString_;
     bool isEos_ {false};
     std::shared_mutex downloadRequestMutex_;

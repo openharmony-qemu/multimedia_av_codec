@@ -17,6 +17,7 @@
 #include "monitor/download_monitor.h"
 #include "cpp_ext/algorithm_ext.h"
 #include "common/event.h"
+#include "utils/string_utils.h"
 #include <sstream>
 
 namespace OHOS {
@@ -37,8 +38,17 @@ namespace {
     constexpr int32_t REDIRECT_CODE = 302;
     const std::string CLIENT_ERROR_MSG = "client error";
     const std::string SERVER_ERROR_MSG = "server error";
+    // Framework errors: no retry, no error report to App (internal handling)
     const std::set<int32_t> CLIENT_NOT_RETRY_ERROR_CODES = {
         992,
+    };
+    // App errors: no retry, but must report error back to App
+    const std::set<int32_t> APP_NOT_RETRY_ERROR_CODES = {
+        -2, // LOADING_ERROR_NO_RESOURCE
+        -3, // LOADING_ERROR_INVAID_HANDLE
+        -4, // LOADING_ERROR_ACCESS_DENIED
+        -5, // LOADING_ERROR_ACCESS_TIMEOUT
+        -6, // LOADING_ERROR_AUTHORIZE_FAILED
     };
     const std::set<int32_t> CLIENT_RETRY_ERROR_CODES = {
         -1, // Application resource not ready for access
@@ -263,11 +273,6 @@ void DownloadMonitor::SetStatusCallback(StatusCallbackFunc cb)
     (void)cb;
 }
 
-bool DownloadMonitor::GetStartedStatus()
-{
-    return downloader_->GetStartedStatus();
-}
-
 // Notify client and server error.
 void DownloadMonitor::ReportLoadingErrorEvent(const std::shared_ptr<DownloadRequest>& request,
     int32_t clientErrorCode, int32_t serverErrorCode)
@@ -345,51 +350,15 @@ std::string DownloadMonitor::BuildErrorDescription(const NetworkErrorInfo& netwo
     bool isClient = networkErrorInfo.isClient_;
     std::string errorType = isClient ? CLIENT_ERROR_MSG : SERVER_ERROR_MSG;
     int errorCode = isClient ? networkErrorInfo.clientErrorCode_ : networkErrorInfo.serverErrorCode_;
-    std::string url = MaskUrl(networkErrorInfo.url_);
-    
+    std::string url = StringUtil::MaskUrl(networkErrorInfo.url_);
+
     oss << "requestError: true"
         << ", errorType: " << errorType
         << ", errorCode: " << errorCode
         << ", contentType: " << contentType
         << ", maskUrl: " << url;
-    
-    return oss.str();
-}
 
-std::string DownloadMonitor::MaskUrl(const std::string& url)
-{
-    if (url.empty()) return url;
-    size_t schemeEnd = url.find("://");
-    std::string prefix;
-    size_t hostStart = 0;
-    if (schemeEnd != std::string::npos) {
-        prefix = url.substr(0, schemeEnd + 3); // 3
-        hostStart = schemeEnd + 3; // 3
-    }
-    size_t pathSlash = url.find('/', hostStart);
-    if (pathSlash == std::string::npos) {
-        size_t query = url.find_first_of("?#", hostStart);
-        std::string host = url.substr(hostStart,
-            (query == std::string::npos ? url.length() : query) - hostStart);
-        return prefix + host;
-    }
-    std::string host = url.substr(hostStart, pathSlash - hostStart);
-    size_t queryStart = url.find_first_of("?#", pathSlash);
-    std::string path = (queryStart == std::string::npos)
-        ? url.substr(pathSlash) : url.substr(pathSlash, queryStart - pathSlash);
-    if (path == "/")
-        return prefix + host + "/";
-    size_t lastSlash = path.rfind('/');
-    std::string filename = path.substr(lastSlash + 1);
-    if (filename.empty()) {
-        return prefix + host + "/***";
-    } else {
-        if (path == "/" + filename) {
-            return prefix + host + path;
-        } else {
-            return prefix + host + "/***/" + filename;
-        }
-    }
+    return oss.str();
 }
 
 void DownloadMonitor::SetSourceStatisticsDfx(
@@ -422,6 +391,16 @@ bool DownloadMonitor::CheckRetryLimitReached(int32_t clientError, int32_t retryT
     return false;
 }
 
+void DownloadMonitor::ReportAndStopDownload(const std::shared_ptr<DownloadRequest>& request,
+    int32_t clientError, int32_t serverError, const NetworkErrorInfo& networkErrorInfo)
+{
+    ReportLoadingErrorEvent(request, clientError, serverError);
+    NotifyError(networkErrorInfo);
+    if (downloader_ != nullptr) {
+        downloader_->SetDownloadErrorState();
+    }
+}
+
 bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
 {
     auto clientError = request->GetClientError();
@@ -431,15 +410,18 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
     isNeedClearBuffer_ = serverError == REDIRECT_CODE;
     MEDIA_LOG_I("NeedRetry: clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
         ", retryTimes = " PUBLIC_LOG_D32, clientError, serverError, retryTimes);
-    
+
     if (CLIENT_NOT_RETRY_ERROR_CODES.find(static_cast<int32_t>(clientError)) != CLIENT_NOT_RETRY_ERROR_CODES.end()) {
-        MEDIA_LOG_I("Client error code is 23 or 992, not retry.");
+        MEDIA_LOG_I("Client error code " PUBLIC_LOG_D32 " not retry.", static_cast<int32_t>(clientError));
+        return false;
+    }
+    if (APP_NOT_RETRY_ERROR_CODES.find(static_cast<int32_t>(clientError)) != APP_NOT_RETRY_ERROR_CODES.end()) {
+        MEDIA_LOG_I("App error code " PUBLIC_LOG_D32 " not retry, report error.", static_cast<int32_t>(clientError));
+        ReportAndStopDownload(request, clientError, serverError, networkErrorInfo);
         return false;
     }
     if (downloader_ != nullptr && downloader_->IsNotRetry(request)) {
-        ReportLoadingErrorEvent(request, clientError, serverError);
-        NotifyError(networkErrorInfo);
-        downloader_->SetDownloadErrorState();
+        ReportAndStopDownload(request, clientError, serverError, networkErrorInfo);
         return false;
     }
     if (clientError == 0 && serverError == 0) {
@@ -459,11 +441,7 @@ bool DownloadMonitor::NeedRetry(const std::shared_ptr<DownloadRequest>& request)
         return false;
     }
     if (CheckRetryLimitReached(clientError, retryTimes)) {
-        ReportLoadingErrorEvent(request, clientError, serverError);
-        NotifyError(networkErrorInfo);
-        if (downloader_ != nullptr) {
-            downloader_->SetDownloadErrorState();
-        }
+        ReportAndStopDownload(request, clientError, serverError, networkErrorInfo);
         return false;
     }
     MEDIA_LOG_W("DoRetryL clientError = " PUBLIC_LOG_D32 ", serverError = " PUBLIC_LOG_D32
@@ -600,15 +578,6 @@ bool DownloadMonitor::GetPlayable()
     return false;
 }
 
-bool DownloadMonitor::GetBufferingTimeOut()
-{
-    if (downloader_) {
-        return downloader_->GetBufferingTimeOut();
-    } else {
-        return false;
-    }
-}
-
 bool DownloadMonitor::GetReadTimeOut(bool isDelay)
 {
     if (downloader_) {
@@ -741,6 +710,12 @@ std::string DownloadMonitor::GetCurUrl()
 {
     FALSE_RETURN_V(downloader_ != nullptr, "");
     return downloader_->GetCurUrl();
+}
+
+std::string DownloadMonitor::GetMaskUrlByReadIndex(int32_t streamId)
+{
+    FALSE_RETURN_V(downloader_ != nullptr, "");
+    return downloader_->GetMaskUrlByReadIndex(streamId);
 }
 
 void DownloadMonitor::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId)

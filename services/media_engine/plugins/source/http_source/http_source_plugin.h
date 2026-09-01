@@ -83,6 +83,7 @@ public:
     std::string GetContentType() override;
     bool IsHlsEnd(int32_t streamId = -1) override;
     bool IsHls() override;
+    std::string GetMaskUrlByReadIndex(int32_t streamId) override;
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
@@ -101,8 +102,6 @@ private:
     bool IsAllowedProtocol(std::string_view url);
     std::shared_ptr<MediaDownloader> GetDownloader() const;
     void SetDownloader(const std::shared_ptr<MediaDownloader>& downloader);
-    uint32_t bufferSize_;
-    uint32_t waterline_;
     uint32_t seekErrorCount_{0};
     std::weak_ptr<Callback> callback_;
     std::shared_ptr<MediaDownloader> downloader_;

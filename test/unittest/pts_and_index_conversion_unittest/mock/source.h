@@ -137,8 +137,6 @@ public:
     std::shared_ptr<Plugins::SourcePlugin> plugin_;
 
     std::shared_ptr<Plugins::PluginInfo> pluginInfo_{};
-    bool isPluginReady_ {false};
-    bool isAboveWaterline_ {false};
 
     std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
     std::atomic<bool> isInterruptNeeded_{false};

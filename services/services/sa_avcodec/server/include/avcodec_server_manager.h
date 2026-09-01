@@ -56,7 +56,7 @@ public:
                                                    const std::string &callerName)>;
     std::optional<CodecParamInfo> GetAndUpdateCodecParmInfoByProcessName(
         const std::string &bundleName, const bool isFloatingWindow);
-    void UpdateCodecParmInfoByInstanceId(int32_t instanceId, const InstanceInfo &info);
+    void UpdateCodecParmInfoByInstanceId(int32_t instanceId, const InstanceInfo &updateInfo);
     void RegisterCallback(InstanceInfoCallback callback);
     void UnRegisterCallback();
 

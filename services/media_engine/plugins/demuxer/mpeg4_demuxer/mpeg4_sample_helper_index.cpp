@@ -509,7 +509,7 @@ Status MPEG4SampleHelper::ConsumeRawSampleCtts(SampleTableCursor& cursor, uint32
 Status MPEG4SampleHelper::CalculateSampleTableSummary()
 {
     uint64_t rawCount = CountSttsSamples();
-    FALSE_RETURN_V_NOLOG(rawCount > 0 && rawCount <= maxValidatedSampleCount, Status::ERROR_INVALID_DATA);
+    FALSE_RETURN_V_NOLOG(rawCount > 0, Status::ERROR_INVALID_DATA);
     sampleTableSummary_ = SampleTableSummary {};
     sampleTableSummary_.maxDtsEnd = INT64_MIN;
     sampleTableSummary_.maxPtsEnd = INT64_MIN;

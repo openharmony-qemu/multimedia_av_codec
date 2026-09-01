@@ -847,12 +847,11 @@ void VideoDecoder::ReleaseBuffers()
                 }
             }
             AVCODEC_LOGI("Num %{public}u surface cleancache success", decInstanceID_);
-        
-            buffers_[INDEX_OUTPUT].clear();
-            outputBufferCnt_ = 0;
-            outAVBuffer4Surface_.clear();
         }
     }
+    buffers_[INDEX_OUTPUT].clear();
+    outputBufferCnt_ = 0;
+    outAVBuffer4Surface_.clear();
     oLock.unlock();
     isBufferAllocated_ = false;
 }

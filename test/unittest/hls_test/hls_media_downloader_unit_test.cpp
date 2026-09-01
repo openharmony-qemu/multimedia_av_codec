@@ -473,7 +473,6 @@ HWTEST_F(HlsMediaDownloaderTest, TEST_READ_003, TestSize.Level1)
     readDataInfo.streamId_ = 0;
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
-    downloader->bufferingFlag_ = 1;
     auto ret = downloader->Read(buff, readDataInfo);
 
     OSAL::SleepFor(DELAY_AFTER_OPEN);
@@ -970,144 +969,6 @@ HWTEST_F(HlsMediaDownloaderTest, GET_PLAYBACK_INFO_002, TestSize.Level1)
     downloader = nullptr;
 }
 
-HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_001, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->audioSegManager_ =
-        std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_AUDIO);
-    downloader->audioSegManager_->Init();
-    downloader->audioSegManager_->Clone(downloader->videoSegManager_);
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                            std::shared_ptr<DownloadRequest>& request) {};
-    downloader->SetStatusCallback(statusCallback);
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    downloader->SetCallback(sourceCallback);
-    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
-    PlayInfo playInfo;
-    playInfo.url_ = testUrl;
-    downloader->videoSegManager_->PutRequestIntoDownloader(playInfo);
-    downloader->videoSegManager_->backPlayList_.push_back(playInfo);
-    downloader->videoSegManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
-    downloader->videoSegManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE_UT);
-    EXPECT_FALSE(downloader->SetInitialBufferSize(0, 20000000));
-}
-
-HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_002, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->audioSegManager_ =
-        std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_AUDIO);
-    downloader->audioSegManager_->Init();
-    downloader->audioSegManager_->Clone(downloader->videoSegManager_);
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-                            std::shared_ptr<DownloadRequest>& request) {};
-    downloader->SetStatusCallback(statusCallback);
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    downloader->SetCallback(sourceCallback);
-    std::string testUrl = TEST_URI_PATH + "test_hls/testHLSEncode.m3u8";
-    PlayInfo playInfo;
-    playInfo.url_ = testUrl;
-    downloader->videoSegManager_->PutRequestIntoDownloader(playInfo);
-    downloader->videoSegManager_->backPlayList_.push_back(playInfo);
-    downloader->videoSegManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
-    downloader->videoSegManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE_UT);
-    EXPECT_FALSE(downloader->SetInitialBufferSize(0, 50000));
-}
-
-HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_003, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->videoSegManager_->downloader_ = std::make_shared<Downloader>("hlsMedia");
-    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { (void)data; (void)len; (void)flag; return 0; };
-    auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    RequestInfo info {};
-    downloader->videoSegManager_->downloadRequest_ = std::make_shared<DownloadRequest>(100,
-        saveData, statusCallback, info, false);
-    EXPECT_TRUE(downloader->SetInitialBufferSize(0, 50000));
-}
-
-HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_004, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->audioSegManager_ =
-        std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_AUDIO);
-    downloader->audioSegManager_->Init();
-    downloader->audioSegManager_->Clone(downloader->videoSegManager_);
-    downloader->videoSegManager_->downloader_ = std::make_shared<Downloader>("hlsMedia");
-    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { (void)data; (void)len; (void)flag; return 0; };
-    auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    RequestInfo info {};
-    downloader->videoSegManager_->downloadRequest_ = std::make_shared<DownloadRequest>(100.0,
-        saveData, statusCallback, info, false);
-    EXPECT_FALSE(downloader->SetInitialBufferSize(0, 50000));
-}
-
-HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_005, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->videoSegManager_ = nullptr;
-    EXPECT_FALSE(downloader->SetInitialBufferSize(0, 50000));
-}
-
-HWTEST_F(HlsMediaDownloaderTest, SET_INITIAL_BUFFERSIZE_006, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->subtitlesSegManager_ =
-        std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_SUBTITLE);
-    downloader->subtitlesSegManager_->Init();
-    downloader->subtitlesSegManager_->Clone(downloader->videoSegManager_);
-    downloader->videoSegManager_->downloader_ = std::make_shared<Downloader>("hlsMedia");
-    auto saveData = [] (uint8_t* data, uint32_t len, bool flag) { (void)data; (void)len; (void)flag; return 0; };
-    auto statusCallback = [] (DownloadStatus status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    RequestInfo info {};
-    downloader->videoSegManager_->downloadRequest_ = std::make_shared<DownloadRequest>(100.0,
-        saveData, statusCallback, info, false);
-    EXPECT_FALSE(downloader->SetInitialBufferSize(0, 50000));
-}
-
-HWTEST_F(HlsMediaDownloaderTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->audioSegManager_ =
-        std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_AUDIO);
-    downloader->audioSegManager_->Init();
-    downloader->audioSegManager_->Clone(downloader->videoSegManager_);
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    downloader->SetStatusCallback(statusCallback);
-    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    playStrategy->width = 1280;
-    playStrategy->height = 720;
-    playStrategy->bufferDurationForPlaying = 5;
-    downloader->SetPlayStrategy(playStrategy);
-    EXPECT_EQ(downloader->videoSegManager_->bufferDurationForPlaying_, 5);
-}
-
-HWTEST_F(HlsMediaDownloaderTest, SET_PLAY_STRATEGY_002, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    downloader->SetStatusCallback(statusCallback);
-    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    playStrategy->width = 1280;
-    playStrategy->height = 720;
-    playStrategy->bufferDurationForPlaying = 5;
-    downloader->SetPlayStrategy(playStrategy);
-    EXPECT_EQ(downloader->videoSegManager_->bufferDurationForPlaying_, 5);
-}
-
 HWTEST_F(HlsMediaDownloaderTest, SET_PLAY_STRATEGY_003, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
@@ -1121,25 +982,6 @@ HWTEST_F(HlsMediaDownloaderTest, SET_PLAY_STRATEGY_003, TestSize.Level1)
     EXPECT_FALSE(downloader->audioSegManager_);
 }
 
-HWTEST_F(HlsMediaDownloaderTest, SET_PLAY_STRATEGY_004, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->subtitlesSegManager_ =
-        std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_SUBTITLE);
-    downloader->subtitlesSegManager_->Init();
-    downloader->subtitlesSegManager_->Clone(downloader->videoSegManager_);
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {};
-    downloader->SetStatusCallback(statusCallback);
-    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
-    playStrategy->width = 1280;
-    playStrategy->height = 720;
-    playStrategy->bufferDurationForPlaying = 5;
-    downloader->SetPlayStrategy(playStrategy);
-    EXPECT_EQ(downloader->videoSegManager_->bufferDurationForPlaying_, 5);
-}
-
 HWTEST_F(HlsMediaDownloaderTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
@@ -1149,36 +991,6 @@ HWTEST_F(HlsMediaDownloaderTest, NOTIFY_INIT_SUCCESS_001, TestSize.Level1)
     downloader->audioSegManager_->Init();
     downloader->audioSegManager_->Clone(downloader->videoSegManager_);
     downloader->NotifyInitSuccess();
-    EXPECT_TRUE(downloader->videoSegManager_->isDemuxerInitSuccess_);
-}
-
-HWTEST_F(HlsMediaDownloaderTest, NOTIFY_INIT_SUCCESS_002, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->NotifyInitSuccess();
-    EXPECT_TRUE(downloader->videoSegManager_->isDemuxerInitSuccess_);
-}
-
-HWTEST_F(HlsMediaDownloaderTest, NOTIFY_INIT_SUCCESS_003, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->videoSegManager_ = nullptr;
-    downloader->NotifyInitSuccess();
-    EXPECT_FALSE(downloader->audioSegManager_);
-}
-
-HWTEST_F(HlsMediaDownloaderTest, NOTIFY_INIT_SUCCESS_004, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(10, true, header_);
-    downloader->Init();
-    downloader->subtitlesSegManager_ =
-        std::make_shared<HlsSegmentManager>(downloader->videoSegManager_, HlsSegmentType::SEG_SUBTITLE);
-    downloader->subtitlesSegManager_->Init();
-    downloader->subtitlesSegManager_->Clone(downloader->videoSegManager_);
-    downloader->NotifyInitSuccess();
-    EXPECT_TRUE(downloader->videoSegManager_->isDemuxerInitSuccess_);
 }
 
 HWTEST_F(HlsMediaDownloaderTest, GET_STREAM_INFO_001, TestSize.Level1)
@@ -1366,7 +1178,6 @@ HWTEST_F(HlsMediaDownloaderTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
     downloader->GetSeekable();
     PlayInfo playInfo;
     downloader->videoSegManager_->backPlayList_.push_back(playInfo);
-    downloader->videoSegManager_->initCacheSize_ = 100;
     downloader->videoSegManager_->isSeekingFlag = true;
     downloader->videoSegManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     downloader->videoSegManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
@@ -1374,26 +1185,6 @@ HWTEST_F(HlsMediaDownloaderTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
     downloader->videoSegManager_->isSeekingFlag = false;
     EXPECT_EQ(downloader->videoSegManager_->CacheBufferFullLoop(), false);
     CloseHlsDetachAudioVideo(downloader);
-}
-
-HWTEST_F(HlsMediaDownloaderTest, POST_BUFFERING_EVENT_001, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
-    downloader->Init();
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    downloader->SetCallback(sourceCallback);
-    EXPECT_EQ(downloader->bufferingFlag_, 0);
-    downloader->PostBufferingEvent(HlsSegmentType::SEG_VIDEO, BufferingInfoType::BUFFERING_START);
-    EXPECT_EQ(downloader->bufferingFlag_, 2);
-    downloader->PostBufferingEvent(HlsSegmentType::SEG_VIDEO, BufferingInfoType::BUFFERING_END);
-    EXPECT_EQ(downloader->bufferingFlag_, 0);
-    downloader->PostBufferingEvent(HlsSegmentType::SEG_AUDIO, BufferingInfoType::BUFFERING_START);
-    EXPECT_EQ(downloader->bufferingFlag_, 1);
-    downloader->PostBufferingEvent(HlsSegmentType::SEG_VIDEO, BufferingInfoType::BUFFERING_START);
-    EXPECT_EQ(downloader->bufferingFlag_, 3);
-    downloader->PostBufferingEvent(HlsSegmentType::SEG_AUDIO, BufferingInfoType::BUFFERING_END);
-    downloader->PostBufferingEvent(HlsSegmentType::SEG_VIDEO, BufferingInfoType::BUFFERING_END);
-    EXPECT_EQ(downloader->bufferingFlag_, 0);
 }
 
 HWTEST_F(HlsMediaDownloaderTest, GET_CONTENT_TYPE_001, TestSize.Level1)
@@ -1408,39 +1199,6 @@ HWTEST_F(HlsMediaDownloaderTest, GET_CONTENT_TYPE_001, TestSize.Level1)
     downloader->videoSegManager_ = nullptr;
     auto typeNullptr = downloader->GetContentType();
     EXPECT_EQ(typeNullptr, "");
-}
-
-HWTEST_F(HlsMediaDownloaderTest, GET_STARTED_STATUS_001, TestSize.Level1)
-{
-    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
-    OSAL::SleepFor(DELAY_AFTER_OPEN);
-    auto ret = downloader->GetStartedStatus();
-    EXPECT_FALSE(ret);
-    CloseHlsDetachAudioVideo(downloader);
-}
-
-HWTEST_F(HlsMediaDownloaderTest, GET_STARTED_STATUS_002, TestSize.Level1)
-{
-    auto downloader = OpenHlsDetachAudioVideoWithMasterReady("test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000.m3u8");
-    OSAL::SleepFor(DELAY_AFTER_OPEN);
-    auto ret = downloader->GetStartedStatus();
-    EXPECT_TRUE(ret);
-    CloseHlsDetachAudioVideo(downloader);
-}
-
-HWTEST_F(HlsMediaDownloaderTest, GET_STARTED_STATUS_003, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
-    downloader->Init();
-    auto sourceCallback = std::make_shared<SourceCallback>();
-    downloader->SetCallback(sourceCallback);
-    auto ret = downloader->GetStartedStatus();
-    EXPECT_FALSE(ret);
-
-    downloader->videoSegManager_ = nullptr;
-    ret = downloader->GetStartedStatus();
-    EXPECT_FALSE(ret);
-    downloader = nullptr;
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SELECT_BITRATE_001, TestSize.Level1)
@@ -1473,37 +1231,6 @@ HWTEST_F(HlsMediaDownloaderTest, SET_IS_TRIGGER_AUTO_MODE_001, TestSize.Level1)
     downloader->videoSegManager_ = nullptr;
     downloader->SetIsTriggerAutoMode(false);
     downloader->SetAppUid(TEST_APP_UID);
-}
-
-HWTEST_F(HlsMediaDownloaderTest, GET_BUFFERING_TIMEOUT_001, TestSize.Level1)
-{
-    auto downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
-    downloader->Init();
-    
-    auto ret = downloader->GetBufferingTimeOut();
-    EXPECT_FALSE(ret);
-    
-    downloader->videoSegManager_ = nullptr;
-    ret = downloader->GetBufferingTimeOut();
-    EXPECT_TRUE(ret);
-
-    downloader->Close(true);
-    downloader = nullptr;
-}
-
-HWTEST_F(HlsMediaDownloaderTest, WAIT_FOR_BUFFERING_END_001, TestSize.Level1)
-{
-    auto downloader = OpenHlsDetachAudioVideo();
-    
-    downloader->WaitForBufferingEnd();
-    
-    downloader->SetInitialBufferSize(0, 20000000);
-    
-    downloader->videoSegManager_ = nullptr;
-    downloader->WaitForBufferingEnd();
-
-    downloader->Close(true);
-    CloseHlsDetachAudioVideo(downloader);
 }
 
 HWTEST_F(HlsMediaDownloaderTest, SET_IS_REPORTED_ERROR_CODE_001, TestSize.Level1)
@@ -1782,5 +1509,193 @@ HWTEST_F(HlsMediaDownloaderTest, OPEN_HLS_ENCODE_004, TestSize.Level1)
         std::static_pointer_cast<HlsPlayListDownloader>(downloader->videoSegManager_->playlistDownloader_);
     EXPECT_TRUE(playlistDownloader->GetAesDecryptor(1) != nullptr);
     downloader = nullptr;
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_VideoSegManagerNull
+ * @tc.desc  : Test GetMaskUrlByReadIndex returns empty when videoSegManager_ is nullptr
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_VideoSegManagerNull, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    downloader->videoSegManager_ = nullptr;
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(1), "");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_EmptyUrl
+ * @tc.desc  : Test GetMaskUrlByReadIndex returns empty when segment url is empty
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_EmptyUrl, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_.clear();
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(1), "");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_NoScheme
+ * @tc.desc  : Test MaskUrl branch: url without scheme separator returned unchanged
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_NoScheme, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "no-scheme";
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(1), "no-scheme");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_HostOnly
+ * @tc.desc  : Test MaskUrl branch: url with no path returns scheme://host
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_HostOnly, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host";
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(1), "https://host");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_RootPath
+ * @tc.desc  : Test MaskUrl branch: root path "/" stripped to scheme://host
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_RootPath, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host/";
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(1), "https://host");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_DirectoryPath
+ * @tc.desc  : Test MaskUrl branch: directory path ending with "/" stripped
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_DirectoryPath, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host/a/b/";
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(1), "https://host");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_SingleSegment
+ * @tc.desc  : Test MaskUrl branch: single-segment file path needs no mask
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_SingleSegment, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host/file.m3u8";
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(1), "https://host/file.m3u8");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_UserInfoStripped
+ * @tc.desc  : Test MaskUrl branch: userinfo (user:pass@) is stripped
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_UserInfoStripped, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "http://user:pass@host/dir/file";
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(1), "http://host/***/file");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_SegVideo
+ * @tc.desc  : Test GetMaskUrlByReadIndex masks video segment url (SEG_VIDEO branch)
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_SegVideo, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->videoSegManager_ != nullptr);
+    downloader->videoSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->videoSegManager_->curUrl_ = "https://host/dir/video.ts";
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(1), "https://host/***/video.ts");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_SegAudio
+ * @tc.desc  : Test GetMaskUrlByReadIndex masks audio segment url (SEG_AUDIO branch)
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_SegAudio, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->audioSegManager_ != nullptr);
+    downloader->audioSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->audioSegManager_->curUrl_ = "https://host/dir/audio.aac";
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(3), "https://host/***/audio.aac");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_SegSubtitle
+ * @tc.desc  : Test GetMaskUrlByReadIndex masks subtitle segment url (SEG_SUBTITLE branch)
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_SegSubtitle, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    ASSERT_TRUE(downloader->subtitlesSegManager_ != nullptr);
+    downloader->subtitlesSegManager_->InfoIndexMap_.writeMap.clear();
+    downloader->subtitlesSegManager_->curUrl_ = "https://host/dir/sub.vtt";
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(4), "https://host/***/sub.vtt");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
+}
+
+/**
+ * @tc.name  : Test GetMaskUrlByReadIndex API
+ * @tc.number: GetMaskUrlByReadIndex_SegAudioManagerNull
+ * @tc.desc  : Test GetMaskUrlByReadIndex returns empty when SEG_AUDIO maps to nullptr audioSegManager_
+ */
+HWTEST_F(HlsMediaDownloaderTest, GetMaskUrlByReadIndex_SegAudioManagerNull, TestSize.Level1)
+{
+    auto downloader = OpenHlsDetachAudioVideoWithMasterReady();
+    downloader->audioSegManager_ = nullptr;
+    EXPECT_EQ(downloader->GetMaskUrlByReadIndex(3), "");
+    downloader->Close(true);
+    CloseHlsDetachAudioVideo(downloader);
 }
 }

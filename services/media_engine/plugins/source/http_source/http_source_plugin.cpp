@@ -32,7 +32,6 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-constexpr int DEFAULT_BUFFER_SIZE = 200 * 1024;
 constexpr int DEFAULT_EXPECT_DURATION = 19;
 constexpr int ERROR_COUNT = 5;
 const std::string LOWER_M3U8 = "m3u8";
@@ -70,10 +69,7 @@ Status HttpSourceRegister(std::shared_ptr<Register> reg)
 PLUGIN_DEFINITION(HttpSource, LicenseType::APACHE_V2, HttpSourceRegister, [] {});
 
 HttpSourcePlugin::HttpSourcePlugin(const std::string &name) noexcept
-    : SourcePlugin(std::move(name)),
-      bufferSize_(DEFAULT_BUFFER_SIZE),
-      waterline_(0),
-      downloader_(nullptr)
+    : SourcePlugin(std::move(name)), downloader_(nullptr)
 {
     MEDIA_LOG_D("HttpSourcePlugin enter.");
 }
@@ -112,10 +108,7 @@ Status HttpSourcePlugin::Deinit()
 Status HttpSourcePlugin::Prepare()
 {
     MEDIA_LOG_D("Prepare enter.");
-    if (delayReady_) {
-        return Status::ERROR_DELAY_READY;
-    }
-    return Status::OK;
+    return delayReady_ ? Status::ERROR_DELAY_READY : Status::OK;
 }
 
 Status HttpSourcePlugin::Reset()
@@ -193,9 +186,6 @@ Status HttpSourcePlugin::GetParameter(std::shared_ptr<Meta> &meta)
 Status HttpSourcePlugin::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("SetParameter enter.");
-    FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
-    meta->GetData(Tag::BUFFERING_SIZE, bufferSize_);
-    meta->GetData(Tag::WATERLINE_HIGH, waterline_);
     return Status::OK;
 }
 
@@ -820,6 +810,13 @@ bool HttpSourcePlugin::IsHls()
     }
     MEDIA_LOG_I("IsHls return true");
     return true;
+}
+
+std::string HttpSourcePlugin::GetMaskUrlByReadIndex(int32_t streamId)
+{
+    auto downloader = GetDownloader();
+    FALSE_RETURN_V_MSG_E(downloader != nullptr, "", "GetMaskUrlByReadIndex downloader is nullptr");
+    return downloader->GetMaskUrlByReadIndex(streamId);
 }
 
 bool HttpSourcePlugin::IsAllowedProtocol(std::string_view url)

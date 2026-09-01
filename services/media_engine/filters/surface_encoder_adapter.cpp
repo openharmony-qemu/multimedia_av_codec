@@ -35,8 +35,6 @@ constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
 constexpr uint32_t STOP_TIME_OUT_MS = 2000;
 constexpr uint32_t MAX_STOPPED_FRAMES_FOR_BOOST = 2;
-//Codec wait timeout with no video frame received
-constexpr uint32_t AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED = 50001 ;
 namespace OHOS {
 namespace Media {
 
@@ -334,10 +332,10 @@ Status SurfaceEncoderAdapter::SetWatermarkMode()
     return Status::OK;
 }
 
-Status SurfaceEncoderAdapter::SetScreenCaptureMode()
+Status SurfaceEncoderAdapter::SetStabilizationMode(bool enableStabilization)
 {
-    MEDIA_LOG_I("SetScreenCaptureMode");
-    isScreenCaptureMode_ = true;
+    MEDIA_LOG_I("SetStabilizationMode, enableStabilization is: %{public}d", enableStabilization);
+    enableStabilization_ = enableStabilization;
     return Status::OK;
 }
 
@@ -392,7 +390,7 @@ Status SurfaceEncoderAdapter::Stop()
     if (curState_ == ProcessStateCode::PAUSED && !isTransCoderMode) {
         stopTime_ = pauseTime_;
         // current frame is not the last frame before the pause time, wait for stop
-        if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_) && !isScreenCaptureMode_) {
+        if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_) && enableStabilization_) {
             MEDIA_LOG_D("paused state -> stop, wait for stop.");
             HandleWaitforStop();
         }
@@ -401,7 +399,7 @@ Status SurfaceEncoderAdapter::Stop()
     }
     // operate stop when it is recording state.
     if (curState_ == ProcessStateCode::RECORDING && !isTransCoderMode) {
-        if (!isScreenCaptureMode_) {
+        if (enableStabilization_) {
             MEDIA_LOG_D("recording state -> stop, wait for stop.");
             HandleWaitforStop();
         }
@@ -941,7 +939,7 @@ void SurfaceEncoderAdapter::HandleWaitforStop()
     if (waitStatus == std::cv_status::timeout && currentKeyFramePts_ == -1) {
         MEDIA_LOG_E("Codec wait timeout with no video frame received");
         encoderAdapterCallback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL,
-                                         AVCODEC_ERR_TIMEOUT_NO_FRAME_RECEIVED);
+                                         static_cast<int32_t>(Status::ERROR_AVCODEC_TIMEOUT_NO_VIDEO_FRAMES_RECEIVED));
     }
 }
 

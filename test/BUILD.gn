@@ -311,6 +311,7 @@ group("av_codec_fuzz_test") {
       "fuzztest/avcencinfo_fuzzer:AvCencInfoFuzzTest",
       "fuzztest/audiomuxerflac_fuzzer:AudioMuxerFlacFuzzTest",
       "fuzztest/avcodecsuspend_fuzzer:AvcodecSuspendFuzzTest",
+      "fuzztest/avcodecvideocall_fuzzer:AvcodecVideoCallFuzzTest",
       "fuzztest/avsourcefunc_fuzzer:AvSourceFuncFuzzTest",
       "fuzztest/demuxer_fuzzer:DemuxerFuzzTest",
       "fuzztest/demuxerinnerfunc_fuzzer:DemuxerInnerFuncFuzzTest",

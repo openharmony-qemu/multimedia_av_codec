@@ -249,11 +249,11 @@ Status SurfaceEncoderFilter::SetWatermarkMode()
     return Status::OK;
 }
 
-Status SurfaceEncoderFilter::SetScreenCaptureMode()
+Status SurfaceEncoderFilter::SetStabilizationMode(bool enableStabilization)
 {
-    MEDIA_LOG_I("SetScreenCaptureMode");
+    MEDIA_LOG_I("SetStabilizationMode");
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
-    mediaCodec_->SetScreenCaptureMode();
+    mediaCodec_->SetStabilizationMode(enableStabilization);
     return Status::OK;
 }
 

@@ -148,6 +148,7 @@ public:
     Status StopBufferring(bool isAppBackground);
     bool IsHlsEnd(int32_t streamId = -1);
     bool IsHls();
+    std::string GetMaskUrlByReadIndex(int32_t streamId);
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
     bool IsCloudFd();
     void PauseRead();
@@ -170,8 +171,6 @@ private:
     std::shared_ptr<Plugins::SourcePlugin> plugin_;
 
     std::shared_ptr<Plugins::PluginInfo> pluginInfo_{};
-    bool isPluginReady_ {false};
-    bool isAboveWaterline_ {false};
 
     std::shared_ptr<CallbackImpl> mediaDemuxerCallback_;
     std::atomic<bool> isInterruptNeeded_{false};

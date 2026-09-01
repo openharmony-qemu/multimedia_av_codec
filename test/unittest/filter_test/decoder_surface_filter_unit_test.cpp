@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <cinttypes>
+#include <cstdlib>
 #include "gtest/gtest.h"
 #include "avcodec_errors.h"
 #include "avcodec_info.h"
@@ -218,6 +219,14 @@ void DecoderSurfaceFilterUnitTest::SetUp(void)
 
 void DecoderSurfaceFilterUnitTest::TearDown(void)
 {
+    if (decoderSurfaceFilter_ != nullptr) {
+        decoderSurfaceFilter_->isThreadExit_ = true;
+        decoderSurfaceFilter_->condBufferAvailable_.notify_all();
+        if (decoderSurfaceFilter_->readThread_ != nullptr && decoderSurfaceFilter_->readThread_->joinable()) {
+            decoderSurfaceFilter_->readThread_->join();
+            decoderSurfaceFilter_->readThread_ = nullptr;
+        }
+    }
     decoderSurfaceFilter_ = nullptr;
     system::SetParameter("persist.media_service.async_filter", "1");
 }
@@ -248,6 +257,13 @@ HWTEST_F(DecoderSurfaceFilterUnitTest, DecoderSurfaceFilter_Destructor_0100, Tes
     decoderSurfaceFilter_->isThreadExit_ = false;
     decoderSurfaceFilter_->readThread_ =
         std::make_unique<std::thread>(&DecoderSurfaceFilter::RenderLoop, decoderSurfaceFilter_);
+    // Must stop RenderLoop thread before destroying the object to avoid use-after-free
+    decoderSurfaceFilter_->isThreadExit_ = true;
+    decoderSurfaceFilter_->condBufferAvailable_.notify_all();
+    if (decoderSurfaceFilter_->readThread_ != nullptr && decoderSurfaceFilter_->readThread_->joinable()) {
+        decoderSurfaceFilter_->readThread_->join();
+        decoderSurfaceFilter_->readThread_ = nullptr;
+    }
     decoderSurfaceFilter_ =
         std::make_shared<DecoderSurfaceFilter>("testDecoderSurfaceFilter", FilterType::FILTERTYPE_VIDEODEC);
     EXPECT_NE(decoderSurfaceFilter_, nullptr);

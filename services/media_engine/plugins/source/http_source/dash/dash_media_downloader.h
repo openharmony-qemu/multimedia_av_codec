@@ -60,7 +60,6 @@ public:
     std::vector<SeekRange> GetSeekableRanges() const override;
     void SetCallback(const std::shared_ptr<Callback>& cb) override;
     void SetStatusCallback(StatusCallbackFunc cb) override;
-    bool GetStartedStatus() override;
     std::vector<uint32_t> GetBitRates() override;
     bool SelectBitRate(uint32_t bitrate) override;
     Status SelectStream(int32_t streamId) override;
@@ -80,7 +79,6 @@ public:
     void GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     uint64_t GetBufferSize() const override;
     bool GetPlayable() override;
-    bool GetBufferingTimeOut() override;
     void SetAppUid(int32_t appUid) override;
     void NotifyInitSuccess() override;
     uint64_t GetMemorySize() override;
@@ -92,7 +90,6 @@ public:
 private:
     void ReceiveMpdStreamInitEvent();
     void ReceiveMpdParseOkEvent();
-    void PostBufferingEvent(int streamId, BufferingInfoType type);
     void VideoSegmentDownloadFinished(int streamId);
     void GetSegmentToDownload(int downloadStreamId, bool streamSwitchFlag);
     void CleanVideoSegmentBuffer(bool &bufferCleanFlag, int64_t &remainLastNumberSeq);
@@ -168,11 +165,6 @@ private:
     PendingPeriodSwitch pendingAudioSwitch_;
     std::mutex parseSidxMutex_;
     uint64_t expectDuration_{0};
-    std::mutex bufferingMutex_;
-    uint32_t bufferingFlag_{0};
-    std::atomic<uint32_t> lastBufferingPercent_{0};
-    double bufferDurationForPlaying_ {0};
-
     std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader_ {nullptr};
     std::shared_ptr<DownloadMetricsInfo> downloadMetricsInfo_ {nullptr};
     std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> reportInfo_ {nullptr};

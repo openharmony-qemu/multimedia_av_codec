@@ -136,7 +136,6 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     mediaDownloader->GetContentType();
     mediaDownloader->SetInterruptState(false);
     mediaDownloader->GetBufferSize();
-    mediaDownloader->GetBufferingTimeOut();
     mediaDownloader->GetContentType();
     std::vector<StreamInfo> streams;
     mediaDownloader->GetStreamInfo(streams);
@@ -148,7 +147,6 @@ bool DashMediaDownBitrateFuzzerTest(const uint8_t *data, size_t size)
     }
     mediaDownloader->GetContentLength();
     mediaDownloader->GetDuration();
-    mediaDownloader->GetStartedStatus();
     mediaDownloader->GetBitRates();
     mediaDownloader->SetDownloadErrorState();
     int64_t seektime = GetData<int64_t>();

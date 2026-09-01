@@ -99,7 +99,6 @@ bool SegMentFuzzTest(FuzzedDataProvider *fdp)
     hlsSegmentManager->GetHLSDiscontinuity();
     bool isAppBackground = fdp->ConsumeIntegral<bool>();
     hlsSegmentManager->StopBufferring(isAppBackground);
-    hlsSegmentManager->WaitForBufferingEnd();
     hlsSegmentManager->GetTotalTsBuffersize();
     hlsSegmentManager->GetStreamInfoById(streamId);
     hlsSegmentManager->GetDefaultMediaStreamId(HlsSegmentType::SEG_AUDIO);

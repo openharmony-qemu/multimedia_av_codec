@@ -46,7 +46,7 @@ public:
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
     Status SetWatermarkMode();
-    Status SetScreenCaptureMode();
+    Status SetStabilizationMode(bool enableStabilization);
     sptr<Surface> GetInputSurface();
     Status DoPrepare() override;
     Status DoStart() override;

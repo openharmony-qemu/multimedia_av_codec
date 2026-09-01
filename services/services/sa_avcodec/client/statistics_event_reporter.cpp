@@ -36,6 +36,11 @@ void StatisticsEventReporter::Report(StatisticsEventType type, Media::Meta &meta
     sptr<IRemoteObject> object = samgr->CheckSystemAbility(OHOS::AV_CODEC_SERVICE_ID);
     CHECK_AND_RETURN_LOG(object != nullptr, "AVCodec service object is nullptr");
 
+    pid_t callerPid = 0;
+    if (!meta.GetData(Media::Tag::AV_CODEC_CALLER_PID, callerPid)) {
+        meta.SetData(Media::Tag::AV_CODEC_CALLER_PID, getprocpid());
+    }
+
     MessageParcel data;
     MessageParcel reply;
     MessageOption option(MessageOption::TF_ASYNC);

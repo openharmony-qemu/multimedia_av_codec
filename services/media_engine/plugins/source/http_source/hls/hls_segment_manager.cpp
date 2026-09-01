@@ -40,10 +40,9 @@ constexpr int MIN_WIDTH = 480;
 constexpr int SECOND_WIDTH = 720;
 constexpr int THIRD_WIDTH = 1080;
 constexpr uint32_t SAMPLE_INTERVAL = 1000; // Sampling time interval: ms
-constexpr int START_PLAY_WATER_LINE = 128 * 1024;
+constexpr int START_PLAY_DELAY_THRESHOLD = 128 * 1024;
 constexpr int DATA_USAGE_INTERVAL = 300 * 1000;
 constexpr double ZERO_THRESHOLD = 1e-9;
-constexpr size_t PLAY_WATER_LINE = 5 * 1024;
 constexpr int IS_DOWNLOAD_MIN_BIT = 100; // Determine whether it is downloading
 constexpr uint32_t DURATION_CHANGE_AMOUT_MILLISECONDS = 500;
 constexpr int SEEK_STATUS_RETRY_TIMES = 100;
@@ -51,8 +50,6 @@ constexpr int SEEK_STATUS_SLEEP_TIME = 50;
 constexpr uint64_t CURRENT_BIT_RATE = 200 * 1024; // bps
 constexpr int32_t ONE_SECONDS = 1000;
 constexpr uint64_t ONE_USSECONDS = 1000 * 1000;
-constexpr float CACHE_LEVEL_1 = 0.5;
-constexpr float DEFAULT_CACHE_TIME = 1;
 constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
@@ -74,6 +71,7 @@ constexpr size_t ADJUST_SIZE = 200 * 1024;
 constexpr int64_t SEEK_WAIT_TIME = 5;
 constexpr int BITS_PER_BYTE = 8;
 constexpr size_t SEQ_IV_OFFSET = HlsSegmentManager::AES_BLOCK_LEN / 2;
+constexpr size_t MAX_FRAGMENT_TRACKING = 100000;
 
 uint64_t SpliceOffset(uint32_t tsIndex, uint32_t offset32)
 {
@@ -112,7 +110,6 @@ HlsSegmentManager::HlsSegmentManager(int expectBufferDuration, bool userDefinedD
     } else {
         cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
         cacheMediaBuffer_->Init(maxCacheBufferSize_, CHUNK_SIZE);
-        bufferingTime_.store(static_cast<size_t>(steadyClock_.ElapsedMilliseconds()));
         totalBufferSize_ = maxCacheBufferSize_;
         memorySize_ = maxCacheBufferSize_;
     }
@@ -152,7 +149,6 @@ HlsSegmentManager::HlsSegmentManager(const std::shared_ptr<HlsSegmentManager> &o
     } else {
         cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
         cacheMediaBuffer_->Init(maxCacheBufferSize_, CHUNK_SIZE);
-        bufferingTime_.store(static_cast<size_t>(steadyClock_.ElapsedMilliseconds()));
         totalBufferSize_ = maxCacheBufferSize_;
         memorySize_ = maxCacheBufferSize_;
     }
@@ -218,7 +214,6 @@ void HlsSegmentManager::Init()
     playlistDownloader_->Init();
     playlistDownloader_->SetSourceStatisticsDfx(reportInfo_, IsHlsFmp4());
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
-    waterLineAbove_ = PLAY_WATER_LINE;
     steadyClock_.Reset();
     loopInterruptClock_.Reset();
 }
@@ -279,11 +274,21 @@ void HlsSegmentManager::SetDownloaderRequestCb(
     };
 }
 
+void HlsSegmentManager::EvictFragmentMapIfNeeded(std::map<std::string, bool>& fragmentMap, const std::string& tag)
+{
+    if (fragmentMap.size() >= MAX_FRAGMENT_TRACKING) {
+        MEDIA_LOG_W("%{public}s size " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
+            ", evict oldest, type: %{public}d", tag.c_str(), fragmentMap.size(), MAX_FRAGMENT_TRACKING, type_);
+        fragmentMap.erase(fragmentMap.begin());
+    }
+}
+
 void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
 {
     {
         std::lock_guard<std::mutex> lock(fragmentMapMutex_);
-        if (fragmentDownloadStart[playInfo.url_]) {
+        auto it = fragmentDownloadStart.find(playInfo.url_);
+        if (it != fragmentDownloadStart.end() && it->second) {
             MEDIA_LOG_I("PutRequestIntoDownloader playinfo is repeat");
             writeTsIndex_ > 0 ? writeTsIndex_-- : 0;
             return;
@@ -301,6 +306,7 @@ void HlsSegmentManager::PutRequestIntoDownloader(const PlayInfo& playInfo)
                                                          realStatusCallback, requestInfo, isRequestWholeFile));
     {
         std::lock_guard<std::mutex> lock(fragmentMapMutex_);
+        EvictFragmentMapIfNeeded(fragmentDownloadStart, "fragmentDownloadStart");
         fragmentDownloadStart[playInfo.url_] = true;
     }
     int64_t startTimePos = playInfo.startTimePos_;
@@ -431,6 +437,11 @@ void HlsSegmentManager::Close(bool isAsync)
     }
     if (downloader_) {
         downloader_->Stop(isAsync);
+    }
+    {
+        std::lock_guard<std::mutex> fragmentLock(fragmentMapMutex_);
+        fragmentDownloadStart.clear();
+        fragmentPushed.clear();
     }
     isStopped = true;
     if (!isDownloadFinish_) {
@@ -1106,6 +1117,27 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
         "type: %{public}d", playList_->Size(), backPlayList_.size(), writeTsIndex_, type_);
 }
 
+bool HlsSegmentManager::HandleBitrateSelectFragment(const PlayInfo& fragment)
+{
+    if (isSelectingBitrate_.load() && fragment.sequence_ > currentSequence_) {
+        isSelectingBitrate_.store(true);
+    }
+    if (isSelectingBitrate_.load()) {
+        {
+            std::lock_guard<std::mutex> lock(fragmentMapMutex_);
+            EvictFragmentMapIfNeeded(fragmentDownloadStart, "fragmentDownloadStart");
+            fragmentDownloadStart[fragment.url_] = true;
+        }
+        if (currentSequence_ == fragment.sequence_) {
+            MEDIA_LOG_I("HLS Switch bitrate, type: %{public}d", type_);
+            isSelectingBitrate_.store(false);
+        } else {
+            return true; // skip this fragment, continue loop
+        }
+    }
+    return false;
+}
+
 void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playList)
 {
     ResetPlaylistCapacity(static_cast<size_t>(playList.size()));
@@ -1120,45 +1152,32 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
         }
         auto fragment = playList[i];
         PlaylistBackup(fragment);
-        if (isSelectingBitrate_.load() && fragment.sequence_ > currentSequence_) {
-            isSelectingBitrate_.store(false);
+        if (HandleBitrateSelectFragment(fragment)) {
+            continue;
         }
-        if (isSelectingBitrate_.load()) {
-            {
-                std::lock_guard<std::mutex> lock(fragmentMapMutex_);
-                fragmentDownloadStart[fragment.url_] = true;
-            }
-            if (currentSequence_ == fragment.sequence_) {
-                MEDIA_LOG_I("HLS Switch bitrate, type: %{public}d", type_);
-                isSelectingBitrate_.store(false);
-            } else {
-                continue;
-            }
-        }
-        PlayInfo playerTmp = playList[i];
+        PlayInfo playerTmp = fragment;
         {
             std::lock_guard<std::mutex> lock(infoIndexMapMutex_);
-            if (InfoIndexMap_.urlMap.find(playList[i].url_) == InfoIndexMap_.urlMap.end()) {
+            if (InfoIndexMap_.urlMap.find(fragment.url_) == InfoIndexMap_.urlMap.end()) {
                 playerTmp.sumDuration_ = InfoIndexMap_.lastPlay.sumDuration_ +
                     static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
-                InfoIndexMap_.urlMap[playList[i].url_] = playerTmp;
+                InfoIndexMap_.urlMap[fragment.url_] = playerTmp;
                 InfoIndexMap_.lastPlay = playerTmp;
             }
         }
         {
             std::lock_guard<std::mutex> lock(fragmentMapMutex_);
-            if (!fragmentDownloadStart[fragment.url_] && !fragmentPushed[fragment.url_]) {
+            auto startIt = fragmentDownloadStart.find(fragment.url_);
+            bool alreadyStarted = (startIt != fragmentDownloadStart.end() && startIt->second);
+            auto pushedIt = fragmentPushed.find(fragment.url_);
+            bool alreadyPushed = (pushedIt != fragmentPushed.end() && pushedIt->second);
+            if (!alreadyStarted && !alreadyPushed) {
+                EvictFragmentMapIfNeeded(fragmentPushed, "fragmentPushed");
                 playList_->Push(fragment);
                 fragmentPushed[fragment.url_] = true;
             }
         }
     }
-}
-
-bool HlsSegmentManager::GetStartedStatus()
-{
-    FALSE_RETURN_V(playlistDownloader_ != nullptr, false);
-    return playlistDownloader_->GetPlayListDownloadStatus() && startedPlayStatus_;
 }
 
 bool HlsSegmentManager::CacheBufferFullLoop()
@@ -1283,7 +1302,6 @@ uint32_t HlsSegmentManager::SaveData(uint8_t* data, uint32_t len, bool notBlock)
     if (isSeekingFlag.load()) {
         return len;
     }
-    startedPlayStatus_ = true;
     uint32_t res = 0;
     if (GetAesDecryptor() == nullptr) {
         res = SaveCacheBufferData(data, len, notBlock);
@@ -1418,16 +1436,6 @@ void HlsSegmentManager::DownloadRecordHistory(int64_t nowTime)
 
 void HlsSegmentManager::OnWriteCacheBuffer(uint32_t len)
 {
-    {
-        AutoLock lock(initCacheMutex_);
-        if (initCacheSize_.load() != -1) {
-            if (IsCachedInitSizeReady(initCacheSize_.load()) && bufferingCbFunc_) {
-                bufferingCbFunc_(type_, BufferingInfoType::BUFFERING_END);
-                initCacheSize_.store(-1);
-                expectOffset_.store(-1);
-            }
-        }
-    }
     int64_t nowTime = steadyClock_.ElapsedMilliseconds();
     if (startDownloadTime_ == 0) {
         startDownloadTime_ = nowTime;
@@ -1438,7 +1446,7 @@ void HlsSegmentManager::OnWriteCacheBuffer(uint32_t len)
     totalBits_ += writeBits;
     lastWriteBit_ += writeBits;
     dataUsage_ += writeBits;
-    if ((totalBits_ > START_PLAY_WATER_LINE) && (playDelayTime_ == 0)) {
+    if ((totalBits_ > START_PLAY_DELAY_THRESHOLD) && (playDelayTime_ == 0)) {
         auto startPlayTime = steadyClock_.ElapsedMilliseconds();
         playDelayTime_ = startPlayTime - openTime_;
         MEDIA_LOG_D("Start play delay time: " PUBLIC_LOG_D64 ", type: %{public}d", playDelayTime_, type_);
@@ -1664,6 +1672,7 @@ void HlsSegmentManager::PushPlayInfo(PlayInfo playInfo)
 {
     {
         std::lock_guard<std::mutex> lock(fragmentMapMutex_);
+        EvictFragmentMapIfNeeded(fragmentDownloadStart, "fragmentDownloadStart");
         fragmentDownloadStart[playInfo.url_] = false;
     }
     curStreamId_ = playInfo.streamId_;
@@ -2016,14 +2025,7 @@ size_t HlsSegmentManager::GetTotalBufferSize()
 void HlsSegmentManager::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("SetInterruptState: " PUBLIC_LOG_D32 ", type: %{public}d", isInterruptNeeded, type_);
-    {
-        AutoLock lk(bufferingEndMutex_);
-        isInterruptNeeded_ = isInterruptNeeded;
-        if (isInterruptNeeded_) {
-            MEDIA_LOG_I("SetInterruptState bufferingEndCond NotifyAll, type: %{public}d", type_);
-            bufferingEndCond_.NotifyAll();
-        }
-    }
+    isInterruptNeeded_ = isInterruptNeeded;
     if (playlistDownloader_ != nullptr) {
         playlistDownloader_->SetInterruptState(isInterruptNeeded);
     }
@@ -2042,7 +2044,7 @@ void HlsSegmentManager::GetDownloadInfo(DownloadInfo& downloadInfo)
     }
     downloadInfo.avgDownloadSpeed = avgDownloadSpeed_;
     downloadInfo.totalDownLoadBits = totalBits_;
-    downloadInfo.isTimeOut = isTimeOut_;
+    downloadInfo.isTimeOut = false;
 }
 
 void HlsSegmentManager::GetPlaybackInfo(PlaybackInfo& playbackInfo)
@@ -2116,10 +2118,6 @@ Status HlsSegmentManager::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
         MEDIA_LOG_I("HLS playlistBitrate: " PUBLIC_LOG_D32 " currentBitRate: " PUBLIC_LOG_D32 ", type: %{public}d",
             playlistBitrate, currentBitRate_, type_);
     }
-    if (bufferDurationForPlaying_ > 0 && currentBitRate_ > 0) {
-        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(currentBitRate_) /
-            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
-    }
     auto downloadRequest = GetDownloadRequest();
     if (downloadRequest) {
         downloadRequest->SetBitRateToRequestSize(currentBitRate_);
@@ -2172,13 +2170,6 @@ void HlsSegmentManager::SetAppUid(int32_t appUid)
     }
 }
 
-float HlsSegmentManager::GetCacheDuration(float ratio)
-{
-    if (ratio >= 1) {
-        return CACHE_LEVEL_1;
-    }
-    return DEFAULT_CACHE_TIME;
-}
 
 uint64_t HlsSegmentManager::GetBufferSize() const
 {
@@ -2204,58 +2195,9 @@ uint64_t HlsSegmentManager::GetCrossTsBuffersize()
     return bufferSize;
 }
 
-bool HlsSegmentManager::IsCachedInitSizeReady(int32_t wantInitSize)
-{
-    if (wantInitSize < 0) {
-        return false;
-    }
-    uint64_t bufferSize = 0;
-    if (cacheMediaBuffer_ == nullptr) {
-        return false;
-    }
-    size_t listSize = backPlayList_.size();
-    int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
-    for (size_t i = 0; i < listSize; i++) {
-        if (CheckLoopTimeout(loopStartTime)) {
-            break;
-        }
-        if (i + 1 == listSize) {
-            return true;
-        }
-        if (tsStorageInfo_.find(i) == tsStorageInfo_.end()) {
-            break;
-        } else {
-            uint64_t currentTsStart = SpliceOffset(i, 0);
-            bufferSize += cacheMediaBuffer_->GetBufferSize(currentTsStart);
-            if (bufferSize >= static_cast<uint64_t>(wantInitSize)) {
-                return true;
-            }
-            if (!tsStorageInfo_[i].second) {
-                break;
-            }
-        }
-    }
-    return false;
-}
-
 bool HlsSegmentManager::GetPlayable()
 {
-    if (!isFirstFrameArrived_) {
-        return false;
-    }
-    size_t wantedLength = wantedReadLength_.load();
-    size_t waterLine = wantedLength > 0 ? std::max(PLAY_WATER_LINE, wantedLength) : 0;
-    return waterLine == 0 ? GetBufferSize() > waterLine : GetBufferSize() >= waterLine;
-}
-
-bool HlsSegmentManager::GetBufferingTimeOut()
-{
-    if (bufferingTime_.load() == 0) {
-        return false;
-    } else {
-        size_t now = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
-        return now >= bufferingTime_.load() ? now - bufferingTime_.load() >= timeoutInterval_ : false;
-    }
+    return GetBufferSize() > 0;
 }
 
 bool HlsSegmentManager::GetReadTimeOut(bool isDelay)
@@ -2282,6 +2224,18 @@ size_t HlsSegmentManager::GetSegmentOffset()
     return 0;
 }
 
+std::string HlsSegmentManager::GetCurUrl()
+{
+    {
+        std::lock_guard<std::mutex> lock(infoIndexMapMutex_);
+        auto it = InfoIndexMap_.writeMap.find(readTsIndex_.load());
+        if (it != InfoIndexMap_.writeMap.end() && !it->second.empty()) {
+            return it->second;
+        }
+    }
+    return curUrl_;
+}
+
 bool HlsSegmentManager::GetHLSDiscontinuity()
 {
     if (playlistDownloader_) {
@@ -2304,7 +2258,6 @@ Status HlsSegmentManager::StopBufferring(bool isAppBackground)
     } else {
         isInterrupt_.store(false);
     }
-    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
     downloader_->StopBufferring();
     playlistDownloader_->StopBufferring(isAppBackground);
     MEDIA_LOG_W("HlsSegmentManager:StopBufferring out, isBackground: %{public}d, type: %{public}d", isAppBackground,
@@ -2335,16 +2288,7 @@ void HlsSegmentManager::SetIsReportedErrorCode()
 
 bool HlsSegmentManager::SetInitialBufferSize(int32_t offset, int32_t size)
 {
-    AutoLock lock(initCacheMutex_);
-    bool isInitBufferSizeOk = CheckBreakCondition();
-    auto downloadRequest = GetDownloadRequest();
-    if (isInitBufferSizeOk || !downloader_ || !downloadRequest || isTimeoutErrorNotified_.load()) {
-        MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize ok, type: %{public}d", type_);
-        return false;
-    }
-    MEDIA_LOG_I("HLS SetInitialBufferSize initCacheSize " PUBLIC_LOG_U32 "offset:" PUBLIC_LOG_U32 ", type: %{public}d",
-        size, offset, type_);
-    return true;
+    return false;
 }
 
 void HlsSegmentManager::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy)
@@ -2356,31 +2300,11 @@ void HlsSegmentManager::SetPlayStrategy(const std::shared_ptr<PlayStrategy>& pla
     if (playStrategy->width > 0 && playStrategy->height > 0) {
         playlistDownloader_->SetInitResolution(playStrategy->width, playStrategy->height);
     }
-    if (playStrategy->bufferDurationForPlaying > 0) {
-        bufferDurationForPlaying_ = playStrategy->bufferDurationForPlaying;
-        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(CURRENT_BIT_RATE) /
-            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
-        MEDIA_LOG_I("HLS buffer duration for playing : " PUBLIC_LOG ".3f, type: %{public}d", bufferDurationForPlaying_,
-            type_);
-    }
 }
 
 void HlsSegmentManager::NotifyInitSuccess()
 {
     MEDIA_LOG_I("HLS NotifyInitSuccess in, type: %{public}d", type_);
-    isDemuxerInitSuccess_.store(true);
-    if (bufferDurationForPlaying_ <= 0) {
-        return;
-    }
-    uint32_t playlistBitrate = 0;
-    if (playlistDownloader_ != nullptr) {
-        playlistBitrate = static_cast<uint32_t>(playlistDownloader_->GetCurBitrate());
-    }
-    if (playlistBitrate > 0) {
-        waterlineForPlaying_ = static_cast<uint64_t>(static_cast<double>(playlistBitrate) /
-            static_cast<double>(BYTES_TO_BIT) * bufferDurationForPlaying_);
-    }
-    bufferingTime_ = static_cast<size_t>(steadyClock_.ElapsedMilliseconds());
 }
 
 uint64_t HlsSegmentManager::GetCachedDuration()
@@ -2569,12 +2493,8 @@ void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)
     isInterrupt_.store(other->isInterrupt_.load());
     isFirstFrameArrived_ = other->isFirstFrameArrived_;
     isReportedErrorCode_ = other->isReportedErrorCode_;
-    bufferDurationForPlaying_ = other->bufferDurationForPlaying_;
-    waterlineForPlaying_ = other->waterlineForPlaying_;
-    isDemuxerInitSuccess_.store(other->isDemuxerInitSuccess_.load());
     isTimeoutErrorNotified_.store(other->isTimeoutErrorNotified_.load());
     timeoutInterval_ = other->timeoutInterval_;
-    bufferingCbFunc_ = other->bufferingCbFunc_;
     segEventCb_ = other->segEventCb_;
     InitCacheWithDuration();
     FALSE_RETURN_MSG(playlistDownloader_ != nullptr, "Clone no playlistDownloader_");
@@ -2658,11 +2578,6 @@ HlsSegmentType HlsSegmentManager::GetSegType(uint32_t streamId)
         return type;
     }
     return HlsSegmentType::SEG_VIDEO;
-}
-
-void HlsSegmentManager::SetSegmentBufferingCallback(HlsSegmentBufferingCbFunc bufferingCbFunc)
-{
-    bufferingCbFunc_ = bufferingCbFunc;
 }
 
 void HlsSegmentManager::SetSegmentAllCallback(HlsSegmentEventCbFunc segEventCallback)

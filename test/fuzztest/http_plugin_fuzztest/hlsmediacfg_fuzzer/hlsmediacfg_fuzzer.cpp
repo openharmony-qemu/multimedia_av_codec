@@ -111,8 +111,6 @@ void IncreaseCoverageRead(std::shared_ptr<HlsMediaDownloader> &hlsMediaDownloade
 {
     hlsMediaDownloader->GetPlayable();
 
-    hlsMediaDownloader->GetStartedStatus();
-
     PlaybackInfo playbackInfo;
     hlsMediaDownloader->GetPlaybackInfo(playbackInfo);
 

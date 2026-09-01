@@ -648,6 +648,26 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_AddInternalBufferQueue_Nu
  * @tc.type: FUNC
  * @tc.require:
  */
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetPureAudioMode_0100, TestSize.Level1)
+{
+    EXPECT_EQ(audioEncoderFilter_->isPureAudioMode_.load(), false);
+    Status result = audioEncoderFilter_->SetPureAudioMode();
+    EXPECT_EQ(result, Status::OK);
+    EXPECT_EQ(audioEncoderFilter_->isPureAudioMode_.load(), true);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_SetPureAudioMode_0200, TestSize.Level1)
+{
+    audioEncoderFilter_->isPureAudioMode_.store(false);
+    EXPECT_EQ(audioEncoderFilter_->isPureAudioMode_.load(), false);
+    Status result = audioEncoderFilter_->SetPureAudioMode();
+    EXPECT_EQ(result, Status::OK);
+    EXPECT_EQ(audioEncoderFilter_->isPureAudioMode_.load(), true);
+    Status result2 = audioEncoderFilter_->SetPureAudioMode();
+    EXPECT_EQ(result2, Status::OK);
+    EXPECT_EQ(audioEncoderFilter_->isPureAudioMode_.load(), true);
+}
+
 HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_AddInternalBufferQueue_NullProducer_0400, TestSize.Level1)
 {
     auto mediaCodecMock = std::make_shared<MediaCodecMock>();

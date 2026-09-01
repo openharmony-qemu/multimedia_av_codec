@@ -147,36 +147,6 @@ HWTEST_F(SourceTest, Prepare_003, TestSize.Level1)
 }
 
 /**
- * @tc.name Test Prepare API
- * @tc.number Prepare_004
- * @tc.desc Test ret = Status::ERROR_DELAY_READY && isAboveWaterline_ = false
- */
-HWTEST_F(SourceTest, Prepare_004, TestSize.Level1)
-{
-    EXPECT_CALL(*(mockSourcePlugin_), Prepare()).WillRepeatedly(Return(Status::ERROR_DELAY_READY));
-    EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
-    source_->isAboveWaterline_ = false;
-    Status ret = source_->Prepare();
-    EXPECT_EQ(Status::ERROR_DELAY_READY, ret);
-}
-
-/**
- * @tc.name Test Prepare API
- * @tc.number Prepare_005
- * @tc.desc Test ret = Status::ERROR_DELAY_READY && isAboveWaterline_ = true
- */
-HWTEST_F(SourceTest, Prepare_005, TestSize.Level1)
-{
-    EXPECT_CALL(*(mockSourcePlugin_), Prepare()).WillRepeatedly(Return(Status::ERROR_DELAY_READY));
-    EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
-    source_->isAboveWaterline_ = true;
-    Status ret = source_->Prepare();
-    EXPECT_EQ(source_->isPluginReady_, false);
-    EXPECT_EQ(source_->isAboveWaterline_, false);
-    EXPECT_EQ(Status::ERROR_DELAY_READY, ret);
-}
-
-/**
  * @tc.name Test AutoSelectBitRate API
  * @tc.number AutoSelectBitRate_001
  * @tc.desc Test plugin_ != nullptr

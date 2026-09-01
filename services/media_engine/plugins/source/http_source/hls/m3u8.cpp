@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <cstdint>
 #include <ctime>
+#include <limits>
 #include "m3u8.h"
 #include "base64_utils.h"
 
@@ -698,9 +699,19 @@ void M3U8::ProcessInfo(M3U8Info& info, size_t& duration)
         auto m3u8 = M3U8Fragment(info.uri, info.duration, sequence_, info.discontinuity);
         fragment = std::make_shared<M3U8Fragment>(m3u8, key_, fragmentIv);
     }
-    sequence_++;
+    if (sequence_ < std::numeric_limits<uint64_t>::max()) {
+        sequence_++;
+    } else {
+        MEDIA_LOG_W("sequence_ overflow, skip increment");
+    }
     AddFile(fragment, duration);
-    duration += static_cast<size_t>(info.duration * SECOND_TO_MICROSECOND);
+    size_t fragmentDuration = static_cast<size_t>(info.duration * SECOND_TO_MICROSECOND);
+    if (duration > std::numeric_limits<size_t>::max() - fragmentDuration) {
+        MEDIA_LOG_W("duration overflow, skip accumulation");
+        duration = std::numeric_limits<size_t>::max();
+    } else {
+        duration += fragmentDuration;
+    }
     info.uri = "";
     info.duration = 0;
     info.discontinuity = false;
