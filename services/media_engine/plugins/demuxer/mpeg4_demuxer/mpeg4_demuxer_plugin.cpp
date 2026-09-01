@@ -1295,6 +1295,7 @@ Status MPEG4DemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sour
             nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
         ret = atomParser->MPEG4ParseHeader(
             source, seekable_, readTimeoutMs_.load(std::memory_order_acquire), demuxerMode_);
+        atomParser->NotifyInitializationCompleted();
         FALSE_RETURN_V_MSG_E(ret != Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, ret, "MPEG4Demuxer unsupport type");
         FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "MPEG4ParseHeader failed");
         HiviewDFX::XCollie::GetInstance().CancelTimer(id);
