@@ -196,7 +196,7 @@ bool KeyDownloader::WaitForKey(uint64_t keyIndex, uint32_t timeoutMs)
         return true;
     }
     return readyCond_.wait_for(lock, std::chrono::milliseconds(timeoutMs),
-        [this, keyIndex]() {return readyKeys_count(keyIndex) > 0 || isInterruptNeeded_.load(); });
+        [this, keyIndex]() {return readyKeys_.count(keyIndex) > 0 || isInterruptNeeded_.load(); });
 }
 
 } // namespace HttpPlugin
