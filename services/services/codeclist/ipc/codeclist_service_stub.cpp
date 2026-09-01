@@ -152,7 +152,7 @@ int32_t CodecListServiceStub::GetCapabilityAt(CapabilityData &capabilityData, in
 int32_t CodecListServiceStub::DoFindDecoder(MessageParcel &data, MessageParcel &reply)
 {
     Format format;
-    CHECK_AND_RETURN_RET_LOG(AVCodecParcel::Unmarshalling(reply, format), AVCS_ERR_UNKNOWN,
+    CHECK_AND_RETURN_RET_LOG(AVCodecParcel::Unmarshalling(data, format), AVCS_ERR_UNKNOWN,
                              "GetDecoderInfos failed, Unmarshalling error");
     reply.WriteString(FindDecoder(format));
     return AVCS_ERR_OK;
