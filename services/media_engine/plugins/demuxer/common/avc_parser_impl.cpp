@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <array>
+#include <climits>
 #include <limits>
 #include "common/log.h"
 #include "meta/media_types.h"
@@ -25,6 +26,7 @@ using OHOS::Media::Plugins::RbspContext;
 
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "AvcParser"};
 constexpr uint8_t START_CODE[] = {0x00, 0x00, 0x01};
+constexpr uint8_t ANNEXB_START_CODE[] = {0x00, 0x00, 0x00, 0x01};
 constexpr int32_t SIZE_CODE_LEN = 4;
 constexpr int32_t AVC_CONFIG_HEADER_SIZE = 6;
 constexpr int32_t AVC_CONFIG_SPS_OFFSET = 5;
@@ -693,19 +695,196 @@ void AvcParserImpl::HandleNal(NalUnitInfo nal)
     }
 }
 
+bool AvcParserImpl::AppendPacketData(uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize,
+    const uint8_t *data, size_t size) const
+{
+    FALSE_RETURN_V(data != nullptr || size == 0, false);
+    FALSE_RETURN_V(size <= static_cast<size_t>(INT32_MAX - outDataSize), false);
+    int32_t writeSize = static_cast<int32_t>(size);
+    if (outBuffer != nullptr) {
+        FALSE_RETURN_V(outBufferSize >= 0 && outDataSize <= outBufferSize - writeSize, false);
+        if (size > 0) {
+            std::copy(data, data + size, outBuffer + outDataSize);
+        }
+    }
+    outDataSize += writeSize;
+    return true;
+}
+
+bool AvcParserImpl::AppendStartCode(uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize) const
+{
+    return AppendPacketData(outBuffer, outBufferSize, outDataSize, ANNEXB_START_CODE, sizeof(ANNEXB_START_CODE));
+}
+
+bool AvcParserImpl::FilterPsFromPacket(const uint8_t *packet, int32_t packetSize, PacketState &state)
+{
+    const uint8_t *buf = packet;
+    const uint8_t *bufEnd = packet + packetSize;
+    int spsCount = 0;
+    int ppsCount = 0;
+    while (buf + naluLength_ <= bufEnd) {
+        uint32_t nalSize = 0;
+        for (int32_t i = 0; i < naluLength_; ++i) {
+            nalSize = (nalSize << 0x08) | buf[i];
+        }
+        buf += naluLength_;
+        FALSE_RETURN_V(static_cast<int64_t>(nalSize) <= bufEnd - buf, false);
+        if (nalSize == 0) {
+            continue;
+        }
+        uint8_t unitType = buf[0] & 0x1f;
+        if (unitType == AvcNalType::AVC_NAL_SPS) {
+            if (spsCount == 0) {
+                state.sps.clear();
+            }
+            state.sps.insert(state.sps.end(), ANNEXB_START_CODE, ANNEXB_START_CODE + sizeof(ANNEXB_START_CODE));
+            state.sps.insert(state.sps.end(), buf, buf + nalSize);
+            ++spsCount;
+        } else if (unitType == AvcNalType::AVC_NAL_PPS) {
+            if (ppsCount == 0) {
+                state.pps.clear();
+            }
+            state.pps.insert(state.pps.end(), ANNEXB_START_CODE, ANNEXB_START_CODE + sizeof(ANNEXB_START_CODE));
+            state.pps.insert(state.pps.end(), buf, buf + nalSize);
+            ++ppsCount;
+        }
+        buf += nalSize;
+    }
+    return true;
+}
+
+bool AvcParserImpl::HandlePacketParameterSet(const NalUnitInfo &nal, PacketState &state,
+    uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize)
+{
+    if (nal.nalType == AvcNalType::AVC_NAL_SPS) {
+        state.idrSpsSeen = true;
+        state.newIdr = true;
+        return true;
+    }
+    if (nal.nalType != AvcNalType::AVC_NAL_PPS) {
+        return true;
+    }
+    state.idrPpsSeen = true;
+    state.newIdr = true;
+    if (state.idrSpsSeen || state.sps.empty()) {
+        return true;
+    }
+    FALSE_RETURN_V(AppendPacketData(outBuffer, outBufferSize, outDataSize, state.sps.data(), state.sps.size()), false);
+    state.idrSpsSeen = true;
+    return true;
+}
+
+void AvcParserImpl::DetectPacketIdr(const NalUnitInfo &nal, PacketState &state)
+{
+    if (!state.newIdr && nal.nalType == AvcNalType::AVC_NAL_IDR_SLICE &&
+        nal.size > 1 && (nal.data[1] & 0x80)) {
+        state.newIdr = true;
+    }
+}
+
+bool AvcParserImpl::InsertPsBeforeBufferingPeriod(const NalUnitInfo &nal, PacketState &state,
+    uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize) const
+{
+    if (nal.nalType != AvcNalType::AVC_NAL_SEI || nal.size <= 1 || nal.data[1] != SEI_TYPE_BUFFERING_PERIOD ||
+        state.idrSpsSeen || state.idrPpsSeen) {
+        return true;
+    }
+    if (!state.sps.empty()) {
+        FALSE_RETURN_V(AppendPacketData(outBuffer, outBufferSize, outDataSize,
+            state.sps.data(), state.sps.size()), false);
+        state.idrSpsSeen = true;
+    }
+    if (!state.pps.empty()) {
+        FALSE_RETURN_V(AppendPacketData(outBuffer, outBufferSize, outDataSize,
+            state.pps.data(), state.pps.size()), false);
+        state.idrPpsSeen = true;
+    }
+    return true;
+}
+
+bool AvcParserImpl::InsertPsBeforePacketIdr(const NalUnitInfo &nal, PacketState &state,
+    uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize) const
+{
+    if (!state.newIdr || nal.nalType != AvcNalType::AVC_NAL_IDR_SLICE) {
+        return true;
+    }
+    if (!state.idrSpsSeen && !state.idrPpsSeen) {
+        if (!state.sps.empty() && !AppendPacketData(outBuffer, outBufferSize, outDataSize,
+            state.sps.data(), state.sps.size())) {
+            return false;
+        }
+        if (!state.pps.empty() && !AppendPacketData(outBuffer, outBufferSize, outDataSize,
+            state.pps.data(), state.pps.size())) {
+            return false;
+        }
+        state.newIdr = false;
+        return true;
+    }
+    if (state.idrSpsSeen && !state.idrPpsSeen && !state.pps.empty()) {
+        return AppendPacketData(outBuffer, outBufferSize, outDataSize, state.pps.data(), state.pps.size());
+    }
+    return true;
+}
+
+bool AvcParserImpl::AppendPacketNalUnit(const NalUnitInfo &nal, PacketState &state,
+    uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize) const
+{
+    FALSE_RETURN_V(AppendStartCode(outBuffer, outBufferSize, outDataSize), false);
+    FALSE_RETURN_V(AppendPacketData(outBuffer, outBufferSize, outDataSize, nal.data, nal.size), false);
+    if (nal.nalType == AvcNalType::AVC_NAL_SLICE) {
+        state.newIdr = true;
+        state.idrSpsSeen = false;
+        state.idrPpsSeen = false;
+    }
+    return true;
+}
+
+bool AvcParserImpl::HandlePacketNal(const NalUnitInfo &nal, PacketState &state,
+    uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize)
+{
+    FALSE_RETURN_V(HandlePacketParameterSet(nal, state, outBuffer, outBufferSize, outDataSize), false);
+    DetectPacketIdr(nal, state);
+    FALSE_RETURN_V(InsertPsBeforeBufferingPeriod(nal, state, outBuffer, outBufferSize, outDataSize), false);
+    FALSE_RETURN_V(InsertPsBeforePacketIdr(nal, state, outBuffer, outBufferSize, outDataSize), false);
+    return AppendPacketNalUnit(nal, state, outBuffer, outBufferSize, outDataSize);
+}
+
+bool AvcParserImpl::BuildAnnexbPacket(const uint8_t *packet, int32_t packetSize, PacketState &state,
+    PacketOutputInfo &output)
+{
+    output.dataSize = 0;
+    FALSE_RETURN_V(extradataParsed_ && packet != nullptr && packetSize > 0, false);
+    FALSE_RETURN_V(naluLength_ > 0 && naluLength_ <= SIZE_CODE_LEN, false);
+    FALSE_RETURN_V(FilterPsFromPacket(packet, packetSize, state), false);
+    std::vector<NalUnitInfo> nalUnits;
+    FALSE_RETURN_V_MSG_W(ParseNalUnits(nalUnits, packet, packetSize), false, "ParseNalUnits failed");
+    FALSE_RETURN_V(!nalUnits.empty(), false);
+    for (const auto &nal : nalUnits) {
+        FALSE_RETURN_V(HandlePacketNal(nal, state, output.buffer, output.bufferSize, output.dataSize), false);
+    }
+    return true;
+}
+
 bool AvcParserImpl::ConvertPacketCore(uint8_t **packet, int32_t &packetSize)
 {
-    annexbFrameVec_.clear();
-    FALSE_RETURN_V_NOLOG(extradataParsed_, false);
-    FilterPsFromPacket(*packet, packetSize);
-    std::vector<NalUnitInfo> nalUnits;
-    bool ret = ParseNalUnits(nalUnits, *packet, packetSize);
-    FALSE_RETURN_V_MSG_W(ret, false, "ParseNalUnits failed");
-    for (auto &nal : nalUnits) {
-        HandleNal(nal);
-    }
+    FALSE_RETURN_V(packet != nullptr && *packet != nullptr, false);
+    PacketState initialState {spsVec_, ppsVec_, newIdr_, idrSpsSeen_, idrPpsSeen_};
+    PacketState countState = initialState;
+    PacketOutputInfo countOutput;
+    FALSE_RETURN_V(BuildAnnexbPacket(*packet, packetSize, countState, countOutput), false);
+
+    annexbFrameVec_.resize(static_cast<size_t>(countOutput.dataSize));
+    PacketState outputState = initialState;
+    uint8_t *outData = countOutput.dataSize > 0 ? annexbFrameVec_.data() : nullptr;
+    PacketOutputInfo output {outData, countOutput.dataSize};
+    FALSE_RETURN_V(BuildAnnexbPacket(*packet, packetSize, outputState, output), false);
+    spsVec_ = std::move(outputState.sps);
+    ppsVec_ = std::move(outputState.pps);
+    newIdr_ = outputState.newIdr;
+    idrSpsSeen_ = outputState.idrSpsSeen;
+    idrPpsSeen_ = outputState.idrPpsSeen;
     *packet = annexbFrameVec_.data();
-    packetSize = static_cast<int32_t>(annexbFrameVec_.size());
+    packetSize = output.dataSize;
     return true;
 }
 
@@ -723,6 +902,31 @@ bool AvcParserImpl::ConvertPacketToAnnexb(
     } else {
         return ConvertPacketCore(hvccPacket, hvccPacketSize);
     }
+}
+
+bool AvcParserImpl::ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo)
+{
+    convertInfo.outDataSize = 0;
+    FALSE_RETURN_V(convertInfo.srcData != nullptr && convertInfo.srcDataSize >= 0 &&
+        convertInfo.outBufferSize >= 0, false);
+    PacketState initialState {spsVec_, ppsVec_, newIdr_, idrSpsSeen_, idrPpsSeen_};
+    PacketState countState = initialState;
+    PacketOutputInfo countOutput;
+    FALSE_RETURN_V(BuildAnnexbPacket(convertInfo.srcData, convertInfo.srcDataSize, countState, countOutput), false);
+    convertInfo.outDataSize = countOutput.dataSize;
+    FALSE_RETURN_V(convertInfo.outBuffer != nullptr || countOutput.dataSize == 0, false);
+    FALSE_RETURN_V(countOutput.dataSize <= convertInfo.outBufferSize, false);
+
+    PacketState outputState = initialState;
+    PacketOutputInfo output {convertInfo.outBuffer, convertInfo.outBufferSize};
+    FALSE_RETURN_V(BuildAnnexbPacket(convertInfo.srcData, convertInfo.srcDataSize, outputState, output), false);
+    spsVec_ = std::move(outputState.sps);
+    ppsVec_ = std::move(outputState.pps);
+    newIdr_ = outputState.newIdr;
+    idrSpsSeen_ = outputState.idrSpsSeen;
+    idrPpsSeen_ = outputState.idrPpsSeen;
+    convertInfo.outDataSize = output.dataSize;
+    return true;
 }
 
 void AvcParserImpl::ResetXPSSendStatus()

@@ -36,7 +36,7 @@ public:
     bool ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, int32_t extraDataSize);
     bool ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize,
         bool isExtradata) override;
-    bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) override { return false; };
+    bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) override;
     void ParseAnnexbExtraData(const uint8_t *sample, int32_t size) override;
     bool IsHdrVivid() override { return false; };;
     bool IsSyncFrame(const uint8_t *sample, int32_t size) override { return false; };
@@ -82,6 +82,20 @@ private:
         uint8_t nalType;
     };
 
+    struct PacketState {
+        std::vector<uint8_t> sps;
+        std::vector<uint8_t> pps;
+        bool newIdr = false;
+        bool idrSpsSeen = false;
+        bool idrPpsSeen = false;
+    };
+
+    struct PacketOutputInfo {
+        uint8_t *buffer = nullptr;
+        int32_t bufferSize = 0;
+        int32_t dataSize = 0;
+    };
+
     std::vector<uint8_t> spsVec_;
     std::vector<uint8_t> ppsVec_;
     std::vector<uint8_t> annexbExtraDataVec_;
@@ -114,6 +128,23 @@ private:
     void HandleNalIdrDetect(NalUnitInfo nal);
     void InsertPsBeforeIdr(NalUnitInfo nal);
     void HandleNal(NalUnitInfo nal);
+    bool BuildAnnexbPacket(const uint8_t *packet, int32_t packetSize, PacketState &state,
+        PacketOutputInfo &output);
+    bool HandlePacketParameterSet(const NalUnitInfo &nal, PacketState &state,
+        uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize);
+    void DetectPacketIdr(const NalUnitInfo &nal, PacketState &state);
+    bool InsertPsBeforeBufferingPeriod(const NalUnitInfo &nal, PacketState &state,
+        uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize) const;
+    bool InsertPsBeforePacketIdr(const NalUnitInfo &nal, PacketState &state,
+        uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize) const;
+    bool AppendPacketNalUnit(const NalUnitInfo &nal, PacketState &state,
+        uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize) const;
+    bool HandlePacketNal(const NalUnitInfo &nal, PacketState &state,
+        uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize);
+    bool FilterPsFromPacket(const uint8_t *packet, int32_t packetSize, PacketState &state);
+    bool AppendPacketData(uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize,
+        const uint8_t *data, size_t size) const;
+    bool AppendStartCode(uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize) const;
     void SetPsFlag();
 };
 } // namespace Plugins
