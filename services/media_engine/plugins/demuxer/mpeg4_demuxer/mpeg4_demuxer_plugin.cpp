@@ -1086,9 +1086,8 @@ bool MPEG4DemuxerPlugin::IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffe
 {
     bool outBufferValid = outBuffer != nullptr && outBuffer->meta_ != nullptr;
     FALSE_RETURN_V_NOLOG(!replaceMemory, outBufferValid);
-    bool memoryValid = outBuffer->memory_ != nullptr &&
+    return outBufferValid && outBuffer->memory_ != nullptr &&
         outBuffer->memory_->GetCapacity() >= 0 && outBuffer->memory_->GetAddr() != nullptr;
-    return outBufferValid && memoryValid;
 }
 
 // LCOV_EXCL_START
