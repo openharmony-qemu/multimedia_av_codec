@@ -369,7 +369,7 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
         KeyInfo keyInfo;
         std::copy(std::begin(iv_), std::end(iv_), std::begin(keyInfo.iv_));
         keyInfo.hasExplicitIv_ = hasExplicitIv_.load();
-        keyInfo.uri_ = *keyUri;
+        keyInfo.uri_ = *keyUri_;
         {
             std::unique_lock<std::shared_mutex> lock(keyMutex_);
             keyIndex_++;
