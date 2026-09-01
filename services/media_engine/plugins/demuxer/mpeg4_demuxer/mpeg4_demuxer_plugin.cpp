@@ -1082,10 +1082,13 @@ MPEG4DemuxerPlugin::~MPEG4DemuxerPlugin()
     MEDIA_LOG_D("Out");
 }
 
-bool MPEG4DemuxerPlugin::IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffer)
+bool MPEG4DemuxerPlugin::IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffer, bool replaceMemory)
 {
-    return outBuffer != nullptr && outBuffer->meta_ != nullptr && outBuffer->memory_ != nullptr &&
-           outBuffer->memory_->GetCapacity() >= 0 && outBuffer->memory_->GetAddr() != nullptr;
+    bool outBufferValid = outBuffer != nullptr && outBuffer->meta_ != nullptr;
+    FALSE_RETURN_V_NOLOG(!replaceMemory, outBufferValid);
+    bool memoryValid = outBuffer->memory_ != nullptr &&
+        outBuffer->memory_->GetCapacity() >= 0 && outBuffer->memory_->GetAddr() != nullptr;
+    return outBufferValid && memoryValid;
 }
 
 // LCOV_EXCL_START
@@ -2980,7 +2983,7 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     FALSE_RETURN_V_MSG_E(inited_, Status::ERROR_NULL_POINTER, "Plugin has not been initialized");
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
-    FALSE_RETURN_V_MSG_E(IsValidBuffer(outBuffer), Status::ERROR_INVALID_PARAMETER, "AVBuffer is invalid");
+    FALSE_RETURN_V_MSG_E(IsValidBuffer(outBuffer, false), Status::ERROR_INVALID_PARAMETER, "AVBuffer is invalid");
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
         Status::ERROR_INVALID_OPERATION, "Cannot use sync and async Read together");
     auto track = FindTrackById(trackId);

@@ -29,10 +29,12 @@ public:
     Status SetReadTimeoutForInitSeek(int64_t timeoutMs);
     Status ReadUintData(int64_t offset, uint8_t* buffer, size_t size);
     Status ReadFully(int64_t offset, uint8_t* buffer, size_t size);
+    void NotifyInitializationCompleted();
 private:
     bool IsReadTimeoutExpired();
     Status ReadFromCache(int64_t offset, uint8_t* buffer, size_t size);
     Status FillReadCache(int64_t offset);
+    void UpdateInitDownloadData(size_t dataSize);
 
     std::shared_ptr<DataSource> dataSource_ {nullptr};
     bool readTimeoutConfigured_ {false};
@@ -41,6 +43,8 @@ private:
     std::vector<uint8_t> readCache_;
     int64_t readCacheOffset_ {-1};
     size_t readCacheSize_ {0};
+    uint64_t initDownloadDataSize_ {0};
+    bool initCompleted_ {false};
 };
 
 class DemuxerBitReader {

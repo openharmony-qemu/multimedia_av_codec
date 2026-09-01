@@ -5072,6 +5072,7 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     FALSE_RETURN_V_MSG_E(pendingSampleTableStatus_ == Status::OK, pendingSampleTableStatus_,
         "MPEG4 parse failed due to invalid sample tables");
     CalculateMPEG4Attributes();
+    dataReader_->NotifyInitializationCompleted();
     return ret;
 }
 
