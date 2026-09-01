@@ -964,7 +964,6 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
 {
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(stscEntry_.empty(), Status::ERROR_INVALID_OPERATION, "stscEntry exist");
-    
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_NOLOG(currentOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE,
         Status::ERROR_INVALID_PARAMETER);
@@ -1133,7 +1132,6 @@ Status MPEG4SampleHelper::SetTrackFragmentDecodeTimeParams(int64_t dataOffset, i
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_NOLOG(currentOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE_INT,
         Status::ERROR_INVALID_PARAMETER);
-    
     uint8_t header[4];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
