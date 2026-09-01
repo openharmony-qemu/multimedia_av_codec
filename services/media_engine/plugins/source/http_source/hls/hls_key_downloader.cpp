@@ -145,7 +145,7 @@ uint32_t KeyDownloader::OnKeyDataSaved(uint8_t* data, uint32_t len, bool notBloc
 {
     FALSE_RETURN_V_MSG_E(data != nullptr, 0u, "key data is nullptr");
     if (len > 0 && len <= MAX_KEY_LEN) {
-        KeyInfo keyinfo;
+        KeyInfo keyInfo;
         keyInfo.index_ = keyIndex;
         NZERO_RETURN_V(memcpy_s(keyInfo.key_, MAX_KEY_LEN, data, len), 0);
         keyInfo.keyLen_ = len;
@@ -192,7 +192,7 @@ void KeyDownloader::SetInterruptState(bool isInterruptNeeded)
 bool KeyDownloader::WaitForKey(uint64_t keyIndex, uint32_t timeoutMs)
 {
     std::unique_lock<std::mutex> lock(readyMutex_);
-    if (readyKeys_.count(keyIndex) > 0 ) {
+    if (readyKeys_.count(keyIndex) > 0) {
         return true;
     }
     return readyCond_.wait_for(lock, std::chrono::milliseconds(timeoutMs),
