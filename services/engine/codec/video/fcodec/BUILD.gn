@@ -65,7 +65,7 @@ ohos_shared_library("fcodec") {
   ]
 
   if (is_emulator || !av_codec_fcodec_enable_dmabuffer_at_buffermode) {
-    defines += [ "EMULATOR_ENABLED" ]
+    defines += [ "DISABLE_DMABUFF" ]
   }
 
   if (build_variant != "user") {

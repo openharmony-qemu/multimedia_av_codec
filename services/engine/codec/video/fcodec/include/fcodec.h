@@ -168,7 +168,7 @@ private:
     int32_t SwapOutBuffers(bool isOutputBuffer, State curState);
     int32_t SwapInBuffers(bool isOutputBuffer);
 
-    bool isEmulator_ = false;
+    bool isShieldDmaBuffer_ = false;
     bool isUsedSharedMem_ = false;
     int32_t pid_ = -1;
     int32_t instanceId_ = -1;
