@@ -1565,7 +1565,7 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES;
  * It can be configured via {@link OH_VideoDecoder_Configure} or
  * {@link OH_VideoEncoder_Configure}.
  *
- * @since 26.1.0
+ * @since 26.0.1
  */
 extern const char *OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX;
 
