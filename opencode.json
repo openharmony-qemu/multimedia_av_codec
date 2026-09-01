@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "docs/实例回收-进度.md",
+    "docs/实例回收实现方案.md"
+  ],
+  "command": {
+    "continue-reclaim": {
+      "description": "继续 avcodec 实例回收方案探讨",
+      "template": "先读 docs/实例回收-进度.md 与 docs/资源回收.md，对比当前需求与已记录的决策，识别差异后继续探讨或实现。如需求有变更，先更新 docs/实例回收实现方案.md 对应章节并在 docs/实例回收-进度.md 的变更记录补一行。"
+    }
+  }
+}

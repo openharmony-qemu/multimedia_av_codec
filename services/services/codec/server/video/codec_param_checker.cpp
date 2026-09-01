@@ -938,7 +938,8 @@ std::string NormalizeCodecDmaTag(const std::string &tag)
 {
     std::string normalized;
     for (unsigned char ch : tag) {
-        if (std::isgraph(ch)) {
+        // 仅保留 ASCII 可见字符（0x21~0x7E），过滤非 ASCII、控制字符、空格等不可见字符
+        if (ch >= 0x21 && ch <= 0x7E) {
             normalized.push_back(static_cast<char>(ch));
         }
     }
@@ -948,7 +949,7 @@ std::string NormalizeCodecDmaTag(const std::string &tag)
 bool IsPureDigits(const std::string &tag)
 {
     return !tag.empty() && std::all_of(tag.begin(), tag.end(), [](unsigned char ch) {
-        return std::isdigit(ch);
+        return ch >= '0' && ch <= '9';  // 显式 ASCII 数字范围，避免 isdigit locale 依赖
     });
 }
 
@@ -963,17 +964,12 @@ int32_t CodecDmaTagChecker(CapabilityData &capData, Format &format, CodecScenari
     AVCODEC_LOGI("input dmabuf tag: %{public}s", tag.c_str());
 
     std::string normalized = NormalizeCodecDmaTag(tag);
-    if (normalized.empty()) {
-        format.RemoveKey(Tag::VIDEO_SET_DMABUF_NAME_SUFFIX);
-        return AVCS_ERR_OK;
-    }
-
-    if (IsPureDigits(normalized)) {
-        AVCODEC_LOGE("Param invalid, %{public}s should not be pure digits",
+    // 过滤后必须至少包含一个非数字字符；空或纯数字均无效
+    if (normalized.empty() || IsPureDigits(normalized)) {
+        AVCODEC_LOGE("Param invalid, %{public}s should contain at least one non-digit after normalization",
             Tag::VIDEO_SET_DMABUF_NAME_SUFFIX);
         return AVCS_ERR_INVALID_VAL;
     }
-
     format.PutStringValue(Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, normalized);
     return AVCS_ERR_OK;
 }

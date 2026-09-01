@@ -132,7 +132,7 @@ void SetFormatBasicParam(bool isDecoder)
 namespace {
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0101
- * @tc.desc: codec dma tag with visible characters should be accepted through C encoder configure
+ * @tc.desc: codec dma tag with ascii visible characters should be accepted (non-ascii/whitespace filtered) through C encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0101, TestSize.Level3)
@@ -143,20 +143,20 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0101, 
 }
 
 /**
- * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0102
- * @tc.desc: codec dma tag should be ignored if normalized tag is empty through C encoder configure
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0102
+ * @tc.desc: codec dma tag should be rejected if empty after filtering non-ascii/whitespace through C encoder configure
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0102, TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0102, TestSize.Level3)
 {
     SetFormatBasicParam(false);
     ASSERT_TRUE(OH_AVFormat_SetStringValue(g_format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, " \t\n\r"));
-    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(g_videoEncHevc, g_format));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_Configure(g_videoEncHevc, g_format));
 }
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0103
- * @tc.desc: codec dma tag should reject pure digits through C encoder configure
+ * @tc.desc: codec dma tag should reject pure digits after filtering non-ascii/whitespace through C encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0103, TestSize.Level3)
@@ -168,7 +168,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0103
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0104
- * @tc.desc: codec dma tag should reject non-string values through C encoder configure
+ * @tc.desc: codec dma tag should reject pure digits (no non-digit char) through C encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0104, TestSize.Level3)
@@ -180,7 +180,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0104
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0105
- * @tc.desc: codec dma tag should be accepted through C decoder configure
+ * @tc.desc: codec dma tag with ascii visible characters should be accepted through C decoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0105, TestSize.Level3)
@@ -188,6 +188,42 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0105, 
     SetFormatBasicParam(true);
     ASSERT_TRUE(OH_AVFormat_SetStringValue(g_format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, "d e\tc"));
     ASSERT_EQ(AV_ERR_OK, OH_VideoDecoder_Configure(g_videoDec, g_format));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0106
+ * @tc.desc: codec dma tag with non-ascii chars should be filtered, remaining non-digit accepted through C encoder configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0106, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_TRUE(OH_AVFormat_SetStringValue(g_format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, "中文a"));
+    ASSERT_EQ(AV_ERR_OK, OH_VideoEncoder_Configure(g_videoEncHevc, g_format));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0107
+ * @tc.desc: codec dma tag with non-ascii chars filtered to pure digits should be rejected through C encoder configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0107, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_TRUE(OH_AVFormat_SetStringValue(g_format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, "中文123"));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_Configure(g_videoEncHevc, g_format));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0108
+ * @tc.desc: codec dma tag with only non-ascii chars filtered to empty should be rejected through C encoder configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0108, TestSize.Level3)
+{
+    SetFormatBasicParam(false);
+    ASSERT_TRUE(OH_AVFormat_SetStringValue(g_format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, "中文"));
+    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_Configure(g_videoEncHevc, g_format));
 }
 
 /**
