@@ -42,7 +42,7 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
     demuxerTest->videoWidthDefault_ = fdp.ConsumeIntegralInRange<int32_t>(ZERO, MAX_WIDTH);
     uint8_t *pstream = nullptr;
     size_t framesize = fdp.remaining_bytes();
-    if (framesize = 0) {
+    if (framesize == 0) {
         return;
     }
     if (framesize > MAX_FRAMESIZE) {
