@@ -52,7 +52,7 @@ bool IsEncoderBitrateModeSupported(CapabilityData *capData, VideoEncodeBitrateMo
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0101
- * @tc.desc: codec dma tag with visible characters should be accepted through inner encoder configure
+ * @tc.desc: codec dma tag ascii visible accepted after non-ascii/whitespace filtering through inner encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0101, TestSize.Level3)
@@ -63,20 +63,20 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0101, TestS
 }
 
 /**
- * @tc.name: CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0102
- * @tc.desc: codec dma tag should be ignored if normalized tag is empty through inner encoder configure
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0102
+ * @tc.desc: codec dma tag rejected if empty after non-ascii/whitespace filtering through inner encoder configure
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0102, TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0102, TestSize.Level3)
 {
     SetFormatBasicParam(formatInner_);
     formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, " \t\n\r");
-    ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
 }
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0103
- * @tc.desc: codec dma tag should reject pure digits after normalization
+ * @tc.desc: codec dma tag reject pure digits after non-ascii/whitespace filtering through inner encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0103, TestSize.Level3)
@@ -88,7 +88,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0103, Tes
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0104
- * @tc.desc: codec dma tag should reject non-string values for supported codecs
+ * @tc.desc: codec dma tag should reject pure digits (no non-digit char) through inner encoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0104, TestSize.Level3)
@@ -100,7 +100,7 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0104, Tes
 
 /**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0105
- * @tc.desc: codec dma tag should be accepted through inner decoder configure
+ * @tc.desc: codec dma tag with ascii visible characters should be accepted through inner decoder configure
  * @tc.type: FUNC
  */
 HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0105, TestSize.Level3)
@@ -113,6 +113,42 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0105, TestS
     formatInner_.PutIntValue(MediaDescriptionKey::MD_KEY_HEIGHT, 720); // 720 h默认值
     formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, "d e\tc");
     ASSERT_EQ(AVCS_ERR_OK, videoDecInner->Configure(formatInner_));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0106
+ * @tc.desc: codec dma tag non-ascii filtered, remaining non-digit accepted through inner encoder configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_VALID_TEST_0106, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, "中文a");
+    ASSERT_EQ(AVCS_ERR_OK, videoEncHevcInner_->Configure(formatInner_));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0107
+ * @tc.desc: codec dma tag non-ascii filtered to pure digits, rejected through inner encoder configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0107, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, "中文123");
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
+}
+
+/**
+ * @tc.name: CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0108
+ * @tc.desc: codec dma tag only non-ascii filters to empty, rejected through inner encoder configure
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_INVALID_TEST_0108, TestSize.Level3)
+{
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutStringValue(OHOS::Media::Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, "中文");
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
 }
 
 /**
