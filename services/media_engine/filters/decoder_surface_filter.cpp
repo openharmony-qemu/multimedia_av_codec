@@ -1079,12 +1079,18 @@ void DecoderSurfaceFilter::HandleRender(
         " lastRenderTimeNs " PUBLIC_LOG_D64, index, renderTime, currentSysTimeNs, lastRenderTimeNs);
 
     RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);
+    std::shared_ptr<Meta> metaCopy;
+    if (outBuffer->meta_ != nullptr) {
+        metaCopy = std::make_shared<Meta>(*(outBuffer->meta_));
+    }
     DoRenderOutputBufferAtTime(index, renderTime, outBuffer->pts_);
 
     if (eventReceiver_!= nullptr && lastRenderTimeNs > 0 && !isFirstRenderFrameAfterResume_ && !isInSeekContinuous_) {
         int64_t frameIntervalMs = videoSink_->GetFrameInterval();
         std::vector<int64_t> timeStampList;
-        outBuffer->meta_->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
+        if (metaCopy != nullptr) {
+            metaCopy->GetData(Tag::STALLING_TIMESTAMP, timeStampList);
+        }
         StallingTimestampData data;
         data.syncEndMs = currentSysTimeNs / NS_PER_MS;
         data.rendererStartMs = renderTime / NS_PER_MS;
@@ -1092,7 +1098,9 @@ void DecoderSurfaceFilter::HandleRender(
         data.lastRenderTimeMs = lastRenderTimeNs / NS_PER_MS;
         data.frameIntervalMs = frameIntervalMs;
         WriteDfxTimeToVector(data, timeStampList);
-        outBuffer->meta_->SetData(Tag::STALLING_TIMESTAMP, timeStampList);
+        if (metaCopy != nullptr) {
+            metaCopy->SetData(Tag::STALLING_TIMESTAMP, timeStampList);
+        }
         FALSE_RETURN(frameIntervalMs > 0 && renderTime > 0L);
 
         int64_t texpMS = lastRenderTimeNs / NS_PER_MS + frameIntervalMs;
