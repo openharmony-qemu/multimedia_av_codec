@@ -268,6 +268,7 @@ private:
     Status ReadPacketToCacheQueue(const uint32_t readId);
     Status AddPacketToCacheQueue(AVPacketWrapperPtr pkt, bool requireSelectedTrack = false,
         uint64_t expectedReadConfigEpoch = INVALID_READ_CONFIG_EPOCH, bool* packetAccepted = nullptr);
+    Status CachePacketLocked(AVPacketWrapperPtr pktWrapper, int32_t trackId, uint32_t& cacheBytes);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
@@ -527,6 +528,7 @@ private:
 
     Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
     bool ShouldWaitForRead(uint32_t trackId);
+    void PrepareAsyncRead(uint32_t trackId);
     void FFmpegReadLoop();
     bool NeedWaitForRead(uint32_t trackId);
     void HandleReadWait();

@@ -2219,7 +2219,6 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper,
     Dump(dumpParam);
 #endif
     auto trackId = pktWrapper->GetStreamIndex();
-    Status ret = Status::OK;
     uint32_t cacheBytes = UINT32_MAX;
     std::unique_lock<std::mutex> lock(selectedTrackMutex_);
     if (packetAccepted != nullptr) {
@@ -2237,8 +2236,24 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper,
         AccumulateXpsPktRelease(trackId);
         return Status::OK;
     }
-    if (NeedCombineFrame(trackId) && !IsBeginAsAnnexb(pktWrapper->GetData(), pktWrapper->GetSize())
-        && cacheQueue_.HasCache(trackId)) {
+    Status ret = CachePacketLocked(pktWrapper, trackId, cacheBytes);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Cache packet failed");
+    if (packetAccepted != nullptr) {
+        *packetAccepted = true;
+    }
+    lock.unlock();
+    if (cacheBytes < UINT32_MAX) { // The callback must run without selectedTrackMutex_.
+        MaybeNotifyCachePressure(static_cast<uint32_t>(trackId), cacheBytes);
+    }
+    AccumulateXpsPktRelease(trackId);
+    return ret;
+}
+
+Status FFmpegDemuxerPlugin::CachePacketLocked(AVPacketWrapperPtr pktWrapper, int32_t trackId, uint32_t& cacheBytes)
+{
+    Status ret = Status::OK;
+    if (NeedCombineFrame(trackId) && !IsBeginAsAnnexb(pktWrapper->GetData(), pktWrapper->GetSize()) &&
+        cacheQueue_.HasCache(trackId)) {
         std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
         if (cacheSamplePacket != nullptr) {
             cacheSamplePacket->pkts.push_back(pktWrapper);
@@ -2255,14 +2270,6 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper,
             cacheBytes = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
         }
     }
-    if (packetAccepted != nullptr) {
-        *packetAccepted = true;
-    }
-    lock.unlock();
-    if (cacheBytes < UINT32_MAX) { // The callback must run without selectedTrackMutex_.
-        MaybeNotifyCachePressure(static_cast<uint32_t>(trackId), cacheBytes);
-    }
-    AccumulateXpsPktRelease(trackId);
     return ret;
 }
 

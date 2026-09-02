@@ -230,14 +230,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
         Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    RetireBootstrapCaches();
-    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
-    isPauseReadPacket_.store(false);
-    if (ioContext_.invokerType != InvokerType::READ) {
-        std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::READ;
-    }
-    trackId_.store(trackId);
+    PrepareAsyncRead(trackId);
     if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
         return Status::ERROR_WAIT_TIMEOUT;
     }
@@ -284,14 +277,7 @@ Status FFmpegDemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
         Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    RetireBootstrapCaches();
-    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
-    isPauseReadPacket_.store(false);
-    if (ioContext_.invokerType != InvokerType::READ) {
-        std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::READ;
-    }
-    trackId_.store(trackId);
+    PrepareAsyncRead(trackId);
     if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
         return Status::ERROR_WAIT_TIMEOUT;
     }
@@ -355,6 +341,18 @@ bool FFmpegDemuxerPlugin::ShouldWaitForRead(uint32_t trackId)
         return true;
     }
     return false;
+}
+
+void FFmpegDemuxerPlugin::PrepareAsyncRead(uint32_t trackId)
+{
+    RetireBootstrapCaches();
+    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
+    isPauseReadPacket_.store(false);
+    if (ioContext_.invokerType != InvokerType::READ) {
+        std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
+        ioContext_.invokerType = InvokerType::READ;
+    }
+    trackId_.store(trackId);
 }
 
 Status FFmpegDemuxerPlugin::WaitForLoop(const uint32_t trackId, const uint32_t timeout)
@@ -637,14 +635,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::SYNC)) == 0,
         Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    RetireBootstrapCaches();
-    readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::ASYNC), std::memory_order_acq_rel);
-    isPauseReadPacket_.store(false);
-    if (ioContext_.invokerType != InvokerType::READ) {
-        std::lock_guard<std::mutex> readLock(ioContext_.invokerTypeMutex);
-        ioContext_.invokerType = InvokerType::READ;
-    }
-    trackId_.store(trackId);
+    PrepareAsyncRead(trackId);
     if (!cacheQueue_.HasCache(trackId) && timeout == 0) {
         return Status::ERROR_WAIT_TIMEOUT;
     }
