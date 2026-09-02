@@ -28,6 +28,7 @@ const int64_t EXPECT_SIZE = 4;
 const int64_t MAX_HEIGHT = 2160;
 const int64_t MAX_WIDTH = 2160;
 const int64_t ZERO = 0;
+const size_t MAX_FRAMESIZE = 1048576;
 void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
 {
     if (dataSize < EXPECT_SIZE) {
@@ -41,6 +42,12 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
     demuxerTest->videoWidthDefault_ = fdp.ConsumeIntegralInRange<int32_t>(ZERO, MAX_WIDTH);
     uint8_t *pstream = nullptr;
     size_t framesize = fdp.remaining_bytes();
+    if (framesize = 0) {
+        return;
+    }
+    if (framesize > MAX_FRAMESIZE) {
+        framesize = MAX_FRAMESIZE;
+    }
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

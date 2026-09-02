@@ -28,7 +28,10 @@ using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "hevchwencodersqr_fuzzer"
 
 VEncAPI11FuzzSample *g_vEncSample = nullptr;
-
+const int32_t ZERO = 0;
+const int32_t TWO = 2;
+const int32_t HUNDRED_MILLION = 100000000;
+const int32_t FIFTY_ONE = 51;
 bool ReleaseSample()
 {
     delete g_vEncSample;
@@ -44,8 +47,8 @@ bool HevcHwEncoderApiFuzzTest(FuzzedDataProvider &fdp)
     }
     bool data2 = fdp.ConsumeBool();
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-    int64_t maxBite = fdp.ConsumeIntegralInRange<int64_t>(0, 100000000);
-    int32_t sqrFactor = fdp.ConsumeIntegralInRange<int32_t>(0, 51);
+    int64_t maxBite = fdp.ConsumeIntegralInRange<int64_t>(ZERO, HUNDRED_MILLION);
+    int32_t sqrFactor = fdp.ConsumeIntegralInRange<int32_t>(ZERO, FIFTY_ONE);
     g_vEncSample = new VEncAPI11FuzzSample();
     g_vEncSample->fuzzData = remaining_data.data();
     g_vEncSample->fuzzSize = remaining_data.size();
@@ -53,7 +56,7 @@ bool HevcHwEncoderApiFuzzTest(FuzzedDataProvider &fdp)
     g_vEncSample->fuzzMode = true;
     g_vEncSample->bEnable = true;
     g_vEncSample->enablePTSBasedRateControl = true;
-    g_vEncSample->defaultBitrateMode = fdp.ConsumeIntegralInRange<uint32_t>(0, 2);
+    g_vEncSample->defaultBitrateMode = fdp.ConsumeIntegralInRange<uint32_t>(ZERO, TWO);
     g_vEncSample->factorEnable = true;
     g_vEncSample->maxbiteEnable = true;
     g_vEncSample->defaultSqrFactor = sqrFactor;

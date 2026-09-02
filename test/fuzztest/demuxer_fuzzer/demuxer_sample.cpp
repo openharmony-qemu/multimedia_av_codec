@@ -157,6 +157,8 @@ int DemuxerSample::CreateDemuxer()
 void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
 {
     const char *stringVal;
+    int32_t zero = 0;
+    int32_t twoHundredFiftyFive = 255;
     OH_AVFormat_GetStringValue(sourceFormat, OH_MD_KEY_COMMENT, &stringVal);
     OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_CLOSEST_SYNC);
     OH_AVDemuxer_SeekToTime(demuxer, params.time, SEEK_MODE_PREVIOUS_SYNC);
@@ -184,7 +186,7 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
     OH_AVFormat_SetFloatValue(format, OH_MD_KEY_HEIGHT, params.setHeight);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, params.setFrameRate);
     OH_AVFormat_SetStringValue(format, OH_MD_KEY_LANGUAGE, setLanguage);
-    if (params.setCodecConfigSize > 0 && params.setCodecConfigSize <= 255) {
+    if (params.setCodecConfigSize > zero && params.setCodecConfigSize <= twoHundredFiftyFive) {
         auto configBuffer = std::make_unique<uint8_t[]>(params.setCodecConfigSize);
         OH_AVFormat_SetBuffer(format, OH_MD_KEY_CODEC_CONFIG, configBuffer.get(), params.setCodecConfigSize);
     }
