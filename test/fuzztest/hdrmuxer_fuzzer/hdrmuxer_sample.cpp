@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 #include "hdrmuxer_sample.h"
-
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <fcntl.h>
@@ -144,7 +144,9 @@ void MuxerSample::WriteVideoTrack()
 {
     OH_AVBuffer *buffer = OH_AVBuffer_Create(fuzzSize);
     uint8_t *bufferAddr = nullptr;
-    while ((bufferAddr = OH_AVBuffer_GetAddr(buffer)) != nullptr) {
+    int32_t maxIterations = std::min(static_cast<int32_t>(fuzzSize / 1024), 100);
+    int32_t iteration = 0;
+    while ((bufferAddr = OH_AVBuffer_GetAddr(buffer)) != nullptr && iteration < maxIterations) {
         memcpy_s(bufferAddr, fuzzSize, fuzzData, fuzzSize);
         OH_AVCodecBufferAttr attr;
         OH_AVBuffer_GetBufferAttr(buffer, &attr);
@@ -155,6 +157,14 @@ void MuxerSample::WriteVideoTrack()
         if (ret != AV_ERR_OK) {
             break;
         }
+        iteration++;
+    }
+    if (bufferAddr != nullptr) {
+        OH_AVCodecBufferAttr attr;
+        OH_AVBuffer_GetBufferAttr(buffer, &attr);
+        attr.flags = AVCODEC_BUFFER_FLAGS_EOS;
+        OH_AVBuffer_SetBufferAttr(buffer, &attr);
+        OH_AVMuxer_WriteSampleBuffer(muxer, videoTrackID, buffer);
     }
     OH_AVBuffer_Destroy(buffer);
 }

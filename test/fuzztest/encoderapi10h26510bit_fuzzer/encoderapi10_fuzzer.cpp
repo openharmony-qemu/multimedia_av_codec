@@ -67,7 +67,7 @@ bool g_needRunNormalEncoder = true;
 namespace OHOS {
 bool EncoderAPI10FuzzTest(const uint8_t *data, size_t size)
 {
-    if (size < sizeof(int32_t)) {
+    if (size < sizeof(double)) {
         return false;
     }
     if (g_needRunNormalEncoder) {
@@ -76,7 +76,7 @@ bool EncoderAPI10FuzzTest(const uint8_t *data, size_t size)
     }
     bool result = false;
     FuzzedDataProvider fdp(data, size);
-    int data1 = fdp.ConsumeIntegral<int32_t>();
+    double data1 = fdp.ConsumeFloatingPoint<double>();
     bool data2 = fdp.ConsumeBool();
     int data3 = fdp.ConsumeIntegral<int32_t>();
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();

@@ -43,9 +43,8 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     std::vector<uint32_t> pixelFormats = {1, 2, 3, 4, 5};
     size_t pfIndex = fdp.ConsumeIntegralInRange<uint32_t>(0, pixelFormats.size() - 1);
     vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
-    size_t maxSize = std::numeric_limits<size_t>::max();
-    vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
-    vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);
+    vDecSample->randomName = fdp.ConsumeRandomLengthString(256);
+    vDecSample->randomMime = fdp.ConsumeRandomLengthString(256);
     if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC") != AV_ERR_OK) {
         delete vDecSample;
         vDecSample = nullptr;

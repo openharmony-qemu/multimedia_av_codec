@@ -80,7 +80,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->enbleBFrameMode = fdp.ConsumeIntegral<int32_t>();
     g_vEncSample->enbleSyncMode = 1;
     g_vEncSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();
-    g_vEncSample->syncOutputWaitTime = 1;
+    g_vEncSample->syncOutputWaitTime = fdp.ConsumeIntegralInRange<int64_t>(ONE, TWO);
     g_vEncSample->enableRepeat = fdp.ConsumeBool();
     g_vEncSample->setMaxCount = fdp.ConsumeBool();
     g_vEncSample->defaultKeyFrameInterval = fdp.ConsumeIntegral<uint32_t>();

@@ -184,8 +184,10 @@ void DemuxerSample::GetAndSetFormat(const char *setLanguage, Params params)
     OH_AVFormat_SetFloatValue(format, OH_MD_KEY_HEIGHT, params.setHeight);
     OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, params.setFrameRate);
     OH_AVFormat_SetStringValue(format, OH_MD_KEY_LANGUAGE, setLanguage);
-    char configBuffer[params.setCodecConfigSize];
-    OH_AVFormat_SetBuffer(format, OH_MD_KEY_CODEC_CONFIG, (uint8_t *)configBuffer, params.setCodecConfigSize);
+    if (params.setCodecConfigSize > 0 && params.setCodecConfigSize <= 255) {
+        auto configBuffer = std::make_unique<uint8_t[]>(params.setCodecConfigSize);
+        OH_AVFormat_SetBuffer(format, OH_MD_KEY_CODEC_CONFIG, configBuffer.get(), params.setCodecConfigSize);
+    }
     OH_AVFormat_Copy(format, sourceFormat);
     audioFormat = OH_AVFormat_CreateAudioFormat(OH_AVCODEC_MIMETYPE_AUDIO_AAC, params.sampleRate, params.channelCount);
     videoFormat = OH_AVFormat_CreateVideoFormat(OH_AVCODEC_MIMETYPE_VIDEO_AVC,
@@ -278,10 +280,6 @@ void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, 
                 break;
             }
             OH_AVFormat_GetIntValue(trackFormat, OH_MD_KEY_TRACK_TYPE, &gTrackType);
-            if (trackFormat) {
-                OH_AVFormat_Destroy(trackFormat);
-                trackFormat = nullptr;
-            }
             const char *trackRefType = nullptr;
             const char *trackdescription = nullptr;
             int32_t *trackIds = nullptr;
@@ -289,6 +287,10 @@ void DemuxerSample::RunNormalDemuxerApi11(uint32_t createSize, const char *uri, 
             OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_TRACK_REFERENCE_TYPE, &trackRefType);
             OH_AVFormat_GetStringValue(trackFormat, OH_MD_KEY_TRACK_DESCRIPTION, &trackdescription);
             OH_AVFormat_GetIntBuffer(trackFormat, OH_MD_KEY_REFERENCE_TRACK_IDS, &trackIds, &bufferSize);
+            if (trackFormat) {
+                OH_AVFormat_Destroy(trackFormat);
+                trackFormat = nullptr;
+            }
             ret = OH_AVDemuxer_ReadSampleBuffer(demuxer, index, buffer);
             if (ret != 0) {
                 gReadEnd = true;

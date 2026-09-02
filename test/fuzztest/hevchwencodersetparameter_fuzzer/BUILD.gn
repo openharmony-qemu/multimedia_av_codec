@@ -18,7 +18,7 @@ module_output_path = "av_codec/av_codec"
 MEDIA_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
 ##############################fuzztest##########################################
-ohos_fuzztest("HevcHwEncoderSetParamFuzzTest") {
+ohos_fuzztest("HevcHwEncoderSetParameterFuzzTest") {
   module_out_path = module_output_path
   fuzz_config_file = "$MEDIA_ROOT_DIR/test/fuzztest/hevchwencodersetparameter_fuzzer"
   include_dirs = [
@@ -61,6 +61,6 @@ group("fuzztest") {
 
   deps += [
     # deps file
-    ":HevcHwEncoderSetParamFuzzTest",  #引用测试套
+    ":HevcHwEncoderSetParameterFuzzTest",  #引用测试套
   ]
 }

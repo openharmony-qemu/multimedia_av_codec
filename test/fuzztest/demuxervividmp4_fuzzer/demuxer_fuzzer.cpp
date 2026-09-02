@@ -31,7 +31,7 @@ using namespace OHOS::Media;
 namespace OHOS {
 const char *MP4_PATH = "/data/test/fuzz_create.mp4";
 const int64_t EXPECT_SIZE = 4;
-
+const size_t MAX_FRAMESIZE = 1048576;
 bool DemuxerFuzzTest(const uint8_t *data, size_t dataSize)
 {
     if (dataSize < EXPECT_SIZE) {
@@ -43,7 +43,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t dataSize)
     }
     FuzzedDataProvider fdp(data, dataSize);
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    size_t framesize = fdp.ConsumeIntegralInRange<size_t>(1, MAX_FRAMESIZE);
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

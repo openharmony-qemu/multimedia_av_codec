@@ -30,9 +30,9 @@ bool H263SwdecoderServerFuzzTest(const uint8_t *data, size_t size)
     }
     VDecServerSample *vDecSample = new VDecServerSample();
     FuzzedDataProvider fdp(data, size);
-    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-    vDecSample->fuzzData = remaining_data.data();
-    vDecSample->fuzzSize = remaining_data.size();
+    vDecSample->fuzzData = data;
+    vDecSample->fuzzSize = size;
+    vDecSample->fdp_ = &fdp;
     vDecSample->RunVideoServerDecoder();
     vDecSample->WaitForEos();
     delete vDecSample;

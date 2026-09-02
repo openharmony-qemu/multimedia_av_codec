@@ -44,8 +44,8 @@ bool HevcHwEncoderApiFuzzTest(FuzzedDataProvider &fdp)
     }
     bool data2 = fdp.ConsumeBool();
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
-    int64_t maxBite = 100000000;
-    int32_t sqrFactor = 32;
+    int64_t maxBite = fdp.ConsumeIntegralInRange<int64_t>(0, 100000000);
+    int32_t sqrFactor = fdp.ConsumeIntegralInRange<int32_t>(0, 51);
     g_vEncSample = new VEncAPI11FuzzSample();
     g_vEncSample->fuzzData = remaining_data.data();
     g_vEncSample->fuzzSize = remaining_data.size();
@@ -53,7 +53,7 @@ bool HevcHwEncoderApiFuzzTest(FuzzedDataProvider &fdp)
     g_vEncSample->fuzzMode = true;
     g_vEncSample->bEnable = true;
     g_vEncSample->enablePTSBasedRateControl = true;
-    g_vEncSample->defaultBitrateMode = SQR;
+    g_vEncSample->defaultBitrateMode = fdp.ConsumeIntegralInRange<uint32_t>(0, 2);
     g_vEncSample->factorEnable = true;
     g_vEncSample->maxbiteEnable = true;
     g_vEncSample->defaultSqrFactor = sqrFactor;

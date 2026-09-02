@@ -36,6 +36,7 @@ const size_t LANGUAGE_BUFFER_SIZE = 3;
 const size_t LANGUAGE_COUNT = 2;
 const uint32_t ZERO = 0;
 const uint32_t TWO_HUNDRED_FIFTY_FIVE = 255;
+const size_t MAX_FRAMESIZE = 1048576;
 bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
     if (dataSize <= EXPECT_SIZE) {
@@ -46,10 +47,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
         return false;
     }
     uint8_t *pstream = nullptr;
-    size_t framesize = dataSize - EXPECT_SIZE;
-    if (framesize == 0) {
-        return false;
-    }
+    size_t framesize = fdp->ConsumeIntegralInRange<size_t>(1, MAX_FRAMESIZE);
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

@@ -41,11 +41,11 @@ void SetRandomValue(const uint8_t *data, size_t size)
     int intData6 = fdp.ConsumeIntegral<int32_t>();
     int intData7 = fdp.ConsumeIntegral<int32_t>();
     int intData8 = fdp.ConsumeIntegral<int32_t>();
-    int longData = fdp.ConsumeIntegral<int64_t>();
+    int64_t longData = fdp.ConsumeIntegral<int64_t>();
     double doubleData = fdp.ConsumeFloatingPoint<double>();
 
     int intData9 = fdp.ConsumeIntegral<int32_t>();
-    int longData1 = fdp.ConsumeIntegral<int64_t>();
+    int64_t longData1 = fdp.ConsumeIntegral<int64_t>();
     double doubleData1 = fdp.ConsumeFloatingPoint<double>();
     std::string randomIntKey = fdp.ConsumeRandomLengthString();
     std::string randomLongKey = fdp.ConsumeRandomLengthString();

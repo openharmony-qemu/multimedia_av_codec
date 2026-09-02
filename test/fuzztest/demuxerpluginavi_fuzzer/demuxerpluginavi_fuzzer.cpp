@@ -39,7 +39,7 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
     demuxerTest->videoWidthDefault_ = WIDTH;
     FuzzedDataProvider fdp(data, dataSize);
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    size_t framesize = dataSize - EXPECT_SIZE;
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

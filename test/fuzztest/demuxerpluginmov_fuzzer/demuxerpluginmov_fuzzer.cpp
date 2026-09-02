@@ -37,10 +37,10 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
     demuxerTest->testFilePath_ = "/data/test/demuxerpluginmov.mov";
     demuxerTest->demuxerPluginName_ = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     FuzzedDataProvider fdp(data, dataSize);
-    demuxerTest->videoHeightDefault_ = fdp.ConsumeIntegralInRange<uint32_t>(ZERO, MAX_HEIGHT);
-    demuxerTest->videoWidthDefault_ = fdp.ConsumeIntegralInRange<uint32_t>(ZERO, MAX_WIDTH);
+    demuxerTest->videoHeightDefault_ = fdp.ConsumeIntegralInRange<int32_t>(ZERO, MAX_HEIGHT);
+    demuxerTest->videoWidthDefault_ = fdp.ConsumeIntegralInRange<int32_t>(ZERO, MAX_WIDTH);
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    size_t framesize = fdp.remaining_bytes();
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

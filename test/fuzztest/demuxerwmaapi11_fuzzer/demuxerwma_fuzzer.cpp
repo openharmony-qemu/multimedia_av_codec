@@ -80,8 +80,8 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     uri[URI_COUNT] = FLAG;
     params.setTrackType = fdp.ConsumeIntegral<int64_t>();
     params.setDuration = fdp.ConsumeIntegral<int64_t>();
-    params.setHeight = fdp.ConsumeIntegral<int64_t>();
-    params.setFrameRate = fdp.ConsumeIntegral<int64_t>();
+    params.setHeight = fdp.ConsumeFloatingPoint<float>();
+    params.setFrameRate = fdp.ConsumeFloatingPoint<double>();
     char *setLanguage = new char[LANGUAGE_BUFFER_SIZE];
     if (strncpy_s(setLanguage, LANGUAGE_BUFFER_SIZE, fdp.ConsumeBytesAsString(LANGUAGE_COUNT).c_str(),
         LANGUAGE_COUNT) != 0) {
@@ -95,7 +95,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     params.channelCount = fdp.ConsumeIntegral<int32_t>();
     params.setVideoHeight = fdp.ConsumeIntegral<int32_t>();
     params.setVideoWidth = fdp.ConsumeIntegral<int32_t>();
-    uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
+    uint32_t createSize = fdp.ConsumeIntegralInRange<uint32_t>(0, 10485760);
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = WMA_PATH;
     demuxerSample->RunNormalDemuxerApi11(createSize, uri, setLanguage, params);

@@ -72,7 +72,7 @@ bool EncoderSyncFuzzTest(const uint8_t *data, size_t size)
     vEncSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, TWO);
     CodecType();
     if (g_codeName == "") {
-        return false;
+        return ReleaseSample();
     }
     vEncSample->surfInput = fdp.ConsumeBool();
     vEncSample->fuzzMode = true;

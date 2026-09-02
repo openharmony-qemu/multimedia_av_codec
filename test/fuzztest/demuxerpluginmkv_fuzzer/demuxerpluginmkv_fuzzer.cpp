@@ -27,6 +27,7 @@ namespace OHOS {
 constexpr uint32_t WIDTH = 1920;
 constexpr uint32_t HEIGHT = 1080;
 const int64_t EXPECT_SIZE = 4;
+const size_t MAX_FRAMESIZE = 1048576;
 void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
 {
     if (dataSize < EXPECT_SIZE) {
@@ -39,7 +40,7 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
     demuxerTest->videoWidthDefault_ = WIDTH;
     FuzzedDataProvider fdp(data, dataSize);
     uint8_t *pstream = nullptr;
-    size_t framesize = fdp.ConsumeIntegralInRange<size_t>(0, dataSize - EXPECT_SIZE);
+    size_t framesize = fdp.ConsumeIntegralInRange<size_t>(1, MAX_FRAMESIZE);
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

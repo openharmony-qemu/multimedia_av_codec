@@ -44,7 +44,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(1, static_cast<uint16_t>(dataSize - EXPECT_SIZE));
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
@@ -80,8 +80,8 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     uri[URI_COUNT] = FLAG;
     params.setTrackType = fdp.ConsumeIntegral<int64_t>();
     params.setDuration = fdp.ConsumeIntegral<int64_t>();
-    params.setHeight = fdp.ConsumeIntegral<int64_t>();
-    params.setFrameRate = fdp.ConsumeIntegral<int64_t>();
+    params.setHeight = fdp.ConsumeFloatingPoint<float>();
+    params.setFrameRate = fdp.ConsumeFloatingPoint<double>();
     char *setLanguage = new char[LANGUAGE_BUFFER_SIZE];
     if (strncpy_s(setLanguage, LANGUAGE_BUFFER_SIZE, fdp.ConsumeBytesAsString(LANGUAGE_COUNT).c_str(),
         LANGUAGE_COUNT) != 0) {

@@ -89,12 +89,12 @@ bool DecoderSyncFuzzTest(const uint8_t *data, size_t size)
     g_vDecSample->codecType = fdp.ConsumeIntegralInRange<int32_t>(ONE, EIGHT);
     CodepType();
     g_vDecSample->sfOutput = fdp.ConsumeBool();
-    g_vDecSample->defaultWidth = fdp.ConsumeIntegral<int64_t>();
-    g_vDecSample->defaultHeight = fdp.ConsumeIntegral<int64_t>();
-    g_vDecSample->defaultFrameRate = fdp.ConsumeIntegral<int64_t>();
-    g_vDecSample->enbleSyncMode = fdp.ConsumeIntegral<int64_t>();
+    g_vDecSample->defaultWidth = fdp.ConsumeIntegral<uint32_t>();
+    g_vDecSample->defaultHeight = fdp.ConsumeIntegral<uint32_t>();
+    g_vDecSample->defaultFrameRate = fdp.ConsumeFloatingPoint<double>();
+    g_vDecSample->enbleSyncMode = fdp.ConsumeIntegral<int32_t>();
     g_vDecSample->syncInputWaitTime = fdp.ConsumeIntegral<int64_t>();
-    g_vDecSample->syncOutputWaitTime = 1;
+    g_vDecSample->syncOutputWaitTime = fdp.ConsumeIntegralInRange<int64_t>(ONE, TWO);
     g_vDecSample->renderTimestampNs = fdp.ConsumeIntegral<int64_t>();
     g_vDecSample->isRenderAttime = fdp.ConsumeBool();
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();

@@ -28,7 +28,7 @@ public:
     DemuxerMp4AuxlSample() = default;
     ~DemuxerMp4AuxlSample();
     const char *filePath = "/data/test/fuzz_create.mp4";
-    void RunNormalDemuxer(uint32_t createSize, int64_t time);
+    void RunNormalDemuxer(int64_t time);
 private:
     int CreateDemuxer();
     void GetFormat(OH_AVFormat* format);

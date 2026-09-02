@@ -51,7 +51,8 @@ bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     g_vEncSample = new VEncNdkInnerFuzzSample();
-    string gCodecMime = "video/avc";
+    FuzzedDataProvider fdp(data, size);
+    string gCodecMime = fdp.ConsumeBool() ? OH_AVCODEC_MIMETYPE_VIDEO_HEVC : OH_AVCODEC_MIMETYPE_VIDEO_AVC;
     string gCodecName = "";
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(gCodecMime.c_str(), true, HARDWARE);
     if (cap == nullptr) {
@@ -73,7 +74,6 @@ bool EncoderInnerFuzzTest(const uint8_t *data, size_t size)
     g_vEncSample->videoCoordinateY = (g_vEncSample->defaultHeight - bufferConfig.height) / doubleValue;
     g_vEncSample->videoCoordinateWidth = bufferConfig.width;
     g_vEncSample->videoCoordinateHeight = bufferConfig.height;
-    FuzzedDataProvider fdp(data, size);
     auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     if (g_vEncSample->CreateByName(gCodecName) != AV_ERR_OK) {
         return ReleaseSample();
