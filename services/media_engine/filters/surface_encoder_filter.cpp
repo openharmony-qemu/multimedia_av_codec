@@ -260,6 +260,8 @@ Status SurfaceEncoderFilter::SetStabilizationMode(bool enableStabilization)
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     mediaCodec_->SetStabilizationMode(enableStabilization);
     return Status::OK;
+}
+
 void SurfaceEncoderFilter::SetTransCoderCapabilityCheckInfo(int32_t width, int32_t height)
 {
     MEDIA_LOG_I("SetTransCoderCapabilityCheckInfo width: %{public}d, height: %{public}d", width, height);
