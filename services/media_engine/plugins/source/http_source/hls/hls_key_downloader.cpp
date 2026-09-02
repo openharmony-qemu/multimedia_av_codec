@@ -23,7 +23,6 @@ namespace Plugins {
 namespace HttpPlugin {
 
 constexpr uint32_t MAX_KEY_LEN = 16;
-constexpr size_t AES_IV_LEN = 16;
 constexpr int32_t KEY_DOWNLOAD_TIMEOUT_MS = 10000;
 
 KeyDownloader::KeyDownloader(std::shared_ptr<AesDecryptorManager> aesDecryptorManager,
@@ -92,7 +91,11 @@ void KeyDownloader::DownloadNextKey()
     }
 
     isDownloading_.store(true);
+    SubmitKeyDownload(keyInfo);
+}
 
+void KeyDownloader::SubmitKeyDownload(const KeyInfo& keyInfo)
+{
     auto weakSelf = weak_from_this();
 
     auto keyDataSave = [weakSelf](uint8_t *&&data, uint32_t &&len, bool &&notBlock,
@@ -147,9 +150,9 @@ uint32_t KeyDownloader::OnKeyDataSaved(uint8_t* data, uint32_t len, bool notBloc
     if (len > 0 && len <= MAX_KEY_LEN) {
         KeyInfo keyInfo;
         keyInfo.index_ = keyIndex;
-        NZERO_RETURN_V(memcpy_s(keyInfo.key_, MAX_KEY_LEN, data, len), 0);
+        NZERO_RETURN_V(memcpy_s(keyInfo.key_, sizeof(keyInfo.key_), data, len), 0);
         keyInfo.keyLen_ = len;
-        NZERO_RETURN_V(memcpy_s(keyInfo.iv_, AES_IV_LEN, currentKey_.iv_, AES_IV_LEN), 0);
+        NZERO_RETURN_V(memcpy_s(keyInfo.iv_, sizeof(keyInfo.iv_), currentKey_.iv_, sizeof(currentKey_.iv_)), 0);
         keyInfo.hasExplicitIv_ = currentKey_.hasExplicitIv_;
 
         if (aesDecryptorManager_ != nullptr) {
@@ -199,6 +202,25 @@ bool KeyDownloader::WaitForKey(uint64_t keyIndex, uint32_t timeoutMs)
         [this, keyIndex]() {return readyKeys_.count(keyIndex) > 0 || isInterruptNeeded_.load(); });
 }
 
+std::string KeyDownloader::UriJoin(std::string& baseUrl, const std::string& uri)
+{
+    if ((uri.find("http://") != std::string::npos) || (uri.find("https://") != std::string::npos)) {
+        return uri;
+    } else if (uri.find("//") == 0) { // start with "//"
+        return baseUrl.substr(0, baseUrl.find('/')) + uri;
+    } else if (uri.find('/') == 0) {
+        auto pos = baseUrl.find('/', strlen("https://"));
+        return baseUrl.substr(0, pos) + uri;
+    } else {
+        std::string::size_type pos = baseUrl.find('?');
+        std::string uriMain = (pos != std::string::npos) ? baseUrl.substr(0, pos) : baseUrl;
+        pos = uriMain.rfind('/');
+        if (pos == std::string::npos) {
+            return uri;
+        }
+        return uriMain.substr(0, pos + 1) + uri;
+    }
+}
 } // namespace HttpPlugin
 } // namespace Plugins
 } // namespace Media

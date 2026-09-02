@@ -48,8 +48,10 @@ public:
 
 private:
     void DownloadNextKey();
+    void SubmitKeyDownload(const KeyInfo& keyInfo);
     uint32_t OnKeyDataSaved(uint8_t* data, uint32_t len, bool notBlock, uint64_t keyIndex);
     void OnKeyDownloadDone(const std::string& url, const std::string& location);
+    std::string UriJoin(std::string& baseUrl, const std::string& uri);
 
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<AesDecryptorManager> aesDecryptorManager_;

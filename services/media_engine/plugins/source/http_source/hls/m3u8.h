@@ -34,25 +34,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-inline std::string UriJoin(std::string& baseUrl, const std::string& uri)
-{
-    if ((uri.find("http://") != std::string::npos) || (uri.find("https://") != std::string::npos)) {
-        return uri;
-    } else if (uri.find("//") == 0) { // start with "//"
-        return baseUrl.substr(0, baseUrl.find('/')) + uri;
-    } else if (uri.find('/') == 0) {
-        auto pos = baseUrl.find('/', strlen("https://"));
-        return baseUrl.substr(0, pos) + uri;
-    } else {
-        std::string::size_type pos = baseUrl.find('?');
-        std::string uriMain = (pos != std::string::npos) ? baseUrl.substr(0, pos) : baseUrl;
-        pos = uriMain.rfind('/');
-        if (pos == std::string::npos) {
-            return uri;
-        }
-        return uriMain.substr(0, pos + 1) + uri;
-    }
-}
 
 enum class M3U8MediaType : int32_t {
     M3U8_MEDIA_TYPE_INVALID = -1,

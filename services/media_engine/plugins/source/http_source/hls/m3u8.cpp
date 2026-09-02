@@ -84,6 +84,26 @@ bool StrHasPrefix(const std::string &str, const std::string &prefix)
 
 }
 
+std::string UriJoin(std::string& baseUrl, const std::string& uri)
+{
+    if ((uri.find("http://") != std::string::npos) || (uri.find("https://") != std::string::npos)) {
+        return uri;
+    } else if (uri.find("//") == 0) { // start with "//"
+        return baseUrl.substr(0, baseUrl.find('/')) + uri;
+    } else if (uri.find('/') == 0) {
+        auto pos = baseUrl.find('/', strlen("https://"));
+        return baseUrl.substr(0, pos) + uri;
+    } else {
+        std::string::size_type pos = baseUrl.find('?');
+        std::string uriMain = (pos != std::string::npos) ? baseUrl.substr(0, pos) : baseUrl;
+        pos = uriMain.rfind('/');
+        if (pos == std::string::npos) {
+            return uri;
+        }
+        return uriMain.substr(0, pos + 1) + uri;
+    }
+}
+
 M3U8Fragment::M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const uint8_t *iv)
     : uri_(std::move(m3u8.uri_)),
       duration_(m3u8.duration_),

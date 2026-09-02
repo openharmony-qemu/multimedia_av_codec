@@ -473,6 +473,33 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
     files = currentVariant->m3u8_->files_;
     uint64_t sessionKeyIndex = currentVariant->sessionKeyIndex_;
     std::unordered_map<uint64_t, KeyInfo> keyInfos;
+    CollectAllKeyInfos(keyInfos, files, sessionKeyIndex);
+
+    if (aesDecryptorManager_ == nullptr) {
+        aesDecryptorManager_ = std::make_shared<AesDecryptorManager>();
+    }
+
+    aesDecryptorManager_->CreateAesDecryptorByKeyInfos(keyInfos);
+
+    auto master = GetThreadSafeMaster();
+    if (sessionKeyIndex > 0 && master != nullptr) {
+        KeyInfo sessionKeyInfo;
+        sessionKeyInfo.index_ = UINT64_MAX;
+        std::copy(std::begin(master->key_), std::end(master->key_), std::begin(sessionKeyInfo.key_));
+        std::copy(std::begin(master->iv_), std::end(master->iv_), std::begin(sessionKeyInfo.iv_));
+        sessionKeyInfo.keyLen_ = master->keyLen_;
+        aesDecryptorManager_->CreateOneAesDecryptor(sessionKeyInfo);
+    }
+
+    StartPendingKeyDownload(keyInfos, currentVariant->m3u8_->uri_);
+
+    return sessionKeyIndex;
+}
+
+void HlsPlayListDownloader::CollectAllKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos,
+    std::list<std::shared_ptr<M3U8Fragment>>& files, uint64_t& sessionKeyIndex)
+{
+    auto currentVariant = GetThreadSafeCurrentVariant();
     currentVariant->m3u8_->GetKeyInfos(keyInfos);
     {
         std::lock_guard<std::mutex> lock(mediaMutex_);
@@ -491,23 +518,11 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
             keyInfos.insert(audioKeyInfos.begin(), audioKeyInfos.end());
         }
     }
-    if (aesDecryptorManager_ == nullptr) {
-        aesDecryptorManager_ = std::make_shared<AesDecryptorManager>();
-    }
+}
 
-    aesDecryptorManager_->CreateAesDecryptorByKeyInfos(keyInfos);
-
-    auto master = GetThreadSafeMaster();
-    if (sessionKeyIndex > 0 && master != nullptr) {
-        KeyInfo sessionKeyInfo;
-        sessionKeyInfo.index_ = UINT64_MAX;
-        std::copy(std::begin(master->key_), std::end(master->key_), std::begin(sessionKeyInfo.key_));
-        std::copy(std::begin(master->iv_), std::end(master->iv_), std::begin(sessionKeyInfo.iv_));
-        sessionKeyInfo.keyLen_ = master->keyLen_;
-        aesDecryptorManager_->CreateOneAesDecryptor(sessionKeyInfo);
-    }
-    
-    // Collect pending keys and start sequential download
+void HlsPlayListDownloader::StartPendingKeyDownload(const std::unordered_map<uint64_t, KeyInfo>& keyInfos,
+    const std::string& baseUri)
+{
     std::vector<KeyInfo> pendingKeys;
     for (const auto& [index, keyInfo] : keyInfos) {
         if (keyInfo.keyLen_ == 0 && !keyInfo.uri_.empty() &&
@@ -518,12 +533,10 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
     if (!pendingKeys.empty()) {
         if (keyDownloader_ == nullptr) {
             keyDownloader_ = std::make_shared<KeyDownloader>(
-                aesDecryptorManager_, httpHeader_, currentVariant->m3u8_->uri_, GetSourceLoader());
+                aesDecryptorManager_, httpHeader_, baseUri, GetSourceLoader());
         }
         keyDownloader_->StartSequentialDownload(std::move(pendingKeys));
     }
-
-    return sessionKeyIndex;
 }
 
 bool HlsPlayListDownloader::WaitForKeyReady(uint64_t keyIndex, uint32_t timeoutMs)

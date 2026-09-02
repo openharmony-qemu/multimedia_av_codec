@@ -241,14 +241,12 @@ HWTEST_F(M3u8UnitTest, SAVE_DATA_VALID_DATA, TestSize.Level1)
     uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     uint32_t len = 10;
     m3u8.isSessionKey_ = true;
-    m3u8.keyAllDownload_ = 1;
 
     bool result = m3u8.SaveData(data, len, false, 0);
 
     EXPECT_TRUE(result);
     EXPECT_EQ(m3u8.keyLen_, len);
     EXPECT_TRUE(m3u8.isDecryptKeyReady_);
-    EXPECT_EQ(m3u8.keyAllDownload_, 1);
 }
 
 HWTEST_F(M3u8UnitTest, SAVE_DATA_INVALID_DATA, TestSize.Level1)
@@ -765,15 +763,6 @@ HWTEST_F(M3u8UnitTest, PREPAREDECRYPTIONKEYS_002, TestSize.Level1)
     M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
     std::string testPlaylist = "#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"data:text/plain;base\"";
     EXPECT_TRUE(m3u8.Update(testPlaylist, true));
-}
-
-HWTEST_F(M3u8UnitTest, WAIT_KEY_DOWNLOAD_001, TestSize.Level1)
-{
-    M3U8 m3u8("http://example.com/test.m3u8", "TestPlaylist");
-    m3u8.keyAllDownload_ = 1;
-    m3u8.isInterruptNeeded_ = false;
-    m3u8.WaitKeyDownload();
-    EXPECT_EQ(m3u8.keyAllDownload_, 0);
 }
 
 HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_TAG_NULL_001, TestSize.Level1)
