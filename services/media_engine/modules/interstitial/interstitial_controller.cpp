@@ -117,9 +117,12 @@ Status InterstitialController::AddAdsMediaSource(const std::shared_ptr<MediaSour
             id.c_str(), uri.c_str(), startMs);
     }
 
-    if (startMs == 0 && playState_ == InterstitialPlayState::IDLE && preRollAdId_.empty()) {
-        MEDIA_LOG_I("AddAdsMediaSource: pre-roll ad detected, will trigger on DoStart");
-        preRollAdId_ = id;
+    if (startMs == 0 && playState_ == InterstitialPlayState::IDLE) {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        if (preRollAdId_.empty()) {
+            MEDIA_LOG_I("AddAdsMediaSource: pre-roll ad detected, will trigger on DoStart");
+            preRollAdId_ = id;
+        }
     }
 
     return Status::OK;
@@ -224,26 +227,25 @@ void InterstitialController::OnAdEos()
 
 void InterstitialController::TryPreRollAd()
 {
-    if (preRollAdId_.empty()) {
-        return;
-    }
-    if (isDisableAds_.load() || playState_ != InterstitialPlayState::IDLE) {
-        MEDIA_LOG_I("TryPreRollAd: skipped, disabled=" PUBLIC_LOG_D32 ", state=" PUBLIC_LOG_U32,
-            isDisableAds_.load(), playState_.load());
-        preRollAdId_.clear();
-        return;
-    }
-
     {
         std::lock_guard<std::mutex> lock(adMutex_);
+        if (preRollAdId_.empty()) {
+            return;
+        }
+        if (isDisableAds_.load() || playState_ != InterstitialPlayState::IDLE) {
+            MEDIA_LOG_I("TryPreRollAd: skipped, disabled=" PUBLIC_LOG_D32 ", state=" PUBLIC_LOG_U32,
+                isDisableAds_.load(), playState_.load());
+            preRollAdId_.clear();
+            return;
+        }
         auto it = entries_.find(preRollAdId_);
         if (it == entries_.end() || it->second.played) {
             preRollAdId_.clear();
             return;
         }
+        MEDIA_LOG_I("TryPreRollAd: triggering pre-roll ad " PUBLIC_LOG_S, preRollAdId_.c_str());
     }
 
-    MEDIA_LOG_I("TryPreRollAd: triggering pre-roll ad " PUBLIC_LOG_S, preRollAdId_.c_str());
     if (!TrySwitchAdCandidates(0)) {
         DoResume();
     }
@@ -346,41 +348,68 @@ bool InterstitialController::DoSwitch(const std::string& id)
         MEDIA_LOG_I("DoSwitch: recorded resumePointMs=" PUBLIC_LOG_D64, resumePointMs_.load());
     }
 
-    auto it = entries_.find(id);
-    if (it == entries_.end()) {
-        MEDIA_LOG_E("DoSwitch: entry not found for id=" PUBLIC_LOG_S, id.c_str());
-        return false;
+    InterstitialEntry entry;
+    {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        auto it = entries_.find(id);
+        if (it == entries_.end()) {
+            MEDIA_LOG_E("DoSwitch: entry not found for id=" PUBLIC_LOG_S, id.c_str());
+            return false;
+        }
+        entry = it->second;
+        currentAdId_ = id;
     }
 
     originalSpeed_ = syncMgr_->GetPlaybackRate();
     MEDIA_LOG_I("DoSwitch: saved originalSpeed=" PUBLIC_LOG_F, originalSpeed_.load());
-    currentAdId_ = id;
-    auto preStartAction = [this]() {
-        auto it = entries_.find(currentAdId_);
-        if (it != entries_.end()) {
-            int64_t durationUs = 0;
-            if (mainDemuxer_->GetDuration(durationUs) && durationUs > 0) {
-                it->second.durationMs = durationUs / US_PER_MS;
-                MEDIA_LOG_I("DoSwitch: updated durationMs=" PUBLIC_LOG_D64 " for id=" PUBLIC_LOG_S,
-                    durationUs, currentAdId_.c_str());
-            }
-            EmitStartEvent(it->second);
-        }
-    };
 
     SetPlayState(InterstitialPlayState::PLAYING);
-
-    auto ret = DoSourceSwitch(it->second.resourceUri, ADS_SEEK_POS, ADS_PLAYBACK_SPEED, preStartAction);
+    auto ret = DoSourceSwitch(entry.resourceUri, ADS_SEEK_POS, ADS_PLAYBACK_SPEED,
+        [this]() { EmitAdStartEvent(); });
     if (ret != Status::OK) {
         MEDIA_LOG_E("DoSwitch: DoSourceSwitch failed for id=" PUBLIC_LOG_S, id.c_str());
-        EmitEndEvent(it->second, AdsEventType::ERROR, static_cast<int32_t>(ret), "DoSourceSwitch failed");
+        {
+            std::lock_guard<std::mutex> lock(adMutex_);
+            currentAdId_.clear();
+        }
+        EmitEndEvent(entry, AdsEventType::ERROR, static_cast<int32_t>(ret), "DoSourceSwitch failed");
         SetPlayState(InterstitialPlayState::IDLE);
-        currentAdId_.clear();
         return false;
     }
 
     MEDIA_LOG_I("DoSwitch success: change to ads");
     return true;
+}
+
+void InterstitialController::EmitAdStartEvent()
+{
+    std::string adId;
+    InterstitialEntry startEntry;
+    {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        adId = currentAdId_;
+        auto it = entries_.find(adId);
+        if (it != entries_.end()) {
+            startEntry = it->second;
+        }
+    }
+
+    FALSE_RETURN_MSG(!startEntry.eventId.empty(), "EmitAdStartEvent: entry not found");
+
+    int64_t durationUs = 0;
+    if (mainDemuxer_->GetDuration(durationUs) && durationUs > 0) {
+        int64_t durationMs = durationUs / US_PER_MS;
+        startEntry.durationMs = durationMs;
+        std::lock_guard<std::mutex> lock(adMutex_);
+        auto it = entries_.find(adId);
+        if (it != entries_.end()) {
+            it->second.durationMs = durationMs;
+            MEDIA_LOG_I("EmitAdStartEvent: updated durationMs=" PUBLIC_LOG_D64 " for id=" PUBLIC_LOG_S,
+                durationMs, adId.c_str());
+        }
+    }
+
+    EmitStartEvent(startEntry);
 }
 
 bool InterstitialController::TrySwitchAdCandidates(int64_t startMs)
@@ -417,7 +446,10 @@ void InterstitialController::DoResume()
         MEDIA_LOG_E("DoResume: cannot resume, mainContentUri is empty=%{public}d, syncMgr is null=%{public}d",
             mainContentUri_.empty(), !syncMgr_);
         SetPlayState(InterstitialPlayState::IDLE);
-        currentAdId_.clear();
+        {
+            std::lock_guard<std::mutex> lock(adMutex_);
+            currentAdId_.clear();
+        }
         resumePointMs_ = 0;
         return;
     }
@@ -425,7 +457,10 @@ void InterstitialController::DoResume()
     float speed = originalSpeed_.load();
     DoSourceSwitch(mainContentUri_, seekMs, speed);
     SetPlayState(InterstitialPlayState::IDLE);
-    currentAdId_.clear();
+    {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        currentAdId_.clear();
+    }
     resumePointMs_ = 0;
     MEDIA_LOG_I("DoResume success: change to main, speed=" PUBLIC_LOG_F, speed);
 }

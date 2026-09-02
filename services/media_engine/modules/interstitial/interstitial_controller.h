@@ -117,6 +117,7 @@ private:
     bool DoSwitch(const std::string& id);
     bool TrySwitchAdCandidates(int64_t startMs);
     void DoResume();
+    void EmitAdStartEvent();
     Status DoSourceSwitch(const std::string& uri, int64_t seekMs, float speed,
         std::function<void()> preStartAction = nullptr);
     void FinishCurrentAdAndContinue(AdsEventType eventType);
