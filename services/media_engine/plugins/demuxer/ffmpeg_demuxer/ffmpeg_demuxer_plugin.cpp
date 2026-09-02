@@ -544,12 +544,19 @@ void FFmpegDemuxerPlugin::ResetParam()
     ioContext_.eos = false;
     ioContext_.initDownloadDataSize = 0;
     mediaInfo_ = MediaInfo();
+    if (formatContext_ != nullptr) {
+        Status ret = InvalidateCachesForDiscontinuity();
+        if (ret != Status::OK) {
+            MEDIA_LOG_W("Invalidate caches while reset failed: " PUBLIC_LOG_D32, ret);
+        }
+    }
     {
         std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
         for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
             cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
         }
         selectedTrackIds_.clear();
+        cachePhase_ = CachePhase::BOOTSTRAP;
     }
     checkedTrackIds_.clear();
     pluginImpl_.reset();
@@ -2200,7 +2207,8 @@ void FFmpegDemuxerPlugin::ConvertCsdToAnnexb(const AVStream& avStream, Meta &for
     }
 }
 
-Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper, bool requireSelectedTrack)
+Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper, bool requireSelectedTrack,
+    uint64_t expectedReadConfigEpoch, bool* packetAccepted)
 {
     FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr,
         Status::ERROR_NULL_POINTER, "Pkt is nullptr");
@@ -2214,7 +2222,17 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper,
     Status ret = Status::OK;
     uint32_t cacheBytes = UINT32_MAX;
     std::unique_lock<std::mutex> lock(selectedTrackMutex_);
-    if (requireSelectedTrack && !TrackIsSelectedLocked(static_cast<uint32_t>(trackId))) {
+    if (packetAccepted != nullptr) {
+        *packetAccepted = false;
+    }
+    const bool epochMatched = expectedReadConfigEpoch == INVALID_READ_CONFIG_EPOCH ||
+        expectedReadConfigEpoch == readConfigEpoch_;
+    const bool selected = TrackIsSelectedLocked(static_cast<uint32_t>(trackId));
+    if (!epochMatched || (requireSelectedTrack &&
+        (!selected || !cacheQueue_.HasTrackQueue(static_cast<uint32_t>(trackId))))) {
+        MEDIA_LOG_D("Discard packet for track " PUBLIC_LOG_D32 ", epoch " PUBLIC_LOG_U64 "/" PUBLIC_LOG_U64,
+            trackId, expectedReadConfigEpoch, readConfigEpoch_);
+        av_packet_unref(pktWrapper->GetAVPacket());
         lock.unlock();
         AccumulateXpsPktRelease(trackId);
         return Status::OK;
@@ -2231,10 +2249,14 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper,
         if (cacheSamplePacket != nullptr) {
             cacheSamplePacket->pkts.push_back(pktWrapper);
             cacheSamplePacket->offset = 0;
-            cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket);
+            FALSE_RETURN_V_MSG_E(cacheQueue_.Push(static_cast<uint32_t>(trackId), cacheSamplePacket),
+                Status::ERROR_UNKNOWN, "Push packet to cache failed");
             ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
             cacheBytes = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
         }
+    }
+    if (packetAccepted != nullptr) {
+        *packetAccepted = true;
     }
     lock.unlock();
     if (cacheBytes < UINT32_MAX) { // The callback must run without selectedTrackMutex_.
@@ -2897,10 +2919,17 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
 
     std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
     if (!TrackIsSelectedLocked(trackId)) {
-        selectedTrackIds_.push_back(trackId);
+        if (cachePhase_ == CachePhase::RUNTIME) {
+            Status ret = cacheQueue_.RemoveTrackQueue(trackId);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Remove stale track cache failed");
+        }
+        Status ret = cacheQueue_.AddTrackQueue(trackId);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Create track cache failed");
         trackMtx_[trackId] = std::make_shared<std::mutex>();
         trackDfxInfoMap_[trackId] = {0, -1, -1, -1, false};
-        return cacheQueue_.AddTrackQueue(trackId);
+        selectedTrackIds_.push_back(trackId);
+        ++readConfigEpoch_;
+        return Status::OK;
     } else {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " has been selected", trackId);
     }
@@ -2919,7 +2948,10 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
         selectedTrackIds_.erase(index);
         trackMtx_.erase(trackId);
         trackDfxInfoMap_.erase(trackId);
-        return cacheQueue_.RemoveTrackQueue(trackId);
+        Status ret = cacheQueue_.RemoveTrackQueue(trackId);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Remove track cache failed");
+        ++readConfigEpoch_;
+        return Status::OK;
     } else {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " is not in selected list", trackId);
     }
@@ -3015,8 +3047,7 @@ Status FFmpegDemuxerPlugin::DoSeekInternal(int trackIndex, int64_t seekTime, int
     formatContext_->pb->error = 0;
     FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_UNKNOWN,
         "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ret).c_str());
-    ResetAfterSeek(seekTime, flag == AVSEEK_FLAG_BACKWARD ? SeekMode::SEEK_PREVIOUS_SYNC : mode);
-    return Status::OK;
+    return ResetAfterSeek(seekTime, flag == AVSEEK_FLAG_BACKWARD ? SeekMode::SEEK_PREVIOUS_SYNC : mode);
 }
 
 bool FFmpegDemuxerPlugin::GetVideoTrack(int &trackIndex) const
@@ -3085,7 +3116,8 @@ Status FFmpegDemuxerPlugin::SeekToRmKeyFrame(int trackIndex, int64_t seekTime, i
             realSeekTime = ConvertTimeFromFFmpeg(timestamp, avStream->time_base);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret,
                 "Read frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
-            ResetAfterSeek(pktWrapper->GetDts(), mode);
+            ret = ResetAfterSeek(pktWrapper->GetDts(), mode);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reset cache after seek failed");
             ret = AddPacketToCacheQueue(pktWrapper);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPacketToCacheQueue failed");
         }
@@ -3209,19 +3241,71 @@ Status FFmpegDemuxerPlugin::SeekToKeyFrameCheckParam(int64_t seekTime, SeekMode 
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::ResetAfterSeek(int64_t seekTime, SeekMode mode)
+void FFmpegDemuxerPlugin::RetireBootstrapCachesLocked()
+{
+    if (cachePhase_ != CachePhase::BOOTSTRAP) {
+        return;
+    }
+    cachePhase_ = CachePhase::RUNTIME;
+    if (formatContext_ == nullptr) {
+        return;
+    }
+    for (uint32_t trackId = 0; trackId < static_cast<uint32_t>(formatContext_->nb_streams); ++trackId) {
+        if (TrackIsSelectedLocked(trackId)) {
+            continue;
+        }
+        trackMtx_.erase(trackId);
+        trackDfxInfoMap_.erase(trackId);
+        if (cacheQueue_.RemoveTrackQueue(trackId) != Status::OK) {
+            MEDIA_LOG_W("Retire bootstrap cache failed: " PUBLIC_LOG_U32, trackId);
+        }
+    }
+}
+
+void FFmpegDemuxerPlugin::RetireBootstrapCaches()
+{
+    std::lock_guard<std::mutex> lock(selectedTrackMutex_);
+    RetireBootstrapCachesLocked();
+}
+
+Status FFmpegDemuxerPlugin::InvalidateCachesForDiscontinuity()
+{
+    std::lock_guard<std::mutex> lock(selectedTrackMutex_);
+    ++readConfigEpoch_;
+    cachePhase_ = CachePhase::RUNTIME;
+    Status firstError = Status::OK;
+    const uint32_t streamCount = formatContext_ == nullptr ? 0 : static_cast<uint32_t>(formatContext_->nb_streams);
+    for (uint32_t trackId = 0; trackId < streamCount; ++trackId) {
+        Status ret = cacheQueue_.RemoveTrackQueue(trackId);
+        if (ret != Status::OK && firstError == Status::OK) {
+            firstError = ret;
+        }
+        if (!TrackIsSelectedLocked(trackId)) {
+            trackMtx_.erase(trackId);
+            trackDfxInfoMap_.erase(trackId);
+        }
+    }
+    for (uint32_t trackId : selectedTrackIds_) {
+        Status ret = cacheQueue_.AddTrackQueue(trackId);
+        if (ret != Status::OK && firstError == Status::OK) {
+            firstError = ret;
+        }
+    }
+    return firstError;
+}
+
+Status FFmpegDemuxerPlugin::ResetAfterSeek(int64_t seekTime, SeekMode mode)
 {
     if (readLoopStatus_ != Status::OK) {
         MEDIA_LOG_E("Read loop status is not OK, release thread");
         ReleaseFFmpegReadLoop();
     }
-    for (auto idx : selectedTrackIds_) {
-        cacheQueue_.RemoveTrackQueue(idx);
-        cacheQueue_.AddTrackQueue(idx);
-    }
+    Status ret = InvalidateCachesForDiscontinuity();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Invalidate caches after seek failed");
     seekTime_ = seekTime;
     seekMode_ = mode;
     AccumulateXpsPktReleaseAll();
+    return Status::OK;
 }
 
 Status FFmpegDemuxerPlugin::SeekToKeyFrame(int32_t trackId, int64_t seekTime,
@@ -3263,7 +3347,8 @@ Status FFmpegDemuxerPlugin::SeekToKeyFrame(int32_t trackId, int64_t seekTime,
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
 
-    ResetAfterSeek(pktWrapper->GetDts(), SeekMode::SEEK_NEXT_SYNC);
+    ret = ResetAfterSeek(pktWrapper->GetDts(), SeekMode::SEEK_NEXT_SYNC);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Reset cache after seek failed");
     ret = AddPacketToCacheQueue(pktWrapper);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPacketToCacheQueue failed");
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
@@ -3295,10 +3380,8 @@ Status FFmpegDemuxerPlugin::Flush()
         seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING || threadState_ == NOT_STARTED; });
     }
 
-    for (size_t i = 0; i < selectedTrackIds_.size(); ++i) {
-        ret = cacheQueue_.RemoveTrackQueue(selectedTrackIds_[i]);
-        ret = cacheQueue_.AddTrackQueue(selectedTrackIds_[i]);
-    }
+    ret = InvalidateCachesForDiscontinuity();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Invalidate caches after flush failed");
     if (formatContext_) {
         std::unique_lock<std::mutex> sLock(syncMutex_);
         avio_flush(formatContext_.get()->pb);
@@ -3338,20 +3421,6 @@ void FFmpegDemuxerPlugin::DumpPacketInfo(int32_t trackId, Stage stage)
     }
 }
 
-void FFmpegDemuxerPlugin::ClearUnselectTrackCache()
-{
-    for (uint32_t trackIndex = 0; trackIndex < formatContext_->nb_streams; ++trackIndex) {
-        if (TrackIsSelected(trackIndex)) {
-            continue;
-        }
-        trackMtx_.erase(trackIndex);
-        trackDfxInfoMap_.erase(trackIndex);
-        if (cacheQueue_.RemoveTrackQueue(trackIndex) != Status::OK) {
-            MEDIA_LOG_W("Reset track cache failed: " PUBLIC_LOG_U32, trackIndex);
-        }
-    }
-}
-
 bool FFmpegDemuxerPlugin::FrameReady(Status ret)
 {
     if (ret == Status::END_OF_STREAM) {
@@ -3378,10 +3447,7 @@ Status FFmpegDemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffe
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
         Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
-    if (needClear_) {
-        ClearUnselectTrackCache();
-        needClear_ = false;
-    }
+    RetireBootstrapCaches();
     readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_read", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
@@ -3422,6 +3488,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
         Status::ERROR_INVALID_OPERATION,
         "Cannot use sync and async Read together");
+    RetireBootstrapCaches();
     readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
     Status ret;
     if (NeedCombineFrame(trackId) && cacheQueue_.GetCacheSize(trackId) == 1) {
@@ -3962,8 +4029,7 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
     FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_UNKNOWN, "SeekToStartInternal failed");
-    ResetAfterSeek(AV_NOPTS_VALUE, SeekMode::SEEK_NEXT_SYNC);
-    return Status::OK;
+    return ResetAfterSeek(AV_NOPTS_VALUE, SeekMode::SEEK_NEXT_SYNC);
 }
 
 Status FFmpegDemuxerPlugin::SeekToStart()
@@ -4067,7 +4133,11 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
         HiviewDFX::XCollie::GetInstance().CancelTimer(id);
         return Status::ERROR_WAIT_TIMEOUT;
     }
-    ResetAfterSeek(seekTime, mode);
+    ret = ResetAfterSeek(seekTime, mode);
+    if (ret != Status::OK) {
+        HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+        return ret;
+    }
     ret = ReadUntilDtsReached(ctx, seekTime, realSeekTime, timeoutGuard);
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return ret;
