@@ -22,6 +22,7 @@
 #include <iomanip>
 #include <sstream>
 #include <chrono>
+#include <limits>
 #ifndef _WIN32
 #include <unistd.h>
 #include "securec.h"
@@ -92,11 +93,10 @@ std::string GetCurrentDate() {
     std::time_t timeNow = std::chrono::system_clock::to_time_t(now);
     // 转换为tm结构（本地时间）
     std::tm* localTime = std::localtime(&timeNow);
-    
     // 使用stringstream格式化日期
     std::ostringstream oss;
     oss << std::put_time(localTime, "%Y-%m-%d ");
-    
+
     return oss.str();
 }
 
@@ -174,12 +174,15 @@ uint64_t String2Uint64Timestamp(std::string &creationTime)
     }
     // 时间小于1904-01-01 00:00:00 UTC 用time now
     if (success) {
+        // mktime调用前设置tm_isdst = -1让其自动判断夏令时, 调用后设置不生效
+        tm.tm_isdst = -1;
         // 带 z/Z 则用UTC时间戳
-        uint64_t timestamp = (creationTime.find_first_of("zZ") != std::string::npos) ?
-            static_cast<uint64_t>(timegm(&tm)) : static_cast<uint64_t>(std::mktime(&tm));
-        if (static_cast<int64_t>(timeSec) + static_cast<int64_t>(timestamp) >= 0) {
-            tm.tm_isdst = -1;
-            return timeSec + timestamp;
+        int64_t timestamp = (creationTime.find_first_of("zZ") != std::string::npos) ?
+            static_cast<int64_t>(timegm(&tm)) : static_cast<int64_t>(std::mktime(&tm));
+        // 1904~1970间的时间戳为负数, 先用有符号数校验范围再相加, 避免无符号加法回绕溢出
+        constexpr int64_t epoch1904 = static_cast<int64_t>(timeSec);
+        if (timestamp >= -epoch1904 && timestamp <= std::numeric_limits<int64_t>::max() - epoch1904) {
+            return static_cast<uint64_t>(epoch1904 + timestamp);
         }
         MEDIA_LOG_W("mpeg4 muxer input time:%{public}s is earlier than 1904-01-01 00:00:00 UTC", creationTime.c_str());
     }
@@ -254,6 +257,7 @@ Status Mpeg4MuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)
 
 Status Mpeg4MuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
 {
+    FALSE_RETURN_V_MSG_E(param != nullptr, Status::ERROR_INVALID_PARAMETER, "param is null");
     int32_t dataInt = 0;
     std::string dataStr;
     if (param->GetData(Tag::MEDIA_EDITLIST, dataInt) && dataInt == 0) {
@@ -269,7 +273,6 @@ Status Mpeg4MuxerPlugin::SetParameter(const std::shared_ptr<Meta> &param)
         useTimedMeta_ = true;
         MEDIA_LOG_I("use timed metadata track");
     }
-    FALSE_RETURN_V_MSG_E(param != nullptr, Status::ERROR_INVALID_PARAMETER, "param is null");
     Status ret = Status::NO_ERROR;
     ret = SetRotation(param);
     FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "SetRotation failed");
