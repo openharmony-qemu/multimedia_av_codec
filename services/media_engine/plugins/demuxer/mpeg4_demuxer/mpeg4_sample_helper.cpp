@@ -30,9 +30,10 @@ namespace Plugins {
 namespace MPEG4 {
 constexpr uint32_t DEFAULT_FIELD_SIZE = 32;
 constexpr int64_t MAX_TRUN_SAMPLES = 1000000; //需要确定讨论
-constexpr uint32_t MAX_SAMPLE_TABLE_SAMPLES = static_cast<uint32_t>(MAX_TRUN_SAMPLES);
 constexpr uint32_t MAX_TIMING_TABLE_ENTRY_COUNT = 4 * 1024 * 1024;
 constexpr uint32_t MAX_TIMING_TABLE_SAMPLE_COUNT = 4 * 1024 * 1024;
+constexpr uint32_t MAX_SAMPLE_TABLE_ENTRY_COUNT = MAX_TIMING_TABLE_SAMPLE_COUNT;
+constexpr uint32_t MAX_SAMPLE_TABLE_SAMPLES = MAX_TIMING_TABLE_SAMPLE_COUNT;
 constexpr int64_t NEXT_FRAME = 1;
 constexpr int64_t PREVIOUS_FRAME = 0;
 constexpr int64_t MAX_SAMPLES_PER_FRAME = 1024;
@@ -760,7 +761,8 @@ Status MPEG4SampleHelper::SetSyncSampleParams(int64_t dataOffset, size_t dataSiz
     }
 
     uint32_t numSyncs = GetU32Value(&header[4]);
-    FALSE_RETURN_V_MSG_E(numSyncs <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid sync sample count");
+    FALSE_RETURN_V_MSG_E(numSyncs <= MAX_SAMPLE_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
+        "Invalid sync sample count");
     currentOffset += sizeof(header);
 
     FALSE_RETURN_V_NOLOG((dataSize - sizeof(header)) / sizeof(uint32_t) >= numSyncs, Status::ERROR_UNKNOWN);
@@ -933,7 +935,8 @@ Status MPEG4SampleHelper::SetChunkOffsetParams(uint32_t atomType, int64_t dataOf
     ret = dataReader_->ReadUintData(currentOffset, entryBuffer, sizeof(entryBuffer));
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
     uint32_t numChunkOffsets = GetU32Value(entryBuffer, sizeof(entryBuffer));
-    FALSE_RETURN_V_MSG_E(numChunkOffsets <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid chunk offset count");
+    FALSE_RETURN_V_MSG_E(numChunkOffsets <= MAX_SAMPLE_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
+        "Invalid chunk offset count");
     currentOffset += sizeof(uint32_t);
     uint32_t unit = atomType == static_cast<uint32_t>(FourccType("stco")) ? sizeof(uint32_t) : sizeof(uint64_t);
     FALSE_RETURN_V_NOLOG((dataSize - sizeof(uint64_t)) / unit >= numChunkOffsets, Status::ERROR_UNKNOWN);
@@ -961,7 +964,6 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
 {
     MEDIA_LOG_D("In");
     FALSE_RETURN_V_MSG_E(stscEntry_.empty(), Status::ERROR_INVALID_OPERATION, "stscEntry exist");
-    
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_NOLOG(currentOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE,
         Status::ERROR_INVALID_PARAMETER);
@@ -972,7 +974,8 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
     FALSE_RETURN_V_NOLOG(!GetU32Value(header, sizeof(header)), Status::ERROR_INVALID_DATA);
 
     uint32_t numStscEntries = GetU32Value(&header[4]);
-    FALSE_RETURN_V_MSG_E(numStscEntries <= MAX_TRUN_SAMPLES, Status::ERROR_INVALID_DATA, "Invalid stsc entry count");
+    FALSE_RETURN_V_MSG_E(numStscEntries <= MAX_SAMPLE_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
+        "Invalid stsc entry count");
     currentOffset += sizeof(header);
 
     FALSE_RETURN_V_NOLOG((dataSize - sizeof(header)) / sizeof(StscEntry) >= numStscEntries, Status::ERROR_UNKNOWN);
@@ -1129,7 +1132,6 @@ Status MPEG4SampleHelper::SetTrackFragmentDecodeTimeParams(int64_t dataOffset, i
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_NOLOG(currentOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE_INT,
         Status::ERROR_INVALID_PARAMETER);
-    
     uint8_t header[4];
     auto ret = dataReader_->ReadUintData(currentOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
@@ -1656,21 +1658,6 @@ bool MPEG4SampleHelper::GetSampleSize(uint32_t sampleIndex, uint32_t& samplesPer
     return true;
 }
 
-Status MPEG4SampleHelper::UpdateSampleDurationAndDts(uint32_t sttsDelta, uint32_t samplesPerFrame,
-    int64_t& duration, int64_t& currentDts) const
-{
-    FALSE_RETURN_V_MSG_E(samplesPerFrame > 0, Status::ERROR_INVALID_DATA, "Invalid samples per frame");
-    int64_t delta = static_cast<int64_t>(sttsDelta);
-    int64_t frameCount = static_cast<int64_t>(samplesPerFrame);
-    FALSE_RETURN_V_MSG_E(delta <= std::numeric_limits<int64_t>::max() / frameCount,
-        Status::ERROR_INVALID_DATA, "Sample duration is too large");
-    duration = delta * frameCount;
-    FALSE_RETURN_V_MSG_E(currentDts <= std::numeric_limits<int64_t>::max() - duration,
-        Status::ERROR_INVALID_DATA, "Sample dts is too large");
-    currentDts += duration;
-    return Status::OK;
-}
-
 namespace {
 std::vector<uint8_t> MakeSkipSamplesInfo(int64_t skipSamples)
 {
@@ -1982,236 +1969,6 @@ Status MPEG4SampleHelper::ApplyEditList()
     FALSE_RETURN_V_NOLOG(!newEntries.empty(), Status::OK);
     FinalizeAppliedEditList(buildCtx);
     restoreGuard.active = false;
-    return Status::OK;
-}
-
-uint64_t MPEG4SampleHelper::CountSttsSamples() const
-{
-    uint64_t totalSttsSamples = 0;
-    for (const auto& sttsEntry : sttsEntry_) {
-        totalSttsSamples += sttsEntry.count;
-    }
-    return totalSttsSamples;
-}
-
-MPEG4SampleHelper::SampleIndexBuildContext MPEG4SampleHelper::CreateSampleIndexBuildContext() const
-{
-    SampleIndexBuildContext buildCtx;
-    buildCtx.currentOffset = chunkOffsets_[0];
-    buildCtx.currentDts = editListEntries_.empty() ? -timeOffset_ - dtsShift_ : -dtsShift_;
-    buildCtx.remainSamples = static_cast<int64_t>(stscEntry_[buildCtx.stscIndex].count);
-    buildCtx.totalSttsSamples = CountSttsSamples();
-    if (!cttsEntry_.empty()) {
-        buildCtx.cttsSamplesRemaining = cttsEntry_[0].count;
-        buildCtx.cttsDelta = cttsEntry_[0].delta;
-    }
-    return buildCtx;
-}
-
-Status MPEG4SampleHelper::ConsumeCttsSamples(SampleIndexBuildContext& buildCtx, uint32_t sampleCount,
-    int64_t& ptsOffset)
-{
-    if (buildCtx.cttsSamplesRemaining == 0) {
-        ++buildCtx.cttsIndex;
-        FALSE_RETURN_V_NOLOG(buildCtx.cttsIndex < cttsEntry_.size(), Status::ERROR_INVALID_DATA);
-        buildCtx.cttsSamplesRemaining = cttsEntry_[buildCtx.cttsIndex].count;
-        buildCtx.cttsDelta = cttsEntry_[buildCtx.cttsIndex].delta;
-    }
-    int64_t offset = 0;
-    FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(dtsShift_, static_cast<int64_t>(buildCtx.cttsDelta), &offset) &&
-        offset >= 0 && static_cast<uint64_t>(offset) <= std::numeric_limits<uint32_t>::max(),
-        Status::ERROR_INVALID_DATA);
-    ptsOffset = offset;
-    uint32_t remaining = sampleCount;
-    while (remaining > 0 && !cttsEntry_.empty()) {
-        if (buildCtx.cttsSamplesRemaining == 0) {
-            ++buildCtx.cttsIndex;
-            FALSE_RETURN_V_NOLOG(buildCtx.cttsIndex < cttsEntry_.size(), Status::ERROR_INVALID_DATA);
-            buildCtx.cttsSamplesRemaining = cttsEntry_[buildCtx.cttsIndex].count;
-            buildCtx.cttsDelta = cttsEntry_[buildCtx.cttsIndex].delta;
-        }
-        uint32_t consumed = std::min(remaining, buildCtx.cttsSamplesRemaining);
-        remaining -= consumed;
-        buildCtx.cttsSamplesRemaining -= consumed;
-    }
-    return remaining == 0 ? Status::OK : Status::ERROR_INVALID_DATA;
-}
-
-Status MPEG4SampleHelper::AdvanceChunkIfNeeded(SampleIndexBuildContext& buildCtx)
-{
-    if (buildCtx.sampleInChunk < stscEntry_[buildCtx.stscIndex].count) {
-        return Status::OK;
-    }
-    ++buildCtx.chunkIndex;
-    buildCtx.sampleInChunk = 0;
-    if (buildCtx.processedSttsSamples >= buildCtx.totalSttsSamples) {
-        return Status::OK;
-    }
-    FALSE_RETURN_V_MSG_E(buildCtx.chunkIndex < chunkOffsets_.size(), Status::ERROR_INVALID_DATA,
-        "Chunk index is out of range");
-    buildCtx.stscIndex = (buildCtx.stscIndex < stscEntry_.size() - 1 &&
-        buildCtx.chunkIndex == stscEntry_[buildCtx.stscIndex + 1].first) ? buildCtx.stscIndex + 1 :
-        buildCtx.stscIndex;
-    buildCtx.remainSamples = stscEntry_[buildCtx.stscIndex].count;
-    buildCtx.currentOffset = chunkOffsets_[buildCtx.chunkIndex];
-    return Status::OK;
-}
-
-Status MPEG4SampleHelper::AppendSampleIndexEntry(const SttsEntry& sttsEntry, uint32_t& sampleInSttsEntry,
-    SampleIndexBuildContext& buildCtx)
-{
-    if (buildCtx.hasPreviousDuration) {
-        int64_t derivedDuration = buildCtx.currentDts - sampleIndexEntry_.back().dts;
-        if (derivedDuration != buildCtx.previousDuration) {
-            FALSE_RETURN_V_NOLOG(AddDurationOverride(buildCtx.sampleIndex - 1, buildCtx.previousDuration) == Status::OK,
-                Status::ERROR_INVALID_DATA);
-        }
-    }
-    sampleIndexEntry_.emplace_back(SampleIndexEntry {});
-    sampleIndexEntry_.back().pos = buildCtx.currentOffset;
-    sampleIndexEntry_.back().dts = buildCtx.currentDts;
-    FALSE_RETURN_V_MSG_E(GetSampleSize(buildCtx.sampleIndex, buildCtx.samplesPerFrame, sampleIndexEntry_.back(),
-        buildCtx.remainSamples), Status::ERROR_INVALID_DATA, "Sample size is too large");
-    int64_t ptsOffset = 0;
-    if (!cttsEntry_.empty()) {
-        FALSE_RETURN_V_NOLOG(ConsumeCttsSamples(buildCtx, buildCtx.samplesPerFrame, ptsOffset) == Status::OK,
-            Status::ERROR_INVALID_DATA);
-    }
-    FALSE_RETURN_V_NOLOG(sampleIndexEntry_.back().SetPts(sampleIndexEntry_.back().dts + ptsOffset),
-        Status::ERROR_INVALID_DATA);
-    int64_t duration = 0;
-    Status ret = UpdateSampleDurationAndDts(sttsEntry.delta, buildCtx.samplesPerFrame, duration, buildCtx.currentDts);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update sample duration failed");
-    if (duration == 0) {
-        FALSE_RETURN_V_NOLOG(AddDurationOverride(buildCtx.sampleIndex, 0) == Status::OK,
-            Status::ERROR_INVALID_DATA);
-    }
-    lastPTS_ = std::max(lastPTS_, sampleIndexEntry_.back().GetPts());
-    FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(buildCtx.currentOffset,
-        static_cast<int64_t>(sampleIndexEntry_.back().GetSize()), &buildCtx.currentOffset),
-        Status::ERROR_INVALID_DATA);
-    FALSE_RETURN_V_MSG_E(buildCtx.currentOffset >= 0, Status::ERROR_INVALID_DATA, "Sample Offset is negative");
-    buildCtx.previousDuration = duration;
-    buildCtx.hasPreviousDuration = true;
-    ++buildCtx.sampleIndex;
-    sampleInSttsEntry += buildCtx.samplesPerFrame;
-    buildCtx.sampleInChunk += buildCtx.samplesPerFrame;
-    buildCtx.processedSttsSamples += buildCtx.samplesPerFrame;
-    return AdvanceChunkIfNeeded(buildCtx);
-}
-
-Status MPEG4SampleHelper::BuildSampleIndexEntries()
-{
-    std::lock_guard<std::mutex> lock(indexMutex_);
-    if (sampleIndexState_.load(std::memory_order_relaxed) == SampleIndexState::DENSE) {
-        return Status::OK;
-    }
-    if (denseAttempted_) {
-        return denseStatus_;
-    }
-    denseAttempted_ = true;
-    sampleIndexEntry_.clear();
-    durationOverrides_.clear();
-    if (isFragmented_ && sttsEntry_.empty()) {
-        denseStatus_ = Status::OK;
-        sampleIndexState_.store(SampleIndexState::DENSE, std::memory_order_release);
-        return denseStatus_;
-    }
-    denseStatus_ = BuildDenseSampleIndexEntries();
-    if (denseStatus_ == Status::OK) {
-        sampleTableSummary_.logicalSampleCount = static_cast<uint32_t>(sampleIndexEntry_.size());
-        ReleaseSparseStorageLocked();
-        sampleIndexState_.store(SampleIndexState::DENSE, std::memory_order_release);
-    } else {
-        sampleIndexEntry_.clear();
-        durationOverrides_.clear();
-    }
-    return denseStatus_;
-}
-
-Status MPEG4SampleHelper::EnsureDenseIndex()
-{
-    return BuildSampleIndexEntries();
-}
-
-Status MPEG4SampleHelper::BuildDenseSampleIndexEntries()
-{
-    FALSE_RETURN_V_MSG_E(PreBuildProcessAndCheck() == Status::OK, Status::ERROR_INVALID_DATA, "PreCheck failed");
-    uint64_t expectedSampleCount = CountSttsSamples();
-    FALSE_RETURN_V_MSG_E(expectedSampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid sample index entry count");
-    SampleIndexBuildContext buildCtx = CreateSampleIndexBuildContext();
-    for (const auto& sttsEntry : sttsEntry_) {  // 遍历sttsEntry
-        FALSE_RETURN_V_MSG_E(sttsEntry.count > 0 && sttsEntry.count <= expectedSampleCount,
-            Status::ERROR_INVALID_DATA, "Invalid stts sample count");
-        uint32_t sampleInSttsEntry = 0;
-        while (sampleInSttsEntry < sttsEntry.count) {  // 根据sttsEntry.count进行循环
-            Status ret = AppendSampleIndexEntry(sttsEntry, sampleInSttsEntry, buildCtx);
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Append sample index entry failed");
-        }
-    }
-
-    if (buildCtx.hasPreviousDuration && !sampleIndexEntry_.empty()) {
-        FALSE_RETURN_V_NOLOG(AddDurationOverride(static_cast<uint32_t>(sampleIndexEntry_.size() - 1),
-            buildCtx.previousDuration) == Status::OK, Status::ERROR_INVALID_DATA);
-    }
-
-    UpdateRawSampleStats();
-    Status ret = ApplyEditList();
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Apply edit list failed");
-    return Status::OK;
-}
-
-void MPEG4SampleHelper::UpdateRawSampleStats()
-{
-    totalDuration_ = 0;
-    rawSampleCount_ = 0;
-    rawTotalSize_ = 0;
-    for (const auto& sttsEntry : sttsEntry_) {
-        totalDuration_ += static_cast<int64_t>(sttsEntry.count) * static_cast<int64_t>(sttsEntry.delta);
-        rawSampleCount_ += sttsEntry.count;
-    }
-    for (const auto& sample : sampleIndexEntry_) {
-        rawTotalSize_ += sample.GetSize();
-    }
-    rawTotalDuration_ = totalDuration_;
-}
-
-Status MPEG4SampleHelper::GetSampleDuration(uint32_t index, uint32_t &duration)
-{
-    FALSE_RETURN_V_NOLOG(!sampleIndexEntry_.empty() && !sttsEntry_.empty(), Status::ERROR_INVALID_OPERATION);
-
-    // LCOV_EXCL_START
-    if (firstMoofSampleIndex_ > 0) {
-        if (index < firstMoofSampleIndex_) {
-            int64_t temp = index;
-            uint32_t sttsIndex = 0;
-            while (sttsIndex < sttsEntry_.size() - 1 &&
-                temp >= static_cast<int64_t>(sttsEntry_[sttsIndex].count)) {
-                temp -= static_cast<int64_t>(sttsEntry_[sttsIndex].count);
-                ++sttsIndex;
-            }
-            duration = sttsEntry_[sttsIndex].delta;
-        } else {
-            FALSE_RETURN_V_MSG_E(index >= numMoovSamples_ && firstMoofSttsIndex_ > 0,
-                Status::ERROR_INVALID_PARAMETER, "Invalid sample index");
-            uint64_t sttsIndex = static_cast<uint64_t>(index) - numMoovSamples_ +
-                                 static_cast<uint64_t>(firstMoofSttsIndex_) - 1;
-            FALSE_RETURN_V_MSG_E(sttsIndex < sttsEntry_.size(), Status::ERROR_INVALID_PARAMETER,
-                "sttsIndex out of range");
-            duration = sttsEntry_[sttsIndex].delta;
-        }
-        return Status::OK;
-    }
-
-    int64_t temp = index;
-    uint32_t sttsIndex = 0;
-    while (sttsIndex < sttsEntry_.size() - 1 && temp >= static_cast<int64_t>(sttsEntry_[sttsIndex].count)) {
-        temp -= static_cast<int64_t>(sttsEntry_[sttsIndex].count);
-        ++sttsIndex;
-    }
-    // LCOV_EXCL_STOP
-    FALSE_RETURN_V_NOLOG(sttsIndex < sttsEntry_.size(), Status::ERROR_INVALID_PARAMETER);
-    duration = sttsEntry_[sttsIndex].delta;
     return Status::OK;
 }
 
