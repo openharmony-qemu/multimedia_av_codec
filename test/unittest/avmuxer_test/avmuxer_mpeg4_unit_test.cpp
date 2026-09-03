@@ -16,6 +16,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <cstring>
+#include <iterator>
 #include <fcntl.h>
 #include "avmuxer_sample.h"
 #include "avmuxer.h"
@@ -2084,6 +2086,208 @@ HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetFormat_CreationTime_004, TestSize.Level0)
     ASSERT_EQ(avmuxer_->SetFormat(audioParams), 0);
     avmuxer_->Start();
     avmuxer_->Stop();
+}
+
+// 读取大端无符号整数
+static uint64_t ReadBeUint(const std::vector<uint8_t> &data, size_t pos, size_t len)
+{
+    uint64_t value = 0;
+    for (size_t i = 0; i < len && pos + i < data.size(); i++) {
+        value = (value << 8) | data[pos + i];  // 8: big endian
+    }
+    return value;
+}
+
+// 在[start, end)范围内按box结构查找指定type的box, 返回box起始偏移
+static size_t FindBox(const std::vector<uint8_t> &data, size_t start, size_t end, const std::string &type)
+{
+    size_t pos = start;
+    while (pos + 8 <= end) {  // 8: size + type
+        uint32_t size = static_cast<uint32_t>(ReadBeUint(data, pos, 4));
+        if (size == 0) {
+            size = static_cast<uint32_t>(end - pos);  // size为0表示box延伸到文件尾
+        }
+        if (size < 8 || pos + size > end) {  // 8: size + type
+            return std::string::npos;
+        }
+        if (memcmp(data.data() + pos + 4, type.c_str(), 4) == 0) {  // 4: type
+            return pos;
+        }
+        pos += size;
+    }
+    return std::string::npos;
+}
+
+// 从已生成的mp4文件解析 moov.mvhd 的 creation time(1904纪元秒)
+static uint64_t GetMvhdCreationTime(const std::string &path)
+{
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open()) {
+        return UINT64_MAX;
+    }
+    std::vector<uint8_t> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    size_t moov = FindBox(data, 0, data.size(), "moov");
+    if (moov == std::string::npos) {
+        return UINT64_MAX;
+    }
+    uint32_t moovSize = static_cast<uint32_t>(ReadBeUint(data, moov, 4));
+    size_t moovEnd = (moovSize == 0) ? data.size() : moov + moovSize;
+    size_t mvhd = FindBox(data, moov + 8, moovEnd, "mvhd");  // 8: size + type
+    if (mvhd == std::string::npos) {
+        return UINT64_MAX;
+    }
+    size_t payload = mvhd + 8;  // 8: size + type
+    uint8_t version = data[payload];
+    // 跳过version(1B)+flags(3B)后为creation time: version1为8字节, version0为4字节
+    return version == 1 ? ReadBeUint(data, payload + 4, 8) : ReadBeUint(data, payload + 4, 4);  // 4: version+flags
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_CreationTime_005
+ * @tc.desc: Muxer set format with creation time between 1904 and 1970 (UTC with milliseconds)
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetFormat_CreationTime_005, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat_CreationTime_005.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    // 1904~1970间时间为负秒数, 1904纪元值 = 2082844800 - 631152000 = 1451692800
+    audioParams->PutStringValue(OH_MD_KEY_CREATION_TIME, "1950-01-01T00:00:00.000000Z");
+    ASSERT_EQ(avmuxer_->SetFormat(audioParams), 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    EXPECT_EQ(GetMvhdCreationTime(outputFile), 1451692800ULL);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_CreationTime_006
+ * @tc.desc: Muxer set format with creation time exactly at 1904-01-01 UTC boundary
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetFormat_CreationTime_006, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat_CreationTime_006.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    // 1904-01-01 00:00:00 UTC为1904纪元起点, 期望值为0
+    audioParams->PutStringValue(OH_MD_KEY_CREATION_TIME, "1904-01-01T00:00:00Z");
+    ASSERT_EQ(avmuxer_->SetFormat(audioParams), 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    EXPECT_EQ(GetMvhdCreationTime(outputFile), 0ULL);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_CreationTime_007
+ * @tc.desc: Muxer set format with creation time one second before 1970
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetFormat_CreationTime_007, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat_CreationTime_007.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    // 1969-12-31 23:59:59 UTC = 1904纪元2082844800 - 1
+    audioParams->PutStringValue(OH_MD_KEY_CREATION_TIME, "1969-12-31T23:59:59Z");
+    ASSERT_EQ(avmuxer_->SetFormat(audioParams), 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    EXPECT_EQ(GetMvhdCreationTime(outputFile), 2082844799ULL);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_CreationTime_008
+ * @tc.desc: Muxer set format with creation time earlier than 1904, fallback to current time
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetFormat_CreationTime_008, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat_CreationTime_008.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    // 早于1904-01-01 00:00:00 UTC时回退为当前时间
+    audioParams->PutStringValue(OH_MD_KEY_CREATION_TIME, "1900-01-01T00:00:00Z");
+    ASSERT_EQ(avmuxer_->SetFormat(audioParams), 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    // 当前时间(2026年)的1904纪元值约为3.87e9, 断言不早于2020-01-01(1904纪元3660681600)
+    EXPECT_GE(GetMvhdCreationTime(outputFile), 3660681600ULL);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_CreationTime_009
+ * @tc.desc: Muxer set format with normal creation time after 1970 (UTC with milliseconds)
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetFormat_CreationTime_009, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat_CreationTime_009.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    // 2023-12-19T03:16:00Z = 1970纪元1702955760, 1904纪元 = 2082844800 + 1702955760 = 3785800560
+    audioParams->PutStringValue(OH_MD_KEY_CREATION_TIME, "2023-12-19T03:16:00.000000Z");
+    ASSERT_EQ(avmuxer_->SetFormat(audioParams), 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    EXPECT_EQ(GetMvhdCreationTime(outputFile), 3785800560ULL);
+}
+
+/**
+ * @tc.name: Muxer_SetFormat_CreationTime_010
+ * @tc.desc: Muxer set format with local time (no timezone marker) between 1904 and 1970
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4MuxerUnitTest, Muxer_SetFormat_CreationTime_010, TestSize.Level0)
+{
+    std::string outputFile = TEST_FILE_PATH + std::string("Muxer_SetFormat_CreationTime_010.mp4");
+    fd_ = open(outputFile.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    OH_AVOutputFormat outputFormat = AV_OUTPUT_FORMAT_MPEG_4;
+
+    bool isCreated = avmuxer_->CreateMuxer(fd_, outputFormat);
+    ASSERT_TRUE(isCreated);
+
+    std::shared_ptr<FormatMock> audioParams = FormatMockFactory::CreateFormat();
+    audioParams->PutStringValue(OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_MPEG);
+    // 无Z后缀按本地时区解析(mktime), UTC基准值1451692800, 允许UTC-12 ~ UTC+14的时区偏移
+    audioParams->PutStringValue(OH_MD_KEY_CREATION_TIME, "1950-01-01 00:00:00");
+    ASSERT_EQ(avmuxer_->SetFormat(audioParams), 0);
+    ASSERT_EQ(avmuxer_->Start(), 0);
+    ASSERT_EQ(avmuxer_->Stop(), 0);
+    constexpr uint64_t expectedUtc = 1451692800ULL;
+    uint64_t creationTime = GetMvhdCreationTime(outputFile);
+    EXPECT_GE(creationTime, expectedUtc - 12 * 3600ULL);  // 12: UTC-12, 3600: 1h in seconds
+    EXPECT_LE(creationTime, expectedUtc + 14 * 3600ULL);  // 14: UTC+14, 3600: 1h in seconds
 }
 
 /**
