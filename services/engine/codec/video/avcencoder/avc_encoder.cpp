@@ -263,7 +263,7 @@ void AvcEncoder::ClearDirtyList()
 void AvcEncoder::WaitForInBuffer(std::unique_lock<std::mutex> &listLock)
 {
     surfaceRecvCv_.wait(listLock, [this] {
-        if (state_ == State::STOPPING) {
+        if (state_ != State::RUNNING) {
             return true;
         }
 
@@ -283,9 +283,9 @@ void AvcEncoder::GetBufferFromSurface()
         WaitForInBuffer(listLock);
     }
     listLock.unlock();
-    if (state_ == State::STOPPING) {
+    if (state_ != State::RUNNING) {
         ReleaseSurfaceBuffer();
-        AVCODEC_LOGE("surface exit .");
+        AVCODEC_LOGE("state is %{public}d, surface exit .", static_cast<int32_t>(state_.load()));
         return;
     }
 
@@ -297,7 +297,7 @@ void AvcEncoder::GetBufferFromSurface()
     if (ret != GSERROR_OK || buffer == nullptr) {
         return;
     }
-    if (state_ == State::STOPPING) {
+    if (state_ != State::RUNNING) {
         inputSurface_->ReleaseBuffer(buffer, -1);
         return;
     }
