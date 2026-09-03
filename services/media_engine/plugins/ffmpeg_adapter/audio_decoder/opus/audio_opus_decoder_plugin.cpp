@@ -299,6 +299,9 @@ Status AudioOpusDecoderPlugin::Flush()
         return Status::ERROR_UNKNOWN;
     }
     pluginCodecPtr_->Flush();
+    bufferMeta_ = nullptr;
+    pendingSkipInfo_.clear();
+    skipSamples_ = 0;
     return Status::OK;
 }
 
@@ -348,7 +351,11 @@ Status AudioOpusDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
         if (inputAvBuffer->meta_ == nullptr) {
             return Status::ERROR_INVALID_DATA;
         }
-        bufferMeta_ = inputAvBuffer->meta_;
+        bufferMeta_ = std::make_shared<Meta>(*inputAvBuffer->meta_);
+        pendingSkipInfo_.clear();
+        if (bufferMeta_->GetData(Tag::BUFFER_SKIP_SAMPLES_INFO, pendingSkipInfo_)) {
+            bufferMeta_->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO);
+        }
         SafeCallInputBufferDone(dataCallback_, inputAvBuffer);
     }
     MEDIA_LOG_D("QueueInputBuffer success");
@@ -427,13 +434,9 @@ Status AudioOpusDecoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer> &outp
             outputBuffer->duration_ = decodeLen_ * usPerSample;
         }
         bufferMeta_->SetData(Tag::AUDIO_SAMPLE_PER_FRAME, decodeLen_);
-        // 获取skip info
-
         if (decodeLen_ > 0) {
-            std::vector<uint8_t> skipInfo;
-            if (bufferMeta_->GetData(Tag::BUFFER_SKIP_SAMPLES_INFO, skipInfo)) {
-                bufferMeta_->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO);
-            }
+            std::vector<uint8_t> skipInfo = pendingSkipInfo_;
+            pendingSkipInfo_.clear();
             pluginCodecPtr_->ProcessRecieveData(&codeData_, decodeLen_);
             if (!isEnableSkipSamples_ || (skipInfo.size() < 10 && skipSamples_ == 0)) {  // 10 bytes
                 memory->Write(codeData_, decodeLen_ * channels_ * sizeof(int16_t), 0);

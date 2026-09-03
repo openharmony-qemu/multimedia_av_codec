@@ -114,6 +114,7 @@ private:
     std::vector<uint8_t> mapping_ = {};
     uint32_t skipSamples_ = 0;
     bool isEnableSkipSamples_ = false;
+    std::vector<uint8_t> pendingSkipInfo_ {};
 };
 }  // namespace Opus
 }  // namespace Plugins
