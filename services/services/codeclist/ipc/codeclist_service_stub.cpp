@@ -174,7 +174,8 @@ int32_t CodecListServiceStub::DoGetCapability(MessageParcel &data, MessageParcel
     AVCodecCategory category = static_cast<AVCodecCategory>(data.ReadInt32());
     CapabilityData capabilityData;
     (void)GetCapability(capabilityData, mime, isEncoder, category);
-    (void)CodecListParcel::Marshalling(reply, capabilityData);
+    CHECK_AND_RETURN_RET_LOG(CodecListParcel::Marshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
+                             "DoGetCapability error, failed to marshalling capabilityData");  
     return AVCS_ERR_OK;
 }
 
@@ -188,6 +189,8 @@ int32_t CodecListServiceStub::DoGetCapabilityAt(MessageParcel &data, MessageParc
         return ret;
     }
     (void)CodecListParcel::Marshalling(reply, capabilityData);
+    CHECK_AND_RETURN_RET_LOG(CodecListParcel::Marshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
+                             "DoGetCapabilityAt error, failed to marshalling capabilityData");  
     return AVCS_ERR_OK;
 }
 
