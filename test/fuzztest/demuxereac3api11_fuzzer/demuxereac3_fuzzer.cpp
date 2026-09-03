@@ -35,6 +35,7 @@ const char FLAG = '\0';
 const size_t LANGUAGE_BUFFER_SIZE = 3;
 const size_t LANGUAGE_COUNT = 2;
 const uint16_t MIN_FRAME_SIZE = 1;
+const int64_t MAX_BUFFER_SIZE = 1048576;
 bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
     if (dataSize <= EXPECT_SIZE) {
@@ -98,6 +99,9 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     params.setVideoHeight = fdp.ConsumeIntegral<int32_t>();
     params.setVideoWidth = fdp.ConsumeIntegral<int32_t>();
     uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
+    if (createSize > MAX_BUFFER_SIZE) {
+        createSize = MAX_BUFFER_SIZE;
+    }
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = EAC3_PATH;
 #ifndef SUPPORT_DEMUXER_EAC3

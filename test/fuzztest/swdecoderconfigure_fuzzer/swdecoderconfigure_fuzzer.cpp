@@ -24,6 +24,7 @@ using namespace OHOS;
 using namespace OHOS::Media;
 #define FUZZ_PROJECT_NAME "swdecoderconfigure_fuzzer"
 const size_t EXPECT_SIZE = 6;
+const int32_t TWO_HUNDRED_FIFTY_SIX = 256;
 namespace OHOS {
 bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
 {
@@ -43,9 +44,8 @@ bool SwdecoderConfigureFuzzTest(const uint8_t *data, size_t size)
     std::vector<uint32_t> pixelFormats = {1, 2, 3, 4, 5};
     size_t pfIndex = fdp.ConsumeIntegralInRange<uint32_t>(0, pixelFormats.size() - 1);
     vDecSample->defaultPixelFormat = pixelFormats[pfIndex];
-    size_t maxSize = std::numeric_limits<size_t>::max();
-    vDecSample->randomName = fdp.ConsumeRandomLengthString(maxSize);
-    vDecSample->randomMime = fdp.ConsumeRandomLengthString(maxSize);
+    vDecSample->randomName = fdp.ConsumeRandomLengthString(TWO_HUNDRED_FIFTY_SIX);
+    vDecSample->randomMime = fdp.ConsumeRandomLengthString(TWO_HUNDRED_FIFTY_SIX);
     if (vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.AVC") != AV_ERR_OK) {
         delete vDecSample;
         vDecSample = nullptr;

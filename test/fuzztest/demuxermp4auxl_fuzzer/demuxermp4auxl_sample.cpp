@@ -104,7 +104,7 @@ void DemuxerMp4AuxlSample::GetFormat(OH_AVFormat* format)
     OH_AVFormat_GetIntBuffer(format, OH_MD_KEY_REFERENCE_TRACK_IDS, &referenceIds, &referenceIdsSize);
 }
 
-void DemuxerMp4AuxlSample::RunNormalDemuxer(uint32_t createSize, int64_t time)
+void DemuxerMp4AuxlSample::RunNormalDemuxer(int64_t time)
 {
     bool gReadEnd = false;
     int ret = CreateDemuxer();

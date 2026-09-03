@@ -78,6 +78,7 @@ bool H263SwdecoderFuzzTest(const uint8_t *data, size_t size)
         Release();
         return false;
     }
+    Release();
     return true;
 }
 } // namespace OHOS

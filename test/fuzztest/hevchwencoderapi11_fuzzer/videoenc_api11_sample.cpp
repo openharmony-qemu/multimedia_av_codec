@@ -138,10 +138,8 @@ int32_t VEncAPI11FuzzSample::SetParameter()
         if (format == nullptr) {
             return AV_ERR_UNKNOWN;
         }
-        int32_t sqrfac = 51;
-        int64_t biterate = 10000000;
-        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_SQR_FACTOR, sqrfac);
-        (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_MAX_BITRATE, biterate);
+        (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_SQR_FACTOR, defaultSqrFactor);
+        (void)OH_AVFormat_SetLongValue(format, OH_MD_KEY_MAX_BITRATE, defaultMaxBitrate);
         int ret = OH_VideoEncoder_SetParameter(venc_, format);
         int32_t value = 0;
         int64_t value2 = 0;

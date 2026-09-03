@@ -962,7 +962,7 @@ int32_t VEncNdkFuzzSample::SetParameter(OH_AVFormat *format)
     return AV_ERR_UNKNOWN;
 }
 
-int32_t VEncNdkFuzzSample::SetParameterFuzz(int32_t data, int32_t data1)
+int32_t VEncNdkFuzzSample::SetParameterFuzz(double data, int32_t data1)
 {
     if (venc_) {
         OH_AVFormat *format = OH_AVFormat_Create();

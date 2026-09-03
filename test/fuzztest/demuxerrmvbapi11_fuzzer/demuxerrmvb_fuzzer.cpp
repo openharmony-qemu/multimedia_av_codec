@@ -81,8 +81,8 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     uri[URI_COUNT] = FLAG;
     params.setTrackType = fdp.ConsumeIntegral<int64_t>();
     params.setDuration = fdp.ConsumeIntegral<int64_t>();
-    params.setHeight = fdp.ConsumeIntegral<int64_t>();
-    params.setFrameRate = fdp.ConsumeIntegral<int64_t>();
+    params.setHeight = fdp.ConsumeFloatingPoint<float>();
+    params.setFrameRate = fdp.ConsumeFloatingPoint<double>();
     char *setLanguage = new char[LANGUAGE_BUFFER_SIZE];
     if (strncpy_s(setLanguage, LANGUAGE_BUFFER_SIZE, fdp.ConsumeBytesAsString(LANGUAGE_COUNT).c_str(),
         LANGUAGE_COUNT) != 0) {
@@ -91,7 +91,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     setLanguage[LANGUAGE_COUNT] = FLAG;
-    params.setCodecConfigSize = fdp.ConsumeIntegral<uint8_t>();
+    params.setCodecConfigSize = fdp.ConsumeIntegral<int64_t>();
     params.sampleRate = fdp.ConsumeIntegral<int32_t>();
     params.channelCount = fdp.ConsumeIntegral<int32_t>();
     params.setVideoHeight = fdp.ConsumeIntegral<int32_t>();

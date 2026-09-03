@@ -41,7 +41,7 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    uint16_t framesize = fdp->ConsumeIntegralInRange<uint16_t>(1, static_cast<uint16_t>(dataSize - EXPECT_SIZE));
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;
@@ -68,10 +68,9 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
         return false;
     }
     int64_t time = fdp.ConsumeIntegral<int64_t>();
-    uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
     shared_ptr<DemuxerMp4AuxlSample> demuxerSample = make_shared<DemuxerMp4AuxlSample>();
     demuxerSample->filePath = FILE_PATH;
-    demuxerSample->RunNormalDemuxer(createSize, time);
+    demuxerSample->RunNormalDemuxer(time);
     int ret = remove(FILE_PATH);
     if (ret != 0) {
         return false;

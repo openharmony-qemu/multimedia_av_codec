@@ -25,6 +25,7 @@ using namespace OHOS::Media;
 
 namespace OHOS {
 const int64_t EXPECT_SIZE = 4;
+const size_t MAX_FRAMESIZE = 1048576;
 void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
 {
     if (dataSize < EXPECT_SIZE) {
@@ -35,7 +36,10 @@ void DemuxerPluginFuzzWithFunc(const uint8_t *data, size_t dataSize)
     demuxerTest->demuxerPluginName_ = "avdemux_flac";
     FuzzedDataProvider fdp(data, dataSize);
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    size_t framesize = dataSize - EXPECT_SIZE;
+    if (framesize > MAX_FRAMESIZE) {
+        framesize = MAX_FRAMESIZE;
+    }
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

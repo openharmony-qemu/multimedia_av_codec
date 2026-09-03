@@ -26,7 +26,7 @@ using namespace std;
 namespace OHOS {
 const int64_t EXPECT_SIZE = 64;
 const char* TEST_FILE_PATH = "/data/test/demuxergetcommentdatafuzztest.mp4";
-
+const size_t MAX_FRAMESIZE = 1048576;
 bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
 {
     if (dataSize < EXPECT_SIZE) {
@@ -37,7 +37,10 @@ bool CheckDataValidity(FuzzedDataProvider *fdp, size_t dataSize)
         return false;
     }
     uint8_t *pstream = nullptr;
-    uint16_t framesize = dataSize - EXPECT_SIZE;
+    size_t framesize = dataSize - EXPECT_SIZE;
+    if (framesize > MAX_FRAMESIZE) {
+        framesize = MAX_FRAMESIZE;
+    }
     pstream = (uint8_t *)malloc(framesize * sizeof(uint8_t));
     if (!pstream) {
         std::cerr << "Memory alloction failed" << std::endl;

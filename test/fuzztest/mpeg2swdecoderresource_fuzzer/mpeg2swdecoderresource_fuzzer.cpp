@@ -70,14 +70,11 @@ bool ChangeBinaryInData(const uint8_t *data, size_t size)
         vDecSample->Flush();
         vDecSample->Stop();
         vDecSample->Reset();
-        vDecSample->Release();
-        delete vDecSample;
-        vDecSample = nullptr;
-        return false;
     }
+    vDecSample->Release();
     delete vDecSample;
     vDecSample = nullptr;
-    return true;
+    return ret == AV_ERR_OK;
 }
 } // namespace OHOS
 

@@ -124,6 +124,39 @@ void VDecServerSample::RunVideoServerDecoder()
     }
 }
 
+void VDecServerSample::GetFrameData(const uint8_t *&srcPtr, size_t &copySize, size_t capacity)
+{
+    srcPtr = fuzzData;
+    copySize = fuzzSize;
+    if (fdp_ != nullptr) {
+        size_t framesLeft = static_cast<size_t>(frameIndex - sendFrameIndex);
+        size_t remaining = fdp_->remaining_bytes();
+        size_t chunk = (framesLeft > 0) ? (remaining / framesLeft) : 0;
+        if (chunk == 0 && remaining > 0) {
+            chunk = remaining;
+        }
+        if (chunk > capacity) {
+            chunk = capacity;
+        }
+        frameData_ = fdp_->ConsumeBytes<uint8_t>(chunk);
+        if (!frameData_.empty()) {
+            srcPtr = frameData_.data();
+            copySize = frameData_.size();
+        } else if (fuzzSize > 0) {
+            size_t perFrame = (frameIndex > 0) ? (fuzzSize / frameIndex) : fuzzSize;
+            size_t offset = static_cast<size_t>(sendFrameIndex) * perFrame;
+            if (offset >= fuzzSize) {
+                offset = 0;
+            }
+            srcPtr = fuzzData + offset;
+            copySize = (offset + perFrame <= fuzzSize) ? perFrame : (fuzzSize - offset);
+        }
+    }
+    if (copySize > capacity) {
+        copySize = capacity;
+    }
+}
+
 void VDecServerSample::InputFunc()
 {
     int32_t time = 1000;
@@ -152,7 +185,11 @@ void VDecServerSample::InputFunc()
             break;
         }
         uint8_t *bufferAddr = buffer->memory_->GetAddr();
-        if (memcpy_s(bufferAddr, buffer->memory_->GetCapacity(), fuzzData, fuzzSize) != EOK) {
+        size_t capacity = static_cast<size_t>(buffer->memory_->GetCapacity());
+        const uint8_t *srcPtr = nullptr;
+        size_t copySize = 0;
+        GetFrameData(srcPtr, copySize, capacity);
+        if (memcpy_s(bufferAddr, capacity, srcPtr, copySize) != EOK) {
             break;
         }
         int32_t err = codec_->QueueInputBuffer(index);

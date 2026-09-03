@@ -26,6 +26,8 @@
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
+#include <vector>
+#include <fuzzer/FuzzedDataProvider.h>
 #include "fcodec.h"
 namespace OHOS {
 namespace MediaAVCodec {
@@ -51,9 +53,12 @@ public:
     void Reset();
     void InputFunc();
     void WaitForEos();
+    void GetFrameData(const uint8_t *&srcPtr, size_t &copySize, size_t capacity);
     VDecSignal *signal_;
-    const uint8_t *fuzzData;
-    size_t fuzzSize;
+    const uint8_t *fuzzData = nullptr;
+    size_t fuzzSize = 0;
+    FuzzedDataProvider *fdp_ = nullptr;
+    std::vector<uint8_t> frameData_;
     int sendFrameIndex = 0;
     int32_t width = 1920;
     int32_t height = 1080;
