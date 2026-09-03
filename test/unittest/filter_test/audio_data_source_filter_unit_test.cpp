@@ -198,7 +198,8 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_001, Test
     std::shared_ptr<MockAudioDataSource> mockAudioDataSource = std::make_shared<MockAudioDataSource>();
     audioDataSourceFilter_->audioDataSource_ = mockAudioDataSource;
     EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).Times(0);
-    audioDataSourceFilter_->ReadLoop();
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
 }
 
 /**
@@ -216,7 +217,8 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_002, Test
 
     EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).WillOnce(Return((int32_t) 1));
     EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_)).Times(0);
-    audioDataSourceFilter_->ReadLoop();
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
 }
 
 /**
@@ -233,7 +235,8 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_003, Test
 
     EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).WillOnce(Return((int32_t) 0));
     EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_)).Times(0);
-    audioDataSourceFilter_->ReadLoop();
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
 }
 
 /**
@@ -252,8 +255,10 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_004, Test
     EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).WillOnce(Return((int32_t) 0));
     EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
         .WillOnce(Return(Status::ERROR_UNKNOWN));
+    EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_)).Times(1);
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(0);
-    audioDataSourceFilter_->ReadLoop();
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
 }
 
 /**
@@ -275,7 +280,8 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_005, Test
     EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_))
         .WillOnce(Return(OHOS::Media::AudioDataSourceReadAtActionState::SKIP_WITHOUT_LOG));
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(1);
-    audioDataSourceFilter_->ReadLoop();
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
 }
 
 /**
@@ -293,14 +299,151 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_006, Test
     std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
     mockEmptyOutputBuffer->memory_ = std::make_shared<AVMemory>();
 
-    EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).WillOnce(Return((int32_t) 0));
+    EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_))
+        .WillOnce(Return((int32_t)0))
+        .WillRepeatedly(Return((int32_t)0));
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::OK)));
+    EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_))
+        .WillOnce(Return(OHOS::Media::AudioDataSourceReadAtActionState::OK))
+        .WillRepeatedly(Return(OHOS::Media::AudioDataSourceReadAtActionState::SKIP_WITHOUT_LOG));
+    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(testing::AtLeast(1));
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_ReadLoop_007
+ * @tc.desc: ReadLoop, audioDataSource_ == nullptr, DoReadAndPush returns INVALID without touching bufferQueue
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_007, TestSize.Level1)
+{
+    audioDataSourceFilter_->eos_ = false;
+    audioDataSourceFilter_->audioDataSource_ = nullptr;
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new OHOS::Media::Pipeline::MockAVBufferQueueProducer();
+    audioDataSourceFilter_->outputBufferQueue_ = mockAVBufferQueueProducer;
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_)).Times(0);
+    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(0);
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_ReadLoop_008
+ * @tc.desc: ReadLoop, ReadAt returns RETRY_IN_INTERVAL, cover fail log branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_008, TestSize.Level1)
+{
+    audioDataSourceFilter_->eos_ = false;
+    std::shared_ptr<MockAudioDataSource> mockAudioDataSource = std::make_shared<MockAudioDataSource>();
+    audioDataSourceFilter_->audioDataSource_ = mockAudioDataSource;
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new OHOS::Media::Pipeline::MockAVBufferQueueProducer();
+    audioDataSourceFilter_->outputBufferQueue_ = mockAVBufferQueueProducer;
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
+    mockEmptyOutputBuffer->memory_ = std::make_shared<AVMemory>();
+
+    EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).WillOnce(Return((int32_t)0));
     EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
         .WillOnce(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::OK)));
     EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_))
-        .WillOnce(Return(OHOS::Media::AudioDataSourceReadAtActionState::OK));
-    EXPECT_CALL(*mockAudioDataSource, SetVideoFirstFramePts(testing::_)).Times(0);
+        .WillOnce(Return(OHOS::Media::AudioDataSourceReadAtActionState::RETRY_IN_INTERVAL));
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(1);
-    audioDataSourceFilter_->ReadLoop();
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_ReadLoop_009
+ * @tc.desc: ReadLoop, ReadAt returns OK but buffer->memory_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_009, TestSize.Level1)
+{
+    audioDataSourceFilter_->eos_ = false;
+    std::shared_ptr<MockAudioDataSource> mockAudioDataSource = std::make_shared<MockAudioDataSource>();
+    audioDataSourceFilter_->audioDataSource_ = mockAudioDataSource;
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new OHOS::Media::Pipeline::MockAVBufferQueueProducer();
+    audioDataSourceFilter_->outputBufferQueue_ = mockAVBufferQueueProducer;
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
+
+    EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).WillRepeatedly(Return((int32_t)0));
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::OK)));
+    EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_))
+        .WillRepeatedly(Return(OHOS::Media::AudioDataSourceReadAtActionState::OK));
+    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(testing::AtLeast(1));
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_ReadLoop_010
+ * @tc.desc: ReadLoop, PushBuffer returns ERROR_UNKNOWN when available, cover PushBuffer fail log
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_010, TestSize.Level1)
+{
+    audioDataSourceFilter_->eos_ = false;
+    std::shared_ptr<MockAudioDataSource> mockAudioDataSource = std::make_shared<MockAudioDataSource>();
+    audioDataSourceFilter_->audioDataSource_ = mockAudioDataSource;
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new OHOS::Media::Pipeline::MockAVBufferQueueProducer();
+    audioDataSourceFilter_->outputBufferQueue_ = mockAVBufferQueueProducer;
+    std::shared_ptr<AVBuffer> mockEmptyOutputBuffer = std::make_shared<AVBuffer>();
+    mockEmptyOutputBuffer->memory_ = std::make_shared<AVMemory>();
+
+    EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).WillRepeatedly(Return((int32_t)0));
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillRepeatedly(DoAll(SetArgReferee<0>(mockEmptyOutputBuffer), Return(Status::OK)));
+    EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_))
+        .WillOnce(Return(OHOS::Media::AudioDataSourceReadAtActionState::OK))
+        .WillRepeatedly(Return(OHOS::Media::AudioDataSourceReadAtActionState::SKIP_WITHOUT_LOG));
+    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, true)).WillRepeatedly(Return(Status::ERROR_UNKNOWN));
+    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, false)).WillRepeatedly(Return(Status::OK));
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_DoFlush_001
+ * @tc.desc: DoFlush
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_DoFlush_001, TestSize.Level1)
+{
+    Status ret = audioDataSourceFilter_->DoFlush();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_SetVideoFirstFramePts_001
+ * @tc.desc: SetVideoFirstFramePts forwards the pts value when source is set, and not when nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_SetVideoFirstFramePts_001, TestSize.Level1)
+{
+    std::shared_ptr<MockAudioDataSource> mockAudioDataSource = std::make_shared<MockAudioDataSource>();
+    audioDataSourceFilter_->audioDataSource_ = mockAudioDataSource;
+    int64_t capturedPts = -1;
+    EXPECT_CALL(*mockAudioDataSource, SetVideoFirstFramePts(testing::_)).WillOnce(SaveArg<0>(&capturedPts));
+    audioDataSourceFilter_->SetVideoFirstFramePts(1000);
+    audioDataSourceFilter_->audioDataSource_ = nullptr;
+    audioDataSourceFilter_->SetVideoFirstFramePts(2000);
+    EXPECT_EQ(capturedPts, 1000);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_OnAudioDataReady_001
+ * @tc.desc: OnAudioDataReady
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_OnAudioDataReady_001, TestSize.Level1)
+{
+    audioDataSourceFilter_->dataReady_ = false;
+    audioDataSourceFilter_->OnAudioDataReady();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, true);
 }
 
 /**

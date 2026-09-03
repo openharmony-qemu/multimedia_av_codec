@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "audio_data_source_filter.h"
 #include "common/log.h"
 #include "filter/filter_factory.h"
@@ -20,11 +20,8 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SCREENCAPTURE, "AudioDataSourceFilter" };
 static constexpr uint8_t LOG_LIMIT_HUNDRED = 100;
-static constexpr uint64_t AUDIO_NS_PER_SECOND = 1000000000; // ns 1s
-static constexpr int64_t AUDIO_DATASOURCE_FILTER_READ_FAILED_WAIT_TIME = 21333333; // 20000000 us 20ms
-static constexpr int64_t AUDIO_DATASOURCE_FILTER_READ_SUCCESS_WAIT_TIME = 4000000; // us 4ms
 }
- 
+
 namespace OHOS {
 namespace Media {
 namespace Pipeline {
@@ -34,7 +31,7 @@ static AutoRegisterFilter<AudioDataSourceFilter> g_registerAudioDataSourceFilter
     [](const std::string& name, const FilterType type) {
         return std::make_shared<AudioDataSourceFilter>(name, FilterType::AUDIO_DATA_SOURCE);
     });
- 
+
 /// End of Stream Buffer Flag
 constexpr uint32_t BUFFER_FLAG_EOS = 0x00000001;
 class AudioDataSourceFilterLinkCallback : public FilterLinkCallback {
@@ -43,7 +40,7 @@ public:
         : audioDataSourceFilter_(std::move(audioDataSourceFilter))
     {
     }
- 
+
     void OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta) override
     {
         if (auto dataSourceFilter = audioDataSourceFilter_.lock()) {
@@ -52,7 +49,7 @@ public:
             MEDIA_LOG_I("OnLinkedResult invalid dataSourceFilter");
         }
     }
- 
+
     void OnUnlinkedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto dataSourceFilter = audioDataSourceFilter_.lock()) {
@@ -61,7 +58,7 @@ public:
             MEDIA_LOG_I("OnUnlinkedResult invalid dataSourceFilter");
         }
     }
- 
+
     void OnUpdatedResult(std::shared_ptr<Meta> &meta) override
     {
         if (auto dataSourceFilter = audioDataSourceFilter_.lock()) {
@@ -70,21 +67,21 @@ public:
             MEDIA_LOG_I("OnUpdatedResult invalid dataSourceFilter");
         }
     }
- 
+
 private:
     std::weak_ptr<AudioDataSourceFilter> audioDataSourceFilter_;
 };
- 
+
 AudioDataSourceFilter::AudioDataSourceFilter(std::string name, FilterType type): Filter(name, type)
 {
     MEDIA_LOG_I("audio data source filter create");
 }
- 
+
 AudioDataSourceFilter::~AudioDataSourceFilter()
 {
     MEDIA_LOG_I("audio data source filter destroy");
 }
- 
+
 void AudioDataSourceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
@@ -93,10 +90,13 @@ void AudioDataSourceFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     callback_ = callback;
     if (!taskPtr_) {
         taskPtr_ = std::make_shared<Task>("DataReader");
-        taskPtr_->RegisterJob([this] { ReadLoop(); return 0;});
+        taskPtr_->RegisterJob([this] {
+            ProcessLoop();
+            return 0;
+        });
     }
 }
- 
+
 Status AudioDataSourceFilter::DoPrepare()
 {
     MEDIA_LOG_I("AudioDataSourceFilter DoPrepare");
@@ -108,72 +108,100 @@ Status AudioDataSourceFilter::DoPrepare()
         StreamType::STREAMTYPE_RAW_AUDIO);
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::DoStart()
 {
     MEDIA_LOG_I("AudioDataSourceFilter DoStart");
     eos_ = false;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        stopped_.store(false);
+        dataReady_ = false;
+    }
     if (taskPtr_) {
         taskPtr_->Start();
     }
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::DoPause()
 {
     MEDIA_LOG_I("AudioDataSourceFilter DoPause");
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        stopped_.store(true);
+        dataCond_.notify_all();
+    }
     if (taskPtr_) {
         taskPtr_->Pause();
     }
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::DoResume()
 {
     MEDIA_LOG_I("AudioDataSourceFilter DoResume");
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        stopped_.store(false);
+        dataReady_ = false;
+    }
     if (taskPtr_) {
         taskPtr_->Start();
     }
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::DoStop()
 {
     MEDIA_LOG_I("AudioDataSourceFilter DoStop");
-    // stop task firstly
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        stopped_.store(true);
+        dataReady_ = false;
+        dataCond_.notify_all();
+    }
     if (taskPtr_) {
         taskPtr_->Stop();
     }
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::DoFlush()
 {
     MEDIA_LOG_I("AudioDataSourceFilter DoFlush");
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::DoRelease()
 {
     MEDIA_LOG_I("AudioDataSourceFilter DoRelease");
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        stopped_.store(true);
+        dataCond_.notify_all();
+    }
     if (taskPtr_) {
         taskPtr_->Stop();
     }
     taskPtr_ = nullptr;
+    if (audioDataSource_) {
+        audioDataSource_->SetListener(nullptr);
+    }
     audioDataSource_ = nullptr;
     return Status::OK;
 }
- 
+
 void AudioDataSourceFilter::SetParameter(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("AudioDataSourceFilter SetParameter");
 }
- 
+
 void AudioDataSourceFilter::GetParameter(std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("AudioDataSourceFilter GetParameter");
 }
- 
+
 Status AudioDataSourceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     MEDIA_LOG_I("AudioDataSourceFilter LinkNext");
@@ -186,16 +214,23 @@ Status AudioDataSourceFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter
     nextFilter->OnLinked(outType, meta, filterLinkCallback);
     return Status::OK;
 }
- 
+
 FilterType AudioDataSourceFilter::GetFilterType()
 {
     MEDIA_LOG_I("AudioDataSourceFilter GetFilterType");
     return FilterType::AUDIO_CAPTURE;
 }
- 
-void AudioDataSourceFilter::SetAudioDataSource(const std::shared_ptr<IAudioDataSource>& audioSource)
+
+void AudioDataSourceFilter::SetAudioDataSource(const std::shared_ptr<IAudioDataSource> &audioSource)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (audioDataSource_) {
+        audioDataSource_->SetListener(nullptr);
+    }
     audioDataSource_ = audioSource;
+    if (audioDataSource_) {
+        audioDataSource_->SetListener(shared_from_this());
+    }
 }
 
 void AudioDataSourceFilter::SetVideoFirstFramePts(int64_t firstFramePts)
@@ -224,120 +259,132 @@ Status AudioDataSourceFilter::SendEos()
     eos_ = true;
     return ret;
 }
- 
-void AudioDataSourceFilter::ReadLoop()
+
+void AudioDataSourceFilter::OnAudioDataReady()
 {
-    MEDIA_LOG_D("AudioDataSourceFilter ReadLoop In");
-    if (eos_.load() || audioDataSource_ == nullptr) {
-        return;
+    std::lock_guard<std::mutex> lock(mutex_);
+    dataReady_ = true;
+    dataCond_.notify_one();
+}
+
+void AudioDataSourceFilter::ProcessLoop()
+{
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        dataCond_.wait(lock, [this] { return dataReady_ || stopped_.load(); });
+        if (stopped_.load()) {
+            return;
+        }
+        dataReady_ = false;
+    }
+    while (!stopped_.load() && !eos_.load()) {
+        if (DoReadAndPush() != AudioDataSourceReadAtActionState::OK) {
+            break;
+        }
+    }
+}
+
+AudioDataSourceReadAtActionState AudioDataSourceFilter::DoReadAndPush()
+{
+    std::shared_ptr<IAudioDataSource> dataSource;
+    sptr<AVBufferQueueProducer> bufferQueue;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        dataSource = audioDataSource_;
+        bufferQueue = outputBufferQueue_;
+    }
+    if (dataSource == nullptr) {
+        return AudioDataSourceReadAtActionState::INVALID;
     }
     int64_t bufferSize = 0;
-    if (audioDataSource_->GetSize(bufferSize) != 0) {
-        MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "Get audioCaptureModule buffer size fail");
-        return;
+    if (dataSource->GetSize(bufferSize) != 0) {
+        return AudioDataSourceReadAtActionState::RETRY_SKIP;
     }
-    MEDIA_LOG_D("AudioDataSourceFilter GetSize : " PUBLIC_LOG_D64, bufferSize);
+    if (bufferQueue == nullptr) {
+        MEDIA_LOG_I("AudioDataSourceFilter outputBufferQueue_ is nullptr");
+        return AudioDataSourceReadAtActionState::INVALID;
+    }
     std::shared_ptr<AVBuffer> buffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = bufferSize;
     avBufferConfig.memoryFlag = MemoryFlag::MEMORY_READ_WRITE;
-    if (outputBufferQueue_ == nullptr) {
-        MEDIA_LOG_I("AudioDataSourceFilter outputBufferQueue_ is nullptr");
-        return;
-    }
-    Status status = outputBufferQueue_->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
+    Status status = bufferQueue->RequestBuffer(buffer, avBufferConfig, TIME_OUT_MS);
     if (status != Status::OK) {
         MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter RequestBuffer fail");
-        return;
+        dataSource->ReadAt(nullptr, bufferSize);
+        return AudioDataSourceReadAtActionState::RETRY_SKIP;
     }
-    AudioDataSourceReadAtActionState readAtRet = audioDataSource_->ReadAt(buffer, bufferSize);
+    AudioDataSourceReadAtActionState readAtRet = dataSource->ReadAt(buffer, bufferSize);
     if (readAtRet != AudioDataSourceReadAtActionState::OK) {
-        if (readAtRet != AudioDataSourceReadAtActionState::SKIP_WITHOUT_LOG) { // log after Started
+        if (readAtRet != AudioDataSourceReadAtActionState::SKIP_WITHOUT_LOG) {
             MEDIA_LOGE_LIMIT(LOG_LIMIT_HUNDRED, "AudioDataSourceFilter ReadAt fail ret: %{public}d",
                 static_cast<int32_t>(readAtRet));
         }
-        outputBufferQueue_->PushBuffer(buffer, false);
-        if (readAtRet == AudioDataSourceReadAtActionState::RETRY_IN_INTERVAL) { // retry after 20ms
-            RelativeSleep(AUDIO_DATASOURCE_FILTER_READ_FAILED_WAIT_TIME);
-        }
-        return;
+        bufferQueue->PushBuffer(buffer, false);
+        return readAtRet;
     }
-    FALSE_RETURN_MSG(buffer != nullptr && buffer->memory_ != nullptr, "buffer->memory_ is nullptr");
+    if (buffer == nullptr || buffer->memory_ == nullptr) {
+        MEDIA_LOG_E("buffer->memory_ is nullptr");
+        bufferQueue->PushBuffer(buffer, false);
+        return AudioDataSourceReadAtActionState::RETRY_SKIP;
+    }
     buffer->memory_->SetSize(bufferSize);
-    status = outputBufferQueue_->PushBuffer(buffer, true);
+    status = bufferQueue->PushBuffer(buffer, true);
     if (status != Status::OK) {
         MEDIA_LOG_E("AudioDataSourceFilter PushBuffer fail");
     }
-    RelativeSleep(AUDIO_DATASOURCE_FILTER_READ_SUCCESS_WAIT_TIME);
+    return AudioDataSourceReadAtActionState::OK;
 }
- 
+
 void AudioDataSourceFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &queue, std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("AudioDataSourceFilter OnLinkedResult");
+    std::lock_guard<std::mutex> lock(mutex_);
     outputBufferQueue_ = queue;
 }
- 
+
 Status AudioDataSourceFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     MEDIA_LOG_I("AudioDataSourceFilter UpdateNext");
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     MEDIA_LOG_I("AudioDataSourceFilter UnLinkNext");
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
     MEDIA_LOG_I("AudioDataSourceFilter OnLinked");
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
     const std::shared_ptr<FilterLinkCallback> &callback)
 {
     MEDIA_LOG_I("AudioDataSourceFilter OnUpdated");
     return Status::OK;
 }
- 
+
 Status AudioDataSourceFilter::OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback> &callback)
 {
     MEDIA_LOG_I("AudioDataSourceFilter OnUnLinked");
     return Status::OK;
 }
- 
+
 void AudioDataSourceFilter::OnUnlinkedResult(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("AudioDataSourceFilter OnUnlinkedResult");
     (void) meta;
 }
- 
+
 void AudioDataSourceFilter::OnUpdatedResult(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("AudioDataSourceFilter OnUpdatedResult");
     (void) meta;
-}
-
-int32_t AudioDataSourceFilter::RelativeSleep(int64_t nanoTime)
-{
-    int32_t ret = -1; // -1 for bad result.
-    if (nanoTime <= 0) {
-        MEDIA_LOG_E("RelativeSleep nanoTime <= 0");
-        return ret;
-    }
-    struct timespec time;
-    time.tv_sec = nanoTime / AUDIO_NS_PER_SECOND;
-    time.tv_nsec = nanoTime - (time.tv_sec * AUDIO_NS_PER_SECOND); // Avoids % operation.
-    clockid_t clockId = CLOCK_MONOTONIC;
-    const int relativeFlag = 0; // flag of relative sleep.
-    ret = clock_nanosleep(clockId, relativeFlag, &time, nullptr);
-    if (ret != 0) {
-        MEDIA_LOG_I("RelativeSleep may failed, ret is :%{public}d", ret);
-    }
-    return ret;
 }
 } // namespace Pipeline
 } // namespace Media
