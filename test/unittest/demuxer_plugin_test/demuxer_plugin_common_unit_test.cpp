@@ -2030,6 +2030,30 @@ HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CachePhase_RetireBootstrap_062420
 }
 
 /**
+ * @tc.name: AVDemuxer_CachePhase_PreserveBootstrapOnReselect_062423
+ * @tc.desc: Re-selecting a track before the first real read reuses its bootstrap cache.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CachePhase_PreserveBootstrapOnReselect_062423, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    plugin->formatContext_ = CreateFormatContextWithStreams(1);
+    ASSERT_NE(plugin->formatContext_, nullptr);
+    plugin->formatContext_->streams[0]->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
+    ASSERT_TRUE(plugin->cacheQueue_.Push(0, std::make_shared<SamplePacket>()));
+
+    ASSERT_EQ(plugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(plugin->UnselectTrack(0), Status::OK);
+    ASSERT_EQ(plugin->SelectTrack(0), Status::OK);
+
+    EXPECT_EQ(plugin->cachePhase_, FFmpegDemuxerPlugin::CachePhase::BOOTSTRAP);
+    EXPECT_TRUE(plugin->cacheQueue_.HasTrackQueue(0));
+    EXPECT_TRUE(plugin->cacheQueue_.HasCache(0));
+}
+
+/**
  * @tc.name: AVDemuxer_CacheEpoch_DiscardInFlightPacket_062421
  * @tc.desc: A packet read before a selection generation change cannot enter the new queue.
  * @tc.type: FUNC

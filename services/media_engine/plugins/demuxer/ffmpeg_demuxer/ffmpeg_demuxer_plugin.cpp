@@ -2929,11 +2929,18 @@ Status FFmpegDemuxerPlugin::SelectTrack(uint32_t trackId)
         if (cachePhase_ == CachePhase::RUNTIME) {
             Status ret = cacheQueue_.RemoveTrackQueue(trackId);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Remove stale track cache failed");
+            trackMtx_[trackId] = std::make_shared<std::mutex>();
+            trackDfxInfoMap_[trackId] = {0, -1, -1, -1, false};
+        } else {
+            if (trackMtx_.find(trackId) == trackMtx_.end()) {
+                trackMtx_[trackId] = std::make_shared<std::mutex>();
+            }
+            if (trackDfxInfoMap_.find(trackId) == trackDfxInfoMap_.end()) {
+                trackDfxInfoMap_[trackId] = {0, -1, -1, -1, false};
+            }
         }
         Status ret = cacheQueue_.AddTrackQueue(trackId);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Create track cache failed");
-        trackMtx_[trackId] = std::make_shared<std::mutex>();
-        trackDfxInfoMap_[trackId] = {0, -1, -1, -1, false};
         selectedTrackIds_.push_back(trackId);
         ++readConfigEpoch_;
         return Status::OK;
@@ -2953,10 +2960,12 @@ Status FFmpegDemuxerPlugin::UnselectTrack(uint32_t trackId)
                               [trackId](uint32_t selectedId) {return trackId == selectedId; });
     if (index != selectedTrackIds_.end()) {
         selectedTrackIds_.erase(index);
-        trackMtx_.erase(trackId);
-        trackDfxInfoMap_.erase(trackId);
-        Status ret = cacheQueue_.RemoveTrackQueue(trackId);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Remove track cache failed");
+        if (cachePhase_ == CachePhase::RUNTIME) {
+            trackMtx_.erase(trackId);
+            trackDfxInfoMap_.erase(trackId);
+            Status ret = cacheQueue_.RemoveTrackQueue(trackId);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Remove track cache failed");
+        }
         ++readConfigEpoch_;
         return Status::OK;
     } else {
