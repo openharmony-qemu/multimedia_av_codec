@@ -59,6 +59,8 @@ static constexpr const char SECURE_DEC_ALLOC_BUF_FAILED_INFO[] = "SECURE_DEC_ALL
 static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QUERY_CAP_UNSUPPORTED_INFO";
 static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CREATE_CODEC_UNSUPPORTED_INFO";
 
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "StatisticsEventHandler"};
+
 const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING = {
     { VideoCodecType::DECODER_HARDWARE, "HDec" },
     { VideoCodecType::DECODER_SOFTWARE, "SDec" },
@@ -208,13 +210,9 @@ constexpr size_t MAX_STATISTICS_MAP_ENTRY_COUNT = 127;
 template<typename T1, typename T2>
 inline void CreateOrIncrementMapCount(T1 &map, const T2 &key)
 {
-    if (map.size() >= MAX_STATISTICS_MAP_ENTRY_COUNT) {
-        return;
-    }
+    CHECK_AND_RETURN_LOGW(map.size() < MAX_STATISTICS_MAP_ENTRY_COUNT, "Statistics map entry count limit");
     if constexpr (std::is_same_v<std::decay_t<T2>, std::string>) {
-        if (key.size() > MAX_STATISTICS_KEY_STRING_LENGTH) {
-            return;
-        }
+        CHECK_AND_RETURN_LOGW(key.size() <= MAX_STATISTICS_KEY_STRING_LENGTH, "Statistics key string too long");
     }
     auto iter = map.find(key);
     if (iter != map.end()) {
@@ -856,9 +854,8 @@ public:
                     !isInOccupationHDecEvent_.load()) {
                     auto usageStatistics = AVCodecServerManager::GetInstance().GetHDecUsageStatistics();
                     for (const auto& [holder, count] : usageStatistics) {
-                        if (lastOccupationHDecAppInfoVec_.size() >= maxOccupationHDecRecordCount) {
-                            break;
-                        }
+                        CHECK_AND_BREAK_LOG(lastOccupationHDecAppInfoVec_.size() < maxOccupationHDecRecordCount,
+                            "lastOccupationHDecAppInfoVec_ reached limit %{public}zu", maxOccupationHDecRecordCount);
                         AppNameIndex appIndex = AppNameIndexInfo::GetInstance().GetIndexByAppName(holder);
                         lastOccupationHDecAppInfoVec_.emplace_back(appIndex, count);
                     }
