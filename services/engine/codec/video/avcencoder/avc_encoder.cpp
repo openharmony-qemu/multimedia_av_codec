@@ -289,21 +289,6 @@ void AvcEncoder::GetBufferFromSurface()
         return;
     }
 
-    sptr<SurfaceBuffer> buffer = nullptr;
-    sptr<SyncFence> fence = nullptr;
-    OHOS::Rect damage;
-    int64_t pts = -1;
-    GSError ret = inputSurface_->AcquireBuffer(buffer, fence, pts, damage);
-    if (ret != GSERROR_OK || buffer == nullptr) {
-        return;
-    }
-    if (state_ != State::RUNNING) {
-        inputSurface_->ReleaseBuffer(buffer, -1);
-        return;
-    }
-    buffer->InvalidateCache();
-
-    AVCODEC_LOGD("timestamp: %{public}" PRId64 ", dataSize: %{public}d", pts, buffer->GetSize());
     listLock.lock();
     CHECK_AND_RETURN_LOG(!freeList_.empty(), "freeList_ is empty!");
     uint32_t index = freeList_.front();
@@ -312,12 +297,20 @@ void AvcEncoder::GetBufferFromSurface()
 
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     CHECK_AND_RETURN_LOG(inputBuffer != nullptr, "input buffer is null");
-    inputBuffer->surfaceBuffer_ = buffer;
-    if (fence != nullptr && fence->IsValid()) {
-        inputBuffer->fence_ = new SyncFence(fence->Get());
-    }
     CHECK_AND_RETURN_LOG(inputBuffer->avBuffer_ != nullptr, "Allocate input buffer failed!");
-    inputBuffer->avBuffer_->pts_ = pts;
+
+    OHOS::Rect damage;
+    GSError ret = inputSurface_->AcquireBuffer(inputBuffer->surfaceBuffer_, inputBuffer->fence_,
+        inputBuffer->avBuffer_->pts_, damage);
+    if (ret != GSERROR_OK || inputBuffer->surfaceBuffer_ == nullptr) {
+        return;
+    }
+    if (state_ != State::RUNNING) {
+        inputSurface_->ReleaseBuffer(inputBuffer->surfaceBuffer_, -1);
+        return;
+    }
+    inputBuffer->surfaceBuffer_->InvalidateCache();
+
     if (enableSurfaceModeInputCb_) {
         inputBuffer->owner_ = FBuffer::Owner::OWNED_BY_USER;
         callback_->OnInputBufferAvailable(index, inputBuffer->avBuffer_);
@@ -1771,10 +1764,9 @@ void AvcEncoder::SendFrame()
 
 void AvcEncoder::WaitForFence(std::shared_ptr<FBuffer> &inputBuffer)
 {
-    sptr<SyncFence> fence = inputBuffer->fence_;
-    if (fence != nullptr) {
+    if (inputBuffer->fence_ != nullptr && inputBuffer->fence_->IsValid()) {
         constexpr uint32_t waitForEver = -1;
-        fence->Wait(waitForEver);
+        inputBuffer->fence_->Wait(waitForEver);
     }
 }
 
