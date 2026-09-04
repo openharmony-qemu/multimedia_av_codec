@@ -301,7 +301,7 @@ void AvcEncoder::GetBufferFromSurface()
 
     OHOS::Rect damage;
     GSError ret = inputSurface_->AcquireBuffer(inputBuffer->surfaceBuffer_, inputBuffer->fence_,
-        inputBuffer->avBuffer_->pts, damage);
+        inputBuffer->avBuffer_->pts_, damage);
     if (ret != GSERROR_OK || inputBuffer->surfaceBuffer_ == nullptr) {
         return;
     }
