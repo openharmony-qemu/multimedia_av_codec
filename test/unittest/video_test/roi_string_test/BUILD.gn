@@ -35,6 +35,7 @@ ohos_unittest("roi_string_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
   ]
 
   external_deps = [

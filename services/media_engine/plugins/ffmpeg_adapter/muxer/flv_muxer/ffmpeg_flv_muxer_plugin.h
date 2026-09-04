@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include "avcodec_dfx_component.h"
 #include "plugin/muxer_plugin.h"
 #include "stream_parser_manager.h"
 
@@ -68,6 +69,7 @@ private:
     void CheckChannelLayout(uint64_t channelLayout, const std::shared_ptr<Meta> &trackDesc);
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::shared_ptr<AVPacket> cachePacket_ {};
     std::shared_ptr<AVOutputFormat> outputFormat_ {};
     std::shared_ptr<AVFormatContext> formatContext_ {};

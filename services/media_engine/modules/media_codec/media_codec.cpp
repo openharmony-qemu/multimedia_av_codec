@@ -1050,8 +1050,8 @@ void MediaCodec::OnInputBufferDone(const std::shared_ptr<AVBuffer> &inputBuffer)
         }
     }
     Status ret = inputBufferQueueConsumer_->ReleaseBuffer(inputBuffer);
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " OnInputBufferDone, buffer->pts:%{public}" PRId64,
-        FAKE_POINTER(this), inputBuffer->pts_);
+    AVCODEC_LOGD("%{public}" PRIu64 " OnInputBufferDone, buffer->pts:%{public}" PRId64,
+        avcodecUniqueId_, inputBuffer->pts_);
     CHECK_AND_RETURN_LOG(ret == Status::OK, "OnInputBufferDone fail");
 }
 
@@ -1078,8 +1078,8 @@ void MediaCodec::OnOutputBufferDone(const std::shared_ptr<AVBuffer> &outputBuffe
     if (realPtr != nullptr) {
         realPtr->OnOutputBufferDone(outputBuffer);
     }
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " OnOutputBufferDone, buffer->pts:%{public}" PRId64,
-        FAKE_POINTER(this), outputBuffer->pts_);
+    AVCODEC_LOGD("%{public}" PRIu64 " OnOutputBufferDone, buffer->pts:%{public}" PRId64,
+        avcodecUniqueId_, outputBuffer->pts_);
     CHECK_AND_RETURN_LOG(ret == Status::OK, "OnOutputBufferDone fail");
 }
 

@@ -18,6 +18,7 @@
 
 #include <memory>
 #include "avdemuxer.h"
+#include "avcodec_log.h"
 #include "avsource.h"
 #include "nocopyable.h"
 #include "media_demuxer.h"
@@ -51,6 +52,7 @@ public:
         const uint32_t index, uint64_t &relativePresentationTimeUs) override;
     int32_t GetCurrentCacheSize(uint32_t trackIndex, uint32_t& size) override;
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::shared_ptr<MediaDemuxer> mediaDemuxer_ = nullptr;
     std::string sourceUri_;
     std::shared_mutex mutex_;

@@ -17,6 +17,7 @@
 
 #include <queue>
 #include "avcodec_audio_codec.h"
+#include "avcodec_log.h"
 #include "nocopyable.h"
 #include "task_thread.h"
 #include "audio_codec_server.h"
@@ -57,6 +58,7 @@ public:
     std::shared_ptr<AVBuffer> GetOutputBuffer(uint32_t index);
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     void ProduceInputBuffer();
     void ConsumerOutputBuffer();
     int32_t GetInputBufferSize();

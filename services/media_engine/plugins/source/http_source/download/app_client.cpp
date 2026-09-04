@@ -40,7 +40,7 @@ namespace {
 AppClient::AppClient(RxHeader headCallback, RxBody bodyCallback, void *userParam)
     : rxHeader_(headCallback), rxBody_(bodyCallback), userParam_(userParam)
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " AppClient create", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " AppClient create", avcodecUniqueId_);
 }
 
 AppClient::~AppClient()
@@ -56,7 +56,7 @@ void AppClient::MapToString(const std::map<std::string, std::string>& httpHeader
     }
     for (const auto& iter : httpHeader) {
         headerStr = iter.first + " : " + iter.second;
-        MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient header: " PUBLIC_LOG_S, FAKE_POINTER(this), headerStr.c_str());
+        MEDIA_LOG_D("%{public}" PRIu64 " AppClient header: " PUBLIC_LOG_S, avcodecUniqueId_, headerStr.c_str());
         void* buffer = reinterpret_cast<void*>(headerStr.data());
         rxHeader_(buffer, 1, headerStr.size(), userParam_);
     }
@@ -82,8 +82,8 @@ Status AppClient::RequestData(long startPos, int len, const RequestInfo& request
     MediaAVCodec::AVCodecTrace trace("AppClient RequestData, startPos: " +
         std::to_string(startPos) + ", len: " + std::to_string(len));
     (void)requestInfo;
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "AppClient RequestData in, startPos: "
-        PUBLIC_LOG_D32 " len: " PUBLIC_LOG_D32, FAKE_POINTER(this), static_cast<int>(startPos), len);
+    MEDIA_LOG_I("%{public}" PRIu64 "AppClient RequestData in, startPos: "
+        PUBLIC_LOG_D32 " len: " PUBLIC_LOG_D32, avcodecUniqueId_, static_cast<int>(startPos), len);
  
     if (startPos == -1) {
         len = -1;
@@ -112,11 +112,11 @@ Status AppClient::RequestData(long startPos, int len, const RequestInfo& request
  
     Status ret = Status::OK;
     if (requestState == LoadingRequestError::LOADING_ERROR_SUCCESS) {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR "AppClient RequestData success", FAKE_POINTER(this));
+        MEDIA_LOG_I("%{public}" PRIu64 "AppClient RequestData success", avcodecUniqueId_);
         completedCb(clientCode, serverCode, std::string(), ret);
     } else {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR "AppClient RequestData fail, clientCode: " PUBLIC_LOG_D32
-            " requestState_: " PUBLIC_LOG_D32, FAKE_POINTER(this), clientCode, static_cast<int32_t>(requestState));
+        MEDIA_LOG_I("%{public}" PRIu64 "AppClient RequestData fail, clientCode: " PUBLIC_LOG_D32
+            " requestState_: " PUBLIC_LOG_D32, avcodecUniqueId_, clientCode, static_cast<int32_t>(requestState));
  
         Task::SleepInTask(RETRY_SLEEP_TIME);
         ret = Status::ERROR_CLIENT;
@@ -130,7 +130,7 @@ Status AppClient::Close(bool isAsync)
 {
     (void)isAsync;
     NotifyResponseDataEnd(LoadingRequestError::LOADING_ERROR_SUCCESS);
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "AppClient Close.", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 "AppClient Close.", avcodecUniqueId_);
     return Status::OK;
 }
  
@@ -184,23 +184,23 @@ void AppClient::NotifyResponseDataEnd(LoadingRequestError state)
             curOffset_.store(DEFAULT_CURRENT_OFFSET);
         }
     }
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR "AppClient NotifyResponseDataEnd state: " PUBLIC_LOG_D32,
-        FAKE_POINTER(this), static_cast<int32_t>(state));
+    MEDIA_LOG_D("%{public}" PRIu64 "AppClient NotifyResponseDataEnd state: " PUBLIC_LOG_D32,
+        avcodecUniqueId_, static_cast<int32_t>(state));
 }
 
 int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_ptr<AVSharedMemory> memory)
 {
     FALSE_RETURN_V(memory != nullptr, 0);
     if (uuid != uuid_.load()) {
-        MEDIA_LOG_E("0x%{public}06" PRIXPTR " AppClient respondData uuid invalid, uuid: " PUBLIC_LOG_D64,
-            FAKE_POINTER(this), uuid);
+        MEDIA_LOG_E("%{public}" PRIu64 " AppClient respondData uuid invalid, uuid: " PUBLIC_LOG_D64,
+            avcodecUniqueId_, uuid);
         NotifyResponseDataEnd(LoadingRequestError::LOADING_ERROR_NOT_READY);
         return DROP_APP_DATA;
     }
  
     if (curOffset_.load() != offset) {
-        MEDIA_LOG_E("0x%{public}06" PRIXPTR " AppClient respondData offset invalid, offset: " PUBLIC_LOG_D64
-            " curOffset_: " PUBLIC_LOG_D32, FAKE_POINTER(this), offset, static_cast<int32_t>(curOffset_.load()));
+        MEDIA_LOG_E("%{public}" PRIu64 " AppClient respondData offset invalid, offset: " PUBLIC_LOG_D64
+            " curOffset_: " PUBLIC_LOG_D32, avcodecUniqueId_, offset, static_cast<int32_t>(curOffset_.load()));
         NotifyResponseDataEnd(LoadingRequestError::LOADING_ERROR_NOT_READY);
         return DROP_APP_DATA;
     }
@@ -209,8 +209,8 @@ int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_p
     size_t res = rxBody_(buffer, memory->GetSize(), 1, userParam_);
     curOffset_.fetch_add(static_cast<int64_t>(res));
     if (res == 0) {
-        MEDIA_LOG_W("0x%{public}06" PRIXPTR " AppClient respondData buffer full, can not write, uuid: " PUBLIC_LOG_D64,
-            FAKE_POINTER(this), uuid);
+        MEDIA_LOG_W("%{public}" PRIu64 " AppClient respondData buffer full, can not write, uuid: " PUBLIC_LOG_D64,
+            avcodecUniqueId_, uuid);
         NotifyResponseDataEnd(LoadingRequestError::LOADING_ERROR_SUCCESS);
         return BUFFER_FULL;
     }
@@ -220,12 +220,12 @@ int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_p
         ", offset: " + std::to_string(offset) + ", receiveDataSize: " + std::to_string(receiveDataSize));
     int32_t prevInFlight = dataInFlight_.fetch_sub(receiveDataSize);
     if (len_.load() > 0 && prevInFlight <= receiveDataSize) {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " AppClient respondData complete, uuid: " PUBLIC_LOG_D64,
-            FAKE_POINTER(this), uuid);
+        MEDIA_LOG_I("%{public}" PRIu64 " AppClient respondData complete, uuid: " PUBLIC_LOG_D64,
+            avcodecUniqueId_, uuid);
         NotifyResponseDataEnd(LoadingRequestError::LOADING_ERROR_SUCCESS);
     }
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient RespondData, uuid " PUBLIC_LOG_D64 " offset " PUBLIC_LOG_D64
-        " dataInFlight_ " PUBLIC_LOG_D32 " size " PUBLIC_LOG_D32, FAKE_POINTER(this), uuid, offset,
+    MEDIA_LOG_D("%{public}" PRIu64 " AppClient RespondData, uuid " PUBLIC_LOG_D64 " offset " PUBLIC_LOG_D64
+        " dataInFlight_ " PUBLIC_LOG_D32 " size " PUBLIC_LOG_D32, avcodecUniqueId_, uuid, offset,
         dataInFlight_.load(), receiveDataSize);
     return receiveDataSize;
 }
@@ -233,7 +233,7 @@ int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_p
 int32_t AppClient::FinishLoading(int64_t uuid, LoadingRequestError state)
 {
     FALSE_RETURN_V_MSG_E(uuid == uuid_.load(), 0, "FinishLoading uuid invalid.");
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "AppClient FinishLoading uuid " PUBLIC_LOG_D64, FAKE_POINTER(this), uuid);
+    MEDIA_LOG_I("%{public}" PRIu64 "AppClient FinishLoading uuid " PUBLIC_LOG_D64, avcodecUniqueId_, uuid);
     Task::SleepInTask(FINISHLOADING_SLEEP_TIME);
     NotifyResponseDataEnd(state);
     return 0;
@@ -242,7 +242,7 @@ int32_t AppClient::FinishLoading(int64_t uuid, LoadingRequestError state)
 void AppClient::SetUuid(int64_t uuid)
 {
     FALSE_RETURN_MSG(uuid > 0, "SetUuid uuid invalid.");
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " AppClient SetUuid " PUBLIC_LOG_D64, FAKE_POINTER(this), uuid);
+    MEDIA_LOG_D("%{public}" PRIu64 " AppClient SetUuid " PUBLIC_LOG_D64, avcodecUniqueId_, uuid);
     uuid_.store(uuid);
 }
  

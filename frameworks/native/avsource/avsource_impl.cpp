@@ -136,7 +136,7 @@ int32_t AVSourceImpl::InitWithDataSource(const std::shared_ptr<Media::IMediaData
 
 AVSourceImpl::AVSourceImpl()
 {
-    AVCODEC_LOGD("Create instances 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+    AVCODEC_LOGD("Create instances %{public}" PRIu64, avcodecUniqueId_);
 }
 
 AVSourceImpl::~AVSourceImpl()
@@ -144,7 +144,7 @@ AVSourceImpl::~AVSourceImpl()
     if (mediaDemuxer != nullptr) {
         mediaDemuxer = nullptr;
     }
-    AVCODEC_LOGD("Destroy instances 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+    AVCODEC_LOGD("Destroy instances %{public}" PRIu64, avcodecUniqueId_);
 }
 
 int32_t AVSourceImpl::GetSourceFormat(OHOS::Media::Format &format)

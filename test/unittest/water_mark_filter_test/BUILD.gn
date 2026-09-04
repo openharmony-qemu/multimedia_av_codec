@@ -83,6 +83,7 @@ ohos_unittest("watermark_filter_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/media_engine/filters:av_codec_media_engine_filters",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",

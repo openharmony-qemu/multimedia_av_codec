@@ -49,7 +49,7 @@ namespace Ffmpeg {
 FFmpegMuxerPlugin::FFmpegMuxerPlugin(std::string name)
     : MuxerPlugin(std::move(name)), isWriteHeader_(false)
 {
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    MEDIA_LOG_D("%{public}" PRIu64 " Instances create", avcodecUniqueId_);
 #ifndef _WIN32
     mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
@@ -83,7 +83,7 @@ FFmpegMuxerPlugin::~FFmpegMuxerPlugin()
     outputFormat_.reset();
     cachePacket_.reset();
     formatContext_.reset();
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    MEDIA_LOG_D("%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
 #ifndef _WIN32
     mallopt(M_FLUSH_THREAD_CACHE, 0);
 #endif

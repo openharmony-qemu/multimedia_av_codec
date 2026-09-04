@@ -128,7 +128,7 @@ CodecServer::CodecServer()
 {
     (void)mallopt(M_SET_THREAD_CACHE, M_THREAD_CACHE_DISABLE);
     (void)mallopt(M_DELAYED_FREE, M_DELAYED_FREE_DISABLE);
-    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("Instances create");
 }
 
 CodecServer::~CodecServer()
@@ -137,7 +137,7 @@ CodecServer::~CodecServer()
     codecBaseCb_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
-    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("Instances destroy");
 }
 
 int32_t CodecServer::InitServer(int32_t instanceId)
@@ -493,7 +493,7 @@ int32_t CodecServer::Stop()
     
     int32_t retPostProcessing = StopPostProcessing();
     int32_t retCodec = codecBase_->Stop();
-    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
+    CodecStopEventWrite(caller_.pid, caller_.uid, instanceId_);
     if ((retPostProcessing + retCodec) != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return (retCodec == AVCS_ERR_OK) ? retPostProcessing : retCodec;
@@ -532,7 +532,7 @@ int32_t CodecServer::Flush()
     if (sfdManager_) {
         sfdManager_->Flush();
     }
-    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
+    CodecStopEventWrite(caller_.pid, caller_.uid, instanceId_);
     if (retPostProcessing + retCodec != AVCS_ERR_OK) {
         StatusChanged(ERROR);
         return (retPostProcessing != AVCS_ERR_OK) ? retPostProcessing : retCodec;
@@ -563,7 +563,7 @@ int32_t CodecServer::NotifyEos()
     if (ret == AVCS_ERR_OK) {
         CodecStatus newStatus = END_OF_STREAM;
         StatusChanged(newStatus);
-        CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
+        CodecStopEventWrite(caller_.pid, caller_.uid, instanceId_);
     }
     return ret;
 }
@@ -592,7 +592,7 @@ int32_t CodecServer::Reset()
     if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
     }
-    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
+    CodecStopEventWrite(caller_.pid, caller_.uid, instanceId_);
     lastErrMsg_.clear();
     if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
@@ -633,7 +633,7 @@ int32_t CodecServer::Release()
         SurfaceTools::GetInstance().ReleaseSurface(instanceId_,
             SurfaceUtils::GetInstance()->GetSurface(surfaceId_), pushBlankBufferOnShutdown_, true);
     }
-    CodecStopEventWrite(caller_.pid, caller_.uid, FAKE_POINTER(this));
+    CodecStopEventWrite(caller_.pid, caller_.uid, instanceId_);
     OnInstanceEncodeEndEvent();
     codecBase_ = nullptr;
     codecBaseCb_ = nullptr;
@@ -1386,12 +1386,12 @@ int32_t CodecServer::CalculateLayerIdByTemporalInfo(int32_t poc)
 
 CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<CodecServer> &codec) : weakCodec_(codec)
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances create");
 }
 
 CodecBaseCallback::~CodecBaseCallback()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances destroy");
 }
 
 void CodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
@@ -1456,7 +1456,7 @@ int32_t CodecServer::GetCodecDfxInfo(CodecDfxInfo &codecDfxInfo)
 
     codecDfxInfo.clientPid = caller_.pid;
     codecDfxInfo.clientUid = caller_.uid;
-    codecDfxInfo.codecInstanceId = FAKE_POINTER(this);
+    codecDfxInfo.codecInstanceId = instanceId_;
     format.GetStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecDfxInfo.codecName);
     codecDfxInfo.codecIsVendor = codecIsVendor == 1 ? "True" : "False";
     codecDfxInfo.codecMode = isSurfaceMode_ ? "Surface mode" : "Buffer Mode";

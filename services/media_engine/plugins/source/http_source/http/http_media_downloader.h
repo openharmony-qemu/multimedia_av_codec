@@ -22,6 +22,7 @@
 #include <mutex>
 #include <unistd.h>
 #include <shared_mutex>
+#include "avcodec_dfx_component.h"
 #include "timer.h"
 #include "osal/utils/ring_buffer.h"
 #include "osal/utils/steady_clock.h"
@@ -166,6 +167,7 @@ private:
     std::shared_ptr<Downloader> GetDownloader() const;
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::shared_ptr<RingBuffer> ringBuffer_;
     std::shared_ptr<CacheMediaChunkBufferImpl> cacheMediaBuffer_;
     std::shared_ptr<Downloader> downloader_;
