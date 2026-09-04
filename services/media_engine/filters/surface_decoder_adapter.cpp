@@ -117,6 +117,7 @@ SurfaceDecoderAdapter::~SurfaceDecoderAdapter()
 Status SurfaceDecoderAdapter::Init(const std::string &mime)
 {
     MEDIA_LOG_I("Init mime: " PUBLIC_LOG_S, mime.c_str());
+    codecMimeType_ = mime;
     Format format;
     std::shared_ptr<Media::Meta> callerInfo = std::make_shared<Media::Meta>();
     callerInfo->SetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, appPid_);
@@ -129,6 +130,12 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime)
         if (ret != 0 || !codecServer_) {
             MEDIA_LOG_I("Create codecServer failed");
             return Status::ERROR_VID_DEC_INIT_FAILED;
+        }
+        Format codecInfo;
+        if (codecServer_->GetCodecInfo(codecInfo) == 0) {
+            int32_t isHardware = 0;
+            codecInfo.GetIntValue(Media::Tag::MEDIA_IS_HARDWARE, isHardware);
+            isHardwareCodec_ = (isHardware == 1);
         }
     }
     if (!releaseBufferTask_) {
@@ -166,6 +173,7 @@ Status SurfaceDecoderAdapter::Init(const std::string &mime, bool isHdr)
         std::unique_lock<std::shared_mutex> lock(codecServerMutex_);
         int ret = MediaAVCodec::VideoDecoderFactory::CreateByName(capabilityData->codecName, format, codecServer_);
         FALSE_RETURN_V_MSG(ret == 0 && codecServer_ != nullptr, Status::ERROR_UNKNOWN, "get capability data failed");
+        isHardwareCodec_ = true;
     }
     if (!releaseBufferTask_) {
         releaseBufferTask_ = std::make_shared<Task>("SurfaceDecoder");
@@ -185,8 +193,36 @@ Status SurfaceDecoderAdapter::Configure(const Format &format)
     if (!codecServer_) {
         return Status::ERROR_UNKNOWN;
     }
+    if (isTransCoderMode_) {
+        int32_t width = 0;
+        int32_t height = 0;
+        format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, width);
+        format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, height);
+        Status capRet = CheckTransCoderResolution(width, height);
+        FALSE_RETURN_V_MSG(capRet == Status::OK, capRet, "CheckTransCoderResolution failed");
+    }
     int32_t ret = codecServer_->Configure(format);
     return ret == 0 ? Status::OK : Status::ERROR_VID_DEC_CONFIGURE_FAILED;
+}
+
+Status SurfaceDecoderAdapter::CheckTransCoderResolution(int32_t width, int32_t height)
+{
+    auto capAdapter = std::make_shared<Pipeline::CodecCapabilityAdapter>();
+    capAdapter->Init();
+    MediaAVCodec::CapabilityData* capData = nullptr;
+    MediaAVCodec::AVCodecCategory category = isHardwareCodec_
+        ? MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE
+        : MediaAVCodec::AVCodecCategory::AVCODEC_SOFTWARE;
+    Status capRet = capAdapter->GetCapabilityByMime(codecMimeType_, false, category, capData);
+    if (capRet == Status::OK && capData != nullptr) {
+        MediaAVCodec::VideoCaps videoCaps(capData);
+        if (!videoCaps.IsSizeSupported(width, height)) {
+            MEDIA_LOG_E("Decoder does not support resolution in transcoder mode, "
+                "width: %{public}d, height: %{public}d", width, height);
+            return Status::ERROR_VID_DEC_RESOLUTION_UNSUPPORTED;
+        }
+    }
+    return Status::OK;
 }
 
 int64_t SurfaceDecoderAdapter::GetFrameNum()
@@ -201,6 +237,12 @@ void SurfaceDecoderAdapter::SetCallingInfo(int32_t appUid, int32_t appPid,
     appPid_ = appPid;
     bundleName_ = bundleName;
     instanceId_ = instanceId;
+}
+
+void SurfaceDecoderAdapter::SetTransCoderMode()
+{
+    MEDIA_LOG_I("SetTransCoderMode");
+    isTransCoderMode_ = true;
 }
 
 int64_t SurfaceDecoderAdapter::GetLastBufferPts()

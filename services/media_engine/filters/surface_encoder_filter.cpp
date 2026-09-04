@@ -200,7 +200,12 @@ Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
         return Status::ERROR_UNKNOWN;
     }
     configureParameter_ = parameter;
-    return mediaCodec_->Configure(parameter);
+    Status ret = mediaCodec_->Configure(parameter);
+    if (ret == Status::ERROR_VID_ENC_RESOLUTION_UNSUPPORTED && isTranscoderMode_ && eventReceiver_ != nullptr) {
+        eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_TARGET_RESOLUTION_OUT_OF_RANGE)});
+    }
+    return ret;
 }
 
 Status SurfaceEncoderFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer)
@@ -255,6 +260,14 @@ Status SurfaceEncoderFilter::SetStabilizationMode(bool enableStabilization)
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     mediaCodec_->SetStabilizationMode(enableStabilization);
     return Status::OK;
+}
+
+void SurfaceEncoderFilter::SetTransCoderCapabilityCheckInfo(int32_t width, int32_t height)
+{
+    MEDIA_LOG_I("SetTransCoderCapabilityCheckInfo width: %{public}d, height: %{public}d", width, height);
+    if (mediaCodec_ != nullptr) {
+        mediaCodec_->SetTransCoderCapabilityCheckInfo(width, height);
+    }
 }
 
 sptr<Surface> SurfaceEncoderFilter::GetInputSurface()

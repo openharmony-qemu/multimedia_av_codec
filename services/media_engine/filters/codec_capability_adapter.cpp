@@ -48,12 +48,6 @@ Status CodecCapabilityAdapter::GetAvailableEncoder(std::vector<MediaAVCodec::Cap
     return Status::OK;
 }
 
-Status CodecCapabilityAdapter::GetAvailableDecoder(std::vector<MediaAVCodec::CapabilityData*> &decoderInfo)
-{
-    GetVideoDecoder(decoderInfo);
-    return Status::OK;
-}
-
 Status CodecCapabilityAdapter::IsWatermarkSupported(std::string &codecMimeType, bool &isWatermarkSupported)
 {
     MediaAVCodec::CapabilityData *capabilityData = codeclist_->GetCapability(codecMimeType,
@@ -80,6 +74,18 @@ Status CodecCapabilityAdapter::IsWatermarkSupported(std::string &codecMimeType, 
         return Status::OK;
     }
 
+    return Status::ERROR_UNKNOWN;
+}
+
+Status CodecCapabilityAdapter::GetCapabilityByMime(const std::string &mime, bool isEncoder,
+    MediaAVCodec::AVCodecCategory category, MediaAVCodec::CapabilityData* &capabilityData)
+{
+    capabilityData = codeclist_->GetCapability(mime, isEncoder, category);
+    if (capabilityData != nullptr) {
+        return Status::OK;
+    }
+    MEDIA_LOG_W("No matching capability found for mime: %{public}s, isEncoder: %{public}d, category: %{public}d",
+        mime.c_str(), static_cast<int32_t>(isEncoder), static_cast<int32_t>(category));
     return Status::ERROR_UNKNOWN;
 }
 
@@ -112,38 +118,6 @@ Status CodecCapabilityAdapter::GetVideoEncoder(std::vector<MediaAVCodec::Capabil
         std::string(MediaAVCodec::CodecMimeType::VIDEO_HEVC), true, MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
     if (capabilityDataHEVC != nullptr) {
         encoderInfo.push_back(capabilityDataHEVC);
-    }
-    return Status::OK;
-}
-
-Status CodecCapabilityAdapter::GetVideoDecoder(std::vector<MediaAVCodec::CapabilityData*> &decoderInfo)
-{
-    MediaAVCodec::CapabilityData *capabilityDataAVC = codeclist_->GetCapability(
-        std::string(MediaAVCodec::CodecMimeType::VIDEO_AVC), false,
-        MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
-    if (capabilityDataAVC != nullptr) {
-        decoderInfo.push_back(capabilityDataAVC);
-    } else {
-        MediaAVCodec::CapabilityData *capabilityDataAVCSoft = codeclist_->GetCapability(
-            std::string(MediaAVCodec::CodecMimeType::VIDEO_AVC), false,
-            MediaAVCodec::AVCodecCategory::AVCODEC_SOFTWARE);
-        if (capabilityDataAVCSoft != nullptr) {
-            decoderInfo.push_back(capabilityDataAVCSoft);
-        }
-    }
- 
-    MediaAVCodec::CapabilityData *capabilityDataHEVC = codeclist_->GetCapability(
-        std::string(MediaAVCodec::CodecMimeType::VIDEO_HEVC), false,
-        MediaAVCodec::AVCodecCategory::AVCODEC_HARDWARE);
-    if (capabilityDataHEVC != nullptr) {
-        decoderInfo.push_back(capabilityDataHEVC);
-    } else {
-        MediaAVCodec::CapabilityData *capabilityDataHEVCSoft = codeclist_->GetCapability(
-            std::string(MediaAVCodec::CodecMimeType::VIDEO_HEVC), false,
-            MediaAVCodec::AVCodecCategory::AVCODEC_SOFTWARE);
-        if (capabilityDataHEVCSoft != nullptr) {
-            decoderInfo.push_back(capabilityDataHEVCSoft);
-        }
     }
     return Status::OK;
 }

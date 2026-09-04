@@ -110,6 +110,7 @@ public:
     std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback_;
     std::shared_ptr<EncoderAdapterKeyFramePtsCallback> encoderAdapterKeyFramePtsCallback_;
     bool GetIsTransCoderMode();
+    void SetTransCoderCapabilityCheckInfo(int32_t width, int32_t height);
 
 private:
     void ReleaseBuffer();
@@ -129,6 +130,7 @@ private:
     Status CheckAndAdjustFrameRate();
     bool IsSupportBoostFrameRate();
     void HandleTranscoderMode(uint32_t index, std::shared_ptr<Format> &parameter);
+    Status CheckTransCoderResolution();
     void Clear();
 
     std::shared_ptr<MediaAVCodec::AVCodecVideoEncoder> codecServer_;
@@ -183,6 +185,9 @@ private:
     bool isSupportBoostFrameRate_ = false;
     bool isWatermarkMode_ = false;
     bool enableStabilization_ = true;
+    int32_t transCoderWidth_ = 0;
+    int32_t transCoderHeight_ = 0;
+    bool isHardwareCodec_ = false;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

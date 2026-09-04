@@ -47,6 +47,7 @@ public:
     Status SetTransCoderMode();
     Status SetWatermarkMode();
     Status SetStabilizationMode(bool enableStabilization);
+    void SetTransCoderCapabilityCheckInfo(int32_t width, int32_t height);
     sptr<Surface> GetInputSurface();
     Status DoPrepare() override;
     Status DoStart() override;

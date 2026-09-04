@@ -125,7 +125,6 @@ void main()
 }
 )delimiter";
 
-// 顶点数据：位置坐标(x, y, z) + 纹理坐标(u, v)
 GLfloat vertices[] = {
     -1.0f, 1.0f,  0.0f,    1.0f, 1.0f,  // 左上角
     -1.0f, -1.0f, 0.0f,    1.0f, 0.0f,  // 左下角
@@ -340,7 +339,7 @@ bool WaterMarkFilter::SetupShaderUniforms()
         shaderProgram_->SetMatrix4v("matTransform", matrix_, 16, false);
         shaderProgram_->SetInt("textTexture", 1);
     }
- 
+
     MEDIA_LOG_I("SetShaderUniform video: %{public}dx%{public}d -> target: %{public}dx%{public}d, watermark: %{public}s",
         videoWidth_.load(), videoHeight_.load(), targetWidth_.load(), targetHeight_.load(),
         watermarkList_.empty() ? "no" : "yes");
@@ -814,7 +813,7 @@ Status WaterMarkFilter::DoPrepare()
                 filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                     StreamType::STREAMTYPE_WATERMARK);
             } else {
-                filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
+                return filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
                     StreamType::STREAMTYPE_RAW_VIDEO);
             }
             break;

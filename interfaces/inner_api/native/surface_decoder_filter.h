@@ -62,6 +62,7 @@ public:
     void OnError(MediaAVCodec::AVCodecErrorType errorType, int32_t errorCode);
     sptr<AVBufferQueueProducer> GetInputBufferQueue();
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+    Status SetTransCoderMode();
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -94,6 +95,7 @@ private:
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};
+    bool isTranscoderMode_ = false;
 };
 } // namespace Pipeline
 } // namespace Media

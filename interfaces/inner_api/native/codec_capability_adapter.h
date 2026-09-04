@@ -30,11 +30,11 @@ public:
     void Init();
 
     Status GetAvailableEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo);
-    Status GetAvailableDecoder(std::vector<MediaAVCodec::CapabilityData*> &decoderInfo);
     Status IsWatermarkSupported(std::string &CodecMimeType, bool &isWatermarkSupported);
+    Status GetCapabilityByMime(const std::string &mime, bool isEncoder,
+        MediaAVCodec::AVCodecCategory category, MediaAVCodec::CapabilityData* &capabilityData);
 private:
     Status GetVideoEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo);
-    Status GetVideoDecoder(std::vector<MediaAVCodec::CapabilityData*> &decoderInfo);
 
     Status GetAudioEncoder(std::vector<MediaAVCodec::CapabilityData*> &encoderInfo);
     std::shared_ptr<MediaAVCodec::AVCodecList> codeclist_ {nullptr};
