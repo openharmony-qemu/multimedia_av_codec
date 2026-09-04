@@ -152,7 +152,8 @@ int32_t CodecListServiceStub::GetCapabilityAt(CapabilityData &capabilityData, in
 int32_t CodecListServiceStub::DoFindDecoder(MessageParcel &data, MessageParcel &reply)
 {
     Format format;
-    (void)AVCodecParcel::Unmarshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG(AVCodecParcel::Unmarshalling(data, format), AVCS_ERR_UNKNOWN,
+                             "GetDecoderInfos failed, Unmarshalling error");
     reply.WriteString(FindDecoder(format));
     return AVCS_ERR_OK;
 }
@@ -160,7 +161,8 @@ int32_t CodecListServiceStub::DoFindDecoder(MessageParcel &data, MessageParcel &
 int32_t CodecListServiceStub::DoFindEncoder(MessageParcel &data, MessageParcel &reply)
 {
     Format format;
-    (void)AVCodecParcel::Unmarshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG(AVCodecParcel::Unmarshalling(data, format), AVCS_ERR_UNKNOWN,
+                             "GetEncoderInfos failed, Unmarshalling error");
     reply.WriteString(FindEncoder(format));
     return AVCS_ERR_OK;
 }
@@ -172,7 +174,8 @@ int32_t CodecListServiceStub::DoGetCapability(MessageParcel &data, MessageParcel
     AVCodecCategory category = static_cast<AVCodecCategory>(data.ReadInt32());
     CapabilityData capabilityData;
     (void)GetCapability(capabilityData, mime, isEncoder, category);
-    (void)CodecListParcel::Marshalling(reply, capabilityData);
+    CHECK_AND_RETURN_RET_LOG(CodecListParcel::Marshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
+                             "CapabilityData marshalling failed.");
     return AVCS_ERR_OK;
 }
 
@@ -185,7 +188,8 @@ int32_t CodecListServiceStub::DoGetCapabilityAt(MessageParcel &data, MessageParc
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-    (void)CodecListParcel::Marshalling(reply, capabilityData);
+    CHECK_AND_RETURN_RET_LOG(CodecListParcel::Marshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
+                             "CapabilityData marshalling failed.");
     return AVCS_ERR_OK;
 }
 
