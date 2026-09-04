@@ -2214,11 +2214,31 @@ Status MPEG4AtomParser::ParseVideoSampleEntry(MPEG4Atom currentAtom, int32_t dep
 Status MPEG4AtomParser::ParseSubtitleSampleEntry(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
-    if (currentAtom.type == FourccType("wvtt")) {
-        std::string mimeType = GetMimeType(currentAtom.type);
-        SetMime(mimeType);
+    if (currentAtom.type != FourccType("wvtt")) {
+        ctx->offset += static_cast<int64_t>(currentAtom.size);
+        return Status::OK;
     }
-    ctx->offset += static_cast<int64_t>(currentAtom.size);
+    SetMime(GetMimeType(currentAtom.type));
+
+    int64_t endOffset = 0;
+    if (__builtin_add_overflow(ctx->offset, currentAtom.size, &endOffset)) {
+        MEDIA_LOG_E("WebVTT sample entry size overflow");
+        return Status::ERROR_INVALID_DATA;
+    }
+    constexpr uint64_t webVttSampleEntryDataSize = 8;
+    if (currentAtom.dataSize < webVttSampleEntryDataSize) {
+        ctx->offset = endOffset;
+        return Status::OK;
+    }
+
+    // The wvtt sample entry has reserved/data-reference fields before vttC.
+    ctx->offset = ctx->dataOffset + static_cast<int64_t>(webVttSampleEntryDataSize);
+    while (ctx->offset < endOffset) {
+        Status ret = MPEG4ParseAtom(depth + 1, ctx);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse WebVTT sample entry child failed");
+    }
+    FALSE_RETURN_V_MSG_E(ctx->offset == endOffset, Status::ERROR_INVALID_DATA,
+        "Invalid WebVTT sample entry size");
     return Status::OK;
 }
 
@@ -2299,6 +2319,13 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
             "vvcC data too small to contain FullBox prefix");
         dataOffset += FULLBOX_PREFIX_SIZE;
         dataSize -= FULLBOX_PREFIX_SIZE;
+    } else if (currentAtom.type == FourccType("vttC")) {
+        // FFmpeg exposes the complete vttC box as subtitle extradata.
+        FALSE_RETURN_V_MSG_E(currentAtom.size >= DEFAULT_HEAD_SIZE &&
+            ctx->dataOffset >= static_cast<int64_t>(DEFAULT_HEAD_SIZE), Status::ERROR_INVALID_DATA,
+            "Invalid vttC atom offset or size");
+        dataOffset -= DEFAULT_HEAD_SIZE;
+        dataSize = static_cast<uint64_t>(currentAtom.size);
     }
     lastTrack_->codecParms.hasValidExtradata = false;
     lastTrack_->codecParms.annexbExtradataSize = 0;
@@ -5156,6 +5183,7 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("avcC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("hvcC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("vvcC"), &MPEG4AtomParser::ParseCodecConfig},
+        {FourccType("vttC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("colr"), &MPEG4AtomParser::ParseColr}, {FourccType("aclr"), &MPEG4AtomParser::ParseAclr},
         {FourccType("glbl"), &MPEG4AtomParser::ParseGlbl}, {FourccType("stts"), &MPEG4AtomParser::ParseStts},
         {FourccType("stss"), &MPEG4AtomParser::ParseStss}, {FourccType("ctts"), &MPEG4AtomParser::ParseCtts},
