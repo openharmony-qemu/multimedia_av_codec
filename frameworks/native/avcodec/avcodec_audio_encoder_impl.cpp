@@ -60,13 +60,13 @@ int32_t AVCodecAudioEncoderImpl::Init(AVCodecType type, bool isMimeType, const s
 
 AVCodecAudioEncoderImpl::AVCodecAudioEncoderImpl()
 {
-    AVCODEC_LOGD("AVCodecAudioEncoderImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("AVCodecAudioEncoderImpl:%{public}" PRIu64 " Instances create", avcodecUniqueId_);
 }
 
 AVCodecAudioEncoderImpl::~AVCodecAudioEncoderImpl()
 {
     codecService_ = nullptr;
-    AVCODEC_LOGD("AVCodecAudioEncoderImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("AVCodecAudioEncoderImpl:%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
 }
 
 int32_t AVCodecAudioEncoderImpl::Configure(const Format &format)

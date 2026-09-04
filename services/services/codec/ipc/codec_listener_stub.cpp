@@ -174,14 +174,14 @@ CodecListenerStub::CodecListenerStub()
     if (outputBufferCache_ == nullptr) {
         outputBufferCache_ = std::make_unique<CodecBufferCache>(true);
     }
-    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("Instances create");
 }
 
 CodecListenerStub::~CodecListenerStub()
 {
     inputBufferCache_ = nullptr;
     outputBufferCache_ = nullptr;
-    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("Instances destroy");
 }
 
 void CodecListenerStub::Init()

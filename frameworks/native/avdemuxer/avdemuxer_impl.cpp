@@ -60,7 +60,7 @@ int32_t AVDemuxerImpl::Init(std::shared_ptr<AVSource> source)
 
 AVDemuxerImpl::AVDemuxerImpl()
 {
-    AVCODEC_LOGD("Create instances 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+    AVCODEC_LOGD("Create instances %{public}" PRIu64, avcodecUniqueId_);
 }
 
 AVDemuxerImpl::~AVDemuxerImpl()
@@ -70,7 +70,7 @@ AVDemuxerImpl::~AVDemuxerImpl()
     }
     std::unique_lock<std::shared_mutex> lock(mutex_);
     mediaDemuxer_ = nullptr;
-    AVCODEC_LOGD("Destroy instances 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+    AVCODEC_LOGD("Destroy instances %{public}" PRIu64, avcodecUniqueId_);
 }
 
 int32_t AVDemuxerImpl::SelectTrackByID(uint32_t trackIndex)

@@ -16,6 +16,7 @@
 #define AVCODEC_AUDIO_DECODER_IMPL_H
 
 #include "avcodec_audio_decoder.h"
+#include "avcodec_log.h"
 #include "nocopyable.h"
 #include "audio_codec_server.h"
 
@@ -41,6 +42,7 @@ public:
     int32_t Init(AVCodecType type, bool isMimeType, const std::string &name);
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::shared_ptr<AudioCodecServer> codecService_ = nullptr;
 };
 } // namespace MediaAVCodec

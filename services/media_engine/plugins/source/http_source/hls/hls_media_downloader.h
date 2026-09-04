@@ -20,6 +20,7 @@
 #include <thread>
 #include <unistd.h>
 #include <utility>
+#include "avcodec_dfx_component.h"
 #include "playlist_downloader.h"
 #include "download/downloader.h"
 #include "media_downloader.h"
@@ -109,6 +110,7 @@ private:
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::weak_ptr<Callback> callback_;
     std::shared_ptr<HlsSegmentManager> videoSegManager_ {nullptr};
     std::shared_ptr<HlsSegmentManager> audioSegManager_ {nullptr};

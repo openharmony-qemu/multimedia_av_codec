@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <utility>
 #include <unordered_map>
+#include "avcodec_dfx_component.h"
 #include "playlist_downloader.h"
 #include "av_common.h"
 #include "download/downloader.h"
@@ -244,6 +245,7 @@ private:
         DownloadDoneCbFunc downloadDoneCallback);
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     HlsSegmentType type_ = HlsSegmentType::SEG_VIDEO;
     size_t minBufferSize_ = VIDEO_MIN_BUFFER_SIZE;
     size_t maxCacheBufferSize_ = VIDEO_MAX_CACHE_BUFFER_SIZE;
