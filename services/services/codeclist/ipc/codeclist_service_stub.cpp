@@ -188,7 +188,6 @@ int32_t CodecListServiceStub::DoGetCapabilityAt(MessageParcel &data, MessageParc
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
-    (void)CodecListParcel::Marshalling(reply, capabilityData);
     CHECK_AND_RETURN_RET_LOG(CodecListParcel::Marshalling(reply, capabilityData), AVCS_ERR_UNKNOWN,
                              "CapabilityData marshalling failed.");
     return AVCS_ERR_OK;
