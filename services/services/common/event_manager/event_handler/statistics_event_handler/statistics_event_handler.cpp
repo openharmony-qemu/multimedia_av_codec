@@ -18,6 +18,7 @@
 #include <cmath>
 #include <mutex>
 #include <ctime>
+#include <type_traits>
 #include "cJSON.h"
 #include "hisysevent.h"
 #include "avcodec_log.h"
@@ -57,6 +58,8 @@ static constexpr const char SECURE_DEC_ALLOC_BUF_FAILED_INFO[] = "SECURE_DEC_ALL
 // EVENT_STR_L3
 static constexpr const char QUERY_CAP_UNSUPPORTED_INFO[] = "QUERY_CAP_UNSUPPORTED_INFO";
 static constexpr const char CREATE_CODEC_UNSUPPORTED_INFO[] = "CREATE_CODEC_UNSUPPORTED_INFO";
+
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "StatisticsEventHandler"};
 
 const std::unordered_map<VideoCodecType, std::string> VIDEO_CODEC_TYPE_TO_STRING = {
     { VideoCodecType::DECODER_HARDWARE, "HDec" },
@@ -199,9 +202,18 @@ struct HashTuple {
     }
 };
 
+constexpr size_t MAX_STATISTICS_KEY_STRING_LENGTH = 127;
+constexpr size_t MAX_STATISTICS_MAP_ENTRY_COUNT = 127;
+
+// Only validate string keys here; non-string keys (pair/tuple) are validated
+// separately at their reporting sites before calling this function.
 template<typename T1, typename T2>
 inline void CreateOrIncrementMapCount(T1 &map, const T2 &key)
 {
+    CHECK_AND_RETURN_LOGW(map.size() < MAX_STATISTICS_MAP_ENTRY_COUNT, "Statistics map entry count limit");
+    if constexpr (std::is_same_v<std::decay_t<T2>, std::string>) {
+        CHECK_AND_RETURN_LOGW(key.size() <= MAX_STATISTICS_KEY_STRING_LENGTH, "Statistics key string too long");
+    }
     auto iter = map.find(key);
     if (iter != map.end()) {
         iter->second++;
@@ -481,7 +493,7 @@ private:
         if (meta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType) &&
             meta.GetData(Media::Tag::MIME_TYPE, mimeType) &&
             (vcodecType > VideoCodecType::UNKNOWN && vcodecType < VideoCodecType::END) &&
-            !mimeType.empty()) {
+            !mimeType.empty() && mimeType.size() <= MAX_STATISTICS_KEY_STRING_LENGTH) {
             const bool isSecure = GetMetaString(meta, Media::Tag::MEDIA_CODEC_NAME).find("secure") !=
                 std::string::npos;
             auto type = std::make_tuple(vcodecType, mimeType, isSecure);
@@ -842,6 +854,8 @@ public:
                     !isInOccupationHDecEvent_.load()) {
                     auto usageStatistics = AVCodecServerManager::GetInstance().GetHDecUsageStatistics();
                     for (const auto& [holder, count] : usageStatistics) {
+                        CHECK_AND_BREAK_LOG(lastOccupationHDecAppInfoVec_.size() < maxOccupationHDecRecordCount,
+                            "lastOccupationHDecAppInfoVec_ reached limit %{public}zu", maxOccupationHDecRecordCount);
                         AppNameIndex appIndex = AppNameIndexInfo::GetInstance().GetIndexByAppName(holder);
                         lastOccupationHDecAppInfoVec_.emplace_back(appIndex, count);
                     }
@@ -1103,6 +1117,7 @@ public:
         VideoCodecType vcodecType = VideoCodecType::UNKNOWN;
         if (eventMeta.GetData(EventInfoExtentedKey::CODEC_ERROR_CODE.data(), errorCode) &&
             eventMeta.GetData(Media::Tag::MIME_TYPE, mimeType) && !mimeType.empty() &&
+            mimeType.size() <= MAX_STATISTICS_KEY_STRING_LENGTH &&
             eventMeta.GetData(EventInfoExtentedKey::VIDEO_CODEC_TYPE.data(), vcodecType) &&
             (vcodecType > VideoCodecType::UNKNOWN && vcodecType < VideoCodecType::END)) {
             CodecErrorInfoKey codecErrorKey = std::make_tuple(vcodecType, mimeType, errorCode);
@@ -1237,10 +1252,6 @@ void StatisticsEventInfo::RegisterEventHook(StatisticsEventType eventType, Event
 
 void StatisticsEventInfo::RegisterSubmitEventTimer()
 {
-#ifdef BUILD_ENG_VERSION
-    return;
-#endif
-
     uint32_t timeout = 0;
     time_t now = time(nullptr);
     std::tm tmLocal{};
