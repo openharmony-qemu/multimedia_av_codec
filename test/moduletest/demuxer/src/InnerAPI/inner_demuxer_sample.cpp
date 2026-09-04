@@ -650,7 +650,9 @@ int32_t InnerDemuxerSample::ReadSample(int32_t videoFrame, int32_t audioFrame)
             }
             ret = this->demuxer_->ReadSampleBuffer(i, avBuffer);
             if (ret != 0) {
-                cout << "ReadSampleBuffer fail ret:" << retForSave << endl;
+                cout << "ReadSampleBuffer fail ret:" << ret << endl;
+                audioIsEnd = true;
+                videoIsEnd = true;
                 break;
             }
             if (SetEos(trackType) != 0) {
