@@ -1183,15 +1183,17 @@ void FCodec::CheckStrideChange(uint32_t index, bool isChanged)
 
 int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
 {
-    if (width_ != cachedFrame_->width || height_ != cachedFrame_->height) {
-        AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d", width_,
-                     cachedFrame_->width, height_, cachedFrame_->height);
-        isChanged = true;
-        width_ = cachedFrame_->width;
-        height_ = cachedFrame_->height;
-        CHECK_AND_RETURN_RET_LOG(ValidateVideoResolution(codecName_, width_, height_), AVCS_ERR_INVALID_VAL,
+    int32_t w = cachedFrame_->width;
+    int32_t h = cachedFrame_->height;
+    if (width_ != w || height_ != h) {
+        CHECK_AND_RETURN_RET_LOG(ValidateVideoResolution(codecName_, w, h), AVCS_ERR_INVALID_VAL,
             "Current decoder:%{public}s dosn't support width of %{public}d and height of %{public}d!",
             codecName_.c_str(), width_, height_);
+        isChanged = true;
+        width_ = w;
+        height_ = h;
+        AVCODEC_LOGI("format changed, width: %{public}d -> %{public}d, height: %{public}d -> %{public}d",
+            width_, w, height_, h);
         converter_.reset();
         CalculateBufferSize();
         CHECK_AND_RETURN_RET_LOG(inputBufferSize_ > 0 && outputBufferSize_ > 0, AVCS_ERR_INVALID_VAL,
@@ -1204,6 +1206,23 @@ int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
                 sInfo_.requestConfig.height = height_;
             }
         }
+    }
+    {
+        std::lock_guard<std::mutex> oLock(outputMutex_);
+        if (sInfo_.surface == nullptr) {
+            CHECK_AND_RETURN_RET_LOG((UpdateBuffers(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
+                                     "Update output buffer failed, index=%{public}u", index);
+        } else {
+            CHECK_AND_RETURN_RET_LOG((UpdateSurfaceMemory(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
+                                     "Update buffer failed");
+        }
+    }
+    CheckStrideChange(index, isChanged);
+    if (decNum_ == 0) {
+        callback_->OnOutputFormatChanged(format_);
+    }
+    if (isChanged) {
+        callback_->OnOutputFormatChanged(format_);
     }
     return AVCS_ERR_OK;
 }
@@ -1508,24 +1527,6 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
 #ifndef DISABLE_DMABUFF
     GetCropInfo(cropVec, isChanged);
     GetColorAspectsInfo(colorSpaceInfoData, isChanged);
-#endif
-    if (decNum_ == 0) {
-        callback_->OnOutputFormatChanged(format_);
-    }
-    if (isChanged) {
-        callback_->OnOutputFormatChanged(format_);
-    }
-    std::unique_lock<std::mutex> oLock(outputMutex_);
-    if (sInfo_.surface == nullptr) {
-        CHECK_AND_RETURN_RET_LOG((UpdateBuffers(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
-                                 "Update output buffer failed, index=%{public}u", index);
-    } else {
-        CHECK_AND_RETURN_RET_LOG((UpdateSurfaceMemory(index) == AVCS_ERR_OK), AVCS_ERR_NO_MEMORY,
-                                 "Update buffer failed");
-    }
-    oLock.unlock();
-    CheckStrideChange(index, isChanged);
-#ifndef DISABLE_DMABUFF
     std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
     std::shared_ptr<AVMemory> &bufferMemory = frameBuffer->avBuffer_->memory_;
     sptr<SurfaceBuffer> surfacebuffer = bufferMemory->GetSurfaceBuffer();
