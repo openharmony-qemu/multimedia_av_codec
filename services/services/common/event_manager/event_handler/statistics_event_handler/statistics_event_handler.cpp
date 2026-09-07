@@ -19,6 +19,7 @@
 #include <mutex>
 #include <ctime>
 #include <type_traits>
+#include <limits>
 #include "cJSON.h"
 #include "hisysevent.h"
 #include "avcodec_log.h"
@@ -205,6 +206,24 @@ struct HashTuple {
 constexpr size_t MAX_STATISTICS_KEY_STRING_LENGTH = 127;
 constexpr size_t MAX_STATISTICS_MAP_ENTRY_COUNT = 127;
 
+template <typename T>
+inline void SafeIncrement(T &val)
+{
+    if (val < std::numeric_limits<T>::max()) {
+        ++val;
+    }
+}
+
+template <typename T>
+inline void SafeAdd(T &val, T delta)
+{
+    if (delta <= std::numeric_limits<T>::max() - val) {
+        val += delta;
+    } else {
+        val = std::numeric_limits<T>::max();
+    }
+}
+
 // Only validate string keys here; non-string keys (pair/tuple) are validated
 // separately at their reporting sites before calling this function.
 template<typename T1, typename T2>
@@ -216,7 +235,7 @@ inline void CreateOrIncrementMapCount(T1 &map, const T2 &key)
     }
     auto iter = map.find(key);
     if (iter != map.end()) {
-        iter->second++;
+        SafeIncrement(iter->second);
     } else {
         map.emplace(key, 1);
     }
@@ -363,10 +382,10 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
         switch (eventType) {
             case StatisticsEventType::BASIC_QUERY_CAP_INFO:
-                queryCapTimes_++;
+                SafeIncrement(queryCapTimes_);
                 break;
             case StatisticsEventType::BASIC_CREATE_CODEC_INFO:
-                createCodecTimes_++;
+                SafeIncrement(createCodecTimes_);
                 break;
             case StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO:
                 OnBasicCreateCodecSpecInfo(eventMeta);
@@ -528,7 +547,7 @@ private:
                 usage.currentCount--;
             }
         } else if (action == instanceActionCreate) {
-            usage.currentCount++;
+            SafeIncrement(usage.currentCount);
             usage.periodMax = std::max(usage.periodMax, usage.currentCount);
         }
     }
@@ -1037,8 +1056,8 @@ private:
         if (eventMeta.GetData(key.data(), combinedKey)) {
             constexpr uint64_t kLower32Mask = 0xFFFFFFFFULL;
             constexpr unsigned kUpper32Shift = 32u;
-            duration += static_cast<uint32_t>(combinedKey & kLower32Mask);
-            count += static_cast<uint32_t>(combinedKey >> kUpper32Shift);
+            SafeAdd(duration, static_cast<uint32_t>(combinedKey & kLower32Mask));
+            SafeAdd(count, static_cast<uint32_t>(combinedKey >> kUpper32Shift));
         }
     };
 
