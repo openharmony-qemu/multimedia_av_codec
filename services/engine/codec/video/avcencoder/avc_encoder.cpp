@@ -575,7 +575,8 @@ void AvcEncoder::GetBitRateModeFromUser(const Format &format)
         AVCODEC_LOGI("user set bitrate mod %{public}d", static_cast<int>(mode));
         bitrateMode_ = mode;
         if (mode == VideoEncodeBitrateMode::CQ &&
-            format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) && quality >= 0) {
+            format.GetIntValue(MediaDescriptionKey::MD_KEY_QUALITY, quality) &&
+            (quality >= VIDEO_QUALITY_MIN) && (quality <= VIDEO_QUALITY_MAX)) {
             avcQuality_ = quality;
             encQp_ = VIDEO_QP_MIN +
                 (VIDEO_QUALITY_MAX - quality) * (VIDEO_QP_MAX - VIDEO_QP_MIN) / VIDEO_QUALITY_MAX;
@@ -921,6 +922,7 @@ int32_t AvcEncoder::Start()
     CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCS_ERR_INVALID_OPERATION, "Start codec failed: callback is null");
     CHECK_AND_RETURN_RET_LOG((state_ == State::CONFIGURED || state_ == State::FLUSHED), AVCS_ERR_INVALID_STATE,
                              "Start codec failed: not in Configured or Flushed state");
+    state_ = State::STARTING;
 
     if (!isBufferAllocated_) {
         int32_t ret = AllocateBuffers();
@@ -980,24 +982,31 @@ int32_t AvcEncoder::Stop()
         inputSurface_->UnregisterConsumerListener();
     }
 
+    inputAvailQue_->SetActive(false, false);
+    codecAvailQue_->SetActive(false, false);
     std::unique_lock<std::mutex> sLock(sendMutex_);
     sendCv_.notify_one();
     sLock.unlock();
-    inputAvailQue_->SetActive(false, false);
-    codecAvailQue_->SetActive(false, false);
     sendTask_->Stop();
     ReleaseBuffers();
-    std::unique_lock<std::mutex> runLock(encRunMutex_);
-    if (avcEncoder_ != nullptr && avcEncoderDeleteFunc_ != nullptr) {
-        uint32_t ret = avcEncoderDeleteFunc_(avcEncoder_);
-        if (ret != 0) {
-            AVCODEC_LOGE("Error: avc encoder delete error: %{public}d", ret);
-            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-            state_ = State::ERROR;
+    bool needErrorCb = false;
+    {
+        std::unique_lock<std::mutex> runLock(encRunMutex_);
+        if (avcEncoder_ != nullptr && avcEncoderDeleteFunc_ != nullptr) {
+            uint32_t ret = avcEncoderDeleteFunc_(avcEncoder_);
+            if (ret != 0) {
+                AVCODEC_LOGE("Error: avc encoder delete error: %{public}d", ret);
+                state_ = State::ERROR;
+                needErrorCb = true;
+            }
+            avcEncoder_ = nullptr;
         }
-        avcEncoder_ = nullptr;
     }
-    runLock.unlock();
+
+    if (needErrorCb) {
+        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+        return AVCS_ERR_UNKNOWN;
+    }
     state_ = State::CONFIGURED;
     AVCODEC_LOGI("Stop codec successful, state: Configured");
     return AVCS_ERR_OK;
@@ -1010,12 +1019,12 @@ int32_t AvcEncoder::Flush()
                              "Flush codec failed: not in running or Eos state");
     state_ = State::FLUSHING;
     AVCODEC_LOGI("step into FLUSHING status");
+    inputAvailQue_->SetActive(false, false);
+    codecAvailQue_->SetActive(false, false);
     std::unique_lock<std::mutex> sLock(sendMutex_);
     sendCv_.notify_one();
     sLock.unlock();
 
-    inputAvailQue_->SetActive(false, false);
-    codecAvailQue_->SetActive(false, false);
     sendTask_->Pause();
 
     ResetBuffers();
@@ -1039,11 +1048,11 @@ int32_t AvcEncoder::Reset()
 void AvcEncoder::StopThread()
 {
     if (sendTask_ != nullptr && inputAvailQue_ != nullptr) {
+        inputAvailQue_->SetActive(false, false);
+        codecAvailQue_->SetActive(false, false);
         std::unique_lock<std::mutex> sLock(sendMutex_);
         sendCv_.notify_one();
         sLock.unlock();
-        inputAvailQue_->SetActive(false, false);
-        codecAvailQue_->SetActive(false, false);
         sendTask_->Stop();
     }
 }
@@ -1058,6 +1067,10 @@ void AvcEncoder::ReleaseBuffers()
     std::unique_lock<std::mutex> iLock(inputMutex_);
     buffers_[INDEX_INPUT].clear();
     iLock.unlock();
+
+    std::unique_lock<std::mutex> freeLock(freeListMutex_);
+    freeList_.clear();
+    freeLock.unlock();
 
     std::unique_lock<std::mutex> oLock(outputMutex_);
     codecAvailQue_->Clear();
@@ -1079,17 +1092,23 @@ void AvcEncoder::ReleaseResource()
         inputSurface_->UnregisterConsumerListener();
     }
 
-    std::unique_lock<std::mutex> runLock(encRunMutex_);
-    if (avcEncoder_ != nullptr && avcEncoderDeleteFunc_ != nullptr) {
-        uint32_t ret = avcEncoderDeleteFunc_(avcEncoder_);
-        if (ret != 0) {
-            AVCODEC_LOGE("Error: avc encoder delete error: %{public}d", ret);
-            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-            state_ = State::ERROR;
+    bool needErrorCb = false;
+    {
+        std::unique_lock<std::mutex> runLock(encRunMutex_);
+        if (avcEncoder_ != nullptr && avcEncoderDeleteFunc_ != nullptr) {
+            uint32_t ret = avcEncoderDeleteFunc_(avcEncoder_);
+            if (ret != 0) {
+                AVCODEC_LOGE("Error: avc encoder delete error: %{public}d", ret);
+                state_ = State::ERROR;
+                needErrorCb = true;
+            }
+            avcEncoder_ = nullptr;
         }
-        avcEncoder_ = nullptr;
     }
-    runLock.unlock();
+
+    if (needErrorCb) {
+        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+    }
 }
 
 int32_t AvcEncoder::Release()
@@ -1106,8 +1125,10 @@ int32_t AvcEncoder::Release()
 int32_t AvcEncoder::SetParameter(const Format &format)
 {
     int64_t bitRateLong;
+    int32_t bitRateInt;
     int32_t requestIdr;
     if (!format.GetLongValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateLong) &&
+        !format.GetIntValue(MediaDescriptionKey::MD_KEY_BITRATE, bitRateInt) &&
         !format.GetIntValue(MediaDescriptionKey::MD_KEY_REQUEST_I_FRAME, requestIdr)) {
         AVCODEC_LOGE("Only support dynamic set bitrate or IDR request!!!");
         return AVCS_ERR_INVALID_VAL;
@@ -1232,6 +1253,13 @@ int32_t AvcEncoder::ReleaseOutputBuffer(uint32_t index)
 
 int32_t AvcEncoder::NotifyEos()
 {
+    if (inputSurface_ == nullptr) {
+        AVCODEC_LOGE("Not support for buffer mode!!!");
+        return AVCS_ERR_UNSUPPORT;
+    }
+    if (state_ != State::RUNNING) {
+        return AVCS_ERR_OK;
+    }
     AVCODEC_LOGI(" start ");
     std::unique_lock<std::mutex> listLock(freeListMutex_);
     WaitForInBuffer(listLock);
@@ -1588,8 +1616,10 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
     CHECK_AND_RETURN_RET_LOG(outputBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output buffer nullptr");
     std::shared_ptr<AVBuffer> &outputAVBuffer = outputBuffer->avBuffer_;
     CHECK_AND_RETURN_RET_LOG(outputAVBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output avbuffer nullptr");
+    CHECK_AND_RETURN_RET_LOG(outputAVBuffer->memory_ != nullptr, AVCS_ERR_NO_MEMORY, "output buffer memory nullptr");
 
     outArgs.streamBuf = outputAVBuffer->memory_->GetAddr();
+    CHECK_AND_RETURN_RET_LOG(outArgs.streamBuf != nullptr, AVCS_ERR_NO_MEMORY, "output streamBuf nullptr");
     outArgs.size = static_cast<uint32_t>(outputAVBuffer->memory_->GetCapacity());
 
     ret = avcEncoderFrameFunc_(avcEncoder_, &inArgs, &outArgs);
@@ -1664,8 +1694,10 @@ int32_t AvcEncoder::CopyHeaderInfoToOutArgs()
     CHECK_AND_RETURN_RET_LOG(outputBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output buffer nullptr");
     std::shared_ptr<AVBuffer> &outputAVBuffer = outputBuffer->avBuffer_;
     CHECK_AND_RETURN_RET_LOG(outputAVBuffer != nullptr, AVCS_ERR_NO_MEMORY, "output avbuffer nullptr");
+    CHECK_AND_RETURN_RET_LOG(outputAVBuffer->memory_ != nullptr, AVCS_ERR_NO_MEMORY, "output buffer memory nullptr");
 
     avcEncOutputArgs_.streamBuf = outputAVBuffer->memory_->GetAddr();
+    CHECK_AND_RETURN_RET_LOG(avcEncOutputArgs_.streamBuf != nullptr, AVCS_ERR_NO_MEMORY, "output streamBuf nullptr");
     avcEncOutputArgs_.size = static_cast<uint32_t>(outputAVBuffer->memory_->GetCapacity());
 
     int32_t ret = memcpy_s(avcEncOutputArgs_.streamBuf, avcEncOutputArgs_.size,
