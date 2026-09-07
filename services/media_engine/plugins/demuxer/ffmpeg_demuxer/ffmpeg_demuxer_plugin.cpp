@@ -552,6 +552,7 @@ void FFmpegDemuxerPlugin::ResetParam()
         selectedTrackIds_.clear();
     }
     checkedTrackIds_.clear();
+    firstFramePendingTracks_.clear();
     pluginImpl_.reset();
     {
         std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
@@ -2748,6 +2749,11 @@ bool FFmpegDemuxerPlugin::CheckLimitedProbeExitConditions(bool hasVideoTrack, bo
 void FFmpegDemuxerPlugin::SupplementFirstFrameIfPending(uint32_t trackId,
     const std::shared_ptr<SamplePacket>& samplePacket)
 {
+    if (formatContext_ == nullptr || trackId >= formatContext_->nb_streams) {
+        MEDIA_LOG_W("Invalid track id " PUBLIC_LOG_U32 ", stream count " PUBLIC_LOG_U32,
+            trackId, formatContext_ == nullptr ? 0 : formatContext_->nb_streams);
+        return;
+    }
     if (firstFramePendingTracks_.count(trackId) > 0 && !samplePacket->pkts.empty()) {
         AVPacketWrapperPtr pktWrapper = samplePacket->pkts[0];
         AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
@@ -2949,7 +2955,7 @@ Status FFmpegDemuxerPlugin::CheckSeekParams(int64_t seekTime, SeekMode mode) con
     return Status::OK;
 }
 
-void FFmpegDemuxerPlugin::SyncSeekThread()
+bool FFmpegDemuxerPlugin::SyncSeekThread()
 {
     ioContext_.retry = false;
     ioContext_.avReadPacketStopState.store(AVReadPacketStopState::FALSE);
@@ -2963,10 +2969,18 @@ void FFmpegDemuxerPlugin::SyncSeekThread()
     if (readThread_ != nullptr && threadState_ == READING) {
         MEDIA_LOG_I("Seek notify read thread to stop");
         std::unique_lock<std::mutex> waitLock(seekWaitMutex_);
-        ioContext_.readCbReady = true;
-        readCbCv_.notify_all();
-        seekWaitCv_.wait(waitLock, [this] { return threadState_ == WAITING || threadState_ == NOT_STARTED; });
+        {
+            std::lock_guard<std::mutex> readLock(readPacketMutex_);
+            ioContext_.readCbReady.store(true);
+            readCbCv_.notify_all();
+        }
+        if (!seekWaitCv_.wait_for(waitLock, std::chrono::seconds(SETTIMER_TIMEOUT),
+            [this] { return threadState_ == WAITING || threadState_ == NOT_STARTED; })) {
+            MEDIA_LOG_E("Timed out waiting for read thread to stop before seek");
+            return false;
+        }
     }
+    return true;
 }
 
 bool FFmpegDemuxerPlugin::IsUseFirstFrameDts(int trackIndex, int64_t seekTime)
@@ -3102,7 +3116,8 @@ Status FFmpegDemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode m
 
     Status check = CheckSeekParams(seekTime, mode);
     FALSE_RETURN_V_MSG_E(check == Status::OK, check, "CheckSeekParams failed");
-    SyncSeekThread();
+    FALSE_RETURN_V_MSG_E(SyncSeekThread(), Status::ERROR_WAIT_TIMEOUT,
+        "Timed out waiting for read thread before seek");
     int trackIndex = SelectSeekTrack();
     MEDIA_LOG_D("Seek based on track " PUBLIC_LOG_D32, trackIndex);
 
@@ -3237,7 +3252,11 @@ Status FFmpegDemuxerPlugin::SeekToKeyFrame(int32_t trackId, int64_t seekTime,
     AVStream *avStream = nullptr;
     auto ret = SeekToKeyFrameCheckParam(seekTime, mode, trackId, ffTime, avStream);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SeekToKeyFrameCheckParam failed");
-    SyncSeekThread();
+    if (!SyncSeekThread()) {
+        HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+        MEDIA_LOG_E("Timed out waiting for read thread before seek");
+        return Status::ERROR_WAIT_TIMEOUT;
+    }
     TimeRange timeRange;
     if (timeRangeManager_.IsInTimeRanges(ffTime, timeRange)) {
         ffTime = timeRange.end_ts;
@@ -3472,7 +3491,7 @@ void FFmpegDemuxerPlugin::InitPTSandIndexConvert()
 Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
     const uint64_t relativePresentationTimeUs, uint32_t &index)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::unique_lock<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
 
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::IsMpeg4File(fileType_),
@@ -3514,7 +3533,7 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
 Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t trackIndex,
     const uint32_t index, uint64_t &relativePresentationTimeUs)
 {
-    std::shared_lock<std::shared_mutex> lock(sharedMutex_);
+    std::unique_lock<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ != nullptr, Status::ERROR_NULL_POINTER, "AVFormatContext is nullptr");
     FALSE_RETURN_V_MSG_E(index < UINT32_MAX, Status::ERROR_INVALID_DATA, "Index is out of range");
     FALSE_RETURN_V_MSG_E(FFmpegFormatHelper::IsMpeg4File(fileType_),
@@ -3943,7 +3962,8 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
         MEDIA_LOG_I("minTsPktInfo_ is not upd, do not seek");
         return Status::OK;
     }
-    SyncSeekThread();
+    FALSE_RETURN_V_MSG_E(SyncSeekThread(), Status::ERROR_WAIT_TIMEOUT,
+        "Timed out waiting for read thread before seek");
     if (IsSkipGetMinTsPktInfo()) {
         if (fileType_ == FileType::MPEGPS || fileType_ == FileType::MPEGTS) {
             ffRet = AVSeekFrameLock(SEEK_TRACK_DEFAULT, POS_0, AVSEEK_FLAG_BYTE);
@@ -4044,7 +4064,11 @@ Status FFmpegDemuxerPlugin::SeekToFrameByDts(int32_t trackId, int64_t seekTime,
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_seekToFrameByDts", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     if (readThread_ != nullptr) {
-        SyncSeekThread();
+        if (!SyncSeekThread()) {
+            HiviewDFX::XCollie::GetInstance().CancelTimer(id);
+            MEDIA_LOG_E("Timed out waiting for read thread before seek");
+            return Status::ERROR_WAIT_TIMEOUT;
+        }
     }
     SeekToFrameByDtsContext ctx;
     Status ret = SeekToFrameByDtsCheckParam(trackId, seekTime, mode, ctx);
