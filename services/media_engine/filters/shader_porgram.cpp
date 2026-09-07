@@ -12,18 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "shader_program.h"
 #include "common/log.h"
- 
+#include "avcodec_log.h"
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "WaterMarkFilter" };
 }
- 
+
 namespace OHOS {
 namespace Media {
-const uint32_t LOG_LEN = 1024;
- 
+
 ShaderProgram::ShaderProgram(const std::string &vertexShader, const std::string &fragShader)
 {
     auto vShaderCode = vertexShader.c_str();
@@ -31,7 +31,7 @@ ShaderProgram::ShaderProgram(const std::string &vertexShader, const std::string 
     glShaderSource(vertex, 1, &vShaderCode, nullptr);
     glCompileShader(vertex);
     CheckCompileErrors(vertex, "VERTEX");
- 
+
     auto fShaderCode = fragShader.c_str();
     GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment, 1, &fShaderCode, nullptr);
@@ -41,51 +41,46 @@ ShaderProgram::ShaderProgram(const std::string &vertexShader, const std::string 
     id_ = glCreateProgram();
     glAttachShader(id_, vertex);
     glAttachShader(id_, fragment);
+    glBindAttribLocation(id_, 0, "position");
+    glBindAttribLocation(id_, 1, "texCoord");
     glLinkProgram(id_);
     CheckCompileErrors(id_, "PROGRAM");
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 }
- 
+
 ShaderProgram::~ShaderProgram() noexcept
 {
     if (Valid()) {
         glDeleteProgram(id_);
     }
 }
- 
+
 void ShaderProgram::CheckCompileErrors(GLuint shader, const std::string &shaderType)
 {
-    int success;
-    char infoLog[LOG_LEN];
+    int success = 0;
     if (shaderType != "PROGRAM") {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(shader, LOG_LEN, NULL, infoLog);
-            MEDIA_LOG_E("ERROR::SHADER_COMPILATION_ERROR of type: %{public}s, infoLog is: %{public}s",
-                shaderType.c_str(), infoLog);
-        }
+        FALSE_RETURN_MSG(success, "ERROR::SHADER_COMPILATION_ERROR of glGetShaderiv");
     } else {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
-        if (!success) {
-            glGetProgramInfoLog(shader, LOG_LEN, NULL, infoLog);
-            MEDIA_LOG_I("ERROR::PROGRAM_LINKING_ERROR of type: %{public}s, infoLog is: %{public}s",
-                shaderType.c_str(), infoLog);
-        }
+        FALSE_RETURN_MSG(success, "ERROR::PROGRAM_LINKING_ERROR of glGetProgramiv");
     }
 }
- 
+
 void ShaderProgram::SetInt(const std::string &name, int value)
 {
     glUniform1i(glGetUniformLocation(id_, name.c_str()), static_cast<GLint>(value));
 }
- 
+
+void ShaderProgram::SetVec2(const std::string &name, float v0, float v1)
+{
+    glUniform2f(glGetUniformLocation(id_, name.c_str()), v0, v1);
+}
+
 void ShaderProgram::SetMatrix4v(const std::string &name, const float *matrix, int cnt, bool transpose)
 {
-    if (matrix == nullptr) {
-        MEDIA_LOG_I("ShaderProgram NShaderProgram::SetFloat4v: invalid arguments");
-        return;
-    }
+    FALSE_RETURN_MSG(matrix != nullptr, "matrix is null");
     GLboolean glTranspose = transpose ? GL_TRUE : GL_FALSE;
     glUniformMatrix4fv(glGetUniformLocation(id_, name.c_str()), 1, glTranspose, matrix);
 }

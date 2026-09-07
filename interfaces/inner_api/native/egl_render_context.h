@@ -43,6 +43,7 @@ public:
     }
     
     EGLSurface CreateEglSurface(EGLNativeWindowType surface, const EGLint *attribList = nullptr);
+    EGLSurface CreatePbufferSurface(const EGLint *attribList = nullptr);
     void DestroyEglSurface(EGLSurface surface);
     void MakeCurrent(EGLSurface surface) const;
     void SwapBuffers(EGLSurface surface) const;

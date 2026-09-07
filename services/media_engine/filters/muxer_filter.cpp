@@ -45,6 +45,7 @@ using namespace OHOS::MediaAVCodec;
 constexpr int64_t WAIT_TIME_OUT_NS = 3000000000;
 constexpr int64_t US_TO_MS = 1000;
 constexpr int64_t S_TO_MS = 1000;
+constexpr int64_t SYNC_THRESHOLD_US = 200000; // 200ms
 constexpr uint32_t BUFFER_IS_EOS = 1;
 constexpr int32_t VALID_MIN_DURATION = 1;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
@@ -145,9 +146,13 @@ Status MuxerFilter::DoStart()
 {
     MEDIA_LOG_I("MuxerFilter Start");
     MediaAVCodec::AVCodecTrace trace("MuxerFilter::Start");
-    
+
     CHECK_AND_RETURN_RET_LOG(!isStarted, Status::OK, "MuxerFilter has started");
     FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_FRAMEWORK_ERR, "MediaMuxer is nullptr.");
+    if (!pendingMetaTracks_.empty()) {
+        auto ret = AddPendingMetaTracks();
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPendingMetaTracks failed in DoStart");
+    }
     Status ret = mediaMuxer_->Start();
     if (ret != Status::OK) {
         SetFaultEvent("MuxerFilter::DoStart error", (int32_t)ret);
@@ -269,13 +274,59 @@ void MuxerFilter::ConfigureTrackMeta(const std::shared_ptr<Meta> &meta, const st
         videoCodecMimeType_ = mimeType;
     } else if (mimeType.find("meta/") == 0) {
         metaDataCodecMimeType_ = mimeType;
-        std::string srcMimeType;
-        meta->Get<Tag::TIMED_METADATA_SRC_TRACK_MIME>(srcMimeType);
-        if (trackIndexMap_.find(srcMimeType) != trackIndexMap_.end()) {
-            auto sourceTrackIndex = trackIndexMap_.at(videoCodecMimeType_);
-            meta->Set<Tag::TIMED_METADATA_SRC_TRACK>(sourceTrackIndex);
-        }
     }
+}
+
+Status MuxerFilter::AddPendingMetaTracks()
+{
+    std::vector<PendingMetaTrack> stillPending;
+    for (auto &pending : pendingMetaTracks_) {
+        std::string srcMimeType;
+        pending.meta->Get<Tag::TIMED_METADATA_SRC_TRACK_MIME>(srcMimeType);
+        auto it = trackIndexMap_.find(srcMimeType);
+        if (it == trackIndexMap_.end()) {
+            MEDIA_LOG_I("Source track not ready for meta track, re-pending. srcMimeType: %{public}s",
+                srcMimeType.c_str());
+            stillPending.push_back(pending);
+            continue;
+        }
+        pending.meta->Set<Tag::TIMED_METADATA_SRC_TRACK>(it->second);
+        int32_t trackIndex = -1;
+        auto ret = mediaMuxer_->AddTrack(trackIndex, pending.meta);
+        if (ret != Status::OK) {
+            MEDIA_LOG_E("AddPendingMetaTracks AddTrack failed, ret: %{public}d", static_cast<int32_t>(ret));
+            if (eventReceiver_ != nullptr) {
+                eventReceiver_->OnEvent({"muxer_filter", EventType::EVENT_ERROR, static_cast<int32_t>(ret)});
+            }
+            SetFaultEvent("MuxerFilter::AddPendingMetaTracks error", (int32_t)ret);
+            pendingMetaTracks_ = std::move(stillPending);
+            return ret;
+        }
+        std::string mimeType;
+        pending.meta->Get<Tag::MIME_TYPE>(mimeType);
+        trackIndexMap_.emplace(std::make_pair(mimeType, trackIndex));
+        sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
+        if (inputBufferQueue == nullptr) {
+            MEDIA_LOG_E("AddPendingMetaTracks inputBufferQueue is nullptr");
+            pendingMetaTracks_ = std::move(stillPending);
+            return Status::ERROR_NULL_POINTER;
+        }
+        if (pending.callback != nullptr) {
+            pending.callback->OnLinkedResult(inputBufferQueue, const_cast<std::shared_ptr<Meta> &>(pending.meta));
+        }
+        sptr<IBrokerListener> listener = new MuxerBrokerListener(shared_from_this(), trackIndex,
+            pending.streamType, inputBufferQueue);
+        inputBufferQueue->SetBufferFilledListener(listener);
+        preFilterCount_++;
+        {
+            std::lock_guard<std::mutex> lock(bufferPtsMutex_);
+            bufferPtsMap_.insert(std::pair<int32_t, int64_t>(trackIndex, 0));
+        }
+        MEDIA_LOG_I("AddPendingMetaTracks done, mimeType: %{public}s, trackIndex: %{public}d",
+            mimeType.c_str(), trackIndex);
+    }
+    pendingMetaTracks_ = std::move(stillPending);
+    return Status::OK;
 }
 
 Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -287,8 +338,21 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
     std::string mimeType;
     FALSE_RETURN_V_MSG(meta != nullptr, Status::ERROR_NULL_POINTER, "meta is nullptr.");
     meta->Get<Tag::MIME_TYPE>(mimeType);
+    MEDIA_LOG_I("MuxerFilter::OnLinked, mimeType: %{public}s", mimeType.c_str());
     ConfigureTrackMeta(meta, mimeType);
     FALSE_RETURN_V_MSG(mediaMuxer_ != nullptr, Status::ERROR_NULL_POINTER, "MediaMuxer is nullptr.");
+
+    // For meta tracks, defer AddTrack until source track is registered
+    if (mimeType.find("meta/") == 0) {
+        std::string srcMimeType;
+        meta->Get<Tag::TIMED_METADATA_SRC_TRACK_MIME>(srcMimeType);
+        if (trackIndexMap_.find(srcMimeType) == trackIndexMap_.end()) {
+            MEDIA_LOG_I("Meta track source not ready, pending. srcMimeType: %{public}s", srcMimeType.c_str());
+            pendingMetaTracks_.push_back({meta, callback, inType});
+            return Status::OK;
+        }
+    }
+
     auto ret = mediaMuxer_->AddTrack(trackIndex, meta);
     if (ret != Status::OK && eventReceiver_ != nullptr) {
         if (isTransCoderMode.load()) {
@@ -300,6 +364,13 @@ Status MuxerFilter::OnLinked(StreamType inType, const std::shared_ptr<Meta> &met
         return ret;
     }
     trackIndexMap_.emplace(std::make_pair(mimeType, trackIndex));
+
+    // Process any pending meta tracks now that current track is registered in trackIndexMap_
+    if (mimeType.find("audio/") == 0 || mimeType.find("video/") == 0) {
+        ret = AddPendingMetaTracks();
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "AddPendingMetaTracks failed");
+    }
+
     sptr<AVBufferQueueProducer> inputBufferQueue = mediaMuxer_->GetInputBufferQueue(trackIndex);
     FALSE_RETURN_V_MSG(inputBufferQueue != nullptr, Status::ERROR_NULL_POINTER, "inputBufferQueue is nullptr");
     FALSE_RETURN_V_MSG(callback != nullptr, Status::ERROR_NULL_POINTER, "callback is nullptr");
@@ -394,11 +465,19 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
         lastAudioPts_.store(inputBuffer->pts_);
         if (videoCodecMimeType_.empty()) {
             inputBufferQueue->ReturnBuffer(inputBuffer, true);
-        } else if (inputBuffer->pts_ <= lastVideoPts_.load() || videoIsEos.load()) {
+        } else if (inputBuffer->pts_ <= lastVideoPts_.load() + SYNC_THRESHOLD_US || videoIsEos.load()) {
             inputBufferQueue->ReturnBuffer(inputBuffer, true);
         } else {
+            MEDIA_LOG_D("Audio ahead of video, waiting. audioPts: " PUBLIC_LOG_D64
+                " lastVideoPts: " PUBLIC_LOG_D64 " diff: " PUBLIC_LOG_D64 " us",
+                inputBuffer->pts_, lastVideoPts_.load(),
+                inputBuffer->pts_ - lastVideoPts_.load());
             std::unique_lock<std::mutex> lock(stopMutex_);
-            stopCondition_.wait_for(lock, std::chrono::milliseconds(US_TO_MS));
+            stopCondition_.wait_for(lock, std::chrono::milliseconds(US_TO_MS),
+                [this, &inputBuffer]() {
+                    return inputBuffer->pts_ <= lastVideoPts_.load() + SYNC_THRESHOLD_US
+                        || videoIsEos.load();
+                });
             inputBufferQueue->ReturnBuffer(inputBuffer, true);
         }
     } else if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {

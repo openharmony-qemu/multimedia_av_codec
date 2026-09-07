@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #include "egl_render_context.h"
 #include <cstring>
 #include "common/log.h"
@@ -21,11 +21,11 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "EglRenderContext" };
 }
- 
+
 namespace OHOS {
 namespace Media {
 const std::int32_t BIT_SIZE = 8;
- 
+
 const char *GetEglErrorString()
 {
     EGLint error = eglGetError();
@@ -58,26 +58,35 @@ const char *GetEglErrorString()
     }
     return "Unknown Error";
 }
- 
+
 using GetPlatformDisplayExt = PFNEGLGETPLATFORMDISPLAYEXTPROC;
- 
+
 EglRenderContext::EglRenderContext() {}
- 
+
 EglRenderContext::~EglRenderContext() noexcept
 {
     if (eglDisplay_ == EGL_NO_DISPLAY) {
         return;
     }
- 
-    eglDestroyContext(eglDisplay_, eglContext_);
+    // 1. 解绑当前线程的 EGL 上下文和表面
     eglMakeCurrent(eglDisplay_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
-    eglTerminate(eglDisplay_);
+
+    // 2. 释放当前线程持有的 EGL 资源
     eglReleaseThread();
- 
-    eglDisplay_ = EGL_NO_DISPLAY;
-    eglContext_ = EGL_NO_CONTEXT;
+
+    // 3. 销毁 EGL 上下文（如果存在）
+    if (eglContext_ != EGL_NO_CONTEXT) {
+        eglDestroyContext(eglDisplay_, eglContext_);
+        eglContext_ = EGL_NO_CONTEXT;
+    }
+
+    // 4. 终止 EGL 显示连接
+    if (eglDisplay_ != EGL_NO_DISPLAY) {
+        eglTerminate(eglDisplay_);
+        eglDisplay_ = EGL_NO_DISPLAY;
+    }
 }
- 
+
 bool EglRenderContext::Init()
 {
     FALSE_RETURN_V_MSG(!IsEglContextReady(), true, "IsEglContextReady is ok");
@@ -92,7 +101,7 @@ bool EglRenderContext::Init()
         false, "eglInitialize failed to create");
     EGLint count;
     EGLint configAttribs[] = { EGL_SURFACE_TYPE,
-                               EGL_WINDOW_BIT,
+                               EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
                                EGL_RED_SIZE,
                                BIT_SIZE,
                                EGL_GREEN_SIZE,
@@ -104,19 +113,14 @@ bool EglRenderContext::Init()
                                EGL_RENDERABLE_TYPE,
                                EGL_OPENGL_ES3_BIT,
                                EGL_NONE };
-    if (eglChooseConfig(eglDisplay_, configAttribs, &config_, 1, &count) == EGL_FALSE) {
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::Init: Failed to bind choose config, error: %{public}s.", GetEglErrorString());
-        return false;
-    }
-    const EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
+
+        FALSE_RETURN_V_MSG(eglChooseConfig(eglDisplay_, configAttribs, &config_, 1, &count) != EGL_FALSE,
+            false, "Failed to bind choose config");
+    
+    const EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
+
     eglContext_ = eglCreateContext(eglDisplay_, config_, EGL_NO_CONTEXT, contextAttribs);
-    if (eglContext_ == EGL_NO_CONTEXT) {
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::Init: Failed to bind create context, error: %{public}s.", GetEglErrorString());
-        return false;
-    }
- 
+    FALSE_RETURN_V_MSG(eglContext_ != EGL_NO_CONTEXT, false, "Failed to eglCreateContext");
     MEDIA_LOG_I("EglRenderContext EglRenderContext::Init end.");
     return true;
 }
@@ -142,7 +146,7 @@ void EglRenderContext::SwapBuffers(EGLSurface surface) const
             surfaceId, GetEglErrorString());
     }
 }
- 
+
 void EglRenderContext::DestroyEglSurface(EGLSurface surface)
 {
     if (!eglDestroySurface(eglDisplay_, surface)) {
@@ -152,29 +156,38 @@ void EglRenderContext::DestroyEglSurface(EGLSurface surface)
             surfaceId, GetEglErrorString());
     }
 }
- 
+
 EGLSurface EglRenderContext::CreateEglSurface(EGLNativeWindowType eglNativeWindow, const EGLint *attribList)
 {
-    if (!IsEglContextReady()) {
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::CreateEglWindowSurface: EGL context has not initialized");
-        return EGL_NO_SURFACE;
-    }
- 
-    if (!eglMakeCurrent(eglDisplay_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT)) {
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::CreateEglWindowSurface: Failed to make current no surface, error is %{public}s.",
-            GetEglErrorString());
-    }
- 
+    FALSE_RETURN_V_MSG(IsEglContextReady(), EGL_NO_SURFACE,
+        "EglRenderContext::IsEglContextReady: EGL context has not initialized");
+
+    FALSE_RETURN_V_MSG(eglMakeCurrent(eglDisplay_, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT),
+        EGL_NO_SURFACE, "eglMakeCurrent::CreateEglWindowSurface: EGL context has not initialized");
+
     EGLSurface surface = eglCreateWindowSurface(eglDisplay_, config_, eglNativeWindow, attribList);
-    if (surface == EGL_NO_SURFACE) {
-        MEDIA_LOG_E("EglRenderContext",
-            "EglRenderContext::CreateEglWindowSurface: Failed to create eglSurface, error is %{public}s.",
-            GetEglErrorString());
-        return EGL_NO_SURFACE;
-    }
- 
+
+    FALSE_RETURN_V_MSG(surface != EGL_NO_SURFACE,
+        EGL_NO_SURFACE, "EglRenderContext::CreateEglWindowSurface: Failed to create eglSurface");
+    return surface;
+}
+
+EGLSurface EglRenderContext::CreatePbufferSurface(const EGLint *attribList)
+{
+    FALSE_RETURN_V_MSG(IsEglContextReady(), EGL_NO_SURFACE,
+        "EglRenderContext::CreatePbufferSurface: EGL context has not initialized");
+
+    EGLint defaultAttribs[] = {
+        EGL_WIDTH, 1,
+        EGL_HEIGHT, 1,
+        EGL_NONE,
+    };
+
+    const EGLint *attribs = attribList != nullptr ? attribList : defaultAttribs;
+    EGLSurface surface = eglCreatePbufferSurface(eglDisplay_, config_, attribs);
+    FALSE_RETURN_V_MSG(surface != EGL_NO_SURFACE, EGL_NO_SURFACE,
+        "EglRenderContext::CreatePbufferSurface: Failed to create Pbuffer surface, error is %{public}s",
+        GetEglErrorString());
     return surface;
 }
 }

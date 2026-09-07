@@ -42,6 +42,7 @@ public:
     }
     
     void SetInt(const std::string &name, int value);
+    void SetVec2(const std::string &name, float v0, float v1);
     void SetMatrix4v(const std::string &name, const float *matrix, int cnt, bool transpose = false);
  
 private:

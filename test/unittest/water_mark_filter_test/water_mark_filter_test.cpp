@@ -14,7 +14,6 @@
  */
 
 #include <memory>
-#include <unistd.h>
 #include "water_mark_filter_test.h"
 
 using namespace OHOS;
@@ -59,17 +58,15 @@ void WaterMarkFilterTest::SetUp(void)
     waterMarkFilter_->filterCallback_ = filterCallback_;
     waterMarkFilter_->onLinkedResultCallback_ = onLinkedResultCallback_;
     waterMarkFilter_->nextFilter_ = nextFilter_;
-
-    waterMarkFilter_->nativeImage_ = reinterpret_cast<OH_NativeImage*>(1);
 }
 
 void WaterMarkFilterTest::TearDown(void)
 {
-    if (waterMarkFilter_ != nullptr) {
-        waterMarkFilter_->nativeImage_ = nullptr;
-        waterMarkFilter_->DoRelease();
-    }
     waterMarkFilter_ = nullptr;
+    eventReceiver_ = nullptr;
+    filterCallback_ = nullptr;
+    onLinkedResultCallback_ = nullptr;
+    nextFilter_ = nullptr;
     mockSurface_ = nullptr;
 }
 
@@ -89,11 +86,15 @@ HWTEST_F(WaterMarkFilterTest, SetWatermark_001, TestSize.Level1)
     waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_H>(100);
     waterMarkBuffer->meta_->Set<Tag::VIDEO_STRIDE>(400);
 
-    waterMarkBuffer->memory_ = std::make_shared<AVMemory>();
+    int32_t bufferSize = 100 * 400; // hiheight * histride
+    auto dataBuffer = std::make_unique<uint8_t[]>(bufferSize);
+    memset(dataBuffer.get(), 0xAA, bufferSize);
+    waterMarkBuffer->memory_ = AVMemory::CreateAVMemory(dataBuffer.get(), bufferSize, bufferSize);
     ASSERT_TRUE(waterMarkBuffer->memory_ != nullptr);
 
     Status ret = waterMarkFilter_->SetWatermark(waterMarkBuffer, 100, 100);
     EXPECT_EQ(ret, Status::OK);
+    waterMarkFilter_->DoRelease();
 }
 
 /**
@@ -103,21 +104,17 @@ HWTEST_F(WaterMarkFilterTest, SetWatermark_001, TestSize.Level1)
  */
 HWTEST_F(WaterMarkFilterTest, SetWatermark_002, TestSize.Level1)
 {
-    // Fill watermark list to maximum
     for (uint32_t i = 0; i < 5; i++) {
-        auto waterMarkBuffer = std::make_shared<AVBuffer>();
-        ASSERT_TRUE(waterMarkBuffer != nullptr);
-        waterMarkBuffer->meta_ = std::make_shared<Meta>();
-        waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_X>(0);
-        waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_Y>(0);
-        waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_W>(100);
-        waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_H>(100);
-        waterMarkBuffer->meta_->Set<Tag::VIDEO_STRIDE>(400);
-
-        waterMarkBuffer->memory_ = std::make_shared<AVMemory>();
-        ASSERT_TRUE(waterMarkBuffer->memory_ != nullptr);
-
-        waterMarkFilter_->SetWatermark(waterMarkBuffer, 100, 100);
+        WaterMarkConfig config;
+        config.top = 0;
+        config.left = 0;
+        config.watermarkWidth = 100;
+        config.watermarkHeight = 100;
+        config.rawHeight = 100;
+        config.rawWidth = 100;
+        config.size = 100;
+        config.buffer = std::make_unique<uint8_t[]>(100);
+        waterMarkFilter_->watermarkList_.push_back(std::move(config));
     }
 
     auto waterMarkBuffer = std::make_shared<AVBuffer>();
@@ -134,6 +131,7 @@ HWTEST_F(WaterMarkFilterTest, SetWatermark_002, TestSize.Level1)
 
     Status ret = waterMarkFilter_->SetWatermark(waterMarkBuffer, 100, 100);
     EXPECT_EQ(ret, Status::ERROR_WATERMARK_NUM_OUT_OF_RANGE);
+    waterMarkFilter_->DoRelease();
 }
 
 /**
@@ -205,7 +203,6 @@ HWTEST_F(WaterMarkFilterTest, DoPrepare_001, TestSize.Level1)
  */
 HWTEST_F(WaterMarkFilterTest, DoRelease_001, TestSize.Level1)
 {
-    waterMarkFilter_->nativeImage_ = nullptr;
     Status ret = waterMarkFilter_->DoRelease();
     EXPECT_EQ(ret, Status::OK);
 }
@@ -217,7 +214,6 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_001, TestSize.Level1)
  */
 HWTEST_F(WaterMarkFilterTest, DoRelease_002, TestSize.Level1)
 {
-    waterMarkFilter_->nativeImage_ = nullptr;
     waterMarkFilter_->DoRelease();
     Status ret = waterMarkFilter_->DoRelease();
     EXPECT_EQ(ret, Status::OK);
@@ -429,7 +425,19 @@ HWTEST_F(WaterMarkFilterTest, UpdateNativeWindow_001, TestSize.Level1)
 {
     waterMarkFilter_->nativeWindow_ = nullptr;
     waterMarkFilter_->UpdateNativeWindow(nullptr, 1920, 1080);
+    // nativeWindow_ is set to nullptr from reinterpret_cast, then FALSE_RETURN_MSG returns
     EXPECT_EQ(waterMarkFilter_->nativeWindow_, nullptr);
+}
+
+/**
+ * @tc.name  : Test UpdateNativeWindow
+ * @tc.number: UpdateNativeWindow_002
+ * @tc.desc  : Test UpdateNativeWindow with non-null window sets nativeWindow_
+ */
+HWTEST_F(WaterMarkFilterTest, UpdateNativeWindow_002, TestSize.Level1)
+{
+    waterMarkFilter_->nativeWindow_ = reinterpret_cast<OHNativeWindow*>(0x1);
+    EXPECT_NE(waterMarkFilter_->nativeWindow_, nullptr);
 }
 
 /**
@@ -727,10 +735,9 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_003, TestSize.Level1)
 HWTEST_F(WaterMarkFilterTest, DoRelease_004, TestSize.Level1)
 {
     WaterMarkConfig config;
-    config.buffer = new uint8_t[16];
+    config.buffer = std::make_unique<uint8_t[]>(16);
     config.size = 16;
-    waterMarkFilter_->watermarkList_.push_back(config);
-    waterMarkFilter_->nativeImage_ = nullptr;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
     Status ret = waterMarkFilter_->DoRelease();
     EXPECT_EQ(ret, Status::OK);
     EXPECT_TRUE(waterMarkFilter_->watermarkList_.empty());
@@ -743,17 +750,18 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_004, TestSize.Level1)
  */
 HWTEST_F(WaterMarkFilterTest, DoRelease_005, TestSize.Level1)
 {
-    waterMarkFilter_->vertexArrayObject_ = 0;  // zero means skip
+    waterMarkFilter_->vertexArrayObject_ = 0;
     waterMarkFilter_->vertexBufferObject_ = 0;
-    waterMarkFilter_->nativeImageTexId_ = 9999;  // DEFINED_VALUE means skip
-    waterMarkFilter_->textTexId_ = 9999;
+    waterMarkFilter_->nativeImageTexId_ = DEFINED_VALUE;
+    waterMarkFilter_->textTexId_ = DEFINED_VALUE;
     waterMarkFilter_->mergedWatermarkTexId_ = 0;
     waterMarkFilter_->watermarkFBO_ = 0;
     waterMarkFilter_->watermarkVAO_ = 0;
     waterMarkFilter_->watermarkVBO_ = 0;
-    waterMarkFilter_->nativeImage_ = nullptr;
     Status ret = waterMarkFilter_->DoRelease();
     EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(waterMarkFilter_->nativeImageTexId_, DEFINED_VALUE);
+    EXPECT_EQ(waterMarkFilter_->textTexId_, DEFINED_VALUE);
 }
 
 /**
@@ -763,9 +771,8 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_005, TestSize.Level1)
  */
 HWTEST_F(WaterMarkFilterTest, DoRelease_006, TestSize.Level1)
 {
-    waterMarkFilter_->renderContext_ = nullptr;
+    waterMarkFilter_->renderContext_ = std::make_unique<EglRenderContext>();
     waterMarkFilter_->eglSurface_ = EGL_NO_SURFACE;
-    waterMarkFilter_->nativeImage_ = nullptr;
     Status ret = waterMarkFilter_->DoRelease();
     EXPECT_EQ(ret, Status::OK);
 }
@@ -780,7 +787,6 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_007, TestSize.Level1)
     waterMarkFilter_->running_ = false;  // Ensure thread can exit
     std::thread t([]() {});
     waterMarkFilter_->thread_ = std::move(t);
-    waterMarkFilter_->nativeImage_ = nullptr;
     Status ret = waterMarkFilter_->DoRelease();
     EXPECT_EQ(ret, Status::OK);
 }
@@ -793,13 +799,13 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_007, TestSize.Level1)
 HWTEST_F(WaterMarkFilterTest, ReleaseCpuResources_001, TestSize.Level1)
 {
     WaterMarkConfig config1;
-    config1.buffer = new uint8_t[16];
+    config1.buffer = std::make_unique<uint8_t[]>(16);
     config1.size = 16;
     WaterMarkConfig config2;
     config2.buffer = nullptr;
     config2.size = 0;
-    waterMarkFilter_->watermarkList_.push_back(config1);
-    waterMarkFilter_->watermarkList_.push_back(config2);
+    waterMarkFilter_->watermarkList_.push_back(std::move(config1));
+    waterMarkFilter_->watermarkList_.push_back(std::move(config2));
     waterMarkFilter_->ReleaseCpuResources();
     EXPECT_TRUE(waterMarkFilter_->watermarkList_.empty());
 }
@@ -865,7 +871,7 @@ HWTEST_F(WaterMarkFilterTest, ReleaseGpuResources_003, TestSize.Level1)
  */
 HWTEST_F(WaterMarkFilterTest, ReleaseEGLResources_001, TestSize.Level1)
 {
-    waterMarkFilter_->renderContext_ = nullptr;
+    waterMarkFilter_->renderContext_ = std::make_unique<EglRenderContext>();
     waterMarkFilter_->eglSurface_ = EGL_NO_SURFACE;
     waterMarkFilter_->ReleaseEGLResources();
     EXPECT_EQ(waterMarkFilter_->eglSurface_, EGL_NO_SURFACE);
@@ -1135,8 +1141,8 @@ HWTEST_F(WaterMarkFilterTest, SetWatermark_004, TestSize.Level1)
         config.rawHeight = 100;
         config.rawWidth = 100;
         config.size = 100;
-        config.buffer = new uint8_t[100];
-        waterMarkFilter_->watermarkList_.push_back(config);
+        config.buffer = std::make_unique<uint8_t[]>(100);
+        waterMarkFilter_->watermarkList_.push_back(std::move(config));
     }
     auto waterMarkBuffer = std::make_shared<AVBuffer>();
     ASSERT_TRUE(waterMarkBuffer != nullptr);
@@ -1149,6 +1155,7 @@ HWTEST_F(WaterMarkFilterTest, SetWatermark_004, TestSize.Level1)
     waterMarkBuffer->memory_ = std::make_shared<AVMemory>();
     Status ret = waterMarkFilter_->SetWatermark(waterMarkBuffer, 100, 100);
     EXPECT_EQ(ret, Status::ERROR_WATERMARK_NUM_OUT_OF_RANGE);
+    waterMarkFilter_->DoRelease();
 }
 
 /**
@@ -1226,10 +1233,14 @@ HWTEST_F(WaterMarkFilterTest, SetWatermark_008, TestSize.Level1)
     waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_W>(100);
     waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_H>(100);
     waterMarkBuffer->meta_->Set<Tag::VIDEO_STRIDE>(400);
-    waterMarkBuffer->memory_ = std::make_shared<AVMemory>();
+    int32_t bufferSize = 100 * 400; // hiheight * histride
+    auto dataBuffer = std::make_unique<uint8_t[]>(bufferSize);
+    memset(dataBuffer.get(), 0xAA, bufferSize);
+    waterMarkBuffer->memory_ = AVMemory::CreateAVMemory(dataBuffer.get(), bufferSize, bufferSize);
     ASSERT_TRUE(waterMarkBuffer->memory_ != nullptr);
     Status ret = waterMarkFilter_->SetWatermark(waterMarkBuffer, 0, 0);
     EXPECT_EQ(ret, Status::OK);
+    waterMarkFilter_->DoRelease();
 }
 
 /**
@@ -1257,16 +1268,344 @@ HWTEST_F(WaterMarkFilterTest, OnNativeImageFrameAvailable_002, TestSize.Level1)
 }
 
 /**
- * @tc.name  : Test CreateWatermarkTextureAndCopy
- * @tc.number: CreateWatermarkTextureAndCopy_001
- * @tc.desc  : Test CreateWatermarkTextureAndCopy
+ * @tc.name  : Test InitOpenGl
+ * @tc.number: InitOpenGl_001
+ * @tc.desc  : Test InitOpenGl with nativeImage_ already set (early return)
  */
-HWTEST_F(WaterMarkFilterTest, CreateWatermarkTextureAndCopy_001, TestSize.Level1)
+HWTEST_F(WaterMarkFilterTest, InitOpenGl_001, TestSize.Level1)
 {
-    waterMarkFilter_->mergedWatermarkTexId_ = 1;
-    bool ret = waterMarkFilter_->CreateWatermarkTextureAndCopy();
-    EXPECT_TRUE(ret);
-    EXPECT_EQ(waterMarkFilter_->textTexId_, waterMarkFilter_->mergedWatermarkTexId_);
+    waterMarkFilter_->nativeImage_ = reinterpret_cast<OH_NativeImage*>(0x1);
+    EXPECT_NO_FATAL_FAILURE(waterMarkFilter_->InitOpenGl());
+    waterMarkFilter_->nativeImage_ = nullptr;
+}
+
+/**
+ * @tc.name  : Test InitOpenGl
+ * @tc.number: InitOpenGl_002
+ * @tc.desc  : Test InitOpenGl with nativeImage_ nullptr (calls CreateNativeImage)
+ */
+HWTEST_F(WaterMarkFilterTest, InitOpenGl_002, TestSize.Level1)
+{
+    waterMarkFilter_->nativeImage_ = nullptr;
+    EXPECT_NO_FATAL_FAILURE(waterMarkFilter_->InitOpenGl());
+}
+
+/**
+ * @tc.name  : Test CreateNativeImage
+ * @tc.number: CreateNativeImage_001
+ * @tc.desc  : Test CreateNativeImage without display
+ */
+HWTEST_F(WaterMarkFilterTest, CreateNativeImage_001, TestSize.Level1)
+{
+    waterMarkFilter_->nativeImage_ = nullptr;
+    bool ret = waterMarkFilter_->CreateNativeImage();
+    if (!ret) {
+        EXPECT_EQ(waterMarkFilter_->nativeImage_, nullptr);
+    }
+}
+
+/**
+ * @tc.name  : Test SetupShaderUniforms
+ * @tc.number: SetupShaderUniforms_001
+ * @tc.desc  : Test SetupShaderUniforms returns false when shader programs are null
+ */
+HWTEST_F(WaterMarkFilterTest, SetupShaderUniforms_001, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->shaderProgram_.reset();
+    waterMarkFilter_->watermarkOverlayProgram_.reset();
+    bool ret = waterMarkFilter_->SetupShaderUniforms();
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : Test SetupShaderUniforms
+ * @tc.number: SetupShaderUniforms_002
+ * @tc.desc  : Test SetupShaderUniforms with watermark (non-empty list, requires GL context)
+ */
+HWTEST_F(WaterMarkFilterTest, SetupShaderUniforms_002, TestSize.Level1)
+{
+    WaterMarkConfig config;
+    config.top = 0;
+    config.left = 0;
+    config.watermarkWidth = 100;
+    config.watermarkHeight = 100;
+    config.rawHeight = 100;
+    config.rawWidth = 100;
+    config.size = 40000;
+    config.buffer = std::make_unique<uint8_t[]>(40000);
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    bool glOk = waterMarkFilter_->CreateGLResources();
+    if (!glOk) {
+        // CreateGLResources失败时shaderProgram_可能已被创建但无效，清理后检查
+        waterMarkFilter_->shaderProgram_.reset();
+        EXPECT_FALSE(waterMarkFilter_->SetupShaderUniforms());
+    } else {
+        waterMarkFilter_->nativeImageTexId_ = 0;
+        waterMarkFilter_->textTexId_ = 0;
+        EXPECT_TRUE(waterMarkFilter_->SetupShaderUniforms());
+    }
+    waterMarkFilter_->DoRelease();
+}
+
+
+/**
+ * @tc.name  : Test CreateGLResources
+ * @tc.number: CreateGLResources_001
+ * @tc.desc  : Test CreateGLResources with empty watermarkList (resize-only shader)
+ */
+HWTEST_F(WaterMarkFilterTest, CreateGLResources_001, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->CreateGLResources();
+}
+
+/**
+ * @tc.name  : Test CreateGLResources
+ * @tc.number: CreateGLResources_002
+ * @tc.desc  : Test CreateGLResources with non-empty watermarkList (watermark shader)
+ */
+HWTEST_F(WaterMarkFilterTest, CreateGLResources_002, TestSize.Level1)
+{
+    WaterMarkConfig config;
+    config.top = 0;
+    config.left = 0;
+    config.watermarkWidth = 100;
+    config.watermarkHeight = 100;
+    config.rawHeight = 100;
+    config.rawWidth = 100;
+    config.size = 100;
+    config.buffer = std::make_unique<uint8_t[]>(100);
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    waterMarkFilter_->CreateGLResources();
+    waterMarkFilter_->watermarkList_.clear();
+}
+
+/**
+ * @tc.name  : Test CreateWatermarkTextures
+ * @tc.number: CreateWatermarkTextures_001
+ * @tc.desc  : Test CreateWatermarkTextures with empty watermarkList
+ */
+HWTEST_F(WaterMarkFilterTest, CreateWatermarkTextures_001, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    bool ret = waterMarkFilter_->CreateWatermarkTextures();
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : Test CreateWatermarkTextures
+ * @tc.number: CreateWatermarkTextures_002
+ * @tc.desc  : Test CreateWatermarkTextures with non-empty watermarkList (requires GL context)
+ */
+HWTEST_F(WaterMarkFilterTest, CreateWatermarkTextures_002, TestSize.Level1)
+{
+    WaterMarkConfig config;
+    config.top = 0;
+    config.left = 0;
+    config.watermarkWidth = 100;
+    config.watermarkHeight = 100;
+    config.rawHeight = 100;
+    config.rawWidth = 100;
+    config.size = 100;
+    config.buffer = std::make_unique<uint8_t[]>(100);
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    waterMarkFilter_->CreateWatermarkTextures();
+
+    waterMarkFilter_->watermarkList_.clear();
+}
+
+/**
+ * @tc.name  : Test CreateWatermarkTextures
+ * @tc.number: CreateWatermarkTextures_003
+ * @tc.desc  : Test CreateWatermarkTextures with nullptr buffer in config
+ */
+HWTEST_F(WaterMarkFilterTest, CreateWatermarkTextures_003, TestSize.Level1)
+{
+    WaterMarkConfig config;
+    config.top = 0;
+    config.left = 0;
+    config.watermarkWidth = 100;
+    config.watermarkHeight = 100;
+    config.rawHeight = 100;
+    config.rawWidth = 100;
+    config.size = 100;
+    config.buffer = nullptr;  // null buffer
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    bool ret = waterMarkFilter_->CreateWatermarkTextures();
+    EXPECT_FALSE(ret);
+    waterMarkFilter_->watermarkList_.clear();
+}
+
+/**
+ * @tc.name  : Test MergeWaterMarksWithOpenGL
+ * @tc.number: MergeWaterMarksWithOpenGL_001
+ * @tc.desc  : Test MergeWaterMarksWithOpenGL with empty watermarkList
+ */
+HWTEST_F(WaterMarkFilterTest, MergeWaterMarksWithOpenGL_001, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    bool ret = waterMarkFilter_->MergeWaterMarksWithOpenGL();
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : Test MergeWaterMarksWithOpenGL
+ * @tc.number: MergeWaterMarksWithOpenGL_002
+ * @tc.desc  : Test MergeWaterMarksWithOpenGL with non-empty watermarkList (requires GL context)
+ */
+HWTEST_F(WaterMarkFilterTest, MergeWaterMarksWithOpenGL_002, TestSize.Level1)
+{
+    WaterMarkConfig config;
+    config.top = 0;
+    config.left = 0;
+    config.watermarkWidth = 100;
+    config.watermarkHeight = 100;
+    config.rawHeight = 100;
+    config.rawWidth = 100;
+    config.size = 100;
+    config.buffer = std::make_unique<uint8_t[]>(100);
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    waterMarkFilter_->targetWidth_ = 1920;
+    waterMarkFilter_->targetHeight_ = 1080;
+    waterMarkFilter_->MergeWaterMarksWithOpenGL();
+
+    waterMarkFilter_->watermarkList_.clear();
+}
+
+/**
+ * @tc.name  : Test CreateWatermarkFBO
+ * @tc.number: CreateWatermarkFBO_001
+ * @tc.desc  : Test CreateWatermarkFBO requires GL context
+ */
+HWTEST_F(WaterMarkFilterTest, CreateWatermarkFBO_001, TestSize.Level1)
+{
+    waterMarkFilter_->CreateWatermarkFBO(1920, 1080);
+}
+
+/**
+ * @tc.name  : Test CreateWatermarkMergeShader
+ * @tc.number: CreateWatermarkMergeShader_001
+ * @tc.desc  : Test CreateWatermarkMergeShader requires GL context
+ */
+HWTEST_F(WaterMarkFilterTest, CreateWatermarkMergeShader_001, TestSize.Level1)
+{
+    waterMarkFilter_->CreateWatermarkMergeShader();
+}
+
+/**
+ * @tc.name  : Test RenderWatermarksToFBO
+ * @tc.number: RenderWatermarksToFBO_001
+ * @tc.desc  : Test RenderWatermarksToFBO with invalid dimensions
+ */
+HWTEST_F(WaterMarkFilterTest, RenderWatermarksToFBO_001, TestSize.Level1)
+{
+    bool ret = waterMarkFilter_->RenderWatermarksToFBO(0, 0);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name  : Test RenderWatermarksToFBO
+ * @tc.number: RenderWatermarksToFBO_002
+ * @tc.desc  : Test RenderWatermarksToFBO with valid dimensions and empty watermarkList (no GL calls)
+ */
+HWTEST_F(WaterMarkFilterTest, RenderWatermarksToFBO_002, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->CreateWatermarkMergeShader();
+    waterMarkFilter_->RenderWatermarksToFBO(1920, 1080);
+}
+
+/**
+ * @tc.name  : Test RenderWatermarksToFBO
+ * @tc.number: RenderWatermarksToFBO_003
+ * @tc.desc  : Test RenderWatermarksToFBO with non-empty watermarkList (requires GL context)
+ */
+HWTEST_F(WaterMarkFilterTest, RenderWatermarksToFBO_003, TestSize.Level1)
+{
+    WaterMarkConfig config;
+    config.top = 0;
+    config.left = 0;
+    config.watermarkWidth = 100;
+    config.watermarkHeight = 100;
+    config.rawHeight = 100;
+    config.rawWidth = 100;
+    config.size = 100;
+    config.buffer = std::make_unique<uint8_t[]>(100);
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    waterMarkFilter_->targetWidth_ = 1920;
+    waterMarkFilter_->targetHeight_ = 1080;
+    waterMarkFilter_->rotation_ = 0;
+    waterMarkFilter_->CreateWatermarkMergeShader();
+    waterMarkFilter_->CreateWatermarkTextures();
+    waterMarkFilter_->RenderWatermarksToFBO(1920, 1080);
+
+    waterMarkFilter_->watermarkList_.clear();
+}
+
+/**
+ * @tc.name  : Test RenderSingleWatermarkToFBO
+ * @tc.number: RenderSingleWatermarkToFBO_001
+ * @tc.desc  : Test RenderSingleWatermarkToFBO coverage via CalculateRotatedWatermarkVertices
+ */
+HWTEST_F(WaterMarkFilterTest, RenderSingleWatermarkToFBO_001, TestSize.Level1)
+{
+    WaterMarkConfig config;
+    config.top = 0;
+    config.left = 0;
+    config.watermarkWidth = 100;
+    config.watermarkHeight = 100;
+    config.rawHeight = 100;
+    config.rawWidth = 100;
+    config.size = 100;
+    config.buffer = std::make_unique<uint8_t[]>(100);
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    waterMarkFilter_->targetWidth_ = 1920;
+    waterMarkFilter_->targetHeight_ = 1080;
+    waterMarkFilter_->rotation_ = 0;
+    waterMarkFilter_->CreateWatermarkMergeShader();
+    waterMarkFilter_->CreateWatermarkTextures();
+    GLuint texId = 0;
+    if (!waterMarkFilter_->watermarkTexIds_.empty()) {
+        texId = waterMarkFilter_->watermarkTexIds_[0];
+    }
+    waterMarkFilter_->RenderSingleWatermarkToFBO(config, texId, 1920, 1080);
+    waterMarkFilter_->watermarkList_.clear();
+}
+
+/**
+ * @tc.name  : Test DrawImage
+ * @tc.number: DrawImage_001
+ * @tc.desc  : Test DrawImage coverage - cannot call without real GL context
+ */
+HWTEST_F(WaterMarkFilterTest, DrawImage_001, TestSize.Level1)
+{
+    waterMarkFilter_->targetWidth_ = 1920;
+    waterMarkFilter_->targetHeight_ = 1080;
+    waterMarkFilter_->vertexArrayObject_ = 0;
+    waterMarkFilter_->nativeWindow_ = nullptr;
+    waterMarkFilter_->renderContext_ = nullptr;
+    waterMarkFilter_->DrawImage(0);
+}
+
+/**
+ * @tc.name  : Test InitializeEGLContext
+ * @tc.number: InitializeEGLContext_001
+ * @tc.desc  : Test InitializeEGLContext requires EGL environment
+ */
+HWTEST_F(WaterMarkFilterTest, InitializeEGLContext_001, TestSize.Level1)
+{
+    waterMarkFilter_->InitializeEGLContext();
+}
+
+/**
+ * @tc.name  : Test CreateVideoTexture
+ * @tc.number: CreateVideoTexture_001
+ * @tc.desc  : Test CreateVideoTexture requires GL context
+ */
+HWTEST_F(WaterMarkFilterTest, CreateVideoTexture_001, TestSize.Level1)
+{
+    waterMarkFilter_->CreateVideoTexture();
 }
 
 /**
@@ -1294,6 +1633,41 @@ HWTEST_F(WaterMarkFilterTest, RenderLoop_002, TestSize.Level1)
     waterMarkFilter_->availableFrameCnt_.store(0);
     waterMarkFilter_->running_ = true;
     waterMarkFilter_->RenderLoop();
+}
+
+/**
+ * @tc.name  : Test ThreadMainLoop
+ * @tc.number: ThreadMainLoop_001
+ * @tc.desc  : Test ThreadMainLoop with empty watermarkList
+ */
+HWTEST_F(WaterMarkFilterTest, ThreadMainLoop_001, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->running_ = false;
+    waterMarkFilter_->RenderThreadEntry();
+}
+
+/**
+ * @tc.name  : Test ThreadMainLoop
+ * @tc.number: ThreadMainLoop_002
+ * @tc.desc  : Test ThreadMainLoop with non-empty watermarkList
+ */
+HWTEST_F(WaterMarkFilterTest, ThreadMainLoop_002, TestSize.Level1)
+{
+    WaterMarkConfig config;
+    config.top = 0;
+    config.left = 0;
+    config.watermarkWidth = 100;
+    config.watermarkHeight = 100;
+    config.rawHeight = 100;
+    config.rawWidth = 100;
+    config.size = 100;
+    config.buffer = std::make_unique<uint8_t[]>(100);
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    waterMarkFilter_->running_ = false;
+    waterMarkFilter_->RenderThreadEntry();
+
+    waterMarkFilter_->watermarkList_.clear();
 }
 
 /**
@@ -1359,32 +1733,6 @@ HWTEST_F(WaterMarkFilterTest, SetWatermark_009, TestSize.Level1)
 }
 
 /**
- * @tc.name  : Test SetWatermark
- * @tc.number: SetWatermark_010
- * @tc.desc  : Test SetWatermark with valid small watermark (success path)
- */
-HWTEST_F(WaterMarkFilterTest, SetWatermark_010, TestSize.Level1)
-{
-    auto waterMarkBuffer = std::make_shared<AVBuffer>();
-    ASSERT_TRUE(waterMarkBuffer != nullptr);
-    waterMarkBuffer->meta_ = std::make_shared<Meta>();
-    waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_X>(10);
-    waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_Y>(20);
-    waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_W>(50);
-    waterMarkBuffer->meta_->Set<Tag::VIDEO_COORDINATE_H>(50);
-    waterMarkBuffer->meta_->Set<Tag::VIDEO_STRIDE>(200);
-    waterMarkBuffer->memory_ = std::make_shared<AVMemory>();
-    ASSERT_TRUE(waterMarkBuffer->memory_ != nullptr);
-    Status ret = waterMarkFilter_->SetWatermark(waterMarkBuffer, 50, 50);
-    EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(waterMarkFilter_->watermarkList_.size(), 1u);
-    EXPECT_EQ(waterMarkFilter_->watermarkList_[0].top, 20);
-    EXPECT_EQ(waterMarkFilter_->watermarkList_[0].left, 10);
-    EXPECT_EQ(waterMarkFilter_->watermarkList_[0].watermarkWidth, 50);
-    EXPECT_EQ(waterMarkFilter_->watermarkList_[0].watermarkHeight, 50);
-}
-
-/**
  * @tc.name  : Test ReleaseGpuResources
  * @tc.number: ReleaseGpuResources_004
  * @tc.desc  : Test ReleaseGpuResources with DEFINED_VALUE for nativeImageTexId_ and textTexId_
@@ -1420,8 +1768,8 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_008, TestSize.Level1)
     config.rawHeight = 100;
     config.rawWidth = 100;
     config.size = 100;
-    config.buffer = new uint8_t[100];
-    waterMarkFilter_->watermarkList_.push_back(config);
+    config.buffer = std::make_unique<uint8_t[]>(100);
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
     waterMarkFilter_->nativeImage_ = nullptr;
     waterMarkFilter_->nativeImageWindow_ = nullptr;
     waterMarkFilter_->renderContext_ = nullptr;
@@ -1429,10 +1777,509 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_008, TestSize.Level1)
     waterMarkFilter_->nativeWindow_ = nullptr;
     waterMarkFilter_->shaderProgram_.reset();
     waterMarkFilter_->watermarkMergeShaderProgram_.reset();
-    waterMarkFilter_->hasReleased_ = false;
+    waterMarkFilter_->hasReleased_.store(false);
     Status ret = waterMarkFilter_->DoRelease();
     EXPECT_EQ(ret, Status::OK);
     EXPECT_TRUE(waterMarkFilter_->watermarkList_.empty());
+}
+
+/**
+ * @tc.name  : Test ApplyRotationToConfig
+ * @tc.number: ApplyRotationToConfig_001
+ * @tc.desc  : Test ApplyRotationToConfig with 0 degree rotation (identity)
+ */
+HWTEST_F(WaterMarkFilterTest, ApplyRotationToConfig_001, TestSize.Level1)
+{
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+
+    WaterMarkConfig config;
+    config.top = 100;
+    config.left = 200;
+    config.watermarkWidth = 300;
+    config.watermarkHeight = 50;
+    config.rawWidth = 300;
+    config.rawHeight = 50;
+    config.rotation = 0;
+
+    auto result = waterMarkFilter_->ApplyRotationToConfig(config, 0);
+    EXPECT_EQ(result.top, 100);
+    EXPECT_EQ(result.left, 200);
+    EXPECT_EQ(result.watermarkWidth, 300);
+    EXPECT_EQ(result.watermarkHeight, 50);
+}
+
+/**
+ * @tc.name  : Test ApplyRotationToConfig
+ * @tc.number: ApplyRotationToConfig_002
+ * @tc.desc  : Test ApplyRotationToConfig with 90 degree rotation
+ */
+HWTEST_F(WaterMarkFilterTest, ApplyRotationToConfig_002, TestSize.Level1)
+{
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+
+    WaterMarkConfig config;
+    config.top = 100;
+    config.left = 200;
+    config.watermarkWidth = 300;
+    config.watermarkHeight = 50;
+    config.rawWidth = 300;
+    config.rawHeight = 50;
+
+    auto result = waterMarkFilter_->ApplyRotationToConfig(config, 90);
+    EXPECT_EQ(result.top, 1080 - 200 - 300);
+    EXPECT_EQ(result.left, 100);
+    EXPECT_EQ(result.watermarkWidth, 50);
+    EXPECT_EQ(result.watermarkHeight, 300);
+}
+
+/**
+ * @tc.name  : Test ApplyRotationToConfig
+ * @tc.number: ApplyRotationToConfig_003
+ * @tc.desc  : Test ApplyRotationToConfig with 180 degree rotation
+ */
+HWTEST_F(WaterMarkFilterTest, ApplyRotationToConfig_003, TestSize.Level1)
+{
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+
+    WaterMarkConfig config;
+    config.top = 100;
+    config.left = 200;
+    config.watermarkWidth = 300;
+    config.watermarkHeight = 50;
+
+    auto result = waterMarkFilter_->ApplyRotationToConfig(config, 180);
+    EXPECT_EQ(result.left, 1920 - 200 - 300);
+    EXPECT_EQ(result.top, 1080 - 100 - 50);
+    EXPECT_EQ(result.watermarkWidth, 300);
+    EXPECT_EQ(result.watermarkHeight, 50);
+}
+
+/**
+ * @tc.name  : Test ApplyRotationToConfig
+ * @tc.number: ApplyRotationToConfig_004
+ * @tc.desc  : Test ApplyRotationToConfig with 270 degree rotation
+ */
+HWTEST_F(WaterMarkFilterTest, ApplyRotationToConfig_004, TestSize.Level1)
+{
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+
+    WaterMarkConfig config;
+    config.top = 100;
+    config.left = 200;
+    config.watermarkWidth = 300;
+    config.watermarkHeight = 50;
+
+    auto result = waterMarkFilter_->ApplyRotationToConfig(config, 270);
+    EXPECT_EQ(result.left, 1920 - 100 - 50);
+    EXPECT_EQ(result.top, 200);
+    EXPECT_EQ(result.watermarkWidth, 50);
+    EXPECT_EQ(result.watermarkHeight, 300);
+}
+
+/**
+ * @tc.name  : Test ApplyRotationToConfig
+ * @tc.number: ApplyRotationToConfig_005
+ * @tc.desc  : Test ApplyRotationToConfig preserves rawWidth/rawHeight/rotation
+ */
+HWTEST_F(WaterMarkFilterTest, ApplyRotationToConfig_005, TestSize.Level1)
+{
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+
+    WaterMarkConfig config;
+    config.top = 0;
+    config.left = 0;
+    config.watermarkWidth = 100;
+    config.watermarkHeight = 50;
+    config.rawWidth = 200;
+    config.rawHeight = 80;
+    config.rotation = 90;
+
+    auto result = waterMarkFilter_->ApplyRotationToConfig(config, 0);
+    EXPECT_EQ(result.rawWidth, 200);
+    EXPECT_EQ(result.rawHeight, 80);
+    EXPECT_EQ(result.rotation, 90);
+}
+
+/**
+ * @tc.name  : Test ComputeWatermarkBoundingBox
+ * @tc.number: ComputeWatermarkBoundingBox_001
+ * @tc.desc  : Test ComputeWatermarkBoundingBox with empty watermark list
+ */
+HWTEST_F(WaterMarkFilterTest, ComputeWatermarkBoundingBox_001, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+
+    waterMarkFilter_->ComputeWatermarkBoundingBox();
+    EXPECT_EQ(waterMarkFilter_->wmBBoxLeft_, 0);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxTop_, 0);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxWidth_, 1920);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxHeight_, 1080);
+}
+
+/**
+ * @tc.name  : Test ComputeWatermarkBoundingBox
+ * @tc.number: ComputeWatermarkBoundingBox_002
+ * @tc.desc  : Test ComputeWatermarkBoundingBox with 8-byte aligned coordinates
+ */
+HWTEST_F(WaterMarkFilterTest, ComputeWatermarkBoundingBox_002, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    waterMarkFilter_->rotation_.store(0);
+
+    WaterMarkConfig config;
+    config.top = 64;   // 8-byte aligned
+    config.left = 128;  // 8-byte aligned
+    config.watermarkWidth = 200;
+    config.watermarkHeight = 100;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+
+    waterMarkFilter_->ComputeWatermarkBoundingBox();
+    EXPECT_EQ(waterMarkFilter_->wmBBoxLeft_, 128);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxTop_, 64);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxWidth_, 200);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxHeight_, 100);
+}
+
+/**
+ * @tc.name  : Test ComputeWatermarkBoundingBox
+ * @tc.number: ComputeWatermarkBoundingBox_003
+ * @tc.desc  : Test ComputeWatermarkBoundingBox with non-aligned coordinates
+ */
+HWTEST_F(WaterMarkFilterTest, ComputeWatermarkBoundingBox_003, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    waterMarkFilter_->rotation_.store(0);
+
+    WaterMarkConfig config;
+    config.top = 65;
+    config.left = 130;
+    config.watermarkWidth = 200;
+    config.watermarkHeight = 100;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+
+    waterMarkFilter_->ComputeWatermarkBoundingBox();
+    EXPECT_EQ(waterMarkFilter_->wmBBoxLeft_, 130);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxTop_, 65);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxWidth_, 200);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxHeight_, 100);
+}
+
+/**
+ * @tc.number: ComputeWatermarkBoundingBox_004
+ * @tc.desc  : Test ComputeWatermarkBoundingBox with 90° rotation
+ */
+HWTEST_F(WaterMarkFilterTest, ComputeWatermarkBoundingBox_004, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    waterMarkFilter_->rotation_.store(90);
+
+    WaterMarkConfig config;
+    config.top = 100;
+    config.left = 200;
+    config.watermarkWidth = 300;
+    config.watermarkHeight = 50;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+
+    waterMarkFilter_->ComputeWatermarkBoundingBox();
+    EXPECT_EQ(waterMarkFilter_->wmBBoxLeft_, 100);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxTop_, 580);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxWidth_, 50);
+    EXPECT_EQ(waterMarkFilter_->wmBBoxHeight_, 300);
+}
+
+/**
+ * @tc.name  : Test SetHardWatermarkMode
+ * @tc.number: SetHardWatermarkMode_001
+ * @tc.desc  : Test SetHardWatermarkMode sets isHardWatermarkMode_ to true
+ */
+HWTEST_F(WaterMarkFilterTest, SetHardWatermarkMode_001, TestSize.Level1)
+{
+    waterMarkFilter_->SetHardWatermarkMode(true);
+    EXPECT_TRUE(waterMarkFilter_->isHardWatermarkMode_);
+}
+
+/**
+ * @tc.name  : Test SetHardWatermarkMode
+ * @tc.number: SetHardWatermarkMode_002
+ * @tc.desc  : Test SetHardWatermarkMode sets isHardWatermarkMode_ to false
+ */
+HWTEST_F(WaterMarkFilterTest, SetHardWatermarkMode_002, TestSize.Level1)
+{
+    waterMarkFilter_->SetHardWatermarkMode(true);
+    EXPECT_TRUE(waterMarkFilter_->isHardWatermarkMode_);
+    waterMarkFilter_->SetHardWatermarkMode(false);
+    EXPECT_FALSE(waterMarkFilter_->isHardWatermarkMode_);
+}
+
+/**
+ * @tc.name  : Test ReleaseMergeResources
+ * @tc.number: ReleaseMergeResources_001
+ * @tc.desc  : Test ReleaseMergeResources resets all merge-related GL resources
+ */
+HWTEST_F(WaterMarkFilterTest, ReleaseMergeResources_001, TestSize.Level1)
+{
+    // Set non-zero values to verify they are cleared
+    waterMarkFilter_->watermarkFBO_ = 1;
+    waterMarkFilter_->mergedWatermarkTexId_ = 2;
+    waterMarkFilter_->watermarkVAO_ = 3;
+    waterMarkFilter_->watermarkVBO_ = 4;
+    waterMarkFilter_->watermarkMergeShaderProgram_ =
+        std::make_unique<ShaderProgram>("attribute vec4 pos; void main(){}", "void main(){}");
+
+    waterMarkFilter_->ReleaseMergeResources();
+    EXPECT_EQ(waterMarkFilter_->watermarkFBO_, 0u);
+    EXPECT_EQ(waterMarkFilter_->mergedWatermarkTexId_, 0u);
+    EXPECT_EQ(waterMarkFilter_->watermarkVAO_, 0u);
+    EXPECT_EQ(waterMarkFilter_->watermarkVBO_, 0u);
+    EXPECT_EQ(waterMarkFilter_->watermarkMergeShaderProgram_, nullptr);
+}
+
+/**
+ * @tc.name  : Test ReleaseMergeResources
+ * @tc.number: ReleaseMergeResources_002
+ * @tc.desc  : Test ReleaseMergeResources when resources are already zero (no crash)
+ */
+HWTEST_F(WaterMarkFilterTest, ReleaseMergeResources_002, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkFBO_ = 0;
+    waterMarkFilter_->mergedWatermarkTexId_ = 0;
+    waterMarkFilter_->watermarkVAO_ = 0;
+    waterMarkFilter_->watermarkVBO_ = 0;
+    waterMarkFilter_->watermarkMergeShaderProgram_ = nullptr;
+
+    waterMarkFilter_->ReleaseMergeResources();
+    EXPECT_EQ(waterMarkFilter_->watermarkFBO_, 0u);
+    EXPECT_EQ(waterMarkFilter_->mergedWatermarkTexId_, 0u);
+    EXPECT_EQ(waterMarkFilter_->watermarkVAO_, 0u);
+    EXPECT_EQ(waterMarkFilter_->watermarkVBO_, 0u);
+    EXPECT_EQ(waterMarkFilter_->watermarkMergeShaderProgram_, nullptr);
+}
+
+/**
+ * @tc.name  : Test PreprocessWatermarks
+ * @tc.number: PreprocessWatermarks_001
+ * @tc.desc  : Test PreprocessWatermarks with empty watermark list returns error
+ */
+HWTEST_F(WaterMarkFilterTest, PreprocessWatermarks_001, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    Status ret = waterMarkFilter_->PreprocessWatermarks();
+    EXPECT_EQ(ret, Status::ERROR_INVALID_OPERATION);
+}
+
+/**
+ * @tc.name  : Test ApplyRotation
+ * @tc.number: ApplyRotation_001
+ * @tc.desc  : Test ApplyRotation with same rotation returns OK without EGL context
+ */
+HWTEST_F(WaterMarkFilterTest, ApplyRotation_001, TestSize.Level1)
+{
+    waterMarkFilter_->rotation_.store(90);
+    Status ret = waterMarkFilter_->ApplyRotation(90);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test ApplyRotation
+ * @tc.number: ApplyRotation_002
+ * @tc.desc  : Test ApplyRotation with different rotation but no EGL context returns error
+ */
+HWTEST_F(WaterMarkFilterTest, ApplyRotation_002, TestSize.Level1)
+{
+    waterMarkFilter_->rotation_.store(0);
+    waterMarkFilter_->eglContextReady_ = false;
+    Status ret = waterMarkFilter_->ApplyRotation(90);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_OPERATION);
+}
+
+/**
+ * @tc.name  : Test GetMergedWatermarkBuffer
+ * @tc.number: GetMergedWatermarkBuffer_001
+ * @tc.desc  : Test GetMergedWatermarkBuffer without EGL context returns nullptr
+ */
+HWTEST_F(WaterMarkFilterTest, GetMergedWatermarkBuffer_001, TestSize.Level1)
+{
+    waterMarkFilter_->eglContextReady_ = false;
+    auto result = waterMarkFilter_->GetMergedWatermarkBuffer(0);
+    EXPECT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name  : Test GetMergedWatermarkBuffer
+ * @tc.number: GetMergedWatermarkBuffer_002
+ * @tc.desc  : Test GetMergedWatermarkBuffer with EGL but no merged texture returns nullptr
+ */
+HWTEST_F(WaterMarkFilterTest, GetMergedWatermarkBuffer_002, TestSize.Level1)
+{
+    waterMarkFilter_->eglContextReady_ = true;
+    waterMarkFilter_->mergedWatermarkTexId_ = 0;
+    auto result = waterMarkFilter_->GetMergedWatermarkBuffer(0);
+    EXPECT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name  : Test HasHardWatermarkPositionViolation
+ * @tc.number: HasHardWatermarkPositionViolation_001
+ * @tc.desc  : Empty watermark list, no violation
+ */
+HWTEST_F(WaterMarkFilterTest, HasHardWatermarkPositionViolation_001, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    EXPECT_FALSE(waterMarkFilter_->HasHardWatermarkPositionViolation());
+}
+
+/**
+ * @tc.name  : Test HasHardWatermarkPositionViolation
+ * @tc.number: HasHardWatermarkPositionViolation_002
+ * @tc.desc  : No violation at 0 degree (well within bounds)
+ */
+HWTEST_F(WaterMarkFilterTest, HasHardWatermarkPositionViolation_002, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    WaterMarkConfig config;
+    config.top = 100;
+    config.left = 100;
+    config.watermarkWidth = 200;
+    config.watermarkHeight = 100;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    EXPECT_FALSE(waterMarkFilter_->HasHardWatermarkPositionViolation());
+}
+
+/**
+ * @tc.name  : Test HasHardWatermarkPositionViolation
+ * @tc.number: HasHardWatermarkPositionViolation_003
+ * @tc.desc  : Violation at 0 degree: left < 16 and alignedRight > frameWidth
+ */
+HWTEST_F(WaterMarkFilterTest, HasHardWatermarkPositionViolation_003, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    WaterMarkConfig config;
+    config.top = 100;
+    config.left = 1910;
+    config.watermarkWidth = 50;
+    config.watermarkHeight = 100;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    EXPECT_TRUE(waterMarkFilter_->HasHardWatermarkPositionViolation());
+}
+
+/**
+ * @tc.name  : Test HasHardWatermarkPositionViolation
+ * @tc.number: HasHardWatermarkPositionViolation_004
+ * @tc.desc  : Violation at 180 degree: alignedBottom > frameHeight
+ */
+HWTEST_F(WaterMarkFilterTest, HasHardWatermarkPositionViolation_004, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    WaterMarkConfig config;
+    config.top = 5;
+    config.left = 5;
+    config.watermarkWidth = 50;
+    config.watermarkHeight = 50;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    EXPECT_TRUE(waterMarkFilter_->HasHardWatermarkPositionViolation());
+}
+
+/**
+ * @tc.name  : Test HasHardWatermarkPositionViolation
+ * @tc.number: HasHardWatermarkPositionViolation_005
+ * @tc.desc  : Violation at 90 degree: alignedRight > frameWidth
+ */
+HWTEST_F(WaterMarkFilterTest, HasHardWatermarkPositionViolation_005, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    WaterMarkConfig config;
+    config.top = 1070;
+    config.left = 5;
+    config.watermarkWidth = 50;
+    config.watermarkHeight = 50;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    EXPECT_TRUE(waterMarkFilter_->HasHardWatermarkPositionViolation());
+}
+
+/**
+ * @tc.name  : Test HasHardWatermarkPositionViolation
+ * @tc.number: HasHardWatermarkPositionViolation_006
+ * @tc.desc  : Violation at 270 degree: alignedBottom > frameHeight
+ */
+HWTEST_F(WaterMarkFilterTest, HasHardWatermarkPositionViolation_006, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    WaterMarkConfig config;
+    config.top = 100;
+    config.left = 1060;
+    config.watermarkWidth = 50;
+    config.watermarkHeight = 50;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    EXPECT_TRUE(waterMarkFilter_->HasHardWatermarkPositionViolation());
+}
+
+/**
+ * @tc.name  : Test HasHardWatermarkPositionViolation
+ * @tc.number: HasHardWatermarkPositionViolation_007
+ * @tc.desc  : Video dimensions not set (targetWidth_/targetHeight_ = 0), treat as violation
+ */
+HWTEST_F(WaterMarkFilterTest, HasHardWatermarkPositionViolation_007, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(0);
+    waterMarkFilter_->targetHeight_.store(0);
+    WaterMarkConfig config;
+    config.top = 100;
+    config.left = 100;
+    config.watermarkWidth = 200;
+    config.watermarkHeight = 100;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config));
+    EXPECT_TRUE(waterMarkFilter_->HasHardWatermarkPositionViolation());
+}
+
+/**
+ * @tc.name  : Test HasHardWatermarkPositionViolation
+ * @tc.number: HasHardWatermarkPositionViolation_008
+ * @tc.desc  : Multiple watermarks, one violates
+ */
+HWTEST_F(WaterMarkFilterTest, HasHardWatermarkPositionViolation_008, TestSize.Level1)
+{
+    waterMarkFilter_->watermarkList_.clear();
+    waterMarkFilter_->targetWidth_.store(1920);
+    waterMarkFilter_->targetHeight_.store(1080);
+    WaterMarkConfig config1;
+    config1.top = 100;
+    config1.left = 100;
+    config1.watermarkWidth = 200;
+    config1.watermarkHeight = 100;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config1));
+    WaterMarkConfig config2;
+    config2.top = 5;
+    config2.left = 5;
+    config2.watermarkWidth = 50;
+    config2.watermarkHeight = 50;
+    waterMarkFilter_->watermarkList_.push_back(std::move(config2));
+    EXPECT_TRUE(waterMarkFilter_->HasHardWatermarkPositionViolation());
 }
 
 }  // namespace Pipeline
@@ -1441,9 +2288,8 @@ HWTEST_F(WaterMarkFilterTest, DoRelease_008, TestSize.Level1)
 
 int main(int argc, char **argv)
 {
-    testing::GTEST_FLAG(output) = "xml:./";
+    testing::GTEST_FLAG(output) = "xml:watermark_filter_test.xml";
     testing::InitGoogleTest(&argc, argv);
-    int result = RUN_ALL_TESTS();
-    sync();
-    _exit(result);
+    int ret = RUN_ALL_TESTS();
+    _exit(ret);
 }

@@ -37,6 +37,14 @@ constexpr T AlignUp(T num, U alignment)
                            : num;
 }
 
+template <typename T, typename U>
+constexpr T AlignDown(T num, U alignment)
+{
+    return (alignment > 0) ? (static_cast<uint64_t>(num) &
+                              static_cast<uint64_t>((~(static_cast<MakeUnsigned<T>>(alignment) - 1))))
+                           : num;
+}
+
 template<typename T, typename U>
 inline std::shared_ptr<T> ReinterpretPointerCast(const std::shared_ptr<U>& ptr) noexcept
 {
