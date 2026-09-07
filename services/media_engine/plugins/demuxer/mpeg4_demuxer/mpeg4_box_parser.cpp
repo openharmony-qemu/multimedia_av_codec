@@ -2318,10 +2318,17 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
         dataSize -= FULLBOX_PREFIX_SIZE;
     } else if (currentAtom.type == FourccType("vttC")) {
         // FFmpeg exposes the complete vttC box as subtitle extradata.
-        FALSE_RETURN_V_MSG_E(currentAtom.size >= DEFAULT_HEAD_SIZE &&
-            ctx->dataOffset >= static_cast<int64_t>(DEFAULT_HEAD_SIZE), Status::ERROR_INVALID_DATA,
-            "Invalid vttC atom offset or size");
-        dataOffset -= DEFAULT_HEAD_SIZE;
+        FALSE_RETURN_V_MSG_E(currentAtom.size <= static_cast<uint64_t>(INT64_MAX) && ctx->offset >= 0 &&
+            static_cast<uint64_t>(ctx->offset) >= currentAtom.size,
+            Status::ERROR_INVALID_DATA, "Invalid vttC atom offsets");
+        const int64_t atomStart = ctx->offset - static_cast<int64_t>(currentAtom.size);
+        FALSE_RETURN_V_MSG_E(ctx->dataOffset >= atomStart, Status::ERROR_INVALID_DATA,
+            "Invalid vttC data offset");
+        const int64_t atomHeaderSize = ctx->dataOffset - atomStart;
+        FALSE_RETURN_V_MSG_E(atomHeaderSize >= static_cast<int64_t>(DEFAULT_HEAD_SIZE) &&
+            static_cast<uint64_t>(atomHeaderSize) <= currentAtom.size, Status::ERROR_INVALID_DATA,
+            "Invalid vttC atom header size");
+        dataOffset -= atomHeaderSize;
         dataSize = static_cast<uint64_t>(currentAtom.size);
     }
     lastTrack_->codecParms.hasValidExtradata = false;
