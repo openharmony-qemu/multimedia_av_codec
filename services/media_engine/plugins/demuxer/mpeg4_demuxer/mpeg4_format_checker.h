@@ -40,7 +40,6 @@ bool IsSupportCodec(int32_t fourcc, TrackType trackType, const std::string& mime
 
 bool NeedParseVideoInfo(std::string mimeType, TrackType trackType);
 bool NeedParseAudioInfo(std::string mimeType, TrackType trackType);
-bool NeedParseMediaTrackInfo(TrackType trackType);
 
 std::string GetMimeType(int32_t atomtype);
 std::string GetMimeTypeByObjectType(uint8_t objectTypeId);
