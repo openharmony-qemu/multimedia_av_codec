@@ -1147,7 +1147,12 @@ bool MediaDemuxer::IsWatchDevice()
 
 bool MediaDemuxer::BoostThreadPriorityIfNeeded()
 {
-    if (IsWatchDevice()) {
+    if(bundleName_ == "bootanimation"){
+        MEDIA_LOG_I("boosting read thread priority for animation");
+        return BoostReadThreadPriority() == Status::OK;
+    }
+
+#ifdef SUPPORT_START_STOP_ON_DEMAND
         MEDIA_LOG_I("Watch device, boosting read thread priority");
         Status boostWatchRet = BoostReadThreadPriority();
         if (boostWatchRet != Status::OK) {
@@ -1158,7 +1163,9 @@ bool MediaDemuxer::BoostThreadPriorityIfNeeded()
             MEDIA_LOG_I("Successfully boosted read thread priority for watch");
             return true;
         }
-    } else if (!HasVideo() && HasAudio()) {
+#endif
+
+        if (!HasVideo() && HasAudio()) {
         MEDIA_LOG_I("Audio only, boosting read thread priority");
         Status boostAudioRet = BoostReadThreadPriority();
         if (boostAudioRet != Status::OK) {
