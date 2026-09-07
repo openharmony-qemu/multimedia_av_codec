@@ -16,6 +16,7 @@
 #include "cpu_image_processor.h"
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <cstring>
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -92,8 +93,11 @@ int32_t GetSliceHeightFromBuffer(const OHOS::sptr<OHOS::SurfaceBuffer> &buffer)
     if (err != GSERROR_OK || planes == nullptr || planes->planeCount <= 1) {
         return buffer->GetHeight();
     }
-    int32_t sliceHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) / stride);
-    return std::max(sliceHeight, buffer->GetHeight());
+    uint64_t sliceHeight = planes->planes[1].offset / static_cast<uint64_t>(stride);
+    if (sliceHeight > static_cast<uint64_t>(INT32_MAX)) {
+        return INT32_MAX;
+    }
+    return std::max(static_cast<int32_t>(sliceHeight), buffer->GetHeight());
 }
 
 size_t PlaneBytes(int32_t height, int32_t stride)
@@ -172,6 +176,10 @@ bool BuildNV12Layout(BufferView &view)
 
 bool BuildP010Layout(BufferView &view)
 {
+    if (view.width > INT32_MAX / P010_LUMA_BYTES_PER_PIXEL) {
+        AVCODEC_LOGE("Invalid plane width for P010 format: width=%{public}d", view.width);
+        return false;
+    }
     size_t uvOffset = PlaneBytes(view.sliceHeight, view.stride);
     return AddPlane(view, LumaInfo(view.width, view.height, view.width * P010_LUMA_BYTES_PER_PIXEL,
                                     view.stride, P010_LUMA_BYTES_PER_PIXEL), 0) &&
@@ -213,6 +221,10 @@ bool BuildPlaneLayout(BufferView &view)
             return BuildI420Layout(view);
         case GRAPHIC_PIXEL_FMT_RGBA_8888:
         case GRAPHIC_PIXEL_FMT_RGBA_1010102:
+            if (view.width > INT32_MAX / RGBA_BYTES_PER_PIXEL) {
+                AVCODEC_LOGE("Invalid plane width for RGBA format: width=%{public}d", view.width);
+                return false;
+            }
             return AddPlane(view, LumaInfo(view.width, view.height, view.width * RGBA_BYTES_PER_PIXEL,
                                            view.stride, RGBA_BYTES_PER_PIXEL), 0);
         default:
