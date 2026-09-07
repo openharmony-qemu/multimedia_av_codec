@@ -1183,15 +1183,17 @@ void FCodec::CheckStrideChange(uint32_t index, bool isChanged)
 
 int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
 {
-    if (width_ != cachedFrame_->width || height_ != cachedFrame_->height) {
-        AVCODEC_LOGI("format change, width: %{public}d->%{public}d, height: %{public}d->%{public}d", width_,
-                     cachedFrame_->width, height_, cachedFrame_->height);
-        isChanged = true;
-        width_ = cachedFrame_->width;
-        height_ = cachedFrame_->height;
-        CHECK_AND_RETURN_RET_LOG(ValidateVideoResolution(codecName_, width_, height_), AVCS_ERR_INVALID_VAL,
+    int32_t w = cachedFrame_->width;
+    int32_t h = cachedFrame_->height;
+    if (width_ != w || height_ != h) {
+        CHECK_AND_RETURN_RET_LOG(ValidateVideoResolution(codecName_, w, h), AVCS_ERR_INVALID_VAL,
             "Current decoder:%{public}s dosn't support width of %{public}d and height of %{public}d!",
             codecName_.c_str(), width_, height_);
+        isChanged = true;
+        width_ = w;
+        height_ = h;
+        AVCODEC_LOGI("format changed, width: %{public}d -> %{public}d, height: %{public}d -> %{public}d",
+            width_, w, height_, h);
         converter_.reset();
         CalculateBufferSize();
         CHECK_AND_RETURN_RET_LOG(inputBufferSize_ > 0 && outputBufferSize_ > 0, AVCS_ERR_INVALID_VAL,
