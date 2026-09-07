@@ -4214,12 +4214,12 @@ Status MPEG4AtomParser::ReadMetadataString(
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
 
     buffer[size] = '\0';
-    const bool isTrackMetadata = parseCtx != nullptr && lastTrack_ != nullptr &&
+    const bool isTrackMeta = parseCtx != nullptr && lastTrack_ != nullptr &&
         lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
         parseCtx->path[0] == FourccType("moov") && parseCtx->path[1] == FourccType("trak") &&
         (parseCtx->path[2] == FourccType("udta") || parseCtx->path[2] == FourccType("ilst"));
-    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size), isTrackMetadata) &&
-        !parseCtx->isUserMeta) {
+    const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
+    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size), isTrackMeta) && !isUserMeta) {
         return Status::OK;
     }
     return SetMetadata(key, buffer.get(), size, dataType);
