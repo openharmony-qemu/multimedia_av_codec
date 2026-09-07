@@ -3163,6 +3163,14 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     auto mpeg4TrackId = FindTrackByMime(mpeg4MediaInfo_, WEBVTT_MIME);
     ASSERT_NE(ffmpegTrackId, INVALID_TRACK_ID);
     ASSERT_NE(mpeg4TrackId, INVALID_TRACK_ID);
+    std::string ffmpegTitle;
+    std::string mpeg4Title;
+    bool hasFfmpegTitle = ffmpegMediaInfo_.tracks[ffmpegTrackId].Get<Tag::MEDIA_TITLE>(ffmpegTitle);
+    bool hasMpeg4Title = mpeg4MediaInfo_.tracks[mpeg4TrackId].Get<Tag::MEDIA_TITLE>(mpeg4Title);
+    EXPECT_EQ(hasMpeg4Title, hasFfmpegTitle);
+    if (hasFfmpegTitle) {
+        EXPECT_EQ(mpeg4Title, ffmpegTitle);
+    }
     std::vector<uint8_t> ffmpegCodecConfig;
     std::vector<uint8_t> mpeg4CodecConfig;
     ASSERT_TRUE(ffmpegMediaInfo_.tracks[ffmpegTrackId].Get<Tag::MEDIA_CODEC_CONFIG>(ffmpegCodecConfig));

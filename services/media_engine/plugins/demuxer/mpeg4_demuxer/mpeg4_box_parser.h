@@ -284,7 +284,7 @@ private:
     // 元数据解析辅助函数
     std::string ConvertLanguageCode(uint16_t langcode);
     std::string GetMetadataKey(uint32_t atomType, ParseContext* ctx);
-    bool SetMetadataValue(const std::string& key, const std::string& value);
+    bool SetMetadataValue(const std::string& key, const std::string& value, bool isTrackMetadata = false);
     void ParseLocationString(const std::string& locationStr);
     // 辅助轨相关辅助函数
     void InferTrackTypeFromMime(const std::string& mimeType);
@@ -343,7 +343,8 @@ private:
     Status ParseCover(MPEG4Atom currentAtom, uint32_t dataType, uint64_t stringSize, ParseContext* parseCtx);
     Status ParseItunesMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
-    Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta);
+    Status ReadMetadataString(std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta,
+        ParseContext* parseCtx);
     Status SetMetadata(std::string& key, uint8_t* buffer, uint64_t size, uint32_t dataType);
     Status ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);

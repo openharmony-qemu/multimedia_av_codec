@@ -1474,9 +1474,6 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 void MPEG4AtomParser::AdapterFormat(std::shared_ptr<Track> track)
 {
-    if (!NeedParseMediaTrackInfo(track->codecParms.trackType)) {
-        mediaInfo_.tracks[track->trackIndex].Remove(Tag::MEDIA_LANGUAGE);
-    }
     int32_t channelCount = -1;
     if (mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
         mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(channelCount);
@@ -4000,7 +3997,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
         if (currentAtom.type == FourccType("covr") || (!key.empty() && key == "com.apple.quicktime.artwork")) {
             return ParseCover(currentAtom, dataType, stringSize, ctx);
         }
-        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType, ctx->isUserMeta);
+        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType, ctx->isUserMeta, ctx);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read iTunes metadata string failed");
     } else {
         MEDIA_LOG_W("Invalid iTunes metadata format: dataTag=" PUBLIC_LOG_U32, dataTag);
@@ -4021,10 +4018,10 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     constexpr uint16_t defaultSkipSize = 4;
     if (stringLength > currentAtom.dataSize - defaultSkipSize) {
         // 作为原始数据处理
-        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0, ctx->isUserMeta);
+        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0, ctx->isUserMeta, ctx);
     } else {
         // 跳过语言代码
-        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0, ctx->isUserMeta);
+        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0, ctx->isUserMeta, ctx);
     }
 
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read traditional metadata string failed");
@@ -4111,7 +4108,7 @@ std::string DecodeMacString(const uint8_t* data, size_t size)
 }
 // LCOV_EXCL_STOP
 
-bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string& value)
+bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string& value, bool isTrackMetadata)
 {
     static const std::map<std::string, TagType> keyToTagMap = {
         {"title",         Tag::MEDIA_TITLE},
@@ -4141,6 +4138,9 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
         resultStr = resultStr.length() > 0 ? resultStr : value;
         if (resultStr.length() > 0) {
             mediaInfo_.general.SetData(it->second, resultStr);
+            if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
+                mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TITLE>(resultStr);
+            }
         }
         return true;
     } else if (key == "location") {
@@ -4203,7 +4203,7 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
 }
 
 Status MPEG4AtomParser::ReadMetadataString(
-    std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta)
+    std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta, ParseContext* parseCtx)
 {
     FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
     FALSE_RETURN_V_MSG_E(size <= std::min(MPEG4_MAX_BOX_DATA_SIZE, static_cast<uint64_t>(SIZE_MAX - 1)),
@@ -4214,7 +4214,11 @@ Status MPEG4AtomParser::ReadMetadataString(
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
 
     buffer[size] = '\0';
-    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) && !isUserMeta) {
+    const bool isTrackMetadata = parseCtx != nullptr && lastTrack_ != nullptr &&
+        lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
+        parseCtx->path[0] == FourccType("moov") && parseCtx->path[1] == FourccType("trak") &&
+        (parseCtx->path[2] == FourccType("udta") || parseCtx->path[2] == FourccType("ilst"));
+    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size), isTrackMetadata) && !isUserMeta) {
         return Status::OK;
     }
     return SetMetadata(key, buffer.get(), size, dataType);
