@@ -34,12 +34,12 @@ AVCodecServiceStub::AVCodecServiceStub()
     avCodecListenerMap_.clear();
     registeredCallbackPid_ = -1;
     InitStub();
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances create");
 }
 
 AVCodecServiceStub::~AVCodecServiceStub()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances destroy");
 }
 
 void AVCodecServiceStub::InitStub() {}

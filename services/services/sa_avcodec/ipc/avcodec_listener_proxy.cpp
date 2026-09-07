@@ -25,11 +25,11 @@ namespace MediaAVCodec {
 AVCodecListenerProxy::AVCodecListenerProxy(const sptr<IRemoteObject> &impl)
     : IRemoteProxy<IStandardAVCodecListener>(impl)
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances create");
 }
 AVCodecListenerProxy::~AVCodecListenerProxy()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances destroy");
 }
 
 int32_t AVCodecListenerProxy::OnOutputStrategyInfo(const std::string &bundleName, int32_t codecDecision)

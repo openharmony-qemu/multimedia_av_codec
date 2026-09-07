@@ -50,7 +50,7 @@ DashMediaDownloader::~DashMediaDownloader()
 
 void DashMediaDownloader::Init()
 {
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Init", FAKE_POINTER(this));
+    MEDIA_LOG_D("%{public}" PRIu64 " Init", avcodecUniqueId_);
     downloadMetricsInfo_ = std::make_shared<DownloadMetricsInfo>();
     if (mpdDownloader_ != nullptr && downloadMetricsInfo_ != nullptr) {
         mpdDownloader_->SetDownloadCallback(downloadMetricsInfo_);

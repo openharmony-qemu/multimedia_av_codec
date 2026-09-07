@@ -28,6 +28,7 @@ ohos_shared_library("av_codec_service_dfx") {
 
   sources = [
     "avcodec_dump_utils.cpp",
+    "avcodec_dfx_component.cpp",
     "avcodec_sysevent.cpp",
     "avcodec_xcollie.cpp",
   ]

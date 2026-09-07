@@ -40,6 +40,8 @@ private:
     std::string tagContent_ = "";
 };
 
+uint64_t AllocateUniqueId();
+
 std::string CreateVideoLogTag(const OHOS::Media::Meta &meta);
 } // namespace MediaAVCodec
 } // namespace OHOS

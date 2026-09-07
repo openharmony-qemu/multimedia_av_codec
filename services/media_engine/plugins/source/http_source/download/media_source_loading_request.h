@@ -17,6 +17,7 @@
 #define HISTREAMER_MEDIA_SOURCE_LOADING_REQUEST_H
  
 #include <string>
+#include "avcodec_dfx_component.h"
 #include "osal/task/mutex.h"
 #include "plugin/plugin_buffer.h"
 #include "common/media_source.h"
@@ -43,6 +44,9 @@ public:
 
     int64_t uuid_ {0};
     std::shared_ptr<NetworkClient> client_ {};
+
+private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
 };
 
 class MediaSourceLoadingRequest : public IMediaSourceLoadingRequest {
@@ -60,6 +64,7 @@ public:
     int32_t FinishLoading(int64_t uuid, LoadingRequestError state) override;
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::map<int64_t, std::shared_ptr<LoadingRequestElements>> requestMap_ {};
     FairMutex clientMutex_{};
 };
@@ -79,6 +84,9 @@ public:
     std::shared_ptr<MediaSourceLoadingRequest> request_ {nullptr};
     std::shared_ptr<IMediaSourceLoader> loader_  {nullptr};
     bool enable_ {false};
+
+private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
 };
 }
 }

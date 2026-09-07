@@ -113,12 +113,12 @@ namespace MediaAVCodec {
 using namespace Media;
 CodecListCore::CodecListCore()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances create");
 }
 
 CodecListCore::~CodecListCore()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances destroy");
 }
 
 bool CodecListCore::CheckBitrate(const Format &format, const CapabilityData &data)

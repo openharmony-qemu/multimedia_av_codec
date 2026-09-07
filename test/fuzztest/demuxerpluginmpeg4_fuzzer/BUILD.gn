@@ -71,6 +71,7 @@ ohos_fuzztest("DemuxerPluginMpeg4FuzzTest") {
     "window_manager:libwm",
   ]
   deps = [
+    "$MEDIA_ROOT_DIR/services/dfx:av_codec_service_dfx",
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",
     "$MEDIA_ROOT_DIR/services/media_engine/modules:av_codec_media_engine_modules",
   ]

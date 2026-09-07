@@ -17,6 +17,7 @@
 #define AVSOURCE_IMPL_H
 
 #include "avsource.h"
+#include "avcodec_dfx_component.h"
 #include "nocopyable.h"
 #include "meta/meta.h"
 
@@ -33,6 +34,9 @@ public:
     int32_t InitWithURI(const std::string &uri);
     int32_t InitWithFD(int32_t fd, int64_t offset, int64_t size);
     int32_t InitWithDataSource(const std::shared_ptr<Media::IMediaDataSource> &dataSource);
+
+private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

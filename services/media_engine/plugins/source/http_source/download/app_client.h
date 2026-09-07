@@ -71,6 +71,7 @@ private:
     void MapToString(const std::map<std::string, std::string>& httpHeader);
  
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     RxHeader rxHeader_;
     RxBody rxBody_;
     void *userParam_;
