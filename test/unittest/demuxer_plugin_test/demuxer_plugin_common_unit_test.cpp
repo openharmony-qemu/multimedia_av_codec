@@ -23,6 +23,7 @@
 #include <condition_variable>
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include "avpacket_wrapper.h"
 #include "avpacket_memory.h"
 #include "demuxer_plugin_unit_test.h"
@@ -2008,7 +2009,8 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_mapHit_062404, TestSize.Le
         ASSERT_TRUE(ptsIt != demuxerPlugin_->trackMinPtsMap_.end());
         mapMinPts = ptsIt->second;
     }
-    int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
+    int64_t globalOffset = 0;
+    ASSERT_EQ(demuxerPlugin_->CalculateGlobalOffset(avStream, 0, globalOffset), Status::OK);
     EXPECT_EQ(globalOffset, mapMinPts);
 }
 
@@ -2028,7 +2030,8 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_startTime_fallback_062405,
         demuxerPlugin_->trackMinPtsMap_.clear();
     }
     int64_t startTime = avStream->start_time;
-    int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
+    int64_t globalOffset = 0;
+    ASSERT_EQ(demuxerPlugin_->CalculateGlobalOffset(avStream, 0, globalOffset), Status::OK);
     EXPECT_EQ(globalOffset, startTime);
 }
 
@@ -2049,9 +2052,168 @@ HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_zero_fallback_062406, Test
     }
     int64_t savedStartTime = avStream->start_time;
     avStream->start_time = AV_NOPTS_VALUE;
-    int64_t globalOffset = demuxerPlugin_->CalculateGlobalOffset(avStream, 0);
+    int64_t globalOffset = 0;
+    ASSERT_EQ(demuxerPlugin_->CalculateGlobalOffset(avStream, 0, globalOffset), Status::OK);
     EXPECT_EQ(globalOffset, 0);
     avStream->start_time = savedStartTime;
+}
+
+HWTEST(FFmpegDemuxerPluginSafetyTest, AVDemuxer_PTSIndexConvert_TimestampOverflow_062413, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mov,mp4,m4a,3gp,3g2,mj2");
+    ASSERT_NE(plugin, nullptr);
+
+    AVStream offsetStream {};
+    offsetStream.start_time = 100;
+    int64_t globalOffset = 0;
+    EXPECT_EQ(plugin->CalculateGlobalOffset(&offsetStream, 10, globalOffset), Status::OK);
+    EXPECT_EQ(globalOffset, 90);
+    offsetStream.start_time = INT64_MIN + 1;
+    EXPECT_EQ(plugin->CalculateGlobalOffset(&offsetStream, 2, globalOffset), Status::ERROR_INVALID_DATA);
+
+    AVMOVStts sttsData[] = {{2, 1}};
+    AVMOVCtts cttsData[] = {{2, INT_MAX}};
+    AVStream cttsStream {};
+    cttsStream.index = 0;
+    cttsStream.stts_count = 1;
+    cttsStream.stts_data = sttsData;
+    cttsStream.ctts_count = 1;
+    cttsStream.ctts_data = cttsData;
+    cttsStream.time_scale = INT_MAX;
+    cttsStream.time_base = {1, INT_MAX};
+    plugin->trackMinPtsMap_[0] = INT64_MAX;
+    EXPECT_EQ(plugin->PTSAndIndexConvertSttsAndCttsProcess(FFmpegDemuxerPlugin::GET_ALL_FRAME_PTS,
+        &cttsStream, 0, 0),
+        Status::ERROR_INVALID_DATA);
+
+    AVMOVStts onlySttsData[] = {{3, 1}};
+    AVStream sttsStream {};
+    sttsStream.index = 0;
+    sttsStream.stts_count = 1;
+    sttsStream.stts_data = onlySttsData;
+    sttsStream.time_scale = INT_MAX;
+    sttsStream.time_base = {1, INT_MAX};
+    plugin->trackMinPtsMap_[0] = INT64_MAX - 1;
+    EXPECT_EQ(plugin->PTSAndIndexConvertOnlySttsProcess(FFmpegDemuxerPlugin::GET_ALL_FRAME_PTS,
+        &sttsStream, 0, 0),
+        Status::ERROR_INVALID_DATA);
+}
+
+HWTEST(FFmpegDemuxerPluginSafetyTest, AVDemuxer_WebvttEOS_InvalidTimestampAndStream_062411, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mov,mp4,m4a,3gp,3g2,mj2");
+    ASSERT_NE(plugin, nullptr);
+
+    AVPacket eosPkt {};
+    eosPkt.stream_index = 0;
+
+    plugin->WebvttMP4EOSProcess(&eosPkt);
+
+    AVFormatContext *formatContext = avformat_alloc_context();
+    ASSERT_NE(formatContext, nullptr);
+    plugin->formatContext_ = std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *context) {
+        avformat_free_context(context);
+    });
+
+    eosPkt.stream_index = -1;
+    plugin->WebvttMP4EOSProcess(&eosPkt);
+    eosPkt.stream_index = 0;
+    plugin->WebvttMP4EOSProcess(&eosPkt);
+
+    AVStream *avStream = avformat_new_stream(formatContext, nullptr);
+    ASSERT_NE(avStream, nullptr);
+    avStream->codecpar->codec_id = AV_CODEC_ID_WEBVTT;
+    avStream->duration = 100;
+    plugin->fileType_ = FileType::MP4;
+    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
+
+    auto firstWrapper = std::make_shared<AVPacketWrapper>();
+    ASSERT_NE(firstWrapper, nullptr);
+    AVPacket *firstPkt = firstWrapper->GetAVPacket();
+    ASSERT_NE(firstPkt, nullptr);
+    firstPkt->pts = 40;
+    auto samplePacket = std::make_shared<SamplePacket>();
+    ASSERT_NE(samplePacket, nullptr);
+    samplePacket->pkts.push_back(firstWrapper);
+    ASSERT_TRUE(plugin->cacheQueue_.Push(0, samplePacket));
+
+    plugin->WebvttMP4EOSProcess(&eosPkt);
+    EXPECT_EQ(firstPkt->duration, 60);
+
+    firstPkt->duration = 0;
+    firstPkt->pts = AV_NOPTS_VALUE;
+    plugin->WebvttMP4EOSProcess(&eosPkt);
+    EXPECT_EQ(firstPkt->duration, 0);
+
+    firstPkt->pts = -1;
+    avStream->duration = INT64_MAX;
+    plugin->WebvttMP4EOSProcess(&eosPkt);
+    EXPECT_EQ(firstPkt->duration, 0);
+}
+
+HWTEST(FFmpegDemuxerPluginSafetyTest, AVDemuxer_GetNextSampleSize_TotalSizeOverflow_062412, TestSize.Level1)
+{
+    auto createPlugin = [](AVCodecID codecId, int extradataSize) {
+        auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mov,mp4,m4a,3gp,3g2,mj2");
+        if (plugin == nullptr) {
+            return plugin;
+        }
+        AVFormatContext *formatContext = avformat_alloc_context();
+        if (formatContext == nullptr) {
+            return std::shared_ptr<FFmpegDemuxerPlugin>(nullptr);
+        }
+        plugin->formatContext_ = std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *context) {
+            avformat_free_context(context);
+        });
+        plugin->selectedTrackIds_.push_back(0);
+        FFmpegDemuxerPlugin::AVStreamSnapshot snapshot;
+        snapshot.valid = true;
+        snapshot.codecId = codecId;
+        snapshot.extradataSize = extradataSize;
+        plugin->streamSnapshots_.push_back(snapshot);
+        return plugin;
+    };
+    auto addSamplePacket = [](const std::shared_ptr<FFmpegDemuxerPlugin>& plugin,
+                               const std::vector<std::pair<int, int>>& packetInfo) {
+        auto samplePacket = std::make_shared<SamplePacket>();
+        if (samplePacket == nullptr) {
+            return false;
+        }
+        for (const auto &[packetSize, flags] : packetInfo) {
+            auto wrapper = std::make_shared<AVPacketWrapper>();
+            if (wrapper == nullptr || wrapper->GetAVPacket() == nullptr) {
+                return false;
+            }
+            wrapper->GetAVPacket()->size = packetSize;
+            wrapper->GetAVPacket()->flags = flags;
+            samplePacket->pkts.push_back(wrapper);
+        }
+        return plugin->cacheQueue_.Push(0, samplePacket);
+    };
+
+    int32_t size = 0;
+    auto packetOverflowPlugin = createPlugin(AV_CODEC_ID_AAC, 0);
+    ASSERT_NE(packetOverflowPlugin, nullptr);
+    ASSERT_TRUE(addSamplePacket(packetOverflowPlugin, {{std::numeric_limits<int>::max(), 0}, {1, 0}}));
+    EXPECT_EQ(packetOverflowPlugin->GetNextSampleSize(0, size), Status::ERROR_UNKNOWN);
+
+    auto asyncPacketOverflowPlugin = createPlugin(AV_CODEC_ID_AAC, 0);
+    ASSERT_NE(asyncPacketOverflowPlugin, nullptr);
+    ASSERT_TRUE(addSamplePacket(asyncPacketOverflowPlugin, {{std::numeric_limits<int>::max(), 0}, {1, 0}}));
+    asyncPacketOverflowPlugin->readThread_ = std::make_unique<std::thread>();
+    EXPECT_EQ(asyncPacketOverflowPlugin->GetNextSampleSize(0, size, 0), Status::ERROR_UNKNOWN);
+
+    auto extradataOverflowPlugin = createPlugin(AV_CODEC_ID_H264, 1);
+    ASSERT_NE(extradataOverflowPlugin, nullptr);
+    ASSERT_TRUE(addSamplePacket(extradataOverflowPlugin,
+        {{std::numeric_limits<int>::max(), AV_PKT_FLAG_KEY}}));
+    EXPECT_EQ(extradataOverflowPlugin->GetNextSampleSize(0, size), Status::ERROR_UNKNOWN);
+
+    auto normalPlugin = createPlugin(AV_CODEC_ID_AAC, 0);
+    ASSERT_NE(normalPlugin, nullptr);
+    ASSERT_TRUE(addSamplePacket(normalPlugin, {{TEST_DATA_SIZE, 0}}));
+    EXPECT_EQ(normalPlugin->GetNextSampleSize(0, size), Status::OK);
+    EXPECT_EQ(size, TEST_DATA_SIZE);
 }
 
 // ==================== Dts2FrameId / SeekMs2FrameId / FrameId2SeekMs Tests ====================

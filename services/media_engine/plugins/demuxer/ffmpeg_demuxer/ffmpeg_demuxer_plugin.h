@@ -576,7 +576,7 @@ private:
     void InitMinTsPacketInfo(AVPacket *pkt);
     void UpdMinTsPacketInfo(AVPacket *pkt);
     void RecordTrackMinTs(AVPacket *pkt);
-    int64_t CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts);
+    Status CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts, int64_t& globalOffset);
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
     int RMSeekToStart();

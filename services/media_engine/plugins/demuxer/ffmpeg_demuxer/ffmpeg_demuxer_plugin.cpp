@@ -1229,12 +1229,14 @@ bool FFmpegDemuxerPlugin::IsWebvttMP4(const AVStream *avStream)
 
 void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
 {
-    if (pkt == nullptr || pkt->size != 0) {
+    if (pkt == nullptr || pkt->size != 0 || formatContext_ == nullptr || formatContext_->streams == nullptr ||
+        pkt->stream_index < 0 || static_cast<uint32_t>(pkt->stream_index) >= formatContext_->nb_streams) {
         return;
     }
-    auto trackId = pkt->stream_index;
+    auto trackId = static_cast<uint32_t>(pkt->stream_index);
     AVStream *avStream = formatContext_->streams[trackId];
-    if (!IsWebvttMP4(avStream) || !cacheQueue_.HasCache(trackId)) {
+    if (avStream == nullptr || avStream->codecpar == nullptr || !IsWebvttMP4(avStream) ||
+        !cacheQueue_.HasCache(trackId)) {
         return;
     }
     std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
@@ -1243,8 +1245,9 @@ void FFmpegDemuxerPlugin::WebvttMP4EOSProcess(const AVPacket *pkt)
     }
     AVPacketWrapperPtr firstWrapper = cacheSamplePacket->pkts[0];
     AVPacket *firstPkt = (firstWrapper != nullptr) ? firstWrapper->GetAVPacket() : nullptr;
-    if (firstPkt != nullptr && firstPkt->duration == 0) {
-        firstPkt->duration = formatContext_->streams[trackId]->duration - firstPkt->pts;
+    if (firstPkt != nullptr && firstPkt->duration == 0 && avStream->duration != AV_NOPTS_VALUE &&
+        firstPkt->pts != AV_NOPTS_VALUE && !SignedIntSafeSub(avStream->duration, firstPkt->pts, firstPkt->duration)) {
+        MEDIA_LOG_E("Failed to calculate WebVTT packet duration");
     }
 }
 
@@ -3444,14 +3447,20 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size)
     for (const auto &pktWrapper : samplePacket->pkts) {
         FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetAVPacket() != nullptr, Status::ERROR_UNKNOWN,
             "Packet in sample is nullptr");
-        totalSize += pktWrapper->GetSize();
+        int newTotalSize = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(totalSize, pktWrapper->GetSize(), &newTotalSize),
+            Status::ERROR_UNKNOWN, "TotalSize overflow");
+        totalSize = newTotalSize;
     }
 
     const AVStreamSnapshot* snapshot = GetStreamSnapshot(trackId);
     FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid, Status::ERROR_UNKNOWN, "Track info invalid");
     if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), snapshot->codecId) > 0) &&
         static_cast<uint32_t>(samplePacket->pkts[0]->GetFlags()) & static_cast<uint32_t>(AV_PKT_FLAG_KEY)) {
-        totalSize += snapshot->extradataSize;
+        int newTotalSize = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(totalSize, snapshot->extradataSize, &newTotalSize),
+            Status::ERROR_UNKNOWN, "TotalSize overflow");
+        totalSize = newTotalSize;
     }
     size = totalSize;
     return Status::OK;
@@ -3559,8 +3568,10 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
     ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIdx].count);
     int32_t cttsCurNum = static_cast<int32_t>(avStream->ctts_data[cttsIdx].count);
-    int64_t globalOffset = CalculateGlobalOffset(avStream,
-        (avStream->ctts_count > 0) ? avStream->ctts_data[0].duration : 0);
+    int64_t globalOffset = 0;
+    Status ret = CalculateGlobalOffset(avStream,
+        (avStream->ctts_count > 0) ? avStream->ctts_data[0].duration : 0, globalOffset);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Calculate global offset failed");
     while (sttsIdx < avStream->stts_count && cttsIdx < avStream->ctts_count && cttsCurNum >= 0 && sttsCurNum >= 0) {
         if (cttsCurNum == 0) {
             cttsIdx++;
@@ -3571,8 +3582,12 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
         }
         cttsCurNum--;
         int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIdx].duration);
-        int64_t rawPts = dts + currentCttsDuration + globalOffset;
-        int64_t rawDts = dts + globalOffset;
+        int64_t rawDts = 0;
+        FALSE_RETURN_V_MSG_E(SignedIntSafeAdd(dts, globalOffset, rawDts),
+            Status::ERROR_INVALID_DATA, "dts offset overflow");
+        int64_t rawPts = 0;
+        FALSE_RETURN_V_MSG_E(SignedIntSafeAdd(rawDts, currentCttsDuration, rawPts),
+            Status::ERROR_INVALID_DATA, "pts offset overflow");
         FALSE_RETURN_V_MSG_E((rawPts / static_cast<int64_t>(avStream->time_scale)) <= (INT64_MAX / MS_TO_NS),
             Status::ERROR_INVALID_DATA, "pts overflow before convert to us");
         FALSE_RETURN_V_MSG_E((rawDts / static_cast<int64_t>(avStream->time_scale)) <= (INT64_MAX / MS_TO_NS),
@@ -3608,9 +3623,13 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvert
     int64_t dts = 0; // init dts
     ptsCnt_ = 0;
     int32_t sttsCurNum = static_cast<int32_t>(avStream->stts_data[sttsIdx].count);
-    int64_t globalOffset = CalculateGlobalOffset(avStream, 0);
+    int64_t globalOffset = 0;
+    Status ret = CalculateGlobalOffset(avStream, 0, globalOffset);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Calculate global offset failed");
     while (sttsIdx < avStream->stts_count && sttsCurNum >= 0) {
-        int64_t rawPts = dts + globalOffset;
+        int64_t rawPts = 0;
+        FALSE_RETURN_V_MSG_E(SignedIntSafeAdd(dts, globalOffset, rawPts),
+            Status::ERROR_INVALID_DATA, "pts offset overflow");
         FALSE_RETURN_V_MSG_E((rawPts / static_cast<int64_t>(avStream->time_scale)) <= (INT64_MAX / MS_TO_NS),
             Status::ERROR_INVALID_DATA, "pts overflow before convert to us");
         pts = AvTime2Us(ConvertTimeFromFFmpeg(rawPts, avStream->time_base));

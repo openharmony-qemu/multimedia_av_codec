@@ -507,10 +507,10 @@ Status FFmpegDemuxerPlugin::FrameId2SeekMs(uint32_t frameId, int64_t &seekMs)
     return Status::OK;
 }
 
-int64_t FFmpegDemuxerPlugin::CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts)
+Status FFmpegDemuxerPlugin::CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts, int64_t& globalOffset)
 {
-    FALSE_RETURN_V_MSG_E(avStream != nullptr, 0, "avStream is nullptr");
-    int64_t globalOffset = 0;
+    FALSE_RETURN_V_MSG_E(avStream != nullptr, Status::ERROR_NULL_POINTER, "avStream is nullptr");
+    globalOffset = 0;
     bool mapHit = false;
     int64_t mapMinPts = 0;
     {
@@ -523,13 +523,15 @@ int64_t FFmpegDemuxerPlugin::CalculateGlobalOffset(const AVStream* avStream, int
     }
 
     if (mapHit) {
-        globalOffset = mapMinPts - rawFirstPts;
+        FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(mapMinPts, rawFirstPts, &globalOffset),
+            Status::ERROR_INVALID_DATA, "global offset overflow");
         MEDIA_LOG_I("globalOffset from trackMinPtsMap_: " PUBLIC_LOG_D64, globalOffset);
     } else if (avStream->start_time != AV_NOPTS_VALUE) {
-        globalOffset = avStream->start_time - rawFirstPts;
+        FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(avStream->start_time, rawFirstPts, &globalOffset),
+            Status::ERROR_INVALID_DATA, "global offset overflow");
         MEDIA_LOG_I("globalOffset from start_time: " PUBLIC_LOG_D64, globalOffset);
     }
-    return globalOffset;
+    return Status::OK;
 }
 
 void FFmpegDemuxerPlugin::RecordTrackMinTs(AVPacket *pkt)
