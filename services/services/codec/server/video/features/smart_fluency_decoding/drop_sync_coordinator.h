@@ -43,7 +43,6 @@ private:
     static constexpr size_t queueMask = queueCapacity - 1;
     static constexpr size_t cacheLineSize = 64;
     static constexpr size_t feedbackWindowSize = 100;
-    static constexpr size_t feedbackWindowMask = feedbackWindowSize - 1;
 
     struct FeedbackSlot {
         bool isRetained = false;
