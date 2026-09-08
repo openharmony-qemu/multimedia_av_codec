@@ -1139,18 +1139,121 @@ returnBuffersToCodec(reclaimed);                          // ⑭ 第 1 遍，isR
 #### returnBuffersToCodec 的核心判断
 
 ```cpp
-// MediaCodec.cpp:6604
-sp<MediaCodecBuffer> buffer = info->mData;       // 临时拷贝，refcount+1
-if (isReclaim && info->mOwnedByClient) {
-    // 故意不清 info->mData —— 保留引用
-} else {
-    info->mOwnedByClient = false;
-    info->mData.clear();                         // 清除引用，refcount-1
+// MediaCodec.cpp:6592-6618
+void MediaCodec::returnBuffersToCodecOnPort(int32_t portIndex, bool isReclaim) {
+    for (size_t i = 0; i < mPortBuffers[portIndex].size(); ++i) {
+        BufferInfo *info = &mPortBuffers[portIndex][i];
+        if (info->mData != nullptr) {
+            sp<MediaCodecBuffer> buffer = info->mData;   // 临时拷贝，refcount+1
+            if (isReclaim && info->mOwnedByClient) {
+                // —— 应用还持有的 buffer ——
+                // 故意不清 info->mData —— 保留引用
+            } else {
+                // —— 应用不持有的 buffer ——
+                info->mOwnedByClient = false;
+                info->mData.clear();                     // 清除引用，refcount-1
+            }
+            mBufferChannel->discardBuffer(buffer);         // 两种情况都调用
+        }
+    }
+    mAvailPortBuffers[portIndex].clear();
 }
-mBufferChannel->discardBuffer(buffer);            // 清 mImpl 引用
 ```
 
-**只有 `isReclaim==true` 且 `mOwnedByClient==true` 时才保留**；否则清除。
+**只有 `isReclaim==true` 且 `mOwnedByClient==true` 时才保留**；否则清除。但无论保留还是清除，都会调用 `discardBuffer`。
+
+#### discardBuffer：通知 codec 收回 buffer
+
+`discardBuffer` 是 `ACodecBufferChannel`（或 `CCodecBufferChannel`）上的方法，作用是**异步通知 codec 收回某个 buffer**：
+
+```cpp
+// ACodecBufferChannel.cpp:497-517
+status_t ACodecBufferChannel::discardBuffer(const sp<MediaCodecBuffer> &buffer) {
+    // 1. 在 buffer channel 自己的数组里找这个 buffer
+    auto array = std::atomic_load(&mInputBuffers);  // 或 mOutputBuffers
+    BufferInfoIterator it = findClientBuffer(array, buffer);
+    if (it == array->end()) { return -ENOENT; }
+
+    // 2. 构造消息：input 用 mInputBufferFilled，output 用 mOutputBufferDrained
+    sp<AMessage> msg = input ? mInputBufferFilled->dup() : mOutputBufferDrained->dup();
+
+    // 3. 携带 codec 侧的 buffer 引用、buffer-id、discarded 标志
+    msg->setObject("buffer", it->mCodecBuffer);   // codec 侧的 buffer 引用
+    msg->setInt32("buffer-id", it->mBufferId);
+    msg->setInt32("discarded", true);              // 标记为"丢弃"模式
+
+    // 4. 异步投递给 ACodec
+    msg->post();   // 异步！不阻塞
+    return OK;
+}
+```
+
+关键点：
+- 消息里携带的是 **codec 侧的 buffer 引用**（`it->mCodecBuffer`），不是 MediaCodec 侧的 `info->mData`。
+- `msg->post()` 是异步投递，不阻塞。ACodec 在自己的 looper 上处理这条消息。
+- 对于 Codec2 架构（`CCodecBufferChannel`），`discardBuffer` 的逻辑类似——通知 codec 侧收回 buffer。
+
+#### ACodec 处理 discardBuffer：KEEP_BUFFERS 模式
+
+ACodec 收到消息后进入 `onInputBufferFilled`（input 侧）或 `onOutputBufferDrained`（output 侧）：
+
+```cpp
+// ACodec.cpp:6285-6337  BaseState::onInputBufferFilled
+int32_t discarded = 0;
+if (msg->findInt32("discarded", &discarded) && discarded) {
+    mode = KEEP_BUFFERS;   // 丢弃模式：只收下，不重新提交
+}
+info->mStatus = BufferInfo::OWNED_BY_US;  // codec 收回所有权
+info->mData = buffer;
+
+switch (mode) {
+    case KEEP_BUFFERS:
+        break;  // 什么都不做：
+               //   - 不调用 postFillThisBuffer
+               //   - 不把 buffer 发回给 MediaCodec
+               //   - 只静静收下
+    case RESUBMIT_BUFFERS:
+        postFillThisBuffer(info);  // 正常模式才会发回 MediaCodec
+        break;
+}
+```
+
+Output 侧（`onOutputBufferDrained`，`ACodec.cpp:6802-6968`）逻辑相同：`discarded=true` 时不渲染，走 `KEEP_BUFFERS` 模式收下。
+
+**`discarded=true` → `KEEP_BUFFERS` 模式**：ACodec 把 buffer 收回（`OWNED_BY_US`），但**不重新提交给 OMX 组件，也不发回 MediaCodec**。这一步是 codec 侧收回 buffer 所有权的核心机制。
+
+#### freeBuffersOnPort：清空 buffer channel 引用
+
+当 ACodec 收回所有 buffer（`allYourBuffersAreBelongToUs()` 为 true）后，进入 `ExecutingToIdleState::changeStateIfWeOwnAllBuffers()`：
+
+```cpp
+// ACodec.cpp:8916-8922
+if (mComponentNowIdle && mCodec->allYourBuffersAreBelongToUs()) {
+    mCodec->mOMXNode->sendCommand(OMX_CommandStateSet, OMX_StateLoaded);
+    mCodec->freeBuffersOnPort(kPortIndexInput);
+    mCodec->freeBuffersOnPort(kPortIndexOutput);
+}
+```
+
+```cpp
+// ACodec.cpp:1656-1674
+status_t ACodec::freeBuffersOnPort(OMX_U32 portIndex) {
+    // ★ 关键：清空 buffer channel 的数组
+    if (portIndex == kPortIndexInput)
+        mBufferChannel->setInputBufferArray({});   // 清空 mInputBuffers
+    else
+        mBufferChannel->setOutputBufferArray({});  // 清空 mOutputBuffers
+
+    for (size_t i = mBuffers[portIndex].size(); i > 0;) {
+        i--;
+        freeBuffer(portIndex, i);  // 调用 OMX freeBuffer 释放底层资源
+    }
+}
+```
+
+`setInputBufferArray({})` / `setOutputBufferArray({})` 替换 buffer channel 的整个数组，旧数组中每个 `BufferInfo` 的 `mClientBuffer`（`sp<MediaCodecBuffer>`）被释放。此时如果 MediaCodec 侧的 `info->mData` 也已 clear，`MediaCodecBuffer` 引用计数归零 → 内存释放 → 应用裸指针悬空。**正因为 `info->mData` 未 clear，buffer 对象仍然活着。**
+
+对于 Codec2 架构，`CCodecBuffers` 也有类似的引用持有和清理路径。
 
 #### 第 1 遍（isReclaim=true）：保留应用持有的 buffer
 
@@ -1221,7 +1324,33 @@ T6  应用若仍写 buffer → crash
 
 reclaim 后调 `release()` API 走空分支（`mState==UNINITIALIZED && mReleasedByResourceManager` 时直接回复 OK），不会再清理 buffer。对象析构时 `mPortBuffers` 中的 `mData` 已被清零，只是销毁空数组。
 
-### 12.4 与鸿蒙 C 接口对比
+#### 为什么第一遍不释放：保守设计选择
+
+`isReclaim` 的本质是**把释放推迟到 codec 确认完全关闭后**，而非 shutdown 过程中：
+
+| 释放时机 | 第 1 遍就 clear | 第 2 遍 clear（实际代码） |
+| --- | --- | --- |
+| 内存何时释放 | `freeBuffersOnPort` 清空 buffer channel 引用时（shutdown 过程中） | `setState(UNINITIALIZED)` 后（codec 完全关闭后） |
+| 应用裸指针 | shutdown 过程中悬空 | codec 关闭后悬空 |
+| codec 是否仍可能访问内存 | 是（shutdown 进行中） | 否 |
+
+两遍 clear 对应用裸指针的 use-after-free 风险**本质相同**——都是把最后的引用释放掉，应用指针就悬空。`isReclaim` 不能消除风险，只是把风险窗口从"异步 shutdown 过程中"推迟到"shutdown 确认完成后"，缩到最小。
+
+由于 `initiateShutdown` 是异步的，shutdown 过程中 `freeBuffersOnPort` 何时清空 buffer channel 引用不可预测。如果第 1 遍就 clear 了 `info->mData`，到 `freeBuffersOnPort` 时引用计数可能立即归零——此刻 codec 可能还在处理最后一帧。保留 `info->mData` 到第 2 遍，保证了整个 shutdown 过程中 buffer 对象始终存活。
+
+### 12.4 discardBuffer 与 ERROR_RECLAIMED 的关系
+
+两者是 reclaim 流程中**面向不同对象的通知**，没有直接交互：
+
+| | 面向 | 时机 | 作用 |
+| --- | --- | --- | --- |
+| `ERROR_RECLAIMED`/`DEAD_OBJECT` | 应用 | 第一次 `reclaim(false)`，`MediaCodec.cpp:5665` | 告诉应用"你的 codec 被回收了" |
+| `discardBuffer` | codec | 第二次 `reclaim(true)`，`returnBuffersToCodec` 内，`MediaCodec.cpp:5801` | 告诉 codec"把这些 buffer 收回去" |
+
+- `ERROR_RECLAIMED` 是应用侧的错误码（NDK 层将 `DEAD_OBJECT` 翻译为 `AMEDIACODEC_ERROR_RECLAIMED = 1101`），应用收到后应停止使用该 codec 并调用 `release()`。
+- `discardBuffer` 是 codec 侧的 buffer 回收机制，通过异步消息让 ACodec/Codec2 收回应用未归还的 buffer。两者发生在不同阶段、面向不同对象。
+
+### 12.5 与鸿蒙 C 接口对比
 
 | 对比项 | Android MediaCodec | 鸿蒙 av_codec（C 接口） |
 | --- | --- | --- |
