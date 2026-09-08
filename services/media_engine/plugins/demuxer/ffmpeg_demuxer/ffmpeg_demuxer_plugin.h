@@ -339,8 +339,15 @@ private:
         const AVStream* avStream, int64_t absolutePTS, uint32_t index);
     Status PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvertMode mode,
         const AVStream* avStream, int64_t absolutePTS, uint32_t index);
-    Status CalculatePtsAndDts(const AVStream* avStream, int64_t dts, int64_t currentCttsDuration,
-        int64_t globalOffset, int64_t& pts, int64_t& finalDts);
+    struct PtsAndDtsConvertParam {
+        const AVStream* avStream;
+        int64_t dts;
+        int64_t cttsDuration;
+        int64_t globalOffset;
+        int64_t pts;
+        int64_t finalDts;
+    };
+    Status CalculatePtsAndDts(PtsAndDtsConvertParam& param);
     void InitPTSandIndexConvert();
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
     void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
