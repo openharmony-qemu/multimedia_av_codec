@@ -781,8 +781,12 @@ void HDecoder::ProcSurfaceBufferToUser(const sptr<SurfaceBuffer>& buffer)
                 HLOGI("plane[%u]: offset=%" PRIu64 ", rowStride=%u, columnStride=%u",
                     i, planes->planes[i].offset, planes->planes[i].rowStride, planes->planes[i].columnStride);
             }
-            layout.alignedHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) /
-                layout.byteStride);
+            if (planes->planeCount >= 2 && layout.byteStride != 0) {
+                layout.alignedHeight = static_cast<int32_t>(static_cast<int64_t>(planes->planes[1].offset) /
+                    layout.byteStride);
+            } else {
+                layout.alignedHeight = layout.handleH;
+            }
         }
         currGenerationLayoutHasParsed_ = true;
     } else {

@@ -304,7 +304,8 @@ void HDecoder::SubmitBuffersToNextOwner()
         } else if (info.nextStepOwner == BufferOwner::OWNED_BY_USER) {
             optional<size_t> idx = FindBufferIndexByID(OMX_DirOutput, info.bufferId);
             if (!idx.has_value()) {
-                return;
+                HLOGD("buffer id %u not found in output pool", info.bufferId);
+                continue;
             }
             HLOGI("bufferId = %d, output buffer next owner is user", info.bufferId);
             OnOMXFillBufferDone(RESUBMIT_BUFFER, info, idx.value());

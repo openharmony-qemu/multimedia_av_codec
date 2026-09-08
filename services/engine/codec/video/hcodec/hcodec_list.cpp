@@ -41,6 +41,7 @@ static bool g_deviceCapsInited = false;
 static std::vector<CodecCompCapability> g_deviceCaps;
 static uint32_t g_maxDecInstCnt = 0;
 static uint32_t g_maxEncInstCnt = 0;
+constexpr int32_t MAX_COMPONENT_COUNT = 256;
 
 class Listener : public ServStatListenerStub {
 public:
@@ -117,7 +118,7 @@ static void InitCapsLocked()
     }
     int32_t compCnt = 0;
     int32_t ret = mnger->GetComponentNum(compCnt);
-    if (ret != HDF_SUCCESS || compCnt <= 0) {
+    if (ret != HDF_SUCCESS || compCnt <= 0 || compCnt > MAX_COMPONENT_COUNT) {
         LOGE("failed to query component number, ret=%d", ret);
         return;
     }
@@ -302,7 +303,7 @@ map<ImgSize, Range> HCodecList::GetMeasuredFrameRate(const CodecVideoPortCap& hd
         STEP_BUTT = 4
     };
     map<ImgSize, Range> userRateMap;
-    for (size_t index = 0; index < hdiVideoCap.measuredFrameRate.size(); index += STEP_BUTT) {
+    for (size_t index = 0; index + STEP_BUTT <= hdiVideoCap.measuredFrameRate.size(); index += STEP_BUTT) {
         if (hdiVideoCap.measuredFrameRate[index] <= 0) {
             continue;
         }
