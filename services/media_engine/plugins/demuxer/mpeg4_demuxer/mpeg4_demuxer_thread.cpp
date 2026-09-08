@@ -1113,6 +1113,7 @@ void MPEG4DemuxerPlugin::ReleaseReadLoop()
     readLoopStatus_.store(Status::OK, std::memory_order_release);
 }
 
+// restoreCacheInfo must be true only when the current sample was removed from cache statistics before conversion.
 Status MPEG4DemuxerPlugin::SkipPacketAfterPacketConvertError(
     uint32_t trackId, const std::shared_ptr<MPEG4Sample>& mpeg4Sample, bool popSample, bool restoreCacheInfo)
 {
