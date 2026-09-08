@@ -1580,13 +1580,6 @@ int32_t CodecServer::SetCallbackForPostProcessing()
     return postProcessing_->SetCallback(postProcessingCallback_, postProcessingUserData_);
 }
 
-void CodecServer::ClearCallbackForPostProcessing()
-{
-    std::lock_guard<std::shared_mutex> lock(cbMutex_);
-    postProcessingCallback_.onError = nullptr;
-    postProcessingCallback_.onOutputBufferAvailable = nullptr;
-}
-
 int32_t CodecServer::SetOutputSurfaceForPostProcessing(sptr<Surface> surface)
 {
     int32_t ret = postProcessing_->SetOutputSurface(surface);
@@ -1718,8 +1711,8 @@ int32_t CodecServer::ReleasePostProcessing()
     }
 
     if (postProcessingUserData_ != nullptr) {
+        std::lock_guard<std::shared_mutex> lock(cbMutex_);
         auto p = static_cast<PostProcessingCallbackUserData*>(postProcessingUserData_);
-        p->codecServer.reset();
         delete p;
         postProcessingUserData_ = nullptr;
     }
@@ -1866,7 +1859,10 @@ void CodecServer::DeactivatePostProcessingQueue()
 
 void CodecServer::CleanPostProcessingResource()
 {
-    ClearCallbackForPostProcessing();
+    std::lock_guard<std::shared_mutex> lock(cbMutex_);
+    postProcessingCallback_.onError = nullptr;
+    postProcessingCallback_.onOutputBufferAvailable = nullptr;
+    postProcessingCallback_.onOutputFormatChanged = nullptr;
     if (postProcessingTask_) {
         postProcessingTask_.reset();
     }

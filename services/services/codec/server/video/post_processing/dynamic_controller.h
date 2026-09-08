@@ -16,6 +16,8 @@
 #ifndef POST_PROCESSING_DYNAMIC_CONTROLLER_H
 #define POST_PROCESSING_DYNAMIC_CONTROLLER_H
 
+#include <memory>
+#include <mutex>
 #include "controller.h"
 #include "dynamic_interface.h"
 #include "post_processing_utils.h"
@@ -50,10 +52,18 @@ public:
 
 private:
     GSError OnProducerBufferReleased(sptr<SurfaceBuffer> &buffer);
+    void DetachOutputSurfaceListener();
+
+    struct SurfaceCallbackContext {
+        std::mutex mutex;
+        DynamicController* controller{nullptr};
+    };
 
     bool ready_{false};
     DynamicInterface interface_;
     DynamicColorSpaceConverterHandle* instance_{nullptr};
+    sptr<Surface> outputSurface_{nullptr};
+    std::shared_ptr<SurfaceCallbackContext> callbackContext_{nullptr};
     static constexpr HiviewDFX::HiLogLabel LABEL{LogLabel("DynamicController")};
 };
 

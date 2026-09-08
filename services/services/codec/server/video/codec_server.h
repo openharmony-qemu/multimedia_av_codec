@@ -192,7 +192,6 @@ private:
 
     // post processing, video decoder and surface mode only
     int32_t SetCallbackForPostProcessing();
-    void ClearCallbackForPostProcessing();
     int32_t CreatePostProcessing(const Format& format);
     int32_t SetOutputSurfaceForPostProcessing(sptr<Surface> surface);
     int32_t PreparePostProcessing();

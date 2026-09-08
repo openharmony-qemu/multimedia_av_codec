@@ -44,6 +44,7 @@ bool DynamicController::LoadInterfacesImpl()
 
 void DynamicController::UnloadInterfacesImpl()
 {
+    DetachOutputSurfaceListener();
     interface_.Unload();
     ready_ = false;
 }
@@ -82,9 +83,18 @@ int32_t DynamicController::SetOutputSurfaceImpl(sptr<Surface> surface)
     auto ret = interface_.Invoke<DynamicInterfaceName::SET_OUTPUT_SURFACE>(instance_, sf);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN,
         "Set output surface for video processing failed.");
+    DetachOutputSurfaceListener();
+    outputSurface_ = surface;
+    callbackContext_ = std::make_shared<SurfaceCallbackContext>();
+    callbackContext_->controller = this;
+    auto context = callbackContext_;
     surface->UnRegisterReleaseListener();
-    surface->RegisterReleaseListener([this](sptr<SurfaceBuffer> &buffer) -> GSError {
-        return OnProducerBufferReleased(buffer);
+    surface->RegisterReleaseListener([context](sptr<SurfaceBuffer> &buffer) -> GSError {
+        std::lock_guard<std::mutex> lock(context->mutex);
+        if (context->controller == nullptr) {
+            return GSERROR_OK;
+        }
+        return context->controller->OnProducerBufferReleased(buffer);
     });
     return AVCS_ERR_OK;
 }
@@ -152,6 +162,7 @@ int32_t DynamicController::ResetImpl()
 
 int32_t DynamicController::ReleaseImpl()
 {
+    DetachOutputSurfaceListener();
     auto ret = interface_.Invoke<DynamicInterfaceName::RELEASE>(instance_);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "Release video processing failed.");
     return AVCS_ERR_OK;
@@ -169,6 +180,18 @@ GSError DynamicController::OnProducerBufferReleased([[maybe_unused]] sptr<Surfac
 {
     auto ret = interface_.Invoke<DynamicInterfaceName::ON_PRODUCER_BUFFER_RELEASED>(instance_);
     return static_cast<GSError>(ret);
+}
+
+void DynamicController::DetachOutputSurfaceListener()
+{
+    if (outputSurface_ != nullptr) {
+        outputSurface_->UnRegisterReleaseListener();
+        outputSurface_ = nullptr;
+    }
+    if (callbackContext_ != nullptr) {
+        std::lock_guard<std::mutex> lock(callbackContext_->mutex);
+        callbackContext_->controller = nullptr;
+    }
 }
 
 int32_t DynamicController::NotifyEosImpl()
