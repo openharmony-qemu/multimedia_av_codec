@@ -238,7 +238,7 @@ void TimeAndIndexConversion::ParseTrak(uint64_t boxSize)
     MEDIA_LOG_D("curTrakInfoIndex_: " PUBLIC_LOG_D32, curTrakInfoIndex_);
     FALSE_RETURN_MSG(boxSize >= BOX_HEAD_SIZE, "ParseTrak failed due to error box size");
     curTrakInfo_.trakId = curTrakInfoIndex_;
-    ParseBox(boxSize - BOX_HEAD_SIZE);
+    ParseBox(boxSize);
     trakInfoVec_.push_back(curTrakInfo_);
     curTrakInfo_.cttsEntries.clear();
     curTrakInfo_.sttsEntries.clear();
