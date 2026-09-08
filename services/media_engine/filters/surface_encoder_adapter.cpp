@@ -725,6 +725,11 @@ void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, con
         meta->Get<Tag::VIDEO_ENCODE_BITRATE_MODE>(videoEncodeBitrateMode);
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, videoEncodeBitrateMode);
     }
+    if (meta->Find(Tag::VIDEO_ENCODER_SQR_FACTOR) != meta->end()) {
+        uint32_t sqrFactor;
+        meta->Get<Tag::VIDEO_ENCODER_SQR_FACTOR>(sqrFactor);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
+    }
 }
 
 void SurfaceEncoderAdapter::ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format,

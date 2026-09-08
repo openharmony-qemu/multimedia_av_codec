@@ -383,6 +383,44 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
 }
 
 /**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_SqrFactor_0100
+ * @tc.desc: ConfigureAboutRGBA with VIDEO_ENCODER_SQR_FACTOR in Meta
+ *           Covers: branch I (Meta has SQR_FACTOR → Format conversion)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_SqrFactor_0100, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    uint32_t expectedSqrFactor = 27;
+    meta->SetData(Tag::VIDEO_ENCODER_SQR_FACTOR, expectedSqrFactor);
+    MediaAVCodec::Format format;
+    surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
+
+    int32_t actualSqrFactor = -1;
+    EXPECT_TRUE(format.GetIntValue(
+        MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, actualSqrFactor));
+    EXPECT_EQ(static_cast<uint32_t>(actualSqrFactor), expectedSqrFactor);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_SqrFactor_0200
+ * @tc.desc: ConfigureAboutRGBA without VIDEO_ENCODER_SQR_FACTOR in Meta
+ *           Covers: branch J (Meta has no SQR_FACTOR → skip conversion)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_SqrFactor_0200, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->SetData(Tag::VIDEO_PIXEL_FORMAT, 2); // 2: NV12
+    MediaAVCodec::Format format;
+    surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
+
+    int32_t actualSqrFactor = -1;
+    EXPECT_FALSE(format.GetIntValue(
+        MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, actualSqrFactor));
+}
+
+/**
  * @tc.name: SurfaceEncoderAdapter_ConfigureAboutEnableTemporalScale_0100
  * @tc.desc: ConfigureAboutEnableTemporalScale
  * @tc.type: FUNC
