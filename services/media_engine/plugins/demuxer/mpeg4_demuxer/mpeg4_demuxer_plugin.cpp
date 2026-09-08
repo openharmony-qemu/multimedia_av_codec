@@ -3061,10 +3061,10 @@ Status MPEG4DemuxerPlugin::WriteConvertedSampleToBuffer(uint32_t trackIndex, con
         MEDIA_LOG_D("Reset info failed");
     }
     Status ret = ConvertSampleToAnnexb(mpeg4Sample, trackIndex);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert annexb failed");
     if (SetTrackCacheInfo(mpeg4Sample) == false) {
         MEDIA_LOG_D("Set info failed");
     }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Convert annexb failed");
 
     int32_t remainSize = mpeg4Sample->sample->size - mpeg4Sample->offset;
     int32_t copySize = remainSize < outBuffer->memory_->GetCapacity() ? remainSize : outBuffer->memory_->GetCapacity();
@@ -3167,7 +3167,7 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
         ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
     }
     FALSE_RETURN_V_NOLOG(ret != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
-    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+    FALSE_RETURN_V_NOLOG(ret == Status::OK || ret == Status::ERROR_PACKET_CONVERT_FAILED, ret);
     if (seekable_ == Seekable::UNSEEKABLE || useCache) {
         PopTrackCache(trackId);
     } else {

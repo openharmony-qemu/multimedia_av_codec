@@ -665,7 +665,8 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
         PopTrackCache(trackId);
         cacheSamples_.erase(trackId);
     }
-    return ret;
+    return ret == Status::ERROR_PACKET_CONVERT_FAILED ?
+        SkipPacketAfterPacketConvertError(trackId, mpeg4Sample, true, false) : ret;
 }
 
 Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSize, uint32_t timeout)
@@ -1112,6 +1113,26 @@ void MPEG4DemuxerPlugin::ReleaseReadLoop()
     readLoopStatus_.store(Status::OK, std::memory_order_release);
 }
 
+Status MPEG4DemuxerPlugin::SkipPacketAfterPacketConvertError(
+    uint32_t trackId, const std::shared_ptr<MPEG4Sample>& mpeg4Sample, bool popSample, bool restoreCacheInfo)
+{
+    std::shared_ptr<Sample> sample =
+        (mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr) ? mpeg4Sample->sample : nullptr;
+    int64_t pts = (sample != nullptr) ? sample->pts : INT64_MIN;
+    int64_t dts = (sample != nullptr) ? sample->dts : INT64_MIN;
+    int32_t size = (sample != nullptr) ? sample->size : INT32_MIN;
+    MEDIA_LOG_W("Skip packet due to annexb convert error, trackId=" PUBLIC_LOG_U32 ", ret=" PUBLIC_LOG_D32
+        ", pts=" PUBLIC_LOG_D64 ", dts=" PUBLIC_LOG_D64 ", size=" PUBLIC_LOG_D32,
+        trackId, static_cast<int32_t>(Status::ERROR_PACKET_CONVERT_FAILED), pts, dts, size);
+    if (restoreCacheInfo && mpeg4Sample != nullptr && !SetTrackCacheInfo(mpeg4Sample)) {
+        MEDIA_LOG_D("Set info failed before skip packet");
+    }
+    if (popSample) {
+        PopTrackCache(trackId);
+    }
+    return Status::ERROR_PACKET_CONVERT_FAILED;
+}
+
 Status MPEG4DemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer, uint32_t timeout)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
@@ -1154,7 +1175,8 @@ Status MPEG4DemuxerPlugin::ReadSampleZeroCopy(uint32_t trackId, std::shared_ptr<
         PopTrackCache(trackId);
         cacheSamples_.erase(trackId);
     }
-    return ret;
+    return ret == Status::ERROR_PACKET_CONVERT_FAILED ?
+        SkipPacketAfterPacketConvertError(trackId, mpeg4Sample, true, true) : ret;
 }
 } // namespace MPEG4
 } // namespace Plugins
