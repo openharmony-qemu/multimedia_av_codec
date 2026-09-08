@@ -729,19 +729,21 @@ Status FFmpegDemuxerPlugin::SetAVReadPacketStopState(bool state)
 
 bool FFmpegDemuxerPlugin::IsReadTimeoutExpired(IOContext* ioContext)
 {
-    if (ioContext->readTimeoutMs <= 0) {
+    const int64_t readTimeoutMs = ioContext->readTimeoutMs.load();
+    if (readTimeoutMs <= 0) {
         return false;
     }
-    if (ioContext->readStartTimeMs <= 0) {
+    const int64_t readStartTimeMs = ioContext->readStartTimeMs.load();
+    if (readStartTimeMs <= 0) {
         ioContext->readStartTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch()).count();
         return false;
     }
     int64_t currentTimeMs = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count();
-    if (currentTimeMs - ioContext->readStartTimeMs > ioContext->readTimeoutMs) {
+    if (currentTimeMs - readStartTimeMs > readTimeoutMs) {
         MEDIA_LOG_E("Read timeout, elapsed: " PUBLIC_LOG_D64 "ms, limit: " PUBLIC_LOG_D64 "ms",
-            currentTimeMs - ioContext->readStartTimeMs, ioContext->readTimeoutMs.load());
+            currentTimeMs - readStartTimeMs, readTimeoutMs);
         return true;
     }
     return false;

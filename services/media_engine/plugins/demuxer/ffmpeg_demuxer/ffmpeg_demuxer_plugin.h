@@ -236,7 +236,7 @@ private:
     bool FrameReady(Status ret);
     int SelectSeekTrack() const;
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
-    void SyncSeekThread();
+    bool SyncSeekThread();
     Status DoSeekInternal(int trackIndex, int64_t seekTime, int64_t ffTime, SeekMode mode, int64_t& realSeekTime);
     bool IsUseFirstFrameDts(int trackIndex, int64_t seekTime);
     void GetStreamInitialParams();

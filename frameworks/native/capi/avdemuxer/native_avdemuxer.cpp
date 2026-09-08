@@ -100,6 +100,12 @@ public:
 
     virtual ~NativeDemuxerCallback() = default;
 
+    void ClearDemuxer()
+    {
+        std::unique_lock<std::shared_mutex> lock(mutex_);
+        demuxer_ = nullptr;
+    }
+
     void OnDrmInfoChanged(const std::multimap<std::string, std::vector<uint8_t>> &drmInfo) override
     {
 #ifdef SUPPORT_DRM
@@ -159,6 +165,10 @@ OH_AVErrCode OH_AVDemuxer_Destroy(OH_AVDemuxer *demuxer)
     CHECK_AND_RETURN_RET_LOG(demuxer != nullptr, AV_ERR_INVALID_VAL, "Input demuxer is nullptr");
     CHECK_AND_RETURN_RET_LOG(demuxer->magic_ == AVMagic::AVCODEC_MAGIC_AVDEMUXER, AV_ERR_INVALID_VAL, "Magic error");
     ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AVDemuxer_Destroy.Time", TIMES);
+    struct DemuxerObject *demuxerObj = reinterpret_cast<DemuxerObject *>(demuxer);
+    if (demuxerObj->callback_ != nullptr) {
+        demuxerObj->callback_->ClearDemuxer();
+    }
     delete demuxer;
     return AV_ERR_OK;
 }
