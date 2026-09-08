@@ -13,14 +13,20 @@
  * limitations under the License.
  */
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
 #include <thread>
+#include <vector>
 #include "avcodec_errors.h"
 #include "codec_server_coverage_unit_test.h"
 #include "codeclist_core.h"
+#include "dynamic_controller.h"
 #include "media_description.h"
 #include "meta/meta_key.h"
+#include "poc_consumer_listener.h"
+#include "surface.h"
+#include "sync_fence.h"
 #include "unittest_utils.h"
 
 #define EXPECT_CALL_GET_HCODEC_CAPS_MOCK                                                                               \
@@ -35,6 +41,59 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace MediaAVCodec {
+namespace {
+// batch request path skips the consumer-listener precondition; flush makes the buffer acquirable
+bool FlushOneBuffer(const sptr<Surface> &producer)
+{
+    std::vector<sptr<SurfaceBuffer>> buffers;
+    std::vector<sptr<SyncFence>> fences;
+    BufferRequestConfig requestConfig = {
+        .width = 64,
+        .height = 64,
+        .strideAlignment = 0x8, // 8: default stride alignment
+        .format = GRAPHIC_PIXEL_FMT_RGBA_8888,
+        .usage = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE,
+        .timeout = 0,
+    };
+    if (producer->RequestBuffers(buffers, fences, requestConfig) != GSERROR_OK || buffers.empty() ||
+        buffers[0] == nullptr) {
+        return false;
+    }
+    BufferFlushConfig flushConfig = {
+        .damage = {0, 0, 64, 64},
+        .timestamp = 0,
+        .desiredPresentTimestamp = 0,
+    };
+    return producer->FlushBuffer(buffers[0], fences[0], flushConfig) == GSERROR_OK;
+}
+
+// occupy the freed controller block with garbage of the same size class
+std::vector<std::unique_ptr<uint8_t[]>> PoisonFreedControllerBlock()
+{
+    constexpr int32_t churnCount = 2048;
+    const size_t blockSize = sizeof(PostProcessing::DynamicController);
+    std::vector<std::unique_ptr<uint8_t[]>> churn;
+    churn.reserve(churnCount);
+    for (int32_t i = 0; i < churnCount; i++) {
+        auto block = std::make_unique<uint8_t[]>(blockSize);
+        std::fill(block.get(), block.get() + blockSize, 0x5a);
+        churn.push_back(std::move(block));
+    }
+    return churn;
+}
+
+// consumer release fires the producer release listener registered by the controller
+bool AcquireAndReleaseOneBuffer(const sptr<Surface> &consumer)
+{
+    sptr<SurfaceBuffer> acquired = nullptr;
+    sptr<SyncFence> acquiredFence = SyncFence::INVALID_FENCE;
+    int64_t timestamp = 0;
+    Rect damage = {0, 0, 0, 0};
+    return consumer->AcquireBuffer(acquired, acquiredFence, timestamp, damage) == GSERROR_OK &&
+        consumer->ReleaseBuffer(acquired, acquiredFence) == GSERROR_OK;
+}
+} // namespace
+
 void CodecServerUnitTest::CreateCodecByMime()
 {
     std::string codecName = "video.H.Encoder.Name.00";
@@ -285,6 +344,45 @@ HWTEST_F(CodecServerUnitTest, CleanPostProcessingResource_Valid_Test_001, TestSi
     EXPECT_EQ(server_->postProcessingTask_, nullptr);
     EXPECT_EQ(server_->decodedBufferInfoQueue_, nullptr);
     EXPECT_EQ(server_->postProcessingInputBufferInfoQueue_, nullptr);
+}
+
+/**
+ * @tc.name: PostProcessing_SurfaceListenerUAF_PoC_001
+ * @tc.desc: producer release listener holds DynamicController pointer; buffer release after
+ *           controller destruction must not dereference freed memory
+ */
+HWTEST_F(CodecServerUnitTest, PostProcessing_SurfaceListenerUAF_PoC_001, TestSize.Level1)
+{
+    {
+        auto probe = std::make_unique<PostProcessing::DynamicController>();
+        if (!probe->LoadInterfaces() || probe->Create() != AVCS_ERR_OK) {
+            GTEST_SKIP() << "VPE is not available on this device";
+        }
+    }
+
+    constexpr int32_t testLoop = 5;
+    for (int32_t round = 0; round < testLoop; round++) {
+        std::unique_ptr<OHOS::IBufferConsumerListenerClazz> consumerListener(CreatePoCConsumerListener());
+        ASSERT_NE(consumerListener, nullptr);
+        auto controller = std::make_unique<PostProcessing::DynamicController>();
+        ASSERT_TRUE(controller->LoadInterfaces());
+        ASSERT_EQ(controller->Create(), AVCS_ERR_OK);
+
+        sptr<Surface> consumer = Surface::CreateSurfaceAsConsumer();
+        ASSERT_NE(consumer, nullptr);
+        sptr<IBufferProducer> producerOfQueue = consumer->GetProducer();
+        sptr<Surface> producer = Surface::CreateSurfaceAsProducer(producerOfQueue);
+        ASSERT_NE(producer, nullptr);
+        ASSERT_EQ(consumer->RegisterConsumerListener(consumerListener.get()), GSERROR_OK);
+        ASSERT_EQ(controller->SetOutputSurface(producer), AVCS_ERR_OK);
+
+        ASSERT_TRUE(FlushOneBuffer(producer));
+
+        controller.reset();
+
+        auto churn = PoisonFreedControllerBlock();
+        ASSERT_TRUE(AcquireAndReleaseOneBuffer(consumer));
+    }
 }
 } // namespace MediaAVCodec
 } // namespace OHOS

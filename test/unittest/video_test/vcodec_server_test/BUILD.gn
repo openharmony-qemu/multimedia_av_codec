@@ -134,6 +134,7 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
 
   deps = [
     ":av_codec_engine_codeclist_mock",  # av_codec_engine_codeclist_mock
+    ":poc_consumer_listener",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/services/codec/server/video/features/smart_fluency_decoding:smart_fluency_decoding",
@@ -175,6 +176,18 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
 
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
+# surface-listener UAF PoC: the consumer listener must be defined in a CFI-instrumented
+# TU, otherwise ROM cross-DSO CFI aborts on the OnBufferAvailable virtual dispatch
+ohos_source_set("poc_consumer_listener") {
+  testonly = true
+  sanitize = av_codec_sanitize
+  sources = [ "./mock/poc_consumer_listener.cpp" ]
+  include_dirs = [ "./mock/include" ]
+  external_deps = [ "graphic_surface:surface" ]
+  subsystem_name = "multimedia"
+  part_name = "av_codec"
 }
 
 # 目的：反复mock单例模式的初始化方法
