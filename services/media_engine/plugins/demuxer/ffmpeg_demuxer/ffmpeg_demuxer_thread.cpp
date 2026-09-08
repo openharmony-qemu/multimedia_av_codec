@@ -137,10 +137,6 @@ int FFmpegDemuxerPlugin::HandleNonReadAgain(IOContext* ioContext, int& tryCount)
                 MEDIA_LOG_I("AVReadPacket stopped");
                 return AV_READ_PACKET_READ_ERROR;
             case AVReadPacketStopState::FALSE:
-                if (invokerType == InvokerType::SEEK) {
-                    return RetryNonReadAgainBounded(tryCount, AV_READ_PACKET_SLEEP_TIME,
-                        "Read again and retry during seek", ioContext->offset);
-                }
                 AVCODEC_LOG_LIMIT_IN_TIME(AVCODEC_LOGI, LOG_INTERVAL_MS, LOG_MAX_COUNT,
                     "Read again and retry, offset:" PUBLIC_LOG_D64,
                     ioContext->offset);
