@@ -180,6 +180,7 @@ private:
         UNINITIALIZED,
         INITIALIZED,
         CONFIGURED,
+        STARTING,
         STOPPING,
         RUNNING,
         FLUSHED,
