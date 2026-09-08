@@ -100,6 +100,23 @@ bool HasCanDropTag(const std::shared_ptr<MediaAVBuffer>& buffer)
     return buffer != nullptr && buffer->meta_ != nullptr &&
         buffer->meta_->GetData(Media::Tag::VIDEO_BUFFER_CAN_DROP, canDrop) && canDrop;
 }
+
+std::shared_ptr<AVFormatContext> CreateFormatContextWithStreams(uint32_t streamCount)
+{
+    AVFormatContext* context = avformat_alloc_context();
+    if (context == nullptr) {
+        return nullptr;
+    }
+    for (uint32_t i = 0; i < streamCount; ++i) {
+        if (avformat_new_stream(context, nullptr) == nullptr) {
+            avformat_free_context(context);
+            return nullptr;
+        }
+    }
+    return std::shared_ptr<AVFormatContext>(context, [](AVFormatContext* value) {
+        avformat_free_context(value);
+    });
+}
 } // namespace
 
 // ==================== TimeRangeManager Tests ====================
@@ -1986,6 +2003,105 @@ HWTEST_F(DemuxerPluginUnitTest, RecordTrackMinTs_multi_track_062403, TestSize.Le
     EXPECT_EQ(plugin->trackMinDtsMap_[0], 80);
     EXPECT_EQ(plugin->trackMinDtsMap_[1], 150);
     av_packet_free(&pkt);
+}
+
+/**
+ * @tc.name: AVDemuxer_CachePhase_RetireBootstrap_062420
+ * @tc.desc: Bootstrap cache is retained only for tracks selected before the first real read.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CachePhase_RetireBootstrap_062420, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    plugin->formatContext_ = CreateFormatContextWithStreams(3);
+    ASSERT_NE(plugin->formatContext_, nullptr);
+    plugin->selectedTrackIds_ = {0, 1};
+    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
+    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(1), Status::OK);
+    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(2), Status::OK);
+
+    plugin->RetireBootstrapCaches();
+
+    EXPECT_EQ(plugin->cachePhase_, FFmpegDemuxerPlugin::CachePhase::RUNTIME);
+    EXPECT_TRUE(plugin->cacheQueue_.HasTrackQueue(0));
+    EXPECT_TRUE(plugin->cacheQueue_.HasTrackQueue(1));
+    EXPECT_FALSE(plugin->cacheQueue_.HasTrackQueue(2));
+}
+
+/**
+ * @tc.name: AVDemuxer_CachePhase_PreserveBootstrapOnReselect_062423
+ * @tc.desc: Re-selecting a track before the first real read reuses its bootstrap cache.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CachePhase_PreserveBootstrapOnReselect_062423, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    plugin->formatContext_ = CreateFormatContextWithStreams(1);
+    ASSERT_NE(plugin->formatContext_, nullptr);
+    plugin->formatContext_->streams[0]->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
+    ASSERT_TRUE(plugin->cacheQueue_.Push(0, std::make_shared<SamplePacket>()));
+
+    ASSERT_EQ(plugin->SelectTrack(0), Status::OK);
+    ASSERT_EQ(plugin->UnselectTrack(0), Status::OK);
+    ASSERT_EQ(plugin->SelectTrack(0), Status::OK);
+
+    EXPECT_EQ(plugin->cachePhase_, FFmpegDemuxerPlugin::CachePhase::BOOTSTRAP);
+    EXPECT_TRUE(plugin->cacheQueue_.HasTrackQueue(0));
+    EXPECT_TRUE(plugin->cacheQueue_.HasCache(0));
+}
+
+/**
+ * @tc.name: AVDemuxer_CacheEpoch_DiscardInFlightPacket_062421
+ * @tc.desc: A packet read before a selection generation change cannot enter the new queue.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CacheEpoch_DiscardInFlightPacket_062421, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    plugin->selectedTrackIds_ = {2};
+    plugin->readConfigEpoch_ = 2;
+    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(2), Status::OK);
+    auto packet = std::make_shared<AVPacketWrapper>();
+    ASSERT_NE(packet, nullptr);
+    ASSERT_NE(packet->GetAVPacket(), nullptr);
+    packet->GetAVPacket()->stream_index = 2;
+    bool accepted = true;
+
+    EXPECT_EQ(plugin->AddPacketToCacheQueue(packet, true, 1, &accepted), Status::OK);
+    EXPECT_FALSE(accepted);
+    EXPECT_FALSE(plugin->cacheQueue_.HasCache(2));
+}
+
+/**
+ * @tc.name: AVDemuxer_CacheDiscontinuity_InvalidateAll_062422
+ * @tc.desc: Seek/flush discontinuity removes every old queue before selected queues are rebuilt.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CacheDiscontinuity_InvalidateAll_062422, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    plugin->formatContext_ = CreateFormatContextWithStreams(3);
+    ASSERT_NE(plugin->formatContext_, nullptr);
+    plugin->selectedTrackIds_ = {0, 1};
+    for (uint32_t trackId = 0; trackId < 3; ++trackId) {
+        ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(trackId), Status::OK);
+        auto sample = std::make_shared<SamplePacket>();
+        ASSERT_TRUE(plugin->cacheQueue_.Push(trackId, sample));
+    }
+
+    ASSERT_EQ(plugin->InvalidateCachesForDiscontinuity(), Status::OK);
+
+    EXPECT_TRUE(plugin->cacheQueue_.HasTrackQueue(0));
+    EXPECT_TRUE(plugin->cacheQueue_.HasTrackQueue(1));
+    EXPECT_FALSE(plugin->cacheQueue_.HasTrackQueue(2));
+    EXPECT_FALSE(plugin->cacheQueue_.HasCache(0));
+    EXPECT_FALSE(plugin->cacheQueue_.HasCache(1));
+    EXPECT_EQ(plugin->cachePhase_, FFmpegDemuxerPlugin::CachePhase::RUNTIME);
 }
 
 // ==================== CalculateGlobalOffset Tests ====================

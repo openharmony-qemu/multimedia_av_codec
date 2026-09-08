@@ -88,6 +88,7 @@ public:
 
     Status AddTrackQueue(uint32_t trackIndex);
     Status RemoveTrackQueue(uint32_t trackIndex);
+    bool HasTrackQueue(uint32_t trackIndex);
     bool HasCache(uint32_t trackIndex);
     size_t GetCacheSize(uint32_t trackIndex);
     uint32_t GetCacheDataSize(uint32_t trackIndex);
@@ -169,6 +170,13 @@ Status BlockQueuePool<T>::RemoveTrackQueue(uint32_t trackIndex)
     }
     MEDIA_LOG_D("Out, block queue " PUBLIC_LOG_S, name_.c_str());
     return Status::OK;
+}
+
+template <typename T>
+bool BlockQueuePool<T>::HasTrackQueue(uint32_t trackIndex)
+{
+    std::unique_lock<std::recursive_mutex> lockCacheQ(mutextCacheQ_);
+    return HasQueue(trackIndex);
 }
 
 template <typename T>

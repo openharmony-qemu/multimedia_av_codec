@@ -66,6 +66,7 @@ constexpr uint32_t SOFT_LIMIT_MULTIPLIER = 2;
 constexpr uint32_t HARD_LIMIT_MULTIPLIER = 4;
 constexpr uint32_t SOFT_LIMIT_MIN = 20;
 constexpr uint32_t HARD_LIMIT_MIN = 50;
+constexpr uint64_t INVALID_READ_CONFIG_EPOCH = UINT64_MAX;
 class FFmpegDemuxerPlugin : public DemuxerPlugin {
 public:
     using CachePressureCallback = DemuxerPlugin::CachePressureCallback;
@@ -265,7 +266,9 @@ private:
     bool TrackIsSelectedLocked(const uint32_t trackId) const;
     Status HandleReadFrameResult(int ffmpegRet);
     Status ReadPacketToCacheQueue(const uint32_t readId);
-    Status AddPacketToCacheQueue(AVPacketWrapperPtr pkt, bool requireSelectedTrack = false);
+    Status AddPacketToCacheQueue(AVPacketWrapperPtr pkt, bool requireSelectedTrack = false,
+        uint64_t expectedReadConfigEpoch = INVALID_READ_CONFIG_EPOCH, bool* packetAccepted = nullptr);
+    Status CachePacketLocked(AVPacketWrapperPtr pktWrapper, int32_t trackId, uint32_t& cacheBytes);
     Status SetDrmCencInfo(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     void WriteBufferAttr(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
     Status BufferIsValid(std::shared_ptr<AVBuffer> sample, std::shared_ptr<SamplePacket> samplePacket);
@@ -366,6 +369,8 @@ private:
     std::mutex mutex_ {};
     std::shared_mutex sharedMutex_;
     // Read-thread paths use this mutex directly and must never acquire sharedMutex_ while holding it.
+    // Lock order: never acquire selectedTrackMutex_ while holding a per-track mutex. Cache lifecycle
+    // transitions only hold selectedTrackMutex_ and never take a per-track mutex.
     std::mutex selectedTrackMutex_;
     std::unordered_map<uint32_t, std::shared_ptr<std::mutex>> trackMtx_;
     Seekable seekable_;
@@ -431,8 +436,15 @@ private:
     std::set<uint32_t> firstFramePendingTracks_ {};
     bool TrackIsChecked(const uint32_t trackId);
     std::vector<uint32_t> checkedTrackIds_ {};
-    void ClearUnselectTrackCache();
-    bool needClear_ = true;
+    enum class CachePhase : uint8_t {
+        BOOTSTRAP,
+        RUNTIME,
+    };
+    void RetireBootstrapCaches();
+    void RetireBootstrapCachesLocked();
+    Status InvalidateCachesForDiscontinuity();
+    CachePhase cachePhase_ {CachePhase::BOOTSTRAP};
+    uint64_t readConfigEpoch_ {0};
 
     std::shared_ptr<MultiStreamParserManager> streamParsers_ {nullptr};
 
@@ -516,12 +528,13 @@ private:
 
     Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
     bool ShouldWaitForRead(uint32_t trackId);
+    void PrepareAsyncRead(uint32_t trackId);
     void FFmpegReadLoop();
     bool NeedWaitForRead(uint32_t trackId);
     void HandleReadWait();
     bool EnsurePacketAllocated(AVPacketWrapperPtr& pktWrapper);
     bool ReadAndProcessFrame(AVPacketWrapperPtr& pktWrapper);
-    bool HandleAVPacketNormal(AVPacketWrapperPtr& pktWrapper);
+    bool HandleAVPacketNormal(AVPacketWrapperPtr& pktWrapper, uint64_t readConfigEpoch);
     void HandleAVPacketEndOfStream(AVPacketWrapperPtr& pktWrapper);
     void HandleAVPacketReadError(AVPacketWrapperPtr& pktWrapper, int ffmpegRet);
     bool ReadOnePacketAndProcessWebVTT(AVPacketWrapperPtr& pktWrapper);
@@ -597,7 +610,7 @@ private:
         SeekToFrameByDtsContext &ctx);
     Status ReadUntilDtsReached(SeekToFrameByDtsContext &ctx, int64_t seekTime,
         int64_t &realSeekTime, TimeoutGuard &timeoutGuard);
-    void ResetAfterSeek(int64_t seekTime, SeekMode mode);
+    Status ResetAfterSeek(int64_t seekTime, SeekMode mode);
     Status ReadRmUntilPos(AVPacket *pkt, int64_t pos);
 
     std::unordered_map<int32_t, int32_t> mp4FirstKeyFrameIdx_; // key: track index, value: first key frame index
