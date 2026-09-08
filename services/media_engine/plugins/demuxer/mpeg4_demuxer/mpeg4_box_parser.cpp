@@ -1474,9 +1474,6 @@ Status MPEG4AtomParser::ParseTrak(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 void MPEG4AtomParser::AdapterFormat(std::shared_ptr<Track> track)
 {
-    if (!NeedParseMediaTrackInfo(track->codecParms.trackType)) {
-        mediaInfo_.tracks[track->trackIndex].Remove(Tag::MEDIA_LANGUAGE);
-    }
     int32_t channelCount = -1;
     if (mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
         mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(channelCount);
@@ -2214,11 +2211,31 @@ Status MPEG4AtomParser::ParseVideoSampleEntry(MPEG4Atom currentAtom, int32_t dep
 Status MPEG4AtomParser::ParseSubtitleSampleEntry(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
-    if (currentAtom.type == FourccType("wvtt")) {
-        std::string mimeType = GetMimeType(currentAtom.type);
-        SetMime(mimeType);
+    if (currentAtom.type != FourccType("wvtt")) {
+        ctx->offset += static_cast<int64_t>(currentAtom.size);
+        return Status::OK;
     }
-    ctx->offset += static_cast<int64_t>(currentAtom.size);
+    SetMime(GetMimeType(currentAtom.type));
+
+    int64_t endOffset = 0;
+    if (__builtin_add_overflow(ctx->offset, currentAtom.size, &endOffset)) {
+        MEDIA_LOG_E("WebVTT sample entry size overflow");
+        return Status::ERROR_INVALID_DATA;
+    }
+    constexpr uint64_t webVttSampleEntryDataSize = 8;
+    if (currentAtom.dataSize < webVttSampleEntryDataSize) {
+        ctx->offset = endOffset;
+        return Status::OK;
+    }
+
+    // The wvtt sample entry has reserved/data-reference fields before vttC.
+    ctx->offset = ctx->dataOffset + static_cast<int64_t>(webVttSampleEntryDataSize);
+    while (ctx->offset < endOffset) {
+        Status ret = MPEG4ParseAtom(depth + 1, ctx);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse WebVTT sample entry child failed");
+    }
+    FALSE_RETURN_V_MSG_E(ctx->offset == endOffset, Status::ERROR_INVALID_DATA,
+        "Invalid WebVTT sample entry size");
     return Status::OK;
 }
 
@@ -2299,6 +2316,20 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
             "vvcC data too small to contain FullBox prefix");
         dataOffset += FULLBOX_PREFIX_SIZE;
         dataSize -= FULLBOX_PREFIX_SIZE;
+    } else if (currentAtom.type == FourccType("vttC")) {
+        // FFmpeg exposes the complete vttC box as subtitle extradata.
+        FALSE_RETURN_V_MSG_E(currentAtom.size <= static_cast<uint64_t>(INT64_MAX) && ctx->offset >= 0 &&
+            static_cast<uint64_t>(ctx->offset) >= currentAtom.size,
+            Status::ERROR_INVALID_DATA, "Invalid vttC atom offsets");
+        const int64_t atomStart = ctx->offset - static_cast<int64_t>(currentAtom.size);
+        FALSE_RETURN_V_MSG_E(ctx->dataOffset >= atomStart, Status::ERROR_INVALID_DATA,
+            "Invalid vttC data offset");
+        const int64_t atomHeaderSize = ctx->dataOffset - atomStart;
+        FALSE_RETURN_V_MSG_E(atomHeaderSize >= static_cast<int64_t>(DEFAULT_HEAD_SIZE) &&
+            static_cast<uint64_t>(atomHeaderSize) <= currentAtom.size, Status::ERROR_INVALID_DATA,
+            "Invalid vttC atom header size");
+        dataOffset -= atomHeaderSize;
+        dataSize = static_cast<uint64_t>(currentAtom.size);
     }
     lastTrack_->codecParms.hasValidExtradata = false;
     lastTrack_->codecParms.annexbExtradataSize = 0;
@@ -3973,7 +4004,7 @@ Status MPEG4AtomParser::ParseItunesMetadata(MPEG4Atom currentAtom, std::string& 
         if (currentAtom.type == FourccType("covr") || (!key.empty() && key == "com.apple.quicktime.artwork")) {
             return ParseCover(currentAtom, dataType, stringSize, ctx);
         }
-        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType, ctx->isUserMeta);
+        ret = ReadMetadataString(key, ctx->dataOffset + headerSize, stringSize, dataType, ctx);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read iTunes metadata string failed");
     } else {
         MEDIA_LOG_W("Invalid iTunes metadata format: dataTag=" PUBLIC_LOG_U32, dataTag);
@@ -3994,10 +4025,10 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     constexpr uint16_t defaultSkipSize = 4;
     if (stringLength > currentAtom.dataSize - defaultSkipSize) {
         // 作为原始数据处理
-        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0, ctx->isUserMeta);
+        ret = ReadMetadataString(key, ctx->dataOffset, currentAtom.dataSize, 0, ctx);
     } else {
         // 跳过语言代码
-        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0, ctx->isUserMeta);
+        ret = ReadMetadataString(key, ctx->dataOffset + defaultSkipSize, stringLength, 0, ctx);
     }
 
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read traditional metadata string failed");
@@ -4084,7 +4115,7 @@ std::string DecodeMacString(const uint8_t* data, size_t size)
 }
 // LCOV_EXCL_STOP
 
-bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string& value)
+bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string& value, bool isTrackMetadata)
 {
     static const std::map<std::string, TagType> keyToTagMap = {
         {"title",         Tag::MEDIA_TITLE},
@@ -4114,6 +4145,9 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
         resultStr = resultStr.length() > 0 ? resultStr : value;
         if (resultStr.length() > 0) {
             mediaInfo_.general.SetData(it->second, resultStr);
+            if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
+                mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TITLE>(resultStr);
+            }
         }
         return true;
     } else if (key == "location") {
@@ -4176,7 +4210,7 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
 }
 
 Status MPEG4AtomParser::ReadMetadataString(
-    std::string& key, int64_t offset, uint64_t size, uint32_t dataType, bool isUserMeta)
+    std::string& key, int64_t offset, uint64_t size, uint32_t dataType, ParseContext* parseCtx)
 {
     FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
     FALSE_RETURN_V_MSG_E(size <= std::min(MPEG4_MAX_BOX_DATA_SIZE, static_cast<uint64_t>(SIZE_MAX - 1)),
@@ -4187,7 +4221,12 @@ Status MPEG4AtomParser::ReadMetadataString(
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
 
     buffer[size] = '\0';
-    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size)) && !isUserMeta) {
+    const bool isTrackMeta = parseCtx != nullptr && lastTrack_ != nullptr &&
+        lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
+        parseCtx->path[0] == FourccType("moov") && parseCtx->path[1] == FourccType("trak") &&
+        (parseCtx->path[2] == FourccType("udta") || parseCtx->path[2] == FourccType("ilst"));
+    const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
+    if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size), isTrackMeta) && !isUserMeta) {
         return Status::OK;
     }
     return SetMetadata(key, buffer.get(), size, dataType);
@@ -5156,6 +5195,7 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("avcC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("hvcC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("vvcC"), &MPEG4AtomParser::ParseCodecConfig},
+        {FourccType("vttC"), &MPEG4AtomParser::ParseCodecConfig},
         {FourccType("colr"), &MPEG4AtomParser::ParseColr}, {FourccType("aclr"), &MPEG4AtomParser::ParseAclr},
         {FourccType("glbl"), &MPEG4AtomParser::ParseGlbl}, {FourccType("stts"), &MPEG4AtomParser::ParseStts},
         {FourccType("stss"), &MPEG4AtomParser::ParseStss}, {FourccType("ctts"), &MPEG4AtomParser::ParseCtts},

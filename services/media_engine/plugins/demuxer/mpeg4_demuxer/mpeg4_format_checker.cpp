@@ -177,14 +177,6 @@ static const std::map<TrackType, MediaType> g_supportMediaType = {
     {AUXILIARY_TYPE, MediaType::AUXILIARY},
 };
 
-static const std::vector<TrackType> g_supportMediaInfoType = {
-    TrackType::VIDEO_TYPE,
-    TrackType::AUDIO_TYPE,
-    TrackType::TIMEDMETA_TYPE,
-    TrackType::AUXILIARY_TYPE,
-};
-
-
 bool IsSupportedBrand(int32_t brand)
 {
     return g_supportedFileBrandsFourcc.count(brand) > 0;
@@ -287,12 +279,6 @@ bool NeedParseAudioInfo(std::string mimeType, TrackType trackType)
 {
     return (trackType == AUDIO_TYPE) ||
            (trackType == AUXILIARY_TYPE && IsAudioMimeType(mimeType));
-}
-
-bool NeedParseMediaTrackInfo(TrackType trackType)
-{
-    return (std::find(g_supportMediaInfoType.cbegin(), g_supportMediaInfoType.cend(),
-        trackType) != g_supportMediaInfoType.cend());
 }
 
 std::string GetMimeType(int32_t atomtype)
