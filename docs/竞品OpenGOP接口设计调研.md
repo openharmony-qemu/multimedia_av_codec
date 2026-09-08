@@ -15,7 +15,7 @@ GOP（Group of Pictures）是视频编码中以关键帧为首的一组连续图
 
 ## 2. av_codec 新增 API 设计（open GOP）
 
-> 目标：对标 iOS `kVTCompressionPropertyKey_AllowOpenGOP`（见 3 节），在 OpenHarmony av_codec 编码侧补齐 open/closed GOP 控制能力。设计严格遵循现有 B 帧的"key + capability feature"双件模式（`OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME` + `VIDEO_ENCODER_B_FRAME`）。
+> 目标：对标 iOS `kVTCompressionPropertyKey_AllowOpenGOP`（见 3 节），在 OpenHarmony av_codec 编码侧补齐 open/closed GOP 控制能力。
 
 ### 2.1 新增 Key（仅 configure 阶段）
 
