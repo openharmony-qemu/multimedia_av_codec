@@ -88,7 +88,7 @@ void DropSyncCoordinator::UpdateFeedback(bool isRetained, bool isPreDropped)
     if (isPreDropped) {
         windowPreDroppedCount_++;
     }
-    feedbackWindowPos_ = (feedbackWindowPos_ + 1) & feedbackWindowMask;
+    feedbackWindowPos_ = (feedbackWindowPos_ + 1) % feedbackWindowSize;
     AVCODEC_LOGD("isRetained=%{public}d, isPreDropped=%{public}d, window=%{public}zu/%{public}zu"
         ", retained=%{public}u, preDropped=%{public}u",
         isRetained, isPreDropped, feedbackWindowCount_, feedbackWindowSize,
