@@ -70,6 +70,7 @@ public:
 private:
     void HandleTransCoderComplete();
     void ConfigureTrackMeta(const std::shared_ptr<Meta> &meta, const std::string &mimeType);
+    Status AddPendingMetaTracks();
 
     std::string name_;
 
@@ -97,19 +98,26 @@ private:
     std::atomic<bool> videoIsEos{false};
     std::atomic<bool> audioIsEos{false};
     std::atomic<bool> isTransCoderMode{false};
- 
+
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
     std::mutex eosMutex_;
     std::mutex bufferPtsMutex_;
-    
+
     bool isStarted{false};
 
     int32_t maxDuration_ {INT32_MAX};
     std::atomic<bool> isReachMaxDuration_{false};
-    
+
     bool isAdts_{true};
     bool mediaProfile_{0}; // default value: AAC_LC
+
+    struct PendingMetaTrack {
+        std::shared_ptr<Meta> meta;
+        std::shared_ptr<FilterLinkCallback> callback;
+        StreamType streamType;
+    };
+    std::vector<PendingMetaTrack> pendingMetaTracks_;
 };
 } // namespace Pipeline
 } // namespace MEDIA
