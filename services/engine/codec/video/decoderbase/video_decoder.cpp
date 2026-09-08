@@ -567,14 +567,17 @@ int32_t VideoDecoder::SetOutputSurface(sptr<Surface> surface)
         state_ == State::EOS) {
         return ReplaceOutputSurfaceWhenRunning(surface);
     }
-    UnRegisterListenerToSurface(sInfo_.surface);
     uint64_t surfaceId = surface->GetUniqueId();
-    sInfo_.surface = surface;
-    CombineConsumerUsage();
-    int32_t ret = RegisterListenerToSurface(sInfo_.surface);
+    {
+        std::lock_guard<std::mutex> sLock(surfaceMutex_);
+        UnRegisterListenerToSurface(sInfo_.surface);
+        sInfo_.surface = surface;
+        CombineConsumerUsage();
+    }
+    int32_t ret = RegisterListenerToSurface(surface);
     CHECK_AND_RETURN_RET_LOG(ret == GSERROR_OK, ret,
                              "surface(%{public}" PRIu64 ") register listener to surface failed, GSError=%{public}d",
-                             sInfo_.surface->GetUniqueId(), ret);
+                             surfaceId, ret);
     AVCODEC_LOGI("Num %{public}u Set surface(%{public}" PRIu64 ") success.", decInstanceID_, surfaceId);
     return AVCS_ERR_OK;
 }

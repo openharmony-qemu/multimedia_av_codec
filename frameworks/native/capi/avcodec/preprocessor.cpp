@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <charconv>
 #include <cmath>
+#include <cstdint>
 #include <cstring>
 #include <limits>
 #include <optional>
@@ -115,6 +116,23 @@ double RoundToTwoDecimals(double value)
     return std::round(value * ROUND_TO_TWO_DECIMALS_FACTOR) / ROUND_TO_TWO_DECIMALS_FACTOR;
 }
 
+int32_t TransformRoiCoordinate(int32_t value, double scale, int32_t offset)
+{
+    double transformed = std::round(static_cast<double>(value) * scale) - static_cast<double>(offset);
+    constexpr double int32Min = static_cast<double>(INT32_MIN);
+    constexpr double int32Max = static_cast<double>(INT32_MAX);
+    if (std::isnan(transformed)) {
+        return 0;
+    }
+    if (transformed > int32Max) {
+        return INT32_MAX;
+    }
+    if (transformed < int32Min) {
+        return INT32_MIN;
+    }
+    return static_cast<int32_t>(transformed);
+}
+
 bool IsYuv420Format(OHOS::GraphicPixelFormat format)
 {
     return format == GRAPHIC_PIXEL_FMT_YCBCR_420_SP || format == GRAPHIC_PIXEL_FMT_YCRCB_420_SP ||
@@ -127,9 +145,15 @@ int32_t GetMinRowBytes(OHOS::GraphicPixelFormat format, int32_t width)
     switch (format) {
         case GRAPHIC_PIXEL_FMT_RGBA_8888:
         case GRAPHIC_PIXEL_FMT_RGBA_1010102:
+            if (width > INT32_MAX / RGBA_BYTES_PER_PIXEL) {
+                return INVALID_ROW_BYTES;
+            }
             return width * RGBA_BYTES_PER_PIXEL;
         case GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GRAPHIC_PIXEL_FMT_YCRCB_P010:
+            if (width > INT32_MAX / P010_BYTES_PER_SAMPLE) {
+                return INVALID_ROW_BYTES;
+            }
             return width * P010_BYTES_PER_SAMPLE;
         case GRAPHIC_PIXEL_FMT_YCBCR_420_SP:
         case GRAPHIC_PIXEL_FMT_YCRCB_420_SP:
@@ -165,10 +189,10 @@ std::string TransformRoiMetadata(const std::string &roi, double scaleX, double s
         std::string_view segment = roiView.substr(start, end == std::string_view::npos ? end : end - start);
         auto entry = ParseRoiEntry(segment);
         if (entry) {
-            int32_t newTop = static_cast<int32_t>(std::round(entry->top * scaleY)) - offsetTop;
-            int32_t newLeft = static_cast<int32_t>(std::round(entry->left * scaleX)) - offsetLeft;
-            int32_t newBottom = static_cast<int32_t>(std::round(entry->bottom * scaleY)) - offsetTop;
-            int32_t newRight = static_cast<int32_t>(std::round(entry->right * scaleX)) - offsetLeft;
+            int32_t newTop = TransformRoiCoordinate(entry->top, scaleY, offsetTop);
+            int32_t newLeft = TransformRoiCoordinate(entry->left, scaleX, offsetLeft);
+            int32_t newBottom = TransformRoiCoordinate(entry->bottom, scaleY, offsetTop);
+            int32_t newRight = TransformRoiCoordinate(entry->right, scaleX, offsetLeft);
             if (!result.empty()) {
                 result += ";";
             }
@@ -701,7 +725,7 @@ void Preprocessor::UpdateConfiguredValues(const Media::Format &format, bool conf
 bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight)
 {
     AVCodecListImpl codecList;
-    (void)codecList.Init();
+    CHECK_AND_RETURN_RET_LOG(codecList.Init() == AVCS_ERR_OK, false, "Init AVCodecList failed!");
     CapabilityData *cap = codecList.GetCapability(std::string(mime_.c_str()), true, AVCodecCategory::AVCODEC_NONE);
     if (cap == nullptr) {
         return false;
