@@ -3558,6 +3558,24 @@ Status FFmpegDemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t 
     return Status::OK;
 }
 
+Status FFmpegDemuxerPlugin::CalculatePtsAndDts(const AVStream* avStream, int64_t dts, int64_t currentCttsDuration,
+    int64_t globalOffset, int64_t& pts, int64_t& finalDts)
+{
+    int64_t rawDts = 0;
+    FALSE_RETURN_V_MSG_E(SignedIntSafeAdd(dts, globalOffset, rawDts),
+        Status::ERROR_INVALID_DATA, "dts offset overflow");
+    int64_t rawPts = 0;
+    FALSE_RETURN_V_MSG_E(SignedIntSafeAdd(rawDts, currentCttsDuration, rawPts),
+        Status::ERROR_INVALID_DATA, "pts offset overflow");
+    FALSE_RETURN_V_MSG_E((rawPts / static_cast<int64_t>(avStream->time_scale)) <= (INT64_MAX / MS_TO_NS),
+        Status::ERROR_INVALID_DATA, "pts overflow before convert to us");
+    FALSE_RETURN_V_MSG_E((rawDts / static_cast<int64_t>(avStream->time_scale)) <= (INT64_MAX / MS_TO_NS),
+        Status::ERROR_INVALID_DATA, "dts overflow before convert to us");
+    pts = AvTime2Us(ConvertTimeFromFFmpeg(rawPts, avStream->time_base));
+    finalDts = AvTime2Us(ConvertTimeFromFFmpeg(rawDts, avStream->time_base));
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConvertMode mode,
     const AVStream* avStream, int64_t absolutePTS, uint32_t index)
 {
@@ -3582,18 +3600,9 @@ Status FFmpegDemuxerPlugin::PTSAndIndexConvertSttsAndCttsProcess(IndexAndPTSConv
         }
         cttsCurNum--;
         int64_t currentCttsDuration = static_cast<int64_t>(avStream->ctts_data[cttsIdx].duration);
-        int64_t rawDts = 0;
-        FALSE_RETURN_V_MSG_E(SignedIntSafeAdd(dts, globalOffset, rawDts),
-            Status::ERROR_INVALID_DATA, "dts offset overflow");
-        int64_t rawPts = 0;
-        FALSE_RETURN_V_MSG_E(SignedIntSafeAdd(rawDts, currentCttsDuration, rawPts),
-            Status::ERROR_INVALID_DATA, "pts offset overflow");
-        FALSE_RETURN_V_MSG_E((rawPts / static_cast<int64_t>(avStream->time_scale)) <= (INT64_MAX / MS_TO_NS),
-            Status::ERROR_INVALID_DATA, "pts overflow before convert to us");
-        FALSE_RETURN_V_MSG_E((rawDts / static_cast<int64_t>(avStream->time_scale)) <= (INT64_MAX / MS_TO_NS),
-            Status::ERROR_INVALID_DATA, "dts overflow before convert to us");
-        pts = AvTime2Us(ConvertTimeFromFFmpeg(rawPts, avStream->time_base));
-        int64_t finalDts = AvTime2Us(ConvertTimeFromFFmpeg(rawDts, avStream->time_base));
+        int64_t finalDts = 0;
+        ret = CalculatePtsAndDts(avStream, dts, currentCttsDuration, globalOffset, pts, finalDts);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Calculate pts and dts failed");
         if (mode == GET_ALL_FRAME_PTS) {
             if (ptsCnt_ >= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT) {
                 MEDIA_LOG_I("PTS cnt has reached the maximum limit");

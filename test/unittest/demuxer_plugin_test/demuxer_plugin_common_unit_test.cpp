@@ -95,6 +95,47 @@ AVPacket MakePacket(uint8_t *data, int32_t size, int32_t flags = 0)
     return pkt;
 }
 
+std::shared_ptr<FFmpegDemuxerPlugin> CreateSampleSizePlugin(AVCodecID codecId, int extradataSize)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mov,mp4,m4a,3gp,3g2,mj2");
+    if (plugin == nullptr) {
+        return plugin;
+    }
+    AVFormatContext *formatContext = avformat_alloc_context();
+    if (formatContext == nullptr) {
+        return nullptr;
+    }
+    plugin->formatContext_ = std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *context) {
+        avformat_free_context(context);
+    });
+    plugin->selectedTrackIds_.push_back(0);
+    FFmpegDemuxerPlugin::AVStreamSnapshot snapshot;
+    snapshot.valid = true;
+    snapshot.codecId = codecId;
+    snapshot.extradataSize = extradataSize;
+    plugin->streamSnapshots_.push_back(snapshot);
+    return plugin;
+}
+
+bool AddSampleSizePacket(const std::shared_ptr<FFmpegDemuxerPlugin>& plugin,
+    const std::vector<std::pair<int, int>>& packetInfo)
+{
+    auto samplePacket = std::make_shared<SamplePacket>();
+    if (samplePacket == nullptr) {
+        return false;
+    }
+    for (const auto &[packetSize, flags] : packetInfo) {
+        auto wrapper = std::make_shared<AVPacketWrapper>();
+        if (wrapper == nullptr || wrapper->GetAVPacket() == nullptr) {
+            return false;
+        }
+        wrapper->GetAVPacket()->size = packetSize;
+        wrapper->GetAVPacket()->flags = flags;
+        samplePacket->pkts.push_back(wrapper);
+    }
+    return plugin->cacheQueue_.Push(0, samplePacket);
+}
+
 bool HasCanDropTag(const std::shared_ptr<MediaAVBuffer>& buffer)
 {
     bool canDrop = false;
@@ -2153,65 +2194,27 @@ HWTEST(FFmpegDemuxerPluginSafetyTest, AVDemuxer_WebvttEOS_InvalidTimestampAndStr
 
 HWTEST(FFmpegDemuxerPluginSafetyTest, AVDemuxer_GetNextSampleSize_TotalSizeOverflow_062412, TestSize.Level1)
 {
-    auto createPlugin = [](AVCodecID codecId, int extradataSize) {
-        auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mov,mp4,m4a,3gp,3g2,mj2");
-        if (plugin == nullptr) {
-            return plugin;
-        }
-        AVFormatContext *formatContext = avformat_alloc_context();
-        if (formatContext == nullptr) {
-            return std::shared_ptr<FFmpegDemuxerPlugin>(nullptr);
-        }
-        plugin->formatContext_ = std::shared_ptr<AVFormatContext>(formatContext, [](AVFormatContext *context) {
-            avformat_free_context(context);
-        });
-        plugin->selectedTrackIds_.push_back(0);
-        FFmpegDemuxerPlugin::AVStreamSnapshot snapshot;
-        snapshot.valid = true;
-        snapshot.codecId = codecId;
-        snapshot.extradataSize = extradataSize;
-        plugin->streamSnapshots_.push_back(snapshot);
-        return plugin;
-    };
-    auto addSamplePacket = [](const std::shared_ptr<FFmpegDemuxerPlugin>& plugin,
-                               const std::vector<std::pair<int, int>>& packetInfo) {
-        auto samplePacket = std::make_shared<SamplePacket>();
-        if (samplePacket == nullptr) {
-            return false;
-        }
-        for (const auto &[packetSize, flags] : packetInfo) {
-            auto wrapper = std::make_shared<AVPacketWrapper>();
-            if (wrapper == nullptr || wrapper->GetAVPacket() == nullptr) {
-                return false;
-            }
-            wrapper->GetAVPacket()->size = packetSize;
-            wrapper->GetAVPacket()->flags = flags;
-            samplePacket->pkts.push_back(wrapper);
-        }
-        return plugin->cacheQueue_.Push(0, samplePacket);
-    };
-
     int32_t size = 0;
-    auto packetOverflowPlugin = createPlugin(AV_CODEC_ID_AAC, 0);
+    auto packetOverflowPlugin = CreateSampleSizePlugin(AV_CODEC_ID_AAC, 0);
     ASSERT_NE(packetOverflowPlugin, nullptr);
-    ASSERT_TRUE(addSamplePacket(packetOverflowPlugin, {{std::numeric_limits<int>::max(), 0}, {1, 0}}));
+    ASSERT_TRUE(AddSampleSizePacket(packetOverflowPlugin, {{std::numeric_limits<int>::max(), 0}, {1, 0}}));
     EXPECT_EQ(packetOverflowPlugin->GetNextSampleSize(0, size), Status::ERROR_UNKNOWN);
 
-    auto asyncPacketOverflowPlugin = createPlugin(AV_CODEC_ID_AAC, 0);
+    auto asyncPacketOverflowPlugin = CreateSampleSizePlugin(AV_CODEC_ID_AAC, 0);
     ASSERT_NE(asyncPacketOverflowPlugin, nullptr);
-    ASSERT_TRUE(addSamplePacket(asyncPacketOverflowPlugin, {{std::numeric_limits<int>::max(), 0}, {1, 0}}));
+    ASSERT_TRUE(AddSampleSizePacket(asyncPacketOverflowPlugin, {{std::numeric_limits<int>::max(), 0}, {1, 0}}));
     asyncPacketOverflowPlugin->readThread_ = std::make_unique<std::thread>();
     EXPECT_EQ(asyncPacketOverflowPlugin->GetNextSampleSize(0, size, 0), Status::ERROR_UNKNOWN);
 
-    auto extradataOverflowPlugin = createPlugin(AV_CODEC_ID_H264, 1);
+    auto extradataOverflowPlugin = CreateSampleSizePlugin(AV_CODEC_ID_H264, 1);
     ASSERT_NE(extradataOverflowPlugin, nullptr);
-    ASSERT_TRUE(addSamplePacket(extradataOverflowPlugin,
+    ASSERT_TRUE(AddSampleSizePacket(extradataOverflowPlugin,
         {{std::numeric_limits<int>::max(), AV_PKT_FLAG_KEY}}));
     EXPECT_EQ(extradataOverflowPlugin->GetNextSampleSize(0, size), Status::ERROR_UNKNOWN);
 
-    auto normalPlugin = createPlugin(AV_CODEC_ID_AAC, 0);
+    auto normalPlugin = CreateSampleSizePlugin(AV_CODEC_ID_AAC, 0);
     ASSERT_NE(normalPlugin, nullptr);
-    ASSERT_TRUE(addSamplePacket(normalPlugin, {{TEST_DATA_SIZE, 0}}));
+    ASSERT_TRUE(AddSampleSizePacket(normalPlugin, {{TEST_DATA_SIZE, 0}}));
     EXPECT_EQ(normalPlugin->GetNextSampleSize(0, size), Status::OK);
     EXPECT_EQ(size, TEST_DATA_SIZE);
 }

@@ -339,6 +339,8 @@ private:
         const AVStream* avStream, int64_t absolutePTS, uint32_t index);
     Status PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvertMode mode,
         const AVStream* avStream, int64_t absolutePTS, uint32_t index);
+    Status CalculatePtsAndDts(const AVStream* avStream, int64_t dts, int64_t currentCttsDuration,
+        int64_t globalOffset, int64_t& pts, int64_t& finalDts);
     void InitPTSandIndexConvert();
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
     void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
@@ -515,6 +517,7 @@ private:
     bool Mp4CheckKeyFrame(AVStream* stream);
 
     Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
+    Status GetSampleSizeFromCache(uint32_t trackId, const std::shared_ptr<SamplePacket>& samplePacket, int32_t& size);
     bool ShouldWaitForRead(uint32_t trackId);
     void FFmpegReadLoop();
     bool NeedWaitForRead(uint32_t trackId);

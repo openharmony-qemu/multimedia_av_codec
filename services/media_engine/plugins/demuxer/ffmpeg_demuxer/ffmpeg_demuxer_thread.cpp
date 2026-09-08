@@ -607,6 +607,35 @@ void FFmpegDemuxerPlugin::ReleaseFFmpegReadLoop()
     readLoopStatus_ = Status::OK; // Reset readLoopStatus_ to OK after destroy
 }
 
+Status FFmpegDemuxerPlugin::GetSampleSizeFromCache(uint32_t trackId, const std::shared_ptr<SamplePacket>& samplePacket,
+    int32_t& size)
+{
+    int totalSize = 0;
+    for (const auto &pktWrapper : samplePacket->pkts) {
+        AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
+        FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet in sample is nullptr");
+        int newTotalSize = 0;
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(totalSize, pkt->size, &newTotalSize),
+            Status::ERROR_UNKNOWN, "TotalSize overflow");
+        totalSize = newTotalSize;
+    }
+
+    const auto* snapshot = GetStreamSnapshot(trackId);
+    FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid, Status::ERROR_UNKNOWN, "Stream snapshot is invalid");
+    if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), snapshot->codecId) > 0)) {
+        AVPacketWrapperPtr firstWrapper = samplePacket->pkts[0];
+        if (firstWrapper != nullptr && firstWrapper->GetAVPacket() != nullptr &&
+            (static_cast<uint32_t>(firstWrapper->GetFlags()) & static_cast<uint32_t>(AV_PKT_FLAG_KEY))) {
+            int newTotalSize = 0;
+            FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(totalSize, snapshot->extradataSize, &newTotalSize),
+                Status::ERROR_UNKNOWN, "TotalSize overflow");
+            totalSize = newTotalSize;
+        }
+    }
+    size = totalSize;
+    return Status::OK;
+}
+
 Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, uint32_t timeout)
 {
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
@@ -642,30 +671,7 @@ Status FFmpegDemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t& size, u
         return Status::END_OF_STREAM;
     }
     FALSE_RETURN_V_MSG_E(samplePacket->pkts.size() > 0, Status::ERROR_UNKNOWN, "Cache sample is empty");
-    int totalSize = 0;
-    for (const auto &pktWrapper : samplePacket->pkts) {
-        AVPacket *pkt = (pktWrapper != nullptr) ? pktWrapper->GetAVPacket() : nullptr;
-        FALSE_RETURN_V_MSG_E(pkt != nullptr, Status::ERROR_UNKNOWN, "Packet in sample is nullptr");
-        int newTotalSize = 0;
-        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(totalSize, pkt->size, &newTotalSize),
-            Status::ERROR_UNKNOWN, "TotalSize overflow");
-        totalSize = newTotalSize;
-    }
-
-    const auto* snapshot = GetStreamSnapshot(trackId);
-    FALSE_RETURN_V_MSG_E(snapshot != nullptr && snapshot->valid, Status::ERROR_UNKNOWN, "Stream snapshot is invalid");
-    if ((std::count(g_streamContainedXPS.begin(), g_streamContainedXPS.end(), snapshot->codecId) > 0)) {
-        AVPacketWrapperPtr firstWrapper = samplePacket->pkts[0];
-        if (firstWrapper != nullptr && firstWrapper->GetAVPacket() != nullptr &&
-            (static_cast<uint32_t>(firstWrapper->GetFlags()) & static_cast<uint32_t>(AV_PKT_FLAG_KEY))) {
-            int newTotalSize = 0;
-            FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(totalSize, snapshot->extradataSize, &newTotalSize),
-                Status::ERROR_UNKNOWN, "TotalSize overflow");
-            totalSize = newTotalSize;
-        }
-    }
-    size = totalSize;
-    return Status::OK;
+    return GetSampleSizeFromCache(trackId, samplePacket, size);
 }
 
 Status FFmpegDemuxerPlugin::Pause()
