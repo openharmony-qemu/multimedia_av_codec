@@ -475,7 +475,7 @@ private:
     Status DoSelectTrack(int32_t trackId, int32_t curTrackId);
     Status HandleRebootPlugin(int32_t trackId, bool& isRebooted);
     Status HandleHlsRebootPlugin(int32_t trackId);
-    Status HandleSegmentChange(int32_t trackId);
+    Status HandleSegmentChange(int32_t trackId, bool isAVInOneStream);
     Status HandleSegmentEos(int32_t trackId);
     Status HandleHlsSeek();
     bool IsAVInOneStream();

@@ -1797,7 +1797,7 @@ Status MediaDemuxer::HandleSegmentEos(int32_t trackId)
     Status ret = Status::OK;
     if (!isAVInOneStream) {
         // not mixed
-        ret = HandleSegmentChange(trackId);
+        ret = HandleSegmentChange(trackId, isAVInOneStream);
         MEDIA_LOG_I("HandleSegmentChange end");
         return ret;
     }
@@ -1817,18 +1817,17 @@ Status MediaDemuxer::HandleSegmentEos(int32_t trackId)
     }
     MEDIA_LOG_I("HandleSegmentChange mixed start");
     int32_t tmpTrackId = IsValidTrackId(videoTrackId_) ? videoTrackId_ : audioTrackId_;
-    ret = HandleSegmentChange(tmpTrackId);
+    ret = HandleSegmentChange(tmpTrackId, isAVInOneStream);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "HandleSegmentChange mixed failed");
     ret = (tmpTrackId == videoTrackId_ && IsValidTrackId(audioTrackId_)) ? InnerSelectTrack(audioTrackId_) : Status::OK;
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "HandleSegmentChange Select audio track failed");
     FALSE_GOON_NOEXEC(tmpTrackId == videoTrackId_ && IsValidTrackId(audioTrackId_),
         PushCodecCheckBuffer(audioTrackId_));
-    UpdateTrackMap();
     MEDIA_LOG_I("HandleSegmentChange mixed end");
     return ret;
 }
 
-Status MediaDemuxer::HandleSegmentChange(int32_t trackId)
+Status MediaDemuxer::HandleSegmentChange(int32_t trackId, bool isAVInOneStream)
 {
     FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, Status::ERROR_NULL_POINTER, "Plugin manager is nullptr");
     FALSE_RETURN_V(!subStreamDemuxer_ || trackId != subtitleTrackId_, Status::OK);
@@ -1853,6 +1852,9 @@ Status MediaDemuxer::HandleSegmentChange(int32_t trackId)
     }
     Plugins::MediaInfo mediaInfo = demuxerPluginManager_->GetMediaInfo();
     InitMediaMetaData(mediaInfo); // update mediaMetaData_
+    if (isAVInOneStream) {
+        UpdateTrackMap();
+    }
     PushCodecCheckBuffer(trackId);
     ret = InnerSelectTrack(trackId);
     return ret;
