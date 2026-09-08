@@ -725,7 +725,7 @@ void Preprocessor::UpdateConfiguredValues(const Media::Format &format, bool conf
 bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight)
 {
     AVCodecListImpl codecList;
-    (void)codecList.Init();
+    CHECK_AND_RETURN_RET_LOG(codecList.Init() == AVCS_ERR_OK, false, "Init AVCodecList failed!");
     CapabilityData *cap = codecList.GetCapability(std::string(mime_.c_str()), true, AVCodecCategory::AVCODEC_NONE);
     if (cap == nullptr) {
         return false;
