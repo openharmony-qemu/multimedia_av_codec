@@ -257,6 +257,7 @@ private:
     static int CheckContextIsValid(void* opaque, int &bufSize);
     void NotifyInitializationCompleted();
     void PrepareSetDataSourceContext();
+    Status InitInputFormatContext();
 
     void InitParser();
     void InitBitStreamContext(const AVStream& avStream);

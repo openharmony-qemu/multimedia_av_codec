@@ -1688,6 +1688,29 @@ void FFmpegDemuxerPlugin::PrepareSetDataSourceContext()
     }
 }
 
+Status FFmpegDemuxerPlugin::InitInputFormatContext()
+{
+    {
+        std::lock_guard<std::mutex> glock(g_mtx);
+        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName_).c_str());
+        pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
+    }
+    FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
+    {
+        std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
+        formatContext_ = InitAVFormatContext(&ioContext_);
+    }
+    if (formatContext_ != nullptr) {
+        return Status::OK;
+    }
+    if (ioContext_.retry) {
+        MEDIA_LOG_E("SetDataSource failed cause not enough data");
+        return Status::ERROR_NOT_ENOUGH_DATA;
+    }
+    MEDIA_LOG_E("AVFormatContext is nullptr");
+    return Status::ERROR_UNKNOWN;
+}
+
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source,
     const std::shared_ptr<Media::Meta>& configs)
 {
@@ -1708,23 +1731,9 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_setdatasource", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     InitIoContextInDemuxer(source);
-    {
-        std::lock_guard<std::mutex> glock(g_mtx);
-        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName_).c_str());
-        pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
-    }
-    FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
-    {
-        std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
-        formatContext_ = InitAVFormatContext(&ioContext_);
-    }
-    if (formatContext_ == nullptr) {
-        if (ioContext_.retry) {
-            MEDIA_LOG_E("SetDataSource failed cause not enough data");
-            return Status::ERROR_NOT_ENOUGH_DATA;
-        }
-        MEDIA_LOG_E("AVFormatContext is nullptr");
-        return Status::ERROR_UNKNOWN;
+    Status ret = InitInputFormatContext();
+    if (ret != Status::OK) {
+        return ret;
     }
     fileType_ = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
     InitParser();
