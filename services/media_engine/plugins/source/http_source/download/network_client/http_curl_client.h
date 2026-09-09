@@ -83,6 +83,7 @@ private:
     void *userParam_;
     CURL* easyHandle_ {nullptr};
     mutable Mutex mutex_;
+    mutable Mutex ipMutex_;
     struct curl_slist* headerList_ {nullptr};
     std::string ip_ {};
     std::atomic<bool> ipFlag_ {false};

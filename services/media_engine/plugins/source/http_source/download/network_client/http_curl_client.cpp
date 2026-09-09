@@ -287,10 +287,11 @@ Status HttpCurlClient::Close(bool isAsync)
             curl_slist_free_all(headerList_);
             headerList_ = nullptr;
         }
+    }
+    {
+        AutoLock lock(ipMutex_);
         ipFlag_ = false;
-        if (!ip_.empty()) {
-            ip_.clear();
-        }
+        ip_.clear();
     }
     MEDIA_LOG_I("Close client out");
     return Status::OK;
@@ -299,20 +300,23 @@ Status HttpCurlClient::Close(bool isAsync)
 Status HttpCurlClient::Deinit()
 {
     MEDIA_LOG_I("Deinit in");
-    AutoLock lock(mutex_);
-    if (easyHandle_) {
-        curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
+    {
+        AutoLock lock(mutex_);
+        if (easyHandle_) {
+            curl_easy_setopt(easyHandle_, CURLOPT_TIMEOUT_MS, 1);
+        }
+        if (easyHandle_) {
+            curl_easy_cleanup(easyHandle_);
+            easyHandle_ = nullptr;
+        }
+        if (headerList_) {
+            curl_slist_free_all(headerList_);
+            headerList_ = nullptr;
+        }
     }
-    if (easyHandle_) {
-        curl_easy_cleanup(easyHandle_);
-        easyHandle_ = nullptr;
-    }
-    if (headerList_) {
-        curl_slist_free_all(headerList_);
-        headerList_ = nullptr;
-    }
-    ipFlag_ = false;
-    if (!ip_.empty()) {
+    {
+        AutoLock lock(ipMutex_);
+        ipFlag_ = false;
         ip_.clear();
     }
     curl_global_cleanup();
@@ -322,10 +326,9 @@ Status HttpCurlClient::Deinit()
 
 Status HttpCurlClient::GetIp(std::string &ip)
 {
-    AutoLock lock(mutex_);
+    AutoLock lock(ipMutex_);
     if (!ip_.empty()) {
-        std::string obj(ip_);
-        ip = obj;
+        ip = ip_;
     } else {
         MEDIA_LOG_E("Get ip failed, ip is null.");
     }
@@ -467,9 +470,11 @@ Status HttpCurlClient::SetIp()
     if (!ipFlag_) {
         char* ip = nullptr;
         if (!curl_easy_getinfo(easyHandle_, CURLINFO_PRIMARY_IP, &ip) && ip) {
+            AutoLock lock(ipMutex_);
             ip_ = ip;
             ipFlag_ = true;
         } else {
+            AutoLock lock(ipMutex_);
             ip_ = "";
             MEDIA_LOG_E("Set sever ip failed.");
             retSetIp = Status::ERROR_UNKNOWN;
