@@ -83,6 +83,7 @@ const int32_t MPEGPS_START_CODE_SIZE = 4;
 const uint8_t MPEGPS_START_CODE[] = {0x00, 0x00, 0x01, 0xBA};
 
 const uint32_t SETTIMER_TIMEOUT = 5; // second
+const uint32_t RM_READ_TIMEOUT_MS = SETTIMER_TIMEOUT * 1000;
 constexpr int64_t LOG_INTERVAL_MS = 2000; // 2s
 constexpr uint32_t LOG_MAX_COUNT = 10; // 10 times
 constexpr int32_t SEEK_TRACK_DEFAULT = -1;
@@ -568,9 +569,7 @@ void FFmpegDemuxerPlugin::ResetParam()
     streamSnapshots_.clear();
 
     streamParsers_.reset();
-    for (auto item : avbsfContexts_) {
-        item.second.reset();
-    }
+    avbsfContexts_.clear();
     trackMtx_.clear();
     trackDfxInfoMap_.clear();
     minTsPktInfo_.isInit = false;
@@ -1400,7 +1399,8 @@ Status FFmpegDemuxerPlugin::SetEosSample(std::shared_ptr<AVBuffer> sample, bool 
     sample->flag_ = (uint32_t)(AVBufferFlag::EOS);
     if (replaceMemory) {
         auto avPacketWrapper = std::make_shared<AVPacketWrapper>();
-        FALSE_RETURN_V_MSG_E(avPacketWrapper != nullptr, Status::ERROR_INVALID_OPERATION, "Create pktWrapper failed");
+        FALSE_RETURN_V_MSG_E(avPacketWrapper != nullptr && avPacketWrapper->GetAVPacket() != nullptr,
+            Status::ERROR_INVALID_OPERATION, "Create pktWrapper failed");
         auto pkt = avPacketWrapper->GetAVPacket();
         int ret = av_new_packet(pkt, 1);
         FALSE_RETURN_V_MSG_E(ret >= 0, Status::ERROR_INVALID_OPERATION, "Call av_new_packet failed");
@@ -1688,6 +1688,29 @@ void FFmpegDemuxerPlugin::PrepareSetDataSourceContext()
     }
 }
 
+Status FFmpegDemuxerPlugin::InitInputFormatContext()
+{
+    {
+        std::lock_guard<std::mutex> glock(g_mtx);
+        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName_).c_str());
+        pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
+    }
+    FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
+    {
+        std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
+        formatContext_ = InitAVFormatContext(&ioContext_);
+    }
+    if (formatContext_ != nullptr) {
+        return Status::OK;
+    }
+    if (ioContext_.retry) {
+        MEDIA_LOG_E("SetDataSource failed cause not enough data");
+        return Status::ERROR_NOT_ENOUGH_DATA;
+    }
+    MEDIA_LOG_E("AVFormatContext is nullptr");
+    return Status::ERROR_UNKNOWN;
+}
+
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source,
     const std::shared_ptr<Media::Meta>& configs)
 {
@@ -1701,26 +1724,16 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         }
     }
     PrepareSetDataSourceContext();
+    if (!setLimitByUser) {
+        cachelimitSize_ = DEFAULT_CACHE_LIMIT;
+    }
+    outOfLimit_ = false;
     auto id = HiviewDFX::XCollie::GetInstance().SetTimer("av_codec::demuxer_setdatasource", SETTIMER_TIMEOUT,
         nullptr, nullptr, HiviewDFX::XCOLLIE_FLAG_LOG);
     InitIoContextInDemuxer(source);
-    {
-        std::lock_guard<std::mutex> glock(g_mtx);
-        auto inputFormat = av_find_input_format(ProcessPluginName(pluginName_).c_str());
-        pluginImpl_ = std::shared_ptr<AVInputFormat>(const_cast<AVInputFormat*>(inputFormat), [](void*) {});
-    }
-    FALSE_RETURN_V_MSG_E(pluginImpl_ != nullptr, Status::ERROR_UNSUPPORTED_FORMAT, "No match inputformat");
-    {
-        std::lock_guard<std::mutex> selectedTrackLock(selectedTrackMutex_);
-        formatContext_ = InitAVFormatContext(&ioContext_);
-    }
-    if (formatContext_ == nullptr) {
-        if (ioContext_.retry) {
-            MEDIA_LOG_E("SetDataSource failed cause not enough data");
-            return Status::ERROR_NOT_ENOUGH_DATA;
-        }
-        MEDIA_LOG_E("AVFormatContext is nullptr");
-        return Status::ERROR_UNKNOWN;
+    Status ret = InitInputFormatContext();
+    if (ret != Status::OK) {
+        return ret;
     }
     fileType_ = FFmpegFormatHelper::GetFileTypeByName(*formatContext_);
     InitParser();
@@ -1744,7 +1757,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
     }
     NotifyInitializationCompleted();
     MEDIA_LOG_I("Out");
-    cachelimitSize_ = DEFAULT_CACHE_LIMIT;
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
 }
@@ -2255,12 +2267,32 @@ Status FFmpegDemuxerPlugin::AddPacketToCacheQueue(AVPacketWrapperPtr pktWrapper,
 
 Status FFmpegDemuxerPlugin::CachePacketLocked(AVPacketWrapperPtr pktWrapper, int32_t trackId, uint32_t& cacheBytes)
 {
+    FALSE_RETURN_V_MSG_E(pktWrapper != nullptr && pktWrapper->GetSize() >= 0,
+        Status::ERROR_INVALID_DATA, "Packet size is invalid");
+    uint32_t packetSize = static_cast<uint32_t>(pktWrapper->GetSize());
+    uint32_t cacheDataSize = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
+    if (cachelimitSize_ > 0 && (cacheDataSize > cachelimitSize_ ||
+        packetSize > cachelimitSize_ - cacheDataSize)) {
+        if (!outOfLimit_) {
+            MEDIA_LOG_W("Track " PUBLIC_LOG_D32 " cache out of limit: " PUBLIC_LOG_U32 "+" PUBLIC_LOG_U32 "/"
+                PUBLIC_LOG_U32 ", by user " PUBLIC_LOG_D32, trackId, cacheDataSize, packetSize, cachelimitSize_,
+                static_cast<int32_t>(setLimitByUser));
+            outOfLimit_ = true;
+        }
+        return Status::ERROR_NO_MEMORY;
+    }
+
     Status ret = Status::OK;
     if (NeedCombineFrame(trackId) && !IsBeginAsAnnexb(pktWrapper->GetData(), pktWrapper->GetSize()) &&
         cacheQueue_.HasCache(trackId)) {
         std::shared_ptr<SamplePacket> cacheSamplePacket = cacheQueue_.Back(static_cast<uint32_t>(trackId));
         if (cacheSamplePacket != nullptr) {
+            FALSE_RETURN_V_MSG_E(cacheQueue_.ResetInfo(cacheSamplePacket), Status::ERROR_UNKNOWN,
+                "Reset cache packet info failed");
             cacheSamplePacket->pkts.push_back(pktWrapper);
+            FALSE_RETURN_V_MSG_E(cacheQueue_.SetInfo(cacheSamplePacket), Status::ERROR_UNKNOWN,
+                "Set cache packet info failed");
+            ret = CheckCacheDataLimit(static_cast<uint32_t>(trackId));
             cacheBytes = cacheQueue_.GetCacheDataSize(static_cast<uint32_t>(trackId));
         }
     } else {
@@ -3107,12 +3139,20 @@ bool FFmpegDemuxerPlugin::GetAudioTrack(int &trackIndex) const
 
 Status FFmpegDemuxerPlugin::ReadRmUntilPos(AVPacket *pkt, int64_t pos)
 {
+    int64_t lastPos = avio_tell(formatContext_->pb);
+    TimeoutGuard timeoutGuard(RM_READ_TIMEOUT_MS);
     while (true) {
+        FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT,
+            "Timeout while reading rm frames");
         int32_t ffRet = AVReadFrameLimit(pkt);
         FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
-        if (avio_tell(formatContext_->pb) >= pos) {
+        int64_t currentPos = avio_tell(formatContext_->pb);
+        if (currentPos >= pos) {
             break;
         }
+        FALSE_RETURN_V_MSG_E(currentPos > lastPos, Status::ERROR_WRONG_STATE,
+            "RM read position does not advance");
+        lastPos = currentPos;
         av_packet_unref(pkt);
     }
     return Status::OK;
@@ -3140,7 +3180,8 @@ Status FFmpegDemuxerPlugin::SeekToRmKeyFrame(int trackIndex, int64_t seekTime, i
             "Call av_seek_frame failed, err: " PUBLIC_LOG_S, AVStrError(ffRet).c_str());
         int64_t audioPos = avio_tell(formatContext_->pb);
         if (videoPos <= audioPos) {
-            DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
+            ret = DoSeekInternal(trackIndex, seekTime, ffTime, mode, realSeekTime);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Seek rm video key frame failed");
         } else {
             ret = ReadRmUntilPos(pktWrapper->GetAVPacket(), videoPos);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_WRONG_STATE, "Read rm frame until pos failed");

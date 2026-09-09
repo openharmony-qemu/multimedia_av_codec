@@ -216,7 +216,7 @@ struct OH_AVSource *OH_AVSource_CreateWithFD(int32_t fd, int64_t offset, int64_t
 struct OH_AVSource *OH_AVSource_CreateWithDataSource(OH_AVDataSource *dataSource)
 {
     CHECK_AND_RETURN_RET_LOG(dataSource != nullptr, nullptr, "Input dataSource is nullptr");
-    CHECK_AND_RETURN_RET_LOG(dataSource->size != 0, nullptr, "Datasource size must be greater than zero");
+    CHECK_AND_RETURN_RET_LOG(dataSource->size > 0, nullptr, "Datasource size must be greater than zero");
     CHECK_AND_RETURN_RET_LOG(dataSource->readAt != nullptr, nullptr, "Datasource readAt is nullptr");
     std::shared_ptr<NativeAVDataSource> nativeAVDataSource = std::make_shared<NativeAVDataSource>(dataSource);
     CHECK_AND_RETURN_RET_LOG(nativeAVDataSource != nullptr, nullptr, "New nativeAVDataSource failed");

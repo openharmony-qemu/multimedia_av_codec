@@ -69,9 +69,19 @@ Status MultiStreamParserManager::Create(uint32_t trackId, VideoStreamType videoS
     std::unique_ptr<StreamParser, DestroyFunc> streamParser(createIt->second(), destroyIt->second);
     FALSE_RETURN_V_MSG_E(streamParser != nullptr, Status::ERROR_UNKNOWN, "Create failed:" PUBLIC_LOG_D32,
         videoStreamType);
-    streamMap_[trackId].type = videoStreamType;
-    streamMap_[trackId].parser = streamParser.release();
-    streamMap_[trackId].inited = false;
+    auto streamIt = streamMap_.find(trackId);
+    if (streamIt != streamMap_.end() && streamIt->second.parser != nullptr) {
+        auto oldDestroyIt = destroyFuncMap_.find(streamIt->second.type);
+        FALSE_RETURN_V_MSG_E(oldDestroyIt != destroyFuncMap_.end() && oldDestroyIt->second != nullptr,
+            Status::ERROR_UNKNOWN,
+            "Destroy func is invalid:" PUBLIC_LOG_D32, streamIt->second.type);
+        oldDestroyIt->second(streamIt->second.parser);
+        streamIt->second.parser = nullptr;
+    }
+    auto &streamInfo = streamMap_[trackId];
+    streamInfo.type = videoStreamType;
+    streamInfo.parser = streamParser.release();
+    streamInfo.inited = false;
     return Status::OK;
 }
 
@@ -100,9 +110,12 @@ bool MultiStreamParserManager::Init(VideoStreamType videoStreamType)
         if (handlerMap_.count(videoStreamType) == 0) {
             handlerMap_[videoStreamType] = LoadLib(streamParserPath);
         }
-        if (!CheckSymbol(handlerMap_[videoStreamType], videoStreamType)) {
+        void *handler = handlerMap_[videoStreamType];
+        if (!CheckSymbol(handler, videoStreamType)) {
             MEDIA_LOG_E("Load stream parser failed");
-            dlclose(handlerMap_[videoStreamType]);
+            if (handler != nullptr) {
+                dlclose(handler);
+            }
             handlerMap_.erase(videoStreamType);
             return false;
         }
