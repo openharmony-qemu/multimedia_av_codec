@@ -417,6 +417,8 @@ private:
         std::unique_ptr<uint8_t[]>& directData, AnnexbBufferConvertContext& context);
     Status WriteSampleMemory(
         uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer, std::shared_ptr<MPEG4Sample> mpeg4Sample);
+    Status SkipPacketAfterPacketConvertError(uint32_t trackId, const std::shared_ptr<MPEG4Sample>& mpeg4Sample,
+        bool popSample, bool restoreCacheInfo);
     void CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<Sample> sample);
 
     Status CheckCacheDataLimit(uint32_t trackId);
