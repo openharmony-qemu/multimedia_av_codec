@@ -38,6 +38,8 @@ struct Sample {
     int64_t pts;
     int64_t dts;
     int64_t duration;
+    // File position is stable across reads and is used to identify a sample.
+    int64_t pos = -1;
     uint32_t flag;
     int32_t size;
     std::vector<uint8_t> skipSamplesInfo;

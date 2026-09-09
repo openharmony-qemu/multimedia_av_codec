@@ -2456,6 +2456,7 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(const SampleReadInfo& sampleInfo, std
     sample->pts = attr.ptsUs;
     sample->dts = attr.dtsUs;
     sample->duration = attr.durationUs;
+    sample->pos = currentSample.pos;
     sample->flag = attr.flag;
     sample->size = currentSample.size;
     sample->skipSamplesInfo = std::move(attr.skipSamplesInfo);
@@ -3124,10 +3125,17 @@ void MPEG4DemuxerPlugin::CheckResetXPSSendStatus(uint32_t trackIndex, std::share
     if (track == nullptr || !IsVideoType(*track)) {
         return;
     }
-    if (FirstFrameValid(trackIndex) && sample->dts == firstFrameMap_[trackIndex]->dts) {
-        if (streamParsers_ != nullptr) {
-            streamParsers_->ResetXPSSendStatus(trackIndex);
+    if (FirstFrameValid(trackIndex)) {
+        const auto& firstFrame = firstFrameMap_[trackIndex];
+        if (sample->pos >= 0 && firstFrame->pos >= 0) {
+            if (sample->pos == firstFrame->pos) {
+                streamParsers_->ResetXPSSendStatus(trackIndex);
+            }
+            return;
         }
+    }
+    if (sample->dts != INT64_MIN && sample->dts <= 0) {
+        streamParsers_->ResetXPSSendStatus(trackIndex);
     }
 }
 
