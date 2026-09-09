@@ -342,6 +342,15 @@ private:
         const AVStream* avStream, int64_t absolutePTS, uint32_t index);
     Status PTSAndIndexConvertOnlySttsProcess(IndexAndPTSConvertMode mode,
         const AVStream* avStream, int64_t absolutePTS, uint32_t index);
+    struct PtsAndDtsConvertParam {
+        const AVStream* avStream;
+        int64_t dts;
+        int64_t cttsDuration;
+        int64_t globalOffset;
+        int64_t pts;
+        int64_t finalDts;
+    };
+    Status CalculatePtsAndDts(PtsAndDtsConvertParam& param);
     void InitPTSandIndexConvert();
     void IndexToRelativePTSProcess(int64_t pts, uint32_t index);
     void RelativePTSToIndexProcess(int64_t pts, int64_t absolutePTS);
@@ -527,6 +536,7 @@ private:
     bool Mp4CheckKeyFrame(AVStream* stream);
 
     Status WaitForLoop(const uint32_t trackId, const uint32_t timeout);
+    Status GetSampleSizeFromCache(uint32_t trackId, const std::shared_ptr<SamplePacket>& samplePacket, int32_t& size);
     bool ShouldWaitForRead(uint32_t trackId);
     void PrepareAsyncRead(uint32_t trackId);
     void FFmpegReadLoop();
@@ -589,7 +599,7 @@ private:
     void InitMinTsPacketInfo(AVPacket *pkt);
     void UpdMinTsPacketInfo(AVPacket *pkt);
     void RecordTrackMinTs(AVPacket *pkt);
-    int64_t CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts);
+    Status CalculateGlobalOffset(const AVStream* avStream, int64_t rawFirstPts, int64_t& globalOffset);
     bool IsSkipGetMinTsPktInfo();
     Status SeekToStartInternal();
     int RMSeekToStart();

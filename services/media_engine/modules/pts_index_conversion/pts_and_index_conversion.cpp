@@ -125,7 +125,6 @@ void TimeAndIndexConversion::StartParse()
         FALSE_RETURN_MSG(buffer != nullptr, "StartParse failed due to read buffer error");
         BoxHeader header{0};
         ReadBoxHeader(buffer, header);
-        FALSE_RETURN_MSG(header.size >= 0, "StartParse failed due to error box size");
         uint64_t boxSize = static_cast<uint64_t>(header.size);
         uint32_t headerSize = BOX_HEAD_SIZE;
         if (boxSize == 1 || boxSize == 0) { // 0 and 1 are used to verify whether there is a large size
@@ -135,6 +134,8 @@ void TimeAndIndexConversion::StartParse()
             headerSize = BOX_HEAD_LARGE_SIZE;
         }
         FALSE_RETURN_MSG(boxSize >= headerSize, "StartParse failed due to error box size");
+        FALSE_RETURN_MSG(offset_ <= fileSize_ && boxSize <= fileSize_ - offset_,
+            "StartParse failed due to box size exceeding file size");
         if (strncmp(header.type, BOX_TYPE_MOOV, sizeof(header.type)) == 0) {
             offset_ += headerSize;
             ParseMoov(boxSize - headerSize);
@@ -146,10 +147,13 @@ void TimeAndIndexConversion::StartParse()
 
 void TimeAndIndexConversion::ReadLargeSize(std::shared_ptr<Buffer> buffer, uint64_t &largeSize)
 {
-    offset_ += BOX_HEAD_SIZE;
     FALSE_RETURN_MSG(buffer != nullptr, "ReadLargeSize failed due to read buffer error");
+    FALSE_RETURN_MSG(offset_ <= std::numeric_limits<uint64_t>::max() - BOX_HEAD_SIZE,
+        "ReadLargeSize failed due to offset overflow");
+    offset_ += BOX_HEAD_SIZE;
     int bufSize = sizeof(uint64_t); // The type of largeSize is uint64_t
     ReadBufferFromDataSource(bufSize, buffer);
+    offset_ -= BOX_HEAD_SIZE;
     FALSE_RETURN_MSG(buffer != nullptr, "ReadLargeSize failed due to read buffer error");
     auto memory = buffer->GetMemory();
     FALSE_RETURN_MSG(memory != nullptr, "No memory in buffer");
@@ -160,7 +164,6 @@ void TimeAndIndexConversion::ReadLargeSize(std::shared_ptr<Buffer> buffer, uint6
     uint32_t high = ntohl(*reinterpret_cast<const uint32_t*>(ptr));
     uint32_t low  = ntohl(*reinterpret_cast<const uint32_t*>(ptr + UINT32_BYTES));
     largeSize = (static_cast<uint64_t>(high) << UINT32_BITS) | low;
-    offset_ -= BOX_HEAD_SIZE;
 }
 
 void TimeAndIndexConversion::ReadBoxHeader(std::shared_ptr<Buffer> buffer, BoxHeader &header)
@@ -210,7 +213,6 @@ void TimeAndIndexConversion::ParseMoov(uint64_t boxSize)
         FALSE_RETURN_MSG(buffer != nullptr, "ParseMoov failed due to read buffer error");
         BoxHeader header{0};
         ReadBoxHeader(buffer, header);
-        FALSE_RETURN_MSG(header.size >= 0, "ParseMoov failed due to error box size");
         uint64_t childBoxSize = static_cast<uint64_t>(header.size);
         uint32_t headerSize = BOX_HEAD_SIZE;
         if (childBoxSize == 1 || childBoxSize == 0) { // 0 and 1 are used to verify whether there is a large size
@@ -220,6 +222,8 @@ void TimeAndIndexConversion::ParseMoov(uint64_t boxSize)
             headerSize = BOX_HEAD_LARGE_SIZE;
         }
         FALSE_RETURN_MSG(childBoxSize >= headerSize, "ParseMoov failed due to error box size");
+        FALSE_RETURN_MSG(childBoxSize <= parentSize - offset_,
+            "ParseMoov failed due to child box size exceeding parent box");
         if (strncmp(header.type, BOX_TYPE_TRAK, sizeof(header.type)) == 0) {
             offset_ += headerSize;
             ParseTrak(childBoxSize - headerSize);
@@ -234,7 +238,7 @@ void TimeAndIndexConversion::ParseTrak(uint64_t boxSize)
     MEDIA_LOG_D("curTrakInfoIndex_: " PUBLIC_LOG_D32, curTrakInfoIndex_);
     FALSE_RETURN_MSG(boxSize >= BOX_HEAD_SIZE, "ParseTrak failed due to error box size");
     curTrakInfo_.trakId = curTrakInfoIndex_;
-    ParseBox(boxSize - BOX_HEAD_SIZE);
+    ParseBox(boxSize);
     trakInfoVec_.push_back(curTrakInfo_);
     curTrakInfo_.cttsEntries.clear();
     curTrakInfo_.sttsEntries.clear();
@@ -256,7 +260,6 @@ void TimeAndIndexConversion::ParseBox(uint64_t boxSize)
         FALSE_RETURN_MSG(buffer != nullptr, "ParseBox failed due to read buffer error");
         BoxHeader header{0};
         ReadBoxHeader(buffer, header);
-        FALSE_RETURN_MSG(header.size >= 0, "ParseBox failed due to error box size");
         uint64_t childBoxSize = static_cast<uint64_t>(header.size);
         uint32_t headerSize = BOX_HEAD_SIZE;
         if (childBoxSize == 1 || childBoxSize == 0) { // 0 and 1 are used to verify whether there is a large size
@@ -266,6 +269,8 @@ void TimeAndIndexConversion::ParseBox(uint64_t boxSize)
             headerSize = BOX_HEAD_LARGE_SIZE;
         }
         FALSE_RETURN_MSG(childBoxSize >= headerSize, "ParseBox failed due to error box size");
+        FALSE_RETURN_MSG(childBoxSize <= parentSize - offset_,
+            "ParseBox failed due to child box size exceeding parent box");
         auto it = boxParsers.find(std::string(header.type));
         if (it != boxParsers.end()) {
             offset_ += headerSize;

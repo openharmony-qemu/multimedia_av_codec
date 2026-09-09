@@ -178,5 +178,22 @@ HWTEST_F(PtsAndIndexConversionUnitTest, PTSAndIndexConvertSwitchProcess_001, Tes
     timeAndIndexConversions_->PTSAndIndexConvertSwitchProcess(mode, pts, absolutePTS, index);
     EXPECT_EQ(timeAndIndexConversions_->absolutePTSIndexZero_, ID_TEST);
 }
+
+/**
+ * @tc.name: ReadLargeSizeKeepsOffsetOnInvalidBuffer
+ * @tc.number: ReadLargeSizeKeepsOffsetOnInvalidBuffer_001
+ * @tc.desc: ReadLargeSize should not change offset_ when the input buffer is invalid
+ */
+HWTEST_F(PtsAndIndexConversionUnitTest, ReadLargeSizeKeepsOffsetOnInvalidBuffer, TestSize.Level0)
+{
+    ASSERT_NE(timeAndIndexConversions_, nullptr);
+    constexpr uint64_t initialOffset = 16;
+    uint64_t largeSize = 0;
+    timeAndIndexConversions_->offset_ = initialOffset;
+
+    timeAndIndexConversions_->ReadLargeSize(nullptr, largeSize);
+
+    EXPECT_EQ(timeAndIndexConversions_->offset_, initialOffset);
+}
 } // Media
 } // OHOS
