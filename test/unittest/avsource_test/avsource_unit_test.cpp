@@ -901,6 +901,20 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_Compare_Fd_1000, 
     dataSource_ = nullptr;
 }
 
+#ifndef AVSOURCE_INNER_UNIT_TEST
+/**
+ * @tc.name: AVSource_CreateSourceWithDataSource_NegativeSize_1000
+ * @tc.desc: Create source with a negative data source size
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithDataSource_NegativeSize_1000, TestSize.Level1)
+{
+    OH_AVDataSource dataSource = {-1, AVSourceReadAt};
+    source_ = AVSourceMockFactory::CreateWithDataSource(&dataSource);
+    ASSERT_EQ(source_, nullptr);
+}
+#endif
+
 /**
  * @tc.name: AVSource_CreateSourceWithDataSource_Compare_Fd_1010
  * @tc.desc: destroy source (test_error.mp4)

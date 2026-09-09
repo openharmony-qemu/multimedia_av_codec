@@ -195,5 +195,24 @@ HWTEST_F(PtsAndIndexConversionUnitTest, ReadLargeSizeKeepsOffsetOnInvalidBuffer,
 
     EXPECT_EQ(timeAndIndexConversions_->offset_, initialOffset);
 }
+
+/**
+ * @tc.name: ParseTrakDoesNotReusePreviousTrackInfo
+ * @tc.number: ParseTrakDoesNotReusePreviousTrackInfo_001
+ * @tc.desc: A track without child boxes must not inherit the previous track metadata
+ */
+HWTEST_F(PtsAndIndexConversionUnitTest, ParseTrakDoesNotReusePreviousTrackInfo, TestSize.Level0)
+{
+    ASSERT_NE(timeAndIndexConversions_, nullptr);
+    timeAndIndexConversions_->curTrakInfo_.trakType = TimeAndIndexConversion::TrakType::TRAK_VIDIO;
+    timeAndIndexConversions_->curTrakInfo_.timeScale = 1000;
+
+    timeAndIndexConversions_->ParseTrak(8);
+    timeAndIndexConversions_->ParseTrak(8);
+
+    ASSERT_EQ(timeAndIndexConversions_->trakInfoVec_.size(), 2);
+    EXPECT_EQ(timeAndIndexConversions_->trakInfoVec_[1].trakType, TimeAndIndexConversion::TrakType::TRAK_OTHER);
+    EXPECT_EQ(timeAndIndexConversions_->trakInfoVec_[1].timeScale, 0);
+}
 } // Media
 } // OHOS

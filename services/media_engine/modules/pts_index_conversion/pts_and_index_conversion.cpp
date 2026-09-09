@@ -240,8 +240,7 @@ void TimeAndIndexConversion::ParseTrak(uint64_t boxSize)
     curTrakInfo_.trakId = curTrakInfoIndex_;
     ParseBox(boxSize);
     trakInfoVec_.push_back(curTrakInfo_);
-    curTrakInfo_.cttsEntries.clear();
-    curTrakInfo_.sttsEntries.clear();
+    curTrakInfo_ = TrakInfo{};
     curTrakInfoIndex_++;
 }
 

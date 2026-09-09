@@ -32,6 +32,7 @@
 #include "plugin/plugin_manager_v2.h"
 #include "buffer/avbuffer.h"
 #include "mock/ffmpeg_avreadframe_mock_helper.h"
+#include "multi_stream_parser_manager.h"
 #include "time_range_manager.h"
 
 extern "C" {
@@ -159,6 +160,117 @@ std::shared_ptr<AVFormatContext> CreateFormatContextWithStreams(uint32_t streamC
         avformat_free_context(value);
     });
 }
+
+int32_t g_destroyedTestParserCount = 0;
+int32_t g_testParserHandler = 0;
+int32_t g_releasedTestBsfContextCount = 0;
+int32_t g_rmTestReadPacketCount = 0;
+int32_t g_rmTestSeekCount = 0;
+bool g_rmTestAdvancePosition = false;
+FFInputFormat g_rmTestInputFormat {};
+
+class CountingStreamParser final : public StreamParser {
+public:
+    void ParseExtraData(const uint8_t *, int32_t, uint8_t **, int32_t *) override {}
+    bool ConvertExtraDataToAnnexb(uint8_t *, int32_t) override { return true; }
+    bool ConvertPacketToAnnexb(uint8_t **, int32_t &, uint8_t *, size_t, bool) override { return true; }
+    bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &) override { return true; }
+    void ParseAnnexbExtraData(const uint8_t *, int32_t) override {}
+    void ResetXPSSendStatus() override {}
+    bool IsHdrVivid() override { return false; }
+    bool IsHdr10Plus() override { return false; }
+    bool IsSyncFrame(const uint8_t *, int32_t) override { return false; }
+    bool GetColorRange() override { return false; }
+    uint8_t GetColorPrimaries() override { return 0; }
+    uint8_t GetColorTransfer() override { return 0; }
+    uint8_t GetColorMatrixCoeff() override { return 0; }
+    uint8_t GetProfileIdc() override { return 0; }
+    uint8_t GetLevelIdc() override { return 0; }
+    uint32_t GetChromaLocation() override { return 0; }
+    uint32_t GetPicWidInLumaSamples() override { return 0; }
+    uint32_t GetPicHetInLumaSamples() override { return 0; }
+    std::vector<uint8_t> GetLogInfo() override { return {}; }
+    uint32_t GetMaxReorderPic() override { return 0; }
+    int32_t GetFirstFillerDataNalSize(const uint8_t *, int32_t) override { return 0; }
+    double GetSar() override { return 0; }
+};
+
+StreamParser *CreateCountingStreamParser()
+{
+    return new CountingStreamParser();
+}
+
+void DestroyCountingStreamParser(StreamParser *parser)
+{
+    ++g_destroyedTestParserCount;
+    delete parser;
+}
+
+void ReleaseTestBsfContext(AVBSFContext *context)
+{
+    ++g_releasedTestBsfContextCount;
+    av_bsf_free(&context);
+}
+
+int ReadRmTestPacket(AVFormatContext *context, AVPacket *packet)
+{
+    ++g_rmTestReadPacketCount;
+    int ret = av_new_packet(packet, 1);
+    if (ret >= 0) {
+        packet->stream_index = 0;
+        packet->pts = 0;
+        packet->dts = 0;
+        packet->duration = 1;
+        if (g_rmTestAdvancePosition && context->pb != nullptr) {
+            ++context->pb->pos;
+        }
+    }
+    return ret;
+}
+
+int SeekRmTestPacket(AVFormatContext *, int, int64_t, int)
+{
+    ++g_rmTestSeekCount;
+    return g_rmTestSeekCount == 1 ? 0 : AVERROR(EIO);
+}
+
+std::shared_ptr<AVFormatContext> CreateRmTestFormatContext()
+{
+    g_rmTestInputFormat = {};
+    g_rmTestInputFormat.p.name = "rm_test";
+    g_rmTestInputFormat.p.flags = AVFMT_NOGENSEARCH;
+    g_rmTestInputFormat.read_packet = ReadRmTestPacket;
+    g_rmTestInputFormat.read_seek = SeekRmTestPacket;
+    AVFormatContext *context = avformat_alloc_context();
+    if (context == nullptr) {
+        return nullptr;
+    }
+    uint8_t *buffer = static_cast<uint8_t *>(av_malloc(1));
+    AVIOContext *ioContext = buffer != nullptr ? avio_alloc_context(buffer, 1, 0, nullptr, nullptr, nullptr, nullptr)
+                                               : nullptr;
+    if (ioContext == nullptr) {
+        av_free(buffer);
+        avformat_free_context(context);
+        return nullptr;
+    }
+    context->iformat = &g_rmTestInputFormat.p;
+    context->pb = ioContext;
+    AVStream *videoStream = avformat_new_stream(context, nullptr);
+    AVStream *audioStream = avformat_new_stream(context, nullptr);
+    if (videoStream == nullptr || audioStream == nullptr) {
+        avio_context_free(&context->pb);
+        avformat_free_context(context);
+        return nullptr;
+    }
+    videoStream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    videoStream->time_base = {1, 1000};
+    audioStream->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    audioStream->time_base = {1, 1000};
+    return std::shared_ptr<AVFormatContext>(context, [](AVFormatContext *value) {
+        avio_context_free(&value->pb);
+        avformat_free_context(value);
+    });
+}
 } // namespace
 
 // ==================== TimeRangeManager Tests ====================
@@ -223,6 +335,144 @@ HWTEST(TimeRangeManagerTest, AVDemuxer_TimeRangeManager_Reduce_061339, TestSize.
     EXPECT_EQ(manager.timeRanges_.count({20, 25}), 0U);
     EXPECT_EQ(manager.timeRanges_.count({30, 35}), 0U);
     EXPECT_EQ(manager.timeRanges_.size(), 3U);
+}
+
+/**
+ * @tc.name: AVDemuxer_MultiStreamParserManager_NullHandler_062424
+ * @tc.desc: Loading a parser with a null dynamic-library handle fails safely and clears the handle entry.
+ * @tc.type: FUNC
+ */
+HWTEST(MultiStreamParserManagerTest, AVDemuxer_MultiStreamParserManager_NullHandler_062424, TestSize.Level1)
+{
+    auto handlerMapBackup = MultiStreamParserManager::handlerMap_;
+    auto createFuncMapBackup = MultiStreamParserManager::createFuncMap_;
+    auto destroyFuncMapBackup = MultiStreamParserManager::destroyFuncMap_;
+    MultiStreamParserManager::handlerMap_[VideoStreamType::VVC] = nullptr;
+    MultiStreamParserManager::createFuncMap_.erase(VideoStreamType::VVC);
+    MultiStreamParserManager::destroyFuncMap_.erase(VideoStreamType::VVC);
+
+    MultiStreamParserManager manager;
+    EXPECT_EQ(manager.Create(0, VideoStreamType::VVC), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(MultiStreamParserManager::handlerMap_.count(VideoStreamType::VVC), 0U);
+
+    MultiStreamParserManager::handlerMap_ = std::move(handlerMapBackup);
+    MultiStreamParserManager::createFuncMap_ = std::move(createFuncMapBackup);
+    MultiStreamParserManager::destroyFuncMap_ = std::move(destroyFuncMapBackup);
+}
+
+/**
+ * @tc.name: AVDemuxer_MultiStreamParserManager_RecreateTrack_062425
+ * @tc.desc: Recreating a track destroys its previous stream parser before replacing it.
+ * @tc.type: FUNC
+ */
+HWTEST(MultiStreamParserManagerTest, AVDemuxer_MultiStreamParserManager_RecreateTrack_062425, TestSize.Level1)
+{
+    auto handlerMapBackup = MultiStreamParserManager::handlerMap_;
+    auto createFuncMapBackup = MultiStreamParserManager::createFuncMap_;
+    auto destroyFuncMapBackup = MultiStreamParserManager::destroyFuncMap_;
+    MultiStreamParserManager::handlerMap_[VideoStreamType::VVC] = &g_testParserHandler;
+    MultiStreamParserManager::createFuncMap_[VideoStreamType::VVC] = &CreateCountingStreamParser;
+    MultiStreamParserManager::destroyFuncMap_[VideoStreamType::VVC] = &DestroyCountingStreamParser;
+    g_destroyedTestParserCount = 0;
+
+    {
+        MultiStreamParserManager manager;
+        EXPECT_EQ(manager.Create(0, VideoStreamType::VVC), Status::OK);
+        EXPECT_EQ(manager.Create(0, VideoStreamType::VVC), Status::OK);
+        EXPECT_EQ(g_destroyedTestParserCount, 1);
+    }
+    EXPECT_EQ(g_destroyedTestParserCount, 2);
+
+    MultiStreamParserManager::handlerMap_ = std::move(handlerMapBackup);
+    MultiStreamParserManager::createFuncMap_ = std::move(createFuncMapBackup);
+    MultiStreamParserManager::destroyFuncMap_ = std::move(destroyFuncMapBackup);
+}
+
+/**
+ * @tc.name: AVDemuxer_FFmpegDemuxerPlugin_ResetReleasesBsfContext_062426
+ * @tc.desc: Reset releases all bitstream-filter contexts and removes their stale map entries.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_ResetReleasesBsfContext_062426, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    const AVBitStreamFilter *filter = av_bsf_get_by_name("h264_mp4toannexb");
+    ASSERT_NE(filter, nullptr);
+    AVBSFContext *context = nullptr;
+    ASSERT_EQ(av_bsf_alloc(filter, &context), 0);
+    ASSERT_NE(context, nullptr);
+    g_releasedTestBsfContextCount = 0;
+    plugin->avbsfContexts_[0] = std::shared_ptr<AVBSFContext>(context, ReleaseTestBsfContext);
+
+    EXPECT_EQ(plugin->Reset(), Status::OK);
+    EXPECT_TRUE(plugin->avbsfContexts_.empty());
+    EXPECT_EQ(g_releasedTestBsfContextCount, 1);
+}
+
+/**
+ * @tc.name: AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_NoProgress_062427
+ * @tc.desc: Reading RM packets with an unchanged IO position fails instead of looping indefinitely.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_NoProgress_062427, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_rm");
+    ASSERT_NE(plugin, nullptr);
+    plugin->formatContext_ = CreateRmTestFormatContext();
+    ASSERT_NE(plugin->formatContext_, nullptr);
+    AVPacket *packet = av_packet_alloc();
+    ASSERT_NE(packet, nullptr);
+    g_rmTestReadPacketCount = 0;
+    g_rmTestAdvancePosition = false;
+
+    EXPECT_EQ(plugin->ReadRmUntilPos(packet, 1), Status::ERROR_WRONG_STATE);
+    EXPECT_EQ(g_rmTestReadPacketCount, 1);
+    av_packet_free(&packet);
+}
+
+/**
+ * @tc.name: AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_Progress_062429
+ * @tc.desc: Reading RM packets succeeds when the IO position reaches the target.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_Progress_062429, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_rm");
+    ASSERT_NE(plugin, nullptr);
+    plugin->formatContext_ = CreateRmTestFormatContext();
+    ASSERT_NE(plugin->formatContext_, nullptr);
+    AVPacket *packet = av_packet_alloc();
+    ASSERT_NE(packet, nullptr);
+    g_rmTestReadPacketCount = 0;
+    g_rmTestAdvancePosition = true;
+
+    EXPECT_EQ(plugin->ReadRmUntilPos(packet, 1), Status::OK);
+    EXPECT_EQ(g_rmTestReadPacketCount, 1);
+    g_rmTestAdvancePosition = false;
+    av_packet_free(&packet);
+}
+
+/**
+ * @tc.name: AVDemuxer_FFmpegDemuxerPlugin_SeekToRmKeyFrame_PropagatesSeekError_062428
+ * @tc.desc: RM key-frame seek returns the failure from its final internal seek.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_SeekToRmKeyFrame_PropagatesSeekError_062428,
+    TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_rm");
+    ASSERT_NE(plugin, nullptr);
+    plugin->formatContext_ = CreateRmTestFormatContext();
+    ASSERT_NE(plugin->formatContext_, nullptr);
+    plugin->selectedTrackIds_ = {0, 1};
+    plugin->fileType_ = FileType::RM;
+    g_rmTestSeekCount = 0;
+    int64_t realSeekTime = 0;
+
+    EXPECT_EQ(plugin->SeekToRmKeyFrame(0, 0, 0, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime),
+        Status::ERROR_UNKNOWN);
+    EXPECT_EQ(g_rmTestSeekCount, 2);
 }
 
 // ==================== FFmpeg Utils Tests ====================
@@ -2144,6 +2394,54 @@ HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CacheDiscontinuity_InvalidateAll_
     EXPECT_FALSE(plugin->cacheQueue_.HasCache(0));
     EXPECT_FALSE(plugin->cacheQueue_.HasCache(1));
     EXPECT_EQ(plugin->cachePhase_, FFmpegDemuxerPlugin::CachePhase::RUNTIME);
+}
+
+/**
+ * @tc.name: AVDemuxer_CacheCombinedPacketLimit_062430
+ * @tc.desc: Combined non-Annex-B packets update cache bytes and stop at the configured cache limit.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CacheCombinedPacketLimit_062430, TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    ASSERT_NE(plugin, nullptr);
+    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
+    plugin->streamSnapshots_.resize(1);
+    plugin->streamSnapshots_[0].valid = true;
+    plugin->streamSnapshots_[0].needCombineFrame = true;
+    plugin->SetCacheLimit(8);
+
+    uint32_t notifiedBytes = 0;
+    ASSERT_EQ(plugin->SetCachePressureCallback([&notifiedBytes](uint32_t, uint32_t bytes) {
+        notifiedBytes = bytes;
+    }), Status::OK);
+    ASSERT_EQ(plugin->SetTrackCacheLimit(0, 7, 1), Status::OK);
+    auto makePacket = [](int32_t size) {
+        auto packet = std::make_shared<AVPacketWrapper>();
+        if (packet == nullptr || packet->GetAVPacket() == nullptr || av_new_packet(packet->GetAVPacket(), size) < 0) {
+            return AVPacketWrapperPtr(nullptr);
+        }
+        packet->GetAVPacket()->stream_index = 0;
+        packet->GetAVPacket()->data[0] = 0x12;
+        return packet;
+    };
+
+    auto firstPacket = makePacket(4);
+    auto secondPacket = makePacket(3);
+    auto overflowPacket = makePacket(2);
+    ASSERT_NE(firstPacket, nullptr);
+    ASSERT_NE(secondPacket, nullptr);
+    ASSERT_NE(overflowPacket, nullptr);
+    EXPECT_EQ(plugin->AddPacketToCacheQueue(firstPacket), Status::OK);
+    EXPECT_EQ(plugin->AddPacketToCacheQueue(secondPacket), Status::OK);
+    EXPECT_EQ(plugin->cacheQueue_.GetCacheDataSize(0), 7U);
+    EXPECT_EQ(notifiedBytes, 7U);
+
+    EXPECT_EQ(plugin->AddPacketToCacheQueue(overflowPacket), Status::ERROR_NO_MEMORY);
+    EXPECT_EQ(plugin->cacheQueue_.GetCacheDataSize(0), 7U);
+    auto cachedPacket = plugin->cacheQueue_.Back(0);
+    ASSERT_NE(cachedPacket, nullptr);
+    EXPECT_EQ(cachedPacket->pkts.size(), 2U);
 }
 
 // ==================== CalculateGlobalOffset Tests ====================
