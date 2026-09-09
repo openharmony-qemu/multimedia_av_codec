@@ -88,7 +88,6 @@ ohos_shared_library("media_plugin_HttpSource") {
  
   ldflags = [
     "-Wl,--exclude-libs=libc++_static.a",
-    "-Wl,--exclude-libs=libhttp_curl_client.a",
   ]
 
   relative_install_dir = "media/media_plugins"
