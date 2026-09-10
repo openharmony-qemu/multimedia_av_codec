@@ -68,7 +68,7 @@ void InterstitialScheduler::CollectEvent(const std::shared_ptr<MediaAVCodec::AVT
     bool immediateNotify = false;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (pendingEvents.size() >= MAX_PENDING_EVENTS) {
+        if (pendingEvents_.size() >= MAX_PENDING_EVENTS) {
             MEDIA_LOG_W("CollectEvent: pendingEvents_ full");
             return;
         }
