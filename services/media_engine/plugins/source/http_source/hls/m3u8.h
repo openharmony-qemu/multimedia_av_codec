@@ -34,6 +34,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
 enum class M3U8MediaType : int32_t {
     M3U8_MEDIA_TYPE_INVALID = -1,
     M3U8_MEDIA_TYPE_AUDIO,
@@ -139,7 +140,6 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
         uint64_t initSequence);
     void ProcessInfo(M3U8Info& info, size_t& duration);
     void InitDownloadHeader();
-    void WaitKeyDownload();
     void GetKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos);
     void ParseDateRange(const std::shared_ptr<AttributesTag>& tag);
     int64_t CalculateDateTimeOffset(const std::string& programDateTime, const std::string& startDate);
@@ -189,7 +189,6 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     std::unordered_map<uint64_t, KeyInfo> keyInfos_;
     std::shared_mutex keyMutex_;
     uint64_t sessionKeyIndex_ {0};
-    std::atomic<int> keyAllDownload_ {0};
     bool isSessionKey_ {false};
     uint64_t totalKeyIndex_ {0};
     std::list<std::shared_ptr<DateRange>> dateRanges_;

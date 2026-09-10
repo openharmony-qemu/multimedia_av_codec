@@ -42,7 +42,6 @@ constexpr uint32_t DEFAULT_HEADER_SIZE = 1 * 1024 * 1024;
 constexpr uint32_t DEFAULT_MAX_SIZE = 100 * 1024 * 1024;
 constexpr double SECOND_TO_MICROSECOND = 1000.0 * 1000.0;
 constexpr uint64_t MAX_UINT64_NUM = UINT64_MAX;
-constexpr size_t RETRY_TIMES = 1000;
 constexpr size_t AES_IV_LEN = 16;
 constexpr int BITS_PER_BYTE = 8;
 constexpr size_t SEQ_IV_OFFSET = AES_IV_LEN / 2;
@@ -83,6 +82,8 @@ bool StrHasPrefix(const std::string &str, const std::string &prefix)
     return str.find(prefix) == 0;
 }
 
+}
+
 std::string UriJoin(std::string& baseUrl, const std::string& uri)
 {
     if ((uri.find("http://") != std::string::npos) || (uri.find("https://") != std::string::npos)) {
@@ -101,7 +102,6 @@ std::string UriJoin(std::string& baseUrl, const std::string& uri)
         }
         return uriMain.substr(0, pos + 1) + uri;
     }
-}
 }
 
 M3U8Fragment::M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const uint8_t *iv)
@@ -370,14 +370,14 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
     auto oldKeyUri = keyUri_;
     auto oldMethod = method_;
     uint8_t oldIv[sizeof(iv_)];
-    errno_t ivRet = memcpy_s(oldIv, sizeof(oldIv), iv_, sizeof(iv_));
+    NZERO_LOG(memcpy_s(oldIv, sizeof(oldIv), iv_, sizeof(iv_)));
     bool oldHasExplicitIv = hasExplicitIv_.load();
     ParseKey(std::static_pointer_cast<AttributesTag>(tag));
     auto keyTag = std::static_pointer_cast<AttributesTag>(tag);
     auto keyUri = keyTag ? keyTag->GetAttributeByName("URI") : nullptr;
     FALSE_RETURN(keyUri != nullptr);
-    if (ivRet == EOK && isDecryptKeyReady_.load() && oldKeyUri != nullptr && keyUri_ != nullptr &&
-        *oldKeyUri == *keyUri_ && oldMethod != nullptr && method_ != nullptr && *oldMethod == *method_ &&
+    if (oldKeyUri != nullptr && keyUri_ != nullptr && *oldKeyUri == *keyUri_ &&
+        oldMethod != nullptr && method_ != nullptr && *oldMethod == *method_ &&
         oldHasExplicitIv == hasExplicitIv_.load() && memcmp(oldIv, iv_, sizeof(iv_)) == 0) {
         MEDIA_LOG_I("Same decryption key, skip redundant download");
         return;
@@ -389,14 +389,13 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
         KeyInfo keyInfo;
         std::copy(std::begin(iv_), std::end(iv_), std::begin(keyInfo.iv_));
         keyInfo.hasExplicitIv_ = hasExplicitIv_.load();
-        keyAllDownload_.fetch_add(1);
+        keyInfo.uri_ = *keyUri_;
         {
             std::unique_lock<std::shared_mutex> lock(keyMutex_);
             keyIndex_++;
             keyInfo.index_ = keyIndex_ + totalKeyIndex_;
             keyInfos_[keyInfo.index_] = keyInfo;
         }
-        DownloadKey(true);
     }
 }
 
@@ -887,7 +886,6 @@ uint32_t M3U8::SaveData(uint8_t *data, uint32_t len, bool notBlock, uint64_t key
                 NZERO_RETURN_V(memcpy_s(keyInfos_[keyIndex].key_, MAX_LOOP, data, len), 0);
                 keyInfos_[keyIndex].keyLen_ = keyLen_;
             }
-            keyAllDownload_.fetch_sub(1);
         } else {
             NZERO_RETURN_V(memcpy_s(key_, MAX_LOOP, data, len), 0);
             keyLen_ = len;
@@ -991,19 +989,6 @@ void M3U8::ProcessDrmInfos(void)
     bool ret = SetDrmInfo(drmInfo);
     if (ret) {
         StoreDrmInfos(drmInfo);
-    }
-}
-
-void M3U8::WaitKeyDownload()
-{
-    int32_t times = 0;
-    while (keyAllDownload_.load() > 0 && !isInterruptNeeded_) {
-        Task::SleepInTask(5); // sleep 5ms
-        if ((times++) >= RETRY_TIMES) {
-            keyAllDownload_.store(0);
-            MEDIA_LOG_E("Download decrypkey failed.");
-            break;
-        }
     }
 }
 

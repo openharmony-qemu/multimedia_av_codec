@@ -472,27 +472,15 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
     auto currentVariant = GetThreadSafeCurrentVariant();
     files = currentVariant->m3u8_->files_;
     uint64_t sessionKeyIndex = currentVariant->sessionKeyIndex_;
-    currentVariant->m3u8_->WaitKeyDownload();
     std::unordered_map<uint64_t, KeyInfo> keyInfos;
-    currentVariant->m3u8_->GetKeyInfos(keyInfos);
-    {
-        std::lock_guard<std::mutex> lock(mediaMutex_);
-        if (currentSubtitles_ && currentSubtitles_->m3u8_) {
-            files = currentSubtitles_->m3u8_->files_;
-            sessionKeyIndex = currentSubtitles_->sessionKeyIndex_;
-            currentSubtitles_->m3u8_->WaitKeyDownload();
-            currentSubtitles_->m3u8_->GetKeyInfos(keyInfos);
-        }
-        if (currentAudio_ && currentAudio_->m3u8_) {
-            files = currentAudio_->m3u8_->files_;
-            sessionKeyIndex = currentAudio_->sessionKeyIndex_;
-            currentAudio_->m3u8_->WaitKeyDownload();
-            currentAudio_->m3u8_->GetKeyInfos(keyInfos);
-        }
-    }
+    CollectAllKeyInfos(keyInfos, files, sessionKeyIndex);
+
     if (aesDecryptorManager_ == nullptr) {
         aesDecryptorManager_ = std::make_shared<AesDecryptorManager>();
     }
+
+    aesDecryptorManager_->CreateAesDecryptorByKeyInfos(keyInfos);
+
     auto master = GetThreadSafeMaster();
     if (sessionKeyIndex > 0 && master != nullptr) {
         KeyInfo sessionKeyInfo;
@@ -502,8 +490,61 @@ uint64_t HlsPlayListDownloader::KeyChange(std::list<std::shared_ptr<M3U8Fragment
         sessionKeyInfo.keyLen_ = master->keyLen_;
         aesDecryptorManager_->CreateOneAesDecryptor(sessionKeyInfo);
     }
-    aesDecryptorManager_->CreateAesDecryptorByKeyInfos(keyInfos);
+
+    StartPendingKeyDownload(keyInfos, currentVariant->m3u8_->uri_);
+
     return sessionKeyIndex;
+}
+
+void HlsPlayListDownloader::CollectAllKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos,
+    std::list<std::shared_ptr<M3U8Fragment>>& files, uint64_t& sessionKeyIndex)
+{
+    auto currentVariant = GetThreadSafeCurrentVariant();
+    currentVariant->m3u8_->GetKeyInfos(keyInfos);
+    {
+        std::lock_guard<std::mutex> lock(mediaMutex_);
+        if (currentSubtitles_ && currentSubtitles_->m3u8_) {
+            files = currentSubtitles_->m3u8_->files_;
+            sessionKeyIndex = currentSubtitles_->sessionKeyIndex_;
+            std::unordered_map<uint64_t, KeyInfo> subKeyInfos;
+            currentSubtitles_->m3u8_->GetKeyInfos(subKeyInfos);
+            keyInfos.insert(subKeyInfos.begin(), subKeyInfos.end());
+        }
+        if (currentAudio_ && currentAudio_->m3u8_) {
+            files = currentAudio_->m3u8_->files_;
+            sessionKeyIndex = currentAudio_->sessionKeyIndex_;
+            std::unordered_map<uint64_t, KeyInfo> audioKeyInfos;
+            currentAudio_->m3u8_->GetKeyInfos(audioKeyInfos);
+            keyInfos.insert(audioKeyInfos.begin(), audioKeyInfos.end());
+        }
+    }
+}
+
+void HlsPlayListDownloader::StartPendingKeyDownload(const std::unordered_map<uint64_t, KeyInfo>& keyInfos,
+    const std::string& baseUri)
+{
+    std::vector<KeyInfo> pendingKeys;
+    for (const auto& [index, keyInfo] : keyInfos) {
+        if (keyInfo.keyLen_ == 0 && !keyInfo.uri_.empty() &&
+            aesDecryptorManager_->GetAesDecryptorByKeyIndex(index) == nullptr) {
+            pendingKeys.push_back(keyInfo);
+        }
+    }
+    if (!pendingKeys.empty()) {
+        if (keyDownloader_ == nullptr) {
+            keyDownloader_ = std::make_shared<KeyDownloader>(
+                aesDecryptorManager_, httpHeader_, baseUri, GetSourceLoader());
+        }
+        keyDownloader_->StartSequentialDownload(std::move(pendingKeys));
+    }
+}
+
+bool HlsPlayListDownloader::WaitForKeyReady(uint64_t keyIndex, uint32_t timeoutMs)
+{
+    if (keyDownloader_ != nullptr) {
+        return keyDownloader_->WaitForKey(keyIndex, timeoutMs);
+    }
+    return GetAesDecryptor(keyIndex) != nullptr;
 }
 
 std::shared_ptr<AesDecryptor> HlsPlayListDownloader::GetAesDecryptor(uint64_t keyIndex)

@@ -450,6 +450,10 @@ void AesDecryptorManager::CreateAesDecryptorByKeyInfos(const std::unordered_map<
         if (aesDecryptorsMap_.find(index) != aesDecryptorsMap_.end()) {
             continue;
         }
+        if (keyInfo.keyLen_ == 0) {
+            hasExplicitIvMap_[index] = keyInfo.hasExplicitIv_;
+            continue;
+        }
         std::shared_ptr<AesDecryptor> tempAesDecryptor = std::make_shared<AesDecryptor>();
         tempAesDecryptor->OnSourceKeyChange(keyInfo.key_, keyInfo.keyLen_, keyInfo.iv_);
         aesDecryptorsMap_[index] = tempAesDecryptor;

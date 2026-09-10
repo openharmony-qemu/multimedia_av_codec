@@ -22,6 +22,7 @@
 #include "playlist_downloader.h"
 #include "m3u8.h"
 #include "utils/aes_decryptor.h"
+#include "hls_key_downloader.h"
 #include <shared_mutex>
 #include <atomic>
 
@@ -87,6 +88,7 @@ public:
     bool IsLiveEnd() override;
     std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override;
     bool HasExplicitIv(uint64_t keyIndex) override;
+    bool WaitForKeyReady(uint64_t keyIndex, uint32_t timeoutMs) override;
 private:
     bool IsLiveTimeShiftSeekable();
     void UpdateMasterInfo(bool isPreParse);
@@ -101,6 +103,10 @@ private:
     void CheckAllFragmentsSeekable(const std::list<std::shared_ptr<M3U8Fragment>>& files);
     void UpdateLiveBaseOffset(const std::list<std::shared_ptr<M3U8Fragment>>& files);
     void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file, uint64_t sessionKeyIndex);
+    void CollectAllKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos,
+        std::list<std::shared_ptr<M3U8Fragment>>& files, uint64_t& sessionKeyIndex);
+    void StartPendingKeyDownload(const std::unordered_map<uint64_t, KeyInfo>& keyInfos,
+        const std::string& baseUri);
     uint64_t KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files);
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
     bool ContainsNonDigit(const std::string& str);
@@ -149,6 +155,7 @@ private:
     bool isLiveEnd_ {false};
     std::atomic<bool> isPreParseFinished_ {false};
     std::shared_ptr<AesDecryptorManager> aesDecryptorManager_;
+    std::shared_ptr<KeyDownloader> keyDownloader_;
     mutable std::mutex seekRangeMutex_;
     std::vector<SeekRange> seekRanges_ {};
     int64_t liveBaseOffset_ {0};
