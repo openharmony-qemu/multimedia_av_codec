@@ -1557,9 +1557,11 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_REPEAT_HEADER_BEFORE_SYNC_FRAMES;
  *
  * Constraints on the suffix value:
  * 1. Only ASCII printable characters (same as C library isgraph()) are allowed.
- *    Whitespace, newline, tab and other control characters will be stripped out.
- * 2. After stripping, the suffix must contain at least one non-digit character,
- *    otherwise {@link AV_ERR_INVALID_VAL} will be returned.
+ *    If the suffix contains any non-ASCII character, whitespace, newline, tab
+ *    or other invisible (control) character, {@link AV_ERR_INVALID_VAL} will
+ *    be returned. No filtering is applied to the input.
+ * 2. The suffix must contain at least one non-digit character, otherwise
+ *    {@link AV_ERR_INVALID_VAL} will be returned.
  *
  * This key is optional. When not set, the DMABUF name remains unchanged.
  * It can be configured via {@link OH_VideoDecoder_Configure} or
