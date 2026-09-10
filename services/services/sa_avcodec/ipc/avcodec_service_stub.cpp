@@ -319,10 +319,10 @@ int32_t AVCodecServiceStub::OnNotifyRegisterCallback(MessageParcel &data, Messag
 int32_t AVCodecServiceStub::NotifyListenerByProcessName(const std::string &bundleName, int32_t codecDecision)
 {
     std::lock_guard<std::mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(registeredCallbackPid_ != -1, AVCS_ERR_NO_MEMORY,
+    CHECK_AND_RETURN_RET_LOG(registeredCallbackPid_ != -1, AVCS_ERR_INVALID_VAL,
                              "There is no valid registered callback pid");
     auto it = avCodecListenerMap_.find(registeredCallbackPid_);
-    CHECK_AND_RETURN_RET_LOG(it != avCodecListenerMap_.end(), AVCS_ERR_NO_MEMORY,
+    CHECK_AND_RETURN_RET_LOG(it != avCodecListenerMap_.end(), AVCS_ERR_UNKNOWN,
                              "failed to find listener for registered pid %{public}d", registeredCallbackPid_);
     auto listener = it->second;
     CHECK_AND_RETURN_RET_LOG(listener != nullptr, AVCS_ERR_NO_MEMORY,

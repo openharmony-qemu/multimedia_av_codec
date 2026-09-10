@@ -238,10 +238,9 @@ void AVCodecServer::OnOutputParamInfo(const CodecParamInfo &codecParam, const st
 {
     std::lock_guard<std::mutex> stateLock(stateMutex_);
     if (camRegisterFlag_) {
-    int32_t codecDecision = 0;
-    codecDecision = DecidePowerMode(codecParam);
-    std::string bundleName = forwardCallerName.empty() ? callerName : forwardCallerName;
-    NotifyListenerByProcessName(bundleName, codecDecision);
+        int32_t codecDecision = DecidePowerMode(codecParam);
+        std::string bundleName = forwardCallerName.empty() ? callerName : forwardCallerName;
+        NotifyListenerByProcessName(bundleName, codecDecision);
     }
 }
 

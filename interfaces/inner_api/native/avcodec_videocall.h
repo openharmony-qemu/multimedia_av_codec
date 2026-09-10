@@ -48,7 +48,7 @@ public:
     
     /**
      * @brief Register callback for low power mode adjustment notification.
-     * @param callback The callbcak object for low power consumption notification.
+     * @param callback The callback object for low power consumption notification.
      * @return Returns {@link AVCS_ERR_OK} if success; returns an error on failure.
      * @since 7.0
      * @version 1.0

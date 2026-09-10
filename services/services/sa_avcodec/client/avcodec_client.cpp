@@ -154,9 +154,9 @@ int32_t AVCodecClient::RegisterCallback(const std::shared_ptr<MediaCodecLowPower
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG(callback != nullptr, AVCS_ERR_INPUT_DATA_ERROR, "callback object is nullptr");
-    callback_ = callback;
     int32_t ret = IsAlived();
     CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_SERVICE_DIED, "AVCodec proxy does not exist");
+    callback_ = callback;
     return avCodecProxy_->NotifyCamRegister(true);
 }
 

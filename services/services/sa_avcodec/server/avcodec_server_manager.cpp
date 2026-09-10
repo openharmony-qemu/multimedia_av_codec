@@ -461,7 +461,7 @@ std::optional<CodecParamInfo> AVCodecServerManager::GetAndUpdateCodecParmInfoByP
 
 void AVCodecServerManager::UpdateCodecParmInfoByInstanceId(int32_t instanceId, const InstanceInfo &updateInfo)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     int32_t countEnc = 0;
     int32_t countDec = 0;
     InstanceInfo matchedInstance;
@@ -487,10 +487,12 @@ void AVCodecServerManager::UpdateCodecParmInfoByInstanceId(int32_t instanceId, c
                  (updateInfo.codecParam.encPowermode == 1 && countEnc == 1) ||
                  (updateInfo.codecParam.encPowermode == -1 && countEnc == 1 && countDec == 1));
     if (found && callback_ && valid && matchedInstance.codecParam.encPowermode != -1) {
-        callback_(matchedInstance.codecParam,
-                  matchedInstance.forwardCaller.processName,
-                  matchedInstance.caller.processName);
-        }
+        InstanceInfoCallback cb = callback_;
+        lock.unlock();
+        cb(matchedInstance.codecParam,
+            matchedInstance.forwardCaller.processName,
+            matchedInstance.caller.processName);
+    }
 }
 
 void AVCodecServerManager::RegisterCallback(InstanceInfoCallback callback)
