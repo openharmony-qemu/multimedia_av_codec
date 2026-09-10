@@ -48,9 +48,9 @@ void KeyDownloader::StartSequentialDownload(std::vector<KeyInfo> pendingKeys)
         for (auto& keyInfo : pendingKeys) {
             pendingKeys_.push(std::move(keyInfo));
         }
-    }
-    if (pendingKeys_.empty()) {
+        if (pendingKeys_.empty()) {
         return;
+    }
     }
 
     if (downloader_ == nullptr) {
@@ -98,12 +98,12 @@ void KeyDownloader::SubmitKeyDownload(const KeyInfo& keyInfo)
 {
     auto weakSelf = weak_from_this();
 
-    auto keyDataSave = [weakSelf](uint8_t *&&data, uint32_t &&len, bool &&notBlock,
-        uint64_t &&keyIndex) -> uint32_t {
+    auto keyDataSave = [weakSelf](uint8_t *data, uint32_t len, bool notBlock,
+        uint64_t keyIndex) -> uint32_t {
         auto self = weakSelf.lock();
         FALSE_RETURN_V_MSG_E(self != nullptr, 0u, "KeyDownloader destructed");
         return self->OnKeyDataSaved(data, len, notBlock, keyIndex);
-    };
+    }; 
 
     auto downloadDoneCb = [weakSelf](const std::string& url, const std::string& location) {
         auto self = weakSelf.lock();
@@ -135,6 +135,7 @@ void KeyDownloader::SubmitKeyDownload(const KeyInfo& keyInfo)
         keyInfo.index_, keyDataSave, statusCallback, requestInfo, true);
     downloadRequest->SetIsAuthRequest(true);
     downloadRequest->SetRequestType(RequestType::HLS_KEY);
+    downloadRequest->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest->SetDownloadDoneCb(downloadDoneCb);
 
     MEDIA_LOG_I("Start downloading key, index: " PUBLIC_LOG_U64 ", url: " PUBLIC_LOG_S,
@@ -147,27 +148,27 @@ void KeyDownloader::SubmitKeyDownload(const KeyInfo& keyInfo)
 uint32_t KeyDownloader::OnKeyDataSaved(uint8_t* data, uint32_t len, bool notBlock, uint64_t keyIndex)
 {
     FALSE_RETURN_V_MSG_E(data != nullptr, 0u, "key data is nullptr");
-    if (len > 0 && len <= MAX_KEY_LEN) {
-        KeyInfo keyInfo;
-        keyInfo.index_ = keyIndex;
-        NZERO_RETURN_V(memcpy_s(keyInfo.key_, sizeof(keyInfo.key_), data, len), 0);
-        keyInfo.keyLen_ = len;
-        NZERO_RETURN_V(memcpy_s(keyInfo.iv_, sizeof(keyInfo.iv_), currentKey_.iv_, sizeof(currentKey_.iv_)), 0);
-        keyInfo.hasExplicitIv_ = currentKey_.hasExplicitIv_;
+    if (len > 0 && currentKey_.keyLen_ + len <= MAX_KEY_LEN) {
+        NZERO_RETURN_V(memcpy_s(currentKey_.key_ + currentKey_.keyLen_,
+            sizeof(currentKey_.key_) - currentKey_.keyLen_, data, len), 0);
+        currentKey_.keyLen_ += len;
+        // Create decryptor and mark ready only when full key is accumulated
+        if (currentKey_.keyLen_ == MAX_KEY_LEN) {
+            if (aesDecryptorManager_ != nullptr) {
+            aesDecryptorManager_->CreateOneAesDecryptor(currentKey_);
+            }
 
-        if (aesDecryptorManager_ != nullptr) {
-            aesDecryptorManager_->CreateOneAesDecryptor(keyInfo);
+            {
+                std::lock_guard<std::mutex> lock(readyMutex_);
+                readyKeys_.insert(currentKey_);
+            }
+            readyCond_.notify_all();
+            MEDIA_LOG_I("Key download completed, index: " PUBLIC_LOG_U64, keyIndex);
         }
-
-        {
-            std::lock_guard<std::mutex> lock(readyMutex_);
-            readyKeys_.insert(keyIndex);
-        }
-        readyCond_.notify_all();
-        MEDIA_LOG_I("Key download completed, index: " PUBLIC_LOG_U64, keyIndex);
         return len;
     }
-    MEDIA_LOG_E("Invalid key data length: " PUBLIC_LOG_U32, len);
+    MEDIA_LOG_E("Invalid key data length: " PUBLIC_LOG_U32, ", accumulated: " PUBLIC_LOG_U32,
+        len, static_cast<uint32_t>(currentKey_.keyLen_));
     return 0;
 }
 
@@ -198,8 +199,9 @@ bool KeyDownloader::WaitForKey(uint64_t keyIndex, uint32_t timeoutMs)
     if (readyKeys_.count(keyIndex) > 0) {
         return true;
     }
-    return readyCond_.wait_for(lock, std::chrono::milliseconds(timeoutMs),
+    readyCond_.wait_for(lock, std::chrono::milliseconds(timeoutMs),
         [this, keyIndex]() {return readyKeys_.count(keyIndex) > 0 || isInterruptNeeded_.load(); });
+    return readyKeys_.count(keyIndex) > 0;
 }
 
 std::string KeyDownloader::UriJoin(std::string& baseUrl, const std::string& uri)
