@@ -160,14 +160,14 @@ uint32_t KeyDownloader::OnKeyDataSaved(uint8_t* data, uint32_t len, bool notBloc
 
             {
                 std::lock_guard<std::mutex> lock(readyMutex_);
-                readyKeys_.insert(currentKey_);
+                readyKeys_.insert(currentKey_.index_);
             }
             readyCond_.notify_all();
             MEDIA_LOG_I("Key download completed, index: " PUBLIC_LOG_U64, keyIndex);
         }
         return len;
     }
-    MEDIA_LOG_E("Invalid key data length: " PUBLIC_LOG_U32, ", accumulated: " PUBLIC_LOG_U32,
+    MEDIA_LOG_E("Invalid key data length: " PUBLIC_LOG_U32 ", accumulated: " PUBLIC_LOG_U32,
         len, static_cast<uint32_t>(currentKey_.keyLen_));
     return 0;
 }
