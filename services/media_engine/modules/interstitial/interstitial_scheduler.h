@@ -60,6 +60,7 @@ private:
 
     static constexpr int64_t NOTIFY_ADVANCE_MS = 2000;
     static constexpr int64_t US_PER_MS = 1000;
+    static constexpr int64_t MAX_PENDING_EVENTS = 1000;
 };
 
 } // namespace Media

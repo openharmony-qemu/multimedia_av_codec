@@ -47,6 +47,7 @@ class InterstitialScheduler;
 enum class InterstitialPlayState : uint32_t {
     IDLE = 0,
     PLAYING,
+    TRANSITIONING,
 };
 
 enum class AdsEventType : int32_t {
