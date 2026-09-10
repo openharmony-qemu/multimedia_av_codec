@@ -278,6 +278,12 @@ int32_t FCodec::AllocateCodecContext()
     CHECK_AND_RETURN_RET_LOG(avCodecContext_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "Configure codec failed: Allocate context error");
     avCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
+    avCodecContext_->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pixFmts) {
+        for (int i = 0; pixFmts[i] != AV_PIX_FMT_NONE; i++) {
+            AVCODEC_LOGI("configure codec candidate[%d] = %s", i, av_get_pix_fmt_name(pixFmts[i]));
+        }
+        return pixFmts[0];
+    };
     return AVCS_ERR_OK;
 }
 
@@ -1190,10 +1196,10 @@ int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
             "Current decoder:%{public}s dosn't support width of %{public}d and height of %{public}d!",
             codecName_.c_str(), width_, height_);
         isChanged = true;
-        width_ = w;
-        height_ = h;
         AVCODEC_LOGI("format changed, width: %{public}d -> %{public}d, height: %{public}d -> %{public}d",
             width_, w, height_, h);
+        width_ = w;
+        height_ = h;
         converter_.reset();
         CalculateBufferSize();
         CHECK_AND_RETURN_RET_LOG(inputBufferSize_ > 0 && outputBufferSize_ > 0, AVCS_ERR_INVALID_VAL,
