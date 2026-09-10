@@ -26,9 +26,9 @@ constexpr uint32_t MAX_KEY_LEN = 16;
 constexpr int32_t KEY_DOWNLOAD_TIMEOUT_MS = 10000;
 
 KeyDownloader::KeyDownloader(std::shared_ptr<AesDecryptorManager> aesDecryptorManager,
-                            const std::map<std::string, std::string>& httpHeader,
-                            const std::string& baseUri,
-                            std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+                             const std::map<std::string, std::string>& httpHeader,
+                             const std::string& baseUri,
+                             std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
     : aesDecryptorManager_(std::move(aesDecryptorManager)),
       httpHeader_(httpHeader),
       baseUri_(baseUri),
@@ -103,7 +103,7 @@ void KeyDownloader::SubmitKeyDownload(const KeyInfo& keyInfo)
         auto self = weakSelf.lock();
         FALSE_RETURN_V_MSG_E(self != nullptr, 0u, "KeyDownloader destructed");
         return self->OnKeyDataSaved(data, len, notBlock, keyIndex);
-    }; 
+    };
 
     auto downloadDoneCb = [weakSelf](const std::string& url, const std::string& location) {
         auto self = weakSelf.lock();
