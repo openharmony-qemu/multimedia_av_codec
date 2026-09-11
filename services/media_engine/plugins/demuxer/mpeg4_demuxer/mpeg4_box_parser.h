@@ -425,6 +425,8 @@ private:
     Status ParsePssh(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status BuildPsshInfo(int64_t boxOffset, const uint8_t uuidData[16], uint32_t boxSize);
     Status ParseTenc(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ReadTencDefaultConstantIV(ParseContext* ctx, uint32_t kidOffset, uint8_t defaultIsProtected,
+        uint8_t defaultPerSampleIvSize, bool ivSizeInvalid);
     Status ParseSenc(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseSencSampleEntry(uint32_t& dataOffset, size_t entryIndex, bool useSubsamples,
         uint32_t atomEndOffset);
