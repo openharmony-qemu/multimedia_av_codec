@@ -143,6 +143,26 @@ void HwEncDualNdkTest::TearDown()
 {
 }
 namespace {
+bool IsSupportRgba1010102Format()
+{
+    const int32_t *pixelFormat = nullptr;
+    uint32_t pixelFormatNum = 0;
+    OH_AVCapability *capability = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true, HARDWARE);
+    if (capability == nullptr) {
+        return false;
+    }
+    int32_t ret = OH_AVCapability_GetVideoSupportedPixelFormats(capability, &pixelFormat, &pixelFormatNum);
+    if (pixelFormat == nullptr || pixelFormatNum == 0 || ret != AV_ERR_OK) {
+        return false;
+    }
+    for (int i = 0; i < pixelFormatNum; i++) {
+        if (pixelFormat[i] == static_cast<int32_t>(AV_PIXEL_FORMAT_RGBA1010102)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void SetParameter(std::shared_ptr<VEncAPI11Sample>& encSample, ConfigParameter &configParameter)
 {
     encSample->DEFAULT_BITRATE_MODE = configParameter.bitRateMode;
@@ -1774,7 +1794,7 @@ HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0870, TestSize.Level2)
  */
 HWTEST_F(HwEncDualNdkTest, VIDEO_ENCODE_DUAL_0880, TestSize.Level2)
 {
-    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP && IsSupportRgba1010102Format()) {
         auto vEncSample = make_shared<VEncAPI11Sample>();
         ASSERT_EQ(AV_ERR_OK, CreateEncoder(vEncSample, OH_AVCODEC_MIMETYPE_VIDEO_HEVC, {file_1280_720_nv12_10bit,
             file_176_144_rgba1010102}));
