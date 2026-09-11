@@ -144,8 +144,7 @@ Status InterstitialController::RemoveAdsMediaSource(const std::string& id)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    if ((playState_ == InterstitialPlayState::PLAYING ||
-         playState_ == InterstitialPlayState::TRANSITIONING) && currentAdId_ == id) {
+    if (playState_ == InterstitialPlayState::PLAYING && currentAdId_ == id) {
         MEDIA_LOG_W("RemoveAdsMediaSource: cannot remove currently playing ad id=" PUBLIC_LOG_S, id.c_str());
         return Status::OK;
     }
@@ -181,12 +180,14 @@ Status InterstitialController::DisableAllAdsMediaSource()
 
 Status InterstitialController::SkipCurrentAdsMediaSource()
 {
-    InterstitialPlayState expected = InterstitialPlayState::PLAYING;
-    if (!playState_.compare_exchange_strong(expected, InterstitialPlayState::TRANSITIONING)) {
-        MEDIA_LOG_W("SkipCurrentAdsMediaSource: not playing ad, state=" PUBLIC_LOG_U32, playState_.load());
-        return Status::OK;
+    {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        if (playState_ != InterstitialPlayState::PLAYING) {
+            MEDIA_LOG_W("SkipCurrentAdsMediaSource: not playing ad, state=" PUBLIC_LOG_U32, playState_.load());
+            return Status::OK;
+        }
+        MEDIA_LOG_I("SkipCurrentAdsMediaSource: skipping current ad id=" PUBLIC_LOG_S, currentAdId_.c_str());
     }
-    MEDIA_LOG_I("SkipCurrentAdsMediaSource: skipping current ad id=" PUBLIC_LOG_S, currentAdId_.c_str());
     FinishCurrentAdAndContinue(AdsEventType::SKIPPED);
     return Status::OK;
 }
@@ -196,20 +197,17 @@ void InterstitialController::OnPreloadTick()
     MEDIA_LOG_I("OnPreloadTick");
     FALSE_RETURN_MSG_W(!isDisableAds_.load(), "InterstitialController::OnPreloadTick failed: ads are disabled");
 
-    FALSE_RETURN_MSG_W(syncMgr_, "InterstitialController::OnPreloadTick failed: syncMgr is null");
-
     int64_t targetStartMs = -1;
     {
         std::lock_guard<std::mutex> lock(adMutex_);
-        InterstitialPlayState expected = InterstitialPlayState::IDLE;
-        if (!playState_.compare_exchange_strong(expected, InterstitialPlayState::TRANSITIONING)) {
-            MEDIA_LOG_W("OnPreloadTick: state is not IDLE, state=" PUBLIC_LOG_U32, playState_.load());
+        if (playState_ != InterstitialPlayState::IDLE) {
+            MEDIA_LOG_W("is playing ad");
             return;
         }
+        FALSE_RETURN_MSG_W(syncMgr_, "InterstitialController::OnPreloadTick failed: syncMgr is null");
         int64_t currentPosMs = syncMgr_->GetMediaTimeNow() / US_PER_MS;
         std::string nextId = FindNextAdId(currentPosMs);
         if (nextId.empty()) {
-            SetPlayState(InterstitialPlayState::IDLE);
             return;
         }
         targetStartMs = entries_[nextId].startMs;
@@ -222,12 +220,14 @@ void InterstitialController::OnPreloadTick()
 
 void InterstitialController::OnAdEos()
 {
-    InterstitialPlayState expected = InterstitialPlayState::PLAYING;
-    if (!playState_.compare_exchange_strong(expected, InterstitialPlayState::TRANSITIONING)) {
-        MEDIA_LOG_W("OnAdEos: not playing ad, state=" PUBLIC_LOG_U32, playState_.load());
-        return;
+    {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        if (playState_ != InterstitialPlayState::PLAYING) {
+            MEDIA_LOG_W("OnAdEos: not playing ad, state=" PUBLIC_LOG_U32, playState_.load());
+            return;
+        }
+        MEDIA_LOG_I("OnAdEos: ad EOS detected, currentAdId=" PUBLIC_LOG_S, currentAdId_.c_str());
     }
-    MEDIA_LOG_I("OnAdEos: ad EOS detected, currentAdId=" PUBLIC_LOG_S, currentAdId_.c_str());
     FinishCurrentAdAndContinue(AdsEventType::COMPLETED);
 }
 
@@ -238,20 +238,14 @@ void InterstitialController::TryPreRollAd()
         if (preRollAdId_.empty()) {
             return;
         }
-        InterstitialPlayState expected = InterstitialPlayState::IDLE;
-        if (!playState_.compare_exchange_strong(expected, InterstitialPlayState::TRANSITIONING)) {
-            MEDIA_LOG_I("TryPreRollAd: state is not IDLE, state=" PUBLIC_LOG_U32, playState_.load());
-            preRollAdId_.clear();
-            return;
-        }
-        if (isDisableAds_.load()) {
-            SetPlayState(InterstitialPlayState::IDLE);
+        if (isDisableAds_.load() || playState_ != InterstitialPlayState::IDLE) {
+            MEDIA_LOG_I("TryPreRollAd: skipped, disabled=" PUBLIC_LOG_D32 ", state=" PUBLIC_LOG_U32,
+                isDisableAds_.load(), playState_.load());
             preRollAdId_.clear();
             return;
         }
         auto it = entries_.find(preRollAdId_);
         if (it == entries_.end() || it->second.played) {
-            SetPlayState(InterstitialPlayState::IDLE);
             preRollAdId_.clear();
             return;
         }
@@ -267,8 +261,7 @@ void InterstitialController::OnStop()
 {
     std::lock_guard<std::mutex> lock(adMutex_);
 
-    if (playState_ == InterstitialPlayState::PLAYING ||
-        playState_ == InterstitialPlayState::TRANSITIONING) {
+    if (playState_ == InterstitialPlayState::PLAYING) {
         MEDIA_LOG_W("OnStop: currently playing ad, will stop");
         SetPlayState(InterstitialPlayState::IDLE);
     }
@@ -314,14 +307,6 @@ void InterstitialController::OnSeek(int64_t seekTargetMs)
     }
     FALSE_RETURN_MSG_W(!isDisableAds_.load(), "OnSeek switch failed: ads are disabled");
     FALSE_RETURN_MSG(!preRollToTrigger.empty(), "OnSeek: no pre-roll ad to trigger");
-    {
-        std::lock_guard<std::mutex> lock(adMutex_);
-        InterstitialPlayState expected = InterstitialPlayState::IDLE;
-        if (!playState_.compare_exchange_strong(expected, InterstitialPlayState::TRANSITIONING)) {
-            MEDIA_LOG_W("OnSeek: state is not IDLE, state=" PUBLIC_LOG_U32, playState_.load());
-            return;
-        }
-    }
     if (!TrySwitchAdCandidates(0)) {
         DoResume();
     }
@@ -329,8 +314,7 @@ void InterstitialController::OnSeek(int64_t seekTargetMs)
 
 bool InterstitialController::IsPlayingInterstitial() const
 {
-    return playState_ == InterstitialPlayState::PLAYING ||
-           playState_ == InterstitialPlayState::TRANSITIONING;
+    return playState_ == InterstitialPlayState::PLAYING;
 }
 
 bool InterstitialController::IsAdsDisabled() const
@@ -395,6 +379,7 @@ bool InterstitialController::DoSwitch(const std::string& id)
     originalSpeed_ = syncMgr_->GetPlaybackRate();
     MEDIA_LOG_I("DoSwitch: saved originalSpeed=" PUBLIC_LOG_F, originalSpeed_.load());
 
+    SetPlayState(InterstitialPlayState::PLAYING);
     auto ret = DoSourceSwitch(entry.resourceUri, ADS_SEEK_POS, ADS_PLAYBACK_SPEED,
         [this]() { EmitAdStartEvent(); });
     if (ret != Status::OK) {
@@ -404,9 +389,9 @@ bool InterstitialController::DoSwitch(const std::string& id)
             currentAdId_.clear();
         }
         EmitEndEvent(entry, AdsEventType::ERROR, static_cast<int32_t>(ret), "DoSourceSwitch failed");
+        SetPlayState(InterstitialPlayState::IDLE);
         return false;
     }
-    SetPlayState(InterstitialPlayState::PLAYING);
 
     MEDIA_LOG_I("DoSwitch success: change to ads");
     return true;
@@ -553,31 +538,27 @@ void InterstitialController::FinishCurrentAdAndContinue(AdsEventType eventType)
 
     {
         std::lock_guard<std::mutex> lock(adMutex_);
+        if (currentAdId_.empty()) {
+            return;
+        }
         auto it = entries_.find(currentAdId_);
         if (it != entries_.end()) {
             currentEntry = it->second;
             startMs = it->second.startMs;
             it->second.played = true;
+            currentAdId_.clear();
         }
     }
 
     EmitEndEvent(currentEntry, eventType);
-    if (isDisableAds_.load()) {
-        MEDIA_LOG_W("FinishCurrentAdAndContinue failed: ads are disabled");
-        SetPlayState(InterstitialPlayState::IDLE);
-        {
-            std::lock_guard<std::mutex> lock(adMutex_);
-            currentAdId_.clear();
-        }
-        return;
-    }
+    FALSE_RETURN_MSG_W(!isDisableAds_.load(), "FinishCurrentAdAndContinue failed: ads are disabled");
     if (startMs >= 0 && TrySwitchAdCandidates(startMs)) {
         return;
     }
 
     {
         std::lock_guard<std::mutex> lock(adMutex_);
-        currentAdId_.clear();
+        SetPlayState(InterstitialPlayState::IDLE);
     }
     DoResume();
 }
