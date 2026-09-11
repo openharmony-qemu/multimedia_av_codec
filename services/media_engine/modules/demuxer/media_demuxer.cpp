@@ -1147,7 +1147,7 @@ bool MediaDemuxer::IsWatchDevice()
 
 bool MediaDemuxer::BoostThreadPriorityIfNeeded()
 {
-    if(bundleName_ == "bootanimation"){
+    if (bundleName_ == "bootanimation") {
         MEDIA_LOG_I("boosting read thread priority for animation");
         return BoostReadThreadPriority() == Status::OK;
     }
