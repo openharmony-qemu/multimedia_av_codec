@@ -262,6 +262,9 @@ void AVCodecServiceStub::OnReportStatisticsEvent(MessageParcel &data, MessagePar
     pid_t forwardPid = 0;
     CHECK_AND_RETURN_LOG(!meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, forwardPid),
         "Forward caller pid %{public}d is not allowed in statistics IPC, intercepted", forwardPid);
+    std::string forwardProcessName;
+    CHECK_AND_RETURN_LOG(!meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName),
+        "Forward caller process name is not allowed in statistics IPC, intercepted");
     pid_t callerPid = 0;
     CHECK_AND_RETURN_LOG(meta.GetData(Media::Tag::AV_CODEC_CALLER_PID, callerPid), "Read caller pid failed");
     pid_t ipcPid = static_cast<pid_t>(IPCSkeleton::GetCallingPid());
