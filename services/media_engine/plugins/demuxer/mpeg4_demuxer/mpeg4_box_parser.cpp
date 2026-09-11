@@ -4622,10 +4622,13 @@ Status MPEG4AtomParser::ParseTenc(MPEG4Atom currentAtom, int32_t depth, ParseCon
         sizeof(lastTrack_->drmInfo.defaultCencInfo.keyId), &tencData[kidOffset], PSSH_UUID_SIZE);
     FALSE_RETURN_V_MSG_E(memcpyRet == EOK, Status::ERROR_INVALID_OPERATION, "Copy tenc keyId failed");
     lastTrack_->drmInfo.defaultCencInfo.keyIdLen = PSSH_UUID_SIZE;
+    bool ivSizeInvalid = false;
     if (defaultPerSampleIvSize != 0 && defaultPerSampleIvSize != DRM_IV_SIZE_8 &&
             defaultPerSampleIvSize != DRM_IV_SIZE_16) {
-        MEDIA_LOG_E("Invalid per_sample_iv_size: " PUBLIC_LOG_D32, defaultPerSampleIvSize);
-        return Status::ERROR_INVALID_DATA;
+        MEDIA_LOG_W("Unsupported per_sample_iv_size: " PUBLIC_LOG_D32 ", skip constant IV read",
+            defaultPerSampleIvSize);
+        ivSizeInvalid = true;
+        lastTrack_->drmInfo.perSampleIvSize = 0;
     }
     if (version > 0) {
         lastTrack_->drmInfo.defaultCencInfo.encryptBlocks = (patternByte >> TENC_PATTERN_BYTE_SHIFT)
@@ -4633,24 +4636,37 @@ Status MPEG4AtomParser::ParseTenc(MPEG4Atom currentAtom, int32_t depth, ParseCon
         lastTrack_->drmInfo.defaultCencInfo.skipBlocks = patternByte & TENC_PATTERN_BYTE_MASK;
     }
     // OHOS_DRM: read default_constant_IV when perSampleIvSize == 0 and isProtected
+    // Skip constant IV read when per_sample_iv_size was invalid to avoid reading garbage data
+    ret = ReadTencDefaultConstantIV(ctx, kidOffset, defaultIsProtected, defaultPerSampleIvSize, ivSizeInvalid);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read tenc default constant IV failed");
+    lastTrack_->drmInfo.defaultCencInfo.mode = 0; // AV_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET
+    ctx->offset += currentAtom.size;
+    return Status::OK;
+}
+
+Status MPEG4AtomParser::ReadTencDefaultConstantIV(ParseContext* ctx, uint32_t kidOffset,
+    uint8_t defaultIsProtected, uint8_t defaultPerSampleIvSize, bool ivSizeInvalid)
+{
+    // OHOS_DRM: read default_constant_IV when perSampleIvSize == 0 and isProtected
     // tenc v0: KID ends at dataOffset + 24; tenc v1: KID ends at dataOffset + 23
-    if (defaultIsProtected && defaultPerSampleIvSize == 0) {
+    // Skip constant IV read when per_sample_iv_size was invalid to avoid reading garbage data
+    if (defaultIsProtected && defaultPerSampleIvSize == 0 && !ivSizeInvalid) {
         uint32_t ivSizeOffset = kidOffset + PSSH_UUID_SIZE;
         uint8_t ivSizeData[1];
-        ret = dataReader_->ReadUintData(ctx->dataOffset + ivSizeOffset, ivSizeData, sizeof(ivSizeData));
+        Status ret = dataReader_->ReadUintData(ctx->dataOffset + ivSizeOffset, ivSizeData, sizeof(ivSizeData));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read tenc default IV size failed");
         uint8_t defaultIvSize = ivSizeData[0];
         if (defaultIvSize != DRM_IV_SIZE_8 && defaultIvSize != DRM_IV_SIZE_16) {
-            MEDIA_LOG_E("Invalid default_constant_IV_size: " PUBLIC_LOG_D32, defaultIvSize);
-            return Status::ERROR_INVALID_DATA;
+            MEDIA_LOG_W("Invalid default_constant_IV_size: " PUBLIC_LOG_D32 ", skip constant IV", defaultIvSize);
+            defaultIvSize = 0;
         }
-        ret = dataReader_->ReadUintData(ctx->dataOffset + ivSizeOffset + 1,
-            lastTrack_->drmInfo.defaultCencInfo.iv, defaultIvSize);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read tenc default IV failed");
-        lastTrack_->drmInfo.defaultCencInfo.ivLen = defaultIvSize;
+        if (defaultIvSize > 0) {
+            ret = dataReader_->ReadUintData(ctx->dataOffset + ivSizeOffset + 1,
+                lastTrack_->drmInfo.defaultCencInfo.iv, defaultIvSize);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read tenc default IV failed");
+            lastTrack_->drmInfo.defaultCencInfo.ivLen = defaultIvSize;
+        }
     }
-    lastTrack_->drmInfo.defaultCencInfo.mode = 0; // AV_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET
-    ctx->offset += currentAtom.size;
     return Status::OK;
 }
 // LCOV_EXCL_STOP
