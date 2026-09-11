@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "avcodec_service_stub.h"
+#include <set>
 #include "accesstoken_kit.h"
 #include "avcodec_errors.h"
 #include "avcodec_log.h"
@@ -23,6 +24,16 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecServiceStub"};
+
+bool IsIpcAllowedStatisticsEvent(OHOS::MediaAVCodec::StatisticsEventType type)
+{
+    static const std::set<OHOS::MediaAVCodec::StatisticsEventType> allowedTypes = {
+        OHOS::MediaAVCodec::StatisticsEventType::ADVANCED_FEATURE_INFO,
+        OHOS::MediaAVCodec::StatisticsEventType::BASIC_CREATE_CODEC_SPEC_INFO,
+        OHOS::MediaAVCodec::StatisticsEventType::CONTAINER_FORMAT_INFO,
+    };
+    return allowedTypes.count(type) > 0;
+}
 }
 
 namespace OHOS {
@@ -244,8 +255,16 @@ void AVCodecServiceStub::OnReportStatisticsEvent(MessageParcel &data, MessagePar
 {
     uint32_t eventType = 0;
     CHECK_AND_RETURN_LOG(data.ReadUint32(eventType), "Read statistics event type failed");
+    CHECK_AND_RETURN_LOG(IsIpcAllowedStatisticsEvent(static_cast<StatisticsEventType>(eventType)),
+        "Statistics event type %{public}u is not allowed to report via IPC, intercepted", eventType);
     Media::Meta meta;
     CHECK_AND_RETURN_LOG(meta.FromParcel(data), "Read statistics event meta failed");
+    pid_t forwardPid = 0;
+    CHECK_AND_RETURN_LOG(!meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PID, forwardPid),
+        "Forward caller pid %{public}d is not allowed in statistics IPC, intercepted", forwardPid);
+    std::string forwardProcessName;
+    CHECK_AND_RETURN_LOG(!meta.GetData(Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardProcessName),
+        "Forward caller process name is not allowed in statistics IPC, intercepted");
     pid_t callerPid = 0;
     CHECK_AND_RETURN_LOG(meta.GetData(Media::Tag::AV_CODEC_CALLER_PID, callerPid), "Read caller pid failed");
     pid_t ipcPid = static_cast<pid_t>(IPCSkeleton::GetCallingPid());
