@@ -149,7 +149,7 @@ private:
     void SetInstanceEncodeEventInfo(std::shared_ptr<Media::Meta> &meta);
     void OnInstanceAdvancedFeatureEvent(std::string feature, std::shared_ptr<Media::Meta> meta = nullptr);
     void InitFramerateCalculator(Meta &callerInfo);
-    void UpdateInstanceInfo(int32_t codeWidth, int32_t codeHeight, int32_t codecBitrate, int32_t codecLowpower);
+    void UpdateInstanceInfo(int32_t codecWidth, int32_t codecHeight, int32_t codecBitrate, int32_t codecLowpower);
 
     CodecStatus status_ = UNINITIALIZED;
 
