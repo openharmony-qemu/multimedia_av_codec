@@ -48,7 +48,7 @@ using DeleteFuncType = uint32_t (*)(AVC_ENC_HANDLE hEncoder);
 
 #define SCOPED_TRACE_AVC(name) HITRACE_METER_FMT(HITRACE_TAG_ZMEDIA, name)
 
-class AvcEncoder : public CodecBase, public RefBase, public std::enable_shared_from_this<AvcEncoder> {
+class AvcEncoder : public CodecBase, public std::enable_shared_from_this<AvcEncoder> {
 public:
     explicit AvcEncoder(const std::string &name);
     ~AvcEncoder() override;
