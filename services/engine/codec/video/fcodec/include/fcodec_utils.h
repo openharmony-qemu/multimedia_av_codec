@@ -258,6 +258,39 @@ int32_t CMRangeToBoolean(CM_Range range)
 namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
+} // namespace
+
+static void FfmpegLogCallback(void *avcl, int level, const char *fmt, va_list vl)
+{
+    (void)avcl;
+    char buf[2048];
+    vsnprintf(buf, sizeof(buf), fmt, vl);
+    if (level > AV_LOG_INFO) {
+        return;
+    }
+    switch (level) {
+        case AV_LOG_FATAL:
+        case AV_LOG_ERROR:
+            AVCODEC_LOGE("[ffmpeg] %{public}s", buf);
+            break;
+        case AV_LOG_WARNING:
+            AVCODEC_LOGW("[ffmpeg] %{public}s", buf);
+            break;
+        case AV_LOG_INFO:
+        case AV_LOG_VERBOSE:
+            AVCODEC_LOGI("[ffmpeg] %{public}s", buf);
+            break;
+        case AV_LOG_DEBUG:
+            AVCODEC_LOGD("[ffmpeg] %{public}s", buf);
+            break;
+        default:
+            AVCODEC_LOGI("[ffmpeg] %{public}s", buf);
+            break;
+    }
+}
+
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 256;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";

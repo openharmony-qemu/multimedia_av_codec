@@ -36,7 +36,6 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
 constexpr int32_t DEFAULT_IN_BUFFER_CNT = 4;
@@ -63,6 +62,9 @@ FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::UNINIT
 #ifdef DISABLE_DMABUFF
     isShieldDmaBuffer_ = true;
 #endif
+
+    av_log_set_level(AV_LOG_DEBUG);
+    av_log_set_callback(FfmpegLogCallback);
 }
 
 FCodec::~FCodec()
@@ -1579,6 +1581,13 @@ void FCodec::ReceiveFrame()
         frameBuffer->avBuffer_->memory_->SetSize(0);
         state_ = State::EOS;
     } else if (ret == AVERROR(EAGAIN)) {
+        bool has_pipeline_frames = (cachedFrame_->opaque != nullptr);  // 读取信息
+        if (has_pipeline_frames) {
+            // pipeline 中有残留帧待取
+            // 此处添加 fcodec 的"强行取帧"决定逻辑
+            AVCODEC_LOGI("%{public}s pipeline has leftover frames", decName_.c_str());
+        }
+
         std::unique_lock<std::mutex> sendLock(sendMutex_);
         if (isSendWait_ || isSendEos_) {
             isSendWait_ = false;

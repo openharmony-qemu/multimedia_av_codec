@@ -22,7 +22,6 @@ extern "C" {
 #include "libavutil/imgutils.h"
 #include "libswscale/swscale.h"
 }
-#include "avcodec_errors.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
