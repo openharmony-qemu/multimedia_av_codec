@@ -285,7 +285,6 @@ void InterstitialController::OnSeek(int64_t seekTargetMs)
         }
     }
 
-
     std::string preRollToTrigger;
     {
         std::lock_guard<std::mutex> lock(adMutex_);

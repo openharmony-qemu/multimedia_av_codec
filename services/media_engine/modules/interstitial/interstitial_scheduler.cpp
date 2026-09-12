@@ -105,7 +105,6 @@ void InterstitialScheduler::OnPlaybackTick()
             scheduleStrategy_->TrimExpiredEvents(pendingEvents_, currentPosMs);
         }
     }
-    
 }
 
 void InterstitialScheduler::OnSeek(int64_t seekTargetMs)
