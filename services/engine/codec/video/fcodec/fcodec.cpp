@@ -282,7 +282,7 @@ int32_t FCodec::AllocateCodecContext()
     avCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
     avCodecContext_->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pixFmts) {
         for (int i = 0; pixFmts[i] != AV_PIX_FMT_NONE; i++) {
-            AVCODEC_LOGI("configure codec candidate[%d] = %s", i, av_get_pix_fmt_name(pixFmts[i]));
+            AVCODEC_LOGI("configure codec candidate[%{public}d] = %{public}s", i, av_get_pix_fmt_name(pixFmts[i]));
         }
         return pixFmts[0];
     };
