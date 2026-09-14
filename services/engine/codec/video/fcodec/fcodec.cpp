@@ -36,6 +36,14 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
+#ifdef __cplusplus
+extern "C" {
+#endif
+void avcodec_set_force_drain(AVCodecContext *avctx, int enable);
+#ifdef __cplusplus
+}
+#endif
+
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
 constexpr int32_t DEFAULT_IN_BUFFER_CNT = 4;
@@ -1325,13 +1333,13 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
 
 void FCodec::SendFrame()
 {
-    CHECK_AND_RETURN_LOG_LIMIT(state_ != State::STOPPING && state_ != State::FLUSHING, LOG_FREQUENCE, "Invalid state");
-    if (state_ != State::RUNNING || isSendEos_ || inputAvailQue_->Size() == 0u) {
+    CHECK_AND_RETURN_LOG_LIMIT(state_ == State::RUNNING, LOG_FREQUENCE, "Not in running state");
+    if (isSendEos_ || inputAvailQue_->Size() == 0u) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
+        sendCount_ += 1;
         return;
     }
     uint32_t index = inputAvailQue_->Front();
-    CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
     std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
     std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
@@ -1364,6 +1372,7 @@ void FCodec::SendFrame()
         }
 #endif // BUILD_ENG_VERSION
         callback_->OnInputBufferAvailable(index, inputAVBuffer);
+        sendCount_ = 0;
     } else if (ret == AVERROR(EAGAIN)) {
         std::unique_lock<std::mutex> sendLock(sendMutex_);
         isSendWait_ = true;
@@ -1550,12 +1559,11 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
 
 void FCodec::ReceiveFrame()
 {
-    CHECK_AND_RETURN_LOG_LIMIT(state_ != State::STOPPING && state_ != State::FLUSHING, LOG_FREQUENCE, "Invalid state");
-    if (state_ != State::RUNNING || codecAvailQue_->Size() == 0u) {
+    CHECK_AND_RETURN_LOG_LIMIT(state_ == State::RUNNING, LOG_FREQUENCE, "Not in running state");
+    if (codecAvailQue_->Size() == 0u) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
-    CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
     std::unique_lock<std::mutex> sLock(syncMutex_);
     int ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
     sLock.unlock();
@@ -1582,10 +1590,9 @@ void FCodec::ReceiveFrame()
         state_ = State::EOS;
     } else if (ret == AVERROR(EAGAIN)) {
         bool has_pipeline_frames = (cachedFrame_->opaque != nullptr);  // 读取信息
-        if (has_pipeline_frames) {
-            // pipeline 中有残留帧待取
-            // 此处添加 fcodec 的"强行取帧"决定逻辑
-            AVCODEC_LOGI("%{public}s pipeline has leftover frames", decName_.c_str());
+        if (has_pipeline_frames && sendCount_ > 30) { // 30
+            AVCODEC_LOGI("%{public}s pipeline has leftover frames, start draining", decName_.c_str());
+            avcodec_set_force_drain(avCodecContext_.get(), 1);
         }
 
         std::unique_lock<std::mutex> sendLock(sendMutex_);

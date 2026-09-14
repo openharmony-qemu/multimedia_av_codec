@@ -266,7 +266,7 @@ static void FfmpegLogCallback(void *avcl, int level, const char *fmt, va_list vl
 {
     (void)avcl;
     char buf[2048];
-    int ret = vsnprintf(buf, sizeof(buf), fmt, vl);
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, vl);
     if (level > AV_LOG_DEBUG || ret < 0) {
         return;
     }

@@ -228,6 +228,7 @@ private:
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::thread mRequestSurfaceBufferThread_;
     uint32_t decNum_ = 0;
+    std::atomic<uint32_t> sendCount_ = 0;
     // surface config
     std::atomic<GraphicTransformType> transform_ = GraphicTransformType::GRAPHIC_ROTATE_NONE;
     // dump
