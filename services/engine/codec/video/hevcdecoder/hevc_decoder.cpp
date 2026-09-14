@@ -235,7 +235,11 @@ int32_t HevcDecoder::Initialize()
             break;
         }
     }
-    CHECK_AND_RETURN_RET_LOG(!mime.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed: not support name:%{public}s", codecName_.c_str());
+    CHECK_AND_RETURN_RET_LOG(
+        !mime.empty(), 
+        AVCS_ERR_INVALID_VAL, 
+        "Init codec failed: not support name:%{public}s", 
+        codecName_.c_str());
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mime);
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecName_);
     decInfo_.mimeType = mime;
