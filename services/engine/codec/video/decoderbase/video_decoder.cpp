@@ -89,6 +89,7 @@ void VideoDecoder::OpenDumpFile()
             }
         }
     }
+    CHECK_AND_RETURN_LOG(dumpModeStr.length() == 2, "dumpModeStr length should equal 2");
     if (dumpModeStr[1] == '1') {
         int ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
         if (ret > 0) {

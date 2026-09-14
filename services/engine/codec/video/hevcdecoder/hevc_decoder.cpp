@@ -235,6 +235,7 @@ int32_t HevcDecoder::Initialize()
             break;
         }
     }
+    CHECK_AND_RETURN_RET_LOG(!mime.empty(), AVCS_ERR_INVALID_VAL, "Init codec failed: not support name:%{public}s", codecName_.c_str());
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mime);
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecName_);
     decInfo_.mimeType = mime;
@@ -366,6 +367,10 @@ int32_t HevcDecoder::DecodeFrameOnce()
     if (hevcSDecoder_ == nullptr || hevcDecoderFlushFrameFunc_ == nullptr ||
         hevcDecoderDecodecFrameFunc_ == nullptr) {
         AVCODEC_LOGE("Num %{public}u Hevc decoder resources not available, cannot call decoder", decInstanceID_);
+        if (callback_ == nullptr) {
+            AVCODEC_LOGE("callback is null, Num %{public}u", decInstanceID_);
+            return -1;
+        }
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_VID_DEC_FAILED);
         return -1;
     }
@@ -397,6 +402,10 @@ int32_t HevcDecoder::DecodeFrameOnce()
             status = FillFrameBuffer(frameBuffer);
         } else {
             CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
+            if (callback_ == nullptr) {
+                AVCODEC_LOGE("callback is null, Num %{public}u", decInstanceID_);
+                return -1;
+            }
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
             state_ = State::ERROR;
             return -1;
@@ -405,6 +414,10 @@ int32_t HevcDecoder::DecodeFrameOnce()
         FramePostProcess(frameBuffer, index, status);
     } else if (ret < -1 || (!isSendEos_ && ret == -1)) {
         AVCODEC_LOGE("Num %{public}u Hevc decode error: ret = %{public}d", decInstanceID_, ret);
+        if (callback_ == nullptr) {
+            AVCODEC_LOGE("callback is null, Num %{public}u", decInstanceID_);
+            return -1;
+        }
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_STREAM);
     }
     return ret;
