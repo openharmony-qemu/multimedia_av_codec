@@ -934,16 +934,12 @@ int32_t MaxFrameDelayCountChecker(CapabilityData &capData, Format &format, Codec
     return AVCS_ERR_OK;
 }
 
-std::string NormalizeCodecDmaTag(const std::string &tag)
+bool IsAsciiVisible(const std::string &tag)
 {
-    std::string normalized;
-    for (unsigned char ch : tag) {
-        // 仅保留 ASCII 可见字符（0x21~0x7E），过滤非 ASCII、控制字符、空格等不可见字符
-        if (ch >= 0x21 && ch <= 0x7E) {
-            normalized.push_back(static_cast<char>(ch));
-        }
-    }
-    return normalized;
+    return std::all_of(tag.begin(), tag.end(), [](unsigned char ch) {
+        // 仅接受 ASCII 可见字符（0x21~0x7E），非 ASCII 字符、空格及控制字符等不可见字符均非法
+        return ch >= 0x21 && ch <= 0x7E;
+    });
 }
 
 bool IsPureDigits(const std::string &tag)
@@ -963,14 +959,18 @@ int32_t CodecDmaTagChecker(CapabilityData &capData, Format &format, CodecScenari
     }
     AVCODEC_LOGI("input dmabuf tag: %{public}s", tag.c_str());
 
-    std::string normalized = NormalizeCodecDmaTag(tag);
-    // 过滤后必须至少包含一个非数字字符；空或纯数字均无效
-    if (normalized.empty() || IsPureDigits(normalized)) {
-        AVCODEC_LOGE("Param invalid, %{public}s should contain at least one non-digit after normalization",
+    // 输入包含非 ASCII 字符或不可见字符（空格、制表符、控制字符等）均直接报错，不做过滤
+    if (!IsAsciiVisible(tag)) {
+        AVCODEC_LOGE("Param invalid, %{public}s contains non-ascii or invisible character",
             Tag::VIDEO_SET_DMABUF_NAME_SUFFIX);
         return AVCS_ERR_INVALID_VAL;
     }
-    format.PutStringValue(Tag::VIDEO_SET_DMABUF_NAME_SUFFIX, normalized);
+    // 必须至少包含一个非数字字符；空字符串或纯数字均无效
+    if (tag.empty() || IsPureDigits(tag)) {
+        AVCODEC_LOGE("Param invalid, %{public}s should contain at least one non-digit character",
+            Tag::VIDEO_SET_DMABUF_NAME_SUFFIX);
+        return AVCS_ERR_INVALID_VAL;
+    }
     return AVCS_ERR_OK;
 }
 } // namespace
