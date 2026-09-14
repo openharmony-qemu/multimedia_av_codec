@@ -284,7 +284,7 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
     if (cachedFrame_ == nullptr) {
         AVFrame *frame = av_frame_alloc();
         if (frame == nullptr) {
-            AVCODEC_LOGE("HevcDecoder v_frame_alloc failed");
+            AVCODEC_LOGE("HevcDecoder av_frame_alloc failed");
             callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY);
             state_ = State::ERROR;
             return;    
