@@ -5249,12 +5249,12 @@ Status MPEG4AtomParser::ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, i
     bool &isZeroSizeAtom, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(ctx != nullptr && ctx->offset >= 0 &&
-        static_cast<uint64_t>(ctx->offset) <= static_cast<uint64_t>(INT64_MAX) - sizeof(uint32_t) * 2,
+        static_cast<uint64_t>(ctx->offset) <= static_cast<uint64_t>(INT64_MAX) - DEFAULT_HEAD_SIZE,
         Status::ERROR_INVALID_DATA, "Invalid atom header offset");
     uint64_t dataSourceSize = 0;
     if (dataSource_ != nullptr && dataSource_->GetSize(dataSourceSize) == Status::OK) {
         uint64_t offset = static_cast<uint64_t>(ctx->offset);
-        FALSE_RETURN_V_MSG_E(offset <= dataSourceSize && dataSourceSize - offset >= sizeof(uint32_t) * 2,
+        FALSE_RETURN_V_MSG_E(offset <= dataSourceSize && dataSourceSize - offset >= DEFAULT_HEAD_SIZE,
             Status::ERROR_INVALID_DATA, "Atom header exceeds data source");
     }
     uint8_t atomInfo[8];
@@ -5323,7 +5323,7 @@ Status MPEG4AtomParser::ValidateAtomSourceRange(MPEG4Atom& atom, const std::stri
     ParseContext* ctx, uint64_t atomInfoSize)
 {
     FALSE_RETURN_V_MSG_E(ctx != nullptr && ctx->offset >= 0, Status::ERROR_INVALID_DATA, "Invalid atom offset");
-    FALSE_RETURN_V_MSG_E(atomInfoSize >= sizeof(uint32_t) * 2 && atomInfoSize <= atom.size,
+    FALSE_RETURN_V_MSG_E(atomInfoSize >= DEFAULT_HEAD_SIZE && atomInfoSize <= atom.size,
         Status::ERROR_INVALID_DATA, "Invalid atom header size");
     uint64_t atomEndOffset = 0;
     if (__builtin_add_overflow(static_cast<uint64_t>(ctx->offset), atom.size, &atomEndOffset)) {

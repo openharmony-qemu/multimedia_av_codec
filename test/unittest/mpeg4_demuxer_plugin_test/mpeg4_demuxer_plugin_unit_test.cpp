@@ -4324,7 +4324,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomHeader_RejectInvalid
     Plugins::MPEG4::MPEG4AtomParser::ParseContext nestedCtx;
     std::string typeStr;
     bool isZeroSizeAtom = false;
-    EXPECT_EQ(nestedTest.parser.ParseAtomHeader(atom, typeStr, 1, isZeroSizeAtom, &nestedCtx), Status::ERROR_INVALID_DATA);
+    EXPECT_EQ(nestedTest.parser.ParseAtomHeader(atom, typeStr, 1, isZeroSizeAtom, &nestedCtx),
+        Status::ERROR_INVALID_DATA);
 
     Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom overflowAtom;
     overflowAtom.type = static_cast<int32_t>(mdatType);
