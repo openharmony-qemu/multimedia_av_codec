@@ -78,6 +78,8 @@ constexpr size_t WEAK_NETWORK_THREAD_RETRY_FAIL_COUNT = 20;
 constexpr size_t MAX_WEBVTT_SAMPLE_READ_COUNT = 100000;
 constexpr int64_t TEST_MS_TO_US = 1000;
 constexpr int64_t TEST_US_TO_NS = 1000;
+constexpr int32_t ZERO_LENGTH_AAC_SAMPLE_RATE = 44100;
+constexpr int32_t ZERO_LENGTH_AAC_SAMPLES_PER_FRAME = 1024;
 constexpr uint32_t SAMPLE_INDEX_TEST_COUNT = 3;
 constexpr uint32_t SAMPLE_INDEX_TEST_SECOND = 1;
 constexpr uint32_t SAMPLE_INDEX_TEST_THIRD = 2;
@@ -1197,13 +1199,13 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareZeroLengthAacTrac
     helper->mimeType_ = Plugins::MimeType::AUDIO_AAC;
     track->trackIndex = 0;
     track->trackId = 0;
-    track->timeScale = 44100;
+    track->timeScale = ZERO_LENGTH_AAC_SAMPLE_RATE;
     track->codecParms.trackType = Plugins::MPEG4::AUDIO_TYPE;
     track->sampleHelper = helper;
     plugin.firstTrack_ = track;
     plugin.mediaInfo_.tracks.resize(1);
-    plugin.mediaInfo_.tracks[0].Set<Tag::AUDIO_SAMPLE_RATE>(44100);
-    plugin.mediaInfo_.tracks[0].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(1024);
+    plugin.mediaInfo_.tracks[0].Set<Tag::AUDIO_SAMPLE_RATE>(ZERO_LENGTH_AAC_SAMPLE_RATE);
+    plugin.mediaInfo_.tracks[0].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(ZERO_LENGTH_AAC_SAMPLES_PER_FRAME);
     return track;
 }
 
@@ -3096,7 +3098,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthAacTrailingInd
     Plugins::MPEG4::MPEG4SampleHelper helper;
     helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
     helper.mimeType_ = MimeType::AUDIO_AAC;
-    helper.sttsEntry_ = {{2, 1024}};
+    helper.sttsEntry_ = {{2, ZERO_LENGTH_AAC_SAMPLES_PER_FRAME}};
     helper.stscEntry_ = {{0, 3, 1}};
     helper.sampleSizes_ = {3, 4, 0};
     helper.sampleSizeCount_ = 3U;
