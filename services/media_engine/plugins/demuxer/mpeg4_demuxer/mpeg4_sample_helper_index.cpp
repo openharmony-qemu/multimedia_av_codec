@@ -1392,6 +1392,19 @@ Status MPEG4SampleHelper::BuildDenseSampleIndexEntries()
             buildCtx.previousDuration) == Status::OK, Status::ERROR_INVALID_DATA);
     }
 
+    // AAC can carry one final zero-byte stsz entry without a matching stts entry. FFmpeg exposes it as an
+    // untimed packet at the end of the decode timeline; keep the source tables unchanged and add only its view.
+    if (mimeType_ == MimeType::AUDIO_AAC && !hasDefaultStszSize_ &&
+        sampleSizes_.size() == expectedSampleCount + 1 && sampleSizes_[expectedSampleCount] == 0) {
+        SampleIndexEntry trailingSample;
+        trailingSample.pos = buildCtx.currentOffset;
+        trailingSample.dts = buildCtx.currentDts;
+        FALSE_RETURN_V_NOLOG(trailingSample.SetPts(trailingSample.dts) && trailingSample.SetSize(0) &&
+            AddDurationOverride(static_cast<uint32_t>(sampleIndexEntry_.size()), 0) == Status::OK,
+            Status::ERROR_INVALID_DATA);
+        sampleIndexEntry_.emplace_back(std::move(trailingSample));
+    }
+
     UpdateRawSampleStats();
     Status ret = ApplyEditList();
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Apply edit list failed");

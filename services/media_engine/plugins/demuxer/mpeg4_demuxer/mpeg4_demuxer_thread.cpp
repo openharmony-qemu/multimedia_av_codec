@@ -294,7 +294,7 @@ Status MPEG4DemuxerPlugin::CheckReadSampleDataState(int32_t size)
         Status::ERROR_WRONG_STATE, "Read thread stopped");
     FALSE_RETURN_V_MSG_E(avReadPacketStopState_.load(std::memory_order_acquire) != AVReadPacketStopState::TRUE,
         Status::ERROR_WRONG_STATE, "AVReadPacket stopped");
-    FALSE_RETURN_V_MSG_E(size > 0, Status::ERROR_INVALID_PARAMETER, "Invalid size");
+    FALSE_RETURN_V_MSG_E(size >= 0, Status::ERROR_INVALID_PARAMETER, "Invalid size");
     return Status::OK;
 }
 
@@ -462,6 +462,9 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, const 
     MEDIA_LOG_D("In");
     Status ret = CheckReadSampleDataState(sampleInfo.view.size);
     FALSE_RETURN_V(ret == Status::OK, ret);
+    if (sampleInfo.view.size == 0) {
+        return WriteSampleAttr(sampleInfo, sample);
+    }
     ret = ReadSampleDataToBuffer(sample, sampleInfo.view.pos, sampleInfo.view.size);
     if (ret == Status::OK) {
         ret = WriteSampleAttr(sampleInfo, sample);

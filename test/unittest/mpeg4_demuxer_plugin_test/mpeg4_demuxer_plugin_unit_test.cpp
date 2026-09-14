@@ -1176,6 +1176,37 @@ std::shared_ptr<Plugins::MPEG4::Sample> CreateMpeg4Sample(int32_t size, bool has
     return sample;
 }
 
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareZeroLengthAacTrack(
+    Plugins::MPEG4::MPEG4DemuxerPlugin& plugin)
+{
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    EXPECT_NE(track, nullptr);
+    if (track == nullptr) {
+        return nullptr;
+    }
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    EXPECT_NE(helper, nullptr);
+    if (helper == nullptr) {
+        return nullptr;
+    }
+    helper->sampleIndexEntry_.push_back(MakeSampleIndexEntry(0, 0, 0, 0));
+    helper->durationOverrides_.push_back({0, 0});
+    helper->sttsEntry_ = {{1, 0}};
+    helper->allSamplesSync_ = true;
+    helper->trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper->mimeType_ = Plugins::MimeType::AUDIO_AAC;
+    track->trackIndex = 0;
+    track->trackId = 0;
+    track->timeScale = 44100;
+    track->codecParms.trackType = Plugins::MPEG4::AUDIO_TYPE;
+    track->sampleHelper = helper;
+    plugin.firstTrack_ = track;
+    plugin.mediaInfo_.tracks.resize(1);
+    plugin.mediaInfo_.tracks[0].Set<Tag::AUDIO_SAMPLE_RATE>(44100);
+    plugin.mediaInfo_.tracks[0].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(1024);
+    return track;
+}
+
 struct FrameSampleDigest {
     int32_t actualSize = 0;
     int64_t pts = 0;
@@ -2975,6 +3006,112 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleMemoryInvalidBranc
     EXPECT_EQ(overflowOffsetMemory.GetAddr(), nullptr);
     EXPECT_EQ(overflowOffsetMemory.GetCapacity(), 0);
     EXPECT_EQ(overflowOffsetMemory.GetSize(), 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroLengthAacSample_001
+ * @tc.desc: Verify a legal zero-length AAC sample does not read payload and uses AAC duration fallback
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthAacSample_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    auto track = PrepareZeroLengthAacTrack(plugin);
+    ASSERT_NE(track, nullptr);
+    EXPECT_EQ(plugin.CheckReadSampleDataState(0), Status::OK);
+    EXPECT_EQ(plugin.CheckReadSampleDataState(-1), Status::ERROR_INVALID_PARAMETER);
+
+    auto dataSource = std::make_shared<ShortReadDataSource>(std::vector<uint8_t> {0x01}, 1);
+    ASSERT_NE(dataSource, nullptr);
+    plugin.dataSource_ = dataSource;
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    ASSERT_EQ(track->sampleHelper->GetSampleIndexView(0, view), Status::OK);
+    Plugins::MPEG4::MPEG4DemuxerPlugin::SampleReadInfo sampleInfo {0, 0, view, true};
+    auto sample = std::make_shared<Plugins::MPEG4::Sample>();
+    ASSERT_NE(sample, nullptr);
+    ASSERT_EQ(plugin.ReadSampleData(sample, sampleInfo), Status::OK);
+    EXPECT_EQ(sample->data, nullptr);
+    EXPECT_EQ(sample->size, 0);
+    EXPECT_EQ(sample->duration, 23219);
+    EXPECT_TRUE(dataSource->readOffsets.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroLengthAacCopyOutput_001
+ * @tc.desc: Verify a reused copy buffer is cleared for a legal zero-length AAC sample
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthAacCopyOutput_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(PrepareZeroLengthAacTrack(plugin), nullptr);
+    auto sample = CreateMpeg4Sample(0, false);
+    ASSERT_NE(sample, nullptr);
+    sample->duration = 23219;
+    auto mpeg4Sample = std::make_shared<Plugins::MPEG4::MPEG4Sample>();
+    ASSERT_NE(mpeg4Sample, nullptr);
+    mpeg4Sample->trackId = 0;
+    mpeg4Sample->sample = sample;
+
+    AVBufferWrapper copyBuffer(64);
+    ASSERT_NE(copyBuffer.mediaAVBuffer, nullptr);
+    copyBuffer.mediaAVBuffer->memory_->SetSize(64);
+    ASSERT_EQ(plugin.WriteBuffer(0, copyBuffer.mediaAVBuffer, mpeg4Sample), Status::OK);
+    EXPECT_EQ(copyBuffer.mediaAVBuffer->memory_->GetSize(), 0);
+    EXPECT_EQ(copyBuffer.mediaAVBuffer->duration_, 23219);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroLengthAacZeroCopyOutput_001
+ * @tc.desc: Verify zero-copy output owns valid zero-length memory for a legal AAC sample
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthAacZeroCopyOutput_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(PrepareZeroLengthAacTrack(plugin), nullptr);
+    auto sample = CreateMpeg4Sample(0, false);
+    ASSERT_NE(sample, nullptr);
+    sample->duration = 23219;
+    auto mpeg4Sample = std::make_shared<Plugins::MPEG4::MPEG4Sample>();
+    ASSERT_NE(mpeg4Sample, nullptr);
+    mpeg4Sample->trackId = 0;
+    mpeg4Sample->sample = sample;
+    auto zeroCopyBuffer = MediaAVBuffer::CreateAVBuffer();
+    ASSERT_NE(zeroCopyBuffer, nullptr);
+    ASSERT_EQ(plugin.WriteSampleMemory(0, zeroCopyBuffer, mpeg4Sample), Status::OK);
+    ASSERT_NE(zeroCopyBuffer->memory_, nullptr);
+    EXPECT_EQ(zeroCopyBuffer->memory_->GetSize(), 0);
+    EXPECT_EQ(zeroCopyBuffer->memory_->GetAddr(), nullptr);
+    EXPECT_EQ(zeroCopyBuffer->duration_, 23219);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroLengthAacTrailingIndex_001
+ * @tc.desc: Verify a legal trailing zero-length AAC entry is built from synthetic sample tables
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthAacTrailingIndex_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper.mimeType_ = MimeType::AUDIO_AAC;
+    helper.sttsEntry_ = {{2, 1024}};
+    helper.stscEntry_ = {{0, 3, 1}};
+    helper.sampleSizes_ = {3, 4, 0};
+    helper.sampleSizeCount_ = 3U;
+    helper.chunkOffsets_ = {100};
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    ASSERT_EQ(helper.GetSampleCount(), 3U);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    ASSERT_EQ(helper.GetSampleIndexView(2, view), Status::OK);
+    EXPECT_EQ(view.pos, 107);
+    EXPECT_EQ(view.dts, 2048);
+    EXPECT_EQ(view.pts, 2048);
+    EXPECT_EQ(view.size, 0);
+    EXPECT_EQ(view.duration, 0);
 }
 
 /**
