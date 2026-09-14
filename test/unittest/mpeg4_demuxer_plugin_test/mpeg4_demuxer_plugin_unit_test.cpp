@@ -515,6 +515,25 @@ std::shared_ptr<UnknownSizeDataSource> CreateUnknownSizeDataSourceForBytes(const
     return std::make_shared<UnknownSizeDataSource>(data, std::max<size_t>(data.size(), 1));
 }
 
+struct AtomParserTestContext {
+    std::shared_ptr<DataSource> dataSource;
+    std::shared_ptr<DemuxerDataReader> reader;
+    Plugins::MPEG4::MPEG4AtomParser parser;
+
+    explicit AtomParserTestContext(const std::vector<uint8_t>& data, bool unknownSize = false)
+    {
+        if (unknownSize) {
+            dataSource = CreateUnknownSizeDataSourceForBytes(data);
+        } else {
+            dataSource = CreateDataSourceForBytes(data);
+        }
+        reader = std::make_shared<DemuxerDataReader>();
+        EXPECT_EQ(reader->SetDataReader(dataSource), Status::OK);
+        parser.dataReader_ = reader;
+        parser.dataSource_ = dataSource;
+    }
+};
+
 std::vector<uint8_t> BuildStszData(uint32_t defaultSampleSize, uint32_t sampleCount,
     const std::vector<uint32_t>& sampleSizes = {})
 {
@@ -4180,8 +4199,142 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomHeader_TrimTrailingU
     bool isZeroSizeAtom = false;
 
     ASSERT_EQ(parser.ParseAtomHeader(atom, typeStr, 0, isZeroSizeAtom, &ctx), Status::OK);
-    EXPECT_EQ(atom.size, data.size());
+    EXPECT_EQ(atom.size, 32U);
+    EXPECT_EQ(atom.effectiveSize, data.size());
     EXPECT_FALSE(isZeroSizeAtom);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomHeader_RootMdatBoundaries_001
+ * @tc.desc: Verify root mdat truncation, ordering, and declared/effective sizes
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomHeader_RootMdatBoundaries_001, TestSize.Level1)
+{
+    constexpr uint32_t mdatType = static_cast<uint32_t>(Plugins::MPEG4::FourccType("mdat"));
+    std::vector<uint8_t> truncated;
+    AppendU32(truncated, 32);
+    AppendU32(truncated, mdatType);
+    truncated.resize(12, 0);
+    AtomParserTestContext test(truncated);
+    Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom atom;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    std::string typeStr;
+    bool isZeroSizeAtom = false;
+
+    ASSERT_EQ(test.parser.ParseAtomHeader(atom, typeStr, 0, isZeroSizeAtom, &ctx), Status::OK);
+    EXPECT_EQ(atom.size, 32U);
+    EXPECT_EQ(atom.effectiveSize, truncated.size());
+    ASSERT_EQ(test.parser.MPEG4ParseAtom(0, &ctx), Status::OK);
+    EXPECT_FALSE(test.parser.moovFound_);
+    EXPECT_TRUE(test.parser.hasMdatBox_);
+    EXPECT_EQ(ctx.offset, static_cast<int64_t>(truncated.size()));
+
+    std::vector<uint8_t> ordered;
+    AppendU32(ordered, 12);
+    AppendU32(ordered, mdatType);
+    ordered.resize(12, 0);
+    AppendU32(ordered, 8);
+    AppendU32(ordered, static_cast<uint32_t>(Plugins::MPEG4::FourccType("moov")));
+    AtomParserTestContext orderedTest(ordered);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext orderedCtx;
+    ASSERT_EQ(orderedTest.parser.MPEG4ParseAtom(0, &orderedCtx), Status::OK);
+    ASSERT_EQ(orderedTest.parser.MPEG4ParseAtom(0, &orderedCtx), Status::OK);
+    EXPECT_TRUE(orderedTest.parser.moovFound_);
+    EXPECT_EQ(orderedCtx.offset, static_cast<int64_t>(ordered.size()));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomHeader_ExtendedAndZeroSizeBoundaries_001
+ * @tc.desc: Verify extended headers, zero-size atoms, and incomplete headers
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_AtomHeader_ExtendedAndZeroSizeBoundaries_001, TestSize.Level1)
+{
+    constexpr uint32_t mdatType = static_cast<uint32_t>(Plugins::MPEG4::FourccType("mdat"));
+    auto extended = BuildAtomHeader(32, mdatType, true);
+    extended.resize(20, 0);
+    AtomParserTestContext extendedTest(extended);
+    Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom atom;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    std::string typeStr;
+    bool isZeroSizeAtom = false;
+    EXPECT_EQ(extendedTest.parser.ParseAtomHeader(atom, typeStr, 0, isZeroSizeAtom, &ctx), Status::OK);
+    EXPECT_EQ(atom.size, 48U);
+    EXPECT_EQ(atom.effectiveSize, extended.size());
+
+    std::vector<uint8_t> shortExtended;
+    AppendU32(shortExtended, 1);
+    AppendU32(shortExtended, mdatType);
+    shortExtended.resize(12, 0);
+    AtomParserTestContext shortTest(shortExtended);
+    EXPECT_EQ(shortTest.parser.ParseAtomHeader(atom, typeStr, 0, isZeroSizeAtom, &ctx), Status::ERROR_INVALID_DATA);
+
+    std::vector<uint8_t> zeroSize;
+    AppendU32(zeroSize, 0);
+    AppendU32(zeroSize, mdatType);
+    zeroSize.resize(12, 0);
+    AtomParserTestContext zeroTest(zeroSize);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext zeroCtx;
+    EXPECT_EQ(zeroTest.parser.MPEG4ParseAtom(0, &zeroCtx), Status::OK);
+    EXPECT_EQ(zeroCtx.offset, static_cast<int64_t>(zeroSize.size()));
+
+    std::vector<uint8_t> nestedZero;
+    AppendU32(nestedZero, 0);
+    AppendU32(nestedZero, static_cast<uint32_t>(Plugins::MPEG4::FourccType("free")));
+    AtomParserTestContext nestedZeroTest(nestedZero);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext nestedCtx;
+    EXPECT_EQ(nestedZeroTest.parser.ParseAtomHeader(atom, typeStr, 1, isZeroSizeAtom, &nestedCtx), Status::OK);
+    EXPECT_TRUE(isZeroSizeAtom);
+    EXPECT_EQ(nestedCtx.offset, 4);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomHeader_RejectInvalidBoundaries_001
+ * @tc.desc: Verify invalid offsets, overflow, nested truncation, and malformed declared sizes are rejected
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomHeader_RejectInvalidBoundaries_001, TestSize.Level1)
+{
+    constexpr uint32_t mdatType = static_cast<uint32_t>(Plugins::MPEG4::FourccType("mdat"));
+    auto header = BuildAtomHeader(0, mdatType, false);
+
+    AtomParserTestContext negativeTest(header, true);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext negativeCtx;
+    negativeCtx.offset = -1;
+    EXPECT_EQ(negativeTest.parser.MPEG4ParseAtom(0, &negativeCtx), Status::ERROR_INVALID_PARAMETER);
+
+    AtomParserTestContext beyondTest(header);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext beyondCtx;
+    beyondCtx.offset = static_cast<int64_t>(header.size()) + 1;
+    EXPECT_EQ(beyondTest.parser.MPEG4ParseAtom(0, &beyondCtx), Status::ERROR_INVALID_DATA);
+
+    AtomParserTestContext overflowTest(header, true);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext overflowCtx;
+    overflowCtx.offset = std::numeric_limits<int64_t>::max() - 7;
+    EXPECT_EQ(overflowTest.parser.MPEG4ParseAtom(0, &overflowCtx), Status::ERROR_INVALID_DATA);
+
+    std::vector<uint8_t> nestedHeader;
+    AppendU32(nestedHeader, 32);
+    AppendU32(nestedHeader, mdatType);
+    nestedHeader.resize(12, 0);
+    AtomParserTestContext nestedTest(nestedHeader);
+    Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom atom;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext nestedCtx;
+    std::string typeStr;
+    bool isZeroSizeAtom = false;
+    EXPECT_EQ(nestedTest.parser.ParseAtomHeader(atom, typeStr, 1, isZeroSizeAtom, &nestedCtx),
+        Status::ERROR_INVALID_DATA);
+
+    Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom overflowAtom;
+    overflowAtom.type = static_cast<int32_t>(mdatType);
+    overflowAtom.size = std::numeric_limits<uint64_t>::max();
+    overflowAtom.effectiveSize = overflowAtom.size;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext atomCtx;
+    atomCtx.offset = 1;
+    EXPECT_EQ(nestedTest.parser.ValidateAtomSourceRange(overflowAtom, "mdat", 0, &atomCtx, 16),
+        Status::ERROR_INVALID_DATA);
 }
 
 /**

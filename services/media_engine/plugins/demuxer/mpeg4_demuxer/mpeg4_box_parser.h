@@ -173,7 +173,8 @@ private:
     
     struct MPEG4Atom {
         int32_t type = 0;
-        uint64_t size = 0;
+        uint64_t size = 0; // Declared atom size, normalized for size==0 atoms.
+        uint64_t effectiveSize = 0; // Atom size used for consumption, including the header.
         uint64_t dataSize = 0;
         int64_t dataOffset = 0;
         uint64_t headerSize = 0;
