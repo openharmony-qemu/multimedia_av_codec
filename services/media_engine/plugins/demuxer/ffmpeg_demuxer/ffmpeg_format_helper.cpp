@@ -772,8 +772,10 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         format.Set<Tag::VIDEO_SAR>(static_cast<double>(av_q2d(sar)));
     }
 
-    if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
-        ParseHvccBoxInfo(avStream, format);
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC || avStream.codecpar->codec_id == AV_CODEC_ID_H264) {
+
+        (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) ? ParseHvccBoxInfo(avStream, format) :
+                                                            ParseAvcBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
         if (IsMpeg4File(fileType)) {
             ParseHdrStaticMetadata(avStream, format);
@@ -1085,6 +1087,20 @@ void FFmpegFormatHelper::ParseAuxiliaryTrackInfo(const AVStream& avStream, Meta 
         }
         format.Set<Tag::REFERENCE_TRACK_IDS>(referenceIds);
     }
+}
+
+void FFmpegFormatHelper::ParseAvcBoxInfo(const AVStream& avStream, Meta &format)
+{
+    AVCProfile profile = Converter::ConvertToOHAVCProfile(avStream.codecpar->profile);
+    
+    FALSE_RETURN_MSG_W(profile != AVCProfile::AVC_PROFILE_UNKNOW, "Parse avc profile failed");
+    format.Set<Tag::VIDEO_H264_PROFILE>(profile);
+    format.Set<Tag::MEDIA_PROFILE>(profile);
+
+    AVCLevel level = Converter::ConvertToOHAVCLevel(avStream.codecpar->level);
+    FALSE_RETURN_MSG_W(level != AVCLevel::AVC_LEVEL_UNKNOW, "Parse avc level failed");
+    format.Set<Tag::VIDEO_H264_LEVEL>(level);
+    format.Set<Tag::MEDIA_LEVEL>(level);
 }
 
 void FFmpegFormatHelper::ParseHvccBoxInfo(const AVStream& avStream, Meta &format)

@@ -48,6 +48,8 @@ public:
     static MatrixCoefficient ConvertFFMpegToOHColorMatrix(int32_t colorSpace);
     static int32_t ConvertFFMpegToOHColorRange(int32_t colorRange);
     static ChromaLocation ConvertFFMpegToOHChromaLocation(int32_t chromaLocation);
+    static AVCProfile ConvertToOHAVCProfile(int ffAVCProfile);
+    static AVCLevel ConvertToOHAVCLevel(int ffAVCLevel);
     static HEVCProfile ConvertToOHHEVCProfile(int ffHEVCProfile);
     static HEVCLevel ConvertToOHHEVCLevel(int ffHEVCLevel);
 #ifdef USE_FF_DEMUXER
