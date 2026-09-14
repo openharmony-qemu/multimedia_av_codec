@@ -837,17 +837,27 @@ Status MPEG4AtomParser::ParseMoov(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 Status MPEG4AtomParser::ParseMdat(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
-    FALSE_RETURN_V_MSG_E(currentAtom.size > 0, Status::ERROR_INVALID_DATA, "mdat atom size is zero, wrong MPEG4 file");
+    (void)depth;
+    uint64_t effectiveSize = currentAtom.effectiveSize > 0 ? currentAtom.effectiveSize : currentAtom.size;
+    FALSE_RETURN_V_MSG_E(effectiveSize > 0, Status::ERROR_INVALID_DATA,
+        "mdat atom size is zero, wrong MPEG4 file");
+    FALSE_RETURN_V_MSG_E(ctx != nullptr && ctx->offset >= 0 && effectiveSize <= static_cast<uint64_t>(INT64_MAX) &&
+        static_cast<uint64_t>(ctx->offset) <= static_cast<uint64_t>(INT64_MAX) - effectiveSize,
+        Status::ERROR_INVALID_DATA, "Invalid mdat effective size");
     hasMdatBox_ = true;
-    ctx->offset += static_cast<int64_t>(currentAtom.size);
+    ctx->offset += static_cast<int64_t>(effectiveSize);
     return Status::OK;
 }
 
 // LCOV_EXCL_START
 Status MPEG4AtomParser::ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
+    uint64_t effectiveSize = currentAtom.effectiveSize > 0 ? currentAtom.effectiveSize : currentAtom.size;
+    FALSE_RETURN_V_MSG_E(effectiveSize <= static_cast<uint64_t>(INT64_MAX) && ctx->offset >= 0 &&
+        static_cast<uint64_t>(ctx->offset) <= static_cast<uint64_t>(INT64_MAX) - effectiveSize,
+        Status::ERROR_INVALID_DATA, "Invalid wide atom effective size");
     if (currentAtom.dataSize < DEFAULT_HEAD_SIZE) {
-        ctx->offset += static_cast<int64_t>(currentAtom.size);
+        ctx->offset += static_cast<int64_t>(effectiveSize);
         return Status::OK;  // continue
     }
 
@@ -858,20 +868,21 @@ Status MPEG4AtomParser::ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint32_t embeddedSize = GetU32Value(headBuffer, sizeof(headBuffer));
     // 如果不是0 sized mdat atom，跳过剩余数据
     if (embeddedSize != 0) {
-        ctx->offset += static_cast<int64_t>(currentAtom.size);
+        ctx->offset += static_cast<int64_t>(effectiveSize);
         return Status::OK;
     }
 
     uint32_t embeddedType = GetU32Value(&headBuffer[4]);
     // 如果不是mdat类型，跳过剩余数据
     if (embeddedType != static_cast<uint32_t>(FourccType("mdat"))) {
-        ctx->offset += static_cast<int64_t>(currentAtom.size);
+        ctx->offset += static_cast<int64_t>(effectiveSize);
         return Status::OK;
     }
 
     MPEG4Atom mdatAtom;
     mdatAtom.type = static_cast<int32_t>(embeddedType);
     mdatAtom.size = currentAtom.dataSize - sizeof(headBuffer);
+    mdatAtom.effectiveSize = mdatAtom.size;
     mdatAtom.dataSize = mdatAtom.size;
     // 更新ctx指向mdat数据的开始位置
     int64_t originalOffset = ctx->offset;
@@ -880,7 +891,7 @@ Status MPEG4AtomParser::ParseWide(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
     ret = ParseMdat(mdatAtom, depth, ctx);
     ctx->dataOffset = originalDataOffset;
-    ctx->offset = originalOffset + static_cast<int64_t>(currentAtom.size);
+    ctx->offset = originalOffset + static_cast<int64_t>(effectiveSize);
     return ret;
 }
 // LCOV_EXCL_STOP
@@ -5237,6 +5248,15 @@ void MPEG4AtomParser::InitParseTable()
 Status MPEG4AtomParser::ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, int32_t depth,
     bool &isZeroSizeAtom, ParseContext* ctx)
 {
+    FALSE_RETURN_V_MSG_E(ctx != nullptr && ctx->offset >= 0 &&
+        static_cast<uint64_t>(ctx->offset) <= static_cast<uint64_t>(INT64_MAX) - sizeof(uint32_t) * 2,
+        Status::ERROR_INVALID_DATA, "Invalid atom header offset");
+    uint64_t dataSourceSize = 0;
+    if (dataSource_ != nullptr && dataSource_->GetSize(dataSourceSize) == Status::OK) {
+        uint64_t offset = static_cast<uint64_t>(ctx->offset);
+        FALSE_RETURN_V_MSG_E(offset <= dataSourceSize && dataSourceSize - offset >= sizeof(uint32_t) * 2,
+            Status::ERROR_INVALID_DATA, "Atom header exceeds data source");
+    }
     uint8_t atomInfo[8];
     const uint32_t typeOffset = 4; // type在第5-8字节
     Status ret = dataReader_->ReadUintData(ctx->offset, atomInfo, sizeof(atomInfo));
@@ -5252,13 +5272,26 @@ Status MPEG4AtomParser::ParseAtomHeader(MPEG4Atom& atom, std::string& typeStr, i
         return ret;
     }
     FALSE_RETURN_V_MSG_E(atom.size >= sizeof(atomInfo), Status::ERROR_INVALID_DATA, "Invalid atom size");
-    return ValidateAtomSourceRange(atom, typeStr, depth, ctx, sizeof(atomInfo));
+    FALSE_RETURN_V_MSG_E(ctx->dataOffset >= ctx->offset, Status::ERROR_INVALID_DATA,
+        "Invalid atom header offset");
+    atom.effectiveSize = atom.size;
+    uint64_t headerSize = static_cast<uint64_t>(ctx->dataOffset - ctx->offset);
+    return ValidateAtomSourceRange(atom, typeStr, depth, ctx, headerSize);
 }
 
 Status MPEG4AtomParser::ParseAtomSize(MPEG4Atom& atom, int32_t depth, bool& isZeroSizeAtom, ParseContext* ctx)
 {
     const uint64_t minExtendSize = 16;
     if (atom.size == 1) {
+        FALSE_RETURN_V_MSG_E(ctx->dataOffset >= 0 &&
+            static_cast<uint64_t>(ctx->dataOffset) <= static_cast<uint64_t>(INT64_MAX) - sizeof(uint64_t),
+            Status::ERROR_INVALID_DATA, "Invalid extended atom header offset");
+        uint64_t dataSourceSize = 0;
+        if (dataSource_ != nullptr && dataSource_->GetSize(dataSourceSize) == Status::OK) {
+            uint64_t offset = static_cast<uint64_t>(ctx->dataOffset);
+            FALSE_RETURN_V_MSG_E(offset <= dataSourceSize && dataSourceSize - offset >= sizeof(uint64_t),
+                Status::ERROR_INVALID_DATA, "Extended atom header exceeds data source");
+        }
         uint8_t sizeData[8];
         Status ret = dataReader_->ReadUintData(ctx->dataOffset, sizeData, sizeof(sizeData));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read atom extended size failed");
@@ -5276,6 +5309,9 @@ Status MPEG4AtomParser::ParseAtomSize(MPEG4Atom& atom, int32_t depth, bool& isZe
                 Status::ERROR_INVALID_DATA, "Invalid zero-size atom offset");
             atom.size = dataSourceSize - static_cast<uint64_t>(ctx->offset);
         } else {
+            FALSE_RETURN_V_MSG_E(ctx->offset >= 0 &&
+                static_cast<uint64_t>(ctx->offset) <= static_cast<uint64_t>(INT64_MAX) - sizeof(uint32_t),
+                Status::ERROR_INVALID_DATA, "Invalid zero-size atom offset");
             ctx->offset += sizeof(uint32_t);
             isZeroSizeAtom = true;
         }
@@ -5286,19 +5322,34 @@ Status MPEG4AtomParser::ParseAtomSize(MPEG4Atom& atom, int32_t depth, bool& isZe
 Status MPEG4AtomParser::ValidateAtomSourceRange(MPEG4Atom& atom, const std::string& typeStr, int32_t depth,
     ParseContext* ctx, uint64_t atomInfoSize)
 {
+    FALSE_RETURN_V_MSG_E(ctx != nullptr && ctx->offset >= 0, Status::ERROR_INVALID_DATA, "Invalid atom offset");
+    FALSE_RETURN_V_MSG_E(atomInfoSize >= sizeof(uint32_t) * 2 && atomInfoSize <= atom.size,
+        Status::ERROR_INVALID_DATA, "Invalid atom header size");
+    uint64_t atomEndOffset = 0;
+    if (__builtin_add_overflow(static_cast<uint64_t>(ctx->offset), atom.size, &atomEndOffset)) {
+        MEDIA_LOG_E("Atom size overflow at offset: " PUBLIC_LOG_D64, ctx->offset);
+        return Status::ERROR_INVALID_DATA;
+    }
     uint64_t dataSourceSize = 0;
-    if (dataSource_ != nullptr && dataSource_->GetSize(dataSourceSize) == Status::OK && dataSourceSize > 0) {
-        FALSE_RETURN_V_MSG_E(ctx->offset >= 0 && static_cast<uint64_t>(ctx->offset) <= dataSourceSize,
+    if (dataSource_ != nullptr && dataSource_->GetSize(dataSourceSize) == Status::OK) {
+        FALSE_RETURN_V_MSG_E(static_cast<uint64_t>(ctx->offset) <= dataSourceSize,
             Status::ERROR_INVALID_DATA, "Invalid atom offset");
-        uint64_t atomEndOffset = 0;
-        bool atomExceedsSource = __builtin_add_overflow(static_cast<uint64_t>(ctx->offset), atom.size,
-            &atomEndOffset) || atomEndOffset > dataSourceSize;
+        bool atomExceedsSource = atomEndOffset > dataSourceSize;
+        uint64_t remainingSize = dataSourceSize - static_cast<uint64_t>(ctx->offset);
+        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && atom.type == MDAT_ATOM_TYPE) {
+            FALSE_RETURN_V_MSG_E(remainingSize >= atomInfoSize, Status::ERROR_INVALID_DATA,
+                "Invalid truncated mdat atom header");
+            atom.effectiveSize = remainingSize;
+            MEDIA_LOG_W("Trim truncated root mdat: offset " PUBLIC_LOG_D64 ", declared size " PUBLIC_LOG_U64
+                ", effective size " PUBLIC_LOG_U64 ", source size " PUBLIC_LOG_U64,
+                ctx->offset, atom.size, atom.effectiveSize, dataSourceSize);
+            return Status::OK;
+        }
         if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && moovFound_ && hasMdatBox_ &&
             MPEG4ParseTable_.find(atom.type) == MPEG4ParseTable_.end()) {
-            uint64_t remainingSize = dataSourceSize - static_cast<uint64_t>(ctx->offset);
             FALSE_RETURN_V_MSG_E(remainingSize >= atomInfoSize, Status::ERROR_INVALID_DATA,
                 "Invalid trailing unknown atom size");
-            atom.size = remainingSize;
+            atom.effectiveSize = remainingSize;
             MEDIA_LOG_W("Trim trailing unknown atom: offset " PUBLIC_LOG_D64 ", type " PUBLIC_LOG_S
                 ", source size " PUBLIC_LOG_U64, ctx->offset, typeStr.c_str(), dataSourceSize);
         } else if (atomExceedsSource) {
@@ -5345,14 +5396,12 @@ Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read and parse atom header failed");
     FALSE_RETURN_V_MSG_E(!isZeroSizeAtom, Status::OK, "Zero size non-root atom, skip it");
 
-    int64_t atomEndOffset = -1LL;
-    if (__builtin_add_overflow(ctx->offset, atom.size, &atomEndOffset)) {
-        MEDIA_LOG_E("Atom size overflow at offset: " PUBLIC_LOG_D64, ctx->offset);
-        return Status::ERROR_INVALID_DATA;
-    }
     PathAdder pathAdder(&ctx->path, atom.type);
-    atom.dataSize = atom.size - (ctx->dataOffset - ctx->offset);
-    FALSE_RETURN_V_MSG_E(atom.dataSize >= 0, Status::ERROR_INVALID_DATA, "Invalid atom data size");
+    FALSE_RETURN_V_MSG_E(atom.effectiveSize <= atom.size, Status::ERROR_INVALID_DATA,
+        "Invalid atom effective size");
+    FALSE_RETURN_V_MSG_E(atom.effectiveSize >= static_cast<uint64_t>(ctx->dataOffset - ctx->offset),
+        Status::ERROR_INVALID_DATA, "Invalid atom effective size");
+    atom.dataSize = atom.effectiveSize - static_cast<uint64_t>(ctx->dataOffset - ctx->offset);
     if (atom.type != MDAT_ATOM_TYPE && atom.dataSize > MAX_NON_MDAT_ATOM_PAYLOAD_SIZE) {
         MEDIA_LOG_E("Non-mdat atom payload too large: type " PUBLIC_LOG_S ", payload " PUBLIC_LOG_U64
             ", max " PUBLIC_LOG_U64, atomTypeStr.c_str(), atom.dataSize, MAX_NON_MDAT_ATOM_PAYLOAD_SIZE);
@@ -5368,7 +5417,10 @@ Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
     } else {
         // 无法识别的atom类型，跳过
         SetHdrTypeInfo(atom);
-        ctx->offset += atom.size;
+        FALSE_RETURN_V_MSG_E(atom.effectiveSize <= static_cast<uint64_t>(INT64_MAX) &&
+            static_cast<uint64_t>(ctx->offset) <= static_cast<uint64_t>(INT64_MAX) - atom.effectiveSize,
+            Status::ERROR_INVALID_DATA, "Invalid atom effective size");
+        ctx->offset += static_cast<int64_t>(atom.effectiveSize);
     }
     return ret;
 }
