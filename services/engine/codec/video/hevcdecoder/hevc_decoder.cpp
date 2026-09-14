@@ -282,13 +282,14 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
 {
     std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     if (cachedFrame_ == nullptr) {
-        cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) { av_frame_free(&p); });
-    }
-    if (cachedFrame_ == nullptr) {
-        AVCODEC_LOGE("HevcDecoder v_frame_alloc failed");
-        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY);
-        state_ = State::ERROR;
-        return;
+        AVFrame *frame = av_frame_alloc();
+        if (frame == nullptr) {
+            AVCODEC_LOGE("HevcDecoder v_frame_alloc failed");
+            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY);
+            state_ = State::ERROR;
+            return;    
+        }
+        cachedFrame_ = std::shared_ptr<AVFrame>(frame, [](AVFrame *p) { av_frame_free(&frame); })
     }
     cachedFrame_->data[0] = hevcDecoderOutpusArgs_.pucOutYUV[0];
     cachedFrame_->data[1] = hevcDecoderOutpusArgs_.pucOutYUV[1]; // 1 u channel
