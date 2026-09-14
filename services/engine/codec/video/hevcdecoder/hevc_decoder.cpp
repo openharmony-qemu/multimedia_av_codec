@@ -284,6 +284,12 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
     if (cachedFrame_ == nullptr) {
         cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) { av_frame_free(&p); });
     }
+    if (cachedFrame_ == nullptr) {
+        AVCODEC_LOGE("HevcDecoder v_frame_alloc failed");
+        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY);
+        state_ = State::ERROR;
+        return;
+    }
     cachedFrame_->data[0] = hevcDecoderOutpusArgs_.pucOutYUV[0];
     cachedFrame_->data[1] = hevcDecoderOutpusArgs_.pucOutYUV[1]; // 1 u channel
     cachedFrame_->data[2] = hevcDecoderOutpusArgs_.pucOutYUV[2]; // 2 v channel
@@ -367,10 +373,6 @@ int32_t HevcDecoder::DecodeFrameOnce()
     if (hevcSDecoder_ == nullptr || hevcDecoderFlushFrameFunc_ == nullptr ||
         hevcDecoderDecodecFrameFunc_ == nullptr) {
         AVCODEC_LOGE("Num %{public}u Hevc decoder resources not available, cannot call decoder", decInstanceID_);
-        if (callback_ == nullptr) {
-            AVCODEC_LOGE("callback is null, Num %{public}u", decInstanceID_);
-            return -1;
-        }
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_VID_DEC_FAILED);
         return -1;
     }
@@ -402,10 +404,6 @@ int32_t HevcDecoder::DecodeFrameOnce()
             status = FillFrameBuffer(frameBuffer);
         } else {
             CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, -1, "Not in running state");
-            if (callback_ == nullptr) {
-                AVCODEC_LOGE("callback is null, Num %{public}u", decInstanceID_);
-                return -1;
-            }
             callback_->OnError(AVCODEC_ERROR_EXTEND_START, AVCS_ERR_NO_MEMORY);
             state_ = State::ERROR;
             return -1;
@@ -414,10 +412,6 @@ int32_t HevcDecoder::DecodeFrameOnce()
         FramePostProcess(frameBuffer, index, status);
     } else if (ret < -1 || (!isSendEos_ && ret == -1)) {
         AVCODEC_LOGE("Num %{public}u Hevc decode error: ret = %{public}d", decInstanceID_, ret);
-        if (callback_ == nullptr) {
-            AVCODEC_LOGE("callback is null, Num %{public}u", decInstanceID_);
-            return -1;
-        }
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNSUPPORT_STREAM);
     }
     return ret;
