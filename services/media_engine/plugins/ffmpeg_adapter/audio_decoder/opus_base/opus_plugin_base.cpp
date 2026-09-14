@@ -187,7 +187,11 @@ int32_t AudioOpusEncoderPluginBase::GetOutputBufferSize()
 
 int32_t AudioOpusEncoderPluginBase::SetCodecConfig(std::vector<uint8_t> &codecConfig)
 {
-    uint16_t writePadding = static_cast<uint16_t>(padding_);
+    constexpr int32_t OPUS_HEAD_SAMPLE_RATE = 48000;
+    int32_t scaledPadding = (samplingRate_ > 0)
+        ? padding_ * OPUS_HEAD_SAMPLE_RATE / samplingRate_
+        : padding_;
+    uint16_t writePadding = static_cast<uint16_t>(scaledPadding);
     uint32_t sampleRate = static_cast<uint32_t>(samplingRate_);
     std::vector<uint8_t> config = {
         'O', 'p', 'u', 's', 'H', 'e', 'a', 'd',

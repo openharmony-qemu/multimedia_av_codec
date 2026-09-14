@@ -49,6 +49,9 @@ constexpr int32_t MIN_BITRATE = 6000;
 constexpr int32_t MAX_BITRATE = 510000;
 // 2: AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START
 constexpr int32_t PTS_MODE_FIRST_INPUT_START = 2;
+// RFC 7845 requires OpusHead pre-skip to be in 48 kHz samples. libopus's encoder
+// lookahead is ~6.5 ms, i.e. 312 samples at 48 kHz, regardless of the input rate.
+constexpr int32_t OPUS_PRESKIP_48K = 312;
 }  // namespace
 
 namespace OHOS {
@@ -135,6 +138,27 @@ public:
             return ret;
         }
         return plugin_->Prepare(); // Prepare creates the opus encoder
+    }
+
+    // Prepares the encoder at the given rate/channels, then reads the OpusHead
+    // codec config produced by Prepare() and returns the pre-skip field
+    // (offset 10-11, little-endian). Returns -1 on any failure.
+    int32_t GetCodecConfigPreSkip(int32_t sampleRate, int32_t channels)
+    {
+        Status ret = InitAndConfigure(false, OPUS_BITRATE, AudioSampleFormat::SAMPLE_S16LE, false,
+                                      sampleRate, channels);
+        if (ret != Status::OK) {
+            return -1;
+        }
+        auto outMeta = make_shared<Meta>();
+        if (plugin_->GetParameter(outMeta) != Status::OK) {
+            return -1;
+        }
+        vector<uint8_t> cfg;
+        if (!outMeta->Get<Tag::MEDIA_CODEC_CONFIG>(cfg) || cfg.size() < 19) { // 19: min OpusHead size
+            return -1;
+        }
+        return static_cast<int32_t>(cfg[10] | (cfg[11] << 8)); // 10, 11: pre-skip field offset  8
     }
 
 protected:
@@ -824,6 +848,29 @@ TEST_F(OpusEncoderPluginUnitTest, Prepare_And_Release)
     EXPECT_EQ(Status::OK, plugin_->SetParameter(meta));
     EXPECT_EQ(Status::OK, plugin_->Prepare());
     EXPECT_EQ(Status::OK, plugin_->Release());
+}
+
+// OpusHead pre-skip must be in 48 kHz samples (RFC 7845). For a 48 kHz encoder the
+// raw OPUS_GET_LOOKAHEAD value is already in the 48 kHz domain, so the codec config
+// should carry 312 directly.
+TEST_F(OpusEncoderPluginUnitTest, CodecConfig_PreSkip_48k_In48kDomain)
+{
+    ASSERT_NE(plugin_, nullptr);
+    int32_t preskip = GetCodecConfigPreSkip(OPUS_SAMPLE_RATE, OPUS_CHANNELS);
+    EXPECT_GE(preskip, 0);
+    EXPECT_EQ(preskip, OPUS_PRESKIP_48K);
+}
+
+// Regression: a 16 kHz encoder's raw OPUS_GET_LOOKAHEAD is ~104 (6.5 ms at 16 kHz).
+// The plugin must scale it to the 48 kHz domain before writing OpusHead pre-skip, so
+// the result is 104 * 48000 / 16000 = 312 -- the same as the 48 kHz case. Before the
+// fix this wrote the unscaled 104 into the codec config.
+TEST_F(OpusEncoderPluginUnitTest, CodecConfig_PreSkip_16k_ScaledTo48k)
+{
+    ASSERT_NE(plugin_, nullptr);
+    int32_t preskip = GetCodecConfigPreSkip(16000, OPUS_CHANNELS); // 16000: 16 kHz input
+    EXPECT_GE(preskip, 0);
+    EXPECT_EQ(preskip, OPUS_PRESKIP_48K); // must equal the 48 kHz pre-skip, not 104
 }
 
 }  // namespace Plugins

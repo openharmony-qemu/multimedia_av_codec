@@ -235,7 +235,10 @@ Status FFmpegMuxerPlugin::SetCodecParameterOfAudioTrack(AVStream *stream, const 
     std::vector<uint8_t> codecConfig;
     if (trackDesc->Find(Tag::MEDIA_CODEC_CONFIG) != trackDesc->end()) {
         trackDesc->Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig); // codec config
-        return SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());
+        Status ret = SetCodecParameterExtra(stream, codecConfig.data(), codecConfig.size());
+        FALSE_RETURN_V_MSG_E(ret == Status::NO_ERROR, ret, "set codec parameter extra failed");
+        SetOpusInitialPadding(stream, codecConfig);
+        return Status::NO_ERROR;
     } else if (par->codec_id == AV_CODEC_ID_AAC) {
         if (trackDesc->Find(Tag::MEDIA_PROFILE) != trackDesc->end()) {
             int32_t profile;
@@ -278,6 +281,18 @@ Status FFmpegMuxerPlugin::SetCodecParameterExtra(AVStream *stream, const uint8_t
     FALSE_RETURN_V_MSG_E(rc == EOK, Status::ERROR_UNKNOWN, "memcpy_s failed");
 
     return Status::NO_ERROR;
+}
+
+void FFmpegMuxerPlugin::SetOpusInitialPadding(AVStream *stream, const std::vector<uint8_t> &codecConfig)
+{
+    AVCodecParameters *par = stream->codecpar;
+    if (pluginName_ != "ffmpegMux_ogg" || par->codec_id != AV_CODEC_ID_OPUS ||
+        codecConfig.size() < 19 || par->sample_rate <= 0) { // 19: min OpusHead size
+        return;
+    }
+    uint16_t preskip = static_cast<uint16_t>(codecConfig[10] | (codecConfig[11] << 8));  // 10 11 8
+    par->initial_padding = static_cast<int32_t>(static_cast<int64_t>(preskip) *
+        par->sample_rate / 48000); // 16k: 312*16000/48000=104; 48k: 312
 }
 
 Status FFmpegMuxerPlugin::CheckAacParam(const std::shared_ptr<Meta> &trackDesc)
@@ -440,9 +455,13 @@ Status FFmpegMuxerPlugin::Stop()
         FALSE_RETURN_V_MSG_E(flacCodecConfig_->Update(), Status::ERROR_UNKNOWN, "flac codec config update failed!");
         UpdateExtraData(flacCodecConfig_->mCodecConfig.data(), flacCodecConfig_->mCodecConfig.size());
     }
-    int ret = av_write_frame(formatContext_.get(), nullptr); // flush out cache data
-    if (ret < 0) {
-        MEDIA_LOG_E("write trailer failed, %{public}s", AVStrError(ret).c_str());
+    int ret = 0;
+    // For the ogg muxer, skip the explicit av_write_frame(NULL) pre-flush.
+    if (pluginName_ != "ffmpegMux_ogg") {
+        ret = av_write_frame(formatContext_.get(), nullptr); // flush out cache data
+        if (ret < 0) {
+            MEDIA_LOG_E("write trailer failed, %{public}s", AVStrError(ret).c_str());
+        }
     }
     ret = av_write_trailer(formatContext_.get());
     if (ret != 0) {
