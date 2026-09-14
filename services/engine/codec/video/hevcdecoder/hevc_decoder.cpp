@@ -289,7 +289,7 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
             state_ = State::ERROR;
             return;    
         }
-        cachedFrame_ = std::shared_ptr<AVFrame>(frame, [](AVFrame *p) { av_frame_free(&frame); });
+        cachedFrame_ = std::shared_ptr<AVFrame>(frame, [](AVFrame *p) { av_frame_free(&p); });
     }
     cachedFrame_->data[0] = hevcDecoderOutpusArgs_.pucOutYUV[0];
     cachedFrame_->data[1] = hevcDecoderOutpusArgs_.pucOutYUV[1]; // 1 u channel
