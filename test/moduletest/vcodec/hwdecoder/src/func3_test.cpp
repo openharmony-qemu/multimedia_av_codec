@@ -129,6 +129,72 @@ int32_t GetVideoMaxHeightForWidth(OH_AVCapability *capability, uint32_t width)
     return heightRange.maxVal;
 }
 
+struct DmabufSuffixItem {
+    std::string input;
+    std::string expected;
+};
+
+const std::vector<DmabufSuffixItem> &GetDmabufSuffixCat1()
+{
+    static const std::vector<DmabufSuffixItem> cat1 = {
+        { "!", "!" },
+        { "abc123", "abc123" },
+        { "a_b-c!a1bcX2YZ3!@#$%^&*", "a_b-c!a1bcX2YZ3!@#$%^&*" },
+    };
+    return cat1;
+}
+
+const std::vector<std::string> &GetDmabufSuffixCat2()
+{
+    static const std::vector<std::string> cat2 = {
+        "测试 / cafe /  ", "12 3a", "abc\n \t \r \0", "0123456789", "\n \t",
+    };
+    return cat2;
+}
+
+static void ResetDmabufTestState(const std::shared_ptr<VDecAPI11Sample> &vDecSample)
+{
+    vDecSample->Flush_buffer();
+    vDecSample->errCount = 0;
+    vDecSample->frameCount_ = 0;
+    vDecSample->outCount = 0;
+    vDecSample->dmabufSuffixChecked = false;
+}
+
+static int RunDmabufSuffixCat1(const std::shared_ptr<VDecAPI11Sample> &vDecSample)
+{
+    const auto &cat1 = GetDmabufSuffixCat1();
+    vDecSample->needCheckDmabufNameSuffix = true;
+    for (size_t i = 0; i < cat1.size(); i++) {
+        if (i > 0) {
+            if (vDecSample->Reset() != AV_ERR_OK) { return -1; }
+            ResetDmabufTestState(vDecSample);
+        }
+        vDecSample->dmabufNameSuffix = cat1[i].input;
+        vDecSample->expectedDmabufSuffix = cat1[i].expected;
+        if (vDecSample->ConfigureVideoDecoder() != AV_ERR_OK) { return -1; }
+        if (vDecSample->StartVideoDecoder() != AV_ERR_OK) { return -1; }
+        vDecSample->WaitForEOS();
+        if (vDecSample->errCount != AV_ERR_OK) { return -1; }
+    }
+    return 0;
+}
+
+static int RunDmabufSuffixCat2(const std::shared_ptr<VDecAPI11Sample> &vDecSample)
+{
+    const auto &cat2 = GetDmabufSuffixCat2();
+    for (size_t i = 0; i < cat2.size(); i++) {
+        if (vDecSample->Reset() != AV_ERR_OK) { return -1; }
+        ResetDmabufTestState(vDecSample);
+        vDecSample->dmabufNameSuffix = cat2[i];
+        int32_t ret = vDecSample->ConfigureVideoDecoder();
+        if (ret != AV_ERR_INVALID_VAL) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 namespace {
 /**
  * @tc.number    : VIDEO_DECODE_TRANSFORM_0010
@@ -1911,6 +1977,75 @@ HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_DESTROY_SURFACE_0010, TestSize.Level0)
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
         ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
         ASSERT_EQ(AV_ERR_INVALID_VAL, vDecSample->DecodeSetSurface());
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_H264_DMABUF_SUFFIX_0010
+ * @tc.name      : 264硬解config设置dma标签, 有效输入及无效输入
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_H264_DMABUF_SUFFIX_0010, TestSize.Level2)
+{
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_30;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->enableDmabufNameSuffix = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(0, RunDmabufSuffixCat1(vDecSample));
+        ASSERT_EQ(0, RunDmabufSuffixCat2(vDecSample));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_H265_DMABUF_SUFFIX_0010
+ * @tc.name      : 265硬解config设置dma标签, 有效输入及无效输入
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_H265_DMABUF_SUFFIX_0010, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_1080_20;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->enableDmabufNameSuffix = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(0, RunDmabufSuffixCat1(vDecSample));
+        ASSERT_EQ(0, RunDmabufSuffixCat2(vDecSample));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_DECODE_H266_DMABUF_SUFFIX_0010
+ * @tc.name      : 266硬解config设置dma标签, 有效输入及无效输入
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwdecFunc3NdkTest, VIDEO_DECODE_H266_DMABUF_SUFFIX_0010, TestSize.Level2)
+{
+    if (cap_vvc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
+        auto vDecSample = make_shared<VDecAPI11Sample>();
+        vDecSample->INP_DIR = INP_DIR_VVC_1080;
+        vDecSample->DEFAULT_WIDTH = 1920;
+        vDecSample->DEFAULT_HEIGHT = 1080;
+        vDecSample->DEFAULT_FRAME_RATE = 30;
+        vDecSample->SF_OUTPUT = false;
+        vDecSample->enableDmabufNameSuffix = true;
+        vDecSample->AFTER_EOS_DESTORY_CODEC = false;
+        ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameVVC));
+        ASSERT_EQ(AV_ERR_OK, vDecSample->SetVideoDecoderCallback());
+        ASSERT_EQ(0, RunDmabufSuffixCat1(vDecSample));
+        ASSERT_EQ(0, RunDmabufSuffixCat2(vDecSample));
     }
 }
 }
