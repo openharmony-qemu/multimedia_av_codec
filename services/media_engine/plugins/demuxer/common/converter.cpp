@@ -259,28 +259,6 @@ const std::vector<std::pair<int32_t, ChromaLocation>> g_pFfChromaLocationMap = {
     {6, ChromaLocation::BOTTOM},
 };
 
-const std::vector<std::pair<int, AVCProfile>> g_pFfAVCProfileMap = {
-    {66,  AVCProfile::AVC_PROFILE_BASELINE},
-    {578, AVCProfile::AVC_PROFILE_CONSTRAINED_BASELINE},  // 66 | FF_PROFILE_H264_CONSTRAINED = 66 | (1 << 9) = 578
-    {88,  AVCProfile::AVC_PROFILE_EXTENDED},
-    {100, AVCProfile::AVC_PROFILE_HIGH},
-    {110, AVCProfile::AVC_PROFILE_HIGH_10},
-    {122, AVCProfile::AVC_PROFILE_HIGH_422},
-    {144, AVCProfile::AVC_PROFILE_HIGH_444},
-    {77,  AVCProfile::AVC_PROFILE_MAIN},
-    // {, AVCProfile::AVC_PROFILE_CONSTRAINED_HIGH},  // todo
-};
-
-const std::vector<std::pair<int, AVCLevel>> g_pFfAVCLevelMap = {
-    {10, AVCLevel::AVC_LEVEL_1},  {9,  AVCLevel::AVC_LEVEL_1b}, {11, AVCLevel::AVC_LEVEL_11},
-    {12, AVCLevel::AVC_LEVEL_12}, {13, AVCLevel::AVC_LEVEL_13}, {20, AVCLevel::AVC_LEVEL_2},
-    {21, AVCLevel::AVC_LEVEL_21}, {22, AVCLevel::AVC_LEVEL_22}, {30, AVCLevel::AVC_LEVEL_3},
-    {31, AVCLevel::AVC_LEVEL_31}, {32, AVCLevel::AVC_LEVEL_32}, {40, AVCLevel::AVC_LEVEL_4},
-    {41, AVCLevel::AVC_LEVEL_41}, {42, AVCLevel::AVC_LEVEL_42}, {50, AVCLevel::AVC_LEVEL_5},
-    {51, AVCLevel::AVC_LEVEL_51}, {52, AVCLevel::AVC_LEVEL_52}, {60, AVCLevel::AVC_LEVEL_6},
-    {61, AVCLevel::AVC_LEVEL_61}, {62, AVCLevel::AVC_LEVEL_62},
-};
-
 const std::vector<std::pair<int, HEVCProfile>> g_pFfHEVCProfileMap = {
     {1, HEVCProfile::HEVC_PROFILE_MAIN},
     {2, HEVCProfile::HEVC_PROFILE_MAIN_10},
@@ -297,18 +275,18 @@ const std::vector<std::pair<int, HEVCLevel>> g_pFfHEVCLevelMap = {
 
 AVCProfile Converter::ConvertToOHAVCProfile(int ffAVCProfile)
 {
-    auto it = std::find_if(g_pFfAVCProfileMap.begin(), g_pFfAVCProfileMap.end(),
-                            [&ffAVCProfile](const auto &item) -> bool { return item.first == ffAVCProfile; });
-    FALSE_RETURN_V_MSG_W(it != g_pFfAVCProfileMap.end(), AVCProfile::AVC_PROFILE_UNKNOW,
+    auto it = std::find_if(g_FfAVCProfileMap.begin(), g_FfAVCProfileMap.end(),
+                           [&ffAVCProfile](const auto &item) -> bool { return item.first == ffAVCProfile; });
+    FALSE_RETURN_V_MSG_W(it != g_FfAVCProfileMap.end(), AVCProfile::AVC_PROFILE_UNKNOW,
                          "Find ffAVCProfile(" PUBLIC_LOG_D32 ") failed", ffAVCProfile);
     return it->second;
 }
 
 AVCLevel Converter::ConvertToOHAVCLevel(int ffAVCLevel)
 {
-    auto it = std::find_if(g_pFfAVCLevelMap.begin(), g_pFfAVCLevelMap.end(),
+    auto it = std::find_if(g_FfAVCLevelMap.begin(), g_FfAVCLevelMap.end(),
                            [&ffAVCLevel](const auto &item) -> bool { return item.first == ffAVCLevel; });
-    FALSE_RETURN_V_MSG_W(it != g_pFfAVCLevelMap.end(), AVCLevel::AVC_LEVEL_UNKNOW,
+    FALSE_RETURN_V_MSG_W(it != g_FfAVCLevelMap.end(), AVCLevel::AVC_LEVEL_UNKNOW,
                          "Find ffAVCLevel(" PUBLIC_LOG_D32 ") failed", ffAVCLevel);
     return it->second;
 }
