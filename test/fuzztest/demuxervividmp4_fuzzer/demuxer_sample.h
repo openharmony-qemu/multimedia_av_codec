@@ -48,19 +48,19 @@ private:
     int32_t gWidth = 3840;
     int32_t gHeight = 2160;
     int gTrackType = 0;
-    int32_t gTrackCount;
-    OH_AVCodecBufferAttr attr;
+    int32_t gTrackCount = 0;
+    OH_AVCodecBufferAttr attr {};
     bool gReadEnd = false;
-    int fd;
-    OH_AVFormat *sourceFormat;
-    OH_AVFormat *format;
-    OH_AVFormat *audioFormat;
-    OH_AVFormat *videoFormat;
-    OH_AVSource *source;
-    OH_AVSource *uriSource;
-    OH_AVDemuxer *demuxer;
-    OH_AVMemory *memory;
-    OH_AVBuffer *buffer;
+    int fd = -1;
+    OH_AVFormat *sourceFormat = nullptr;
+    OH_AVFormat *format = nullptr;
+    OH_AVFormat *audioFormat = nullptr;
+    OH_AVFormat *videoFormat = nullptr;
+    OH_AVSource *source = nullptr;
+    OH_AVSource *uriSource = nullptr;
+    OH_AVDemuxer *demuxer = nullptr;
+    OH_AVMemory *memory = nullptr;
+    OH_AVBuffer *buffer = nullptr;
 };
 } // namespace Media
 } // namespace OHOS

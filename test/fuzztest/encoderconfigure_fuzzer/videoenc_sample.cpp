@@ -23,7 +23,10 @@ namespace {
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr uint32_t FRAME_INTERVAL = 16666;
-constexpr uint32_t MAX_PIXEL_FMT = 5;
+constexpr int32_t MIN_PIXEL_FMT_FUZZ = 0;
+constexpr int32_t MAX_PIXEL_FMT_FUZZ = 10;
+constexpr int32_t MIN_BITRATE_MODE_FUZZ = -1;
+constexpr int32_t MAX_BITRATE_MODE_FUZZ = 6;
 constexpr uint8_t RGBA_SIZE = 4;
 constexpr uint32_t IDR_FRAME_INTERVAL = 10;
 constexpr uint32_t DOUBLE = 2;
@@ -119,7 +122,8 @@ int32_t VEncFuzzSample::ConfigureVideoEncoderFuzz(FuzzedDataProvider *fdp)
     defaultHeight = fdp->ConsumeIntegral<uint32_t>();
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_HEIGHT, defaultHeight);
     double frameRate = fdp->ConsumeFloatingPoint<double>();
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, (int)frameRate % MAX_PIXEL_FMT);
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT,
+        fdp->ConsumeIntegralInRange<int32_t>(MIN_PIXEL_FMT_FUZZ, MAX_PIXEL_FMT_FUZZ));
     (void)OH_AVFormat_SetDoubleValue(format, OH_MD_KEY_FRAME_RATE, frameRate);
 
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_RANGE_FLAG, fdp->ConsumeIntegral<uint32_t>());
@@ -127,7 +131,8 @@ int32_t VEncFuzzSample::ConfigureVideoEncoderFuzz(FuzzedDataProvider *fdp)
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_TRANSFER_CHARACTERISTICS, fdp->ConsumeIntegral<uint32_t>());
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_MATRIX_COEFFICIENTS, fdp->ConsumeIntegral<uint32_t>());
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_I_FRAME_INTERVAL, fdp->ConsumeIntegral<uint32_t>());
-    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, fdp->ConsumeIntegral<uint32_t>());
+    OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
+        fdp->ConsumeIntegralInRange<int32_t>(MIN_BITRATE_MODE_FUZZ, MAX_BITRATE_MODE_FUZZ));
     OH_AVFormat_SetLongValue(format, OH_MD_KEY_BITRATE, fdp->ConsumeIntegral<uint32_t>());
     OH_AVFormat_SetIntValue(format, OH_MD_KEY_QUALITY, fdp->ConsumeIntegral<uint32_t>());
 

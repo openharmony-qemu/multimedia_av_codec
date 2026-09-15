@@ -95,7 +95,7 @@ bool DemuxerFuzzTest(const uint8_t *data, size_t size)
     params.channelCount = fdp.ConsumeIntegral<int32_t>();
     params.setVideoHeight = fdp.ConsumeIntegral<int32_t>();
     params.setVideoWidth = fdp.ConsumeIntegral<int32_t>();
-    uint32_t createSize = fdp.ConsumeIntegral<uint32_t>();
+    uint32_t createSize = fdp.ConsumeIntegralInRange<uint32_t>(0, 1048576);
     shared_ptr<DemuxerSample> demuxerSample = make_shared<DemuxerSample>();
     demuxerSample->filePath = WEBM_PATH;
     demuxerSample->RunNormalDemuxerApi11(createSize, uri, setLanguage, params);
