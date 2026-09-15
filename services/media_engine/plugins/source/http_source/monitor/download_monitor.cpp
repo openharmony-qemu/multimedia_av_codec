@@ -586,10 +586,10 @@ bool DownloadMonitor::GetReadTimeOut(bool isDelay)
     return false;
 }
 
-size_t DownloadMonitor::GetSegmentOffset()
+size_t DownloadMonitor::GetSegmentOffset(StreamType streamType)
 {
     if (downloader_) {
-        return downloader_->GetSegmentOffset();
+        return downloader_->GetSegmentOffset(streamType);
     }
     return 0;
 }

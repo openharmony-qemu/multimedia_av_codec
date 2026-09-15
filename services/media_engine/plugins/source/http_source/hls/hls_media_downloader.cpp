@@ -404,8 +404,14 @@ bool HlsMediaDownloader::GetReadTimeOut(bool isDelay)
     return videoSegManager_->GetReadTimeOut(isDelay);
 }
 
-size_t HlsMediaDownloader::GetSegmentOffset()
+size_t HlsMediaDownloader::GetSegmentOffset(StreamType streamType)
 {
+    if (streamType == StreamType::AUDIO && audioSegManager_ != nullptr) {
+        return audioSegManager_->GetSegmentOffset();
+    }
+    if (streamType == StreamType::SUBTITLE && subtitlesSegManager_ != nullptr) {
+        return subtitlesSegManager_->GetSegmentOffset();
+    }
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, 0, "GetSegmentOffset no video segment manager found!");
     return videoSegManager_->GetSegmentOffset();
 }

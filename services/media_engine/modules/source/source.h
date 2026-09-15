@@ -132,7 +132,7 @@ public:
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo);
     Status SelectStream(int32_t streamID);
     void SetEnableOnlineFdCache(bool isEnableFdCache);
-    size_t GetSegmentOffset();
+    size_t GetSegmentOffset(Plugins::StreamType streamType = Plugins::StreamType::VIDEO);
     bool GetHLSDiscontinuity();
     void WaitForBufferingEnd();
     bool SetInitialBufferSize(int32_t offset, int32_t size);

@@ -316,8 +316,9 @@ public:
         (void)isEnableFdCache;
     }
 
-    virtual size_t GetSegmentOffset()
+    virtual size_t GetSegmentOffset(StreamType streamType = StreamType::VIDEO)
     {
+        (void)streamType;
         return 0;
     }
 

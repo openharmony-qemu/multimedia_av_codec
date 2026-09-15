@@ -43,6 +43,7 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
+#include "plugin/source_plugin.h"
 #include "interrupt_listener.h"
 #include "performance_utils.h"
 #include "media_sync_manager.h"
@@ -60,6 +61,7 @@ class InterstitialScheduler;
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
 using FileType = OHOS::Media::Plugins::FileType;
+using StreamType = OHOS::Media::Plugin::StreamType;
 using funcPreReadSample = std::function<int64_t(int32_t trackId)>;
 using CachePressureCallback = std::function<void(uint32_t trackId, uint32_t cachedBytes)>;
 
@@ -570,6 +572,7 @@ private:
     bool IsNeedPreDownload() const;
     void UpdateSegmentOffset(int32_t trackId);
     void UpdateSegmentOffset(int32_t oldTrackId, int32_t newTrackId);
+    StreamType GetStreamTypeByTrackId(int32_t trackeId);
     void SetCurrentSegmentOffset(int32_t trackId, size_t segmentOffset);
     int64_t GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmentOffset);
     bool IsSubtitleTrackId(int32_t trackId);

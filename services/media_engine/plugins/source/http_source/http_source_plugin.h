@@ -69,7 +69,7 @@ public:
     Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override;
     Status GetPlaybackInfo(PlaybackInfo& playbackInfo) override;
     std::vector<SeekRange> GetSeekableRanges() const override;
-    size_t GetSegmentOffset() override;
+    size_t GetSegmentOffset(StreamType streamType = StreamType::VIDEO) override;
     bool GetHLSDiscontinuity() override;
     bool SetSourceInitialBufferSize(int32_t offset, int32_t size) override;
     Status StopBufferring(bool isAppBackground) override;
