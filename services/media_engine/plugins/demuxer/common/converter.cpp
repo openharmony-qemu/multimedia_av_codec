@@ -273,17 +273,6 @@ const std::vector<std::pair<int, HEVCLevel>> g_pFfHEVCLevelMap = {
     {186, HEVCLevel::HEVC_LEVEL_62},
 };
 
-HEVCProfile Converter::ConvertToOHHEVCProfile(int ffHEVCProfile)
-{
-    auto ite = std::find_if(g_pFfHEVCProfileMap.begin(), g_pFfHEVCProfileMap.end(),
-                            [&ffHEVCProfile](const auto &item) -> bool { return item.first == ffHEVCProfile; });
-    if (ite == g_pFfHEVCProfileMap.end()) {
-        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, ffHEVCProfile);
-        return HEVCProfile::HEVC_PROFILE_UNKNOW;
-    }
-    return ite->second;
-}
-
 HEVCLevel Converter::ConvertToOHHEVCLevel(int ffHEVCLevel)
 {
     auto ite = std::find_if(g_pFfHEVCLevelMap.begin(), g_pFfHEVCLevelMap.end(),
@@ -291,6 +280,17 @@ HEVCLevel Converter::ConvertToOHHEVCLevel(int ffHEVCLevel)
     if (ite == g_pFfHEVCLevelMap.end()) {
         MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, ffHEVCLevel);
         return HEVCLevel::HEVC_LEVEL_UNKNOW;
+    }
+    return ite->second;
+}
+
+HEVCProfile Converter::ConvertToOHHEVCProfile(int ffHEVCProfile)
+{
+    auto ite = std::find_if(g_pFfHEVCProfileMap.begin(), g_pFfHEVCProfileMap.end(),
+                            [&ffHEVCProfile](const auto &item) -> bool { return item.first == ffHEVCProfile; });
+    if (ite == g_pFfHEVCProfileMap.end()) {
+        MEDIA_LOG_W("Failed: " PUBLIC_LOG_D32, ffHEVCProfile);
+        return HEVCProfile::HEVC_PROFILE_UNKNOW;
     }
     return ite->second;
 }
