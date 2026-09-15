@@ -4138,6 +4138,27 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleToChunk_RepairInva
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleToChunk_TrimUnmappedSamples_001
+ * @tc.desc: Verify samples beyond repaired stsc chunk coverage are not indexed
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleToChunk_TrimUnmappedSamples_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.sttsEntry_ = {{4U, 1U}};
+    helper.stscEntry_ = {{0U, 1U, 1U}, {0U, 1U, 0U}, {2U, 1U, 1U}};
+    helper.sampleSizes_ = {1, 1, 1, 1};
+    helper.sampleSizeCount_ = 4;
+    helper.chunkOffsets_ = {100, 101, 102};
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    EXPECT_EQ(helper.GetSampleCount(), 3U);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    EXPECT_EQ(helper.GetSampleIndexView(2, view), Status::OK);
+    EXPECT_EQ(helper.GetSampleIndexView(3, view), Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_Sidx_RejectUnsupportedVersion_001
  * @tc.desc: Verify sidx version must be version 0 or 1 even when the remaining bytes look parseable
  * @tc.type: FUNC

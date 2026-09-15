@@ -1610,11 +1610,12 @@ void MPEG4SampleHelper::NormalizeCttsEntries(uint32_t sttsSampleCount)
     cttsEntry_ = std::move(normalizedEntries);
 }
 
-void MPEG4SampleHelper::RepairStscEntries()
+bool MPEG4SampleHelper::RepairStscEntries()
 {
+    size_t repairCount = 0;
     while (stscEntry_.size() > 1 && stscEntry_.back().count == 0) {
-        MEDIA_LOG_W("Drop trailing zero-count stsc entry");
         stscEntry_.pop_back();
+        ++repairCount;
     }
     for (size_t index = stscEntry_.size(); index > 0; --index) {
         StscEntry& entry = stscEntry_[index - 1];
@@ -1626,8 +1627,7 @@ void MPEG4SampleHelper::RepairStscEntries()
         if (!invalid) {
             continue;
         }
-        MEDIA_LOG_W("Repair invalid stsc entry " PUBLIC_LOG_ZU ": first=" PUBLIC_LOG_U32 ", count="
-            PUBLIC_LOG_U32 ", id=" PUBLIC_LOG_U32, index - 1, entry.first, entry.count, entry.id);
+        ++repairCount;
         if (hasNext) {
             entry.first = stscEntry_[index].first - 1;
             entry.count = stscEntry_[index].count;
@@ -1640,6 +1640,37 @@ void MPEG4SampleHelper::RepairStscEntries()
         }
         entry.count = std::max(entry.count, 1U);
         entry.id = std::max(entry.id, 1U);
+    }
+    if (repairCount > 0) {
+        MEDIA_LOG_W("Repair invalid stsc entries, count=" PUBLIC_LOG_ZU, repairCount);
+    }
+    return repairCount > 0;
+}
+
+uint32_t MPEG4SampleHelper::GetMappedStscSampleCount(uint32_t upperBound) const
+{
+    uint32_t total = 0;
+    size_t stscIndex = 0;
+    for (size_t chunkIndex = 0; chunkIndex < chunkOffsets_.size() && total < upperBound; ++chunkIndex) {
+        if (stscIndex + 1 < stscEntry_.size() && chunkIndex == stscEntry_[stscIndex + 1].first) {
+            ++stscIndex;
+        }
+        uint32_t remaining = upperBound - total;
+        total += std::min(stscEntry_[stscIndex].count, remaining);
+    }
+    return total;
+}
+
+void MPEG4SampleHelper::TruncateSttsEntries(uint32_t sampleCount)
+{
+    uint32_t remaining = sampleCount;
+    for (auto it = sttsEntry_.begin(); it != sttsEntry_.end(); ++it) {
+        if (it->count >= remaining) {
+            it->count = remaining;
+            sttsEntry_.erase(std::next(it), sttsEntry_.end());
+            return;
+        }
+        remaining -= it->count;
     }
 }
 
@@ -1672,7 +1703,7 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         MEDIA_LOG_W("stsz sample count " PUBLIC_LOG_U32 " does not match stts sample count " PUBLIC_LOG_U32,
             sampleSizeCount_, sttsSampleCount);
     }
-    RepairStscEntries();
+    bool stscRepaired = RepairStscEntries();
     for (uint32_t i = 0; i < stscEntry_.size(); ++i) {
         const auto& entry = stscEntry_[i];
         FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_SAMPLE_TABLE_SAMPLES, Status::ERROR_INVALID_DATA,
@@ -1682,6 +1713,17 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         if (i > 0) {
             FALSE_RETURN_V_MSG_E(entry.first > stscEntry_[i - 1].first, Status::ERROR_INVALID_DATA,
                 "Invalid stsc first chunk order");
+        }
+    }
+
+    if (stscRepaired) {
+        uint32_t mappedSampleCount = GetMappedStscSampleCount(sttsSampleCount);
+        FALSE_RETURN_V_MSG_E(mappedSampleCount > 0, Status::ERROR_INVALID_DATA, "stsc maps no samples");
+        if (mappedSampleCount < sttsSampleCount) {
+            MEDIA_LOG_W("Trim stts samples not mapped by stsc: stts=" PUBLIC_LOG_U32 ", mapped=" PUBLIC_LOG_U32,
+                sttsSampleCount, mappedSampleCount);
+            TruncateSttsEntries(mappedSampleCount);
+            sttsSampleCount = mappedSampleCount;
         }
     }
 

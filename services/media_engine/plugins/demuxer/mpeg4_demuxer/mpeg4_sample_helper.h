@@ -418,7 +418,9 @@ private:
     Status ParseTfhdBaseDataOffset(TfhdParseContext& ctx, int64_t moofOffset);
     Status ParseTfhdOptionalUint32(TfhdParseContext& ctx, const TfhdOptionalUint32Field& field);
     void NormalizeCttsEntries(uint32_t sttsSampleCount);
-    void RepairStscEntries();
+    bool RepairStscEntries();
+    uint32_t GetMappedStscSampleCount(uint32_t upperBound) const;
+    void TruncateSttsEntries(uint32_t sampleCount);
     Status PreBuildProcessAndCheck();
     uint64_t CountSttsSamples() const;
     SampleIndexBuildContext CreateSampleIndexBuildContext() const;
