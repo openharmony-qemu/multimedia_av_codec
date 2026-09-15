@@ -236,9 +236,9 @@ int32_t HevcDecoder::Initialize()
         }
     }
     CHECK_AND_RETURN_RET_LOG(
-        !mime.empty(), 
-        AVCS_ERR_INVALID_VAL, 
-        "Init codec failed: not support name:%{public}s", 
+        !mime.empty(),
+        AVCS_ERR_INVALID_VAL,
+        "Init codec failed: not support name:%{public}s",
         codecName_.c_str());
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mime);
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecName_);
@@ -291,7 +291,7 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
             AVCODEC_LOGE("HevcDecoder av_frame_alloc failed");
             callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY);
             state_ = State::ERROR;
-            return;    
+            return;
         }
         cachedFrame_ = std::shared_ptr<AVFrame>(frame, [](AVFrame *p) { av_frame_free(&p); });
     }

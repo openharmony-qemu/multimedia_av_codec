@@ -45,6 +45,7 @@ constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_IN_BUFFER_CNT = 4;
 constexpr int32_t DEFAULT_MAX_BUFFER_CNT = 10;
 constexpr uint32_t LOG_LOW_FREQUENCY = 100;
+constexpr int32_t DUMP_MODE = 2；
 
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
@@ -89,7 +90,7 @@ void VideoDecoder::OpenDumpFile()
             }
         }
     }
-    CHECK_AND_RETURN_LOG(dumpModeStr.length() == 2, "dumpModeStr length should equal 2");
+    CHECK_AND_RETURN_LOG(dumpModeStr.length() == DUMP_MODE, "dumpModeStr length should equal %{public}d", DUMP_MODE);
     if (dumpModeStr[1] == '1') {
         int ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
         if (ret > 0) {
