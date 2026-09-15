@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <string>
 #include <fstream>
+#include <iterator>
 #include <vector>
 #include <fcntl.h>
 #include "native_avbuffer.h"
@@ -38,6 +39,38 @@ const string OPUS_FILE_PATH = "/data/test/media/opus_16000_1.dat";
 const string VORBIS_FILE_PATH = "/data/test/media/vorbis_16000_2.dat";
 const string OPUS_SO_FILE_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_ext_base.z.so";
 constexpr int32_t OPUS_FRAME_SAMPLE_SIZES = 960 * 2 * 2; // 48k, 20ms, 2ch, s16le
+
+// Parses the ogg physical bitstream page-by-page starting from offset 0 (following
+// each page's segment table to the next page boundary, not by scanning for "OggS"
+// which can appear inside packet data) and returns the header_type_flag byte
+// (page offset 5) of the last page. Returns -1 if no page was parsed.
+int32_t GetLastOggPageFlag(const string &path)
+{
+    std::ifstream f(path, std::ios::binary);
+    if (!f.is_open()) {
+        return -1;
+    }
+    std::vector<uint8_t> data((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    int64_t size = static_cast<int64_t>(data.size());
+    int64_t off = 0;
+    int32_t lastFlag = -1;
+    while (off + 27 <= size) { // 27: fixed ogg page header size
+        if (data[off] != 'O' || data[off + 1] != 'g' || data[off + 2] != 'g' || data[off + 3] != 'S') {  // 2 3
+            break;
+        }
+        int32_t nseg = data[off + 26]; // 26: page_segments offset
+        if (off + 27 + nseg > size) {  // 27
+            break;
+        }
+        lastFlag = data[off + 5]; // 5: header_type_flag offset (bit 0x04 = EOS)
+        int64_t body = 0;
+        for (int32_t i = 0; i < nseg; i++) {
+            body += data[off + 27 + i]; // 27: segment table start
+        }
+        off += 27 + nseg + body;  // 27
+    }
+    return lastFlag;
+}
 
 class AVMuxerOggUnitTest : public testing::Test {
 public:
@@ -408,6 +441,55 @@ HWTEST_F(AVMuxerOggUnitTest, OGG_Muxer_Destroy_Lifecycle_001, TestSize.Level1)
 
     int32_t ret = OH_AVMuxer_Destroy(tmpMuxer);
     ASSERT_EQ(ret, AV_ERR_OK);
+}
+
+// Regression for the ogg muxer not writing the EOS page. The muxer's Stop() used to
+// call av_write_frame(NULL) before av_write_trailer; for the ogg muxer that NULL flush
+// routes through ffmpeg's ogg_write_pages(flush=2), which emits every buffered page
+// (including the last one) WITHOUT the EOS flag, leaving av_write_trailer nothing to
+// flush -- so the file ended with header_type_flag 0x00 and no EOS page anywhere.
+// After the fix the last page must carry EOS (0x04).
+HWTEST_F(AVMuxerOggUnitTest, OGG_Muxer_LastPageHasEos_001, TestSize.Level1)
+{
+    string fileName = TEST_FILE_PATH + string("OGG_Muxer_LastPageHasEos_001.ogg");
+    int32_t fd = open(fileName.c_str(), O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR);
+    ASSERT_GE(fd, 0);
+    muxer_ = OH_AVMuxer_Create(fd, AV_OUTPUT_FORMAT_OGG);
+    ASSERT_NE(muxer_, nullptr);
+
+    OH_AVFormat *audioFormat = OH_AVFormat_Create();
+    ASSERT_NE(audioFormat, nullptr);
+    OH_AVFormat_SetStringValue(audioFormat, OH_MD_KEY_CODEC_MIME, OH_AVCODEC_MIMETYPE_AUDIO_OPUS);
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_SAMPLE_RATE, 16000); // 16000: 16 kHz opus
+    OH_AVFormat_SetIntValue(audioFormat, OH_MD_KEY_AUD_CHANNEL_COUNT, 1);
+    inputFile_ = std::make_shared<std::ifstream>(OPUS_FILE_PATH, std::ios::binary);
+    // read codec config baked into the .dat
+    uint32_t codecCfgLen = 0;
+    inputFile_->read(reinterpret_cast<char *>(&codecCfgLen), sizeof(codecCfgLen));
+    ASSERT_EQ(inputFile_->eof(), false);
+    if (codecCfgLen > 0) {
+        vector<uint8_t> codecConfig(codecCfgLen);
+        inputFile_->read(reinterpret_cast<char *>(codecConfig.data()), codecCfgLen);
+        ASSERT_EQ(inputFile_->eof(), false);
+        OH_AVFormat_SetBuffer(audioFormat, OH_MD_KEY_CODEC_CONFIG, codecConfig.data(), codecCfgLen);
+    }
+    int32_t trackId = -1;
+    ASSERT_EQ(OH_AVMuxer_AddTrack(muxer_, &trackId, audioFormat), AV_ERR_OK);
+    ASSERT_NE(trackId, -1);
+    OH_AVFormat_Destroy(audioFormat);
+    ASSERT_EQ(OH_AVMuxer_Start(muxer_), AV_ERR_OK);
+
+    while (WriteSample(trackId, inputFile_)) {
+        // CONTINUE
+    }
+    ASSERT_EQ(OH_AVMuxer_Stop(muxer_), AV_ERR_OK);
+
+    // The muxer flushed everything via avio_flush inside Stop(), so the on-disk file
+    // already contains the final (EOS) page. The last page's header_type_flag must have
+    // bit 0x04 set.
+    int32_t lastFlag = GetLastOggPageFlag(fileName);
+    ASSERT_GE(lastFlag, 0) << "failed to parse any ogg page from " << fileName;
+    EXPECT_TRUE(lastFlag & 0x04) << "last ogg page should carry EOS (0x04), got 0x" << lastFlag;
 }
 
 } // namespace

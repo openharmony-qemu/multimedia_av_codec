@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include <vector>
 #include "avcodec_dfx_component.h"
 #include "plugin/muxer_plugin.h"
 
@@ -60,6 +61,7 @@ private:
     Status CheckAacParam(const std::shared_ptr<Meta> &trackDesc);
     Status SetCodecParameterOfAudioTrack(AVStream *stream, const std::shared_ptr<Meta> &trackDesc);
     Status SetCodecParameterExtra(AVStream *stream, const uint8_t *extraData, int32_t extraDataSize);
+    void SetOpusInitialPadding(AVStream *stream, const std::vector<uint8_t> &codecConfig);
     Status AddAudioTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID);
     Status AddVideoTrack(int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc, AVCodecID codeID, bool isCover);
     Status WriteNormal(uint32_t trackIndex, const std::shared_ptr<AVBuffer> &sample, int32_t dataOffset);

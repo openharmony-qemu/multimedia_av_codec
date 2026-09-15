@@ -243,6 +243,9 @@ Status AudioOpusEncoderPlugin::GetParameter(std::shared_ptr<Meta> &parameter)
     }
     audioParameter_.Set<Tag::AUDIO_MAX_OUTPUT_SIZE>(maxOutputSize_);
     audioParameter_.Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    if (sampleRate_ > 0) {
+        audioParameter_.Set<Tag::AUDIO_SAMPLE_PER_FRAME>(sampleRate_ * 20 / 1000);  // 20ms 1000ms
+    }
 
     *parameter = audioParameter_;
     MEDIA_LOG_I("Opus GetParameter success");
