@@ -50,12 +50,14 @@ void InterstitialScheduler::SetNotifyCallback(NotifyCallback callback)
 
 void InterstitialScheduler::SetScheduleStrategy(std::shared_ptr<IScheduleStrategy> strategy)
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     scheduleStrategy_ = std::move(strategy);
     MEDIA_LOG_I("SetScheduleStrategy OK");
 }
 
 std::shared_ptr<IScheduleStrategy> InterstitialScheduler::GetScheduleStrategy() const
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     return scheduleStrategy_;
 }
 
@@ -66,6 +68,10 @@ void InterstitialScheduler::CollectEvent(const std::shared_ptr<MediaAVCodec::AVT
     bool immediateNotify = false;
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        if (pendingEvents_.size() >= MAX_PENDING_EVENTS) {
+            MEDIA_LOG_W("CollectEvent: pendingEvents_ full");
+            return;
+        }
         for (const auto& entry : pendingEvents_) {
             if (entry.metadata != nullptr && entry.metadata->id == metadata->id) {
                 MEDIA_LOG_D("CollectEvent: duplicate event id=%{public}s, skip", metadata->id.c_str());
@@ -93,19 +99,23 @@ void InterstitialScheduler::OnPlaybackTick()
     }
 
     CheckAndNotify(currentPosMs);
-
-    if (scheduleStrategy_) {
+    {
         std::lock_guard<std::mutex> lock(mutex_);
-        scheduleStrategy_->TrimExpiredEvents(pendingEvents_, currentPosMs);
+        if (scheduleStrategy_) {
+            scheduleStrategy_->TrimExpiredEvents(pendingEvents_, currentPosMs);
+        }
     }
 }
 
 void InterstitialScheduler::OnSeek(int64_t seekTargetMs)
 {
-    if (scheduleStrategy_) {
+    {
         std::lock_guard<std::mutex> lock(mutex_);
-        scheduleStrategy_->OnSeek(pendingEvents_, seekTargetMs);
+        if (scheduleStrategy_) {
+            scheduleStrategy_->OnSeek(pendingEvents_, seekTargetMs);
+        }
     }
+    
     MEDIA_LOG_I("OnSeek: seekTargetMs=%" PRId64, seekTargetMs);
 }
 

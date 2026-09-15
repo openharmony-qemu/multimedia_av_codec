@@ -70,13 +70,19 @@ void InterstitialController::SetMainContentUri(const std::string& uri)
 void InterstitialController::SetLiveSource(bool isLive)
 {
     isLive_.store(isLive);
-    if (isLive) {
-        scheduleStrategy_ = std::make_shared<LiveScheduleStrategy>();
-    } else {
-        scheduleStrategy_ = std::make_shared<VodScheduleStrategy>();
+    std::shared_ptr<IScheduleStrategy> strategy;
+    {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        if (isLive) {
+            scheduleStrategy_ = std::make_shared<LiveScheduleStrategy>();
+        } else {
+            scheduleStrategy_ = std::make_shared<VodScheduleStrategy>();
+        }
+        strategy = scheduleStrategy_;
     }
+
     if (scheduler_) {
-        scheduler_->SetScheduleStrategy(scheduleStrategy_);
+        scheduler_->SetScheduleStrategy(strategy);
     }
     MEDIA_LOG_I("SetLiveSource: isLive=" PUBLIC_LOG_D32, isLive);
 }
@@ -271,9 +277,12 @@ void InterstitialController::OnStop()
 void InterstitialController::OnSeek(int64_t seekTargetMs)
 {
     MEDIA_LOG_I("OnSeek: seekTargetMs=" PUBLIC_LOG_D64, seekTargetMs);
-    if (scheduleStrategy_ && !scheduleStrategy_->ShouldHandleSeek()) {
-        MEDIA_LOG_I("OnSeek: strategy says no-op");
-        return;
+    {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        if (scheduleStrategy_ && !scheduleStrategy_->ShouldHandleSeek()) {
+            MEDIA_LOG_I("OnSeek: strategy says no-op");
+            return;
+        }
     }
 
     std::string preRollToTrigger;
@@ -335,6 +344,7 @@ bool InterstitialController::IsLiveSource() const
 
 std::shared_ptr<IScheduleStrategy> InterstitialController::GetScheduleStrategy() const
 {
+    std::lock_guard<std::mutex> lock(adMutex_);
     return scheduleStrategy_;
 }
 
@@ -343,7 +353,12 @@ bool InterstitialController::DoSwitch(const std::string& id)
     MEDIA_LOG_I("DoSwitch: id=" PUBLIC_LOG_S, id.c_str());
     FALSE_RETURN_V_MSG_E(syncMgr_, false, "DoSwitch: syncMgr_ is null, cannot switch");
 
-    if (scheduleStrategy_ && scheduleStrategy_->ShouldSaveResumePoint() && resumePointMs_ == 0) {
+    bool shouldSaveResumePoint = false;
+    {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        shouldSaveResumePoint = scheduleStrategy_ && scheduleStrategy_->ShouldSaveResumePoint();
+    }
+    if (shouldSaveResumePoint && resumePointMs_ == 0) {
         resumePointMs_ = syncMgr_->GetMediaTimeNow() / US_PER_MS;
         MEDIA_LOG_I("DoSwitch: recorded resumePointMs=" PUBLIC_LOG_D64, resumePointMs_.load());
     }
@@ -435,16 +450,21 @@ bool InterstitialController::TrySwitchAdCandidates(int64_t startMs)
 void InterstitialController::DoResume()
 {
     int64_t seekMs = resumePointMs_;
-    if (scheduleStrategy_) {
-        seekMs = scheduleStrategy_->GetResumeSeekMs(resumePointMs_, mainDemuxer_);
+    std::shared_ptr<IScheduleStrategy> strategy;
+    {
+        std::lock_guard<std::mutex> lock(adMutex_);
+        strategy = scheduleStrategy_;
+    }
+    if (strategy) {
+        seekMs = strategy->GetResumeSeekMs(resumePointMs_, mainDemuxer_);
     }
 
     MEDIA_LOG_I("DoResume: mainContentUri=" PUBLIC_LOG_S ", seekMs=" PUBLIC_LOG_D64,
         mainContentUri_.c_str(), seekMs);
 
-    if (mainContentUri_.empty() || !syncMgr_) {
-        MEDIA_LOG_E("DoResume: cannot resume, mainContentUri is empty=%{public}d, syncMgr is null=%{public}d",
-            mainContentUri_.empty(), !syncMgr_);
+    if (mainContentUri_.empty() || !syncMgr_ || !mainDemuxer_) {
+        MEDIA_LOG_E("DoResume: cannot resume, mainContentUri is empty=%{public}d, syncMgr is null=%{public}d"
+            ", mainDemuxer is null=%{public}d", mainContentUri_.empty(), !syncMgr_, !mainDemuxer_);
         SetPlayState(InterstitialPlayState::IDLE);
         {
             std::lock_guard<std::mutex> lock(adMutex_);
@@ -472,6 +492,8 @@ Status InterstitialController::DoSourceSwitch(const std::string& uri, int64_t se
         uri.c_str(), seekMs, speed);
 
     FALSE_RETURN_V_MSG_E(syncMgr_, Status::ERROR_INVALID_OPERATION, "DoSourceSwitch: syncMgr_ is null, cannot switch");
+    FALSE_RETURN_V_MSG_E(mainDemuxer_, Status::ERROR_INVALID_OPERATION,
+        "DoSourceSwitch: mainDemuxer_ is null, cannot switch");
     uint32_t capturedBitRate = mainDemuxer_->GetCurrentBitRate();
     MEDIA_LOG_I("DoSourceSwitch: captured bitrate=" PUBLIC_LOG_U32, capturedBitRate);
 
@@ -515,11 +537,15 @@ void InterstitialController::FinishCurrentAdAndContinue(AdsEventType eventType)
 
     {
         std::lock_guard<std::mutex> lock(adMutex_);
+        if (currentAdId_.empty()) {
+            return;
+        }
         auto it = entries_.find(currentAdId_);
         if (it != entries_.end()) {
             currentEntry = it->second;
             startMs = it->second.startMs;
             it->second.played = true;
+            currentAdId_.clear();
         }
     }
 
@@ -532,7 +558,6 @@ void InterstitialController::FinishCurrentAdAndContinue(AdsEventType eventType)
     {
         std::lock_guard<std::mutex> lock(adMutex_);
         SetPlayState(InterstitialPlayState::IDLE);
-        currentAdId_.clear();
     }
     DoResume();
 }
