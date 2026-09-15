@@ -773,7 +773,6 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
     }
 
     if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC || avStream.codecpar->codec_id == AV_CODEC_ID_H264) {
-
         if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
             ParseHvccBoxInfo(avStream, format);
         }
