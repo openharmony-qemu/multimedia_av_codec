@@ -45,7 +45,7 @@ constexpr int32_t DEFAULT_OUT_BUFFER_CNT = 3;
 constexpr int32_t DEFAULT_IN_BUFFER_CNT = 4;
 constexpr int32_t DEFAULT_MAX_BUFFER_CNT = 10;
 constexpr uint32_t LOG_LOW_FREQUENCY = 100;
-constexpr int32_t DUMP_MODE = 2；
+constexpr int32_t DUMP_MODE = 2;
 
 #ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 128;
