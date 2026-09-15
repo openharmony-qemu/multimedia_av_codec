@@ -55,8 +55,6 @@ public:
     void WaitForEos();
     void GetFrameData(const uint8_t *&srcPtr, size_t &copySize, size_t capacity);
     VDecSignal *signal_;
-    const uint8_t *fuzzData = nullptr;
-    size_t fuzzSize = 0;
     FuzzedDataProvider *fdp_ = nullptr;
     std::vector<uint8_t> frameData_;
     int sendFrameIndex = 0;

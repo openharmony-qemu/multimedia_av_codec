@@ -46,12 +46,9 @@ bool HevcHwEncoderApiFuzzTest(FuzzedDataProvider &fdp)
         return false;
     }
     bool data2 = fdp.ConsumeBool();
-    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
     int64_t maxBite = fdp.ConsumeIntegralInRange<int64_t>(ZERO, HUNDRED_MILLION);
     int32_t sqrFactor = fdp.ConsumeIntegralInRange<int32_t>(ZERO, FIFTY_ONE);
     g_vEncSample = new VEncAPI11FuzzSample();
-    g_vEncSample->fuzzData = remaining_data.data();
-    g_vEncSample->fuzzSize = remaining_data.size();
     g_vEncSample->surfInput = data2;
     g_vEncSample->fuzzMode = true;
     g_vEncSample->bEnable = true;
@@ -61,6 +58,9 @@ bool HevcHwEncoderApiFuzzTest(FuzzedDataProvider &fdp)
     g_vEncSample->maxbiteEnable = true;
     g_vEncSample->defaultSqrFactor = sqrFactor;
     g_vEncSample->defaultMaxBitrate = maxBite;
+    auto remaining_data = fdp.ConsumeRemainingBytes<uint8_t>();
+    g_vEncSample->fuzzData = remaining_data.data();
+    g_vEncSample->fuzzSize = remaining_data.size();
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory("video/hevc", true, HARDWARE);
     string tmpCodecName = OH_AVCapability_GetName(cap);
     if (g_vEncSample->CreateVideoEncoder(tmpCodecName.c_str()) != AV_ERR_OK) {
