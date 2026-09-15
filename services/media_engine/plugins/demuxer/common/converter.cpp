@@ -273,24 +273,6 @@ const std::vector<std::pair<int, HEVCLevel>> g_pFfHEVCLevelMap = {
     {186, HEVCLevel::HEVC_LEVEL_62},
 };
 
-AVCProfile Converter::ConvertToOHAVCProfile(int ffAVCProfile)
-{
-    auto it = std::find_if(g_FfAVCProfileMap.begin(), g_FfAVCProfileMap.end(),
-                           [&ffAVCProfile](const auto &item) -> bool { return item.first == ffAVCProfile; });
-    FALSE_RETURN_V_MSG_W(it != g_FfAVCProfileMap.end(), AVCProfile::AVC_PROFILE_UNKNOW,
-                         "Find ffAVCProfile(" PUBLIC_LOG_D32 ") failed", ffAVCProfile);
-    return it->second;
-}
-
-AVCLevel Converter::ConvertToOHAVCLevel(int ffAVCLevel)
-{
-    auto it = std::find_if(g_FfAVCLevelMap.begin(), g_FfAVCLevelMap.end(),
-                           [&ffAVCLevel](const auto &item) -> bool { return item.first == ffAVCLevel; });
-    FALSE_RETURN_V_MSG_W(it != g_FfAVCLevelMap.end(), AVCLevel::AVC_LEVEL_UNKNOW,
-                         "Find ffAVCLevel(" PUBLIC_LOG_D32 ") failed", ffAVCLevel);
-    return it->second;
-}
-
 HEVCProfile Converter::ConvertToOHHEVCProfile(int ffHEVCProfile)
 {
     auto ite = std::find_if(g_pFfHEVCProfileMap.begin(), g_pFfHEVCProfileMap.end(),
