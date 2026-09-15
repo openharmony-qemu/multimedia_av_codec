@@ -235,6 +235,11 @@ int32_t HevcDecoder::Initialize()
             break;
         }
     }
+    CHECK_AND_RETURN_RET_LOG(
+        !mime.empty(),
+        AVCS_ERR_INVALID_VAL,
+        "Init codec failed: not support name:%{public}s",
+        codecName_.c_str());
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_MIME, mime);
     format_.PutStringValue(MediaDescriptionKey::MD_KEY_CODEC_NAME, codecName_);
     decInfo_.mimeType = mime;
@@ -281,7 +286,14 @@ void HevcDecoder::ConvertDecOutToAVFrame(int32_t bitDepth)
 {
     std::lock_guard<std::mutex> convertLock(convertDataMutex_);
     if (cachedFrame_ == nullptr) {
-        cachedFrame_ = std::shared_ptr<AVFrame>(av_frame_alloc(), [](AVFrame *p) { av_frame_free(&p); });
+        AVFrame *frame = av_frame_alloc();
+        if (frame == nullptr) {
+            AVCODEC_LOGE("HevcDecoder av_frame_alloc failed");
+            callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY);
+            state_ = State::ERROR;
+            return;
+        }
+        cachedFrame_ = std::shared_ptr<AVFrame>(frame, [](AVFrame *p) { av_frame_free(&p); });
     }
     cachedFrame_->data[0] = hevcDecoderOutpusArgs_.pucOutYUV[0];
     cachedFrame_->data[1] = hevcDecoderOutpusArgs_.pucOutYUV[1]; // 1 u channel
