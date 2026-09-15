@@ -681,6 +681,7 @@ int32_t HEncoder::SetSQRMode(const Format &format)
     optional<uint32_t> bitRate = GetBitRateFromUser(format);
     if (sqrFactor.has_value()) {
         bitrateType.sqrFactor = sqrFactor.value();
+        bitrateType.isSqrFactorSet = true;
         HLOGD("set sqr factor %u", bitrateType.sqrFactor);
     }
     if (maxBitrate.has_value()) {
