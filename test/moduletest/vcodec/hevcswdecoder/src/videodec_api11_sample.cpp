@@ -393,7 +393,7 @@ void VDecAPI11Sample::ConfigureVideoDecoder2(OH_AVFormat *format)
     }
     if (enableDmabufNameSuffix) {
         (void)OH_AVFormat_SetStringValue(format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, dmabufNameSuffix.c_str());
-    }    
+    }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enableSyncMode);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
 }

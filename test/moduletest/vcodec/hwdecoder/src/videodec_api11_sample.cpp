@@ -391,6 +391,14 @@ int64_t VDecAPI11Sample::GetSystemTimeUs()
     return nanoTime / NANOS_IN_MICRO;
 }
 
+void VDecAPI11Sample::SetConfig(OH_AVFormat *format)
+{
+    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
+    if (enableDmabufNameSuffix) {
+        (void)OH_AVFormat_SetStringValue(format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, dmabufNameSuffix.c_str());
+    }
+}
+
 int32_t VDecAPI11Sample::ConfigureVideoDecoder()
 {
     if (autoSwitchSurface && needAutoSwitch && enbleSyncMode == 0) {
@@ -436,10 +444,7 @@ int32_t VDecAPI11Sample::ConfigureVideoDecoder()
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER, 1);
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enbleSyncMode);
-    (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
-    if (enableDmabufNameSuffix) {
-        (void)OH_AVFormat_SetStringValue(format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, dmabufNameSuffix.c_str());
-    }
+    SetConfig(format);
     int ret = OH_VideoDecoder_Configure(vdec_, format);
     OH_AVFormat_Destroy(format);
     return ret;
