@@ -125,6 +125,7 @@ void MediaDemuxer::InitPtsInfo()
         maintainBaseInfos_[trackId]->isLastPtsChange = false;
         maintainBaseInfos_[trackId]->lastPtsModifyedMax = INVALID_PTS_DATA;
         SetCurrentSegmentOffset(trackId, source_->GetSegmentOffset(GetStreamTypeByTrackId(trackId)));
+    }
 }
 
 void MediaDemuxer::InitMediaStartPts()
@@ -181,9 +182,9 @@ StreamType MediaDemuxer::GetStreamTypeByTrackId(int32_t trackId)
 {
     if (trackId == videoTrackId_) {
         return StreamType::VIDEO;
-    } else if (trackId == audioTrackId_){
+    } else if (trackId == audioTrackId_) {
         return StreamType::AUDIO;
-    } else if (trackId == subtitleTrackId_){
+    } else if (trackId == subtitleTrackId_) {
         return StreamType::SUBTITLE;
     }
     return StreamType::MIXED;
