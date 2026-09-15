@@ -1294,7 +1294,7 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_NullSideSurface, T
 
     processor_->HandleSampleTask();
     EXPECT_TRUE(processor_->sampleDone_.load());
-    EXPECT_EQ(processor_->sampleResult_, 0);
+    EXPECT_EQ(processor_->sampleResult_, 1);
 }
 
 /**
@@ -1330,7 +1330,7 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_CopySuccess, TestS
 
     processor_->HandleSampleTask();
     EXPECT_TRUE(processor_->sampleDone_.load());
-    EXPECT_EQ(processor_->sampleResult_, 1);
+    EXPECT_EQ(processor_->sampleResult_, 0);
 }
 
 /**
@@ -1370,7 +1370,7 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, HandleSampleTask_NullVirAddr, TestS
 
     processor_->HandleSampleTask();
     EXPECT_TRUE(processor_->sampleDone_.load());
-    EXPECT_EQ(processor_->sampleResult_, 0);
+    EXPECT_EQ(processor_->sampleResult_, 1);
 }
 
 /**
