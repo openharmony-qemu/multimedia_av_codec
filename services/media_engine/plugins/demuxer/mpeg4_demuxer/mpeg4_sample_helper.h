@@ -417,6 +417,7 @@ private:
     bool HasTfhdRemainingData(const TfhdParseContext& ctx, size_t fieldSize) const;
     Status ParseTfhdBaseDataOffset(TfhdParseContext& ctx, int64_t moofOffset);
     Status ParseTfhdOptionalUint32(TfhdParseContext& ctx, const TfhdOptionalUint32Field& field);
+    void NormalizeCttsEntries(uint32_t sttsSampleCount);
     void RepairStscEntries();
     Status PreBuildProcessAndCheck();
     uint64_t CountSttsSamples() const;

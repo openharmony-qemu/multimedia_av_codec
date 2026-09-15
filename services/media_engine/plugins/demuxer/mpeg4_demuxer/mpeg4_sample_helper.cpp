@@ -733,7 +733,10 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
 
     for (uint32_t i = 0; i < numCttsEntries; ++i) {
         uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(CttsEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid ctts sample count");
+        if (sampleCount == 0) {
+            MEDIA_LOG_D("Ignore zero-count ctts entry");
+            continue;
+        }
         uint32_t rawDelta = GetU32Value(data.get() + 4 + i * sizeof(CttsEntry));
         cttsEntry_.emplace_back(CttsEntry {
             .count = sampleCount,
@@ -1583,6 +1586,30 @@ Status MPEG4SampleHelper::ValidateCttsEntries(uint32_t sttsSampleCount) const
     return Status::OK;
 }
 
+void MPEG4SampleHelper::NormalizeCttsEntries(uint32_t sttsSampleCount)
+{
+    std::vector<CttsEntry> normalizedEntries;
+    normalizedEntries.reserve(cttsEntry_.size() + 1);
+    uint32_t remaining = sttsSampleCount;
+    for (const auto& entry : cttsEntry_) {
+        if (entry.count == 0) {
+            continue;
+        }
+        if (remaining == 0) {
+            MEDIA_LOG_W("Ignore trailing ctts entries beyond stts sample count");
+            break;
+        }
+        uint32_t count = std::min(entry.count, remaining);
+        normalizedEntries.emplace_back(CttsEntry {.count = count, .delta = entry.delta});
+        remaining -= count;
+    }
+    if (remaining > 0) {
+        MEDIA_LOG_W("Pad missing ctts entries with zero offset, count=" PUBLIC_LOG_U32, remaining);
+        normalizedEntries.emplace_back(CttsEntry {.count = remaining, .delta = 0});
+    }
+    cttsEntry_ = std::move(normalizedEntries);
+}
+
 void MPEG4SampleHelper::RepairStscEntries()
 {
     while (stscEntry_.size() > 1 && stscEntry_.back().count == 0) {
@@ -1659,6 +1686,7 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
     }
 
     if (!cttsEntry_.empty()) {
+        NormalizeCttsEntries(sttsSampleCount);
         ret = ValidateCttsEntries(sttsSampleCount);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ValidateCttsEntries failed");
         CalculateDtsShift();
