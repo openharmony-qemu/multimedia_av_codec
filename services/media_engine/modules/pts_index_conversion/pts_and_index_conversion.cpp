@@ -306,121 +306,85 @@ void TimeAndIndexConversion::ParseContainerBox(uint64_t boxSize, uint32_t depth)
     }
 }
 
+bool TimeAndIndexConversion::ReadTimeToSampleData(uint64_t boxSize, size_t entrySize, const char *boxName,
+    uint32_t &entryCount, std::vector<uint8_t> &data)
+{
+    FALSE_RETURN_V_MSG_E(boxSize <= std::numeric_limits<size_t>::max(), false,
+        "Time-to-sample box is too large");
+    FALSE_RETURN_V_MSG_E(boxSize >= TIME_TO_SAMPLE_HEADER_SIZE, false,
+        "Time-to-sample box is too small");
+    auto buffer = std::make_shared<Buffer>();
+    data.resize(TIME_TO_SAMPLE_HEADER_SIZE);
+    buffer->WrapMemory(data.data(), data.size(), data.size());
+    ReadBufferFromDataSource(data.size(), buffer);
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, false, "Time-to-sample header read failed");
+    auto memory = buffer->GetMemory();
+    FALSE_RETURN_V_MSG_E(memory != nullptr, false, "Time-to-sample header memory is null");
+    const uint8_t *ptr = memory->GetReadOnlyData();
+    FALSE_RETURN_V_MSG_E(ptr != nullptr && memory->GetSize() >= TIME_TO_SAMPLE_HEADER_SIZE, false,
+        "Time-to-sample header is incomplete");
+    entryCount = ntohl(*reinterpret_cast<const uint32_t *>(ptr + sizeof(uint32_t)));
+    if (entrySize == 0 || entryCount > PTS_AND_INDEX_CONVERSION_MAX_FRAMES ||
+        static_cast<uint64_t>(entryCount) > (boxSize - TIME_TO_SAMPLE_HEADER_SIZE) / entrySize ||
+        entryCount > (std::numeric_limits<size_t>::max() - TIME_TO_SAMPLE_HEADER_SIZE) / entrySize) {
+        MEDIA_LOG_E("%{public}s entry count is invalid: " PUBLIC_LOG_U32, boxName, entryCount);
+        return false;
+    }
+    size_t readSize = TIME_TO_SAMPLE_HEADER_SIZE + static_cast<size_t>(entryCount) * entrySize;
+    data.resize(readSize);
+    if (entryCount == 0) {
+        return true;
+    }
+    buffer = std::make_shared<Buffer>();
+    buffer->WrapMemory(data.data(), data.size(), data.size());
+    ReadBufferFromDataSource(data.size(), buffer);
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, false, "Time-to-sample entry read failed");
+    memory = buffer->GetMemory();
+    FALSE_RETURN_V_MSG_E(memory != nullptr, false, "Time-to-sample entry memory is null");
+    return IsValidTimeToSampleEntryCount(memory->GetSize(), entryCount, entrySize, boxName);
+}
+
 void TimeAndIndexConversion::ParseCtts(uint64_t boxSize)
 {
-    FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseCtts failed due to too large box size");
-    FALSE_RETURN_MSG(boxSize >= TIME_TO_SAMPLE_HEADER_SIZE, "ParseCtts failed due to too small box size");
     constexpr size_t entrySize = sizeof(CTTSEntry);
-
-    auto buffer = std::make_shared<Buffer>();
-    std::vector<uint8_t> headerBuffer(TIME_TO_SAMPLE_HEADER_SIZE);
-    auto bufData = buffer->WrapMemory(headerBuffer.data(), headerBuffer.size(), headerBuffer.size());
-    ReadBufferFromDataSource(headerBuffer.size(), buffer);
-    FALSE_RETURN_MSG(buffer != nullptr, "ParseCtts failed due to read buffer error");
-    auto memory = buffer->GetMemory();
-    FALSE_RETURN_MSG(memory != nullptr, "ParseCtts failed due to no memory in buffer");
-    const uint8_t* ptr = memory->GetReadOnlyData();
-    FALSE_RETURN_MSG(ptr != nullptr, "ParseCtts failed due to nullptr");
-    if (memory->GetSize() < TIME_TO_SAMPLE_HEADER_SIZE) {
-        MEDIA_LOG_E("Not enough data in buffer to read CTTS header");
+    uint32_t entryCount = 0;
+    std::vector<uint8_t> data;
+    if (!ReadTimeToSampleData(boxSize, entrySize, "CTTS", entryCount, data)) {
         return;
     }
-    // read versionAndFlags and entryCount
-    uint32_t versionAndFlags = *reinterpret_cast<const uint32_t*>(ptr);
+    uint32_t versionAndFlags = *reinterpret_cast<const uint32_t *>(data.data());
     MEDIA_LOG_D("versionAndFlags: " PUBLIC_LOG_D32, versionAndFlags);
-    uint32_t entryCount = *reinterpret_cast<const uint32_t*>(ptr + sizeof(uint32_t));
-    entryCount = ntohl(entryCount);
-    if (entryCount > PTS_AND_INDEX_CONVERSION_MAX_FRAMES ||
-        static_cast<uint64_t>(entryCount) > (boxSize - TIME_TO_SAMPLE_HEADER_SIZE) / entrySize) {
-        MEDIA_LOG_E("CTTS entry count exceeds box size: " PUBLIC_LOG_U32, entryCount);
-        return;
-    }
-
-    size_t readSize = TIME_TO_SAMPLE_HEADER_SIZE + static_cast<size_t>(entryCount) * entrySize;
-    std::vector<uint8_t> buff;
-    if (entryCount > 0) {
-        buffer = std::make_shared<Buffer>();
-        buff.resize(readSize);
-        auto entryBufData = buffer->WrapMemory(buff.data(), readSize, readSize);
-        ReadBufferFromDataSource(readSize, buffer);
-        FALSE_RETURN_MSG(buffer != nullptr, "ParseCtts failed due to read buffer error");
-        memory = buffer->GetMemory();
-        FALSE_RETURN_MSG(memory != nullptr, "ParseCtts failed due to no memory in buffer");
-        ptr = memory->GetReadOnlyData();
-        FALSE_RETURN_MSG(ptr != nullptr, "ParseCtts failed due to nullptr");
-    }
-    size_t size = memory->GetSize();
-    if (!IsValidTimeToSampleEntryCount(size, entryCount, entrySize, "CTTS")) {
-        return;
-    }
     std::vector<CTTSEntry> entries(entryCount);
-    const uint8_t* entryPtr = ptr + TIME_TO_SAMPLE_HEADER_SIZE;
+    const uint8_t *entryPtr = data.data() + TIME_TO_SAMPLE_HEADER_SIZE;
     for (uint32_t i = 0; i < entryCount; ++i) {
-        entries[i].sampleCount = ntohl(*reinterpret_cast<const uint32_t*>(entryPtr));
-        entries[i].sampleOffset = static_cast<int32_t>(ntohl(*reinterpret_cast<const uint32_t*>(entryPtr +
-                                  sizeof(uint32_t))));
-        entryPtr += sizeof(CTTSEntry);
+        entries[i].sampleCount = ntohl(*reinterpret_cast<const uint32_t *>(entryPtr));
+        entries[i].sampleOffset = static_cast<int32_t>(ntohl(*reinterpret_cast<const uint32_t *>(entryPtr +
+            sizeof(uint32_t))));
+        entryPtr += entrySize;
     }
     curTrakInfo_.cttsEntries = entries;
-    offset_ += static_cast<uint64_t>(boxSize);
+    offset_ += boxSize;
 }
 
 void TimeAndIndexConversion::ParseStts(uint64_t boxSize)
 {
-    FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseStts failed due to too large box size");
-    FALSE_RETURN_MSG(boxSize >= TIME_TO_SAMPLE_HEADER_SIZE, "ParseStts failed due to too small box size");
     constexpr size_t entrySize = sizeof(STTSEntry);
-
-    auto buffer = std::make_shared<Buffer>();
-    std::vector<uint8_t> headerBuffer(TIME_TO_SAMPLE_HEADER_SIZE);
-    auto bufData = buffer->WrapMemory(headerBuffer.data(), headerBuffer.size(), headerBuffer.size());
-    ReadBufferFromDataSource(headerBuffer.size(), buffer);
-    FALSE_RETURN_MSG(buffer != nullptr, "ParseStts failed due to read buffer error");
-    auto memory = buffer->GetMemory();
-    FALSE_RETURN_MSG(memory != nullptr, "ParseStts failed due to no memory in buffer");
-    const uint8_t* ptr = memory->GetReadOnlyData();
-    FALSE_RETURN_MSG(ptr != nullptr, "ParseStts failed due to nullptr");
-    if (memory->GetSize() < TIME_TO_SAMPLE_HEADER_SIZE) {
-        MEDIA_LOG_E("Not enough data in buffer to read STTS header");
+    uint32_t entryCount = 0;
+    std::vector<uint8_t> data;
+    if (!ReadTimeToSampleData(boxSize, entrySize, "STTS", entryCount, data)) {
         return;
     }
-    // read versionAndFlags and entryCount
-    uint32_t versionAndFlags = *reinterpret_cast<const uint32_t*>(ptr);
+    uint32_t versionAndFlags = *reinterpret_cast<const uint32_t *>(data.data());
     MEDIA_LOG_D("versionAndFlags: " PUBLIC_LOG_D32, versionAndFlags);
-    uint32_t entryCount = *reinterpret_cast<const uint32_t*>(ptr + sizeof(uint32_t));
-    entryCount = ntohl(entryCount);
-    if (entryCount > PTS_AND_INDEX_CONVERSION_MAX_FRAMES ||
-        static_cast<uint64_t>(entryCount) > (boxSize - TIME_TO_SAMPLE_HEADER_SIZE) / entrySize) {
-        MEDIA_LOG_E("STTS entry count exceeds box size: " PUBLIC_LOG_U32, entryCount);
-        return;
-    }
-
-    size_t readSize = TIME_TO_SAMPLE_HEADER_SIZE + static_cast<size_t>(entryCount) * entrySize;
-    std::vector<uint8_t> buff;
-    if (entryCount > 0) {
-        buffer = std::make_shared<Buffer>();
-        buff.resize(readSize);
-        auto entryBufData = buffer->WrapMemory(buff.data(), readSize, readSize);
-        ReadBufferFromDataSource(readSize, buffer);
-        FALSE_RETURN_MSG(buffer != nullptr, "ParseStts failed due to read buffer error");
-        memory = buffer->GetMemory();
-        FALSE_RETURN_MSG(memory != nullptr, "ParseStts failed due to no memory in buffer");
-        ptr = memory->GetReadOnlyData();
-        FALSE_RETURN_MSG(ptr != nullptr, "ParseStts failed due to nullptr");
-    }
-    size_t size = memory->GetSize();
-    if (!IsValidTimeToSampleEntryCount(size, entryCount, entrySize, "STTS")) {
-        return;
-    }
     std::vector<STTSEntry> entries(entryCount);
-    const uint8_t* entryPtr = ptr + TIME_TO_SAMPLE_HEADER_SIZE;
+    const uint8_t *entryPtr = data.data() + TIME_TO_SAMPLE_HEADER_SIZE;
     for (uint32_t i = 0; i < entryCount; ++i) {
-        entries[i].sampleCount = ntohl(*reinterpret_cast<const uint32_t*>(entryPtr));
-        entries[i].sampleDelta = ntohl(*reinterpret_cast<const uint32_t*>(entryPtr + sizeof(uint32_t)));
-        entryPtr += sizeof(STTSEntry);
+        entries[i].sampleCount = ntohl(*reinterpret_cast<const uint32_t *>(entryPtr));
+        entries[i].sampleDelta = ntohl(*reinterpret_cast<const uint32_t *>(entryPtr + sizeof(uint32_t)));
+        entryPtr += entrySize;
     }
     curTrakInfo_.sttsEntries = entries;
-    offset_ += static_cast<uint64_t>(boxSize);
+    offset_ += boxSize;
 }
 
 void TimeAndIndexConversion::ParseHdlr(uint64_t boxSize)
@@ -463,66 +427,63 @@ void TimeAndIndexConversion::ParseHdlr(uint64_t boxSize)
     offset_ += static_cast<uint64_t>(boxSize);
 }
 
-void TimeAndIndexConversion::ParseMdhd(uint64_t boxSize)
+bool TimeAndIndexConversion::ReadMdhdData(uint64_t boxSize, std::vector<uint8_t> &data,
+    size_t &timeScaleOffset)
 {
-    FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseMdhd failed due to too large box size");
     constexpr size_t versionAndFlagsSize = sizeof(uint32_t);
-    FALSE_RETURN_MSG(boxSize >= versionAndFlagsSize, "ParseMdhd failed due to too small box size");
-
+    FALSE_RETURN_V_MSG_E(boxSize <= std::numeric_limits<size_t>::max(), false,
+        "MDHD box is too large");
+    FALSE_RETURN_V_MSG_E(boxSize >= versionAndFlagsSize, false, "MDHD box is too small");
     auto buffer = std::make_shared<Buffer>();
-    std::vector<uint8_t> versionBuffer(versionAndFlagsSize);
-    auto bufData = buffer->WrapMemory(versionBuffer.data(), versionBuffer.size(), versionBuffer.size());
-    ReadBufferFromDataSource(versionBuffer.size(), buffer);
-    FALSE_RETURN_MSG(buffer != nullptr, "ParseMdhd failed due to read buffer error");
+    data.resize(versionAndFlagsSize);
+    buffer->WrapMemory(data.data(), data.size(), data.size());
+    ReadBufferFromDataSource(data.size(), buffer);
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, false, "MDHD version read failed");
     auto memory = buffer->GetMemory();
-    FALSE_RETURN_MSG(memory != nullptr, "ParseMdhd failed due to no memory in buffer");
-    const uint8_t* ptr = memory->GetReadOnlyData();
-    FALSE_RETURN_MSG(ptr != nullptr, "ParseMdhd failed due to nullptr");
-    size_t size = memory->GetSize();
-
-    // mdhd(full box): version(1)+flags(3) + creation/modification + timescale + duration
-    // version 0: creation/modification/timescale/duration are uint32
-    // version 1: creation/modification/duration are uint64, timescale is uint32
-    FALSE_RETURN_MSG(size >= sizeof(uint32_t), "Not enough data in buffer to read MDHD version");
-    uint8_t version = ptr[0];
-    size_t timeScaleOffset = 0;
-    size_t minBytesForTimeScale = 0;
-    if (version == 1) {
+    FALSE_RETURN_V_MSG_E(memory != nullptr, false, "MDHD version memory is null");
+    const uint8_t *ptr = memory->GetReadOnlyData();
+    FALSE_RETURN_V_MSG_E(ptr != nullptr && memory->GetSize() >= versionAndFlagsSize, false,
+        "MDHD version data is incomplete");
+    constexpr size_t versionOne = 1;
+    if (ptr[0] == versionOne) {
         timeScaleOffset = sizeof(uint32_t) + sizeof(uint64_t) + sizeof(uint64_t);
-        minBytesForTimeScale = timeScaleOffset + sizeof(uint32_t);
     } else {
         timeScaleOffset = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint32_t);
-        minBytesForTimeScale = timeScaleOffset + sizeof(uint32_t);
     }
-    std::vector<uint8_t> buff;
-    if (size < minBytesForTimeScale) {
-        FALSE_RETURN_MSG(boxSize >= minBytesForTimeScale,
-            "Not enough data in box to read MDHD timeScale, need: " PUBLIC_LOG_ZU, minBytesForTimeScale);
-        buffer = std::make_shared<Buffer>();
-        buff.resize(minBytesForTimeScale);
-        auto timeScaleBufData = buffer->WrapMemory(buff.data(), minBytesForTimeScale, minBytesForTimeScale);
-        ReadBufferFromDataSource(minBytesForTimeScale, buffer);
-        FALSE_RETURN_MSG(buffer != nullptr, "ParseMdhd failed due to read buffer error");
-        memory = buffer->GetMemory();
-        FALSE_RETURN_MSG(memory != nullptr, "ParseMdhd failed due to no memory in buffer");
-        ptr = memory->GetReadOnlyData();
-        FALSE_RETURN_MSG(ptr != nullptr, "ParseMdhd failed due to nullptr");
-        size = memory->GetSize();
-        if (size < minBytesForTimeScale) {
-            MEDIA_LOG_E("Not enough data in buffer to read MDHD timeScale, size: " PUBLIC_LOG_ZU ", need: "
-                PUBLIC_LOG_ZU, size, minBytesForTimeScale);
-            return;
-        }
+    size_t minBytesForTimeScale = timeScaleOffset + sizeof(uint32_t);
+    if (data.size() >= minBytesForTimeScale) {
+        return true;
     }
+    FALSE_RETURN_V_MSG_E(boxSize >= minBytesForTimeScale, false,
+        "MDHD timeScale is outside the box");
+    data.resize(minBytesForTimeScale);
+    buffer = std::make_shared<Buffer>();
+    buffer->WrapMemory(data.data(), data.size(), data.size());
+    ReadBufferFromDataSource(data.size(), buffer);
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, false, "MDHD timeScale read failed");
+    memory = buffer->GetMemory();
+    FALSE_RETURN_V_MSG_E(memory != nullptr, false, "MDHD timeScale memory is null");
+    if (memory->GetSize() < minBytesForTimeScale) {
+        MEDIA_LOG_E("Not enough data in buffer to read MDHD timeScale, size: " PUBLIC_LOG_ZU ", need: "
+            PUBLIC_LOG_ZU, memory->GetSize(), minBytesForTimeScale);
+        return false;
+    }
+    return true;
+}
 
-    // 读取versionAndFlags/ timeScale
-    uint32_t versionAndFlags = ntohl(*reinterpret_cast<const uint32_t*>(ptr));
+void TimeAndIndexConversion::ParseMdhd(uint64_t boxSize)
+{
+    std::vector<uint8_t> data;
+    size_t timeScaleOffset = 0;
+    if (!ReadMdhdData(boxSize, data, timeScaleOffset)) {
+        return;
+    }
+    uint32_t versionAndFlags = ntohl(*reinterpret_cast<const uint32_t *>(data.data()));
     MEDIA_LOG_D("versionAndFlags: " PUBLIC_LOG_D32, versionAndFlags);
-    uint32_t timeScale = *reinterpret_cast<const uint32_t*>(ptr + timeScaleOffset);
-    timeScale = ntohl(timeScale);
+    uint32_t timeScale = ntohl(*reinterpret_cast<const uint32_t *>(data.data() + timeScaleOffset));
     MEDIA_LOG_D("timeScale: " PUBLIC_LOG_D32, timeScale);
     curTrakInfo_.timeScale = timeScale;
-    offset_ += static_cast<uint64_t>(boxSize);
+    offset_ += boxSize;
 }
 
 void TimeAndIndexConversion::InitPTSandIndexConvert()

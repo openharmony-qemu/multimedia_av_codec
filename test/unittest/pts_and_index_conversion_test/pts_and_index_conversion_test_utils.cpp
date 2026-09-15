@@ -27,25 +27,50 @@
 namespace OHOS::Media::PtsAndIndexConversionTestUtils {
 namespace {
 
+constexpr size_t BYTE_BITS = 8;
+constexpr uint8_t BYTE_MASK = 0xff;
+constexpr size_t BYTE_INDEX_ONE = 1;
+constexpr size_t BYTE_INDEX_TWO = 2;
+constexpr size_t BYTE_INDEX_THREE = 3;
+constexpr size_t UINT32_WORD_COUNT_TWO = 2;
+constexpr size_t UINT32_WORD_COUNT_THREE = 3;
+constexpr size_t UINT32_WORD_COUNT_FOUR = 4;
+constexpr size_t CONTAINER_BOX_COUNT = 5;
+constexpr size_t FTYP_PAYLOAD_SIZE = 8;
+constexpr size_t FTYP_BRAND_OFFSET = sizeof(uint32_t) * UINT32_WORD_COUNT_TWO;
+constexpr size_t HANDLER_TYPE_OFFSET = sizeof(uint32_t) * UINT32_WORD_COUNT_TWO;
+constexpr size_t LARGE_BOX_HEADER_SIZE = sizeof(uint32_t) * UINT32_WORD_COUNT_FOUR;
+constexpr size_t NORMAL_BOX_HEADER_SIZE = sizeof(uint32_t) * UINT32_WORD_COUNT_TWO;
+constexpr size_t FTYP_BOX_SIZE = sizeof(uint32_t) * UINT32_WORD_COUNT_FOUR;
+constexpr uint32_t LARGE_BOX_SIZE_MARKER = 1;
+constexpr uint8_t MDHD_VERSION_ONE = 1;
+constexpr uint32_t SAMPLE_COUNT = 2;
+constexpr uint32_t DEFAULT_TIME_SCALE = 1000;
+constexpr size_t MDHD_V0_PAYLOAD_SIZE = 20;
+constexpr size_t MDHD_V1_PAYLOAD_SIZE = 32;
+constexpr size_t MDHD_V0_TIME_SCALE_OFFSET = 12;
+constexpr size_t MDHD_V1_TIME_SCALE_OFFSET = 20;
+constexpr int CHILD_SETUP_FAILURE = 2;
+
 constexpr uint64_t LARGE_BOX_PAYLOAD_SIZE = 1ULL << 30;
 constexpr size_t LARGE_BOX_PAYLOAD_OFFSET = 112;
-constexpr size_t LARGE_BOX_PREFIX_SIZE = LARGE_BOX_PAYLOAD_OFFSET + 20;
+constexpr size_t LARGE_BOX_PREFIX_SIZE = LARGE_BOX_PAYLOAD_OFFSET + MDHD_V0_PAYLOAD_SIZE;
 constexpr rlim_t CHILD_ADDRESS_SPACE_LIMIT = 256ULL * 1024ULL * 1024ULL;
 constexpr rlim_t CHILD_STACK_LIMIT = 256ULL * 1024ULL;
 constexpr size_t DEEP_CONTAINER_DEPTH = 4096;
 
 void WriteBigEndian32(std::vector<uint8_t> &data, size_t offset, uint32_t value)
 {
-    data[offset] = static_cast<uint8_t>((value >> 24) & 0xff);
-    data[offset + 1] = static_cast<uint8_t>((value >> 16) & 0xff);
-    data[offset + 2] = static_cast<uint8_t>((value >> 8) & 0xff);
-    data[offset + 3] = static_cast<uint8_t>(value & 0xff);
+    data[offset] = static_cast<uint8_t>((value >> (BYTE_BITS * UINT32_WORD_COUNT_THREE)) & BYTE_MASK);
+    data[offset + BYTE_INDEX_ONE] = static_cast<uint8_t>((value >> (BYTE_BITS * UINT32_WORD_COUNT_TWO)) & BYTE_MASK);
+    data[offset + BYTE_INDEX_TWO] = static_cast<uint8_t>((value >> BYTE_BITS) & BYTE_MASK);
+    data[offset + BYTE_INDEX_THREE] = static_cast<uint8_t>(value & BYTE_MASK);
 }
 
 void WriteBigEndian64(std::vector<uint8_t> &data, size_t offset, uint64_t value)
 {
     for (size_t i = 0; i < sizeof(uint64_t); ++i) {
-        data[offset + i] = static_cast<uint8_t>(value >> ((sizeof(uint64_t) - 1 - i) * 8));
+        data[offset + i] = static_cast<uint8_t>(value >> ((sizeof(uint64_t) - BYTE_INDEX_ONE - i) * BYTE_BITS));
     }
 }
 
@@ -58,9 +83,9 @@ void WriteBoxType(std::vector<uint8_t> &data, size_t offset, const char *type)
 
 void WriteLargeBoxHeader(std::vector<uint8_t> &data, size_t offset, const char *type, uint64_t boxSize)
 {
-    WriteBigEndian32(data, offset, 1);
+    WriteBigEndian32(data, offset, LARGE_BOX_SIZE_MARKER);
     WriteBoxType(data, offset + sizeof(uint32_t), type);
-    WriteBigEndian64(data, offset + sizeof(uint32_t) * 2, boxSize);
+    WriteBigEndian64(data, offset + sizeof(uint32_t) * UINT32_WORD_COUNT_TWO, boxSize);
 }
 
 bool WriteAll(int fd, const uint8_t *data, size_t size)
@@ -84,36 +109,36 @@ bool CreateLargeSizeMedia(const char *targetType, const std::string &path, int &
     }
 
     std::vector<uint8_t> prefix(LARGE_BOX_PREFIX_SIZE, 0);
-    WriteBigEndian32(prefix, 0, 16);
+    WriteBigEndian32(prefix, 0, FTYP_BOX_SIZE);
     WriteBoxType(prefix, sizeof(uint32_t), BOX_TYPE_FTYP);
-    prefix[8] = 'i';
-    prefix[9] = 's';
-    prefix[10] = 'o';
-    prefix[11] = 'm';
+    prefix[FTYP_BRAND_OFFSET] = 'i';
+    prefix[FTYP_BRAND_OFFSET + BYTE_INDEX_ONE] = 's';
+    prefix[FTYP_BRAND_OFFSET + BYTE_INDEX_TWO] = 'o';
+    prefix[FTYP_BRAND_OFFSET + BYTE_INDEX_THREE] = 'm';
 
     constexpr const char *containerTypes[] = {BOX_TYPE_MOOV, BOX_TYPE_TRAK, BOX_TYPE_MDIA,
         BOX_TYPE_MINF, BOX_TYPE_STBL};
-    constexpr size_t targetOffset = sizeof(uint32_t) * 4 + sizeof(uint32_t) * 4 * 5;
-    uint64_t nestedBoxSize = LARGE_BOX_PAYLOAD_SIZE + sizeof(uint32_t) * 4;
+    constexpr size_t targetOffset = FTYP_BOX_SIZE + LARGE_BOX_HEADER_SIZE * CONTAINER_BOX_COUNT;
+    uint64_t nestedBoxSize = LARGE_BOX_PAYLOAD_SIZE + LARGE_BOX_HEADER_SIZE;
     WriteLargeBoxHeader(prefix, targetOffset, targetType, nestedBoxSize);
 
-    for (size_t index = 5; index > 0; --index) {
+    for (size_t index = CONTAINER_BOX_COUNT; index > 0; --index) {
         size_t parentIndex = index - 1;
-        size_t offset = sizeof(uint32_t) * 4 + sizeof(uint32_t) * 4 * parentIndex;
-        nestedBoxSize += sizeof(uint32_t) * 4;
+        size_t offset = FTYP_BOX_SIZE + LARGE_BOX_HEADER_SIZE * parentIndex;
+        nestedBoxSize += LARGE_BOX_HEADER_SIZE;
         WriteLargeBoxHeader(prefix, offset, containerTypes[parentIndex], nestedBoxSize);
     }
 
-    size_t targetPayloadOffset = targetOffset + sizeof(uint32_t) * 4;
+    size_t targetPayloadOffset = targetOffset + LARGE_BOX_HEADER_SIZE;
     if (strcmp(targetType, BOX_TYPE_CTTS) == 0 || strcmp(targetType, BOX_TYPE_STTS) == 0) {
         // version/flags and entryCount are both zero.
     } else if (strcmp(targetType, BOX_TYPE_HDLR) == 0) {
-        prefix[targetPayloadOffset + 8] = 'v';
-        prefix[targetPayloadOffset + 9] = 'i';
-        prefix[targetPayloadOffset + 10] = 'd';
-        prefix[targetPayloadOffset + 11] = 'e';
+        prefix[targetPayloadOffset + HANDLER_TYPE_OFFSET] = 'v';
+        prefix[targetPayloadOffset + HANDLER_TYPE_OFFSET + BYTE_INDEX_ONE] = 'i';
+        prefix[targetPayloadOffset + HANDLER_TYPE_OFFSET + BYTE_INDEX_TWO] = 'd';
+        prefix[targetPayloadOffset + HANDLER_TYPE_OFFSET + BYTE_INDEX_THREE] = 'e';
     } else if (strcmp(targetType, BOX_TYPE_MDHD) == 0) {
-        WriteBigEndian32(prefix, targetPayloadOffset + 12, 1000);
+        WriteBigEndian32(prefix, targetPayloadOffset + MDHD_V0_TIME_SCALE_OFFSET, DEFAULT_TIME_SCALE);
     } else {
         close(fd);
         unlink(path.c_str());
@@ -131,7 +156,7 @@ bool CreateLargeSizeMedia(const char *targetType, const std::string &path, int &
 
 std::vector<uint8_t> MakeBox(const char *type, const std::vector<uint8_t> &payload)
 {
-    std::vector<uint8_t> box(sizeof(uint32_t) * 2, 0);
+    std::vector<uint8_t> box(NORMAL_BOX_HEADER_SIZE, 0);
     WriteBigEndian32(box, 0, static_cast<uint32_t>(box.size() + payload.size()));
     WriteBoxType(box, sizeof(uint32_t), type);
     box.insert(box.end(), payload.begin(), payload.end());
@@ -147,11 +172,11 @@ std::vector<uint8_t> MakeContainerChain(const char *targetType, const std::vecto
     auto trak = MakeBox(BOX_TYPE_TRAK, mdia);
     auto moov = MakeBox(BOX_TYPE_MOOV, trak);
 
-    std::vector<uint8_t> ftypPayload(8, 0);
+    std::vector<uint8_t> ftypPayload(FTYP_PAYLOAD_SIZE, 0);
     ftypPayload[0] = 'i';
-    ftypPayload[1] = 's';
-    ftypPayload[2] = 'o';
-    ftypPayload[3] = 'm';
+    ftypPayload[BYTE_INDEX_ONE] = 's';
+    ftypPayload[BYTE_INDEX_TWO] = 'o';
+    ftypPayload[BYTE_INDEX_THREE] = 'm';
     auto ftyp = MakeBox(BOX_TYPE_FTYP, ftypPayload);
     ftyp.insert(ftyp.end(), moov.begin(), moov.end());
     return ftyp;
@@ -167,11 +192,11 @@ std::vector<uint8_t> MakeDeepContainerMedia(size_t depth, const char *targetType
 
     auto trak = MakeBox(BOX_TYPE_TRAK, nested);
     auto moov = MakeBox(BOX_TYPE_MOOV, trak);
-    std::vector<uint8_t> ftypPayload(8, 0);
+    std::vector<uint8_t> ftypPayload(FTYP_PAYLOAD_SIZE, 0);
     ftypPayload[0] = 'i';
-    ftypPayload[1] = 's';
-    ftypPayload[2] = 'o';
-    ftypPayload[3] = 'm';
+    ftypPayload[BYTE_INDEX_ONE] = 's';
+    ftypPayload[BYTE_INDEX_TWO] = 'o';
+    ftypPayload[BYTE_INDEX_THREE] = 'm';
     auto ftyp = MakeBox(BOX_TYPE_FTYP, ftypPayload);
     ftyp.insert(ftyp.end(), moov.begin(), moov.end());
     return ftyp;
@@ -192,7 +217,7 @@ bool RunLargeSizeReproduction(const char *targetType)
     if (pid == 0) {
         struct rlimit limit {CHILD_ADDRESS_SPACE_LIMIT, CHILD_ADDRESS_SPACE_LIMIT};
         if (setrlimit(RLIMIT_AS, &limit) != 0) {
-            _exit(2);
+            _exit(CHILD_SETUP_FAILURE);
         }
         std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(fileSize);
         auto conversion = std::make_shared<TimeAndIndexConversion>();
@@ -229,7 +254,7 @@ bool RunDeepContainerReproduction(int &childStatus)
     if (pid == 0) {
         struct rlimit limit {CHILD_STACK_LIMIT, CHILD_STACK_LIMIT};
         if (!writeSuccess || setrlimit(RLIMIT_STACK, &limit) != 0) {
-            _exit(2);
+            _exit(CHILD_SETUP_FAILURE);
         }
         std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=" + std::to_string(media.size());
         auto conversion = std::make_shared<TimeAndIndexConversion>();
@@ -252,32 +277,34 @@ bool RunDeepContainerReproduction(int &childStatus)
 
 std::vector<uint8_t> MakeTimeEntryPayload(uint32_t entryCount, uint32_t secondValue)
 {
-    std::vector<uint8_t> payload(sizeof(uint32_t) * 2 + entryCount * sizeof(uint32_t) * 2, 0);
+    std::vector<uint8_t> payload(sizeof(uint32_t) * UINT32_WORD_COUNT_TWO +
+        entryCount * sizeof(uint32_t) * UINT32_WORD_COUNT_TWO, 0);
     WriteBigEndian32(payload, sizeof(uint32_t), entryCount);
     if (entryCount > 0) {
-        WriteBigEndian32(payload, sizeof(uint32_t) * 2, 2);
-        WriteBigEndian32(payload, sizeof(uint32_t) * 3, secondValue);
+        WriteBigEndian32(payload, sizeof(uint32_t) * UINT32_WORD_COUNT_TWO, SAMPLE_COUNT);
+        WriteBigEndian32(payload, sizeof(uint32_t) * UINT32_WORD_COUNT_THREE, secondValue);
     }
     return payload;
 }
 
 std::vector<uint8_t> MakeHdlrPayload()
 {
-    std::vector<uint8_t> payload(sizeof(uint32_t) * 3, 0);
-    payload[sizeof(uint32_t) * 2] = 'v';
-    payload[sizeof(uint32_t) * 2 + 1] = 'i';
-    payload[sizeof(uint32_t) * 2 + 2] = 'd';
-    payload[sizeof(uint32_t) * 2 + 3] = 'e';
+    std::vector<uint8_t> payload(sizeof(uint32_t) * UINT32_WORD_COUNT_THREE, 0);
+    payload[HANDLER_TYPE_OFFSET] = 'v';
+    payload[HANDLER_TYPE_OFFSET + BYTE_INDEX_ONE] = 'i';
+    payload[HANDLER_TYPE_OFFSET + BYTE_INDEX_TWO] = 'd';
+    payload[HANDLER_TYPE_OFFSET + BYTE_INDEX_THREE] = 'e';
     return payload;
 }
 
 std::vector<uint8_t> MakeMdhdPayload(uint8_t version)
 {
-    const size_t payloadSize = version == 1 ? 32 : 20;
+    const size_t payloadSize = version == MDHD_VERSION_ONE ? MDHD_V1_PAYLOAD_SIZE : MDHD_V0_PAYLOAD_SIZE;
     std::vector<uint8_t> payload(payloadSize, 0);
     payload[0] = version;
-    const size_t timeScaleOffset = version == 1 ? 20 : 12;
-    WriteBigEndian32(payload, timeScaleOffset, 1000);
+    const size_t timeScaleOffset = version == MDHD_VERSION_ONE ? MDHD_V1_TIME_SCALE_OFFSET :
+        MDHD_V0_TIME_SCALE_OFFSET;
+    WriteBigEndian32(payload, timeScaleOffset, DEFAULT_TIME_SCALE);
     return payload;
 }
 
