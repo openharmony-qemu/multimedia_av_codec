@@ -106,9 +106,6 @@ private:
         {BOX_TYPE_CTTS, &TimeAndIndexConversion::ParseCtts},
         {BOX_TYPE_HDLR, &TimeAndIndexConversion::ParseHdlr},
         {BOX_TYPE_MDHD, &TimeAndIndexConversion::ParseMdhd},
-        {BOX_TYPE_STBL, &TimeAndIndexConversion::ParseBox},
-        {BOX_TYPE_MINF, &TimeAndIndexConversion::ParseBox},
-        {BOX_TYPE_MDIA, &TimeAndIndexConversion::ParseBox},
     };
 
     void StartParse();
@@ -119,6 +116,7 @@ private:
     void ParseMoov(uint64_t boxSize);
     void ParseTrak(uint64_t boxSize);
     void ParseBox(uint64_t boxSize);
+    void ParseContainerBox(uint64_t boxSize, uint32_t depth);
     void ParseCtts(uint64_t boxSize);
     void ParseStts(uint64_t boxSize);
     void ParseHdlr(uint64_t boxSize);
