@@ -53,11 +53,11 @@ const std::string &GetBundleNameOrDefault()
     CHECK_AND_RETURN_RET_LOG(bundleMgrProxy != nullptr, bundleName, "bundleMgrProxy is nullptr");
 
     BundleInfo bundleInfo;
-    (void)bundleMgrProxy->GetBundleInfoV9(bundleName,
-                                          static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_HAP_MODULE) |
-                                              static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_METADATA) |
-                                              static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_DISABLE),
-                                          bundleInfo, Constants::ALL_USERID);
+    if (bundleMgrProxy->GetBundleInfoForSelf(static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_DEFAULT) |
+                                                 static_cast<uint32_t>(GetBundleInfoFlag::GET_BUNDLE_INFO_EXCLUDE_EXT),
+                                             bundleInfo) == ERR_OK) {
+        bundleName = bundleInfo.name;
+    }
     return bundleName;
 }
 constexpr int64_t  LOG_INTERVAL_MS = 2000;  // 2s
