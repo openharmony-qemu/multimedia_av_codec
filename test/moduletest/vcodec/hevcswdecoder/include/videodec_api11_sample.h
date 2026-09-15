@@ -118,7 +118,7 @@ public:
     static std::string ExtractSuffixFromBufName(const std::string& bufName);
     static bool IsNumericString(const std::string& str);
     void CountMatchingRows(std::istringstream& ss, size_t colIndex,
-        const std::string& expectedSuffix, int& totalCount, int& matchCount);    
+        const std::string& expectedSuffix, int& totalCount, int& matchCount);
     int32_t Start();
     int32_t Stop();
     int32_t Flush();
