@@ -989,12 +989,10 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
 
     for (uint32_t i = 0; i < numStscEntries; ++i) {
         uint32_t tempFirst = GetU32Value(data.get() + i * sizeof(StscEntry));
-        FALSE_RETURN_V_NOLOG(tempFirst > 0, Status::ERROR_INVALID_DATA);
         uint32_t sampleCount = GetU32Value(data.get() + sizeof(uint32_t) + i * sizeof(StscEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stsc sample count");
 
         stscEntry_.emplace_back(StscEntry{
-            .first = tempFirst - 1,
+            .first = tempFirst > 0 ? tempFirst - 1 : 0,
             .count = sampleCount,
             .id = GetU32Value(data.get() + sizeof(uint64_t) + i * sizeof(StscEntry))
         });
@@ -1585,6 +1583,39 @@ Status MPEG4SampleHelper::ValidateCttsEntries(uint32_t sttsSampleCount) const
     return Status::OK;
 }
 
+void MPEG4SampleHelper::RepairStscEntries()
+{
+    while (stscEntry_.size() > 1 && stscEntry_.back().count == 0) {
+        MEDIA_LOG_W("Drop trailing zero-count stsc entry");
+        stscEntry_.pop_back();
+    }
+    for (size_t index = stscEntry_.size(); index > 0; --index) {
+        StscEntry& entry = stscEntry_[index - 1];
+        const bool hasNext = index < stscEntry_.size();
+        const bool hasPrevious = index > 1;
+        const bool invalid = (hasNext && entry.first >= stscEntry_[index].first) ||
+            (hasPrevious && entry.first <= stscEntry_[index - 2].first) || entry.first < index - 1 ||
+            entry.count == 0 || entry.id == 0;
+        if (!invalid) {
+            continue;
+        }
+        MEDIA_LOG_W("Repair invalid stsc entry " PUBLIC_LOG_ZU ": first=" PUBLIC_LOG_U32 ", count="
+            PUBLIC_LOG_U32 ", id=" PUBLIC_LOG_U32, index - 1, entry.first, entry.count, entry.id);
+        if (hasNext) {
+            entry.first = stscEntry_[index].first - 1;
+            entry.count = stscEntry_[index].count;
+            entry.id = stscEntry_[index].id;
+            continue;
+        }
+        entry.first = std::max(entry.first, static_cast<uint32_t>(index - 1));
+        if (hasPrevious && entry.first <= stscEntry_[index - 2].first) {
+            entry.first = stscEntry_[index - 2].first == UINT32_MAX ? UINT32_MAX : stscEntry_[index - 2].first + 1;
+        }
+        entry.count = std::max(entry.count, 1U);
+        entry.id = std::max(entry.id, 1U);
+    }
+}
+
 Status MPEG4SampleHelper::PreBuildProcessAndCheck()
 {
     if (isFragmented_) {
@@ -1614,6 +1645,7 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         MEDIA_LOG_W("stsz sample count " PUBLIC_LOG_U32 " does not match stts sample count " PUBLIC_LOG_U32,
             sampleSizeCount_, sttsSampleCount);
     }
+    RepairStscEntries();
     for (uint32_t i = 0; i < stscEntry_.size(); ++i) {
         const auto& entry = stscEntry_[i];
         FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_SAMPLE_TABLE_SAMPLES, Status::ERROR_INVALID_DATA,
