@@ -26,8 +26,10 @@ namespace OHOS::Media::PtsAndIndexConversionTestUtils {
 
 constexpr size_t MAX_CONTAINER_DEPTH = 10;
 constexpr uint32_t EXCESSIVE_ENTRY_COUNT = 36001;
+constexpr uint64_t NON_MDAT_BOX_PAYLOAD_LIMIT = 64ULL * 1024 * 1024;
 
 bool RunLargeSizeReproduction(const char *targetType);
+bool RunLargeSizeBoundary(const char *targetType, uint64_t payloadSize, bool expectVideoTrack);
 bool RunDeepContainerReproduction(int &childStatus);
 bool ParseSmallSizeMedia(const char *targetType, const std::vector<uint8_t> &payload,
     TimeAndIndexConversion &conversion);

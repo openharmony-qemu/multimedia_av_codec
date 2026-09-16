@@ -374,6 +374,17 @@ HWTEST_F(PtsAndIndexConversionTest, LargeSizeMdhd, TestSize.Level1)
 }
 
 /**
+ * @tc.name: LargeSizeBoundary
+ * @tc.number: LargeSizeBoundary_001
+ * @tc.desc: The non-mdat payload limit accepts its boundary and skips larger HDLR boxes.
+ */
+HWTEST_F(PtsAndIndexConversionTest, LargeSizeBoundary, TestSize.Level1)
+{
+    EXPECT_TRUE(RunLargeSizeBoundary(BOX_TYPE_HDLR, NON_MDAT_BOX_PAYLOAD_LIMIT, true));
+    EXPECT_TRUE(RunLargeSizeBoundary(BOX_TYPE_HDLR, NON_MDAT_BOX_PAYLOAD_LIMIT + 1, false));
+}
+
+/**
  * @tc.name: DeepContainerStackExhaustion
  * @tc.number: DeepContainerStackExhaustion_001
  * @tc.desc: Excessively nested recognized containers must not exhaust the parser stack.

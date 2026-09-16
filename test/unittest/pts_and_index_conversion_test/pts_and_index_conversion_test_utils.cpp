@@ -101,7 +101,8 @@ bool WriteAll(int fd, const uint8_t *data, size_t size)
     return true;
 }
 
-bool CreateLargeSizeMedia(const char *targetType, const std::string &path, int &fd, uint64_t &fileSize)
+bool CreateLargeSizeMedia(const char *targetType, uint64_t payloadSize, const std::string &path,
+    int &fd, uint64_t &fileSize)
 {
     fd = open(path.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
     if (fd < 0) {
@@ -119,7 +120,7 @@ bool CreateLargeSizeMedia(const char *targetType, const std::string &path, int &
     constexpr const char *containerTypes[] = {BOX_TYPE_MOOV, BOX_TYPE_TRAK, BOX_TYPE_MDIA,
         BOX_TYPE_MINF, BOX_TYPE_STBL};
     constexpr size_t targetOffset = FTYP_BOX_SIZE + LARGE_BOX_HEADER_SIZE * CONTAINER_BOX_COUNT;
-    uint64_t nestedBoxSize = LARGE_BOX_PAYLOAD_SIZE + LARGE_BOX_HEADER_SIZE;
+    uint64_t nestedBoxSize = payloadSize + LARGE_BOX_HEADER_SIZE;
     WriteLargeBoxHeader(prefix, targetOffset, targetType, nestedBoxSize);
 
     for (size_t index = CONTAINER_BOX_COUNT; index > 0; --index) {
@@ -145,7 +146,7 @@ bool CreateLargeSizeMedia(const char *targetType, const std::string &path, int &
         return false;
     }
 
-    fileSize = LARGE_BOX_PAYLOAD_OFFSET + LARGE_BOX_PAYLOAD_SIZE;
+    fileSize = LARGE_BOX_PAYLOAD_OFFSET + payloadSize;
     if (!WriteAll(fd, prefix.data(), prefix.size()) || ftruncate(fd, static_cast<off_t>(fileSize)) != 0) {
         close(fd);
         unlink(path.c_str());
@@ -202,14 +203,12 @@ std::vector<uint8_t> MakeDeepContainerMedia(size_t depth, const char *targetType
     return ftyp;
 }
 
-} // namespace
-
-bool RunLargeSizeReproduction(const char *targetType)
+bool RunLargeSizeCase(const char *targetType, uint64_t payloadSize, bool checkVideoTrack, bool expectVideoTrack)
 {
     std::string path = "/data/local/tmp/pts_index_large_box_" + std::to_string(getpid()) + "_" + targetType;
     int fd = -1;
     uint64_t fileSize = 0;
-    if (!CreateLargeSizeMedia(targetType, path, fd, fileSize)) {
+    if (!CreateLargeSizeMedia(targetType, payloadSize, path, fd, fileSize)) {
         return false;
     }
 
@@ -223,7 +222,15 @@ bool RunLargeSizeReproduction(const char *targetType)
         auto conversion = std::make_shared<TimeAndIndexConversion>();
         auto source = std::make_shared<MediaSource>(uri);
         Status result = conversion->SetDataSource(source);
-        _exit(result == Status::OK ? 0 : 1);
+        if (result != Status::OK) {
+            _exit(1);
+        }
+        if (!checkVideoTrack) {
+            _exit(0);
+        }
+        uint32_t trackIndex = 0;
+        bool hasVideoTrack = conversion->GetFirstVideoTrackIndex(trackIndex) == Status::OK;
+        _exit(hasVideoTrack == expectVideoTrack ? 0 : 1);
     }
 
     if (pid < 0) {
@@ -237,6 +244,18 @@ bool RunLargeSizeReproduction(const char *targetType)
     close(fd);
     unlink(path.c_str());
     return waited && WIFEXITED(status) && WEXITSTATUS(status) == 0;
+}
+
+} // namespace
+
+bool RunLargeSizeReproduction(const char *targetType)
+{
+    return RunLargeSizeCase(targetType, LARGE_BOX_PAYLOAD_SIZE, false, false);
+}
+
+bool RunLargeSizeBoundary(const char *targetType, uint64_t payloadSize, bool expectVideoTrack)
+{
+    return RunLargeSizeCase(targetType, payloadSize, true, expectVideoTrack);
 }
 
 bool RunDeepContainerReproduction(int &childStatus)

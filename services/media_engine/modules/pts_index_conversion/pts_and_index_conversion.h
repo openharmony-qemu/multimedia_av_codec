@@ -117,9 +117,6 @@ private:
     void ParseTrak(uint64_t boxSize);
     void ParseBox(uint64_t boxSize);
     void ParseContainerBox(uint64_t boxSize, uint32_t depth);
-    bool ReadTimeToSampleData(uint64_t boxSize, size_t entrySize, const char *boxName,
-        uint32_t &entryCount, std::vector<uint8_t> &data);
-    bool ReadMdhdData(uint64_t boxSize, std::vector<uint8_t> &data, size_t &timeScaleOffset);
     void ParseCtts(uint64_t boxSize);
     void ParseStts(uint64_t boxSize);
     void ParseHdlr(uint64_t boxSize);
