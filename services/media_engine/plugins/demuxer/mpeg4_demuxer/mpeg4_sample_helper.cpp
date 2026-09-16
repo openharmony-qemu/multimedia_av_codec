@@ -1589,6 +1589,15 @@ Status MPEG4SampleHelper::ValidateCttsEntries(uint32_t sttsSampleCount) const
 
 void MPEG4SampleHelper::NormalizeCttsEntries(uint32_t sttsSampleCount)
 {
+    uint64_t totalSampleCount = 0;
+    bool hasZeroCount = false;
+    for (const auto& entry : cttsEntry_) {
+        hasZeroCount = hasZeroCount || entry.count == 0;
+        totalSampleCount += entry.count;
+    }
+    if (!hasZeroCount && totalSampleCount == sttsSampleCount) {
+        return;
+    }
     std::vector<CttsEntry> normalizedEntries;
     normalizedEntries.reserve(cttsEntry_.size() + 1);
     uint32_t remaining = sttsSampleCount;
