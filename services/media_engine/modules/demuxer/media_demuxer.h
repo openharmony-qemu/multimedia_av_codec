@@ -61,7 +61,7 @@ class InterstitialScheduler;
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
 using FileType = OHOS::Media::Plugins::FileType;
-using StreamType = OHOS::Media::Plugin::StreamType;
+using StreamType = OHOS::Media::Plugins:StreamType;
 using funcPreReadSample = std::function<int64_t(int32_t trackId)>;
 using CachePressureCallback = std::function<void(uint32_t trackId, uint32_t cachedBytes)>;
 
