@@ -601,7 +601,6 @@ int VpxDecoder::VpxDestroyDecoderFunc(void **vpxDecoder)
     vpx_codec_err_t res = vpx_codec_destroy(codec);
     if (res != VPX_CODEC_OK) {
         AVCODEC_LOGE("Error: Failed to destroy decoder: %s\n", vpx_codec_err_to_string(res));
-        return -1;
     }
     free(codec);
     *vpxDecoder = nullptr;
