@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -36,6 +36,18 @@ const uint32_t BOX_HEAD_LARGE_SIZE = 16;
 constexpr size_t UINT32_BYTES = sizeof(uint32_t);
 constexpr size_t UINT32_BITS = sizeof(uint32_t) * 8;
 constexpr size_t TIME_TO_SAMPLE_HEADER_SIZE = sizeof(uint32_t) * 2;
+
+namespace {
+constexpr uint32_t MAX_BOX_PARSE_DEPTH = 10;
+constexpr uint64_t MAX_NON_MDAT_BOX_PAYLOAD_SIZE = 64ULL * 1024 * 1024;
+
+bool IsContainerBox(const char *type)
+{
+    return strncmp(type, BOX_TYPE_MDIA, sizeof(uint32_t)) == 0 ||
+        strncmp(type, BOX_TYPE_MINF, sizeof(uint32_t)) == 0 ||
+        strncmp(type, BOX_TYPE_STBL, sizeof(uint32_t)) == 0;
+}
+} // namespace
 
 bool IsValidTimeToSampleEntryCount(size_t dataSize, uint32_t entryCount, size_t entrySize, const char* boxName)
 {
@@ -246,8 +258,18 @@ void TimeAndIndexConversion::ParseTrak(uint64_t boxSize)
 
 void TimeAndIndexConversion::ParseBox(uint64_t boxSize)
 {
+    ParseContainerBox(boxSize, 0);
+}
+
+void TimeAndIndexConversion::ParseContainerBox(uint64_t boxSize, uint32_t depth)
+{
     FALSE_RETURN_MSG(boxSize <= std::numeric_limits<uint64_t>::max() - offset_,
         "ParseBox failed due to parent box size overflow");
+    if (depth > MAX_BOX_PARSE_DEPTH) {
+        MEDIA_LOG_E("ParseBox skipped due to excessive nesting depth: " PUBLIC_LOG_U32, depth);
+        offset_ += boxSize;
+        return;
+    }
     uint64_t parentSize = offset_ + boxSize;
     while (offset_ < parentSize) {
         int bufSize = sizeof(uint32_t) + sizeof(uint32_t);
@@ -270,18 +292,37 @@ void TimeAndIndexConversion::ParseBox(uint64_t boxSize)
         FALSE_RETURN_MSG(childBoxSize >= headerSize, "ParseBox failed due to error box size");
         FALSE_RETURN_MSG(childBoxSize <= parentSize - offset_,
             "ParseBox failed due to child box size exceeding parent box");
-        auto it = boxParsers.find(std::string(header.type));
-        if (it != boxParsers.end()) {
+        if (IsContainerBox(header.type)) {
             offset_ += headerSize;
-            (this->*(it->second))(childBoxSize - headerSize);
+            ParseContainerBox(childBoxSize - headerSize, depth + 1);
         } else {
-            offset_ += childBoxSize;
+            auto it = boxParsers.find(std::string(header.type));
+            if (it != boxParsers.end()) {
+                offset_ += headerSize;
+                (this->*(it->second))(childBoxSize - headerSize);
+            } else {
+                offset_ += childBoxSize;
+            }
         }
     }
 }
 
+bool TimeAndIndexConversion::SkipOversizedBox(uint64_t boxSize, const char *boxName)
+{
+    if (boxSize <= MAX_NON_MDAT_BOX_PAYLOAD_SIZE) {
+        return false;
+    }
+    MEDIA_LOG_E("%{public}s box payload too large: " PUBLIC_LOG_U64 ", max " PUBLIC_LOG_U64,
+        boxName, boxSize, MAX_NON_MDAT_BOX_PAYLOAD_SIZE);
+    offset_ += boxSize;
+    return true;
+}
+
 void TimeAndIndexConversion::ParseCtts(uint64_t boxSize)
 {
+    if (SkipOversizedBox(boxSize, "CTTS")) {
+        return;
+    }
     FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseCtts failed due to too large box size");
     size_t readSize = static_cast<size_t>(boxSize);
     auto buffer = std::make_shared<Buffer>();
@@ -320,6 +361,9 @@ void TimeAndIndexConversion::ParseCtts(uint64_t boxSize)
 
 void TimeAndIndexConversion::ParseStts(uint64_t boxSize)
 {
+    if (SkipOversizedBox(boxSize, "STTS")) {
+        return;
+    }
     FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseStts failed due to too large box size");
     size_t readSize = static_cast<size_t>(boxSize);
     auto buffer = std::make_shared<Buffer>();
@@ -357,6 +401,9 @@ void TimeAndIndexConversion::ParseStts(uint64_t boxSize)
 
 void TimeAndIndexConversion::ParseHdlr(uint64_t boxSize)
 {
+    if (SkipOversizedBox(boxSize, "HDLR")) {
+        return;
+    }
     FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseHdlr failed due to too large box size");
     size_t readSize = static_cast<size_t>(boxSize);
     auto buffer = std::make_shared<Buffer>();
@@ -369,7 +416,7 @@ void TimeAndIndexConversion::ParseHdlr(uint64_t boxSize)
     const uint8_t* ptr = memory->GetReadOnlyData();
     FALSE_RETURN_MSG(ptr != nullptr, "ParseHdlr failed due to nullptr");
     size_t size = memory->GetSize();
-    if (size < sizeof(uint32_t) * 3) { // 3 is versionAndFlags + entryCount + handlerType
+    if (size < sizeof(uint32_t) * 3) { // 3 is versionAndFlags + preDefined + handlerType
         MEDIA_LOG_E("Not enough data in buffer to read HDLR header");
         return;
     }
@@ -395,6 +442,9 @@ void TimeAndIndexConversion::ParseHdlr(uint64_t boxSize)
 
 void TimeAndIndexConversion::ParseMdhd(uint64_t boxSize)
 {
+    if (SkipOversizedBox(boxSize, "MDHD")) {
+        return;
+    }
     FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseMdhd failed due to too large box size");
     size_t readSize = static_cast<size_t>(boxSize);
     auto buffer = std::make_shared<Buffer>();

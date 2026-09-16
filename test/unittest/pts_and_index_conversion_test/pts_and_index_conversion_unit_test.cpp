@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,11 +21,14 @@
 #include <list>
 #include <cmath>
 #include <sys/types.h>
+#include <unistd.h>
 #include <fstream>
 #include <memory>
+#include <vector>
 #include "gtest/gtest.h"
 #include "avcodec_errors.h"
 #include "pts_and_index_conversion_unit_test.h"
+#include "pts_and_index_conversion_test_utils.h"
 
 #define LOCAL true
 namespace OHOS::Media {
@@ -37,6 +40,8 @@ using MediaSource = OHOS::Media::Plugins::MediaSource;
 string g_flvPath            = string("/data/test/media/h264.flv");
 string g_ptsConversionPath  = string("/data/test/media/camera_info_parser.mp4");
 string g_ptsdoublevideoPath = string("/data/test/media/h264_double_video_audio.mp4");
+
+using namespace PtsAndIndexConversionTestUtils;
 
 void PtsAndIndexConversionTest::SetUpTestCase(void)
 {
@@ -326,5 +331,183 @@ HWTEST_F(PtsAndIndexConversionTest, Demuxer_GetVideoTrackIndex_1002, TestSize.Le
     trackIndex_ = -1;
     ASSERT_NE(TimeAndIndexConversions_->GetFirstVideoTrackIndex(trackIndex_), Status::OK);
     ASSERT_EQ(trackIndex_, -1);
+}
+
+/**
+ * @tc.name: LargeSizeCtts
+ * @tc.number: LargeSizeCtts_001
+ * @tc.desc: A large CTTS payload must not make the parser allocate the whole box.
+ */
+HWTEST_F(PtsAndIndexConversionTest, LargeSizeCtts, TestSize.Level1)
+{
+    EXPECT_TRUE(RunLargeSizeReproduction(BOX_TYPE_CTTS));
+}
+
+/**
+ * @tc.name: LargeSizeStts
+ * @tc.number: LargeSizeStts_001
+ * @tc.desc: A large STTS payload must not make the parser allocate the whole box.
+ */
+HWTEST_F(PtsAndIndexConversionTest, LargeSizeStts, TestSize.Level1)
+{
+    EXPECT_TRUE(RunLargeSizeReproduction(BOX_TYPE_STTS));
+}
+
+/**
+ * @tc.name: LargeSizeHdlr
+ * @tc.number: LargeSizeHdlr_001
+ * @tc.desc: A large HDLR payload must not make the parser allocate the whole box.
+ */
+HWTEST_F(PtsAndIndexConversionTest, LargeSizeHdlr, TestSize.Level1)
+{
+    EXPECT_TRUE(RunLargeSizeReproduction(BOX_TYPE_HDLR));
+}
+
+/**
+ * @tc.name: LargeSizeMdhd
+ * @tc.number: LargeSizeMdhd_001
+ * @tc.desc: A large MDHD payload must not make the parser allocate the whole box.
+ */
+HWTEST_F(PtsAndIndexConversionTest, LargeSizeMdhd, TestSize.Level1)
+{
+    EXPECT_TRUE(RunLargeSizeReproduction(BOX_TYPE_MDHD));
+}
+
+/**
+ * @tc.name: LargeSizeBoundary
+ * @tc.number: LargeSizeBoundary_001
+ * @tc.desc: The non-mdat payload limit accepts its boundary and skips larger HDLR boxes.
+ */
+HWTEST_F(PtsAndIndexConversionTest, LargeSizeBoundary, TestSize.Level1)
+{
+    EXPECT_TRUE(RunLargeSizeBoundary(BOX_TYPE_HDLR, NON_MDAT_BOX_PAYLOAD_LIMIT, true));
+    EXPECT_TRUE(RunLargeSizeBoundary(BOX_TYPE_HDLR, NON_MDAT_BOX_PAYLOAD_LIMIT + 1, false));
+}
+
+/**
+ * @tc.name: DeepContainerStackExhaustion
+ * @tc.number: DeepContainerStackExhaustion_001
+ * @tc.desc: Excessively nested recognized containers must not exhaust the parser stack.
+ */
+HWTEST_F(PtsAndIndexConversionTest, DeepContainerStackExhaustion, TestSize.Level1)
+{
+    int childStatus = 0;
+    EXPECT_TRUE(RunDeepContainerReproduction(childStatus)) << "child process status=" << childStatus;
+}
+
+/**
+ * @tc.name: DeepContainerDepthBoundary
+ * @tc.number: DeepContainerDepthBoundary_001
+ * @tc.desc: Containers at the depth limit are parsed, while deeper subtrees are skipped safely.
+ */
+HWTEST_F(PtsAndIndexConversionTest, DeepContainerDepthBoundary, TestSize.Level1)
+{
+    TimeAndIndexConversion allowedConversion;
+    ASSERT_TRUE(ParseDeepContainerMedia(MAX_CONTAINER_DEPTH, allowedConversion));
+    ASSERT_EQ(allowedConversion.trakInfoVec_.size(), 1);
+    EXPECT_EQ(allowedConversion.trakInfoVec_[0].trakType, TimeAndIndexConversion::TrakType::TRAK_VIDIO);
+
+    TimeAndIndexConversion skippedConversion;
+    ASSERT_TRUE(ParseDeepContainerMedia(MAX_CONTAINER_DEPTH + 1, skippedConversion));
+    ASSERT_EQ(skippedConversion.trakInfoVec_.size(), 1);
+    EXPECT_EQ(skippedConversion.trakInfoVec_[0].trakType, TimeAndIndexConversion::TrakType::TRAK_OTHER);
+}
+
+/**
+ * @tc.name: ValidCttsEntries
+ * @tc.number: ValidCttsEntries_001
+ * @tc.desc: A normal CTTS box keeps its entry data after bounded reading.
+ */
+HWTEST_F(PtsAndIndexConversionTest, ValidCttsEntries, TestSize.Level0)
+{
+    TimeAndIndexConversion conversion;
+    ASSERT_TRUE(ParseSmallSizeMedia(BOX_TYPE_CTTS, MakeTimeEntryPayload(1, 3), conversion));
+    ASSERT_EQ(conversion.trakInfoVec_.size(), 1);
+    ASSERT_EQ(conversion.trakInfoVec_[0].cttsEntries.size(), 1);
+    EXPECT_EQ(conversion.trakInfoVec_[0].cttsEntries[0].sampleCount, 2);
+    EXPECT_EQ(conversion.trakInfoVec_[0].cttsEntries[0].sampleOffset, 3);
+}
+
+/**
+ * @tc.name: ValidSttsEntries
+ * @tc.number: ValidSttsEntries_001
+ * @tc.desc: A normal STTS box keeps its entry data after bounded reading.
+ */
+HWTEST_F(PtsAndIndexConversionTest, ValidSttsEntries, TestSize.Level0)
+{
+    TimeAndIndexConversion conversion;
+    ASSERT_TRUE(ParseSmallSizeMedia(BOX_TYPE_STTS, MakeTimeEntryPayload(1, 100), conversion));
+    ASSERT_EQ(conversion.trakInfoVec_.size(), 1);
+    ASSERT_EQ(conversion.trakInfoVec_[0].sttsEntries.size(), 1);
+    EXPECT_EQ(conversion.trakInfoVec_[0].sttsEntries[0].sampleCount, 2);
+    EXPECT_EQ(conversion.trakInfoVec_[0].sttsEntries[0].sampleDelta, 100);
+}
+
+/**
+ * @tc.name: ValidHdlr
+ * @tc.number: ValidHdlr_001
+ * @tc.desc: A normal HDLR box preserves the video handler classification.
+ */
+HWTEST_F(PtsAndIndexConversionTest, ValidHdlr, TestSize.Level0)
+{
+    TimeAndIndexConversion conversion;
+    ASSERT_TRUE(ParseSmallSizeMedia(BOX_TYPE_HDLR, MakeHdlrPayload(), conversion));
+    ASSERT_EQ(conversion.trakInfoVec_.size(), 1);
+    EXPECT_EQ(conversion.trakInfoVec_[0].trakType, TimeAndIndexConversion::TrakType::TRAK_VIDIO);
+}
+
+/**
+ * @tc.name: ValidMdhdVersions
+ * @tc.number: ValidMdhdVersions_001
+ * @tc.desc: Both MDHD versions retain their time scale with bounded reading.
+ */
+HWTEST_F(PtsAndIndexConversionTest, ValidMdhdVersions, TestSize.Level0)
+{
+    TimeAndIndexConversion conversionV0;
+    ASSERT_TRUE(ParseSmallSizeMedia(BOX_TYPE_MDHD, MakeMdhdPayload(0), conversionV0));
+    ASSERT_EQ(conversionV0.trakInfoVec_.size(), 1);
+    EXPECT_EQ(conversionV0.trakInfoVec_[0].timeScale, 1000);
+
+    TimeAndIndexConversion conversionV1;
+    ASSERT_TRUE(ParseSmallSizeMedia(BOX_TYPE_MDHD, MakeMdhdPayload(1), conversionV1));
+    ASSERT_EQ(conversionV1.trakInfoVec_.size(), 1);
+    EXPECT_EQ(conversionV1.trakInfoVec_[0].timeScale, 1000);
+}
+
+/**
+ * @tc.name: RejectsExcessiveTimeEntryCount
+ * @tc.number: RejectsExcessiveTimeEntryCount_001
+ * @tc.desc: CTTS/STTS entry counts over the parser limit are rejected without large allocation.
+ */
+HWTEST_F(PtsAndIndexConversionTest, RejectsExcessiveTimeEntryCount, TestSize.Level0)
+{
+    TimeAndIndexConversion cttsConversion;
+    ASSERT_TRUE(ParseSmallSizeMedia(BOX_TYPE_CTTS, MakeTimeEntryPayload(EXCESSIVE_ENTRY_COUNT, 0), cttsConversion));
+    ASSERT_EQ(cttsConversion.trakInfoVec_.size(), 1);
+    EXPECT_TRUE(cttsConversion.trakInfoVec_[0].cttsEntries.empty());
+
+    TimeAndIndexConversion sttsConversion;
+    ASSERT_TRUE(ParseSmallSizeMedia(BOX_TYPE_STTS, MakeTimeEntryPayload(EXCESSIVE_ENTRY_COUNT, 0),
+        sttsConversion));
+    ASSERT_EQ(sttsConversion.trakInfoVec_.size(), 1);
+    EXPECT_TRUE(sttsConversion.trakInfoVec_[0].sttsEntries.empty());
+}
+
+/**
+ * @tc.name: RejectsTooSmallMetadataBoxes
+ * @tc.number: RejectsTooSmallMetadataBoxes_001
+ * @tc.desc: HDLR and MDHD boxes smaller than their required fields are ignored safely.
+ */
+HWTEST_F(PtsAndIndexConversionTest, RejectsTooSmallMetadataBoxes, TestSize.Level0)
+{
+    TimeAndIndexConversion hdlrConversion;
+    ASSERT_TRUE(ParseSmallSizeMedia(BOX_TYPE_HDLR, std::vector<uint8_t>(sizeof(uint32_t) * 2), hdlrConversion));
+    ASSERT_EQ(hdlrConversion.trakInfoVec_.size(), 1);
+    EXPECT_EQ(hdlrConversion.trakInfoVec_[0].trakType, TimeAndIndexConversion::TrakType::TRAK_OTHER);
+
+    TimeAndIndexConversion mdhdConversion;
+    ASSERT_TRUE(ParseSmallSizeMedia(BOX_TYPE_MDHD, std::vector<uint8_t>(sizeof(uint32_t)), mdhdConversion));
+    ASSERT_EQ(mdhdConversion.trakInfoVec_.size(), 1);
+    EXPECT_EQ(mdhdConversion.trakInfoVec_[0].timeScale, 0);
 }
 }
