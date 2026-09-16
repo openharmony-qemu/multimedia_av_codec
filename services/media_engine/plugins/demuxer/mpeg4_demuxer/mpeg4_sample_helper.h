@@ -421,6 +421,8 @@ private:
     bool RepairStscEntries();
     uint32_t GetMappedStscSampleCount(uint32_t upperBound) const;
     void TruncateSttsEntries(uint32_t sampleCount);
+    Status ValidateSampleSizeCount(uint32_t sttsSampleCount) const;
+    Status ValidateAndRepairStsc(uint32_t& sttsSampleCount);
     Status PreBuildProcessAndCheck();
     uint64_t CountSttsSamples() const;
     SampleIndexBuildContext CreateSampleIndexBuildContext() const;

@@ -45,6 +45,7 @@ constexpr uint32_t HALF_BYTE_BITS = 4;
 constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
 constexpr uint32_t HALF_BYTE_NUMBER = 2;
+constexpr size_t PREVIOUS_ENTRY_INDEX_OFFSET = 2;
 
 struct MPEG4SampleHelper::SampleInfo {
     uint32_t duration = 0;
@@ -1622,7 +1623,8 @@ bool MPEG4SampleHelper::RepairStscEntries()
         const bool hasNext = index < stscEntry_.size();
         const bool hasPrevious = index > 1;
         const bool invalid = (hasNext && entry.first >= stscEntry_[index].first) ||
-            (hasPrevious && entry.first <= stscEntry_[index - 2].first) || entry.first < index - 1 ||
+            (hasPrevious && entry.first <= stscEntry_[index - PREVIOUS_ENTRY_INDEX_OFFSET].first) ||
+            entry.first < index - 1 ||
             entry.count == 0 || entry.id == 0;
         if (!invalid) {
             continue;
@@ -1635,8 +1637,9 @@ bool MPEG4SampleHelper::RepairStscEntries()
             continue;
         }
         entry.first = std::max(entry.first, static_cast<uint32_t>(index - 1));
-        if (hasPrevious && entry.first <= stscEntry_[index - 2].first) {
-            entry.first = stscEntry_[index - 2].first == UINT32_MAX ? UINT32_MAX : stscEntry_[index - 2].first + 1;
+        if (hasPrevious && entry.first <= stscEntry_[index - PREVIOUS_ENTRY_INDEX_OFFSET].first) {
+            entry.first = stscEntry_[index - PREVIOUS_ENTRY_INDEX_OFFSET].first == UINT32_MAX ? UINT32_MAX :
+                stscEntry_[index - PREVIOUS_ENTRY_INDEX_OFFSET].first + 1;
         }
         entry.count = std::max(entry.count, 1U);
         entry.id = std::max(entry.id, 1U);
@@ -1674,6 +1677,48 @@ void MPEG4SampleHelper::TruncateSttsEntries(uint32_t sampleCount)
     }
 }
 
+Status MPEG4SampleHelper::ValidateSampleSizeCount(uint32_t sttsSampleCount) const
+{
+    if (!hasDefaultStszSize_) {
+        FALSE_RETURN_V_MSG_E(sampleSizes_.size() == sampleSizeCount_, Status::ERROR_INVALID_DATA,
+            "Invalid stsz sample size count");
+        FALSE_RETURN_V_MSG_E(sttsSampleCount <= sampleSizes_.size(), Status::ERROR_INVALID_DATA,
+            "stsz sample size count is less than stts");
+    } else if (sampleSizeCount_ != sttsSampleCount) {
+        MEDIA_LOG_W("stsz sample count " PUBLIC_LOG_U32 " does not match stts sample count " PUBLIC_LOG_U32,
+            sampleSizeCount_, sttsSampleCount);
+    }
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::ValidateAndRepairStsc(uint32_t& sttsSampleCount)
+{
+    bool stscRepaired = RepairStscEntries();
+    for (uint32_t i = 0; i < stscEntry_.size(); ++i) {
+        const auto& entry = stscEntry_[i];
+        FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_SAMPLE_TABLE_SAMPLES, Status::ERROR_INVALID_DATA,
+            "Invalid stsc sample count");
+        FALSE_RETURN_V_MSG_E(entry.first < chunkOffsets_.size(), Status::ERROR_INVALID_DATA,
+            "Invalid stsc first chunk");
+        if (i > 0) {
+            FALSE_RETURN_V_MSG_E(entry.first > stscEntry_[i - 1].first, Status::ERROR_INVALID_DATA,
+                "Invalid stsc first chunk order");
+        }
+    }
+    if (!stscRepaired) {
+        return Status::OK;
+    }
+    uint32_t mappedSampleCount = GetMappedStscSampleCount(sttsSampleCount);
+    FALSE_RETURN_V_MSG_E(mappedSampleCount > 0, Status::ERROR_INVALID_DATA, "stsc maps no samples");
+    if (mappedSampleCount < sttsSampleCount) {
+        MEDIA_LOG_W("Trim stts samples not mapped by stsc: stts=" PUBLIC_LOG_U32 ", mapped=" PUBLIC_LOG_U32,
+            sttsSampleCount, mappedSampleCount);
+        TruncateSttsEntries(mappedSampleCount);
+        sttsSampleCount = mappedSampleCount;
+    }
+    return Status::OK;
+}
+
 Status MPEG4SampleHelper::PreBuildProcessAndCheck()
 {
     if (isFragmented_) {
@@ -1694,38 +1739,10 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
     Status ret = ValidateAndCountSttsSamples(sttsSampleCount);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ValidateAndCountSttsSamples failed");
 
-    if (!hasDefaultStszSize_) {
-        FALSE_RETURN_V_MSG_E(sampleSizes_.size() == sampleSizeCount_, Status::ERROR_INVALID_DATA,
-            "Invalid stsz sample size count");
-        FALSE_RETURN_V_MSG_E(sttsSampleCount <= sampleSizes_.size(), Status::ERROR_INVALID_DATA,
-            "stsz sample size count is less than stts");
-    } else if (sampleSizeCount_ != sttsSampleCount) {
-        MEDIA_LOG_W("stsz sample count " PUBLIC_LOG_U32 " does not match stts sample count " PUBLIC_LOG_U32,
-            sampleSizeCount_, sttsSampleCount);
-    }
-    bool stscRepaired = RepairStscEntries();
-    for (uint32_t i = 0; i < stscEntry_.size(); ++i) {
-        const auto& entry = stscEntry_[i];
-        FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_SAMPLE_TABLE_SAMPLES, Status::ERROR_INVALID_DATA,
-            "Invalid stsc sample count");
-        FALSE_RETURN_V_MSG_E(entry.first < chunkOffsets_.size(), Status::ERROR_INVALID_DATA,
-            "Invalid stsc first chunk");
-        if (i > 0) {
-            FALSE_RETURN_V_MSG_E(entry.first > stscEntry_[i - 1].first, Status::ERROR_INVALID_DATA,
-                "Invalid stsc first chunk order");
-        }
-    }
-
-    if (stscRepaired) {
-        uint32_t mappedSampleCount = GetMappedStscSampleCount(sttsSampleCount);
-        FALSE_RETURN_V_MSG_E(mappedSampleCount > 0, Status::ERROR_INVALID_DATA, "stsc maps no samples");
-        if (mappedSampleCount < sttsSampleCount) {
-            MEDIA_LOG_W("Trim stts samples not mapped by stsc: stts=" PUBLIC_LOG_U32 ", mapped=" PUBLIC_LOG_U32,
-                sttsSampleCount, mappedSampleCount);
-            TruncateSttsEntries(mappedSampleCount);
-            sttsSampleCount = mappedSampleCount;
-        }
-    }
+    FALSE_RETURN_V_MSG_E(ValidateSampleSizeCount(sttsSampleCount) == Status::OK, Status::ERROR_INVALID_DATA,
+        "Validate stsz sample count failed");
+    FALSE_RETURN_V_MSG_E(ValidateAndRepairStsc(sttsSampleCount) == Status::OK, Status::ERROR_INVALID_DATA,
+        "Validate stsc failed");
 
     if (!cttsEntry_.empty()) {
         NormalizeCttsEntries(sttsSampleCount);
