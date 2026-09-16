@@ -307,12 +307,20 @@ void TimeAndIndexConversion::ParseContainerBox(uint64_t boxSize, uint32_t depth)
     }
 }
 
+bool TimeAndIndexConversion::SkipOversizedBox(uint64_t boxSize, const char *boxName)
+{
+    if (boxSize <= MAX_NON_MDAT_BOX_PAYLOAD_SIZE) {
+        return false;
+    }
+    MEDIA_LOG_E("%{public}s box payload too large: " PUBLIC_LOG_U64 ", max " PUBLIC_LOG_U64,
+        boxName, boxSize, MAX_NON_MDAT_BOX_PAYLOAD_SIZE);
+    offset_ += boxSize;
+    return true;
+}
+
 void TimeAndIndexConversion::ParseCtts(uint64_t boxSize)
 {
-    if (boxSize > MAX_NON_MDAT_BOX_PAYLOAD_SIZE) {
-        MEDIA_LOG_E("CTTS box payload too large: " PUBLIC_LOG_U64 ", max " PUBLIC_LOG_U64,
-            boxSize, MAX_NON_MDAT_BOX_PAYLOAD_SIZE);
-        offset_ += boxSize;
+    if (SkipOversizedBox(boxSize, "CTTS")) {
         return;
     }
     FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseCtts failed due to too large box size");
@@ -353,10 +361,7 @@ void TimeAndIndexConversion::ParseCtts(uint64_t boxSize)
 
 void TimeAndIndexConversion::ParseStts(uint64_t boxSize)
 {
-    if (boxSize > MAX_NON_MDAT_BOX_PAYLOAD_SIZE) {
-        MEDIA_LOG_E("STTS box payload too large: " PUBLIC_LOG_U64 ", max " PUBLIC_LOG_U64,
-            boxSize, MAX_NON_MDAT_BOX_PAYLOAD_SIZE);
-        offset_ += boxSize;
+    if (SkipOversizedBox(boxSize, "STTS")) {
         return;
     }
     FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseStts failed due to too large box size");
@@ -396,10 +401,7 @@ void TimeAndIndexConversion::ParseStts(uint64_t boxSize)
 
 void TimeAndIndexConversion::ParseHdlr(uint64_t boxSize)
 {
-    if (boxSize > MAX_NON_MDAT_BOX_PAYLOAD_SIZE) {
-        MEDIA_LOG_E("HDLR box payload too large: " PUBLIC_LOG_U64 ", max " PUBLIC_LOG_U64,
-            boxSize, MAX_NON_MDAT_BOX_PAYLOAD_SIZE);
-        offset_ += boxSize;
+    if (SkipOversizedBox(boxSize, "HDLR")) {
         return;
     }
     FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseHdlr failed due to too large box size");
@@ -440,10 +442,7 @@ void TimeAndIndexConversion::ParseHdlr(uint64_t boxSize)
 
 void TimeAndIndexConversion::ParseMdhd(uint64_t boxSize)
 {
-    if (boxSize > MAX_NON_MDAT_BOX_PAYLOAD_SIZE) {
-        MEDIA_LOG_E("MDHD box payload too large: " PUBLIC_LOG_U64 ", max " PUBLIC_LOG_U64,
-            boxSize, MAX_NON_MDAT_BOX_PAYLOAD_SIZE);
-        offset_ += boxSize;
+    if (SkipOversizedBox(boxSize, "MDHD")) {
         return;
     }
     FALSE_RETURN_MSG(boxSize <= std::numeric_limits<size_t>::max(), "ParseMdhd failed due to too large box size");

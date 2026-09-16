@@ -117,6 +117,7 @@ private:
     void ParseTrak(uint64_t boxSize);
     void ParseBox(uint64_t boxSize);
     void ParseContainerBox(uint64_t boxSize, uint32_t depth);
+    bool SkipOversizedBox(uint64_t boxSize, const char *boxName);
     void ParseCtts(uint64_t boxSize);
     void ParseStts(uint64_t boxSize);
     void ParseHdlr(uint64_t boxSize);
