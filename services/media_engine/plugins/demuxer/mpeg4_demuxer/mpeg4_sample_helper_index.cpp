@@ -497,10 +497,14 @@ Status MPEG4SampleHelper::ConsumeRawSampleCtts(SampleTableCursor& cursor, uint32
         uint32_t consumed = std::min(remaining, cursor.cttsRemaining);
         remaining -= consumed;
         cursor.cttsRemaining -= consumed;
-        if (cursor.cttsRemaining == 0 && remaining > 0) {
-            ++cursor.cttsIndex;
-            FALSE_RETURN_V_NOLOG(cursor.cttsIndex < cttsEntry_.size(), Status::ERROR_INVALID_DATA);
-            cursor.cttsRemaining = cttsEntry_[cursor.cttsIndex].count;
+        if (cursor.cttsRemaining == 0) {
+            bool hasMoreRawSamples = cursor.processedRawSamples < sampleTableSummary_.rawSampleCount &&
+                samplesPerFrame < sampleTableSummary_.rawSampleCount - cursor.processedRawSamples;
+            if (remaining > 0 || hasMoreRawSamples) {
+                ++cursor.cttsIndex;
+                FALSE_RETURN_V_NOLOG(cursor.cttsIndex < cttsEntry_.size(), Status::ERROR_INVALID_DATA);
+                cursor.cttsRemaining = cttsEntry_[cursor.cttsIndex].count;
+            }
         }
     }
     return Status::OK;
