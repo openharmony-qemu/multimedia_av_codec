@@ -143,7 +143,14 @@ void VpxDecoder::ConfigureHdrMetadata(const Format &format)
     }
     size_t extraSize = 0;
     uint8_t *extraData = nullptr;
-    format.GetBuffer(MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA, &extraData, extraSize);
+    if (!format.GetBuffer(MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA, &extraData, extraSize)){
+        AVCODEC_LOGE("format_ get MD_KEY_VIDEO_HDR_METADATA failed!");
+        return;
+    }
+    if (extraData == nullptr || extraSize != sizeof(AVMasteringDisplayMetadata)) {
+        AVCODEC_LOGE("Get HDR metadata from format failed");
+        return;
+    }
     const AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)extraData;
     if (metadata == nullptr || extraSize != sizeof(AVMasteringDisplayMetadata)) {
         AVCODEC_LOGE("Get HDR metadata from format failed");
@@ -592,13 +599,13 @@ int VpxDecoder::VpxDestroyDecoderFunc(void **vpxDecoder)
     }
     vpx_codec_ctx_t *codec = (vpx_codec_ctx_t *)(*vpxDecoder);
     vpx_codec_err_t res = vpx_codec_destroy(codec);
-    free(codec);
-    *vpxDecoder = nullptr;
     if (res != VPX_CODEC_OK) {
         AVCODEC_LOGE("Error: Failed to destroy decoder: %s\n", vpx_codec_err_to_string(res));
         return -1;
     }
-    return 0;
+    free(codec);
+    *vpxDecoder = nullptr;
+    return (res != VPX_CODEC_OK) ? -1 : 0;
 }
 
 int VpxDecoder::VpxDecodeFrameFunc(void *vpxDecoder, const unsigned char *frame, unsigned int frameSize)
