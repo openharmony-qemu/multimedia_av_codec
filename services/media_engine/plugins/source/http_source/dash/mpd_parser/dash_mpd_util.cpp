@@ -14,6 +14,7 @@
  */
 #define HST_LOG_TAG "DashMpdUtil"
 
+#include <cmath>
 #include <cstring>
 #include <cstdlib>
 #include <cstdint>
@@ -343,7 +344,7 @@ bool DashStrToNonNegativeDouble(const std::string &str, double &result)
     if (pos < str.length()) {
         return false;
     }
-    if (result < 0.0) {
+    if (!std::isfinite(result) || result < 0.0) {
         return false;
     }
     return true;
