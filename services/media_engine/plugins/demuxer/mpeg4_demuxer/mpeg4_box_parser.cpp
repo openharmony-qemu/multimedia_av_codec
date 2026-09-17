@@ -2699,7 +2699,9 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
         uint32_t extensionSampleRate = 0;
         ReadAACSampleRate(bitReader, extensionSamplingFreqIndex, extensionSampleRate);
         ReadAACObjectType(bitReader, audioObjectType);
-        sampleRate = extensionSampleRate;
+        if (extensionSampleRate > 0) {
+            sampleRate = extensionSampleRate;
+        }
     }
     const uint32_t frameLengthFlag = bitReader.HasBits(1) ? bitReader.ReadBits(1) : 0;
     uint32_t samplePerFrame = frameLengthFlag ? 960 : 1024;
@@ -3172,8 +3174,7 @@ Status MPEG4AtomParser::ParseStsc(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
-    FALSE_RETURN_V_MSG_E(currentAtom.type != FourccType("stsc") || currentAtom.dataSize > 0,
-        Status::ERROR_INVALID_DATA, "Empty stsc atom");
+    FALSE_RETURN_V_MSG_E(currentAtom.dataSize > 0, Status::ERROR_INVALID_DATA, "Empty stsc atom");
     if (currentAtom.size > MIN_BOX_SIZE) {
         Status ret = lastTrack_->sampleHelper->SetSampleToChunkParams(ctx->dataOffset, currentAtom.dataSize);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set sample to chunk params failed");
