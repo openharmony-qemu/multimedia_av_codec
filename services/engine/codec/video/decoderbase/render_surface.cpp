@@ -205,8 +205,6 @@ int32_t RenderSurface::FlushSurfaceMemory(std::shared_ptr<FSurfaceMemory> &surfa
         CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Surface buffer attach failed!");
         surfaceMemory->isAttached = true;
     }
-    CHECK_AND_RETURN_RET_LOG(index < outAVBuffer4Surface_.size(), AVCS_ERR_INVALID_VAL,
-        "Surface buffer index %{public}d out of range, size=%{public}lu", index, outAVBuffer4Surface_.size());
     OHOS::BufferFlushConfig flushConfig = {{0, 0, surfaceBuffer->GetWidth(), surfaceBuffer->GetHeight()},
         outAVBuffer4Surface_[index]->pts_, -1};
     if (outAVBuffer4Surface_[index]->meta_->Find(OHOS::Media::Tag::VIDEO_DECODER_DESIRED_PRESENT_TIMESTAMP) !=
