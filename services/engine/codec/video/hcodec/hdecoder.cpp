@@ -62,6 +62,7 @@ HDecoder::~HDecoder()
 {
     MsgHandleLoop::Stop();
 #ifdef USE_VIDEO_PROCESSING_ENGINE
+    std::lock_guard<std::mutex> vpelock(g_vpeLock);
     if (vpeHandle_ != nullptr) {
         if (VrrDestroyFunc_ != nullptr) {
             VrrDestroyFunc_(vrrHandle_);
@@ -571,6 +572,11 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 int32_t HDecoder::InitVrr()
 {
+    std::unique_lock<std::mutex> vpelock(g_vpeLock, std::try_to_lock);
+    if (!vpelock.owns_lock()) {
+        HLOGI("VPE lock busy, InitVrr skipped");
+        return AVCS_ERR_UNSUPPORT;
+    }
     if (vpeHandle_ != nullptr) {
         return AVCS_ERR_OK;
     }
