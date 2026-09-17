@@ -63,7 +63,9 @@ int32_t VideoDecoder::Init(Meta &callerInfo)
                callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, decInfo_.processName)) {
         decInfo_.calledByAvcodec = true;
     }
-    callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
+    if (callerInfo.GetData("av_codec_event_info_instance_id", instanceId_)) {
+        AVCODEC_LOGW("Failed to get instanceId from meta");
+    }
     int32_t ret = Initialize();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to initialize");
     decInfo_.instanceId = std::to_string(instanceId_);
@@ -122,7 +124,7 @@ void VideoDecoder::ConfigureDefaultVal(const Format &format, const std::string_v
     } else {
         AVCODEC_LOGW("Set parameter failed: %{public}s, which minimum threshold=%{public}d, "
                      "maximum threshold=%{public}d",
-                     formatKey.data(), minVal, maxVal);
+                     std::string(formatKey).c_str(), minVal, maxVal);
     }
 }
 
@@ -310,9 +312,9 @@ void VideoDecoder::ResetData()
     if (scaleData_[0] != nullptr) {
         if (isConverted_) {
             av_free(scaleData_[0]);
-            isConverted_ = false;
-            scale_.reset();
         }
+        isConverted_ = false;
+        scale_.reset();
         for (int32_t i = 0; i < AV_NUM_DATA_POINTERS; i++) {
             scaleData_[i] = nullptr;
             scaleLineSize_[i] = 0;
@@ -375,6 +377,9 @@ int32_t VideoDecoder::Flush()
                              "%{public}s Flush codec failed: not in running or Eos state", decName_.c_str());
     state_ = State::FLUSHING;
     AVCODEC_LOGI("%{public}s step into FLUSHING status", decName_.c_str());
+    CHECK_AND_RETURN_RET_LOG(inputAvailQue_ != nullptr, AVCS_ERR_NO_MEMORY, "inputAvailQue_ is null!");
+    CHECK_AND_RETURN_RET_LOG(codecAvailQue_ != nullptr, AVCS_ERR_NO_MEMORY, "codecAvailQue_ is null!");
+    CHECK_AND_RETURN_RET_LOG(sendTask_ != nullptr, AVCS_ERR_NO_MEMORY, "sendTask_ is null!");
     inputAvailQue_->SetActive(false, false);
     codecAvailQue_->SetActive(false, false);
     sendTask_->Pause();
@@ -598,13 +603,15 @@ int32_t VideoDecoder::RenderOutputBuffer(uint32_t index)
         frameBuffer->owner_ = Owner::OWNED_BY_SURFACE;
         oLock.unlock();
         std::shared_ptr<FSurfaceMemory> surfaceMemory = frameBuffer->sMemory;
+        CHECK_AND_RETURN_RET_LOG(surfaceMemory != nullptr, AVCS_ERR_UNKNOWN, "surfaceMemory is nullptr.");
         int32_t ret = FlushSurfaceMemory(surfaceMemory, index);
         if (ret != AVCS_ERR_OK) {
             AVCODEC_LOGW("Flush surface memory(index=%{public}u) failed: %{public}d", index, ret);
-        } else {
-            AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
+            std::lock_guard<std::mutex> restor(outputMutex_);
+            frameBuffer->owner_ = Owner::OWNED_BY_USER;
+            return ret;
         }
-        AVCODEC_LOGD("render output buffer with index, index=%{public}u", index);
+        AVCODEC_LOGD("Flush surface memory(index=%{public}u) successful.", index);
         return AVCS_ERR_OK;
     } else {
         AVCODEC_LOGE("Failed to render output buffer with bad index, index=%{public}u, owner=%{public}d",
@@ -660,6 +667,7 @@ void VideoDecoder::SetSurfaceParameter()
     }
     if (scaling) {
         sInfo_.scalingMode = scaling.value();
+        CHECK_AND_RETURN_LOG(sInfo_.surface != nullptr, "surface is null");
         sInfo_.surface->SetScalingMode(sInfo_.scalingMode.value());
     }
     if (orientation) {

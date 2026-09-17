@@ -276,6 +276,13 @@ int32_t RenderSurface::ClearSurfaceAndSetQueueSize(const sptr<Surface> &surface,
 int32_t RenderSurface::SetSurfaceFormat()
 {
     if (bitDepth_ == BITS_PER_PIXEL_COMPONENT_10) {
+        VideoPixelFormat targetPixelFmt = outputPixelFmt_;
+        if (outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
+            targetPixelFmt = VideoPixelFormat::NV12;
+        }
+        GraphicPixelFormat surfacePixelFmt = TranslateSurfaceFormat(targetPixelFmt);
+        CHECK_AND_RETURN_RET_LOG(surfacePixelFmt != GraphicPixelFormat::GRAPHIC_PIXEL_FMT_BUTT, AVCS_ERR_UNSUPPORT,
+                                 "Failed to allocate output buffer: unsupported surface format");
         if (outputPixelFmt_ == VideoPixelFormat::NV12 || outputPixelFmt_ == VideoPixelFormat::UNKNOWN) {
             sInfo_.requestConfig.format = GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010;
         } else {
@@ -540,6 +547,7 @@ sptr<SurfaceBuffer> RenderSurface::CreateNewSurfaceBuffer(int32_t index)
     int32_t ret = surfaceMemory->AllocSurfaceBuffer(width_, height_);
     if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("Alloc new surface buffer failed: %{public}d", ret);
+        surfaceMemory->ReleaseSurfaceBuffer();
         return nullptr;
     }
     buffers_[INDEX_OUTPUT][index]->avBuffer =
