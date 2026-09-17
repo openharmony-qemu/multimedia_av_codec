@@ -417,6 +417,12 @@ private:
     bool HasTfhdRemainingData(const TfhdParseContext& ctx, size_t fieldSize) const;
     Status ParseTfhdBaseDataOffset(TfhdParseContext& ctx, int64_t moofOffset);
     Status ParseTfhdOptionalUint32(TfhdParseContext& ctx, const TfhdOptionalUint32Field& field);
+    void NormalizeCttsEntries(uint32_t sttsSampleCount);
+    bool RepairStscEntries();
+    uint32_t GetMappedStscSampleCount(uint32_t upperBound) const;
+    void TruncateSttsEntries(uint32_t sampleCount);
+    Status ValidateSampleSizeCount(uint32_t sttsSampleCount) const;
+    Status ValidateAndRepairStsc(uint32_t& sttsSampleCount);
     Status PreBuildProcessAndCheck();
     uint64_t CountSttsSamples() const;
     SampleIndexBuildContext CreateSampleIndexBuildContext() const;

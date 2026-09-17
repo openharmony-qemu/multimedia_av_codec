@@ -45,6 +45,7 @@ constexpr uint32_t HALF_BYTE_BITS = 4;
 constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
 constexpr uint32_t HALF_BYTE_NUMBER = 2;
+constexpr size_t PREVIOUS_ENTRY_INDEX_OFFSET = 2;
 
 struct MPEG4SampleHelper::SampleInfo {
     uint32_t duration = 0;
@@ -733,7 +734,10 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
 
     for (uint32_t i = 0; i < numCttsEntries; ++i) {
         uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(CttsEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid ctts sample count");
+        if (sampleCount == 0) {
+            MEDIA_LOG_D("Ignore zero-count ctts entry");
+            continue;
+        }
         uint32_t rawDelta = GetU32Value(data.get() + 4 + i * sizeof(CttsEntry));
         cttsEntry_.emplace_back(CttsEntry {
             .count = sampleCount,
@@ -989,12 +993,10 @@ Status MPEG4SampleHelper::SetSampleToChunkParams(int64_t dataOffset, size_t data
 
     for (uint32_t i = 0; i < numStscEntries; ++i) {
         uint32_t tempFirst = GetU32Value(data.get() + i * sizeof(StscEntry));
-        FALSE_RETURN_V_NOLOG(tempFirst > 0, Status::ERROR_INVALID_DATA);
         uint32_t sampleCount = GetU32Value(data.get() + sizeof(uint32_t) + i * sizeof(StscEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stsc sample count");
 
         stscEntry_.emplace_back(StscEntry{
-            .first = tempFirst - 1,
+            .first = tempFirst > 0 ? tempFirst - 1 : 0,
             .count = sampleCount,
             .id = GetU32Value(data.get() + sizeof(uint64_t) + i * sizeof(StscEntry))
         });
@@ -1585,6 +1587,147 @@ Status MPEG4SampleHelper::ValidateCttsEntries(uint32_t sttsSampleCount) const
     return Status::OK;
 }
 
+void MPEG4SampleHelper::NormalizeCttsEntries(uint32_t sttsSampleCount)
+{
+    uint64_t totalSampleCount = 0;
+    bool hasZeroCount = false;
+    for (const auto& entry : cttsEntry_) {
+        hasZeroCount = hasZeroCount || entry.count == 0;
+        totalSampleCount += entry.count;
+    }
+    if (!hasZeroCount && totalSampleCount == sttsSampleCount) {
+        return;
+    }
+    std::vector<CttsEntry> normalizedEntries;
+    normalizedEntries.reserve(cttsEntry_.size() + 1);
+    uint32_t remaining = sttsSampleCount;
+    for (const auto& entry : cttsEntry_) {
+        if (entry.count == 0) {
+            continue;
+        }
+        if (remaining == 0) {
+            MEDIA_LOG_W("Ignore trailing ctts entries beyond stts sample count");
+            break;
+        }
+        uint32_t count = std::min(entry.count, remaining);
+        normalizedEntries.emplace_back(CttsEntry {.count = count, .delta = entry.delta});
+        remaining -= count;
+    }
+    if (remaining > 0) {
+        MEDIA_LOG_W("Pad missing ctts entries with zero offset, count=" PUBLIC_LOG_U32, remaining);
+        normalizedEntries.emplace_back(CttsEntry {.count = remaining, .delta = 0});
+    }
+    cttsEntry_ = std::move(normalizedEntries);
+}
+
+bool MPEG4SampleHelper::RepairStscEntries()
+{
+    size_t repairCount = 0;
+    while (stscEntry_.size() > 1 && stscEntry_.back().count == 0) {
+        stscEntry_.pop_back();
+        ++repairCount;
+    }
+    for (size_t index = stscEntry_.size(); index > 0; --index) {
+        StscEntry& entry = stscEntry_[index - 1];
+        const bool hasNext = index < stscEntry_.size();
+        const bool hasPrevious = index > 1;
+        const bool invalid = (hasNext && entry.first >= stscEntry_[index].first) ||
+            (hasPrevious && entry.first <= stscEntry_[index - PREVIOUS_ENTRY_INDEX_OFFSET].first) ||
+            entry.first < index - 1 ||
+            entry.count == 0 || entry.id == 0;
+        if (!invalid) {
+            continue;
+        }
+        ++repairCount;
+        if (hasNext) {
+            entry.first = stscEntry_[index].first - 1;
+            entry.count = stscEntry_[index].count;
+            entry.id = stscEntry_[index].id;
+            continue;
+        }
+        entry.first = std::max(entry.first, static_cast<uint32_t>(index - 1));
+        if (hasPrevious && entry.first <= stscEntry_[index - PREVIOUS_ENTRY_INDEX_OFFSET].first) {
+            entry.first = stscEntry_[index - PREVIOUS_ENTRY_INDEX_OFFSET].first == UINT32_MAX ? UINT32_MAX :
+                stscEntry_[index - PREVIOUS_ENTRY_INDEX_OFFSET].first + 1;
+        }
+        entry.count = std::max(entry.count, 1U);
+        entry.id = std::max(entry.id, 1U);
+    }
+    if (repairCount > 0) {
+        MEDIA_LOG_W("Repair invalid stsc entries, count=" PUBLIC_LOG_ZU, repairCount);
+    }
+    return repairCount > 0;
+}
+
+uint32_t MPEG4SampleHelper::GetMappedStscSampleCount(uint32_t upperBound) const
+{
+    uint32_t total = 0;
+    size_t stscIndex = 0;
+    for (size_t chunkIndex = 0; chunkIndex < chunkOffsets_.size() && total < upperBound; ++chunkIndex) {
+        if (stscIndex + 1 < stscEntry_.size() && chunkIndex == stscEntry_[stscIndex + 1].first) {
+            ++stscIndex;
+        }
+        uint32_t remaining = upperBound - total;
+        total += std::min(stscEntry_[stscIndex].count, remaining);
+    }
+    return total;
+}
+
+void MPEG4SampleHelper::TruncateSttsEntries(uint32_t sampleCount)
+{
+    uint32_t remaining = sampleCount;
+    for (auto it = sttsEntry_.begin(); it != sttsEntry_.end(); ++it) {
+        if (it->count >= remaining) {
+            it->count = remaining;
+            sttsEntry_.erase(std::next(it), sttsEntry_.end());
+            return;
+        }
+        remaining -= it->count;
+    }
+}
+
+Status MPEG4SampleHelper::ValidateSampleSizeCount(uint32_t sttsSampleCount) const
+{
+    if (!hasDefaultStszSize_) {
+        FALSE_RETURN_V_MSG_E(sampleSizes_.size() == sampleSizeCount_, Status::ERROR_INVALID_DATA,
+            "Invalid stsz sample size count");
+        FALSE_RETURN_V_MSG_E(sttsSampleCount <= sampleSizes_.size(), Status::ERROR_INVALID_DATA,
+            "stsz sample size count is less than stts");
+    } else if (sampleSizeCount_ != sttsSampleCount) {
+        MEDIA_LOG_W("stsz sample count " PUBLIC_LOG_U32 " does not match stts sample count " PUBLIC_LOG_U32,
+            sampleSizeCount_, sttsSampleCount);
+    }
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::ValidateAndRepairStsc(uint32_t& sttsSampleCount)
+{
+    bool stscRepaired = RepairStscEntries();
+    for (uint32_t i = 0; i < stscEntry_.size(); ++i) {
+        const auto& entry = stscEntry_[i];
+        FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_SAMPLE_TABLE_SAMPLES, Status::ERROR_INVALID_DATA,
+            "Invalid stsc sample count");
+        FALSE_RETURN_V_MSG_E(entry.first < chunkOffsets_.size(), Status::ERROR_INVALID_DATA,
+            "Invalid stsc first chunk");
+        if (i > 0) {
+            FALSE_RETURN_V_MSG_E(entry.first > stscEntry_[i - 1].first, Status::ERROR_INVALID_DATA,
+                "Invalid stsc first chunk order");
+        }
+    }
+    if (!stscRepaired) {
+        return Status::OK;
+    }
+    uint32_t mappedSampleCount = GetMappedStscSampleCount(sttsSampleCount);
+    FALSE_RETURN_V_MSG_E(mappedSampleCount > 0, Status::ERROR_INVALID_DATA, "stsc maps no samples");
+    if (mappedSampleCount < sttsSampleCount) {
+        MEDIA_LOG_W("Trim stts samples not mapped by stsc: stts=" PUBLIC_LOG_U32 ", mapped=" PUBLIC_LOG_U32,
+            sttsSampleCount, mappedSampleCount);
+        TruncateSttsEntries(mappedSampleCount);
+        sttsSampleCount = mappedSampleCount;
+    }
+    return Status::OK;
+}
+
 Status MPEG4SampleHelper::PreBuildProcessAndCheck()
 {
     if (isFragmented_) {
@@ -1605,28 +1748,13 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
     Status ret = ValidateAndCountSttsSamples(sttsSampleCount);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ValidateAndCountSttsSamples failed");
 
-    if (!hasDefaultStszSize_) {
-        FALSE_RETURN_V_MSG_E(sampleSizes_.size() == sampleSizeCount_, Status::ERROR_INVALID_DATA,
-            "Invalid stsz sample size count");
-        FALSE_RETURN_V_MSG_E(sttsSampleCount <= sampleSizes_.size(), Status::ERROR_INVALID_DATA,
-            "stsz sample size count is less than stts");
-    } else if (sampleSizeCount_ != sttsSampleCount) {
-        MEDIA_LOG_W("stsz sample count " PUBLIC_LOG_U32 " does not match stts sample count " PUBLIC_LOG_U32,
-            sampleSizeCount_, sttsSampleCount);
-    }
-    for (uint32_t i = 0; i < stscEntry_.size(); ++i) {
-        const auto& entry = stscEntry_[i];
-        FALSE_RETURN_V_MSG_E(entry.count > 0 && entry.count <= MAX_SAMPLE_TABLE_SAMPLES, Status::ERROR_INVALID_DATA,
-            "Invalid stsc sample count");
-        FALSE_RETURN_V_MSG_E(entry.first < chunkOffsets_.size(), Status::ERROR_INVALID_DATA,
-            "Invalid stsc first chunk");
-        if (i > 0) {
-            FALSE_RETURN_V_MSG_E(entry.first > stscEntry_[i - 1].first, Status::ERROR_INVALID_DATA,
-                "Invalid stsc first chunk order");
-        }
-    }
+    FALSE_RETURN_V_MSG_E(ValidateSampleSizeCount(sttsSampleCount) == Status::OK, Status::ERROR_INVALID_DATA,
+        "Validate stsz sample count failed");
+    FALSE_RETURN_V_MSG_E(ValidateAndRepairStsc(sttsSampleCount) == Status::OK, Status::ERROR_INVALID_DATA,
+        "Validate stsc failed");
 
     if (!cttsEntry_.empty()) {
+        NormalizeCttsEntries(sttsSampleCount);
         ret = ValidateCttsEntries(sttsSampleCount);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ValidateCttsEntries failed");
         CalculateDtsShift();

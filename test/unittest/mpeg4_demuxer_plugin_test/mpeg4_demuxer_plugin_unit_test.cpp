@@ -4214,21 +4214,87 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CompositionTime_RejectZe
     Plugins::MPEG4::MPEG4SampleHelper helper;
     helper.dataReader_ = CreateReaderForBytes(data);
 
-    EXPECT_EQ(helper.SetCompositionTimeToSampleParams(0, data.size()), Status::ERROR_INVALID_DATA);
+    EXPECT_EQ(helper.SetCompositionTimeToSampleParams(0, data.size()), Status::OK);
 }
 
 /**
- * @tc.name: Mpeg4DemuxerPlugin_SampleToChunk_RejectZeroSampleCount_001
- * @tc.desc: Verify stsc entries with zero samples per chunk are rejected
+ * @tc.name: Mpeg4DemuxerPlugin_CompositionTime_TrimExcessSamples_001
+ * @tc.desc: Verify trailing ctts samples beyond stts sample count are ignored like FFmpeg mov demuxer
  * @tc.type: FUNC
  */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleToChunk_RejectZeroSampleCount_001, TestSize.Level1)
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CompositionTime_TrimExcessSamples_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper.sttsEntry_ = {{3U, 10U}};
+    helper.cttsEntry_ = {{2U, 5}, {2U, 9}};
+    helper.stscEntry_ = {{0U, 3U, 1U}};
+    helper.sampleSizes_ = {1, 1, 1};
+    helper.sampleSizeCount_ = 3;
+    helper.chunkOffsets_ = {100};
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    ASSERT_EQ(helper.GetSampleIndexView(2, view), Status::OK);
+    EXPECT_EQ(view.pts - view.dts, 9);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleToChunk_AcceptZeroSampleCount_001
+ * @tc.desc: Verify stsc zero sample count is retained for FFmpeg-compatible repair
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleToChunk_AcceptZeroSampleCount_001, TestSize.Level1)
 {
     auto data = BuildStscData({{1U, 0U, 1U}});
     Plugins::MPEG4::MPEG4SampleHelper helper;
     helper.dataReader_ = CreateReaderForBytes(data);
 
-    EXPECT_EQ(helper.SetSampleToChunkParams(0, data.size()), Status::ERROR_INVALID_DATA);
+    EXPECT_EQ(helper.SetSampleToChunkParams(0, data.size()), Status::OK);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleToChunk_RepairInvalidMiddleEntry_001
+ * @tc.desc: Verify invalid intermediate stsc entry is repaired like FFmpeg mov demuxer
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleToChunk_RepairInvalidMiddleEntry_001,
+    TestSize.Level1)
+{
+    auto data = BuildStscData({{1U, 1U, 1U}, {1U, UINT32_MAX, 0U}, {3U, 1U, 1U}});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+    ASSERT_EQ(helper.SetSampleToChunkParams(0, data.size()), Status::OK);
+    helper.sttsEntry_ = {{3U, 1U}};
+    helper.sampleSizes_ = {1, 1, 1};
+    helper.sampleSizeCount_ = 3;
+    helper.chunkOffsets_ = {100, 101, 102};
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    ASSERT_EQ(helper.GetSampleIndexView(1, view), Status::OK);
+    EXPECT_EQ(view.pos, 101);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SampleToChunk_TrimUnmappedSamples_001
+ * @tc.desc: Verify samples beyond repaired stsc chunk coverage are not indexed
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleToChunk_TrimUnmappedSamples_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.sttsEntry_ = {{4U, 1U}};
+    helper.stscEntry_ = {{0U, 1U, 1U}, {0U, 1U, 0U}, {2U, 1U, 1U}};
+    helper.sampleSizes_ = {1, 1, 1, 1};
+    helper.sampleSizeCount_ = 4;
+    helper.chunkOffsets_ = {100, 101, 102};
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    EXPECT_EQ(helper.GetSampleCount(), 3U);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    EXPECT_EQ(helper.GetSampleIndexView(2, view), Status::OK);
+    EXPECT_EQ(helper.GetSampleIndexView(3, view), Status::ERROR_INVALID_PARAMETER);
 }
 
 /**
