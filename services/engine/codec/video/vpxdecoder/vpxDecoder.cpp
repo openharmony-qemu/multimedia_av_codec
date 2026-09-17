@@ -143,7 +143,7 @@ void VpxDecoder::ConfigureHdrMetadata(const Format &format)
     }
     size_t extraSize = 0;
     uint8_t *extraData = nullptr;
-    if (!format.GetBuffer(MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA, &extraData, extraSize)){
+    if (!format.GetBuffer(MediaDescriptionKey::MD_KEY_VIDEO_HDR_METADATA, &extraData, extraSize)) {
         AVCODEC_LOGE("format_ get MD_KEY_VIDEO_HDR_METADATA failed!");
         return;
     }
