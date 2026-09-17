@@ -63,7 +63,9 @@ int32_t VideoDecoder::Init(Meta &callerInfo)
                callerInfo.GetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, decInfo_.processName)) {
         decInfo_.calledByAvcodec = true;
     }
-    callerInfo.GetData("av_codec_event_info_instance_id", instanceId_);
+    if (callerInfo.GetData("av_codec_event_info_instance_id", instanceId_)) {
+        AVCODEC_LOGW("Failed to get instanceId from meta");
+    }
     int32_t ret = Initialize();
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Failed to initialize");
     decInfo_.instanceId = std::to_string(instanceId_);
