@@ -126,12 +126,22 @@ private:
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif
+    // for send task thread
+    void PrepareSendPacket(const std::shared_ptr<AVBuffer> &inputAVBuffer);
+    void HandleSendSuccess(uint32_t index, const std::shared_ptr<FBuffer> &inputBuffer,
+                           const std::shared_ptr<AVBuffer> &inputAVBuffer);
+    void HandleSendEAGAIN();
+    void HandleSendError(int ret);
+
+    // for recv task thread
     void GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
     void GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
-    // Get video frame rate from AVCodecContext. Returns 0.0 if not available.
-    double GetAvCodecContextFrameRate();
     int32_t DecodedFrameProcess(uint32_t index);
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
+    
+    // Get video frame rate from AVCodecContext. Returns 0.0 if not available.
+    double GetAvCodecContextFrameRate();
+
     int32_t AllocateInputBuffer(int32_t inBufferSize);
     int32_t AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer);
     int32_t AllocateOutputBuffer();

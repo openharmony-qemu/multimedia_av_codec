@@ -1334,24 +1334,8 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
     return AVCS_ERR_OK;
 }
 
-void FCodec::SendFrame()
+void FCodec::PrepareSendPacket(const std::shared_ptr<AVBuffer> &inputAVBuffer)
 {
-    CHECK_AND_RETURN_LOG_LIMIT(IsThreadActive(), LOG_FREQUENCE, "Not in running state");
-    if (state_ != State::RUNNING || isSendEos_ || inputAvailQue_->Size() == 0u) {
-        if (state_ == State::EOS) {
-            std::unique_lock<std::mutex> sendLock(sendMutex_);
-            sendCv_.wait(sendLock);
-        } else {
-            if (!isSendEos_ && inputAvailQue_->Size() == 0u) {
-                sendCount_ += 1;
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
-        }
-        return;
-    }
-    uint32_t index = inputAvailQue_->Front();
-    std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
-    std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
         avPacket_->data = nullptr;
         avPacket_->size = 0;
@@ -1365,32 +1349,67 @@ void FCodec::SendFrame()
         avPacket_->size = static_cast<int32_t>(inputAVBuffer->memory_->GetSize());
         avPacket_->pts = inputAVBuffer->pts_;
     }
+}
+
+void FCodec::HandleSendSuccess(uint32_t index, const std::shared_ptr<FBuffer> &inputBuffer,
+                               const std::shared_ptr<AVBuffer> &inputAVBuffer)
+{
+    std::unique_lock<std::mutex> recvLock(recvMutex_);
+    recvCv_.notify_one();
+    recvLock.unlock();
+    inputAvailQue_->Pop();
+    inputBuffer->owner_ = Owner::OWNED_BY_USER;
+    callback_->OnInputBufferAvailable(index, inputAVBuffer);
+}
+
+void FCodec::HandleSendEAGAIN()
+{
+    std::unique_lock<std::mutex> sendLock(sendMutex_);
+    isSendWait_ = true;
+    sendCv_.wait_for(sendLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
+}
+
+void FCodec::HandleSendError(int ret)
+{
+    AVCODEC_LOGE("Cannot send frame to codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
+    callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+    state_ = State::ERROR;
+}
+
+void FCodec::SendFrame()
+{
+    CHECK_AND_RETURN_LOG_LIMIT(IsThreadActive(), LOG_FREQUENCE, "Not in running state");
+    if (state_ != State::RUNNING || isSendEos_ || inputAvailQue_->Size() == 0u) {
+        if (state_ == State::EOS) {
+            std::unique_lock<std::mutex> sendLock(sendMutex_);
+            sendCv_.wait(sendLock);
+        } else {
+            if (!isSendEos_ && inputAvailQue_->Size() == 0u) {
+                // TODO: 用户没有送帧，sleep 前有其他动作待补充
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
+        }
+        return;
+    }
+    uint32_t index = inputAvailQue_->Front();
+    std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
+    std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
+    PrepareSendPacket(inputAVBuffer);
     std::unique_lock<std::mutex> sLock(syncMutex_);
     int ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     sLock.unlock();
     if (ret == 0 || ret == AVERROR_INVALIDDATA) {
-        EXPECT_AND_LOGD(ret == AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
-        std::unique_lock<std::mutex> recvLock(recvMutex_);
-        recvCv_.notify_one();
-        recvLock.unlock();
-        inputAvailQue_->Pop();
-        inputBuffer->owner_ = Owner::OWNED_BY_USER;
+        HandleSendSuccess(index, inputBuffer, inputAVBuffer);
 #ifdef BUILD_ENG_VERSION
         if (dumpInFile_ && dumpInFile_->is_open()) {
             dumpInFile_->write(reinterpret_cast<char *>(inputAVBuffer->memory_->GetAddr()),
                                static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
         }
 #endif // BUILD_ENG_VERSION
-        callback_->OnInputBufferAvailable(index, inputAVBuffer);
-        sendCount_ = 0;
     } else if (ret == AVERROR(EAGAIN)) {
-        std::unique_lock<std::mutex> sendLock(sendMutex_);
-        isSendWait_ = true;
-        sendCv_.wait_for(sendLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
+        HandleSendEAGAIN();
     } else {
-        AVCODEC_LOGE("Cannot send frame to codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
-        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-        state_ = State::ERROR;
+        HandleSendError(ret);
     }
 }
 
