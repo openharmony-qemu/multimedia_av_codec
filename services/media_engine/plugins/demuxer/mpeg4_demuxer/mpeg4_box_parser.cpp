@@ -161,11 +161,6 @@ constexpr size_t DURATION_OFFSET_V1 = 24;
 constexpr size_t DIRECT_META_PATH_SIZE = 2;  // moov/meta 直接结构的路径大小
 constexpr uint8_t AOT_SBR = 5;
 constexpr uint8_t AOT_PS = 29;
-constexpr uint8_t AAC_MAIN = 1;
-constexpr uint8_t AAC_LC = 2;
-constexpr uint8_t AAC_SSR = 3;
-constexpr uint8_t AAC_LTP = 4;
-constexpr uint8_t AAC_ER_LC = 17;
 constexpr uint8_t AAC_ER_LD = 23;
 constexpr uint8_t AAC_ER_ELD = 39;
 // ESDS 描述符标签常量
@@ -312,17 +307,6 @@ static const uint32_t AAC_SAMPLE_RATE_TABLE[] = {
     24000, 22050, 16000, 12000, 11025, 8000, 7350
 };
 
-enum AACDataBlockType : uint8_t {
-    TYPE_SCE,
-    TYPE_CPE,
-    TYPE_CCE,
-    TYPE_LFE,
-    TYPE_DSE,
-    TYPE_PCE,
-    TYPE_FIL,
-    TYPE_END
-};
-
 constexpr uint64_t AV3A_DCA3_BOX_MIN_SIZE = 5;
 constexpr uint64_t AV3A_DCA3_BOX_MAX_SIZE = 64;
 constexpr int32_t AV3A_AUDIO_FRAME_SIZE = 1024;
@@ -386,6 +370,53 @@ uint32_t ReadBitsWide(DemuxerBitReader& bitReader, uint8_t numBits)
         numBits -= bitsToRead;
     }
     return value;
+}
+
+uint32_t ReadBitsWidePadded(DemuxerBitReader& bitReader, uint8_t numBits)
+{
+    if (bitReader.HasBits(numBits)) {
+        return ReadBitsWide(bitReader, numBits);
+    }
+    uint32_t value = 0;
+    while (numBits > 0) {
+        value <<= 1;
+        if (bitReader.HasBits(1)) {
+            value |= bitReader.ReadBits(1);
+        }
+        --numBits;
+    }
+    return value;
+}
+
+uint32_t ShowBitsWide(DemuxerBitReader bitReader, uint8_t numBits)
+{
+    return ReadBitsWidePadded(bitReader, numBits);
+}
+
+void ReadAACSampleRate(DemuxerBitReader& bitReader, uint8_t& samplingFreqIndex, uint32_t& sampleRate)
+{
+    constexpr uint8_t samplingFreqIndexSize = 4;
+    constexpr uint8_t explicitSampleRateSize = 24;
+    constexpr uint8_t explicitSampleRateIndex = 0x0F;
+    samplingFreqIndex = static_cast<uint8_t>(ReadBitsWidePadded(bitReader, samplingFreqIndexSize));
+    if (samplingFreqIndex == explicitSampleRateIndex) {
+        sampleRate = ReadBitsWidePadded(bitReader, explicitSampleRateSize);
+        return;
+    }
+    sampleRate = samplingFreqIndex < sizeof(AAC_SAMPLE_RATE_TABLE) / sizeof(AAC_SAMPLE_RATE_TABLE[0]) ?
+        AAC_SAMPLE_RATE_TABLE[samplingFreqIndex] : 0;
+}
+
+void ReadAACObjectType(DemuxerBitReader& bitReader, uint8_t& audioObjectType)
+{
+    constexpr uint8_t audioObjectTypeSize = 5;
+    constexpr uint8_t audioObjectTypeEscape = 0x1F;
+    constexpr uint8_t audioObjectTypeExtensionSize = 6;
+    audioObjectType = static_cast<uint8_t>(ReadBitsWidePadded(bitReader, audioObjectTypeSize));
+    if (audioObjectType != audioObjectTypeEscape) {
+        return;
+    }
+    audioObjectType = static_cast<uint8_t>(0x20 + ReadBitsWidePadded(bitReader, audioObjectTypeExtensionSize));
 }
 
 bool GetAv3aChannelConfig(uint8_t channelNumberIndex, AudioChannelLayout& layout, int32_t& channels)
@@ -2614,7 +2645,7 @@ Status MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64
 
     if (tag == MPEG4_DEC_SPECIFIC_DESCR_TAG) {
         // 特殊情况：MPEG-1/2 Audio 不需要 decoder specific info
-        FALSE_RETURN_V_MSG_D(objectTypeId != 0x69 && objectTypeId != 0x6B, Status::ERROR_INVALID_DATA,
+        FALSE_RETURN_V_MSG_D(objectTypeId != 0x69 && objectTypeId != 0x6B, Status::OK,
             "MPEG-1/2 Audio detected, no decoder specific info needed");
         FALSE_RETURN_V_MSG_E(size > 0 && size <= MAX_EXTRA_DATA_SIZE, Status::ERROR_INVALID_DATA,
             "Wrong descriptor size");
@@ -2638,188 +2669,39 @@ Status MPEG4AtomParser::ParseDecoderConfigDescriptor(const uint8_t* data, uint64
     return Status::OK;
 }
 
-void GetAACConfigExtInfo(const std::shared_ptr<DemuxerBitReader> bitReader, uint8_t& audioObjectType)
-{
-    bitReader->SkipBits(0x04);
-    audioObjectType = bitReader->ReadBits(0x05);
-    if (audioObjectType == 0x1F) {
-        audioObjectType = 0x20 + bitReader->ReadBits(0x06);
-    }
-}
-
-// LCOV_EXCL_START
-bool DecodeChannelMap(uint8_t layoutMap[][3], uint8_t channelType, const std::shared_ptr<DemuxerBitReader> bitReader,
-    uint8_t num)
-{
-    uint8_t element;
-    while (num--) {
-        switch (channelType) {
-            case 0x01:
-            case 0x02:
-            case 0x03: {
-                element = bitReader->ReadBits(1);
-                break;
-            }
-            case 0x04: {
-                element = TYPE_LFE;
-                break;
-            }
-            case 0x05: {
-                bitReader->SkipBits(1);
-                element = TYPE_CCE;
-                break;
-            }
-            default:
-                return false;
-        }
-        layoutMap[0][0] = element;
-        layoutMap[0][1] = bitReader->ReadBits(0x04);
-        layoutMap[0][0x02] = channelType;
-        ++layoutMap;
-    }
-    return true;
-}
-
-uint8_t CountChannels(uint8_t (*layoutMap)[3], uint8_t tags)
-{
-    uint8_t sum = 0;
-    for (uint8_t i = 0; i < tags; ++i) {
-        uint8_t element = layoutMap[i][0];
-        uint8_t pos = layoutMap[i][0x02];
-        sum += (1 + (element == TYPE_CPE)) * (pos != 0 && pos != 0x05);
-    }
-    return sum;
-}
-
-bool ParseGeneralAACConfig(const std::shared_ptr<DemuxerBitReader> bitReader, uint8_t audioObjectType,
-    uint32_t& channels)
-{
-    uint8_t layoutMap[64][3];
-    FALSE_RETURN_V(bitReader->HasBits(0x1A), false);
-    uint32_t flag = bitReader->ReadBits(1);
-    if (flag) {
-        bitReader->SkipBits(0x19);
-    } else {
-        bitReader->SkipBits(0x0B);
-    }
-    FALSE_RETURN_V(bitReader->HasBits(0x23), false);
-    uint8_t numFront = bitReader->ReadBits(0x04);
-    uint8_t numSide = bitReader->ReadBits(0x04);
-    uint8_t numBack = bitReader->ReadBits(0x04);
-    uint8_t numLfe = bitReader->ReadBits(0x02);
-    uint8_t numAssociateData = bitReader->ReadBits(0x03);
-    uint8_t numCc = bitReader->ReadBits(0x04);
-    if (bitReader->ReadBits(1)) {
-        bitReader->ReadBits(0x04);
-    }
-    if (bitReader->ReadBits(1)) {
-        bitReader->ReadBits(0x04);
-    }
-    if (bitReader->ReadBits(1)) {
-        bitReader->ReadBits(0x03);
-    }
-    if (!(bitReader->HasBits(0x05 * (numFront + numSide + numBack + numCc) +
-        0x04 * (numLfe + numAssociateData + numCc)))) {
-        return false;
-    }
-    uint8_t tags = 0;
-    FALSE_RETURN_V(DecodeChannelMap(layoutMap, 0x01, bitReader, numFront), false);
-    tags += numFront;
-    FALSE_RETURN_V(DecodeChannelMap(layoutMap + tags, 0x02, bitReader, numSide), false);
-    tags += numSide;
-    FALSE_RETURN_V(DecodeChannelMap(layoutMap + tags, 0x03, bitReader, numBack), false);
-    tags += numBack;
-    FALSE_RETURN_V(DecodeChannelMap(layoutMap + tags, 0x04, bitReader, numLfe), false);
-    tags += numLfe;
-    bitReader->SkipBits(0x04 * numAssociateData);
-    FALSE_RETURN_V(DecodeChannelMap(layoutMap + tags, 0x05, bitReader, numCc), false);
-    tags += numCc;
-
-    channels = CountChannels(layoutMap, tags);
-    return true;
-}
-// LCOV_EXCL_STOP
-
-bool CheckAACType(uint8_t audioObjectType)
-{
-    switch (audioObjectType) {
-        case AAC_MAIN:
-        case AAC_LC:
-        case AAC_SSR:
-        case AAC_LTP:
-        case AAC_ER_LC:
-        case AAC_ER_LD:
-        case AAC_ER_ELD:
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool GetAACLayoutConfig(uint8_t audioObjectType, const std::shared_ptr<DemuxerBitReader> bitReader, uint32_t size,
-    uint32_t& channels, AudioChannelLayout &layout)
-{
-    switch (audioObjectType) {
-        case AAC_MAIN:
-        case AAC_LC:
-        case AAC_SSR:
-        case AAC_LTP:
-        case AAC_ER_LC:
-        case AAC_ER_LD: {
-            FALSE_RETURN_V(ParseGeneralAACConfig(bitReader, audioObjectType, channels), false);
-            break;
-        }
-        case AAC_ER_ELD: {
-            return true;
-        }
-        default:
-            return false;
-    }
-    return true;
-}
-
 bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_t& sampleRate, uint32_t& channels,
     AudioChannelLayout &layout)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), false, "Invalid current track");
-    auto bitReader = std::make_shared<DemuxerBitReader>(data, size);
-    FALSE_RETURN_V_MSG_E(bitReader != nullptr, false, "Failed create bitReader");
-    FALSE_RETURN_V(bitReader->HasBits(MIN_BOX_SIZE), false);
-    uint8_t audioObjectType = bitReader->ReadBits(0x05);
-    if (audioObjectType == 0x1F) {
-        FALSE_RETURN_V(bitReader->HasBits(0x11), false);
-        audioObjectType = 0x20 + bitReader->ReadBits(0x06);
-    }
-    uint8_t samplingFreqIndex = bitReader->ReadBits(0x04);
-    if (samplingFreqIndex == 0x0F) {
-        FALSE_RETURN_V(bitReader->HasBits(0x1F), false);
-        sampleRate = bitReader->ReadBits(0x08) << 0x10 | bitReader->ReadBits(0x08) << 0x08 | bitReader->ReadBits(0x08);
-    } else {
-        if (samplingFreqIndex < sizeof(AAC_SAMPLE_RATE_TABLE) / sizeof(AAC_SAMPLE_RATE_TABLE[0])) {
-            sampleRate = AAC_SAMPLE_RATE_TABLE[samplingFreqIndex];
-        }
-    }
-    uint8_t channelConfig = bitReader->ReadBits(0x04);
-    uint32_t frameLengthFlag = 0;
+    FALSE_RETURN_V_MSG_E(data != nullptr, false, "Invalid AAC config data");
+    constexpr uint8_t channelConfigSize = 4;
+    constexpr uint8_t baseConfigSize = 13;
+    DemuxerBitReader bitReader(data, size);
+    FALSE_RETURN_V(bitReader.HasBits(baseConfigSize), false);
+    uint8_t audioObjectType = 0;
+    ReadAACObjectType(bitReader, audioObjectType);
+    uint8_t samplingFreqIndex = 0;
+    sampleRate = 0;
+    ReadAACSampleRate(bitReader, samplingFreqIndex, sampleRate);
+    uint8_t channelConfig = static_cast<uint8_t>(ReadBitsWidePadded(bitReader, channelConfigSize));
     static const uint8_t aacAudioChannels[14] = {0, 1, 2, 3, 4, 5, 6, 8, 0, 0, 0, 7, 8, 24};
-    if (channelConfig < sizeof(aacAudioChannels) / sizeof(aacAudioChannels[0])) {
-        channels = aacAudioChannels[channelConfig];
-        layout = AAC_CHANNEL_LAYOUT_TABLE[channelConfig];
-    } else {
+    if (channelConfig >= sizeof(aacAudioChannels) / sizeof(aacAudioChannels[0])) {
         MEDIA_LOG_E("Invalid AAC channel configuration: " PUBLIC_LOG_U8, channelConfig);
         return false;
     }
-    if (audioObjectType == AOT_SBR || (audioObjectType == AOT_PS &&
-        (!(bitReader->ShowBits(0x03) & 0x03) && !(bitReader->ShowBits(0x09) & 0x0F)))) {
-        FALSE_RETURN_V(bitReader->HasBits(0x09), false);
-        GetAACConfigExtInfo(bitReader, audioObjectType);
+    channels = aacAudioChannels[channelConfig];
+    layout = AAC_CHANNEL_LAYOUT_TABLE[channelConfig];
+
+    const bool isImplicitPs = audioObjectType == AOT_PS &&
+        !((bitReader.ShowBits(0x03) & 0x03) && !(ShowBitsWide(bitReader, 0x09) & 0x3F));
+    if (audioObjectType == AOT_SBR || isImplicitPs) {
+        uint8_t extensionSamplingFreqIndex = 0;
+        uint32_t extensionSampleRate = 0;
+        ReadAACSampleRate(bitReader, extensionSamplingFreqIndex, extensionSampleRate);
+        ReadAACObjectType(bitReader, audioObjectType);
+        sampleRate = extensionSampleRate;
     }
-    frameLengthFlag = bitReader->ReadBits(1);
-    if (channelConfig == 0) {
-        FALSE_RETURN_V_MSG_E(GetAACLayoutConfig(audioObjectType, bitReader, size, channels, layout), false,
-            "Get AAC layout config failed");
-    }
-    FALSE_RETURN_V_MSG_E(CheckAACType(audioObjectType), false, "Unsupported AAC type");
+    const uint32_t frameLengthFlag = bitReader.HasBits(1) ? bitReader.ReadBits(1) : 0;
     uint32_t samplePerFrame = frameLengthFlag ? 960 : 1024;
     if (audioObjectType == AAC_ER_LD || (audioObjectType == AAC_ER_ELD)) {
         samplePerFrame >>= 1;
@@ -2841,7 +2723,7 @@ bool MPEG4AtomParser::ParseAACSpecificConfig(const uint8_t* data, uint32_t size)
     if (ParseAACConfig(data, size, sampleRate, channels, layout)) {
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_COUNT>(static_cast<int32_t>(channels));
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<int32_t>(sampleRate));
-        if (layout == AudioChannelLayout::UNKNOWN) {
+        if (channels > 0 && layout == AudioChannelLayout::UNKNOWN) {
             int32_t channelCount = 0;
             auto audioParser = std::make_shared<MPEG4AudioParser>();
             FALSE_RETURN_V_MSG_E(audioParser != nullptr, false, "Failed create audioParser");
