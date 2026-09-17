@@ -110,7 +110,7 @@ private:
     void InitBuffers();
     void FlushBuffers();
     void ReleaseBuffers();
-    void StopThread();
+    void StopThread(bool isNeedStop = true);
     void ReleaseResource();
     int32_t UpdateBuffers(uint32_t index);
     int32_t UpdateSurfaceMemory(uint32_t index);

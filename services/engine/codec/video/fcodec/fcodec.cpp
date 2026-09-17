@@ -557,21 +557,21 @@ void FCodec::FlushBuffers()
     av_packet_unref(avPacket_.get());
 }
 
-void FCodec::StopThread()
+void FCodec::StopThread(bool isNeedStop)
 {
     if (sendTask_ != nullptr && inputAvailQue_ != nullptr) {
         std::unique_lock<std::mutex> sLock(sendMutex_);
         sendCv_.notify_one();
         sLock.unlock();
         inputAvailQue_->SetActive(false, false);
-        sendTask_->Stop();
+        isNeedStop ? sendTask_->Stop() : sendTask_->Pause();
     }
     if (receiveTask_ != nullptr && codecAvailQue_ != nullptr) {
         std::unique_lock<std::mutex> rLock(recvMutex_);
         recvCv_.notify_one();
         rLock.unlock();
         codecAvailQue_->SetActive(false, false);
-        receiveTask_->Stop();
+        isNeedStop ? receiveTask_->Stop() : receiveTask_->Pause();
     }
 }
 
@@ -598,17 +598,7 @@ int32_t FCodec::Flush()
     state_ = State::FLUSHING;
     AVCODEC_LOGI("%{public}s step into FLUSHING status", decName_.c_str());
     std::unique_lock<std::mutex> sLock(sendMutex_);
-    sendCv_.notify_one();
-    sLock.unlock();
-    inputAvailQue_->SetActive(false, false);
-    sendTask_->Pause();
-
-    std::unique_lock<std::mutex> rLock(recvMutex_);
-    recvCv_.notify_one();
-    rLock.unlock();
-    codecAvailQue_->SetActive(false, false);
-    receiveTask_->Pause();
-
+    StopThread(false);
     avcodec_flush_buffers(avCodecContext_.get());
     ResetContext(false);
     FlushBuffers();
