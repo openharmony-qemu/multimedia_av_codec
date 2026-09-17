@@ -102,6 +102,7 @@ private:
         FROZEN,
     };
     bool IsActive() const;
+    bool IsThreadActive() const;
     void FreeExtraData();
     void ResetContext(bool isNeedFree = true);
     void CalculateBufferSize();
@@ -127,6 +128,8 @@ private:
 #endif
     void GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
     void GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
+    // Get video frame rate from AVCodecContext. Returns 0.0 if not available.
+    double GetAvCodecContextFrameRate();
     int32_t DecodedFrameProcess(uint32_t index);
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     int32_t AllocateInputBuffer(int32_t inBufferSize);

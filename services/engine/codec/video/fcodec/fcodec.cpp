@@ -452,6 +452,12 @@ bool FCodec::IsActive() const
     return state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS;
 }
 
+bool FCodec::IsThreadActive() const
+{
+    return state_ == State::RUNNING || state_ == State::EOS ||
+           state_ == State::FREEZING || state_ == State::FROZEN;
+}
+
 void FCodec::FreeExtraData()
 {
     if (avCodecContext_->extradata) {
@@ -699,6 +705,14 @@ int32_t FCodec::SetParameter(const Format &format)
     return AVCS_ERR_OK;
 }
 
+double FCodec::GetAvCodecContextFrameRate()
+{
+    if (state_ != State::RUNNING || avCodecContext_ == nullptr || avCodecContext_->framerate.den <= 0) {
+        return 0.0;
+    }
+    return static_cast<double>(avCodecContext_->framerate.num) / static_cast<double>(avCodecContext_->framerate.den);
+}
+
 int32_t FCodec::GetOutputFormat(Format &format)
 {
     AVCODEC_SYNC_TRACE;
@@ -709,9 +723,8 @@ int32_t FCodec::GetOutputFormat(Format &format)
         }
     }
     if (!format_.ContainKey(FMTKey::VIDEO_FRAME_RATE)) {
-        if (avCodecContext_ != nullptr && avCodecContext_->framerate.den > 0) {
-            double value = static_cast<double>(avCodecContext_->framerate.num) /
-                           static_cast<double>(avCodecContext_->framerate.den);
+        double value = GetAvCodecContextFrameRate();
+        if (value > 0.0) {
             format_.PutDoubleValue(FMTKey::VIDEO_FRAME_RATE, value);
         }
     }
@@ -1333,10 +1346,17 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
 
 void FCodec::SendFrame()
 {
-    CHECK_AND_RETURN_LOG_LIMIT(state_ == State::RUNNING, LOG_FREQUENCE, "Not in running state");
-    if (isSendEos_ || inputAvailQue_->Size() == 0u) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
-        sendCount_ += 1;
+    CHECK_AND_RETURN_LOG_LIMIT(IsThreadActive(), LOG_FREQUENCE, "Not in running state");
+    if (state_ != State::RUNNING || isSendEos_ || inputAvailQue_->Size() == 0u) {
+        if (state_ == State::EOS) {
+            std::unique_lock<std::mutex> sendLock(sendMutex_);
+            sendCv_.wait(sendLock);
+        } else {
+            if (!isSendEos_ && inputAvailQue_->Size() == 0u) {
+                sendCount_ += 1;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
+        }
         return;
     }
     uint32_t index = inputAvailQue_->Front();
@@ -1559,9 +1579,14 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
 
 void FCodec::ReceiveFrame()
 {
-    CHECK_AND_RETURN_LOG_LIMIT(state_ == State::RUNNING, LOG_FREQUENCE, "Not in running state");
-    if (codecAvailQue_->Size() == 0u) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
+    CHECK_AND_RETURN_LOG_LIMIT(IsThreadActive(), LOG_FREQUENCE, "Not in running state");
+    if (state_ != State::RUNNING || codecAvailQue_->Size() == 0u) {
+        if (state_ == State::EOS) {
+            std::unique_lock<std::mutex> recvLock(recvMutex_);
+            recvCv_.wait(recvLock);
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
+        }
         return;
     }
     std::unique_lock<std::mutex> sLock(syncMutex_);
