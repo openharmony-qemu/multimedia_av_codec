@@ -134,9 +134,14 @@ private:
     void HandleSendError(int ret);
 
     // for recv task thread
+#ifndef DISABLE_DMABUFF
     void GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
     void GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
+#endif // DISABLE_DMABUFF
     int32_t DecodedFrameProcess(uint32_t index);
+    void HandleReceiveEOF(const std::shared_ptr<FBuffer> &frameBuffer);
+    void HandleReceiveEAGAIN();
+    void HandleReceiveError(int ret);
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
     
     // Get video frame rate from AVCodecContext. Returns 0.0 if not available.

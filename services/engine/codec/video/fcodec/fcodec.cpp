@@ -454,8 +454,7 @@ bool FCodec::IsActive() const
 
 bool FCodec::IsThreadActive() const
 {
-    return state_ == State::RUNNING || state_ == State::EOS ||
-           state_ == State::FREEZING || state_ == State::FROZEN;
+    return state_ == State::RUNNING || state_ == State::EOS || state_ == State::FREEZING || state_ == State::FROZEN;
 }
 
 void FCodec::FreeExtraData()
@@ -1360,6 +1359,7 @@ void FCodec::HandleSendSuccess(uint32_t index, const std::shared_ptr<FBuffer> &i
     inputAvailQue_->Pop();
     inputBuffer->owner_ = Owner::OWNED_BY_USER;
     callback_->OnInputBufferAvailable(index, inputAVBuffer);
+    sendCount_ = 0;
 }
 
 void FCodec::HandleSendEAGAIN()
@@ -1385,7 +1385,7 @@ void FCodec::SendFrame()
             sendCv_.wait(sendLock);
         } else {
             if (!isSendEos_ && inputAvailQue_->Size() == 0u) {
-                // TODO: 用户没有送帧，sleep 前有其他动作待补充
+                sendCount_ += 1;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         }
@@ -1502,6 +1502,7 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
     }
 }
 
+#ifndef DISABLE_DMABUFF
 void FCodec::GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged)
 {
     int32_t cropTop = static_cast<int32_t>(cachedFrame_->crop_top);
@@ -1558,6 +1559,7 @@ void FCodec::GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged)
         format_.PutIntValue(FMTKey::VIDEO_COLOR_RANGE, colRange);
     }
 }
+#endif // DISABLE_DMABUFF
 
 int32_t FCodec::DecodedFrameProcess(uint32_t index)
 {
@@ -1568,9 +1570,9 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
     bool isChanged = false;
     int32_t ret = CheckFormatChange(index, isChanged);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Check format change failed");
+#ifndef DISABLE_DMABUFF
     std::vector<uint8_t> cropVec(sizeof(BufferHandleMetaRegion));
     std::vector<uint8_t> colorSpaceInfoData(sizeof(CM_ColorSpaceInfo));
-#ifndef DISABLE_DMABUFF
     GetCropInfo(cropVec, isChanged);
     GetColorAspectsInfo(colorSpaceInfoData, isChanged);
     std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
@@ -1581,9 +1583,41 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
     CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_CROP_REGION failed");
     err = surfacebuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoData);
     CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_COLORSPACE_INFO failed");
-#endif
+#endif // DISABLE_DMABUFF
     decNum_++;
     return AVCS_ERR_OK;
+}
+
+void FCodec::HandleReceiveEOF(const std::shared_ptr<FBuffer> &frameBuffer)
+{
+    AVCODEC_LOGI("Receive eos");
+    frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+    frameBuffer->avBuffer_->memory_->SetSize(0);
+    state_ = State::EOS;
+}
+
+void FCodec::HandleReceiveEAGAIN()
+{
+    bool has_pipeline_frames = (cachedFrame_->opaque != nullptr);  // 读取信息
+    if (has_pipeline_frames && sendCount_ > 30) { // 30
+        AVCODEC_LOGI("%{public}s pipeline has leftover frames, start draining", decName_.c_str());
+        avcodec_set_force_drain(avCodecContext_.get(), 1);
+    }
+    std::unique_lock<std::mutex> sendLock(sendMutex_);
+    if (isSendWait_ || isSendEos_) {
+        isSendWait_ = false;
+        sendCv_.notify_one();
+    }
+    sendLock.unlock();
+    std::unique_lock<std::mutex> recvLock(recvMutex_);
+    recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
+}
+
+void FCodec::HandleReceiveError(int ret)
+{
+    AVCODEC_LOGE("Cannot recv frame from codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
+    callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+    state_ = State::ERROR;
 }
 
 void FCodec::ReceiveFrame()
@@ -1618,30 +1652,12 @@ void FCodec::ReceiveFrame()
         }
         frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_NONE;
     } else if (ret == AVERROR_EOF) {
-        AVCODEC_LOGI("Receive eos");
-        frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
-        frameBuffer->avBuffer_->memory_->SetSize(0);
-        state_ = State::EOS;
+        HandleReceiveEOF(frameBuffer);
     } else if (ret == AVERROR(EAGAIN)) {
-        bool has_pipeline_frames = (cachedFrame_->opaque != nullptr);  // 读取信息
-        if (has_pipeline_frames && sendCount_ > 30) { // 30
-            AVCODEC_LOGI("%{public}s pipeline has leftover frames, start draining", decName_.c_str());
-            avcodec_set_force_drain(avCodecContext_.get(), 1);
-        }
-
-        std::unique_lock<std::mutex> sendLock(sendMutex_);
-        if (isSendWait_ || isSendEos_) {
-            isSendWait_ = false;
-            sendCv_.notify_one();
-        }
-        sendLock.unlock();
-        std::unique_lock<std::mutex> recvLock(recvMutex_);
-        recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
+        HandleReceiveEAGAIN();
         return;
     } else {
-        AVCODEC_LOGE("Cannot recv frame from codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
-        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-        state_ = State::ERROR;
+        HandleReceiveError(ret);
         return;
     }
     FramePostProcess(frameBuffer, index, status, ret);

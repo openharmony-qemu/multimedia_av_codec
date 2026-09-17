@@ -16,6 +16,7 @@
 #ifndef FCODEC_UTILS_H
 #define FCODEC_UTILS_H
 
+#ifndef DISABLE_DMABUFF
 #include "v2_0/cm_color_space.h"
 #include "v2_0/buffer_handle_meta_key_type.h"
 #include "meta/video_types.h"
@@ -254,6 +255,7 @@ int32_t CMRangeToBoolean(CM_Range range)
     }
 }
 } // namespace
+#endif // DISABLE_DMABUFF
 
 namespace OHOS {
 namespace MediaAVCodec {
