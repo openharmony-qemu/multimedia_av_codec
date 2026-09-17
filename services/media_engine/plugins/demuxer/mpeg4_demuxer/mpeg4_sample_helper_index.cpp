@@ -449,8 +449,7 @@ Status MPEG4SampleHelper::FillRawSampleView(
     FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(view.dts, ptsOffset, &view.pts), Status::ERROR_INVALID_DATA);
     view.duration = step.duration;
     uint32_t rawSampleIndex = static_cast<uint32_t>(cursor.processedRawSamples);
-    bool isSync = allSamplesSync_ || (cursor.stssIndex < stssEntry_.size() &&
-        stssEntry_[cursor.stssIndex].index == rawSampleIndex);
+    bool isSync = IsSyncSample(stssEntry_, allSamplesSync_, rawSampleIndex);
     view.flag = isSync ? Sample::SampleFlag::SYNC_FRAME : Sample::SampleFlag::NONE;
     return Status::OK;
 }
@@ -1181,6 +1180,10 @@ int32_t MPEG4SampleHelper::GetMinOffsetOfCttsEntry()
 std::vector<uint32_t> MPEG4SampleHelper::GetSyncSamplesIndexFromStssEntry()
 {
     std::vector<uint32_t> syncSamplesIndex;
+    if (emptyStss_ && GetSampleCount() > 0) {
+        syncSamplesIndex.emplace_back(0);
+        return syncSamplesIndex;
+    }
     for (uint32_t i = 0; i < stssEntry_.size(); ++i) {
         uint32_t index = stssEntry_[i].index;
         if (sampleIndexState_.load(std::memory_order_acquire) != SampleIndexState::DENSE &&

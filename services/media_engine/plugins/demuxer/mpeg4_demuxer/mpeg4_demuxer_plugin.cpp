@@ -1442,9 +1442,13 @@ Status MPEG4DemuxerPlugin::ParseAVFirstFrames()
         // Process video track
         if (IsVideoType(*currentTrack) && streamParsers_ != nullptr) {
             if (streamParsers_->ParserIsCreated(avTrackId) && !streamParsers_->ParserIsInited(avTrackId)) {
-                bool convertRet = streamParsers_->ConvertExtraDataToAnnexb(avTrackId,
-                    currentTrack->codecParms.data.get(), currentTrack->codecParms.extradataSize);
-                FALSE_CONTINUE_LOGD(convertRet, "ConvertExtraDataToAnnexb failed in track:" PUBLIC_LOG_U32, avTrackId);
+                const auto& codecParms = currentTrack->codecParms;
+                if (codecParms.data != nullptr && codecParms.extradataSize > 0) {
+                    bool convertRet = streamParsers_->ConvertExtraDataToAnnexb(avTrackId,
+                        codecParms.data.get(), codecParms.extradataSize);
+                    FALSE_CONTINUE_LOGD(convertRet, "ConvertExtraDataToAnnexb failed in track:" PUBLIC_LOG_U32,
+                        avTrackId);
+                }
             }
             firstFrameMap_[avTrackId] = mpeg4Sample->sample;
         }

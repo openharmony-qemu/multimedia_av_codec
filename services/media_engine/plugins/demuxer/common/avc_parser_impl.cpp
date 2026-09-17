@@ -424,6 +424,8 @@ bool AvcParserImpl::ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDa
     spsVec_.clear();
     ppsVec_.clear();
     annexbExtraDataVec_.clear();
+    extradataParsed_ = false;
+    FALSE_RETURN_V_MSG_W(extraData != nullptr && extraDataSize > 0, false, "AVC extradata is empty");
     (void)ParseMaxReorderPicFromAvcConfig(extraData, extraDataSize);
     if (IsAnnexbFrame(extraData, extraDataSize)) {
         annexbExtraDataVec_.insert(annexbExtraDataVec_.end(), extraData, extraData + extraDataSize);

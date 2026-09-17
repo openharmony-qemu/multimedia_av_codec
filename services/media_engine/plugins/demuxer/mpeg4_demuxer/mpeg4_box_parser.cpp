@@ -56,8 +56,6 @@ constexpr int64_t DYNAMIC_MATRIX_OFFSET_V0 = 36;
 constexpr int64_t DYNAMIC_MATRIX_OFFSET_V1 = 48;
 constexpr int64_t DEFAULT_HEAD_SIZE = 8;
 constexpr int64_t ESDS_READ_SIZE = 13;
-constexpr int64_t HDR_VIVID_TAG_LENGTH = 31;
-constexpr int64_t HDR_VIVID_TAG_OFFSET = 43;
 constexpr int32_t MATRIX_SIZE = 4;
 constexpr int32_t MAX_DEPTH = 10;
 // Maximum payload size for non-mdat atoms; excludes the atom header.
@@ -88,8 +86,8 @@ constexpr uint32_t MAX_SIDX_ENTRY_COUNT = 8192;
 constexpr uint64_t MIN_TIMED_METADATA_SAMPLE_ENTRY_SIZE = 16;
 constexpr uint64_t MIN_TRADITIONAL_METADATA_SIZE = 4;
 constexpr uint64_t MIN_LOCI_SIZE = 20;
-constexpr uint64_t MIN_CLLI_SIZE = 12;
-constexpr uint64_t MIN_MDCV_SIZE = 32;
+constexpr uint64_t MIN_CLLI_SIZE = 4;
+constexpr uint64_t MIN_MDCV_SIZE = 24;
 constexpr uint64_t MIN_TENC_SIZE = 20;
 constexpr uint64_t MIN_PSSH_SIZE = 20;
 constexpr uint64_t MIN_SENC_SIZE = 8;
@@ -839,12 +837,13 @@ Status MPEG4AtomParser::ParseMdat(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     (void)depth;
     uint64_t effectiveSize = currentAtom.effectiveSize > 0 ? currentAtom.effectiveSize : currentAtom.size;
-    FALSE_RETURN_V_MSG_E(effectiveSize > 0, Status::ERROR_INVALID_DATA,
-        "mdat atom size is zero, wrong MPEG4 file");
+    FALSE_RETURN_V_NOLOG(effectiveSize > 0, Status::OK);
     FALSE_RETURN_V_MSG_E(ctx != nullptr && ctx->offset >= 0 && effectiveSize <= static_cast<uint64_t>(INT64_MAX) &&
         static_cast<uint64_t>(ctx->offset) <= static_cast<uint64_t>(INT64_MAX) - effectiveSize,
         Status::ERROR_INVALID_DATA, "Invalid mdat effective size");
-    hasMdatBox_ = true;
+    if (currentAtom.dataSize > 0) {
+        hasMdatBox_ = true;
+    }
     ctx->offset += static_cast<int64_t>(effectiveSize);
     return Status::OK;
 }
@@ -2192,18 +2191,6 @@ Status MPEG4AtomParser::ParseVideoSampleEntry(MPEG4Atom currentAtom, int32_t dep
         SetMime(mimeType);
     }
 
-    if (HDR_VIVID_TAG_OFFSET + HDR_VIVID_TAG_LENGTH <= sizeof(sampleEntryInfo)) {
-        char hdrTag[HDR_VIVID_TAG_LENGTH];
-        for (int64_t i = 0; i < HDR_VIVID_TAG_LENGTH; ++i) {
-            hdrTag[i] = sampleEntryInfo[HDR_VIVID_TAG_OFFSET + i];
-        }
-        if (!strncmp(hdrTag, "CUVA HDR Video", strlen("CUVA HDR Video"))) {
-            mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::VIDEO_IS_HDR_VIVID>(true);
-        }
-    } else {
-        MEDIA_LOG_E("Invalid HDR tag offset or length");
-    }
-
     int64_t endOffset = 0;
     if (__builtin_add_overflow(ctx->offset, currentAtom.size, &endOffset)) {
         MEDIA_LOG_E("Atom size overflow");
@@ -2319,6 +2306,8 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
     FALSE_RETURN_V_MSG_E(currentAtom.dataSize <= MAX_EXTRA_DATA_SIZE, Status::ERROR_INVALID_DATA,
         "CodecConfig size too large");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
+    FALSE_RETURN_V_MSG_D(currentAtom.dataSize > 0 || currentAtom.type == FourccType("vttC"), Status::OK,
+        "Ignore empty atom");
     // 检查是否已经有 codec config 数据
     int64_t dataOffset = ctx->dataOffset;
     uint64_t dataSize = currentAtom.dataSize;
@@ -3301,6 +3290,8 @@ Status MPEG4AtomParser::ParseStsc(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
+    FALSE_RETURN_V_MSG_E(currentAtom.type != FourccType("stsc") || currentAtom.dataSize > 0,
+        Status::ERROR_INVALID_DATA, "Empty stsc atom");
     if (currentAtom.size > MIN_BOX_SIZE) {
         Status ret = lastTrack_->sampleHelper->SetSampleToChunkParams(ctx->dataOffset, currentAtom.dataSize);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set sample to chunk params failed");
@@ -3314,6 +3305,8 @@ Status MPEG4AtomParser::ParseStsz(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
+    FALSE_RETURN_V_MSG_E(currentAtom.type != FourccType("stz2") || currentAtom.dataSize > 0,
+        Status::ERROR_INVALID_DATA, "Empty stz2 atom");
     constexpr int64_t minStszSize = 20; // stsz atom最小大小
     if (currentAtom.size >= minStszSize) {
         Status ret = lastTrack_->sampleHelper->SetSampleSizeParams(currentAtom.type, ctx->dataOffset,
@@ -5153,7 +5146,8 @@ Status MPEG4AtomParser::ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
-    FALSE_RETURN_V_MSG_D(currentAtom.size >= MIN_CLLI_SIZE, Status::OK, "Clli: Empty");
+    FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_CLLI_SIZE, Status::ERROR_INVALID_DATA,
+        "Clli atom too small");
     uint8_t info[4];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, info, sizeof(info));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read chan data failed");
@@ -5172,7 +5166,8 @@ Status MPEG4AtomParser::ParseMdcv(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
-    FALSE_RETURN_V_MSG_D(currentAtom.size >= MIN_MDCV_SIZE, Status::OK, "Mdcv: Empty");
+    FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_MDCV_SIZE, Status::ERROR_INVALID_DATA,
+        "Mdcv atom too small");
     uint8_t info[24];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, info, sizeof(info));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read chan data failed");
@@ -5382,6 +5377,31 @@ void MPEG4AtomParser::SetHdrTypeInfo(MPEG4Atom currentAtom)
     }
 }
 
+static bool IsToleratedEmptyAtom(int32_t atomType)
+{
+    switch (atomType) {
+        case FourccType("mvhd"):
+        case FourccType("tkhd"):
+        case FourccType("elst"):
+        case FourccType("tref"):
+        case FourccType("mdhd"):
+        case FourccType("hdlr"):
+        case FourccType("btrt"):
+        case FourccType("pasp"):
+        case FourccType("esds"):
+        case FourccType("aclr"):
+        case FourccType("ctts"):
+        case FourccType("loci"):
+        case FourccType("frma"):
+        case FourccType("senc"):
+        case FourccType("chan"):
+        case FourccType("gnre"):
+            return true;
+        default:
+            return false;
+    }
+}
+
 Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(dataReader_ != nullptr && ctx != nullptr, Status::ERROR_INVALID_PARAMETER,
@@ -5412,6 +5432,11 @@ Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
     // 使用函数指针查找和调用解析函数
     ParseFunction parseFunc = FindAtomParser(atom, ctx);
     if (parseFunc) {
+        if (atom.dataSize == 0 && IsToleratedEmptyAtom(atom.type)) {
+            MEDIA_LOG_W("Ignore empty atom: " PUBLIC_LOG_S, atomTypeStr.c_str());
+            ctx->offset += static_cast<int64_t>(atom.effectiveSize);
+            return Status::OK;
+        }
         ret = (this->*parseFunc)(atom, depth, ctx);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse atom failed for type: " PUBLIC_LOG_S, atomTypeStr.c_str());
     } else {

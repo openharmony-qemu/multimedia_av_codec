@@ -81,9 +81,9 @@ bool DemuxerDataReader::IsReadTimeoutExpired()
 
 Status DemuxerDataReader::ReadUintData(int64_t offset, uint8_t* buffer, size_t size)
 {
-    FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_INVALID_PARAMETER, "Buffer is nullptr");
-    FALSE_RETURN_V_MSG_E(size > 0, Status::ERROR_INVALID_PARAMETER, "Size must be greater than 0");
     FALSE_RETURN_V_MSG_E(offset >= 0, Status::ERROR_INVALID_PARAMETER, "Offset is invalid");
+    FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
+    FALSE_RETURN_V_MSG_E(buffer != nullptr, Status::ERROR_INVALID_PARAMETER, "Buffer is nullptr");
 
     if (size <= READ_CACHE_SIZE) {
         return ReadFromCache(offset, buffer, size);
