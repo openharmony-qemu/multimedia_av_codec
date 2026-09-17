@@ -5029,8 +5029,7 @@ Status MPEG4AtomParser::ParseClli(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
-    FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_CLLI_SIZE, Status::ERROR_INVALID_DATA,
-        "Clli atom too small");
+    FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_CLLI_SIZE, Status::OK, "Clli atom too small");
     uint8_t info[4];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, info, sizeof(info));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read chan data failed");
@@ -5049,8 +5048,7 @@ Status MPEG4AtomParser::ParseMdcv(MPEG4Atom currentAtom, int32_t depth, ParseCon
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
     ctx->offset += static_cast<int64_t>(currentAtom.size);
-    FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_MDCV_SIZE, Status::ERROR_INVALID_DATA,
-        "Mdcv atom too small");
+    FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_MDCV_SIZE, Status::OK, "Mdcv atom too small");
     uint8_t info[24];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, info, sizeof(info));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read chan data failed");
