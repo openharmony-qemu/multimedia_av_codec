@@ -1481,15 +1481,8 @@ Status MPEG4DemuxerPlugin::ParseAVFirstFrames()
         FALSE_CONTINUE_LOGD(ret == Status::OK && mpeg4Sample->sample != nullptr && mpeg4Sample->sample->data != nullptr,
             "Failed to get first frame for track:" PUBLIC_LOG_U32, avTrackId);
 
-        // Process video track
-        if (IsVideoType(*currentTrack) && streamParsers_ != nullptr) {
-            if (streamParsers_->ParserIsCreated(avTrackId) && !streamParsers_->ParserIsInited(avTrackId)) {
-                bool convertRet = streamParsers_->ConvertExtraDataToAnnexb(avTrackId,
-                    currentTrack->codecParms.data.get(), currentTrack->codecParms.extradataSize);
-                FALSE_CONTINUE_LOGD(convertRet, "ConvertExtraDataToAnnexb failed in track:" PUBLIC_LOG_U32, avTrackId);
-            }
-            firstFrameMap_[avTrackId] = mpeg4Sample->sample;
-        }
+        FALSE_CONTINUE_LOGD(ProcessVideoFirstFrame(currentTrack, avTrackId, mpeg4Sample),
+            "ConvertExtraDataToAnnexb failed in track:" PUBLIC_LOG_U32, avTrackId);
 
         // Process audio track
         if (IsAudioType(*currentTrack)) {
@@ -1506,6 +1499,26 @@ Status MPEG4DemuxerPlugin::ParseAVFirstFrames()
         }
     }
     return Status::OK;
+}
+
+bool MPEG4DemuxerPlugin::ProcessVideoFirstFrame(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    uint32_t trackId, const std::shared_ptr<MPEG4Sample>& mpeg4Sample)
+{
+    if (!IsVideoType(*track) || streamParsers_ == nullptr) {
+        return true;
+    }
+    if (streamParsers_->ParserIsCreated(trackId) && !streamParsers_->ParserIsInited(trackId)) {
+        const auto& codecParms = track->codecParms;
+        if (codecParms.data != nullptr && codecParms.extradataSize > 0) {
+            bool convertRet = streamParsers_->ConvertExtraDataToAnnexb(trackId, codecParms.data.get(),
+                codecParms.extradataSize);
+            if (!convertRet) {
+                return false;
+            }
+        }
+    }
+    firstFrameMap_[trackId] = mpeg4Sample->sample;
+    return true;
 }
 
 Status MPEG4DemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)

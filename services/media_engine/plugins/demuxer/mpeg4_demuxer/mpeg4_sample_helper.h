@@ -357,6 +357,7 @@ private:
     int32_t movieTimeScale_ = 0;
     int32_t trackTimeScale_ = 0;
     bool isFragmented_ = false;
+    bool emptyStss_ = false;
     std::vector<EditListEntry> editListEntries_;
     SkipSamplesInfoMap skipSamplesInfoMap_;
 

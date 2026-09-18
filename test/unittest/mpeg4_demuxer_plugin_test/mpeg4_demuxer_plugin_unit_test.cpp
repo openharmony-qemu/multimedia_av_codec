@@ -4049,6 +4049,19 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DemuxerDataReader_ReadFu
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_DemuxerDataReader_ReadUintDataEmpty_0001
+ * @tc.desc: Verify zero-length ReadUintData succeeds without a buffer or data source access.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DemuxerDataReader_ReadUintDataEmpty_0001,
+    TestSize.Level1)
+{
+    DemuxerDataReader reader;
+    EXPECT_EQ(reader.ReadUintData(0, nullptr, 0), Status::OK);
+    EXPECT_EQ(reader.ReadUintData(-1, nullptr, 0), Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_ReadSampleDataToBuffer_ShortRead_0001
  * @tc.desc: Verify ReadSampleDataToBuffer continues from the previous short read offset
  * @tc.type: FUNC
@@ -4435,6 +4448,15 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomHeader_RootMdatBound
     EXPECT_TRUE(test.parser.hasMdatBox_);
     EXPECT_EQ(ctx.offset, static_cast<int64_t>(truncated.size()));
 
+    std::vector<uint8_t> emptyMdat;
+    AppendU32(emptyMdat, 8);
+    AppendU32(emptyMdat, mdatType);
+    AtomParserTestContext emptyMdatTest(emptyMdat);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext emptyMdatCtx;
+    EXPECT_EQ(emptyMdatTest.parser.MPEG4ParseAtom(0, &emptyMdatCtx), Status::OK);
+    EXPECT_FALSE(emptyMdatTest.parser.hasMdatBox_);
+    EXPECT_EQ(emptyMdatCtx.offset, static_cast<int64_t>(emptyMdat.size()));
+
     std::vector<uint8_t> ordered;
     AppendU32(ordered, 12);
     AppendU32(ordered, mdatType);
@@ -4804,6 +4826,46 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexAccessAndLook
     VerifySampleIndexProperties(helper);
     VerifySampleIndexAccessors(helper);
     VerifySampleIndexLookup(helper);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_EmptyStssSyncFlag_001
+ * @tc.desc: Verify empty stss marks only the first sample as sync, matching FFmpeg keyframe_absent.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EmptyStssSyncFlag_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.sampleIndexEntry_ = {
+        MakeSampleIndexEntry(0, 0, 0, 1),
+        MakeSampleIndexEntry(1, 10, 10, 1),
+        MakeSampleIndexEntry(2, 20, 20, 1),
+    };
+
+    ASSERT_EQ(helper.SetSyncSampleParams(0, 0), Status::OK);
+    EXPECT_TRUE(helper.emptyStss_);
+    EXPECT_FALSE(helper.IsSyncSample(1));
+    EXPECT_TRUE(helper.IsSyncSample(0));
+    EXPECT_FALSE(helper.IsSyncSample(2));
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0}));
+
+    Plugins::MPEG4::MPEG4SampleHelper zeroCountHelper;
+    zeroCountHelper.dataReader_ = CreateReaderForBytes(std::vector<uint8_t>(8, 0));
+    ASSERT_EQ(zeroCountHelper.SetSyncSampleParams(0, 8), Status::OK);
+    EXPECT_TRUE(zeroCountHelper.emptyStss_);
+
+    Plugins::MPEG4::MPEG4SampleHelper duplicateStssHelper;
+    duplicateStssHelper.stssEntry_ = {{0}};
+    EXPECT_EQ(duplicateStssHelper.SetSyncSampleParams(0, 0), Status::OK);
+    EXPECT_TRUE(duplicateStssHelper.emptyStss_);
+    std::vector<uint8_t> oneSyncSample;
+    AppendU32(oneSyncSample, 0);
+    AppendU32(oneSyncSample, 1);
+    AppendU32(oneSyncSample, 1);
+    duplicateStssHelper.dataReader_ = CreateReaderForBytes(oneSyncSample);
+    EXPECT_EQ(duplicateStssHelper.SetSyncSampleParams(0, oneSyncSample.size()), Status::OK);
+    EXPECT_FALSE(duplicateStssHelper.stssEntry_.empty());
+    EXPECT_FALSE(duplicateStssHelper.IsSyncSample(1));
 }
 
 /**

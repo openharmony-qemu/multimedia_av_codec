@@ -751,7 +751,14 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
 Status MPEG4SampleHelper::SetSyncSampleParams(int64_t dataOffset, size_t dataSize)
 {
     MEDIA_LOG_D("In");
-    FALSE_RETURN_V_MSG_E(stssEntry_.empty(), Status::ERROR_INVALID_OPERATION, "stssEntry exist");
+    if (dataSize == 0) {
+        emptyStss_ = true;
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(stssEntry_.empty() || emptyStss_, Status::ERROR_INVALID_OPERATION, "stssEntry exist");
+    if (emptyStss_) {
+        stssEntry_.clear();
+    }
 
     int64_t currentOffset = dataOffset;
     FALSE_RETURN_V_NOLOG(currentOffset >= MIN_DATA_OFFSET && dataSize >= MIN_DATA_SIZE,
@@ -767,6 +774,10 @@ Status MPEG4SampleHelper::SetSyncSampleParams(int64_t dataOffset, size_t dataSiz
     uint32_t numSyncs = GetU32Value(&header[4]);
     FALSE_RETURN_V_MSG_E(numSyncs <= MAX_SAMPLE_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
         "Invalid sync sample count");
+    if (numSyncs == 0) {
+        emptyStss_ = true;
+        return Status::OK;
+    }
     currentOffset += sizeof(header);
 
     FALSE_RETURN_V_NOLOG((dataSize - sizeof(header)) / sizeof(uint32_t) >= numSyncs, Status::ERROR_UNKNOWN);
@@ -1760,7 +1771,7 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         CalculateDtsShift();
     }
 
-    allSamplesSync_ = stssEntry_.empty() &&
+    allSamplesSync_ = !emptyStss_ && stssEntry_.empty() &&
         (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE ||
         trackType_ == AUXILIARY_TYPE || (trackType_ == SUBTITLE_TYPE && mimeType_ == MimeType::TEXT_WEBVTT));
     return Status::OK;
@@ -1802,6 +1813,9 @@ std::vector<uint8_t> MakeSkipSamplesInfo(int64_t skipSamples)
 bool MPEG4SampleHelper::IsSyncSample(const std::vector<StssEntry>& syncSamples, bool allSamplesSync,
     uint32_t sampleIndex) const
 {
+    if (emptyStss_) {
+        return sampleIndex == 0;
+    }
     if (allSamplesSync) {
         return true;
     }
