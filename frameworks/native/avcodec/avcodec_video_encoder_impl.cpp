@@ -90,7 +90,7 @@ int32_t AVCodecVideoEncoderImpl::Init(AVCodecType type, bool isMimeType, const s
 
 AVCodecVideoEncoderImpl::AVCodecVideoEncoderImpl()
 {
-    AVCODEC_LOGD_WITH_TAG("AVCodecVideoEncoderImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("AVCodecVideoEncoderImpl Instances create");
 }
 
 AVCodecVideoEncoderImpl::~AVCodecVideoEncoderImpl()
@@ -101,7 +101,7 @@ AVCodecVideoEncoderImpl::~AVCodecVideoEncoderImpl()
         }
         codecClient_ = nullptr;
     }
-    AVCODEC_LOGD_WITH_TAG("AVCodecVideoEncoderImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("AVCodecVideoEncoderImpl Instances destroy");
 }
 
 int32_t AVCodecVideoEncoderImpl::Configure(const Format &format)

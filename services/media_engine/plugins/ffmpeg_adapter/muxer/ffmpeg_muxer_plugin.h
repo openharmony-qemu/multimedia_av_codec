@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include <iomanip>
+#include "avcodec_dfx_component.h"
 #include "plugin/muxer_plugin.h"
 #include "stream_parser_manager.h"
 
@@ -53,6 +54,7 @@ public:
     Status Reset() override;
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     Status SetRotation(std::shared_ptr<Meta> param);
     Status SetLocation(std::shared_ptr<Meta> param);
     Status SetMetaData(std::shared_ptr<Meta> param);

@@ -44,6 +44,21 @@ std::string CreateVideoLogTag(const Meta &callerInfo)
     return std::string("[") + std::to_string(instanceId) + "][" + type + "]";
 }
 
+uint64_t AllocateUniqueId()
+{
+    static std::atomic<uint64_t> counter{0};
+    uint64_t current = counter.load(std::memory_order_relaxed);
+    uint64_t next = 0;
+    do {
+        if (current == UINT64_MAX) {
+            next = 0;
+        } else {
+            next = current + 1;
+        }
+    } while (!counter.compare_exchange_weak(current, next, std::memory_order_relaxed));
+    return next;
+}
+
 AVCodecDfxComponent::AVCodecDfxComponent()
 {
     tag_.store("");

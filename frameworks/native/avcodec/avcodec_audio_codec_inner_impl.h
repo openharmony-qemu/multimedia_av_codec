@@ -15,10 +15,11 @@
 #ifndef AVCODEC_AUDIO_CODEC_INNER_IMPL_H
 #define AVCODEC_AUDIO_CODEC_INNER_IMPL_H
 
-#include "avcodec_audio_codec.h"
-#include "nocopyable.h"
 #include "audio_codec_server.h"
+#include "avcodec_audio_codec.h"
+#include "avcodec_log.h"
 #include "drm_i_keysession_service.h"
+#include "nocopyable.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -81,6 +82,7 @@ public:
     int32_t ReleaseOutputBuffer(const std::shared_ptr<AVBuffer> &buffer) override;
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     class SyncCodecAdapter : public Media::IConsumerListener, public std::enable_shared_from_this<SyncCodecAdapter> {
     public:
         explicit SyncCodecAdapter(size_t outputBufferNum);

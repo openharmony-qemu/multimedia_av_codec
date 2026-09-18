@@ -16,6 +16,7 @@
 #ifndef MPEG4_MUXER_PLUGIN_H
 #define MPEG4_MUXER_PLUGIN_H
 
+#include "avcodec_dfx_component.h"
 #include "box_parser.h"
 #include "avio_stream.h"
 #include "basic_track.h"
@@ -55,6 +56,7 @@ private:
     void WriteFileLevelMetafBox();
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::shared_ptr<AVIOStream> io_ = nullptr;
     VideoRotation rotation_ { VIDEO_ROTATION_0 };
     uint32_t outputFormat_ = OHOS::MediaAVCodec::OUTPUT_FORMAT_MPEG_4;

@@ -24,6 +24,7 @@
 #include "task_thread.h"
 #include "meta/meta.h"
 #include "avcodec_info.h"
+#include "avcodec_log.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -102,6 +103,7 @@ public:
 #endif
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     int32_t InitByName(Meta &callerInfo, API_VERSION apiVersion);
     int32_t InitByMime(Meta &callerInfo, API_VERSION apiVersion);
     int32_t InitServer();
@@ -143,6 +145,7 @@ public:
                                  std::shared_ptr<AVSharedMemory> buffer);
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::weak_ptr<AudioCodecServer> codec_;
 };
 
@@ -157,6 +160,7 @@ public:
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer);
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::weak_ptr<AudioCodecServer> codec_;
 };
 } // namespace MediaAVCodec

@@ -13,12 +13,12 @@
  * limitations under the License.
  */
 #include "avcodec_audio_codec_inner_impl.h"
-#include "i_avcodec_service.h"
-#include "avcodec_log.h"
-#include "avcodec_errors.h"
-#include "avcodec_trace.h"
 #include "avcodec_codec_name.h"
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
+#include "avcodec_trace.h"
 #include "drm_i_keysession_service.h"
+#include "i_avcodec_service.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -85,13 +85,13 @@ std::shared_ptr<AVCodecAudioCodec> AudioCodecFactory::CreateByName(const std::st
 
 AVCodecAudioCodecInnerImpl::AVCodecAudioCodecInnerImpl()
 {
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl:%{public}" PRIu64 " Instances create", avcodecUniqueId_);
 }
 
 AVCodecAudioCodecInnerImpl::~AVCodecAudioCodecInnerImpl()
 {
     codecService_ = nullptr;
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl:%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
 }
 
 int32_t AVCodecAudioCodecInnerImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)

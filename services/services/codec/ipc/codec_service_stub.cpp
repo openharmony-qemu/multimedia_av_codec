@@ -135,14 +135,14 @@ sptr<CodecServiceStub> CodecServiceStub::Create(int32_t instanceId)
 
 CodecServiceStub::CodecServiceStub()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances create");
 }
 
 CodecServiceStub::~CodecServiceStub()
 {
     std::lock_guard<std::shared_mutex> lock(mutex_);
     (void)InnerRelease();
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances destroy");
 }
 
 int32_t CodecServiceStub::InitStub(int32_t instanceId)

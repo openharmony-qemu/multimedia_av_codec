@@ -183,7 +183,7 @@ namespace Mpeg4 {
 Mpeg4MuxerPlugin::Mpeg4MuxerPlugin(std::string name)
     : MuxerPlugin(std::move(name))
 {
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    MEDIA_LOG_D("%{public}" PRIu64 " Instances create", avcodecUniqueId_);
     outputFormat_ = g_supportedMuxer[pluginName_];
     boxParser_ = std::make_shared<BoxParser>(outputFormat_);
     moov_ = boxParser_->MoovBoxGenerate();
@@ -198,7 +198,7 @@ Mpeg4MuxerPlugin::~Mpeg4MuxerPlugin()
     moov_ = nullptr;
     boxParser_ = nullptr;
     tracks_.clear();
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    MEDIA_LOG_D("%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
 }
 
 Status Mpeg4MuxerPlugin::SetDataSink(const std::shared_ptr<DataSink> &dataSink)

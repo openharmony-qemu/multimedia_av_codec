@@ -68,9 +68,8 @@ av_codec_capi_external_deps = [
   "openssl:libcrypto_shared",
 ]
 
-av_codec_inner_deps = [
-  "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
-]
+av_codec_inner_deps =
+    [ "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client" ]
 
 av_codec_inner_external_deps = [
   "bounds_checking_function:libsec_static",
@@ -96,19 +95,30 @@ group("vcodec_framework_test") {
   if (av_codec_support_codec) {
     deps = [
       ":video_buffer_converter_unit_test",
+      ":videodec_VC1_func_async_unit_test",
+      ":videodec_VC1_func_sync_unit_test",
+      ":videodec_VC1_stable_unit_test",
+      ":videodec_WVC1_func_async_unit_test",
+      ":videodec_WVC1_func_sync_unit_test",
+      ":videodec_WVC1_stable_unit_test",
       ":videodec_capi_async_unit_test",
       ":videodec_capi_sync_unit_test",
+      ":videodec_cinepak_capi_async_unit_test",
+      ":videodec_cinepak_capi_sync_unit_test",
+      ":videodec_cinepak_inner_async_unit_test",
+      ":videodec_cinepak_inner_sync_unit_test",
+      ":videodec_cinepak_stable_unit_test",
       ":videodec_detailed_error_code_async_unit_test",
+      ":videodec_dvvideo_capi_async_unit_test",
+      ":videodec_dvvideo_capi_sync_unit_test",
+      ":videodec_dvvideo_func_async_unit_test",
+      ":videodec_dvvideo_func_sync_unit_test",
+      ":videodec_dvvideo_stable_unit_test",
       ":videodec_h263_capi_async_unit_test",
       ":videodec_h263_capi_sync_unit_test",
       ":videodec_h263_inner_async_unit_test",
       ":videodec_h263_inner_sync_unit_test",
       ":videodec_h263_stable_unit_test",
-      ":videodec_wmv3_capi_async_unit_test",
-      ":videodec_wmv3_capi_sync_unit_test",
-      ":videodec_wmv3_inner_async_unit_test",
-      ":videodec_wmv3_inner_sync_unit_test",
-      ":videodec_wmv3_stable_unit_test",
       ":videodec_hdecoder_memrecycle_async_unit_test",
       ":videodec_hdecoder_memrecycle_sync_unit_test",
       ":videodec_hdrvivid2sdr_async_unit_test",
@@ -117,20 +127,22 @@ group("vcodec_framework_test") {
       ":videodec_inner_async_unit_test",
       ":videodec_inner_sync_unit_test",
       ":videodec_memrecycle_unit_test",
+      ":videodec_mpeg1_capi_async_unit_test",
+      ":videodec_mpeg1_capi_sync_unit_test",
+      ":videodec_mpeg1_func_async_unit_test",
+      ":videodec_mpeg1_func_sync_unit_test",
+      ":videodec_mpeg1_stable_unit_test",
       ":videodec_mpeg_func_async_unit_test",
       ":videodec_mpeg_func_sync_unit_test",
-      ":videodec_VC1_func_async_unit_test",
-      ":videodec_VC1_func_sync_unit_test",
-      ":videodec_WVC1_func_async_unit_test",
-      ":videodec_WVC1_func_sync_unit_test",
+      ":videodec_mpeg_stable_unit_test",
       ":videodec_msvideo1dec_fun_async_unit_test",
       ":videodec_msvideo1dec_fun_sync_unit_test",
-      ":videodec_mpeg_stable_unit_test",
-      ":videodec_stable_unit_test",
-      ":videodec_state_unit_test",
-      ":videodec_VC1_stable_unit_test",
-      ":videodec_WVC1_stable_unit_test",
       ":videodec_msvideo1dec_stable_unit_test",
+      ":videodec_rawvideo_capi_async_unit_test",
+      ":videodec_rawvideo_capi_sync_unit_test",
+      ":videodec_rawvideo_func_async_unit_test",
+      ":videodec_rawvideo_func_sync_unit_test",
+      ":videodec_rawvideo_stable_unit_test",
       ":videodec_rv30_capi_async_unit_test",
       ":videodec_rv30_capi_sync_unit_test",
       ":videodec_rv30_func_async_unit_test",
@@ -141,61 +153,46 @@ group("vcodec_framework_test") {
       ":videodec_rv40_func_async_unit_test",
       ":videodec_rv40_func_sync_unit_test",
       ":videodec_rv40_stable_unit_test",
-      ":videodec_mpeg1_capi_async_unit_test",
-      ":videodec_mpeg1_capi_sync_unit_test",
-      ":videodec_mpeg1_func_async_unit_test",
-      ":videodec_mpeg1_func_sync_unit_test",
-      ":videodec_mpeg1_stable_unit_test",
-      ":videodec_dvvideo_capi_async_unit_test",
-      ":videodec_dvvideo_capi_sync_unit_test",
-      ":videodec_dvvideo_func_async_unit_test",
-      ":videodec_dvvideo_func_sync_unit_test",
-      ":videodec_dvvideo_stable_unit_test",
-      ":videodec_rawvideo_capi_async_unit_test",
-      ":videodec_rawvideo_capi_sync_unit_test",
-      ":videodec_rawvideo_func_async_unit_test",
-      ":videodec_rawvideo_func_sync_unit_test",
-      ":videodec_rawvideo_stable_unit_test",
-      ":videodec_cinepak_capi_async_unit_test",
-      ":videodec_cinepak_capi_sync_unit_test",
-      ":videodec_cinepak_inner_async_unit_test",
-      ":videodec_cinepak_inner_sync_unit_test",
-      ":videodec_cinepak_stable_unit_test",
+      ":videodec_stable_unit_test",
+      ":videodec_state_unit_test",
+      ":videodec_wmv3_capi_async_unit_test",
+      ":videodec_wmv3_capi_sync_unit_test",
+      ":videodec_wmv3_inner_async_unit_test",
+      ":videodec_wmv3_inner_sync_unit_test",
+      ":videodec_wmv3_stable_unit_test",
     ]
 
     if (av_codec_support_video_encoder_preprocessing) {
-      deps += [
-        ":videoenc_preproc_dual_output_unit_test",
-      ]
+      deps += [ ":videoenc_preproc_dual_output_unit_test" ]
     }
 
     if (av_codec_support_vp8_decoder) {
       deps += [
-        ":videodec_vp8dec_unit_test",
         ":videodec_vp8_capi_async_unit_test",
         ":videodec_vp8_capi_sync_unit_test",
         ":videodec_vp8_func_async_unit_test",
-        ":videodec_vp8_func_sync_unit_test"
+        ":videodec_vp8_func_sync_unit_test",
+        ":videodec_vp8dec_unit_test",
       ]
     }
 
     if (av_codec_support_vp9_decoder) {
       deps += [
-        ":videodec_vp9dec_unit_test",
         ":videodec_vp9_capi_async_unit_test",
         ":videodec_vp9_capi_sync_unit_test",
         ":videodec_vp9_func_async_unit_test",
-        ":videodec_vp9_func_sync_unit_test"
+        ":videodec_vp9_func_sync_unit_test",
+        ":videodec_vp9dec_unit_test",
       ]
     }
 
     if (av_codec_support_av1_decoder) {
       deps += [
-        ":videodec_av1dec_unit_test",
         ":videodec_av1_capi_async_unit_test",
         ":videodec_av1_capi_sync_unit_test",
         ":videodec_av1_func_async_unit_test",
         ":videodec_av1_func_sync_unit_test",
+        ":videodec_av1dec_unit_test",
       ]
     }
 
@@ -291,7 +288,10 @@ ohos_unittest("videodec_cinepak_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_cinepak_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -348,7 +348,10 @@ ohos_unittest("videodec_cinepak_inner_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_cinepak_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
 
@@ -414,7 +417,10 @@ ohos_unittest("videodec_cinepak_capi_sync_unit_test") {
     "./videodec_cinepak_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -471,7 +477,10 @@ ohos_unittest("videodec_cinepak_inner_sync_unit_test") {
     "./videodec_cinepak_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
 
@@ -527,7 +536,10 @@ ohos_unittest("videodec_capi_async_unit_test") {
     "./videodec_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -583,7 +595,10 @@ ohos_unittest("videodec_h263_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_h263_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -644,7 +659,10 @@ ohos_unittest("videodec_inner_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -695,7 +713,10 @@ ohos_unittest("videodec_wmv3_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_wmv3_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -752,7 +773,10 @@ ohos_unittest("videodec_h263_inner_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_h263_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -805,7 +829,10 @@ ohos_unittest("videodec_mpeg_func_async_unit_test") {
     "./videodec_mpeg_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -857,7 +884,10 @@ ohos_unittest("videodec_wmv3_inner_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_wmv3_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -909,7 +939,10 @@ ohos_unittest("videoenc_capi_async_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
@@ -957,7 +990,10 @@ ohos_unittest("videoenc_inner_async_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   resource_config_file = resource_configuration_file
@@ -1001,7 +1037,10 @@ ohos_unittest("videoenc_temporal_scalability_capi_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_temporal_scalability_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
@@ -1046,7 +1085,10 @@ ohos_unittest("videoenc_temporal_scalability_inner_unit_test") {
     "./videoenc_temporal_scalability_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -1278,7 +1320,10 @@ ohos_unittest("videoenc_repeat_previous_frame_unit_test") {
     "./func_sample/sample/encoder/venc_async_sample.cpp",
     "./videoenc_repeat_previous_frame_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
@@ -1451,7 +1496,10 @@ ohos_unittest("videodec_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videodec_stable_unit_test.cpp" ]
-  deps = [ "./stable_sample:video_sample" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "./stable_sample:video_sample",
+  ]
   external_deps = [
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -1466,7 +1514,10 @@ ohos_unittest("videodec_h263_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videodec_h263_stable_unit_test.cpp" ]
-  deps = [ "./stable_sample:video_sample" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "./stable_sample:video_sample",
+  ]
   external_deps = [
     "hilog:libhilog",
     "media_foundation:media_foundation",
@@ -1496,7 +1547,10 @@ ohos_unittest("videodec_mpeg_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videodec_mpeg_stable_unit_test.cpp" ]
-  deps = [ "./stable_sample:video_sample" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "./stable_sample:video_sample",
+  ]
   external_deps = [
     "hilog:libhilog",
     "media_foundation:media_foundation",
@@ -1511,7 +1565,10 @@ ohos_unittest("videoenc_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videoenc_stable_unit_test.cpp" ]
-  deps = [ "./stable_sample:video_sample" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "./stable_sample:video_sample",
+  ]
   external_deps = [
     "graphic_surface:surface",
     "hilog:libhilog",
@@ -1551,7 +1608,10 @@ ohos_unittest("videodec_VC1_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videodec_vc1_stable_unit_test.cpp" ]
-  deps = [ "./stable_sample:video_sample" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "./stable_sample:video_sample",
+  ]
   external_deps = [
     "hilog:libhilog",
     "media_foundation:media_foundation",
@@ -1621,7 +1681,10 @@ ohos_unittest("videodec_WVC1_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videodec_wvc1_stable_unit_test.cpp" ]
-  deps = [ "./stable_sample:video_sample" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "./stable_sample:video_sample",
+  ]
   external_deps = [
     "hilog:libhilog",
     "media_foundation:media_foundation",
@@ -1700,6 +1763,7 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
   ]
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
   ]
   external_deps = av_codec_capi_external_deps
@@ -1717,10 +1781,10 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
 
   if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
-      external_deps += [
-        "video_processing_engine:videoprocessingengine",
-        "video_processing_engine:video_processing",
-      ]
+    external_deps += [
+      "video_processing_engine:video_processing",
+      "video_processing_engine:videoprocessingengine",
+    ]
   }
 
   resource_config_file = resource_configuration_file
@@ -1773,6 +1837,7 @@ ohos_unittest("videodec_hdecoder_memrecycle_async_unit_test") {
 
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
   ]
   external_deps = av_codec_inner_external_deps
@@ -1846,7 +1911,7 @@ ohos_unittest("videodec_memrecycle_unit_test") {
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
     "$av_codec_root_dir/services/engine/codec/video:av_codec_video_loader",
-    "$av_codec_root_dir/services/engine/codec/video/fcodec:fcodec",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec",
     "$av_codec_root_dir/services/engine/codec/video/hevcdecoder:hevc_decoder",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -1914,7 +1979,10 @@ ohos_unittest("videodec_capi_sync_unit_test") {
     "./videodec_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -1971,7 +2039,10 @@ ohos_unittest("videodec_h263_capi_sync_unit_test") {
     "./videodec_h263_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -2032,7 +2103,10 @@ ohos_unittest("videodec_inner_sync_unit_test") {
     "./videodec_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -2082,7 +2156,10 @@ ohos_unittest("videodec_wmv3_capi_sync_unit_test") {
     "./videodec_wmv3_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -2140,7 +2217,10 @@ ohos_unittest("videodec_h263_inner_sync_unit_test") {
     "./videodec_h263_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -2191,7 +2271,10 @@ ohos_unittest("videodec_wmv3_inner_sync_unit_test") {
     "./videodec_wmv3_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -2243,7 +2326,10 @@ ohos_unittest("videodec_mpeg_func_sync_unit_test") {
     "./videodec_mpeg_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -2295,7 +2381,10 @@ ohos_unittest("videodec_rv30_func_sync_unit_test") {
     "./videodec_rv30dec_fun_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
@@ -2349,7 +2438,10 @@ ohos_unittest("videodec_rv30_func_async_unit_test") {
     "./videodec_rv30dec_fun_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
@@ -2360,7 +2452,6 @@ ohos_unittest("videodec_rv30_func_async_unit_test") {
 
   resource_config_file = resource_configuration_file
 }
-
 
 #################################################################
 ohos_unittest("videodec_rv40_func_sync_unit_test") {
@@ -2404,7 +2495,10 @@ ohos_unittest("videodec_rv40_func_sync_unit_test") {
     "./videodec_rv40dec_fun_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
@@ -2458,7 +2552,10 @@ ohos_unittest("videodec_rv40_func_async_unit_test") {
     "./videodec_rv40dec_fun_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
@@ -2512,7 +2609,10 @@ ohos_unittest("videodec_av1_func_sync_unit_test") {
     "./videodec_av1dec_fun_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
 
@@ -2565,7 +2665,10 @@ ohos_unittest("videodec_av1_func_async_unit_test") {
     "./videodec_av1dec_fun_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   deps += av_codec_inner_deps
   external_deps = av_codec_inner_external_deps
 
@@ -2616,7 +2719,10 @@ ohos_unittest("videodec_rv30_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_rv30dec_fun_unit_test.cpp",
   ]
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
@@ -2675,7 +2781,10 @@ ohos_unittest("videodec_rv30_capi_sync_unit_test") {
     "./videodec_rv30dec_fun_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
@@ -2733,7 +2842,10 @@ ohos_unittest("videodec_rv40_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_rv40dec_fun_unit_test.cpp",
   ]
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
@@ -2792,7 +2904,10 @@ ohos_unittest("videodec_rv40_capi_sync_unit_test") {
     "./videodec_rv40dec_fun_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
@@ -2850,7 +2965,10 @@ ohos_unittest("videodec_av1_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_av1dec_fun_unit_test.cpp",
   ]
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
 
@@ -2908,7 +3026,10 @@ ohos_unittest("videodec_av1_capi_sync_unit_test") {
     "./videodec_av1dec_fun_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   deps += av_codec_capi_deps
   external_deps = av_codec_capi_external_deps
 
@@ -2967,7 +3088,10 @@ ohos_unittest("videodec_mpeg1_func_sync_unit_test") {
     "./videodec_mpeg1_func_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -3019,7 +3143,10 @@ ohos_unittest("videodec_mpeg1_func_async_unit_test") {
     "./videodec_mpeg1_func_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -3069,7 +3196,10 @@ ohos_unittest("videodec_mpeg1_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_mpeg1_func_unit_test.cpp",
   ]
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -3126,7 +3256,10 @@ ohos_unittest("videodec_mpeg1_capi_sync_unit_test") {
     "./videodec_mpeg1_func_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -3184,7 +3317,10 @@ ohos_unittest("videodec_VC1_func_async_unit_test") {
     "./videodec_vc1_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
 
@@ -3237,7 +3373,10 @@ ohos_unittest("videodec_VC1_func_sync_unit_test") {
     "./videodec_vc1_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
 
@@ -3290,7 +3429,10 @@ ohos_unittest("videodec_vp8_func_sync_unit_test") {
     "./videodec_vp8dec_func_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -3342,7 +3484,10 @@ ohos_unittest("videodec_vp8_func_async_unit_test") {
     "./videodec_vp8dec_func_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -3392,7 +3537,10 @@ ohos_unittest("videodec_vp8_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_vp8dec_func_unit_test.cpp",
   ]
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -3449,7 +3597,10 @@ ohos_unittest("videodec_vp8_capi_sync_unit_test") {
     "./videodec_vp8dec_func_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -3507,7 +3658,10 @@ ohos_unittest("videodec_vp9_func_sync_unit_test") {
     "./videodec_vp9dec_func_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -3559,7 +3713,10 @@ ohos_unittest("videodec_vp9_func_async_unit_test") {
     "./videodec_vp9dec_func_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -3609,7 +3766,10 @@ ohos_unittest("videodec_vp9_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_vp9dec_func_unit_test.cpp",
   ]
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -3666,7 +3826,10 @@ ohos_unittest("videodec_vp9_capi_sync_unit_test") {
     "./videodec_vp9dec_func_unit_test.cpp",
   ]
 
-  deps = ["$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test"]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -3724,7 +3887,10 @@ ohos_unittest("videodec_WVC1_func_async_unit_test") {
     "./videodec_wvc1_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
 
@@ -3777,7 +3943,10 @@ ohos_unittest("videodec_WVC1_func_sync_unit_test") {
     "./videodec_wvc1_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
   external_deps += [ "ffmpeg:libohosffmpeg" ]
 
@@ -3830,7 +3999,10 @@ ohos_unittest("videodec_msvideo1dec_fun_async_unit_test") {
     "./videodec_msvideo1dec_fun_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -3882,7 +4054,10 @@ ohos_unittest("videodec_msvideo1dec_fun_sync_unit_test") {
     "./videodec_msvideo1dec_fun_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -3939,6 +4114,7 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
 
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
   ]
   external_deps = av_codec_capi_external_deps
@@ -3955,12 +4131,12 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
     ]
   }
 
-    if (defined(av_codec_support_video_processing_engine) &&
+  if (defined(av_codec_support_video_processing_engine) &&
       av_codec_support_video_processing_engine) {
-      external_deps += [
-        "video_processing_engine:videoprocessingengine",
-        "video_processing_engine:video_processing",
-      ]
+    external_deps += [
+      "video_processing_engine:video_processing",
+      "video_processing_engine:videoprocessingengine",
+    ]
   }
 
   resource_config_file = resource_configuration_file
@@ -4012,6 +4188,7 @@ ohos_unittest("videodec_hdecoder_memrecycle_sync_unit_test") {
   ]
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
   ]
   external_deps = av_codec_inner_external_deps
@@ -4066,7 +4243,10 @@ ohos_unittest("videoenc_capi_sync_unit_test") {
     "./videoenc_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   resource_config_file = resource_configuration_file
@@ -4115,7 +4295,10 @@ ohos_unittest("videoenc_inner_sync_unit_test") {
     "./videoenc_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   resource_config_file = resource_configuration_file
@@ -4309,7 +4492,10 @@ ohos_unittest("videodec_detailed_error_code_async_unit_test") {
     "./videodec_detailed_error_code_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -4325,7 +4511,10 @@ ohos_unittest("videodec_dvvideo_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videodec_dvvideo_stable_unit_test.cpp" ]
-  deps = [ "./stable_sample:video_sample" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "./stable_sample:video_sample",
+  ]
   external_deps = [
     "hilog:libhilog",
     "media_foundation:media_foundation",
@@ -4376,7 +4565,10 @@ ohos_unittest("videodec_dvvideo_func_sync_unit_test") {
     "./videodec_dvvideo_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -4428,7 +4620,10 @@ ohos_unittest("videodec_dvvideo_func_async_unit_test") {
     "./videodec_dvvideo_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -4478,7 +4673,10 @@ ohos_unittest("videodec_dvvideo_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_dvvideo_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -4535,7 +4733,10 @@ ohos_unittest("videodec_dvvideo_capi_sync_unit_test") {
     "./videodec_dvvideo_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -4557,7 +4758,10 @@ ohos_unittest("videodec_rawvideo_stable_unit_test") {
   module_out_path = module_output_path
   include_dirs = []
   sources = [ "./videodec_rawvideo_stable_unit_test.cpp" ]
-  deps = [ "./stable_sample:video_sample" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "./stable_sample:video_sample",
+  ]
   external_deps = [
     "hilog:libhilog",
     "media_foundation:media_foundation",
@@ -4608,7 +4812,10 @@ ohos_unittest("videodec_rawvideo_func_sync_unit_test") {
     "./videodec_rawvideo_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -4660,7 +4867,10 @@ ohos_unittest("videodec_rawvideo_func_async_unit_test") {
     "./videodec_rawvideo_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_inner_unit_test",
+  ]
   external_deps = av_codec_inner_external_deps
 
   if (av_codec_support_drm) {
@@ -4710,7 +4920,10 @@ ohos_unittest("videodec_rawvideo_capi_async_unit_test") {
     "./func_sample/sample/decoder/vdec_async_sample.cpp",
     "./videodec_rawvideo_func_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {
@@ -4767,7 +4980,10 @@ ohos_unittest("videodec_rawvideo_capi_sync_unit_test") {
     "./videodec_rawvideo_func_unit_test.cpp",
   ]
 
-  deps = [ "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/test/unittest/common:av_codec_capi_unit_test",
+  ]
   external_deps = av_codec_capi_external_deps
 
   if (av_codec_support_drm) {

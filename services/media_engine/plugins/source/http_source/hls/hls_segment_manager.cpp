@@ -235,7 +235,7 @@ void HlsSegmentManager::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audi
 
 HlsSegmentManager::~HlsSegmentManager()
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor in, type: %{public}d", FAKE_POINTER(this), type_);
+    MEDIA_LOG_I("%{public}" PRIu64 " ~HlsSegmentManager dtor in, type: %{public}d", avcodecUniqueId_, type_);
     if (downloader_ != nullptr) {
         downloader_->Stop(false);
     }
@@ -244,8 +244,8 @@ HlsSegmentManager::~HlsSegmentManager()
         playlistDownloader_ = nullptr;
     }
     SetAesDecryptor(nullptr);
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsSegmentManager dtor out, type: %{public}d, "
-        "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, FAKE_POINTER(this), type_,
+    MEDIA_LOG_I("%{public}" PRIu64 " ~HlsSegmentManager dtor out, type: %{public}d, "
+        "writeTsIndex: " PUBLIC_LOG_U32 " writeOffset: " PUBLIC_LOG_U64, avcodecUniqueId_, type_,
         writeTsIndex_, writeOffset_);
     FALSE_RETURN_MSG(reportInfo_ != nullptr, "reportInfo_ is nullptr");
     FALSE_RETURN_MSG(downloader_ != nullptr, "downloader_ is nullptr");
@@ -390,7 +390,7 @@ void HlsSegmentManager::InitCacheWithDuration()
 
 void HlsSegmentManager::Close(bool isAsync)
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " HLS Close enter, type: %{public}d", FAKE_POINTER(this), type_);
+    MEDIA_LOG_I("%{public}" PRIu64 " HLS Close enter, type: %{public}d", avcodecUniqueId_, type_);
     isInterrupt_ = true;
     if (playList_) {
         playList_->SetActive(false);
