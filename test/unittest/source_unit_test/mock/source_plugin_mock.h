@@ -62,7 +62,7 @@ public:
     MOCK_METHOD(Status, Pause, (), ());
     MOCK_METHOD(Status, Resume, (), ());
     MOCK_METHOD(void, SetEnableOnlineFdCache, (bool isEnableFdCache), ());
-    MOCK_METHOD(size_t, GetSegmentOffset, (), ());
+    MOCK_METHOD(size_t, GetSegmentOffset, (Plugins::StreamType streamType), ());
     MOCK_METHOD(bool, GetHLSDiscontinuity, (), ());
     MOCK_METHOD(Status, StopBufferring, (bool isAppBackground), ());
     MOCK_METHOD(void, WaitForBufferingEnd, (), ());

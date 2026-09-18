@@ -115,8 +115,9 @@ public:
     {
         return bitRate == 0 ? false : true;
     }
-    size_t GetSegmentOffset() override
+    size_t GetSegmentOffset(StreamType streamType = StreamType::VIDEO) override
     {
+        (void)streamType;
         return segmentOffset_;
     }
     bool GetHLSDiscontinuity() override

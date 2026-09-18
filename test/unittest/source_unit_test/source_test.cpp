@@ -594,7 +594,7 @@ HWTEST_F(SourceTest, SelectStream_001, TestSize.Level1)
  */
 HWTEST_F(SourceTest, GetSegmentOffset_001, TestSize.Level1)
 {
-    EXPECT_CALL(*(mockSourcePlugin_), GetSegmentOffset()).WillRepeatedly(Return(0));
+    EXPECT_CALL(*(mockSourcePlugin_), GetSegmentOffset(::testing::_)).WillRepeatedly(Return(0));
     EXPECT_CALL(*(mockSourcePlugin_), Deinit()).WillOnce(Return(Status::OK));
     size_t ret = source_->GetSegmentOffset();
     EXPECT_EQ(ret, 0);
