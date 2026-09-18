@@ -103,7 +103,7 @@ public:
     MOCK_METHOD(Status, GetPlaybackInfo, (PlaybackInfo& playbackInfo), ());
     MOCK_METHOD(Status, SelectStream, (int32_t streamID), ());
     MOCK_METHOD(void, SetEnableOnlineFdCache, (bool isEnableFdCache), ());
-    MOCK_METHOD(size_t, GetSegmentOffset, (), ());
+    MOCK_METHOD(size_t, GetSegmentOffset, (Plugins::StreamType streamType), ());
     MOCK_METHOD(bool, GetHLSDiscontinuity, (), ());
     MOCK_METHOD(void, WaitForBufferingEnd, (), ());
     MOCK_METHOD(bool, SetInitialBufferSize, (int32_t offset, int32_t size), ());
