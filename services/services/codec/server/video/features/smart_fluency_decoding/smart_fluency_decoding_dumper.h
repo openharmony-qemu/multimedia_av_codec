@@ -18,6 +18,8 @@
 
 #include <atomic>
 #include <cstdint>
+#include <iosfwd>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -40,7 +42,7 @@ struct FrameDumpRecord {
     double retentionRate;
     double speed;
     SfdDecisionReason preReason{SfdDecisionReason::UNSPECIFIED};
-    SfdDecisionReason postReason{SfdDecisionReason::POST_BYPASSED};
+    SfdDecisionReason postReason{SfdDecisionReason::UNSPECIFIED};
     int64_t preDecCostUs;         // PreDecode latency (us)
     int64_t postDecCostUs;        // PostDecode latency (us)
     size_t writeIndex;            // Write index in sync queue
@@ -55,7 +57,8 @@ struct FrameDumpRecord {
     int64_t analyzeMvCostUs;
     int64_t updateDumperCostUs;
 
-    FrameDumpRecord() : pts(-1), dts(-1), flags(0), isNonRef(false), isPreRetained(1), isPostRetained(1),
+    // -1 means no decision was recorded (or PostDecode was bypassed after a pre-drop).
+    FrameDumpRecord() : pts(-1), dts(-1), flags(0), isNonRef(false), isPreRetained(-1), isPostRetained(-1),
                         preSysTimeMs(-1), postSysTimeMs(-1), preDropCount(0),
                         mode(RetentionStrategyType::FULL), retentionRate(1.0), speed(1.0),
                         preDecCostUs(-1), postDecCostUs(-1), writeIndex(0), readIndex(0),
@@ -119,6 +122,7 @@ private:
     void CreateNewPreRecord(const PreDecodeRecordCtx& ctx);
     void UpdateExistingPostRecord(const PostDecodeRecordCtx& ctx);
     void CreateNewPostRecord(const PostDecodeRecordCtx& ctx);
+    void DumpToFileInternal(bool force);
 
     std::mutex mutex_;
     std::vector<FrameDumpRecord> records_;

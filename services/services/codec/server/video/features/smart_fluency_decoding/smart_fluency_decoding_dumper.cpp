@@ -27,7 +27,7 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_SFD, "SmartFluencyDecodingDumper"};
 constexpr const char* DUMP_DIR = "/data/misc/sfddump/";
-// Reduce segment threshold: Flush to file every 100 frames (approx. 3-5 seconds of video)
+// Flush every 100 completed records; keep in-flight frames available for matching.
 constexpr size_t MAX_DUMP_RECORDS = 100;
 // Precision for floating point numbers in dump file
 constexpr int DUMP_FLOAT_PRECISION = 4;
@@ -164,7 +164,7 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
         }
     }
     if (needDump) {
-        DumpToFile();
+        DumpToFileInternal(false);
     }
 }
 
@@ -233,7 +233,7 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         }
     }
     if (needDump) {
-        DumpToFile();
+        DumpToFileInternal(false);
     }
 }
 
@@ -250,14 +250,22 @@ std::string SmartFluencyDecodingDumper::GetTimestampString()
 
 void SmartFluencyDecodingDumper::DumpToFile()
 {
-    std::vector<FrameDumpRecord> chunk;
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (records_.empty()) {
-            return;
-        }
-        chunk.swap(records_);
+    DumpToFileInternal(true);
+}
+
+void SmartFluencyDecodingDumper::DumpToFileInternal(bool force)
+{
+    // Serialize selection, file append and removal with both recording paths.
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto isComplete = [](const FrameDumpRecord& rec) {
+        return rec.isPreRetained == 0 || (rec.isPreRetained == 1 && rec.isPostRetained >= 0);
+    };
+    if (records_.empty() || (!force &&
+        static_cast<size_t>(std::count_if(records_.begin(), records_.end(), isComplete)) < MAX_DUMP_RECORDS)) {
+        return;
     }
+    auto end = force ? records_.end() : std::stable_partition(records_.begin(), records_.end(), isComplete);
+    std::vector<FrameDumpRecord> chunk(records_.begin(), end);
     std::sort(chunk.begin(), chunk.end(), [](const FrameDumpRecord& a, const FrameDumpRecord& b) {
         return a.pts < b.pts;
     });
@@ -266,6 +274,8 @@ void SmartFluencyDecodingDumper::DumpToFile()
     WriteHeaderIfNeeded(ofs);
     WriteRecordsToStream(ofs, chunk);
     ofs.close();
+    CHECK_AND_RETURN_LOG(!ofs.fail(), "Failed to write dump file: %{public}s", currentFilename_.c_str());
+    records_.erase(records_.begin(), end);
     AVCODEC_LOGI("Successfully appended %{public}zu records to %{public}s", chunk.size(), currentFilename_.c_str());
 }
 
@@ -277,6 +287,8 @@ void SmartFluencyDecodingDumper::WriteHeaderIfNeeded(std::ofstream& ofs)
     ofs << "# SFD Execution Report\n# Timestamp: " << GetTimestampString() << "\n";
     ofs << "# CodecType: " << static_cast<int>(codecType_) << ", Resolution: " << width_ << "x" << height_ << "\n";
     ofs << "# Final Mode: " << static_cast<int>(currentMode_) << ", CtuSize: " << currentCtuSize_ << "\n";
+    ofs << "# Retained: 1=retain, 0=drop, -1=not recorded or post-decode bypassed\n";
+    ofs << "# Records are sorted within each batch; sort by PTS within each playback segment for analysis\n";
     ofs << "# ----------------------------------------------------\n";
     ofs << "PTS,DTS,Flags,IsNonRef,Mode,PreRetained,PostRetained,PreReason,PostReason,PreSysTimeMs,PostSysTimeMs,"
            "PreDropCount,RetentionRate,Speed,PreCostUs,NaluCostUs,PostCostUs,CopyMvUs,AnalyzeMvUs,UpdateDumperUs,"
