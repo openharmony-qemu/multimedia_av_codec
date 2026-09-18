@@ -20,10 +20,14 @@
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_manager_v2.h"
 #include <fcntl.h>
+#include <unistd.h>
 #include <fstream>
 #include <gtest/gtest.h>
 #include "avpacket_wrapper.h"
 #include "media_description.h"
+#include "meta/meta.h"
+#include "meta/meta_key.h"
+#include "meta/video_types.h"
 #include "file_server_demo.h"
 #include <numeric>
 #include <vector>
@@ -2761,20 +2765,20 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_AVC_HLG_0001, TestSize.Leve
     Meta *format = FindVideoTrack(mediaInfo_);
     ASSERT_NE(format, nullptr);
 
-    TransferCharacteristic trc = TransferCharacteristic::UNSPECIFIED;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_COLOR_TRC>(trc));
-    EXPECT_EQ(trc, TransferCharacteristic::HLG);
+    Plugins::TransferCharacteristic trc = Plugins::TransferCharacteristic::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_TRC, trc));
+    EXPECT_EQ(trc, Plugins::TransferCharacteristic::HLG);
 
-    ColorPrimary pri = ColorPrimary::UNSPECIFIED;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_COLOR_PRIMARIES>(pri));
-    EXPECT_EQ(pri, ColorPrimary::BT2020);
+    Plugins::ColorPrimary pri = Plugins::ColorPrimary::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_PRIMARIES, pri));
+    EXPECT_EQ(pri, Plugins::ColorPrimary::BT2020);
 
-    MatrixCoefficient matrix = MatrixCoefficient::UNSPECIFIED;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_COLOR_MATRIX_COEFF>(matrix));
-    EXPECT_EQ(matrix, MatrixCoefficient::BT2020_NCL);
+    Plugins::MatrixCoefficient matrix = Plugins::MatrixCoefficient::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_MATRIX_COEFF, matrix));
+    EXPECT_EQ(matrix, Plugins::MatrixCoefficient::BT2020_NCL);
 
     bool range = true;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_COLOR_RANGE>(range));
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_RANGE, range));
     EXPECT_FALSE(range);
 }
 
@@ -2791,8 +2795,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_AVC_HLG_NoHdrType_0002, Tes
     Meta *format = FindVideoTrack(mediaInfo_);
     ASSERT_NE(format, nullptr);
 
-    HDRType hdrType = HDRType::NONE;
-    EXPECT_FALSE(format->Get<Tag::VIDEO_HDR_TYPE>(hdrType));
+    Plugins::HDRType hdrType = Plugins::HDRType::NONE;
+    EXPECT_FALSE(format->GetData(Tag::VIDEO_HDR_TYPE, hdrType));
 }
 
 /**
@@ -2808,8 +2812,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_AVC_HLG_NoChromaLoc_0003, T
     Meta *format = FindVideoTrack(mediaInfo_);
     ASSERT_NE(format, nullptr);
 
-    ChromaLocation chromaLoc = ChromaLocation::LEFT;
-    EXPECT_FALSE(format->Get<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc));
+    Plugins::ChromaLocation chromaLoc = Plugins::ChromaLocation::LEFT;
+    EXPECT_FALSE(format->GetData(Tag::VIDEO_CHROMA_LOCATION, chromaLoc));
 }
 
 /**
@@ -2825,20 +2829,20 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_HEVC_HLG_0001, TestSize.Lev
     Meta *format = FindVideoTrack(mediaInfo_);
     ASSERT_NE(format, nullptr);
 
-    TransferCharacteristic trc = TransferCharacteristic::UNSPECIFIED;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_COLOR_TRC>(trc));
-    EXPECT_EQ(trc, TransferCharacteristic::HLG);
+    Plugins::TransferCharacteristic trc = Plugins::TransferCharacteristic::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_TRC, trc));
+    EXPECT_EQ(trc, Plugins::TransferCharacteristic::HLG);
 
-    ColorPrimary pri = ColorPrimary::UNSPECIFIED;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_COLOR_PRIMARIES>(pri));
-    EXPECT_EQ(pri, ColorPrimary::BT2020);
+    Plugins::ColorPrimary pri = Plugins::ColorPrimary::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_PRIMARIES, pri));
+    EXPECT_EQ(pri, Plugins::ColorPrimary::BT2020);
 
-    MatrixCoefficient matrix = MatrixCoefficient::UNSPECIFIED;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_COLOR_MATRIX_COEFF>(matrix));
-    EXPECT_EQ(matrix, MatrixCoefficient::BT2020_NCL);
+    Plugins::MatrixCoefficient matrix = Plugins::MatrixCoefficient::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_MATRIX_COEFF, matrix));
+    EXPECT_EQ(matrix, Plugins::MatrixCoefficient::BT2020_NCL);
 
     bool range = true;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_COLOR_RANGE>(range));
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_RANGE, range));
     EXPECT_FALSE(range);
 }
 
@@ -2855,9 +2859,9 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_HEVC_HLG_ChromaLoc_0002, Te
     Meta *format = FindVideoTrack(mediaInfo_);
     ASSERT_NE(format, nullptr);
 
-    ChromaLocation chromaLoc = ChromaLocation::UNSPECIFIED;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc));
-    EXPECT_EQ(chromaLoc, ChromaLocation::LEFT);
+    Plugins::ChromaLocation chromaLoc = Plugins::ChromaLocation::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_CHROMA_LOCATION, chromaLoc));
+    EXPECT_EQ(chromaLoc, Plugins::ChromaLocation::LEFT);
 }
 
 /**
@@ -2873,9 +2877,9 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_HEVC_HLG_Profile_0003, Test
     Meta *format = FindVideoTrack(mediaInfo_);
     ASSERT_NE(format, nullptr);
 
-    HEVCProfile profile = HEVCProfile::HEVC_PROFILE_UNKNOW;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_H265_PROFILE>(profile));
-    EXPECT_EQ(profile, HEVCProfile::HEVC_PROFILE_MAIN_10);
+    Plugins::HEVCProfile profile = Plugins::HEVCProfile::HEVC_PROFILE_UNKNOW;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_H265_PROFILE, profile));
+    EXPECT_EQ(profile, Plugins::HEVCProfile::HEVC_PROFILE_MAIN_10);
 }
 
 /**
@@ -2894,9 +2898,9 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_HEVC_HLG_HdrType_0004, Test
     Meta *format = FindVideoTrack(mediaInfo_);
     ASSERT_NE(format, nullptr);
 
-    HDRType hdrType = HDRType::NONE;
-    EXPECT_TRUE(format->Get<Tag::VIDEO_HDR_TYPE>(hdrType));
-    EXPECT_EQ(hdrType, HDRType::HLG);
+    Plugins::HDRType hdrType = Plugins::HDRType::NONE;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_HDR_TYPE, hdrType));
+    EXPECT_EQ(hdrType, Plugins::HDRType::HLG);
 }
 
 /**
@@ -2912,8 +2916,8 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_AVC_SDR_NoHLG_0001, TestSiz
     Meta *format = FindVideoTrack(mediaInfo_);
     ASSERT_NE(format, nullptr);
 
-    TransferCharacteristic trc = TransferCharacteristic::UNSPECIFIED;
-    if (format->Get<Tag::VIDEO_COLOR_TRC>(trc)) {
-        EXPECT_NE(trc, TransferCharacteristic::HLG);
+    Plugins::TransferCharacteristic trc = Plugins::TransferCharacteristic::UNSPECIFIED;
+    if (format->GetData(Tag::VIDEO_COLOR_TRC, trc)) {
+        EXPECT_NE(trc, Plugins::TransferCharacteristic::HLG);
     }
 }
