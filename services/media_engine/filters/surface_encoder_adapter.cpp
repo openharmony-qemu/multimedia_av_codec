@@ -723,7 +723,15 @@ void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, con
     if (meta->Find(Tag::VIDEO_ENCODE_BITRATE_MODE) != meta->end()) {
         Plugins::VideoEncodeBitrateMode videoEncodeBitrateMode;
         meta->Get<Tag::VIDEO_ENCODE_BITRATE_MODE>(videoEncodeBitrateMode);
+        MEDIA_LOG_I("ConfigureAboutRGBA BitrateMode(%{public}d)", static_cast<int32_t>(videoEncodeBitrateMode));
         format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, videoEncodeBitrateMode);
+    }
+
+    if (meta->Find(Tag::VIDEO_ENCODER_SQR_FACTOR) != meta->end()) {
+        int32_t sqrFactor;
+        meta->Get<Tag::VIDEO_ENCODER_SQR_FACTOR>(sqrFactor);
+        MEDIA_LOG_I("ConfigureAboutRGBA set sqrFactor(%{public}d)", sqrFactor);
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
     }
 }
 
