@@ -570,7 +570,7 @@ private:
     bool IsNeedPreDownload() const;
     void UpdateSegmentOffset(int32_t trackId);
     void UpdateSegmentOffset(int32_t oldTrackId, int32_t newTrackId);
-    StreamType GetStreamTypeByTrackId(int32_t trackeId);
+    int32_t GetStreamTypeByTrackId(int32_t trackeId);
     void SetCurrentSegmentOffset(int32_t trackId, size_t segmentOffset);
     int64_t GetCurrentSegmentOffset(int32_t trackId, int64_t oldSegmentOffset);
     bool IsSubtitleTrackId(int32_t trackId);
