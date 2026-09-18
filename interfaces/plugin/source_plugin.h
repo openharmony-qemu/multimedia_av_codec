@@ -33,7 +33,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 
-enum StreamType {
+enum StreamType : int32_t {
     MIXED = 0,
     VIDEO,
     AUDIO,
