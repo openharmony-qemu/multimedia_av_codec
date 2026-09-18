@@ -124,7 +124,8 @@ void MediaDemuxer::InitPtsInfo()
         maintainBaseInfos_[trackId]->basePts = INVALID_PTS_DATA;
         maintainBaseInfos_[trackId]->isLastPtsChange = false;
         maintainBaseInfos_[trackId]->lastPtsModifyedMax = INVALID_PTS_DATA;
-        SetCurrentSegmentOffset(trackId, source_->GetSegmentOffset(GetStreamTypeByTrackId(trackId)));
+        SetCurrentSegmentOffset(trackId,
+            source_->GetSegmentOffset(static_cast<Plugins::StreamType>(GetStreamTypeByTrackId(trackId))));
     }
 }
 
