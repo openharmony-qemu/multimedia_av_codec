@@ -61,6 +61,8 @@ constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 200;
 constexpr uint32_t LOG_FREQUENCE = 2000;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
+constexpr uint32_t MS_PER_SECOND = 1000;
+constexpr uint32_t DEFAULT_FRAME_INTERVAL = 30;
 } // namespace
 using namespace OHOS::Media;
 using FMTKey = Media::Tag;
@@ -1199,6 +1201,16 @@ void FCodec::CheckStrideChange(uint32_t index, bool isChanged)
     }
 }
 
+uint32_t FCodec::GetFrameIntervalMs()
+{
+    double frameRate = GetAvCodecContextFrameRate();
+    if (frameRate > 0.0) {
+        return static_cast<uint32_t>(std::ceil(MS_PER_SECOND / frameRate));
+    } else {
+        return DEFAULT_FRAME_INTERVAL;
+    }
+}
+
 int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
 {
     int32_t w = cachedFrame_->width;
@@ -1238,6 +1250,7 @@ int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
     CheckStrideChange(index, isChanged);
     if (decNum_ == 0) {
         callback_->OnOutputFormatChanged(format_);
+        frameInterval_ = GetFrameIntervalMs();
     }
     if (isChanged) {
         callback_->OnOutputFormatChanged(format_);
@@ -1385,7 +1398,7 @@ void FCodec::SendFrame()
             sendCv_.wait(sendLock);
         } else {
             if (!isSendEos_ && inputAvailQue_->Size() == 0u) {
-                sendCount_ += 1;
+                sendCount_ ++;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         }
@@ -1590,7 +1603,6 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
 
 void FCodec::HandleReceiveEOF(const std::shared_ptr<FBuffer> &frameBuffer)
 {
-    AVCODEC_LOGI("Receive eos");
     frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
     frameBuffer->avBuffer_->memory_->SetSize(0);
     state_ = State::EOS;
@@ -1598,9 +1610,10 @@ void FCodec::HandleReceiveEOF(const std::shared_ptr<FBuffer> &frameBuffer)
 
 void FCodec::HandleReceiveEAGAIN()
 {
-    bool has_pipeline_frames = (cachedFrame_->opaque != nullptr);  // 读取信息
-    if (has_pipeline_frames && sendCount_ > 30) { // 30
-        AVCODEC_LOGI("%{public}s pipeline has leftover frames, start draining", decName_.c_str());
+    bool has_pipeline_frames = (cachedFrame_->opaque != nullptr);
+    if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME && sendCount_ > frameInterval_ && has_pipeline_frames) {
+        AVCODEC_LOGI("%{public}s pipeline has leftover frames, start draining, current frame interval: %{public}u",
+                     decName_.c_str(), frameInterval_);
         avcodec_set_force_drain(avCodecContext_.get(), 1);
     }
     std::unique_lock<std::mutex> sendLock(sendMutex_);
@@ -1652,6 +1665,7 @@ void FCodec::ReceiveFrame()
         }
         frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_NONE;
     } else if (ret == AVERROR_EOF) {
+        AVCODEC_LOGI("Receive eos");
         HandleReceiveEOF(frameBuffer);
     } else if (ret == AVERROR(EAGAIN)) {
         HandleReceiveEAGAIN();
