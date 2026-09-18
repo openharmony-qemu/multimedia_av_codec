@@ -43,7 +43,6 @@
 #include "plugin/plugin_info.h"
 #include "plugin/plugin_time.h"
 #include "plugin/demuxer_plugin.h"
-#include "plugin/source_plugin.h"
 #include "interrupt_listener.h"
 #include "performance_utils.h"
 #include "media_sync_manager.h"
@@ -62,7 +61,6 @@ using MediaSource = OHOS::Media::Plugins::MediaSource;
 using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
 using FileType = OHOS::Media::Plugins::FileType;
 using StreamType = OHOS::Media::Plugins::StreamType;
-using funcPreReadSample = std::function<int64_t(int32_t trackId)>;
 using CachePressureCallback = std::function<void(uint32_t trackId, uint32_t cachedBytes)>;
 
 extern std::unordered_set<FileType> ptsManagedFileTypes;
