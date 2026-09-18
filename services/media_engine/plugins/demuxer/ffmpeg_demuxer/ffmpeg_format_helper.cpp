@@ -772,14 +772,16 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         format.Set<Tag::VIDEO_SAR>(static_cast<double>(av_q2d(sar)));
     }
 
-    if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC || avStream.codecpar->codec_id == AV_CODEC_ID_H264) {
-        if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
-            ParseHvccBoxInfo(avStream, format);
-        }
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_HEVC) {
+        ParseHvccBoxInfo(avStream, format);
         ParseColorBoxInfo(avStream, format);
         if (IsMpeg4File(fileType)) {
             ParseHdrStaticMetadata(avStream, format);
         }
+    }
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && IsMpeg4File(fileType)) {
+        ParseHLGColorBoxInfo(avStream, format);
+        ParseHdrStaticMetadata(avStream, format);
     }
     if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         ParseRawvideoInfo(avStream, format);
@@ -1162,6 +1164,22 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &forma
 
     ChromaLocation chromaLoc = Converter::ConvertFFMpegToOHChromaLocation(avStream.codecpar->chroma_location);
     format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);
+}
+
+void FFmpegFormatHelper::ParseHLGColorBoxInfo(const AVStream& avStream, Meta &format)
+{
+    TransferCharacteristic colorTrans = Converter::ConvertFFMpegToOHColorTrans(avStream.codecpar->color_trc);
+    FALSE_RETURN_MSG_W(colorTrans == TransferCharacteristic::HLG, "ColorTrans is not HLG");
+    format.Set<Tag::VIDEO_COLOR_TRC>(colorTrans);
+
+    int colorRange = Converter::ConvertFFMpegToOHColorRange(avStream.codecpar->color_range);
+    format.Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(colorRange));
+
+    ColorPrimary colorPrimaries = Converter::ConvertFFMpegToOHColorPrimaries(avStream.codecpar->color_primaries);
+    format.Set<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
+
+    MatrixCoefficient colorMatrix = Converter::ConvertFFMpegToOHColorMatrix(avStream.codecpar->color_space);
+    format.Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
 }
 
 void FFmpegFormatHelper::ParseHevcInfo(
