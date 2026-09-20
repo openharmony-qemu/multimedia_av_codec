@@ -68,7 +68,7 @@ ohos_shared_library("fcodec") {
     defines += [ "DISABLE_DMABUFF" ]
   }
 
-  if (build_variant != "user") {
+  if (build_variant == "root") {
     defines += [ "BUILD_ENG_VERSION" ]
   }
 

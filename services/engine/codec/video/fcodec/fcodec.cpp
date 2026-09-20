@@ -73,8 +73,10 @@ FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::UNINIT
     isShieldDmaBuffer_ = true;
 #endif
 
+#ifdef BUILD_ENG_VERSION
     av_log_set_level(AV_LOG_DEBUG);
     av_log_set_callback(FfmpegLogCallback);
+#endif // BUILD_ENG_VERSION
 }
 
 FCodec::~FCodec()
@@ -598,7 +600,6 @@ int32_t FCodec::Flush()
                              "%{public}s Flush codec failed: not in running or Eos state", decName_.c_str());
     state_ = State::FLUSHING;
     AVCODEC_LOGI("%{public}s step into FLUSHING status", decName_.c_str());
-    std::unique_lock<std::mutex> sLock(sendMutex_);
     StopThread(false);
     avcodec_flush_buffers(avCodecContext_.get());
     ResetContext(false);
