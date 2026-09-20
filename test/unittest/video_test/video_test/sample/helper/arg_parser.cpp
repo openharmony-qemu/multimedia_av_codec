@@ -207,7 +207,7 @@ Video codec demo help:
     --video_decoder_output_colorspace   enable video processing and specified colorspace type
     --sync_mode                         enable sync mode
     --enable_b_frame                    enable b frame? (0: false; 1: true)
-    --b_frame_gop_mode                  b frame GOP mode (0: adaptive B; 1: H3B)
+    --b_frame_gop_mode                  b frame GOP mode (1: adaptive; 2: H3B)
     --sqr_factor                        default 25, range [0, 51]
     --enable_roi                        enable roi? (0: false; 1: true)
     --roi_file_path                     roi file path
