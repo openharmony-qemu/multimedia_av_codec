@@ -20,8 +20,10 @@
 #include <unistd.h>
 #include "common/log.h"
 
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "HiStreamer" };
+constexpr uint64_t DATASINKFD_FDSAN_TAG = static_cast<uint64_t>(LOG_DOMAIN_MUXER) << 32 | FDSAN_TAG_A;
 }
 
 namespace OHOS {
@@ -29,6 +31,7 @@ namespace Media {
 DataSinkFd::DataSinkFd(int32_t fd) : fd_(dup(fd)), pos_(0), end_(-1)
 {
     MEDIA_LOG_I("dup fd is %{public}d", fd_);
+    fdsan_exchange_owner_tag(fd_, 0, DATASINKFD_FDSAN_TAG);
     end_ = lseek(fd_, 0, SEEK_END);
     if (lseek(fd_, 0, SEEK_SET) < 0) {
         MEDIA_LOG_E("failed to construct, fd is %{public}d, error is %{public}s", fd_, strerror(errno));
@@ -43,6 +46,7 @@ DataSinkFd::~DataSinkFd()
         MEDIA_LOG_I("close fd is %{public}d", fd_);
         MEDIA_LOG_I("current pos is: " PUBLIC_LOG_U64 ", file end at: " PUBLIC_LOG_U64, pos_, end_);
         close(fd_);
+        fdsan_close_with_tag(fd_, DATASINKFD_FDSAN_TAG);
         fd_ = -1;
     }
 }
