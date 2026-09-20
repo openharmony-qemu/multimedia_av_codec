@@ -13,11 +13,16 @@
  * limitations under the License.
  */
 
-#include "video_encoder.h"
 #include <unordered_map>
+#include "av_codec_sample_error.h"
+#include "av_codec_sample_log.h"
+#include "codec_callback.h"
+#include "external_window.h"
 #include "meta/meta_key.h"
+#include "native_window.h"
 #include "sample_utils.h"
 #include "sample_context.h"
+#include "video_encoder.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncoder"};
@@ -56,6 +61,7 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_WIDTH, sampleInfo.videoWidth);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_HEIGHT, sampleInfo.videoHeight);
     OH_AVFormat_SetDoubleValue(format.get(), OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
+    OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME, sampleInfo.enableBFrame);
     if (sampleInfo.enableBFrame) {
         OH_AVFormat_SetIntValue(format.get(), Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, sampleInfo.bFrameGopMode);
