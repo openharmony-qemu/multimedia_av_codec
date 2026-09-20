@@ -62,6 +62,9 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetDoubleValue(format.get(), OH_MD_KEY_FRAME_RATE, sampleInfo.frameRate);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME, sampleInfo.enableBFrame);
+    if (sampleInfo.enableBFrame) {
+        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_MAX_B_FRAMES, sampleInfo.maxBFrames);
+    }
     if (sampleInfo.bitrateMode != CQ) {
         OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_QP_MAX, 51); // 51 is max qp
         OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_QP_MIN, 0); // 0 is min qp

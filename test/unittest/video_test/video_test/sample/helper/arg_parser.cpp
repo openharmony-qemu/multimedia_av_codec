@@ -55,6 +55,7 @@ enum DemoArgumentType : int {
     DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,
     DEMO_ARG_SYNC_MODE,
     DEMO_ARG_ENABLE_B_FRAME,
+    DEMO_ARG_MAX_B_FRAMES,
     DEMO_ARG_SQR_FACTOR,
     DEMO_ARG_ENABLE_ROI,
     DEMO_ARG_ROI_FILE_PATH,
@@ -101,6 +102,7 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  "video_decoder_output_colorspace"},
     {DEMO_ARG_SYNC_MODE,                        "sync_mode"},
     {DEMO_ARG_ENABLE_B_FRAME,                   "enable_b_frame"},
+    {DEMO_ARG_MAX_B_FRAMES,                     "max_b_frames"},
     {DEMO_ARG_SQR_FACTOR,                       "sqr_factor"},
     {DEMO_ARG_ENABLE_ROI,                       "enable_roi"},
     {DEMO_ARG_ROI_FILE_PATH,                    "roi_file_path"},
@@ -147,6 +149,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"video_decoder_output_colorspace",  required_argument,  nullptr, DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE},
     {"sync_mode",                        required_argument,  nullptr, DEMO_ARG_SYNC_MODE},
     {"enable_b_frame",                   required_argument,  nullptr, DEMO_ARG_ENABLE_B_FRAME},
+    {"max_b_frames",                     required_argument,  nullptr, DEMO_ARG_MAX_B_FRAMES},
     {"sqr_factor",                       required_argument,  nullptr, DEMO_ARG_SQR_FACTOR},
     {"enable_roi",                       required_argument,  nullptr, DEMO_ARG_ENABLE_ROI},
     {"roi_file_path",                    required_argument,  nullptr, DEMO_ARG_ROI_FILE_PATH},
@@ -204,6 +207,7 @@ Video codec demo help:
     --video_decoder_output_colorspace   enable video processing and specified colorspace type
     --sync_mode                         enable sync mode
     --enable_b_frame                    enable b frame? (0: false; 1: true)
+    --max_b_frames                      maximum number of consecutive b frames
     --sqr_factor                        default 25, range [0, 51]
     --enable_roi                        enable roi? (0: false; 1: true)
     --roi_file_path                     roi file path
@@ -395,6 +399,11 @@ inline void SetEnableBFrame(SampleInfo &info, const char * const value)
 {
     info.enableBFrame = std::stol(value);
 }
+
+inline void SetMaxBFrames(SampleInfo &info, const char * const value)
+{
+    info.maxBFrames = std::stol(value);
+}
  
 inline void SetSqrFactor(SampleInfo &info, const char * const value)
 {
@@ -480,6 +489,7 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  SetVideoDecoderOutputColorspace},
     {DEMO_ARG_SYNC_MODE,                        SetSyncMode},
     {DEMO_ARG_ENABLE_B_FRAME,                   SetEnableBFrame},
+    {DEMO_ARG_MAX_B_FRAMES,                     SetMaxBFrames},
     {DEMO_ARG_SQR_FACTOR,                       SetSqrFactor},
     {DEMO_ARG_ENABLE_ROI,                       SetEnableRoi},
     {DEMO_ARG_ROI_FILE_PATH,                    SetRoiFilePath},
