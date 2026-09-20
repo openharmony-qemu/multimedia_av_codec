@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include "common/log.h"
 
+#define FDSAN_TAG_A 1
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_MUXER, "HiStreamer" };
