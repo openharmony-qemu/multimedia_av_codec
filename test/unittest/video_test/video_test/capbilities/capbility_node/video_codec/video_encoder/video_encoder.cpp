@@ -19,6 +19,7 @@
 #include "av_codec_sample_error.h"
 #include "av_codec_sample_log.h"
 #include "codec_callback.h"
+#include "meta/meta_key.h"
 #include "native_window.h"
 #include "sample_utils.h"
 #include "sample_context.h"
@@ -63,7 +64,7 @@ int32_t VideoEncoder::Configure(const SampleInfo &sampleInfo)
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE, sampleInfo.bitrateMode);
     OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME, sampleInfo.enableBFrame);
     if (sampleInfo.enableBFrame) {
-        OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_MAX_B_FRAMES, sampleInfo.maxBFrames);
+        OH_AVFormat_SetIntValue(format.get(), Media::Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE, sampleInfo.bFrameGopMode);
     }
     if (sampleInfo.bitrateMode != CQ) {
         OH_AVFormat_SetIntValue(format.get(), OH_MD_KEY_VIDEO_ENCODER_QP_MAX, 51); // 51 is max qp
