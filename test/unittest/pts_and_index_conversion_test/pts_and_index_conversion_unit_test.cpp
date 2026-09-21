@@ -380,8 +380,8 @@ HWTEST_F(PtsAndIndexConversionTest, LargeSizeMdhd, TestSize.Level1)
  */
 HWTEST_F(PtsAndIndexConversionTest, LargeSizeBoundary, TestSize.Level1)
 {
-    EXPECT_TRUE(RunLargeSizeBoundary(BOX_TYPE_HDLR, NON_MDAT_BOX_PAYLOAD_LIMIT, true));
-    EXPECT_TRUE(RunLargeSizeBoundary(BOX_TYPE_HDLR, NON_MDAT_BOX_PAYLOAD_LIMIT + 1, false));
+    EXPECT_TRUE(RunLargeSizeBoundary(NON_MDAT_BOX_PAYLOAD_LIMIT, false));
+    EXPECT_TRUE(RunLargeSizeBoundary(NON_MDAT_BOX_PAYLOAD_LIMIT + 1, true));
 }
 
 /**

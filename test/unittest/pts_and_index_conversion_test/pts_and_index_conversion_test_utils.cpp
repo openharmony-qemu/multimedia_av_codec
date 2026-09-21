@@ -253,9 +253,15 @@ bool RunLargeSizeReproduction(const char *targetType)
     return RunLargeSizeCase(targetType, LARGE_BOX_PAYLOAD_SIZE, false, false);
 }
 
-bool RunLargeSizeBoundary(const char *targetType, uint64_t payloadSize, bool expectVideoTrack)
+bool RunLargeSizeBoundary(uint64_t payloadSize, bool expectSkipped)
 {
-    return RunLargeSizeCase(targetType, payloadSize, true, expectVideoTrack);
+    constexpr uint64_t initialOffset = 16;
+    TimeAndIndexConversion conversion;
+    conversion.offset_ = initialOffset;
+
+    bool skipped = conversion.SkipOversizedBox(payloadSize, "TEST");
+    uint64_t expectedOffset = expectSkipped ? initialOffset + payloadSize : initialOffset;
+    return skipped == expectSkipped && conversion.offset_ == expectedOffset;
 }
 
 bool RunDeepContainerReproduction(int &childStatus)
