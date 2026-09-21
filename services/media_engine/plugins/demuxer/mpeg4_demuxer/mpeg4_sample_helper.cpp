@@ -68,6 +68,18 @@ static int64_t SaturatingMultiply(int64_t left, int64_t right)
         std::numeric_limits<int64_t>::min();
 }
 
+static uint64_t CalculatePositiveDtsDifference(int64_t currentDts, int64_t correctedDts)
+{
+    if (currentDts <= correctedDts) {
+        return 0;
+    }
+    if (correctedDts >= 0 || currentDts < 0) {
+        return static_cast<uint64_t>(currentDts - correctedDts);
+    }
+    const uint64_t correctedMagnitude = static_cast<uint64_t>(-(correctedDts + 1)) + 1;
+    return static_cast<uint64_t>(currentDts) + correctedMagnitude;
+}
+
 struct MPEG4SampleHelper::SampleInfo {
     uint32_t duration = 0;
     uint32_t size = 0;
@@ -742,7 +754,7 @@ void MPEG4SampleHelper::NormalizeSttsEntry(SttsEntry& entry, uint32_t entryIndex
     correctedDts = SaturatingAdd(correctedDts, correctionDuration);
     currentDts = SaturatingAdd(currentDts, currentDuration);
     if (currentDts > correctedDts && entry.count > 0 && entry.delta > 0) {
-        uint64_t dtsDifference = static_cast<uint64_t>(currentDts) - static_cast<uint64_t>(correctedDts);
+        uint64_t dtsDifference = CalculatePositiveDtsDifference(currentDts, correctedDts);
         uint64_t driftWide = dtsDifference / entry.count;
         uint32_t drift = driftWide > UINT32_MAX ? UINT32_MAX : static_cast<uint32_t>(driftWide);
         const uint32_t correction = static_cast<int64_t>(entry.delta) > drift ? drift : entry.delta - 1;
