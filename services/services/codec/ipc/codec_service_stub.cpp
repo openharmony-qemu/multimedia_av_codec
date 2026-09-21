@@ -560,8 +560,10 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 
     int32_t instanceId = 0;
     std::string codecName = "";
-    (void)callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
-    (void)callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName);
+    if (!callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId) ||
+        !callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName)) {
+        AVCODEC_LOGW_WITH_TAG("Get instance info from callerInfo failed");
+    }
     Meta replyCallerInfo;
     replyCallerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
     replyCallerInfo.SetData(Tag::MEDIA_CODEC_NAME, codecName);
