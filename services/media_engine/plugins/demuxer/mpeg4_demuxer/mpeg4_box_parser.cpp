@@ -2378,29 +2378,43 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
     ctx->offset += static_cast<int64_t>(currentAtom.size);
     FALSE_RETURN_V_MSG_D(currentAtom.dataSize > 0 || currentAtom.type == FourccType("vttC"), Status::OK,
         "Ignore empty atom");
-    // 检查是否已经有 codec config 数据
     int64_t dataOffset = ctx->dataOffset;
     uint64_t dataSize = currentAtom.dataSize;
-    if (currentAtom.type == FourccType("vvcC")) {
+    Status ret = GetCodecConfigDataRange(currentAtom, ctx, dataOffset, dataSize);
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+    ResetCodecConfig(dataSize);
+    auto configData = std::make_unique<uint8_t[]>(dataSize);
+    FALSE_RETURN_V_MSG_E(configData != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate CodecConfig extradata");
+    ret = dataReader_->ReadUintData(dataOffset, configData.get(), dataSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_NOT_ENOUGH_DATA, "Read CodecConfig data failed");
+    return StoreCodecConfig(std::move(configData), dataSize);
+}
+
+Status MPEG4AtomParser::GetCodecConfigDataRange(const MPEG4Atom& atom, ParseContext* ctx, int64_t& dataOffset,
+    uint64_t& dataSize) const
+{
+    if (atom.type == FourccType("vvcC")) {
         FALSE_RETURN_V_MSG_E(dataSize > FULLBOX_PREFIX_SIZE, Status::ERROR_INVALID_DATA,
             "vvcC data too small to contain FullBox prefix");
         dataOffset += FULLBOX_PREFIX_SIZE;
         dataSize -= FULLBOX_PREFIX_SIZE;
-    } else if (currentAtom.type == FourccType("vttC")) {
-        // FFmpeg exposes the complete vttC box as subtitle extradata.
-        FALSE_RETURN_V_MSG_E(currentAtom.size <= static_cast<uint64_t>(INT64_MAX) && ctx->offset >= 0 &&
-            static_cast<uint64_t>(ctx->offset) >= currentAtom.size,
-            Status::ERROR_INVALID_DATA, "Invalid vttC atom offsets");
-        const int64_t atomStart = ctx->offset - static_cast<int64_t>(currentAtom.size);
-        FALSE_RETURN_V_MSG_E(ctx->dataOffset >= atomStart, Status::ERROR_INVALID_DATA,
-            "Invalid vttC data offset");
-        const int64_t atomHeaderSize = ctx->dataOffset - atomStart;
-        FALSE_RETURN_V_MSG_E(atomHeaderSize >= static_cast<int64_t>(DEFAULT_HEAD_SIZE) &&
-            static_cast<uint64_t>(atomHeaderSize) <= currentAtom.size, Status::ERROR_INVALID_DATA,
-            "Invalid vttC atom header size");
-        dataOffset -= atomHeaderSize;
-        dataSize = static_cast<uint64_t>(currentAtom.size);
+        return Status::OK;
     }
+    FALSE_RETURN_V_NOLOG(atom.type == FourccType("vttC"), Status::OK);
+    FALSE_RETURN_V_MSG_E(atom.size <= static_cast<uint64_t>(INT64_MAX) && ctx->offset >= 0 &&
+        static_cast<uint64_t>(ctx->offset) >= atom.size, Status::ERROR_INVALID_DATA, "Invalid vttC atom offsets");
+    const int64_t atomStart = ctx->offset - static_cast<int64_t>(atom.size);
+    FALSE_RETURN_V_MSG_E(ctx->dataOffset >= atomStart, Status::ERROR_INVALID_DATA, "Invalid vttC data offset");
+    const int64_t atomHeaderSize = ctx->dataOffset - atomStart;
+    FALSE_RETURN_V_MSG_E(atomHeaderSize >= static_cast<int64_t>(DEFAULT_HEAD_SIZE) &&
+        static_cast<uint64_t>(atomHeaderSize) <= atom.size, Status::ERROR_INVALID_DATA, "Invalid vttC atom header size");
+    dataOffset -= atomHeaderSize;
+    dataSize = static_cast<uint64_t>(atom.size);
+    return Status::OK;
+}
+
+void MPEG4AtomParser::ResetCodecConfig(uint64_t dataSize)
+{
     lastTrack_->codecParms.hasValidExtradata = false;
     lastTrack_->codecParms.annexbExtradataSize = 0;
     if (lastTrack_->codecParms.data != nullptr) {
@@ -2409,11 +2423,10 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
         lastTrack_->codecParms.data.reset();
         lastTrack_->codecParms.extradataSize = 0;
     }
+}
 
-    auto configData = std::make_unique<uint8_t[]>(dataSize);
-    FALSE_RETURN_V_MSG_E(configData != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate CodecConfig extradata");
-    Status ret = dataReader_->ReadUintData(dataOffset, configData.get(), dataSize);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_NOT_ENOUGH_DATA, "Read CodecConfig data failed");
+Status MPEG4AtomParser::StoreCodecConfig(std::unique_ptr<uint8_t[]>&& configData, uint64_t dataSize)
+{
     FALSE_RETURN_V_MSG_E(currentStsdEntryIndex_ < lastTrack_->codecConfigs.size(), Status::ERROR_INVALID_DATA,
         "Invalid stsd entry index");
     const auto& oldConfig = lastTrack_->codecConfigs[currentStsdEntryIndex_];
@@ -2428,7 +2441,7 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
         lastTrack_->codecParms.data.get() + dataSize);
     lastTrack_->codecConfigsSize += dataSize;
     MEDIA_LOG_D("CodecConfig extradata size: " PUBLIC_LOG_D64, lastTrack_->codecParms.extradataSize);
-    return ret;
+    return Status::OK;
 }
 
 // 该解析函数专门用于处理音频SampleEntry atom，如mp4a enca

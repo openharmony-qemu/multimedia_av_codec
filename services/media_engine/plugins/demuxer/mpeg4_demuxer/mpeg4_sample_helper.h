@@ -25,6 +25,7 @@
 #include <vector>
 #include "common/status.h"
 #include "demuxer_data_reader.h"
+#include "mpeg4_sample.h"
 #include "mpeg4_utils.h"
 
 namespace OHOS {
@@ -158,14 +159,7 @@ public:
     };
     static_assert(sizeof(SampleIndexEntry) == 24, "SampleIndexEntry must remain compact");
 
-    struct SampleIndexView {
-        int64_t pos = 0;
-        int64_t dts = 0;
-        int64_t pts = 0;
-        int64_t duration = 0;
-        uint32_t flag = 0;
-        int32_t size = 0;
-    };
+    using SampleIndexView = ::OHOS::Media::Plugins::MPEG4::SampleIndexView;
     struct CttsEntry {
         uint32_t count;
         int32_t delta;

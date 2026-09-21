@@ -398,6 +398,10 @@ private:
     Status ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseVideoSampleEntry(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status GetCodecConfigDataRange(const MPEG4Atom& atom, ParseContext* ctx, int64_t& dataOffset,
+        uint64_t& dataSize) const;
+    void ResetCodecConfig(uint64_t dataSize);
+    Status StoreCodecConfig(std::unique_ptr<uint8_t[]>&& configData, uint64_t dataSize);
     Status ParseAudioSampleEntry(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseSubtitleSampleEntry(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMebx(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
