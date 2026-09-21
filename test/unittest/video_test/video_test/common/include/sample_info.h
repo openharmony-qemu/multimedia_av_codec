@@ -142,6 +142,7 @@ struct SampleInfo {
     bool syncMode = false;
     int32_t sqrFactor = 25; // 25: default sqr factor
     bool enableBFrame = false;
+    int32_t bFrameGopMode = 1; // 1: adaptive; 2: H3B
     bool enableRoi = false;
     std::string roiFilePath;
     bool enableRoiByNativebuf = false;

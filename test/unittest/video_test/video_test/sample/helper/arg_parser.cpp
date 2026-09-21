@@ -55,6 +55,7 @@ enum DemoArgumentType : int {
     DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,
     DEMO_ARG_SYNC_MODE,
     DEMO_ARG_ENABLE_B_FRAME,
+    DEMO_ARG_B_FRAME_GOP_MODE,
     DEMO_ARG_SQR_FACTOR,
     DEMO_ARG_ENABLE_ROI,
     DEMO_ARG_ROI_FILE_PATH,
@@ -101,6 +102,7 @@ const std::unordered_map<DemoArgumentType, std::string> DEMO_ARGUMENT_TYPE_TO_ST
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  "video_decoder_output_colorspace"},
     {DEMO_ARG_SYNC_MODE,                        "sync_mode"},
     {DEMO_ARG_ENABLE_B_FRAME,                   "enable_b_frame"},
+    {DEMO_ARG_B_FRAME_GOP_MODE,                 "b_frame_gop_mode"},
     {DEMO_ARG_SQR_FACTOR,                       "sqr_factor"},
     {DEMO_ARG_ENABLE_ROI,                       "enable_roi"},
     {DEMO_ARG_ROI_FILE_PATH,                    "roi_file_path"},
@@ -147,6 +149,7 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
     {"video_decoder_output_colorspace",  required_argument,  nullptr, DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE},
     {"sync_mode",                        required_argument,  nullptr, DEMO_ARG_SYNC_MODE},
     {"enable_b_frame",                   required_argument,  nullptr, DEMO_ARG_ENABLE_B_FRAME},
+    {"b_frame_gop_mode",                 required_argument,  nullptr, DEMO_ARG_B_FRAME_GOP_MODE},
     {"sqr_factor",                       required_argument,  nullptr, DEMO_ARG_SQR_FACTOR},
     {"enable_roi",                       required_argument,  nullptr, DEMO_ARG_ENABLE_ROI},
     {"roi_file_path",                    required_argument,  nullptr, DEMO_ARG_ROI_FILE_PATH},
@@ -161,13 +164,11 @@ constexpr struct option DEMO_LONG_ARGUMENT[] = {
 
 constexpr std::string_view HELP_TEXT = R"HELP_TEXT(
 Video codec demo help:
+
+General options:
     --help                              print this help info
-
     --sample_type                       sample type (0: VideoCodec; 1: YuvViewer)
-
     --codec_type                        codec type (0: decoder; 2: encoder)
-    --input                             input file path
-    --output                            output file path
     --create_codec_by_mime              create codec by mime
     --mime                              codec mime (video/avc: H264; video/hevc: H265)
     --width                             video width
@@ -175,47 +176,57 @@ Video codec demo help:
     --framerate                         video framerate
     --pixel_format                      1: YUVI420          2: NV12     3: NV21
                                         4: SURFACE_FORMAT   5: RGBA
-    --bitrate                           encoder bitrate (bps)
-    --bitrate_mode                      encoder bitrate mode (0: CBR; 1: VBR; 2: CQ; 3: SQR; 4: CBR_HIGH_QUALITY)
-    --video_profile                     AVC profile (0: baseline; 4: high; 8: main)
-                                        HEVC profile (0: main; 1: main10)
     --codec_run_mode                    0: Surface origin      1: Buffer SharedMemory
                                         2: Surface AVBuffer    3: Buffer AVBuffer
+    --sync_mode                         enable sync mode
+
+Input and output options:
+    --input                             input file path
+    --output                            output file path
     --data_producer                     0: Demuxer;  1: Bitstream Reader;  2: Rawdata Reader
     --bitstream_type                    0: AnnexB;   1: AVCC
     --demuxer_source_type               0: file;     1: uri
     --codec_consumer                    0: Default;  1: Decoder render output
-
-    --frame_interval                    frame push interval (ms)
-    --i_frame_interval                  i frame interval (ms)
-    --sample_count                      specify count of sample instance
-    --sample_repeat_times               sample repeat times, data producer will seek to head while eos
-    --demo_repeat_times                 demo repeat times, sample will destroy while eos
     --need_dump_input                   need to dump input stream? (0: false; 1: true)
     --need_dump_output                  need to dump output stream? (0: false; 1: true)
-    --max_frames                        number of frames to be processed
-    --seek_mode                         demuxer seek mode:
-                                            0: SEEK_MODE_NEXT_SYNC
-                                            1: SEEK_MODE_PREVIOUS_SYNC
-                                            2: SEEK_MODE_CLOSEST_SYNC
-    --thread_sleep_mode                 0: Input sleep;  1: Output sleep
-    --pause_before_run_sample           pause before run sample, value greater than 60 then press enter to continue,
-                                        greater than 0 then sleep seconds of value
-    --video_decoder_output_colorspace   enable video processing and specified colorspace type
-    --sync_mode                         enable sync mode
-    --enable_b_frame                    enable b frame? (0: false; 1: true)
+
+Encoder options:
+    --bitrate                           encoder bitrate (bps)
+    --bitrate_mode                      encoder bitrate mode (0: CBR; 1: VBR; 2: CQ; 3: SQR; 4: CBR_HIGH_QUALITY)
+    --quality                           quality for CQ bitrate mode, range [1, 100]
     --sqr_factor                        default 25, range [0, 51]
+    --video_profile                     AVC profile (0: baseline; 4: high; 8: main)
+                                        HEVC profile (0: main; 1: main10)
+    --i_frame_interval                  i frame interval (ms)
+    --enable_b_frame                    enable b frame? (0: false; 1: true)
+    --b_frame_gop_mode                  b frame GOP mode (1: adaptive; 2: H3B)
     --enable_roi                        enable roi? (0: false; 1: true)
     --roi_file_path                     roi file path
     --enable_roi_by_nativebuf           enable roi by nativebuf? (0: false; 1: true)
     --roi_file_path_by_nativebuf        roi file path by nativebuf
-    --output_order                      enable low latency(0: false; 1: true), if true, meaning decoder order
-    --quality                           quality for CQ bitrate mode, range [1, 100]
     --enable_temporal_scalability       enable temporal scalability? (0: false; 1: true)
     --temporal_gop_reference_mode       temporal GOP reference mode (0: adjacent; 1: jump; 2: uniformly scaled)
     --temporal_gop_size                 temporal GOP size, range [2, GOP)
 
-Example:
+Decoder options:
+    --seek_mode                         demuxer seek mode:
+                                            0: SEEK_MODE_NEXT_SYNC
+                                            1: SEEK_MODE_PREVIOUS_SYNC
+                                            2: SEEK_MODE_CLOSEST_SYNC
+    --video_decoder_output_colorspace   enable video processing and specified colorspace type
+    --output_order                      enable low latency (0: false; 1: true); true means decoder order
+
+Run control options:
+    --frame_interval                    frame push interval (ms)
+    --sample_count                      specify count of sample instance
+    --sample_repeat_times               sample repeat times, data producer will seek to head while eos
+    --demo_repeat_times                 demo repeat times, sample will destroy while eos
+    --max_frames                        number of frames to be processed
+    --thread_sleep_mode                 0: Input sleep;  1: Output sleep
+    --pause_before_run_sample           pause before run sample, value greater than 60 then press enter to continue,
+                                        greater than 0 then sleep seconds of value
+
+Decoder example:
     --codec_type 0 --input input.h264 --mime video/avc --width 1280 --height 720 --framerate 30 --pixel_format 1
     --codec_run_mode 0 --frame_interval 0 --repeat_times 1 --hdr_vivid_video 0 --need_dump_output 0 --max_frames 100
     --sync_mode 1
@@ -395,6 +406,11 @@ inline void SetEnableBFrame(SampleInfo &info, const char * const value)
 {
     info.enableBFrame = std::stol(value);
 }
+
+inline void SetBFrameGopMode(SampleInfo &info, const char * const value)
+{
+    info.bFrameGopMode = std::stol(value);
+}
  
 inline void SetSqrFactor(SampleInfo &info, const char * const value)
 {
@@ -480,6 +496,7 @@ const std::unordered_map<DemoArgumentType, void (*)(SampleInfo &info, const char
     {DEMO_ARG_VIDEO_DECODER_OUTPUT_COLORSPACE,  SetVideoDecoderOutputColorspace},
     {DEMO_ARG_SYNC_MODE,                        SetSyncMode},
     {DEMO_ARG_ENABLE_B_FRAME,                   SetEnableBFrame},
+    {DEMO_ARG_B_FRAME_GOP_MODE,                 SetBFrameGopMode},
     {DEMO_ARG_SQR_FACTOR,                       SetSqrFactor},
     {DEMO_ARG_ENABLE_ROI,                       SetEnableRoi},
     {DEMO_ARG_ROI_FILE_PATH,                    SetRoiFilePath},
