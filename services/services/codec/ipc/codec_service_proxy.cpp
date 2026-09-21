@@ -349,11 +349,10 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index, AVCodecBufferInfo in
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    data.WriteUint32(index);
-
     auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listenerStub != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
-    bool parcelRet = listenerStub->WriteInputBufferToParcel(index, data);
+    bool parcelRet = data.WriteUint32(index);
+    parcelRet = parcelRet && listenerStub->WriteInputBufferToParcel(index, data);
     CHECK_AND_RETURN_RET_LOGD_WITH_TAG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
@@ -372,11 +371,10 @@ int32_t CodecServiceProxy::QueueInputBuffer(uint32_t index)
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    data.WriteUint32(index);
-
     auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listenerStub != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
-    bool parcelRet = listenerStub->WriteInputBufferToParcel(index, data);
+    bool parcelRet = data.WriteUint32(index);
+    parcelRet = parcelRet && listenerStub->WriteInputBufferToParcel(index, data);
     CHECK_AND_RETURN_RET_LOGD_WITH_TAG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
@@ -395,11 +393,10 @@ int32_t CodecServiceProxy::QueueInputParameter(uint32_t index)
     bool token = data.WriteInterfaceToken(CodecServiceProxy::GetDescriptor());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(token, AVCS_ERR_INVALID_OPERATION, "Write descriptor failed!");
 
-    data.WriteUint32(index);
-
     auto listenerStub = static_cast<CodecListenerStub *>(listener_.GetRefPtr());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(listenerStub != nullptr, AVCS_ERR_INVALID_OPERATION, "Listener is nullptr");
-    bool parcelRet = listenerStub->WriteInputBufferToParcel(index, data);
+    bool parcelRet = data.WriteUint32(index);
+    parcelRet = parcelRet && listenerStub->WriteInputBufferToParcel(index, data);
     CHECK_AND_RETURN_RET_LOGD_WITH_TAG(parcelRet, AVCS_ERR_INVALID_STATE, "Write parcel failed");
 
     int32_t ret = Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::QUEUE_INPUT_BUFFER), data,
