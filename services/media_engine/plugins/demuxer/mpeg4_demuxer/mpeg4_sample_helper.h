@@ -195,6 +195,7 @@ public:
     Status GetSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const;
     Status GetSampleSize(uint32_t sampleIndex, int32_t& size) const;
     Status GetSampleRange(uint32_t sampleIndex, int64_t& pos, int32_t& size) const;
+    uint32_t GetSampleDescriptionIndex(uint32_t sampleIndex) const;
     Status GetSamplePts(uint32_t sampleIndex, int64_t& pts) const;
     Status GetSampleDts(uint32_t sampleIndex, int64_t& dts) const;
     Status GetSampleDurationTicks(uint32_t sampleIndex, int64_t& duration) const;
@@ -286,6 +287,11 @@ private:
         uint32_t count;
         uint32_t id;
     };
+    struct SampleDescriptionRange {
+        uint64_t firstSample;
+        uint64_t sampleCount;
+        uint32_t id;
+    };
     struct StssEntry {
         uint32_t index;
     };
@@ -335,6 +341,7 @@ private:
     std::vector<SttsEntry> sttsEntry_;
     std::vector<SampleIndexEntry> sampleIndexEntry_;
     std::vector<StscEntry> stscEntry_;
+    std::vector<SampleDescriptionRange> sampleDescriptionRanges_;
     std::vector<StssEntry> stssEntry_;
     std::vector<int32_t> sampleSizes_;
     std::vector<int64_t> chunkOffsets_;
@@ -362,6 +369,8 @@ private:
     SkipSamplesInfoMap skipSamplesInfoMap_;
 
     void ProcessHalfByteSampleSizes(const uint8_t* data, uint32_t& entryIndex, uint32_t numSampleSizes);
+    void NormalizeSttsEntry(SttsEntry& entry, uint32_t entryIndex, int64_t& currentDts,
+        int64_t& correctedDts) const;
     Status ValidateAndCountSttsSamples(uint32_t& sampleCount) const;
     Status ValidateCttsEntries(uint32_t sttsSampleCount) const;
     Status ApplyEditList();
@@ -424,6 +433,7 @@ private:
     void TruncateSttsEntries(uint32_t sampleCount);
     Status ValidateSampleSizeCount(uint32_t sttsSampleCount) const;
     Status ValidateAndRepairStsc(uint32_t& sttsSampleCount);
+    void BuildSampleDescriptionRanges();
     Status PreBuildProcessAndCheck();
     uint64_t CountSttsSamples() const;
     SampleIndexBuildContext CreateSampleIndexBuildContext() const;

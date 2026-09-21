@@ -1507,6 +1507,10 @@ bool MPEG4DemuxerPlugin::ProcessVideoFirstFrame(const std::shared_ptr<MPEG4AtomP
     if (!IsVideoType(*track) || streamParsers_ == nullptr) {
         return true;
     }
+    if (track->hasMultipleCodecConfigs &&
+        !UpdateCodecConfigForSample(track, mpeg4Sample->sampleIndex)) {
+        return false;
+    }
     if (streamParsers_->ParserIsCreated(trackId) && !streamParsers_->ParserIsInited(trackId)) {
         const auto& codecParms = track->codecParms;
         if (codecParms.data != nullptr && codecParms.extradataSize > 0) {
@@ -1519,6 +1523,38 @@ bool MPEG4DemuxerPlugin::ProcessVideoFirstFrame(const std::shared_ptr<MPEG4AtomP
     }
     firstFrameMap_[trackId] = mpeg4Sample->sample;
     return true;
+}
+
+bool MPEG4DemuxerPlugin::UpdateCodecConfigForSample(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex)
+{
+    if (track == nullptr || track->sampleHelper == nullptr || !track->hasMultipleCodecConfigs) {
+        return true;
+    }
+    if (streamParsers_ == nullptr || !streamParsers_->ParserIsCreated(track->trackIndex)) {
+        return true;
+    }
+    uint32_t descriptionIndex = track->sampleHelper->GetSampleDescriptionIndex(sampleIndex);
+    if (descriptionIndex == 0 || descriptionIndex > track->codecConfigs.size()) {
+        MEDIA_LOG_W("Invalid sample description index " PUBLIC_LOG_U32 ", keep current config", descriptionIndex);
+        return true;
+    }
+    uint32_t configIndex = descriptionIndex - 1;
+    if (configIndex == track->currentCodecConfigIndex) {
+        return true;
+    }
+    const auto& config = track->codecConfigs[configIndex];
+    if (config.empty()) {
+        MEDIA_LOG_W("Sample description has no codec config, keep current config");
+        return true;
+    }
+    std::vector<uint8_t> mutableConfig(config);
+    bool ret = streamParsers_->ConvertExtraDataToAnnexb(track->trackIndex, mutableConfig.data(),
+        static_cast<int32_t>(mutableConfig.size()));
+    if (ret) {
+        track->currentCodecConfigIndex = configIndex;
+    }
+    return ret;
 }
 
 Status MPEG4DemuxerPlugin::GetMediaInfo(MediaInfo& mediaInfo)
@@ -2818,6 +2854,9 @@ Status MPEG4DemuxerPlugin::HandleAnnexbBufferConversionResult(const std::shared_
 Status MPEG4DemuxerPlugin::TryConvertSampleToAnnexbToBuffer(const std::shared_ptr<MPEG4Sample>& mpeg4Sample,
     uint32_t trackId, AnnexbBufferConvertContext& context)
 {
+    auto track = FindTrackById(trackId);
+    FALSE_RETURN_V_MSG_E(UpdateCodecConfigForSample(track, mpeg4Sample->sampleIndex),
+        Status::ERROR_PACKET_CONVERT_FAILED, "Update sample codec config failed");
     Status ret = PrepareAnnexbBufferConversion(mpeg4Sample, trackId, context);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Prepare annexb buffer conversion failed");
     if (!context.shouldConvert) {
@@ -2843,6 +2882,8 @@ Status MPEG4DemuxerPlugin::ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> ds
         dstMpeg4Sample->isAnnexb = true;
         return ret;
     }
+    FALSE_RETURN_V_MSG_E(UpdateCodecConfigForSample(track, dstMpeg4Sample->sampleIndex),
+        Status::ERROR_PACKET_CONVERT_FAILED, "Update sample codec config failed");
     const std::string& mime = track->sampleHelper->mimeType_;
     if (HaveValidParser(mime) && streamParsers_ != nullptr &&
         streamParsers_->ParserIsInited(trackIndex)) {

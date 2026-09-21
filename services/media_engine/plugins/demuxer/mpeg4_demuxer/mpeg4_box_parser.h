@@ -114,6 +114,9 @@ public:
         uint16_t audioSampleEntryChannelCount = 0;
         uint16_t audioSampleEntryBitsPerCodedSample = 0;
         CodecParams codecParms{};
+        std::vector<std::vector<uint8_t>> codecConfigs;
+        bool hasMultipleCodecConfigs = false;
+        uint32_t currentCodecConfigIndex = UINT32_MAX;
         Mpeg4TrackDrmInfo drmInfo;
         std::shared_ptr<SampleCache> cache = nullptr;
 
@@ -155,6 +158,7 @@ public:
 private:
     std::shared_ptr<Track> firstTrack_;
     std::shared_ptr<Track> lastTrack_;
+    uint32_t currentStsdEntryIndex_ = 0;
     std::shared_ptr<Track> currentTrack_;
 
     enum ColorRange : uint32_t {
