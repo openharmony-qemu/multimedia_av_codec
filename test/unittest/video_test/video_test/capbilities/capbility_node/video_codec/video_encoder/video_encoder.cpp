@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "video_encoder.h"
 #include <unordered_map>
 #include "av_codec_sample_error.h"
 #include "av_codec_sample_log.h"
@@ -22,7 +23,6 @@
 #include "native_window.h"
 #include "sample_utils.h"
 #include "sample_context.h"
-#include "video_encoder.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_TEST, "VideoEncoder"};
