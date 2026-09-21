@@ -3150,8 +3150,8 @@ Status FFmpegDemuxerPlugin::ReadRmUntilPos(AVPacket *pkt, int64_t pos)
         if (currentPos >= pos) {
             break;
         }
-        FALSE_RETURN_V_MSG_E(currentPos > lastPos, Status::ERROR_WRONG_STATE,
-            "RM read position does not advance");
+        FALSE_RETURN_V_MSG_E(currentPos >= lastPos, Status::ERROR_WRONG_STATE,
+            "RM read position moves backwards");
         lastPos = currentPos;
         av_packet_unref(pkt);
     }

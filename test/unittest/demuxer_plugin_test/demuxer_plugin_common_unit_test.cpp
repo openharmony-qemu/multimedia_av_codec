@@ -167,6 +167,8 @@ int32_t g_releasedTestBsfContextCount = 0;
 int32_t g_rmTestReadPacketCount = 0;
 int32_t g_rmTestSeekCount = 0;
 bool g_rmTestAdvancePosition = false;
+int32_t g_rmTestAdvanceAfterReadCount = 0;
+bool g_rmTestMovePositionBackward = false;
 FFInputFormat g_rmTestInputFormat {};
 
 class CountingStreamParser final : public StreamParser {
@@ -221,7 +223,10 @@ int ReadRmTestPacket(AVFormatContext *context, AVPacket *packet)
         packet->pts = 0;
         packet->dts = 0;
         packet->duration = 1;
-        if (g_rmTestAdvancePosition && context->pb != nullptr) {
+        if (g_rmTestMovePositionBackward && context->pb != nullptr) {
+            --context->pb->pos;
+        } else if (g_rmTestAdvancePosition && context->pb != nullptr &&
+            g_rmTestReadPacketCount > g_rmTestAdvanceAfterReadCount) {
             ++context->pb->pos;
         }
     }
@@ -411,11 +416,12 @@ HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_ResetReleasesBsfCo
 }
 
 /**
- * @tc.name: AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_NoProgress_062427
- * @tc.desc: Reading RM packets with an unchanged IO position fails instead of looping indefinitely.
+ * @tc.name: AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_BackwardPosition_062427
+ * @tc.desc: Reading RM packets fails when the IO position moves backwards.
  * @tc.type: FUNC
  */
-HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_NoProgress_062427, TestSize.Level1)
+HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_BackwardPosition_062427,
+    TestSize.Level1)
 {
     auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_rm");
     ASSERT_NE(plugin, nullptr);
@@ -424,10 +430,13 @@ HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_NoP
     AVPacket *packet = av_packet_alloc();
     ASSERT_NE(packet, nullptr);
     g_rmTestReadPacketCount = 0;
+    g_rmTestMovePositionBackward = true;
     g_rmTestAdvancePosition = false;
+    plugin->formatContext_->pb->pos = 1;
 
     EXPECT_EQ(plugin->ReadRmUntilPos(packet, 1), Status::ERROR_WRONG_STATE);
     EXPECT_EQ(g_rmTestReadPacketCount, 1);
+    g_rmTestMovePositionBackward = false;
     av_packet_free(&packet);
 }
 
@@ -445,10 +454,37 @@ HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_Pro
     AVPacket *packet = av_packet_alloc();
     ASSERT_NE(packet, nullptr);
     g_rmTestReadPacketCount = 0;
+    g_rmTestAdvanceAfterReadCount = 0;
     g_rmTestAdvancePosition = true;
 
     EXPECT_EQ(plugin->ReadRmUntilPos(packet, 1), Status::OK);
     EXPECT_EQ(g_rmTestReadPacketCount, 1);
+    g_rmTestAdvanceAfterReadCount = 0;
+    g_rmTestAdvancePosition = false;
+    av_packet_free(&packet);
+}
+
+/**
+ * @tc.name: AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_EqualPosition_062430
+ * @tc.desc: Reading RM packets tolerates an unchanged IO position before later progress.
+ * @tc.type: FUNC
+ */
+HWTEST(FFmpegDemuxerPluginTest, AVDemuxer_FFmpegDemuxerPlugin_ReadRmUntilPos_EqualPosition_062430,
+    TestSize.Level1)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_rm");
+    ASSERT_NE(plugin, nullptr);
+    plugin->formatContext_ = CreateRmTestFormatContext();
+    ASSERT_NE(plugin->formatContext_, nullptr);
+    AVPacket *packet = av_packet_alloc();
+    ASSERT_NE(packet, nullptr);
+    g_rmTestReadPacketCount = 0;
+    g_rmTestAdvanceAfterReadCount = 1;
+    g_rmTestAdvancePosition = true;
+
+    EXPECT_EQ(plugin->ReadRmUntilPos(packet, 1), Status::OK);
+    EXPECT_EQ(g_rmTestReadPacketCount, 2);
+    g_rmTestAdvanceAfterReadCount = 0;
     g_rmTestAdvancePosition = false;
     av_packet_free(&packet);
 }
