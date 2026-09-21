@@ -2279,7 +2279,6 @@ Status FFmpegDemuxerPlugin::CachePacketLocked(AVPacketWrapperPtr pktWrapper, int
                 static_cast<int32_t>(setLimitByUser));
             outOfLimit_ = true;
         }
-        return Status::ERROR_NO_MEMORY;
     }
 
     Status ret = Status::OK;

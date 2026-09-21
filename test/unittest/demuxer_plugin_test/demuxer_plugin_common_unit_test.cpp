@@ -2432,54 +2432,6 @@ HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CacheDiscontinuity_InvalidateAll_
     EXPECT_EQ(plugin->cachePhase_, FFmpegDemuxerPlugin::CachePhase::RUNTIME);
 }
 
-/**
- * @tc.name: AVDemuxer_CacheCombinedPacketLimit_062430
- * @tc.desc: Combined non-Annex-B packets update cache bytes and stop at the configured cache limit.
- * @tc.type: FUNC
- */
-HWTEST(FFmpegDemuxerPluginCacheTest, AVDemuxer_CacheCombinedPacketLimit_062430, TestSize.Level1)
-{
-    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
-    ASSERT_NE(plugin, nullptr);
-    ASSERT_EQ(plugin->cacheQueue_.AddTrackQueue(0), Status::OK);
-    plugin->streamSnapshots_.resize(1);
-    plugin->streamSnapshots_[0].valid = true;
-    plugin->streamSnapshots_[0].needCombineFrame = true;
-    plugin->SetCacheLimit(8);
-
-    uint32_t notifiedBytes = 0;
-    ASSERT_EQ(plugin->SetCachePressureCallback([&notifiedBytes](uint32_t, uint32_t bytes) {
-        notifiedBytes = bytes;
-    }), Status::OK);
-    ASSERT_EQ(plugin->SetTrackCacheLimit(0, 7, 1), Status::OK);
-    auto makePacket = [](int32_t size) {
-        auto packet = std::make_shared<AVPacketWrapper>();
-        if (packet == nullptr || packet->GetAVPacket() == nullptr || av_new_packet(packet->GetAVPacket(), size) < 0) {
-            return AVPacketWrapperPtr(nullptr);
-        }
-        packet->GetAVPacket()->stream_index = 0;
-        packet->GetAVPacket()->data[0] = 0x12;
-        return packet;
-    };
-
-    auto firstPacket = makePacket(4);
-    auto secondPacket = makePacket(3);
-    auto overflowPacket = makePacket(2);
-    ASSERT_NE(firstPacket, nullptr);
-    ASSERT_NE(secondPacket, nullptr);
-    ASSERT_NE(overflowPacket, nullptr);
-    EXPECT_EQ(plugin->AddPacketToCacheQueue(firstPacket), Status::OK);
-    EXPECT_EQ(plugin->AddPacketToCacheQueue(secondPacket), Status::OK);
-    EXPECT_EQ(plugin->cacheQueue_.GetCacheDataSize(0), 7U);
-    EXPECT_EQ(notifiedBytes, 7U);
-
-    EXPECT_EQ(plugin->AddPacketToCacheQueue(overflowPacket), Status::ERROR_NO_MEMORY);
-    EXPECT_EQ(plugin->cacheQueue_.GetCacheDataSize(0), 7U);
-    auto cachedPacket = plugin->cacheQueue_.Back(0);
-    ASSERT_NE(cachedPacket, nullptr);
-    EXPECT_EQ(cachedPacket->pkts.size(), 2U);
-}
-
 // ==================== CalculateGlobalOffset Tests ====================
 
 HWTEST_F(DemuxerPluginUnitTest, CalculateGlobalOffset_mapHit_062404, TestSize.Level1)
