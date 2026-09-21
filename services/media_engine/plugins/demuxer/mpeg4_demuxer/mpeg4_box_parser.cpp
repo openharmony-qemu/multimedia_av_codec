@@ -61,6 +61,7 @@ constexpr int32_t MAX_DEPTH = 10;
 // Maximum payload size for non-mdat atoms; excludes the atom header.
 constexpr uint64_t MAX_NON_MDAT_ATOM_PAYLOAD_SIZE = 64ULL * 1024 * 1024;
 constexpr int32_t MDAT_ATOM_TYPE = FourccType("mdat");
+constexpr int32_t MOOV_ATOM_TYPE = FourccType("moov");
 constexpr uint64_t MAX_TITLE_SIZE = 24;
 constexpr uint64_t MAX_EXTRA_DATA_SIZE = 1024 * 1024;
 constexpr uint64_t MAX_DATA_SIZE = 256;
@@ -857,7 +858,8 @@ Status MPEG4AtomParser::ParseMoov(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_E(depth == MPEG4_ROOT_DEPTH, Status::ERROR_INVALID_PARAMETER, "Invalid moov depth");
     if (moovFound_) {
         uint64_t effectiveSize = currentAtom.effectiveSize > 0 ? currentAtom.effectiveSize : currentAtom.size;
-        FALSE_RETURN_V_MSG_E(ctx != nullptr && effectiveSize <= static_cast<uint64_t>(INT64_MAX) &&
+        FALSE_RETURN_V_MSG_E(effectiveSize >= DEFAULT_HEAD_SIZE && ctx != nullptr &&
+            effectiveSize <= static_cast<uint64_t>(INT64_MAX) &&
             ctx->offset >= 0 && static_cast<uint64_t>(ctx->offset) <=
             static_cast<uint64_t>(INT64_MAX) - effectiveSize, Status::ERROR_INVALID_DATA,
             "Invalid duplicate moov atom size");
@@ -2207,6 +2209,9 @@ Status MPEG4AtomParser::ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseCon
             "Failed to restore first codec config");
         std::copy(firstConfig.begin(), firstConfig.end(), lastTrack_->codecParms.data.get());
         lastTrack_->codecParms.extradataSize = static_cast<int64_t>(firstConfig.size());
+    } else {
+        lastTrack_->codecParms.data.reset();
+        lastTrack_->codecParms.extradataSize = 0;
     }
     if (lastTrack_->sampleHelper != nullptr &&
         NeedParseAudioInfo(lastTrack_->sampleHelper->mimeType_, lastTrack_->codecParms.trackType)) {
@@ -2402,11 +2407,11 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
     FALSE_RETURN_V_MSG_E(configData != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate CodecConfig extradata");
     Status ret = dataReader_->ReadUintData(dataOffset, configData.get(), dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_NOT_ENOUGH_DATA, "Read CodecConfig data failed");
+    FALSE_RETURN_V_MSG_E(currentStsdEntryIndex_ < lastTrack_->codecConfigs.size(), Status::ERROR_INVALID_DATA,
+        "Invalid stsd entry index");
 
     lastTrack_->codecParms.data = std::move(configData);
     lastTrack_->codecParms.extradataSize = static_cast<int64_t>(dataSize);
-    FALSE_RETURN_V_MSG_E(currentStsdEntryIndex_ < lastTrack_->codecConfigs.size(), Status::ERROR_INVALID_DATA,
-        "Invalid stsd entry index");
     lastTrack_->codecConfigs[currentStsdEntryIndex_].assign(lastTrack_->codecParms.data.get(),
         lastTrack_->codecParms.data.get() + dataSize);
     MEDIA_LOG_D("CodecConfig extradata size: " PUBLIC_LOG_D64, lastTrack_->codecParms.extradataSize);
@@ -5243,7 +5248,7 @@ Status MPEG4AtomParser::ValidateAtomSourceRange(MPEG4Atom& atom, const std::stri
             Status::ERROR_INVALID_DATA, "Invalid atom offset");
         bool atomExceedsSource = atomEndOffset > dataSourceSize;
         uint64_t remainingSize = dataSourceSize - static_cast<uint64_t>(ctx->offset);
-        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && atom.type == FourccType("moov")) {
+        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && atom.type == MOOV_ATOM_TYPE) {
             FALSE_RETURN_V_MSG_E(remainingSize >= atomInfoSize, Status::ERROR_INVALID_DATA,
                 "Invalid truncated moov atom header");
             atom.effectiveSize = remainingSize;

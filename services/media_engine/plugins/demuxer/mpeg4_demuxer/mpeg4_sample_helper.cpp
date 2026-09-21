@@ -46,6 +46,7 @@ constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
 constexpr uint32_t HALF_BYTE_NUMBER = 2;
 constexpr size_t PREVIOUS_ENTRY_INDEX_OFFSET = 2;
+// Match FFmpeg's default max_stts_delta: allow a negative correction up to 10 seconds at 48 kHz.
 constexpr uint32_t MAX_STTS_DELTA = std::numeric_limits<uint32_t>::max() - 48000U * 10U;
 
 int64_t SaturatingAdd(int64_t left, int64_t right)
@@ -740,7 +741,7 @@ void MPEG4SampleHelper::NormalizeSttsEntry(SttsEntry& entry, uint32_t entryIndex
         static_cast<int64_t>(entry.count));
     correctedDts = SaturatingAdd(correctedDts, correctionDuration);
     currentDts = SaturatingAdd(currentDts, currentDuration);
-    if (currentDts > correctedDts && entry.count > 0) {
+    if (currentDts > correctedDts && entry.count > 0 && entry.delta > 0) {
         uint64_t dtsDifference = static_cast<uint64_t>(currentDts) - static_cast<uint64_t>(correctedDts);
         uint64_t driftWide = dtsDifference / entry.count;
         uint32_t drift = driftWide > UINT32_MAX ? UINT32_MAX : static_cast<uint32_t>(driftWide);

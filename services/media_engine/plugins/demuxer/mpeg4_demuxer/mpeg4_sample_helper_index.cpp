@@ -184,6 +184,9 @@ uint32_t MPEG4SampleHelper::GetSampleDescriptionIndex(uint32_t sampleIndex) cons
     }
     SampleIndexView view;
     FALSE_RETURN_V_NOLOG(GetSampleIndexView(sampleIndex, view) == Status::OK, 0);
+    if (!chunkOffsetsSorted_) {
+        return FindSampleDescriptionIndexByPosition(view.pos);
+    }
     auto chunk = std::upper_bound(chunkOffsets_.cbegin(), chunkOffsets_.cend(), view.pos);
     if (chunk == chunkOffsets_.cbegin()) {
         return 0;
@@ -197,6 +200,35 @@ uint32_t MPEG4SampleHelper::GetSampleDescriptionIndex(uint32_t sampleIndex) cons
         return 0;
     }
     return (--entry)->id;
+}
+
+uint32_t MPEG4SampleHelper::FindSampleDescriptionIndexByPosition(int64_t position) const
+{
+    uint32_t stscIndex = 0;
+    uint64_t sampleIndex = 0;
+    for (size_t chunkIndex = 0; chunkIndex < chunkOffsets_.size(); ++chunkIndex) {
+        if (stscIndex + 1 < stscEntry_.size() && chunkIndex >= stscEntry_[stscIndex + 1].first) {
+            ++stscIndex;
+        }
+        if (stscIndex >= stscEntry_.size()) {
+            return 0;
+        }
+        const auto& entry = stscEntry_[stscIndex];
+        int64_t samplePosition = chunkOffsets_[chunkIndex];
+        for (uint32_t sampleInChunk = 0; sampleInChunk < entry.count; ++sampleInChunk) {
+            if (samplePosition == position) {
+                return entry.id;
+            }
+            size_t sizeIndex = hasDefaultStszSize_ ? 0 : static_cast<size_t>(sampleIndex);
+            if (sizeIndex >= sampleSizes_.size() || sampleSizes_[sizeIndex] < 0 ||
+                __builtin_add_overflow(samplePosition, static_cast<int64_t>(sampleSizes_[sizeIndex]),
+                    &samplePosition)) {
+                return 0;
+            }
+            ++sampleIndex;
+        }
+    }
+    return 0;
 }
 
 Status MPEG4SampleHelper::GetSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const
@@ -996,6 +1028,7 @@ Status MPEG4SampleHelper::FinalizeSampleTables()
 void MPEG4SampleHelper::BuildSampleDescriptionRanges()
 {
     sampleDescriptionRanges_.clear();
+    chunkOffsetsSorted_ = std::is_sorted(chunkOffsets_.cbegin(), chunkOffsets_.cend());
     if (stscEntry_.empty() || chunkOffsets_.empty()) {
         return;
     }

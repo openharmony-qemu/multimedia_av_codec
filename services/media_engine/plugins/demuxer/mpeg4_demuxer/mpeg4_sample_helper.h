@@ -365,6 +365,7 @@ private:
     int32_t trackTimeScale_ = 0;
     bool isFragmented_ = false;
     bool emptyStss_ = false;
+    bool chunkOffsetsSorted_ = true;
     std::vector<EditListEntry> editListEntries_;
     SkipSamplesInfoMap skipSamplesInfoMap_;
 
@@ -434,6 +435,7 @@ private:
     Status ValidateSampleSizeCount(uint32_t sttsSampleCount) const;
     Status ValidateAndRepairStsc(uint32_t& sttsSampleCount);
     void BuildSampleDescriptionRanges();
+    uint32_t FindSampleDescriptionIndexByPosition(int64_t position) const;
     Status PreBuildProcessAndCheck();
     uint64_t CountSttsSamples() const;
     SampleIndexBuildContext CreateSampleIndexBuildContext() const;
