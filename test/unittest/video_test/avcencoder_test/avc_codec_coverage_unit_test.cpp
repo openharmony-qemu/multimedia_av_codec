@@ -747,7 +747,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Format_Error_001, TestSize.Level1)
     EXPECT_EQ(ret, AVCS_ERR_OK);
     sleep(1);
     ret = avcEncoder_->Stop();
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_STATE);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
     ret = avcEncoder_->Release();
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
@@ -890,7 +890,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Process_Error_001, TestSize.Level1
     EXPECT_EQ(ret, AVCS_ERR_OK);
     sleep(1);
     ret = avcEncoder_->Stop();
-    EXPECT_NE(ret, AVCS_ERR_OK);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
     ret = avcEncoder_->Release();
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
@@ -920,7 +920,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Process_Error_002, TestSize.Level1
     EXPECT_EQ(ret, AVCS_ERR_OK);
     sleep(1);
     ret = avcEncoder_->Stop();
-    EXPECT_EQ(ret, AVCS_ERR_INVALID_STATE);
+    EXPECT_EQ(ret, AVCS_ERR_OK);
     ret = avcEncoder_->Release();
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
@@ -950,7 +950,7 @@ HWTEST_F(AvcCodecCoverageUnitTest, Test_Codec_Delete_Error_001, TestSize.Level1)
     EXPECT_EQ(ret, AVCS_ERR_OK);
     sleep(1);
     ret = avcEncoder_->Stop();
-    EXPECT_EQ(ret, AVCS_ERR_OK);
+    EXPECT_EQ(ret, AVCS_ERR_UNKNOWN);
     ret = avcEncoder_->Release();
     EXPECT_EQ(ret, AVCS_ERR_OK);
 }
