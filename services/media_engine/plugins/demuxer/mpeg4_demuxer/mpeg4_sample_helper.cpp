@@ -49,7 +49,7 @@ constexpr size_t PREVIOUS_ENTRY_INDEX_OFFSET = 2;
 // Match FFmpeg's default max_stts_delta: allow a negative correction up to 10 seconds at 48 kHz.
 constexpr uint32_t MAX_STTS_DELTA = std::numeric_limits<uint32_t>::max() - 48000U * 10U;
 
-int64_t SaturatingAdd(int64_t left, int64_t right)
+static int64_t SaturatingAdd(int64_t left, int64_t right)
 {
     int64_t result = 0;
     if (!__builtin_add_overflow(left, right, &result)) {
@@ -58,7 +58,7 @@ int64_t SaturatingAdd(int64_t left, int64_t right)
     return left >= 0 ? std::numeric_limits<int64_t>::max() : std::numeric_limits<int64_t>::min();
 }
 
-int64_t SaturatingMultiply(int64_t left, int64_t right)
+static int64_t SaturatingMultiply(int64_t left, int64_t right)
 {
     int64_t result = 0;
     if (!__builtin_mul_overflow(left, right, &result)) {
@@ -730,9 +730,7 @@ void MPEG4SampleHelper::NormalizeSttsEntry(SttsEntry& entry, uint32_t entryIndex
     int64_t correctionDelta = entry.delta;
     if (entry.delta > MAX_STTS_DELTA) {
         const uint32_t originalDelta = entry.delta;
-        const int64_t signedDelta = entry.delta <= static_cast<uint32_t>(INT32_MAX) ?
-            static_cast<int64_t>(entry.delta) :
-            static_cast<int64_t>(entry.delta) - static_cast<int64_t>(UINT32_MAX) - 1;
+        const int64_t signedDelta = static_cast<int32_t>(entry.delta);
         entry.delta = 1;
         correctionDelta = signedDelta < 0 ? signedDelta : 1;
         MEDIA_LOG_W("Clip large stts delta " PUBLIC_LOG_U32 " in entry " PUBLIC_LOG_U32,

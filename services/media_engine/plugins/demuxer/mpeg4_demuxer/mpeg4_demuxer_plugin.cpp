@@ -1536,7 +1536,6 @@ bool MPEG4DemuxerPlugin::UpdateCodecConfigForSample(
     }
     uint32_t descriptionIndex = track->sampleHelper->GetSampleDescriptionIndex(sampleIndex);
     if (descriptionIndex == 0 || descriptionIndex > track->codecConfigs.size()) {
-        MEDIA_LOG_W("Invalid sample description index " PUBLIC_LOG_U32 ", keep current config", descriptionIndex);
         return true;
     }
     uint32_t configIndex = descriptionIndex - 1;
@@ -1545,13 +1544,21 @@ bool MPEG4DemuxerPlugin::UpdateCodecConfigForSample(
     }
     const auto& config = track->codecConfigs[configIndex];
     if (config.empty()) {
-        MEDIA_LOG_W("Sample description has no codec config, keep current config");
         return true;
     }
     std::vector<uint8_t> mutableConfig(config);
+    auto currentConfig = std::make_unique<uint8_t[]>(config.size());
+    if (currentConfig == nullptr) {
+        return false;
+    }
+    std::copy(config.begin(), config.end(), currentConfig.get());
     bool ret = streamParsers_->ConvertExtraDataToAnnexb(track->trackIndex, mutableConfig.data(),
         static_cast<int32_t>(mutableConfig.size()));
     if (ret) {
+        track->codecParms.data = std::move(currentConfig);
+        track->codecParms.extradataSize = static_cast<int64_t>(config.size());
+        track->codecParms.hasValidExtradata = false;
+        track->codecParms.annexbExtradataSize = 0;
         track->currentCodecConfigIndex = configIndex;
     }
     return ret;

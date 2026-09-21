@@ -171,6 +171,9 @@ Status MPEG4SampleHelper::GetSampleRange(uint32_t sampleIndex, int64_t& pos, int
 
 uint32_t MPEG4SampleHelper::GetSampleDescriptionIndex(uint32_t sampleIndex) const
 {
+    if (singleSampleDescriptionIndex_ != 0) {
+        return singleSampleDescriptionIndex_;
+    }
     if (!editListApplied_ && !simpleEditProjection_.enabled) {
         auto range = std::upper_bound(sampleDescriptionRanges_.cbegin(), sampleDescriptionRanges_.cend(), sampleIndex,
             [](uint32_t value, const SampleDescriptionRange& item) {
@@ -204,36 +207,15 @@ uint32_t MPEG4SampleHelper::GetSampleDescriptionIndex(uint32_t sampleIndex) cons
 
 uint32_t MPEG4SampleHelper::FindSampleDescriptionIndexByPosition(int64_t position) const
 {
+    if (sampleDescriptionPositions_.empty()) {
+        return 0;
+    }
     auto item = std::lower_bound(sampleDescriptionPositions_.cbegin(), sampleDescriptionPositions_.cend(), position,
         [](const SampleDescriptionPosition& entry, int64_t value) {
             return entry.position < value;
         });
     if (item != sampleDescriptionPositions_.cend() && item->position == position) {
         return item->id;
-    }
-    uint32_t stscIndex = 0;
-    uint64_t sampleIndex = 0;
-    for (size_t chunkIndex = 0; chunkIndex < chunkOffsets_.size(); ++chunkIndex) {
-        if (stscIndex + 1 < stscEntry_.size() && chunkIndex >= stscEntry_[stscIndex + 1].first) {
-            ++stscIndex;
-        }
-        if (stscIndex >= stscEntry_.size()) {
-            return 0;
-        }
-        const auto& entry = stscEntry_[stscIndex];
-        int64_t samplePosition = chunkOffsets_[chunkIndex];
-        for (uint32_t sampleInChunk = 0; sampleInChunk < entry.count; ++sampleInChunk) {
-            if (samplePosition == position) {
-                return entry.id;
-            }
-            size_t sizeIndex = hasDefaultStszSize_ ? 0 : static_cast<size_t>(sampleIndex);
-            if (sizeIndex >= sampleSizes_.size() || sampleSizes_[sizeIndex] < 0 ||
-                __builtin_add_overflow(samplePosition, static_cast<int64_t>(sampleSizes_[sizeIndex]),
-                    &samplePosition)) {
-                return 0;
-            }
-            ++sampleIndex;
-        }
     }
     return 0;
 }
@@ -1037,7 +1019,15 @@ void MPEG4SampleHelper::BuildSampleDescriptionRanges()
     sampleDescriptionRanges_.clear();
     chunkOffsetsSorted_ = std::is_sorted(chunkOffsets_.cbegin(), chunkOffsets_.cend());
     sampleDescriptionPositions_.clear();
+    singleSampleDescriptionIndex_ = 0;
     if (stscEntry_.empty() || chunkOffsets_.empty()) {
+        return;
+    }
+    const uint32_t descriptionIndex = stscEntry_.front().id;
+    if (std::all_of(stscEntry_.cbegin(), stscEntry_.cend(), [descriptionIndex](const StscEntry& entry) {
+        return entry.id == descriptionIndex;
+    })) {
+        singleSampleDescriptionIndex_ = descriptionIndex;
         return;
     }
     if (!chunkOffsetsSorted_) {

@@ -351,6 +351,7 @@ private:
     std::vector<int32_t> sampleSizes_;
     std::vector<int64_t> chunkOffsets_;
     uint32_t sampleSizeCount_ = 0;
+    uint32_t singleSampleDescriptionIndex_ = 0;
     SdtpEntry sdtpEntry_;
     TrackExtendsInfo trex_;
     TrackFragmentHeaderInfo tfhd_;
