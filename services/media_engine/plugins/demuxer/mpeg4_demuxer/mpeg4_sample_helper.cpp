@@ -725,6 +725,8 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
 void MPEG4SampleHelper::NormalizeSttsEntry(SttsEntry& entry, uint32_t entryIndex, int64_t& currentDts,
     int64_t& correctedDts) const
 {
+    // Keep FFmpeg mov_read_stts()'s two timelines: large unsigned deltas may encode negative corrections,
+    // then later entries repay the accumulated DTS drift without producing a negative sample duration.
     int64_t correctionDelta = entry.delta;
     if (entry.delta > MAX_STTS_DELTA) {
         const uint32_t originalDelta = entry.delta;

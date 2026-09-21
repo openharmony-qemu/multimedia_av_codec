@@ -204,6 +204,13 @@ uint32_t MPEG4SampleHelper::GetSampleDescriptionIndex(uint32_t sampleIndex) cons
 
 uint32_t MPEG4SampleHelper::FindSampleDescriptionIndexByPosition(int64_t position) const
 {
+    auto item = std::lower_bound(sampleDescriptionPositions_.cbegin(), sampleDescriptionPositions_.cend(), position,
+        [](const SampleDescriptionPosition& entry, int64_t value) {
+            return entry.position < value;
+        });
+    if (item != sampleDescriptionPositions_.cend() && item->position == position) {
+        return item->id;
+    }
     uint32_t stscIndex = 0;
     uint64_t sampleIndex = 0;
     for (size_t chunkIndex = 0; chunkIndex < chunkOffsets_.size(); ++chunkIndex) {
@@ -1029,7 +1036,12 @@ void MPEG4SampleHelper::BuildSampleDescriptionRanges()
 {
     sampleDescriptionRanges_.clear();
     chunkOffsetsSorted_ = std::is_sorted(chunkOffsets_.cbegin(), chunkOffsets_.cend());
+    sampleDescriptionPositions_.clear();
     if (stscEntry_.empty() || chunkOffsets_.empty()) {
+        return;
+    }
+    if (!chunkOffsetsSorted_) {
+        BuildSampleDescriptionPositions();
         return;
     }
     uint64_t firstSample = 0;
@@ -1053,6 +1065,41 @@ void MPEG4SampleHelper::BuildSampleDescriptionRanges()
         sampleDescriptionRanges_.push_back({firstSample, sampleCount, entry.id});
         firstSample += sampleCount;
     }
+}
+
+void MPEG4SampleHelper::BuildSampleDescriptionPositions()
+{
+    uint32_t stscIndex = 0;
+    uint64_t sampleIndex = 0;
+    for (size_t chunkIndex = 0; chunkIndex < chunkOffsets_.size(); ++chunkIndex) {
+        if (stscIndex + 1 < stscEntry_.size() && chunkIndex >= stscEntry_[stscIndex + 1].first) {
+            ++stscIndex;
+        }
+        if (stscIndex >= stscEntry_.size()) {
+            sampleDescriptionPositions_.clear();
+            return;
+        }
+        const auto& entry = stscEntry_[stscIndex];
+        int64_t samplePosition = chunkOffsets_[chunkIndex];
+        for (uint32_t sampleInChunk = 0; sampleInChunk < entry.count; ++sampleInChunk) {
+            size_t sizeIndex = hasDefaultStszSize_ ? 0 : static_cast<size_t>(sampleIndex);
+            if (sizeIndex >= sampleSizes_.size() || sampleSizes_[sizeIndex] < 0) {
+                sampleDescriptionPositions_.clear();
+                return;
+            }
+            sampleDescriptionPositions_.push_back({samplePosition, entry.id});
+            if (__builtin_add_overflow(samplePosition, static_cast<int64_t>(sampleSizes_[sizeIndex]),
+                &samplePosition)) {
+                sampleDescriptionPositions_.clear();
+                return;
+            }
+            ++sampleIndex;
+        }
+    }
+    std::sort(sampleDescriptionPositions_.begin(), sampleDescriptionPositions_.end(),
+        [](const SampleDescriptionPosition& left, const SampleDescriptionPosition& right) {
+            return left.position < right.position;
+        });
 }
 
 Status MPEG4SampleHelper::EnsureSparseIndex() const

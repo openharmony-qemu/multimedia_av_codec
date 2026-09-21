@@ -292,6 +292,10 @@ private:
         uint64_t sampleCount;
         uint32_t id;
     };
+    struct SampleDescriptionPosition {
+        int64_t position;
+        uint32_t id;
+    };
     struct StssEntry {
         uint32_t index;
     };
@@ -342,6 +346,7 @@ private:
     std::vector<SampleIndexEntry> sampleIndexEntry_;
     std::vector<StscEntry> stscEntry_;
     std::vector<SampleDescriptionRange> sampleDescriptionRanges_;
+    std::vector<SampleDescriptionPosition> sampleDescriptionPositions_;
     std::vector<StssEntry> stssEntry_;
     std::vector<int32_t> sampleSizes_;
     std::vector<int64_t> chunkOffsets_;
@@ -435,6 +440,7 @@ private:
     Status ValidateSampleSizeCount(uint32_t sttsSampleCount) const;
     Status ValidateAndRepairStsc(uint32_t& sttsSampleCount);
     void BuildSampleDescriptionRanges();
+    void BuildSampleDescriptionPositions();
     uint32_t FindSampleDescriptionIndexByPosition(int64_t position) const;
     Status PreBuildProcessAndCheck();
     uint64_t CountSttsSamples() const;

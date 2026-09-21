@@ -2197,11 +2197,8 @@ Status MPEG4AtomParser::ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse stsd container failed");
     }
     FALSE_RETURN_V_MSG_E(ctx->offset == endOffset, Status::ERROR_INVALID_DATA, "Invalid stsd size");
-    size_t validConfigCount = 0;
-    for (const auto& config : lastTrack_->codecConfigs) {
-        validConfigCount += !config.empty();
-    }
-    lastTrack_->hasMultipleCodecConfigs = validConfigCount > 1;
+    // FFmpeg retains one extradata slot for every stsd entry and switches it by stsc.id.
+    lastTrack_->hasMultipleCodecConfigs = entryCount > 1;
     if (!lastTrack_->codecConfigs.empty() && !lastTrack_->codecConfigs.front().empty()) {
         const auto& firstConfig = lastTrack_->codecConfigs.front();
         lastTrack_->codecParms.data = std::make_unique<uint8_t[]>(firstConfig.size());
