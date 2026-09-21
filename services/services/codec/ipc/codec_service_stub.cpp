@@ -41,11 +41,11 @@ bool IsCallerNativeOrShell()
 {
     using namespace OHOS::Security::AccessToken;
     auto tokenType = AccessTokenKit::GetTokenTypeFlag(OHOS::IPCSkeleton::GetCallingTokenID());
-    bool ok = tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL;
-    if (!ok) {
+    bool ret = tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL;
+    if (!ret) {
         AVCODEC_LOGE("Caller requires native|shell token, got %{public}d", static_cast<int32_t>(tokenType));
     }
-    return ok;
+    return ret;
 }
 
 template<typename T>
