@@ -2407,7 +2407,8 @@ Status MPEG4AtomParser::GetCodecConfigDataRange(const MPEG4Atom& atom, ParseCont
     FALSE_RETURN_V_MSG_E(ctx->dataOffset >= atomStart, Status::ERROR_INVALID_DATA, "Invalid vttC data offset");
     const int64_t atomHeaderSize = ctx->dataOffset - atomStart;
     FALSE_RETURN_V_MSG_E(atomHeaderSize >= static_cast<int64_t>(DEFAULT_HEAD_SIZE) &&
-        static_cast<uint64_t>(atomHeaderSize) <= atom.size, Status::ERROR_INVALID_DATA, "Invalid vttC atom header size");
+        static_cast<uint64_t>(atomHeaderSize) <= atom.size, Status::ERROR_INVALID_DATA,
+        "Invalid vttC atom header size");
     dataOffset -= atomHeaderSize;
     dataSize = static_cast<uint64_t>(atom.size);
     return Status::OK;
