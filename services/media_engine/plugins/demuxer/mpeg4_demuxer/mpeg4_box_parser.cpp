@@ -64,6 +64,7 @@ constexpr int32_t MDAT_ATOM_TYPE = FourccType("mdat");
 constexpr int32_t MOOV_ATOM_TYPE = FourccType("moov");
 constexpr uint64_t MAX_TITLE_SIZE = 24;
 constexpr uint64_t MAX_EXTRA_DATA_SIZE = 1024 * 1024;
+constexpr uint64_t MAX_TOTAL_CODEC_CONFIG_SIZE = 16 * MAX_EXTRA_DATA_SIZE;
 constexpr uint64_t MAX_DATA_SIZE = 256;
 constexpr uint64_t MIN_COLOR_SIZE = 4;
 constexpr uint64_t MIN_COLOR_PARAM_SIZE = 6;
@@ -727,10 +728,17 @@ Status MPEG4AtomParser::ParseContainerAtom(const MPEG4Atom& containerAtom, int32
     }
     // 设置解析起始位置为容器的数据开始位置
     ctx->offset = ctx->dataOffset;
+    const bool allowTruncatedTail = depth == MPEG4_ROOT_DEPTH &&
+        containerAtom.effectiveSize < containerAtom.size;
     while (ctx->offset < endOffset) {
         bool isPadding = false;
         Status ret = PrepareChildAtomInContainer(endOffset, ctx, isPadding);
         if (ret != Status::OK) {
+            if (allowTruncatedTail) {
+                MEDIA_LOG_W("Ignore truncated moov tail at offset " PUBLIC_LOG_D64, ctx->offset);
+                ctx->offset = endOffset;
+                break;
+            }
             return ret;
         }
         if (isPadding) {
@@ -2185,8 +2193,10 @@ Status MPEG4AtomParser::ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint32_t entryCount = GetU32Value(&stsdData[4]);
     FALSE_RETURN_V_MSG_E(entryCount > 0 && entryCount <= 0x0400, Status::ERROR_INVALID_DATA, "Invalid STSD entries");
     lastTrack_->codecConfigs.clear();
+    lastTrack_->codecConfigsSize = 0;
     lastTrack_->codecConfigs.resize(entryCount);
     lastTrack_->hasMultipleCodecConfigs = false;
+    lastTrack_->invalidCodecConfigLogged = false;
     lastTrack_->currentCodecConfigIndex = UINT32_MAX;
     int64_t endOffset = ctx->dataOffset + static_cast<int64_t>(currentAtom.dataSize);
     ctx->offset = ctx->dataOffset + sizeof(stsdData); // 跳过stsd头部信息
@@ -2406,11 +2416,17 @@ Status MPEG4AtomParser::ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, P
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_NOT_ENOUGH_DATA, "Read CodecConfig data failed");
     FALSE_RETURN_V_MSG_E(currentStsdEntryIndex_ < lastTrack_->codecConfigs.size(), Status::ERROR_INVALID_DATA,
         "Invalid stsd entry index");
+    const auto& oldConfig = lastTrack_->codecConfigs[currentStsdEntryIndex_];
+    FALSE_RETURN_V_MSG_E(lastTrack_->codecConfigsSize >= oldConfig.size() &&
+        dataSize <= MAX_TOTAL_CODEC_CONFIG_SIZE - (lastTrack_->codecConfigsSize - oldConfig.size()),
+        Status::ERROR_INVALID_DATA, "CodecConfig total size too large");
 
     lastTrack_->codecParms.data = std::move(configData);
     lastTrack_->codecParms.extradataSize = static_cast<int64_t>(dataSize);
+    lastTrack_->codecConfigsSize -= oldConfig.size();
     lastTrack_->codecConfigs[currentStsdEntryIndex_].assign(lastTrack_->codecParms.data.get(),
         lastTrack_->codecParms.data.get() + dataSize);
+    lastTrack_->codecConfigsSize += dataSize;
     MEDIA_LOG_D("CodecConfig extradata size: " PUBLIC_LOG_D64, lastTrack_->codecParms.extradataSize);
     return ret;
 }

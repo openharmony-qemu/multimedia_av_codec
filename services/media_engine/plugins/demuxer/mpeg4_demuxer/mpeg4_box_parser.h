@@ -115,7 +115,9 @@ public:
         uint16_t audioSampleEntryBitsPerCodedSample = 0;
         CodecParams codecParms{};
         std::vector<std::vector<uint8_t>> codecConfigs;
+        uint64_t codecConfigsSize = 0;
         bool hasMultipleCodecConfigs = false;
+        bool invalidCodecConfigLogged = false;
         uint32_t currentCodecConfigIndex = UINT32_MAX;
         Mpeg4TrackDrmInfo drmInfo;
         std::shared_ptr<SampleCache> cache = nullptr;

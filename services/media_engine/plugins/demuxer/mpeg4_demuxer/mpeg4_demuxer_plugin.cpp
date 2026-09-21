@@ -1536,6 +1536,11 @@ bool MPEG4DemuxerPlugin::UpdateCodecConfigForSample(
     }
     uint32_t descriptionIndex = track->sampleHelper->GetSampleDescriptionIndex(sampleIndex);
     if (descriptionIndex == 0 || descriptionIndex > track->codecConfigs.size()) {
+        if (!track->invalidCodecConfigLogged) {
+            MEDIA_LOG_W("Invalid sample description index " PUBLIC_LOG_U32 ", sample " PUBLIC_LOG_U32,
+                descriptionIndex, sampleIndex);
+            track->invalidCodecConfigLogged = true;
+        }
         return true;
     }
     uint32_t configIndex = descriptionIndex - 1;
@@ -1544,6 +1549,10 @@ bool MPEG4DemuxerPlugin::UpdateCodecConfigForSample(
     }
     const auto& config = track->codecConfigs[configIndex];
     if (config.empty()) {
+        if (!track->invalidCodecConfigLogged) {
+            MEDIA_LOG_W("Sample description has no codec config, sample " PUBLIC_LOG_U32, sampleIndex);
+            track->invalidCodecConfigLogged = true;
+        }
         return true;
     }
     std::vector<uint8_t> mutableConfig(config);
