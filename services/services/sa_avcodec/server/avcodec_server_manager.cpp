@@ -73,23 +73,31 @@ void AVCodecServerManager::Init()
 
 int32_t AVCodecServerManager::CreateStubObject(StubType type, sptr<IRemoteObject> &object)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    int32_t ret = AVCS_ERR_UNSUPPORT;
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     switch (type) {
 #ifdef SUPPORT_CODECLIST
         case CODECLIST: {
-            return CreateCodecListStubObject(object);
+            ret = CreateCodecListStubObject(object);
+            break;
         }
 #endif
 #ifdef SUPPORT_CODEC
         case CODEC: {
-            return CreateCodecStubObject(object);
+            ret = CreateCodecStubObject(object);
+            break;
         }
 #endif
         default: {
             AVCODEC_LOGE("default case, av_codec server manager failed");
-            return AVCS_ERR_UNSUPPORT;
+            break;
         }
     }
+    lock.unlock();
+    if (type == CODEC && ret == AVCS_ERR_OK) {
+        SetCritical(true);
+    }
+    return ret;
 }
 
 #ifdef SUPPORT_CODECLIST
@@ -131,7 +139,6 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
     }
     codecStubMap_.emplace(pid, std::make_pair(object, instanceInfo));
 
-    SetCriticalInner(true);
     AVCODEC_LOGD("The number of codec services(%{public}zu)", codecStubMap_.size());
     return AVCS_ERR_OK;
 }
@@ -139,7 +146,7 @@ int32_t AVCodecServerManager::CreateCodecStubObject(sptr<IRemoteObject> &object)
 
 void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> object)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     pid_t pid = IPCSkeleton::GetCallingPid();
     switch (type) {
         case CODEC: {
@@ -174,8 +181,10 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
             break;
         }
     }
-    if (codecStubMap_.size() == 0) {
-        SetCriticalInner(false);
+    bool needSetCritical = codecStubMap_.size() == 0;
+    lock.unlock();
+    if (needSetCritical) {
+        SetCritical(false);
     }
 }
 
@@ -210,7 +219,7 @@ void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
 
 void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
+    std::unique_lock<std::shared_mutex> lock(mutex_);
     auto preSize = codecStubMap_.size();
     EraseCodecObjectByPid(pid);
     AVCODEC_LOGI("codec stub services(%{public}zu->%{public}zu),pid(%{public}d)", preSize, codecStubMap_.size(), pid);
@@ -220,10 +229,15 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
     AVCODEC_LOGI("codeclist stub services(%{public}zu->%{public}zu),pid(%{public}d)", preSize, codecListStubMap_.size(),
                  pid);
     executor_.Clear();
+    bool needSetCritical = false;
     if (codecStubMap_.size() == 0) {
-        SetCriticalInner(false);
+        needSetCritical = true;
     } else {
         PrintCodecCallersInfo();
+    }
+    lock.unlock();
+    if (needSetCritical) {
+        SetCritical(false);
     }
 }
 
@@ -271,40 +285,61 @@ void AVCodecServerManager::PrintCodecCallersInfo()
 
 void AVCodecServerManager::NotifyProcessStatus(const int32_t status)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_LOG(notifyProcessStatusFunc_ != nullptr, "notify memory manager is nullptr, %{public}d", status);
-    int32_t ret = notifyProcessStatusFunc_(pid_, 1, status, AV_CODEC_SERVICE_ID);
-    if (ret == 0) {
+    NotifyProcessStatusFunc notifyFunc = notifyProcessStatusFunc_;
+    CHECK_AND_RETURN_LOG(notifyFunc != nullptr, "notify memory manager is nullptr, %{public}d", status);
+    int32_t ret = notifyFunc(pid_, 1, status, AV_CODEC_SERVICE_ID);
+    bool notifySuccess = ret == 0;
+    if (notifySuccess) {
         AVCODEC_LOGI("notify memory manager to %{public}d success", status);
-        memMgrStarted_ = status == 1;
     } else {
         AVCODEC_LOGW("notify memory manager to %{public}d fail", status);
     }
-    if ((status == 1) && (lastSetCriticalValue_ == true) && setCriticalFailed_) {
+    bool retrySetCritical = false;
+    if (notifySuccess) {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        memMgrStarted_ = status == 1;
+        retrySetCritical = (status == 1) && (lastSetCriticalValue_ == true) && setCriticalFailed_;
+    }
+    if (retrySetCritical) {
         AVCODEC_LOGI("retry set critical to 1 after notify status 1");
-        SetCriticalInner(true);
+        SetCritical(true);
     }
 }
 
 void AVCodecServerManager::SetCritical(const bool isKeyService)
 {
-    std::lock_guard<std::shared_mutex> lock(mutex_);
-    SetCriticalInner(isKeyService);
+    std::lock_guard<std::mutex> criticalLock(criticalMutex_);
+    {
+        std::lock_guard<std::shared_mutex> lock(mutex_);
+        if (!isKeyService && !codecStubMap_.empty()) {
+            return;
+        }
+        if (!setCriticalFailed_ && lastSetCriticalValue_ == isKeyService) {
+            return;
+        }
+    }
+    bool setSuccess = false;
+    if (!memMgrStarted_.load()) {
+        AVCODEC_LOGW("Memory manager service is not started, %{public}d", isKeyService);
+    } else if (setCriticalFunc_ == nullptr) {
+        AVCODEC_LOGW("set critical is nullptr, %{public}d", isKeyService);
+    } else {
+        int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
+        if (ret == 0) {
+            setSuccess = true;
+            AVCODEC_LOGD("set to %{public}d", isKeyService);
+        } else {
+            AVCODEC_LOGW("set to %{public}d fail", isKeyService);
+        }
+    }
+    UpdateSetCriticalState(isKeyService, setSuccess);
 }
 
-void AVCodecServerManager::SetCriticalInner(const bool isKeyService)
+void AVCodecServerManager::UpdateSetCriticalState(const bool isKeyService, const bool setSuccess)
 {
-    if (!setCriticalFailed_ && lastSetCriticalValue_ == isKeyService) {
-        return;
-    }
-    setCriticalFailed_ = true;
+    std::lock_guard<std::shared_mutex> lock(mutex_);
     lastSetCriticalValue_ = isKeyService;
-    CHECK_AND_RETURN_LOG(memMgrStarted_, "Memory manager service is not started, %{public}d", isKeyService);
-    CHECK_AND_RETURN_LOG(setCriticalFunc_ != nullptr, "set critical is nullptr, %{public}d", isKeyService);
-    int32_t ret = setCriticalFunc_(pid_, isKeyService, AV_CODEC_SERVICE_ID);
-    CHECK_AND_RETURN_LOG(ret == 0, "set to %{public}d fail", isKeyService);
-    setCriticalFailed_ = false;
-    AVCODEC_LOGD("set to %{public}d", isKeyService);
+    setCriticalFailed_ = !setSuccess;
 }
 
 uint32_t AVCodecServerManager::GetInstanceCount()

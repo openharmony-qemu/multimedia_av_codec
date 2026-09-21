@@ -61,7 +61,7 @@ public:
     void UnRegisterCallback();
 
 private:
-    void SetCriticalInner(const bool isKeyService);
+    void UpdateSetCriticalState(const bool isKeyService, const bool setSuccess);
     AVCodecServerManager();
 
 #ifdef SUPPORT_CODEC
@@ -104,6 +104,7 @@ private:
     NotifyProcessStatusFunc notifyProcessStatusFunc_ = nullptr;
     SetCriticalFunc setCriticalFunc_ = nullptr;
     std::atomic<bool> memMgrStarted_ = false;
+    std::mutex criticalMutex_;
     bool setCriticalFailed_ = false;
     bool lastSetCriticalValue_ = false;
     InstanceInfoCallback callback_ = nullptr;
