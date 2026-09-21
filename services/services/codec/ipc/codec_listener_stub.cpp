@@ -234,7 +234,8 @@ int CodecListenerStub::HandleOnOutputFormatChanged(MessageParcel &data, bool nee
         return AVCS_ERR_OK;
     }
     Format format;
-    (void)AVCodecParcel::Unmarshalling(data, format);
+    bool parcelRet = AVCodecParcel::Unmarshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
     outputBufferCache_->ClearCaches();
     OnOutputFormatChanged(format);
     return AVCS_ERR_OK;

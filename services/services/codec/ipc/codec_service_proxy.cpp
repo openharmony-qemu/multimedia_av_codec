@@ -422,7 +422,8 @@ int32_t CodecServiceProxy::GetOutputFormat(Format &format)
         Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::GET_OUTPUT_FORMAT), data, reply, option);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
-    (void)AVCodecParcel::Unmarshalling(reply, format);
+    bool parcelRet = AVCodecParcel::Unmarshalling(reply, format);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
     return AVCS_ERR_OK;
 }
 
@@ -504,7 +505,8 @@ int32_t CodecServiceProxy::GetInputFormat(Format &format)
         Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::GET_INPUT_FORMAT), data, reply, option);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
-    (void)AVCodecParcel::Unmarshalling(reply, format);
+    bool parcelRet = AVCodecParcel::Unmarshalling(reply, format);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
     return AVCS_ERR_OK;
 }
 
@@ -521,7 +523,8 @@ int32_t CodecServiceProxy::GetCodecInfo(Format &format)
         Remote()->SendRequest(static_cast<uint32_t>(CodecServiceInterfaceCode::GET_CODEC_INFO), data, reply, option);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, AVCS_ERR_INVALID_OPERATION, "Send request failed");
 
-    (void)AVCodecParcel::Unmarshalling(reply, format);
+    bool parcelRet = AVCodecParcel::Unmarshalling(reply, format);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
     return AVCS_ERR_OK;
 }
 

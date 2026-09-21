@@ -575,7 +575,8 @@ int32_t CodecServiceStub::Configure(MessageParcel &data, MessageParcel &reply)
     AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Format format;
-    (void)AVCodecParcel::Unmarshalling(data, format);
+    bool parcelRet = AVCodecParcel::Unmarshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
     bool ret = reply.WriteInt32(Configure(format));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
@@ -776,7 +777,8 @@ int32_t CodecServiceStub::SetParameter(MessageParcel &data, MessageParcel &reply
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Format format;
-    (void)AVCodecParcel::Unmarshalling(data, format);
+    bool parcelRet = AVCodecParcel::Unmarshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
 
     bool ret = reply.WriteInt32(SetParameter(format));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
