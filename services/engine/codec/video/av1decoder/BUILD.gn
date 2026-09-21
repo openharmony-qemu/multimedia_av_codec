@@ -39,6 +39,12 @@ ohos_shared_library("av1_decoder") {
   defines = []
   defines += av_codec_defines
 
+  ldflags =[
+    "-Wl,--exclude-libs=libc++_static.a",
+  ]
+
+  version_script = "av1_decoder.map"
+  
   sources = [
     "$av_codec_root_dir/services/engine/codec/video/av1decoder/av1decoder.cpp",
     "$av_codec_root_dir/services/engine/codec/video/av1decoder/av1_decoder_api.cpp",

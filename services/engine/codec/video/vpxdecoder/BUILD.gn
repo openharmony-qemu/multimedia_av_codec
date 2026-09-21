@@ -39,6 +39,12 @@ ohos_shared_library("vpx_decoder") {
   defines = []
   defines += av_codec_defines
 
+  ldflags =[
+    "-Wl,--exclude-libs=libc++_static.a",
+  ]
+
+  version_script = "vpx_decoder.map"
+
   sources = [
     "$av_codec_root_dir/services/engine/codec/video/decoderbase/video_decoder.cpp",
     "$av_codec_root_dir/services/engine/codec/video/decoderbase/render_surface.cpp",
