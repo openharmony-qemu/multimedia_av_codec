@@ -2279,7 +2279,6 @@ Status FFmpegDemuxerPlugin::CachePacketLocked(AVPacketWrapperPtr pktWrapper, int
                 static_cast<int32_t>(setLimitByUser));
             outOfLimit_ = true;
         }
-        return Status::ERROR_NO_MEMORY;
     }
 
     Status ret = Status::OK;
@@ -3150,8 +3149,8 @@ Status FFmpegDemuxerPlugin::ReadRmUntilPos(AVPacket *pkt, int64_t pos)
         if (currentPos >= pos) {
             break;
         }
-        FALSE_RETURN_V_MSG_E(currentPos > lastPos, Status::ERROR_WRONG_STATE,
-            "RM read position does not advance");
+        FALSE_RETURN_V_MSG_E(currentPos >= lastPos, Status::ERROR_WRONG_STATE,
+            "RM read position moves backwards");
         lastPos = currentPos;
         av_packet_unref(pkt);
     }
