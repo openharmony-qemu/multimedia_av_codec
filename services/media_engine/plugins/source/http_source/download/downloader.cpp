@@ -373,6 +373,10 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
     if (isInterruptNeeded_) {
         request->isInterruptNeeded_ = true;
     }
+    if (isCancelling_.load()) {
+        MEDIA_LOG_W("Dwonload skipped, cancelling in progress");
+        return false;
+    }
     requestQue_->SetActive(true);
     if (waitMs == -1) { // wait until push success
         requestQue_->Push(request);
@@ -401,6 +405,10 @@ void Downloader::Start()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Start");
     MEDIA_LOG_I("start Begin");
+    if (isCancelling_.load()) {
+        MEDIA_LOG_W("Start skipped, cancelling in progress");
+        return;
+    }
     requestQue_->SetActive(true);
     task_->Start();
     MEDIA_LOG_I("start End");
@@ -444,6 +452,7 @@ void Downloader::Pause(bool isAsync)
 void Downloader::Cancel()
 {
     MEDIA_LOG_I("%{public}" PRIu64 " Cancel Begin", avcodecUniqueId_);
+    isCancelling_.store(true);
     if (currentRequest_ != nullptr && currentRequest_->retryTimes_.load() > 0) {
         currentRequest_->retryTimes_.store(0);
     }
@@ -454,6 +463,7 @@ void Downloader::Cancel()
     }
     PauseLoop(true);
     WaitLoopPause();
+    isCancelling_.store(false);
     MEDIA_LOG_I("%{public}" PRIu64 " Cancel End", avcodecUniqueId_);
 }
 

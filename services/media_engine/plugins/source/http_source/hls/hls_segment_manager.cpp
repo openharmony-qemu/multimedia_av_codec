@@ -1784,6 +1784,12 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
     ResetDecryptBuffer();
     auto playInfo = playList_->Pop(POP_TIME_OUT_MS);
     if (!playInfo.url_.empty()) {
+        if (isSeekingFlag.load()) {
+            MEDIA_LOG_I("UpdateDownloadFinished skip PutRequestIntoDownloader during seek, type: %{public}d",
+                type_);
+            isDownloadStarted_ = false;
+            return;
+        }
         writeTsIndex_++;
         size_t fragmentSize = downloadRequest->GetFileContentLength();
         double duration = downloadRequest->GetDuration();
