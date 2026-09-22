@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <chrono>
+#include "avcodec_dfx_component.h"
 #include "securec.h"
 #include "osal/task/task.h"
 #include "osal/task/mutex.h"
@@ -220,6 +221,7 @@ public:
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     bool BeginDownload();
     void HttpDownloadLoop();
     void RequestData();

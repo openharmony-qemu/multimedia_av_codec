@@ -65,6 +65,8 @@ ohos_shared_library("media_plugin_FFmpegMuxer") {
     "muxer/ffmpeg_muxer_plugin.cpp",
   ]
 
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+
   external_deps = [
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
@@ -195,6 +197,8 @@ ohos_shared_library("media_plugin_Mpeg4Muxer") {
     "./muxer/mpeg4_muxer/track/timed_meta_track.cpp",
     "./common/stream_parser_manager.cpp",
   ]
+
+  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
   external_deps = [
     "c_utils:utils",

@@ -16,6 +16,7 @@
 #define AVMUXER_IMPL_H
 
 #include "avmuxer.h"
+#include "avcodec_log.h"
 #include "media_muxer.h"
 #include "nocopyable.h"
 
@@ -35,6 +36,7 @@ public:
     int32_t Stop() override;
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     int32_t StatusConvert(Status status);
 
 private:

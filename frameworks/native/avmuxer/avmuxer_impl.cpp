@@ -45,12 +45,12 @@ std::shared_ptr<AVMuxer> AVMuxerFactory::CreateAVMuxer(int32_t fd, Plugins::Outp
 
 AVMuxerImpl::AVMuxerImpl()
 {
-    AVCODEC_LOGD("AVMuxerImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("AVMuxerImpl:%{public}" PRIu64 " Instances create", avcodecUniqueId_);
 }
 
 AVMuxerImpl::~AVMuxerImpl()
 {
-    AVCODEC_LOGD("AVMuxerImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("AVMuxerImpl:%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
 }
 
 int32_t AVMuxerImpl::Init(int32_t fd, Plugins::OutputFormat format)

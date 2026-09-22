@@ -222,6 +222,7 @@ ohos_unittest("av_audio_inner_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -444,10 +445,14 @@ ohos_unittest("av_audio_media_codec_unit_test") {
 
   sources = [ "./audio_media_codec_unit_test.cpp" ]
 
-  deps = [ "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules" ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
+  ]
 
   external_deps = [
     "c_utils:utils",
+    "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
 
@@ -497,6 +502,7 @@ ohos_unittest("audio_codec_inner_avbuffer_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
     "$av_codec_root_dir/services/services:av_codec_service",
@@ -646,6 +652,7 @@ ohos_unittest("audio_g711mu_encoder_plugin_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -694,6 +701,7 @@ ohos_unittest("audio_resample_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -743,6 +751,7 @@ ohos_unittest("audio_decoder_plugin_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -792,6 +801,7 @@ ohos_unittest("audio_encoder_plugin_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/services:av_codec_service",
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -1377,6 +1387,7 @@ ohos_unittest("audio_sync_codec_adapter_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
     "$av_codec_root_dir/services/services:av_codec_service",
@@ -3515,6 +3526,7 @@ ohos_unittest("audio_amrnb_multiframe_decode_unit_test") {
   deps = [
     "$av_codec_root_dir/interfaces/inner_api/native:av_codec_client",
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
     "$av_codec_root_dir/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
     "$av_codec_root_dir/services/media_engine/modules:av_codec_media_engine_modules",
     "$av_codec_root_dir/services/services:av_codec_service",

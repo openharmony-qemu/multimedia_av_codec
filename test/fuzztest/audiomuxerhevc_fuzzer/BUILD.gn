@@ -74,6 +74,7 @@ ohos_fuzztest("AudioMuxerHevcFuzzTest") {
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avmuxer",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_avsource",
     "$MEDIA_ROOT_DIR/interfaces/kits/c:native_media_codecbase",
+    "$MEDIA_ROOT_DIR/services/dfx:av_codec_service_dfx",
     "$MEDIA_ROOT_DIR/services/services:av_codec_service",
   ]
 }

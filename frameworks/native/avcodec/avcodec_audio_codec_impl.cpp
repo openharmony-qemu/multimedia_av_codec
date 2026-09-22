@@ -79,13 +79,13 @@ int32_t AVCodecAudioCodecImpl::Init(AVCodecType type, bool isMimeType, const std
 
 AVCodecAudioCodecImpl::AVCodecAudioCodecImpl()
 {
-    AVCODEC_LOGI("AVCodecAudioCodecImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGI("AVCodecAudioCodecImpl:%{public}" PRIu64 " Instances create", avcodecUniqueId_);
 }
 
 AVCodecAudioCodecImpl::~AVCodecAudioCodecImpl()
 {
     codecService_ = nullptr;
-    AVCODEC_LOGI("AVCodecAudioCodecImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGI("AVCodecAudioCodecImpl:%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
 }
 
 int32_t AVCodecAudioCodecImpl::Configure(const Format &format)
@@ -98,7 +98,7 @@ int32_t AVCodecAudioCodecImpl::Configure(const Format &format)
     int32_t syncMode = 0;
     format.GetIntValue(Media::Tag::AV_CODEC_ENABLE_SYNC_MODE, syncMode);
     isSyncMode_.store(syncMode == 1);
-    AVCODEC_LOGI("AVCodecAudioCodecImpl:0x%{public}06" PRIXPTR " sync mode:%{public}d", FAKE_POINTER(this), syncMode);
+    AVCODEC_LOGI("AVCodecAudioCodecImpl:%{public}" PRIu64 " sync mode:%{public}d", avcodecUniqueId_, syncMode);
     if (isSyncMode_.load()) {
         std::shared_ptr<AVCodecInnerCallback> innerCallback = std::make_shared<AVCodecInnerCallback>(this);
         codecService_->SetCallback(innerCallback);
@@ -156,14 +156,14 @@ int32_t AVCodecAudioCodecImpl::Start()
         AVCODEC_LOGE("Start failed, outputTask_ is nullptr, please check the outputTask_.");
         ret = AVCS_ERR_UNKNOWN;
     }
-    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Start, ret = %{public}d", FAKE_POINTER(this), ret);
+    AVCODEC_LOGI("Instances:%{public}" PRIu64 " Start, ret = %{public}d", avcodecUniqueId_, ret);
     return ret;
 }
 
 int32_t AVCodecAudioCodecImpl::Stop()
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Stop", FAKE_POINTER(this));
+    AVCODEC_LOGI("Instances:%{public}" PRIu64 " Stop", avcodecUniqueId_);
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     StopTaskAsync();
     int32_t ret = codecService_->Stop();
@@ -176,7 +176,7 @@ int32_t AVCodecAudioCodecImpl::Stop()
 int32_t AVCodecAudioCodecImpl::Flush()
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Flush", FAKE_POINTER(this));
+    AVCODEC_LOGI("Instances:%{public}" PRIu64 " Flush", avcodecUniqueId_);
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     PauseTaskAsync();
     int32_t ret = codecService_->Flush();
@@ -189,7 +189,7 @@ int32_t AVCodecAudioCodecImpl::Flush()
 int32_t AVCodecAudioCodecImpl::Reset()
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Reset", FAKE_POINTER(this));
+    AVCODEC_LOGI("Instances:%{public}" PRIu64 " Reset", avcodecUniqueId_);
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     StopTaskAsync();
     int32_t ret = codecService_->Reset();
@@ -208,7 +208,7 @@ int32_t AVCodecAudioCodecImpl::Reset()
 int32_t AVCodecAudioCodecImpl::Release()
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("Instances:0x%{public}06" PRIXPTR " Release", FAKE_POINTER(this));
+    AVCODEC_LOGI("Instances:%{public}" PRIu64 " Release", avcodecUniqueId_);
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCS_ERR_INVALID_STATE, "service died");
     Stop();
     int32_t ret = codecService_->Release();

@@ -39,12 +39,12 @@ std::shared_ptr<ICodecListService> CodecListServer::Create()
 
 CodecListServer::CodecListServer()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances create");
 }
 
 CodecListServer::~CodecListServer()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances destroy");
 }
 
 bool CodecListServer::Init()

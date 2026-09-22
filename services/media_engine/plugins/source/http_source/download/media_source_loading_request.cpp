@@ -24,7 +24,7 @@ namespace HttpPlugin {
 // -------------------------------LoadingRequestElements----------------------------------------
 LoadingRequestElements::~LoadingRequestElements()
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Elements dtor, uuid " PUBLIC_LOG_D64, FAKE_POINTER(this), uuid_);
+    MEDIA_LOG_I("%{public}" PRIu64 " Elements dtor, uuid " PUBLIC_LOG_D64, avcodecUniqueId_, uuid_);
     if (client_ != nullptr) {
         client_.reset();
     }
@@ -59,13 +59,13 @@ int32_t LoadingRequestElements::FinishLoading(int64_t uuid, LoadingRequestError 
 int64_t MediaSourceLoadingRequest::Open(int64_t uuid, const std::shared_ptr<NetworkClient> &client)
 {
     MediaAVCodec::AVCodecTrace trace("MediaSourceLoadingRequest Open, uuid: " + std::to_string(uuid));
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest Open, uuid: " PUBLIC_LOG_D64,
-        FAKE_POINTER(this), uuid);
+    MEDIA_LOG_I("%{public}" PRIu64 "MediaSourceLoadingRequest Open, uuid: " PUBLIC_LOG_D64,
+        avcodecUniqueId_, uuid);
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
     if (it != requestMap_.end()) {
-        MEDIA_LOG_W("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest Open, uuid has opened: " PUBLIC_LOG_D64,
-            FAKE_POINTER(this), uuid);
+        MEDIA_LOG_W("%{public}" PRIu64 "MediaSourceLoadingRequest Open, uuid has opened: " PUBLIC_LOG_D64,
+            avcodecUniqueId_, uuid);
         return 0;
     }
     auto element = std::make_shared<LoadingRequestElements>(uuid, client);
@@ -77,22 +77,22 @@ int64_t MediaSourceLoadingRequest::Open(int64_t uuid, const std::shared_ptr<Netw
 int32_t MediaSourceLoadingRequest::Close(int64_t uuid)
 {
     MediaAVCodec::AVCodecTrace trace("MediaSourceLoadingRequest Close, uuid: " + std::to_string(uuid));
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "MediaSOurceLoadingRequest Close, uuid: " PUBLIC_LOG_D64,
-        FAKE_POINTER(this), uuid);
+    MEDIA_LOG_I("%{public}" PRIu64 "MediaSOurceLoadingRequest Close, uuid: " PUBLIC_LOG_D64,
+        avcodecUniqueId_, uuid);
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
     if (it != requestMap_.end()) {
         requestMap_.erase(it);
     } else {
-        MEDIA_LOG_W("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest Close, invalid uuid: " PUBLIC_LOG_D64,
-            FAKE_POINTER(this), uuid);
+        MEDIA_LOG_W("%{public}" PRIu64 "MediaSourceLoadingRequest Close, invalid uuid: " PUBLIC_LOG_D64,
+            avcodecUniqueId_, uuid);
     }
     return 0;
 }
 
 MediaSourceLoadingRequest::~MediaSourceLoadingRequest()
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest dtor in.", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 "MediaSourceLoadingRequest dtor in.", avcodecUniqueId_);
     AutoLock lock(clientMutex_);
     requestMap_.clear();
 }
@@ -102,15 +102,15 @@ int32_t MediaSourceLoadingRequest::RespondData(int64_t uuid, int64_t offset,
 {
     MediaAVCodec::AVCodecTrace trace("MediaSourceLoadingRequest RespondData, uuid: " + std::to_string(uuid) +
         ", offset: " + std::to_string(offset));
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest RespondData, uuid: " PUBLIC_LOG_D64
-        " offset: " PUBLIC_LOG_D64, FAKE_POINTER(this), uuid, offset);
+    MEDIA_LOG_D("%{public}" PRIu64 "MediaSourceLoadingRequest RespondData, uuid: " PUBLIC_LOG_D64
+        " offset: " PUBLIC_LOG_D64, avcodecUniqueId_, uuid, offset);
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
     if (it != requestMap_.end() && it->second != nullptr) {
         return it->second->RespondData(uuid, offset, request);
     } else {
-        MEDIA_LOG_E("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest RespondData, invalid uuid: " PUBLIC_LOG_D64,
-            FAKE_POINTER(this), uuid);
+        MEDIA_LOG_E("%{public}" PRIu64 "MediaSourceLoadingRequest RespondData, invalid uuid: " PUBLIC_LOG_D64,
+            avcodecUniqueId_, uuid);
     }
     return 0;
 }
@@ -119,30 +119,30 @@ int32_t MediaSourceLoadingRequest::RespondHeader(int64_t uuid, std::map<std::str
     std::string redirectUrl)
 {
     MediaAVCodec::AVCodecTrace trace("MediaSourceLoadingRequest RespondHeader, uuid: " + std::to_string(uuid));
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest RespondHeader, uuid: " PUBLIC_LOG_D64,
-        FAKE_POINTER(this), uuid);
+    MEDIA_LOG_D("%{public}" PRIu64 "MediaSourceLoadingRequest RespondHeader, uuid: " PUBLIC_LOG_D64,
+        avcodecUniqueId_, uuid);
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
     if (it != requestMap_.end() && it->second != nullptr) {
         return it->second->RespondHeader(uuid, header, redirectUrl);
     } else {
-        MEDIA_LOG_E("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest RespondHeader, invalid uuid: " PUBLIC_LOG_D64,
-            FAKE_POINTER(this), uuid);
+        MEDIA_LOG_E("%{public}" PRIu64 "MediaSourceLoadingRequest RespondHeader, invalid uuid: " PUBLIC_LOG_D64,
+            avcodecUniqueId_, uuid);
     }
     return 0;
 }
 
 int32_t MediaSourceLoadingRequest::FinishLoading(int64_t uuid, LoadingRequestError state)
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest FinishLoading, uuid: " PUBLIC_LOG_D64
-        " state: " PUBLIC_LOG_D32, FAKE_POINTER(this), uuid, static_cast<int32_t>(state));
+    MEDIA_LOG_I("%{public}" PRIu64 "MediaSourceLoadingRequest FinishLoading, uuid: " PUBLIC_LOG_D64
+        " state: " PUBLIC_LOG_D32, avcodecUniqueId_, uuid, static_cast<int32_t>(state));
     AutoLock lock(clientMutex_);
     auto it = requestMap_.find(uuid);
     if (it != requestMap_.end() && it->second != nullptr) {
         return it->second->FinishLoading(uuid, state);
     } else {
-        MEDIA_LOG_E("0x%{public}06" PRIXPTR "MediaSourceLoadingRequest FinishLoading, invalid uuid: " PUBLIC_LOG_D64,
-            FAKE_POINTER(this), uuid);
+        MEDIA_LOG_E("%{public}" PRIu64 "MediaSourceLoadingRequest FinishLoading, invalid uuid: " PUBLIC_LOG_D64,
+            avcodecUniqueId_, uuid);
     }
     return 0;
 }
@@ -160,8 +160,8 @@ int64_t MediaSourceLoaderCombinations::Open(const std::string &url, const std::m
         loader_->Init(request);
     }
     int64_t uuid = loader_->Open(url, header);
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "MediaSourceLoaderCombinations Open, uuid: " PUBLIC_LOG_D64,
-        FAKE_POINTER(this), uuid);
+    MEDIA_LOG_I("%{public}" PRIu64 "MediaSourceLoaderCombinations Open, uuid: " PUBLIC_LOG_D64,
+        avcodecUniqueId_, uuid);
     request_->Open(uuid, client);
     return uuid;
 }

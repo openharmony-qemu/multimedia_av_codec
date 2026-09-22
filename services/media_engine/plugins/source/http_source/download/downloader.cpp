@@ -283,7 +283,7 @@ void Downloader::Init()
         {
             AutoLock lk(shareDownloader->loopPauseMutex_);
             if (shareDownloader->loopStatus_ == LoopStatus::PAUSE) {
-                MEDIA_LOG_I("0x%{public}06" PRIXPTR " loopStatus PAUSE to START", FAKE_POINTER(shareDownloader.get()));
+                MEDIA_LOG_I("%{public}" PRIu64 " loopStatus PAUSE to START", shareDownloader->avcodecUniqueId_);
             }
             shareDownloader->loopStatus_ = LoopStatus::START;
         }
@@ -291,7 +291,7 @@ void Downloader::Init()
         shareDownloader->NotifyLoopPause();
         return 0;
     });
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader ctor", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " Downloader ctor", avcodecUniqueId_);
 }
 
 Downloader::Downloader(const std::string& name, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader) noexcept
@@ -303,9 +303,9 @@ Downloader::Downloader(const std::string& name, std::shared_ptr<MediaSourceLoade
         sourceLoader_ = sourceLoader;
         client_ = NetworkClient::GetAppInstance(&RxHeaderData, &RxBodyData, this);
         client_->SetLoader(sourceLoader->loader_);
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR "Get app instance success", FAKE_POINTER(this));
+        MEDIA_LOG_I("%{public}" PRIu64 "Get app instance success", avcodecUniqueId_);
     } else {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR "Get libcurl instance success", FAKE_POINTER(this));
+        MEDIA_LOG_I("%{public}" PRIu64 "Get libcurl instance success", avcodecUniqueId_);
         client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
     }
 }
@@ -329,7 +329,7 @@ Downloader::~Downloader()
         client_->Deinit();
         client_ = nullptr;
     }
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~Downloader dtor", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " ~Downloader dtor", avcodecUniqueId_);
 }
 
 bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs)
@@ -380,7 +380,7 @@ void Downloader::ReStart()
 void Downloader::Pause(bool isAsync)
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Pause Begin", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " Pause Begin", avcodecUniqueId_);
     requestQue_->SetActive(false, false);
     if (client_ != nullptr) {
         isClientClose_ = true;
@@ -390,12 +390,12 @@ void Downloader::Pause(bool isAsync)
     if (!isAsync) {
         WaitLoopPause();
     }
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Pause End", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " Pause End", avcodecUniqueId_);
 }
 
 void Downloader::Cancel()
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Cancel Begin", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " Cancel Begin", avcodecUniqueId_);
     if (currentRequest_ != nullptr && currentRequest_->retryTimes_ > 0) {
         currentRequest_->retryTimes_ = 0;
     }
@@ -406,7 +406,7 @@ void Downloader::Cancel()
     }
     PauseLoop(true);
     WaitLoopPause();
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Cancel End", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " Cancel End", avcodecUniqueId_);
 }
 
 
@@ -521,7 +521,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
     }
     {
         AutoLock lock(operatorMutex_);
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " Retry Begin", FAKE_POINTER(this));
+        MEDIA_LOG_I("%{public}" PRIu64 " Retry Begin", avcodecUniqueId_);
         FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
         requestQue_->SetActive(false, false);
     }
@@ -644,8 +644,8 @@ void Downloader::OpenAppUri()
         if (sourceLoader_ != nullptr && currentRequest_ != nullptr) {
             if (sourceId_ != 0) {
                 sourceLoader_->Close(sourceId_);
-                MEDIA_LOG_D("0x%{public}06" PRIXPTR "LoaderCombinations Close uuid " PUBLIC_LOG_D64,
-                    FAKE_POINTER(this), sourceId_);
+                MEDIA_LOG_D("%{public}" PRIu64 "LoaderCombinations Close uuid " PUBLIC_LOG_D64,
+                    avcodecUniqueId_, sourceId_);
             }
 
             int64_t uuid = 0;
@@ -654,17 +654,17 @@ void Downloader::OpenAppUri()
                 if (uuid > 0) {
                     break;
                 }
-                MEDIA_LOG_D("0x%{public}06" PRIXPTR "Open retry " PUBLIC_LOG_D64 " retryTimes: " PUBLIC_LOG_D32,
-                FAKE_POINTER(this), uuid, i);
+                MEDIA_LOG_D("%{public}" PRIu64 "Open retry " PUBLIC_LOG_D64 " retryTimes: " PUBLIC_LOG_D32,
+                avcodecUniqueId_, uuid, i);
             }
-            MEDIA_LOG_I("0x%{public}06" PRIXPTR "LoaderCombinations Open uuid " PUBLIC_LOG_D64,
-                FAKE_POINTER(this), uuid);
+            MEDIA_LOG_I("%{public}" PRIu64 "LoaderCombinations Open uuid " PUBLIC_LOG_D64,
+                avcodecUniqueId_, uuid);
             if (uuid != 0) {
                 client_->SetUuid(uuid);
                 sourceId_ = uuid;
             } else {
-                MEDIA_LOG_E("0x%{public}06" PRIXPTR "Open faild, uuid " PUBLIC_LOG_D64,
-                FAKE_POINTER(this), uuid);
+                MEDIA_LOG_E("%{public}" PRIu64 "Open faild, uuid " PUBLIC_LOG_D64,
+                avcodecUniqueId_, uuid);
                 std::shared_ptr<Downloader> unused;
                 currentRequest_->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, unused, currentRequest_);
             }
@@ -745,7 +745,7 @@ void Downloader::RequestData()
         FALSE_RETURN_MSG(shareDownloader != nullptr, "handleResponseCb, Downloader is nullptr!");
         shareDownloader->HandleResponseCb(clientCode, serverCode, ret);
     };
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData enter.", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " RequestData enter.", avcodecUniqueId_);
 
     int len = currentRequest_->requestSize_;
     if (currentRequest_->requestWholeFile_) {
@@ -759,7 +759,7 @@ void Downloader::RequestData()
         downloadCallback_->UpdateTotalDownloadCount();
     }
     client_->RequestData(startPos, len, sourceInfo, handleResponseCb);
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " RequestData end.", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " RequestData end.", avcodecUniqueId_);
 }
 
 void Downloader::HandleRetErrorCode()
@@ -1200,8 +1200,8 @@ const std::shared_ptr<DownloadRequest>& Downloader::GetCurrentRequest()
 
 void Downloader::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader SetInterruptState %{public}d",
-        FAKE_POINTER(this), isInterruptNeeded);
+    MEDIA_LOG_I("%{public}" PRIu64 " Downloader SetInterruptState %{public}d",
+        avcodecUniqueId_, isInterruptNeeded);
     {
         AutoLock lk(loopPauseMutex_);
         AutoLock lock(sleepMutex_);
@@ -1224,7 +1224,7 @@ void Downloader::NotifyLoopPause()
 {
     AutoLock lk(loopPauseMutex_);
     if (loopStatus_ == LoopStatus::PAUSE || isInterruptNeeded_) {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " Downloader NotifyLoopPause", FAKE_POINTER(this));
+        MEDIA_LOG_I("%{public}" PRIu64 " Downloader NotifyLoopPause", avcodecUniqueId_);
         loopStatus_ = LoopStatus::IDLE;
         loopPauseCond_.NotifyAll();
     } else {
@@ -1238,15 +1238,15 @@ void Downloader::WaitLoopPause()
 {
     AutoLock lk(loopPauseMutex_);
     if (loopStatus_ == LoopStatus::IDLE) {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR "Downloader not WaitLoopPause loopStatus is idle", FAKE_POINTER(this));
+        MEDIA_LOG_I("%{public}" PRIu64 "Downloader not WaitLoopPause loopStatus is idle", avcodecUniqueId_);
         return;
     }
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR "Downloader WaitLoopPause task loopStatus_ %{public}d",
-        FAKE_POINTER(this), loopStatus_.load());
+    MEDIA_LOG_I("%{public}" PRIu64 "Downloader WaitLoopPause task loopStatus_ %{public}d",
+        avcodecUniqueId_, loopStatus_.load());
     loopStatus_ = LoopStatus::PAUSE;
     loopPauseCond_.Wait(lk, [this]() {
-        MEDIA_LOG_I("0x%{public}06" PRIXPTR " WaitLoopPause wake loopStatus %{public}d",
-            FAKE_POINTER(this), loopStatus_.load());
+        MEDIA_LOG_I("%{public}" PRIu64 " WaitLoopPause wake loopStatus %{public}d",
+            avcodecUniqueId_, loopStatus_.load());
         return loopStatus_ != LoopStatus::PAUSE || isInterruptNeeded_;
     });
 }

@@ -18,6 +18,7 @@
 #include <hilog/log.h>
 #include <cinttypes>
 #include <chrono>
+#include "avcodec_dfx_component.h"
 
 namespace OHOS {
 namespace MediaAVCodec {

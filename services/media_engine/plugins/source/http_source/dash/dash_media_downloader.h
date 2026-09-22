@@ -16,6 +16,7 @@
 #ifndef HISTREAMER_DASH_MEDIA_DOWNLOADER_H
 #define HISTREAMER_DASH_MEDIA_DOWNLOADER_H
 
+#include "avcodec_dfx_component.h"
 #include "media_downloader.h"
 #include "dash_mpd_downloader.h"
 #include "dash_segment_downloader.h"
@@ -113,6 +114,7 @@ private:
 
 private:
 
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     Callback* callback_ {nullptr};
     StatusCallbackFunc statusCallback_ {nullptr};
 

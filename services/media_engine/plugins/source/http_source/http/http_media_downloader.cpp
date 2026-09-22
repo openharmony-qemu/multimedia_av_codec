@@ -134,13 +134,13 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
 
 HttpMediaDownloader::~HttpMediaDownloader()
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HttpMediaDownloader dtor", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " ~HttpMediaDownloader dtor", avcodecUniqueId_);
     Close(false);
 }
 
 void HttpMediaDownloader::Init()
 {
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " Init", FAKE_POINTER(this));
+    MEDIA_LOG_D("%{public}" PRIu64 " Init", avcodecUniqueId_);
     downloadMetricsInfo_ = std::make_shared<DownloadMetricsInfo>();
     if (downloader_ != nullptr && downloadMetricsInfo_ != nullptr) {
         downloader_->SetDownloadCallback(downloadMetricsInfo_);
