@@ -2203,8 +2203,11 @@ Status MPEG4AtomParser::ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     // 读取sample description entries
     for (uint32_t i = 0; i < entryCount; ++i) {
         currentStsdEntryIndex_ = i;
+        ResetCurrentStsdCodecConfig();
         ret = ParseSampleDescriptionEntry(depth, ctx);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse stsd container failed");
+        ret = CacheCurrentStsdCodecConfig();
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Cache stsd codec config failed");
     }
     FALSE_RETURN_V_MSG_E(ctx->offset == endOffset, Status::ERROR_INVALID_DATA, "Invalid stsd size");
     // FFmpeg retains one extradata slot for every stsd entry and switches it by stsc.id.
@@ -2217,8 +2220,7 @@ Status MPEG4AtomParser::ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseCon
         std::copy(firstConfig.begin(), firstConfig.end(), lastTrack_->codecParms.data.get());
         lastTrack_->codecParms.extradataSize = static_cast<int64_t>(firstConfig.size());
     } else {
-        lastTrack_->codecParms.data.reset();
-        lastTrack_->codecParms.extradataSize = 0;
+        ResetCurrentStsdCodecConfig();
     }
     if (lastTrack_->sampleHelper != nullptr &&
         NeedParseAudioInfo(lastTrack_->sampleHelper->mimeType_, lastTrack_->codecParms.trackType)) {
@@ -2424,6 +2426,30 @@ void MPEG4AtomParser::ResetCodecConfig(uint64_t dataSize)
         lastTrack_->codecParms.data.reset();
         lastTrack_->codecParms.extradataSize = 0;
     }
+}
+
+void MPEG4AtomParser::ResetCurrentStsdCodecConfig()
+{
+    lastTrack_->codecParms.data.reset();
+    lastTrack_->codecParms.extradataSize = 0;
+    lastTrack_->codecParms.hasValidExtradata = false;
+    lastTrack_->codecParms.annexbExtradataSize = 0;
+}
+
+Status MPEG4AtomParser::CacheCurrentStsdCodecConfig()
+{
+    FALSE_RETURN_V_MSG_E(currentStsdEntryIndex_ < lastTrack_->codecConfigs.size(), Status::ERROR_INVALID_DATA,
+        "Invalid stsd entry index");
+    if (lastTrack_->codecParms.data == nullptr || lastTrack_->codecParms.extradataSize <= 0 ||
+        !lastTrack_->codecConfigs[currentStsdEntryIndex_].empty()) {
+        return Status::OK;
+    }
+    const uint64_t dataSize = static_cast<uint64_t>(lastTrack_->codecParms.extradataSize);
+    auto configData = std::make_unique<uint8_t[]>(dataSize);
+    FALSE_RETURN_V_MSG_E(configData != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate stsd codec config");
+    errno_t ret = memcpy_s(configData.get(), dataSize, lastTrack_->codecParms.data.get(), dataSize);
+    FALSE_RETURN_V_MSG_E(ret == EOK, Status::ERROR_INVALID_DATA, "Copy stsd codec config failed");
+    return StoreCodecConfig(std::move(configData), dataSize);
 }
 
 Status MPEG4AtomParser::StoreCodecConfig(std::unique_ptr<uint8_t[]>&& configData, uint64_t dataSize)
