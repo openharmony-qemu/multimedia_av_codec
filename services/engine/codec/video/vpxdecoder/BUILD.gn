@@ -39,10 +39,6 @@ ohos_shared_library("vpx_decoder") {
   defines = []
   defines += av_codec_defines
 
-  ldflags =[
-    "-Wl,--exclude-libs=libc++_static.a",
-  ]
-
   version_script = "vpx_decoder.map"
 
   sources = [

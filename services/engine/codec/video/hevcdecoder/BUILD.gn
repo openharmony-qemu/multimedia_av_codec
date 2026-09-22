@@ -39,10 +39,6 @@ ohos_shared_library("hevc_decoder") {
   defines = []
   defines += av_codec_defines
 
-  ldflags =[
-    "-Wl,--exclude-libs=libc++_static.a",
-  ]
-
   version_script = "hevc_decoder.map"
 
   sources = [
