@@ -370,6 +370,7 @@ ohos_unittest("videodec_cinepak_stable_unit_test") {
   sources = [ "./videodec_cinepak_stable_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1423,6 +1424,7 @@ ohos_unittest("videodec_vp8dec_unit_test") {
   sources = [ "./videodec_vp8dec_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1438,6 +1440,7 @@ ohos_unittest("videodec_vp9dec_unit_test") {
   sources = [ "./videodec_vp9dec_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1453,6 +1456,7 @@ ohos_unittest("videodec_msvideo1dec_stable_unit_test") {
   sources = [ "./videodec_msvideo1dec_stable_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1468,6 +1472,7 @@ ohos_unittest("videodec_av1dec_unit_test") {
   sources = [ "./videodec_av1dec_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1483,6 +1488,7 @@ ohos_unittest("videodec_hevcdec_unit_test") {
   sources = [ "./videodec_hevcdec_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1501,6 +1507,7 @@ ohos_unittest("videodec_stable_unit_test") {
     "./stable_sample:video_sample",
   ]
   external_deps = [
+    "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:native_media_core",
@@ -1519,6 +1526,7 @@ ohos_unittest("videodec_h263_stable_unit_test") {
     "./stable_sample:video_sample",
   ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1534,6 +1542,7 @@ ohos_unittest("videodec_wmv3_stable_unit_test") {
   sources = [ "./videodec_wmv3_stable_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1552,6 +1561,7 @@ ohos_unittest("videodec_mpeg_stable_unit_test") {
     "./stable_sample:video_sample",
   ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1570,6 +1580,7 @@ ohos_unittest("videoenc_stable_unit_test") {
     "./stable_sample:video_sample",
   ]
   external_deps = [
+    "c_utils:utils",
     "graphic_surface:surface",
     "hilog:libhilog",
     "media_foundation:native_media_core",
@@ -1613,6 +1624,7 @@ ohos_unittest("videodec_VC1_stable_unit_test") {
     "./stable_sample:video_sample",
   ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1628,6 +1640,7 @@ ohos_unittest("videodec_rv30_stable_unit_test") {
   sources = [ "./videodec_rv30dec_stable_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1643,6 +1656,7 @@ ohos_unittest("videodec_rv40_stable_unit_test") {
   sources = [ "./videodec_rv40dec_stable_unit_test.cpp" ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1668,6 +1682,7 @@ ohos_unittest("videodec_mpeg1_stable_unit_test") {
   ]
   deps = [ "./stable_sample:video_sample" ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -1686,6 +1701,7 @@ ohos_unittest("videodec_WVC1_stable_unit_test") {
     "./stable_sample:video_sample",
   ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -4487,6 +4503,7 @@ ohos_unittest("videodec_dvvideo_stable_unit_test") {
     "./stable_sample:video_sample",
   ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
@@ -4734,6 +4751,7 @@ ohos_unittest("videodec_rawvideo_stable_unit_test") {
     "./stable_sample:video_sample",
   ]
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",

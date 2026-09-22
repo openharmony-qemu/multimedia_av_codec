@@ -66,6 +66,7 @@ ohos_source_set("av_codec_engine_codeclist") {
   ]
 
   external_deps = [
+    "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_4.0",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",

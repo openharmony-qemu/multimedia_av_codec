@@ -71,6 +71,7 @@ ohos_unittest("source_unit_test") {
   public_configs = []
 
   external_deps = [
+    "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
     "ipc:ipc_single",
