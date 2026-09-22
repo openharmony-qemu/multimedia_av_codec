@@ -457,7 +457,8 @@ bool FCodec::IsActive() const
 
 bool FCodec::IsThreadActive() const
 {
-    return state_ == State::RUNNING || state_ == State::EOS || state_ == State::FREEZING || state_ == State::FROZEN;
+    return state_ == State::RUNNING || state_ == State::EOS || state_ == State::ERROR ||state_ == State::FREEZING ||
+           state_ == State::FROZEN;
 }
 
 void FCodec::FreeExtraData()
@@ -1407,13 +1408,13 @@ void FCodec::SendFrame()
     int ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     sLock.unlock();
     if (ret == 0 || ret == AVERROR_INVALIDDATA) {
-        HandleSendSuccess(index, inputBuffer, inputAVBuffer);
 #ifdef BUILD_ENG_VERSION
         if (dumpInFile_ && dumpInFile_->is_open()) {
             dumpInFile_->write(reinterpret_cast<char *>(inputAVBuffer->memory_->GetAddr()),
                                static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
         }
 #endif // BUILD_ENG_VERSION
+        HandleSendSuccess(index, inputBuffer, inputAVBuffer);
     } else if (ret == AVERROR(EAGAIN)) {
         HandleSendEAGAIN();
     } else {
