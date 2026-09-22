@@ -786,6 +786,8 @@ Status MPEG4SampleHelper::FindSimpleEditRawStart(const EditListEntry& edit, uint
         Status::ERROR_UNSUPPORTED_FORMAT);
     uint32_t lastAny = 0;
     uint32_t lastSync = 0;
+    int64_t lastAnyDts = INT64_MIN;
+    int64_t lastSyncDts = INT64_MIN;
     bool hasAny = false;
     bool hasSync = false;
     while (cursor.processedRawSamples < sampleTableSummary_.rawSampleCount) {
@@ -797,11 +799,16 @@ Status MPEG4SampleHelper::FindSimpleEditRawStart(const EditListEntry& edit, uint
         if (view.dts > searchDts) {
             break;
         }
-        hasAny = true;
-        lastAny = rawIndex;
-        lastAnyCursor = currentCursor;
-        if (IsSyncSample(stssEntry_, allSamplesSync_, rawIndex) && view.pts <= edit.mediaTime) {
+        if (!hasAny || view.dts > lastAnyDts) {
+            hasAny = true;
+            lastAnyDts = view.dts;
+            lastAny = rawIndex;
+            lastAnyCursor = currentCursor;
+        }
+        if (IsSyncSample(stssEntry_, allSamplesSync_, rawIndex) && view.pts <= edit.mediaTime &&
+            (!hasSync || view.dts > lastSyncDts)) {
             hasSync = true;
+            lastSyncDts = view.dts;
             lastSync = rawIndex;
             lastSyncCursor = currentCursor;
         }

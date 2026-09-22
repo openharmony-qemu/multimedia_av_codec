@@ -171,6 +171,7 @@ private:
     };
 
     struct Av3aConfigParams {
+        int32_t sampleRate = 0;
         int32_t soundbedChannels = 0;
         int32_t objectNumber = 0;
         int32_t hoaOrder = 0;

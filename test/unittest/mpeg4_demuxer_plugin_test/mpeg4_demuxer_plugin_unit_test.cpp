@@ -33,6 +33,7 @@
 #include "file_server_demo.h"
 #include "avc_parser_impl.h"
 #include "mpeg4_sample_memory.h"
+#include "mpeg4_sample_helper.h"
 #include "rbsp_context.h"
 
 using namespace OHOS;
@@ -2332,6 +2333,29 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_InitSelectTrack_001, Tes
     ASSERT_GT(mpeg4MediaInfo_.tracks.size(), 0U);
     auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
     EXPECT_FALSE(selectedTrackIds.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationMp3EditProjection_001
+ * @tc.desc: Verify edit-list projection retains every MP3 sample sharing the same DTS
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroDurationMp3EditProjection_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper.mimeType_ = MimeType::AUDIO_MPEG;
+    helper.sttsEntry_ = {{180, 0}, {1, 576}};
+    helper.stscEntry_ = {{0, 181, 1}};
+    helper.sampleSizes_.assign(181, 1);
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{0, 36, 1, 0}}, 1000, 16000);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    EXPECT_EQ(helper.GetSampleCount(), 181U);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView firstSample;
+    ASSERT_EQ(helper.GetSampleIndexView(0, firstSample), Status::OK);
+    EXPECT_EQ(firstSample.pos, 0);
 }
 
 /**
