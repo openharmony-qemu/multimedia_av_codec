@@ -102,6 +102,7 @@ private:
         FROZEN,
     };
     bool IsActive() const;
+    bool IsThreadActive() const;
     void FreeExtraData();
     void ResetContext(bool isNeedFree = true);
     void CalculateBufferSize();
@@ -109,7 +110,7 @@ private:
     void InitBuffers();
     void FlushBuffers();
     void ReleaseBuffers();
-    void StopThread();
+    void StopThread(bool isNeedStop = true);
     void ReleaseResource();
     int32_t UpdateBuffers(uint32_t index);
     int32_t UpdateSurfaceMemory(uint32_t index);
@@ -125,10 +126,27 @@ private:
 #if (defined SUPPORT_CODEC_RV) || (defined SUPPORT_CODEC_MP4V_ES) || (defined SUPPORT_CODEC_VC1)
     int32_t SetCodecExtradata(const Format &format);
 #endif
+    // for send task thread
+    void PrepareSendPacket(const std::shared_ptr<AVBuffer> &inputAVBuffer);
+    void HandleSendSuccess(uint32_t index, const std::shared_ptr<FBuffer> &inputBuffer,
+                           const std::shared_ptr<AVBuffer> &inputAVBuffer);
+    void HandleSendEAGAIN();
+    void HandleSendError(int ret);
+
+    // for recv task thread
+#ifndef DISABLE_DMABUFF
     void GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
     void GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged);
+#endif // DISABLE_DMABUFF
     int32_t DecodedFrameProcess(uint32_t index);
+    void HandleReceiveEOF(const std::shared_ptr<FBuffer> &frameBuffer);
+    void HandleReceiveEAGAIN();
+    void HandleReceiveError(int ret);
     void FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t index, int32_t status, int ret);
+    
+    // Get video frame rate from AVCodecContext. Returns 0.0 if not available.
+    double GetAvCodecContextFrameRate();
+
     int32_t AllocateInputBuffer(int32_t inBufferSize);
     int32_t AllocateSurfaceBuffer(sptr<SurfaceBuffer> &surfacebuffer);
     int32_t AllocateOutputBuffer();
@@ -228,6 +246,8 @@ private:
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::thread mRequestSurfaceBufferThread_;
     uint32_t decNum_ = 0;
+    std::atomic<uint32_t> sendCount_ = 0u;
+    std::atomic<bool> forceDrainSet_ = false;
     // surface config
     std::atomic<GraphicTransformType> transform_ = GraphicTransformType::GRAPHIC_ROTATE_NONE;
     // dump

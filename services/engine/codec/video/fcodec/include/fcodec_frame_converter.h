@@ -18,11 +18,14 @@
 
 #include <cstdint>
 #include <memory>
+#ifdef __cplusplus
 extern "C" {
+#endif
 #include "libavutil/imgutils.h"
 #include "libswscale/swscale.h"
+#ifdef __cplusplus
 }
-#include "avcodec_errors.h"
+#endif
 
 namespace OHOS {
 namespace MediaAVCodec {

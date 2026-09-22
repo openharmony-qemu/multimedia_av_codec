@@ -36,7 +36,14 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
+#ifdef __cplusplus
+extern "C" {
+#endif
+void avcodec_set_force_drain(AVCodecContext *avctx, int enable);
+#ifdef __cplusplus
+}
+#endif
+
 constexpr uint32_t INDEX_INPUT = 0;
 constexpr uint32_t INDEX_OUTPUT = 1;
 constexpr int32_t DEFAULT_IN_BUFFER_CNT = 4;
@@ -54,6 +61,7 @@ constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 200;
 constexpr uint32_t LOG_FREQUENCE = 2000;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
+constexpr uint32_t DEFAULT_FRAME_INTERVAL = 16;
 } // namespace
 using namespace OHOS::Media;
 using FMTKey = Media::Tag;
@@ -63,6 +71,11 @@ FCodec::FCodec(const std::string &name) : codecName_(name), state_(State::UNINIT
 #ifdef DISABLE_DMABUFF
     isShieldDmaBuffer_ = true;
 #endif
+
+#ifdef BUILD_ENG_VERSION
+    av_log_set_level(AV_LOG_DEBUG);
+    av_log_set_callback(FfmpegLogCallback);
+#endif // BUILD_ENG_VERSION
 }
 
 FCodec::~FCodec()
@@ -278,6 +291,12 @@ int32_t FCodec::AllocateCodecContext()
     CHECK_AND_RETURN_RET_LOG(avCodecContext_ != nullptr, AVCS_ERR_INVALID_OPERATION,
                              "Configure codec failed: Allocate context error");
     avCodecContext_->codec_type = AVMEDIA_TYPE_VIDEO;
+    avCodecContext_->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pixFmts) {
+        for (int i = 0; pixFmts[i] != AV_PIX_FMT_NONE; i++) {
+            AVCODEC_LOGI("configure codec candidate[%{public}d] = %{public}s", i, av_get_pix_fmt_name(pixFmts[i]));
+        }
+        return pixFmts[0];
+    };
     return AVCS_ERR_OK;
 }
 
@@ -436,6 +455,12 @@ bool FCodec::IsActive() const
     return state_ == State::RUNNING || state_ == State::FLUSHED || state_ == State::EOS;
 }
 
+bool FCodec::IsThreadActive() const
+{
+    return state_ == State::RUNNING || state_ == State::EOS || state_ == State::ERROR ||state_ == State::FREEZING ||
+           state_ == State::FROZEN;
+}
+
 void FCodec::FreeExtraData()
 {
     if (avCodecContext_->extradata) {
@@ -535,21 +560,21 @@ void FCodec::FlushBuffers()
     av_packet_unref(avPacket_.get());
 }
 
-void FCodec::StopThread()
+void FCodec::StopThread(bool isNeedStop)
 {
     if (sendTask_ != nullptr && inputAvailQue_ != nullptr) {
         std::unique_lock<std::mutex> sLock(sendMutex_);
         sendCv_.notify_one();
         sLock.unlock();
         inputAvailQue_->SetActive(false, false);
-        sendTask_->Stop();
+        isNeedStop ? sendTask_->Stop() : sendTask_->Pause();
     }
     if (receiveTask_ != nullptr && codecAvailQue_ != nullptr) {
         std::unique_lock<std::mutex> rLock(recvMutex_);
         recvCv_.notify_one();
         rLock.unlock();
         codecAvailQue_->SetActive(false, false);
-        receiveTask_->Stop();
+        isNeedStop ? receiveTask_->Stop() : receiveTask_->Pause();
     }
 }
 
@@ -575,18 +600,7 @@ int32_t FCodec::Flush()
                              "%{public}s Flush codec failed: not in running or Eos state", decName_.c_str());
     state_ = State::FLUSHING;
     AVCODEC_LOGI("%{public}s step into FLUSHING status", decName_.c_str());
-    std::unique_lock<std::mutex> sLock(sendMutex_);
-    sendCv_.notify_one();
-    sLock.unlock();
-    inputAvailQue_->SetActive(false, false);
-    sendTask_->Pause();
-
-    std::unique_lock<std::mutex> rLock(recvMutex_);
-    recvCv_.notify_one();
-    rLock.unlock();
-    codecAvailQue_->SetActive(false, false);
-    receiveTask_->Pause();
-
+    StopThread(false);
     avcodec_flush_buffers(avCodecContext_.get());
     ResetContext(false);
     FlushBuffers();
@@ -683,6 +697,14 @@ int32_t FCodec::SetParameter(const Format &format)
     return AVCS_ERR_OK;
 }
 
+double FCodec::GetAvCodecContextFrameRate()
+{
+    if (state_ != State::RUNNING || avCodecContext_ == nullptr || avCodecContext_->framerate.den <= 0) {
+        return 0.0;
+    }
+    return static_cast<double>(avCodecContext_->framerate.num) / static_cast<double>(avCodecContext_->framerate.den);
+}
+
 int32_t FCodec::GetOutputFormat(Format &format)
 {
     AVCODEC_SYNC_TRACE;
@@ -693,9 +715,8 @@ int32_t FCodec::GetOutputFormat(Format &format)
         }
     }
     if (!format_.ContainKey(FMTKey::VIDEO_FRAME_RATE)) {
-        if (avCodecContext_ != nullptr && avCodecContext_->framerate.den > 0) {
-            double value = static_cast<double>(avCodecContext_->framerate.num) /
-                           static_cast<double>(avCodecContext_->framerate.den);
+        double value = GetAvCodecContextFrameRate();
+        if (value > 0.0) {
             format_.PutDoubleValue(FMTKey::VIDEO_FRAME_RATE, value);
         }
     }
@@ -1190,10 +1211,10 @@ int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
             "Current decoder:%{public}s dosn't support width of %{public}d and height of %{public}d!",
             codecName_.c_str(), width_, height_);
         isChanged = true;
-        width_ = w;
-        height_ = h;
         AVCODEC_LOGI("format changed, width: %{public}d -> %{public}d, height: %{public}d -> %{public}d",
             width_, w, height_, h);
+        width_ = w;
+        height_ = h;
         converter_.reset();
         CalculateBufferSize();
         CHECK_AND_RETURN_RET_LOG(inputBufferSize_ > 0 && outputBufferSize_ > 0, AVCS_ERR_INVALID_VAL,
@@ -1315,17 +1336,8 @@ int32_t FCodec::QueueInputBuffer(uint32_t index)
     return AVCS_ERR_OK;
 }
 
-void FCodec::SendFrame()
+void FCodec::PrepareSendPacket(const std::shared_ptr<AVBuffer> &inputAVBuffer)
 {
-    CHECK_AND_RETURN_LOG_LIMIT(state_ != State::STOPPING && state_ != State::FLUSHING, LOG_FREQUENCE, "Invalid state");
-    if (state_ != State::RUNNING || isSendEos_ || inputAvailQue_->Size() == 0u) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
-        return;
-    }
-    uint32_t index = inputAvailQue_->Front();
-    CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
-    std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
-    std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
     if (inputAVBuffer->flag_ & AVCODEC_BUFFER_FLAG_EOS) {
         avPacket_->data = nullptr;
         avPacket_->size = 0;
@@ -1339,31 +1351,75 @@ void FCodec::SendFrame()
         avPacket_->size = static_cast<int32_t>(inputAVBuffer->memory_->GetSize());
         avPacket_->pts = inputAVBuffer->pts_;
     }
+}
+
+void FCodec::HandleSendSuccess(uint32_t index, const std::shared_ptr<FBuffer> &inputBuffer,
+                               const std::shared_ptr<AVBuffer> &inputAVBuffer)
+{
+    std::unique_lock<std::mutex> recvLock(recvMutex_);
+    recvCv_.notify_one();
+    recvLock.unlock();
+    inputAvailQue_->Pop();
+    inputBuffer->owner_ = Owner::OWNED_BY_USER;
+    callback_->OnInputBufferAvailable(index, inputAVBuffer);
+    sendCount_ = 0;
+    forceDrainSet_.store(false);
+}
+
+void FCodec::HandleSendEAGAIN()
+{
+    std::unique_lock<std::mutex> sendLock(sendMutex_);
+    isSendWait_ = true;
+    sendCv_.wait_for(sendLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
+}
+
+void FCodec::HandleSendError(int ret)
+{
+    callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+    state_ = State::ERROR;
+}
+
+void FCodec::SendFrame()
+{
+    CHECK_AND_RETURN_LOG_LIMIT(IsThreadActive(), LOG_FREQUENCE, "Not in running state");
+    if (state_ != State::RUNNING || isSendEos_ || inputAvailQue_->Size() == 0u) {
+        if (!isSendEos_ && inputAvailQue_->Size() == 0u) {
+            sendCount_ ++;
+            if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME &&
+                sendCount_ > DEFAULT_FRAME_INTERVAL && !forceDrainSet_.load()) {
+                std::unique_lock<std::mutex> syncLock(syncMutex_);
+                avcodec_set_force_drain(avCodecContext_.get(), 1);
+                forceDrainSet_.store(true);
+                syncLock.unlock();
+                AVCODEC_LOGI("%{public}s pipeline has leftover frames, start draining", decName_.c_str());
+                std::unique_lock<std::mutex> recvLock(recvMutex_);
+                recvCv_.notify_one();
+                recvLock.unlock();
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
+        return;
+    }
+    uint32_t index = inputAvailQue_->Front();
+    std::shared_ptr<FBuffer> &inputBuffer = buffers_[INDEX_INPUT][index];
+    std::shared_ptr<AVBuffer> &inputAVBuffer = inputBuffer->avBuffer_;
+    PrepareSendPacket(inputAVBuffer);
     std::unique_lock<std::mutex> sLock(syncMutex_);
     int ret = avcodec_send_packet(avCodecContext_.get(), avPacket_.get());
     sLock.unlock();
     if (ret == 0 || ret == AVERROR_INVALIDDATA) {
-        EXPECT_AND_LOGD(ret == AVERROR_INVALIDDATA, "ffmpeg ret = %{public}s", AVStrError(ret).c_str());
-        std::unique_lock<std::mutex> recvLock(recvMutex_);
-        recvCv_.notify_one();
-        recvLock.unlock();
-        inputAvailQue_->Pop();
-        inputBuffer->owner_ = Owner::OWNED_BY_USER;
 #ifdef BUILD_ENG_VERSION
         if (dumpInFile_ && dumpInFile_->is_open()) {
             dumpInFile_->write(reinterpret_cast<char *>(inputAVBuffer->memory_->GetAddr()),
                                static_cast<int32_t>(inputAVBuffer->memory_->GetSize()));
         }
 #endif // BUILD_ENG_VERSION
-        callback_->OnInputBufferAvailable(index, inputAVBuffer);
+        HandleSendSuccess(index, inputBuffer, inputAVBuffer);
     } else if (ret == AVERROR(EAGAIN)) {
-        std::unique_lock<std::mutex> sendLock(sendMutex_);
-        isSendWait_ = true;
-        sendCv_.wait_for(sendLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
+        HandleSendEAGAIN();
     } else {
         AVCODEC_LOGE("Cannot send frame to codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
-        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-        state_ = State::ERROR;
+        HandleSendError(ret);
     }
 }
 
@@ -1456,6 +1512,7 @@ void FCodec::FramePostProcess(std::shared_ptr<FBuffer> &frameBuffer, uint32_t in
     }
 }
 
+#ifndef DISABLE_DMABUFF
 void FCodec::GetCropInfo(std::vector<uint8_t> &vec, bool isFmtChanged)
 {
     int32_t cropTop = static_cast<int32_t>(cachedFrame_->crop_top);
@@ -1512,6 +1569,7 @@ void FCodec::GetColorAspectsInfo(std::vector<uint8_t> &vec, bool isFmtChanged)
         format_.PutIntValue(FMTKey::VIDEO_COLOR_RANGE, colRange);
     }
 }
+#endif // DISABLE_DMABUFF
 
 int32_t FCodec::DecodedFrameProcess(uint32_t index)
 {
@@ -1522,9 +1580,9 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
     bool isChanged = false;
     int32_t ret = CheckFormatChange(index, isChanged);
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, ret, "Check format change failed");
+#ifndef DISABLE_DMABUFF
     std::vector<uint8_t> cropVec(sizeof(BufferHandleMetaRegion));
     std::vector<uint8_t> colorSpaceInfoData(sizeof(CM_ColorSpaceInfo));
-#ifndef DISABLE_DMABUFF
     GetCropInfo(cropVec, isChanged);
     GetColorAspectsInfo(colorSpaceInfoData, isChanged);
     std::shared_ptr<FBuffer> frameBuffer = buffers_[INDEX_OUTPUT][index];
@@ -1535,19 +1593,43 @@ int32_t FCodec::DecodedFrameProcess(uint32_t index)
     CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_CROP_REGION failed");
     err = surfacebuffer->SetMetadata(ATTRKEY_COLORSPACE_INFO, colorSpaceInfoData);
     CHECK_AND_RETURN_RET_LOG(err == GSERROR_OK, AVCS_ERR_UNKNOWN, "SetBufferMeta ATTRKEY_COLORSPACE_INFO failed");
-#endif
+#endif // DISABLE_DMABUFF
     decNum_++;
     return AVCS_ERR_OK;
 }
 
+void FCodec::HandleReceiveEOF(const std::shared_ptr<FBuffer> &frameBuffer)
+{
+    frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
+    frameBuffer->avBuffer_->memory_->SetSize(0);
+    state_ = State::EOS;
+}
+
+void FCodec::HandleReceiveEAGAIN()
+{
+    std::unique_lock<std::mutex> sendLock(sendMutex_);
+    if (isSendWait_ || isSendEos_) {
+        isSendWait_ = false;
+        sendCv_.notify_one();
+    }
+    sendLock.unlock();
+    std::unique_lock<std::mutex> recvLock(recvMutex_);
+    recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
+}
+
+void FCodec::HandleReceiveError(int ret)
+{
+    callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+    state_ = State::ERROR;
+}
+
 void FCodec::ReceiveFrame()
 {
-    CHECK_AND_RETURN_LOG_LIMIT(state_ != State::STOPPING && state_ != State::FLUSHING, LOG_FREQUENCE, "Invalid state");
+    CHECK_AND_RETURN_LOG_LIMIT(IsThreadActive(), LOG_FREQUENCE, "Not in running state");
     if (state_ != State::RUNNING || codecAvailQue_->Size() == 0u) {
         std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
-    CHECK_AND_RETURN_LOG(state_ == State::RUNNING, "Not in running state");
     std::unique_lock<std::mutex> sLock(syncMutex_);
     int ret = avcodec_receive_frame(avCodecContext_.get(), cachedFrame_.get());
     sLock.unlock();
@@ -1569,23 +1651,13 @@ void FCodec::ReceiveFrame()
         frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_NONE;
     } else if (ret == AVERROR_EOF) {
         AVCODEC_LOGI("Receive eos");
-        frameBuffer->avBuffer_->flag_ = AVCODEC_BUFFER_FLAG_EOS;
-        frameBuffer->avBuffer_->memory_->SetSize(0);
-        state_ = State::EOS;
+        HandleReceiveEOF(frameBuffer);
     } else if (ret == AVERROR(EAGAIN)) {
-        std::unique_lock<std::mutex> sendLock(sendMutex_);
-        if (isSendWait_ || isSendEos_) {
-            isSendWait_ = false;
-            sendCv_.notify_one();
-        }
-        sendLock.unlock();
-        std::unique_lock<std::mutex> recvLock(recvMutex_);
-        recvCv_.wait_for(recvLock, std::chrono::milliseconds(DEFAULT_DECODE_WAIT_TIME));
+        HandleReceiveEAGAIN();
         return;
     } else {
         AVCODEC_LOGE("Cannot recv frame from codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
-        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
-        state_ = State::ERROR;
+        HandleReceiveError(ret);
         return;
     }
     FramePostProcess(frameBuffer, index, status, ret);
