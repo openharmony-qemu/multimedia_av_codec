@@ -516,18 +516,20 @@ int32_t CodecServiceStub::CheckInitCaller(AVCodecType type, Media::Meta &callerI
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(type > AVCodecType::AVCODEC_TYPE_NONE &&
                                           type <= AVCodecType::AVCODEC_TYPE_AUDIO_DECODER,
                                       AVCS_ERR_INVALID_VAL, "type invalid %{public}d", static_cast<int32_t>(type));
-    pid_t callerPid = 0;
-    uid_t callerUid = 0;
-    pid_t forwardPid = 0;
-    uid_t forwardUid = 0;
-    bool ret = GetCallerId(callerInfo, Tag::AV_CODEC_CALLER_PID, callerPid) &&
-               GetCallerId(callerInfo, Tag::AV_CODEC_CALLER_UID, callerUid);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "pid/uid missing");
     pid_t ipcPid = static_cast<pid_t>(IPCSkeleton::GetCallingPid());
     uid_t ipcUid = static_cast<uid_t>(IPCSkeleton::GetCallingUid());
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(callerPid == ipcPid && callerUid == ipcUid, AVCS_ERR_INVALID_OPERATION,
-                                      "pid/uid mismatch, caller %{public}d/%{public}u, ipc %{public}d/%{public}u",
-                                      callerPid, callerUid, ipcPid, ipcUid);
+    pid_t callerPid = ipcPid;
+    uid_t callerUid = ipcUid;
+    pid_t forwardPid = 0;
+    uid_t forwardUid = 0;
+    if (!GetCallerId(callerInfo, Tag::AV_CODEC_CALLER_PID, callerPid) ||
+        !GetCallerId(callerInfo, Tag::AV_CODEC_CALLER_UID, callerUid) ||
+        callerPid != ipcPid || callerUid != ipcUid) {
+        AVCODEC_LOGW_WITH_TAG("caller pid/uid missing or mismatch, caller %{public}d/%{public}u, "
+                              "ipc %{public}d/%{public}u", callerPid, callerUid, ipcPid, ipcUid);
+        callerPid = ipcPid;
+        callerUid = ipcUid;
+    }
     bool hasForwardPid = GetCallerId(callerInfo, Tag::AV_CODEC_FORWARD_CALLER_PID, forwardPid);
     bool hasForwardUid = GetCallerId(callerInfo, Tag::AV_CODEC_FORWARD_CALLER_UID, forwardUid);
     ResetCallerId(callerInfo, Tag::AV_CODEC_CALLER_PID, callerPid);
