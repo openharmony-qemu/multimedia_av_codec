@@ -2707,8 +2707,9 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
         }
     }
     const uint32_t frameLengthFlag = bitReader.HasBits(1) ? bitReader.ReadBits(1) : 0;
-    uint32_t samplePerFrame = frameLengthFlag ? 960 : 1024;
-    if (hasExplicitSbr && extensionSampleRate > baseSampleRate && samplePerFrame == 1024) {
+    uint32_t samplePerFrame = frameLengthFlag ? 960 : AUDIO_DEFAULT_SAMPLE_PER_FRAME;
+    if (hasExplicitSbr && extensionSampleRate > baseSampleRate &&
+        samplePerFrame == AUDIO_DEFAULT_SAMPLE_PER_FRAME) {
         samplePerFrame *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
     }
     if (audioObjectType == AAC_ER_LD || (audioObjectType == AAC_ER_ELD)) {

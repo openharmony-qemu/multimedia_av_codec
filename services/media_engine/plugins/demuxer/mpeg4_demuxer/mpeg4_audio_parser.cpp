@@ -53,7 +53,8 @@ constexpr uint8_t AAC_EXTENSION_TYPE_SBR = 0x0D;
 constexpr uint8_t AAC_EXTENSION_TYPE_SBR_CRC = 0x0E;
 constexpr uint8_t AAC_FIL_ESCAPE_COUNT = 15;
 constexpr uint8_t AAC_FILL_COUNT_BITS = 4;
-constexpr uint8_t AAC_FILL_BYTE_BITS = 8;
+constexpr uint8_t AAC_BITS_PER_BYTE = 8;
+constexpr uint8_t AAC_FILL_BYTE_BITS = AAC_BITS_PER_BYTE;
 constexpr uint8_t AAC_FILL_ESCAPE_ADJUSTMENT = 1;
 constexpr uint8_t AAC_ELEMENT_HEADER_BITS = 7;
 constexpr uint8_t AAC_ELEMENT_TYPE_BITS = 3;
@@ -62,6 +63,7 @@ constexpr uint8_t AAC_ELEMENT_END_BITS = 3;
 constexpr uint8_t AAC_EXTENSION_TYPE_BITS = 4;
 constexpr uint8_t AAC_PADDING_BITS_MAX = 7;
 constexpr uint8_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
+constexpr int32_t AAC_DEFAULT_SAMPLES_PER_FRAME = 1024;
 constexpr int32_t AAC_STEREO_CHANNELS = 2;
 
 struct AacRawDataBlockInfo {
@@ -189,15 +191,15 @@ bool SkipAacFillElementPayload(DemuxerBitReader& bitReader)
 
 bool ReadAacBitsAt(const uint8_t* data, size_t totalBits, size_t bitOffset, uint8_t bitCount, uint32_t& value)
 {
-    if (data == nullptr || bitCount == 0 || bitCount > sizeof(value) * 8 || bitOffset > totalBits ||
+    if (data == nullptr || bitCount == 0 || bitCount > sizeof(value) * AAC_BITS_PER_BYTE || bitOffset > totalBits ||
         bitCount > totalBits - bitOffset) {
         return false;
     }
     value = 0;
     for (uint8_t i = 0; i < bitCount; ++i) {
         size_t currentBit = bitOffset + i;
-        uint8_t currentByte = data[currentBit / 8];
-        uint8_t shift = static_cast<uint8_t>(7 - currentBit % 8);
+        uint8_t currentByte = data[currentBit / AAC_BITS_PER_BYTE];
+        uint8_t shift = static_cast<uint8_t>(AAC_BITS_PER_BYTE - 1 - currentBit % AAC_BITS_PER_BYTE);
         value = (value << 1) | ((currentByte >> shift) & 0x01);
     }
     return true;
@@ -210,7 +212,9 @@ bool IsAacZeroPadding(const uint8_t* data, size_t totalBits, size_t bitOffset)
     }
     for (size_t currentBit = bitOffset; currentBit < totalBits; ++currentBit) {
         uint32_t value = 0;
-        FALSE_RETURN_V(ReadAacBitsAt(data, totalBits, currentBit, 1, value) && value == 0, false);
+        if (!ReadAacBitsAt(data, totalBits, currentBit, 1, value) || value != 0) {
+            return false;
+        }
     }
     return true;
 }
@@ -219,25 +223,38 @@ bool ParseAacFillElementAt(const uint8_t* data, size_t totalBits, size_t bitOffs
     uint8_t& extensionType)
 {
     uint32_t elementType = 0;
-    FALSE_RETURN_V(ReadAacBitsAt(data, totalBits, bitOffset, AAC_ELEMENT_TYPE_BITS, elementType) &&
-        elementType == AAC_ELEMENT_TYPE_FIL, false);
+    if (!ReadAacBitsAt(data, totalBits, bitOffset, AAC_ELEMENT_TYPE_BITS, elementType) ||
+        elementType != AAC_ELEMENT_TYPE_FIL) {
+        return false;
+    }
     size_t currentOffset = bitOffset + AAC_ELEMENT_TYPE_BITS;
     uint32_t fillBytes = 0;
-    FALSE_RETURN_V(ReadAacBitsAt(data, totalBits, currentOffset, AAC_FILL_COUNT_BITS, fillBytes), false);
+    if (!ReadAacBitsAt(data, totalBits, currentOffset, AAC_FILL_COUNT_BITS, fillBytes)) {
+        return false;
+    }
     currentOffset += AAC_FILL_COUNT_BITS;
     if (fillBytes == AAC_FIL_ESCAPE_COUNT) {
         uint32_t escapedFillBytes = 0;
-        FALSE_RETURN_V(ReadAacBitsAt(data, totalBits, currentOffset, AAC_FILL_BYTE_BITS, escapedFillBytes), false);
-        FALSE_RETURN_V(escapedFillBytes > 0, false);
+        if (!ReadAacBitsAt(data, totalBits, currentOffset, AAC_FILL_BYTE_BITS, escapedFillBytes) ||
+            escapedFillBytes == 0) {
+            return false;
+        }
         fillBytes += escapedFillBytes - AAC_FILL_ESCAPE_ADJUSTMENT;
         currentOffset += AAC_FILL_BYTE_BITS;
     }
-    FALSE_RETURN_V(fillBytes > 0, false);
+    if (fillBytes == 0) {
+        return false;
+    }
     size_t payloadBits = 0;
-    FALSE_RETURN_V(!__builtin_mul_overflow(static_cast<size_t>(fillBytes), static_cast<size_t>(8), &payloadBits), false);
-    FALSE_RETURN_V(currentOffset <= totalBits && payloadBits <= totalBits - currentOffset, false);
+    if (__builtin_mul_overflow(static_cast<size_t>(fillBytes),
+        static_cast<size_t>(AAC_BITS_PER_BYTE), &payloadBits) ||
+        currentOffset > totalBits || payloadBits > totalBits - currentOffset) {
+        return false;
+    }
     uint32_t extension = 0;
-    FALSE_RETURN_V(ReadAacBitsAt(data, totalBits, currentOffset, AAC_EXTENSION_TYPE_BITS, extension), false);
+    if (!ReadAacBitsAt(data, totalBits, currentOffset, AAC_EXTENSION_TYPE_BITS, extension)) {
+        return false;
+    }
     extensionType = static_cast<uint8_t>(extension);
     payloadEnd = currentOffset + payloadBits;
     return true;
@@ -246,16 +263,24 @@ bool ParseAacFillElementAt(const uint8_t* data, size_t totalBits, size_t bitOffs
 bool IsAacFillChainToEnd(const uint8_t* data, size_t totalBits, size_t bitOffset, uint8_t depth)
 {
     constexpr uint8_t maxFillChainDepth = 4;
-    FALSE_RETURN_V(depth < maxFillChainDepth, false);
+    if (depth >= maxFillChainDepth) {
+        return false;
+    }
     uint32_t elementType = 0;
-    FALSE_RETURN_V(ReadAacBitsAt(data, totalBits, bitOffset, AAC_ELEMENT_TYPE_BITS, elementType), false);
+    if (!ReadAacBitsAt(data, totalBits, bitOffset, AAC_ELEMENT_TYPE_BITS, elementType)) {
+        return false;
+    }
     if (elementType == AAC_ELEMENT_TYPE_END) {
         return IsAacZeroPadding(data, totalBits, bitOffset + AAC_ELEMENT_END_BITS);
     }
-    FALSE_RETURN_V(elementType == AAC_ELEMENT_TYPE_FIL, false);
+    if (elementType != AAC_ELEMENT_TYPE_FIL) {
+        return false;
+    }
     size_t payloadEnd = 0;
     uint8_t extensionType = 0;
-    FALSE_RETURN_V(ParseAacFillElementAt(data, totalBits, bitOffset, payloadEnd, extensionType), false);
+    if (!ParseAacFillElementAt(data, totalBits, bitOffset, payloadEnd, extensionType)) {
+        return false;
+    }
     return IsAacFillChainToEnd(data, totalBits, payloadEnd, static_cast<uint8_t>(depth + 1));
 }
 
@@ -265,7 +290,7 @@ bool DetectAacSbrFillElement(const uint8_t* data, uint32_t size, AacRawDataBlock
         return false;
     }
     size_t totalBits = 0;
-    if (__builtin_mul_overflow(static_cast<size_t>(size), static_cast<size_t>(8), &totalBits)) {
+    if (__builtin_mul_overflow(static_cast<size_t>(size), static_cast<size_t>(AAC_BITS_PER_BYTE), &totalBits)) {
         return false;
     }
     constexpr size_t minFillElementBits = AAC_ELEMENT_TYPE_BITS + AAC_FILL_COUNT_BITS + AAC_EXTENSION_TYPE_BITS +
@@ -398,8 +423,8 @@ Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
         int32_t samplesPerFrame = 0;
         if (mediaInfo.tracks[index_].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) && sampleRate > 0 &&
             mediaInfo.tracks[index_].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
-            samplesPerFrame == 1024 && sampleRate <= std::numeric_limits<int32_t>::max() /
-                AAC_SBR_SAMPLE_RATE_MULTIPLIER) {
+            samplesPerFrame == AAC_DEFAULT_SAMPLES_PER_FRAME &&
+            sampleRate <= std::numeric_limits<int32_t>::max() / AAC_SBR_SAMPLE_RATE_MULTIPLIER) {
             sampleRate *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
             samplesPerFrame *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
             mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
