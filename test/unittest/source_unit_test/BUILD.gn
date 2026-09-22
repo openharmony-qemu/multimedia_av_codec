@@ -74,6 +74,7 @@ ohos_unittest("source_test") {
   public_configs = []
 
   external_deps = [
+    "c_utils:utils",
     "googletest:gmock",
     "googletest:gtest",
     "ffmpeg:libohosffmpeg",

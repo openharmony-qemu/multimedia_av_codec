@@ -76,6 +76,7 @@ ohos_unittest("avmuxer_capi_unit_test") {
   ]
 
   external_deps = [
+    "c_utils:utils",
     "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -125,6 +126,7 @@ ohos_unittest("avmuxer_inner_unit_test") {
   ]
 
   external_deps = [
+    "c_utils:utils",
     "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:media_foundation",
@@ -167,6 +169,7 @@ ohos_unittest("avmuxer_ogg_unit_test") {
   ]
 
   external_deps = [
+    "c_utils:utils",
     "bounds_checking_function:libsec_shared",
     "media_foundation:native_media_core",
     "graphic_surface:surface",
@@ -362,6 +365,7 @@ ohos_unittest("avmuxer_flv_unit_test") {
   ]
 
   external_deps = [
+    "c_utils:utils",
     "bounds_checking_function:libsec_shared",
     "graphic_surface:surface",
     "media_foundation:media_foundation",

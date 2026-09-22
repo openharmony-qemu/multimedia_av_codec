@@ -109,6 +109,7 @@ ohos_unittest("hencoder_buffer_unit_test") {
     "$av_codec_root_dir/test/unittest/hcodec_test/helper:hcodec_test_helper",
   ]
   external_deps = [
+    "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_4.0",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
@@ -138,6 +139,7 @@ ohos_unittest("hdecoder_buffer_unit_test") {
     "$av_codec_root_dir/test/unittest/hcodec_test/helper:hcodec_test_helper",
   ]
   external_deps = [
+    "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_4.0",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",
@@ -161,6 +163,7 @@ ohos_unittest("hcodec_type_converter_unit_test") {
   sources = [ "hcodec_type_converter_unit_test.cpp" ]
   deps = [ "$av_codec_root_dir/services/engine/codec/video/hcodec:hcodec" ]
   external_deps = [
+    "c_utils:utils",
     "drivers_interface_codec:libcodec_proxy_4.0",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",

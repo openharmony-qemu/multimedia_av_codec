@@ -41,6 +41,7 @@ ohos_source_set("event_manager") {
   ]
 
   external_deps = [
+    "c_utils:utils",
     "hilog:libhilog",
     "media_foundation:media_foundation",
   ]
