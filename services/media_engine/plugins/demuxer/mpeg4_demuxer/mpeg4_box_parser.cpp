@@ -163,6 +163,7 @@ constexpr uint8_t AOT_SBR = 5;
 constexpr uint8_t AOT_PS = 29;
 constexpr uint8_t AAC_ER_LD = 23;
 constexpr uint8_t AAC_ER_ELD = 39;
+constexpr uint32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
 // ESDS 描述符标签常量
 constexpr uint8_t MPEG4_ES_DESCR_TAG = 0x03;
 constexpr uint8_t MPEG4_DEC_CONFIG_DESCR_TAG = 0x04;
@@ -2683,6 +2684,7 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
     uint8_t samplingFreqIndex = 0;
     sampleRate = 0;
     ReadAACSampleRate(bitReader, samplingFreqIndex, sampleRate);
+    const uint32_t baseSampleRate = sampleRate;
     uint8_t channelConfig = static_cast<uint8_t>(ReadBitsWidePadded(bitReader, channelConfigSize));
     static const uint8_t aacAudioChannels[14] = {0, 1, 2, 3, 4, 5, 6, 8, 0, 0, 0, 7, 8, 24};
     if (channelConfig >= sizeof(aacAudioChannels) / sizeof(aacAudioChannels[0])) {
@@ -2694,9 +2696,10 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
 
     const bool isImplicitPs = audioObjectType == AOT_PS &&
         !((bitReader.ShowBits(0x03) & 0x03) && !(ShowBitsWide(bitReader, 0x09) & 0x3F));
-    if (audioObjectType == AOT_SBR || isImplicitPs) {
+    const bool hasExplicitSbr = audioObjectType == AOT_SBR || isImplicitPs;
+    uint32_t extensionSampleRate = 0;
+    if (hasExplicitSbr) {
         uint8_t extensionSamplingFreqIndex = 0;
-        uint32_t extensionSampleRate = 0;
         ReadAACSampleRate(bitReader, extensionSamplingFreqIndex, extensionSampleRate);
         ReadAACObjectType(bitReader, audioObjectType);
         if (extensionSampleRate > 0) {
@@ -2705,6 +2708,9 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
     }
     const uint32_t frameLengthFlag = bitReader.HasBits(1) ? bitReader.ReadBits(1) : 0;
     uint32_t samplePerFrame = frameLengthFlag ? 960 : 1024;
+    if (hasExplicitSbr && extensionSampleRate > baseSampleRate && samplePerFrame == 1024) {
+        samplePerFrame *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
+    }
     if (audioObjectType == AAC_ER_LD || (audioObjectType == AAC_ER_ELD)) {
         samplePerFrame >>= 1;
     }
