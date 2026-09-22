@@ -169,6 +169,57 @@ Status MPEG4SampleHelper::GetSampleRange(uint32_t sampleIndex, int64_t& pos, int
     return Status::OK;
 }
 
+uint32_t MPEG4SampleHelper::GetSampleDescriptionIndex(uint32_t sampleIndex) const
+{
+    if (singleSampleDescriptionIndex_ != 0) {
+        return singleSampleDescriptionIndex_;
+    }
+    if (!editListApplied_ && !simpleEditProjection_.enabled) {
+        auto range = std::upper_bound(sampleDescriptionRanges_.cbegin(), sampleDescriptionRanges_.cend(), sampleIndex,
+            [](uint32_t value, const SampleDescriptionRange& item) {
+                return static_cast<uint64_t>(value) < item.firstSample;
+            });
+        if (range != sampleDescriptionRanges_.cbegin()) {
+            --range;
+            uint64_t offset = static_cast<uint64_t>(sampleIndex) - range->firstSample;
+            return offset < range->sampleCount ? range->id : 0;
+        }
+    }
+    SampleIndexView view;
+    FALSE_RETURN_V_NOLOG(GetSampleIndexView(sampleIndex, view) == Status::OK, 0);
+    if (!chunkOffsetsSorted_) {
+        return FindSampleDescriptionIndexByPosition(view.pos);
+    }
+    auto chunk = std::upper_bound(chunkOffsets_.cbegin(), chunkOffsets_.cend(), view.pos);
+    if (chunk == chunkOffsets_.cbegin()) {
+        return 0;
+    }
+    size_t chunkIndex = static_cast<size_t>(chunk - chunkOffsets_.cbegin() - 1);
+    auto entry = std::upper_bound(stscEntry_.cbegin(), stscEntry_.cend(), chunkIndex,
+        [](size_t value, const StscEntry& item) {
+            return value < item.first;
+        });
+    if (entry == stscEntry_.cbegin()) {
+        return 0;
+    }
+    return (--entry)->id;
+}
+
+uint32_t MPEG4SampleHelper::FindSampleDescriptionIndexByPosition(int64_t position) const
+{
+    if (sampleDescriptionPositions_.empty()) {
+        return 0;
+    }
+    auto item = std::lower_bound(sampleDescriptionPositions_.cbegin(), sampleDescriptionPositions_.cend(), position,
+        [](const SampleDescriptionPosition& entry, int64_t value) {
+            return entry.position < value;
+        });
+    if (item != sampleDescriptionPositions_.cend() && item->position == position) {
+        return item->id;
+    }
+    return 0;
+}
+
 Status MPEG4SampleHelper::GetSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const
 {
     if (UseSparseIndex()) {
@@ -951,6 +1002,9 @@ Status MPEG4SampleHelper::FinalizeSampleTables()
         return Status::OK;
     }
     sampleTableStatus_ = CalculateSampleTableSummary();
+    if (sampleTableStatus_ == Status::OK) {
+        BuildSampleDescriptionRanges();
+    }
     if (sampleTableStatus_ == Status::OK && !editListEntries_.empty()) {
         Status projectionRet = BuildSimpleEditProjection();
         if (projectionRet != Status::OK) {
@@ -958,6 +1012,84 @@ Status MPEG4SampleHelper::FinalizeSampleTables()
         }
     }
     return sampleTableStatus_;
+}
+
+void MPEG4SampleHelper::BuildSampleDescriptionRanges()
+{
+    sampleDescriptionRanges_.clear();
+    chunkOffsetsSorted_ = std::is_sorted(chunkOffsets_.cbegin(), chunkOffsets_.cend());
+    sampleDescriptionPositions_.clear();
+    singleSampleDescriptionIndex_ = 0;
+    if (stscEntry_.empty() || chunkOffsets_.empty()) {
+        return;
+    }
+    const uint32_t descriptionIndex = stscEntry_.front().id;
+    if (std::all_of(stscEntry_.cbegin(), stscEntry_.cend(), [descriptionIndex](const StscEntry& entry) {
+        return entry.id == descriptionIndex;
+    })) {
+        singleSampleDescriptionIndex_ = descriptionIndex;
+        return;
+    }
+    if (!chunkOffsetsSorted_) {
+        BuildSampleDescriptionPositions();
+        return;
+    }
+    uint64_t firstSample = 0;
+    for (size_t index = 0; index < stscEntry_.size(); ++index) {
+        const auto& entry = stscEntry_[index];
+        uint64_t firstChunk = entry.first;
+        uint64_t nextChunk = index + 1 < stscEntry_.size() ? stscEntry_[index + 1].first : chunkOffsets_.size();
+        if (firstChunk >= nextChunk || firstChunk >= chunkOffsets_.size()) {
+            continue;
+        }
+        uint64_t chunkCount = std::min<uint64_t>(nextChunk, chunkOffsets_.size()) - firstChunk;
+        uint64_t sampleCount = 0;
+        if (__builtin_mul_overflow(chunkCount, static_cast<uint64_t>(entry.count), &sampleCount)) {
+            sampleDescriptionRanges_.clear();
+            return;
+        }
+        if (sampleCount == 0 || firstSample > UINT64_MAX - sampleCount) {
+            sampleDescriptionRanges_.clear();
+            return;
+        }
+        sampleDescriptionRanges_.push_back({firstSample, sampleCount, entry.id});
+        firstSample += sampleCount;
+    }
+}
+
+void MPEG4SampleHelper::BuildSampleDescriptionPositions()
+{
+    uint32_t stscIndex = 0;
+    uint64_t sampleIndex = 0;
+    for (size_t chunkIndex = 0; chunkIndex < chunkOffsets_.size(); ++chunkIndex) {
+        if (stscIndex + 1 < stscEntry_.size() && chunkIndex >= stscEntry_[stscIndex + 1].first) {
+            ++stscIndex;
+        }
+        if (stscIndex >= stscEntry_.size()) {
+            sampleDescriptionPositions_.clear();
+            return;
+        }
+        const auto& entry = stscEntry_[stscIndex];
+        int64_t samplePosition = chunkOffsets_[chunkIndex];
+        for (uint32_t sampleInChunk = 0; sampleInChunk < entry.count; ++sampleInChunk) {
+            size_t sizeIndex = hasDefaultStszSize_ ? 0 : static_cast<size_t>(sampleIndex);
+            if (sizeIndex >= sampleSizes_.size() || sampleSizes_[sizeIndex] < 0) {
+                sampleDescriptionPositions_.clear();
+                return;
+            }
+            sampleDescriptionPositions_.push_back({samplePosition, entry.id});
+            if (__builtin_add_overflow(samplePosition, static_cast<int64_t>(sampleSizes_[sizeIndex]),
+                &samplePosition)) {
+                sampleDescriptionPositions_.clear();
+                return;
+            }
+            ++sampleIndex;
+        }
+    }
+    std::sort(sampleDescriptionPositions_.begin(), sampleDescriptionPositions_.end(),
+        [](const SampleDescriptionPosition& left, const SampleDescriptionPosition& right) {
+            return left.position < right.position;
+        });
 }
 
 Status MPEG4SampleHelper::EnsureSparseIndex() const

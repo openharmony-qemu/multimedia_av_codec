@@ -114,6 +114,11 @@ public:
         uint16_t audioSampleEntryChannelCount = 0;
         uint16_t audioSampleEntryBitsPerCodedSample = 0;
         CodecParams codecParms{};
+        std::vector<std::vector<uint8_t>> codecConfigs;
+        uint64_t codecConfigsSize = 0;
+        bool hasMultipleCodecConfigs = false;
+        bool invalidCodecConfigLogged = false;
+        uint32_t currentCodecConfigIndex = UINT32_MAX;
         Mpeg4TrackDrmInfo drmInfo;
         std::shared_ptr<SampleCache> cache = nullptr;
 
@@ -155,6 +160,7 @@ public:
 private:
     std::shared_ptr<Track> firstTrack_;
     std::shared_ptr<Track> lastTrack_;
+    uint32_t currentStsdEntryIndex_ = 0;
     std::shared_ptr<Track> currentTrack_;
 
     enum ColorRange : uint32_t {
@@ -392,6 +398,12 @@ private:
     Status ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseVideoSampleEntry(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseCodecConfig(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status GetCodecConfigDataRange(const MPEG4Atom& atom, ParseContext* ctx, int64_t& dataOffset,
+        uint64_t& dataSize) const;
+    void ResetCodecConfig(uint64_t dataSize);
+    void ResetCurrentStsdCodecConfig();
+    Status CacheCurrentStsdCodecConfig();
+    Status StoreCodecConfig(std::unique_ptr<uint8_t[]>&& configData, uint64_t dataSize);
     Status ParseAudioSampleEntry(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseSubtitleSampleEntry(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseMebx(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);

@@ -46,6 +46,39 @@ constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
 constexpr uint32_t HALF_BYTE_NUMBER = 2;
 constexpr size_t PREVIOUS_ENTRY_INDEX_OFFSET = 2;
+// Match FFmpeg's default max_stts_delta: allow a negative correction up to 10 seconds at 48 kHz.
+constexpr uint32_t MAX_STTS_DELTA = std::numeric_limits<uint32_t>::max() - 48000U * 10U;
+
+static int64_t SaturatingAdd(int64_t left, int64_t right)
+{
+    int64_t result = 0;
+    if (!__builtin_add_overflow(left, right, &result)) {
+        return result;
+    }
+    return left >= 0 ? std::numeric_limits<int64_t>::max() : std::numeric_limits<int64_t>::min();
+}
+
+static int64_t SaturatingMultiply(int64_t left, int64_t right)
+{
+    int64_t result = 0;
+    if (!__builtin_mul_overflow(left, right, &result)) {
+        return result;
+    }
+    return (left < 0) == (right < 0) ? std::numeric_limits<int64_t>::max() :
+        std::numeric_limits<int64_t>::min();
+}
+
+static uint64_t CalculatePositiveDtsDifference(int64_t currentDts, int64_t correctedDts)
+{
+    if (currentDts <= correctedDts) {
+        return 0;
+    }
+    if (correctedDts >= 0 || currentDts < 0) {
+        return static_cast<uint64_t>(currentDts - correctedDts);
+    }
+    const uint64_t correctedMagnitude = static_cast<uint64_t>(-(correctedDts + 1)) + 1;
+    return static_cast<uint64_t>(currentDts) + correctedMagnitude;
+}
 
 struct MPEG4SampleHelper::SampleInfo {
     uint32_t duration = 0;
@@ -686,6 +719,8 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     currentOffset += static_cast<int64_t>(size);
     sttsEntry_.reserve(numSttsEntries);
 
+    int64_t currentDts = 0;
+    int64_t correctedDts = 0;
     for (uint32_t i = 0; i < numSttsEntries; ++i) {
         uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(SttsEntry));
         FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
@@ -693,9 +728,40 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
             .count = sampleCount,
             .delta = GetU32Value(data.get() + 4 + i * sizeof(SttsEntry))
         });
+        NormalizeSttsEntry(sttsEntry_.back(), i, currentDts, correctedDts);
     }
 
     return Status::OK;
+}
+
+void MPEG4SampleHelper::NormalizeSttsEntry(SttsEntry& entry, uint32_t entryIndex, int64_t& currentDts,
+    int64_t& correctedDts) const
+{
+    // Keep FFmpeg mov_read_stts()'s two timelines: large unsigned deltas may encode negative corrections,
+    // then later entries repay the accumulated DTS drift without producing a negative sample duration.
+    int64_t correctionDelta = entry.delta;
+    if (entry.delta > MAX_STTS_DELTA) {
+        const uint32_t originalDelta = entry.delta;
+        const int64_t signedDelta = static_cast<int32_t>(entry.delta);
+        entry.delta = 1;
+        correctionDelta = signedDelta < 0 ? signedDelta : 1;
+        MEDIA_LOG_W("Clip large stts delta " PUBLIC_LOG_U32 " in entry " PUBLIC_LOG_U32,
+            originalDelta, entryIndex);
+    }
+    int64_t correctionDuration = SaturatingMultiply(correctionDelta, static_cast<int64_t>(entry.count));
+    int64_t currentDuration = SaturatingMultiply(static_cast<int64_t>(entry.delta),
+        static_cast<int64_t>(entry.count));
+    correctedDts = SaturatingAdd(correctedDts, correctionDuration);
+    currentDts = SaturatingAdd(currentDts, currentDuration);
+    if (currentDts > correctedDts && entry.count > 0 && entry.delta > 0) {
+        uint64_t dtsDifference = CalculatePositiveDtsDifference(currentDts, correctedDts);
+        uint64_t driftWide = dtsDifference / entry.count;
+        uint32_t drift = driftWide > UINT32_MAX ? UINT32_MAX : static_cast<uint32_t>(driftWide);
+        const uint32_t correction = static_cast<int64_t>(entry.delta) > drift ? drift : entry.delta - 1;
+        currentDts = SaturatingAdd(currentDts,
+            -SaturatingMultiply(static_cast<int64_t>(correction), static_cast<int64_t>(entry.count)));
+        entry.delta -= correction;
+    }
 }
 
 Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, size_t dataSize)

@@ -25,6 +25,7 @@
 #include <vector>
 #include "common/status.h"
 #include "demuxer_data_reader.h"
+#include "mpeg4_sample.h"
 #include "mpeg4_utils.h"
 
 namespace OHOS {
@@ -158,14 +159,7 @@ public:
     };
     static_assert(sizeof(SampleIndexEntry) == 24, "SampleIndexEntry must remain compact");
 
-    struct SampleIndexView {
-        int64_t pos = 0;
-        int64_t dts = 0;
-        int64_t pts = 0;
-        int64_t duration = 0;
-        uint32_t flag = 0;
-        int32_t size = 0;
-    };
+    using SampleIndexView = ::OHOS::Media::Plugins::MPEG4::SampleIndexView;
     struct CttsEntry {
         uint32_t count;
         int32_t delta;
@@ -195,6 +189,7 @@ public:
     Status GetSampleIndexView(uint32_t sampleIndex, SampleIndexView& view) const;
     Status GetSampleSize(uint32_t sampleIndex, int32_t& size) const;
     Status GetSampleRange(uint32_t sampleIndex, int64_t& pos, int32_t& size) const;
+    uint32_t GetSampleDescriptionIndex(uint32_t sampleIndex) const;
     Status GetSamplePts(uint32_t sampleIndex, int64_t& pts) const;
     Status GetSampleDts(uint32_t sampleIndex, int64_t& dts) const;
     Status GetSampleDurationTicks(uint32_t sampleIndex, int64_t& duration) const;
@@ -286,6 +281,15 @@ private:
         uint32_t count;
         uint32_t id;
     };
+    struct SampleDescriptionRange {
+        uint64_t firstSample;
+        uint64_t sampleCount;
+        uint32_t id;
+    };
+    struct SampleDescriptionPosition {
+        int64_t position;
+        uint32_t id;
+    };
     struct StssEntry {
         uint32_t index;
     };
@@ -335,10 +339,13 @@ private:
     std::vector<SttsEntry> sttsEntry_;
     std::vector<SampleIndexEntry> sampleIndexEntry_;
     std::vector<StscEntry> stscEntry_;
+    std::vector<SampleDescriptionRange> sampleDescriptionRanges_;
+    std::vector<SampleDescriptionPosition> sampleDescriptionPositions_;
     std::vector<StssEntry> stssEntry_;
     std::vector<int32_t> sampleSizes_;
     std::vector<int64_t> chunkOffsets_;
     uint32_t sampleSizeCount_ = 0;
+    uint32_t singleSampleDescriptionIndex_ = 0;
     SdtpEntry sdtpEntry_;
     TrackExtendsInfo trex_;
     TrackFragmentHeaderInfo tfhd_;
@@ -358,10 +365,13 @@ private:
     int32_t trackTimeScale_ = 0;
     bool isFragmented_ = false;
     bool emptyStss_ = false;
+    bool chunkOffsetsSorted_ = true;
     std::vector<EditListEntry> editListEntries_;
     SkipSamplesInfoMap skipSamplesInfoMap_;
 
     void ProcessHalfByteSampleSizes(const uint8_t* data, uint32_t& entryIndex, uint32_t numSampleSizes);
+    void NormalizeSttsEntry(SttsEntry& entry, uint32_t entryIndex, int64_t& currentDts,
+        int64_t& correctedDts) const;
     Status ValidateAndCountSttsSamples(uint32_t& sampleCount) const;
     Status ValidateCttsEntries(uint32_t sttsSampleCount) const;
     Status ApplyEditList();
@@ -424,6 +434,9 @@ private:
     void TruncateSttsEntries(uint32_t sampleCount);
     Status ValidateSampleSizeCount(uint32_t sttsSampleCount) const;
     Status ValidateAndRepairStsc(uint32_t& sttsSampleCount);
+    void BuildSampleDescriptionRanges();
+    void BuildSampleDescriptionPositions();
+    uint32_t FindSampleDescriptionIndexByPosition(int64_t position) const;
     Status PreBuildProcessAndCheck();
     uint64_t CountSttsSamples() const;
     SampleIndexBuildContext CreateSampleIndexBuildContext() const;

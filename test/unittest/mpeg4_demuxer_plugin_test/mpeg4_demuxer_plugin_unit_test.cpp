@@ -4150,6 +4150,22 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TrunAcceptsCompleteOptio
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_TimeToSample_ClipNegativeDelta_001
+ * @tc.desc: Verify oversized stts delta is clipped like FFmpeg's MOV demuxer correction path
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TimeToSample_ClipNegativeDelta_001, TestSize.Level1)
+{
+    auto data = BuildSttsData({{1U, 1023U}, {1U, 0xFFFFFC9EU}, {1U, 1023U}});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    ASSERT_EQ(helper.SetTimeToSampleParams(0, data.size()), Status::OK);
+    EXPECT_EQ(helper.GetSttsEntryCount(), 3U);
+    EXPECT_EQ(helper.GetSampleDeltaOfSttsEntry(1), 1U);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_SampleSize_Stz2HalfByteSingleEntry_001
  * @tc.desc: Verify stz2 half-byte parsing does not append an extra low-nibble sample for an odd count
  * @tc.type: FUNC

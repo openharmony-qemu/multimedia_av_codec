@@ -211,6 +211,7 @@ private:
     Status ParseAVFirstFrames();
     bool ProcessVideoFirstFrame(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
         const std::shared_ptr<MPEG4Sample>& mpeg4Sample);
+    bool UpdateCodecConfigForSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex);
     bool FirstFrameValid(uint32_t trackIndex);
     bool IsValidBuffer(const std::shared_ptr<AVBuffer>& outBuffer, bool replaceMemory);
 

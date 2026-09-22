@@ -55,6 +55,15 @@ struct MPEG4Sample {
     uint32_t sampleIndex = 0;
 };
 
+struct SampleIndexView {
+    int64_t pos = 0;
+    int64_t dts = 0;
+    int64_t pts = 0;
+    int64_t duration = 0;
+    uint32_t flag = 0;
+    int32_t size = 0;
+};
+
 class SampleCache {
 public:
     bool HasCache() const
