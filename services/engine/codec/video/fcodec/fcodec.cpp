@@ -61,8 +61,7 @@ constexpr uint32_t DEFAULT_TRY_DECODE_TIME = 1;
 constexpr uint32_t DEFAULT_DECODE_WAIT_TIME = 200;
 constexpr uint32_t LOG_FREQUENCE = 2000;
 constexpr int32_t DEFAULT_THREAD_COUNT = 2;
-constexpr uint32_t MS_PER_SECOND = 1000;
-constexpr uint32_t DEFAULT_FRAME_INTERVAL = 30;
+constexpr uint32_t DEFAULT_FRAME_INTERVAL = 16;
 } // namespace
 using namespace OHOS::Media;
 using FMTKey = Media::Tag;
@@ -1202,16 +1201,6 @@ void FCodec::CheckStrideChange(uint32_t index, bool isChanged)
     }
 }
 
-uint32_t FCodec::GetFrameIntervalMs()
-{
-    double frameRate = GetAvCodecContextFrameRate();
-    if (frameRate > 0.0) {
-        return static_cast<uint32_t>(std::ceil(MS_PER_SECOND / frameRate));
-    } else {
-        return DEFAULT_FRAME_INTERVAL;
-    }
-}
-
 int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
 {
     int32_t w = cachedFrame_->width;
@@ -1251,7 +1240,6 @@ int32_t FCodec::CheckFormatChange(uint32_t index, bool &isChanged)
     CheckStrideChange(index, isChanged);
     if (decNum_ == 0) {
         callback_->OnOutputFormatChanged(format_);
-        frameInterval_ = GetFrameIntervalMs();
     }
     if (isChanged) {
         callback_->OnOutputFormatChanged(format_);
@@ -1374,6 +1362,7 @@ void FCodec::HandleSendSuccess(uint32_t index, const std::shared_ptr<FBuffer> &i
     inputBuffer->owner_ = Owner::OWNED_BY_USER;
     callback_->OnInputBufferAvailable(index, inputAVBuffer);
     sendCount_ = 0;
+    forceDrainSet_.store(false);
 }
 
 void FCodec::HandleSendEAGAIN()
@@ -1385,7 +1374,6 @@ void FCodec::HandleSendEAGAIN()
 
 void FCodec::HandleSendError(int ret)
 {
-    AVCODEC_LOGE("Cannot send frame to codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
     callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
     state_ = State::ERROR;
 }
@@ -1394,15 +1382,21 @@ void FCodec::SendFrame()
 {
     CHECK_AND_RETURN_LOG_LIMIT(IsThreadActive(), LOG_FREQUENCE, "Not in running state");
     if (state_ != State::RUNNING || isSendEos_ || inputAvailQue_->Size() == 0u) {
-        if (state_ == State::EOS) {
-            std::unique_lock<std::mutex> sendLock(sendMutex_);
-            sendCv_.wait(sendLock);
-        } else {
-            if (!isSendEos_ && inputAvailQue_->Size() == 0u) {
-                sendCount_ ++;
+        if (!isSendEos_ && inputAvailQue_->Size() == 0u) {
+            sendCount_ ++;
+            if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME &&
+                sendCount_ > DEFAULT_FRAME_INTERVAL && !forceDrainSet_.load()) {
+                std::unique_lock<std::mutex> syncLock(syncMutex_);
+                avcodec_set_force_drain(avCodecContext_.get(), 1);
+                forceDrainSet_.store(true);
+                syncLock.unlock();
+                AVCODEC_LOGI("%{public}s pipeline has leftover frames, start draining", decName_.c_str());
+                std::unique_lock<std::mutex> recvLock(recvMutex_);
+                recvCv_.notify_one();
+                recvLock.unlock();
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
     uint32_t index = inputAvailQue_->Front();
@@ -1423,6 +1417,7 @@ void FCodec::SendFrame()
     } else if (ret == AVERROR(EAGAIN)) {
         HandleSendEAGAIN();
     } else {
+        AVCODEC_LOGE("Cannot send frame to codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
         HandleSendError(ret);
     }
 }
@@ -1611,12 +1606,6 @@ void FCodec::HandleReceiveEOF(const std::shared_ptr<FBuffer> &frameBuffer)
 
 void FCodec::HandleReceiveEAGAIN()
 {
-    bool has_pipeline_frames = (cachedFrame_->opaque != nullptr);
-    if (codecName_ == AVCodecCodecName::VIDEO_DECODER_AVC_NAME && sendCount_ > frameInterval_ && has_pipeline_frames) {
-        AVCODEC_LOGI("%{public}s pipeline has leftover frames, start draining, current frame interval: %{public}u",
-                     decName_.c_str(), frameInterval_);
-        avcodec_set_force_drain(avCodecContext_.get(), 1);
-    }
     std::unique_lock<std::mutex> sendLock(sendMutex_);
     if (isSendWait_ || isSendEos_) {
         isSendWait_ = false;
@@ -1629,7 +1618,6 @@ void FCodec::HandleReceiveEAGAIN()
 
 void FCodec::HandleReceiveError(int ret)
 {
-    AVCODEC_LOGE("Cannot recv frame from codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
     callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
     state_ = State::ERROR;
 }
@@ -1638,12 +1626,7 @@ void FCodec::ReceiveFrame()
 {
     CHECK_AND_RETURN_LOG_LIMIT(IsThreadActive(), LOG_FREQUENCE, "Not in running state");
     if (state_ != State::RUNNING || codecAvailQue_->Size() == 0u) {
-        if (state_ == State::EOS) {
-            std::unique_lock<std::mutex> recvLock(recvMutex_);
-            recvCv_.wait(recvLock);
-        } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
-        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TRY_DECODE_TIME));
         return;
     }
     std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -1672,6 +1655,7 @@ void FCodec::ReceiveFrame()
         HandleReceiveEAGAIN();
         return;
     } else {
+        AVCODEC_LOGE("Cannot recv frame from codec: ffmpeg ret = %{public}s", AVStrError(ret).c_str());
         HandleReceiveError(ret);
         return;
     }

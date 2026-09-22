@@ -156,7 +156,6 @@ private:
     int32_t ConvertFrame(AVPixelFormat srcPixfmt, AVPixelFormat dstPixfmt);
     void CheckStrideChange(uint32_t index, bool isChanged);
     int32_t CheckFormatChange(uint32_t index, bool &isChanged);
-    uint32_t GetFrameIntervalMs();
     void SetSurfaceParameter();
     int32_t ReplaceOutputSurfaceWhenRunning(sptr<Surface> newSurface);
     int32_t SetQueueSize(const sptr<Surface> &surface, uint32_t targetSize);
@@ -247,8 +246,8 @@ private:
     std::atomic<bool> requestBufferThreadExit_ = false;
     std::thread mRequestSurfaceBufferThread_;
     uint32_t decNum_ = 0;
-    uint32_t frameInterval_ = 0u;
     std::atomic<uint32_t> sendCount_ = 0u;
+    std::atomic<bool> forceDrainSet_ = false;
     // surface config
     std::atomic<GraphicTransformType> transform_ = GraphicTransformType::GRAPHIC_ROTATE_NONE;
     // dump
