@@ -55,6 +55,38 @@ constexpr int APP_OPEN_RETRY_TIMES = 10;
 constexpr int32_t REDIRECT_CODE = 302;
 constexpr uint32_t MAX_LOOP_TIMES = 100;
 constexpr size_t MAX_HEADER_LINE_LEN = 16 * 1024;
+
+std::string ResolveRedirectUrl(const std::string& baseUrl, const std::string& location)
+{
+    if (location.find("http://") == 0 || location.find("https://") == 0) {
+        return location;
+    }
+    if (location.find("//") == 0) {
+        std::string::size_type schemeEnd = baseUrl.find("://");
+        if (schemeEnd == std::string::npos) {
+            return location;
+        }
+        return baseUrl.substr(0, schemeEnd) + ":" + location;
+    }
+    if (location.find('/') == 0) {
+        std::string::size_type schemeEnd = baseUrl.find("://");
+        if (schemeEnd == std::string::npos) {
+            return location;
+        }
+        std::string::size_type hostEnd = baseUrl.find('/', schemeEnd + 3);
+        if (hostEnd == std::string::npos) {
+            return baseUrl + location;
+        }
+        return baseUrl.substr(0, hostEnd) + location;
+    }
+    std::string::size_type queryPos = baseUrl.find('?');
+    std::string baseMain = (queryPos != std::string::npos) ? baseUrl.substr(0, queryPos) : baseUrl;
+    std::string::size_type lastSlash = baseUrl.rfind('/');
+    if (lastSlash == std::string::npos) {
+        return location;
+    }
+    return baseMain.substr(0, lastSlash + 1) + location;
+}
 }
 
 DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
@@ -741,7 +773,10 @@ void Downloader::HandleRedirect(Status& ret)
         currentRequest_->clientError_ = 0;
         currentRequest_->serverError_ = REDIRECT_CODE;
         ret = Status::ERROR_SERVER;
-        currentRequest_->url_ = currentRequest_->location_;
+        std::string originalUrl = currentRequest_->url_;
+        std::string resolvedUrl = ResolveRedirectUrl(originalUrl, currentRequest_->location_);
+        currentRequest_->url_ = resolvedUrl;
+        currentRequest_->location_ = resolvedUrl;
         currentRequest_->haveRedirectRetry_.store(true);
         currentRequest_->headerInfo_.contentLen = 0;
     }
