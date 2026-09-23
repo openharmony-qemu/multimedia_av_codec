@@ -4904,10 +4904,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, ON_PLAYLIST_CHANGED_START_001, TestSize.Leve
     downloader = nullptr;
 }
 
-
-
-// ===== Round 3: More branch coverage =====
-
 // L985: SeekToTime with null playlistDownloader_
 HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_NULL_PL_001, TestSize.Level1)
 {
@@ -5478,10 +5474,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, CLONE_VALID_NULL_OTHER_001, TestSize.Level1)
     downloader = nullptr;
     other = nullptr;
 }
-
-
-
-// ===== Round 5: Final targeted branch coverage =====
 
 // L1810,L1811: UpdateDownloadFinished with auto-select all conditions met
 HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_DL_FINISHED_ALL_COND_001, TestSize.Level1)

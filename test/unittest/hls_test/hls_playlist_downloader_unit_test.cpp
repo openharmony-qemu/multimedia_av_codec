@@ -3588,7 +3588,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, COPY_FRAGMENT_INFO_NULL_FILE, TestSize.L
     auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
     downloader->Init();
     downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
-    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, std::make_shared<M3U8>(TEST_URI_PATH, ""));
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH,
+        std::make_shared<M3U8>(TEST_URI_PATH, ""));
     variant->streamId_ = 1;
     downloader->currentVariant_ = variant;
     PlayInfo playInfo;
@@ -3607,7 +3608,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, COPY_FRAGMENT_INFO_FMP4, TestSize.Level1
     downloader->Init();
     downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
     downloader->master_->isFmp4_.store(true);
-    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, std::make_shared<M3U8>(TEST_URI_PATH, ""));
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH,
+        std::make_shared<M3U8>(TEST_URI_PATH, ""));
     variant->streamId_ = 1;
     downloader->currentVariant_ = variant;
     auto file = std::make_shared<M3U8Fragment>("http://seg.ts", 5.0, 0, false);
@@ -3630,7 +3632,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, COPY_FRAGMENT_INFO_BYTE_RANGE, TestSize.
     downloader->Init();
     downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
     downloader->master_->isPureByteRange_.store(true);
-    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, std::make_shared<M3U8>(TEST_URI_PATH, ""));
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH,
+        std::make_shared<M3U8>(TEST_URI_PATH, ""));
     variant->streamId_ = 1;
     downloader->currentVariant_ = variant;
     auto file = std::make_shared<M3U8Fragment>("http://seg.ts", 5.0, 0, false);
@@ -3651,7 +3654,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, COPY_FRAGMENT_INFO_KEY_INDEX_MAX, TestSi
     auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
     downloader->Init();
     downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
-    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, std::make_shared<M3U8>(TEST_URI_PATH, ""));
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH,
+        std::make_shared<M3U8>(TEST_URI_PATH, ""));
     variant->streamId_ = 1;
     downloader->currentVariant_ = variant;
     auto file = std::make_shared<M3U8Fragment>("http://seg.ts", 5.0, 0, false);
@@ -3671,7 +3675,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, COPY_FRAGMENT_INFO_KEY_INDEX_POSITIVE, T
     auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
     downloader->Init();
     downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", TEST_URI_PATH);
-    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH, std::make_shared<M3U8>(TEST_URI_PATH, ""));
+    auto variant = std::make_shared<M3U8VariantStream>("video", TEST_URI_PATH,
+        std::make_shared<M3U8>(TEST_URI_PATH, ""));
     variant->streamId_ = 1;
     downloader->currentVariant_ = variant;
     auto file = std::make_shared<M3U8Fragment>("http://seg.ts", 5.0, 0, false);
