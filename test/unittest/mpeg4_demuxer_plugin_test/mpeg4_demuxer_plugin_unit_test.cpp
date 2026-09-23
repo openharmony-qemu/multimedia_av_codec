@@ -103,6 +103,20 @@ constexpr uint32_t SAMPLE_INDEX_TEST_SECOND_SIZE = 6;
 constexpr uint32_t SAMPLE_INDEX_TEST_THIRD_SIZE = 7;
 constexpr int32_t SPARSE_SAMPLE_TEST_SIZE = 10;
 constexpr int64_t SAMPLE_INDEX_TEST_DURATION_OVERRIDE = 8;
+constexpr uint32_t DCA3_CONFIG_SIZE = 6;
+constexpr uint32_t CODEC_ID_BITS = 4;
+constexpr uint32_t SAMPLING_INDEX_BITS = 4;
+constexpr uint32_t NN_TYPE_BITS = 3;
+constexpr uint32_t RESERVED_BITS = 1;
+constexpr uint32_t CONTENT_TYPE_BITS = 4;
+constexpr uint32_t CHANNEL_INDEX_BITS = 7;
+constexpr uint32_t BITRATE_BITS = 16;
+constexpr uint32_t RESOLUTION_BITS = 2;
+constexpr uint32_t LOSSY_CODEC_ID = 2;
+constexpr uint32_t CHANNEL_BASED_CONTENT = 0;
+constexpr uint32_t BASELINE_NN_TYPE = 0;
+constexpr uint32_t TEST_BITRATE_KBPS = 128;
+constexpr uint32_t TEST_RESOLUTION_INDEX = 1;
 std::unique_ptr<FileServerDemo> g_server = nullptr;
 
 Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry MakeSampleIndexEntry(
@@ -510,20 +524,6 @@ std::shared_ptr<DemuxerDataReader> CreateReaderForBytes(const std::vector<uint8_
 
 std::vector<uint8_t> BuildDca3Config(uint8_t samplingIndex, uint8_t channelIndex)
 {
-    constexpr uint32_t DCA3_CONFIG_SIZE = 6;
-    constexpr uint32_t CODEC_ID_BITS = 4;
-    constexpr uint32_t SAMPLING_INDEX_BITS = 4;
-    constexpr uint32_t NN_TYPE_BITS = 3;
-    constexpr uint32_t RESERVED_BITS = 1;
-    constexpr uint32_t CONTENT_TYPE_BITS = 4;
-    constexpr uint32_t CHANNEL_INDEX_BITS = 7;
-    constexpr uint32_t BITRATE_BITS = 16;
-    constexpr uint32_t RESOLUTION_BITS = 2;
-    constexpr uint32_t LOSSY_CODEC_ID = 2;
-    constexpr uint32_t CHANNEL_BASED_CONTENT = 0;
-    constexpr uint32_t BASELINE_NN_TYPE = 0;
-    constexpr uint32_t TEST_BITRATE_KBPS = 128;
-    constexpr uint32_t TEST_RESOLUTION_INDEX = 1;
     std::vector<uint8_t> data(DCA3_CONFIG_SIZE, 0);
     uint32_t bitOffset = 0;
     auto appendBits = [&data, &bitOffset](uint32_t value, uint32_t bits) {
