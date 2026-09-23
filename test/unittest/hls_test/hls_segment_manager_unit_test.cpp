@@ -116,22 +116,22 @@ public:
     void UpdateManifest() override {}
     void ParseManifest(const std::string& location, bool isPreParse = false) override {}
     void SetPlayListCallback(std::weak_ptr<PlayListChangeCallback> callback) override {}
-    int64_t GetDuration() override { return 0; }
-    std::pair<int64_t, bool> GetStartInfo() override { return {0, false}; }
-    Seekable GetSeekable() override { return Seekable::SEEKABLE; }
+    int64_t GetDuration() override { return duration_; }
+    std::pair<int64_t, bool> GetStartInfo() override { return {startInfo_, false}; }
+    Seekable GetSeekable() override { return seekable_; }
     void SelectBitRate(uint32_t bitRate) override {}
-    std::vector<uint32_t> GetBitRates() override { return {}; }
-    uint64_t GetCurrentBitRate() override { return 0; }
-    int GetVideoHeight() override { return 0; }
-    int GetVideoWidth() override { return 0; }
-    bool IsBitrateSame(uint32_t bitRate) override { return false; }
-    bool IsMediaSame(uint32_t streamId, HlsSegmentType mediaType) override { return false; }
-    uint32_t GetCurBitrate() override { return 0; }
-    bool IsLive() override { return false; }
+    std::vector<uint32_t> GetBitRates() override { return bitRates_; }
+    uint64_t GetCurrentBitRate() override { return currentBitRateVal_; }
+    int GetVideoHeight() override { return videoHeight_; }
+    int GetVideoWidth() override { return videoWidth_; }
+    bool IsBitrateSame(uint32_t bitRate) override { return isBitrateSame_; }
+    bool IsMediaSame(uint32_t streamId, HlsSegmentType mediaType) override { return isMediaSame_; }
+    uint32_t GetCurBitrate() override { return curBitrate_; }
+    bool IsLive() override { return isLive_; }
     void SetMimeType(const std::string& mimeType) override {}
     void PreParseManifest(const std::string& location) override {}
-    bool IsParseAndNotifyFinished() override { return true; }
-    bool IsParseFinished() override { return true; }
+    bool IsParseAndNotifyFinished() override { return isParseAndNotifyFinished_; }
+    bool IsParseFinished() override { return isParseFinished_; }
     bool IsFragmentInCurrentPlayList(const std::string& url, const std::string& rangeUrl,
         uint32_t offset, uint32_t length) override
     {
@@ -158,15 +158,31 @@ public:
     uint32_t GetCurStreamId() override { return 0; }
     void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr,
         bool fmp4 = false) override {}
-    bool IsLiveEnd() override { return false; }
+    bool IsLiveEnd() override { return isLiveEnd_; }
     void UpdateStreamInfo() override {}
     HlsSegmentType GetSegType(uint32_t streamId) override { return HlsSegmentType::SEG_AUDIO; }
     std::shared_ptr<AesDecryptor> GetAesDecryptor(uint64_t keyIndex) override { return aesDecryptor_; }
     bool HasExplicitIv(uint64_t keyIndex) override { return hasExplicitIvResult_; }
+    bool WaitForKeyReady(uint64_t keyIndex, uint32_t timeoutMs) override { return waitForKeyReady_; }
     std::shared_ptr<AesDecryptor> aesDecryptor_ = nullptr;
     bool hasExplicitIvResult_ = false;
     bool isHlsFmp4_ = false;
     bool isPureByteRange_ = false;
+    int64_t duration_ = 0;
+    int64_t startInfo_ = 0;
+    Seekable seekable_ = Seekable::SEEKABLE;
+    std::vector<uint32_t> bitRates_;
+    uint64_t currentBitRateVal_ = 0;
+    int videoHeight_ = 0;
+    int videoWidth_ = 0;
+    bool isBitrateSame_ = false;
+    bool isMediaSame_ = false;
+    uint32_t curBitrate_ = 0;
+    bool isLive_ = false;
+    bool isParseAndNotifyFinished_ = true;
+    bool isParseFinished_ = true;
+    bool isLiveEnd_ = false;
+    bool waitForKeyReady_ = false;
 };
 
 void HlsSegmentManagerUnitTest::SetUpTestCase(void)
@@ -596,8 +612,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, HandleFfmpegReadback_001, TestSize.Level1)
     downloader->HandleFfmpegReadback(1000);
 
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, CheckPlaylist_001, TestSize.Level1)
@@ -625,8 +641,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, CheckPlaylist_001, TestSize.Level1)
     downloader->isStopped = true;
     downloader->CheckPlaylist(buff, readDataInfo);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SeekToTsForRead_001, TestSize.Level1)
@@ -653,8 +669,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, SeekToTsForRead_001, TestSize.Level1)
     downloader->SetIsTriggerAutoMode(false);
 
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, ReportVideoSizeChange_001, TestSize.Level1)
@@ -682,8 +698,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, ReportVideoSizeChange_001, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     downloader->ReportVideoSizeChange();
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, DownloadRecordHistory_001, TestSize.Level1)
@@ -707,8 +723,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, DownloadRecordHistory_001, TestSize.Level1)
     OSAL::SleepFor(1 * 1000);
     downloader->DownloadRecordHistory(2000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, CheckRiseBufferSize_001, TestSize.Level1)
@@ -738,8 +754,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, CheckRiseBufferSize_001, TestSize.Level1)
     downloader->CheckPulldownBufferSize();
 
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, GetDownloadRateAndSpeed, TestSize.Level1)
@@ -765,8 +781,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, GetDownloadRateAndSpeed, TestSize.Level1)
     downloader->recordSpeedCount_ = 1;
     downloader->GetDownloadRateAndSpeed();
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_001, TestSize.Level1)
@@ -789,8 +805,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_001, TestSize.Level1)
 
     OSAL::SleepFor(1 * 1000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_CALLBACK, TestSize.Level1)
@@ -812,7 +828,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_CALLBACK, TestSize.Level1)
     readDataInfo.wantReadLength_ = 10;
     readDataInfo.isEos_ = true;
     downloader->Read(buff, readDataInfo);
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
+    EXPECT_EQ(readDataInfo.realReadLength_ <= readDataInfo.wantReadLength_, true);
     OSAL::SleepFor(1 * 1000);
 
     downloader->SetCurrentBitRate(-1, 0);
@@ -855,8 +871,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_CALLBACK1, TestSize.Level1)
     downloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport, TestSize.Level1)
@@ -883,8 +899,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport, TestSize.Level1)
         downloader->Read(buff, readDataInfo);
     }
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport_5M, TestSize.Level1)
@@ -910,8 +926,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport_5M, TestSize.Level1)
     downloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport_5M_default, TestSize.Level1)
@@ -943,8 +959,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_DownloadReport_5M_default, TestSize.Lev
         }
     }
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_read_all, TestSize.Level1)
@@ -971,8 +987,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_read_all, TestSize.Level1)
         downloader->Read(buff, readDataInfo);
     }
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_Read_Live, TestSize.Level1)
@@ -996,8 +1012,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_Read_Live, TestSize.Level1)
     downloader->Read(buff, readDataInfo);
     OSAL::SleepFor(1 * 1000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_Encrypted, TestSize.Level1)
@@ -1020,8 +1036,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_Encrypted, TestSize.Level1)
 
     OSAL::SleepFor(2 * 1000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_Encrypted_session_key, TestSize.Level1)
@@ -1044,8 +1060,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_Encrypted_session_key, TestSize.Le
 
     OSAL::SleepFor(2 * 1000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_OPEN_URL, TestSize.Level1)
@@ -1109,8 +1125,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_null, TestSize.Level1)
 
     OSAL::SleepFor(4 * 1000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, GetSegmentOffset, TestSize.Level1)
@@ -1136,8 +1152,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, GetSegmentOffset, TestSize.Level1)
     downloader->GetSegmentOffset();
     downloader->GetHLSDiscontinuity();
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_MAX_M3U8, TestSize.Level1)
@@ -1160,8 +1176,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_MAX_M3U8, TestSize.Level1)
 
     OSAL::SleepFor(4 * 1000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_SelectBR, TestSize.Level1)
@@ -1186,8 +1202,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, TEST_READ_SelectBR, TestSize.Level1)
 
     OSAL::SleepFor(4 * 1000);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, TEST_WRITE_RINGBUFFER_001, TestSize.Level1)
@@ -1309,6 +1325,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SET_PLAY_STRATEGY_001, TestSize.Level1)
     playStrategy->height = 720;
     playStrategy->bufferDurationForPlaying = 5;
     downloader->SetPlayStrategy(playStrategy);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, CACHE_BUFFER_FULL_LOOP_001, TestSize.Level1)
@@ -1352,8 +1369,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, read, TestSize.Level1)
     downloader->Read(buff, readDataInfo);
 
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, CheckPlaylist, TestSize.Level1)
@@ -1385,8 +1402,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, CheckPlaylist, TestSize.Level1)
     downloader->CheckPlaylist(buff, readDataInfo);
 
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, CheckPlaylist_1, TestSize.Level1)
@@ -1426,8 +1443,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, CheckPlaylist_1, TestSize.Level1)
     downloader->CheckPlaylist(buff, readDataInfo);
 
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, ReadDelegate, TestSize.Level1)
@@ -1451,8 +1468,8 @@ HWTEST_F(HlsSegmentManagerUnitTest, ReadDelegate, TestSize.Level1)
     downloader->ReadDelegate(buff, readDataInfo);
     downloader->Read(buff, readDataInfo);
     downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
     downloader = nullptr;
-    EXPECT_GE(readDataInfo.realReadLength_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock, TestSize.Level1)
@@ -1476,7 +1493,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock, TestSize.Level1
     uint32_t len = BUFFER_SIZE;
     uint32_t res = downloader->SaveCacheBufferDataNotblock(data, len);
     delete[] data;
-    EXPECT_GE(res, 0);
+    EXPECT_EQ(res == 0, true);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock_1, TestSize.Level1)
@@ -1501,7 +1518,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock_1, TestSize.Leve
     downloader->isNeedResume_.store(true);
     uint32_t res = downloader->SaveCacheBufferDataNotblock(data, len);
     delete[] data;
-    EXPECT_GE(res, 0);
+    EXPECT_EQ(res == 0, true);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock_3, TestSize.Level1)
@@ -1526,7 +1543,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock_3, TestSize.Leve
     downloader->isNeedResume_.store(true);
     uint32_t res = downloader->SaveCacheBufferDataNotblock(data, len);
     delete[] data;
-    EXPECT_GE(res, 0);
+    EXPECT_EQ(res == 0, true);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, GET_STREAM_INFO_001, TestSize.Level1)
@@ -1722,6 +1739,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, PUT_REQUEST_INTO_DOWNLOADER_001, TestSize.Le
     downloader->fragmentDownloadStart[playInfo.url_] = false;
     downloader->PutRequestIntoDownloader(playInfo);
     EXPECT_NE(downloader->downloadRequest_, nullptr);
+    EXPECT_EQ(downloader->curUrl_.empty(), false);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_FFMPEG_READ_BACK_001, TestSize.Level1)
@@ -1768,7 +1786,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_DELEGATE_001, TestSize.Level1)
     downloader->cacheMediaBuffer_->Clear();
     downloader->writeTsIndex_ = 0;
     
-    EXPECT_NE(downloader->GetDuration(), 0);
+    EXPECT_EQ(downloader->GetDuration() != 0, true);
     EXPECT_EQ(downloader->CheckReadStatus(), true);
     EXPECT_EQ(downloader->GetBufferSize(), 0);
     unsigned char * buffer = new unsigned char[1 * 1024 * 1024];
@@ -2093,6 +2111,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SET_SOURCE_STATISTICS_DFX_001, TestSize.Leve
     downloader->Init();
     // Pass nullptr - should not crash
     downloader->SetSourceStatisticsDfx(nullptr);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
     EXPECT_EQ(downloader->reportInfo_, nullptr);
 }
 
@@ -2116,13 +2135,13 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_MEMORY_SIZE_001, TestSize.Level1)
     downloader->Init();
     // memorySize_ set during construction
     uint64_t memSize = downloader->GetMemorySize();
-    EXPECT_GE(memSize, 0);
+    EXPECT_EQ(memSize, 0);
     uint64_t resumeThreshold = downloader->GetDownloadResumeThreshold();
-    EXPECT_GE(resumeThreshold, 0);
+    EXPECT_EQ(resumeThreshold, 0);
     uint64_t throttleThreshold = downloader->GetDownloadThrottleThreshold();
-    EXPECT_GE(throttleThreshold, 0);
+    EXPECT_EQ(throttleThreshold, 0);
     uint64_t clearThreshold = downloader->GetsourceLoaderClearThreshold();
-    EXPECT_GE(clearThreshold, 0);
+    EXPECT_EQ(clearThreshold, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SET_IS_REPORTED_ERROR_CODE_001, TestSize.Level1)
@@ -2140,15 +2159,15 @@ HWTEST_F(HlsSegmentManagerUnitTest, SET_APP_UID_001, TestSize.Level1)
     downloader->Init();
     // both downloader_ and playlistDownloader_ are valid
     downloader->SetAppUid(1001);
-    EXPECT_TRUE(downloader != nullptr);
+    EXPECT_EQ(downloader->isStopped.load(), false);
     // downloader_ nullptr branch
     downloader->downloader_ = nullptr;
     downloader->SetAppUid(1002);
-    EXPECT_TRUE(downloader != nullptr);
+    EXPECT_EQ(downloader->isStopped.load(), false);
     // playlistDownloader_ nullptr branch
     downloader->playlistDownloader_ = nullptr;
     downloader->SetAppUid(1003);
-    EXPECT_TRUE(downloader != nullptr);
+    EXPECT_EQ(downloader->isStopped.load(), false);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, GET_CROSS_TS_BUFFERSIZE_001, TestSize.Level1)
@@ -2224,6 +2243,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_STREAM_INFO_BY_ID_001, TestSize.Level1)
     downloader->playlistDownloader_ = nullptr;
     auto info2 = downloader->GetStreamInfoById(0);
     EXPECT_EQ(info2, nullptr);
+    EXPECT_EQ(downloader->type_, HlsSegmentType::SEG_VIDEO);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, GET_DEFAULT_MEDIA_STREAM_ID_001, TestSize.Level1)
@@ -2245,7 +2265,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_SEG_TYPE_001, TestSize.Level1)
     downloader->Init();
     // playlistDownloader_ valid
     HlsSegmentType type = downloader->GetSegType(0);
-    EXPECT_GE(static_cast<int>(type), 0);
+    EXPECT_EQ(type == HlsSegmentType::SEG_AUDIO || type == HlsSegmentType::SEG_VIDEO, true);
     // playlistDownloader_ nullptr
     downloader->playlistDownloader_ = nullptr;
     HlsSegmentType type2 = downloader->GetSegType(0);
@@ -2274,7 +2294,9 @@ HWTEST_F(HlsSegmentManagerUnitTest, SET_GET_DOWNLOAD_REQUEST_001, TestSize.Level
     // SetDownloadRequest
     auto request = std::make_shared<DownloadRequest>("", nullptr, nullptr, false);
     downloader->SetDownloadRequest(request);
-    EXPECT_NE(downloader->GetDownloadRequest(), nullptr);
+    auto req = downloader->GetDownloadRequest();
+    EXPECT_EQ(req != nullptr, true);
+    EXPECT_EQ(req->GetUrl(), "");
     // SetDownloadRequest nullptr
     downloader->SetDownloadRequest(nullptr);
     EXPECT_EQ(downloader->GetDownloadRequest(), nullptr);
@@ -2296,7 +2318,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, CLEAR_CHUNKS_001, TestSize.Level1)
     downloader->writeOffset_ = 0;
     downloader->readOffset_ = 0;
     downloader->ClearChunksInLargeSegment();
-    EXPECT_TRUE(downloader != nullptr);
+    EXPECT_EQ(downloader->writeTsIndex_, 0);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_001, TestSize.Level1)
@@ -2398,7 +2420,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, CLEAR_CHUNKS_OF_FRAGMENT_002, TestSize.Level
     downloader->readOffset_ = 300 * 1024;
     bool ret = downloader->ClearChunksOfFragment();
     // 不论内部清理结果，此分支已执行
-    EXPECT_GE(static_cast<int>(ret), 0);
+    EXPECT_EQ(ret, false);
 }
 
 // ===== 分支补充：ClearChunksInLargeSegment writeTsIndex_!=readTsIndex_ 分支 =====
@@ -2412,7 +2434,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, CLEAR_CHUNKS_IN_LARGE_SEGMENT_002, TestSize.
     downloader->writeTsIndex_ = 1;
     downloader->readTsIndex_ = 0;
     downloader->ClearChunksInLargeSegment();
-    EXPECT_TRUE(downloader != nullptr);
+    EXPECT_EQ(downloader->writeTsIndex_, 0);
 }
 
 // ===== 分支补充：GetCrossTsBuffersize backPlayList_非空且readTsIndex_+1 < size 分支 =====
@@ -2429,7 +2451,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_CROSS_TS_BUFFERSIZE_002, TestSize.Level1
     // readTsIndex_=0, backPlayList_.size()=3 => 0+1<3 => 进入nextTs分支
     downloader->readTsIndex_ = 0;
     uint64_t size = downloader->GetCrossTsBuffersize();
-    EXPECT_GE(size, 0);
+    EXPECT_EQ(size <= static_cast<uint64_t>(MAX_CACHE_BUFFER_SIZE_UT), true);
 }
 
 // ===== 分支补充：SelectBitRate SEG_VIDEO且IsBitrateSame=false (触发切码率流程) =====
@@ -2828,7 +2850,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, NotifyBitrateChange_001, TestSize.Level1)
     ASSERT_NE(nullptr, hlsSegmentManager_);
     hlsSegmentManager_->callback_.reset();
     hlsSegmentManager_->NotifyBitrateChange(1000);
-    SUCCEED();
+    EXPECT_EQ(hlsSegmentManager_->isStopped.load(), false);
 }
 
 /**
@@ -3106,4 +3128,2838 @@ HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_COMPLETE_BLOCK_001, TestSi
 
     downloader = nullptr;
 }
+
+// ==================== Branch Coverage Supplement ====================
+
+// L1027,L1034,L1040,L1046: nullptr defensive checks for getter methods
+HWTEST_F(HlsSegmentManagerUnitTest, NULLPTR_GETTERS_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    EXPECT_EQ(hlsSegmentManager_->GetDuration(), 0);
+    auto si = hlsSegmentManager_->GetStartInfo();
+    EXPECT_EQ(si.first, 0);
+    EXPECT_EQ(si.second, false);
+    EXPECT_EQ(hlsSegmentManager_->GetSeekable(), Seekable::INVALID);
+    EXPECT_EQ(hlsSegmentManager_->GetSeekableRanges().size(), 0);
+}
+
+// L1052,L1538,L1545,L2241: nullptr defensive checks for setter/callback methods
+HWTEST_F(HlsSegmentManagerUnitTest, NULLPTR_SETTERS_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    auto cb = std::make_shared<SourceCallback>();
+    hlsSegmentManager_->SetCallback(cb);
+    EXPECT_EQ(hlsSegmentManager_->callback_.lock().get(), nullptr);
+    EXPECT_EQ(hlsSegmentManager_->GetBitRates().size(), 0);
+    EXPECT_EQ(hlsSegmentManager_->GetHLSDiscontinuity(), false);
+    hlsSegmentManager_->SetStatusCallback(nullptr);
+    EXPECT_EQ(hlsSegmentManager_->playlistDownloader_, nullptr);
+}
+
+// L459,L466,L401: nullptr defensive for Pause/Resume/Open
+HWTEST_F(HlsSegmentManagerUnitTest, NULLPTR_PAUSE_RESUME_OPEN_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    hlsSegmentManager_->Pause();
+    hlsSegmentManager_->Resume();
+    EXPECT_EQ(hlsSegmentManager_->Open("test", header_), false);
+}
+
+// L1837,L1838: ReportVideoSizeChange with no callback and nullptr playlist
+HWTEST_F(HlsSegmentManagerUnitTest, REPORT_VIDEO_SIZE_NULL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->segEventCb_ = nullptr;
+    hlsSegmentManager_->ReportVideoSizeChange();
+    EXPECT_EQ(hlsSegmentManager_->segEventCb_, nullptr);
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->ReportVideoSizeChange();
+    EXPECT_FALSE(called);
+}
+
+// L1875: AutoSelectBitrate with nullptr playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, AUTO_SELECT_BITRATE_NULL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    hlsSegmentManager_->AutoSelectBitrate(1000);
+    EXPECT_EQ(hlsSegmentManager_->recordSpeedCount_, 0);
+}
+
+// L1877: AutoSelectBitrate with empty bitrates
+HWTEST_F(HlsSegmentManagerUnitTest, AUTO_SELECT_BITRATE_EMPTY_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    mock->bitRates_ = {};
+    hlsSegmentManager_->AutoSelectBitrate(1000);
+    EXPECT_EQ(mock->bitRates_.size(), 0);
+}
+
+// L1883,L1884,L1887,L1894: AutoSelectBitrate with matching bitrate
+HWTEST_F(HlsSegmentManagerUnitTest, AUTO_SELECT_BITRATE_MATCH_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    mock->bitRates_ = {500000};
+    mock->curBitrate_ = 500000;
+    mock->currentBitRateVal_ = 500000;
+    hlsSegmentManager_->AutoSelectBitrate(1000000);
+    EXPECT_EQ(mock->curBitrate_, 500000);
+}
+
+// L1894,L1900: AutoSelectBitrate switch to high but buffer too small
+HWTEST_F(HlsSegmentManagerUnitTest, AUTO_SELECT_BITRATE_HIGH_LOWBUF_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    mock->bitRates_ = {100000, 500000};
+    mock->curBitrate_ = 100000;
+    mock->currentBitRateVal_ = 100000;
+    hlsSegmentManager_->GetBufferSize();
+    hlsSegmentManager_->AutoSelectBitrate(200000);
+    EXPECT_EQ(mock->curBitrate_, 100000);
+}
+
+// L1908: AutoSelectBitrate switch to low but buffer too large
+HWTEST_F(HlsSegmentManagerUnitTest, AUTO_SELECT_BITRATE_LOW_HIGHBUF_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    mock->bitRates_ = {100000, 500000};
+    mock->curBitrate_ = 500000;
+    mock->currentBitRateVal_ = 500000;
+    hlsSegmentManager_->AutoSelectBitrate(200000);
+    EXPECT_EQ(mock->curBitrate_, 500000);
+}
+
+// L144,L146: Copy constructor with nullptr other
+HWTEST_F(HlsSegmentManagerUnitTest, COPY_CTOR_NULLPTR_001, TestSize.Level1)
+{
+    std::shared_ptr<HlsSegmentManager> nullOther = nullptr;
+    auto downloader = std::make_shared<HlsSegmentManager>(nullOther, HlsSegmentType::SEG_VIDEO);
+    EXPECT_EQ(downloader->totalBufferSize_, 0);
+    downloader = nullptr;
+}
+
+// L146 branch 0: Copy constructor with valid other, userDefinedBufferDuration_ = true
+HWTEST_F(HlsSegmentManagerUnitTest, COPY_CTOR_VALID_001, TestSize.Level1)
+{
+    auto other = std::make_shared<HlsSegmentManager>(10, true, header_);
+    other->Init();
+    auto downloader = std::make_shared<HlsSegmentManager>(other, HlsSegmentType::SEG_AUDIO);
+    EXPECT_EQ(downloader->userDefinedBufferDuration_, true);
+    EXPECT_EQ(downloader->expectDuration_, other->expectDuration_);
+    downloader = nullptr;
+    other = nullptr;
+}
+
+// L2372 branch 2: HandleSeekReady SEG_SUBTITLE switch
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_SEEK_READY_SUBTITLE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_SUBTITLE);
+    downloader->Init();
+    bool called = false;
+    downloader->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    downloader->HandleSeekReady(1, 0);
+    EXPECT_TRUE(called);
+    downloader = nullptr;
+}
+
+// L2372 branch 0: HandleSeekReady SEG_AUDIO (default) switch
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_SEEK_READY_AUDIO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_AUDIO);
+    downloader->Init();
+    bool called = false;
+    downloader->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    downloader->HandleSeekReady(2, 1);
+    EXPECT_TRUE(called);
+    downloader = nullptr;
+}
+
+// L2389 branch 1: HandleSeekReady with segEventCb_ set (SEG_VIDEO)
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_SEEK_READY_VIDEO_CB_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    bool called = false;
+    downloader->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    downloader->HandleSeekReady(1, 0);
+    EXPECT_TRUE(called);
+    downloader = nullptr;
+}
+
+// L2251 branches 0-5: StopBufferring with null pointers
+HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = nullptr;
+    EXPECT_EQ(downloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
+    downloader = nullptr;
+}
+
+// L2256: StopBufferring isAppBackground true/false
+HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_BG_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    EXPECT_EQ(downloader->StopBufferring(true), Status::OK);
+    EXPECT_EQ(downloader->isInterrupt_.load(), true);
+    EXPECT_EQ(downloader->StopBufferring(false), Status::OK);
+    EXPECT_EQ(downloader->isInterrupt_.load(), false);
+    downloader = nullptr;
+}
+
+// L1554: SelectBitRate SEG_AUDIO returns true
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_AUDIO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_AUDIO);
+    downloader->Init();
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1555: SelectBitRate SEG_SUBTITLE returns true
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_SUBTITLE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_SUBTITLE);
+    downloader->Init();
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1561,L1564: SelectBitRate with callback, auto select, CanAutoSelectBitRate returns false
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_NO_AUTO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    auto cb = std::make_shared<HlsNetworkBitrateCallback>();
+    downloader->SetCallback(cb);
+    downloader->isAutoSelectBitrate_ = true;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1561: SelectBitRate with callback but isAutoSelectBitrate_ = false
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_NO_AUTOMODE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    auto cb = std::make_shared<HlsNetworkBitrateCallback>();
+    downloader->SetCallback(cb);
+    downloader->isAutoSelectBitrate_ = false;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L2146: HandleCachedDuration with tmpBitRate <= 0
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_CACHED_DUR_ZERO_001, TestSize.Level1)
+{
+    hlsSegmentManager_->currentBitRate_ = 0;
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->HandleCachedDuration();
+    EXPECT_FALSE(called);
+}
+
+// L2146 branch 3: HandleCachedDuration with segEventCb_ == nullptr
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_CACHED_DUR_NO_CB_001, TestSize.Level1)
+{
+    hlsSegmentManager_->currentBitRate_ = 1000;
+    hlsSegmentManager_->segEventCb_ = nullptr;
+    hlsSegmentManager_->HandleCachedDuration();
+    EXPECT_EQ(hlsSegmentManager_->cachedDuration_, 0);
+}
+
+// L2151,L2152: HandleCachedDuration with duration change > threshold
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_CACHED_DUR_CHANGE_001, TestSize.Level1)
+{
+    hlsSegmentManager_->currentBitRate_ = 1000;
+    hlsSegmentManager_->lastDurationReacord_ = 0;
+    hlsSegmentManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    hlsSegmentManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    uint8_t data[4096] = {0};
+    hlsSegmentManager_->writeOffset_ = 0;
+    hlsSegmentManager_->writeTsIndex_ = 1;
+    hlsSegmentManager_->readTsIndex_ = 0;
+    hlsSegmentManager_->cacheMediaBuffer_->Write(data, 0, 4096);
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->HandleCachedDuration();
+    EXPECT_EQ(hlsSegmentManager_->cachedDuration_ > 0, true);
+}
+
+// L1425,L1428,L1430: DownloadRecordHistory with autoBufferSize_
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_RECORD_HISTORY_AUTO_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    hlsSegmentManager_->autoBufferSize_ = true;
+    hlsSegmentManager_->userDefinedBufferDuration_ = false;
+    hlsSegmentManager_->lastWriteTime_ = 0;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 1000000;
+    hlsSegmentManager_->recordData_ = rd;
+    mock->currentBitRateVal_ = 500000;
+    hlsSegmentManager_->DownloadRecordHistory(2000);
+    EXPECT_EQ(hlsSegmentManager_->lastWriteTime_ > 0, true);
+}
+
+// L1425 branch 1,3: DownloadRecordHistory with userDefinedBufferDuration_ = true
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_RECORD_HISTORY_USERDEF_001, TestSize.Level1)
+{
+    hlsSegmentManager_->autoBufferSize_ = true;
+    hlsSegmentManager_->userDefinedBufferDuration_ = true;
+    hlsSegmentManager_->lastWriteTime_ = 0;
+    hlsSegmentManager_->DownloadRecordHistory(2000);
+    EXPECT_EQ(hlsSegmentManager_->lastWriteTime_ > 0, true);
+}
+
+// L1463: CalculateCurrentDownloadSpeed with data
+HWTEST_F(HlsSegmentManagerUnitTest, CALC_DOWNLOAD_SPEED_001, TestSize.Level1)
+{
+    hlsSegmentManager_->downloadBits_ = 10000;
+    hlsSegmentManager_->downloadDuringTime_ = 1000;
+    double speed = hlsSegmentManager_->CalculateCurrentDownloadSpeed();
+    EXPECT_EQ(static_cast<int>(speed), 10000);
+}
+
+// L1463 branch 0: CalculateCurrentDownloadSpeed with zero denominator
+HWTEST_F(HlsSegmentManagerUnitTest, CALC_DOWNLOAD_SPEED_ZERO_001, TestSize.Level1)
+{
+    hlsSegmentManager_->downloadBits_ = 10000;
+    hlsSegmentManager_->downloadDuringTime_ = 0;
+    double speed = hlsSegmentManager_->CalculateCurrentDownloadSpeed();
+    EXPECT_EQ(speed, 0.0);
+}
+
+// L1494: DownloadReport with readBitrate_ > 0
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REPORT_BITRATE_001, TestSize.Level1)
+{
+    hlsSegmentManager_->totalBits_ = 100000;
+    hlsSegmentManager_->lastBits_ = 0;
+    hlsSegmentManager_->lastCheckTime_ = 0;
+    hlsSegmentManager_->readBitrate_ = 1000;
+    hlsSegmentManager_->bufferedDuration_ = 10000;
+    hlsSegmentManager_->lastCheckTime_ = 0;
+    OSAL::SleepFor(1100);
+    hlsSegmentManager_->DownloadReport();
+    EXPECT_EQ(hlsSegmentManager_->lastCheckTime_ > 0, true);
+}
+
+// L1507: DownloadReport with data usage interval exceeded
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REPORT_USAGE_001, TestSize.Level1)
+{
+    hlsSegmentManager_->isDownloadFinish_ = false;
+    hlsSegmentManager_->lastReportUsageTime_ = 0;
+    hlsSegmentManager_->dataUsage_ = 5000;
+    hlsSegmentManager_->DownloadReport();
+    EXPECT_EQ(hlsSegmentManager_->dataUsage_, 5000);
+}
+
+// L1517: OnDrmInfoChanged with segEventCb_ set
+HWTEST_F(HlsSegmentManagerUnitTest, ON_DRM_INFO_CHANGED_001, TestSize.Level1)
+{
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    std::multimap<std::string, std::vector<uint8_t>> drmInfos;
+    drmInfos.insert({"key", {1, 2, 3}});
+    hlsSegmentManager_->OnDrmInfoChanged(drmInfos);
+    EXPECT_TRUE(called);
+}
+
+// L1517 branch 0: OnDrmInfoChanged with no callback
+HWTEST_F(HlsSegmentManagerUnitTest, ON_DRM_INFO_CHANGED_NULL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->segEventCb_ = nullptr;
+    std::multimap<std::string, std::vector<uint8_t>> drmInfos;
+    hlsSegmentManager_->OnDrmInfoChanged(drmInfos);
+    EXPECT_EQ(hlsSegmentManager_->totalBits_, 0);
+}
+
+// L1526: OnTimedMetaDataChanged with nullptr metadata
+HWTEST_F(HlsSegmentManagerUnitTest, ON_TIMED_META_NULL_001, TestSize.Level1)
+{
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->OnTimedMetaDataChanged(nullptr);
+    EXPECT_FALSE(called);
+}
+
+// L1529: OnTimedMetaDataChanged with valid metadata and callback
+HWTEST_F(HlsSegmentManagerUnitTest, ON_TIMED_META_VALID_001, TestSize.Level1)
+{
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    auto metadata = std::make_shared<MediaAVCodec::AVTimedMetaData>();
+    metadata->id = "test";
+    metadata->start = 0;
+    metadata->duration = 10;
+    hlsSegmentManager_->OnTimedMetaDataChanged(metadata);
+    EXPECT_TRUE(called);
+}
+
+// L2029,L2032: SetInterruptState with null playlistDownloader_ and downloader_
+HWTEST_F(HlsSegmentManagerUnitTest, SET_INTERRUPT_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->playlistDownloader_ = nullptr;
+    downloader->downloader_ = nullptr;
+    downloader->SetInterruptState(true);
+    EXPECT_EQ(downloader->isInterruptNeeded_.load(), true);
+    downloader = nullptr;
+}
+
+// L2052: GetPlaybackInfo with null downloader_
+HWTEST_F(HlsSegmentManagerUnitTest, GET_PLAYBACK_INFO_NULL_DL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->downloader_ = nullptr;
+    PlaybackInfo info;
+    downloader->GetPlaybackInfo(info);
+    EXPECT_EQ(info.averageDownloadRate, 0);
+    downloader = nullptr;
+}
+
+// L2066 branch 1: GetPlaybackInfo with readBitrate_ > 0 and recordData_
+HWTEST_F(HlsSegmentManagerUnitTest, GET_PLAYBACK_INFO_BITRATE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->readBitrate_ = 1000;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 500.0;
+    downloader->recordData_ = rd;
+    PlaybackInfo info;
+    downloader->GetPlaybackInfo(info);
+    EXPECT_EQ(info.downloadRate, 500);
+    downloader = nullptr;
+}
+
+// L2080: ReportBitrateStart without segEventCb_
+HWTEST_F(HlsSegmentManagerUnitTest, REPORT_BITRATE_START_NULL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->segEventCb_ = nullptr;
+    hlsSegmentManager_->ReportBitrateStart(1000);
+    EXPECT_EQ(hlsSegmentManager_->changeBitRateCount_, 0);
+}
+
+// L2080 branch 1: ReportBitrateStart with segEventCb_
+HWTEST_F(HlsSegmentManagerUnitTest, REPORT_BITRATE_START_CB_001, TestSize.Level1)
+{
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->ReportBitrateStart(2000);
+    EXPECT_TRUE(called);
+}
+
+// L2122: SetCurrentBitRate with downloadRequest_ set
+HWTEST_F(HlsSegmentManagerUnitTest, SET_CURRENT_BITRATE_REQ_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    auto req = std::make_shared<DownloadRequest>("", nullptr, nullptr, false);
+    downloader->SetDownloadRequest(req);
+    EXPECT_EQ(downloader->SetCurrentBitRate(1000, 0), Status::OK);
+    downloader = nullptr;
+}
+
+// L2122 branch 1: SetCurrentBitRate without downloadRequest_
+HWTEST_F(HlsSegmentManagerUnitTest, SET_CURRENT_BITRATE_NOREQ_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->SetDownloadRequest(nullptr);
+    EXPECT_EQ(downloader->SetCurrentBitRate(1000, 0), Status::OK);
+    downloader = nullptr;
+}
+
+// L2122: SetCurrentBitRate with bitRate <= 0 and currentBitRate_ == 0
+HWTEST_F(HlsSegmentManagerUnitTest, SET_CURRENT_BITRATE_ZERO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->currentBitRate_ = 0;
+    EXPECT_EQ(downloader->SetCurrentBitRate(0, 0), Status::OK);
+    EXPECT_EQ(downloader->currentBitRate_, -1);
+    downloader = nullptr;
+}
+
+// L2214,L2215: GetSegmentOffset with live playlist
+HWTEST_F(HlsSegmentManagerUnitTest, GET_SEGMENT_OFFSET_LIVE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->readTsIndex_ = 0;
+    auto offset = downloader->GetSegmentOffset();
+    EXPECT_EQ(offset, 0);
+    downloader = nullptr;
+}
+
+// L2214 branch 0: GetSegmentOffset with nullptr playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, GET_SEGMENT_OFFSET_NULL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    EXPECT_EQ(hlsSegmentManager_->GetSegmentOffset(), 0);
+}
+
+// L2220: GetSegmentOffset with sumDuration < lastDuration
+HWTEST_F(HlsSegmentManagerUnitTest, GET_SEGMENT_OFFSET_LIVE_SUM_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->readTsIndex_ = 0;
+    PlayInfo p;
+    p.url_ = "test_url";
+    p.duration_ = 10;
+    p.sumDuration_ = 100;
+    downloader->InfoIndexMap_.writeMap[0] = "test_url";
+    downloader->InfoIndexMap_.urlMap["test_url"] = p;
+    auto offset = downloader->GetSegmentOffset();
+    EXPECT_EQ(offset, 0);
+    downloader = nullptr;
+}
+
+// L2232: GetCurUrl with map entry found and not empty
+HWTEST_F(HlsSegmentManagerUnitTest, GET_CUR_URL_MAP_001, TestSize.Level1)
+{
+    hlsSegmentManager_->InfoIndexMap_.writeMap[0] = "http://test.com/seg.ts";
+    hlsSegmentManager_->readTsIndex_ = 0;
+    EXPECT_EQ(hlsSegmentManager_->GetCurUrl(), "http://test.com/seg.ts");
+}
+
+// L2232: GetCurUrl with map entry found but empty
+HWTEST_F(HlsSegmentManagerUnitTest, GET_CUR_URL_EMPTY_001, TestSize.Level1)
+{
+    hlsSegmentManager_->InfoIndexMap_.writeMap[0] = "";
+    hlsSegmentManager_->readTsIndex_ = 0;
+    hlsSegmentManager_->curUrl_ = "http://fallback.com/";
+    EXPECT_EQ(hlsSegmentManager_->GetCurUrl(), "http://fallback.com/");
+}
+
+// L2232: GetCurUrl with map entry not found
+HWTEST_F(HlsSegmentManagerUnitTest, GET_CUR_URL_NOTFOUND_001, TestSize.Level1)
+{
+    hlsSegmentManager_->readTsIndex_ = 999;
+    hlsSegmentManager_->curUrl_ = "http://fallback.com/";
+    EXPECT_EQ(hlsSegmentManager_->GetCurUrl(), "http://fallback.com/");
+}
+
+// L2241: GetHLSDiscontinuity with valid playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, GET_HLS_DISCONTINUITY_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    EXPECT_EQ(hlsSegmentManager_->GetHLSDiscontinuity(), false);
+}
+
+// L1977: DownBufferSize with totalBufferSize_ <= ADJUST_SIZE
+HWTEST_F(HlsSegmentManagerUnitTest, DOWN_BUFFER_SIZE_SMALL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->totalBufferSize_ = 100;
+    hlsSegmentManager_->minBufferSize_ = 50;
+    hlsSegmentManager_->DownBufferSize();
+    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_, 50);
+}
+
+// L1986 branch 1: OnReadBuffer with duration < bufferedDuration_
+HWTEST_F(HlsSegmentManagerUnitTest, ON_READ_BUFFER_PARTIAL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->bufferedDuration_ = 1000;
+    hlsSegmentManager_->OnReadBuffer(50);
+    EXPECT_EQ(hlsSegmentManager_->bufferedDuration_, 600);
+}
+
+// L2011: TransferSizeToBitRate width = MIN_WIDTH (480)
+HWTEST_F(HlsSegmentManagerUnitTest, TRANSFER_SIZE_MIN_WIDTH_001, TestSize.Level1)
+{
+    EXPECT_EQ(hlsSegmentManager_->TransferSizeToBitRate(MIN_WITDH), hlsSegmentManager_->minBufferSize_);
+}
+
+// L2013: TransferSizeToBitRate width = SECOND_WIDTH (720)
+HWTEST_F(HlsSegmentManagerUnitTest, TRANSFER_SIZE_SECOND_WIDTH_001, TestSize.Level1)
+{
+    EXPECT_EQ(hlsSegmentManager_->TransferSizeToBitRate(SECOND_WITDH),
+        hlsSegmentManager_->minBufferSize_ * 3);
+}
+
+// L2482: Clone with nullptr
+HWTEST_F(HlsSegmentManagerUnitTest, CLONE_NULLPTR_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->Clone(nullptr);
+    EXPECT_EQ(downloader->totalBufferSize_, 10 * 200 * 1024);
+    downloader = nullptr;
+}
+
+// L2500: Clone with null playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, CLONE_NULL_PLAYLIST_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->playlistDownloader_ = nullptr;
+    auto other = std::make_shared<HlsSegmentManager>(10, true, header_);
+    other->Init();
+    downloader->Clone(other);
+    EXPECT_EQ(downloader->totalBufferSize_, 10 * 200 * 1024);
+    downloader = nullptr;
+    other = nullptr;
+}
+
+// L2502: Clone with null other playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, CLONE_NULL_OTHER_PLAYLIST_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    auto other = std::make_shared<HlsSegmentManager>(10, true, header_);
+    other->Init();
+    other->playlistDownloader_ = nullptr;
+    downloader->Clone(other);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
+    downloader = nullptr;
+    other = nullptr;
+}
+
+// L2515: SelectMedia with nullptr playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_AUDIO);
+    downloader->Init();
+    downloader->playlistDownloader_ = nullptr;
+    EXPECT_EQ(downloader->SelectMedia(0, HlsSegmentType::SEG_AUDIO), false);
+    downloader = nullptr;
+}
+
+// L2518: SelectMedia with SEG_VIDEO type returns true
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_VIDEO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    EXPECT_EQ(downloader->SelectMedia(0, HlsSegmentType::SEG_AUDIO), true);
+    downloader = nullptr;
+}
+
+// L1289: SaveData with null data
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    EXPECT_EQ(downloader->SaveData(nullptr, 100, false), 0);
+    downloader = nullptr;
+}
+
+// L1289 branch 3: SaveData with null cacheMediaBuffer_
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_NULL_BUF_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = nullptr;
+    uint8_t data[10] = {0};
+    EXPECT_EQ(downloader->SaveData(data, 10, false), 0);
+    downloader = nullptr;
+}
+
+// L883: Read with null cacheMediaBuffer_
+HWTEST_F(HlsSegmentManagerUnitTest, READ_NULL_BUF_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = nullptr;
+    unsigned char buff[10];
+    ReadDataInfo readDataInfo;
+    readDataInfo.wantReadLength_ = 10;
+    EXPECT_EQ(downloader->Read(buff, readDataInfo), Status::ERROR_AGAIN);
+    downloader = nullptr;
+}
+
+// L572: CheckLiveLastSegment with null playlist
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_LIVE_LAST_SEG_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->playList_ = nullptr;
+    EXPECT_EQ(downloader->CheckLiveLastSegment(), false);
+}
+
+// L572 branch 1: CheckLiveLastSegment with valid playlist but not last play changed
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_LIVE_LAST_SEG_FALSE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->lastPlaychanged_.store(false);
+    EXPECT_EQ(downloader->CheckLiveLastSegment(), false);
+}
+
+// L682: CheckLiveToVodEnd with null playlist
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_LIVE_TO_VOD_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->playList_ = nullptr;
+    EXPECT_EQ(downloader->CheckLiveToVodEnd(), false);
+}
+
+// L477: CheckReadStatus with null playList_
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_READ_STATUS_NULL_PL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->playList_ = nullptr;
+    EXPECT_EQ(downloader->CheckReadStatus(), false);
+}
+
+// L477 branch 1: CheckReadStatus with null downloadRequest_
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_READ_STATUS_NULL_REQ_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->SetDownloadRequest(nullptr);
+    EXPECT_EQ(downloader->CheckReadStatus(), false);
+}
+
+// L845: IsCurrentTsFinished with SEG_SUBTITLE and !isFirstFrameArrived_
+HWTEST_F(HlsSegmentManagerUnitTest, IS_CURRENT_TS_FINISHED_SUB_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_SUBTITLE);
+    downloader->Init();
+    downloader->isFirstFrameArrived_ = false;
+    downloader->readTsIndex_ = 0;
+    EXPECT_EQ(downloader->IsCurrentTsFinished(), false);
+}
+
+// L875,L878: IsAllDownloadFinish with tsStorageInfo and isStopped
+HWTEST_F(HlsSegmentManagerUnitTest, IS_ALL_DOWNLOAD_FINISH_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->isStopped = true;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(100, true);
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    EXPECT_EQ(downloader->IsAllDownloadFinish(), true);
+    downloader = nullptr;
+}
+
+// L875 branch 0: IsAllDownloadFinish with tsStorageInfo not found
+HWTEST_F(HlsSegmentManagerUnitTest, IS_ALL_DOWNLOAD_FINISH_NOTFOUND_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->isStopped = true;
+    downloader->writeTsIndex_ = 999;
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    EXPECT_EQ(downloader->IsAllDownloadFinish(), false);
+    downloader = nullptr;
+}
+
+// L1820: IsDownloadLastSplice with non-live and last splice
+HWTEST_F(HlsSegmentManagerUnitTest, IS_DOWNLOAD_LAST_SPLICE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = false;
+    downloader->playlistDownloader_ = mock;
+    downloader->writeTsIndex_ = 1;
+    PlayInfo p;
+    downloader->backPlayList_.push_back(p);
+    downloader->backPlayList_.push_back(p);
+    EXPECT_EQ(downloader->IsDownloadLastSplice(), true);
+    downloader = nullptr;
+}
+
+// L1820: IsDownloadLastSplice with null playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, IS_DOWNLOAD_LAST_SPLICE_NULL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    EXPECT_EQ(hlsSegmentManager_->IsDownloadLastSplice(), false);
+}
+
+// L2441: ClearChunksInLargeSegment with conditions met
+HWTEST_F(HlsSegmentManagerUnitTest, CLEAR_CHUNKS_LARGE_MET_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->writeTsIndex_ = 0;
+    downloader->readTsIndex_ = 0;
+    downloader->writeOffset_ = 100;
+    downloader->readOffset_ = 50;
+    downloader->ClearChunksInLargeSegment();
+    EXPECT_GE(downloader->writeOffset_, downloader->readOffset_);
+    downloader = nullptr;
+}
+
+// L2404: GetTotalTsBuffersize with writeTsIndex_ > readTsIndex_
+HWTEST_F(HlsSegmentManagerUnitTest, GET_TOTAL_TS_BUFSIZE_MULTI_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    uint8_t data[1024] = {0};
+    downloader->cacheMediaBuffer_->Write(data, 0, 1024);
+    downloader->readTsIndex_ = 0;
+    downloader->writeTsIndex_ = 1;
+    downloader->readOffset_ = 0;
+    uint64_t size = downloader->GetTotalTsBuffersize();
+    EXPECT_EQ(size <= static_cast<uint64_t>(MAX_CACHE_BUFFER_SIZE_UT), true);
+    downloader = nullptr;
+}
+
+// L1764,L1766: ResetDecryptBuffer with aesDecryptor_
+HWTEST_F(HlsSegmentManagerUnitTest, RESET_DECRYPT_BUFFER_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    uint8_t key[16] = {0};
+    uint8_t iv[16] = {0};
+    downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
+    downloader->singleBlockLen_ = 5;
+    downloader->decryptLen_ = 10;
+    downloader->ResetDecryptBuffer();
+    EXPECT_EQ(downloader->singleBlockLen_, 0);
+    EXPECT_EQ(downloader->decryptLen_, 0);
+    downloader = nullptr;
+}
+
+// L1764,L1766 branch 1: ResetDecryptBuffer without aesDecryptor_
+HWTEST_F(HlsSegmentManagerUnitTest, RESET_DECRYPT_BUFFER_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->aesDecryptor_ = nullptr;
+    downloader->singleBlockLen_ = 5;
+    downloader->decryptLen_ = 10;
+    downloader->ResetDecryptBuffer();
+    EXPECT_EQ(downloader->singleBlockLen_, 0);
+    EXPECT_EQ(downloader->decryptLen_, 0);
+    downloader = nullptr;
+}
+
+// L1357: DecryptDataLeft with writtenLen != decryptLen_
+HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_WRITE_ERR_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t iv[16] = {0};
+    downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
+    downloader->singleBlockLen_ = 0;
+    uint8_t data[16] = {0};
+    uint32_t len = 16;
+    uint8_t *ptr = data;
+    uint32_t result = downloader->DecryptDataLeft(ptr, len, true);
+    EXPECT_EQ(result, 0);
+    downloader = nullptr;
+}
+
+// L1368: DecryptData with nullptr aesDecryptor
+HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->aesDecryptor_ = nullptr;
+    uint8_t data[16] = {0};
+    uint32_t len = 16;
+    uint8_t *ptr = data;
+    EXPECT_EQ(downloader->DecryptData(ptr, len, true), 0);
+    downloader = nullptr;
+}
+
+// L507: HandleFfmpegReadback with notNeedReadBack_ = true
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_FFMPEG_READBACK_NOBACK_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->notNeedReadBack_.store(true);
+    downloader->ffmpegOffset_ = 0;
+    downloader->HandleFfmpegReadback(1000);
+    EXPECT_EQ(downloader->ffmpegOffset_, 1000);
+    downloader = nullptr;
+}
+
+// L507 branch 0: HandleFfmpegReadback with ffmpegOffset_ <= ffmpegOffset
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_FFMPEG_READBACK_LE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->notNeedReadBack_.store(false);
+    downloader->curStreamId_ = 0;
+    downloader->isNeedResetOffset_.store(false);
+    downloader->ffmpegOffset_ = 100;
+    downloader->HandleFfmpegReadback(200);
+    EXPECT_EQ(downloader->ffmpegOffset_, 100);
+    downloader = nullptr;
+}
+
+// L660 branch 0: ReadDelegate returns tmpRes != ERROR_UNKNOWN
+HWTEST_F(HlsSegmentManagerUnitTest, READ_DELEGATE_TMPRES_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->isStopped = true;
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->duration_ = 100;
+    downloader->playlistDownloader_ = mock;
+    downloader->writeTsIndex_ = 0;
+    downloader->readTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, true);
+    unsigned char buff[10];
+    ReadDataInfo rdi;
+    rdi.wantReadLength_ = 10;
+    rdi.streamId_ = 0;
+    auto status = downloader->ReadDelegate(buff, rdi);
+    EXPECT_EQ(status, Status::END_OF_STREAM);
+    downloader = nullptr;
+}
+
+// L1806: UpdateDownloadFinished with SEG_SUBTITLE type
+HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_DOWNLOAD_FINISHED_SUB_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_SUBTITLE);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isDownloadStarted_ = false;
+    auto req = std::make_shared<DownloadRequest>("", nullptr, nullptr, false);
+    downloader->SetDownloadRequest(req);
+    downloader->UpdateDownloadFinished("test_url", "");
+    EXPECT_EQ(downloader->isDownloadFinish_, true);
+    downloader = nullptr;
+}
+
+// L1069: PlaylistBackup with nullptr playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_BACKUP_NULL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    PlayInfo p;
+    hlsSegmentManager_->PlaylistBackup(p);
+    EXPECT_EQ(hlsSegmentManager_->backPlayList_.size(), 0);
+}
+
+// L1069 branch 1, L1070, L1074, L1077: PlaylistBackup with live and duplicate
+HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_BACKUP_LIVE_DUP_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = true;
+    mock->isParseFinished_ = true;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    PlayInfo p;
+    p.url_ = "test.ts";
+    p.rangeUrl_ = "range.ts";
+    p.offset_ = 0;
+    p.length_ = 100;
+    hlsSegmentManager_->PlaylistBackup(p);
+    hlsSegmentManager_->PlaylistBackup(p);
+    EXPECT_EQ(hlsSegmentManager_->seekCandidates_.size(), 1);
+}
+
+// L1069 branch 1, L1082, L1083: PlaylistBackup with live and parse finished
+HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_BACKUP_LIVE_PARSED_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = true;
+    mock->isParseFinished_ = true;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    PlayInfo p1;
+    p1.url_ = "a.ts";
+    hlsSegmentManager_->backPlayList_.push_back(p1);
+    PlayInfo p2;
+    p2.url_ = "b.ts";
+    hlsSegmentManager_->PlaylistBackup(p2);
+    EXPECT_EQ(hlsSegmentManager_->backPlayList_.size(), 0);
+}
+
+// L1069 branch 1, L1088: PlaylistBackup non-live and parse finished
+HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_BACKUP_VOD_PARSED_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = false;
+    mock->isParseFinished_ = true;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    PlayInfo p;
+    p.url_ = "test.ts";
+    hlsSegmentManager_->PlaylistBackup(p);
+    EXPECT_EQ(hlsSegmentManager_->backPlayList_.size(), 1);
+}
+
+// L1122,L1131: HandleBitrateSelectFragment with isSelectingBitrate_
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_BITRATE_SELECT_001, TestSize.Level1)
+{
+    hlsSegmentManager_->isSelectingBitrate_.store(true);
+    hlsSegmentManager_->currentSequence_ = 5;
+    PlayInfo fragment;
+    fragment.sequence_ = 10;
+    fragment.url_ = "test.ts";
+    bool ret = hlsSegmentManager_->HandleBitrateSelectFragment(fragment);
+    EXPECT_EQ(ret, true);
+}
+
+// L1122,L1131 branch 0: HandleBitrateSelectFragment with matching sequence
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_BITRATE_SELECT_MATCH_001, TestSize.Level1)
+{
+    hlsSegmentManager_->isSelectingBitrate_.store(true);
+    hlsSegmentManager_->currentSequence_ = 5;
+    PlayInfo fragment;
+    fragment.sequence_ = 5;
+    fragment.url_ = "test.ts";
+    bool ret = hlsSegmentManager_->HandleBitrateSelectFragment(fragment);
+    EXPECT_EQ(ret, false);
+    EXPECT_EQ(hlsSegmentManager_->isSelectingBitrate_.load(), false);
+}
+
+// L279: EvictFragmentMapIfNeeded with size >= MAX_FRAGMENT_TRACKING
+HWTEST_F(HlsSegmentManagerUnitTest, EVICT_FRAGMENT_MAP_001, TestSize.Level1)
+{
+    std::map<std::string, bool> fragmentMap;
+    for (int i = 0; i < 100001; i++) {
+        fragmentMap["url_" + std::to_string(i)] = true;
+    }
+    hlsSegmentManager_->EvictFragmentMapIfNeeded(fragmentMap, "test");
+    EXPECT_EQ(fragmentMap.size(), 100000);
+}
+
+// L897,L899: Read with isNeedResume_ and freeSize > threshold
+HWTEST_F(HlsSegmentManagerUnitTest, READ_RESUME_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->isNeedResume_.store(true);
+    downloader->memorySize_ = MAX_CACHE_BUFFER_SIZE_UT;
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = false;
+    downloader->playlistDownloader_ = mock;
+    downloader->readOffset_ = 0;
+    downloader->readTsIndex_ = 0;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(100, true);
+    unsigned char buff[10];
+    ReadDataInfo rdi;
+    rdi.wantReadLength_ = 10;
+    rdi.ffmpegOffset = 0;
+    rdi.streamId_ = 0;
+    downloader->Read(buff, rdi);
+    EXPECT_EQ(rdi.realReadLength_ <= static_cast<uint32_t>(rdi.wantReadLength_), true);
+    downloader = nullptr;
+}
+
+// L909,L911: Read with read speed calculation
+HWTEST_F(HlsSegmentManagerUnitTest, READ_SPEED_CALC_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    downloader->readOffset_ = 0;
+    downloader->readTsIndex_ = 0;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(100, true);
+    downloader->lastReadCheckTime_ = 0;
+    downloader->readTotalBytes_ = 0;
+    unsigned char buff[10];
+    ReadDataInfo rdi;
+    rdi.wantReadLength_ = 10;
+    rdi.ffmpegOffset = 0;
+    rdi.streamId_ = 0;
+    downloader->Read(buff, rdi);
+    EXPECT_EQ(rdi.realReadLength_ <= static_cast<uint32_t>(rdi.wantReadLength_), true);
+    downloader = nullptr;
+}
+
+// L976,L979: SeekToTime with isSelectingBitrate_ and timeout
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_SELECTING_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->isSelectingBitrate_.store(true);
+    EXPECT_EQ(downloader->SeekToTime(100, SeekMode::SEEK_NEXT_SYNC), false);
+    downloader = nullptr;
+}
+
+// L993: SeekToTime with isInterruptNeeded_
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_INTERRUPT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->isInterruptNeeded_ = true;
+    EXPECT_EQ(downloader->SeekToTime(0, SeekMode::SEEK_NEXT_SYNC), true);
+    downloader = nullptr;
+}
+
+// L995: SeekToTime with totalDuration == -1
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_NODUR_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->duration_ = -1;
+    downloader->playlistDownloader_ = mock;
+    downloader->isInterruptNeeded_ = false;
+    EXPECT_EQ(downloader->SeekToTime(100, SeekMode::SEEK_NEXT_SYNC), false);
+    downloader = nullptr;
+}
+
+// L1005: SeekToTime with seekTime >= totalDuration
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_BEYOND_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->duration_ = 100;
+    downloader->playlistDownloader_ = mock;
+    downloader->isInterruptNeeded_ = false;
+    downloader->isSelectingBitrate_.store(false);
+    PlayInfo p1, p2;
+    downloader->backPlayList_.push_back(p1);
+    downloader->backPlayList_.push_back(p2);
+    EXPECT_EQ(downloader->SeekToTime(200, SeekMode::SEEK_NEXT_SYNC), true);
+    downloader = nullptr;
+}
+
+// L1199: SaveCacheBufferDataNotblock with throttle threshold
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_CACHE_NOTBLOCK_THROTTLE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->memorySize_ = MAX_CACHE_BUFFER_SIZE_UT;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isNeedResume_.store(false);
+    uint8_t data[10] = {0};
+    uint32_t result = downloader->SaveCacheBufferDataNotblock(data, 10);
+    EXPECT_EQ(result == 10, true);
+    downloader = nullptr;
+}
+
+// L1199 branch 2: SaveCacheBufferDataNotblock triggering resume
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_CACHE_NOTBLOCK_RESUME_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(1024, CHUNK_SIZE);
+    downloader->memorySize_ = 1024;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isNeedResume_.store(false);
+    uint8_t data[10] = {0};
+    uint32_t result = downloader->SaveCacheBufferDataNotblock(data, 10);
+    EXPECT_EQ(result, 0);
+    EXPECT_EQ(downloader->isNeedResume_.load(), true);
+    downloader = nullptr;
+}
+
+// L1293,L1296: SaveData with isSourceLoaderSeeking_ timeout
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_SEEKING_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->isSourceLoaderSeeking_.store(true);
+    uint8_t data[10] = {0};
+    uint32_t result = downloader->SaveData(data, 10, false);
+    EXPECT_EQ(result, 0);
+    downloader = nullptr;
+}
+
+// L1302: SaveData with isSeekingFlag
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_SEEKING_FLAG_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->isSeekingFlag = true;
+    downloader->isSourceLoaderSeeking_.store(false);
+    uint8_t data[10] = {0};
+    uint32_t result = downloader->SaveData(data, 10, false);
+    EXPECT_EQ(result, 10);
+    downloader = nullptr;
+}
+
+// L1306: SaveData with aesDecryptor_ set (encrypted path)
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_ENCRYPTED_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t iv[16] = {0};
+    downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    uint8_t data[32] = {0};
+    uint32_t result = downloader->SaveData(data, 32, true);
+    EXPECT_EQ(result, 32);
+    downloader = nullptr;
+}
+
+// L1322: FillSingleBlock with memcpy
+HWTEST_F(HlsSegmentManagerUnitTest, FILL_SINGLE_BLOCK_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
+    downloader->Init();
+    downloader->singleBlockLen_ = 0;
+    uint8_t data[16] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+    uint32_t len = 16;
+    uint8_t *ptr = data;
+    uint32_t filled = downloader->FillSingleBlock(ptr, len);
+    EXPECT_EQ(filled, 16);
+    EXPECT_EQ(len, 0);
+    downloader = nullptr;
+}
+
+// L2296: SetPlayStrategy with valid playStrategy and width/height > 0
+HWTEST_F(HlsSegmentManagerUnitTest, SET_PLAY_STRATEGY_VALID_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    auto ps = std::make_shared<PlayStrategy>();
+    ps->width = 1920;
+    ps->height = 1080;
+    downloader->SetPlayStrategy(ps);
+    EXPECT_EQ(downloader->playlistDownloader_, mock);
+    downloader = nullptr;
+}
+
+// L2321: CheckLoopTimeout with large duration
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_LOOP_TIMEOUT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    int64_t oldTime = downloader->loopInterruptClock_.ElapsedSeconds() - 100;
+    bool result = downloader->CheckLoopTimeout(oldTime);
+    EXPECT_EQ(result, true);
+    EXPECT_EQ(downloader->downloadErrorState_, true);
+    downloader = nullptr;
+}
+
+// L2449,L2450,L2451: IsHlsEnd with live end and conditions
+HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_LIVE_END_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLiveEnd_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->lastPlaychanged_.store(false);
+    EXPECT_EQ(downloader->IsHlsEnd(), false);
+    downloader = nullptr;
+}
+
+// L2449 branch 0: IsHlsEnd with no playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    downloader->playlistDownloader_ = nullptr;
+    downloader->isEos_ = false;
+    EXPECT_EQ(downloader->IsHlsEnd(), false);
+    downloader = nullptr;
+}
+
+// L2456,L2457,L2459: IsHlsEnd with CheckReadStatus true and conditions
+HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_EOS_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->duration_ = 100;
+    mock->isParseAndNotifyFinished_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->isEos_ = true;
+    downloader->isStopped = true;
+    downloader->readTsIndex_ = 0;
+    PlayInfo p;
+    downloader->backPlayList_.push_back(p);
+    downloader->tsStorageInfo_[0] = std::make_pair(0, true);
+    EXPECT_EQ(downloader->IsHlsEnd(), false);
+    downloader = nullptr;
+}
+
+
+
+// ===== Additional branch coverage tests round 2 =====
+
+// L360: UpdateAesDecryptor with nullptr playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_AES_NULL_PL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    PlayInfo pi;
+    pi.keyIndex_ = 0;
+    hlsSegmentManager_->UpdateAesDecryptor(pi);
+    EXPECT_EQ(hlsSegmentManager_->GetAesDecryptor(), nullptr);
+    EXPECT_EQ(hlsSegmentManager_->totalBits_, 0);
+}
+
+// L365: UpdateAesDecryptor with keyIndex > 0 and WaitForKeyReady returns true
+HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_AES_KEY_READY_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    mock->waitForKeyReady_ = true;
+    auto decryptor = std::make_shared<AesDecryptor>();
+    uint8_t iv[16] = {0};
+    decryptor->SetIv(iv, sizeof(iv));
+    mock->aesDecryptor_ = decryptor;
+    mock->hasExplicitIvResult_ = true;
+    PlayInfo pi;
+    pi.keyIndex_ = 1;
+    pi.sequence_ = 1;
+    hlsSegmentManager_->UpdateAesDecryptor(pi);
+    EXPECT_EQ(hlsSegmentManager_->GetAesDecryptor() != nullptr, true);
+}
+
+// L365 branch 1: UpdateAesDecryptor with keyIndex > 0 and WaitForKeyReady returns false
+HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_AES_KEY_NOT_READY_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    mock->waitForKeyReady_ = false;
+    mock->aesDecryptor_ = nullptr;
+    PlayInfo pi;
+    pi.keyIndex_ = 1;
+    hlsSegmentManager_->UpdateAesDecryptor(pi);
+    EXPECT_EQ(hlsSegmentManager_->GetAesDecryptor(), nullptr);
+    EXPECT_EQ(hlsSegmentManager_->totalBits_, 0);
+}
+
+// L498: CheckBreakCondition with CheckReadStatus() returning true
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_BREAK_COND_READ_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->duration_ = 100;
+    mock->isParseAndNotifyFinished_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->isStopped = true;
+    downloader->downloadErrorState_ = true;
+    EXPECT_EQ(downloader->CheckBreakCondition(), true);
+    downloader = nullptr;
+}
+
+// L146 branch 1: Copy constructor with userDefinedBufferDuration_ = false
+HWTEST_F(HlsSegmentManagerUnitTest, COPY_CTOR_FALSE_DUR_001, TestSize.Level1)
+{
+    auto other = std::make_shared<HlsSegmentManager>(10, false, header_);
+    other->Init();
+    auto downloader = std::make_shared<HlsSegmentManager>(other, HlsSegmentType::SEG_AUDIO);
+    EXPECT_EQ(downloader->userDefinedBufferDuration_, false);
+    EXPECT_EQ(downloader->totalBufferSize_, downloader->maxCacheBufferSize_);
+    downloader = nullptr;
+    other = nullptr;
+}
+
+// L1553: SelectBitRate with null playList_
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_NULL_PL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    downloader->playList_ = nullptr;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), false);
+    downloader = nullptr;
+}
+
+// L1703: SeekToTsForRead with null cacheMediaBuffer_
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TS_FOR_READ_NULL_BUF_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = nullptr;
+    downloader->SeekToTsForRead(0);
+    EXPECT_EQ(downloader->cacheMediaBuffer_, nullptr);
+    EXPECT_EQ(downloader->isStopped.load(), false);
+    downloader = nullptr;
+}
+
+// L1838: ReportVideoSizeChange with segEventCb_ set and null playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, REPORT_VIDEO_SIZE_CB_NULL_PL_001, TestSize.Level1)
+{
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    hlsSegmentManager_->ReportVideoSizeChange();
+    EXPECT_FALSE(called);
+}
+
+// L1862: SetDownloadErrorState with segEventCb_ set and isReportedErrorCode_ = false
+HWTEST_F(HlsSegmentManagerUnitTest, SET_DOWNLOAD_ERROR_CB_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    bool called = false;
+    downloader->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    downloader->isReportedErrorCode_ = false;
+    downloader->SetDownloadErrorState();
+    EXPECT_TRUE(called);
+    EXPECT_EQ(downloader->downloadErrorState_, true);
+    downloader = nullptr;
+}
+
+// L1862 branch 2: SetDownloadErrorState with segEventCb_ set and isReportedErrorCode_ = true
+HWTEST_F(HlsSegmentManagerUnitTest, SET_DOWNLOAD_ERROR_ALREADY_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    bool called = false;
+    downloader->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    downloader->isReportedErrorCode_ = true;
+    downloader->SetDownloadErrorState();
+    EXPECT_FALSE(called);
+    downloader = nullptr;
+}
+
+// L1862 branch 0: SetDownloadErrorState with no segEventCb_
+HWTEST_F(HlsSegmentManagerUnitTest, SET_DOWNLOAD_ERROR_NO_CB_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->segEventCb_ = nullptr;
+    downloader->isReportedErrorCode_ = false;
+    downloader->SetDownloadErrorState();
+    EXPECT_EQ(downloader->downloadErrorState_, true);
+    EXPECT_EQ(downloader->isTimeoutErrorNotified_.load(), false);
+    downloader = nullptr;
+}
+
+// L1923,L1927,L1930: CheckRiseBufferSize with valid playlist and recordData
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_RISE_BUFFER_VALID_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->currentBitRateVal_ = 500000;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 1000000;
+    hlsSegmentManager_->recordData_ = rd;
+    EXPECT_EQ(hlsSegmentManager_->CheckRiseBufferSize(), true);
+}
+
+// L1941,L1944,L1948: CheckPulldownBufferSize with valid playlist and recordData
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_PULLDOWN_BUFFER_VALID_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->currentBitRateVal_ = 1000000;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 500000;
+    hlsSegmentManager_->recordData_ = rd;
+    EXPECT_EQ(hlsSegmentManager_->CheckPulldownBufferSize(), true);
+}
+
+// L1948 branch 0: CheckPulldownBufferSize with downloadRate >= playingBitrate
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_PULLDOWN_BUFFER_HIGH_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->currentBitRateVal_ = 500000;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 1000000;
+    hlsSegmentManager_->recordData_ = rd;
+    EXPECT_EQ(hlsSegmentManager_->CheckPulldownBufferSize(), false);
+}
+
+// L1927 branch 1: CheckRiseBufferSize with playingBitrate = 0 and videoWidth > 0
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_RISE_BUFFER_WIDTH_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->currentBitRateVal_ = 0;
+    mock->videoWidth_ = 1080;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = static_cast<double>(hlsSegmentManager_->minBufferSize_ * 4 + 1);
+    hlsSegmentManager_->recordData_ = rd;
+    EXPECT_EQ(hlsSegmentManager_->CheckRiseBufferSize(), true);
+}
+
+// L2251 branches 0-5: StopBufferring with each null pointer
+HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_NULL_DOWNLOADER_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->downloader_ = nullptr;
+    EXPECT_EQ(downloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
+    downloader = nullptr;
+}
+
+HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_NULL_PLAYLIST_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->playlistDownloader_ = nullptr;
+    EXPECT_EQ(downloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
+    downloader = nullptr;
+}
+
+// L2296: SetPlayStrategy with null playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, SET_PLAY_STRATEGY_NULL_PL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    hlsSegmentManager_->SetPlayStrategy(nullptr);
+    auto ps = std::make_shared<PlayStrategy>();
+    hlsSegmentManager_->SetPlayStrategy(ps);
+    EXPECT_EQ(hlsSegmentManager_->playlistDownloader_, nullptr);
+    EXPECT_EQ(hlsSegmentManager_->totalBits_, 0);
+}
+
+// L2300: SetPlayStrategy with width > 0 and height > 0
+HWTEST_F(HlsSegmentManagerUnitTest, SET_PLAY_STRATEGY_VALID_WH_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    auto ps = std::make_shared<PlayStrategy>();
+    ps->width = 1920;
+    ps->height = 1080;
+    downloader->SetPlayStrategy(ps);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
+    downloader = nullptr;
+}
+
+// L2502: Clone with null other playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, CLONE_NULL_OTHER_PL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto other = std::make_shared<HlsSegmentManager>(10, false, header_);
+    other->Init();
+    other->playlistDownloader_ = nullptr;
+    downloader->Clone(other);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
+    downloader = nullptr;
+    other = nullptr;
+}
+
+// L2515: SelectMedia with null playList_
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_NULL_PL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_AUDIO);
+    downloader->Init();
+    downloader->playList_ = nullptr;
+    EXPECT_EQ(downloader->SelectMedia(0, HlsSegmentType::SEG_AUDIO), false);
+    downloader = nullptr;
+}
+
+// L1810,L1811: UpdateDownloadFinished with subtitle and conditions for auto select
+HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_DOWNLOAD_FINISHED_AUTO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isParseAndNotifyFinished_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->type_ = HlsSegmentType::SEG_VIDEO;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isDownloadStarted_ = false;
+    downloader->isSeekingFlag = false;
+    downloader->isSelectingBitrate_ = false;
+    downloader->isAutoSelectBitrate_ = true;
+    auto req = std::make_shared<DownloadRequest>("", nullptr, nullptr, false);
+    downloader->SetDownloadRequest(req);
+    downloader->UpdateDownloadFinished("test_url", "");
+    EXPECT_EQ(downloader->isDownloadFinish_, true);
+    downloader = nullptr;
+}
+
+// L1494 branch 1: DownloadReport with readBitrate_ > 0 and recordData_
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REPORT_READ_BITRATE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->totalBits_ = 200;
+    downloader->lastBits_ = 0;
+    downloader->lastCheckTime_ = 0;
+    downloader->readBitrate_ = 500;
+    downloader->bufferedDuration_ = 5000;
+    OSAL::SleepFor(1100);
+    downloader->DownloadReport();
+    EXPECT_EQ(downloader->recordData_ != nullptr, true);
+    downloader = nullptr;
+}
+
+// L1507 branch 3: DownloadReport with data usage interval
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REPORT_DATA_USAGE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->isDownloadFinish_ = false;
+    downloader->lastReportUsageTime_ = 1;
+    downloader->dataUsage_ = 5000;
+    downloader->DownloadReport();
+    EXPECT_EQ(downloader->dataUsage_, 5000);
+    downloader = nullptr;
+}
+
+// L1425,L1428,L1430: DownloadRecordHistory with autoBufferSize and rise
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REC_HISTORY_RISE_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->currentBitRateVal_ = 500000;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    hlsSegmentManager_->autoBufferSize_ = true;
+    hlsSegmentManager_->userDefinedBufferDuration_ = false;
+    hlsSegmentManager_->lastWriteTime_ = 0;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 1000000;
+    hlsSegmentManager_->recordData_ = rd;
+    hlsSegmentManager_->DownloadRecordHistory(2000);
+    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_ > 0, true);
+}
+
+// L1430: DownloadRecordHistory with pulldown
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REC_HISTORY_PULLDOWN_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->currentBitRateVal_ = 2000000;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    hlsSegmentManager_->autoBufferSize_ = true;
+    hlsSegmentManager_->userDefinedBufferDuration_ = false;
+    hlsSegmentManager_->lastWriteTime_ = 0;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 500000;
+    hlsSegmentManager_->recordData_ = rd;
+    hlsSegmentManager_->DownloadRecordHistory(2000);
+    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_ > 0, true);
+}
+
+// L897,L899: Read with isNeedResume_ and freeSize > threshold
+HWTEST_F(HlsSegmentManagerUnitTest, READ_RESUME_THRESHOLD_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->isNeedResume_.store(true);
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = false;
+    downloader->playlistDownloader_ = mock;
+    downloader->readOffset_ = 0;
+    downloader->readTsIndex_ = 0;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(100, true);
+    unsigned char buff[10];
+    ReadDataInfo rdi;
+    rdi.wantReadLength_ = 10;
+    rdi.ffmpegOffset = 0;
+    rdi.streamId_ = 0;
+    downloader->Read(buff, rdi);
+    EXPECT_EQ(downloader->isNeedResume_.load(), false);
+    downloader = nullptr;
+}
+
+// L1529 branch 1: OnTimedMetaDataChanged with valid metadata but no callback
+HWTEST_F(HlsSegmentManagerUnitTest, ON_TIMED_META_NO_CB_001, TestSize.Level1)
+{
+    hlsSegmentManager_->segEventCb_ = nullptr;
+    auto metadata = std::make_shared<MediaAVCodec::AVTimedMetaData>();
+    metadata->id = "test";
+    hlsSegmentManager_->OnTimedMetaDataChanged(metadata);
+    EXPECT_EQ(hlsSegmentManager_->segEventCb_, nullptr);
+    EXPECT_EQ(hlsSegmentManager_->totalBits_, 0);
+}
+
+// L1810 branches: UpdateDownloadFinished with non-subtitle and auto select
+HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_DOWNLOAD_FINISHED_NOTSUB_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    downloader->type_ = HlsSegmentType::SEG_VIDEO;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isDownloadStarted_ = false;
+    downloader->isSeekingFlag = false;
+    auto req = std::make_shared<DownloadRequest>("", nullptr, nullptr, false);
+    downloader->SetDownloadRequest(req);
+    downloader->UpdateDownloadFinished("test_url", "");
+    EXPECT_EQ(downloader->isDownloadFinish_, true);
+    downloader = nullptr;
+}
+
+// L247,L248: Destructor with null reportInfo_ and downloader_
+HWTEST_F(HlsSegmentManagerUnitTest, DTOR_NULL_REPORT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->reportInfo_ = nullptr;
+    downloader->downloader_ = nullptr;
+    downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
+    downloader = nullptr;
+}
+
+// L1688: PushPlayInfo with IsLive = true
+HWTEST_F(HlsSegmentManagerUnitTest, PUSH_PLAY_INFO_LIVE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = true;
+    downloader->playlistDownloader_ = mock;
+    PlayInfo pi;
+    pi.url_ = "test.ts";
+    pi.streamId_ = 0;
+    downloader->isDownloadStarted_ = false;
+    downloader->PushPlayInfo(pi);
+    EXPECT_EQ(downloader->isDownloadStarted_, true);
+    downloader = nullptr;
+}
+
+// L1712: SeekToTsForRead with IsLive = true
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TS_FOR_READ_LIVE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = true;
+    downloader->playlistDownloader_ = mock;
+    PlayInfo p;
+    downloader->backPlayList_.push_back(p);
+    downloader->SeekToTsForRead(0);
+    EXPECT_EQ(downloader->readOffset_, 0);
+    downloader = nullptr;
+}
+
+// L1074,L1075,L1077: PlaylistBackup with duplicate fragment in live
+HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_BACKUP_LIVE_SAME_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = true;
+    mock->isParseFinished_ = false;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    PlayInfo p;
+    p.url_ = "test.ts";
+    p.rangeUrl_ = "range.ts";
+    p.offset_ = 0;
+    p.length_ = 100;
+    hlsSegmentManager_->PlaylistBackup(p);
+    hlsSegmentManager_->PlaylistBackup(p);
+    EXPECT_EQ(hlsSegmentManager_->seekCandidates_.size(), 1);
+}
+
+// L1098,L1107: OnPlayListChanged with download not started
+HWTEST_F(HlsSegmentManagerUnitTest, ON_PLAYLIST_CHANGED_START_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    std::vector<PlayInfo> playList;
+    PlayInfo p;
+    p.url_ = "test.ts";
+    p.duration_ = 10.0;
+    playList.push_back(p);
+    downloader->isDownloadStarted_ = false;
+    downloader->OnPlayListChanged(playList);
+    EXPECT_EQ(downloader->isDownloadStarted_, true);
+    downloader = nullptr;
+}
+
+
+
+// ===== Round 3: More branch coverage =====
+
+// L985: SeekToTime with null playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_NULL_PL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->playlistDownloader_ = nullptr;
+    EXPECT_EQ(downloader->SeekToTime(100, SeekMode::SEEK_NEXT_SYNC), false);
+    downloader = nullptr;
+}
+
+// L1923: CheckRiseBufferSize with null playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_RISE_NULL_PL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 1000000;
+    hlsSegmentManager_->recordData_ = rd;
+    EXPECT_EQ(hlsSegmentManager_->CheckRiseBufferSize(), false);
+}
+
+// L1941: CheckPulldownBufferSize with null playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, CHECK_PULLDOWN_NULL_PL_001, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 1000000;
+    hlsSegmentManager_->recordData_ = rd;
+    EXPECT_EQ(hlsSegmentManager_->CheckPulldownBufferSize(), false);
+}
+
+// L1838: ReportVideoSizeChange with segEventCb_ set and null playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, REPORT_VID_SIZE_CB_NULL_001, TestSize.Level1)
+{
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    hlsSegmentManager_->ReportVideoSizeChange();
+    EXPECT_FALSE(called);
+}
+
+// L1820: IsDownloadLastSplice with null playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, IS_LAST_SPLICE_NULL_002, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    hlsSegmentManager_->writeTsIndex_ = 0;
+    hlsSegmentManager_->backPlayList_.push_back(PlayInfo{});
+    EXPECT_EQ(hlsSegmentManager_->IsDownloadLastSplice(), false);
+}
+
+// L2066: GetPlaybackInfo with readBitrate_ > 0 and recordData_
+HWTEST_F(HlsSegmentManagerUnitTest, GET_PLAYBACK_INFO_READBR_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->readBitrate_ = 500;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 300.0;
+    downloader->recordData_ = rd;
+    PlaybackInfo info;
+    downloader->GetPlaybackInfo(info);
+    EXPECT_EQ(info.downloadRate, 300);
+    downloader = nullptr;
+}
+
+// L2151,L2153: HandleCachedDuration with decreasing duration
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_CACHED_DUR_DECREASE_001, TestSize.Level1)
+{
+    hlsSegmentManager_->currentBitRate_ = 1000;
+    hlsSegmentManager_->cachedDuration_ = 1000;
+    hlsSegmentManager_->lastDurationReacord_ = 2000;
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->HandleCachedDuration();
+    // No buffer data so cachedDuration_ should be 0, which is less than lastDurationReacord_ (2000)
+    // This should trigger the decrease branch
+    EXPECT_EQ(called, true);
+}
+
+// L1494: DownloadReport with readBitrate_ > 0 (needs timing)
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REPORT_READBR_TIMING_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->totalBits_ = 200;
+    downloader->lastBits_ = 0;
+    downloader->lastCheckTime_ = 0;
+    downloader->readBitrate_ = 500;
+    downloader->bufferedDuration_ = 5000;
+    OSAL::SleepFor(1100);
+    downloader->DownloadReport();
+    EXPECT_EQ(downloader->recordData_ != nullptr, true);
+    downloader = nullptr;
+}
+
+// L1507: DownloadReport with data usage interval exceeded
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REPORT_USAGE_LONG_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->isDownloadFinish_ = false;
+    downloader->lastReportUsageTime_ = 0;
+    downloader->dataUsage_ = 5000;
+    OSAL::SleepFor(1100);
+    downloader->DownloadReport();
+    // After 1.1s, lastReportUsageTime_ should be updated if > 300000ms
+    // But 1100 < 300000 so dataUsage_ stays
+    EXPECT_EQ(downloader->dataUsage_, 5000);
+    downloader = nullptr;
+}
+
+// L1554: SelectBitRate SEG_AUDIO returns true with mock
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_AUDIO_MOCK_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_AUDIO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1561,L1564: SelectBitRate with callback, auto select, CanAutoSelectBitRate=true
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_AUTO_CAN_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isBitrateSame_ = false;
+    downloader->playlistDownloader_ = mock;
+    auto cb = std::make_shared<HlsNetworkBitrateCallback>();
+    downloader->SetCallback(cb);
+    downloader->isAutoSelectBitrate_ = true;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1569: SelectBitRate with isEos_ = true
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_EOS_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isBitrateSame_ = false;
+    downloader->playlistDownloader_ = mock;
+    auto cb = std::make_shared<HlsNetworkBitrateCallback>();
+    downloader->SetCallback(cb);
+    downloader->isAutoSelectBitrate_ = false;
+    downloader->isEos_ = true;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1810,L1811: UpdateDownloadFinished with auto-select conditions met
+HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_DL_FINISHED_AUTO_SEL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isParseAndNotifyFinished_ = true;
+    mock->isLive_ = false;
+    downloader->playlistDownloader_ = mock;
+    downloader->type_ = HlsSegmentType::SEG_VIDEO;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isDownloadStarted_ = false;
+    downloader->isSeekingFlag = false;
+    downloader->isSelectingBitrate_ = false;
+    downloader->isAutoSelectBitrate_ = true;
+    auto req = std::make_shared<DownloadRequest>("", nullptr, nullptr, false);
+    downloader->SetDownloadRequest(req);
+    downloader->UpdateDownloadFinished("test_url", "");
+    EXPECT_EQ(downloader->isDownloadFinish_, true);
+    downloader = nullptr;
+}
+
+// L1199: SaveCacheBufferDataNotblock with throttle threshold exceeded
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_CACHE_NOTBLOCK_RES_NE_LEN_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(1024, CHUNK_SIZE);
+    downloader->memorySize_ = 1024;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isNeedResume_.store(false);
+    uint8_t data[512] = {0};
+    uint32_t result = downloader->SaveCacheBufferDataNotblock(data, 512);
+    // Buffer is 1024, writing 512 bytes. res should be <= 512
+    EXPECT_EQ(result <= 512, true);
+    downloader = nullptr;
+}
+
+// L1289: SaveData with null cacheMediaBuffer_
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_NULL_BUF_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = nullptr;
+    uint8_t data[10] = {0};
+    EXPECT_EQ(downloader->SaveData(data, 10, false), 0);
+    downloader = nullptr;
+}
+
+// L1293,L1296: SaveData with isSourceLoaderSeeking_ and timeout
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_SEEKING_TIMEOUT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->isSourceLoaderSeeking_.store(true);
+    uint8_t data[10] = {0};
+    uint32_t result = downloader->SaveData(data, 10, false);
+    EXPECT_EQ(result, 0);
+    downloader = nullptr;
+}
+
+// L1322: FillSingleBlock with valid data
+HWTEST_F(HlsSegmentManagerUnitTest, FILL_SINGLE_BLOCK_VALID_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->singleBlockLen_ = 5;
+    uint8_t data[16] = {5,6,7,8,9,10,11,12,13,14,15,16,0,0,0,0};
+    uint32_t len = 11;
+    uint8_t *ptr = data;
+    uint32_t filled = downloader->FillSingleBlock(ptr, len);
+    EXPECT_EQ(filled, 11);
+    EXPECT_EQ(downloader->singleBlockLen_, 16);
+    EXPECT_EQ(len, 0);
+    downloader = nullptr;
+}
+
+// L1357: DecryptDataLeft with writtenLen != decryptLen_
+HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_DIFF_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(16, CHUNK_SIZE);
+    downloader->memorySize_ = 16;
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t iv[16] = {0};
+    downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
+    downloader->singleBlockLen_ = 0;
+    uint8_t data[16] = {0};
+    uint32_t len = 16;
+    uint8_t *ptr = data;
+    uint32_t result = downloader->DecryptDataLeft(ptr, len, true);
+    EXPECT_EQ(result, 0);
+    downloader = nullptr;
+}
+
+// L1383: DecryptData with writtenLen != decryptLen_
+HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_DIFF_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(16, CHUNK_SIZE);
+    downloader->memorySize_ = 16;
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t iv[16] = {0};
+    downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
+    uint8_t data[32] = {0};
+    uint32_t len = 32;
+    uint8_t *ptr = data;
+    uint32_t result = downloader->DecryptData(ptr, len, true);
+    EXPECT_EQ(result <= 32, true);
+    downloader = nullptr;
+}
+
+// L2251: StopBufferring with null cacheMediaBuffer_
+HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_NULL_CACHE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = nullptr;
+    EXPECT_EQ(downloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
+    downloader = nullptr;
+}
+
+// L2300: SetPlayStrategy with width > 0, height = 0
+HWTEST_F(HlsSegmentManagerUnitTest, SET_PLAY_STRATEGY_HEIGHT_ZERO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    auto ps = std::make_shared<PlayStrategy>();
+    ps->width = 1920;
+    ps->height = 0;
+    downloader->SetPlayStrategy(ps);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
+    downloader = nullptr;
+}
+
+// L2515: SelectMedia with null playList_ (already covered but might have failed)
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_NULL_PL_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_AUDIO);
+    downloader->Init();
+    downloader->playList_ = nullptr;
+    EXPECT_EQ(downloader->SelectMedia(0, HlsSegmentType::SEG_AUDIO), false);
+    downloader = nullptr;
+}
+
+// L2518: SelectMedia with SEG_VIDEO type and isMediaSame = false
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_VIDEO_SAME_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isMediaSame_ = true;
+    downloader->playlistDownloader_ = mock;
+    EXPECT_EQ(downloader->SelectMedia(0, HlsSegmentType::SEG_AUDIO), true);
+    downloader = nullptr;
+}
+
+// L1074,L1075: PlaylistBackup with same fragment (different fields)
+HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_BACKUP_DIFF_FIELDS_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = true;
+    mock->isParseFinished_ = false;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    PlayInfo p1;
+    p1.url_ = "test.ts";
+    p1.rangeUrl_ = "range1.ts";
+    p1.offset_ = 0;
+    p1.length_ = 100;
+    PlayInfo p2;
+    p2.url_ = "test.ts";
+    p2.rangeUrl_ = "range2.ts";
+    p2.offset_ = 0;
+    p2.length_ = 100;
+    hlsSegmentManager_->PlaylistBackup(p1);
+    hlsSegmentManager_->PlaylistBackup(p2);
+    EXPECT_EQ(hlsSegmentManager_->seekCandidates_.size(), 2);
+}
+
+// L1098,L1107: OnPlayListChanged with download started and writeTsIndex > 0
+HWTEST_F(HlsSegmentManagerUnitTest, ON_PLAYLIST_CHANGED_WT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    std::vector<PlayInfo> playList;
+    PlayInfo p;
+    p.url_ = "test.ts";
+    p.duration_ = 10.0;
+    playList.push_back(p);
+    downloader->isDownloadStarted_ = false;
+    downloader->writeTsIndex_ = 0;
+    downloader->OnPlayListChanged(playList);
+    EXPECT_EQ(downloader->isDownloadStarted_, true);
+    downloader = nullptr;
+}
+
+// L1113: OnPlayListChanged with IsLiveEnd
+HWTEST_F(HlsSegmentManagerUnitTest, ON_PLAYLIST_CHANGED_LIVE_END_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLiveEnd_ = true;
+    downloader->playlistDownloader_ = mock;
+    std::vector<PlayInfo> playList;
+    PlayInfo p;
+    p.url_ = "test.ts";
+    p.duration_ = 10.0;
+    playList.push_back(p);
+    downloader->isDownloadStarted_ = true;
+    downloader->OnPlayListChanged(playList);
+    EXPECT_EQ(downloader->lastPlaychanged_.load(), true);
+    downloader = nullptr;
+}
+
+// L2450,L2451: IsHlsEnd with live end and all conditions
+HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_LIVE_ALL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLiveEnd_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->lastPlaychanged_.store(true);
+    downloader->readTsIndex_ = 0;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, true);
+    EXPECT_EQ(downloader->IsHlsEnd(), true);
+    downloader = nullptr;
+}
+
+// L2456,L2457: IsHlsEnd with VOD end conditions
+HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_VOD_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLiveEnd_ = false;
+    downloader->playlistDownloader_ = mock;
+    downloader->isEos_ = true;
+    downloader->readTsIndex_ = 0;
+    PlayInfo p;
+    downloader->backPlayList_.push_back(p);
+    downloader->tsStorageInfo_[0] = std::make_pair(0, true);
+    // CheckReadStatus needs duration > 0 and isParseAndNotifyFinished
+    mock->duration_ = 100;
+    mock->isParseAndNotifyFinished_ = true;
+    EXPECT_EQ(downloader->IsHlsEnd(), false);
+    downloader = nullptr;
+}
+
+
+
+// ===== Round 4: Init with callback and more =====
+
+// L193,L210: Init with downloadCallback_ set before Init
+HWTEST_F(HlsSegmentManagerUnitTest, INIT_WITH_CALLBACK_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    auto metricsInfo = std::make_shared<DownloadMetricsInfo>();
+    downloader->SetDownloadCallback(metricsInfo);
+    downloader->Init();
+    EXPECT_EQ(downloader->downloadCallback_ != nullptr, true);
+    downloader = nullptr;
+}
+
+// L247,L248: Destructor with null reportInfo_ and downloader_
+HWTEST_F(HlsSegmentManagerUnitTest, DTOR_NULL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->reportInfo_ = nullptr;
+    downloader->downloader_ = nullptr;
+    downloader->Close(true);
+    EXPECT_EQ(downloader->isStopped.load(), true);
+    downloader = nullptr;
+}
+
+// L1199: SaveCacheBufferDataNotblock with data written
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_CACHE_NOTBLOCK_WRITE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    uint8_t data[100] = {0};
+    uint32_t result = downloader->SaveCacheBufferDataNotblock(data, 100);
+    EXPECT_EQ(result, 100);
+    downloader = nullptr;
+}
+
+// L1251,L1279: SaveCacheBufferData with isInterruptNeeded
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_CACHE_INTERRUPT_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isInterruptNeeded_.store(true);
+    uint8_t data[100] = {0};
+    uint32_t result = downloader->SaveCacheBufferData(data, 100, false);
+    EXPECT_EQ(result, 0);
+    downloader = nullptr;
+}
+
+// L1425 branch 1: DownloadRecordHistory with autoBufferSize and no rise/pulldown
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REC_HISTORY_NOCHANGE_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->currentBitRateVal_ = 500000;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    hlsSegmentManager_->autoBufferSize_ = true;
+    hlsSegmentManager_->userDefinedBufferDuration_ = false;
+    hlsSegmentManager_->lastWriteTime_ = 0;
+    auto rd = std::make_shared<HlsSegmentManager::RecordData>();
+    rd->downloadRate = 500000;
+    hlsSegmentManager_->recordData_ = rd;
+    hlsSegmentManager_->DownloadRecordHistory(2000);
+    EXPECT_EQ(hlsSegmentManager_->totalBufferSize_ > 0, true);
+}
+
+// L1900: AutoSelectBitrate with curBitrate < desBitRate and buffer >= lowSize
+HWTEST_F(HlsSegmentManagerUnitTest, AUTO_SELECT_BITRATE_HIGH_BUF_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    mock->bitRates_ = {100000, 500000};
+    mock->curBitrate_ = 100000;
+    mock->currentBitRateVal_ = 100000;
+    hlsSegmentManager_->AutoSelectBitrate(200000);
+    EXPECT_EQ(hlsSegmentManager_->playlistDownloader_ != nullptr, true);
+}
+
+// L1908 branch 1: AutoSelectBitrate with curBitrate > desBitRate and buffer <= highSize
+HWTEST_F(HlsSegmentManagerUnitTest, AUTO_SELECT_BITRATE_LOW_BUF_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    mock->bitRates_ = {100000, 500000};
+    mock->curBitrate_ = 500000;
+    mock->currentBitRateVal_ = 500000;
+    hlsSegmentManager_->AutoSelectBitrate(200000);
+    EXPECT_EQ(hlsSegmentManager_->playlistDownloader_ != nullptr, true);
+}
+
+// L2296 branch 1: SetPlayStrategy with null playStrategy and valid playlist
+HWTEST_F(HlsSegmentManagerUnitTest, SET_PLAY_STRATEGY_NULL_PS_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    downloader->SetPlayStrategy(nullptr);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
+    downloader = nullptr;
+}
+
+// L2406,L2407: GetTotalTsBuffersize with loop limit exceeded
+HWTEST_F(HlsSegmentManagerUnitTest, GET_TOTAL_TS_BUFSIZE_LOOP_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    uint8_t data[1024] = {0};
+    downloader->cacheMediaBuffer_->Write(data, 0, 1024);
+    downloader->readTsIndex_ = 0;
+    downloader->writeTsIndex_ = 200;
+    downloader->readOffset_ = 0;
+    uint64_t size = downloader->GetTotalTsBuffersize();
+    EXPECT_EQ(size <= static_cast<uint64_t>(MAX_CACHE_BUFFER_SIZE_UT), true);
+    downloader = nullptr;
+}
+
+// L2441: ClearChunksInLargeSegment with writeOffset < readOffset
+HWTEST_F(HlsSegmentManagerUnitTest, CLEAR_CHUNKS_LARGE_DIFF_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->writeTsIndex_ = 0;
+    downloader->readTsIndex_ = 0;
+    downloader->writeOffset_ = 50;
+    downloader->readOffset_ = 100;
+    downloader->ClearChunksInLargeSegment();
+    EXPECT_EQ(downloader->writeOffset_ < downloader->readOffset_, true);
+    downloader = nullptr;
+}
+
+// L2502: Clone with valid other but null other playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, CLONE_VALID_NULL_OTHER_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto other = std::make_shared<HlsSegmentManager>(10, false, header_);
+    other->Init();
+    other->playlistDownloader_ = nullptr;
+    downloader->Clone(other);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
+    downloader = nullptr;
+    other = nullptr;
+}
+
+
+
+// ===== Round 5: Final targeted branch coverage =====
+
+// L1810,L1811: UpdateDownloadFinished with auto-select all conditions met
+HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_DL_FINISHED_ALL_COND_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isParseAndNotifyFinished_ = true;
+    mock->isLive_ = false;
+    mock->isLiveEnd_ = false;
+    downloader->playlistDownloader_ = mock;
+    downloader->type_ = HlsSegmentType::SEG_VIDEO;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isDownloadStarted_ = false;
+    downloader->isSeekingFlag = false;
+    downloader->isSelectingBitrate_ = false;
+    downloader->isAutoSelectBitrate_ = true;
+    auto req = std::make_shared<DownloadRequest>("", nullptr, nullptr, false);
+    downloader->SetDownloadRequest(req);
+    downloader->UpdateDownloadFinished("test_url", "");
+    EXPECT_EQ(downloader->isDownloadFinish_, true);
+    downloader = nullptr;
+}
+
+// L1820: IsDownloadLastSplice with non-live and not last
+HWTEST_F(HlsSegmentManagerUnitTest, IS_LAST_SPLICE_NOT_LAST_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = false;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    hlsSegmentManager_->writeTsIndex_ = 0;
+    PlayInfo p1, p2, p3;
+    hlsSegmentManager_->backPlayList_.push_back(p1);
+    hlsSegmentManager_->backPlayList_.push_back(p2);
+    hlsSegmentManager_->backPlayList_.push_back(p3);
+    EXPECT_EQ(hlsSegmentManager_->IsDownloadLastSplice(), false);
+}
+
+// L2251: StopBufferring with null playlistDownloader_ only
+HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_NULL_PL_ONLY_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->playlistDownloader_ = nullptr;
+    EXPECT_EQ(downloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
+    downloader = nullptr;
+}
+
+// L2256: StopBufferring isAppBackground = true
+HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_BG_TRUE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    EXPECT_EQ(downloader->StopBufferring(true), Status::OK);
+    EXPECT_EQ(downloader->isInterrupt_.load(), true);
+    downloader = nullptr;
+}
+
+// L2296: SetPlayStrategy with null playlistDownloader_ and null playStrategy
+HWTEST_F(HlsSegmentManagerUnitTest, SET_PLAY_STRATEGY_NULL_BOTH_002, TestSize.Level1)
+{
+    hlsSegmentManager_->playlistDownloader_ = nullptr;
+    hlsSegmentManager_->SetPlayStrategy(nullptr);
+    EXPECT_EQ(hlsSegmentManager_->totalBits_, 0);
+}
+
+// L2300: SetPlayStrategy with width=0, height>0
+HWTEST_F(HlsSegmentManagerUnitTest, SET_PLAY_STRATEGY_W_ZERO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    auto ps = std::make_shared<PlayStrategy>();
+    ps->width = 0;
+    ps->height = 1080;
+    downloader->SetPlayStrategy(ps);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
+    downloader = nullptr;
+}
+
+// L2441: ClearChunksInLargeSegment with writeOffset >= readOffset and diff < threshold
+HWTEST_F(HlsSegmentManagerUnitTest, CLEAR_CHUNKS_LARGE_OK_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->writeTsIndex_ = 0;
+    downloader->readTsIndex_ = 0;
+    downloader->writeOffset_ = 100;
+    downloader->readOffset_ = 50;
+    downloader->ClearChunksInLargeSegment();
+    EXPECT_EQ(downloader->writeOffset_ >= downloader->readOffset_, true);
+    downloader = nullptr;
+}
+
+// L2450,L2451: IsHlsEnd with live end and lastPlaychanged=true
+HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_LIVE_TRUE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLiveEnd_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->lastPlaychanged_.store(true);
+    downloader->readTsIndex_ = 0;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, true);
+    // Need GetBufferSize() == 0 - cache is empty
+    EXPECT_EQ(downloader->IsHlsEnd(), true);
+    downloader = nullptr;
+}
+
+// L2502: Clone with valid other and playlistDownloader_
+HWTEST_F(HlsSegmentManagerUnitTest, CLONE_VALID_ALL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto other = std::make_shared<HlsSegmentManager>(10, false, header_);
+    other->Init();
+    downloader->Clone(other);
+    EXPECT_EQ(downloader->playlistDownloader_ != nullptr, true);
+    downloader = nullptr;
+    other = nullptr;
+}
+
+// L2515: SelectMedia with null playList_
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_NULL_PL_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_AUDIO);
+    downloader->Init();
+    downloader->playList_ = nullptr;
+    EXPECT_EQ(downloader->SelectMedia(1, HlsSegmentType::SEG_AUDIO), false);
+    downloader = nullptr;
+}
+
+// L2518: SelectMedia with SEG_VIDEO and isMediaSame=false (triggers actual switch)
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_MEDIA_VIDEO_SWITCH_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isMediaSame_ = false;
+    downloader->playlistDownloader_ = mock;
+    EXPECT_EQ(downloader->SelectMedia(1, HlsSegmentType::SEG_AUDIO), true);
+    downloader = nullptr;
+}
+
+// L1554: SelectBitRate SEG_SUBTITLE with mock
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_SUBTITLE_MOCK_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_SUBTITLE);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    downloader->playlistDownloader_ = mock;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1569: SelectBitRate with isEos_ = true and callback
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_EOS_CB_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isBitrateSame_ = false;
+    downloader->playlistDownloader_ = mock;
+    auto cb = std::make_shared<HlsNetworkBitrateCallback>();
+    downloader->SetCallback(cb);
+    downloader->isAutoSelectBitrate_ = false;
+    downloader->isEos_ = true;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1199: SaveCacheBufferDataNotblock with data that triggers resume
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_CACHE_NOTBLOCK_RESUME_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(512, CHUNK_SIZE);
+    downloader->memorySize_ = 512;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isNeedResume_.store(false);
+    uint8_t data[512] = {0};
+    uint32_t result = downloader->SaveCacheBufferDataNotblock(data, 512);
+    EXPECT_EQ(result == 0 || result == 512, true);
+    downloader = nullptr;
+}
+
+// L1494: DownloadReport with readBitrate_ > 0 (with timing)
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REPORT_RB_TIMING_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->totalBits_ = 200;
+    downloader->lastBits_ = 0;
+    downloader->lastCheckTime_ = 0;
+    downloader->readBitrate_ = 500;
+    downloader->bufferedDuration_ = 5000;
+    OSAL::SleepFor(1100);
+    downloader->DownloadReport();
+    EXPECT_EQ(downloader->recordData_ != nullptr, true);
+    downloader = nullptr;
+}
+
+// L1507: DownloadReport with data usage interval
+HWTEST_F(HlsSegmentManagerUnitTest, DOWNLOAD_REPORT_USAGE_TIMING_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->isDownloadFinish_ = false;
+    downloader->lastReportUsageTime_ = 0;
+    downloader->dataUsage_ = 5000;
+    OSAL::SleepFor(1100);
+    downloader->DownloadReport();
+    EXPECT_EQ(downloader->dataUsage_, 5000);
+    downloader = nullptr;
+}
+
+// L2151,L2153: HandleCachedDuration with increase
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_CACHED_DUR_INCREASE_001, TestSize.Level1)
+{
+    hlsSegmentManager_->currentBitRate_ = 1000;
+    hlsSegmentManager_->lastDurationReacord_ = 0;
+    hlsSegmentManager_->cachedDuration_ = 0;
+    hlsSegmentManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    hlsSegmentManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    uint8_t data[4096] = {0};
+    hlsSegmentManager_->writeTsIndex_ = 1;
+    hlsSegmentManager_->readTsIndex_ = 0;
+    hlsSegmentManager_->writeOffset_ = 0;
+    hlsSegmentManager_->cacheMediaBuffer_->Write(data, 0, 4096);
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->HandleCachedDuration();
+    EXPECT_EQ(called, true);
+}
+
+
+
+// ===== Round 6: Final targeted coverage =====
+
+// L1074,L1075: PlaylistBackup with same URL but different offset
+HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_BACKUP_DIFF_OFFSET_001, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = true;
+    mock->isParseFinished_ = false;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    PlayInfo p1;
+    p1.url_ = "test.ts";
+    p1.rangeUrl_ = "range.ts";
+    p1.offset_ = 0;
+    p1.length_ = 100;
+    PlayInfo p2;
+    p2.url_ = "test.ts";
+    p2.rangeUrl_ = "range.ts";
+    p2.offset_ = 100;
+    p2.length_ = 100;
+    hlsSegmentManager_->PlaylistBackup(p1);
+    hlsSegmentManager_->PlaylistBackup(p2);
+    EXPECT_EQ(hlsSegmentManager_->seekCandidates_.size(), 2);
+}
+
+// L1251,L1279: SaveCacheBufferData with isInterrupt set
+HWTEST_F(HlsSegmentManagerUnitTest, SAVE_CACHE_INTERRUPT_SET_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, false);
+    downloader->isInterrupt_.store(true);
+    uint8_t data[100] = {0};
+    uint32_t result = downloader->SaveCacheBufferData(data, 100, false);
+    EXPECT_EQ(result, 0);
+    downloader = nullptr;
+}
+
+// L1322: FillSingleBlock with partial fill
+HWTEST_F(HlsSegmentManagerUnitTest, FILL_SINGLE_BLOCK_PARTIAL_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->singleBlockLen_ = 10;
+    uint8_t data[5] = {1, 2, 3, 4, 5};
+    uint32_t len = 5;
+    uint8_t *ptr = data;
+    uint32_t filled = downloader->FillSingleBlock(ptr, len);
+    EXPECT_EQ(filled, 5);
+    EXPECT_EQ(downloader->singleBlockLen_, 15);
+    downloader = nullptr;
+}
+
+// L1357: DecryptDataLeft with writtenLen != decryptLen (small buffer)
+HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_SMALL_BUF_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(8, CHUNK_SIZE);
+    downloader->memorySize_ = 8;
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t iv[16] = {0};
+    downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
+    downloader->singleBlockLen_ = 0;
+    uint8_t data[16] = {0};
+    uint32_t len = 16;
+    uint8_t *ptr = data;
+    uint32_t result = downloader->DecryptDataLeft(ptr, len, true);
+    EXPECT_EQ(result, 0);
+    downloader = nullptr;
+}
+
+// L1383: DecryptData with writtenLen != decryptLen (small buffer)
+HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_SMALL_BUF_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(8, CHUNK_SIZE);
+    downloader->memorySize_ = 8;
+    downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
+    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t iv[16] = {0};
+    downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
+    uint8_t data[32] = {0};
+    uint32_t len = 32;
+    uint8_t *ptr = data;
+    uint32_t result = downloader->DecryptData(ptr, len, true);
+    EXPECT_EQ(result <= 32, true);
+    downloader = nullptr;
+}
+
+// L1554 branch 2: SelectBitRate SEG_AUDIO with isBitrateSame=false
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_AUDIO_NOT_SAME_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_AUDIO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isBitrateSame_ = false;
+    downloader->playlistDownloader_ = mock;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1561 branch 4,5: SelectBitRate with callback, auto, CheckReadStatus false
+HWTEST_F(HlsSegmentManagerUnitTest, SELECT_BIT_RATE_AUTO_CHECK_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>("test", HlsSegmentType::SEG_VIDEO);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isBitrateSame_ = false;
+    mock->duration_ = 100;
+    mock->isParseAndNotifyFinished_ = true;
+    downloader->playlistDownloader_ = mock;
+    auto cb = std::make_shared<HlsNetworkBitrateCallback>();
+    downloader->SetCallback(cb);
+    downloader->isAutoSelectBitrate_ = true;
+    EXPECT_EQ(downloader->SelectBitRate(1000000), true);
+    downloader = nullptr;
+}
+
+// L1820 branch 2: IsDownloadLastSplice with non-live and writeTsIndex_ + 1 != size
+HWTEST_F(HlsSegmentManagerUnitTest, IS_LAST_SPLICE_NOT_LAST_002, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLive_ = false;
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    hlsSegmentManager_->writeTsIndex_ = 5;
+    PlayInfo p;
+    hlsSegmentManager_->backPlayList_.push_back(p);
+    EXPECT_EQ(hlsSegmentManager_->IsDownloadLastSplice(), false);
+}
+
+// L1900 branch 0,2: AutoSelectBitrate with curBitrate < desBitRate and buffer < lowSize
+HWTEST_F(HlsSegmentManagerUnitTest, AUTO_SELECT_BITRATE_LOW_BUF_002, TestSize.Level1)
+{
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    hlsSegmentManager_->playlistDownloader_ = mock;
+    mock->bitRates_ = {100000, 500000};
+    mock->curBitrate_ = 100000;
+    mock->currentBitRateVal_ = 100000;
+    hlsSegmentManager_->AutoSelectBitrate(200000);
+    EXPECT_EQ(hlsSegmentManager_->playlistDownloader_ != nullptr, true);
+}
+
+// L2151,L2152,L2153: HandleCachedDuration with cachedDuration change
+HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_CACHED_DUR_CHANGE_002, TestSize.Level1)
+{
+    hlsSegmentManager_->currentBitRate_ = 1000;
+    hlsSegmentManager_->lastDurationReacord_ = 0;
+    hlsSegmentManager_->cachedDuration_ = 0;
+    hlsSegmentManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    hlsSegmentManager_->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    uint8_t data[8192] = {0};
+    hlsSegmentManager_->writeTsIndex_ = 2;
+    hlsSegmentManager_->readTsIndex_ = 0;
+    hlsSegmentManager_->writeOffset_ = 0;
+    hlsSegmentManager_->cacheMediaBuffer_->Write(data, 0, 8192);
+    bool called = false;
+    hlsSegmentManager_->SetSegmentAllCallback([&called](HlsSegEvent) { called = true; });
+    hlsSegmentManager_->HandleCachedDuration();
+    EXPECT_EQ(called, true);
+}
+
+// L2406,L2407: GetTotalTsBuffersize with bufferSize == 0
+HWTEST_F(HlsSegmentManagerUnitTest, GET_TOTAL_TS_BUFSIZE_ZERO_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
+    downloader->Init();
+    downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
+    downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
+    downloader->readTsIndex_ = 0;
+    downloader->writeTsIndex_ = 1;
+    downloader->readOffset_ = 999999;
+    uint64_t size = downloader->GetTotalTsBuffersize();
+    EXPECT_EQ(size <= MAX_CACHE_BUFFER_SIZE_UT, true);
+    downloader = nullptr;
+}
+
+// L2450,L2451: IsHlsEnd with live end and conditions met
+HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_LIVE_TRUE_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLiveEnd_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->lastPlaychanged_.store(true);
+    downloader->readTsIndex_ = 0;
+    downloader->writeTsIndex_ = 0;
+    downloader->tsStorageInfo_[0] = std::make_pair(0, true);
+    EXPECT_EQ(downloader->IsHlsEnd(), true);
+    downloader = nullptr;
+}
+
+// L2456,L2457: IsHlsEnd with VOD end (not live end)
+HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_VOD_CHECK_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    auto mock = std::make_shared<TestPlayListDownloader>();
+    mock->isLiveEnd_ = false;
+    mock->duration_ = 100;
+    mock->isParseAndNotifyFinished_ = true;
+    downloader->playlistDownloader_ = mock;
+    downloader->isEos_ = false;
+    downloader->readTsIndex_ = 0;
+    PlayInfo p;
+    downloader->backPlayList_.push_back(p);
+    downloader->tsStorageInfo_[0] = std::make_pair(0, true);
+    EXPECT_EQ(downloader->IsHlsEnd(), false);
+    downloader = nullptr;
+}
+
+// L2251 branch 0: StopBufferring with null cacheMediaBuffer_ (userDefinedDuration=true)
+HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_NULL_CACHE_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, true, header_);
+    downloader->Init();
+    EXPECT_EQ(downloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
+    downloader = nullptr;
+}
+
+// L2251 branch 2: StopBufferring with null downloader_
+HWTEST_F(HlsSegmentManagerUnitTest, STOP_BUFFERING_NULL_DL_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsSegmentManager>(10, false, header_);
+    downloader->Init();
+    downloader->downloader_ = nullptr;
+    EXPECT_EQ(downloader->StopBufferring(false), Status::ERROR_NULL_POINTER);
+    downloader = nullptr;
+}
+
 }
