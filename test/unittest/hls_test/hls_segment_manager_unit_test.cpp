@@ -3129,8 +3129,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_COMPLETE_BLOCK_001, TestSi
     downloader = nullptr;
 }
 
-// ==================== Branch Coverage Supplement ====================
-
 // L1027,L1034,L1040,L1046: nullptr defensive checks for getter methods
 HWTEST_F(HlsSegmentManagerUnitTest, NULLPTR_GETTERS_001, TestSize.Level1)
 {
@@ -4420,10 +4418,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_EOS_001, TestSize.Level1)
     EXPECT_EQ(downloader->IsHlsEnd(), false);
     downloader = nullptr;
 }
-
-
-
-// ===== Additional branch coverage tests round 2 =====
 
 // L360: UpdateAesDecryptor with nullptr playlistDownloader_
 HWTEST_F(HlsSegmentManagerUnitTest, UPDATE_AES_NULL_PL_001, TestSize.Level1)

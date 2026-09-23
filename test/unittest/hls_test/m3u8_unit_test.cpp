@@ -1494,8 +1494,6 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_Duration_Overflow, TestSize.Level1)
     EXPECT_EQ(m3u8->files_.size(), 1u);
 }
 
-// ===================== Branch coverage additions =====================
-
 HWTEST_F(M3u8UnitTest, ExtractNumber_AllBranches_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");

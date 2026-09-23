@@ -3219,8 +3219,6 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GetStartInfo_NegativeTimeOffset, TestSiz
     EXPECT_EQ(info.second, downloader->master_->precise_);
 }
 
-// ===================== NEW BRANCH COVERAGE TESTS =====================
-
 /**
  * @tc.name: GET_START_INFO_DURATION_NEG1
  * @tc.desc: test GetStartInfo when duration == -1 (live not seekable)
