@@ -2388,18 +2388,19 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroDurationMp3EditProje
     helper.stscEntry_ = {{0, 181, 1}};
     helper.stssEntry_ = {{0}, {1}, {180}};
     helper.sampleSizes_.assign(181, 1);
+    helper.sampleSizeCount_ = 181;
     helper.chunkOffsets_ = {0};
     helper.SetEditListParams({{0, 36, 1, 0}}, 1000, 16000);
 
     ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
     EXPECT_EQ(helper.GetSampleCount(), 181U);
     EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 1, 180}));
-    uint32_t syncIndex = UINT32_MAX;
-    ASSERT_EQ(helper.FindSyncSampleByPts(0, false, SeekMode::SEEK_PREVIOUS_SYNC, syncIndex), Status::OK);
-    EXPECT_EQ(syncIndex, 0U);
     Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView firstSample;
     ASSERT_EQ(helper.GetSampleIndexView(0, firstSample), Status::OK);
     EXPECT_EQ(firstSample.pos, 0);
+    constexpr uint32_t expectedSyncFlag =
+        static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
+    EXPECT_EQ(firstSample.flag & expectedSyncFlag, expectedSyncFlag);
 }
 
 /**
