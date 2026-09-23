@@ -325,6 +325,7 @@ constexpr uint8_t AV3A_CHANNEL_CONFIG_MONO = 0;
 constexpr uint8_t AV3A_CHANNEL_CONFIG_STEREO = 1;
 constexpr uint8_t AV3A_CHANNEL_CONFIG_7_1_4 = 10;
 constexpr uint8_t AV3A_SAMPLING_FREQUENCY_COUNT = 9;
+constexpr size_t AV3A_CHANNEL_CONFIG_COUNT = 9;
 
 struct Av3aResolutionInfo {
     AudioSampleFormat sampleFormat;
@@ -354,7 +355,7 @@ constexpr std::array<int32_t, AV3A_SAMPLING_FREQUENCY_COUNT> AV3A_SAMPLING_RATE_
     192000, 96000, 48000, 44100, 32000, 24000, 22050, 16000, 8000,
 }};
 
-constexpr std::array<Av3aChannelConfig, 9> AV3A_CHANNEL_CONFIG_TABLE = {{
+constexpr std::array<Av3aChannelConfig, AV3A_CHANNEL_CONFIG_COUNT> AV3A_CHANNEL_CONFIG_TABLE = {{
     {0, AudioChannelLayout::MONO, 1},
     {1, AudioChannelLayout::STEREO, 2},
     {2, AudioChannelLayout::CH_5POINT1, 6},
