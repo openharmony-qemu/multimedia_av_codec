@@ -352,6 +352,7 @@ constexpr std::array<Av3aResolutionInfo, 4> AV3A_RESOLUTION_TABLE = {{
 }};
 
 constexpr std::array<int32_t, AV3A_SAMPLING_FREQUENCY_COUNT> AV3A_SAMPLING_RATE_TABLE = {{
+    // AV3A FS table, aligned with third_party/ffmpeg/libavcodec/av3a.h.
     192000, 96000, 48000, 44100, 32000, 24000, 22050, 16000, 8000,
 }};
 
@@ -3024,7 +3025,9 @@ Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const A
 
     // 1000为av3a bitrate转换为bps
     trackMeta.Set<Tag::MEDIA_BITRATE>(static_cast<int64_t>(bitrateKbps) * 1000);
-    trackMeta.Set<Tag::AUDIO_SAMPLE_RATE>(params.sampleRate);
+    if (params.sampleRate > 0) {
+        trackMeta.Set<Tag::AUDIO_SAMPLE_RATE>(params.sampleRate);
+    }
     trackMeta.Set<Tag::AUDIO_SAMPLE_FORMAT>(AV3A_RESOLUTION_TABLE[resolutionIndex].sampleFormat);
     trackMeta.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AV3A_RESOLUTION_TABLE[resolutionIndex].bitsPerSample);
     if (lastTrack_->audioSampleEntryBitsPerCodedSample > 0) {
