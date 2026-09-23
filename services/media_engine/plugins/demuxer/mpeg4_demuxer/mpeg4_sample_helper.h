@@ -72,6 +72,7 @@ public:
     Status SetChunkOffsetParams(uint32_t type, int64_t dataOffset, size_t dataSize);
     Status SetSampleToChunkParams(int64_t dataOffset, size_t dataSize);
     Status SetSampleDependencyTypeParams(int64_t ctxOffset, int64_t dataOffset, size_t dataSize);
+    Status SetRapSampleGroupParams(int64_t dataOffset, size_t dataSize);
     Status SetTrackExtendsParams(int64_t dataOffset, size_t dataSize);
     Status SetTrackFragmentHeaderParams(int64_t dataOffset, int64_t dataSize, uint32_t flag, int64_t moofOffset);
     Status SetTrackFragmentDecodeTimeParams(int64_t dataOffset, int64_t dataSize);
@@ -423,6 +424,7 @@ private:
         EditListProcessContext& processCtx);
     void FinalizeAppliedEditList(EditListBuildContext& buildCtx);
     Status SetFieldSize(uint32_t atomType, int64_t &currentOffset, uint32_t& fieldSize);
+    Status AddRapSyncSamples(const uint8_t* data, uint32_t entryCount);
     Status ProcessSampleSizeData(uint32_t atomType, int64_t currentOffset, uint32_t size,
         uint32_t fieldSize, uint32_t numSampleSizes);
     bool HasTfhdRemainingData(const TfhdParseContext& ctx, size_t fieldSize) const;

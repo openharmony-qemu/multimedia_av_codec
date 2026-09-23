@@ -2464,6 +2464,29 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroDurationMp3EditProje
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_RapSampleGroupSync_001
+ * @tc.desc: Verify rap sample groups add random-access samples to sync flags.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_RapSampleGroupSync_001, TestSize.Level1)
+{
+    std::vector<uint8_t> sbgp;
+    AppendU32(sbgp, 0);
+    AppendU32(sbgp, static_cast<uint32_t>(Plugins::MPEG4::FourccType("rap ")));
+    AppendU32(sbgp, 6);
+    for (const auto& entry : std::vector<std::pair<uint32_t, uint32_t>> {
+        {60, 0}, {1, 1}, {59, 0}, {1, 1}, {58, 0}, {1, 1}}) {
+        AppendU32(sbgp, entry.first);
+        AppendU32(sbgp, entry.second);
+    }
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.stssEntry_ = {{0}};
+    helper.dataReader_ = CreateReaderForBytes(sbgp);
+    ASSERT_EQ(helper.SetRapSampleGroupParams(0, sbgp.size()), Status::OK);
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 60, 120, 179}));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_Dca3ConfigValidation_001
  * @tc.desc: Verify AV3A sampling boundary, invalid sampling, invalid channel config and metadata rate.
  * @tc.type: FUNC

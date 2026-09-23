@@ -3332,6 +3332,15 @@ Status MPEG4AtomParser::ParseSdtp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     return Status::OK;
 }
 
+Status MPEG4AtomParser::ParseSbgp(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
+{
+    FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
+    ctx->offset += currentAtom.size;
+    Status ret = lastTrack_->sampleHelper->SetRapSampleGroupParams(ctx->dataOffset, currentAtom.dataSize);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set RAP sample group params failed");
+    return Status::OK;
+}
+
 // LCOV_EXCL_START
 Status MPEG4AtomParser::ParseTrex(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
@@ -5212,6 +5221,7 @@ void MPEG4AtomParser::InitParseTable()
         {FourccType("stsc"), &MPEG4AtomParser::ParseStsc}, {FourccType("stsz"), &MPEG4AtomParser::ParseStsz},
         {FourccType("stz2"), &MPEG4AtomParser::ParseStsz}, {FourccType("stco"), &MPEG4AtomParser::ParseStco},
         {FourccType("sdtp"), &MPEG4AtomParser::ParseSdtp},
+        {FourccType("sbgp"), &MPEG4AtomParser::ParseSbgp},
         {FourccType("co64"), &MPEG4AtomParser::ParseStco},
         {FourccType("udta"), &MPEG4AtomParser::ParseUdta},
         {FourccType("meta"), &MPEG4AtomParser::ParseMeta}, {FourccType("ilst"), &MPEG4AtomParser::ParseIlst},
