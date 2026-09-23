@@ -510,7 +510,21 @@ std::shared_ptr<DemuxerDataReader> CreateReaderForBytes(const std::vector<uint8_
 
 std::vector<uint8_t> BuildDca3Config(uint8_t samplingIndex, uint8_t channelIndex)
 {
-    std::vector<uint8_t> data(6, 0);
+    constexpr uint32_t DCA3_CONFIG_SIZE = 6;
+    constexpr uint32_t CODEC_ID_BITS = 4;
+    constexpr uint32_t SAMPLING_INDEX_BITS = 4;
+    constexpr uint32_t NN_TYPE_BITS = 3;
+    constexpr uint32_t RESERVED_BITS = 1;
+    constexpr uint32_t CONTENT_TYPE_BITS = 4;
+    constexpr uint32_t CHANNEL_INDEX_BITS = 7;
+    constexpr uint32_t BITRATE_BITS = 16;
+    constexpr uint32_t RESOLUTION_BITS = 2;
+    constexpr uint32_t LOSSY_CODEC_ID = 2;
+    constexpr uint32_t CHANNEL_BASED_CONTENT = 0;
+    constexpr uint32_t BASELINE_NN_TYPE = 0;
+    constexpr uint32_t TEST_BITRATE_KBPS = 128;
+    constexpr uint32_t TEST_RESOLUTION_INDEX = 1;
+    std::vector<uint8_t> data(DCA3_CONFIG_SIZE, 0);
     uint32_t bitOffset = 0;
     auto appendBits = [&data, &bitOffset](uint32_t value, uint32_t bits) {
         for (uint32_t i = 0; i < bits; ++i) {
@@ -521,15 +535,15 @@ std::vector<uint8_t> BuildDca3Config(uint8_t samplingIndex, uint8_t channelIndex
             ++bitOffset;
         }
     };
-    appendBits(2, 4); // lossy AV3A codec
-    appendBits(samplingIndex, 4);
-    appendBits(0, 3); // baseline NN
-    appendBits(0, 1); // reserved
-    appendBits(0, 4); // channel based
-    appendBits(channelIndex, 7);
-    appendBits(0, 1); // reserved
-    appendBits(128, 16);
-    appendBits(1, 2); // 16-bit sample format
+    appendBits(LOSSY_CODEC_ID, CODEC_ID_BITS);
+    appendBits(samplingIndex, SAMPLING_INDEX_BITS);
+    appendBits(BASELINE_NN_TYPE, NN_TYPE_BITS);
+    appendBits(0, RESERVED_BITS);
+    appendBits(CHANNEL_BASED_CONTENT, CONTENT_TYPE_BITS);
+    appendBits(channelIndex, CHANNEL_INDEX_BITS);
+    appendBits(0, RESERVED_BITS);
+    appendBits(TEST_BITRATE_KBPS, BITRATE_BITS);
+    appendBits(TEST_RESOLUTION_INDEX, RESOLUTION_BITS);
     return data;
 }
 
