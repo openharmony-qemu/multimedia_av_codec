@@ -779,7 +779,10 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
             ParseHdrStaticMetadata(avStream, format);
         }
     }
-    if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && IsMpeg4File(fileType)) {
+
+    TransferCharacteristic colorTrans = Converter::ConvertFFMpegToOHColorTrans(avStream.codecpar->color_trc);
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && IsMpeg4File(fileType) &&
+        colorTrans == TransferCharacteristic::HLG) {
         ParseHLGColorBoxInfo(avStream, format);
         ParseHdrStaticMetadata(avStream, format);
     }
@@ -1168,9 +1171,7 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &forma
 
 void FFmpegFormatHelper::ParseHLGColorBoxInfo(const AVStream& avStream, Meta &format)
 {
-    TransferCharacteristic colorTrans = Converter::ConvertFFMpegToOHColorTrans(avStream.codecpar->color_trc);
-    FALSE_RETURN_MSG_W(colorTrans == TransferCharacteristic::HLG, "ColorTrans is not HLG");
-    format.Set<Tag::VIDEO_COLOR_TRC>(colorTrans);
+    format.Set<Tag::VIDEO_COLOR_TRC>(TransferCharacteristic::HLG);
 
     int colorRange = Converter::ConvertFFMpegToOHColorRange(avStream.codecpar->color_range);
     format.Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(colorRange));
