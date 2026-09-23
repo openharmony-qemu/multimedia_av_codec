@@ -2487,6 +2487,66 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_RapSampleGroupSync_001, 
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_EmptyStssRapSampleGroupSync_001
+ * @tc.desc: Verify rap sample groups override empty-stss first-sample fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EmptyStssRapSampleGroupSync_001, TestSize.Level1)
+{
+    std::vector<uint8_t> sbgp;
+    AppendU32(sbgp, 0);
+    AppendU32(sbgp, static_cast<uint32_t>(Plugins::MPEG4::FourccType("rap ")));
+    AppendU32(sbgp, 5);
+    for (const auto& entry : std::vector<std::pair<uint32_t, uint32_t>> {
+        {1, 1}, {59, 0}, {1, 1}, {58, 0}, {1, 1}}) {
+        AppendU32(sbgp, entry.first);
+        AppendU32(sbgp, entry.second);
+    }
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.emptyStss_ = true;
+    helper.dataReader_ = CreateReaderForBytes(sbgp);
+    ASSERT_EQ(helper.SetRapSampleGroupParams(0, sbgp.size()), Status::OK);
+    EXPECT_FALSE(helper.emptyStss_);
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 60, 119}));
+
+    constexpr uint32_t RAP_GROUP_ENTRY_COUNT = 1;
+    constexpr uint32_t RAP_GROUP_SAMPLE_COUNT = 1;
+    constexpr uint32_t RAP_GROUP_NON_KEY_INDEX = 0;
+    std::vector<uint8_t> nonKeyRap;
+    AppendU32(nonKeyRap, 0);
+    AppendU32(nonKeyRap, static_cast<uint32_t>(Plugins::MPEG4::FourccType("rap ")));
+    AppendU32(nonKeyRap, RAP_GROUP_ENTRY_COUNT);
+    AppendU32(nonKeyRap, RAP_GROUP_SAMPLE_COUNT);
+    AppendU32(nonKeyRap, RAP_GROUP_NON_KEY_INDEX);
+    Plugins::MPEG4::MPEG4SampleHelper fallbackHelper;
+    fallbackHelper.emptyStss_ = true;
+    fallbackHelper.dataReader_ = CreateReaderForBytes(nonKeyRap);
+    ASSERT_EQ(fallbackHelper.SetRapSampleGroupParams(0, nonKeyRap.size()), Status::OK);
+    EXPECT_FALSE(fallbackHelper.emptyStss_);
+    EXPECT_TRUE(fallbackHelper.GetSyncSamplesIndexFromStssEntry().empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_StpsPartialSync_001
+ * @tc.desc: Verify stps partial-sync samples are key and suppress empty-stss fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_StpsPartialSync_001, TestSize.Level1)
+{
+    constexpr uint32_t PARTIAL_SYNC_SAMPLE = 61;
+    std::vector<uint8_t> stps;
+    AppendU32(stps, 0);
+    AppendU32(stps, 1);
+    AppendU32(stps, PARTIAL_SYNC_SAMPLE);
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.emptyStss_ = true;
+    helper.dataReader_ = CreateReaderForBytes(stps);
+    ASSERT_EQ(helper.SetPartialSyncSampleParams(0, stps.size()), Status::OK);
+    EXPECT_FALSE(helper.emptyStss_);
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({60}));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_Dca3ConfigValidation_001
  * @tc.desc: Verify AV3A sampling boundary, invalid sampling, invalid channel config and metadata rate.
  * @tc.type: FUNC
