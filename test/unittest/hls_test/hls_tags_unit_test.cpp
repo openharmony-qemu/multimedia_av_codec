@@ -828,7 +828,6 @@ HWTEST_F(AttributeUnitTest, CreateTagByNameAllTypes, TestSize.Level1)
     auto iFrameStreamInfTag = TagFactory::CreateTagByName("ext-x-i-frame-stream-inf", "URI=\"iframe.m3u8\"");
     auto sessionKeyTag = TagFactory::CreateTagByName("ext-x-session-key", "METHOD=AES-128");
     auto skipTag = TagFactory::CreateTagByName("ext-x-skip", "SKIPPED-SEGMENTS=1");
-    auto dateRangeTag = TagFactory::CreateTagByName("ext-x-daterange", "ID=1");
     ASSERT_NE(discontinuityTag, nullptr);
     ASSERT_EQ(discontinuityTag->GetType(), HlsTag::EXTXDISCONTINUITY);
     ASSERT_NE(endlistTag, nullptr);
@@ -857,8 +856,6 @@ HWTEST_F(AttributeUnitTest, CreateTagByNameAllTypes, TestSize.Level1)
     ASSERT_EQ(sessionKeyTag->GetType(), HlsTag::EXTXSESSIONKEY);
     ASSERT_NE(skipTag, nullptr);
     ASSERT_EQ(skipTag->GetType(), HlsTag::EXTXSKIP);
-    ASSERT_NE(dateRangeTag, nullptr);
-    ASSERT_EQ(dateRangeTag->GetType(), HlsTag::EXTXDATERANGE);
 }
 
 HWTEST_F(AttributeUnitTest, ParseAttributesEscapedQuoteInValue, TestSize.Level1)

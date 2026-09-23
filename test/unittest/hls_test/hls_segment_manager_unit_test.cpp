@@ -3968,7 +3968,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_WRITE_ERR_001, TestSize.Le
     downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
     downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
-    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t key[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     uint8_t iv[16] = {0};
     downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
     downloader->singleBlockLen_ = 0;
@@ -4325,7 +4325,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SAVE_DATA_ENCRYPTED_001, TestSize.Level1)
     downloader->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
     downloader->cacheMediaBuffer_->Init(MAX_CACHE_BUFFER_SIZE_UT, CHUNK_SIZE);
     downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
-    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t key[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     uint8_t iv[16] = {0};
     downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
     downloader->writeTsIndex_ = 0;
@@ -4342,7 +4342,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, FILL_SINGLE_BLOCK_001, TestSize.Level1)
     auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, true, header_);
     downloader->Init();
     downloader->singleBlockLen_ = 0;
-    uint8_t data[16] = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
+    uint8_t data[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
     uint32_t len = 16;
     uint8_t *ptr = data;
     uint32_t filled = downloader->FillSingleBlock(ptr, len);
@@ -5134,7 +5134,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, FILL_SINGLE_BLOCK_VALID_001, TestSize.Level1
     auto downloader = std::make_shared<HlsSegmentManager>(MAX_CACHE_BUFFER_SIZE_UT, false, header_);
     downloader->Init();
     downloader->singleBlockLen_ = 5;
-    uint8_t data[16] = {5,6,7,8,9,10,11,12,13,14,15,16,0,0,0,0};
+    uint8_t data[16] = {5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 0, 0, 0, 0};
     uint32_t len = 11;
     uint8_t *ptr = data;
     uint32_t filled = downloader->FillSingleBlock(ptr, len);
@@ -5153,7 +5153,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_DIFF_001, TestSize.Level1)
     downloader->cacheMediaBuffer_->Init(16, CHUNK_SIZE);
     downloader->memorySize_ = 16;
     downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
-    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t key[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     uint8_t iv[16] = {0};
     downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
     downloader->singleBlockLen_ = 0;
@@ -5174,7 +5174,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_DIFF_001, TestSize.Level1)
     downloader->cacheMediaBuffer_->Init(16, CHUNK_SIZE);
     downloader->memorySize_ = 16;
     downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
-    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t key[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     uint8_t iv[16] = {0};
     downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
     uint8_t data[32] = {0};
@@ -5725,10 +5725,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, HANDLE_CACHED_DUR_INCREASE_001, TestSize.Lev
     EXPECT_EQ(called, true);
 }
 
-
-
-// ===== Round 6: Final targeted coverage =====
-
 // L1074,L1075: PlaylistBackup with same URL but different offset
 HWTEST_F(HlsSegmentManagerUnitTest, PLAYLIST_BACKUP_DIFF_OFFSET_001, TestSize.Level1)
 {
@@ -5789,7 +5785,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_LEFT_SMALL_BUF_001, TestSize.Le
     downloader->cacheMediaBuffer_->Init(8, CHUNK_SIZE);
     downloader->memorySize_ = 8;
     downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
-    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t key[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     uint8_t iv[16] = {0};
     downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
     downloader->singleBlockLen_ = 0;
@@ -5810,7 +5806,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, DECRYPT_DATA_SMALL_BUF_001, TestSize.Level1)
     downloader->cacheMediaBuffer_->Init(8, CHUNK_SIZE);
     downloader->memorySize_ = 8;
     downloader->aesDecryptor_ = std::make_shared<AesDecryptor>();
-    uint8_t key[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+    uint8_t key[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     uint8_t iv[16] = {0};
     downloader->aesDecryptor_->OnSourceKeyChange(key, 16, iv);
     uint8_t data[32] = {0};
