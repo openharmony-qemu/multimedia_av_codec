@@ -5324,10 +5324,6 @@ HWTEST_F(HlsSegmentManagerUnitTest, IS_HLS_END_VOD_001, TestSize.Level1)
     downloader = nullptr;
 }
 
-
-
-// ===== Round 4: Init with callback and more =====
-
 // L193,L210: Init with downloadCallback_ set before Init
 HWTEST_F(HlsSegmentManagerUnitTest, INIT_WITH_CALLBACK_001, TestSize.Level1)
 {
