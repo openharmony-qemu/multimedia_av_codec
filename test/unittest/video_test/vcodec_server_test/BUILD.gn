@@ -185,7 +185,10 @@ ohos_source_set("poc_consumer_listener") {
   sanitize = av_codec_sanitize
   sources = [ "./mock/poc_consumer_listener.cpp" ]
   include_dirs = [ "./mock/include" ]
-  external_deps = [ "graphic_surface:surface" ]
+  external_deps = [ 
+    "c_utils:utils",
+    "graphic_surface:surface",
+  ]
   subsystem_name = "multimedia"
   part_name = "av_codec"
 }

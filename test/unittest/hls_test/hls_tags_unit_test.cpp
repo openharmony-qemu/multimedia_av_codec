@@ -45,7 +45,7 @@ void AttributeUnitTest::TearDown(void)
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_Decimal_0001, TestSize.Level1)
 {
-    EXPECT_NE(attribute->Decimal(), 0.0);
+    EXPECT_EQ(attribute->Decimal(), 3ULL);
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_QuotedString_0001, TestSize.Level1)
@@ -55,7 +55,7 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_QuotedString_0001, TestSize.Level1)
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_FloatingPoint_0001, TestSize.Level1)
 {
-    EXPECT_NE(attribute->FloatingPoint(), 0.0);
+    EXPECT_EQ(attribute->FloatingPoint(), 3.0);
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_HexSequence_0001, TestSize.Level1)
@@ -67,15 +67,15 @@ HWTEST_F(AttributeUnitTest, HLS_TAGS_HexSequence_0001, TestSize.Level1)
 HWTEST_F(AttributeUnitTest, HLS_TAGS_GetByteRange_0001, TestSize.Level0)
 {
     std::pair<std::size_t, std::size_t> range = attribute->GetByteRange();
-    EXPECT_GE(range.first, 0);
-    EXPECT_GE(range.second, 0);
+    EXPECT_EQ(range.first, static_cast<std::size_t>(0));
+    EXPECT_EQ(range.second, static_cast<std::size_t>(3));
 }
 
 HWTEST_F(AttributeUnitTest, HLS_TAGS_GetResolution_0001, TestSize.Level1)
 {
     std::pair<int, int> sol = attribute->GetResolution();
-    EXPECT_GE(sol.first, 0);
-    EXPECT_GE(sol.second, 0);
+    EXPECT_EQ(sol.first, 3);
+    EXPECT_EQ(sol.second, 0);
 }
 
 HWTEST_F(AttributeUnitTest, GetName, TestSize.Level0)
@@ -681,5 +681,295 @@ HWTEST_F(AttributeUnitTest, IsValuesListSection_InvalidTag, TestSize.Level0)
 {
     EXPECT_FALSE(IsValuesListSection(HlsTag::EXTXKEY));
     EXPECT_FALSE(IsValuesListSection(HlsTag::URI));
+}
+
+HWTEST_F(AttributeUnitTest, HexSequenceNoPrefixLong, TestSize.Level1)
+{
+    Attribute attr("name", "12345");
+    auto result = attr.HexSequence();
+    ASSERT_EQ(result.size(), static_cast<size_t>(0));
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeQuotedWithOffset, TestSize.Level1)
+{
+    Attribute attr("name", "\"10@100\"");
+    auto byteRange = attr.GetByteRange();
+    ASSERT_EQ(byteRange.first, static_cast<std::size_t>(100));
+    ASSERT_EQ(byteRange.second, static_cast<std::size_t>(10));
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeQuotedEmpty, TestSize.Level1)
+{
+    Attribute attr("name", "\"\"");
+    auto byteRange = attr.GetByteRange();
+    ASSERT_EQ(byteRange.first, static_cast<std::size_t>(0));
+    ASSERT_EQ(byteRange.second, static_cast<std::size_t>(0));
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeQuotedAtEnd, TestSize.Level1)
+{
+    Attribute attr("name", "\"10@\"");
+    auto byteRange = attr.GetByteRange();
+    ASSERT_EQ(byteRange.first, static_cast<std::size_t>(0));
+    ASSERT_EQ(byteRange.second, static_cast<std::size_t>(10));
+}
+
+HWTEST_F(AttributeUnitTest, GetResolutionXAtEnd, TestSize.Level1)
+{
+    Attribute attr("name", "1920x");
+    auto resolution = attr.GetResolution();
+    ASSERT_EQ(resolution.first, 1920);
+    ASSERT_EQ(resolution.second, 0);
+}
+
+HWTEST_F(AttributeUnitTest, QuotedStringSingleQuote, TestSize.Level1)
+{
+    Attribute attr("name", "\"");
+    ASSERT_EQ(attr.QuotedString(), "");
+}
+
+HWTEST_F(AttributeUnitTest, QuotedStringBackslashEnd, TestSize.Level1)
+{
+    Attribute attr("name", "\"hello\\\"");
+    ASSERT_EQ(attr.QuotedString(), "hello");
+}
+
+HWTEST_F(AttributeUnitTest, ValuesListTagNoComma, TestSize.Level1)
+{
+    ValuesListTag testTag(HlsTag::EXTINF, "10");
+    auto durationAttr = testTag.GetAttributeByName("DURATION");
+    auto titleAttr = testTag.GetAttributeByName("TITLE");
+    ASSERT_NE(durationAttr, nullptr);
+    ASSERT_EQ(durationAttr->QuotedString(), "10");
+    ASSERT_EQ(titleAttr, nullptr);
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesCRLF, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-VERSION:3\r\n#EXT-X-TARGETDURATION:10\r\n";
+    auto result = ParseEntries(hlsContent, {}, {});
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(2));
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesMasterPlaylist, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=1280000\n"
+        "http://example.com/low.m3u8";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(1));
+    ASSERT_EQ(tagList.front()->GetType(), HlsTag::EXTXSTREAMINF);
+    auto streamTag = std::static_pointer_cast<AttributesTag>(tagList.front());
+    auto uriAttr = streamTag->GetAttributeByName("URI");
+    ASSERT_NE(uriAttr, nullptr);
+    ASSERT_EQ(uriAttr->QuotedString(), "http://example.com/low.m3u8");
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesURIAfterExtinf, TestSize.Level1)
+{
+    std::string hlsContent = "#EXTINF:10,\nhttp://example.com/segment.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(2));
+    ASSERT_EQ(tagList.back()->GetType(), HlsTag::URI);
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesInvalidTag, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-UNKNOWN:value\n";
+    auto result = ParseEntries(hlsContent, {}, {});
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(0));
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesTagNoColon, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-ENDLIST\n";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(1));
+    ASSERT_EQ(tagList.front()->GetType(), HlsTag::EXTXENDLIST);
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesNonExtHash, TestSize.Level1)
+{
+    std::string hlsContent = "#COMMENT\n#EXT-X-VERSION:3\n";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(1));
+    ASSERT_EQ(tagList.front()->GetType(), HlsTag::EXTXVERSION);
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesConsecutiveNewlines, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-VERSION:3\n\n#EXT-X-TARGETDURATION:10\n";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(2));
+}
+
+HWTEST_F(AttributeUnitTest, CreateTagByNameAllTypes, TestSize.Level1)
+{
+    auto discontinuityTag = TagFactory::CreateTagByName("ext-x-discontinuity", "");
+    auto endlistTag = TagFactory::CreateTagByName("ext-x-endlist", "");
+    auto iframesOnlyTag = TagFactory::CreateTagByName("ext-x-i-frames-only", "");
+    auto cueOutTag = TagFactory::CreateTagByName("ext-x-cue-out", "");
+    auto cueInTag = TagFactory::CreateTagByName("ext-x-cue-in", "");
+    auto uriTag = TagFactory::CreateTagByName("", "http://test.com");
+    auto versionTag = TagFactory::CreateTagByName("ext-x-version", "3");
+    auto byterangeTag = TagFactory::CreateTagByName("ext-x-byterange", "10");
+    auto dateTimeTag = TagFactory::CreateTagByName("ext-x-program-date-time", "2024-01-01");
+    auto targetDurationTag = TagFactory::CreateTagByName("ext-x-targetduration", "10");
+    auto mediaSeqTag = TagFactory::CreateTagByName("ext-x-media-sequence", "0");
+    auto discSeqTag = TagFactory::CreateTagByName("ext-x-discontinuity-sequence", "0");
+    auto playlistTypeTag = TagFactory::CreateTagByName("ext-x-playlist-type", "VOD");
+    auto mapTag = TagFactory::CreateTagByName("ext-x-map", "URI=\"init.mp4\"");
+    auto mediaTag = TagFactory::CreateTagByName("ext-x-media", "TYPE=AUDIO");
+    auto startTag = TagFactory::CreateTagByName("ext-x-start", "TIME-OFFSET=0");
+    auto iFrameStreamInfTag = TagFactory::CreateTagByName("ext-x-i-frame-stream-inf", "URI=\"iframe.m3u8\"");
+    auto sessionKeyTag = TagFactory::CreateTagByName("ext-x-session-key", "METHOD=AES-128");
+    auto skipTag = TagFactory::CreateTagByName("ext-x-skip", "SKIPPED-SEGMENTS=1");
+    ASSERT_NE(discontinuityTag, nullptr);
+    ASSERT_EQ(discontinuityTag->GetType(), HlsTag::EXTXDISCONTINUITY);
+    ASSERT_NE(endlistTag, nullptr);
+    ASSERT_EQ(endlistTag->GetType(), HlsTag::EXTXENDLIST);
+    ASSERT_NE(iframesOnlyTag, nullptr);
+    ASSERT_EQ(iframesOnlyTag->GetType(), HlsTag::EXTXIFRAMESONLY);
+    ASSERT_NE(cueOutTag, nullptr);
+    ASSERT_EQ(cueOutTag->GetType(), HlsTag::EXTXCUEOUT);
+    ASSERT_NE(cueInTag, nullptr);
+    ASSERT_EQ(cueInTag->GetType(), HlsTag::EXTXCUEIN);
+    ASSERT_NE(uriTag, nullptr);
+    ASSERT_EQ(uriTag->GetType(), HlsTag::URI);
+    ASSERT_NE(versionTag, nullptr);
+    ASSERT_EQ(versionTag->GetType(), HlsTag::EXTXVERSION);
+    ASSERT_NE(byterangeTag, nullptr);
+    ASSERT_EQ(byterangeTag->GetType(), HlsTag::EXTXBYTERANGE);
+    ASSERT_NE(mapTag, nullptr);
+    ASSERT_EQ(mapTag->GetType(), HlsTag::EXTXMAP);
+    ASSERT_NE(mediaTag, nullptr);
+    ASSERT_EQ(mediaTag->GetType(), HlsTag::EXTXMEDIA);
+    ASSERT_NE(startTag, nullptr);
+    ASSERT_EQ(startTag->GetType(), HlsTag::EXTXSTART);
+    ASSERT_NE(iFrameStreamInfTag, nullptr);
+    ASSERT_EQ(iFrameStreamInfTag->GetType(), HlsTag::EXTXIFRAMESTREAMINF);
+    ASSERT_NE(sessionKeyTag, nullptr);
+    ASSERT_EQ(sessionKeyTag->GetType(), HlsTag::EXTXSESSIONKEY);
+    ASSERT_NE(skipTag, nullptr);
+    ASSERT_EQ(skipTag->GetType(), HlsTag::EXTXSKIP);
+}
+
+HWTEST_F(AttributeUnitTest, ParseAttributesEscapedQuoteInValue, TestSize.Level1)
+{
+    AttributesTag testTag(HlsTag::EXTXKEY, "URI=\"test\\value\"");
+    auto uriAttr = testTag.GetAttributeByName("URI");
+    ASSERT_NE(uriAttr, nullptr);
+    ASSERT_EQ(uriAttr->QuotedString(), "testvalue");
+}
+
+HWTEST_F(AttributeUnitTest, ParseAttributesBackslashOutsideQuotes, TestSize.Level1)
+{
+    AttributesTag testTag(HlsTag::EXTXKEY, "KEY=val\\ue");
+    auto keyAttr = testTag.GetAttributeByName("KEY");
+    ASSERT_NE(keyAttr, nullptr);
+    ASSERT_EQ(keyAttr->QuotedString(), "val\\ue");
+}
+
+HWTEST_F(AttributeUnitTest, ParseAttributesCommaInQuotedValue, TestSize.Level1)
+{
+    AttributesTag testTag(HlsTag::EXTXKEY, "URI=\"test,value\"");
+    auto uriAttr = testTag.GetAttributeByName("URI");
+    ASSERT_NE(uriAttr, nullptr);
+    ASSERT_EQ(uriAttr->QuotedString(), "test,value");
+}
+
+HWTEST_F(AttributeUnitTest, ParseAttributesOutOfRangeChar, TestSize.Level1)
+{
+    AttributesTag testTag(HlsTag::EXTXKEY, "KEY=value{extra");
+    auto keyAttr = testTag.GetAttributeByName("KEY");
+    ASSERT_NE(keyAttr, nullptr);
+    ASSERT_EQ(keyAttr->QuotedString(), "valueextra");
+}
+
+HWTEST_F(AttributeUnitTest, ParseAttributesBackslashAtEnd, TestSize.Level1)
+{
+    AttributesTag testTag(HlsTag::EXTXKEY, "URI=\"test\\");
+    const auto& attrs = testTag.GetAllAttributes();
+    ASSERT_EQ(attrs.size(), static_cast<size_t>(1));
+    auto uriAttr = testTag.GetAttributeByName("URI");
+    ASSERT_NE(uriAttr, nullptr);
+    ASSERT_EQ(uriAttr->GetName(), "URI");
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesDefineShort, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-DEFINE:\ntest.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    ASSERT_EQ(result.second.size(), static_cast<size_t>(0));
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(1));
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesDefineNonAscii, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-DEFINE:NAME=\"test\xC0\",VALUE=\"out\"\ntest.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    ASSERT_EQ(result.second.size(), static_cast<size_t>(0));
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(1));
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesImportNotFound, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-DEFINE:IMPORT=\"notexist\"\ntest.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    ASSERT_EQ(result.second.size(), static_cast<size_t>(0));
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(1));
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesQueryParamNotFound, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-DEFINE:QUERYPARAM=\"notexist\"\ntest.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    ASSERT_EQ(result.second.size(), static_cast<size_t>(0));
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(1));
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesPlaceholderNotFound, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-DEFINE:NAME=\"test\",VALUE=\"out\"\n{$unknown}000.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    ASSERT_EQ(result.second.size(), static_cast<size_t>(1));
+    ASSERT_EQ(result.second["test"], "out");
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(0));
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesPlaceholderNonAscii, TestSize.Level1)
+{
+    std::string hlsContent = "{$test\xC0}\n#EXT-X-VERSION:3\n";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(1));
+    ASSERT_EQ(tagList.front()->GetType(), HlsTag::EXTXVERSION);
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQueryNonAscii, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?key=\xC0value";
+    auto params = ParseUriQuery(uri);
+    ASSERT_EQ(params.size(), static_cast<size_t>(0));
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQueryDuplicateKey, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?key=val1&key=val2";
+    auto params = ParseUriQuery(uri);
+    ASSERT_EQ(params.size(), static_cast<size_t>(1));
+    ASSERT_EQ(params["key"], "val1");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQueryInvalidPair, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?invalidpair&key=val";
+    auto params = ParseUriQuery(uri);
+    ASSERT_EQ(params.size(), static_cast<size_t>(1));
+    ASSERT_EQ(params["key"], "val");
 }
 }

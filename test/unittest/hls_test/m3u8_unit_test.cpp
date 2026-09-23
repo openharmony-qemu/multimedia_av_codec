@@ -46,7 +46,7 @@ HWTEST_F(M3u8UnitTest, Init_Tag_Updaters_Map_001, TestSize.Level1)
 {
     double duration = testM3u8->GetDuration();
     bool isLive = testM3u8->IsLive();
-    EXPECT_GE(duration, 0.0);
+    EXPECT_EQ(duration, 0.0);
     EXPECT_EQ(isLive, false);
 }
 
@@ -581,11 +581,13 @@ HWTEST_F(M3u8UnitTest, PARSE_MAP_001, TestSize.Level1)
     m3u8.isHeaderReady_ = false;
     m3u8.ParseMap(tag);
     EXPECT_NE(m3u8.fmp4Header_, nullptr);
+    EXPECT_EQ(m3u8.fmp4HeaderLen, 719u);
 
     M3U8 m3u81(testUri, "");
     m3u81.isHeaderReady_ = true;
     m3u81.ParseMap(tag);
     EXPECT_EQ(m3u81.fmp4Header_, nullptr);
+    EXPECT_EQ(m3u81.fmp4HeaderLen, 0u);
 
     std::shared_ptr<AttributesTag> tag2 = std::make_shared<AttributesTag>(HlsTag::EXTXMAP, "#EXT-X-MAP:");
     M3U8 m3u82(testUri, "");
@@ -616,14 +618,16 @@ HWTEST_F(M3u8UnitTest, SetInterruptState_001, TestSize.Level1)
     m3u8->DownloadMap(url, 0, 0);
     EXPECT_NE(m3u8->downloadHeaderRequest_, nullptr);
     EXPECT_NE(m3u8->downloadRequest_, nullptr);
+    EXPECT_EQ(m3u8->downloadHeaderRequest_->startPos_, 0);
     std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", url);
     master->StartParsing();
     auto stream = std::make_shared<M3U8VariantStream>("test", url,
     std::make_shared<M3U8>(url, "test"));
+    stream->streamId_ = 5;
     master->defaultVariant_ = stream;
     master->defaultVariant_->m3u8_ = nullptr;
     master->SetInterruptState(true);
-    EXPECT_NE(master->defaultVariant_, nullptr);
+    EXPECT_EQ(master->defaultVariant_->streamId_, 5u);
     master->defaultVariant_ = nullptr;
     master->SetInterruptState(true);
     EXPECT_EQ(master->defaultVariant_, nullptr);
@@ -837,11 +841,11 @@ HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_PARSE_FAIL_001, TestSize.Level1)
     M3U8 m3u8("http://example.com/test.m3u8", "");
     m3u8.currentProgramDateTime_ = "invalid-datetime";
     auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
-    auto startDateAttr = std::make_shared<Attribute>("START-DATE", "\"2024-01-01T00:01:00\"");
+    auto startDateAttr = std::make_shared<Attribute>("START-DATE", "\"1970-01-01T00:01:00\"");
     tag->AddAttribute(startDateAttr);
     m3u8.ParseDateRange(tag);
     EXPECT_EQ(m3u8.dateRanges_.size(), 1u);
-    EXPECT_GT(m3u8.dateRanges_.front()->start, 0);
+    EXPECT_EQ(m3u8.dateRanges_.front()->start, 60000);
 }
 
 HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_MULTIPLE_001, TestSize.Level1)
@@ -1225,7 +1229,7 @@ HWTEST_F(M3u8UnitTest, KeyInfos_Secure_Cleanup_In_Destructor, TestSize.Level1)
         EXPECT_EQ(memcmp(keyInfo.key_, testKey, sizeof(testKey)), 0);
     }
     m3u8.reset();
-    EXPECT_TRUE(true);
+    EXPECT_EQ(m3u8, nullptr);
 }
 
 HWTEST_F(M3u8UnitTest, InitializeDownloadHeader_LengthGreaterThanZero_001, TestSize.Level1)
@@ -1317,7 +1321,7 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_PerFragment_IV_NoExplicit, TestSize.Level1)
     EXPECT_EQ(m3u8->sequence_, 2u);
     EXPECT_FALSE(info.uri == "http://example.com/seg1.ts");
     EXPECT_EQ(info.duration, 0.0);
-    EXPECT_NE(duration, 0u);
+    EXPECT_EQ(duration, static_cast<size_t>(10.0 * 1000.0 * 1000.0));
     EXPECT_EQ(m3u8->files_.size(), 1u);
 }
 
@@ -1351,7 +1355,7 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_Explicit_IV, TestSize.Level1)
     EXPECT_EQ(m3u8->sequence_, 101u);
     EXPECT_FALSE(info.uri == "http://example.com/seg1.ts");
     EXPECT_EQ(info.duration, 0.0);
-    EXPECT_NE(duration, 0u);
+    EXPECT_EQ(duration, static_cast<size_t>(10.0 * 1000.0 * 1000.0));
     EXPECT_EQ(m3u8->files_.size(), 1u);
 }
 
@@ -1374,7 +1378,7 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_NoDecrypt, TestSize.Level1)
     EXPECT_EQ(m3u8->sequence_, 2u);
     EXPECT_FALSE(info.uri == "http://example.com/seg1.ts");
     EXPECT_EQ(info.duration, 0.0);
-    EXPECT_NE(duration, 0u);
+    EXPECT_EQ(duration, static_cast<size_t>(10.0 * 1000.0 * 1000.0));
     EXPECT_EQ(m3u8->files_.size(), 1u);
     EXPECT_TRUE(m3u8->isFirstFragmentReady_.load());
 }
@@ -1489,4 +1493,510 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_Duration_Overflow, TestSize.Level1)
     EXPECT_EQ(duration, std::numeric_limits<size_t>::max());
     EXPECT_EQ(m3u8->files_.size(), 1u);
 }
+
+HWTEST_F(M3u8UnitTest, ExtractNumber_AllBranches_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    uint64_t maxVal = std::numeric_limits<uint64_t>::max();
+    EXPECT_EQ(m3u8.ExtractNumber(""), maxVal);
+    EXPECT_EQ(m3u8.ExtractNumber("no_dot_here"), maxVal);
+    EXPECT_EQ(m3u8.ExtractNumber("seg123.ts"), 123u);
+    EXPECT_EQ(m3u8.ExtractNumber("no_digits.ts"), maxVal);
+    EXPECT_EQ(m3u8.ExtractNumber("seg456.ts?q=1"), 456u);
+    EXPECT_EQ(m3u8.ExtractNumber("http://x?q=1"), maxVal);
+}
+
+HWTEST_F(M3u8UnitTest, ShouldSkipSegment_AllBranches_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    EXPECT_FALSE(m3u8.ShouldSkipSegment("seg5.ts", 0, 5));
+    EXPECT_TRUE(m3u8.ShouldSkipSegment("seg5.ts", 3, 5));
+    EXPECT_FALSE(m3u8.ShouldSkipSegment("seg8.ts", 3, 5));
+    EXPECT_FALSE(m3u8.ShouldSkipSegment("seg4.ts", 3, 5));
+}
+
+HWTEST_F(M3u8UnitTest, SetDrmInfo_ValidPssh_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.keyUri_ = std::make_shared<std::string>("base64," + std::string(38, 'A') + "==");
+    std::multimap<std::string, std::vector<uint8_t>> drmInfo;
+    EXPECT_TRUE(m3u8.SetDrmInfo(drmInfo));
+    EXPECT_EQ(drmInfo.size(), 1u);
+    EXPECT_EQ(drmInfo.begin()->first, std::string(32, '0'));
+    EXPECT_EQ(drmInfo.begin()->second.size(), 28u);
+}
+
+HWTEST_F(M3u8UnitTest, ProcessDrmInfos_Success_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.keyUri_ = std::make_shared<std::string>("base64," + std::string(38, 'A') + "==");
+    m3u8.ProcessDrmInfos();
+    EXPECT_FALSE(m3u8.isDecryptAble_);
+    EXPECT_EQ(m3u8.localDrmInfos_.size(), 1u);
+}
+
+HWTEST_F(M3u8UnitTest, SaveMapData_AllBranches_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    EXPECT_EQ(m3u8.SaveMapData(nullptr, 10, false), 0u);
+    uint8_t data[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    EXPECT_EQ(m3u8.SaveMapData(data, 10, false), 0u);
+    m3u8.fmp4Header_ = new uint8_t[16];
+    m3u8.fmp4HeaderLen = 16;
+    EXPECT_EQ(m3u8.SaveMapData(data, 10, false), 10u);
+    EXPECT_EQ(m3u8.downloadHeaderLen_, 10u);
+    uint8_t data2[10] = {2};
+    EXPECT_EQ(m3u8.SaveMapData(data2, 10, false), 6u);
+    EXPECT_EQ(m3u8.downloadHeaderLen_, 16u);
+    EXPECT_EQ(m3u8.SaveMapData(data2, 10, false), 0u);
+    EXPECT_EQ(m3u8.SaveMapData(data, 0, false), 0u);
+    delete[] m3u8.fmp4Header_;
+    m3u8.fmp4Header_ = nullptr;
+    m3u8.fmp4HeaderLen = 0;
+    m3u8.downloadHeaderLen_ = 0;
+}
+
+HWTEST_F(M3u8UnitTest, ParseKey_LargeIv_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXKEY, "METHOD=AES-128,IV=0x" + std::string(40, '1'));
+    m3u8.ParseKey(tag);
+    EXPECT_TRUE(m3u8.hasExplicitIv_.load());
+    for (int i = 0; i < 16; i++) {
+        EXPECT_EQ(m3u8.iv_[i], 0x11);
+    }
+}
+
+HWTEST_F(M3u8UnitTest, SaveData_KeyIndexOutOfBounds_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.isSessionKey_ = false;
+    uint8_t data[16] = {1};
+    EXPECT_EQ(m3u8.SaveData(data, 16, false, 5), 16u);
+    EXPECT_EQ(m3u8.keyLen_, 16u);
+    for (int i = 0; i < 16; i++) {
+        EXPECT_EQ(m3u8.key_[i], data[i]);
+    }
+}
+
+HWTEST_F(M3u8UnitTest, DownloadKey_NullKeyUri_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.keyUri_ = nullptr;
+    m3u8.DownloadKey(true);
+    EXPECT_EQ(m3u8.downloader_, nullptr);
+    EXPECT_EQ(m3u8.keyLen_, 0u);
+    EXPECT_FALSE(m3u8.isDecryptKeyReady_.load());
+}
+
+HWTEST_F(M3u8UnitTest, Update_MasterPlaylistDetected_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    std::string playList = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=1000\nhttp://x.m3u8";
+    EXPECT_FALSE(m3u8.Update(playList, true));
+}
+
+HWTEST_F(M3u8UnitTest, Update_NoCleanFiles_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    std::string playList = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n#EXTINF:5.0,\nseg.ts\n#EXT-X-ENDLIST";
+    EXPECT_TRUE(m3u8.Update(playList, false));
+    EXPECT_FALSE(m3u8.files_.empty());
+    EXPECT_FALSE(m3u8.bLive_);
+}
+
+HWTEST_F(M3u8UnitTest, Update_WithDefine_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8?token=abc", "");
+    m3u8.tagMasterMap_ = {{"KEY", "VAL"}};
+    std::string playList = "#EXTM3U\n#EXT-X-DEFINE:IMPORT=KEY\n#EXTINF:5.0,\nseg.ts";
+    EXPECT_TRUE(m3u8.Update(playList, true));
+    EXPECT_FALSE(m3u8.files_.empty());
+}
+
+HWTEST_F(M3u8UnitTest, UpdateFromTags_Interrupt_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    std::list<std::shared_ptr<Tag>> tags;
+    tags.emplace_back(std::make_shared<Tag>(HlsTag::EXTXENDLIST));
+    tags.emplace_back(std::make_shared<SingleValueTag>(HlsTag::URI, "seg.ts"));
+    m3u8.isInterruptNeeded_ = true;
+    m3u8.UpdateFromTags(tags);
+    EXPECT_EQ(m3u8.files_.size(), 0u);
+}
+
+HWTEST_F(M3u8UnitTest, UpdateFromTags_SkipSegment_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.skipSegmentsNum_ = 3;
+    m3u8.initSequence_ = 5;
+    std::list<std::shared_ptr<Tag>> tags;
+    tags.emplace_back(std::make_shared<SingleValueTag>(HlsTag::URI, "seg5.ts"));
+    m3u8.UpdateFromTags(tags);
+    EXPECT_EQ(m3u8.files_.size(), 0u);
+}
+
+HWTEST_F(M3u8UnitTest, UpdateFromTags_VariousTags_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    std::list<std::shared_ptr<Tag>> tags;
+    tags.emplace_back(std::make_shared<Tag>(HlsTag::EXTXENDLIST));
+    tags.emplace_back(std::make_shared<Tag>(HlsTag::EXTXDISCONTINUITY));
+    tags.emplace_back(std::make_shared<SingleValueTag>(HlsTag::URI, "seg.ts"));
+    m3u8.UpdateFromTags(tags);
+    EXPECT_TRUE(m3u8.hasDiscontinuity_);
+    EXPECT_EQ(m3u8.files_.size(), 1u);
+    EXPECT_FALSE(m3u8.bLive_);
+}
+
+HWTEST_F(M3u8UnitTest, UpdateFromTags_WithExistingFiles_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.files_.emplace_back(std::make_shared<M3U8Fragment>("http://x", 5.0, 1, false));
+    std::list<std::shared_ptr<Tag>> tags;
+    m3u8.UpdateFromTags(tags);
+    EXPECT_EQ(m3u8.files_.size(), 1u);
+}
+
+HWTEST_F(M3u8UnitTest, CreateVariantStream_Valid_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    std::string attr = "URI=\"http://example.com/v1.m3u8\",BANDWIDTH=1000,CODECS=\"avc1.42E01E\"";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXSTREAMINF, attr);
+    playlist.CreateVariantStream(tag);
+    EXPECT_EQ(playlist.variants_.size(), 1u);
+    EXPECT_TRUE(playlist.variants_.front()->isVideo_);
+    EXPECT_NE(playlist.defaultVariant_, nullptr);
+    EXPECT_NE(playlist.firstVideoStream_, nullptr);
+}
+
+HWTEST_F(M3u8UnitTest, CreateVariantStream_IFrame_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    std::string attr = "URI=\"http://example.com/v1.m3u8\",BANDWIDTH=1000";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXIFRAMESTREAMINF, attr);
+    playlist.CreateVariantStream(tag);
+    EXPECT_EQ(playlist.variants_.size(), 1u);
+    EXPECT_TRUE(playlist.variants_.front()->iframe_);
+}
+
+HWTEST_F(M3u8UnitTest, ParseMediaStreamInfo_ValidAudio_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    std::string attr = "URI=\"http://example.com/a.m3u8\",TYPE=AUDIO,GROUP-ID=\"audio1\",NAME=\"eng\","
+        "LANGUAGE=\"en\",DEFAULT=YES,AUTOSELECT=YES,FORCED=YES,CHANNELS=\"2\",INSTREAM-ID=\"CC1\","
+        "CHARACTERISTICS=\"public\"";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXMEDIA, attr);
+    std::shared_ptr<Tag> tagPtr = tag;
+    playlist.ParseMediaStreamInfo(tagPtr);
+    EXPECT_EQ(playlist.audioList_.size(), 1u);
+    auto& media = playlist.audioList_.front();
+    EXPECT_EQ(media->groupID_, "audio1");
+    EXPECT_EQ(media->name_, "eng");
+    EXPECT_EQ(media->lang_, "en");
+    EXPECT_EQ(media->channels_, "2");
+    EXPECT_EQ(media->instreamId_, "CC1");
+    EXPECT_EQ(media->characteristics_, "public");
+    EXPECT_TRUE(media->isDefault_);
+    EXPECT_TRUE(media->autoSelect_);
+    EXPECT_TRUE(media->forced_);
+    EXPECT_EQ(media->type_, M3U8MediaType::M3U8_MEDIA_TYPE_AUDIO);
+}
+
+HWTEST_F(M3u8UnitTest, ParseMediaStreamInfo_Subtitles_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    std::string attr = "URI=\"http://example.com/s.m3u8\",TYPE=SUBTITLES,GROUP-ID=\"sub1\",NAME=\"es\"";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXMEDIA, attr);
+    std::shared_ptr<Tag> tagPtr = tag;
+    playlist.ParseMediaStreamInfo(tagPtr);
+    EXPECT_EQ(playlist.subtitlesList_.size(), 1u);
+    EXPECT_EQ(playlist.subtitlesList_.front()->type_, M3U8MediaType::M3U8_MEDIA_TYPE_SUBTITLES);
+}
+
+HWTEST_F(M3u8UnitTest, ParseStart_Valid_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    std::string attr = "TIME-OFFSET=15,PRECISE=YES";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXSTART, attr);
+    std::shared_ptr<Tag> tagPtr = tag;
+    playlist.ParseStart(tagPtr);
+    EXPECT_DOUBLE_EQ(playlist.timeOffset_, 15.0);
+    EXPECT_TRUE(playlist.precise_);
+    EXPECT_TRUE(playlist.isStart_);
+}
+
+HWTEST_F(M3u8UnitTest, BindVideoMedia_EmptyAudioId_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    auto media = std::make_shared<M3U8Media>("a", "http://example.com/a.m3u8", nullptr);
+    media->groupID_ = "audio1";
+    media->forced_ = true;
+    playlist.audioList_.push_back(media);
+    auto stream = std::make_shared<M3U8VariantStream>("v", "http://example.com/v.m3u8", nullptr);
+    playlist.variants_.push_back(stream);
+    playlist.BindVideoMedia("audio");
+    EXPECT_EQ(stream->audioMedia_.size(), 1u);
+    EXPECT_EQ(stream->defaultAudio_, media);
+}
+
+HWTEST_F(M3u8UnitTest, BindVideoMedia_MatchedGroup_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    auto media = std::make_shared<M3U8Media>("a", "uri", nullptr);
+    media->groupID_ = "grp1";
+    media->isDefault_ = true;
+    playlist.audioList_.push_back(media);
+    auto stream = std::make_shared<M3U8VariantStream>("v", "uri", nullptr);
+    stream->codecs_ = "avc1";
+    stream->audio_ = "grp1";
+    playlist.variants_.push_back(stream);
+    playlist.BindVideoMedia("audio");
+    EXPECT_EQ(stream->audioMedia_.size(), 1u);
+    EXPECT_EQ(stream->audioMedia_.front()->originCodec_, "avc1");
+}
+
+HWTEST_F(M3u8UnitTest, BindVideoMedia_UnmatchedGroup_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    auto media = std::make_shared<M3U8Media>("a", "uri", nullptr);
+    media->groupID_ = "grp1";
+    playlist.audioList_.push_back(media);
+    auto stream = std::make_shared<M3U8VariantStream>("v", "uri", nullptr);
+    stream->audio_ = "grp2";
+    playlist.variants_.push_back(stream);
+    playlist.BindVideoMedia("audio");
+    EXPECT_EQ(stream->audioMedia_.size(), 1u);
+    EXPECT_EQ(stream->audioMedia_.front(), media);
+}
+
+HWTEST_F(M3u8UnitTest, GetDefaultMedieStream_Forced_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    auto stream = std::make_shared<M3U8VariantStream>("v", "uri", nullptr);
+    auto media1 = std::make_shared<M3U8Media>("a", "uri", nullptr);
+    auto media2 = std::make_shared<M3U8Media>("b", "uri", nullptr);
+    media2->forced_ = true;
+    stream->audioMedia_ = {media1, media2};
+    playlist.GetDefaultMedieStream(stream, "audio");
+    EXPECT_EQ(stream->defaultAudio_, media2);
+}
+
+HWTEST_F(M3u8UnitTest, GetDefaultMedieStream_Default_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    auto stream = std::make_shared<M3U8VariantStream>("v", "uri", nullptr);
+    auto media1 = std::make_shared<M3U8Media>("a", "uri", nullptr);
+    media1->autoSelect_ = true;
+    auto media2 = std::make_shared<M3U8Media>("b", "uri", nullptr);
+    media2->isDefault_ = true;
+    stream->audioMedia_ = {media1, media2};
+    playlist.GetDefaultMedieStream(stream, "audio");
+    EXPECT_EQ(stream->defaultAudio_, media2);
+}
+
+HWTEST_F(M3u8UnitTest, GetDefaultMedieStream_AutoSelect_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    auto stream = std::make_shared<M3U8VariantStream>("v", "uri", nullptr);
+    auto media1 = std::make_shared<M3U8Media>("a", "uri", nullptr);
+    media1->autoSelect_ = true;
+    stream->audioMedia_ = {media1};
+    playlist.GetDefaultMedieStream(stream, "audio");
+    EXPECT_EQ(stream->defaultAudio_, media1);
+}
+
+HWTEST_F(M3u8UnitTest, GetDefaultMedieStream_Fallback_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    auto stream = std::make_shared<M3U8VariantStream>("v", "uri", nullptr);
+    auto media1 = std::make_shared<M3U8Media>("a", "uri", nullptr);
+    stream->audioMedia_ = {media1};
+    playlist.GetDefaultMedieStream(stream, "audio");
+    EXPECT_EQ(stream->defaultAudio_, media1);
+}
+
+HWTEST_F(M3u8UnitTest, UpdateMasterPlaylist_NoDefault_001, TestSize.Level1)
+{
+    std::string pl = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=5000000,CODECS=\"mp4a.40.2\"\nhttp://x/v.m3u8";
+    M3U8MasterPlaylist playlist(pl, "http://example.com/master.m3u8");
+    playlist.StartParsing();
+    EXPECT_NE(playlist.defaultVariant_, nullptr);
+    EXPECT_EQ(playlist.firstVideoStream_, nullptr);
+    EXPECT_EQ(playlist.variants_.size(), 1u);
+    EXPECT_EQ(playlist.variants_.front()->bandWidth_, 5000000u);
+}
+
+HWTEST_F(M3u8UnitTest, UpdateMasterPlaylist_FirstVideo_001, TestSize.Level1)
+{
+    std::string pl = "#EXTM3U\n#EXT-X-STREAM-INF:BANDWIDTH=5000000,CODECS=\"avc1.42E01E\"\nhttp://x/v1.m3u8\n"
+        "#EXT-X-STREAM-INF:BANDWIDTH=5000000,CODECS=\"avc1.42E01E\"\nhttp://x/v2.m3u8";
+    M3U8MasterPlaylist playlist(pl, "http://example.com/master.m3u8");
+    playlist.StartParsing();
+    EXPECT_NE(playlist.defaultVariant_, nullptr);
+    EXPECT_NE(playlist.firstVideoStream_, nullptr);
+    EXPECT_EQ(playlist.defaultVariant_, playlist.firstVideoStream_);
+}
+
+HWTEST_F(M3u8UnitTest, ProcessAllTags_DefaultCase_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    std::list<std::shared_ptr<Tag>> tags;
+    tags.emplace_back(std::make_shared<Tag>(HlsTag::EXTXENDLIST));
+    playlist.ProcessAllTags(tags);
+    EXPECT_EQ(playlist.variants_.size(), 0u);
+}
+
+HWTEST_F(M3u8UnitTest, ProcessAllTags_IFrameCase_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    std::list<std::shared_ptr<Tag>> tags;
+    tags.emplace_back(std::make_shared<AttributesTag>(HlsTag::EXTXIFRAMESTREAMINF, "URI=\"http://x/v.m3u8\""));
+    playlist.ProcessAllTags(tags);
+    EXPECT_EQ(playlist.variants_.size(), 0u);
+}
+
+HWTEST_F(M3u8UnitTest, GetExtInf_WrongSection_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    double duration = 5.0;
+    auto tag = std::make_shared<SingleValueTag>(HlsTag::URI, "test.ts");
+    m3u8.GetExtInf(tag, duration);
+    EXPECT_DOUBLE_EQ(duration, 5.0);
+}
+
+HWTEST_F(M3u8UnitTest, GetDuration_WithFiles_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.files_.emplace_back(std::make_shared<M3U8Fragment>("http://x", 5.0, 1, false));
+    m3u8.files_.emplace_back(std::make_shared<M3U8Fragment>("http://y", 3.5, 2, false));
+    EXPECT_DOUBLE_EQ(m3u8.GetDuration(), 8.5);
+}
+
+HWTEST_F(M3u8UnitTest, AddFile_MinFragUpdate_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.minFragDuration_ = 100;
+    M3U8Fragment frag("http://x", 5.0, 1, false);
+    m3u8.AddFile(std::make_shared<M3U8Fragment>(frag), 50);
+    EXPECT_EQ(m3u8.minFragDuration_.load(), 50u);
+    EXPECT_EQ(m3u8.segmentOffsets_.size(), 1u);
+}
+
+HWTEST_F(M3u8UnitTest, AddFile_KeyIndexNonNone_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.isDecryptAble_ = true;
+    m3u8.method_ = std::make_shared<std::string>("AES-128");
+    m3u8.keyIndex_ = 2;
+    m3u8.totalKeyIndex_ = 1;
+    M3U8Fragment frag("http://x", 5.0, 1, false);
+    m3u8.AddFile(std::make_shared<M3U8Fragment>(frag), 50);
+    EXPECT_EQ(m3u8.files_.back()->keyIndex_, 3u);
+}
+
+HWTEST_F(M3u8UnitTest, ProcessInfo_FirstFragmentReady_001, TestSize.Level1)
+{
+    auto m3u8 = std::make_shared<M3U8>("http://example.com/test.m3u8", "");
+    m3u8->isDecryptAble_ = true;
+    m3u8->isFirstFragmentReady_ = true;
+    m3u8->sequence_ = 1;
+    m3u8->hasExplicitIv_.store(true);
+    KeyInfo keyInfo;
+    keyInfo.index_ = 0;
+    m3u8->keyInfos_[0] = keyInfo;
+    M3U8Info info;
+    info.uri = "http://example.com/seg.ts";
+    info.duration = 5.0;
+    size_t duration = 0;
+    m3u8->ProcessInfo(info, duration);
+    EXPECT_EQ(m3u8->files_.size(), 1u);
+    EXPECT_EQ(m3u8->sequence_, 2u);
+}
+
+HWTEST_F(M3u8UnitTest, UpdateMediaPlaylist_WithDecrypt_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("#EXTM3U\n#EXTINF:5.0,\nseg.ts", "http://example.com");
+    playlist.isDecryptAble_ = true;
+    playlist.isDecryptKeyReady_ = true;
+    playlist.hasExplicitIv_ = true;
+    playlist.keyLen_ = 16;
+    for (int i = 0; i < 16; i++) {
+        playlist.key_[i] = static_cast<uint8_t>(i);
+        playlist.iv_[i] = static_cast<uint8_t>(i + 1);
+    }
+    playlist.StartParsing();
+    EXPECT_TRUE(playlist.isSimple_);
+    EXPECT_TRUE(playlist.isDecryptAble_);
+}
+
+HWTEST_F(M3u8UnitTest, UpdateMasterPlaylist_WithDefine_001, TestSize.Level1)
+{
+    std::string pl = "#EXTM3U\n#EXT-X-DEFINE:IMPORT=X\n#EXT-X-STREAM-INF:BANDWIDTH=1000,CODECS=\"avc1\"\n"
+        "http://x/v.m3u8";
+    M3U8MasterPlaylist playlist(pl, "http://example.com/master.m3u8?token=abc");
+    playlist.StartParsing();
+    EXPECT_FALSE(playlist.variants_.empty());
+}
+
+HWTEST_F(M3u8UnitTest, BindVideoMedia_NoMedia_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.StartParsing();
+    auto stream = std::make_shared<M3U8VariantStream>("v", "uri", nullptr);
+    playlist.variants_.push_back(stream);
+    playlist.BindVideoMedia("audio");
+    EXPECT_EQ(stream->audioMedia_.size(), 0u);
+    playlist.BindVideoMedia("subtitles");
+    EXPECT_EQ(stream->subtitlesMedia_.size(), 0u);
+}
+
+HWTEST_F(M3u8UnitTest, GetResolutionDelta_001, TestSize.Level1)
+{
+    M3U8MasterPlaylist playlist("", "http://example.com");
+    playlist.initResolution_ = 1000;
+    EXPECT_EQ(playlist.GetResolutionDelta(100, 5), 500u);
+    EXPECT_EQ(playlist.GetResolutionDelta(10, 10), 900u);
+}
+
+HWTEST_F(M3u8UnitTest, ParseDateRange_ContentsAllAttrs_001, TestSize.Level1)
+{
+    M3U8 m3u8("http://example.com/test.m3u8", "");
+    m3u8.currentProgramDateTime_ = "2024-01-01T00:00:00";
+    auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXDATERANGE, "");
+    auto idAttr = std::make_shared<Attribute>("ID", "\"id1\"");
+    tag->AddAttribute(idAttr);
+    auto classAttr = std::make_shared<Attribute>("CLASS", "\"cls\"");
+    tag->AddAttribute(classAttr);
+    auto startDateAttr = std::make_shared<Attribute>("START-DATE", "\"2024-01-01T00:01:00\"");
+    tag->AddAttribute(startDateAttr);
+    auto durationAttr = std::make_shared<Attribute>("DURATION", "30");
+    tag->AddAttribute(durationAttr);
+    auto assetListAttr = std::make_shared<Attribute>("X-ASSET-LIST", "\"http://x\"");
+    tag->AddAttribute(assetListAttr);
+    m3u8.ParseDateRange(tag);
+    EXPECT_EQ(m3u8.dateRanges_.size(), 1u);
+    auto& dr = m3u8.dateRanges_.front();
+    EXPECT_EQ(dr->id, "id1");
+    EXPECT_EQ(dr->classify, "cls");
+    EXPECT_EQ(dr->start, 60000);
+    EXPECT_EQ(dr->duration, 30000);
+    EXPECT_EQ(dr->assetList, "http://x");
+    EXPECT_EQ(dr->contents.size(), 5u);
+}
+
 }

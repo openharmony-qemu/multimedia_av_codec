@@ -292,6 +292,7 @@ private:
     std::atomic<bool> isDestructor_ {false};
     std::atomic<bool> isClientClose_ {false};
     std::atomic<bool> isInterruptNeeded_{false};
+    std::atomic<bool> isCancelling_{false};
 
     enum struct LoopStatus {
         IDLE,

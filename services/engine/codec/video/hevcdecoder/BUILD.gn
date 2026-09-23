@@ -39,6 +39,8 @@ ohos_shared_library("hevc_decoder") {
   defines = []
   defines += av_codec_defines
 
+  version_script = "hevc_decoder.map"
+
   sources = [
     "$av_codec_root_dir/services/engine/codec/video/decoderbase/video_decoder.cpp",
     "$av_codec_root_dir/services/engine/codec/video/decoderbase/render_surface.cpp",

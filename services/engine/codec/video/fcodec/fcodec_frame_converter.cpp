@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "avcodec_errors.h"
 #include "fcodec_frame_converter.h"
 
 namespace OHOS {

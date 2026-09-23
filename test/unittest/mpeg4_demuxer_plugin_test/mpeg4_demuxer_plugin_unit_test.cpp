@@ -32,6 +32,7 @@
 #include "demuxer_data_reader.h"
 #include "file_server_demo.h"
 #include "avc_parser_impl.h"
+#include "mpeg4_audio_parser.h"
 #include "mpeg4_sample_memory.h"
 #include "mpeg4_sample_helper.h"
 #include "rbsp_context.h"
@@ -81,6 +82,24 @@ constexpr int64_t TEST_MS_TO_US = 1000;
 constexpr int64_t TEST_US_TO_NS = 1000;
 constexpr int32_t ZERO_LENGTH_AAC_SAMPLE_RATE = 44100;
 constexpr int32_t ZERO_LENGTH_AAC_SAMPLES_PER_FRAME = 1024;
+constexpr int32_t AAC_TEST_CORE_SAMPLE_RATE = 24000;
+constexpr int32_t AAC_TEST_CORE_SAMPLES_PER_FRAME = 1024;
+constexpr int32_t AAC_TEST_CHANNEL_COUNT = 2;
+constexpr int32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
+constexpr uint8_t AAC_TEST_ELEMENT_CPE = 1;
+constexpr uint8_t AAC_TEST_ELEMENT_FIL = 6;
+constexpr uint8_t AAC_TEST_ELEMENT_END = 7;
+constexpr uint8_t AAC_TEST_EXTENSION_SBR = 0x0D;
+constexpr uint8_t AAC_TEST_EXTENSION_SBR_CRC = 0x0E;
+constexpr uint8_t AAC_TEST_EXTENSION_OTHER = 1;
+constexpr uint8_t AAC_TEST_ELEMENT_TYPE_BITS = 3;
+constexpr uint8_t AAC_TEST_INSTANCE_TAG_BITS = 4;
+constexpr uint8_t AAC_TEST_FILL_COUNT_BITS = 4;
+constexpr uint8_t AAC_TEST_EXTENSION_TYPE_BITS = 4;
+constexpr uint8_t AAC_TEST_FILL_COUNT = 1;
+constexpr uint8_t AAC_TEST_PAYLOAD_BITS = 8;
+constexpr uint8_t AAC_TEST_END_BITS = 3;
+constexpr uint8_t AAC_TEST_BITS_PER_BYTE = 8;
 constexpr uint32_t SAMPLE_INDEX_TEST_COUNT = 3;
 constexpr uint32_t SAMPLE_INDEX_TEST_SECOND = 1;
 constexpr uint32_t SAMPLE_INDEX_TEST_THIRD = 2;
@@ -117,6 +136,47 @@ constexpr uint32_t CHANNEL_BASED_CONTENT = 0;
 constexpr uint32_t BASELINE_NN_TYPE = 0;
 constexpr uint32_t TEST_BITRATE_KBPS = 128;
 constexpr uint32_t TEST_RESOLUTION_INDEX = 1;
+
+void AppendAacTestBits(std::vector<uint8_t>& bits, uint32_t value, uint8_t bitCount)
+{
+    for (int32_t shift = static_cast<int32_t>(bitCount) - 1; shift >= 0; --shift) {
+        bits.push_back(static_cast<uint8_t>((value >> shift) & 0x01));
+    }
+}
+
+std::vector<uint8_t> BuildAacRawDataBlock(uint8_t extensionType, bool truncated = false)
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_CPE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_FIL, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, truncated ? AAC_TEST_FILL_COUNT + 1 : AAC_TEST_FILL_COUNT,
+        AAC_TEST_FILL_COUNT_BITS);
+    AppendAacTestBits(bits, extensionType, AAC_TEST_EXTENSION_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_PAYLOAD_BITS - AAC_TEST_EXTENSION_TYPE_BITS);
+    if (!truncated) {
+        AppendAacTestBits(bits, AAC_TEST_ELEMENT_END, AAC_TEST_END_BITS);
+    }
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    std::vector<uint8_t> data(bits.size() / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        data[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    return data;
+}
+
+MediaInfo MakeAacFrameMediaInfo()
+{
+    MediaInfo mediaInfo;
+    mediaInfo.tracks.resize(1);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_SAMPLE_RATE>(AAC_TEST_CORE_SAMPLE_RATE);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AAC_TEST_CORE_SAMPLES_PER_FRAME);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_CHANNEL_COUNT);
+    return mediaInfo;
+}
 std::unique_ptr<FileServerDemo> g_server = nullptr;
 
 Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry MakeSampleIndexEntry(
@@ -3064,6 +3124,68 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SyncReadInterfaces_001, 
         Status::ERROR_INVALID_OPERATION);
     EXPECT_EQ(mpeg4Plugin_->ReadSampleZeroCopy(trackId, MediaAVBuffer::CreateAVBuffer(),
         MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::ERROR_INVALID_OPERATION);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacImplicitSbr_001
+ * @tc.desc: Verify an in-band EXT_SBR_DATA extension updates AAC output metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacImplicitSbr_001, TestSize.Level1)
+{
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    auto data = BuildAacRawDataBlock(AAC_TEST_EXTENSION_SBR);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t sampleRate = 0;
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(sampleRate, AAC_TEST_CORE_SAMPLE_RATE * AAC_SBR_SAMPLE_RATE_MULTIPLIER);
+    EXPECT_EQ(samplesPerFrame, AAC_TEST_CORE_SAMPLES_PER_FRAME * AAC_SBR_SAMPLE_RATE_MULTIPLIER);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacImplicitSbrCrc_001
+ * @tc.desc: Verify an in-band EXT_SBR_DATA_CRC extension updates AAC output metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacImplicitSbrCrc_001, TestSize.Level1)
+{
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    auto data = BuildAacRawDataBlock(AAC_TEST_EXTENSION_SBR_CRC);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t sampleRate = 0;
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(sampleRate, AAC_TEST_CORE_SAMPLE_RATE * AAC_SBR_SAMPLE_RATE_MULTIPLIER);
+    EXPECT_EQ(samplesPerFrame, AAC_TEST_CORE_SAMPLES_PER_FRAME * AAC_SBR_SAMPLE_RATE_MULTIPLIER);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacImplicitSbrFallback_001
+ * @tc.desc: Verify ordinary fill data and truncated SBR data preserve ASC metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacImplicitSbrFallback_001, TestSize.Level1)
+{
+    std::vector<std::vector<uint8_t>> testData = {BuildAacRawDataBlock(AAC_TEST_EXTENSION_OTHER),
+        BuildAacRawDataBlock(AAC_TEST_EXTENSION_SBR, true)};
+    for (auto& data : testData) {
+        MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+        Plugins::MPEG4::MPEG4AudioParser parser;
+        EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+        int32_t sampleRate = 0;
+        int32_t samplesPerFrame = 0;
+        ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
+        ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+        EXPECT_EQ(sampleRate, AAC_TEST_CORE_SAMPLE_RATE);
+        EXPECT_EQ(samplesPerFrame, AAC_TEST_CORE_SAMPLES_PER_FRAME);
+    }
 }
 
 /**
