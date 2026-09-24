@@ -20,10 +20,14 @@
 #include "buffer/avbuffer.h"
 #include "plugin/plugin_manager_v2.h"
 #include <fcntl.h>
+#include <unistd.h>
 #include <fstream>
 #include <gtest/gtest.h>
 #include "avpacket_wrapper.h"
 #include "media_description.h"
+#include "meta/meta.h"
+#include "meta/meta_key.h"
+#include "meta/video_types.h"
 #include "file_server_demo.h"
 #include <numeric>
 #include <vector>
@@ -89,6 +93,10 @@ string g_mpgPath3 = string("/data/test/media/mpeg_h264_mp2.mpeg");
 string g_srtPath1 = string("/data/test/media/subtitle.srt");
 // VTT
 string g_vttPath1 = string("/data/test/media/webvtt_test_ut.vtt");
+// HDR HLG
+string g_avcHlgPath = string("/data/test/media/avc_hdr_hlg_8bit.mp4");
+string g_hevcHlgPath = string("/data/test/media/hdrType_hlg.mp4");
+string g_avcSdrPath = string("/data/test/media/h264.mp4");
 
 void DemuxerPluginUnitTest::SetUpTestCase(void)
 {
@@ -2730,4 +2738,186 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetReadTimeoutForSeek_TimeoutSuccess_000
 HWTEST_F(DemuxerPluginUnitTest, Demuxer_SetReadTimeoutForSeek_TimeoutSuccess_0002, TestSize.Level1)
 {
     TestSetReadTimeoutForSeek("avdemux_mpegts", g_mpegTsPath3, 2000, true);
+}
+
+static Meta *FindVideoTrack(MediaInfo &mediaInfo)
+{
+    for (uint32_t i = 0; i < mediaInfo.tracks.size(); ++i) {
+        Plugins::MediaType trackType = Plugins::MediaType::UNKNOWN;
+        if (mediaInfo.tracks[i].GetData(Tag::MEDIA_TYPE, trackType) &&
+            trackType == Plugins::MediaType::VIDEO) {
+            return &mediaInfo.tracks[i];
+        }
+    }
+    return nullptr;
+}
+
+/**
+ * @tc.name: Demuxer_GetColorInfo_AVC_HLG_0001
+ * @tc.desc: Parse color four-tuple from AVC HLG 8-bit MP4
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_AVC_HLG_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    InitResource(g_avcHlgPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *format = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    Plugins::TransferCharacteristic trc = Plugins::TransferCharacteristic::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_TRC, trc));
+    EXPECT_EQ(trc, Plugins::TransferCharacteristic::HLG);
+
+    Plugins::ColorPrimary pri = Plugins::ColorPrimary::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_PRIMARIES, pri));
+    EXPECT_EQ(pri, Plugins::ColorPrimary::BT2020);
+
+    Plugins::MatrixCoefficient matrix = Plugins::MatrixCoefficient::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_MATRIX_COEFF, matrix));
+    EXPECT_EQ(matrix, Plugins::MatrixCoefficient::BT2020_NCL);
+
+    bool range = true;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_RANGE, range));
+    EXPECT_FALSE(range);
+}
+
+/**
+ * @tc.name: Demuxer_GetColorInfo_AVC_HLG_NoHdrType_0002
+ * @tc.desc: AVC HLG should not set VIDEO_HDR_TYPE (HEVC-only)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_AVC_HLG_NoHdrType_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    InitResource(g_avcHlgPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *format = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    Plugins::HDRType hdrType = Plugins::HDRType::NONE;
+    EXPECT_FALSE(format->GetData(Tag::VIDEO_HDR_TYPE, hdrType));
+}
+
+/**
+ * @tc.name: Demuxer_GetColorInfo_AVC_HLG_NoChromaLoc_0003
+ * @tc.desc: AVC HLG path (ParseHLGColorBoxInfo) should not set VIDEO_CHROMA_LOCATION
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_AVC_HLG_NoChromaLoc_0003, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    InitResource(g_avcHlgPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *format = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    Plugins::ChromaLocation chromaLoc = Plugins::ChromaLocation::LEFT;
+    EXPECT_FALSE(format->GetData(Tag::VIDEO_CHROMA_LOCATION, chromaLoc));
+}
+
+/**
+ * @tc.name: Demuxer_GetColorInfo_HEVC_HLG_0001
+ * @tc.desc: Parse color four-tuple from HEVC HLG MP4 (ParseColorBoxInfo path)
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_HEVC_HLG_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    InitResource(g_hevcHlgPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *format = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    Plugins::TransferCharacteristic trc = Plugins::TransferCharacteristic::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_TRC, trc));
+    EXPECT_EQ(trc, Plugins::TransferCharacteristic::HLG);
+
+    Plugins::ColorPrimary pri = Plugins::ColorPrimary::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_PRIMARIES, pri));
+    EXPECT_EQ(pri, Plugins::ColorPrimary::BT2020);
+
+    Plugins::MatrixCoefficient matrix = Plugins::MatrixCoefficient::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_MATRIX_COEFF, matrix));
+    EXPECT_EQ(matrix, Plugins::MatrixCoefficient::BT2020_NCL);
+
+    bool range = true;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_COLOR_RANGE, range));
+    EXPECT_FALSE(range);
+}
+
+/**
+ * @tc.name: Demuxer_GetColorInfo_HEVC_HLG_ChromaLoc_0002
+ * @tc.desc: HEVC path (ParseColorBoxInfo) should set VIDEO_CHROMA_LOCATION
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_HEVC_HLG_ChromaLoc_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    InitResource(g_hevcHlgPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *format = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    Plugins::ChromaLocation chromaLoc = Plugins::ChromaLocation::UNSPECIFIED;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_CHROMA_LOCATION, chromaLoc));
+    EXPECT_EQ(chromaLoc, Plugins::ChromaLocation::LEFT);
+}
+
+/**
+ * @tc.name: Demuxer_GetColorInfo_HEVC_HLG_Profile_0003
+ * @tc.desc: HEVC path (ParseHvccBoxInfo) should set VIDEO_H265_PROFILE
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_HEVC_HLG_Profile_0003, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    InitResource(g_hevcHlgPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *format = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    Plugins::HEVCProfile profile = Plugins::HEVCProfile::HEVC_PROFILE_UNKNOW;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_H265_PROFILE, profile));
+    EXPECT_EQ(profile, Plugins::HEVCProfile::HEVC_PROFILE_MAIN_10);
+}
+
+/**
+ * @tc.name: Demuxer_GetColorInfo_HEVC_HLG_HdrType_0004
+ * @tc.desc: HEVC HLG should set VIDEO_HDR_TYPE=HLG when parser lib available
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_HEVC_HLG_HdrType_0004, TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        return;
+    }
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    InitResource(g_hevcHlgPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *format = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    Plugins::HDRType hdrType = Plugins::HDRType::NONE;
+    EXPECT_TRUE(format->GetData(Tag::VIDEO_HDR_TYPE, hdrType));
+    EXPECT_EQ(hdrType, Plugins::HDRType::HLG);
+}
+
+/**
+ * @tc.name: Demuxer_GetColorInfo_AVC_SDR_NoHLG_0001
+ * @tc.desc: AVC SDR content should not be treated as HLG
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_AVC_SDR_NoHLG_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
+    InitResource(g_avcSdrPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *format = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    Plugins::TransferCharacteristic trc = Plugins::TransferCharacteristic::UNSPECIFIED;
+    if (format->GetData(Tag::VIDEO_COLOR_TRC, trc)) {
+        EXPECT_NE(trc, Plugins::TransferCharacteristic::HLG);
+    }
 }

@@ -78,6 +78,7 @@ private:
     static void ParseTimedMetaTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseAuxiliaryTrackInfo(const AVStream& avStream, Meta &format);
     static void ParseHvccBoxInfo(const AVStream& avStream, Meta &format);
+    static void ParseHLGColorBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseColorBoxInfo(const AVStream& avStream, Meta &format);
     static void ParseHdrTypeInfo(const AVStream& avStream, Meta &format, HevcParseFormat parse);
     static void ParseHdrStaticMetadata(const AVStream& avStream, Meta &format);

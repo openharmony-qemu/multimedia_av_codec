@@ -779,6 +779,13 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
             ParseHdrStaticMetadata(avStream, format);
         }
     }
+
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && avStream.codecpar->color_trc == AVCOL_TRC_ARIB_STD_B67 &&
+        IsMpeg4File(fileType)) {  // AVC && HLG && MP4
+        ParseHLGColorBoxInfo(avStream, format);
+        ParseHdrStaticMetadata(avStream, format);
+    }
+
     if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         ParseRawvideoInfo(avStream, format);
     }
@@ -1160,6 +1167,21 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &forma
 
     ChromaLocation chromaLoc = Converter::ConvertFFMpegToOHChromaLocation(avStream.codecpar->chroma_location);
     format.Set<Tag::VIDEO_CHROMA_LOCATION>(chromaLoc);
+}
+
+void FFmpegFormatHelper::ParseHLGColorBoxInfo(const AVStream& avStream, Meta &format)
+{
+    TransferCharacteristic colorTrans = Converter::ConvertFFMpegToOHColorTrans(avStream.codecpar->color_trc);
+    format.Set<Tag::VIDEO_COLOR_TRC>(colorTrans);
+
+    int colorRange = Converter::ConvertFFMpegToOHColorRange(avStream.codecpar->color_range);
+    format.Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(colorRange));
+
+    ColorPrimary colorPrimaries = Converter::ConvertFFMpegToOHColorPrimaries(avStream.codecpar->color_primaries);
+    format.Set<Tag::VIDEO_COLOR_PRIMARIES>(colorPrimaries);
+
+    MatrixCoefficient colorMatrix = Converter::ConvertFFMpegToOHColorMatrix(avStream.codecpar->color_space);
+    format.Set<Tag::VIDEO_COLOR_MATRIX_COEFF>(colorMatrix);
 }
 
 void FFmpegFormatHelper::ParseHevcInfo(
