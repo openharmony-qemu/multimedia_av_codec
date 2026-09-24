@@ -780,12 +780,12 @@ void FFmpegFormatHelper::ParseVideoTrackInfo(const AVStream& avStream, Meta &for
         }
     }
 
-    TransferCharacteristic colorTrans = Converter::ConvertFFMpegToOHColorTrans(avStream.codecpar->color_trc);
-    if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && IsMpeg4File(fileType) &&
-        colorTrans == TransferCharacteristic::HLG) {
+    if (avStream.codecpar->codec_id == AV_CODEC_ID_H264 && avStream.codecpar->color_trc == AVCOL_TRC_ARIB_STD_B67 &&
+        IsMpeg4File(fileType)) {  // AVC && HLG && MP4
         ParseHLGColorBoxInfo(avStream, format);
         ParseHdrStaticMetadata(avStream, format);
     }
+    
     if (avStream.codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
         ParseRawvideoInfo(avStream, format);
     }
@@ -1171,7 +1171,9 @@ void FFmpegFormatHelper::ParseColorBoxInfo(const AVStream& avStream, Meta &forma
 
 void FFmpegFormatHelper::ParseHLGColorBoxInfo(const AVStream& avStream, Meta &format)
 {
-    format.Set<Tag::VIDEO_COLOR_TRC>(TransferCharacteristic::HLG);
+    TransferCharacteristic colorTrans = Converter::ConvertFFMpegToOHColorTrans(avStream.codecpar->color_trc);
+    FALSE_RETURN_MSG_W(colorTrans == TransferCharacteristic::HLG, "colorTrans(" PUBLIC_LOG_D32 ") is not equal to HLG");
+    format.Set<Tag::VIDEO_COLOR_TRC>(colorTrans);
 
     int colorRange = Converter::ConvertFFMpegToOHColorRange(avStream.codecpar->color_range);
     format.Set<Tag::VIDEO_COLOR_RANGE>(static_cast<bool>(colorRange));
