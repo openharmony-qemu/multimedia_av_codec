@@ -34,6 +34,7 @@
 #include "avc_parser_impl.h"
 #include "mpeg4_audio_parser.h"
 #include "mpeg4_sample_memory.h"
+#include "mpeg4_sample_helper.h"
 #include "rbsp_context.h"
 
 using namespace OHOS;
@@ -121,6 +122,20 @@ constexpr uint32_t SAMPLE_INDEX_TEST_SECOND_SIZE = 6;
 constexpr uint32_t SAMPLE_INDEX_TEST_THIRD_SIZE = 7;
 constexpr int32_t SPARSE_SAMPLE_TEST_SIZE = 10;
 constexpr int64_t SAMPLE_INDEX_TEST_DURATION_OVERRIDE = 8;
+constexpr uint32_t DCA3_CONFIG_SIZE = 6;
+constexpr uint32_t CODEC_ID_BITS = 4;
+constexpr uint32_t SAMPLING_INDEX_BITS = 4;
+constexpr uint32_t NN_TYPE_BITS = 3;
+constexpr uint32_t RESERVED_BITS = 1;
+constexpr uint32_t CONTENT_TYPE_BITS = 4;
+constexpr uint32_t CHANNEL_INDEX_BITS = 7;
+constexpr uint32_t BITRATE_BITS = 16;
+constexpr uint32_t RESOLUTION_BITS = 2;
+constexpr uint32_t LOSSY_CODEC_ID = 2;
+constexpr uint32_t CHANNEL_BASED_CONTENT = 0;
+constexpr uint32_t BASELINE_NN_TYPE = 0;
+constexpr uint32_t TEST_BITRATE_KBPS = 128;
+constexpr uint32_t TEST_RESOLUTION_INDEX = 1;
 
 void AppendAacTestBits(std::vector<uint8_t>& bits, uint32_t value, uint8_t bitCount)
 {
@@ -565,6 +580,31 @@ std::shared_ptr<DemuxerDataReader> CreateReaderForBytes(const std::vector<uint8_
     auto reader = std::make_shared<DemuxerDataReader>();
     EXPECT_EQ(reader->SetDataReader(dataSource), Status::OK);
     return reader;
+}
+
+std::vector<uint8_t> BuildDca3Config(uint8_t samplingIndex, uint8_t channelIndex)
+{
+    std::vector<uint8_t> data(DCA3_CONFIG_SIZE, 0);
+    uint32_t bitOffset = 0;
+    auto appendBits = [&data, &bitOffset](uint32_t value, uint32_t bits) {
+        for (uint32_t i = 0; i < bits; ++i) {
+            uint32_t shift = bits - i - 1;
+            if (((value >> shift) & 1U) != 0) {
+                data[bitOffset / 8] |= static_cast<uint8_t>(1U << (7U - (bitOffset % 8U)));
+            }
+            ++bitOffset;
+        }
+    };
+    appendBits(LOSSY_CODEC_ID, CODEC_ID_BITS);
+    appendBits(samplingIndex, SAMPLING_INDEX_BITS);
+    appendBits(BASELINE_NN_TYPE, NN_TYPE_BITS);
+    appendBits(0, RESERVED_BITS);
+    appendBits(CHANNEL_BASED_CONTENT, CONTENT_TYPE_BITS);
+    appendBits(channelIndex, CHANNEL_INDEX_BITS);
+    appendBits(0, RESERVED_BITS);
+    appendBits(TEST_BITRATE_KBPS, BITRATE_BITS);
+    appendBits(TEST_RESOLUTION_INDEX, RESOLUTION_BITS);
+    return data;
 }
 
 std::shared_ptr<ShortReadDataSource> CreateDataSourceForBytes(const std::vector<uint8_t>& data)
@@ -2392,6 +2432,68 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_InitSelectTrack_001, Tes
     ASSERT_GT(mpeg4MediaInfo_.tracks.size(), 0U);
     auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
     EXPECT_FALSE(selectedTrackIds.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationMp3EditProjection_001
+ * @tc.desc: Verify edit-list projection retains every MP3 sample sharing the same DTS
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroDurationMp3EditProjection_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper.mimeType_ = MimeType::AUDIO_MPEG;
+    helper.sttsEntry_ = {{180, 0}, {1, 576}};
+    helper.stscEntry_ = {{0, 181, 1}};
+    helper.stssEntry_ = {{0}, {1}, {180}};
+    helper.sampleSizes_.assign(181, 1);
+    helper.sampleSizeCount_ = 181;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{0, 36, 1, 0}}, 1000, 16000);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    EXPECT_EQ(helper.GetSampleCount(), 181U);
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 1, 180}));
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView firstSample;
+    ASSERT_EQ(helper.GetSampleIndexView(0, firstSample), Status::OK);
+    EXPECT_EQ(firstSample.pos, 0);
+    constexpr uint32_t expectedSyncFlag =
+        static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
+    EXPECT_EQ(firstSample.flag & expectedSyncFlag, expectedSyncFlag);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_Dca3ConfigValidation_001
+ * @tc.desc: Verify AV3A sampling boundary, invalid sampling, invalid channel config and metadata rate.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_Dca3ConfigValidation_001, TestSize.Level1)
+{
+    auto runParse = [](uint8_t samplingIndex, uint8_t channelIndex, Status expected, int32_t* sampleRate) {
+        Plugins::MPEG4::MPEG4AtomParser parser;
+        if (parser.InitCurrentTrackForTrak() != Status::OK) {
+            return false;
+        }
+        parser.dataReader_ = CreateReaderForBytes(BuildDca3Config(samplingIndex, channelIndex));
+        Plugins::MPEG4::MPEG4AtomParser::MPEG4Atom atom;
+        atom.type = Plugins::MPEG4::FourccType("dca3");
+        atom.dataSize = 6;
+        Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+        if (parser.ParseDca3Entry(atom, &ctx) != expected) {
+            return false;
+        }
+        if (sampleRate != nullptr) {
+            return parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(*sampleRate);
+        }
+        return true;
+    };
+
+    int32_t sampleRate = 0;
+    ASSERT_TRUE(runParse(8, 2, Status::OK, &sampleRate));
+    EXPECT_EQ(sampleRate, 8000);
+    EXPECT_TRUE(runParse(9, 2, Status::ERROR_INVALID_DATA, nullptr));
+    EXPECT_TRUE(runParse(8, 4, Status::ERROR_INVALID_DATA, nullptr));
 }
 
 /**

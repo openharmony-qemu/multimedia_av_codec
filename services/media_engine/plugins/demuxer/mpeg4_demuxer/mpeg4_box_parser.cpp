@@ -311,11 +311,11 @@ static const uint32_t AAC_SAMPLE_RATE_TABLE[] = {
 };
 
 constexpr uint64_t AV3A_DCA3_BOX_MIN_SIZE = 5;
-constexpr uint64_t AV3A_DCA3_BOX_MAX_SIZE = 64;
+constexpr uint64_t AV3A_DCA3_BOX_MAX_SIZE = 7;
 constexpr int32_t AV3A_AUDIO_FRAME_SIZE = 1024;
 constexpr uint8_t AV3A_LOSSY_CODEC_ID = 2;
 constexpr uint8_t AV3A_BASELINE_NN_TYPE = 0;
-constexpr uint8_t AV3A_LC_NN_TYPE = 2;
+constexpr uint8_t AV3A_LC_NN_TYPE = 1;
 constexpr uint8_t AV3A_CHANNEL_BASED_TYPE = 0;
 constexpr uint8_t AV3A_OBJECT_BASED_TYPE = 1;
 constexpr uint8_t AV3A_CHANNEL_OBJECT_TYPE = 2;
@@ -325,6 +325,8 @@ constexpr uint8_t AV3A_AMBISONIC_THIRD_ORDER = 3;
 constexpr uint8_t AV3A_CHANNEL_CONFIG_MONO = 0;
 constexpr uint8_t AV3A_CHANNEL_CONFIG_STEREO = 1;
 constexpr uint8_t AV3A_CHANNEL_CONFIG_7_1_4 = 10;
+constexpr uint8_t AV3A_SAMPLING_FREQUENCY_COUNT = 9;
+constexpr size_t AV3A_CHANNEL_CONFIG_COUNT = 9;
 
 struct Av3aResolutionInfo {
     AudioSampleFormat sampleFormat;
@@ -350,14 +352,17 @@ constexpr std::array<Av3aResolutionInfo, 4> AV3A_RESOLUTION_TABLE = {{
     {AudioSampleFormat::INVALID_WIDTH, 0},
 }};
 
-constexpr std::array<Av3aChannelConfig, 11> AV3A_CHANNEL_CONFIG_TABLE = {{
+constexpr std::array<int32_t, AV3A_SAMPLING_FREQUENCY_COUNT> AV3A_SAMPLING_RATE_TABLE = {{
+    // AV3A FS table, aligned with third_party/ffmpeg/libavcodec/av3a.h.
+    192000, 96000, 48000, 44100, 32000, 24000, 22050, 16000, 8000,
+}};
+
+constexpr std::array<Av3aChannelConfig, AV3A_CHANNEL_CONFIG_COUNT> AV3A_CHANNEL_CONFIG_TABLE = {{
     {0, AudioChannelLayout::MONO, 1},
     {1, AudioChannelLayout::STEREO, 2},
-    {2, AudioChannelLayout::CH_4POINT0, 4},
-    {3, AudioChannelLayout::CH_5POINT0, 5},
-    {4, AudioChannelLayout::CH_5POINT1, 6},
-    {5, AudioChannelLayout::CH_7POINT0, 7},
-    {6, AudioChannelLayout::CH_7POINT1, 8},
+    {2, AudioChannelLayout::CH_5POINT1, 6},
+    {3, AudioChannelLayout::CH_7POINT1, 8},
+    {6, AudioChannelLayout::CH_4POINT0, 4},
     {7, AudioChannelLayout::CH_5POINT1POINT2, 8},
     {8, AudioChannelLayout::CH_5POINT1POINT4, 10},
     {9, AudioChannelLayout::CH_7POINT1POINT2, 10},
@@ -3027,6 +3032,9 @@ Status MPEG4AtomParser::UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const A
 
     // 1000为av3a bitrate转换为bps
     trackMeta.Set<Tag::MEDIA_BITRATE>(static_cast<int64_t>(bitrateKbps) * 1000);
+    if (params.sampleRate > 0) {
+        trackMeta.Set<Tag::AUDIO_SAMPLE_RATE>(params.sampleRate);
+    }
     trackMeta.Set<Tag::AUDIO_SAMPLE_FORMAT>(AV3A_RESOLUTION_TABLE[resolutionIndex].sampleFormat);
     trackMeta.Set<Tag::AUDIO_BITS_PER_RAW_SAMPLE>(AV3A_RESOLUTION_TABLE[resolutionIndex].bitsPerSample);
     if (lastTrack_->audioSampleEntryBitsPerCodedSample > 0) {
@@ -3076,6 +3084,8 @@ Status MPEG4AtomParser::ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx)
     uint8_t audioCodecId = bitReader->ReadBits(4);
     FALSE_RETURN_V_MSG_E(audioCodecId == AV3A_LOSSY_CODEC_ID, Status::ERROR_INVALID_DATA, "Unsupported codec id");
     uint8_t samplingFrequencyIndex = bitReader->ReadBits(4);
+    FALSE_RETURN_V_MSG_E(samplingFrequencyIndex < AV3A_SAMPLING_FREQUENCY_COUNT, Status::ERROR_INVALID_DATA,
+        "Unsupported av3a sampling frequency");
     uint8_t nnType = bitReader->ReadBits(3);
     FALSE_RETURN_V_MSG_E(nnType >= AV3A_BASELINE_NN_TYPE && nnType <= AV3A_LC_NN_TYPE,
         Status::ERROR_INVALID_DATA, "Unsupported av3a nn type");
@@ -3084,6 +3094,7 @@ Status MPEG4AtomParser::ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx)
 
     // 解析 ContentType 对应详情
     Av3aConfigParams params;
+    params.sampleRate = AV3A_SAMPLING_RATE_TABLE[samplingFrequencyIndex];
     ret = ParseDca3ContentType(*bitReader, contentType, params);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ParseDca3ContentType failed");
 
