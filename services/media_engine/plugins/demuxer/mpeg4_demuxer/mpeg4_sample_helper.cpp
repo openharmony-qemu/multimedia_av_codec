@@ -1838,7 +1838,7 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
     }
 
     stssEntry_.erase(std::remove_if(
-        stssEntry_.begin(), stssEntry_.end(), 
+        stssEntry_.begin(), stssEntry_.end(),
         [sttsSampleCount](const StssEntry& entry) { return entry.index >= sttsSampleCount; }), stssEntry_.end());
     allSamplesSync_ = !emptyStss_ && !hasExplicitSyncSamples_ && stssEntry_.empty() &&
         (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE ||
