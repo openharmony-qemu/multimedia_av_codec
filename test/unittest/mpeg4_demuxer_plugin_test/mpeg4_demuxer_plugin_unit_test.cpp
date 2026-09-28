@@ -136,6 +136,9 @@ constexpr uint32_t CHANNEL_BASED_CONTENT = 0;
 constexpr uint32_t BASELINE_NN_TYPE = 0;
 constexpr uint32_t TEST_BITRATE_KBPS = 128;
 constexpr uint32_t TEST_RESOLUTION_INDEX = 1;
+constexpr uint32_t RAP_GROUP_ENTRY_COUNT = 1;
+constexpr uint32_t RAP_GROUP_SAMPLE_COUNT = 1;
+constexpr uint32_t RAP_GROUP_NON_KEY_INDEX = 0;
 
 void AppendAacTestBits(std::vector<uint8_t>& bits, uint32_t value, uint8_t bitCount)
 {
@@ -2509,9 +2512,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EmptyStssRapSampleGroupS
     EXPECT_FALSE(helper.emptyStss_);
     EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 60, 119}));
 
-    constexpr uint32_t RAP_GROUP_ENTRY_COUNT = 1;
-    constexpr uint32_t RAP_GROUP_SAMPLE_COUNT = 1;
-    constexpr uint32_t RAP_GROUP_NON_KEY_INDEX = 0;
     std::vector<uint8_t> nonKeyRap;
     AppendU32(nonKeyRap, 0);
     AppendU32(nonKeyRap, static_cast<uint32_t>(Plugins::MPEG4::FourccType("rap ")));

@@ -1109,6 +1109,15 @@ Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctxOffset, int64
     return Status::OK;
 }
 
+void MPEG4SampleHelper::NormalizeSyncSamples()
+{
+    std::sort(stssEntry_.begin(), stssEntry_.end(),
+        [](const StssEntry& left, const StssEntry& right) { return left.index < right.index; });
+    stssEntry_.erase(std::unique(stssEntry_.begin(), stssEntry_.end(),
+        [](const StssEntry& left, const StssEntry& right) { return left.index == right.index; }), stssEntry_.end());
+    emptyStss_ = false;
+}
+
 Status MPEG4SampleHelper::AddRapSyncSamples(const uint8_t* data, uint32_t entryCount)
 {
     uint64_t sampleIndex = 0;
@@ -1120,18 +1129,15 @@ Status MPEG4SampleHelper::AddRapSyncSamples(const uint8_t* data, uint32_t entryC
             FALSE_RETURN_V_NOLOG(stssEntry_.size() <= MAX_SAMPLE_TABLE_ENTRY_COUNT &&
                 sampleCount <= MAX_SAMPLE_TABLE_ENTRY_COUNT - stssEntry_.size(),
                 Status::ERROR_INVALID_DATA);
+            stssEntry_.reserve(stssEntry_.size() + sampleCount);
             for (uint32_t j = 0; j < sampleCount; ++j) {
                 stssEntry_.emplace_back(StssEntry {.index = static_cast<uint32_t>(sampleIndex + j)});
             }
         }
         sampleIndex += sampleCount;
     }
-    std::sort(stssEntry_.begin(), stssEntry_.end(),
-        [](const StssEntry& left, const StssEntry& right) { return left.index < right.index; });
-    stssEntry_.erase(std::unique(stssEntry_.begin(), stssEntry_.end(),
-        [](const StssEntry& left, const StssEntry& right) { return left.index == right.index; }), stssEntry_.end());
     // FFmpeg suppresses the empty-stss first-sample fallback when a non-empty RAP group exists.
-    emptyStss_ = false;
+    NormalizeSyncSamples();
     return Status::OK;
 }
 
@@ -1185,11 +1191,7 @@ Status MPEG4SampleHelper::SetPartialSyncSampleParams(int64_t dataOffset, size_t 
         FALSE_RETURN_V_NOLOG(sampleNumber > 0, Status::ERROR_INVALID_DATA);
         stssEntry_.emplace_back(StssEntry {.index = sampleNumber - 1});
     }
-    std::sort(stssEntry_.begin(), stssEntry_.end(),
-        [](const StssEntry& left, const StssEntry& right) { return left.index < right.index; });
-    stssEntry_.erase(std::unique(stssEntry_.begin(), stssEntry_.end(),
-        [](const StssEntry& left, const StssEntry& right) { return left.index == right.index; }), stssEntry_.end());
-    emptyStss_ = false;
+    NormalizeSyncSamples();
     return Status::OK;
 }
 
