@@ -213,6 +213,8 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"aiff", FileType::AIFF},
     {"dts", FileType::DTS},
     {"au", FileType::AU},
+    {"dsf", FileType::DSF},
+    {"iff", FileType::IFF},
 #ifdef SUPPORT_DEMUXER_LRC
     {"lrc", FileType::LRC},
 #endif
