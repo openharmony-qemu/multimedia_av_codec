@@ -16,6 +16,7 @@
 #define MEDIA_PLUGIN
 #define HST_LOG_TAG "MPEG4AudioParser"
 #include <limits>
+#include <vector>
 
 #include "common/log.h"
 #include "demuxer_data_reader.h"
@@ -65,6 +66,29 @@ constexpr uint8_t AAC_PADDING_BITS_MAX = 7;
 constexpr uint8_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
 constexpr int32_t AAC_DEFAULT_SAMPLES_PER_FRAME = 1024;
 constexpr int32_t AAC_STEREO_CHANNELS = 2;
+constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_BITS = 5;
+constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_ESCAPE = 0x1F;
+constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_EXTENSION_BITS = 6;
+constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_SBR = 5;
+constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_PS = 29;
+constexpr uint8_t AAC_AAC_LC_OBJECT_TYPE = 2;
+constexpr uint8_t AAC_SAMPLING_FREQUENCY_INDEX_BITS = 4;
+constexpr uint8_t AAC_EXPLICIT_SAMPLING_FREQUENCY_INDEX = 0x0F;
+constexpr uint8_t AAC_EXPLICIT_SAMPLING_FREQUENCY_BITS = 24;
+constexpr uint8_t AAC_CHANNEL_CONFIGURATION_BITS = 4;
+constexpr uint8_t AAC_LC_INITIAL_GA_FLAGS_BITS = 2;
+constexpr uint8_t AAC_EXTENSION_FLAG_BITS = 1;
+constexpr uint8_t AAC_CORE_CODER_DELAY_BITS = 14;
+constexpr uint8_t AAC_SYNC_EXTENSION_TYPE_BITS = 11;
+constexpr uint16_t AAC_SYNC_EXTENSION_TYPE = 0x2B7;
+constexpr uint8_t AAC_SYNC_EXTENSION_SBR_BITS = 17;
+constexpr uint8_t AAC_SYNC_EXTENSION_SBR_SIGNAL_BITS = 1;
+
+enum class AacSbrSignalState : uint8_t {
+    UNSPECIFIED,
+    PRESENT,
+    ABSENT,
+};
 
 struct AacRawDataBlockInfo {
     bool hasSbr = false;
@@ -203,6 +227,102 @@ bool ReadAacBitsAt(const uint8_t* data, size_t totalBits, size_t bitOffset, uint
         value = (value << 1) | ((currentByte >> shift) & 0x01);
     }
     return true;
+}
+
+AacSbrSignalState ParseAacSbrSignalState(const std::vector<uint8_t>& codecConfig)
+{
+    if (codecConfig.empty()) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+    size_t totalBits = 0;
+    if (__builtin_mul_overflow(codecConfig.size(), static_cast<size_t>(AAC_BITS_PER_BYTE), &totalBits)) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+
+    uint32_t audioObjectType = 0;
+    if (!ReadAacBitsAt(codecConfig.data(), totalBits, 0, AAC_AUDIO_OBJECT_TYPE_BITS, audioObjectType)) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+    size_t bitOffset = AAC_AUDIO_OBJECT_TYPE_BITS;
+    if (audioObjectType == AAC_AUDIO_OBJECT_TYPE_ESCAPE) {
+        uint32_t escapedObjectType = 0;
+        if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_AUDIO_OBJECT_TYPE_EXTENSION_BITS,
+            escapedObjectType)) {
+            return AacSbrSignalState::UNSPECIFIED;
+        }
+        audioObjectType = 0x20 + escapedObjectType;
+        bitOffset += AAC_AUDIO_OBJECT_TYPE_EXTENSION_BITS;
+    }
+    if (audioObjectType == AAC_AUDIO_OBJECT_TYPE_SBR || audioObjectType == AAC_AUDIO_OBJECT_TYPE_PS) {
+        return AacSbrSignalState::PRESENT;
+    }
+    if (audioObjectType != AAC_AAC_LC_OBJECT_TYPE) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+
+    uint32_t samplingFrequencyIndex = 0;
+    if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_SAMPLING_FREQUENCY_INDEX_BITS,
+        samplingFrequencyIndex)) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+    bitOffset += AAC_SAMPLING_FREQUENCY_INDEX_BITS;
+    if (samplingFrequencyIndex == AAC_EXPLICIT_SAMPLING_FREQUENCY_INDEX) {
+        if (AAC_EXPLICIT_SAMPLING_FREQUENCY_BITS > totalBits - bitOffset) {
+            return AacSbrSignalState::UNSPECIFIED;
+        }
+        bitOffset += AAC_EXPLICIT_SAMPLING_FREQUENCY_BITS;
+    }
+    uint32_t channelConfiguration = 0;
+    if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_CHANNEL_CONFIGURATION_BITS,
+        channelConfiguration) || channelConfiguration == 0) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+    bitOffset += AAC_CHANNEL_CONFIGURATION_BITS;
+
+    uint32_t initialGaFlags = 0;
+    if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_LC_INITIAL_GA_FLAGS_BITS, initialGaFlags)) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+    bitOffset += AAC_LC_INITIAL_GA_FLAGS_BITS;
+    if ((initialGaFlags & 0x01) != 0) {
+        if (AAC_CORE_CODER_DELAY_BITS > totalBits - bitOffset) {
+            return AacSbrSignalState::UNSPECIFIED;
+        }
+        bitOffset += AAC_CORE_CODER_DELAY_BITS;
+    }
+    uint32_t extensionFlag = 0;
+    if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_EXTENSION_FLAG_BITS, extensionFlag)) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+    bitOffset += AAC_EXTENSION_FLAG_BITS;
+    if (extensionFlag != 0) {
+        if (bitOffset >= totalBits) {
+            return AacSbrSignalState::UNSPECIFIED;
+        }
+        ++bitOffset;
+    }
+
+    if (totalBits < AAC_SYNC_EXTENSION_SBR_BITS ||
+        bitOffset > totalBits - AAC_SYNC_EXTENSION_SBR_BITS) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+    const size_t lastSyncExtensionOffset = totalBits - AAC_SYNC_EXTENSION_SBR_BITS;
+    for (; bitOffset <= lastSyncExtensionOffset; ++bitOffset) {
+        uint32_t syncExtensionType = 0;
+        uint32_t extensionAudioObjectType = 0;
+        uint32_t sbrPresent = 0;
+        if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_SYNC_EXTENSION_TYPE_BITS,
+            syncExtensionType) || syncExtensionType != AAC_SYNC_EXTENSION_TYPE ||
+            !ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset + AAC_SYNC_EXTENSION_TYPE_BITS,
+                AAC_AUDIO_OBJECT_TYPE_BITS, extensionAudioObjectType) ||
+            extensionAudioObjectType != AAC_AUDIO_OBJECT_TYPE_SBR ||
+            !ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset + AAC_SYNC_EXTENSION_TYPE_BITS +
+                AAC_AUDIO_OBJECT_TYPE_BITS, AAC_SYNC_EXTENSION_SBR_SIGNAL_BITS, sbrPresent)) {
+            continue;
+        }
+        return sbrPresent ? AacSbrSignalState::PRESENT : AacSbrSignalState::ABSENT;
+    }
+    return AacSbrSignalState::UNSPECIFIED;
 }
 
 bool IsAacZeroPadding(const uint8_t* data, size_t totalBits, size_t bitOffset)
@@ -418,7 +538,12 @@ Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
         return Status::OK;
     }
 
-    if (frameInfo.hasSbr) {
+    std::vector<uint8_t> codecConfig;
+    AacSbrSignalState sbrSignalState = AacSbrSignalState::UNSPECIFIED;
+    if (mediaInfo.tracks[index_].Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig)) {
+        sbrSignalState = ParseAacSbrSignalState(codecConfig);
+    }
+    if (frameInfo.hasSbr && sbrSignalState != AacSbrSignalState::ABSENT) {
         int32_t sampleRate = 0;
         int32_t samplesPerFrame = 0;
         if (mediaInfo.tracks[index_].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) && sampleRate > 0 &&
