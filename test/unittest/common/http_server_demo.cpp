@@ -15,6 +15,7 @@
 
 #include "http_server_demo.h"
 #include <chrono>
+#include <array>
 #include "unittest_log.h"
 
 namespace OHOS {
@@ -34,6 +35,42 @@ HttpServerDemo::HttpServerDemo() {}
 HttpServerDemo::~HttpServerDemo()
 {
     StopServer();
+}
+
+std::map<std::string, HttpServerDemo::Response> HttpServerDemo::contentRegistry_;
+std::map<std::string, std::vector<std::string>> HttpServerDemo::requests_;
+std::mutex HttpServerDemo::registryMutex_;
+
+void HttpServerDemo::RegisterContent(const std::string &urlPath, const std::string &content)
+{
+    std::lock_guard<std::mutex> lock(registryMutex_);
+    Response response;
+    response.content = content;
+    contentRegistry_[urlPath] = response;
+}
+
+void HttpServerDemo::RegisterResponse(const std::string& path, const Response& response)
+{
+    std::lock_guard<std::mutex> lock(registryMutex_);
+    contentRegistry_[path] = response;
+}
+
+std::vector<std::string> HttpServerDemo::GetRequests(const std::string& path)
+{
+    std::lock_guard<std::mutex> lock(registryMutex_);
+    return requests_[path];
+}
+
+void HttpServerDemo::ClearContent()
+{
+    std::lock_guard<std::mutex> lock(registryMutex_);
+    for (const auto& entry : contentRegistry_) {
+        if (entry.second.control != nullptr) {
+            entry.second.control->Release();
+        }
+    }
+    contentRegistry_.clear();
+    requests_.clear();
 }
 
 void HttpServerDemo::StartServer()
@@ -128,16 +165,21 @@ void HttpServerDemo::GetKeepAlive(const std::string &recvStr, int32_t &keep)
     }
 }
 
-void HttpServerDemo::GetFilePath(const std::string &recvStr, std::string &path)
+void HttpServerDemo::GetUrlPath(const std::string &recvStr, std::string &urlPath)
 {
     std::regex regexRange("GET\\s(.+)\\sHTTP");
     std::smatch matchVals;
     if (std::regex_search(recvStr, matchVals, regexRange)) {
-        path = matchVals[1].str();
+        urlPath = matchVals[1].str();
     } else {
         std::cout << "path not found" << std::endl;
-        path = "";
+        urlPath = "";
     }
+}
+
+void HttpServerDemo::GetFilePath(const std::string &recvStr, std::string &path)
+{
+    GetUrlPath(recvStr, path);
     path = SERVER_FILE_PATH + path;
 }
 
@@ -151,7 +193,7 @@ int32_t HttpServerDemo::SendRequestSize(int32_t &connFd, int32_t &fileFd, const 
     if (endPos <= 0) {
         endPos = fileSize - 1;
     }
-    int32_t size = std::min(endPos, fileSize) - std::max(startPos, 0) + 1;
+    int32_t size = std::min(endPos, fileSize - 1) - std::max(startPos, 0) + 1;
     if (endPos < startPos) {
         size = 0;
     }
@@ -166,9 +208,9 @@ int32_t HttpServerDemo::SendRequestSize(int32_t &connFd, int32_t &fileFd, const 
         return -1;
     }
     startPos = std::max(startPos, 0);
-    endPos = std::min(endPos, fileSize);
+    endPos = std::min(endPos, fileSize - 1);
     std::stringstream sstr;
-    sstr << "HTTP/2 206 Partial Content\r\n";
+    sstr << "HTTP/1.1 206 Partial Content\r\n";
     sstr << "Server:demohttp\r\n";
     sstr << "Content-Length: " << size << "\r\n";
     sstr << "Content-Range: bytes " << startPos << "-" << endPos << "/" << fileSize << "\r\n\r\n";
@@ -180,6 +222,146 @@ int32_t HttpServerDemo::SendRequestSize(int32_t &connFd, int32_t &fileFd, const 
         return -1;
     }
     return size;
+}
+
+namespace {
+constexpr int32_t HTTP_OK = 200;
+constexpr int32_t HTTP_PARTIAL_CONTENT = 206;
+constexpr int32_t HTTP_RANGE_NOT_SATISFIABLE = 416;
+constexpr char HTTP_RANGE_HEADER[] = "Range:";
+constexpr char HTTP_RANGE_HEADER_LOWER[] = "range:";
+constexpr char HTTP_STATUS_LINE[] = "HTTP/1.1 ";
+constexpr char HTTP_TEST_CONNECTION[] = " Test\r\nConnection: close\r\n";
+constexpr char HTTP_CHUNKED_HEADER[] = "Transfer-Encoding: chunked\r\n";
+constexpr char HTTP_CONTENT_LENGTH[] = "Content-Length: ";
+constexpr char HTTP_CONTENT_RANGE[] = "Content-Range: bytes ";
+constexpr char HTTP_LINE_END[] = "\r\n";
+constexpr char HTTP_HEADER_SEPARATOR[] = ": ";
+constexpr char HTTP_CHUNK_END[] = "0\r\n\r\n";
+
+bool SendAll(int32_t fd, const std::string& bytes)
+{
+    size_t offset = 0;
+    while (offset < bytes.size()) {
+        auto sent = send(fd, bytes.data() + offset, bytes.size() - offset, MSG_NOSIGNAL);
+        if (sent <= 0) {
+            return false;
+        }
+        offset += static_cast<size_t>(sent);
+    }
+    return true;
+}
+
+std::string MakeMemHeader(const HttpServerDemo::Response& response, int32_t status,
+    const std::string& body, const std::array<int32_t, 3>& range)
+{
+    const auto [start, end, length] = range;
+    std::ostringstream header;
+    header << HTTP_STATUS_LINE << status << HTTP_TEST_CONNECTION;
+    if (response.chunked) {
+        header << HTTP_CHUNKED_HEADER;
+    } else {
+        header << HTTP_CONTENT_LENGTH << body.size() << HTTP_LINE_END;
+    }
+    if (status == HTTP_PARTIAL_CONTENT) {
+        header << HTTP_CONTENT_RANGE << start << "-" << end << "/" << length << HTTP_LINE_END;
+    }
+    for (const auto& item : response.headers) {
+        header << item.first << HTTP_HEADER_SEPARATOR << item.second << HTTP_LINE_END;
+    }
+    header << HTTP_LINE_END;
+    return header.str();
+}
+}
+
+void HttpServerDemo::ServeMemContent(int32_t connFd, const std::string& recvStr, const Response& response)
+{
+    int32_t start = 0;
+    int32_t end = 0;
+    GetRange(recvStr, start, end);
+    int32_t length = static_cast<int32_t>(response.content.size());
+    bool ranged = !response.ignoreRange && (recvStr.find(HTTP_RANGE_HEADER) != std::string::npos ||
+        recvStr.find(HTTP_RANGE_HEADER_LOWER) != std::string::npos);
+    int32_t status = response.status;
+    if (end <= 0) {
+        end = length - 1;
+    }
+    end = std::min(end, length - 1);
+    if (status == HTTP_OK && ranged) {
+        status = start >= length ? HTTP_RANGE_NOT_SATISFIABLE : HTTP_PARTIAL_CONTENT;
+    }
+    std::string body = response.content;
+    if (status == HTTP_PARTIAL_CONTENT) {
+        body = body.substr(start, end - start + 1);
+    }
+    if (status == HTTP_RANGE_NOT_SATISFIABLE) {
+        body.clear();
+    }
+    auto header = MakeMemHeader(response, status, body, {start, end, length});
+    if (response.control != nullptr && response.pausePoint == HttpResponseControl::Point::BEFORE_HEADERS &&
+        !response.control->Hold(connFd)) {
+        return;
+    }
+    if (response.delayMs > 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(response.delayMs));
+    }
+    if (!SendAll(connFd, header)) {
+        return;
+    }
+    if (response.control != nullptr && response.pausePoint == HttpResponseControl::Point::BEFORE_BODY &&
+        !response.control->Hold(connFd)) {
+        return;
+    }
+    SendMemBody(connFd, body, response);
+}
+
+void HttpServerDemo::SendMemBody(int32_t connFd, const std::string& body, const Response& response)
+{
+    for (size_t offset = 0; offset < body.size();) {
+        size_t count = std::min(std::max<size_t>(1, response.chunkSize), body.size() - offset);
+        auto chunk = body.substr(offset, count);
+        if (response.chunked) {
+            std::ostringstream prefix;
+            prefix << std::hex << count << HTTP_LINE_END;
+            chunk = prefix.str() + chunk + HTTP_LINE_END;
+        }
+        if (!SendAll(connFd, chunk)) {
+            return;
+        }
+        offset += count;
+        if (offset == count && response.control != nullptr &&
+            response.pausePoint == HttpResponseControl::Point::AFTER_FIRST_CHUNK &&
+            !response.control->Hold(connFd)) {
+            return;
+        }
+        if (response.intervalMs > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(response.intervalMs));
+        }
+    }
+    if (response.chunked) {
+        SendAll(connFd, HTTP_CHUNK_END);
+    }
+}
+
+bool HttpServerDemo::GetMemResponse(const std::string& recvStr, Response& response)
+{
+    std::string urlPath;
+    GetUrlPath(recvStr, urlPath);
+    std::lock_guard<std::mutex> lock(registryMutex_);
+    auto it = contentRegistry_.find(urlPath);
+    if (it == contentRegistry_.end()) {
+        return false;
+    }
+    auto& requests = requests_[urlPath];
+    requests.push_back(recvStr);
+    response = it->second;
+    if (requests.size() == 1 && response.controlAfterFirstRequest) {
+        response.control.reset();
+    }
+    if (requests.size() > 1 && !response.subsequentContent.empty()) {
+        response.content = response.subsequentContent;
+    }
+    return true;
 }
 
 int32_t HttpServerDemo::SetKeepAlive(int32_t &connFd, int32_t &keepAlive, int32_t &keepIdle)
@@ -217,6 +399,12 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
     }
     GetKeepAlive(recvStr, keepIdle);
     (void)SetKeepAlive(connFd, keepAlive, keepIdle);
+    Response memResponse;
+    if (GetMemResponse(recvStr, memResponse)) {
+        ServeMemContent(connFd, recvStr, memResponse);
+        CloseFd(connFd, fileFd, true, false);
+        return;
+    }
     GetFilePath(recvStr, path);
     if (path == "") {
         std::cout << "Path error, path:" << path << std::endl;
@@ -241,13 +429,6 @@ void HttpServerDemo::FileReadFunc(int32_t connFd)
             std::cout << "send file buffer failed, ret=" << ret << std::endl;
             break;
         }
-    }
-    if (ret > 0) {
-        std::string httpContext = "HTTP/2 200 OK\r\nServer:demohttp\r\n";
-        send(connFd, httpContext.c_str(), httpContext.size(), MSG_NOSIGNAL);
-    } else {
-        std::string httpContext = "HTTP/2 500 Internal Server Error\r\nServer:demohttp\r\n";
-        send(connFd, httpContext.c_str(), httpContext.size(), MSG_NOSIGNAL);
     }
     CloseFd(connFd, fileFd, true, true);
 }

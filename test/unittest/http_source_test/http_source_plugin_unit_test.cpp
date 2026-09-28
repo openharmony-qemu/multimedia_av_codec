@@ -17,6 +17,16 @@
 #include "gtest/gtest.h"
 #include "http_server_demo.h"
 #include "source_callback.h"
+#include "monitor/download_monitor.h"
+#include "http/http_media_downloader.h"
+#include "hls/hls_media_downloader.h"
+#include "hls/hls_playlist_downloader.h"
+#include "http_probe_test_utils.h"
+#include "dash/dash_media_downloader.h"
+#include <chrono>
+#include <cstdlib>
+#include <fcntl.h>
+#include <unistd.h>
 
 using namespace std;
 using namespace testing::ext;
@@ -544,7 +554,7 @@ HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetParameter6, TestSize.Leve
     auto sourceCallback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
-    meta->SetData(Tag::MEDIA_DURATION, static_cast<int64_t>(1000));
+    meta->SetData(OHOS::Media::Tag::MEDIA_DURATION, static_cast<int64_t>(1000));
     Status status = httpSourcePlugin->SetParameter(meta);
     EXPECT_EQ(status, Status::OK);
 }
@@ -566,6 +576,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported1, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     httpSourcePlugin->mimeType_ = "video/mp4";
     httpSourcePlugin->uri_ = "http://example.com/video.m3u8";
     EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
@@ -573,6 +584,7 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported1, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported2, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::DASH;
     httpSourcePlugin->mimeType_ = "video/mp4";
     httpSourcePlugin->uri_ = "http://example.com/video.mpd";
     EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
@@ -580,6 +592,7 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported2, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported3, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HTTP;
     httpSourcePlugin->mimeType_ = "video/mp4";
     httpSourcePlugin->uri_ = "http://example.com/video.mp4";
     EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
@@ -587,6 +600,7 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported3, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported4, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HTTP;
     httpSourcePlugin->mimeType_ = "application/x-mpegURL";
     httpSourcePlugin->uri_ = "http://example.com/video.mp4";
     EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
@@ -594,6 +608,7 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported4, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported5, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HTTP;
     httpSourcePlugin->uri_ = "https://cdn-audio.qimao.com/103631e612434cb62a10227bccc5d596/687daf28/tts/5/30/10/"
     "1h8m3u8rtbJpBe63EHmhJwyKzaNDe.mp3?expire=1753150104";
     EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
@@ -601,36 +616,42 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported5, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported6, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     httpSourcePlugin->uri_ = "http://xxx/xxxx?autotype=m3u8";
     EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported7, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     httpSourcePlugin->uri_ = "http://xxx/aaa.doplaylist?autotype=m3u8";
     EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported8, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HTTP;
     httpSourcePlugin->uri_ = "http://xxx/aaa.doplaylist?autotypem3u8";
     EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported9, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HTTP;
     httpSourcePlugin->uri_ = "http:aaa.doplaylist?autotype=m3u8";
     EXPECT_FALSE(httpSourcePlugin->IsSeekToTimeSupported());
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported10, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     httpSourcePlugin->uri_ = "http://autotype=m3u8";
     EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported11, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     httpSourcePlugin->uri_ = "http://1500005450.vod2.myqcloud.com/playlist_eof.m3u8#maxBufferSize=30000";
     EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
 }
@@ -1596,6 +1617,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetReadBlockingFlag_WithDownloader, TestSize.
 
 HWTEST_F(HttpSourcePluginUnitTest, Pause_WithM3U8Uri, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     auto mock = std::make_shared<MockMediaDownloaderForSeek>();
     httpSourcePlugin->downloader_ = mock;
     httpSourcePlugin->uri_ = "http://example.com/test.m3u8";
@@ -1616,6 +1638,7 @@ HWTEST_F(HttpSourcePluginUnitTest, Pause_WithNonM3U8Uri, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, Resume_WithM3U8Uri, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     auto mock = std::make_shared<MockMediaDownloaderForSeek>();
     httpSourcePlugin->downloader_ = mock;
     httpSourcePlugin->uri_ = "http://example.com/test.m3u8";
@@ -1666,6 +1689,7 @@ HWTEST_F(HttpSourcePluginUnitTest, Deinit_WithDownloader, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsHls_M3U8MimeType, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     httpSourcePlugin->mimeType_ = AVMimeTypes::APPLICATION_M3U8;
     bool result = httpSourcePlugin->IsHls();
     ASSERT_TRUE(result);
@@ -1673,6 +1697,7 @@ HWTEST_F(HttpSourcePluginUnitTest, IsHls_M3U8MimeType, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsHls_M3U8Uri, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     httpSourcePlugin->mimeType_ = "video/mp4";
     httpSourcePlugin->uri_ = "http://example.com/test.m3u8";
     bool result = httpSourcePlugin->IsHls();
@@ -1681,6 +1706,7 @@ HWTEST_F(HttpSourcePluginUnitTest, IsHls_M3U8Uri, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsHls_NotHls, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HTTP;
     httpSourcePlugin->mimeType_ = "video/mp4";
     httpSourcePlugin->uri_ = "http://example.com/test.mp4";
     bool result = httpSourcePlugin->IsHls();
@@ -1728,70 +1754,6 @@ HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_WithDownloaderPositive, Test
     Status status = httpSourcePlugin->SetMediaDuration(1000);
     ASSERT_EQ(status, Status::OK);
     ASSERT_TRUE(mock->setMediaDurationCalled_);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_WithQueryM3U8, TestSize.Level1)
-{
-    httpSourcePlugin->uri_ = "http://xxx/aaaa?autotype=m3u8";
-    httpSourcePlugin->mimeType_ = "video/mp4";
-    bool result = httpSourcePlugin->IsHls();
-    ASSERT_TRUE(result);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_NoDotNoM3U8, TestSize.Level1)
-{
-    httpSourcePlugin->uri_ = "http://example.com/justvideo";
-    httpSourcePlugin->mimeType_ = "video/mp4";
-    bool result = httpSourcePlugin->IsHls();
-    ASSERT_FALSE(result);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_WithDotButNotM3U8, TestSize.Level1)
-{
-    httpSourcePlugin->uri_ = "http://example.com/video.mp4";
-    httpSourcePlugin->mimeType_ = "video/mp4";
-    bool result = httpSourcePlugin->IsHls();
-    ASSERT_FALSE(result);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_EmptyUri, TestSize.Level1)
-{
-    httpSourcePlugin->uri_ = "";
-    httpSourcePlugin->mimeType_ = "video/mp4";
-    bool result = httpSourcePlugin->IsHls();
-    ASSERT_FALSE(result);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_NoSlash, TestSize.Level1)
-{
-    httpSourcePlugin->uri_ = "noslashuri";
-    httpSourcePlugin->mimeType_ = "video/mp4";
-    bool result = httpSourcePlugin->IsHls();
-    ASSERT_FALSE(result);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_DotM3U8WithParams, TestSize.Level1)
-{
-    httpSourcePlugin->uri_ = "http://example.com/video.m3u8?token=abc";
-    httpSourcePlugin->mimeType_ = "video/mp4";
-    bool result = httpSourcePlugin->IsHls();
-    ASSERT_TRUE(result);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_DotNotM3U8WithM3U8Param, TestSize.Level1)
-{
-    httpSourcePlugin->uri_ = "http://example.com/video.mp4?type=m3u8";
-    httpSourcePlugin->mimeType_ = "video/mp4";
-    bool result = httpSourcePlugin->IsHls();
-    ASSERT_TRUE(result);
-}
-
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_DotNotM3U8WithNoM3U8Param, TestSize.Level1)
-{
-    httpSourcePlugin->uri_ = "http://example.com/video.mp4?type=mp4";
-    httpSourcePlugin->mimeType_ = "video/mp4";
-    bool result = httpSourcePlugin->IsHls();
-    ASSERT_FALSE(result);
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, Read_NullDownloaderTwoArg, TestSize.Level1)
@@ -1873,6 +1835,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetSource_HttpNoCallback, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported_M3U8MimeType, TestSize.Level1)
 {
+    httpSourcePlugin->protocolType_ = StreamProtocolType::HLS;
     httpSourcePlugin->mimeType_ = AVMimeTypes::APPLICATION_M3U8;
     httpSourcePlugin->uri_ = "http://example.com/test.mp4";
     bool result = httpSourcePlugin->IsSeekToTimeSupported();
@@ -1946,6 +1909,243 @@ HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_ExactFilePrefix, TestSize.L
     bool result = httpSourcePlugin->IsAllowedProtocol(url);
     ASSERT_FALSE(result);
 }
+
+HWTEST_F(HttpSourcePluginUnitTest, PROBE_THEN_OPEN_REDOWNLOADS_COMPLETE_BYTES, TestSize.Level1)
+{
+    // Exceed 16 KiB and avoid a 4 KiB boundary so missing/duplicated prefix bytes change the final payload.
+    std::string bytes = SnifferTest::PatternBytes(32 * 1024 + 37);
+    // Serve a different first response: probe bytes must never enter the media buffer.
+    MediaAVCodec::HttpServerDemo::Response response;
+    response.content = std::string(bytes.size(), 'x');
+    response.subsequentContent = bytes;
+    MediaAVCodec::HttpServerDemo::RegisterResponse("/redownload.m3u8", response);
+    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:46666/redownload.m3u8");
+    auto callback = std::make_shared<SourceCallback>();
+    httpSourcePlugin->SetCallback(callback);
+    httpSourcePlugin->SetSource(mediaSource);
+    ASSERT_NE(httpSourcePlugin->GetDownloader(), nullptr);
+    EXPECT_FALSE(httpSourcePlugin->IsHls()); // Misleading suffix must not drive routing.
+    std::string collected;
+    Status status = SnifferTest::ReadHttpToEos(httpSourcePlugin, collected);
+    EXPECT_EQ(status, Status::END_OF_STREAM);
+    EXPECT_EQ(collected, bytes);
+    auto ranges = SnifferTest::RequestRanges(MediaAVCodec::HttpServerDemo::GetRequests("/redownload.m3u8"));
+    httpSourcePlugin->CloseUri();
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    // Probe, first 8 KiB, then the remaining bytes.
+    EXPECT_EQ(ranges, (std::vector<std::string> {"", "bytes=0-8191",
+        "bytes=8192-" + std::to_string(bytes.size() - 1)}));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SmallHttpProbeAndFormalDownloadHaveSeparateRequests_001, TestSize.Level2)
+{
+    constexpr size_t SMALL_BODY_SIZE = 512; // Smaller than the formal downloader's first 8 KiB range.
+    const std::string bytes(SMALL_BODY_SIZE, 's');
+    MediaAVCodec::HttpServerDemo::Response response;
+    response.content = std::string(SMALL_BODY_SIZE, 'p');
+    response.subsequentContent = bytes;
+    MediaAVCodec::HttpServerDemo::RegisterResponse("/small-redownload", response);
+    auto callback = std::make_shared<SourceCallback>();
+    ASSERT_EQ(httpSourcePlugin->SetCallback(callback), Status::OK);
+    ASSERT_EQ(httpSourcePlugin->SetSource(std::make_shared<MediaSource>(
+        "http://127.0.0.1:46666/small-redownload")), Status::OK);
+    std::string collected;
+    EXPECT_EQ(SnifferTest::ReadHttpToEos(httpSourcePlugin, collected), Status::END_OF_STREAM);
+    EXPECT_EQ(collected, bytes);
+    auto ranges = SnifferTest::RequestRanges(MediaAVCodec::HttpServerDemo::GetRequests("/small-redownload"));
+    httpSourcePlugin->CloseUri();
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    EXPECT_EQ(ranges, (std::vector<std::string> {"", "bytes=0-8191"}));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, PROBE_SHORT_HLS_WITHOUT_SUFFIX, TestSize.Level1)
+{
+    MediaAVCodec::HttpServerDemo::Response response;
+    response.chunked = true;
+    response.content = "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\nseg.ts\n#EXT-X-ENDLIST\n";
+    MediaAVCodec::HttpServerDemo::RegisterResponse("/playlist", response);
+    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:46666/playlist");
+    httpSourcePlugin->SetSource(mediaSource);
+    ASSERT_NE(httpSourcePlugin->GetDownloader(), nullptr);
+    EXPECT_TRUE(httpSourcePlugin->IsHls());
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2); // Allow the async manifest request.
+    while (MediaAVCodec::HttpServerDemo::GetRequests("/playlist").size() < 2 &&
+        std::chrono::steady_clock::now() < deadline) {
+        OSAL::SleepFor(5); // Poll every 5 ms without busy-waiting.
+    }
+    httpSourcePlugin->Pause();
+    httpSourcePlugin->Resume();
+    httpSourcePlugin->CloseUri();
+    EXPECT_GE(MediaAVCodec::HttpServerDemo::GetRequests("/playlist").size(), 2u);
+    MediaAVCodec::HttpServerDemo::ClearContent();
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, LOCAL_M3U8_USES_NATIVE_OPEN, TestSize.Level1)
+{
+    char path[] = "/data/test/media/native_probe_XXXXXX";
+    int fd = mkstemp(path);
+    ASSERT_GE(fd, 0);
+    const std::string playlist = "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\n"
+        "http://127.0.0.1:46666/local_seg.ts\n#EXT-X-ENDLIST\n";
+    std::string bytes = "prefix!" + playlist;
+    EXPECT_EQ(write(fd, bytes.data(), bytes.size()), static_cast<ssize_t>(bytes.size()));
+    // The manifest starts after the seven-byte "prefix!"; restrict the borrowed FD range to its bytes.
+    mediaSource = std::make_shared<MediaSource>("fd://" + std::to_string(fd) + "?offset=7&size=" +
+        std::to_string(playlist.size()));
+    mediaSource->mimeType_ = AVMimeTypes::APPLICATION_M3U8;
+    httpSourcePlugin->SetSource(mediaSource);
+    bool hls = httpSourcePlugin->IsHls();
+    auto monitor = std::static_pointer_cast<DownloadMonitor>(httpSourcePlugin->GetDownloader());
+    bool native = false;
+    if (monitor != nullptr) {
+        auto impl = std::static_pointer_cast<HlsMediaDownloader>(monitor->downloader_);
+        native = impl->videoSegManager_->mimeType_ == AVMimeTypes::APPLICATION_M3U8;
+    }
+    httpSourcePlugin->CloseUri();
+    EXPECT_GE(fcntl(fd, F_GETFD), 0);
+    close(fd);
+    unlink(path);
+    EXPECT_TRUE(hls);
+    EXPECT_TRUE(native);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, FLV_CONTENT_WITHOUT_SUFFIX_SELECTS_RING_BUFFER, TestSize.Level1)
+{
+    // FLV version 1, audio/video flags 0x05, big-endian offset equal to the nine-byte header.
+    const uint8_t header[] = {'F', 'L', 'V', 1, 5, 0, 0, 0, 9};
+    MediaAVCodec::HttpServerDemo::Response response;
+    // Distinct 512-byte bodies identify the probe and formal requests; a 1 KiB read holds either complete body.
+    response.content = std::string(reinterpret_cast<const char*>(header), sizeof(header)) + std::string(512, 'x');
+    response.subsequentContent = std::string(reinterpret_cast<const char*>(header), sizeof(header)) +
+        std::string(512, 'y');
+    response.chunked = true;
+    MediaAVCodec::HttpServerDemo::RegisterResponse("/flv_stream", response);
+    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:46666/flv_stream");
+    httpSourcePlugin->SetSource(mediaSource);
+    auto monitor = std::static_pointer_cast<DownloadMonitor>(httpSourcePlugin->GetDownloader());
+    ASSERT_NE(monitor, nullptr);
+    auto impl = std::static_pointer_cast<HttpMediaDownloader>(monitor->downloader_);
+    EXPECT_TRUE(impl->isRingBuffer_);
+    EXPECT_TRUE(impl->isFlvContent_);
+    uint8_t data[1024] {};
+    ReadDataInfo info;
+    info.wantReadLength_ = sizeof(data);
+    EXPECT_EQ(impl->Read(data, info), Status::OK);
+    EXPECT_EQ(std::string(reinterpret_cast<char*>(data), info.realReadLength_), response.subsequentContent);
+    info.wantReadLength_ = sizeof(data);
+    EXPECT_EQ(impl->Read(data, info), Status::END_OF_STREAM);
+    EXPECT_EQ(MediaAVCodec::HttpServerDemo::GetRequests("/flv_stream").size(), 2u);
+    EXPECT_FALSE(httpSourcePlugin->IsHls());
+    httpSourcePlugin->CloseUri();
+    MediaAVCodec::HttpServerDemo::ClearContent();
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, INITIAL_RESOLUTION_SELECTS_PROBED_RESOURCE_AND_EMITS_UPDATE, TestSize.Level1)
+{
+    class EventCallback : public Plugins::Callback {
+    public:
+        void OnEvent(const Plugins::PluginEvent& event) override
+        {
+            if (event.type == PluginEventType::STREAM_UPDATE) {
+                ++updates;
+            }
+        }
+        int updates {0};
+    };
+    auto callback = std::make_shared<EventCallback>();
+    // Compare 360p/720p at increasing bitrates; choose the exact 720p strategy match.
+    auto low = std::make_shared<PlayMediaStream>();
+    low->url = "http://127.0.0.1:46666/low";
+    low->width = 640;
+    low->height = 360;
+    low->bitrate = 1000;
+    auto high = std::make_shared<PlayMediaStream>();
+    high->url = "http://127.0.0.1:46666/high";
+    high->width = 1280;
+    high->height = 720;
+    high->bitrate = 2000;
+    MediaAVCodec::HttpServerDemo::RegisterContent("/low", std::string(512, 'l'));
+    MediaAVCodec::HttpServerDemo::RegisterContent("/high", std::string(512, 'h'));
+    mediaSource = std::make_shared<MediaSource>(low->url);
+    mediaSource->playMediaStreamVec_ = {low, high};
+    auto strategy = std::make_shared<PlayStrategy>();
+    strategy->width = 1280;
+    strategy->height = 720;
+    mediaSource->SetPlayStrategy(strategy);
+    httpSourcePlugin->SetCallback(callback);
+    httpSourcePlugin->SetSource(mediaSource);
+    auto monitor = std::static_pointer_cast<DownloadMonitor>(httpSourcePlugin->GetDownloader());
+    ASSERT_NE(monitor, nullptr);
+    auto impl = std::static_pointer_cast<HttpMediaDownloader>(monitor->downloader_);
+    EXPECT_EQ(httpSourcePlugin->uri_, high->url);
+    EXPECT_EQ(impl->defaultStream_->url, high->url);
+    EXPECT_EQ(impl->GetDownloadRequest()->GetUrl(), high->url);
+    EXPECT_EQ(callback->updates, 1);
+    EXPECT_TRUE(MediaAVCodec::HttpServerDemo::GetRequests("/low").empty());
+    httpSourcePlugin->CloseUri();
+    MediaAVCodec::HttpServerDemo::ClearContent();
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, DASH_WITHOUT_XML_DECLARATION_REOPENS_COMPLETE_MPD, TestSize.Level1)
+{
+    const std::string mpd = "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\" "
+        "mediaPresentationDuration=\"PT10S\"><Period><AdaptationSet mimeType=\"video/mp4\">"
+        "<Representation id=\"0\" bandwidth=\"1000\"><BaseURL>media.mp4</BaseURL>"
+        "</Representation></AdaptationSet></Period></MPD>";
+    MediaAVCodec::HttpServerDemo::RegisterContent("/manifest", mpd);
+    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:46666/manifest");
+    httpSourcePlugin->SetSource(mediaSource);
+    EXPECT_FALSE(httpSourcePlugin->IsHls());
+    EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());
+    auto monitor = std::static_pointer_cast<DownloadMonitor>(httpSourcePlugin->GetDownloader());
+    ASSERT_NE(monitor, nullptr);
+    auto impl = std::static_pointer_cast<DashMediaDownloader>(monitor->downloader_);
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2); // Bound async MPD parsing.
+    while (impl->mpdDownloader_->GetDuration() <= 0 && std::chrono::steady_clock::now() < deadline) {
+        OSAL::SleepFor(5); // Poll every 5 ms without busy-waiting.
+    }
+    EXPECT_GT(impl->mpdDownloader_->GetDuration(), 0);
+    EXPECT_EQ(impl->mpdDownloader_->streamDescriptions_.size(), 1u);
+    EXPECT_EQ(MediaAVCodec::HttpServerDemo::GetRequests("/manifest").size(), 2u);
+    httpSourcePlugin->CloseUri();
+    MediaAVCodec::HttpServerDemo::ClearContent();
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, ActiveSnifferSnapshotSurvivesReset, TestSize.Level1)
+{
+    auto sniffer = std::make_shared<SnifferCoordinator>();
+    std::weak_ptr<SnifferCoordinator> weakSniffer = sniffer;
+    ASSERT_TRUE(httpSourcePlugin->SetActiveSniffer(sniffer));
+    auto snapshot = httpSourcePlugin->GetActiveSniffer();
+    sniffer.reset();
+    EXPECT_TRUE(httpSourcePlugin->SetActiveSniffer(nullptr));
+    EXPECT_EQ(httpSourcePlugin->GetActiveSniffer(), nullptr);
+    EXPECT_FALSE(weakSniffer.expired());
+    snapshot.reset();
+    EXPECT_TRUE(weakSniffer.expired());
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, StoppedSourceRejectsPublication, TestSize.Level1)
+{
+    httpSourcePlugin->sourceClosed_.store(true);
+    EXPECT_FALSE(httpSourcePlugin->SetActiveSniffer(std::make_shared<SnifferCoordinator>()));
+    EXPECT_EQ(httpSourcePlugin->GetActiveSniffer(), nullptr);
+    EXPECT_FALSE(httpSourcePlugin->SetDownloader(std::make_shared<MockMediaDownloaderForSeek>()));
+    EXPECT_EQ(httpSourcePlugin->GetDownloader(), nullptr);
+    EXPECT_TRUE(httpSourcePlugin->SetActiveSniffer(nullptr));
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, InterruptStopsActiveSnifferSnapshot, TestSize.Level1)
+{
+    auto sniffer = std::make_shared<SnifferCoordinator>();
+    ASSERT_TRUE(httpSourcePlugin->SetActiveSniffer(sniffer));
+    httpSourcePlugin->SetInterruptState(true);
+    EXPECT_TRUE(sniffer->stopped_);
+    EXPECT_FALSE(httpSourcePlugin->SetActiveSniffer(std::make_shared<SnifferCoordinator>()));
+    EXPECT_TRUE(httpSourcePlugin->SetActiveSniffer(nullptr));
+}
+
 }
 }
 }

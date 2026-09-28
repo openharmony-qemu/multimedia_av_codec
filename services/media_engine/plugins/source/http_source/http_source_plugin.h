@@ -16,6 +16,9 @@
 #define HISTREAMER_HTTP_SOURCE_PLUGIN_H
 
 #include <memory>
+#include <mutex>
+#include "sniffer/sniffer_coordinator.h"
+#include "sniffer/probe_failure_notifier.h"
 #include <shared_mutex>
 #include "media_downloader.h"
 #include "meta/media_types.h"
@@ -87,26 +90,56 @@ public:
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override;
 
 private:
+    enum class SourceState {
+        IDLE,
+        PROBING,
+        READY,
+        PROBE_FAILED,
+        CLOSED
+    };
+    void BeginProbeRoute();
+    void SaveProbeFailure(const ProbeFailure& failure, const std::string& url, bool localManifest);
+    void CancelProbeFailure();
+    Status FinishProbeFailure(const std::shared_ptr<Buffer>& buffer = nullptr);
+    std::shared_ptr<ProbeFailureNotifier> GetProbeFailure() const;
+    std::shared_ptr<Callback> GetCallback() const;
+    void ConfigureDownloader(const std::shared_ptr<MediaDownloader>& downloader,
+        const std::shared_ptr<MediaSource>& source, const SniffResult& result, const MediaStreamList& streams);
     void CloseUri(bool isAsync = false);
     std::shared_ptr<PlayStrategy> PlayStrategyInit(std::shared_ptr<MediaSource> source);
     void SetDownloaderBySource(std::shared_ptr<MediaSource> source);
+    void SelectInitialStream(MediaStreamList& streams);
+    bool IsLocalManifest() const;
+    std::shared_ptr<SniffResult> ProbeSource(int32_t appUid);
+    std::shared_ptr<MediaDownloader> CreateDownloader(
+        const std::shared_ptr<MediaSource>& source, const SniffResult& result);
     std::shared_ptr<MediaDownloader> CreateDashDownloader();
     std::shared_ptr<MediaDownloader> CreateHlsDownloader();
+    std::shared_ptr<MediaDownloader> CreateHttpDownloader(const std::shared_ptr<MediaSource>& source, bool isFlv);
     void InitSourceLoader(std::shared_ptr<MediaSource> source);
-    bool CheckIsM3U8Uri();
-    void InitHttpSource(const std::shared_ptr<MediaSource>& source);
     void MediaStreamDfxTrace(std::shared_ptr<MediaSource> source);
     std::string GetCurUrl();
     Status InitSourcePlugin(const std::shared_ptr<MediaSource>& source);
-    bool IsDash();
     bool IsAllowedProtocol(std::string_view url);
     std::shared_ptr<MediaDownloader> GetDownloader() const;
-    void SetDownloader(const std::shared_ptr<MediaDownloader>& downloader);
+    bool SetDownloader(std::shared_ptr<MediaDownloader> downloader);
+    std::shared_ptr<SnifferCoordinator> GetActiveSniffer() const;
+    bool SetActiveSniffer(std::shared_ptr<SnifferCoordinator> sniffer);
+    void LogRoute(const char* event, const char* reason = "none", const char* phase = "route") const;
     uint32_t seekErrorCount_{0};
+    std::atomic<uint64_t> routeId_ {0};
     std::weak_ptr<Callback> callback_;
+    mutable std::mutex sourceStateMutex_;
+    std::shared_ptr<ProbeFailureNotifier> probeFailure_;
+    std::atomic<SourceState> sourceState_ {SourceState::IDLE};
+    std::atomic<Status> routeStatus_ {Status::ERROR_UNKNOWN};
     std::shared_ptr<MediaDownloader> downloader_;
     mutable std::shared_mutex downloaderMutex_ {};
     bool delayReady_ {true};
+    std::atomic<bool> sourceClosed_ {false};
+    std::atomic<StreamProtocolType> protocolType_ {StreamProtocolType::HTTP};
+    mutable std::shared_mutex activeSnifferMutex_;
+    std::shared_ptr<SnifferCoordinator> activeSniffer_;
     std::string uri_ {};
     std::map<std::string, std::string> httpHeader_ {};
     std::string mimeType_ {};

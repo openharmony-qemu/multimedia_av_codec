@@ -58,6 +58,7 @@ struct NetworkErrorInfo {
 
 class DownloadMonitor : public MediaDownloader, public std::enable_shared_from_this<DownloadMonitor> {
 public:
+    uint64_t GetLogId() const override { return downloader_ != nullptr ? downloader_->GetLogId() : 0; }
     explicit DownloadMonitor(std::shared_ptr<MediaDownloader> downloader) noexcept;
     ~DownloadMonitor() override = default;
     void Init() override;

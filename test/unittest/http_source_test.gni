@@ -1,0 +1,300 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Ordered implementation groups; leading underscores keep them private to this file.
+# Keep target-specific tests, mocks, server helpers and build settings in BUILD.gn.
+# These profiles intentionally preserve existing omissions and source order.
+_http_source_ut_root =
+    get_path_info("../../services/media_engine/plugins/source/http_source",
+                  "abspath")
+
+# NOSORT
+_http_source_ut_http_media_utils_sources =
+    [ "$_http_source_ut_root/utils/http_media_utils.cpp" ]
+
+# NOSORT
+_http_source_ut_base64_sources =
+    [ "$_http_source_ut_root/base64/base64_utils.cpp" ]
+
+# NOSORT
+_http_source_ut_mpd_downloader_sources =
+    [ "$_http_source_ut_root/dash/dash_mpd_downloader.cpp" ]
+
+# NOSORT
+_http_source_ut_mpd_parser_without_generic_nodes_sources = [
+  "$_http_source_ut_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_manager_util.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_util.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_period_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_representation_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/sidx_box_parser.cpp",
+]
+
+# NOSORT
+_http_source_ut_download_without_loading_request_sources = [
+  "$_http_source_ut_root/download/app_client.cpp",
+  "$_http_source_ut_root/download/downloader.cpp",
+  "$_http_source_ut_root/download/network_client/http_curl_client.cpp",
+]
+
+# NOSORT
+_http_source_ut_xml_sources = [
+  "$_http_source_ut_root/xml/xml_element.cpp",
+  "$_http_source_ut_root/xml/xml_parser.cpp",
+]
+
+# NOSORT
+_http_source_ut_string_utils_sources =
+    [ "$_http_source_ut_root/utils/string_utils.cpp" ]
+
+# NOSORT
+_http_source_ut_dash_downloaders_sources = [
+  "$_http_source_ut_root/dash/dash_media_downloader.cpp",
+  "$_http_source_ut_root/dash/dash_mpd_downloader.cpp",
+  "$_http_source_ut_root/dash/dash_segment_downloader.cpp",
+]
+
+# NOSORT
+_http_source_ut_mpd_parser_sources = [
+  "$_http_source_ut_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_generic_node.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/i_dash_mpd_node.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_manager_util.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_util.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_period_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_representation_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/sidx_box_parser.cpp",
+]
+
+# NOSORT
+_http_source_ut_download_callbacks_sources = [
+  "$_http_source_ut_root/download/app_client.cpp",
+  "$_http_source_ut_root/download/downloader.cpp",
+]
+
+# NOSORT
+_http_source_ut_curl_sources =
+    [ "$_http_source_ut_root/download/network_client/http_curl_client.cpp" ]
+
+# NOSORT
+_http_source_ut_download_sources = [
+  "$_http_source_ut_root/download/app_client.cpp",
+  "$_http_source_ut_root/download/downloader.cpp",
+  "$_http_source_ut_root/download/media_source_loading_request.cpp",
+  "$_http_source_ut_root/download/network_client/http_curl_client.cpp",
+]
+
+# NOSORT
+_http_source_ut_mpd_parser_mock_sources = [
+  "$_http_source_ut_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_manager_util.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_util.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_period_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_representation_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/sidx_box_parser.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_generic_node.cpp",
+]
+
+# NOSORT
+_http_source_ut_xml_parser_sources =
+    [ "$_http_source_ut_root/xml/xml_parser.cpp" ]
+
+# NOSORT
+_http_source_ut_hls_sources = [
+  "$_http_source_ut_root/hls/hls_media_downloader.cpp",
+  "$_http_source_ut_root/hls/hls_segment_manager.cpp",
+  "$_http_source_ut_root/hls/hls_playlist_downloader.cpp",
+  "$_http_source_ut_root/hls/hls_key_downloader.cpp",
+  "$_http_source_ut_root/hls/hls_tags.cpp",
+  "$_http_source_ut_root/hls/m3u8.cpp",
+  "$_http_source_ut_root/hls/playlist_downloader.cpp",
+]
+
+# NOSORT
+_http_source_ut_http_sources =
+    [ "$_http_source_ut_root/http/http_media_downloader.cpp" ]
+
+# NOSORT
+_http_source_ut_plugin_entry_sources = [
+  "$_http_source_ut_root/http_source_plugin.cpp",
+  "$_http_source_ut_root/http_source_plugin_stream_protocol_sniffer.cpp",
+]
+
+# NOSORT
+_http_source_ut_coordinator_sources =
+    [ "$_http_source_ut_root/sniffer/sniffer_coordinator.cpp" ]
+
+# NOSORT
+_http_source_ut_aes_decryptor_sources =
+    [ "$_http_source_ut_root/utils/aes_decryptor.cpp" ]
+
+# NOSORT
+_http_source_ut_media_cached_buffer_sources =
+    [ "$_http_source_ut_root/utils/media_cached_buffer.cpp" ]
+
+# NOSORT
+_http_source_ut_mpd_parser_plugin_order_sources = [
+  "$_http_source_ut_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_generic_node.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_manager_util.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_util.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_period_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/dash_representation_manager.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/i_dash_mpd_node.cpp",
+  "$_http_source_ut_root/dash/mpd_parser/sidx_box_parser.cpp",
+]
+
+# NOSORT
+_http_source_ut_hls_key_first_sources = [
+  "$_http_source_ut_root/hls/hls_key_downloader.cpp",
+  "$_http_source_ut_root/hls/hls_media_downloader.cpp",
+  "$_http_source_ut_root/hls/hls_playlist_downloader.cpp",
+  "$_http_source_ut_root/hls/hls_segment_manager.cpp",
+  "$_http_source_ut_root/hls/hls_tags.cpp",
+  "$_http_source_ut_root/hls/m3u8.cpp",
+  "$_http_source_ut_root/hls/playlist_downloader.cpp",
+]
+
+# NOSORT
+_http_source_ut_plugin_entry_with_resource_parser_sources = [
+  "$_http_source_ut_root/http_source_plugin.cpp",
+  "$_http_source_ut_root/http_source_plugin_stream_resource_parser.cpp",
+  "$_http_source_ut_root/http_source_plugin_stream_protocol_sniffer.cpp",
+]
+
+# NOSORT
+_http_source_ut_monitor_sources =
+    [ "$_http_source_ut_root/monitor/download_monitor.cpp" ]
+
+# NOSORT
+_http_source_ut_sniffer_sources = [
+  "$_http_source_ut_root/sniffer/probe_failure_notifier.cpp",
+  "$_http_source_ut_root/sniffer/sniffer_coordinator.cpp",
+]
+
+# NOSORT
+_http_source_ut_storage_usage_util_sources =
+    [ "$_http_source_ut_root/utils/storage_usage_util.cpp" ]
+
+# NOSORT
+_http_source_ut_download_without_curl_sources = [
+  "$_http_source_ut_root/download/app_client.cpp",
+  "$_http_source_ut_root/download/downloader.cpp",
+  "$_http_source_ut_root/download/media_source_loading_request.cpp",
+]
+
+# Public profiles contain contiguous source runs. Split profiles let BUILD.gn
+# retain server helpers and mocks at their original positions.
+
+http_source_ut_http_media_utils_sources =
+    _http_source_ut_http_media_utils_sources
+
+http_source_ut_dash_nodes_sources =
+    _http_source_ut_base64_sources + _http_source_ut_mpd_downloader_sources +
+    _http_source_ut_mpd_parser_without_generic_nodes_sources +
+    _http_source_ut_download_without_loading_request_sources +
+    _http_source_ut_xml_sources + _http_source_ut_string_utils_sources
+
+http_source_ut_dash_without_loading_request_core_sources =
+    _http_source_ut_base64_sources + _http_source_ut_dash_downloaders_sources +
+    _http_source_ut_mpd_parser_sources +
+    _http_source_ut_download_without_loading_request_sources +
+    _http_source_ut_xml_sources
+
+http_source_ut_string_utils_sources = _http_source_ut_string_utils_sources
+
+# Excludes media_source_loading_request.cpp; BUILD.gn supplies its mock.
+http_source_ut_dash_mpd_mock_prefix_sources =
+    _http_source_ut_base64_sources + _http_source_ut_mpd_downloader_sources +
+    _http_source_ut_mpd_parser_sources +
+    _http_source_ut_download_callbacks_sources
+
+http_source_ut_dash_mpd_mock_suffix_sources =
+    _http_source_ut_curl_sources + _http_source_ut_xml_sources
+
+http_source_ut_dash_mpd_sources =
+    _http_source_ut_base64_sources + _http_source_ut_mpd_downloader_sources +
+    _http_source_ut_mpd_parser_sources + _http_source_ut_download_sources +
+    _http_source_ut_xml_sources + _http_source_ut_string_utils_sources
+
+http_source_ut_dash_without_generic_nodes_sources =
+    _http_source_ut_base64_sources + _http_source_ut_dash_downloaders_sources +
+    _http_source_ut_mpd_parser_without_generic_nodes_sources +
+    _http_source_ut_download_sources + _http_source_ut_xml_sources +
+    _http_source_ut_string_utils_sources
+
+# Excludes xml_element.cpp and i_dash_mpd_node.cpp; BUILD.gn supplies their mocks.
+http_source_ut_dash_parser_mock_core_sources =
+    _http_source_ut_base64_sources + _http_source_ut_dash_downloaders_sources +
+    _http_source_ut_mpd_parser_mock_sources + _http_source_ut_download_sources +
+    _http_source_ut_xml_parser_sources
+
+http_source_ut_dash_sources =
+    _http_source_ut_base64_sources + _http_source_ut_dash_downloaders_sources +
+    _http_source_ut_mpd_parser_sources + _http_source_ut_download_sources +
+    _http_source_ut_xml_sources + _http_source_ut_string_utils_sources
+
+http_source_ut_dash_core_sources =
+    _http_source_ut_base64_sources + _http_source_ut_dash_downloaders_sources +
+    _http_source_ut_mpd_parser_sources + _http_source_ut_download_sources +
+    _http_source_ut_xml_sources
+
+http_source_ut_hls_core_sources =
+    _http_source_ut_base64_sources + _http_source_ut_download_sources +
+    _http_source_ut_hls_sources + _http_source_ut_http_sources +
+    _http_source_ut_plugin_entry_sources + _http_source_ut_coordinator_sources +
+    _http_source_ut_aes_decryptor_sources +
+    _http_source_ut_media_cached_buffer_sources
+
+http_source_ut_http_media_string_utils_sources =
+    _http_source_ut_http_media_utils_sources +
+    _http_source_ut_string_utils_sources
+
+http_source_ut_plugin_sources =
+    _http_source_ut_base64_sources + _http_source_ut_dash_downloaders_sources +
+    _http_source_ut_mpd_parser_plugin_order_sources +
+    _http_source_ut_download_sources + _http_source_ut_hls_key_first_sources +
+    _http_source_ut_http_sources +
+    _http_source_ut_plugin_entry_with_resource_parser_sources +
+    _http_source_ut_monitor_sources + _http_source_ut_sniffer_sources +
+    _http_source_ut_aes_decryptor_sources +
+    _http_source_ut_http_media_utils_sources +
+    _http_source_ut_media_cached_buffer_sources +
+    _http_source_ut_storage_usage_util_sources +
+    _http_source_ut_string_utils_sources + _http_source_ut_xml_sources
+
+# Preserves the existing media profile without Curl and generic MPD node implementations.
+http_source_ut_media_sources =
+    _http_source_ut_base64_sources + _http_source_ut_dash_downloaders_sources +
+    _http_source_ut_mpd_parser_without_generic_nodes_sources +
+    _http_source_ut_download_without_curl_sources +
+    _http_source_ut_hls_key_first_sources + _http_source_ut_http_sources +
+    _http_source_ut_plugin_entry_with_resource_parser_sources +
+    _http_source_ut_monitor_sources + _http_source_ut_sniffer_sources +
+    _http_source_ut_aes_decryptor_sources +
+    _http_source_ut_http_media_utils_sources +
+    _http_source_ut_media_cached_buffer_sources +
+    _http_source_ut_storage_usage_util_sources +
+    _http_source_ut_string_utils_sources + _http_source_ut_xml_sources
+
+http_source_ut_aes_sources = _http_source_ut_aes_decryptor_sources
+
+http_source_ut_storage_sources = _http_source_ut_storage_usage_util_sources

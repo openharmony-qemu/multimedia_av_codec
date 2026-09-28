@@ -1,12 +1,11 @@
 import("//build/config/features.gni")
 import("//build/test.gni")
+import("//foundation/multimedia/av_codec/test/fuzztest/http_source_fuzztest.gni")
 
 module_output_path = "player_framework/stream_player_framework"
 AV_CODEC_ROOT_DIR = "//foundation/multimedia/av_codec/"
 
-hls_sources = [
-  "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp",
-]
+hls_sources = http_source_fuzz_hls_tags_sources
 
 ohos_fuzztest("HlsTagsAttrOnlyFuzzTest") {
   module_out_path = module_output_path

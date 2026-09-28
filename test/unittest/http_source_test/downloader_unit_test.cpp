@@ -941,7 +941,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_2, TestSize.Level1)
     downloader->currentRequest_ = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloader->isAppBackground_ = true;
     downloader->StopBufferring();
-    EXPECT_EQ(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->GetClient(), nullptr);
     EXPECT_EQ(downloader->isAppBackground_.load(), true);
 }
 
@@ -2355,11 +2355,65 @@ public:
     void SetAppUid(int32_t) override {}
 };
 
+HWTEST_F(DownloaderUnitTest, OrdinaryChunkedEosDoesNotForceDoneCallback, TestSize.Level1)
+{
+    bool done = false;
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>("http://unused", nullptr, nullptr, true);
+    downloader->currentRequest_->headerInfo_.isChunked = true;
+    downloader->currentRequest_->SetDownloadDoneCb([&](const std::string&, const std::string&) { done = true; });
+    downloader->HandleRetOK();
+    EXPECT_TRUE(downloader->currentRequest_->IsEos());
+    EXPECT_FALSE(done);
+}
+
+HWTEST_F(DownloaderUnitTest, OrdinaryClosedResponseKeepsErrorsWithoutNotification, TestSize.Level1)
+{
+    // Simulate libcurl write error 23 after close; retain the raw code without notifying the stopped owner.
+    int notifications = 0;
+    StatusCallbackFunc callback = [&](DownloadStatus, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) { ++notifications; };
+    downloader->currentRequest_ = std::make_shared<DownloadRequest>("http://unused", nullptr, callback, true);
+    downloader->isDestructor_.store(true);
+    auto status = Status::ERROR_CLIENT;
+    downloader->HandleResponseCb(23, 0, "", status);
+    EXPECT_EQ(downloader->currentRequest_->GetClientError(), 23);
+    EXPECT_EQ(notifications, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, ClientSnapshotSurvivesPointerReset, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockCloseRetryClient>();
+    std::weak_ptr<NetworkClient> weakClient = mock;
+    downloader->SetClient(mock);
+    auto snapshot = downloader->GetClient();
+    mock.reset();
+    downloader->SetClient(nullptr);
+    EXPECT_EQ(downloader->GetClient(), nullptr);
+    EXPECT_FALSE(weakClient.expired());
+    EXPECT_EQ(snapshot->Close(true), Status::OK);
+    snapshot.reset();
+    EXPECT_TRUE(weakClient.expired());
+}
+
+HWTEST_F(DownloaderUnitTest, ForceCloseIsTerminalAndDoesNotRepeatClientClose, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockCloseRetryClient>();
+    downloader->SetClient(mock);
+    downloader->ForceClose();
+    downloader->ForceClose();
+    downloader->Stop(false);
+    EXPECT_EQ(mock->closeCallCount_, 1);
+    EXPECT_EQ(downloader->GetClient(), nullptr);
+    EXPECT_TRUE(downloader->isDestructor_.load());
+    auto request = std::make_shared<DownloadRequest>("http://unused", nullptr, nullptr, true);
+    EXPECT_FALSE(downloader->Download(request, 0));
+}
+
 HWTEST_F(DownloaderUnitTest, Pause_CloseRetry_Succeed, TestSize.Level0)
 {
     auto mock = std::make_shared<MockCloseRetryClient>();
     mock->closeFailTimes_ = 2;
-    downloader->client_ = mock;
+    downloader->SetClient(mock);
 
     auto future = std::async(std::launch::async, [&]() { downloader->Pause(); });
     auto status = future.wait_for(std::chrono::seconds(5));
@@ -2371,7 +2425,7 @@ HWTEST_F(DownloaderUnitTest, Pause_CloseRetry_AllFail, TestSize.Level0)
 {
     auto mock = std::make_shared<MockCloseRetryClient>();
     mock->closeFailTimes_ = 100;
-    downloader->client_ = mock;
+    downloader->SetClient(mock);
 
     auto future = std::async(std::launch::async, [&]() { downloader->Pause(); });
     auto status = future.wait_for(std::chrono::seconds(30));
@@ -2383,7 +2437,7 @@ HWTEST_F(DownloaderUnitTest, Pause_CloseNoRetry_Normal, TestSize.Level0)
 {
     auto mock = std::make_shared<MockCloseRetryClient>();
     mock->closeFailTimes_ = 0;
-    downloader->client_ = mock;
+    downloader->SetClient(mock);
 
     downloader->Pause();
     EXPECT_EQ(mock->closeCallCount_, 1);
@@ -3631,15 +3685,21 @@ HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_Chunked, TestSize
 
 HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_ChunkedFlv, TestSize.Level1)
 {
-    downloader->currentRequest_ = MakeTestRequest();
-    HeaderInfo info;
-    char buf[] = "transfer-encoding: chunked\r\n";
-    char* next = buf + strlen("transfer-encoding");
-    char* key = buf;
-    downloader->currentRequest_->url_ = "http://test.com/video.flv";
-    ASSERT_TRUE(downloader->HandleTransferEncoding(&info, key, next, downloader.get()));
-    ASSERT_TRUE(info.isChunked);
-    ASSERT_EQ(info.contentLen, 0);
+    const std::vector<std::pair<std::string, bool>> cases {
+        {"http://test.com/stream", true}, {"http://test.com/video.flv", false},
+        {"http://test.com/video.flv", true}, {"http://test.com/stream", false}};
+    std::vector<int64_t> lengths;
+    for (const auto& item : cases) {
+        downloader->currentRequest_ = MakeTestRequest(item.first);
+        downloader->currentRequest_->SetIsFlv(item.second);
+        HeaderInfo info;
+        char buf[] = "transfer-encoding: chunked\r\n";
+        char* next = buf + strlen("transfer-encoding");
+        ASSERT_TRUE(downloader->HandleTransferEncoding(&info, buf, next, downloader.get()));
+        EXPECT_TRUE(info.isChunked);
+        lengths.push_back(info.contentLen);
+    }
+    EXPECT_EQ(lengths, (std::vector<int64_t> {0, LIVE_CONTENT_LENGTH, 0, LIVE_CONTENT_LENGTH}));
 }
 
 HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_NotChunked, TestSize.Level1)
@@ -4691,7 +4751,7 @@ HWTEST_F(DownloaderUnitTest, Downloader_Pause_AsyncWithMockRetry, TestSize.Level
 {
     auto mock = std::make_shared<MockCloseRetryClient>();
     mock->closeFailTimes_ = 2;
-    downloader->client_ = mock;
+    downloader->SetClient(mock);
     downloader->Pause(true);
     ASSERT_EQ(mock->closeCallCount_, 3);
 }

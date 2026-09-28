@@ -15,12 +15,17 @@
 #define HST_LOG_TAG "HttpSourcePlugin"
 
 #include "avcodec_trace.h"
+#include "avcodec_dfx_component.h"
 #include "http_source_plugin.h"
 #include "common/log.h"
 #include "hls/hls_media_downloader.h"
 #include "dash/dash_media_downloader.h"
 #include "http/http_media_downloader.h"
 #include "monitor/download_monitor.h"
+#include "sniffer/sniffer_coordinator.h"
+#include <climits>
+#include "utils/initial_stream_selection.h"
+#include "utils/string_utils.h"
 #include "avcodec_sysevent.h"
 #include "http_media_utils.h"
 #include "storage_usage_util.h"
@@ -34,18 +39,22 @@ namespace HttpPlugin {
 namespace {
 constexpr int DEFAULT_EXPECT_DURATION = 19;
 constexpr int ERROR_COUNT = 5;
-const std::string LOWER_M3U8 = "m3u8";
-const std::string DASH_SUFFIX = ".mpd";
-const std::string EQUAL_M3U8 = "=" + LOWER_M3U8;
-const std::string DASH_LIST[] = {
-    std::string(".mpd"),
-    std::string("type=mpd"),
-};
+constexpr std::string_view FD_URI_PREFIX = "fd://";
 constexpr auto UNALLOWED_PROTOCOLS = std::array{
     std::string_view{"file://"},
 };
-constexpr std::string_view HTTP_PREFIX = "http";
 
+std::string LogResource(const std::string& url)
+{
+    constexpr std::string_view HTTP_PREFIX = "http://";
+    constexpr std::string_view HTTPS_PREFIX = "https://";
+    if (url.compare(0, HTTP_PREFIX.size(), HTTP_PREFIX) != 0 &&
+        url.compare(0, HTTPS_PREFIX.size(), HTTPS_PREFIX) != 0) {
+        return "local_or_custom";
+    }
+    // Strip query/fragment even on the mask helper's pathless-URL branch.
+    return StringUtil::MaskUrl(url.substr(0, url.find_first_of("?#")));
+}
 }
 
 std::shared_ptr<SourcePlugin> HttpSourcePluginCreater(const std::string& name)
@@ -108,6 +117,9 @@ Status HttpSourcePlugin::Deinit()
 Status HttpSourcePlugin::Prepare()
 {
     MEDIA_LOG_D("Prepare enter.");
+    if (sourceState_.load() == SourceState::PROBE_FAILED) {
+        return FinishProbeFailure();
+    }
     return delayReady_ ? Status::ERROR_DELAY_READY : Status::OK;
 }
 
@@ -161,7 +173,7 @@ Status HttpSourcePlugin::Pause()
 {
     MEDIA_LOG_I("Pause enter.");
     auto downloader = GetDownloader();
-    if (downloader != nullptr && CheckIsM3U8Uri()) {
+    if (downloader != nullptr && IsHls()) {
         downloader->Pause();
     }
     return Status::OK;
@@ -171,7 +183,7 @@ Status HttpSourcePlugin::Resume()
 {
     MEDIA_LOG_I("Resume enter.");
     auto downloader = GetDownloader();
-    if (downloader != nullptr && CheckIsM3U8Uri()) {
+    if (downloader != nullptr && IsHls()) {
         downloader->Resume();
     }
     return Status::OK;
@@ -199,13 +211,99 @@ Status HttpSourcePlugin::SetMediaDuration(int64_t mediaDuration)
     return Status::OK;
 }
 
+std::shared_ptr<Callback> HttpSourcePlugin::GetCallback() const
+{
+    std::lock_guard<std::mutex> lock(sourceStateMutex_);
+    return callback_.lock();
+}
+
+std::shared_ptr<ProbeFailureNotifier> HttpSourcePlugin::GetProbeFailure() const
+{
+    std::lock_guard<std::mutex> lock(sourceStateMutex_);
+    return probeFailure_;
+}
+
+void HttpSourcePlugin::BeginProbeRoute()
+{
+    std::shared_ptr<ProbeFailureNotifier> previous;
+    {
+        std::lock_guard<std::mutex> lock(sourceStateMutex_);
+        previous.swap(probeFailure_);
+        routeId_.store(MediaAVCodec::AllocateUniqueId());
+        sourceState_.store(SourceState::PROBING);
+        routeStatus_.store(Status::ERROR_UNKNOWN);
+    }
+    if (previous != nullptr) {
+        previous->Cancel();
+    }
+}
+
+void HttpSourcePlugin::SaveProbeFailure(const ProbeFailure& failure, const std::string& url, bool localManifest)
+{
+    bool network = !localManifest &&
+        (failure.kind == ProbeFailureKind::NETWORK || failure.kind == ProbeFailureKind::TIMEOUT);
+    auto notification = network ? std::make_shared<ProbeFailureNotifier>(failure, url,
+        std::weak_ptr<Callback> {}) : nullptr;
+    {
+        std::lock_guard<std::mutex> lock(sourceStateMutex_);
+        if (sourceClosed_.load() || isInterruptNeeded_.load() || failure.routeId != routeId_.load()) {
+            return;
+        }
+        sourceState_.store(network ? SourceState::PROBE_FAILED : SourceState::IDLE);
+        if (notification != nullptr) {
+            notification->SetCallback(callback_);
+            probeFailure_ = std::move(notification);
+            routeStatus_.store(Status::OK);
+        }
+    }
+    LogRoute("probe_failure_saved", network ? "callback_pending" : "synchronous_failure", "probe");
+}
+
+void HttpSourcePlugin::CancelProbeFailure()
+{
+    std::shared_ptr<ProbeFailureNotifier> notification;
+    {
+        std::lock_guard<std::mutex> lock(sourceStateMutex_);
+        sourceState_.store(SourceState::CLOSED);
+        notification.swap(probeFailure_);
+    }
+    if (notification != nullptr) {
+        // No source/pointer lock is held across a callback drain; Cancel handles self-reentry.
+        notification->Cancel();
+    }
+}
+
+Status HttpSourcePlugin::FinishProbeFailure(const std::shared_ptr<Buffer>& buffer)
+{
+    if (buffer != nullptr && buffer->GetMemory() != nullptr) {
+        buffer->GetMemory()->UpdateDataSize(0);
+    }
+    auto notification = GetProbeFailure();
+    if (notification != nullptr) {
+        notification->WaitForDelivery();
+    }
+    // ReadRetry terminates on ERROR_UNKNOWN; never report a successful EOS for failed input.
+    return Status::ERROR_UNKNOWN;
+}
+
 Status HttpSourcePlugin::SetCallback(const std::shared_ptr<Callback>& cb)
 {
     MEDIA_LOG_D("SetCallback enter.");
-    callback_ = cb;
+    std::shared_ptr<ProbeFailureNotifier> failure;
+    {
+        std::lock_guard<std::mutex> lock(sourceStateMutex_);
+        callback_ = cb;
+        failure = probeFailure_;
+        if (failure != nullptr) {
+            failure->SetCallback(cb);
+        }
+    }
     auto downloader = GetDownloader();
     if (downloader != nullptr) {
         downloader->SetCallback(cb);
+    }
+    if (failure != nullptr) {
+        failure->Notify();
     }
     return Status::OK;
 }
@@ -215,15 +313,25 @@ Status HttpSourcePlugin::SetSource(std::shared_ptr<MediaSource> source)
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::SetSource");
     MEDIA_LOG_D("SetSource enter.");
     FALSE_RETURN_V(GetDownloader() == nullptr, Status::ERROR_INVALID_OPERATION); // not allowed set again
+    FALSE_RETURN_V(sourceState_.load() != SourceState::PROBING, Status::ERROR_INVALID_OPERATION);
     FALSE_RETURN_V(source != nullptr, Status::ERROR_INVALID_OPERATION);
     FALSE_RETURN_V(IsAllowedProtocol(source->GetSourceUri()), Status::ERROR_INVALID_OPERATION);
-    InitSourcePlugin(source);
+    sourceClosed_.store(false);
+    auto status = InitSourcePlugin(source);
+    FALSE_RETURN_V(!sourceClosed_.load() && !isInterruptNeeded_.load(), Status::ERROR_UNKNOWN);
+    if (sourceState_.load() == SourceState::PROBE_FAILED) {
+        auto failure = GetProbeFailure();
+        if (failure != nullptr) {
+            // Last action: an external callback may release or reset this plugin.
+            failure->Notify();
+        }
+        return Status::OK;
+    }
+    // A published formal downloader retains its existing acceptance and error-reporting behavior.
+    FALSE_RETURN_V(status == Status::OK || GetDownloader() != nullptr, status);
     redirectUrl_ = GetCurUrl();
     FALSE_RETURN_V(!redirectUrl_.empty() && source->GetSourceUri() != redirectUrl_, Status::OK);
     FALSE_RETURN_V(IsAllowedProtocol(redirectUrl_), Status::ERROR_INVALID_OPERATION);
-    uri_ = redirectUrl_;
-    FALSE_RETURN_V(IsSeekToTimeSupported(), Status::OK);
-    InitSourcePlugin(source);
     return Status::OK;
 }
 
@@ -231,12 +339,16 @@ Status HttpSourcePlugin::InitSourcePlugin(const std::shared_ptr<MediaSource>& so
 {
     SetDownloaderBySource(source);
     auto downloader = GetDownloader();
-    FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
-    auto cb = callback_.lock();
-    if (cb) {
-        downloader->SetCallback(cb);
+    LogRoute("formal_open_check", downloader != nullptr ? "downloader_ready" : "no_downloader", "formal");
+    FALSE_RETURN_V(downloader != nullptr, routeStatus_.load());
+    if (isInterruptNeeded_.load() || sourceClosed_.load()) {
+        LogRoute("formal_open_vetoed", "closed_or_interrupted", "formal");
+        return Status::ERROR_UNKNOWN;
     }
-    FALSE_RETURN_V(downloader->Open(uri_, httpHeader_), Status::ERROR_UNKNOWN);
+    LogRoute("formal_open_begin", "submit", "formal");
+    bool opened = downloader->Open(uri_, httpHeader_);
+    LogRoute("formal_open_end", opened ? "accepted" : "rejected", "formal");
+    FALSE_RETURN_V(opened, Status::ERROR_UNKNOWN);
     auto uuid = source->GetAppUid();
     std::string bundleName = OHOS::Media::HttpMediaUtils::GetClientBundleName(uuid);
     if (reportInfo_ != nullptr) {
@@ -285,8 +397,15 @@ std::shared_ptr<MediaDownloader> HttpSourcePlugin::CreateHlsDownloader()
     bool userDefinedDuration = false;
     uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
     UserDefinedDuration(playStrategy_, userDefinedDuration, expectDuration);
-    auto downloader = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>
-        (expectDuration, userDefinedDuration, httpHeader_, loaderCombinations_));
+    bool local = IsLocalManifest();
+    std::shared_ptr<MediaDownloader> impl;
+    if (local) {
+        impl = std::make_shared<HlsMediaDownloader>(mimeType_, httpHeader_);
+    } else {
+        impl = std::make_shared<HlsMediaDownloader>(expectDuration, userDefinedDuration, httpHeader_,
+            loaderCombinations_);
+    }
+    auto downloader = std::make_shared<DownloadMonitor>(impl);
     FALSE_RETURN_V_MSG(downloader != nullptr, nullptr, "CreateHlsDownloader downloader is nullptr");
     downloader->Init();
     downloader->SetSourceStatisticsDfx(reportInfo_);
@@ -310,76 +429,167 @@ void HttpSourcePlugin::InitSourceLoader(std::shared_ptr<MediaSource> source)
     }
 }
 
+void HttpSourcePlugin::SelectInitialStream(MediaStreamList& streams)
+{
+    streams.erase(std::remove(streams.begin(), streams.end(), nullptr), streams.end());
+    if (!streams.empty()) {
+        std::sort(streams.begin(), streams.end(), [](const auto& a, const auto& b) {
+            return a->bitrate < b->bitrate || (a->bitrate == b->bitrate &&
+                static_cast<uint64_t>(a->width) * a->height < static_cast<uint64_t>(b->width) * b->height);
+        });
+        uint64_t resolution = 0;
+        if (playStrategy_ != nullptr && playStrategy_->width > 0 && playStrategy_->width < USHRT_MAX &&
+            playStrategy_->height > 0 && playStrategy_->height < USHRT_MAX) {
+            resolution = static_cast<uint64_t>(playStrategy_->width) * playStrategy_->height;
+        }
+        uri_ = ChooseInitialStream(streams, resolution)->url;
+    }
+    auto selected = std::find_if(streams.begin(), streams.end(), [this](const auto& stream) {
+        return stream != nullptr && stream->url == uri_;
+    });
+    auto resource = LogResource(uri_);
+    MEDIA_LOG_I("route=%{public}" PRIu64 " event=resource_selected candidates=%{public}zu local=%{public}d "
+        "resource=%{public}s width=%{public}u height=%{public}u bitrate=%{public}u",
+        routeId_.load(), streams.size(), IsLocalManifest(), resource.c_str(),
+        selected != streams.end() ? (*selected)->width : 0, selected != streams.end() ? (*selected)->height : 0,
+        selected != streams.end() ? (*selected)->bitrate : 0);
+}
+
+bool HttpSourcePlugin::IsLocalManifest() const
+{
+    return mimeType_ == AVMimeTypes::APPLICATION_M3U8 && uri_.compare(0, FD_URI_PREFIX.size(), FD_URI_PREFIX) == 0;
+}
+
+std::shared_ptr<SniffResult> HttpSourcePlugin::ProbeSource(int32_t appUid)
+{
+    const auto probeUrl = uri_;
+    const bool localManifest = IsLocalManifest();
+    auto snifferLoader = loaderCombinations_ != nullptr && loaderCombinations_->loader_ != nullptr ?
+        loaderCombinations_ : nullptr;
+    auto sniffer = std::make_shared<SnifferCoordinator>(snifferLoader,
+        SnifferCoordinator::DownloaderFactory {}, routeId_.load());
+    if (!SetActiveSniffer(sniffer)) {
+        LogRoute("probe_rejected", "closed_or_interrupted", "probe");
+        return nullptr;
+    }
+    LogRoute("probe_begin", localManifest ? "local_fd" : "network", "probe");
+    sniffer->Start(probeUrl, httpHeader_, localManifest, appUid);
+    std::shared_ptr<SniffResult> result;
+    bool ok = sniffer->WaitResult(result);
+    auto failure = sniffer->GetFailure();
+    LogRoute("probe_result", ok ? "classified" : "not_accepted", "probe");
+    SetActiveSniffer(nullptr);
+    // WaitResult quiesced the transport; release its prefix storage before creating a media parser.
+    sniffer.reset();
+    if (!ok) {
+        SaveProbeFailure(failure, probeUrl, localManifest);
+    }
+    if (!ok || isInterruptNeeded_.load() || sourceClosed_.load()) {
+        LogRoute("probe_vetoed", !ok ? "probe_unsuccessful" : "closed_or_interrupted", "probe");
+        return nullptr;
+    }
+    return result;
+}
+
+std::shared_ptr<MediaDownloader> HttpSourcePlugin::CreateDownloader(
+    const std::shared_ptr<MediaSource>& source, const SniffResult& result)
+{
+    std::shared_ptr<MediaDownloader> downloader;
+    switch (result.type) {
+        case StreamProtocolType::HLS:
+            downloader = CreateHlsDownloader();
+            break;
+        case StreamProtocolType::DASH:
+            downloader = CreateDashDownloader();
+            break;
+        default:
+            downloader = CreateHttpDownloader(source, result.isFlv);
+            break;
+    }
+    return downloader;
+}
+
 void HttpSourcePlugin::SetDownloaderBySource(std::shared_ptr<MediaSource> source)
 {
+    BeginProbeRoute();
+    LogRoute("route_begin", source != nullptr ? "source_present" : "null_source");
     FALSE_RETURN_MSG(source != nullptr, "source is null.");
     playStrategy_ = PlayStrategyInit(source);
     InitSourceLoader(source);
-    if (IsDash()) {
-        auto downloader = CreateDashDownloader();
-        SetDownloader(downloader);
-        delayReady_ = false;
-    } else if (IsSeekToTimeSupported() && mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        auto downloader = CreateHlsDownloader();
-        SetDownloader(downloader);
-        delayReady_ = false;
-    } else if (uri_.compare(0, HTTP_PREFIX.length(), HTTP_PREFIX) == 0) {
-        InitHttpSource(source);
+    auto streams = source->GetMediaStreamList();
+    SelectInitialStream(streams);
+    if (!IsAllowedProtocol(uri_)) {
+        routeStatus_.store(Status::ERROR_INVALID_OPERATION);
+        sourceState_.store(SourceState::IDLE);
+        LogRoute("route_rejected", "protocol_not_allowed");
+        return;
     }
-    auto downloader = GetDownloader();
-    if (downloader != nullptr && playStrategy_ != nullptr) {
+    auto result = ProbeSource(source->GetAppUid());
+    FALSE_RETURN_MSG(result != nullptr, "probe failed or cancelled");
+    auto downloader = CreateDownloader(source, *result);
+    MEDIA_LOG_I("route=%{public}" PRIu64 " event=downloader_created protocol=%{public}d flv=%{public}d "
+        "created=%{public}d media=%{public}" PRIu64, routeId_.load(), static_cast<int32_t>(result->type), result->isFlv,
+        downloader != nullptr, downloader != nullptr ? downloader->GetLogId() : 0);
+    FALSE_RETURN_MSG(downloader != nullptr, "create downloader failed");
+    protocolType_.store(result->type);
+    if (!SetDownloader(downloader)) {
+        protocolType_.store(StreamProtocolType::HTTP);
+        return;
+    }
+    ConfigureDownloader(downloader, source, *result, streams);
+    MediaStreamDfxTrace(source);
+    LogRoute("route_configured");
+}
+
+void HttpSourcePlugin::ConfigureDownloader(const std::shared_ptr<MediaDownloader>& downloader,
+    const std::shared_ptr<MediaSource>& source, const SniffResult& result, const MediaStreamList& streams)
+{
+    auto callback = GetCallback();
+    if (callback != nullptr) {
+        downloader->SetCallback(callback);
+    }
+    if (playStrategy_ != nullptr) {
         downloader->SetPlayStrategy(playStrategy_);
     }
-    if (mimeType_ == AVMimeTypes::APPLICATION_M3U8) {
-        auto hlsDownloader = std::make_shared<DownloadMonitor>(std::make_shared<HlsMediaDownloader>(mimeType_));
-        hlsDownloader->Init();
-        SetDownloader(hlsDownloader);
+    downloader->SetAppUid(source->GetAppUid());
+    downloader->SetInterruptState(isInterruptNeeded_.load());
+    if (result.type == StreamProtocolType::HTTP) {
+        downloader->SetMediaStreams(streams);
     }
-    MediaStreamDfxTrace(source);
-    downloader = GetDownloader();
-    if (downloader != nullptr) {
-        downloader->SetInterruptState(isInterruptNeeded_);
-        downloader->SetAppUid(source->GetAppUid());
+    delayReady_ = false;
+    std::lock_guard<std::mutex> lock(sourceStateMutex_);
+    if (!sourceClosed_.load() && !isInterruptNeeded_.load()) {
+        sourceState_.store(SourceState::READY);
     }
 }
 
-void HttpSourcePlugin::InitHttpSource(const std::shared_ptr<MediaSource>& source)
+void HttpSourcePlugin::LogRoute(const char* event, const char* reason, const char* phase) const
 {
-    std::shared_ptr<PlayStrategy> playStrategy = source->GetPlayStrategy();
-    auto playMediaStreams = source->GetMediaStreamList();
-    if (playMediaStreams.size() > 0) {
-        std::sort(playMediaStreams.begin(), playMediaStreams.end(),
-            [](const std::shared_ptr<PlayMediaStream>& streamA, const std::shared_ptr<PlayMediaStream>& streamB) {
-                return (streamA->bitrate < streamB->bitrate) ||
-                       (streamA->bitrate == streamB->bitrate &&
-                        static_cast<uint64_t>(streamA->width) * streamA->height <
-                        static_cast<uint64_t>(streamB->width) * streamB->height);
-        });
-        uri_ = playMediaStreams.front()->url;
-    }
+    MEDIA_LOG_I("route=%{public}" PRIu64 " phase=%{public}s event=%{public}s reason=%{public}s "
+        "closed=%{public}d interrupted=%{public}d protocol=%{public}d", routeId_.load(), phase, event, reason,
+        sourceClosed_.load(), isInterruptNeeded_.load(), static_cast<int32_t>(protocolType_.load()));
+}
+
+std::shared_ptr<MediaDownloader> HttpSourcePlugin::CreateHttpDownloader(
+    const std::shared_ptr<MediaSource>& source, bool isFlv)
+{
+    auto playStrategy = source->GetPlayStrategy();
     uint32_t expectDuration = DEFAULT_EXPECT_DURATION;
     if (playStrategy != nullptr && playStrategy->duration > 0) {
         expectDuration = playStrategy->duration;
     }
     auto downloader = std::make_shared<DownloadMonitor>(std::make_shared<HttpMediaDownloader>
-        (uri_, expectDuration, loaderCombinations_));
+        (uri_, expectDuration, loaderCombinations_, isFlv));
+    FALSE_RETURN_V_MSG(downloader != nullptr, nullptr, "CreateHttpDownloader downloader is nullptr");
     downloader->Init();
     downloader->SetSourceStatisticsDfx(reportInfo_);
-    auto cb = callback_.lock();
-    if (cb) {
-        downloader->SetCallback(cb);
-    }
-    SetDownloader(downloader);
-    downloader->SetMediaStreams(playMediaStreams);
+    return downloader;
 }
 
 bool HttpSourcePlugin::IsSeekToTimeSupported()
 {
-    if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        return CheckIsM3U8Uri() || uri_.find(DASH_SUFFIX) != std::string::npos;
-    }
-    MEDIA_LOG_I("IsSeekToTimeSupported return true");
-    return true;
+    auto type = protocolType_.load();
+    return type == StreamProtocolType::HLS || type == StreamProtocolType::DASH;
 }
 
 Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
@@ -389,6 +599,9 @@ Status HttpSourcePlugin::Read(std::shared_ptr<Buffer>& buffer, uint64_t offset, 
 
 Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer, uint64_t offset, size_t expectedLen)
 {
+    if (sourceState_.load() == SourceState::PROBE_FAILED) {
+        return FinishProbeFailure(buffer);
+    }
     MediaAVCodec::AVCodecTrace trace("HttpSourcePlugin::Read, offset: "
         + std::to_string(offset) + ", expectedLen: " + std::to_string(expectedLen));
     MEDIA_LOG_D("Read enter.");
@@ -431,6 +644,10 @@ Status HttpSourcePlugin::Read(int32_t streamId, std::shared_ptr<Buffer>& buffer,
 Status HttpSourcePlugin::GetSize(uint64_t& size)
 {
     MEDIA_LOG_D("GetSize enter.");
+    if (sourceState_.load() == SourceState::PROBE_FAILED) {
+        size = 0; // Accepted network source with unknown length; no playable content is implied.
+        return Status::OK;
+    }
     auto downloader = GetDownloader();
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     size = static_cast<uint64_t>(downloader->GetContentLength());
@@ -449,6 +666,14 @@ void HttpSourcePlugin::SetInterruptState(bool isInterruptNeeded)
 {
     MEDIA_LOG_I("SetInterruptState %{public}d.", isInterruptNeeded);
     isInterruptNeeded_ = isInterruptNeeded;
+    LogRoute(isInterruptNeeded ? "interrupt_requested" : "interrupt_cleared");
+    if (isInterruptNeeded) {
+        CancelProbeFailure();
+        auto sniffer = GetActiveSniffer();
+        if (sniffer != nullptr) {
+            sniffer->Stop();
+        }
+    }
     auto downloader = GetDownloader();
     if (downloader != nullptr) {
         downloader->SetInterruptState(isInterruptNeeded);
@@ -468,7 +693,7 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
         MEDIA_LOG_I("SeekTo enter fail, content = " PUBLIC_LOG_ZU, downloader->GetContentLength());
         seekErrorCount_++;
         if (seekErrorCount_ > ERROR_COUNT) {
-            auto cb = callback_.lock();
+            auto cb = GetCallback();
             if (cb != nullptr) {
                 cb->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_TIME_OUT},
                     "errorMessage: seek time exceeds the maximum duration of the resource"});
@@ -511,6 +736,15 @@ Status HttpSourcePlugin::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode
 
 void HttpSourcePlugin::CloseUri(bool isAsync)
 {
+    sourceClosed_.store(true);
+    CancelProbeFailure();
+    LogRoute("close_requested", isAsync ? "async" : "sync");
+    {
+        auto sniffer = GetActiveSniffer();
+        if (sniffer != nullptr) {
+            sniffer->Stop();
+        }
+    }
     auto downloader = GetDownloader();
     if (downloader != nullptr) {
         MEDIA_LOG_D("Close uri");
@@ -520,6 +754,7 @@ void HttpSourcePlugin::CloseUri(bool isAsync)
         SetDownloader(nullptr);
     }
     uri_.clear();
+    protocolType_.store(StreamProtocolType::HTTP);
 }
 
 Status HttpSourcePlugin::GetDuration(int64_t& duration)
@@ -658,63 +893,6 @@ void HttpSourcePlugin::WaitForBufferingEnd()
     downloader->WaitForBufferingEnd();
 }
 
-static std::pair<std::string, std::string> SplitUri(const std::string& uri)
-{
-    /* RFC3986 Url可以划分成若干个组件，协议、主机、路径等。有一些字符（:/?#[]@）是用作分隔不同组件的，作为保留字符。
-        例如:冒号用于分隔协议和主机，/用于分隔主机和路径，?用于分隔路径和查询参数，百分号(%)制定特殊字符，#号指定书签，
-        &号分隔参数。当组件中的普通数据包含这些特殊字符时，需要对其进行编码。*/
-    std::string::size_type pos = uri.find_first_of('?');
-    if (pos != std::string::npos) {
-        return std::make_pair(uri.substr(0, pos), uri.substr(pos + 1));
-    }
-
-    // #作用是已给纯粹的客户端“锚点”，它不会被发送到客户端。因此#放在?之前的URL不符合规范的。
-    // 例如：http://1500005450.vod2.myqcloud.com/playlist_eof.m3u8#maxBufferSize=30000
-    pos = uri.find_first_of('#');
-    if (pos != std::string::npos) {
-        return std::make_pair(uri.substr(0, pos), "");
-    }
-
-    return std::make_pair(uri, "");
-}
-
-bool HttpSourcePlugin::CheckIsM3U8Uri()
-{
-    if (uri_.empty()) {
-        return false;
-    }
-    std::string uri = uri_;
-    std::transform(uri.begin(), uri.end(), uri.begin(), ::tolower);
-
-    auto pairUri = SplitUri(uri);
-    std::string::size_type pos = pairUri.first.rfind('/');
-    if (pos == std::string::npos) {
-        return false;
-    }
-
-    // 现网的很多hls链接是非.m3u8关键字，举例：http://xxx/xxxx?autotype=m3u8; http://xxx/aaa.doplaylist?auto=m3u8
-    // 优先判断资源类型(.和?#中间的字符串，姑且称资源类型)；参数携带为次。如果不携带资源类型，还走原来的逻辑
-    std::string leafNameSuffix = pairUri.first.substr(pos + 1);
-    pos = leafNameSuffix.rfind('.');
-    if (pos != std::string::npos) {     // 找到资源格式
-        std::string suffix = leafNameSuffix.substr(pos + 1);
-        if (suffix == LOWER_M3U8) {
-            return true;
-        }
-        if (!pairUri.second.empty()) {
-            if (pairUri.second.find(EQUAL_M3U8) != std::string::npos) {
-                return true;
-            }
-        }
-    } else {    // 没有标明资源格式，按原先规则里找；当前未从param后面找=m3u8
-        if (uri.find(LOWER_M3U8) != std::string::npos) {
-            return true;
-        }
-    }
-    
-    return false;
-}
-
 void HttpSourcePlugin::NotifyInitSuccess()
 {
     auto downloader = GetDownloader();
@@ -759,15 +937,6 @@ bool HttpSourcePlugin::IsFlvLive()
     return downloader->IsFlvLive();
 }
 
-bool HttpSourcePlugin::IsDash()
-{
-    auto it = std::find_if(std::begin(DASH_LIST), std::end(DASH_LIST),
-        [this](const std::string& key) {
-            return this->uri_.find(key) != std::string::npos;
-    });
-    return it != std::end(DASH_LIST);
-}
-
 bool HttpSourcePlugin::IsHlsFmp4()
 {
     auto downloader = GetDownloader();
@@ -805,11 +974,7 @@ void HttpSourcePlugin::SetDefaultStreamId(int32_t &videoStreamId, int32_t &audio
 
 bool HttpSourcePlugin::IsHls()
 {
-    if (mimeType_ != AVMimeTypes::APPLICATION_M3U8) {
-        return CheckIsM3U8Uri();
-    }
-    MEDIA_LOG_I("IsHls return true");
-    return true;
+    return protocolType_.load() == StreamProtocolType::HLS;
 }
 
 std::string HttpSourcePlugin::GetMaskUrlByReadIndex(int32_t streamId)
@@ -849,10 +1014,39 @@ std::shared_ptr<MediaDownloader> HttpSourcePlugin::GetDownloader() const
     return downloader_;
 }
 
-void HttpSourcePlugin::SetDownloader(const std::shared_ptr<MediaDownloader>& downloader)
+bool HttpSourcePlugin::SetDownloader(std::shared_ptr<MediaDownloader> downloader)
 {
-    std::unique_lock<std::shared_mutex> lock(downloaderMutex_);
-    downloader_ = downloader;
+    bool accepted = true;
+    bool clearing = downloader == nullptr;
+    {
+        std::unique_lock<std::shared_mutex> lock(downloaderMutex_);
+        if (downloader != nullptr && (isInterruptNeeded_.load() || sourceClosed_.load())) {
+            accepted = false;
+        } else {
+            downloader_.swap(downloader);
+        }
+    }
+    LogRoute(accepted ? (clearing ? "downloader_cleared" : "downloader_published") : "publication_rejected",
+        accepted ? "accepted" : "closed_or_interrupted", "formal");
+    return accepted;
+}
+
+std::shared_ptr<SnifferCoordinator> HttpSourcePlugin::GetActiveSniffer() const
+{
+    std::shared_lock<std::shared_mutex> lock(activeSnifferMutex_);
+    return activeSniffer_;
+}
+
+bool HttpSourcePlugin::SetActiveSniffer(std::shared_ptr<SnifferCoordinator> sniffer)
+{
+    {
+        std::unique_lock<std::shared_mutex> lock(activeSnifferMutex_);
+        if (sniffer != nullptr && (isInterruptNeeded_.load() || sourceClosed_.load())) {
+            return false;
+        }
+        activeSniffer_.swap(sniffer);
+    }
+    return true;
 }
 }
 }

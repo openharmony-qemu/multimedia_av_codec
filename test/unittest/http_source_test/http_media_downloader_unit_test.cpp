@@ -642,9 +642,9 @@ HWTEST_F(HttpMediaDownloaderUnitTest, SELECT_BIT_RATE_001, TestSize.Level1)
 
 HWTEST_F(HttpMediaDownloaderUnitTest, GetReadTimeOut, TestSize.Level1)
 {
-    bool ret = MP4httpMediaDownloader->GetReadTimeOut(false);
-    ret = MP4httpMediaDownloader->GetReadTimeOut(true);
-    EXPECT_FALSE(ret);
+    auto media = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, MAX_CACHE_BUFFER_SIZE, nullptr);
+    EXPECT_FALSE(media->GetReadTimeOut(false));
+    EXPECT_FALSE(media->GetReadTimeOut(true));
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, StopBufferring, TestSize.Level1)
@@ -1575,29 +1575,30 @@ HWTEST_F(HttpMediaDownloaderUnitTest, TEST_GETCURURL_NORMAL, TestSize.Level1)
     EXPECT_EQ(result, url);
 }
 
-HWTEST_F(HttpMediaDownloaderUnitTest, TEST_GETRESOLUTIONDELTA_NORMAL, TestSize.Level1)
+HWTEST_F(HttpMediaDownloaderUnitTest, TEST_INITIAL_STREAM_SELECTION, TestSize.Level1)
 {
+    // Eight seconds of buffering; compare 360p/720p streams and break resolution ties by lower bitrate.
     auto downloader = std::make_shared<HttpMediaDownloader>(MP4_SEGMENT_BASE, 8, nullptr);
-    EXPECT_TRUE(downloader != nullptr);
-    downloader->Init();
-    uint32_t width = USHRT_MAX;
-    uint32_t height = USHRT_MAX;
-    auto result = downloader->GetResolutionDelta(width, height);
-    EXPECT_EQ(result, 0);
-    width = USHRT_MAX - 1;
-    height = USHRT_MAX;
-    result = downloader->GetResolutionDelta(width, height);
-    EXPECT_EQ(result, 0);
-    width = USHRT_MAX;
-    height = USHRT_MAX - 1;
-    result = downloader->GetResolutionDelta(width, height);
-    EXPECT_EQ(result, 0);
-    width = 2;
-    height = 3;
-    downloader->initResolution_ = 1;
-    result = downloader->GetResolutionDelta(width, height);
-    uint32_t expectResult = width * height - downloader->initResolution_;
-    EXPECT_EQ(result, expectResult);
+    auto invalid = std::make_shared<PlayMediaStream>();
+    invalid->width = USHRT_MAX;
+    invalid->height = 1;
+    auto low = std::make_shared<PlayMediaStream>();
+    low->width = 640;
+    low->height = 360;
+    low->bitrate = 100;
+    auto high = std::make_shared<PlayMediaStream>();
+    high->width = 1280;
+    high->height = 720;
+    high->bitrate = 200;
+    auto expensive = std::make_shared<PlayMediaStream>(*high);
+    expensive->bitrate = 300;
+    downloader->playMediaStreams_ = {nullptr, invalid, low, expensive, high};
+    downloader->initResolution_ = 1280 * 720;
+    downloader->ChooseStreamByResolution();
+    EXPECT_EQ(downloader->defaultStream_, high);
+    downloader->initResolution_ = 640 * 360;
+    downloader->ChooseStreamByResolution();
+    EXPECT_EQ(downloader->defaultStream_, low);
 }
 
 HWTEST_F(HttpMediaDownloaderUnitTest, TEST_ADDPARAMFORURL_NORMAL, TestSize.Level1)
@@ -1687,4 +1688,41 @@ HWTEST_F(HttpMediaDownloaderUnitTest, FindStreamByBitRate_001, TestSize.Level1)
     auto result = downloader->FindStreamByBitRate(500);
     EXPECT_EQ(result, stream1);
 }
+HWTEST_F(HttpMediaDownloaderUnitTest, CONTENT_FLV_FLAG_OVERRIDES_URL_SUFFIX, TestSize.Level1)
+{
+    auto opaqueFlv = std::make_shared<HttpMediaDownloader>("http://example.test/stream", 1, nullptr, true);
+    EXPECT_TRUE(opaqueFlv->isRingBuffer_);
+    EXPECT_FALSE(opaqueFlv->isLive_.load());
+    auto misleadingUrl = std::make_shared<HttpMediaDownloader>("http://example.test/video.flv", 1, nullptr, false);
+    EXPECT_FALSE(misleadingUrl->isRingBuffer_);
+    EXPECT_FALSE(misleadingUrl->isLive_.load());
+}
+
+HWTEST_F(HttpMediaDownloaderUnitTest, FINITE_FLV_CONTENT_IS_NOT_LIVE, TestSize.Level1)
+{
+    // FLV version 1, audio/video flags 0x05, big-endian offset equal to the nine-byte header.
+    const uint8_t header[] = {'F', 'L', 'V', 1, 5, 0, 0, 0, 9};
+    std::string bytes(reinterpret_cast<const char*>(header), sizeof(header));
+    bytes.append(512, 'x'); // A small finite body that fits entirely in the 1 KiB read buffer below.
+    MediaAVCodec::HttpServerDemo::RegisterContent("/finite_flv", bytes);
+    auto media = std::make_shared<HttpMediaDownloader>("http://127.0.0.1:46666/finite_flv", 1, nullptr, true);
+    media->Init();
+    media->SetStatusCallback([](DownloadStatus, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) {});
+    ASSERT_TRUE(media->Open("http://127.0.0.1:46666/finite_flv", {}));
+    uint8_t buffer[1024] {};
+    ReadDataInfo info;
+    info.wantReadLength_ = sizeof(buffer);
+    EXPECT_EQ(media->Read(buffer, info), Status::OK);
+    EXPECT_EQ(std::string(reinterpret_cast<char*>(buffer), info.realReadLength_), bytes);
+    EXPECT_FALSE(media->IsFlvLive());
+    EXPECT_FALSE(media->isLive_.load());
+    auto seekable = media->GetSeekable();
+    info.wantReadLength_ = sizeof(buffer);
+    EXPECT_EQ(media->Read(buffer, info), Status::END_OF_STREAM);
+    media->Close(false);
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    EXPECT_EQ(seekable, Seekable::SEEKABLE);
+}
+
 }

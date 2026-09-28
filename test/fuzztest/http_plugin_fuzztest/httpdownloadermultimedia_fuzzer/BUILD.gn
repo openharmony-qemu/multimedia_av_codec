@@ -13,19 +13,14 @@
 
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
+import("//foundation/multimedia/av_codec/test/fuzztest/http_source_fuzztest.gni")
 
 module_output_path = "player_framework/stream_player_framework"
-test_sources = [
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/app_client.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/media_source_loading_request.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client/http_curl_client.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
-  "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
-]
+test_sources = http_source_fuzz_http_downloader_core_sources
+# NOSORT
+test_sources +=
+    [ "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp" ]
+test_sources += http_source_fuzz_http_media_string_utils_sources
 
 config("fuzz_cfg") {
   defines = [

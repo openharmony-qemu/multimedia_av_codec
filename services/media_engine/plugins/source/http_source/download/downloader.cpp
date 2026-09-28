@@ -18,6 +18,7 @@
 
 #include "downloader.h"
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #include "avcodec_trace.h"
 #include "securec.h"
@@ -330,16 +331,76 @@ void DownloadRequest::SetBitRateToRequestSize(const int32_t videoBitrate)
     bitRateToRequestSize_ = videoBitrate / BITRATE_REQUEST_SIZE;
 }
 
-Downloader::Downloader(const std::string& name) noexcept : name_(std::move(name))
+Downloader::Downloader(const std::string& name) noexcept : Downloader(name, nullptr)
+{
+}
+
+Downloader::Downloader(const std::string& name, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader) noexcept
+    : name_(name), sourceLoader_(std::move(sourceLoader))
 {
     shouldStartNextRequest_ = true;
-
-    client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
+    isNotBlock_ = sourceLoader_ != nullptr;
+    auto client = sourceLoader_ != nullptr ? NetworkClient::GetAppInstance(&RxHeaderData, &RxBodyData, this) :
+        NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
+    if (sourceLoader_ != nullptr) {
+        client->SetLoader(sourceLoader_->loader_);
+    }
+    SetClient(std::move(client));
 }
- 
+
+std::shared_ptr<NetworkClient> Downloader::GetClient() const
+{
+    std::shared_lock<std::shared_mutex> lock(clientMutex_);
+    return client_;
+}
+
+void Downloader::SetClient(std::shared_ptr<NetworkClient> client)
+{
+    {
+        std::unique_lock<std::shared_mutex> lock(clientMutex_);
+        client_.swap(client);
+    }
+    // The replaced client is released after the pointer lock is unlocked.
+}
+
+void Downloader::ForceClose()
+{
+    if (forceClosed_) {
+        return;
+    }
+    auto client = GetClient();
+    isDestructor_.store(true);
+    if (requestQue_ != nullptr) {
+        requestQue_->SetActive(false, true);
+    }
+    if (client != nullptr) {
+        client->Close(true);
+        client->Deinit();
+    }
+    if (task_ != nullptr) {
+        task_->Stop();
+    }
+    // No download job or transport callback can now touch the request or loader.
+    if (sourceLoader_ != nullptr) {
+        AutoLock lock(closeMutex_);
+        if (sourceId_ != 0) {
+            sourceLoader_->Close(sourceId_);
+        }
+        sourceId_ = 0;
+        sourceLoader_.reset();
+    }
+    if (currentRequest_ != nullptr) {
+        currentRequest_->Close();
+    }
+    SetClient(nullptr);
+    forceClosed_ = true;
+}
+
 void Downloader::Init()
 {
-    client_->Init();
+    auto client = GetClient();
+    FALSE_RETURN_MSG(client != nullptr, "client is null");
+    client->Init();
     requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>(name_ + "RequestQue",
         REQUEST_QUEUE_SIZE);
     task_ = std::make_shared<Task>(std::string("OS_" + name_ + "Downloader"));
@@ -361,24 +422,9 @@ void Downloader::Init()
     MEDIA_LOG_I("%{public}" PRIu64 " Downloader ctor", avcodecUniqueId_);
 }
 
-Downloader::Downloader(const std::string& name, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader) noexcept
-{
-    name_ = name;
-    shouldStartNextRequest_ = true;
-    if (sourceLoader != nullptr) {
-        isNotBlock_ = true;
-        sourceLoader_ = sourceLoader;
-        client_ = NetworkClient::GetAppInstance(&RxHeaderData, &RxBodyData, this);
-        client_->SetLoader(sourceLoader->loader_);
-        MEDIA_LOG_I("%{public}" PRIu64 "Get app instance success", avcodecUniqueId_);
-    } else {
-        MEDIA_LOG_I("%{public}" PRIu64 "Get libcurl instance success", avcodecUniqueId_);
-        client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
-    }
-}
-
 Downloader::~Downloader()
 {
+    auto client = GetClient();
     isDestructor_ = true;
     MEDIA_LOG_I("~Downloader In");
     {
@@ -392,9 +438,9 @@ Downloader::~Downloader()
     if (task_ != nullptr) {
         task_ = nullptr;
     }
-    if (client_ != nullptr) {
-        client_->Deinit();
-        client_ = nullptr;
+    if (client != nullptr) {
+        client->Deinit();
+        SetClient(nullptr);
     }
     MEDIA_LOG_I("%{public}" PRIu64 " ~Downloader dtor", avcodecUniqueId_);
 }
@@ -405,8 +451,8 @@ bool Downloader::Download(const std::shared_ptr<DownloadRequest>& request, int32
     if (isInterruptNeeded_) {
         request->isInterruptNeeded_ = true;
     }
-    if (isCancelling_.load()) {
-        MEDIA_LOG_W("Dwonload skipped, cancelling in progress");
+    if (isDestructor_.load() || isCancelling_.load()) {
+        MEDIA_LOG_W("Download skipped, stopped or cancelling");
         return false;
     }
     requestQue_->SetActive(true);
@@ -437,8 +483,8 @@ void Downloader::Start()
 {
     MediaAVCodec::AVCodecTrace trace("Downloader::Start");
     MEDIA_LOG_I("start Begin");
-    if (isCancelling_.load()) {
-        MEDIA_LOG_W("Start skipped, cancelling in progress");
+    if (isDestructor_.load() || isCancelling_.load()) {
+        MEDIA_LOG_W("Start skipped, stopped or cancelling");
         return;
     }
     requestQue_->SetActive(true);
@@ -454,14 +500,15 @@ void Downloader::ReStart()
 
 void Downloader::Pause(bool isAsync)
 {
+    auto client = GetClient();
     MediaAVCodec::AVCodecTrace trace("Downloader::Pause");
     MEDIA_LOG_I("%{public}" PRIu64 " Pause Begin", avcodecUniqueId_);
     requestQue_->SetActive(false, false);
-    if (client_ != nullptr) {
+    if (client != nullptr) {
         isClientClose_ = true;
         int retryCount = 0;
         int retryTime = CLIENT_RETRY_TIME;
-        while (client_->Close(isAsync) != Status::OK && retryCount < CLIENT_RETRY_TIME_LIMIT) {
+        while (client->Close(isAsync) != Status::OK && retryCount < CLIENT_RETRY_TIME_LIMIT) {
             MEDIA_LOG_W("client close failed, retry count: %{public}d, delay: %{public}d", retryCount, retryTime);
             if (!isAsync) {
                 Task::SleepInTask(retryTime);
@@ -483,6 +530,7 @@ void Downloader::Pause(bool isAsync)
 
 void Downloader::Cancel()
 {
+    auto client = GetClient();
     MEDIA_LOG_I("%{public}" PRIu64 " Cancel Begin", avcodecUniqueId_);
     isCancelling_.store(true);
     if (currentRequest_ != nullptr && currentRequest_->retryTimes_.load() > 0) {
@@ -490,8 +538,8 @@ void Downloader::Cancel()
     }
     requestQue_->SetActive(false, true);
     shouldStartNextRequest_ = true;
-    if (client_ != nullptr) {
-        client_->Close(false);
+    if (client != nullptr) {
+        client->Close(false);
     }
     PauseLoop(true);
     WaitLoopPause();
@@ -502,14 +550,15 @@ void Downloader::Cancel()
 
 void Downloader::Resume()
 {
+    auto client = GetClient();
     MediaAVCodec::AVCodecTrace trace("Downloader::Resume");
     FALSE_RETURN_MSG(!isDestructor_ && !isInterruptNeeded_, "not Resume. is Destructor or InterruptNeeded");
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("resume Begin");
-        if (isClientClose_ && client_ != nullptr && currentRequest_ != nullptr) {
+        if (isClientClose_ && client != nullptr && currentRequest_ != nullptr) {
             isClientClose_ = false;
-            client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
+            client->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
         }
         requestQue_->SetActive(true);
         if (currentRequest_ != nullptr) {
@@ -533,6 +582,7 @@ void Downloader::Resume()
 
 void Downloader::Stop(bool isAsync)
 {
+    auto client = GetClient();
     MediaAVCodec::AVCodecTrace trace("Downloader::Stop");
     MEDIA_LOG_I("Stop Begin");
     isDestructor_ = true;
@@ -543,10 +593,10 @@ void Downloader::Stop(bool isAsync)
         currentRequest_->isInterruptNeeded_ = true;
         currentRequest_->Close();
     }
-    if (client_ != nullptr) {
-        client_->Close(isAsync);
+    if (client != nullptr) {
+        client->Close(isAsync);
         if (!isAsync) {
-            client_->Deinit();
+            client->Deinit();
         }
     }
     shouldStartNextRequest_ = true;
@@ -594,24 +644,26 @@ void Downloader::SetRequestSize(size_t downloadRequestSize)
 
 void Downloader::GetIp(std::string &ip)
 {
-    if (client_ != nullptr) {
-        client_->GetIp(ip);
+    auto client = GetClient();
+    if (client != nullptr) {
+        client->GetIp(ip);
     }
 }
 
 // Pause download thread before use currentRequest_
 bool Downloader::RetryCore(const std::shared_ptr<DownloadRequest>& request)
 {
+    auto client = GetClient();
     AutoLock lock(operatorMutex_);
-    FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
-    client_->Close(false);
+    FALSE_RETURN_V(client != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
+    client->Close(false);
     if (currentRequest_ != nullptr) {
         if (currentRequest_->IsSame(request) && !shouldStartNextRequest_) {
             currentRequest_->retryTimes_.fetch_add(1);
             currentRequest_->retryOnGoing_ = true;
             currentRequest_->dropedDataLen_ = 0;
         }
-        client_->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
+        client->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
         requestQue_->SetActive(true);
         currentRequest_->isEos_.store(false);
         if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
@@ -624,7 +676,8 @@ bool Downloader::RetryCore(const std::shared_ptr<DownloadRequest>& request)
 
 bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
 {
-    FALSE_RETURN_V_MSG(client_ != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
+    auto client = GetClient();
+    FALSE_RETURN_V_MSG(client != nullptr && !isDestructor_ && !isInterruptNeeded_, false,
         "not Retry, client null or isDestructor or isInterruptNeeded");
     if (isAppBackground_) {
         Pause(true);
@@ -634,7 +687,7 @@ bool Downloader::Retry(const std::shared_ptr<DownloadRequest>& request)
     {
         AutoLock lock(operatorMutex_);
         MEDIA_LOG_I("%{public}" PRIu64 " Retry Begin", avcodecUniqueId_);
-        FALSE_RETURN_V(client_ != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
+        FALSE_RETURN_V(client != nullptr && !shouldStartNextRequest_ && !isDestructor_ && !isInterruptNeeded_, false);
         requestQue_->SetActive(false, false);
     }
     PauseLoop(true);
@@ -672,6 +725,7 @@ std::string Downloader::GetCertIssuerNames()
 
 bool Downloader::BeginDownload()
 {
+    auto client = GetClient();
     MEDIA_LOG_I("BeginDownload %{public}s", name_.c_str());
     currentRequest_->downloaderName_ = name_;
     std::string url = currentRequest_->url_;
@@ -685,8 +739,8 @@ bool Downloader::BeginDownload()
     
     int32_t timeoutMs = currentRequest_->requestInfo_.timeoutMs;
     FALSE_RETURN_V(!url.empty(), false);
-    if (client_) {
-        client_->Open(url, httpHeader, timeoutMs);
+    if (client) {
+        client->Open(url, httpHeader, timeoutMs);
     }
 
     if (currentRequest_->endPos_ <= 0) {
@@ -708,6 +762,7 @@ bool Downloader::BeginDownload()
 
 void Downloader::HttpDownloadLoop()
 {
+    auto client = GetClient();
     AutoLock lock(operatorMutex_);
     MEDIA_LOGI_LIMIT(LOOP_LOG_FEQUENCE, "Downloader loop shouldStartNextRequest %{public}d",
         shouldStartNextRequest_.load());
@@ -729,9 +784,9 @@ void Downloader::HttpDownloadLoop()
         BeginDownload();
         shouldStartNextRequest_ = currentRequest_->IsClosed();
     }
-    if (currentRequest_ == nullptr || client_ == nullptr) {
-        MEDIA_LOG_I("currentRequest_ %{public}d client_ %{public}d nullptr",
-                    currentRequest_ != nullptr, client_ != nullptr);
+    if (currentRequest_ == nullptr || client == nullptr) {
+        MEDIA_LOG_I("currentRequest_ %{public}d client %{public}d nullptr",
+                    currentRequest_ != nullptr, client != nullptr);
         PauseLoop(true);
         return;
     }
@@ -741,6 +796,8 @@ void Downloader::HttpDownloadLoop()
 
 void Downloader::OpenAppUri()
 {
+    auto client = GetClient();
+    FALSE_RETURN_MSG(client != nullptr, "client is null");
     {
         AutoLock lock(closeMutex_);
         if (currentRequest_ != nullptr) {
@@ -755,7 +812,7 @@ void Downloader::OpenAppUri()
 
             int64_t uuid = 0;
             for (int i = 0; i < APP_OPEN_RETRY_TIMES; i++) {
-                uuid = sourceLoader_->Open(appPreviousRequestUrl_, currentRequest_->GetHttpHeader(), client_);
+                uuid = sourceLoader_->Open(appPreviousRequestUrl_, currentRequest_->GetHttpHeader(), client);
                 if (uuid > 0) {
                     break;
                 }
@@ -765,7 +822,7 @@ void Downloader::OpenAppUri()
             MEDIA_LOG_I("%{public}" PRIu64 "LoaderCombinations Open uuid " PUBLIC_LOG_D64,
                 avcodecUniqueId_, uuid);
             if (uuid != 0) {
-                client_->SetUuid(uuid);
+                client->SetUuid(uuid);
                 sourceId_ = uuid;
             } else {
                 MEDIA_LOG_E("%{public}" PRIu64 "Open faild, uuid " PUBLIC_LOG_D64,
@@ -789,6 +846,8 @@ void Downloader::HandleRedirect(Status& ret)
         currentRequest_->location_ = resolvedUrl;
         currentRequest_->haveRedirectRetry_.store(true);
         currentRequest_->headerInfo_.contentLen = 0;
+        MEDIA_LOG_I("downloader=%{public}" PRIu64 " event=explicit_redirect server=%{public}d",
+            avcodecUniqueId_, REDIRECT_CODE);
     }
 }
 
@@ -833,6 +892,8 @@ void Downloader::HandleResponseCb(int32_t clientCode, int32_t serverCode, const 
 
 void Downloader::RequestData()
 {
+    auto client = GetClient();
+    FALSE_RETURN_MSG(client != nullptr, "client is null");
     MediaAVCodec::AVCodecTrace trace("Downloader::HttpDownloadLoop, startPos: "
         + std::to_string(currentRequest_->startPos_) + ", reqSize: " + std::to_string(currentRequest_->requestSize_));
     int64_t startPos = currentRequest_->startPos_;
@@ -870,7 +931,7 @@ void Downloader::RequestData()
     if (downloadCallback_ != nullptr) {
         downloadCallback_->UpdateTotalDownloadCount();
     }
-    client_->RequestData(startPos, len, sourceInfo, handleResponseCb);
+    client->RequestData(startPos, len, sourceInfo, handleResponseCb);
     MEDIA_LOG_I("%{public}" PRIu64 " RequestData end.", avcodecUniqueId_);
 }
 
@@ -1080,7 +1141,7 @@ size_t Downloader::RxBodyData(void* buffer, size_t size, size_t nitems, void* us
     int64_t realRecvContentLen = static_cast<int64_t>(dataLen) + curLen;
     if (!mediaDownloader->currentRequest_->location_.empty() &&
         !mediaDownloader->currentRequest_->haveRedirectRetry_.load()) {
-        MEDIA_LOG_W("Receive location, need retry.");
+        MEDIA_LOG_W("downloader=%{public}" PRIu64 " event=redirect_body_rejected", mediaDownloader->avcodecUniqueId_);
         return 0;
     }
     UpdateHeaderInfo(mediaDownloader);
@@ -1313,7 +1374,7 @@ size_t Downloader::RxHeaderData(void* buffer, size_t size, size_t nitems, void* 
     if (!strncmp(key, "location", strlen("location"))) {
         FALSE_RETURN_V(next != nullptr, size * nitems);
         char* headTrim = StringTrim(next);
-        MEDIA_LOG_I("redirect: " PUBLIC_LOG_S, headTrim);
+        MEDIA_LOG_I("downloader=%{public}" PRIu64 " event=redirect_header", mediaDownloader->avcodecUniqueId_);
         mediaDownloader->currentRequest_->location_ = headTrim;
     }
 
@@ -1337,7 +1398,7 @@ bool Downloader::HandleTransferEncoding(HeaderInfo* info, char* key, char* next,
     if (!strncmp(StringTrim(token), "chunked", strlen("chunked")) &&
         !mediaDownloader->currentRequest_->IsM3u8Request()) {
         info->isChunked = true;
-        if (mediaDownloader->currentRequest_->url_.find(".flv") == std::string::npos) {
+        if (!mediaDownloader->currentRequest_->isFlv_) {
             info->contentLen = LIVE_CONTENT_LENGTH;
         } else {
             info->contentLen = 0;
@@ -1362,8 +1423,9 @@ void Downloader::PauseLoop(bool isAsync)
 
 void Downloader::SetAppUid(int32_t appUid)
 {
-    if (client_) {
-        client_->SetAppUid(appUid);
+    auto client = GetClient();
+    if (client) {
+        client->SetAppUid(appUid);
     }
 }
 
@@ -1374,6 +1436,7 @@ const std::shared_ptr<DownloadRequest>& Downloader::GetCurrentRequest()
 
 void Downloader::SetInterruptState(bool isInterruptNeeded)
 {
+    auto client = GetClient();
     MEDIA_LOG_I("%{public}" PRIu64 " Downloader SetInterruptState %{public}d",
         avcodecUniqueId_, isInterruptNeeded);
     {
@@ -1388,8 +1451,8 @@ void Downloader::SetInterruptState(bool isInterruptNeeded)
         MEDIA_LOG_I("SetInterruptState, Notify.");
         sleepCond_.NotifyOne();
     }
-    if (sourceLoader_ != nullptr) {
-        client_->Close(false);
+    if (sourceLoader_ != nullptr && client != nullptr) {
+        client->Close(false);
     }
     NotifyLoopPause();
 }
@@ -1432,26 +1495,28 @@ void Downloader::SetAppState(bool isAppBackground)
 
 void Downloader::StopBufferring()
 {
+    auto client = GetClient();
     MediaAVCodec::AVCodecTrace trace("Downloader::StopBufferring");
     FALSE_RETURN_MSG(task_ != nullptr && currentRequest_ != nullptr, "task or request is null");
     if (isAppBackground_) {
-        FALSE_RETURN_NOLOG(client_ != nullptr);
+        FALSE_RETURN_NOLOG(client != nullptr);
         MEDIA_LOG_I("StopBufferring: is task not running.");
-        client_->Close(false);
-        client_->Deinit();
+        client->Close(false);
+        client->Deinit();
         {
             AutoLock lk(operatorMutex_);
-            client_ = nullptr;
+            SetClient(nullptr);
         }
     } else {
         {
             AutoLock lk(operatorMutex_);
-            if (client_ == nullptr) {
+            if (client == nullptr) {
                 MEDIA_LOG_I("StopBufferring: restart task.");
-                client_ = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
-                client_->Init();
-                client_->Open(currentRequest_->url_, currentRequest_->httpHeader_,
+                client = NetworkClient::GetInstance(&RxHeaderData, &RxBodyData, this);
+                client->Init();
+                client->Open(currentRequest_->url_, currentRequest_->httpHeader_,
                     currentRequest_->requestInfo_.timeoutMs);
+                SetClient(client);
                 if (currentRequest_->startPos_ > 0 && currentRequest_->protocolType_ != RequestProtocolType::HTTP) {
                     currentRequest_->retryOnGoing_ = true;
                     currentRequest_->dropedDataLen_ = 0;

@@ -133,6 +133,8 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "http_source_plugin_stream_protocol_sniffer.cpp",
     "http_source_plugin_stream_resource_parser.cpp",
     "monitor/download_monitor.cpp",
+    "sniffer/probe_failure_notifier.cpp",
+    "sniffer/sniffer_coordinator.cpp",
     "utils/aes_decryptor.cpp",
     "utils/http_media_utils.cpp",
     "utils/media_cached_buffer.cpp",

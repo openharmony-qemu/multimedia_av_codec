@@ -13,30 +13,15 @@
 
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
+import("//foundation/multimedia/av_codec/test/unittest/http_source_test.gni")
 
 module_output_path = "av_codec/stream_player_framework"
 
-hls_test_sources = [
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/app_client.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/media_source_loading_request.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client/http_curl_client.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_media_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_segment_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_playlist_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_key_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/hls_tags.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/m3u8.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/hls/playlist_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http/http_media_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/http_source_plugin.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/aes_decryptor.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/media_cached_buffer.cpp",
-  "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
-]
+hls_test_sources = http_source_ut_hls_core_sources
+# NOSORT
+hls_test_sources +=
+    [ "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp" ]
+hls_test_sources += http_source_ut_http_media_string_utils_sources
 
 config("hls_unittest_cfg") {
   defines = [

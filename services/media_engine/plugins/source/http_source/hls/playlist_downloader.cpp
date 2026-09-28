@@ -19,6 +19,7 @@
 #include <regex>
 #include <limits>
 #include "playlist_downloader.h"
+#include "utils/fd_source.h"
 #include "network/network_typs.h"
 #include "osal/filesystem/file_system.h"
 #include "utils/string_utils.h"
@@ -27,7 +28,6 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-constexpr int FDPOS = 2;
 constexpr int PLAYLIST_UPDATE_RATE = 1000 * 1000;
 constexpr int MIN_PRE_PARSE_CONTENT_LEN = 10 * 1024; // 10k
 constexpr int RETRY_DELTA_TIME_TO_REPORT_ERROR = 5 * 1000; // 5s
@@ -35,12 +35,6 @@ constexpr int RETRY_TIME_TO_REPORT_ERROR = 10; // 10
 constexpr int HTTP_SERVER_ERROR_410 = 410; // 410 表示请求的资源已经从服务器上永久删除，不再可用
 constexpr int MAX_FILE_SIZE = 20 * 1024 * 1024; // 20M
 constexpr uint32_t PLAYLIST_MAX_SIZE = 100 * 1024 * 1024;
-
-static bool isNumber(const std::string& str)
-{
-    FALSE_RETURN_V_MSG_E(!str.empty(), false, "empty str is not a number.");
-    return str.find_first_not_of("0123456789") == std::string::npos;
-}
 
 void PlayListDownloader::Init()
 {
@@ -207,58 +201,18 @@ void PlayListDownloader::DoOpenNative(const std::string& url)
 
 bool PlayListDownloader::ParseUriInfo(const std::string& uri)
 {
-    if (uri.empty()) {
-        MEDIA_LOG_E("uri is empty");
-        return false;
-    }
-    MEDIA_LOG_D("uri: ");
-    std::smatch fdUriMatch;
-    FALSE_RETURN_V_MSG_E(std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)\\?offset=(.*)&size=(.*)")) ||
-        std::regex_match(uri, fdUriMatch, std::regex("^fd://(.*)")),
-        false, "Invalid fd uri format");
-    FALSE_RETURN_V_MSG_E(fdUriMatch.size() >= FDPOS && isNumber(fdUriMatch[1].str()),
-        false, "Invalid fd uri format");
-    int32_t tempFd = 0;
-    fd_ = StringUtil::SafeStoInt32(fdUriMatch[1].str(), tempFd) ? tempFd : -1; // 1
-    FALSE_RETURN_V_MSG_E(fd_ != -1 && FileSystem::IsRegularFile(fd_),
-        false, "Invalid fd: " PUBLIC_LOG_D32, fd_);
-    fileSize_ = GetFileSize(fd_);
-    if (fdUriMatch.size() == 4) { // 4：4 sub match
-        int64_t tempOffset = 0;
-        offset_ = StringUtil::SafeStoInt64(fdUriMatch[2].str(), tempOffset) ? tempOffset : 0; // 2
-        if (static_cast<uint64_t>(offset_) > fileSize_) {
-            offset_ = static_cast<int64_t>(fileSize_);
-        }
-        int64_t tempSize = 0;
-        auto ret = StringUtil::SafeStoInt64(fdUriMatch[3].str(), tempSize); // 3
-        size_ = (ret && tempSize >= 0) ? static_cast<uint64_t>(tempSize) : 0;
-        uint64_t remainingSize = fileSize_ - static_cast<uint64_t>(offset_);
-        if (size_ > remainingSize) {
-            size_ = remainingSize;
-        }
-    } else {
-        size_ = fileSize_;
-        offset_ = 0;
-    }
+    FdSource source;
+    FALSE_RETURN_V_MSG_E(FdSource::Parse(uri, source), false, "Invalid fd source");
+    fd_ = source.fd;
+    offset_ = source.offset;
+    size_ = static_cast<uint64_t>(source.size);
     size_ = size_ > MAX_FILE_SIZE ? 0 : size_;
     position_ = static_cast<uint64_t>(offset_);
     seekable_ = FileSystem::IsSeekable(fd_) ? Seekable::SEEKABLE : Seekable::UNSEEKABLE;
     if (seekable_ == Seekable::SEEKABLE) {
-        SeekTo(0);
+        return SeekTo(0);
     }
-    MEDIA_LOG_D("Fd: " PUBLIC_LOG_D32 ", offset: " PUBLIC_LOG_D64 ", size: " PUBLIC_LOG_U64, fd_, offset_, size_);
     return true;
-}
-
-uint64_t PlayListDownloader::GetFileSize(int32_t fd)
-{
-    uint64_t fileSize = 0;
-    struct stat s {};
-    if (fstat(fd, &s) == 0) {
-        fileSize = static_cast<uint64_t>(s.st_size);
-        return fileSize;
-    }
-    return fileSize;
 }
 
 bool PlayListDownloader::SeekTo(uint64_t offset)

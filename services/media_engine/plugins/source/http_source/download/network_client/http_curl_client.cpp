@@ -200,6 +200,8 @@ HttpCurlClient::~HttpCurlClient()
 
 Status HttpCurlClient::Init()
 {
+    deinitRequested_.store(false);
+    closeRequested_.store(false);
     FALSE_LOG(curl_global_init(CURL_GLOBAL_ALL) == CURLE_OK);
     return Status::OK;
 }
@@ -247,6 +249,8 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
     MEDIA_LOG_I("Open client in");
     {
         AutoLock lock(mutex_);
+        FALSE_RETURN_V(!deinitRequested_.load(), Status::ERROR_INVALID_OPERATION);
+        closeRequested_.store(false);
         if (easyHandle_ == nullptr) {
             MEDIA_LOG_E("EasyHandle is nullptr, init easyHandle.");
             easyHandle_ = curl_easy_init();
@@ -267,6 +271,9 @@ Status HttpCurlClient::Open(const std::string& url, const std::map<std::string, 
 
 Status HttpCurlClient::Close(bool isAsync)
 {
+    if (isAsync) {
+        closeRequested_.store(true);
+    }
     MEDIA_LOG_I("Close client in");
     {
         AutoLock lock(mutex_);
@@ -299,6 +306,7 @@ Status HttpCurlClient::Close(bool isAsync)
 
 Status HttpCurlClient::Deinit()
 {
+    deinitRequested_.store(true);
     MEDIA_LOG_I("Deinit in");
     {
         AutoLock lock(mutex_);
@@ -383,8 +391,18 @@ Status HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeo
     curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
     curl_easy_setopt(easyHandle_, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
     curl_easy_setopt(easyHandle_, CURLOPT_REDIR_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);
+    curl_easy_setopt(easyHandle_, CURLOPT_NOPROGRESS, 0L); // Zero enables the cancellation progress callback.
+    curl_easy_setopt(easyHandle_, CURLOPT_XFERINFOFUNCTION, &HttpCurlClient::TransferProgress);
+    curl_easy_setopt(easyHandle_, CURLOPT_XFERINFODATA, this);
     InitCurProxy(url);
     return Status::OK;
+}
+
+int HttpCurlClient::TransferProgress(void* user, curl_off_t, curl_off_t, curl_off_t, curl_off_t)
+{
+    auto client = static_cast<HttpCurlClient*>(user);
+    // libcurl continues for zero and aborts the transfer for a nonzero return value.
+    return client != nullptr && (client->closeRequested_.load() || client->deinitRequested_.load()) ? 1 : 0;
 }
 
 std::string HttpCurlClient::UrlParse(const std::string& url) const
@@ -426,6 +444,7 @@ void HttpCurlClient::CheckRequestRange(long startPos, int len)
 Status HttpCurlClient::RequestData(long startPos, int len, const RequestInfo& requestInfo,
     HandleResponseCbFunc completedCb)
 {
+    FALSE_RETURN_V(!closeRequested_.load() && !deinitRequested_.load(), Status::ERROR_INVALID_OPERATION);
     FALSE_RETURN_V(easyHandle_ != nullptr, Status::ERROR_NULL_POINTER);
     CheckRequestRange(startPos, len);
     if (isFirstRequest_.load()) {
