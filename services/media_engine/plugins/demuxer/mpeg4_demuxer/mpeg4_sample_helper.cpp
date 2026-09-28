@@ -1510,6 +1510,9 @@ Status MPEG4SampleHelper::UpdateSampleEntryInfo(
     bool isSync = false;
     SampleEntryCreateContext context {sampleInfo, offset, currentDts, isOverlap};
     FALSE_RETURN_V_NOLOG(CreateSampleEntry(context, sample, isSync) == Status::OK, Status::ERROR_INVALID_DATA);
+    if (hasExplicitSyncSamples_ || !stssEntry_.empty()) {
+        isSync = IsSyncSample(stssEntry_, false, static_cast<uint32_t>(sampleIndexEntry_.size()));
+    }
     ++rawSampleCount_;
     if (sampleIndexEntry_.empty()) {
         FALSE_RETURN_V_NOLOG(sample.GetPts(lastPTS_), Status::ERROR_INVALID_DATA);
@@ -1837,10 +1840,11 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         CalculateDtsShift();
     }
 
+    const bool hasExplicitSyncSamples = hasExplicitSyncSamples_ || !stssEntry_.empty();
     stssEntry_.erase(std::remove_if(
         stssEntry_.begin(), stssEntry_.end(),
         [sttsSampleCount](const StssEntry& entry) { return entry.index >= sttsSampleCount; }), stssEntry_.end());
-    allSamplesSync_ = !emptyStss_ && !hasExplicitSyncSamples_ && stssEntry_.empty() &&
+    allSamplesSync_ = !emptyStss_ && !hasExplicitSyncSamples && stssEntry_.empty() &&
         (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE ||
         trackType_ == AUXILIARY_TYPE || (trackType_ == SUBTITLE_TYPE && mimeType_ == MimeType::TEXT_WEBVTT));
     return Status::OK;
