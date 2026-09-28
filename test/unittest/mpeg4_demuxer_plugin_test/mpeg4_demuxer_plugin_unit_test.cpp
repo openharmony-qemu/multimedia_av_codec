@@ -578,16 +578,17 @@ void AppendU32(std::vector<uint8_t>& data, uint32_t value);
 
 std::vector<uint8_t> BuildFtypWithLateIsomBrand(size_t brandCount, size_t isomBrandIndex)
 {
-    constexpr uint32_t FTYP_ATOM = 0x66747970;
-    constexpr uint32_t UNKNOWN_BRAND = 0x7A7A7A7A;
-    constexpr uint32_t ISOM_BRAND = 0x69736D6F;
+    constexpr uint32_t ftypAtom = 0x66747970;
+    constexpr uint32_t unknownBrand = 0x7A7A7A7A;
+    constexpr uint32_t isomBrand = 0x69736D6F;
+    constexpr size_t ftypAtomMinimumSize = 16;
     std::vector<uint8_t> data;
-    AppendU32(data, static_cast<uint32_t>(16 + brandCount * sizeof(uint32_t)));
-    AppendU32(data, FTYP_ATOM);
-    AppendU32(data, UNKNOWN_BRAND);
+    AppendU32(data, static_cast<uint32_t>(ftypAtomMinimumSize + brandCount * sizeof(uint32_t)));
+    AppendU32(data, ftypAtom);
+    AppendU32(data, unknownBrand);
     AppendU32(data, 0);
     for (size_t index = 0; index < brandCount; ++index) {
-        AppendU32(data, index == isomBrandIndex ? ISOM_BRAND : UNKNOWN_BRAND);
+        AppendU32(data, index == isomBrandIndex ? isomBrand : unknownBrand);
     }
     return data;
 }
