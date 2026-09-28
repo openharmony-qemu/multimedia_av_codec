@@ -169,6 +169,10 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_DTS, MimeType::AUDIO_DTS},
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
+    {AV_CODEC_ID_DSD_LSBF, MimeType::AUDIO_DSD},
+    {AV_CODEC_ID_DSD_MSBF, MimeType::AUDIO_DSD},
+    {AV_CODEC_ID_DSD_LSBF_PLANAR, MimeType::AUDIO_DSD},
+    {AV_CODEC_ID_DSD_MSBF_PLANAR, MimeType::AUDIO_DSD},
 #ifdef SUPPORT_DEMUXER_EAC3
     {AV_CODEC_ID_EAC3, MimeType::AUDIO_EAC3},
 #endif
@@ -271,6 +275,13 @@ static const char* g_gltfKeys[] = {
 std::vector<FileType> g_typeForTrackLevelBaseInfo = {
     FileType::OGG
 };
+
+// AVCodecID -> OH_AVCodec_DSDCodecType
+static std::map<AVCodecID, int32_t> g_FfDSDCodecIdToOHDSDCodecId = {  // ignore AV_CODEC_ID_DSD_LSBF
+    {AV_CODEC_ID_DSD_LSBF_PLANAR, 0},
+    {AV_CODEC_ID_DSD_MSBF_PLANAR, 1},
+    {AV_CODEC_ID_DSD_MSBF, 2},
+}
 
 std::vector<std::string> SplitByChar(const char* str, const char* pattern)
 {
@@ -638,7 +649,12 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
         MEDIA_LOG_W("Parse mime type failed: " PUBLIC_LOG_S, avcodec_get_name(avStream.codecpar->codec_id));
     }
+    
     format.Set<Tag::ORIGINAL_CODEC_NAME>(std::string(avcodec_get_name(avStream.codecpar->codec_id)));
+    auto dsdCodecIdIter = g_FfDSDCodecIdToOHDSDCodecId.find(avStream.codecpar->codec_id);
+    if (dsdCodecIdIter != g_FfDSDCodecIdToOHDSDCodecId.end()) {
+        format.Set<Tag::AUDIO_DSD_CODEC_TYPE>(g_FfDSDCodecIdToOHDSDCodecId[avStream.codecpar->codec_id]);
+    }
 
     AVMediaType mediaType = avStream.codecpar->codec_type;
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {

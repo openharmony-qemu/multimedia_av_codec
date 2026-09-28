@@ -1714,7 +1714,6 @@ Status FFmpegDemuxerPlugin::InitInputFormatContext()
 Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& source,
     const std::shared_ptr<Media::Meta>& configs)
 {
-    MEDIA_LOG_I("SY>>>FFmpegDemuxerPlugin start");
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     FALSE_RETURN_V_MSG_E(formatContext_ == nullptr, Status::ERROR_WRONG_STATE,
         "AVFormatContext has been initialized");
@@ -1757,7 +1756,6 @@ Status FFmpegDemuxerPlugin::SetDataSource(const std::shared_ptr<DataSource>& sou
         return Status::ERROR_NOT_ENOUGH_DATA;
     }
     NotifyInitializationCompleted();
-    MEDIA_LOG_I("SY>>>FFmpegDemuxerPlugin end");
     MEDIA_LOG_I("Out");
     HiviewDFX::XCollie::GetInstance().CancelTimer(id);
     return Status::OK;
@@ -4363,7 +4361,6 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> dataSource)
 
 int SniffWithSize(const std::string& pluginName, std::shared_ptr<DataSource> dataSource, int probSize)
 {
-    MEDIA_LOG_I("SY>>>pluginName is " PUBLIC_LOG_S, pluginName.c_str());
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
     FALSE_RETURN_V_MSG_E(dataSource != nullptr, 0, "DataSource is nullptr");
     std::shared_ptr<AVInputFormat> plugin;
