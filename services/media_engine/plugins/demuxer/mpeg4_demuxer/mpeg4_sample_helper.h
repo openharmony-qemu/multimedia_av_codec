@@ -72,6 +72,8 @@ public:
     Status SetChunkOffsetParams(uint32_t type, int64_t dataOffset, size_t dataSize);
     Status SetSampleToChunkParams(int64_t dataOffset, size_t dataSize);
     Status SetSampleDependencyTypeParams(int64_t ctxOffset, int64_t dataOffset, size_t dataSize);
+    Status SetRapSampleGroupParams(int64_t dataOffset, size_t dataSize);
+    Status SetPartialSyncSampleParams(int64_t dataOffset, size_t dataSize);
     Status SetTrackExtendsParams(int64_t dataOffset, size_t dataSize);
     Status SetTrackFragmentHeaderParams(int64_t dataOffset, int64_t dataSize, uint32_t flag, int64_t moofOffset);
     Status SetTrackFragmentDecodeTimeParams(int64_t dataOffset, int64_t dataSize);
@@ -365,6 +367,7 @@ private:
     int32_t trackTimeScale_ = 0;
     bool isFragmented_ = false;
     bool emptyStss_ = false;
+    bool hasExplicitSyncSamples_ = false;
     bool chunkOffsetsSorted_ = true;
     std::vector<EditListEntry> editListEntries_;
     SkipSamplesInfoMap skipSamplesInfoMap_;
@@ -377,8 +380,6 @@ private:
     Status ApplyEditList();
     Status FindWithSyncSamplesByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& syncIndex);
     int64_t FindIndexWithoutSyncSamples(int64_t inputPTS) const;
-    bool AssignSampleIndex(int64_t currentIndex, uint32_t& sampleIndex) const;
-    bool AssignSampleIndexFromSize(size_t currentIndex, uint32_t& sampleIndex) const;
     bool ResolveDirectSyncSampleByPts(int64_t inputPts, int64_t currentIndex, uint32_t& sampleIndex) const;
     bool ResolveNonBaseTrackEosByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& sampleIndex) const;
     bool IsAtOrBeyondLastSampleEnd(int64_t inputPts) const;
@@ -405,10 +406,7 @@ private:
     void SelectClosestSyncByPts(int64_t inputPts, int64_t& currentIndex) const;
     Status CheckSyncSampleByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, int64_t &currentIndex);
     bool IsSyncSample(const std::vector<StssEntry>& syncSamples, bool allSamplesSync, uint32_t sampleIndex) const;
-    void SetSkipSamplesInfo(uint32_t sampleIndex, std::vector<uint8_t>&& skipSamplesInfo);
     int64_t GetSyncSamplePts(size_t stssIndex) const;
-    int64_t GetFrameDuration(const std::vector<SampleIndexEntry>& entries,
-        const std::vector<DurationOverride>& durationOverrides, size_t index, int64_t editDuration) const;
     int64_t FindPrevClosestIndex(const std::vector<SampleIndexEntry>& entries,
         const std::vector<StssEntry>& syncSamples, bool allSamplesSync, int64_t timestampPts, bool anyFrame) const;
     void FixLeadingDiscardTimestamps(std::vector<SampleIndexEntry>& entries, size_t endIndex, int64_t endDts,
@@ -423,6 +421,7 @@ private:
         EditListProcessContext& processCtx);
     void FinalizeAppliedEditList(EditListBuildContext& buildCtx);
     Status SetFieldSize(uint32_t atomType, int64_t &currentOffset, uint32_t& fieldSize);
+    Status AddRapSyncSamples(const uint8_t* data, uint32_t entryCount);
     Status ProcessSampleSizeData(uint32_t atomType, int64_t currentOffset, uint32_t size,
         uint32_t fieldSize, uint32_t numSampleSizes);
     bool HasTfhdRemainingData(const TfhdParseContext& ctx, size_t fieldSize) const;

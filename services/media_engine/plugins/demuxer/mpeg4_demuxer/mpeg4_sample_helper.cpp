@@ -390,7 +390,7 @@ int64_t MPEG4SampleHelper::FindIndexWithoutSyncSamples(int64_t inputPTS) const
     return std::distance(sampleIndexEntry_.begin(), it);
 }
 
-bool MPEG4SampleHelper::AssignSampleIndex(int64_t currentIndex, uint32_t& sampleIndex) const
+static bool AssignSampleIndex(int64_t currentIndex, uint32_t& sampleIndex)
 {
     FALSE_RETURN_V_NOLOG(currentIndex >= 0 &&
         static_cast<uint64_t>(currentIndex) <= static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()), false);
@@ -398,7 +398,7 @@ bool MPEG4SampleHelper::AssignSampleIndex(int64_t currentIndex, uint32_t& sample
     return true;
 }
 
-bool MPEG4SampleHelper::AssignSampleIndexFromSize(size_t currentIndex, uint32_t& sampleIndex) const
+static bool AssignSampleIndexFromSize(size_t currentIndex, uint32_t& sampleIndex)
 {
     FALSE_RETURN_V_NOLOG(currentIndex <= static_cast<size_t>(std::numeric_limits<uint32_t>::max()), false);
     sampleIndex = static_cast<uint32_t>(currentIndex);
@@ -1510,6 +1510,9 @@ Status MPEG4SampleHelper::UpdateSampleEntryInfo(
     bool isSync = false;
     SampleEntryCreateContext context {sampleInfo, offset, currentDts, isOverlap};
     FALSE_RETURN_V_NOLOG(CreateSampleEntry(context, sample, isSync) == Status::OK, Status::ERROR_INVALID_DATA);
+    if (hasExplicitSyncSamples_ || !stssEntry_.empty()) {
+        isSync = IsSyncSample(stssEntry_, false, static_cast<uint32_t>(sampleIndexEntry_.size()));
+    }
     ++rawSampleCount_;
     if (sampleIndexEntry_.empty()) {
         FALSE_RETURN_V_NOLOG(sample.GetPts(lastPTS_), Status::ERROR_INVALID_DATA);
@@ -1837,7 +1840,11 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         CalculateDtsShift();
     }
 
-    allSamplesSync_ = !emptyStss_ && stssEntry_.empty() &&
+    const bool hasExplicitSyncSamples = hasExplicitSyncSamples_ || !stssEntry_.empty();
+    stssEntry_.erase(std::remove_if(
+        stssEntry_.begin(), stssEntry_.end(),
+        [sttsSampleCount](const StssEntry& entry) { return entry.index >= sttsSampleCount; }), stssEntry_.end());
+    allSamplesSync_ = !emptyStss_ && !hasExplicitSyncSamples && stssEntry_.empty() &&
         (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE ||
         trackType_ == AUXILIARY_TYPE || (trackType_ == SUBTITLE_TYPE && mimeType_ == MimeType::TEXT_WEBVTT));
     return Status::OK;
@@ -1888,14 +1895,6 @@ bool MPEG4SampleHelper::IsSyncSample(const std::vector<StssEntry>& syncSamples, 
     auto it = std::lower_bound(syncSamples.begin(), syncSamples.end(), sampleIndex,
         [](const StssEntry& entry, uint32_t index) { return entry.index < index; });
     return it != syncSamples.end() && it->index == sampleIndex;
-}
-
-int64_t MPEG4SampleHelper::GetFrameDuration(const std::vector<SampleIndexEntry>& entries,
-    const std::vector<DurationOverride>& durationOverrides, size_t index, int64_t editDuration) const
-{
-    int64_t duration = 0;
-    return GetSampleDurationTicks(entries, durationOverrides, static_cast<uint32_t>(index), duration) == Status::OK ?
-        duration : editDuration;
 }
 
 int64_t MPEG4SampleHelper::FindPrevClosestIndex(const std::vector<SampleIndexEntry>& entries,
@@ -1985,8 +1984,9 @@ Status MPEG4SampleHelper::BuildEditListSampleEntry(const SampleIndexEntry& oldEn
     EditListBuildContext& buildCtx, EditListProcessContext& processCtx)
 {
     const auto& edit = *processCtx.edit;
-    processCtx.frameDuration = GetFrameDuration(buildCtx.oldEntries, buildCtx.oldDurationOverrides,
-        index, processCtx.editDuration);
+    int64_t frameDuration = 0;
+    processCtx.frameDuration = GetSampleDurationTicks(buildCtx.oldEntries, buildCtx.oldDurationOverrides,
+        static_cast<uint32_t>(index), frameDuration) == Status::OK ? frameDuration : processCtx.editDuration;
     int64_t currCtts = static_cast<int64_t>(oldEntry.ptsOffset) - dtsShift_;
     int64_t currCts = 0;
     int64_t shiftedDts = 0;
@@ -2107,7 +2107,9 @@ void MPEG4SampleHelper::FinalizeAppliedEditList(EditListBuildContext& buildCtx)
     stssEntry_ = std::move(buildCtx.newSyncSamples);
     skipSamplesInfoMap_.clear();
     for (auto& skipSamplesInfo : buildCtx.newSkipSamplesInfo) {
-        SetSkipSamplesInfo(skipSamplesInfo.first, std::move(skipSamplesInfo.second));
+        if (!skipSamplesInfo.second.empty()) {
+            skipSamplesInfoMap_[skipSamplesInfo.first] = std::move(skipSamplesInfo.second);
+        }
     }
     totalDuration_ = buildCtx.editListDtsEntryEnd - buildCtx.startDts;
     lastPTS_ = 0;

@@ -25,9 +25,18 @@
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_DEMUXER, "MPEG4SampleHelper"};
 constexpr uint32_t MAX_REORDER_DELAY = 16;
+constexpr uint32_t MAX_TIMING_TABLE_SAMPLE_COUNT = 4 * 1024 * 1024;
 constexpr size_t MAX_SIMPLE_EDIT_ENTRY_COUNT = 2;
 constexpr size_t SKIP_SAMPLES_INFO_SIZE = 10;
 constexpr uint32_t BITS_PER_BYTE = 8;
+
+static bool AssignSampleIndex(int64_t currentIndex, uint32_t& sampleIndex)
+{
+    FALSE_RETURN_V_NOLOG(currentIndex >= 0 &&
+        static_cast<uint64_t>(currentIndex) <= static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()), false);
+    sampleIndex = static_cast<uint32_t>(currentIndex);
+    return true;
+}
 }
 
 namespace OHOS {
@@ -341,15 +350,6 @@ Status MPEG4SampleHelper::FindFirstSampleByDts(int64_t dts, uint32_t& sampleInde
     FALSE_RETURN_V_NOLOG(it != sampleIndexEntry_.end(), Status::END_OF_STREAM);
     return AssignSampleIndex(std::distance(sampleIndexEntry_.begin(), it), sampleIndex) ?
         Status::OK : Status::ERROR_INVALID_DATA;
-}
-
-void MPEG4SampleHelper::SetSkipSamplesInfo(uint32_t sampleIndex, std::vector<uint8_t>&& skipSamplesInfo)
-{
-    if (skipSamplesInfo.empty()) {
-        skipSamplesInfoMap_.erase(sampleIndex);
-        return;
-    }
-    skipSamplesInfoMap_[sampleIndex] = std::move(skipSamplesInfo);
 }
 
 int64_t MPEG4SampleHelper::GetSyncSamplePts(size_t stssIndex) const
@@ -989,6 +989,126 @@ Status MPEG4SampleHelper::ApplySimpleEditProjection(uint32_t rawIndex, SampleInd
     if (rawIndex < simpleEditProjection_.firstPlayableRaw || outside) {
         view.flag |= Sample::SampleFlag::DISCARD;
     }
+    return Status::OK;
+}
+
+template<typename SyncSamples>
+static void NormalizeSyncSamples(SyncSamples& syncSamples, bool& emptyStss)
+{
+    std::sort(syncSamples.begin(), syncSamples.end(),
+        [](const auto& left, const auto& right) {
+            return left.index < right.index;
+        });
+    syncSamples.erase(std::unique(syncSamples.begin(), syncSamples.end(),
+        [](const auto& left, const auto& right) {
+            return left.index == right.index;
+        }), syncSamples.end());
+    emptyStss = false;
+}
+
+namespace {
+Status CountRapSyncSamples(const uint8_t* data, uint32_t entryCount, uint64_t& rapSampleCount,
+    uint64_t& totalSampleCount)
+{
+    for (uint32_t i = 0; i < entryCount; ++i) {
+        uint32_t sampleCount = GetU32Value(data + i * sizeof(uint64_t));
+        uint32_t groupIndex = GetU32Value(data + i * sizeof(uint64_t) + sizeof(uint32_t));
+        FALSE_RETURN_V_NOLOG(sampleCount <= UINT32_MAX - totalSampleCount, Status::ERROR_INVALID_DATA);
+        uint64_t selectedSampleCount = groupIndex == 0 ? 0 : sampleCount;
+        FALSE_RETURN_V_NOLOG(selectedSampleCount <= MAX_TIMING_TABLE_SAMPLE_COUNT - rapSampleCount,
+            Status::ERROR_INVALID_DATA);
+        rapSampleCount += selectedSampleCount;
+        totalSampleCount += sampleCount;
+    }
+    return Status::OK;
+}
+
+template<typename SyncSamples>
+static void AppendRapSyncSamples(SyncSamples& syncSamples, uint64_t sampleIndex, uint32_t sampleCount)
+{
+    for (uint32_t i = 0; i < sampleCount; ++i) {
+        typename SyncSamples::value_type entry {static_cast<uint32_t>(sampleIndex + i)};
+        syncSamples.emplace_back(entry);
+    }
+}
+}
+
+Status MPEG4SampleHelper::AddRapSyncSamples(const uint8_t* data, uint32_t entryCount)
+{
+    uint64_t rapSampleCount = 0;
+    uint64_t totalSampleCount = 0;
+    FALSE_RETURN_V_NOLOG(CountRapSyncSamples(data, entryCount, rapSampleCount, totalSampleCount) == Status::OK,
+        Status::ERROR_INVALID_DATA);
+    FALSE_RETURN_V_NOLOG(stssEntry_.size() <= MAX_TIMING_TABLE_SAMPLE_COUNT &&
+        rapSampleCount <= MAX_TIMING_TABLE_SAMPLE_COUNT - stssEntry_.size(),
+        Status::ERROR_INVALID_DATA);
+    hasExplicitSyncSamples_ = true;
+    stssEntry_.reserve(stssEntry_.size() + static_cast<size_t>(rapSampleCount));
+    uint64_t sampleIndex = 0;
+    for (uint32_t i = 0; i < entryCount; ++i) {
+        uint32_t sampleCount = GetU32Value(data + i * sizeof(uint64_t));
+        uint32_t groupIndex = GetU32Value(data + i * sizeof(uint64_t) + sizeof(uint32_t));
+        if (groupIndex != 0) {
+            AppendRapSyncSamples(stssEntry_, sampleIndex, sampleCount);
+        }
+        sampleIndex += sampleCount;
+    }
+    NormalizeSyncSamples(stssEntry_, emptyStss_);
+    return Status::OK;
+}
+
+Status MPEG4SampleHelper::SetRapSampleGroupParams(int64_t dataOffset, size_t dataSize)
+{
+    constexpr size_t baseHeaderSize = 12;
+    constexpr size_t entrySize = 8;
+    FALSE_RETURN_V_NOLOG(dataOffset >= 0 && dataSize >= baseHeaderSize, Status::ERROR_INVALID_PARAMETER);
+    std::vector<uint8_t> header(baseHeaderSize);
+    Status ret = dataReader_->ReadUintData(dataOffset, header.data(), header.size());
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+    if (GetU32Value(header.data() + sizeof(uint32_t)) != static_cast<uint32_t>(FourccType("rap "))) {
+        return Status::OK;
+    }
+    size_t headerSize = header[0] == 1 ? baseHeaderSize + sizeof(uint32_t) : baseHeaderSize;
+    FALSE_RETURN_V_NOLOG(dataSize >= headerSize, Status::ERROR_INVALID_DATA);
+    uint32_t entryCount = GetU32Value(header.data() + baseHeaderSize - sizeof(uint32_t));
+    if (headerSize != baseHeaderSize) {
+        ret = dataReader_->ReadUintData(dataOffset + baseHeaderSize, header.data() + baseHeaderSize - sizeof(uint32_t),
+            sizeof(uint32_t));
+        FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+        entryCount = GetU32Value(header.data() + baseHeaderSize - sizeof(uint32_t));
+    }
+    FALSE_RETURN_V_NOLOG(entryCount <= (dataSize - headerSize) / entrySize, Status::ERROR_INVALID_DATA);
+    FALSE_RETURN_V_NOLOG(entryCount <= MAX_TIMING_TABLE_SAMPLE_COUNT, Status::ERROR_INVALID_DATA);
+    FALSE_RETURN_V_NOLOG(entryCount != 0, Status::OK);
+    std::vector<uint8_t> entries(static_cast<size_t>(entryCount) * entrySize);
+    ret = dataReader_->ReadUintData(dataOffset + headerSize, entries.data(), entries.size());
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+    return AddRapSyncSamples(entries.data(), entryCount);
+}
+
+Status MPEG4SampleHelper::SetPartialSyncSampleParams(int64_t dataOffset, size_t dataSize)
+{
+    constexpr size_t headerSize = 8;
+    FALSE_RETURN_V_NOLOG(dataOffset >= 0 && dataSize >= headerSize, Status::ERROR_INVALID_PARAMETER);
+    uint8_t header[headerSize] = {0};
+    Status ret = dataReader_->ReadUintData(dataOffset, header, sizeof(header));
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+    uint32_t entryCount = GetU32Value(header + sizeof(uint32_t));
+    FALSE_RETURN_V_NOLOG(entryCount <= MAX_TIMING_TABLE_SAMPLE_COUNT &&
+        entryCount <= (dataSize - headerSize) / sizeof(uint32_t), Status::ERROR_INVALID_DATA);
+    FALSE_RETURN_V_NOLOG(entryCount != 0, Status::OK);
+    std::vector<uint8_t> entries(static_cast<size_t>(entryCount) * sizeof(uint32_t));
+    ret = dataReader_->ReadUintData(dataOffset + headerSize, entries.data(), entries.size());
+    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
+    FALSE_RETURN_V_NOLOG(stssEntry_.size() <= MAX_TIMING_TABLE_SAMPLE_COUNT &&
+        entryCount <= MAX_TIMING_TABLE_SAMPLE_COUNT - stssEntry_.size(),
+        Status::ERROR_INVALID_DATA);
+    hasExplicitSyncSamples_ = true;
+    for (uint32_t i = 0; i < entryCount; ++i) {
+        uint32_t sampleNumber = GetU32Value(entries.data() + i * sizeof(uint32_t));
+        stssEntry_.emplace_back(StssEntry {.index = sampleNumber == 0 ? 0 : sampleNumber - 1});
+    }
+    NormalizeSyncSamples(stssEntry_, emptyStss_);
     return Status::OK;
 }
 

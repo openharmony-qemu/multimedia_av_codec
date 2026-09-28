@@ -136,6 +136,10 @@ constexpr uint32_t CHANNEL_BASED_CONTENT = 0;
 constexpr uint32_t BASELINE_NN_TYPE = 0;
 constexpr uint32_t TEST_BITRATE_KBPS = 128;
 constexpr uint32_t TEST_RESOLUTION_INDEX = 1;
+constexpr uint32_t RAP_GROUP_ENTRY_COUNT = 1;
+constexpr uint32_t RAP_GROUP_SAMPLE_COUNT = 1;
+constexpr uint32_t RAP_GROUP_NON_KEY_INDEX = 0;
+constexpr uint32_t PARTIAL_SYNC_SAMPLE = 61;
 
 void AppendAacTestBits(std::vector<uint8_t>& bits, uint32_t value, uint8_t bitCount)
 {
@@ -2461,6 +2465,126 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroDurationMp3EditProje
     constexpr uint32_t expectedSyncFlag =
         static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
     EXPECT_EQ(firstSample.flag & expectedSyncFlag, expectedSyncFlag);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_RapSampleGroupSync_001
+ * @tc.desc: Verify rap sample groups add random-access samples to sync flags.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_RapSampleGroupSync_001, TestSize.Level1)
+{
+    std::vector<uint8_t> sbgp;
+    AppendU32(sbgp, 0);
+    AppendU32(sbgp, static_cast<uint32_t>(Plugins::MPEG4::FourccType("rap ")));
+    AppendU32(sbgp, 6);
+    for (const auto& entry : std::vector<std::pair<uint32_t, uint32_t>> {
+        {60, 0}, {1, 1}, {59, 0}, {1, 1}, {58, 0}, {1, 1}}) {
+        AppendU32(sbgp, entry.first);
+        AppendU32(sbgp, entry.second);
+    }
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.stssEntry_ = {{0}};
+    helper.dataReader_ = CreateReaderForBytes(sbgp);
+    ASSERT_EQ(helper.SetRapSampleGroupParams(0, sbgp.size()), Status::OK);
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 60, 120, 179}));
+
+    std::vector<uint8_t> sbgpVersionOne;
+    AppendU32(sbgpVersionOne, 0x01000000);
+    AppendU32(sbgpVersionOne, static_cast<uint32_t>(Plugins::MPEG4::FourccType("rap ")));
+    AppendU32(sbgpVersionOne, 0);
+    AppendU32(sbgpVersionOne, RAP_GROUP_ENTRY_COUNT);
+    AppendU32(sbgpVersionOne, 2);
+    AppendU32(sbgpVersionOne, 1);
+    Plugins::MPEG4::MPEG4SampleHelper versionOneHelper;
+    versionOneHelper.dataReader_ = CreateReaderForBytes(sbgpVersionOne);
+    ASSERT_EQ(versionOneHelper.SetRapSampleGroupParams(0, sbgpVersionOne.size()), Status::OK);
+    EXPECT_EQ(versionOneHelper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 1}));
+
+    sbgpVersionOne.resize(12);
+    Plugins::MPEG4::MPEG4SampleHelper truncatedVersionOneHelper;
+    truncatedVersionOneHelper.dataReader_ = CreateReaderForBytes(sbgpVersionOne);
+    EXPECT_EQ(truncatedVersionOneHelper.SetRapSampleGroupParams(0, sbgpVersionOne.size()),
+        Status::ERROR_INVALID_DATA);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_EmptyStssRapSampleGroupSync_001
+ * @tc.desc: Verify rap sample groups override empty-stss first-sample fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EmptyStssRapSampleGroupSync_001, TestSize.Level1)
+{
+    std::vector<uint8_t> sbgp;
+    AppendU32(sbgp, 0);
+    AppendU32(sbgp, static_cast<uint32_t>(Plugins::MPEG4::FourccType("rap ")));
+    AppendU32(sbgp, 5);
+    for (const auto& entry : std::vector<std::pair<uint32_t, uint32_t>> {
+        {1, 1}, {59, 0}, {1, 1}, {58, 0}, {1, 1}}) {
+        AppendU32(sbgp, entry.first);
+        AppendU32(sbgp, entry.second);
+    }
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.emptyStss_ = true;
+    helper.dataReader_ = CreateReaderForBytes(sbgp);
+    ASSERT_EQ(helper.SetRapSampleGroupParams(0, sbgp.size()), Status::OK);
+    EXPECT_FALSE(helper.emptyStss_);
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 60, 119}));
+
+    std::vector<uint8_t> nonKeyRap;
+    AppendU32(nonKeyRap, 0);
+    AppendU32(nonKeyRap, static_cast<uint32_t>(Plugins::MPEG4::FourccType("rap ")));
+    AppendU32(nonKeyRap, RAP_GROUP_ENTRY_COUNT);
+    AppendU32(nonKeyRap, RAP_GROUP_SAMPLE_COUNT);
+    AppendU32(nonKeyRap, RAP_GROUP_NON_KEY_INDEX);
+    Plugins::MPEG4::MPEG4SampleHelper fallbackHelper;
+    fallbackHelper.emptyStss_ = true;
+    fallbackHelper.dataReader_ = CreateReaderForBytes(nonKeyRap);
+    ASSERT_EQ(fallbackHelper.SetRapSampleGroupParams(0, nonKeyRap.size()), Status::OK);
+    EXPECT_FALSE(fallbackHelper.emptyStss_);
+    EXPECT_TRUE(fallbackHelper.GetSyncSamplesIndexFromStssEntry().empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_StpsPartialSync_001
+ * @tc.desc: Verify stps partial-sync samples are key and suppress empty-stss fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_StpsPartialSync_001, TestSize.Level1)
+{
+    std::vector<uint8_t> stps;
+    AppendU32(stps, 0);
+    AppendU32(stps, 2);
+    AppendU32(stps, 0);
+    AppendU32(stps, PARTIAL_SYNC_SAMPLE);
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.emptyStss_ = true;
+    helper.dataReader_ = CreateReaderForBytes(stps);
+    ASSERT_EQ(helper.SetPartialSyncSampleParams(0, stps.size()), Status::OK);
+    EXPECT_FALSE(helper.emptyStss_);
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 60}));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SyncSamplesOutsideSampleTable_001
+ * @tc.desc: Verify sync entries outside the finalized sample table are ignored
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SyncSamplesOutsideSampleTable_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper.mimeType_ = MimeType::VIDEO_AVC;
+    helper.sttsEntry_ = {{2, 1}};
+    helper.stscEntry_ = {{0, 2, 1}};
+    helper.sampleSizes_ = {1, 1};
+    helper.sampleSizeCount_ = 2;
+    helper.chunkOffsets_ = {0};
+    helper.stssEntry_ = {{2}};
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    EXPECT_TRUE(helper.GetSyncSamplesIndexFromStssEntry().empty());
+    EXPECT_FALSE(helper.allSamplesSync_);
 }
 
 /**

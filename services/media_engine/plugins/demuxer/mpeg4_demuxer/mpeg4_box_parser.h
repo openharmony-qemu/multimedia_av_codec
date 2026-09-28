@@ -421,6 +421,8 @@ private:
     Status ParseStco(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseCtts(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseSdtp(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseSbgp(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
+    Status ParseStps(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseTrex(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseSidx(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
     Status ParseUserDataString(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx);
