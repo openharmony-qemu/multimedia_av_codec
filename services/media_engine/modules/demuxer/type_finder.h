@@ -31,12 +31,18 @@ namespace Media {
 using namespace Plugins;
 class TypeFinder : public std::enable_shared_from_this<TypeFinder>, public Plugins::DataSource {
 public:
+    struct StreamContext {
+        int32_t streamId = -1;
+        Plugins::Seekable seekable = Plugins::Seekable::INVALID;
+    };
+
     TypeFinder();
 
     ~TypeFinder() override;
 
     void Init(std::string uri, uint64_t mediaDataSize, std::function<Status(int32_t, uint64_t, size_t)> checkRange,
-        std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&, bool)> peekRange, int32_t streamId);
+        std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&, bool)> peekRange,
+        StreamContext streamContext);
 
     std::string FindMediaType();
 
@@ -78,6 +84,7 @@ private:
     std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&, bool)> peekRange_;
     std::function<void(std::string)> typeFound_;
     int32_t streamID_ = -1;
+    Plugins::Seekable seekable_ {Plugins::Seekable::INVALID};
     std::atomic<uint64_t> sniffSize_ {0};
     std::mutex mutex_;
     std::condition_variable readCond_;

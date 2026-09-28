@@ -80,7 +80,8 @@ std::string BaseStreamDemuxer::SnifferMediaType(const StreamInfo& streamInfo)
     MediaAVCodec::AVCodecTrace trace("BaseStreamDemuxer::SnifferMediaType");
     MEDIA_LOG_D("BaseStreamDemuxer::SnifferMediaType called");
     typeFinder_ = std::make_shared<TypeFinder>();
-    typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_, streamInfo.streamId);
+    typeFinder_->Init(uri_, mediaDataSize_, checkRange_, peekRange_,
+        TypeFinder::StreamContext {streamInfo.streamId, seekable_});
     typeFinder_->SetSniffSize(streamInfo.sniffSize);
     std::string type = typeFinder_->FindMediaType();
     std::unique_lock<std::mutex> lock(typeFinderMutex_);
