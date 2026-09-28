@@ -1109,92 +1109,6 @@ Status MPEG4SampleHelper::SetSampleDependencyTypeParams(int64_t ctxOffset, int64
     return Status::OK;
 }
 
-void MPEG4SampleHelper::NormalizeSyncSamples()
-{
-    std::sort(stssEntry_.begin(), stssEntry_.end(),
-        [](const StssEntry& left, const StssEntry& right) { return left.index < right.index; });
-    stssEntry_.erase(std::unique(stssEntry_.begin(), stssEntry_.end(),
-        [](const StssEntry& left, const StssEntry& right) { return left.index == right.index; }), stssEntry_.end());
-    emptyStss_ = false;
-}
-
-Status MPEG4SampleHelper::AddRapSyncSamples(const uint8_t* data, uint32_t entryCount)
-{
-    uint64_t sampleIndex = 0;
-    for (uint32_t i = 0; i < entryCount; ++i) {
-        uint32_t sampleCount = GetU32Value(data + i * sizeof(uint64_t));
-        uint32_t groupIndex = GetU32Value(data + i * sizeof(uint64_t) + sizeof(uint32_t));
-        FALSE_RETURN_V_NOLOG(sampleCount <= UINT32_MAX - sampleIndex, Status::ERROR_INVALID_DATA);
-        if (groupIndex != 0) {
-            FALSE_RETURN_V_NOLOG(stssEntry_.size() <= MAX_SAMPLE_TABLE_ENTRY_COUNT &&
-                sampleCount <= MAX_SAMPLE_TABLE_ENTRY_COUNT - stssEntry_.size(),
-                Status::ERROR_INVALID_DATA);
-            stssEntry_.reserve(stssEntry_.size() + sampleCount);
-            for (uint32_t j = 0; j < sampleCount; ++j) {
-                stssEntry_.emplace_back(StssEntry {.index = static_cast<uint32_t>(sampleIndex + j)});
-            }
-        }
-        sampleIndex += sampleCount;
-    }
-    // FFmpeg suppresses the empty-stss first-sample fallback when a non-empty RAP group exists.
-    NormalizeSyncSamples();
-    return Status::OK;
-}
-
-Status MPEG4SampleHelper::SetRapSampleGroupParams(int64_t dataOffset, size_t dataSize)
-{
-    constexpr size_t baseHeaderSize = 12;
-    constexpr size_t entrySize = 8;
-    FALSE_RETURN_V_NOLOG(dataOffset >= 0 && dataSize >= baseHeaderSize, Status::ERROR_INVALID_PARAMETER);
-    std::vector<uint8_t> header(baseHeaderSize);
-    Status ret = dataReader_->ReadUintData(dataOffset, header.data(), header.size());
-    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    if (GetU32Value(header.data() + sizeof(uint32_t)) != static_cast<uint32_t>(FourccType("rap "))) {
-        return Status::OK;
-    }
-    size_t headerSize = header[0] == 1 ? baseHeaderSize + sizeof(uint32_t) : baseHeaderSize;
-    FALSE_RETURN_V_NOLOG(dataSize >= headerSize, Status::ERROR_INVALID_DATA);
-    uint32_t entryCount = GetU32Value(header.data() + baseHeaderSize - sizeof(uint32_t));
-    if (headerSize != baseHeaderSize) {
-        ret = dataReader_->ReadUintData(dataOffset + baseHeaderSize, header.data() + baseHeaderSize - sizeof(uint32_t),
-            sizeof(uint32_t));
-        FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-        entryCount = GetU32Value(header.data() + baseHeaderSize - sizeof(uint32_t));
-    }
-    FALSE_RETURN_V_NOLOG(entryCount <= (dataSize - headerSize) / entrySize, Status::ERROR_INVALID_DATA);
-    FALSE_RETURN_V_NOLOG(entryCount <= MAX_SAMPLE_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA);
-    FALSE_RETURN_V_NOLOG(entryCount != 0, Status::OK);
-    std::vector<uint8_t> entries(static_cast<size_t>(entryCount) * entrySize);
-    ret = dataReader_->ReadUintData(dataOffset + headerSize, entries.data(), entries.size());
-    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    return AddRapSyncSamples(entries.data(), entryCount);
-}
-
-Status MPEG4SampleHelper::SetPartialSyncSampleParams(int64_t dataOffset, size_t dataSize)
-{
-    constexpr size_t headerSize = 8;
-    FALSE_RETURN_V_NOLOG(dataOffset >= 0 && dataSize >= headerSize, Status::ERROR_INVALID_PARAMETER);
-    uint8_t header[headerSize] = {0};
-    Status ret = dataReader_->ReadUintData(dataOffset, header, sizeof(header));
-    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    uint32_t entryCount = GetU32Value(header + sizeof(uint32_t));
-    FALSE_RETURN_V_NOLOG(entryCount <= MAX_SAMPLE_TABLE_ENTRY_COUNT &&
-        entryCount <= (dataSize - headerSize) / sizeof(uint32_t), Status::ERROR_INVALID_DATA);
-    FALSE_RETURN_V_NOLOG(entryCount != 0, Status::OK);
-    std::vector<uint8_t> entries(static_cast<size_t>(entryCount) * sizeof(uint32_t));
-    ret = dataReader_->ReadUintData(dataOffset + headerSize, entries.data(), entries.size());
-    FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    FALSE_RETURN_V_NOLOG(stssEntry_.size() <= MAX_SAMPLE_TABLE_ENTRY_COUNT &&
-        entryCount <= MAX_SAMPLE_TABLE_ENTRY_COUNT - stssEntry_.size(), Status::ERROR_INVALID_DATA);
-    for (uint32_t i = 0; i < entryCount; ++i) {
-        uint32_t sampleNumber = GetU32Value(entries.data() + i * sizeof(uint32_t));
-        FALSE_RETURN_V_NOLOG(sampleNumber > 0, Status::ERROR_INVALID_DATA);
-        stssEntry_.emplace_back(StssEntry {.index = sampleNumber - 1});
-    }
-    NormalizeSyncSamples();
-    return Status::OK;
-}
-
 // LCOV_EXCL_START
 Status MPEG4SampleHelper::SetTrackExtendsParams(int64_t dataOffset, size_t dataSize)
 {
@@ -1923,7 +1837,11 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         CalculateDtsShift();
     }
 
-    allSamplesSync_ = !emptyStss_ && stssEntry_.empty() &&
+    bool hasExplicitSyncSamples = !stssEntry_.empty();
+    stssEntry_.erase(std::remove_if(stssEntry_.begin(), stssEntry_.end(), [sttsSampleCount](const StssEntry& entry) {
+        return entry.index >= sttsSampleCount;
+    }), stssEntry_.end());
+    allSamplesSync_ = !emptyStss_ && !hasExplicitSyncSamples && stssEntry_.empty() &&
         (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE ||
         trackType_ == AUXILIARY_TYPE || (trackType_ == SUBTITLE_TYPE && mimeType_ == MimeType::TEXT_WEBVTT));
     return Status::OK;

@@ -437,7 +437,6 @@ private:
     void TruncateSttsEntries(uint32_t sampleCount);
     Status ValidateSampleSizeCount(uint32_t sttsSampleCount) const;
     Status ValidateAndRepairStsc(uint32_t& sttsSampleCount);
-    void NormalizeSyncSamples();
     void BuildSampleDescriptionRanges();
     void BuildSampleDescriptionPositions();
     uint32_t FindSampleDescriptionIndexByPosition(int64_t position) const;

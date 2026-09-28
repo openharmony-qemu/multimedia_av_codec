@@ -118,7 +118,6 @@ public:
         uint64_t codecConfigsSize = 0;
         bool hasMultipleCodecConfigs = false;
         bool invalidCodecConfigLogged = false;
-        bool hasAacConfigSamplesPerFrame = false;
         uint32_t currentCodecConfigIndex = UINT32_MAX;
         Mpeg4TrackDrmInfo drmInfo;
         std::shared_ptr<SampleCache> cache = nullptr;
