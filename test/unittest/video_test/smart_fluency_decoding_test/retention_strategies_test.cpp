@@ -844,6 +844,127 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MakeDecision_MaxDropsLimit_011, TestSize
     EXPECT_EQ(strategy->GetLastDecisionReason(), SfdDecisionReason::POST_DROP_ADAPTIVE_DT);
 }
 
+/**
+ * @tc.name: HighMagnitude_CoherentMotionProtected_012
+ * @tc.desc: Coherent high-magnitude motion reaches the existing 60 fps ceiling.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, HighMagnitude_CoherentMotionProtected_012, TestSize.Level1)
+{
+    AdaptiveRetentionStrategy strategy;
+    strategy.UpdateSourceFramerate(30.0);
+    strategy.UpdatePlaybackSpeed(2.0);
+    MVStats stats{};
+    stats.validBlocks = 100;
+    stats.perceptualMagnitude = 100.0;
+    stats.motionConsistency = 0.90;
+    FrameRetentionContext ctx{};
+    ctx.mvStats = &stats;
+    for (int32_t i = 0; i < DEFAULT_TOTAL_FRAMES; ++i) {
+        EXPECT_TRUE(strategy.MakeRetentionDecision(ctx));
+    }
+    EXPECT_NEAR(strategy.GetRatio(), 1.0, DEFAULT_TOLERANCE);
+
+    // Protection still respects the frame-rate ceiling instead of forcing all frames.
+    strategy.Reset();
+    strategy.UpdateSourceFramerate(60.0);
+    strategy.UpdatePlaybackSpeed(2.0);
+    int32_t retainedCount = 0;
+    for (int32_t i = 0; i < DEFAULT_TOTAL_FRAMES; ++i) {
+        retainedCount += strategy.MakeRetentionDecision(ctx) ? 1 : 0;
+    }
+    EXPECT_EQ(retainedCount, 50);
+    EXPECT_NEAR(strategy.GetRatio(), 0.5, DEFAULT_TOLERANCE);
+}
+
+/**
+ * @tc.name: MagnitudeMasking_GatedTargetRatios_013
+ * @tc.desc: Preserve magnitude sensitivity below the gate and blend inside it.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, MagnitudeMasking_GatedTargetRatios_013, TestSize.Level1)
+{
+    struct TestCase {
+        double magnitude;
+        double consistency;
+        double expectedRatio;
+    };
+    const TestCase cases[] = {
+        {70.0, 0.60, 0.8515151515},
+        {100.0, 0.60, 0.5060606061},
+        {100.0, 0.66, 0.5333333333},
+        {85.0, 0.78, 0.9137254902},
+        {100.0, 0.85, 0.9823325163},
+        {100.0, 0.90, 1.0},
+        {150.0, 1.20, 1.0},
+        // Low- and medium-magnitude branches retain their previous behavior.
+        {10.0, 0.90, 0.8823529412},
+        {20.0, 0.90, 1.0},
+        {65.0, 0.90, 1.0},
+    };
+    for (const auto& testCase : cases) {
+        AdaptiveRetentionStrategy strategy;
+        strategy.UpdateSourceFramerate(30.0);
+        strategy.UpdatePlaybackSpeed(2.0);
+        MVStats stats{};
+        stats.validBlocks = 100;
+        stats.perceptualMagnitude = testCase.magnitude;
+        stats.motionConsistency = testCase.consistency;
+        FrameRetentionContext ctx{};
+        ctx.mvStats = &stats;
+        strategy.MakeRetentionDecision(ctx);
+        EXPECT_NEAR(strategy.GetRatio(), testCase.expectedRatio, 1e-6);
+    }
+}
+
+/**
+ * @tc.name: MagnitudeMasking_ContinuousBoundaries_014
+ * @tc.desc: Crossing either consistency gate boundary must not jump the target ratio.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, MagnitudeMasking_ContinuousBoundaries_014, TestSize.Level1)
+{
+    const double boundaries[] = {0.66, 0.90};
+    constexpr double delta = 1e-5;
+    for (double boundary : boundaries) {
+        AdaptiveRetentionStrategy strategy;
+        strategy.UpdatePlaybackSpeed(2.0);
+        MVStats stats{};
+        stats.validBlocks = 100;
+        stats.perceptualMagnitude = 100.0;
+        FrameRetentionContext ctx{};
+        ctx.mvStats = &stats;
+        stats.motionConsistency = boundary - delta;
+        strategy.MakeRetentionDecision(ctx);
+        double below = strategy.GetRatio();
+        stats.motionConsistency = boundary + delta;
+        strategy.MakeRetentionDecision(ctx);
+        EXPECT_GE(strategy.GetRatio(), below);
+        EXPECT_NEAR(strategy.GetRatio(), below, 1e-4);
+    }
+}
+
+/**
+ * @tc.name: MagnitudeMasking_ZeroMotionBranchUnchanged_015
+ * @tc.desc: Consistency protection does not override the separate zero-motion rule.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AdaptiveRetentionStrategyTest, MagnitudeMasking_ZeroMotionBranchUnchanged_015, TestSize.Level1)
+{
+    AdaptiveRetentionStrategy strategy;
+    strategy.UpdatePlaybackSpeed(2.0);
+    MVStats stats{};
+    stats.validBlocks = 100;
+    stats.perceptualMagnitude = 100.0;
+    stats.motionConsistency = 1.0;
+    stats.zeroMotionRatio = 0.85;
+    FrameRetentionContext ctx{};
+    ctx.mvStats = &stats;
+    EXPECT_FALSE(strategy.MakeRetentionDecision(ctx));
+    EXPECT_TRUE(strategy.MakeRetentionDecision(ctx));
+    EXPECT_NEAR(strategy.GetRatio(), 0.5, DEFAULT_TOLERANCE);
+}
+
 // --- FullRetentionStrategy additional tests ---
 
 /**
