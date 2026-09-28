@@ -87,7 +87,12 @@ constexpr int32_t AAC_TEST_CHANNEL_COUNT = 2;
 constexpr int32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC = 2;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_SBR = 5;
+constexpr uint8_t AAC_TEST_AUDIO_OBJECT_TYPE_BITS = 5;
 constexpr uint32_t AAC_TEST_ASC_SYNC_EXTENSION = 0x2B7;
+constexpr uint8_t AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS = 4;
+constexpr uint8_t AAC_TEST_CHANNEL_CONFIGURATION_BITS = 4;
+constexpr uint8_t AAC_TEST_GA_SPECIFIC_CONFIG_FLAGS_BITS = 3;
+constexpr uint8_t AAC_TEST_SYNC_EXTENSION_TYPE_BITS = 11;
 constexpr uint32_t AAC_TEST_96KHZ_SAMPLE_RATE = 96000;
 constexpr uint32_t AAC_TEST_96KHZ_SAMPLES_PER_FRAME = 1024;
 constexpr uint8_t AAC_TEST_ELEMENT_CPE = 1;
@@ -161,12 +166,12 @@ std::vector<uint8_t> BuildAacRawDataBlock(uint8_t extensionType, bool truncated 
 std::vector<uint8_t> BuildAacAudioSpecificConfig(bool sbrPresent)
 {
     std::vector<uint8_t> bits;
-    AppendAacTestBits(bits, AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC, 5);
-    AppendAacTestBits(bits, 0, 4); // 96 kHz sampling frequency index
-    AppendAacTestBits(bits, AAC_TEST_CHANNEL_COUNT, 4);
-    AppendAacTestBits(bits, 0, 3); // GASpecificConfig flags
-    AppendAacTestBits(bits, AAC_TEST_ASC_SYNC_EXTENSION, 11);
-    AppendAacTestBits(bits, AAC_TEST_AUDIO_OBJECT_TYPE_SBR, 5);
+    AppendAacTestBits(bits, AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC, AAC_TEST_AUDIO_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS); // 96 kHz sampling frequency index
+    AppendAacTestBits(bits, AAC_TEST_CHANNEL_COUNT, AAC_TEST_CHANNEL_CONFIGURATION_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_GA_SPECIFIC_CONFIG_FLAGS_BITS); // GASpecificConfig flags
+    AppendAacTestBits(bits, AAC_TEST_ASC_SYNC_EXTENSION, AAC_TEST_SYNC_EXTENSION_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_AUDIO_OBJECT_TYPE_SBR, AAC_TEST_AUDIO_OBJECT_TYPE_BITS);
     AppendAacTestBits(bits, sbrPresent ? 1 : 0, 1);
     while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
         bits.push_back(0);

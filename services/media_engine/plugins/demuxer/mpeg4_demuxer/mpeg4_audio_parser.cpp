@@ -68,6 +68,7 @@ constexpr int32_t AAC_DEFAULT_SAMPLES_PER_FRAME = 1024;
 constexpr int32_t AAC_STEREO_CHANNELS = 2;
 constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_BITS = 5;
 constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_ESCAPE = 0x1F;
+constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_ESCAPE_OFFSET = 0x20;
 constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_EXTENSION_BITS = 6;
 constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_SBR = 5;
 constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_PS = 29;
@@ -229,6 +230,108 @@ bool ReadAacBitsAt(const uint8_t* data, size_t totalBits, size_t bitOffset, uint
     return true;
 }
 
+bool ReadAacAudioObjectType(const uint8_t* data, size_t totalBits, size_t& bitOffset, uint32_t& audioObjectType)
+{
+    if (!ReadAacBitsAt(data, totalBits, bitOffset, AAC_AUDIO_OBJECT_TYPE_BITS, audioObjectType)) {
+        return false;
+    }
+    bitOffset += AAC_AUDIO_OBJECT_TYPE_BITS;
+    if (audioObjectType != AAC_AUDIO_OBJECT_TYPE_ESCAPE) {
+        return true;
+    }
+
+    uint32_t escapedObjectType = 0;
+    if (!ReadAacBitsAt(data, totalBits, bitOffset, AAC_AUDIO_OBJECT_TYPE_EXTENSION_BITS, escapedObjectType)) {
+        return false;
+    }
+    audioObjectType = AAC_AUDIO_OBJECT_TYPE_ESCAPE_OFFSET + escapedObjectType;
+    bitOffset += AAC_AUDIO_OBJECT_TYPE_EXTENSION_BITS;
+    return true;
+}
+
+bool SkipAacSamplingFrequency(const uint8_t* data, size_t totalBits, size_t& bitOffset)
+{
+    uint32_t samplingFrequencyIndex = 0;
+    if (!ReadAacBitsAt(data, totalBits, bitOffset, AAC_SAMPLING_FREQUENCY_INDEX_BITS, samplingFrequencyIndex)) {
+        return false;
+    }
+    bitOffset += AAC_SAMPLING_FREQUENCY_INDEX_BITS;
+    if (samplingFrequencyIndex != AAC_EXPLICIT_SAMPLING_FREQUENCY_INDEX) {
+        return true;
+    }
+
+    if (bitOffset > totalBits || AAC_EXPLICIT_SAMPLING_FREQUENCY_BITS > totalBits - bitOffset) {
+        return false;
+    }
+    bitOffset += AAC_EXPLICIT_SAMPLING_FREQUENCY_BITS;
+    return true;
+}
+
+bool SkipAacLcSpecificConfig(const uint8_t* data, size_t totalBits, size_t& bitOffset)
+{
+    if (!SkipAacSamplingFrequency(data, totalBits, bitOffset)) {
+        return false;
+    }
+
+    uint32_t channelConfiguration = 0;
+    if (!ReadAacBitsAt(data, totalBits, bitOffset, AAC_CHANNEL_CONFIGURATION_BITS, channelConfiguration) ||
+        channelConfiguration == 0) {
+        return false;
+    }
+    bitOffset += AAC_CHANNEL_CONFIGURATION_BITS;
+
+    uint32_t initialGaFlags = 0;
+    if (!ReadAacBitsAt(data, totalBits, bitOffset, AAC_LC_INITIAL_GA_FLAGS_BITS, initialGaFlags)) {
+        return false;
+    }
+    bitOffset += AAC_LC_INITIAL_GA_FLAGS_BITS;
+    if ((initialGaFlags & 0x01) != 0) {
+        if (bitOffset > totalBits || AAC_CORE_CODER_DELAY_BITS > totalBits - bitOffset) {
+            return false;
+        }
+        bitOffset += AAC_CORE_CODER_DELAY_BITS;
+    }
+
+    uint32_t extensionFlag = 0;
+    if (!ReadAacBitsAt(data, totalBits, bitOffset, AAC_EXTENSION_FLAG_BITS, extensionFlag)) {
+        return false;
+    }
+    bitOffset += AAC_EXTENSION_FLAG_BITS;
+    if (extensionFlag == 0) {
+        return true;
+    }
+
+    if (bitOffset >= totalBits) {
+        return false;
+    }
+    ++bitOffset;
+    return true;
+}
+
+AacSbrSignalState FindAacSyncExtensionSbrSignal(const uint8_t* data, size_t totalBits, size_t bitOffset)
+{
+    if (totalBits < AAC_SYNC_EXTENSION_SBR_BITS || bitOffset > totalBits - AAC_SYNC_EXTENSION_SBR_BITS) {
+        return AacSbrSignalState::UNSPECIFIED;
+    }
+    const size_t lastSyncExtensionOffset = totalBits - AAC_SYNC_EXTENSION_SBR_BITS;
+    for (; bitOffset <= lastSyncExtensionOffset; ++bitOffset) {
+        uint32_t syncExtensionType = 0;
+        uint32_t extensionAudioObjectType = 0;
+        uint32_t sbrPresent = 0;
+        if (!ReadAacBitsAt(data, totalBits, bitOffset, AAC_SYNC_EXTENSION_TYPE_BITS, syncExtensionType) ||
+            syncExtensionType != AAC_SYNC_EXTENSION_TYPE ||
+            !ReadAacBitsAt(data, totalBits, bitOffset + AAC_SYNC_EXTENSION_TYPE_BITS, AAC_AUDIO_OBJECT_TYPE_BITS,
+                extensionAudioObjectType) ||
+            extensionAudioObjectType != AAC_AUDIO_OBJECT_TYPE_SBR ||
+            !ReadAacBitsAt(data, totalBits, bitOffset + AAC_SYNC_EXTENSION_TYPE_BITS +
+                AAC_AUDIO_OBJECT_TYPE_BITS, AAC_SYNC_EXTENSION_SBR_SIGNAL_BITS, sbrPresent)) {
+            continue;
+        }
+        return sbrPresent ? AacSbrSignalState::PRESENT : AacSbrSignalState::ABSENT;
+    }
+    return AacSbrSignalState::UNSPECIFIED;
+}
+
 AacSbrSignalState ParseAacSbrSignalState(const std::vector<uint8_t>& codecConfig)
 {
     if (codecConfig.empty()) {
@@ -239,90 +342,19 @@ AacSbrSignalState ParseAacSbrSignalState(const std::vector<uint8_t>& codecConfig
         return AacSbrSignalState::UNSPECIFIED;
     }
 
+    size_t bitOffset = 0;
     uint32_t audioObjectType = 0;
-    if (!ReadAacBitsAt(codecConfig.data(), totalBits, 0, AAC_AUDIO_OBJECT_TYPE_BITS, audioObjectType)) {
+    if (!ReadAacAudioObjectType(codecConfig.data(), totalBits, bitOffset, audioObjectType)) {
         return AacSbrSignalState::UNSPECIFIED;
-    }
-    size_t bitOffset = AAC_AUDIO_OBJECT_TYPE_BITS;
-    if (audioObjectType == AAC_AUDIO_OBJECT_TYPE_ESCAPE) {
-        uint32_t escapedObjectType = 0;
-        if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_AUDIO_OBJECT_TYPE_EXTENSION_BITS,
-            escapedObjectType)) {
-            return AacSbrSignalState::UNSPECIFIED;
-        }
-        audioObjectType = 0x20 + escapedObjectType;
-        bitOffset += AAC_AUDIO_OBJECT_TYPE_EXTENSION_BITS;
     }
     if (audioObjectType == AAC_AUDIO_OBJECT_TYPE_SBR || audioObjectType == AAC_AUDIO_OBJECT_TYPE_PS) {
         return AacSbrSignalState::PRESENT;
     }
-    if (audioObjectType != AAC_AAC_LC_OBJECT_TYPE) {
+    if (audioObjectType != AAC_AAC_LC_OBJECT_TYPE || !SkipAacLcSpecificConfig(codecConfig.data(), totalBits,
+        bitOffset)) {
         return AacSbrSignalState::UNSPECIFIED;
     }
-
-    uint32_t samplingFrequencyIndex = 0;
-    if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_SAMPLING_FREQUENCY_INDEX_BITS,
-        samplingFrequencyIndex)) {
-        return AacSbrSignalState::UNSPECIFIED;
-    }
-    bitOffset += AAC_SAMPLING_FREQUENCY_INDEX_BITS;
-    if (samplingFrequencyIndex == AAC_EXPLICIT_SAMPLING_FREQUENCY_INDEX) {
-        if (AAC_EXPLICIT_SAMPLING_FREQUENCY_BITS > totalBits - bitOffset) {
-            return AacSbrSignalState::UNSPECIFIED;
-        }
-        bitOffset += AAC_EXPLICIT_SAMPLING_FREQUENCY_BITS;
-    }
-    uint32_t channelConfiguration = 0;
-    if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_CHANNEL_CONFIGURATION_BITS,
-        channelConfiguration) || channelConfiguration == 0) {
-        return AacSbrSignalState::UNSPECIFIED;
-    }
-    bitOffset += AAC_CHANNEL_CONFIGURATION_BITS;
-
-    uint32_t initialGaFlags = 0;
-    if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_LC_INITIAL_GA_FLAGS_BITS, initialGaFlags)) {
-        return AacSbrSignalState::UNSPECIFIED;
-    }
-    bitOffset += AAC_LC_INITIAL_GA_FLAGS_BITS;
-    if ((initialGaFlags & 0x01) != 0) {
-        if (AAC_CORE_CODER_DELAY_BITS > totalBits - bitOffset) {
-            return AacSbrSignalState::UNSPECIFIED;
-        }
-        bitOffset += AAC_CORE_CODER_DELAY_BITS;
-    }
-    uint32_t extensionFlag = 0;
-    if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_EXTENSION_FLAG_BITS, extensionFlag)) {
-        return AacSbrSignalState::UNSPECIFIED;
-    }
-    bitOffset += AAC_EXTENSION_FLAG_BITS;
-    if (extensionFlag != 0) {
-        if (bitOffset >= totalBits) {
-            return AacSbrSignalState::UNSPECIFIED;
-        }
-        ++bitOffset;
-    }
-
-    if (totalBits < AAC_SYNC_EXTENSION_SBR_BITS ||
-        bitOffset > totalBits - AAC_SYNC_EXTENSION_SBR_BITS) {
-        return AacSbrSignalState::UNSPECIFIED;
-    }
-    const size_t lastSyncExtensionOffset = totalBits - AAC_SYNC_EXTENSION_SBR_BITS;
-    for (; bitOffset <= lastSyncExtensionOffset; ++bitOffset) {
-        uint32_t syncExtensionType = 0;
-        uint32_t extensionAudioObjectType = 0;
-        uint32_t sbrPresent = 0;
-        if (!ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset, AAC_SYNC_EXTENSION_TYPE_BITS,
-            syncExtensionType) || syncExtensionType != AAC_SYNC_EXTENSION_TYPE ||
-            !ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset + AAC_SYNC_EXTENSION_TYPE_BITS,
-                AAC_AUDIO_OBJECT_TYPE_BITS, extensionAudioObjectType) ||
-            extensionAudioObjectType != AAC_AUDIO_OBJECT_TYPE_SBR ||
-            !ReadAacBitsAt(codecConfig.data(), totalBits, bitOffset + AAC_SYNC_EXTENSION_TYPE_BITS +
-                AAC_AUDIO_OBJECT_TYPE_BITS, AAC_SYNC_EXTENSION_SBR_SIGNAL_BITS, sbrPresent)) {
-            continue;
-        }
-        return sbrPresent ? AacSbrSignalState::PRESENT : AacSbrSignalState::ABSENT;
-    }
-    return AacSbrSignalState::UNSPECIFIED;
+    return FindAacSyncExtensionSbrSignal(codecConfig.data(), totalBits, bitOffset);
 }
 
 bool IsAacZeroPadding(const uint8_t* data, size_t totalBits, size_t bitOffset)
