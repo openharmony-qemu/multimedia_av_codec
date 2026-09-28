@@ -281,7 +281,7 @@ static std::map<AVCodecID, int32_t> g_FfDSDCodecIdToOHDSDCodecId = {  // ignore 
     {AV_CODEC_ID_DSD_LSBF_PLANAR, 0},
     {AV_CODEC_ID_DSD_MSBF_PLANAR, 1},
     {AV_CODEC_ID_DSD_MSBF, 2},
-}
+};
 
 std::vector<std::string> SplitByChar(const char* str, const char* pattern)
 {
@@ -649,7 +649,7 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
         MEDIA_LOG_W("Parse mime type failed: " PUBLIC_LOG_S, avcodec_get_name(avStream.codecpar->codec_id));
     }
-    
+
     format.Set<Tag::ORIGINAL_CODEC_NAME>(std::string(avcodec_get_name(avStream.codecpar->codec_id)));
     auto dsdCodecIdIter = g_FfDSDCodecIdToOHDSDCodecId.find(avStream.codecpar->codec_id);
     if (dsdCodecIdIter != g_FfDSDCodecIdToOHDSDCodecId.end()) {
