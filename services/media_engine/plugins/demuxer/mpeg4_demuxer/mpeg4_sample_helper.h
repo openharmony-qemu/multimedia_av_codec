@@ -367,6 +367,7 @@ private:
     int32_t trackTimeScale_ = 0;
     bool isFragmented_ = false;
     bool emptyStss_ = false;
+    bool hasExplicitSyncSamples_ = false;
     bool chunkOffsetsSorted_ = true;
     std::vector<EditListEntry> editListEntries_;
     SkipSamplesInfoMap skipSamplesInfoMap_;
@@ -406,8 +407,6 @@ private:
     Status CheckSyncSampleByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, int64_t &currentIndex);
     bool IsSyncSample(const std::vector<StssEntry>& syncSamples, bool allSamplesSync, uint32_t sampleIndex) const;
     int64_t GetSyncSamplePts(size_t stssIndex) const;
-    int64_t GetFrameDuration(const std::vector<SampleIndexEntry>& entries,
-        const std::vector<DurationOverride>& durationOverrides, size_t index, int64_t editDuration) const;
     int64_t FindPrevClosestIndex(const std::vector<SampleIndexEntry>& entries,
         const std::vector<StssEntry>& syncSamples, bool allSamplesSync, int64_t timestampPts, bool anyFrame) const;
     void FixLeadingDiscardTimestamps(std::vector<SampleIndexEntry>& entries, size_t endIndex, int64_t endDts,

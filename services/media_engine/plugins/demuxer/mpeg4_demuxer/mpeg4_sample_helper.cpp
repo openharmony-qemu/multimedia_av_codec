@@ -1837,11 +1837,10 @@ Status MPEG4SampleHelper::PreBuildProcessAndCheck()
         CalculateDtsShift();
     }
 
-    bool hasExplicitSyncSamples = !stssEntry_.empty();
-    stssEntry_.erase(
-        std::remove_if(stssEntry_.begin(), stssEntry_.end(), [sttsSampleCount](const StssEntry& entry) {
-        return entry.index >= sttsSampleCount; }), stssEntry_.end());
-    allSamplesSync_ = !emptyStss_ && !hasExplicitSyncSamples && stssEntry_.empty() &&
+    stssEntry_.erase(std::remove_if(
+        stssEntry_.begin(), stssEntry_.end(), 
+        [sttsSampleCount](const StssEntry& entry) { return entry.index >= sttsSampleCount; }), stssEntry_.end());
+    allSamplesSync_ = !emptyStss_ && !hasExplicitSyncSamples_ && stssEntry_.empty() &&
         (trackType_ == VIDEO_TYPE || trackType_ == AUDIO_TYPE || trackType_ == TIMEDMETA_TYPE ||
         trackType_ == AUXILIARY_TYPE || (trackType_ == SUBTITLE_TYPE && mimeType_ == MimeType::TEXT_WEBVTT));
     return Status::OK;
@@ -1892,14 +1891,6 @@ bool MPEG4SampleHelper::IsSyncSample(const std::vector<StssEntry>& syncSamples, 
     auto it = std::lower_bound(syncSamples.begin(), syncSamples.end(), sampleIndex,
         [](const StssEntry& entry, uint32_t index) { return entry.index < index; });
     return it != syncSamples.end() && it->index == sampleIndex;
-}
-
-int64_t MPEG4SampleHelper::GetFrameDuration(const std::vector<SampleIndexEntry>& entries,
-    const std::vector<DurationOverride>& durationOverrides, size_t index, int64_t editDuration) const
-{
-    int64_t duration = 0;
-    return GetSampleDurationTicks(entries, durationOverrides, static_cast<uint32_t>(index), duration) == Status::OK ?
-        duration : editDuration;
 }
 
 int64_t MPEG4SampleHelper::FindPrevClosestIndex(const std::vector<SampleIndexEntry>& entries,
@@ -1989,8 +1980,9 @@ Status MPEG4SampleHelper::BuildEditListSampleEntry(const SampleIndexEntry& oldEn
     EditListBuildContext& buildCtx, EditListProcessContext& processCtx)
 {
     const auto& edit = *processCtx.edit;
-    processCtx.frameDuration = GetFrameDuration(buildCtx.oldEntries, buildCtx.oldDurationOverrides,
-        index, processCtx.editDuration);
+    int64_t frameDuration = 0;
+    processCtx.frameDuration = GetSampleDurationTicks(buildCtx.oldEntries, buildCtx.oldDurationOverrides,
+        static_cast<uint32_t>(index), frameDuration) == Status::OK ? frameDuration : processCtx.editDuration;
     int64_t currCtts = static_cast<int64_t>(oldEntry.ptsOffset) - dtsShift_;
     int64_t currCts = 0;
     int64_t shiftedDts = 0;

@@ -1035,11 +1035,13 @@ static void AppendRapSyncSamples(SyncSamples& syncSamples, uint64_t sampleIndex,
 
 Status MPEG4SampleHelper::AddRapSyncSamples(const uint8_t* data, uint32_t entryCount)
 {
+    hasExplicitSyncSamples_ = true;
     uint64_t rapSampleCount = 0;
     uint64_t sampleIndex = 0;
     FALSE_RETURN_V_NOLOG(CountRapSyncSamples(data, entryCount, rapSampleCount, sampleIndex) == Status::OK,
         Status::ERROR_INVALID_DATA);
-    FALSE_RETURN_V_NOLOG(rapSampleCount <= MAX_TIMING_TABLE_SAMPLE_COUNT - stssEntry_.size(),
+    FALSE_RETURN_V_NOLOG(stssEntry_.size() <= MAX_TIMING_TABLE_SAMPLE_COUNT &&
+        rapSampleCount <= MAX_TIMING_TABLE_SAMPLE_COUNT - stssEntry_.size(),
         Status::ERROR_INVALID_DATA);
     stssEntry_.reserve(stssEntry_.size() + static_cast<size_t>(rapSampleCount));
     sampleIndex = 0;
@@ -1086,6 +1088,7 @@ Status MPEG4SampleHelper::SetRapSampleGroupParams(int64_t dataOffset, size_t dat
 
 Status MPEG4SampleHelper::SetPartialSyncSampleParams(int64_t dataOffset, size_t dataSize)
 {
+    hasExplicitSyncSamples_ = true;
     constexpr size_t headerSize = 8;
     FALSE_RETURN_V_NOLOG(dataOffset >= 0 && dataSize >= headerSize, Status::ERROR_INVALID_PARAMETER);
     uint8_t header[headerSize] = {0};
@@ -1098,7 +1101,8 @@ Status MPEG4SampleHelper::SetPartialSyncSampleParams(int64_t dataOffset, size_t 
     std::vector<uint8_t> entries(static_cast<size_t>(entryCount) * sizeof(uint32_t));
     ret = dataReader_->ReadUintData(dataOffset + headerSize, entries.data(), entries.size());
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-    FALSE_RETURN_V_NOLOG(entryCount <= MAX_TIMING_TABLE_SAMPLE_COUNT - stssEntry_.size(),
+    FALSE_RETURN_V_NOLOG(stssEntry_.size() <= MAX_TIMING_TABLE_SAMPLE_COUNT &&
+        entryCount <= MAX_TIMING_TABLE_SAMPLE_COUNT - stssEntry_.size(),
         Status::ERROR_INVALID_DATA);
     for (uint32_t i = 0; i < entryCount; ++i) {
         uint32_t sampleNumber = GetU32Value(entries.data() + i * sizeof(uint32_t));
