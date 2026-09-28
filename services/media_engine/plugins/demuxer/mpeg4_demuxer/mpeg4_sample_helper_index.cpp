@@ -29,6 +29,14 @@ constexpr uint32_t MAX_TIMING_TABLE_SAMPLE_COUNT = 4 * 1024 * 1024;
 constexpr size_t MAX_SIMPLE_EDIT_ENTRY_COUNT = 2;
 constexpr size_t SKIP_SAMPLES_INFO_SIZE = 10;
 constexpr uint32_t BITS_PER_BYTE = 8;
+
+static bool AssignSampleIndex(int64_t currentIndex, uint32_t& sampleIndex)
+{
+    FALSE_RETURN_V_NOLOG(currentIndex >= 0 &&
+        static_cast<uint64_t>(currentIndex) <= static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()), false);
+    sampleIndex = static_cast<uint32_t>(currentIndex);
+    return true;
+}
 }
 
 namespace OHOS {
@@ -342,15 +350,6 @@ Status MPEG4SampleHelper::FindFirstSampleByDts(int64_t dts, uint32_t& sampleInde
     FALSE_RETURN_V_NOLOG(it != sampleIndexEntry_.end(), Status::END_OF_STREAM);
     return AssignSampleIndex(std::distance(sampleIndexEntry_.begin(), it), sampleIndex) ?
         Status::OK : Status::ERROR_INVALID_DATA;
-}
-
-void MPEG4SampleHelper::SetSkipSamplesInfo(uint32_t sampleIndex, std::vector<uint8_t>&& skipSamplesInfo)
-{
-    if (skipSamplesInfo.empty()) {
-        skipSamplesInfoMap_.erase(sampleIndex);
-        return;
-    }
-    skipSamplesInfoMap_[sampleIndex] = std::move(skipSamplesInfo);
 }
 
 int64_t MPEG4SampleHelper::GetSyncSamplePts(size_t stssIndex) const

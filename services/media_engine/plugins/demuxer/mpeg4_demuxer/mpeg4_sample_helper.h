@@ -379,8 +379,6 @@ private:
     Status ApplyEditList();
     Status FindWithSyncSamplesByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& syncIndex);
     int64_t FindIndexWithoutSyncSamples(int64_t inputPTS) const;
-    bool AssignSampleIndex(int64_t currentIndex, uint32_t& sampleIndex) const;
-    bool AssignSampleIndexFromSize(size_t currentIndex, uint32_t& sampleIndex) const;
     bool ResolveDirectSyncSampleByPts(int64_t inputPts, int64_t currentIndex, uint32_t& sampleIndex) const;
     bool ResolveNonBaseTrackEosByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, uint32_t& sampleIndex) const;
     bool IsAtOrBeyondLastSampleEnd(int64_t inputPts) const;
@@ -407,7 +405,6 @@ private:
     void SelectClosestSyncByPts(int64_t inputPts, int64_t& currentIndex) const;
     Status CheckSyncSampleByPts(int64_t inputPts, bool isBaseTrack, SeekMode flag, int64_t &currentIndex);
     bool IsSyncSample(const std::vector<StssEntry>& syncSamples, bool allSamplesSync, uint32_t sampleIndex) const;
-    void SetSkipSamplesInfo(uint32_t sampleIndex, std::vector<uint8_t>&& skipSamplesInfo);
     int64_t GetSyncSamplePts(size_t stssIndex) const;
     int64_t GetFrameDuration(const std::vector<SampleIndexEntry>& entries,
         const std::vector<DurationOverride>& durationOverrides, size_t index, int64_t editDuration) const;
