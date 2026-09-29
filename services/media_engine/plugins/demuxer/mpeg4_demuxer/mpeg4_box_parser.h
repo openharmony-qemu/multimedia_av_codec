@@ -327,6 +327,8 @@ private:
     Status ParseAtomSize(MPEG4Atom& atom, int32_t depth, bool& isZeroSizeAtom, ParseContext* ctx);
     Status ValidateAtomSourceRange(MPEG4Atom& atom, const std::string& typeStr, int32_t depth, ParseContext* ctx,
         uint64_t atomInfoSize);
+    Status HandleAtomSourceRange(MPEG4Atom& atom, const std::string& typeStr, int32_t depth, ParseContext* ctx,
+        uint64_t atomInfoSize);
     Status ProcessMetaHandler(MPEG4Atom currentAtom, ParseContext* parseCtx);
     Status ProcessTfhdAtom(const MPEG4Atom& atom);
     Status UpdateDca3TrackMeta(DemuxerBitReader& bitReader, const Av3aConfigParams& params);
@@ -346,6 +348,7 @@ private:
     // 解析函数
     Status ParseContainerAtom(const MPEG4Atom& containerAtom, int32_t depth, ParseContext* ctx);
     Status PrepareChildAtomInContainer(int64_t endOffset, ParseContext* ctx, bool& isPadding);
+    Status ValidateChildAtomSize(uint32_t childSize32, int64_t endOffset, ParseContext* ctx);
     Status ReadExtendedChildAtomSize(int64_t childHeaderEndOffset, int64_t endOffset, ParseContext* ctx,
         uint64_t& childSize);
     Status __attribute__((optnone)) ParseAudioAttributes(MPEG4Atom currentAtom, ParseContext* parseCtx);

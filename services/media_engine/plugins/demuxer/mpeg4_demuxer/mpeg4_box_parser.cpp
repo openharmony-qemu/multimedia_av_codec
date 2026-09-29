@@ -786,16 +786,19 @@ Status MPEG4AtomParser::PrepareChildAtomInContainer(int64_t endOffset, ParseCont
         return Status::OK;
     }
     constexpr int64_t basicHeaderSize = 8;
-    constexpr uint32_t basicHeaderSize32 = 8;
-    constexpr uint64_t basicHeaderSizeU64 = 8;
-    // This resource has a 2..7 size prefix followed by a complete atom header.
-    // Skip only that prefix so the next pass can parse the real header.
-    if (allowTruncatedMoovChildren_ && childSize32 > 1 && childSize32 < basicHeaderSize32 &&
+    if (allowTruncatedMoovChildren_ && childSize32 > 1 && childSize32 < basicHeaderSize &&
         ctx->offset + basicHeaderSize <= endOffset) {
         ctx->offset += sizeof(uint32_t);
         MEDIA_LOG_W("Skip truncated moov child prefix at offset " PUBLIC_LOG_D64, ctx->offset - sizeof(uint32_t));
         return Status::OK;
     }
+    return ValidateChildAtomSize(childSize32, endOffset, ctx);
+}
+
+Status MPEG4AtomParser::ValidateChildAtomSize(uint32_t childSize32, int64_t endOffset, ParseContext* ctx)
+{
+    constexpr int64_t basicHeaderSize = 8;
+    constexpr uint64_t basicHeaderSizeU64 = 8;
     int64_t childHeaderEndOffset = 0;
     if (__builtin_add_overflow(ctx->offset, basicHeaderSize, &childHeaderEndOffset) ||
         childHeaderEndOffset > endOffset) {
@@ -5352,6 +5355,12 @@ Status MPEG4AtomParser::ValidateAtomSourceRange(MPEG4Atom& atom, const std::stri
     FALSE_RETURN_V_MSG_E(ctx != nullptr && ctx->offset >= 0, Status::ERROR_INVALID_DATA, "Invalid atom offset");
     FALSE_RETURN_V_MSG_E(atomInfoSize >= DEFAULT_HEAD_SIZE && atomInfoSize <= atom.size,
         Status::ERROR_INVALID_DATA, "Invalid atom header size");
+    return HandleAtomSourceRange(atom, typeStr, depth, ctx, atomInfoSize);
+}
+
+Status MPEG4AtomParser::HandleAtomSourceRange(MPEG4Atom& atom, const std::string& typeStr, int32_t depth,
+    ParseContext* ctx, uint64_t atomInfoSize)
+{
     uint64_t atomEndOffset = 0;
     if (__builtin_add_overflow(static_cast<uint64_t>(ctx->offset), atom.size, &atomEndOffset)) {
         MEDIA_LOG_E("Atom size overflow at offset: " PUBLIC_LOG_D64, ctx->offset);
@@ -5371,22 +5380,15 @@ Status MPEG4AtomParser::ValidateAtomSourceRange(MPEG4Atom& atom, const std::stri
                 ctx->offset, typeStr.c_str());
             return Status::OK;
         }
-        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && atom.type == MOOV_ATOM_TYPE) {
+        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH &&
+            (atom.type == MOOV_ATOM_TYPE || atom.type == MDAT_ATOM_TYPE)) {
             FALSE_RETURN_V_MSG_E(remainingSize >= atomInfoSize, Status::ERROR_INVALID_DATA,
-                "Invalid truncated moov atom header");
+                "Invalid truncated root atom header");
             atom.effectiveSize = remainingSize;
-            MEDIA_LOG_W("Trim truncated root moov: offset " PUBLIC_LOG_D64 ", declared size " PUBLIC_LOG_U64
+            MEDIA_LOG_W("Trim truncated root atom: offset " PUBLIC_LOG_D64 ", type " PUBLIC_LOG_S
+                ", declared size " PUBLIC_LOG_U64
                 ", effective size " PUBLIC_LOG_U64 ", source size " PUBLIC_LOG_U64,
-                ctx->offset, atom.size, atom.effectiveSize, dataSourceSize);
-            return Status::OK;
-        }
-        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && atom.type == MDAT_ATOM_TYPE) {
-            FALSE_RETURN_V_MSG_E(remainingSize >= atomInfoSize, Status::ERROR_INVALID_DATA,
-                "Invalid truncated mdat atom header");
-            atom.effectiveSize = remainingSize;
-            MEDIA_LOG_W("Trim truncated root mdat: offset " PUBLIC_LOG_D64 ", declared size " PUBLIC_LOG_U64
-                ", effective size " PUBLIC_LOG_U64 ", source size " PUBLIC_LOG_U64,
-                ctx->offset, atom.size, atom.effectiveSize, dataSourceSize);
+                ctx->offset, typeStr.c_str(), atom.size, atom.effectiveSize, dataSourceSize);
             return Status::OK;
         }
         if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && moovFound_ && hasMdatBox_ &&
