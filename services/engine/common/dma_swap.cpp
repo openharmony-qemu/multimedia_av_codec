@@ -25,12 +25,12 @@ namespace OHOS {
 namespace MediaAVCodec {
 namespace Codec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "CODEC_UTILS"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "DMA_SWAP"};
 #define DMA_DEVICE_FILE "/dev/dma_reclaim"
 #define DMA_BUF_RECLAIM_IOC_MAGIC 'd'
 #define DMA_BUF_RECLAIM_FD _IOWR(DMA_BUF_RECLAIM_IOC_MAGIC, 0x07, int)
 #define DMA_BUF_RESUME_FD _IOWR(DMA_BUF_RECLAIM_IOC_MAGIC, 0x08, int)
-#define FDSAN_TAG_DMA_SWAP 114514
+#define FDSAN_TAG_DMA_SWAP 1767
 constexpr uint64_t FDSAN_TAG = static_cast<uint64_t>(LOG_DOMAIN_FRAMEWORK) << 32 | FDSAN_TAG_DMA_SWAP;
 } // namespace
 
