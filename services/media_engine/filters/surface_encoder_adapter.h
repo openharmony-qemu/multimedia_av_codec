@@ -117,6 +117,7 @@ private:
     void ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureEnableFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
+    void ConfigureSQRMode(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutEnableTemporalScale(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     bool CheckFrames(int64_t currentPts, int64_t &checkFramesPauseTime);
     void HandlePtsMapping(int64_t currentPts, bool isDroppedFrames, std::shared_ptr<Format> &parameter);
