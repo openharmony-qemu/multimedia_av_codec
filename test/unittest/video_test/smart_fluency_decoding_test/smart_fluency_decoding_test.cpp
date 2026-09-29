@@ -383,11 +383,20 @@ HWTEST_F(SmartFluencyDecodingTest, SyncFrame_InputFlagProtectsMissingOutputFlag_
         EXPECT_TRUE(sfd_->MakePreDecodeDecision(0));
         EXPECT_TRUE(sfd_->MakePostDecodeDecision(0, 1000, nullptr, false));
         EXPECT_TRUE(sfd_->syncFramePts_.empty());
+        EXPECT_EQ(sfd_->dropSyncCoordinator_->feedbackWindowCount_, 1u);
+        EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetActualRetentionRatio(), 1.0, 1e-6);
         EXPECT_FALSE(sfd_->MakePostDecodeDecision(1, 2000, nullptr, false));
+        EXPECT_EQ(sfd_->dropSyncCoordinator_->feedbackWindowCount_, 2u);
+        EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetActualRetentionRatio(), 0.5, 1e-6);
+        EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetPreRetainedRatio(), 1.0, 1e-6);
+        EXPECT_TRUE(sfd_->MakePostDecodeDecision(2, 3000, nullptr, false));
+        EXPECT_EQ(sfd_->dropSyncCoordinator_->feedbackWindowCount_, 3u);
+        EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetActualRetentionRatio(), 2.0 / 3.0, 1e-6);
         sfd_->SetInputBuffer(0, buffer);
         EXPECT_TRUE(sfd_->MakePreDecodeDecision(0));
         sfd_->Flush();
         EXPECT_TRUE(sfd_->syncFramePts_.empty());
+        EXPECT_EQ(sfd_->dropSyncCoordinator_->feedbackWindowCount_, 0u);
     }
 }
 
