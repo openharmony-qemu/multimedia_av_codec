@@ -293,3 +293,180 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SetTransCoderMode_001, TestSize.Level1)
     surfaceEncoderAdapter_->SetTransCoderMode();
     EXPECT_TRUE(surfaceEncoderAdapter_->GetIsTransCoderMode());
 }
+
+/**
+ * @tc.name  : Test Configure SQR mode
+ * @tc.number: Configure_TransCoderSqrMode_001
+ * @tc.desc  : Test Configure in transcoder mode with SQR bitrate mode and no sqrFactor (use default 25)
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderSqrMode_001, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_ENCODE_BITRATE_MODE>(Plugins::VideoEncodeBitrateMode::SQR);
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+ 
+/**
+ * @tc.name  : Test Configure SQR mode
+ * @tc.number: Configure_TransCoderSqrMode_002
+ * @tc.desc  : Test Configure in transcoder mode with SQR bitrate mode and user-specified sqrFactor 25
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderSqrMode_002, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_ENCODE_BITRATE_MODE>(Plugins::VideoEncodeBitrateMode::SQR);
+    meta->Set<Tag::VIDEO_ENCODER_SQR_FACTOR>(25);
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+ 
+/**
+ * @tc.name  : Test Configure SQR mode
+ * @tc.number: Configure_TransCoderSqrMode_003
+ * @tc.desc  : Test Configure in transcoder mode with SQR bitrate mode and boundary sqrFactor 0
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderSqrMode_003, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_ENCODE_BITRATE_MODE>(Plugins::VideoEncodeBitrateMode::SQR);
+    meta->Set<Tag::VIDEO_ENCODER_SQR_FACTOR>(0);
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+ 
+/**
+ * @tc.name  : Test Configure SQR mode
+ * @tc.number: Configure_TransCoderSqrMode_004
+ * @tc.desc  : Test Configure in transcoder mode with SQR bitrate mode and boundary sqrFactor 51
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderSqrMode_004, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_ENCODE_BITRATE_MODE>(Plugins::VideoEncodeBitrateMode::SQR);
+    meta->Set<Tag::VIDEO_ENCODER_SQR_FACTOR>(51);
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+ 
+/**
+ * @tc.name  : Test Configure SQR mode
+ * @tc.number: Configure_TransCoderSqrMode_005
+ * @tc.desc  : Test Configure in transcoder mode with SQR mode and invalid sqrFactor > 51 (fall back to default 25)
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderSqrMode_005, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_ENCODE_BITRATE_MODE>(Plugins::VideoEncodeBitrateMode::SQR);
+    meta->Set<Tag::VIDEO_ENCODER_SQR_FACTOR>(100); // out of [0, 51], should fall back to default 25
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+ 
+/**
+ * @tc.name  : Test Configure SQR mode
+ * @tc.number: Configure_TransCoderSqrMode_006
+ * @tc.desc  : Test Configure in transcoder mode with SQR mode and invalid sqrFactor < 0 (fall back to default 25)
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderSqrMode_006, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_ENCODE_BITRATE_MODE>(Plugins::VideoEncodeBitrateMode::SQR);
+    meta->Set<Tag::VIDEO_ENCODER_SQR_FACTOR>(-1); // negative, should fall back to default 25
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+ 
+/**
+ * @tc.name  : Test Configure SQR mode
+ * @tc.number: Configure_TransCoderSqrMode_007
+ * @tc.desc  : Test Configure in transcoder mode with SQR mode but codecServer_ Configure fails
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderSqrMode_007, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_ERR_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_ENCODE_BITRATE_MODE>(Plugins::VideoEncodeBitrateMode::SQR);
+    meta->Set<Tag::VIDEO_ENCODER_SQR_FACTOR>(30);
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::ERROR_UNKNOWN);
+}
+ 
+/**
+ * @tc.name  : Test Configure non-SQR mode
+ * @tc.number: Configure_TransCoderNonSqrMode_001
+ * @tc.desc  : Test Configure in transcoder mode with VBR (non-SQR) bitrate mode, sqrFactor not set
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderNonSqrMode_001, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_ENCODE_BITRATE_MODE>(Plugins::VideoEncodeBitrateMode::VBR);
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+ 
+/**
+ * @tc.name  : Test Configure non-SQR mode
+ * @tc.number: Configure_TransCoderNonSqrMode_002
+ * @tc.desc  : Test Configure in transcoder mode with VBR bitrate mode and sqrFactor set (should be ignored)
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderNonSqrMode_002, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    meta->Set<Tag::VIDEO_ENCODE_BITRATE_MODE>(Plugins::VideoEncodeBitrateMode::VBR);
+    meta->Set<Tag::VIDEO_ENCODER_SQR_FACTOR>(30); // non-SQR mode, sqrFactor should be ignored
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::OK);
+}
+ 
+/**
+ * @tc.name  : Test Configure non-SQR mode
+ * @tc.number: Configure_TransCoderNonSqrMode_003
+ * @tc.desc  : Test Configure in transcoder mode with no bitrate mode set (non-SQR default path)
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, Configure_TransCoderNonSqrMode_003, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = mockCodecServer_;
+    surfaceEncoderAdapter_->SetTransCoderMode();
+    EXPECT_CALL(*(mockCodecServer_), Configure(_)).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    EXPECT_CALL(*(mockCodecServer_), Release()).WillRepeatedly(Return(TEST_SUCCESS_CODE));
+    auto meta = std::make_shared<Meta>();
+    // no VIDEO_ENCODE_BITRATE_MODE set, should not enter SQR path
+    Status status = surfaceEncoderAdapter_->Configure(meta);
+    EXPECT_EQ(status, Status::OK);
+}
