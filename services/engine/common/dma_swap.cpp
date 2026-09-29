@@ -30,12 +30,15 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "
 #define DMA_BUF_RECLAIM_IOC_MAGIC 'd'
 #define DMA_BUF_RECLAIM_FD _IOWR(DMA_BUF_RECLAIM_IOC_MAGIC, 0x07, int)
 #define DMA_BUF_RESUME_FD _IOWR(DMA_BUF_RECLAIM_IOC_MAGIC, 0x08, int)
+#define FDSAN_TAG_DMA_SWAP 114514
+constexpr uint64_t FDSAN_TAG = static_cast<uint64_t>(LOG_DOMAIN_FRAMEWORK) << 32 | FDSAN_TAG_DMA_SWAP;
 } // namespace
 
 DmaSwaper::DmaSwaper()
 {
     CHECK_AND_RETURN_LOG(reclaimDriverFd_ <= 0, "Already initialized!");
     reclaimDriverFd_ = open(DMA_DEVICE_FILE, O_RDWR | O_CLOEXEC | O_NONBLOCK);
+    fdsan_exchange_owner_tag(reclaimDriverFd_, 0, FDSAN_TAG);
     CHECK_AND_RETURN_LOG(reclaimDriverFd_ > 0, "Fail to open device!");
 }
 
@@ -43,6 +46,7 @@ DmaSwaper::~DmaSwaper()
 {
     CHECK_AND_RETURN_LOG(reclaimDriverFd_ > 0, "Invalid fd!");
     close(reclaimDriverFd_);
+    fdsan_close_with_tag(reclaimDriverFd_, FDSAN_TAG);
     reclaimDriverFd_ = -1;
 }
 

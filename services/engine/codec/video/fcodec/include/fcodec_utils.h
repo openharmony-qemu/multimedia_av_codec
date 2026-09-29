@@ -264,6 +264,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "FCodec"};
 } // namespace
 
+#ifdef BUILD_ENG_VERSION
 static void FfmpegLogCallback(void *avcl, int level, const char *fmt, va_list vl)
 {
     (void)avcl;
@@ -293,7 +294,6 @@ static void FfmpegLogCallback(void *avcl, int level, const char *fmt, va_list vl
     }
 }
 
-#ifdef BUILD_ENG_VERSION
 constexpr uint32_t PATH_MAX_LEN = 256;
 constexpr char DUMP_PATH[] = "/data/misc/fcodecdump";
 
