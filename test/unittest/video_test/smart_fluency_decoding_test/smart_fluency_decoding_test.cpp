@@ -363,6 +363,44 @@ HWTEST_F(SmartFluencyDecodingTest, MakePostDecodeDecision_InvalidSurface_020, Te
 }
 
 /**
+ * @tc.name: SyncFrame_InputFlagProtectsMissingOutputFlag_049
+ * @tc.desc: Input sync flags protect output even when the decoder does not return a sync flag.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SmartFluencyDecodingTest, SyncFrame_InputFlagProtectsMissingOutputFlag_049, TestSize.Level1)
+{
+    SFDConfig cfg = MakeConfig(WIDTH_1080P, HEIGHT_1080P, SFDCodecType::AVC, RetentionStrategyType::ADAPTIVE);
+    ASSERT_EQ(sfd_->Initialize(cfg), 0);
+    sfd_->UpdatePlaybackSpeed(2.0);
+    auto allocator = OHOS::Media::AVAllocatorFactory::CreateSharedAllocator(OHOS::Media::MEMORY_READ_WRITE);
+    for (uint32_t flags : {2u, 10u}) {
+        sfd_->Flush();
+        auto buffer = OHOS::Media::AVBuffer::CreateAVBuffer(allocator, 16);
+        ASSERT_NE(buffer, nullptr);
+        buffer->flag_ = flags;
+        buffer->pts_ = 1000;
+        sfd_->SetInputBuffer(0, buffer);
+        EXPECT_TRUE(sfd_->MakePreDecodeDecision(0));
+        EXPECT_TRUE(sfd_->MakePostDecodeDecision(0, 1000, nullptr, false));
+        EXPECT_TRUE(sfd_->syncFramePts_.empty());
+        EXPECT_EQ(sfd_->dropSyncCoordinator_->feedbackWindowCount_, 1u);
+        EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetActualRetentionRatio(), 1.0, 1e-6);
+        EXPECT_FALSE(sfd_->MakePostDecodeDecision(1, 2000, nullptr, false));
+        EXPECT_EQ(sfd_->dropSyncCoordinator_->feedbackWindowCount_, 2u);
+        EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetActualRetentionRatio(), 0.5, 1e-6);
+        EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetPreRetainedRatio(), 1.0, 1e-6);
+        EXPECT_TRUE(sfd_->MakePostDecodeDecision(2, 3000, nullptr, false));
+        EXPECT_EQ(sfd_->dropSyncCoordinator_->feedbackWindowCount_, 3u);
+        EXPECT_NEAR(sfd_->dropSyncCoordinator_->GetActualRetentionRatio(), 2.0 / 3.0, 1e-6);
+        sfd_->SetInputBuffer(0, buffer);
+        EXPECT_TRUE(sfd_->MakePreDecodeDecision(0));
+        sfd_->Flush();
+        EXPECT_TRUE(sfd_->syncFramePts_.empty());
+        EXPECT_EQ(sfd_->dropSyncCoordinator_->feedbackWindowCount_, 0u);
+    }
+}
+
+/**
  * @tc.name: EnsureNaluAnalyzer_MvSync_021
  * @tc.desc: Verify that NaluAnalyzer creation correctly syncs stream info to an existing MvAnalyzer.
  * @tc.type: FUNC

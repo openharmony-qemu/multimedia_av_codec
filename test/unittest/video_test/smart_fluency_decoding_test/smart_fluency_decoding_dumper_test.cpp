@@ -14,8 +14,15 @@
  */
 
 #include <gtest/gtest.h>
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
 #include <memory>
+#include <sstream>
 #include <sys/stat.h>
+#include <thread>
+#include <unistd.h>
 #include "smart_fluency_decoding_dumper.h"
 
 namespace {
@@ -30,20 +37,77 @@ using namespace testing::ext;
 class SFDDumperTest : public testing::Test {
 protected:
     std::unique_ptr<SmartFluencyDecodingDumper> dumper_;
+    std::string dumpFilename_;
 
     void SetUp() override
     {
         dumper_ = std::make_unique<SmartFluencyDecodingDumper>(
             SFDCodecType::AVC, WIDTH_1080P, HEIGHT_1080P, RetentionStrategyType::ADAPTIVE);
+        char devicePath[] = "/data/local/tmp/sfd_dump_XXXXXX";
+        int fd = mkstemp(devicePath);
+        if (fd >= 0) {
+            dumpFilename_ = devicePath;
+        } else {
+            char hostPath[] = "/tmp/sfd_dump_XXXXXX";
+            fd = mkstemp(hostPath);
+            ASSERT_GE(fd, 0);
+            dumpFilename_ = hostPath;
+        }
+        close(fd);
+        dumper_->currentFilename_ = dumpFilename_;
     }
 
     void TearDown() override
     {
-        // Clear records before destruction to prevent DumpToFileInternal from logging errors or writing files
+        // Clear records before destruction to prevent DumpToFile from logging errors or writing files
         if (dumper_) {
             dumper_->records_.clear();
         }
         dumper_ = nullptr;
+        if (!dumpFilename_.empty()) {
+            std::remove(dumpFilename_.c_str());
+        }
+    }
+
+    void RecordPre(int64_t pts, bool retained = true)
+    {
+        SmartFluencyDecodingDumper::PreDecodeRecordCtx ctx;
+        ctx.pts = pts;
+        ctx.dts = pts;
+        ctx.sysTimeMs = pts;
+        ctx.isRetained = retained;
+        dumper_->RecordPreDecode(ctx);
+    }
+
+    void RecordPost(int64_t pts, bool retained = true)
+    {
+        SmartFluencyDecodingDumper::PostDecodeRecordCtx ctx;
+        ctx.pts = pts;
+        ctx.sysTimeMs = pts;
+        ctx.isRetained = retained;
+        ctx.mvStats = {};
+        dumper_->RecordPostDecode(ctx);
+    }
+
+    std::vector<std::vector<std::string>> ReadRows()
+    {
+        std::ifstream file(dumpFilename_);
+        EXPECT_TRUE(file.is_open());
+        std::vector<std::vector<std::string>> rows;
+        std::string line;
+        while (std::getline(file, line)) {
+            if (line.empty() || line[0] == '#' || line.find("PTS,") == 0) {
+                continue;
+            }
+            std::istringstream stream(line);
+            std::vector<std::string> columns;
+            std::string column;
+            while (std::getline(stream, column, ',')) {
+                columns.push_back(column);
+            }
+            rows.push_back(columns);
+        }
+        return rows;
     }
 };
 
@@ -199,7 +263,7 @@ HWTEST_F(SFDDumperTest, RecordPreDecode_DropDecision_007, TestSize.Level1)
 
 /**
  * @tc.name: RecordPreDecode_AutoDump_008
- * @tc.desc: Push MAX_DUMP_RECORDS (100) to trigger automatic file dumping logic.
+ * @tc.desc: Pending records must survive the automatic dump threshold.
  * @tc.type: FUNC
  */
 HWTEST_F(SFDDumperTest, RecordPreDecode_AutoDump_008, TestSize.Level1)
@@ -210,8 +274,8 @@ HWTEST_F(SFDDumperTest, RecordPreDecode_AutoDump_008, TestSize.Level1)
         ctx.pts = i * 1000; // unique pts
         dumper_->RecordPreDecode(ctx);
     }
-    // After 100 records, the internal vector should have been swapped/cleared by DumpToFile
-    EXPECT_TRUE(dumper_->records_.empty());
+    EXPECT_EQ(dumper_->records_.size(), 100u);
+    EXPECT_TRUE(ReadRows().empty());
 }
 
 /**
@@ -232,28 +296,19 @@ HWTEST_F(SFDDumperTest, DumpToFile_EmptyBypass_009, TestSize.Level1)
  */
 HWTEST_F(SFDDumperTest, WriteHeader_PersistentState_010, TestSize.Level1)
 {
-    struct stat st = {};
-    bool dirExists = (stat("/data/misc/sfddump/", &st) == 0 && S_ISDIR(st.st_mode));
-
     // Trigger first dump
     SmartFluencyDecodingDumper::PreDecodeRecordCtx ctx;
     ctx.pts = 100;
     dumper_->RecordPreDecode(ctx);
     
     dumper_->DumpToFile();
-    if (dirExists) {
-        EXPECT_TRUE(dumper_->isHeaderWritten_);
-    } else {
-        EXPECT_FALSE(dumper_->isHeaderWritten_);
-    }
+    EXPECT_TRUE(dumper_->isHeaderWritten_);
     
     // Second dump
     ctx.pts = 200;
     dumper_->RecordPreDecode(ctx);
     dumper_->DumpToFile();
-    if (dirExists) {
-        EXPECT_TRUE(dumper_->isHeaderWritten_);
-    }
+    EXPECT_TRUE(dumper_->isHeaderWritten_);
 }
 
 /**
@@ -281,4 +336,136 @@ HWTEST_F(SFDDumperTest, Create_ValidationFail_012, TestSize.Level1)
     if (failedDumper == nullptr) {
         EXPECT_EQ(failedDumper, nullptr);
     }
+}
+
+// Delayed and reordered outputs must still produce exactly one complete row per PTS.
+HWTEST_F(SFDDumperTest, AutoDump_DelayedPostAcrossBatches_013, TestSize.Level1)
+{
+    constexpr int32_t frameCount = 250;
+    for (int32_t pts = 0; pts < frameCount; ++pts) {
+        RecordPre(pts);
+    }
+    EXPECT_TRUE(ReadRows().empty());
+    for (int32_t pts = frameCount - 1; pts >= 0; --pts) {
+        RecordPost(pts, pts % 3 != 0);
+    }
+    EXPECT_EQ(ReadRows().size(), 200u);
+    EXPECT_EQ(dumper_->records_.size(), 50u);
+    dumper_->DumpToFile();
+    auto rows = ReadRows();
+    ASSERT_EQ(rows.size(), static_cast<size_t>(frameCount));
+    std::vector<int32_t> occurrences(frameCount, 0);
+    for (const auto& row : rows) {
+        ASSERT_EQ(row.size(), 27u);
+        int32_t pts = std::stoi(row[0]);
+        ASSERT_GE(pts, 0);
+        ASSERT_LT(pts, frameCount);
+        ++occurrences[pts];
+        EXPECT_EQ(row[1], row[0]);
+        EXPECT_EQ(row[5], "1");
+        EXPECT_EQ(row[6], pts % 3 != 0 ? "1" : "0");
+        EXPECT_EQ(row[9], row[0]);
+        EXPECT_EQ(row[10], row[0]);
+    }
+    EXPECT_TRUE(std::all_of(occurrences.begin(), occurrences.end(), [](int32_t count) { return count == 1; }));
+}
+
+HWTEST_F(SFDDumperTest, AutoDump_PreDropsAndPostBeforePre_014, TestSize.Level1)
+{
+    RecordPost(100, false);
+    for (int32_t pts = 0; pts < 100; ++pts) {
+        RecordPre(pts, false);
+    }
+    auto rows = ReadRows();
+    ASSERT_EQ(rows.size(), 100u);
+    for (const auto& row : rows) {
+        ASSERT_EQ(row.size(), 27u);
+        EXPECT_EQ(row[5], "0");
+        EXPECT_EQ(row[6], "-1");
+        EXPECT_EQ(row[8], std::to_string(static_cast<int32_t>(SfdDecisionReason::POST_BYPASSED)));
+    }
+    ASSERT_EQ(dumper_->records_.size(), 1u);
+    EXPECT_EQ(dumper_->records_[0].isPreRetained, -1);
+    RecordPre(100);
+    dumper_->DumpToFile();
+    rows = ReadRows();
+    ASSERT_EQ(rows.size(), 101u);
+    ASSERT_EQ(rows.back().size(), 27u);
+    EXPECT_EQ(rows.back()[0], "100");
+    EXPECT_EQ(rows.back()[5], "1");
+    EXPECT_EQ(rows.back()[6], "0");
+}
+
+HWTEST_F(SFDDumperTest, ForceDump_IncompleteTail_015, TestSize.Level1)
+{
+    RecordPre(1);
+    RecordPost(2);
+    // Destruction must also preserve incomplete tail data, without inventing decisions.
+    dumper_.reset();
+    auto rows = ReadRows();
+    ASSERT_EQ(rows.size(), 2u);
+    ASSERT_EQ(rows[0].size(), 27u);
+    ASSERT_EQ(rows[1].size(), 27u);
+    EXPECT_EQ(rows[0][5], "1");
+    EXPECT_EQ(rows[0][6], "-1");
+    EXPECT_EQ(rows[0][8], "0");
+    EXPECT_EQ(rows[1][5], "-1");
+    EXPECT_EQ(rows[1][6], "1");
+}
+
+HWTEST_F(SFDDumperTest, AutoDump_OpenFailureKeepsRecords_016, TestSize.Level1)
+{
+    // A regular file cannot be used as a parent directory.
+    dumper_->currentFilename_ = dumpFilename_ + "/unavailable.csv";
+    for (int32_t pts = 0; pts < 100; ++pts) {
+        RecordPre(pts, false);
+    }
+    EXPECT_EQ(dumper_->records_.size(), 100u);
+    EXPECT_FALSE(dumper_->isHeaderWritten_);
+    dumper_->currentFilename_ = dumpFilename_;
+    dumper_->DumpToFile();
+    EXPECT_TRUE(dumper_->records_.empty());
+    EXPECT_EQ(ReadRows().size(), 100u);
+}
+
+HWTEST_F(SFDDumperTest, AutoDump_ConcurrentPreAndPost_017, TestSize.Level1)
+{
+    constexpr int32_t frameCount = 300;
+    std::thread input([this]() {
+        for (int32_t pts = 0; pts < frameCount; ++pts) {
+            RecordPre(pts);
+        }
+    });
+    std::thread output([this]() {
+        for (int32_t pts = 0; pts < frameCount; ++pts) {
+            RecordPost(pts);
+        }
+    });
+    input.join();
+    output.join();
+    dumper_->DumpToFile();
+    auto rows = ReadRows();
+    ASSERT_EQ(rows.size(), static_cast<size_t>(frameCount));
+    std::vector<int32_t> occurrences(frameCount, 0);
+    for (const auto& row : rows) {
+        ASSERT_EQ(row.size(), 27u);
+        int32_t pts = std::stoi(row[0]);
+        ASSERT_GE(pts, 0);
+        ASSERT_LT(pts, frameCount);
+        ++occurrences[pts];
+        EXPECT_EQ(row[5], "1");
+        EXPECT_EQ(row[6], "1");
+        EXPECT_EQ(row[9], row[0]);
+        EXPECT_EQ(row[10], row[0]);
+    }
+    EXPECT_TRUE(std::all_of(occurrences.begin(), occurrences.end(), [](int32_t count) { return count == 1; }));
+    std::ifstream file(dumpFilename_);
+    std::string line;
+    int32_t headerCount = 0;
+    while (std::getline(file, line)) {
+        if (line.find("PTS,") == 0) {
+            ++headerCount;
+        }
+    }
+    EXPECT_EQ(headerCount, 1);
 }

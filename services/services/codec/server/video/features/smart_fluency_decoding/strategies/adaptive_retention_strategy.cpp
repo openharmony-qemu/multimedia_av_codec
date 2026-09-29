@@ -30,11 +30,9 @@ constexpr double LOW_RISK_TH = 0.2;
 constexpr double CON_LOW_TH = 0.33;
 constexpr double CON_HIGH_TH = 0.66;
 constexpr double MAG_LOW_TH = 20.0;
-constexpr double MAG_HIGH_TH = 65.0;
 constexpr double MAG_CAP = 100.0;
 constexpr double MAG_WEIGHT_MIN = 0.4;
 constexpr double MAG_WEIGHT_RANGE = 0.6;
-constexpr double MAG_WEIGHT_REDUCTION = 0.7;
 constexpr double SOURCE_FPS_DEFAULT = 30.0;
 constexpr double ACCUMULATOR_THRESHOLD = 1.0;
 constexpr double ACCUMULATOR_MAX = 10.0;
@@ -65,10 +63,6 @@ double AdaptiveRetentionStrategy::EvaluateStutterRisk(const MVStats& mvStats) co
     double magWeight = 1.0;
     if (DoubleUtils::IsLessOrEqual(mag, MAG_LOW_TH)) {
         magWeight = MAG_WEIGHT_MIN + (mag / MAG_LOW_TH) * MAG_WEIGHT_RANGE;
-    } else if (DoubleUtils::IsLessOrEqual(mag, MAG_HIGH_TH)) {
-        magWeight = 1.0;
-    } else {
-        magWeight = 1.0 - ((mag - MAG_HIGH_TH) / (MAG_CAP - MAG_HIGH_TH)) * MAG_WEIGHT_REDUCTION;
     }
     double finalRisk = rawRisk * magWeight;
     return std::clamp(finalRisk, 0.0, 1.0);

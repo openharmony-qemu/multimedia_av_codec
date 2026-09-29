@@ -246,6 +246,7 @@ void SmartFluencyDecoding::Flush()
         strategy_->Reset();
     }
     inBufferMap_.clear();
+    syncFramePts_.clear();
     noRefFrameMap_.clear();
     lastValidMVStats_ = {};
     hasValidMVStats_ = false;
@@ -410,6 +411,19 @@ void SmartFluencyDecoding::RecordPostDecodeDump(
 #endif
 }
 
+bool SmartFluencyDecoding::PreparePreDecodeFrame(const std::shared_ptr<AVBuffer>& buffer, const StrategyCaps& caps)
+{
+    bool isSyncFrame = (buffer->flag_ & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != 0;
+    if (isSyncFrame) {
+        std::lock_guard<std::mutex> lock(configMutex_);
+        syncFramePts_.insert(buffer->pts_);
+    }
+    if (caps.requiresNalu && !naluAnalyzer_) {
+        EnsureNaluAnalyzer();
+    }
+    return isSyncFrame;
+}
+
 bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 {
 #ifdef SFD_DEBUG
@@ -424,9 +438,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         AVCODEC_LOGI_WITH_TAG("ignore eos frame");
         return true;
     }
-    if (caps.requiresNalu && !naluAnalyzer_) {
-        EnsureNaluAnalyzer();
-    }
+    bool isSyncFrame = PreparePreDecodeFrame(buffer, caps);
     PreDecResult res;
     if (naluAnalyzer_ && caps.requiresNalu) {
 #ifdef SFD_DEBUG
@@ -437,7 +449,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 #ifdef SFD_DEBUG
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
-        if (res.isNonRef) {
+        if (res.isNonRef && !isSyncFrame) {
             double currentPreRetenedRatio = dropSyncCoordinator_->GetPreRetainedRatio();
             if (DoubleUtils::IsGreaterOrEqual(caps.targetRatio, 1.0)) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
@@ -506,9 +518,11 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts,
         return true;
     }
     uint32_t preDropCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(pts);
+    bool isSyncFrame = false;
     StrategyCaps caps;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
+        isSyncFrame = syncFramePts_.erase(pts) > 0;
         if (!strategy_) {
             return true;
         }
@@ -524,12 +538,17 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts,
     FrameRetentionContext ctx { preDropCount, caps.requiresMv ? &mvStats : nullptr };
     {
         std::lock_guard<std::mutex> lock(configMutex_);
-        if (strategy_) {
+        if (isSyncFrame) {
+            res.shouldRetain = true;
+            res.ratio = 1.0;
+            res.reason = SfdDecisionReason::POST_RETAIN_SYNC_FRAME;
+        } else if (strategy_) {
             res.shouldRetain = strategy_->MakeRetentionDecision(ctx);
             res.ratio = strategy_->GetRatio();
             res.reason = strategy_->GetLastDecisionReason();
         }
     }
+
     UpdateRetentionFeedback(res.shouldRetain);
     AVCODEC_LOGD_WITH_TAG("Strategy decision: shouldRetain %{public}d, ratio %{public}.3f "
         "(index:%{public}u, pts:%{public}" PRId64 ")", res.shouldRetain, res.ratio, index, pts);

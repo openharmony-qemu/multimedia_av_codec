@@ -23,6 +23,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include "async_drop_dispatcher.h"
@@ -106,6 +107,7 @@ private:
     void InvalidateMvCache(const sptr<SurfaceBuffer>& surfaceBuffer) const;
     void EnsureNaluAnalyzer();
     void EnsureMvAnalyzer();
+    bool PreparePreDecodeFrame(const std::shared_ptr<AVBuffer>& buffer, const StrategyCaps& caps);
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void ExecutePostDrop(uint32_t index);
     bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
@@ -131,6 +133,7 @@ private:
     bool naluAnalyzerJustCreated_{false};
     bool hasValidMVStats_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
+    std::set<int64_t> syncFramePts_; // Guarded by configMutex_.
     SFDConfig config_{};
     std::optional<double> userConfiguredSpeed_{std::nullopt};
     bool isInitialized_{false};
