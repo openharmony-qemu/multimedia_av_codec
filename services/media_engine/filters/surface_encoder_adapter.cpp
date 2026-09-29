@@ -233,19 +233,15 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
             SetFaultEvent("DroppedFramesCallback::DroppedFramesCallback error", ret);
             return Status::ERROR_UNKNOWN;
         }
-    }
-    if (isTransCoderMode) {
+        format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrame_);
+    } else {
+        ConfigureSQRMode(format, meta);
         format.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
         bool isSetEnable = meta->Get<Tag::AV_TRANSCODER_ENABLE_B_FRAME>(enableBFrame_);
         MEDIA_LOG_I("Transcoder enable B frame: %{public}d", static_cast<int32_t>(enableBFrame_));
         if (isSetEnable) {
             format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, static_cast<int32_t>(enableBFrame_));
         }
-    }
-    if (!isTransCoderMode) {
-        format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrame_);
-    }
-    if (ret == 0 && isTransCoderMode) {
         Status capRet = CheckTransCoderResolution();
         FALSE_RETURN_V_MSG(capRet == Status::OK, capRet, "CheckTransCoderResolution failed");
     }
@@ -254,6 +250,28 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         SetFaultEvent("SurfaceEncoderAdapter::Configure error", ret);
     }
     return ret == 0 ? Status::OK : Status::ERROR_UNKNOWN;
+}
+
+void SurfaceEncoderAdapter::ConfigureSQRMode(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
+{
+    bool isSqrMode = false;
+    int32_t bitrateMode = -1;
+    format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode);
+    isSqrMode = (bitrateMode == static_cast<int32_t>(MediaAVCodec::VideoEncodeBitrateMode::SQR));
+    MEDIA_LOG_I("Transcoder mode, bitrateMode: %{public}d, isSqrMode: %{public}d", bitrateMode, isSqrMode);
+    format.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
+    if (isSqrMode) {
+        int32_t sqrFactor = 25; // default recommended value
+        int32_t userSqrFactor = -1;
+        if (meta->Get<Tag::VIDEO_ENCODER_SQR_FACTOR>(userSqrFactor) &&
+            userSqrFactor >= 0 && userSqrFactor <= MAX_SQR_FACTOR) {
+            sqrFactor = userSqrFactor;
+            MEDIA_LOG_I("Use user-specified SQR_FACTOR: %{public}d", sqrFactor);
+        } else {
+            MEDIA_LOG_I("Use default SQR_FACTOR: 25");
+        }
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
+    }
 }
 
 Status SurfaceEncoderAdapter::CheckTransCoderResolution()
