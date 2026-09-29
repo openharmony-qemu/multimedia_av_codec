@@ -621,6 +621,7 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_DSF_0004, TestSize.Level1)
     InitResource(g_dsfPath, pluginName);
     ASSERT_TRUE(initStatus_);
     ASSERT_GE(mediaInfo_.tracks.size(), 1);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
     ReadData();
     EXPECT_TRUE(eosFlag_[0]);
     EXPECT_GT(frames_[0], 0);
@@ -668,4 +669,119 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_IFF_PluginRegistered_0007, 
 {
     auto plugin = PluginManagerV2::Instance().CreatePluginByName("avdemux_iff");
     EXPECT_NE(plugin, nullptr);
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_DSF_0008
+ * @tc.desc: Seek to various positions with different seek modes
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_DSF_0008, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    std::vector<int64_t> seekPositions = {0, 500, 1500, 2500, 3000};
+    std::vector<SeekMode> modes = {SeekMode::SEEK_PREVIOUS_SYNC, SeekMode::SEEK_NEXT_SYNC,
+        SeekMode::SEEK_CLOSEST_SYNC};
+    for (auto seekMs : seekPositions) {
+        for (auto mode : modes) {
+            int64_t realSeekTime = -1;
+            Status ret = demuxerPlugin_->SeekTo(-1, seekMs, mode, realSeekTime);
+            EXPECT_EQ(ret, Status::OK);
+            EXPECT_GE(realSeekTime, 0);
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_SeekAndRead_DSF_0009
+ * @tc.desc: Seek to middle of DSF file, then read frames until EOS
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekAndRead_DSF_0009, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    int64_t realSeekTime = -1;
+    Status ret = demuxerPlugin_->SeekTo(-1, 1500, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    ASSERT_EQ(ret, Status::OK);
+    EXPECT_GE(realSeekTime, 0);
+    ReadData();
+    EXPECT_TRUE(eosFlag_[0]);
+    EXPECT_GT(frames_[0], 0);
+}
+
+/**
+ * @tc.name: Demuxer_SeekAndRead_DSF_0010
+ * @tc.desc: Seek to beginning of DSF file, then read frames until EOS
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekAndRead_DSF_0010, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    int64_t realSeekTime = -1;
+    Status ret = demuxerPlugin_->SeekTo(-1, 0, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    ASSERT_EQ(ret, Status::OK);
+    ReadData();
+    EXPECT_TRUE(eosFlag_[0]);
+    EXPECT_GT(frames_[0], 0);
+}
+
+/**
+ * @tc.name: Demuxer_SeekAndRead_DSF_0011
+ * @tc.desc: Seek to near end of DSF file, then read frames, verify fewer frames than from beginning
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekAndRead_DSF_0011, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    int64_t realSeekTime = -1;
+    Status ret = demuxerPlugin_->SeekTo(-1, 3000, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    ASSERT_EQ(ret, Status::OK);
+    ReadData();
+    int32_t framesFromEnd = frames_[0];
+    EXPECT_GT(framesFromEnd, 0);
+
+    RemoveValue();
+    ret = demuxerPlugin_->SeekTo(-1, 0, SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    ASSERT_EQ(ret, Status::OK);
+    ReadData();
+    int32_t framesFromStart = frames_[0];
+    EXPECT_GT(framesFromStart, framesFromEnd);
+}
+
+/**
+ * @tc.name: Demuxer_ErrorSeek_DSF_0012
+ * @tc.desc: Seek to invalid positions, expect failure
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSeek_DSF_0012, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    int64_t realSeekTime = 0;
+    EXPECT_NE(demuxerPlugin_->SeekTo(-1, -1000, SeekMode::SEEK_NEXT_SYNC, realSeekTime), Status::OK);
+    EXPECT_NE(demuxerPlugin_->SeekTo(-1, INT64_MAX, SeekMode::SEEK_NEXT_SYNC, realSeekTime), Status::OK);
 }
