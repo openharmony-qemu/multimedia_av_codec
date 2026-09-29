@@ -59,7 +59,7 @@ protected:
 
     void TearDown() override
     {
-        // Clear records before destruction to prevent DumpToFileInternal from logging errors or writing files
+        // Clear records before destruction to prevent DumpToFile from logging errors or writing files
         if (dumper_) {
             dumper_->records_.clear();
         }

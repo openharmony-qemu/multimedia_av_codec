@@ -110,6 +110,7 @@ public:
 
     void RecordPreDecode(const PreDecodeRecordCtx& ctx);
     void RecordPostDecode(const PostDecodeRecordCtx& ctx);
+    // Write all remaining records, including incomplete records and a tail shorter than the batch threshold.
     void DumpToFile();
 
 private:
@@ -122,7 +123,9 @@ private:
     void CreateNewPreRecord(const PreDecodeRecordCtx& ctx);
     void UpdateExistingPostRecord(const PostDecodeRecordCtx& ctx);
     void CreateNewPostRecord(const PostDecodeRecordCtx& ctx);
-    void DumpToFileInternal(bool force);
+    void TryDumpCompletedRecords();
+    // Caller holds mutex_; remove the first recordCount records only after a successful write.
+    void WriteRecordsToFileLocked(size_t recordCount);
 
     std::mutex mutex_;
     std::vector<FrameDumpRecord> records_;

@@ -164,7 +164,7 @@ void SmartFluencyDecodingDumper::RecordPreDecode(const PreDecodeRecordCtx& ctx)
         }
     }
     if (needDump) {
-        DumpToFileInternal(false);
+        TryDumpCompletedRecords();
     }
 }
 
@@ -233,7 +233,7 @@ void SmartFluencyDecodingDumper::RecordPostDecode(const PostDecodeRecordCtx& ctx
         }
     }
     if (needDump) {
-        DumpToFileInternal(false);
+        TryDumpCompletedRecords();
     }
 }
 
@@ -250,21 +250,30 @@ std::string SmartFluencyDecodingDumper::GetTimestampString()
 
 void SmartFluencyDecodingDumper::DumpToFile()
 {
-    DumpToFileInternal(true);
+    std::lock_guard<std::mutex> lock(mutex_);
+    WriteRecordsToFileLocked(records_.size());
 }
 
-void SmartFluencyDecodingDumper::DumpToFileInternal(bool force)
+void SmartFluencyDecodingDumper::TryDumpCompletedRecords()
 {
-    // Serialize selection, file append and removal with both recording paths.
     std::lock_guard<std::mutex> lock(mutex_);
     auto isComplete = [](const FrameDumpRecord& rec) {
         return rec.isPreRetained == 0 || (rec.isPreRetained == 1 && rec.isPostRetained >= 0);
     };
-    if (records_.empty() || (!force &&
-        static_cast<size_t>(std::count_if(records_.begin(), records_.end(), isComplete)) < MAX_DUMP_RECORDS)) {
+    size_t completedCount = static_cast<size_t>(std::count_if(records_.begin(), records_.end(), isComplete));
+    if (completedCount < MAX_DUMP_RECORDS) {
         return;
     }
-    auto end = force ? records_.end() : std::stable_partition(records_.begin(), records_.end(), isComplete);
+    std::stable_partition(records_.begin(), records_.end(), isComplete);
+    WriteRecordsToFileLocked(completedCount);
+}
+
+void SmartFluencyDecodingDumper::WriteRecordsToFileLocked(size_t recordCount)
+{
+    if (recordCount == 0) {
+        return;
+    }
+    auto end = records_.begin() + recordCount;
     std::vector<FrameDumpRecord> chunk(records_.begin(), end);
     std::sort(chunk.begin(), chunk.end(), [](const FrameDumpRecord& a, const FrameDumpRecord& b) {
         return a.pts < b.pts;
