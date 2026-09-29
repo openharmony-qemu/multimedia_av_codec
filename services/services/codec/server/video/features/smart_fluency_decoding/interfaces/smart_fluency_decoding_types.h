@@ -66,7 +66,7 @@ enum class SfdDecisionReason : int32_t {
     POST_RETAIN_ADAPTIVE_DT = 15,           // Retain: Adaptive strategy, Decision Tree (DT) allows retention
     POST_DROP_ADAPTIVE_DT = 16,             // Drop: Adaptive strategy, DT recommends dropping
     POST_RETAIN_AUTO_FALLBACK = 17,         // Retain: AutoFallback strategy, releasing at safe time interval
-    POST_RETAIN_SYNC_FRAME = 18,            // Retain: Output carries the sync-frame flag
+    POST_RETAIN_SYNC_FRAME = 18,            // Retain: Input carries the sync-frame flag
 };
 
 using OnStreamAuxInfoParsed = std::function<void(const StreamAuxInfo& info)>;

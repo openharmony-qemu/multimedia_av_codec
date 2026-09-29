@@ -246,6 +246,7 @@ void SmartFluencyDecoding::Flush()
         strategy_->Reset();
     }
     inBufferMap_.clear();
+    syncFramePts_.clear();
     noRefFrameMap_.clear();
     lastValidMVStats_ = {};
     hasValidMVStats_ = false;
@@ -424,6 +425,11 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         AVCODEC_LOGI_WITH_TAG("ignore eos frame");
         return true;
     }
+    bool isSyncFrame = (buffer->flag_ & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != 0;
+    if (isSyncFrame) {
+        std::lock_guard<std::mutex> lock(configMutex_);
+        syncFramePts_.insert(buffer->pts_);
+    }
     if (caps.requiresNalu && !naluAnalyzer_) {
         EnsureNaluAnalyzer();
     }
@@ -437,7 +443,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 #ifdef SFD_DEBUG
         res.naluCostUs = GetCurrentSysTimeUs() - naluStartUs;
 #endif
-        if (res.isNonRef) {
+        if (res.isNonRef && !isSyncFrame) {
             double currentPreRetenedRatio = dropSyncCoordinator_->GetPreRetainedRatio();
             if (DoubleUtils::IsGreaterOrEqual(caps.targetRatio, 1.0)) {
                 res.reason = SfdDecisionReason::PRE_RETAIN_TARGET_FULL;
@@ -496,7 +502,7 @@ void SmartFluencyDecoding::UpdateRetentionFeedback(bool shouldRetain)
 }
 
 bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts,
-    const sptr<SurfaceBuffer> surfaceBuffer, bool mvCacheInvalidated, bool isSyncFrame)
+    const sptr<SurfaceBuffer> surfaceBuffer, bool mvCacheInvalidated)
 {
     PostDecCost cost;
 #ifdef SFD_DEBUG
@@ -506,9 +512,11 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts,
         return true;
     }
     uint32_t preDropCount = dropSyncCoordinator_->GetAndConsumePreDroppedCount(pts);
+    bool isSyncFrame = false;
     StrategyCaps caps;
     {
         std::lock_guard<std::mutex> lock(configMutex_);
+        isSyncFrame = syncFramePts_.erase(pts) > 0;
         if (!strategy_) {
             return true;
         }

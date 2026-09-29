@@ -23,6 +23,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include "async_drop_dispatcher.h"
@@ -62,7 +63,7 @@ public:
     bool ReplayCsdToAnalyzer();
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer,
-                                bool mvCacheInvalidated, bool isSyncFrame = false);
+                                bool mvCacheInvalidated);
     void Flush();
     void OnDecInfoUpdate(double sourceFps, double speed);
     
@@ -131,6 +132,7 @@ private:
     bool naluAnalyzerJustCreated_{false};
     bool hasValidMVStats_{false};
     std::unordered_map<uint32_t, std::shared_ptr<AVBuffer>> inBufferMap_;
+    std::set<int64_t> syncFramePts_; // Guarded by configMutex_.
     SFDConfig config_{};
     std::optional<double> userConfiguredSpeed_{std::nullopt};
     bool isInitialized_{false};
