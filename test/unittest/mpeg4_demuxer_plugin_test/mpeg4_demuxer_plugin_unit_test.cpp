@@ -86,6 +86,16 @@ constexpr int32_t AAC_TEST_CORE_SAMPLE_RATE = 24000;
 constexpr int32_t AAC_TEST_CORE_SAMPLES_PER_FRAME = 1024;
 constexpr int32_t AAC_TEST_CHANNEL_COUNT = 2;
 constexpr int32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
+constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC = 2;
+constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_SBR = 5;
+constexpr uint8_t AAC_TEST_AUDIO_OBJECT_TYPE_BITS = 5;
+constexpr uint32_t AAC_TEST_ASC_SYNC_EXTENSION = 0x2B7;
+constexpr uint8_t AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS = 4;
+constexpr uint8_t AAC_TEST_CHANNEL_CONFIGURATION_BITS = 4;
+constexpr uint8_t AAC_TEST_GA_SPECIFIC_CONFIG_FLAGS_BITS = 3;
+constexpr uint8_t AAC_TEST_SYNC_EXTENSION_TYPE_BITS = 11;
+constexpr uint32_t AAC_TEST_96KHZ_SAMPLE_RATE = 96000;
+constexpr uint32_t AAC_TEST_96KHZ_SAMPLES_PER_FRAME = 1024;
 constexpr uint8_t AAC_TEST_ELEMENT_CPE = 1;
 constexpr uint8_t AAC_TEST_ELEMENT_FIL = 6;
 constexpr uint8_t AAC_TEST_ELEMENT_END = 7;
@@ -161,6 +171,27 @@ std::vector<uint8_t> BuildAacRawDataBlock(uint8_t extensionType, bool truncated 
     if (!truncated) {
         AppendAacTestBits(bits, AAC_TEST_ELEMENT_END, AAC_TEST_END_BITS);
     }
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    std::vector<uint8_t> data(bits.size() / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        data[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    return data;
+}
+
+std::vector<uint8_t> BuildAacAudioSpecificConfig(bool sbrPresent)
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC, AAC_TEST_AUDIO_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS); // 96 kHz sampling frequency index
+    AppendAacTestBits(bits, AAC_TEST_CHANNEL_COUNT, AAC_TEST_CHANNEL_CONFIGURATION_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_GA_SPECIFIC_CONFIG_FLAGS_BITS); // GASpecificConfig flags
+    AppendAacTestBits(bits, AAC_TEST_ASC_SYNC_EXTENSION, AAC_TEST_SYNC_EXTENSION_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_AUDIO_OBJECT_TYPE_SBR, AAC_TEST_AUDIO_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, sbrPresent ? 1 : 0, 1);
     while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
         bits.push_back(0);
     }
@@ -3310,6 +3341,29 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacImplicitSbrFallback_0
         EXPECT_EQ(sampleRate, AAC_TEST_CORE_SAMPLE_RATE);
         EXPECT_EQ(samplesPerFrame, AAC_TEST_CORE_SAMPLES_PER_FRAME);
     }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacExplicitSbrAbsent_001
+ * @tc.desc: Verify an explicit ASC SBR-absent signal prevents in-band SBR metadata promotion.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacExplicitSbrAbsent_001, TestSize.Level1)
+{
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Set<Tag::AUDIO_SAMPLE_RATE>(AAC_TEST_96KHZ_SAMPLE_RATE);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AAC_TEST_96KHZ_SAMPLES_PER_FRAME);
+    mediaInfo.tracks[0].Set<Tag::MEDIA_CODEC_CONFIG>(BuildAacAudioSpecificConfig(false));
+    auto data = BuildAacRawDataBlock(AAC_TEST_EXTENSION_SBR);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t sampleRate = 0;
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(sampleRate, AAC_TEST_96KHZ_SAMPLE_RATE);
+    EXPECT_EQ(samplesPerFrame, AAC_TEST_96KHZ_SAMPLES_PER_FRAME);
 }
 
 /**
