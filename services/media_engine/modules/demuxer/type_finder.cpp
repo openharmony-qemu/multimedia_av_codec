@@ -82,9 +82,11 @@ bool TypeFinder::IsSniffNeeded(std::string uri)
 
 void TypeFinder::Init(std::string uri, uint64_t mediaDataSize,
     std::function<Status(int32_t, uint64_t, size_t)> checkRange,
-    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&, bool)> peekRange, int32_t streamId)
+    std::function<Status(int32_t, uint64_t, size_t, std::shared_ptr<Buffer>&, bool)> peekRange,
+    StreamContext streamContext)
 {
-    streamID_ = streamId;
+    streamID_ = streamContext.streamId;
+    seekable_ = streamContext.seekable;
     mediaDataSize_ = mediaDataSize;
     checkRange_ = std::move(checkRange);
     peekRange_ = std::move(peekRange);
@@ -155,7 +157,7 @@ Status TypeFinder::GetSize(uint64_t& size)
 
 Plugins::Seekable TypeFinder::GetSeekable()
 {
-    return Plugins::Seekable::INVALID;
+    return seekable_;
 }
 
 std::string TypeFinder::SniffMediaType()

@@ -30,6 +30,9 @@
 #include <unistd.h>
 
 #include "demuxer_data_reader.h"
+#include "demuxer/type_finder.h"
+#include "plugin/cached_plugin_package.h"
+#include "plugin/plugin_list.h"
 #include "file_server_demo.h"
 #include "avc_parser_impl.h"
 #include "mpeg4_audio_parser.h"
@@ -567,6 +570,131 @@ public:
         return Status::ERROR_UNKNOWN;
     }
 };
+
+class SequentialReadDataSource final : public DataSource {
+public:
+    explicit SequentialReadDataSource(std::vector<uint8_t> data) : data_(std::move(data)) {}
+
+    Status ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override
+    {
+        requestedOffsets.emplace_back(offset);
+        readSizes.emplace_back(expectedLen);
+        actualOffsets.emplace_back(cursor_);
+        if (buffer == nullptr || buffer->GetMemory() == nullptr || cursor_ >= data_.size()) {
+            return Status::END_OF_STREAM;
+        }
+        size_t readSize = std::min(expectedLen, data_.size() - cursor_);
+        size_t written = buffer->GetMemory()->Write(data_.data() + cursor_, readSize, 0);
+        cursor_ += written;
+        return written > 0 ? Status::OK : Status::ERROR_UNKNOWN;
+    }
+
+    Status GetSize(uint64_t& size) override
+    {
+        size = data_.size();
+        return Status::OK;
+    }
+
+    Seekable GetSeekable() override
+    {
+        return Seekable::UNSEEKABLE;
+    }
+
+    int32_t GetStreamID() override
+    {
+        return 0;
+    }
+
+    bool IsDash() override
+    {
+        return false;
+    }
+
+    size_t GetCursor() const
+    {
+        return cursor_;
+    }
+
+    std::vector<int64_t> requestedOffsets;
+    std::vector<size_t> readSizes;
+    std::vector<size_t> actualOffsets;
+
+private:
+    std::vector<uint8_t> data_;
+    size_t cursor_ = 0;
+};
+
+void AppendU32(std::vector<uint8_t>& data, uint32_t value);
+
+std::vector<uint8_t> BuildFtypWithLateIsomBrand(size_t brandCount, size_t isomBrandIndex)
+{
+    constexpr uint32_t ftypAtom = 0x66747970;
+    constexpr uint32_t unknownBrand = 0x7A7A7A7A;
+    constexpr uint32_t isomBrand = 0x69736D6F;
+    constexpr size_t ftypAtomMinimumSize = 16;
+    std::vector<uint8_t> data;
+    AppendU32(data, static_cast<uint32_t>(ftypAtomMinimumSize + brandCount * sizeof(uint32_t)));
+    AppendU32(data, ftypAtom);
+    AppendU32(data, unknownBrand);
+    AppendU32(data, 0);
+    for (size_t index = 0; index < brandCount; ++index) {
+        AppendU32(data, index == isomBrandIndex ? isomBrand : unknownBrand);
+    }
+    return data;
+}
+
+Status ReadFromSequentialSourceWithPrefixCache(const std::shared_ptr<SequentialReadDataSource>& source,
+    const std::shared_ptr<std::vector<uint8_t>>& prefixCache, uint64_t offset, size_t size,
+    std::shared_ptr<Buffer>& buffer)
+{
+    auto outputMemory = buffer == nullptr ? nullptr : buffer->GetMemory();
+    if (outputMemory == nullptr) {
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    if (prefixCache->empty()) {
+        Status ret = source->ReadAt(static_cast<int64_t>(offset), buffer, size);
+        if (ret == Status::OK) {
+            prefixCache->assign(outputMemory->GetReadOnlyData(),
+                outputMemory->GetReadOnlyData() + outputMemory->GetSize());
+        }
+        return ret;
+    }
+    if (offset >= prefixCache->size()) {
+        return source->ReadAt(static_cast<int64_t>(offset), buffer, size);
+    }
+    size_t cacheOffset = static_cast<size_t>(offset);
+    size_t cachedSize = std::min(size, prefixCache->size() - cacheOffset);
+    outputMemory->Write(prefixCache->data() + cacheOffset, cachedSize, 0);
+    if (cachedSize == size) {
+        return Status::OK;
+    }
+    auto extension = Buffer::CreateDefaultBuffer(size - cachedSize);
+    if (extension == nullptr || extension->GetMemory() == nullptr) {
+        return Status::ERROR_NO_MEMORY;
+    }
+    Status ret = source->ReadAt(static_cast<int64_t>(prefixCache->size()), extension, size - cachedSize);
+    if (ret != Status::OK) {
+        return ret;
+    }
+    auto extensionMemory = extension->GetMemory();
+    prefixCache->insert(prefixCache->end(), extensionMemory->GetReadOnlyData(),
+        extensionMemory->GetReadOnlyData() + extensionMemory->GetSize());
+    outputMemory->Write(extensionMemory->GetReadOnlyData(), extensionMemory->GetSize(), cachedSize);
+    return Status::OK;
+}
+
+PluginSnifferFunc GetDemuxerSniffer(const std::string& pluginName)
+{
+    auto plugins = PluginList::GetInstance().GetPluginsByType(PluginType::DEMUXER);
+    auto plugin = std::find_if(plugins.begin(), plugins.end(), [&pluginName](const PluginDescription& description) {
+        return description.pluginName == pluginName;
+    });
+    if (plugin == plugins.end()) {
+        return nullptr;
+    }
+    auto pluginDef = PluginManagerV2::Instance().cachedPluginPackage_->GetPluginDef(*plugin);
+    return pluginDef == nullptr ? nullptr : pluginDef->GetSniffer();
+}
 
 void AppendU32(std::vector<uint8_t>& data, uint32_t value)
 {
@@ -3176,6 +3304,98 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetDataSourceWithProbSiz
     if (fd >= 0) {
         close(fd);
     }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_UnseekableSniff_UsesFfmpeg_001
+ * @tc.desc: Verify MPEG4 sniff does not consume sequential data beyond the shared prefix cache
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_UnseekableSniff_UsesFfmpeg_001, TestSize.Level1)
+{
+    constexpr size_t lateBrandCount = 5000;
+    constexpr size_t lateIsomBrandIndex = 4200;
+    auto data = BuildFtypWithLateIsomBrand(lateBrandCount, lateIsomBrandIndex);
+    auto source = std::make_shared<SequentialReadDataSource>(data);
+    auto prefixCache = std::make_shared<std::vector<uint8_t>>();
+    auto typeFinder = std::make_shared<TypeFinder>();
+    auto checkRange = [](int32_t, uint64_t, size_t) { return Status::OK; };
+    auto peekRange = [source, prefixCache](int32_t, uint64_t offset, size_t size,
+        std::shared_ptr<Buffer>& buffer, bool) {
+        return ReadFromSequentialSourceWithPrefixCache(source, prefixCache, offset, size, buffer);
+    };
+    typeFinder->Init("sequential.mp4", data.size(), checkRange, peekRange,
+        TypeFinder::StreamContext {0, Seekable::UNSEEKABLE});
+
+    constexpr size_t initialPrefixSize = 16U * 1024U;
+    std::vector<uint8_t> initialPrefix(initialPrefixSize);
+    auto prefixBuffer = std::make_shared<Buffer>();
+    ASSERT_NE(prefixBuffer->WrapMemory(initialPrefix.data(), initialPrefixSize, initialPrefixSize), nullptr);
+    ASSERT_EQ(typeFinder->ReadAt(0, prefixBuffer, initialPrefixSize), Status::OK);
+    EXPECT_EQ(typeFinder->GetSeekable(), Seekable::UNSEEKABLE);
+    auto mpeg4Sniffer = GetDemuxerSniffer(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(mpeg4Sniffer, nullptr);
+    EXPECT_EQ(mpeg4Sniffer(MPEG4_PLUGIN_NAME, typeFinder), 0);
+    EXPECT_EQ(source->requestedOffsets.size(), 1U);
+    EXPECT_EQ(source->GetCursor(), initialPrefixSize);
+    EXPECT_TRUE(std::equal(initialPrefix.begin(), initialPrefix.end(), prefixCache->begin()));
+
+    EXPECT_EQ(typeFinder->FindMediaType(), FFMPEG_MP4_PLUGIN_NAME);
+    EXPECT_TRUE(std::equal(data.begin(), data.begin() + 8, prefixCache->begin()));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_UnseekableSniff_SkipCondition_001
+ * @tc.desc: Verify MPEG4 sniff remains enabled for seekable and invalid seekability states
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_UnseekableSniff_SkipCondition_001, TestSize.Level1)
+{
+    constexpr size_t sniffBufferSize = 4096;
+    auto data = BuildFtypWithLateIsomBrand(1, 0);
+    data.resize(sniffBufferSize, 0);
+    auto mpeg4Sniffer = GetDemuxerSniffer(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(mpeg4Sniffer, nullptr);
+    for (Seekable seekable : {Seekable::SEEKABLE, Seekable::INVALID}) {
+        auto source = std::make_shared<SequentialReadDataSource>(data);
+        auto prefixCache = std::make_shared<std::vector<uint8_t>>();
+        auto typeFinder = std::make_shared<TypeFinder>();
+        auto checkRange = [](int32_t, uint64_t, size_t) { return Status::OK; };
+        auto peekRange = [source, prefixCache](int32_t, uint64_t offset, size_t size,
+            std::shared_ptr<Buffer>& buffer, bool) {
+            return ReadFromSequentialSourceWithPrefixCache(source, prefixCache, offset, size, buffer);
+        };
+        typeFinder->Init("state.mp4", data.size(), checkRange, peekRange, TypeFinder::StreamContext {0, seekable});
+        EXPECT_EQ(typeFinder->GetSeekable(), seekable);
+        auto prefixBuffer = Buffer::CreateDefaultBuffer(sniffBufferSize);
+        ASSERT_NE(prefixBuffer, nullptr);
+        ASSERT_EQ(typeFinder->ReadAt(0, prefixBuffer, sniffBufferSize), Status::OK);
+        EXPECT_GT(mpeg4Sniffer(MPEG4_PLUGIN_NAME, typeFinder), 0);
+        EXPECT_EQ(source->requestedOffsets.size(), 1U);
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_UnseekableSniff_NoCandidate_001
+ * @tc.desc: Verify unrecognized unseekable data remains unidentified when no sniffer scores it
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_UnseekableSniff_NoCandidate_001, TestSize.Level1)
+{
+    std::vector<uint8_t> data(4096, 0);
+    auto source = std::make_shared<SequentialReadDataSource>(data);
+    auto prefixCache = std::make_shared<std::vector<uint8_t>>();
+    auto typeFinder = std::make_shared<TypeFinder>();
+    auto checkRange = [](int32_t, uint64_t, size_t) { return Status::OK; };
+    auto peekRange = [source, prefixCache](int32_t, uint64_t offset, size_t size,
+        std::shared_ptr<Buffer>& buffer, bool) {
+        return ReadFromSequentialSourceWithPrefixCache(source, prefixCache, offset, size, buffer);
+    };
+    typeFinder->Init("unknown.bin", data.size(), checkRange, peekRange,
+        TypeFinder::StreamContext {0, Seekable::UNSEEKABLE});
+
+    EXPECT_TRUE(typeFinder->FindMediaType().empty());
+    EXPECT_EQ(source->requestedOffsets.size(), 1U);
 }
 
 /**

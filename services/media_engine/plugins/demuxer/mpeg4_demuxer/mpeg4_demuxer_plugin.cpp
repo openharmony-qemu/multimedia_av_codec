@@ -3421,6 +3421,19 @@ bool MPEG4DemuxerPlugin::IsAudioType(const MPEG4AtomParser::Track &track)
 }
 
 namespace {
+enum class SniffSkipReason {
+    NONE,
+    SOURCE_UNSEEKABLE,
+};
+
+SniffSkipReason GetSniffSkipReason(const std::shared_ptr<DataSource>& source)
+{
+    if (source != nullptr && source->GetSeekable() == Seekable::UNSEEKABLE) {
+        return SniffSkipReason::SOURCE_UNSEEKABLE;
+    }
+    return SniffSkipReason::NONE;
+}
+
 void IsMPEGPS(int64_t offset, int64_t kMaxOffset, const std::shared_ptr<DemuxerDataReader>& dataReader,
     int32_t& confidence)
 {
@@ -3595,6 +3608,14 @@ int Sniff(const std::string& pluginName, std::shared_ptr<DataSource> source)
     FALSE_RETURN_V_MSG_E(!pluginName.empty(), 0, "Plugin name is empty");
     FALSE_RETURN_V_MSG_E(pluginName == "avdemux_mpeg4", 0, "Plugin name is invalid");
     FALSE_RETURN_V_MSG_E(source != nullptr, 0, "source is nullptr");
+    switch (GetSniffSkipReason(source)) {
+        case SniffSkipReason::SOURCE_UNSEEKABLE:
+            MEDIA_LOG_I("Skip MPEG4 sniff for unseekable source");
+            return 0;
+        case SniffSkipReason::NONE:
+        default:
+            break;
+    }
     auto dataReader = std::make_shared<DemuxerDataReader>();
     FALSE_RETURN_V_MSG_E(dataReader != nullptr, 0, "dataReader allocation failed");
     dataReader->SetDataReader(source);
