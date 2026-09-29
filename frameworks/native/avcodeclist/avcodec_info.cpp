@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-#include <cmath>
-#include "avcodec_log.h"
-#include "avcodec_errors.h"
 #include "avcodec_info.h"
+#include <cmath>
+#include "avcodec_errors.h"
+#include "avcodec_log.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_FRAMEWORK, "AVCodecInfo"};
@@ -70,12 +70,12 @@ VideoCaps::VideoCaps(CapabilityData *capabilityData) : data_(capabilityData)
     CHECK_AND_RETURN_LOG(capabilityData != nullptr, "capabilityData is null");
     InitParams();
     LoadLevelParams();
-    AVCODEC_LOGD("VideoCaps:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("VideoCaps: Instances create");
 }
 
 VideoCaps::~VideoCaps()
 {
-    AVCODEC_LOGD("VideoCaps:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("VideoCaps: Instances destroy");
 }
 
 std::shared_ptr<AVCodecInfo> VideoCaps::GetCodecInfo()
@@ -539,12 +539,12 @@ Range VideoCaps::GetSupportedSqrFactor()
 
 AudioCaps::AudioCaps(CapabilityData *capabilityData) : data_(capabilityData)
 {
-    AVCODEC_LOGD("AudioCaps:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("AudioCaps: Instances create");
 }
 
 AudioCaps::~AudioCaps()
 {
-    AVCODEC_LOGD("AudioCaps:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("AudioCaps: Instances destroy");
 }
 
 std::shared_ptr<AVCodecInfo> AudioCaps::GetCodecInfo()
@@ -615,12 +615,12 @@ Range AudioCaps::GetSupportedComplexity()
 
 AVCodecInfo::AVCodecInfo(CapabilityData *capabilityData) : data_(capabilityData)
 {
-    AVCODEC_LOGD("AVCodecInfo:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("AVCodecInfo: Instances create");
 }
 
 AVCodecInfo::~AVCodecInfo()
 {
-    AVCODEC_LOGD("AVCodecInfo:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("AVCodecInfo: Instances destroy");
 }
 
 bool AVCodecInfo::isEncoder(int32_t codecType)

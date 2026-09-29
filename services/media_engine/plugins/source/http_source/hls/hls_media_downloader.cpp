@@ -90,7 +90,7 @@ void HlsMediaDownloader::OnMasterReady(bool needAudioManager, bool needSubtitles
     MEDIA_LOG_I("HlsMediaDownloader OnMasterReady Audio: %{public}d, Subtitles: %{public}d", needAudioManager,
         needSubtitlesManager);
     if (needAudioManager && !audioSegManager_) {
-        MEDIA_LOG_I("HlsMediaDownloader Audio OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+        MEDIA_LOG_I("HlsMediaDownloader Audio OnMasterReady: %{public}" PRIu64, avcodecUniqueId_);
         audioSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_AUDIO);
         audioSegManager_->Init();
         audioSegManager_->Clone(videoSegManager_);
@@ -98,7 +98,7 @@ void HlsMediaDownloader::OnMasterReady(bool needAudioManager, bool needSubtitles
         audioSegManager_->StartMediaDownload(audioDefaultStreamId, HlsSegmentType::SEG_AUDIO);
     }
     if (needSubtitlesManager && !subtitlesSegManager_) {
-        MEDIA_LOG_I("HlsMediaDownloader Subtitles OnMasterReady: 0x%{public}06" PRIXPTR, FAKE_POINTER(this));
+        MEDIA_LOG_I("HlsMediaDownloader Subtitles OnMasterReady: %{public}" PRIu64, avcodecUniqueId_);
         subtitlesSegManager_ = std::make_shared<HlsSegmentManager>(videoSegManager_, HlsSegmentType::SEG_SUBTITLE);
         subtitlesSegManager_->Init();
         subtitlesSegManager_->Clone(videoSegManager_);
@@ -109,11 +109,11 @@ void HlsMediaDownloader::OnMasterReady(bool needAudioManager, bool needSubtitles
 
 HlsMediaDownloader::~HlsMediaDownloader()
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor in", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " ~HlsMediaDownloader dtor in", avcodecUniqueId_);
     videoSegManager_ = nullptr;
     audioSegManager_ = nullptr;
     subtitlesSegManager_ = nullptr;
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " ~HlsMediaDownloader dtor out", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " ~HlsMediaDownloader dtor out", avcodecUniqueId_);
 }
 
 std::string HlsMediaDownloader::GetContentType()
@@ -131,7 +131,7 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
 
 void HlsMediaDownloader::Close(bool isAsync)
 {
-    MEDIA_LOG_I("0x%{public}06" PRIXPTR " HLS Close enter", FAKE_POINTER(this));
+    MEDIA_LOG_I("%{public}" PRIu64 " HLS Close enter", avcodecUniqueId_);
     FALSE_RETURN_MSG(videoSegManager_ != nullptr, "hls media downloader open failed, no video seg manager!");
     videoSegManager_->Close(isAsync);
 

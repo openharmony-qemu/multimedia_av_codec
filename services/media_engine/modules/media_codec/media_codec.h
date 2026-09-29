@@ -17,6 +17,7 @@
 #define MODULES_MEDIA_CODEC_H
 
 #include <cstring>
+#include "avcodec_dfx_component.h"
 #include "surface.h"
 #include "meta/meta.h"
 #include "buffer/avbuffer.h"
@@ -193,6 +194,7 @@ private:
     void ResetIOStat();
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
     std::shared_ptr<Plugins::CodecPlugin> codecPlugin_;
     std::shared_ptr<AVBufferQueue> inputBufferQueue_;
     std::shared_ptr<AVBuffer> cachedOutputBuffer_;

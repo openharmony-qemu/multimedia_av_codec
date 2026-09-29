@@ -21,6 +21,7 @@
 #include <thread>
 #include <mutex>
 #include <condition_variable>
+#include "avcodec_dfx_component.h"
 #include "buffer/avbuffer_queue.h"
 #include "buffer/avbuffer_queue_define.h"
 #include "plugin/muxer_plugin.h"
@@ -44,6 +45,8 @@ public:
     void OnEvent(const Plugins::PluginEvent &event) override;
 
 private:
+    uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
+
     enum class State {
         UNINITIALIZED,
         INITIALIZED,

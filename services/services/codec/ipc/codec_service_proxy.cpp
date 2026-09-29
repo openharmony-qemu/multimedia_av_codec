@@ -29,12 +29,12 @@ namespace MediaAVCodec {
 using namespace Media;
 CodecServiceProxy::CodecServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IStandardCodecService>(impl)
 {
-    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("Instances create");
 }
 
 CodecServiceProxy::~CodecServiceProxy()
 {
-    AVCODEC_LOGD_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("Instances destroy");
 }
 
 int32_t CodecServiceProxy::SetListenerObject(const sptr<IRemoteObject> &object)

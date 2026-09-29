@@ -25,12 +25,12 @@ namespace OHOS {
 namespace MediaAVCodec {
 AVCodecServiceProxy::AVCodecServiceProxy(const sptr<IRemoteObject> &impl) : IRemoteProxy<IStandardAVCodecService>(impl)
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances create");
 }
 
 AVCodecServiceProxy::~AVCodecServiceProxy()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances destroy");
 }
 
 int32_t AVCodecServiceProxy::GetSubSystemAbility(IStandardAVCodecService::AVCodecSystemAbility subSystemId,

@@ -85,7 +85,7 @@ CodecClient::CodecClient(const sptr<IStandardCodecService> &ipcProxy)
       converter_(std::make_shared<BufferConverter>()),
       syncMutex_(std::make_shared<std::recursive_mutex>())
 {
-    AVCODEC_LOGI_WITH_TAG("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGI_WITH_TAG("Instances create");
 }
 
 CodecClient::~CodecClient()
@@ -96,7 +96,7 @@ CodecClient::~CodecClient()
         SetNeedListen(false);
         circular_.SetIsRunning(false);
     }
-    AVCODEC_LOGI_WITH_TAG("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGI_WITH_TAG("Instances destroy");
 }
 
 void CodecClient::AVCodecServerDied()

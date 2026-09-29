@@ -90,7 +90,7 @@ namespace Media {
 MediaMuxer::MediaMuxer(int32_t appUid, int32_t appPid)
     : appUid_(appUid), appPid_(appPid), format_(Plugins::OutputFormat::DEFAULT)
 {
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " instances create", FAKE_POINTER(this));
+    MEDIA_LOG_D("%{public}" PRIu64 " instances create", avcodecUniqueId_);
 }
 
 MediaMuxer::~MediaMuxer()
@@ -104,7 +104,7 @@ MediaMuxer::~MediaMuxer()
     appPid_ = -1;
     muxer_ = nullptr;
     tracks_.clear();
-    MEDIA_LOG_D("0x%{public}06" PRIXPTR " instances destroy", FAKE_POINTER(this));
+    MEDIA_LOG_D("%{public}" PRIu64 " instances destroy", avcodecUniqueId_);
 }
 
 Status MediaMuxer::Init(int32_t fd, Plugins::OutputFormat format)

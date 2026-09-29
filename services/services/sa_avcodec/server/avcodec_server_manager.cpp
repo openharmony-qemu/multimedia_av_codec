@@ -74,12 +74,12 @@ AVCodecServerManager::AVCodecServerManager()
 {
     pid_ = getpid();
     Init();
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances create");
 }
 
 AVCodecServerManager::~AVCodecServerManager()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("Instances destroy");
 }
 
 void AVCodecServerManager::Init()

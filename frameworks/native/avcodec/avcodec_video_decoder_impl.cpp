@@ -90,7 +90,7 @@ int32_t AVCodecVideoDecoderImpl::Init(AVCodecType type, bool isMimeType, const s
 
 AVCodecVideoDecoderImpl::AVCodecVideoDecoderImpl()
 {
-    AVCODEC_LOGD_WITH_TAG("AVCodecVideoDecoderImpl:0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("AVCodecVideoDecoderImpl Instances create");
 }
 
 AVCodecVideoDecoderImpl::~AVCodecVideoDecoderImpl()
@@ -99,7 +99,7 @@ AVCodecVideoDecoderImpl::~AVCodecVideoDecoderImpl()
         (void)AVCodecServiceFactory::GetInstance().DestroyCodecService(codecClient_);
         codecClient_ = nullptr;
     }
-    AVCODEC_LOGD_WITH_TAG("AVCodecVideoDecoderImpl:0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD_WITH_TAG("AVCodecVideoDecoderImpl Instances destroy");
 }
 
 int32_t AVCodecVideoDecoderImpl::Configure(const Format &format)

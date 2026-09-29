@@ -76,7 +76,7 @@ std::shared_ptr<AudioCodecServer> AudioCodecServer::Create()
 
 AudioCodecServer::AudioCodecServer()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("%{public}" PRIu64 " Instances create", avcodecUniqueId_);
 }
 
 AudioCodecServer::~AudioCodecServer()
@@ -85,7 +85,7 @@ AudioCodecServer::~AudioCodecServer()
     avBufCallback_ = nullptr;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
 }
 
 int32_t AudioCodecServer::InitServer()
@@ -513,12 +513,12 @@ void AudioCodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<A
 
 CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<AudioCodecServer> &codec) : codec_(codec)
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("%{public}" PRIu64 " Instances create", avcodecUniqueId_);
 }
 
 CodecBaseCallback::~CodecBaseCallback()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
 }
 
 void CodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
@@ -554,12 +554,12 @@ void CodecBaseCallback::OnOutputBufferAvailable(uint32_t index, AVCodecBufferInf
 
 VCodecBaseCallback::VCodecBaseCallback(const std::shared_ptr<AudioCodecServer> &codec) : codec_(codec)
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances create", FAKE_POINTER(this));
+    AVCODEC_LOGD("%{public}" PRIu64 " Instances create", avcodecUniqueId_);
 }
 
 VCodecBaseCallback::~VCodecBaseCallback()
 {
-    AVCODEC_LOGD("0x%{public}06" PRIXPTR " Instances destroy", FAKE_POINTER(this));
+    AVCODEC_LOGD("%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
 }
 
 void VCodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
