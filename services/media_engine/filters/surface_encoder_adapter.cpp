@@ -37,6 +37,7 @@ constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
 constexpr uint32_t STOP_TIME_OUT_MS = 2000;
 constexpr uint32_t MAX_STOPPED_FRAMES_FOR_BOOST = 2;
+constexpr uint32_t MAX_SQR_FACTOR = 51;
 namespace OHOS {
 namespace Media {
 
