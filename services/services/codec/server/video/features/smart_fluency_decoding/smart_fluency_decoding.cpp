@@ -411,6 +411,19 @@ void SmartFluencyDecoding::RecordPostDecodeDump(
 #endif
 }
 
+bool SmartFluencyDecoding::PreparePreDecodeFrame(const std::shared_ptr<AVBuffer>& buffer, const StrategyCaps& caps)
+{
+    bool isSyncFrame = (buffer->flag_ & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != 0;
+    if (isSyncFrame) {
+        std::lock_guard<std::mutex> lock(configMutex_);
+        syncFramePts_.insert(buffer->pts_);
+    }
+    if (caps.requiresNalu && !naluAnalyzer_) {
+        EnsureNaluAnalyzer();
+    }
+    return isSyncFrame;
+}
+
 bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
 {
 #ifdef SFD_DEBUG
@@ -425,14 +438,7 @@ bool SmartFluencyDecoding::MakePreDecodeDecision(uint32_t index)
         AVCODEC_LOGI_WITH_TAG("ignore eos frame");
         return true;
     }
-    bool isSyncFrame = (buffer->flag_ & AVCODEC_BUFFER_FLAG_SYNC_FRAME) != 0;
-    if (isSyncFrame) {
-        std::lock_guard<std::mutex> lock(configMutex_);
-        syncFramePts_.insert(buffer->pts_);
-    }
-    if (caps.requiresNalu && !naluAnalyzer_) {
-        EnsureNaluAnalyzer();
-    }
+    bool isSyncFrame = PreparePreDecodeFrame(buffer, caps);
     PreDecResult res;
     if (naluAnalyzer_ && caps.requiresNalu) {
 #ifdef SFD_DEBUG

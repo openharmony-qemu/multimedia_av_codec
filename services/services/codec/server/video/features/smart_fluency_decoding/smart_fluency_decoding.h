@@ -107,6 +107,7 @@ private:
     void InvalidateMvCache(const sptr<SurfaceBuffer>& surfaceBuffer) const;
     void EnsureNaluAnalyzer();
     void EnsureMvAnalyzer();
+    bool PreparePreDecodeFrame(const std::shared_ptr<AVBuffer>& buffer, const StrategyCaps& caps);
     void ExecutePreDrop(uint32_t index, std::shared_ptr<AVBuffer> buffer);
     void ExecutePostDrop(uint32_t index);
     bool HandlePostDecodePassthrough(int64_t pts, uint32_t preDropCount, const PostDecCost& cost);
