@@ -557,6 +557,70 @@ const uint32_t ES_WMV3_MAIN[] = {
     30589
 };
 const uint32_t ES_WMV3_MAIN_LEN = sizeof(ES_WMV3_MAIN) / sizeof(ES_WMV3_MAIN[0]);
+const uint32_t ES_WMV1[] = {
+    39043, 39597, 2913, 6642, 644, 449, 463, 627, 514, 490,
+    667, 456, 18426, 621, 640, 367, 361, 525, 429, 392,
+    526, 676, 552, 430, 11866, 583, 360, 340, 371, 558,
+    511, 437, 465, 420, 396, 421, 9007, 489, 422, 484,
+    462, 491, 425, 486, 544, 602, 589, 613, 8635, 504,
+    431, 529, 510, 553, 649, 654, 557, 585, 593, 699,
+    8886, 629, 701, 599, 596, 585, 619, 670, 681, 651,
+    789, 737, 8839, 594, 579, 617, 650, 798, 765, 727,
+    748, 710, 802, 813, 8930, 770, 717, 788, 836, 875,
+    868, 933, 858, 883, 867, 870, 8943, 693, 724, 871,
+    904, 802, 870, 958, 878, 852, 891, 1053, 8770, 705,
+    716, 830, 899, 838, 896, 1011, 864, 900, 943, 944,
+    8600, 731, 825, 888, 913, 968, 1096, 971, 960, 891,
+    1006, 922, 8471, 843, 959, 968, 881, 887, 948, 873,
+    888, 1041, 1115, 923, 8400, 813, 693, 715, 791, 815,
+    1021, 881, 893, 817, 899, 833, 8143, 722, 702, 796,
+    858, 724, 910, 735, 796, 905, 924, 868, 8010, 619,
+    590, 642, 650, 676, 704, 803, 695, 678, 700, 641,
+    7872, 606, 646, 620, 584, 528, 619, 581, 676, 599,
+    646, 644, 7771, 470, 456, 409, 439, 595, 599, 635,
+    537, 486, 537, 497, 7677, 571, 420, 506, 491, 434,
+    480, 477, 513, 437, 475, 477, 7594, 432, 315, 391,
+    450, 412, 429, 420, 549, 431, 476, 565, 7458, 426,
+    323, 391, 475, 437, 440, 550, 512, 474, 494, 550,
+    7393, 433, 503, 466, 457, 345, 473, 491, 468, 424,
+    532, 392, 7473, 396, 339, 397, 409, 521, 471, 507,
+    429, 491, 477, 543, 7457, 535, 397, 475, 420, 535,
+    495, 503, 479, 535, 551, 499, 7417, 466, 376, 459,
+    493, 510, 523, 527, 472, 550, 535, 625, 7378, 456,
+    361, 469, 414, 484, 586, 530, 456, 542, 588, 501,
+    7309, 470, 505, 484, 402, 551, 554, 451, 383, 583,
+    537, 544, 7289, 472, 376, 453, 381, 558, 499, 451,
+    408, 509, 457, 485, 7371, 546, 383, 423, 373, 497,
+    494, 468, 435, 565, 550, 514, 7420, 466, 390, 467,
+    498, 521, 568, 524, 446, 614, 532, 589, 7506, 480,
+    393, 464, 404, 581, 521, 621, 467, 626, 520, 594,
+    7564, 499, 491, 495, 415, 508, 553, 507, 464, 574,
+    626, 536, 7544, 515, 434, 503, 455, 652, 547, 583,
+    476, 574, 627, 527, 7742, 606, 491, 488, 493, 502,
+    631, 598, 553, 579, 603, 509, 7825, 518, 439, 481,
+    553, 569, 617, 564, 556, 419, 601, 690, 7945, 508,
+    410, 541, 509, 591, 572, 653, 533, 646, 574, 712,
+    8078, 595, 601, 622, 503, 610, 591, 718, 563, 688,
+    640, 704, 8161, 553, 494, 578, 526, 638, 659, 692,
+    584, 672, 630, 676, 8410, 693, 552, 667, 579, 656,
+    704, 706, 652, 686, 645, 682, 8501, 625, 493, 659,
+    637, 664, 603, 705, 610, 698, 647, 747, 8664, 631,
+    523, 682, 606, 692, 700, 854, 700, 727, 708, 859,
+    8820, 617, 689, 713, 617, 674, 695, 814, 662, 780,
+    833, 851, 9050, 650, 562, 685, 653, 766, 749, 827,
+    682, 635, 1076, 802, 9622, 818, 622, 693, 750, 765,
+    853, 776, 890, 801, 752, 757, 9862, 687, 663, 693,
+    873, 746, 767, 758, 833, 770, 722, 827, 9765, 646,
+    572, 662, 706, 736, 732, 833, 878, 778, 754, 797,
+    9878, 720, 780, 758, 819, 822, 760, 881, 926, 923,
+    887, 926, 10113, 767, 662, 742, 833, 864, 794, 814,
+    966, 878, 821, 861, 10366, 874, 678, 760, 849, 863,
+    831, 895, 898, 856, 811, 864, 10359, 767, 691, 787,
+    881, 877, 847, 835, 922, 845, 839, 905, 10296, 753,
+    676, 703, 771, 793, 767, 882, 896, 835, 829, 790,
+    10201, 757, 861, 729
+};
+const uint32_t ES_WMV1_LEN = sizeof(ES_WMV1) / sizeof(ES_WMV1[0]);
 
 #ifdef SUPPORT_CODEC_RV
 const uint32_t ES_RV30[] = {
@@ -2122,6 +2186,125 @@ void Msvideo1Reader::Msvideo1UnitReader::PrereadMsvideo1Unit()
 void Wmv3Reader::Wmv3MetaUnitReader::PrereadFile()
 {
     CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nallptr");
+    inputFile_->read((char *)prereadBuffer_.get(), PREREAD_BUFFER_SIZE);
+    prereadBufferSize_ = inputFile_->gcount();
+    pPrereadBuffer_ = 0;
+}
+
+int32_t Wmv1Reader::Init(const std::shared_ptr<Wmv1ReaderInfo> &info)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    std::shared_ptr<std::ifstream> inputFile = std::make_unique<std::ifstream>(info->inPath.c_str(),
+                                                std::ios::binary | std::ios::in);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(inputFile != nullptr && inputFile->is_open(),
+                                      AV_ERR_INVALID_VAL, "Open input file failed");
+    wmv1UnitReader_ = std::static_pointer_cast<Wmv1UnitReader>(std::make_shared<Wmv1MetaUnitReader>(inputFile));
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(wmv1UnitReader_, AV_ERR_INVALID_VAL, "wmv1 unit reader create failed");
+    return AV_ERR_OK;
+}
+
+void Wmv1Reader::FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t frameType,
+                                bool isEosFrame)
+{
+    (void) frameType;
+    attr.size += frameSize;
+    attr.pts = GetTimeUs();
+    if (isEosFrame) {
+        attr.flags = AVCODEC_BUFFER_FLAG_EOS;
+        std::cout << "Input EOS Frame, frameCount = " << (frameInputCount_ + 1) << std::endl;
+    }
+}
+
+int32_t Wmv1Reader::FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    int32_t frameSize = 0;
+    bool isEosFrame = false;
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(wmv1UnitReader_ != nullptr, AV_ERR_INVALID_VAL, "wmv1UnitReader_ is nullptr");
+    auto ret = wmv1UnitReader_->ReadWmv1Unit(bufferAddr, frameSize, isEosFrame);
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(ret == AV_ERR_OK, AV_ERR_INVALID_VAL, "ReadWmv1Unit failed");
+    uint8_t frameType = 0x00;
+    bufferAddr += frameSize;
+    FillBufferAttr(attr, frameSize, frameType, isEosFrame);
+    frameInputCount_++;
+
+    return AV_ERR_OK;
+}
+
+bool Wmv1Reader::IsEOS() const
+{
+    return wmv1UnitReader_ ? wmv1UnitReader_->IsEOS() : true;
+}
+
+uint8_t const *Wmv1Reader::Wmv1UnitReader::GetNextWmv1UnitAddr() const
+{
+    CHECK_AND_RETURN_RET_LOG(wmv1Unit_ != nullptr, nullptr, "wmv1Unit_ is nullptr");
+    return wmv1Unit_->data();
+}
+
+int32_t Wmv1Reader::Wmv1MetaUnitReader::ReadWmv1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame)
+{
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(bufferAddr != nullptr, AV_ERR_INVALID_VAL, "Got a invalid buffer addr");
+    UNITTEST_CHECK_AND_RETURN_RET_LOG(wmv1Unit_, AV_ERR_INVALID_VAL, "wmv1 unit buffer is nullptr");
+    bufferSize = wmv1Unit_->size();
+    memcpy_s(bufferAddr, bufferSize, wmv1Unit_->data(), bufferSize);
+    std::cout << "bufferSize = " << (bufferSize) << std::endl;
+
+    if (!IsEOF()) {
+        isEosFrame = false;
+        PrereadWmv1Unit();
+    } else {
+        isEosFrame = true;
+        wmv1Unit_->clear();
+    }
+    return AV_ERR_OK;
+}
+
+Wmv1Reader::Wmv1MetaUnitReader::Wmv1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile)
+{
+    inputFile_ = inputFile;
+    prereadBuffer_ = std::make_unique<uint8_t []>(PREREAD_BUFFER_SIZE);
+    wmv1Unit_ = std::make_unique<std::vector<uint8_t>>(MAX_NALU_SIZE);
+    PrereadWmv1Unit();
+}
+
+bool Wmv1Reader::Wmv1MetaUnitReader::IsEOS()
+{
+    return IsEOF() && wmv1Unit_->empty();
+}
+
+bool Wmv1Reader::Wmv1MetaUnitReader::IsEOF()
+{
+    return frameIndex_ >= ES_WMV1_LEN;
+}
+
+uint32_t Wmv1Reader::Wmv1MetaUnitReader::GetFrameLenth(uint32_t index) const
+{
+    return ES_WMV1[index];
+}
+
+void Wmv1Reader::Wmv1MetaUnitReader::PrereadWmv1Unit()
+{
+    CHECK_AND_RETURN_LOG(inputFile_ && inputFile_->is_open(), "Input file not open");
+    CHECK_AND_RETURN_LOG(wmv1Unit_ != nullptr, "wmv1 unit buffer is nullptr");
+    CHECK_AND_RETURN_LOG(frameIndex_ < ES_WMV1_LEN, "All wmv1 frames have been read");
+
+    uint32_t frameSize = GetFrameLenth(frameIndex_);
+    wmv1Unit_->resize(frameSize);
+    auto pBuffer = wmv1Unit_->data();
+
+    inputFile_->read(reinterpret_cast<char*>(pBuffer), frameSize);
+    uint32_t bytesRead = static_cast<uint32_t>(inputFile_->gcount());
+
+    CHECK_AND_RETURN_LOG(bytesRead == frameSize,
+        "Failed to read full frame. Expected: %u, Got: %u", frameSize, bytesRead);
+
+    frameIndex_++;
+}
+
+void Wmv1Reader::Wmv1MetaUnitReader::PrereadFile()
+{
+    CHECK_AND_RETURN_LOG(prereadBuffer_, "Preread buffer is nullptr");
     inputFile_->read((char *)prereadBuffer_.get(), PREREAD_BUFFER_SIZE);
     prereadBufferSize_ = inputFile_->gcount();
     pPrereadBuffer_ = 0;

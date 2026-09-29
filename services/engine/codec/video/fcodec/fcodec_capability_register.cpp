@@ -51,6 +51,15 @@ constexpr int32_t VC1_BLOCKPERSEC_SIZE = 489600;
 constexpr int32_t MSVIDEO1_MIN_WIDTH_SIZE = 4;
 constexpr int32_t MSVIDEO1_MIN_HEIGHT_SIZE = 4;
 constexpr int32_t MSVIDEO1_BLOCKPERSEC_SIZE = 3932160;
+constexpr int32_t WMV1_ALIGNMENT_SIZE = 2;
+constexpr int32_t WMV1_MAX_FRAMERATE_SIZE = 60;
+constexpr int32_t WMV1_MIN_WIDTH_SIZE = 16;
+constexpr int32_t WMV1_MAX_WIDTH_SIZE = 4096;
+constexpr int32_t WMV1_MIN_HEIGHT_SIZE = 16;
+constexpr int32_t WMV1_MAX_HEIGHT_SIZE = 4096;
+constexpr int32_t WMV1_BITRATE_MAX_SIZE = 20000000;
+constexpr int32_t WMV1_MAX_BLOCKPERFRAME_SIZE = 139264;
+constexpr int32_t WMV1_MAX_BLOCKPERSEC_SIZE = 8355840;
 constexpr int32_t WMV3_ALIGNMENT_SIZE = 2;
 constexpr int32_t WMV3_MAX_FRAMERATE_SIZE = 30;
 constexpr int32_t WMV3_MIN_WIDTH_SIZE = 16;
@@ -346,6 +355,24 @@ void GetMsVideo1CapProf(std::vector<CapabilityData> &capaArray)
     }
 }
 
+void GetWmv1CapProf(std::vector<CapabilityData> &capaArray)
+{
+    if (!capaArray.empty()) {
+        CapabilityData& capsData = capaArray.back();
+        capsData.alignment.width = WMV1_ALIGNMENT_SIZE;
+        capsData.alignment.height = WMV1_ALIGNMENT_SIZE;
+        capsData.width.minVal = WMV1_MIN_WIDTH_SIZE;
+        capsData.height.minVal = WMV1_MIN_HEIGHT_SIZE;
+        capsData.width.maxVal = WMV1_MAX_WIDTH_SIZE;
+        capsData.height.maxVal = WMV1_MAX_HEIGHT_SIZE;
+        capsData.bitrate.maxVal = WMV1_BITRATE_MAX_SIZE;
+        capsData.blockPerFrame.maxVal = WMV1_MAX_BLOCKPERFRAME_SIZE;
+        capsData.blockPerSecond.maxVal = WMV1_MAX_BLOCKPERSEC_SIZE;
+        capsData.frameRate.maxVal = WMV1_MAX_FRAMERATE_SIZE;
+        capsData.supportSwapWidthHeight = true;
+    }
+}
+
 void GetWmv3CapProf(std::vector<CapabilityData> &capaArray)
 {
     if (!capaArray.empty()) {
@@ -505,6 +532,8 @@ int32_t FCodec::GetCodecCapability(std::vector<CapabilityData> &capaArray)
 #endif
         } else if (capsData.mimeType == "video/msvideo1") {
             GetMsVideo1CapProf(capaArray);
+        } else if (capsData.mimeType == "video/wmv1") {
+            GetWmv1CapProf(capaArray);
         } else if (capsData.mimeType == "video/wmv3") {
             GetWmv3CapProf(capaArray);
 #ifdef SUPPORT_CODEC_RV
@@ -546,6 +575,8 @@ static ResolutionRange GetResolutionRange(const std::string &codecName)
     } else if (codecName == AVCodecCodecName::VIDEO_DECODER_WVC1_NAME) {
         range = {2, 1920, 2, 1080}; // WVC1: [2, 1920] x [2, 1080]
 #endif
+    } else if (codecName == AVCodecCodecName::VIDEO_DECODER_WMV1_NAME) {
+        range = {16, 4096, 16, 4096}; // WMV1: [16, 4096] x [16, 4096]
     } else if (codecName == AVCodecCodecName::VIDEO_DECODER_WMV3_NAME) {
         range = {16, 1920, 16, 1080}; // WMV3: [16, 1920] x [16, 1080]
     } else if (codecName == AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME) {

@@ -480,6 +480,55 @@ private:
     std::shared_ptr<Wmv3UnitReader> wmv3UnitReader_ = nullptr;
 };
 
+struct Wmv1ReaderInfo {
+    std::string inPath;
+};
+
+class Wmv1Reader : public DataProducerBase {
+public:
+    int32_t FillBuffer(uint8_t *bufferAddr, OH_AVCodecBufferAttr &attr) override;
+    void FillBufferAttr(OH_AVCodecBufferAttr &attr, int32_t frameSize, uint8_t frameType, bool isEosFrame);
+    bool IsEOS() const;
+    int32_t Init(const std::shared_ptr<Wmv1ReaderInfo> &info);
+    std::mutex mutex_;
+    int32_t frameInputCount_ = 0;
+private:
+    class Wmv1UnitReader {
+    public:
+        explicit Wmv1UnitReader(std::shared_ptr<std::ifstream> inputFile) : inputFile_(inputFile) {}
+        virtual ~Wmv1UnitReader() {};
+        uint8_t const *GetNextWmv1UnitAddr() const;
+        virtual int32_t ReadWmv1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEos) = 0;
+        virtual bool IsEOS() = 0;
+        virtual void PrereadFile() = 0;
+
+    protected:
+        Wmv1UnitReader() {};
+        virtual bool IsEOF() = 0;
+        std::unique_ptr<std::vector<uint8_t>> wmv1Unit_ = nullptr;
+        std::shared_ptr<std::ifstream> inputFile_ = nullptr;
+    };
+
+    class Wmv1MetaUnitReader : public Wmv1UnitReader {
+    public:
+        explicit Wmv1MetaUnitReader(std::shared_ptr<std::ifstream> inputFile);
+        int32_t ReadWmv1Unit(uint8_t *bufferAddr, int32_t &bufferSize, bool &isEosFrame) override;
+        bool IsEOS() override;
+        void PrereadFile() override;
+        void PrereadWmv1Unit();
+
+    private:
+        bool IsEOF() override;
+        uint32_t GetFrameLenth(uint32_t index) const;
+        std::unique_ptr<uint8_t []> prereadBuffer_ = nullptr;
+        uint32_t prereadBufferSize_ = 0;
+        uint32_t pPrereadBuffer_ = 0;
+        uint32_t frameIndex_ = 0;
+    };
+
+    std::shared_ptr<Wmv1UnitReader> wmv1UnitReader_ = nullptr;
+};
+
 #ifdef SUPPORT_CODEC_VP8
 struct Vp8ReaderInfo {
     std::string inPath;

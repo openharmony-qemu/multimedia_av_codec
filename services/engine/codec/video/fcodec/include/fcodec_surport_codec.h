@@ -50,6 +50,7 @@ constexpr CodecInfo SUPPORT_VCODEC[] = {
     {AVCodecCodecName::VIDEO_DECODER_WVC1_NAME, CodecMimeType::VIDEO_WVC1, "vc1"},            // WVC1 视频解码器
 #endif
     {AVCodecCodecName::VIDEO_DECODER_MSVIDEO1_NAME, CodecMimeType::VIDEO_MSVIDEO1, "msvideo1"}, // MS Video 1 视频解码器
+    {AVCodecCodecName::VIDEO_DECODER_WMV1_NAME, CodecMimeType::VIDEO_WMV1, "wmv1"},             // WMV1 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_WMV3_NAME, CodecMimeType::VIDEO_WMV3, "wmv3"},             // WMV3 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_MJPEG_NAME, CodecMimeType::VIDEO_MJPEG, "mjpeg"},          // MJPEG 视频解码器
     {AVCodecCodecName::VIDEO_DECODER_DVVIDEO_NAME, CodecMimeType::VIDEO_DVVIDEO, "dvvideo"},    // DVVIDEO 视频解码器

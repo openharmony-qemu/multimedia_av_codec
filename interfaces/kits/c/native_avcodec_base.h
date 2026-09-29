@@ -364,6 +364,13 @@ extern const char *OH_AVCODEC_MIMETYPE_VIDEO_MPEG4_PART2;
 extern const char *OH_AVCODEC_MIMETYPE_VIDEO_H263;
 
 /**
+ * @brief Enumerates the MIME type of video WMV1 codec.
+ *
+ * @since 26.2.0
+ */
+extern const char *OH_AVCODEC_MIMETYPE_VIDEO_WMV1;
+
+/**
  * @brief Enumerates the MIME type of video WMV3 codec.
  *
  * @since 22
