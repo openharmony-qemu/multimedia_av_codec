@@ -292,7 +292,7 @@ void HttpMediaDownloader::UpdateDownloadFinished(const std::string &url, const s
     (void) location;
     auto downloadRequest = GetDownloadRequest();
     if (downloadRequest != nullptr && downloadRequest->IsEos() &&
-        totalBits_.load()>= downloadRequest->GetFileContentLengthNoWait() * BYTES_TO_BIT) {
+        totalBits_.load() >= static_cast<uint64_t>(downloadRequest->GetFileContentLengthNoWait()) * BYTES_TO_BIT) {
         isDownloadFinish_.store(true);
     }
     int64_t nowTime = steadyClock_.ElapsedMilliseconds();
@@ -309,7 +309,7 @@ Status HttpMediaDownloader::ReadRingBuffer(unsigned char* buff, ReadDataInfo& re
 {
     auto downloadRequest = GetDownloadRequest();
     FALSE_RETURN_V(downloadRequest != nullptr, Status::ERROR_UNKNOWN);
-    size_t fileContentLength = downloadRequest->GetFileContentLength();
+    size_t fileContentLength = static_cast<size_t>(downloadRequest->GetFileContentLength());
     uint64_t mediaOffset = ringBuffer_->GetMediaOffset();
     if (fileContentLength > mediaOffset) {
         uint64_t remain = fileContentLength - mediaOffset;
@@ -685,7 +685,7 @@ bool HttpMediaDownloader::ChangeDownloadPos(bool isSeekHit)
         isNeedDropData_.store(false);
         seekOffset += GetCurrentBufferSize();
         auto downloadRequest = GetDownloadRequest();
-        size_t fileContentLength = downloadRequest ? downloadRequest->GetFileContentLength() : 0;
+        size_t fileContentLength = downloadRequest ? static_cast<size_t>(downloadRequest->GetFileContentLength()) : 0;
         if (seekOffset >= static_cast<uint64_t>(fileContentLength)) {
             MEDIA_LOG_W("HTTP seekOffset invalid, readOffset " PUBLIC_LOG_ZU " seekOffset " PUBLIC_LOG_U64
                 " fileContentLength " PUBLIC_LOG_ZU, readOffset_, seekOffset, fileContentLength);
@@ -719,7 +719,7 @@ bool HttpMediaDownloader::HandleSeekHit(int64_t offset)
         return true;
     }
     auto downloadRequest = GetDownloadRequest();
-    size_t fileContentLength = downloadRequest ? downloadRequest->GetFileContentLength() : 0;
+    size_t fileContentLength = downloadRequest ? static_cast<size_t>(downloadRequest->GetFileContentLength()) : 0;
     size_t downloadOffset = static_cast<size_t>(offset) + cacheMediaBuffer_->GetBufferSize(offset);
     if (downloadOffset >= fileContentLength) {
         MEDIA_LOG_W("HTTP downloadOffset invalid, offset " PUBLIC_LOG_D64 " downloadOffset " PUBLIC_LOG_ZU
@@ -768,7 +768,7 @@ bool HttpMediaDownloader::SeekCacheBuffer(int64_t offset, bool& isSeekHit)
     MEDIA_LOG_I("HTTP Seek miss.");
 
     auto downloadRequest = GetDownloadRequest();
-    size_t fileContentLength = downloadRequest ? downloadRequest->GetFileContentLength() : 0;
+    size_t fileContentLength = downloadRequest ? static_cast<size_t>(downloadRequest->GetFileContentLength()) : 0;
     isNeedClearHasRead_.store(fileContentLength > LARGE_VIDEO_THRESHOLD);
 
     uint64_t diff = static_cast<size_t>(offset) > writeOffset_.load() ?
@@ -796,7 +796,7 @@ size_t HttpMediaDownloader::GetContentLength() const
     if (!downloadRequest || downloadRequest->IsClosed()) {
         return 0;
     }
-    return downloadRequest->GetFileContentLength();
+    return static_cast<size_t>(downloadRequest->GetFileContentLength());
 }
 
 int64_t HttpMediaDownloader::GetDuration() const
@@ -814,7 +814,7 @@ std::vector<SeekRange> HttpMediaDownloader::GetSeekableRanges() const
 {
     std::shared_lock<std::shared_mutex> lock(downloadRequestMutex_);
     FALSE_RETURN_V(downloadRequest_ != nullptr, {});
-    size_t fileLength = downloadRequest_->GetFileContentLength();
+    size_t fileLength = static_cast<size_t>(downloadRequest_->GetFileContentLength());
     bool isFullyDownloaded = isDownloadFinish_.load() && downloadRequest_->IsEos();
     bool canSeek = downloadRequest_->IsServerAcceptRange() || isFullyDownloaded;
     int64_t durationUs = GetDuration();
@@ -938,7 +938,7 @@ bool HttpMediaDownloader::EnsureCacheBufferInited()
         MEDIA_LOG_I("HTTP CacheBuffer create failed.");
         return false;
     }
-    size_t fileContentLen = downloadRequest->GetFileContentLength();
+    size_t fileContentLen = static_cast<size_t>(downloadRequest->GetFileContentLength());
     if (fileContentLen > MAX_BUFFER_SIZE - BUFFER_REDUNDANCY) {
         MEDIA_LOG_W("HTTP fileContentLen " PUBLIC_LOG_ZU " exceeds buffer cap, clamp to MAX_BUFFER_SIZE",
             fileContentLen);
@@ -1488,7 +1488,7 @@ bool HttpMediaDownloader::IsFlvLive()
     FALSE_RETURN_V_MSG_E(downloader != nullptr, false, "downloader is nullptr");
     auto downloadRequest = GetDownloadRequest();
     FALSE_RETURN_V_MSG_E(downloadRequest != nullptr, false, "downloadRequest is nullptr");
-    size_t fileContentLen = downloadRequest->GetFileContentLength();
+    size_t fileContentLen = static_cast<size_t>(downloadRequest->GetFileContentLength());
     return fileContentLen == 0 && isRingBuffer_;
 }
 

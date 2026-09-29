@@ -1791,7 +1791,7 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
             return;
         }
         writeTsIndex_++;
-        size_t fragmentSize = downloadRequest->GetFileContentLength();
+        int64_t fragmentSize = downloadRequest->GetFileContentLength();
         double duration = downloadRequest->GetDuration();
         CalculateBitRate(fragmentSize, duration);
         PutRequestIntoDownloader(playInfo);

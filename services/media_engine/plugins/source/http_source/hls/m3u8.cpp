@@ -600,7 +600,7 @@ uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
     FALSE_RETURN_V(data != nullptr, 0);
     AutoLock lock(headerMutex_);
     if (fmp4Header_ == nullptr && downloadHeaderRequest_) {
-        uint32_t headerLen = downloadHeaderRequest_->GetFileContentLengthNoWait();
+        uint32_t headerLen = static_cast<uint32_t>(downloadHeaderRequest_->GetFileContentLengthNoWait());
         headerLen = headerLen > 0 ? headerLen : DEFAULT_HEADER_SIZE; // 1MB
         headerLen = std::min(headerLen, DEFAULT_MAX_SIZE);
         fmp4Header_ = new(std::nothrow) uint8_t[headerLen];
