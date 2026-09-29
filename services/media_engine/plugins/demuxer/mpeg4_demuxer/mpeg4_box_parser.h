@@ -239,6 +239,7 @@ private:
     bool hasIncompleteSidxReference_;
     bool hasMoofBox_;
     bool moovFound_;
+    bool allowTruncatedMoovChildren_ = false;
     Status pendingSampleTableStatus_ {Status::OK};
     Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
     int32_t movieTimeScale_ = 1;
