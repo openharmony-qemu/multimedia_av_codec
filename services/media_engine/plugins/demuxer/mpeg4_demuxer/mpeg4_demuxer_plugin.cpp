@@ -1870,7 +1870,6 @@ void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta 
         track.codecParms.annexbExtradataSize = extradataSize;
         track.codecParms.hasValidExtradata = true;
         if (parseAvcMetadataFromCsd && mime == MimeType::VIDEO_AVC && annexbReady) {
-            streamParsers_->ParseAnnexbExtraData(trackIndex, extradata, extradataSize);
             ParseAVCMetadataInfo(track, format);
         }
     }

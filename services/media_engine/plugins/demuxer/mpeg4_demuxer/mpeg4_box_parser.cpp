@@ -63,6 +63,8 @@ constexpr uint64_t MAX_NON_MDAT_ATOM_PAYLOAD_SIZE = 64ULL * 1024 * 1024;
 constexpr int32_t MDAT_ATOM_TYPE = FourccType("mdat");
 constexpr int32_t MOOV_ATOM_TYPE = FourccType("moov");
 constexpr uint64_t MAX_TITLE_SIZE = 24;
+// Align with FFmpegFormatHelper's 10 MiB public extradata limit. This is
+// independent from the cumulative per-stsd codec-config limit below.
 constexpr uint64_t MAX_EXTRA_DATA_SIZE = 10ULL * 1024 * 1024;
 constexpr uint64_t MAX_TOTAL_CODEC_CONFIG_SIZE = 16ULL * 1024 * 1024;
 constexpr uint64_t MAX_DATA_SIZE = 256;
@@ -750,8 +752,11 @@ Status MPEG4AtomParser::ParseContainerAtom(const MPEG4Atom& containerAtom, int32
         if (isPadding) {
             break;
         }
+        int64_t childOffset = ctx->offset;
         ret = MPEG4ParseAtom(depth + 1, ctx);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse atom at offset " PUBLIC_LOG_D64, ctx->offset);
+        FALSE_RETURN_V_MSG_E(ctx->offset > childOffset, Status::ERROR_INVALID_DATA,
+            "Child atom did not advance container offset");
     }
     FALSE_RETURN_V_MSG_E(ctx->offset == endOffset, Status::ERROR_INVALID_DATA,
         "Finished parsing container atom at offset " PUBLIC_LOG_D64 ", expected end at " PUBLIC_LOG_D64,
@@ -783,6 +788,8 @@ Status MPEG4AtomParser::PrepareChildAtomInContainer(int64_t endOffset, ParseCont
     constexpr int64_t basicHeaderSize = 8;
     constexpr uint32_t basicHeaderSize32 = 8;
     constexpr uint64_t basicHeaderSizeU64 = 8;
+    // This resource has a 2..7 size prefix followed by a complete atom header.
+    // Skip only that prefix so the next pass can parse the real header.
     if (allowTruncatedMoovChildren_ && childSize32 > 1 && childSize32 < basicHeaderSize32 &&
         ctx->offset + basicHeaderSize <= endOffset) {
         ctx->offset += sizeof(uint32_t);
