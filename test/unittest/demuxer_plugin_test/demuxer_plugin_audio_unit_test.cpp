@@ -24,6 +24,9 @@
 #include <gtest/gtest.h>
 #include "media_description.h"
 #include "file_server_demo.h"
+#include "meta/meta.h"
+#include "meta/meta_key.h"
+#include "meta/video_types.h"
 #include <numeric>
 #include <vector>
 
@@ -47,6 +50,8 @@ string g_wavPath2 = string("/data/test/media/audio/wav_48000_1_pcm_alaw.wav");
 string g_amrPath1 = string("/data/test/media/audio/amr_nb_8000_1.amr");
 string g_amrPath2 = string("/data/test/media/audio/amr_wb_16000_1.amr");
 string g_apePath1 = string("/data/test/media/ape_test.ape");
+// DSF
+string g_dsfPath = string("/data/test/media/DSD128.dsf");
 
 /**
  * @tc.name: Demuxer_ReadSample_M4A_0001
@@ -526,4 +531,141 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_URI_APE_0001, TestSize.Level1
     std::vector<uint32_t> numbers(7);
     std::iota(numbers.begin(), numbers.end(), 0);
     CheckAllFrames({7}, {7}, numbers);
+}
+
+static Meta *FindAudioTrack(MediaInfo &mediaInfo)
+{
+    for (uint32_t i = 0; i < mediaInfo.tracks.size(); ++i) {
+        Plugins::MediaType trackType = Plugins::MediaType::UNKNOWN;
+        if (mediaInfo.tracks[i].GetData(Tag::MEDIA_TYPE, trackType) &&
+            trackType == Plugins::MediaType::AUDIO) {
+            return &mediaInfo.tracks[i];
+        }
+    }
+    return nullptr;
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfo_DSF_0001
+ * @tc.desc: Open DSF file and verify basic track metadata
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_DSF_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_GE(mediaInfo_.tracks.size(), 1);
+    Meta *format = FindAudioTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    std::string mimeType;
+    EXPECT_TRUE(format->GetData(Tag::MIME_TYPE, mimeType));
+    EXPECT_EQ(mimeType, "audio/dsd");
+
+    int32_t sampleRate = 0;
+    EXPECT_TRUE(format->GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate));
+    EXPECT_EQ(sampleRate, 352800);
+
+    int32_t channelCount = 0;
+    EXPECT_TRUE(format->GetData(Tag::AUDIO_CHANNEL_COUNT, channelCount));
+    EXPECT_EQ(channelCount, 2);
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfo_DSF_FileType_0002
+ * @tc.desc: Verify DSF file type on general meta
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_DSF_FileType_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+
+    Plugins::FileType fileType = Plugins::FileType::UNKNOW;
+    EXPECT_TRUE(mediaInfo_.general.GetData(Tag::MEDIA_FILE_TYPE, fileType));
+    EXPECT_EQ(fileType, Plugins::FileType::DSF);
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfo_DSF_DsdCodecType_0003
+ * @tc.desc: Verify DSD codec type and original codec name
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_DSF_DsdCodecType_0003, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *format = FindAudioTrack(mediaInfo_);
+    ASSERT_NE(format, nullptr);
+
+    int32_t dsdCodecType = -1;
+    EXPECT_TRUE(format->GetData(Tag::AUDIO_DSD_CODEC_TYPE, dsdCodecType));
+    EXPECT_EQ(dsdCodecType, 0);
+
+    std::string codecName;
+    EXPECT_TRUE(format->GetData(Tag::ORIGINAL_CODEC_NAME, codecName));
+    EXPECT_EQ(codecName, "dsd_lsbf_planar");
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_DSF_0004
+ * @tc.desc: Read samples from DSF file and verify EOS
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_DSF_0004, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_GE(mediaInfo_.tracks.size(), 1);
+    ReadData();
+    EXPECT_TRUE(eosFlag_[0]);
+    EXPECT_GT(frames_[0], 0);
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfo_DSF_TrackType_0005
+ * @tc.desc: Verify track media type is AUDIO and track count is 1
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_DSF_TrackType_0005, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(mediaInfo_.tracks.size(), 1u);
+
+    Plugins::MediaType trackType = Plugins::MediaType::UNKNOWN;
+    EXPECT_TRUE(mediaInfo_.tracks[0].GetData(Tag::MEDIA_TYPE, trackType));
+    EXPECT_EQ(trackType, Plugins::MediaType::AUDIO);
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfo_DSF_Duration_0006
+ * @tc.desc: Verify media duration is set on general meta
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_DSF_Duration_0006, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_dsf";
+    InitResource(g_dsfPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+
+    int64_t duration = 0;
+    EXPECT_TRUE(mediaInfo_.general.GetData(Tag::MEDIA_DURATION, duration));
+    EXPECT_GT(duration, 0);
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfo_IFF_PluginRegistered_0007
+ * @tc.desc: Verify IFF (DFF) demuxer plugin is registered in PluginList
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_IFF_PluginRegistered_0007, TestSize.Level1)
+{
+    auto plugin = PluginManagerV2::Instance().CreatePluginByName("avdemux_iff");
+    EXPECT_NE(plugin, nullptr);
 }
