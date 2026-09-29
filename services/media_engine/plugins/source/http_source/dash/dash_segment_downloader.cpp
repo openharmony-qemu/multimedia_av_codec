@@ -853,7 +853,7 @@ void DashSegmentDownloader::UpdateBufferSegment(const std::shared_ptr<DashBuffer
 {
     auto request = GetDownloadRequest();
     if (mediaSegment->contentLength_ == 0 && CheckDownloadRequest(request)) {
-        mediaSegment->contentLength_ = request->GetFileContentLength();
+        mediaSegment->contentLength_ = static_cast<size_t>(request->GetFileContentLength());
     }
 
     // last packet len is 0 of chunk
@@ -1037,7 +1037,7 @@ void DashSegmentDownloader::UpdateDownloadFinished(const std::string& url, const
         auto request = GetDownloadRequest();
         if (CheckDownloadRequest(request)) {
             if (mediaSegment_->contentLength_ == 0) {
-                mediaSegment_->contentLength_ = request->GetFileContentLength();
+                mediaSegment_->contentLength_ = static_cast<size_t>(request->GetFileContentLength());
             }
             size_t fragmentSize = mediaSegment_->contentLength_;
             double duration = request->GetDuration();
