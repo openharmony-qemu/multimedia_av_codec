@@ -548,8 +548,7 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts,
             res.reason = strategy_->GetLastDecisionReason();
         }
     }
-    
-    
+
     AVCODEC_LOGD_WITH_TAG("Strategy decision: shouldRetain %{public}d, ratio %{public}.3f "
         "(index:%{public}u, pts:%{public}" PRId64 ")", res.shouldRetain, res.ratio, index, pts);
     if (!res.shouldRetain) {
