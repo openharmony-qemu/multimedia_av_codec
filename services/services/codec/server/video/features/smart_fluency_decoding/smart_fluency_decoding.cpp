@@ -496,7 +496,7 @@ void SmartFluencyDecoding::UpdateRetentionFeedback(bool shouldRetain)
 }
 
 bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts,
-    const sptr<SurfaceBuffer> surfaceBuffer, bool mvCacheInvalidated)
+    const sptr<SurfaceBuffer> surfaceBuffer, bool mvCacheInvalidated, bool isSyncFrame)
 {
     PostDecCost cost;
 #ifdef SFD_DEBUG
@@ -524,7 +524,11 @@ bool SmartFluencyDecoding::MakePostDecodeDecision(uint32_t index, int64_t pts,
     FrameRetentionContext ctx { preDropCount, caps.requiresMv ? &mvStats : nullptr };
     {
         std::lock_guard<std::mutex> lock(configMutex_);
-        if (strategy_) {
+        if (isSyncFrame) {
+            res.shouldRetain = true;
+            res.ratio = 1.0;
+            res.reason = SfdDecisionReason::POST_RETAIN_SYNC_FRAME;
+        } else if (strategy_) {
             res.shouldRetain = strategy_->MakeRetentionDecision(ctx);
             res.ratio = strategy_->GetRatio();
             res.reason = strategy_->GetLastDecisionReason();

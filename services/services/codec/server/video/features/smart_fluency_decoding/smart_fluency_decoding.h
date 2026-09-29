@@ -62,7 +62,7 @@ public:
     bool ReplayCsdToAnalyzer();
     bool MakePreDecodeDecision(uint32_t index);
     bool MakePostDecodeDecision(uint32_t index, int64_t pts, const sptr<SurfaceBuffer> surfaceBuffer,
-                                bool mvCacheInvalidated);
+                                bool mvCacheInvalidated, bool isSyncFrame = false);
     void Flush();
     void OnDecInfoUpdate(double sourceFps, double speed);
     

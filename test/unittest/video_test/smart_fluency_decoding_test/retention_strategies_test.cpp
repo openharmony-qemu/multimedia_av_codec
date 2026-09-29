@@ -878,11 +878,11 @@ HWTEST_F(AdaptiveRetentionStrategyTest, HighMagnitude_CoherentMotionProtected_01
 }
 
 /**
- * @tc.name: MagnitudeMasking_GatedTargetRatios_013
- * @tc.desc: Preserve magnitude sensitivity below the gate and blend inside it.
+ * @tc.name: MagnitudeMasking_LowMagnitudeOnly_013
+ * @tc.desc: Preserve low-magnitude weighting without reducing risk for high magnitude.
  * @tc.type: FUNC
  */
-HWTEST_F(AdaptiveRetentionStrategyTest, MagnitudeMasking_GatedTargetRatios_013, TestSize.Level1)
+HWTEST_F(AdaptiveRetentionStrategyTest, MagnitudeMasking_LowMagnitudeOnly_013, TestSize.Level1)
 {
     struct TestCase {
         double magnitude;
@@ -890,11 +890,11 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MagnitudeMasking_GatedTargetRatios_013, 
         double expectedRatio;
     };
     const TestCase cases[] = {
-        {70.0, 0.60, 0.8515151515},
-        {100.0, 0.60, 0.5060606061},
-        {100.0, 0.66, 0.5333333333},
-        {85.0, 0.78, 0.9137254902},
-        {100.0, 0.85, 0.9823325163},
+        {70.0, 0.60, 0.9090909091},
+        {100.0, 0.60, 0.9090909091},
+        {100.0, 0.66, 1.0},
+        {85.0, 0.78, 1.0},
+        {100.0, 0.85, 1.0},
         {100.0, 0.90, 1.0},
         {150.0, 1.20, 1.0},
         // Low- and medium-magnitude branches retain their previous behavior.
@@ -918,29 +918,29 @@ HWTEST_F(AdaptiveRetentionStrategyTest, MagnitudeMasking_GatedTargetRatios_013, 
 }
 
 /**
- * @tc.name: MagnitudeMasking_ContinuousBoundaries_014
- * @tc.desc: Crossing either consistency gate boundary must not jump the target ratio.
+ * @tc.name: MagnitudeMasking_HighMagnitudeInvariant_014
+ * @tc.desc: Magnitudes above the low-motion threshold produce the same target for a given consistency.
  * @tc.type: FUNC
  */
-HWTEST_F(AdaptiveRetentionStrategyTest, MagnitudeMasking_ContinuousBoundaries_014, TestSize.Level1)
+HWTEST_F(AdaptiveRetentionStrategyTest, MagnitudeMasking_HighMagnitudeInvariant_014, TestSize.Level1)
 {
-    const double boundaries[] = {0.66, 0.90};
-    constexpr double delta = 1e-5;
-    for (double boundary : boundaries) {
+    const double consistencies[] = {0.1, 0.60, 0.66, 0.90};
+    for (double consistency : consistencies) {
         AdaptiveRetentionStrategy strategy;
         strategy.UpdatePlaybackSpeed(2.0);
         MVStats stats{};
         stats.validBlocks = 100;
-        stats.perceptualMagnitude = 100.0;
+        stats.perceptualMagnitude = 20.0;
+        stats.motionConsistency = consistency;
         FrameRetentionContext ctx{};
         ctx.mvStats = &stats;
-        stats.motionConsistency = boundary - delta;
         strategy.MakeRetentionDecision(ctx);
-        double below = strategy.GetRatio();
-        stats.motionConsistency = boundary + delta;
-        strategy.MakeRetentionDecision(ctx);
-        EXPECT_GE(strategy.GetRatio(), below);
-        EXPECT_NEAR(strategy.GetRatio(), below, 1e-4);
+        double expectedRatio = strategy.GetRatio();
+        for (double magnitude : {21.0, 65.0, 85.0, 100.0, 150.0}) {
+            stats.perceptualMagnitude = magnitude;
+            strategy.MakeRetentionDecision(ctx);
+            EXPECT_NEAR(strategy.GetRatio(), expectedRatio, 1e-6);
+        }
     }
 }
 
