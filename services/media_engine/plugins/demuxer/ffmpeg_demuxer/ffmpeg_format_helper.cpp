@@ -169,6 +169,10 @@ static std::map<AVCodecID, std::string_view> g_codecIdToMime = {
     {AV_CODEC_ID_DTS, MimeType::AUDIO_DTS},
     {AV_CODEC_ID_COOK, MimeType::AUDIO_COOK},
     {AV_CODEC_ID_AC3, MimeType::AUDIO_AC3},
+    {AV_CODEC_ID_DSD_LSBF, MimeType::AUDIO_DSD},
+    {AV_CODEC_ID_DSD_MSBF, MimeType::AUDIO_DSD},
+    {AV_CODEC_ID_DSD_LSBF_PLANAR, MimeType::AUDIO_DSD},
+    {AV_CODEC_ID_DSD_MSBF_PLANAR, MimeType::AUDIO_DSD},
 #ifdef SUPPORT_DEMUXER_EAC3
     {AV_CODEC_ID_EAC3, MimeType::AUDIO_EAC3},
 #endif
@@ -213,6 +217,7 @@ static std::map<std::string, FileType> g_convertFfmpegFileType = {
     {"aiff", FileType::AIFF},
     {"dts", FileType::DTS},
     {"au", FileType::AU},
+    {"dsf", FileType::DSF},
 #ifdef SUPPORT_DEMUXER_LRC
     {"lrc", FileType::LRC},
 #endif
@@ -268,6 +273,13 @@ static const char* g_gltfKeys[] = {
 
 std::vector<FileType> g_typeForTrackLevelBaseInfo = {
     FileType::OGG
+};
+
+// AVCodecID -> OH_AVCodec_DSDCodecType
+static std::map<AVCodecID, int32_t> g_FfDSDCodecIdToOHDSDCodecId = {  // ignore AV_CODEC_ID_DSD_LSBF
+    {AV_CODEC_ID_DSD_LSBF_PLANAR, 0},
+    {AV_CODEC_ID_DSD_MSBF_PLANAR, 1},
+    {AV_CODEC_ID_DSD_MSBF, 2},
 };
 
 std::vector<std::string> SplitByChar(const char* str, const char* pattern)
@@ -636,7 +648,12 @@ void FFmpegFormatHelper::ParseBaseTrackInfo(const AVStream& avStream, Meta &form
         format.Set<Tag::MIME_TYPE>(std::string(MimeType::INVALID_TYPE));
         MEDIA_LOG_W("Parse mime type failed: " PUBLIC_LOG_S, avcodec_get_name(avStream.codecpar->codec_id));
     }
+
     format.Set<Tag::ORIGINAL_CODEC_NAME>(std::string(avcodec_get_name(avStream.codecpar->codec_id)));
+    auto dsdCodecIdIter = g_FfDSDCodecIdToOHDSDCodecId.find(avStream.codecpar->codec_id);
+    if (dsdCodecIdIter != g_FfDSDCodecIdToOHDSDCodecId.end()) {
+        format.Set<Tag::AUDIO_DSD_CODEC_TYPE>(g_FfDSDCodecIdToOHDSDCodecId[avStream.codecpar->codec_id]);
+    }
 
     AVMediaType mediaType = avStream.codecpar->codec_type;
     if (g_convertFfmpegTrackType.count(mediaType) > 0) {
@@ -665,6 +682,23 @@ static bool IsWmaFormat(const AVFormatContext& avFormatContext)
     return true;
 }
 
+static bool IsDFFFormat(const AVFormatContext& avFormatContext)
+{
+    for (uint32_t i = 0; i < avFormatContext.nb_streams; ++i) {
+        if (avFormatContext.streams[i] == nullptr || avFormatContext.streams[i]->codecpar == nullptr) {
+            MEDIA_LOG_E("AVStream is invalid, index is " PUBLIC_LOG_U32, i);
+            continue;
+        }
+        auto codecId = avFormatContext.streams[i]->codecpar->codec_id;
+        if (avFormatContext.streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+            (codecId == AV_CODEC_ID_DSD_LSBF || codecId == AV_CODEC_ID_DSD_MSBF ||
+            codecId == AV_CODEC_ID_DSD_LSBF_PLANAR || codecId == AV_CODEC_ID_DSD_MSBF_PLANAR)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatContext)
 {
     FALSE_RETURN_V_MSG_E(avFormatContext.iformat != nullptr, FileType::UNKNOW, "Iformat is nullptr");
@@ -690,6 +724,8 @@ FileType FFmpegFormatHelper::GetFileTypeByName(const AVFormatContext& avFormatCo
         }
     } else if (StartWith(fileName, "asf") && IsWmaFormat(avFormatContext)) {
         fileType = FileType::WMA;
+    } else if (StartWith(fileName, "iff") && IsDFFFormat(avFormatContext)) {
+        fileType = FileType::DFF;
     } else {
         if (g_convertFfmpegFileType.count(fileName) != 0) {
             fileType = g_convertFfmpegFileType[fileName];
