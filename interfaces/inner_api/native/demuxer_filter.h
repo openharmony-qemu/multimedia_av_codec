@@ -181,6 +181,7 @@ private:
     Status FaultDemuxerEventInfoWrite(StreamType& streamType);
     bool IsVideoMime(const std::string& mime);
     bool IsAudioMime(const std::string& mime);
+    bool IsDsdFormat(const std::string& mime);
     bool CheckIsBigendian(std::shared_ptr<Meta> &meta);
     Status HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> &trackInfos, int32_t &successNodeCount);
     std::string CollectVideoAndAudioMime();
