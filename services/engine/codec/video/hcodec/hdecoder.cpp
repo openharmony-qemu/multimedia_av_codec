@@ -48,9 +48,10 @@ std::unordered_map<HDecoder*, HDecoder::DecoderInst> g_insts;
 
 #ifdef USE_VIDEO_PROCESSING_ENGINE
 std::mutex g_vpeLock;
-std::vector<std::string> g_vpeSupportList{};
+std::vector<std::string> g_aihdrSupportList{};
 std::vector<std::string> g_srSupportList{};
-bool g_isVpeSupportListInit{false};
+bool g_isAihdrSupportListInit{false};
+bool g_isSrSupportListInit{false};
 #endif
 
 HDecoder::HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
@@ -974,7 +975,7 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
         return;
     }
     HLOGD("VPE CombineUsage app=%s", caller_.app.processName.c_str());
-    if (!g_isVpeSupportListInit) {
+    if (!g_isAihdrSupportListInit || !g_isSrSupportListInit) {
         shared_ptr<void> vpeHandle = shared_ptr<void>(dlopen("libvideoprocessingengine.z.so", RTLD_NOW), dlclose);
         if (vpeHandle == nullptr) {
             HLOGE("dlopen libvideoprocessingengine.z.so failed, dlerror: %s", dlerror());
@@ -986,17 +987,27 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
             HLOGE("dlsym failed");
             return;
         }
-        if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_AIHDR_ENHANCER, g_vpeSupportList)) {
-            HLOGE("get VPE list failed");
+        if (!g_isAihdrSupportListInit) {
+            if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_AIHDR_ENHANCER,
+                g_aihdrSupportList)) {
+                HLOGE("get VPE list failed");
+            } else {
+                g_isAihdrSupportListInit = true;
+            }
         }
-        if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_DETAIL_ENHANCER, g_srSupportList)) {
-            HLOGE("get sr list failed");
+
+        if (!g_isSrSupportListInit) {
+            if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_DETAIL_ENHANCER,
+                g_srSupportList)) {
+                HLOGE("get sr list failed");
+            } else {
+                g_isSrSupportListInit = true;
+            }
         }
-        g_isVpeSupportListInit = true;
         HLOGD("VPE init support list ok");
     }
-    if (std::find(g_vpeSupportList.cbegin(), g_vpeSupportList.cend(), caller_.app.processName) !=
-        g_vpeSupportList.cend()) {
+    if (std::find(g_aihdrSupportList.cbegin(), g_aihdrSupportList.cend(), caller_.app.processName) !=
+        g_aihdrSupportList.cend()) {
         consumerUsage |= (BUFFER_USAGE_MEM_DMA | BUFFER_USAGE_VENDOR_PRI10);
         HLOGI("VPE Aihdr update usage = 0x%" PRIx64 "", consumerUsage);
     }
