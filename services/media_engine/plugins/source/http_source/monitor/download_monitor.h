@@ -96,7 +96,7 @@ public:
     bool GetPlayable() override;
     bool GetReadTimeOut(bool isDelay) override;
     void SetAppUid(int32_t appUid) override;
-    size_t GetSegmentOffset() override;
+    size_t GetSegmentOffset(StreamType streamType = StreamType::VIDEO) override;
     bool GetHLSDiscontinuity() override;
     Status StopBufferring(bool isAppBackground) override;
     void WaitForBufferingEnd() override;

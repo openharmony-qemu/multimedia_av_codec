@@ -2107,6 +2107,7 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     ProcessHistoryOnSeek();
     Status ret;
     isSeekError_.store(false);
+    lastAudioPts_ = seekTime * US_TO_MS;
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("Source seek time: %{public}" PRId64, seekTime);
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
@@ -2168,6 +2169,7 @@ Status MediaDemuxer::SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     Status ret;
     isSeekError_.store(false);
+    lastAudioPts_ = seekTime * US_TO_MS;
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("Source seek");
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
@@ -2220,6 +2222,7 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
     MediaAVCodec::AVCODEC_SYNC_TRACE;
     Status ret;
     isSeekError_.store(false);
+    lastAudioPts_ = seekTime * US_TO_MS;
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("Source seek time: %{public}" PRId64, seekTime);
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {

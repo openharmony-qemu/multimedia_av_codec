@@ -151,10 +151,12 @@ public:
     }
 
     virtual void SetAppUid(int32_t appUid) = 0;
-    virtual size_t GetSegmentOffset()
+    virtual size_t GetSegmentOffset(StreamType streamType = StreamType::VIDEO)
     {
+        (void)streamType;
         return 0;
     }
+    
     virtual bool GetHLSDiscontinuity()
     {
         return false;

@@ -620,10 +620,10 @@ void Source::SetEnableOnlineFdCache(bool isEnableFdCache)
     isEnableFdCache_ = isEnableFdCache;
 }
 
-size_t Source::GetSegmentOffset()
+size_t Source::GetSegmentOffset(Plugins::StreamType streamType)
 {
     FALSE_RETURN_V_MSG_W(plugin_ != nullptr, 0, "GetSegmentOffset source plugin is nullptr!");
-    return plugin_->GetSegmentOffset();
+    return plugin_->GetSegmentOffset(streamType);
 }
 
 bool Source::GetHLSDiscontinuity()

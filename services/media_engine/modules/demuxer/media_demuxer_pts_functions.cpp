@@ -124,7 +124,8 @@ void MediaDemuxer::InitPtsInfo()
         maintainBaseInfos_[trackId]->basePts = INVALID_PTS_DATA;
         maintainBaseInfos_[trackId]->isLastPtsChange = false;
         maintainBaseInfos_[trackId]->lastPtsModifyedMax = INVALID_PTS_DATA;
-        SetCurrentSegmentOffset(trackId, source_->GetSegmentOffset());
+        SetCurrentSegmentOffset(trackId,
+            source_->GetSegmentOffset(static_cast<Plugins::StreamType>(GetStreamTypeByTrackId(trackId))));
     }
 }
 
@@ -178,12 +179,24 @@ void MediaDemuxer::TranscoderInitMediaStartPts()
     }
 }
 
+int32_t MediaDemuxer::GetStreamTypeByTrackId(int32_t trackId)
+{
+    if (trackId == videoTrackId_) {
+        return static_cast<int32_t>(Plugins::StreamType::VIDEO);
+    } else if (trackId == audioTrackId_) {
+        return static_cast<int32_t>(Plugins::StreamType::AUDIO);
+    } else if (trackId == subtitleTrackId_) {
+        return static_cast<int32_t>(Plugins::StreamType::SUBTITLE);
+    }
+    return static_cast<int32_t>(Plugins::StreamType::MIXED);
+}
+
 void MediaDemuxer::UpdateSegmentOffset(int32_t trackId)
 {
     FALSE_RETURN_NOLOG(isAutoMaintainPts_.load());
     FALSE_RETURN_NOLOG(source_ != nullptr);
 
-    auto offset = source_->GetSegmentOffset();
+    auto offset = source_->GetSegmentOffset(static_cast<Plugins::StreamType>(GetStreamTypeByTrackId(trackId)));
     SetCurrentSegmentOffset(trackId, offset);
     FALSE_GOON_NOEXEC(IsAVInOneStream() && trackId == videoTrackId_, SetCurrentSegmentOffset(audioTrackId_, offset));
 }
@@ -193,7 +206,7 @@ void MediaDemuxer::UpdateSegmentOffset(int32_t oldTrackId, int32_t newTrackId)
     FALSE_RETURN_NOLOG(isAutoMaintainPts_.load());
     FALSE_RETURN_NOLOG(source_ != nullptr);
 
-    auto offset = source_->GetSegmentOffset();
+    auto offset = source_->GetSegmentOffset(static_cast<Plugins::StreamType>(GetStreamTypeByTrackId(newTrackId)));
     SetCurrentSegmentOffset(newTrackId, GetCurrentSegmentOffset(oldTrackId, offset));
 }
 

@@ -33,7 +33,7 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 
-enum StreamType {
+enum StreamType : int32_t {
     MIXED = 0,
     VIDEO,
     AUDIO,
@@ -316,8 +316,9 @@ public:
         (void)isEnableFdCache;
     }
 
-    virtual size_t GetSegmentOffset()
+    virtual size_t GetSegmentOffset(StreamType streamType = StreamType::VIDEO)
     {
+        (void)streamType;
         return 0;
     }
 

@@ -619,11 +619,11 @@ Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     return downloader->SetCurrentBitRate(bitRate, streamID);
 }
 
-size_t HttpSourcePlugin::GetSegmentOffset()
+size_t HttpSourcePlugin::GetSegmentOffset(StreamType streamType)
 {
     auto downloader = GetDownloader();
     if (downloader) {
-        return downloader->GetSegmentOffset();
+        return downloader->GetSegmentOffset(streamType);
     }
     return 0;
 }
