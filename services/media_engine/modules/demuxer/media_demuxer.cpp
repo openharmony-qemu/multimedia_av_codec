@@ -1508,6 +1508,7 @@ Status MediaDemuxer::StartTaskWithSampleQueue(int32_t trackId)
     auto iterTrack = TRACK_MAP.find(trackType);
     FALSE_RETURN_V_MSG_E(iterTrack != TRACK_MAP.end(), Status::ERROR_INVALID_PARAMETER,
         "invalid trackId: " PUBLIC_LOG_D32, trackId);
+    AutoLock lock(mapMutex_);
     if (taskMap_.find(trackId) == taskMap_.end() ||
         sampleConsumerTaskMap_.find(trackId) == sampleConsumerTaskMap_.end()) {
         ret = AddDemuxerCopyTaskByTrack(trackId, iterTrack->second);
