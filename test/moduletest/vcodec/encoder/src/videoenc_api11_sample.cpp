@@ -15,6 +15,8 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 #include <utility>
+#include <sstream>
+#include <cctype>
 #include "iconsumer_surface.h"
 #include "native_buffer_inner.h"
 #include "videoenc_api11_sample.h"
@@ -312,6 +314,9 @@ void VEncAPI11Sample::SetConfigureEnc(OH_AVFormat *format)
     if (ENABLE_GOP_SIZE) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_REFERENCE_MODE, GOP_REFERENCE_MODE);
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_ENCODER_TEMPORAL_GOP_SIZE, temporalGopSize);
+    }
+    if (enableDmabufNameSuffix) {
+        (void)OH_AVFormat_SetStringValue(format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, dmabufNameSuffix.c_str());
     }
 }
 
@@ -1222,6 +1227,9 @@ void VEncAPI11Sample::AutoSwitchParam()
 
 void VEncAPI11Sample::SetEOS(uint32_t index, OH_AVBuffer *buffer)
 {
+    if (!dmabufSuffixChecked) {
+        CheckDmabufSuffixOnce();
+    }
     OH_AVCodecBufferAttr attr;
     attr.pts = 0;
     attr.size = 0;

@@ -105,6 +105,20 @@ public:
     bool hdrStaticMetadata = false;
     int32_t beforeSwitchTransform = -1;
     int32_t afterSwitchTransform = -2;
+    bool enableDmabufNameSuffix = false;
+    std::string dmabufNameSuffix;
+    bool needCheckDmabufNameSuffix = false;
+    std::string expectedDmabufSuffix;
+    bool dmabufSuffixChecked = false;
+    bool CheckDmabufNameSuffix(const std::string& expectedSuffix);
+    void CheckDmabufSuffixOnce();
+    bool ReadCmdOutput(const std::string& cmd, std::string& output);
+    bool FindBufNameColumnIndex(const std::string& header, size_t& colIndex);
+    static std::string ExtractColumnByIndex(const std::string& line, size_t colIndex);
+    static std::string ExtractSuffixFromBufName(const std::string& bufName);
+    static bool IsNumericString(const std::string& str);
+    void CountMatchingRows(std::istringstream& ss, size_t colIndex,
+        const std::string& expectedSuffix, int& totalCount, int& matchCount);
     int32_t Start();
     int32_t Stop();
     int32_t Flush();

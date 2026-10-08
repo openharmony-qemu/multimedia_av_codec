@@ -19,6 +19,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <cctype>
 #include <random>
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
@@ -389,6 +390,9 @@ void VDecAPI11Sample::ConfigureVideoDecoder2(OH_AVFormat *format)
     }
     if (NV21_FLAG) {
         (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_PIXEL_FORMAT, AV_PIXEL_FORMAT_NV21);
+    }
+    if (enableDmabufNameSuffix) {
+        (void)OH_AVFormat_SetStringValue(format, OH_MD_KEY_VIDEO_SET_DMABUF_NAME_SUFFIX, dmabufNameSuffix.c_str());
     }
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_ENABLE_SYNC_MODE, enableSyncMode);
     (void)OH_AVFormat_SetIntValue(format, OH_MD_KEY_VIDEO_DECODER_BLANK_FRAME_ON_SHUTDOWN, enbleBlankFrame);
@@ -1422,6 +1426,9 @@ int32_t VDecAPI11Sample::state_EOS()
 
 void VDecAPI11Sample::SetEOS(uint32_t index, OH_AVBuffer *buffer)
 {
+    if (!dmabufSuffixChecked) {
+        CheckDmabufSuffixOnce();
+    }
     OH_AVCodecBufferAttr attr;
     attr.pts = 0;
     attr.size = 0;
@@ -1734,5 +1741,139 @@ void VDecAPI11Sample::SetParameterForSpeedPlayer()
         }
         OH_VideoDecoder_SetParameter(vdec_, format);
         OH_AVFormat_Destroy(format);
+    }
+}
+
+bool VDecAPI11Sample::ReadCmdOutput(const std::string& cmd, std::string& output)
+{
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (pipe == nullptr) {
+        cout << "CheckDmabufNameSuffix: popen failed for [" << cmd << "]" << endl;
+        return false;
+    }
+    char buffer[512];
+    while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+        output += buffer;
+    }
+    pclose(pipe);
+    cout << "CheckDmabufNameSuffix: output=[" << output << "]" << endl;
+    return true;
+}
+
+bool VDecAPI11Sample::FindBufNameColumnIndex(const std::string& header, size_t& colIndex)
+{
+    std::istringstream hs(header);
+    std::string col;
+    size_t idx = 0;
+    while (hs >> col) {
+        if (col == "buf_name") {
+            colIndex = idx;
+            return true;
+        }
+        idx++;
+    }
+    cout << "CheckDmabufNameSuffix: buf_name column not found in header" << endl;
+    return false;
+}
+
+std::string VDecAPI11Sample::ExtractColumnByIndex(const std::string& line, size_t colIndex)
+{
+    std::istringstream ls(line);
+    std::string token;
+    for (size_t i = 0; i <= colIndex; i++) {
+        if (!(ls >> token)) {
+            return "";
+        }
+    }
+    return token;
+}
+
+std::string VDecAPI11Sample::ExtractSuffixFromBufName(const std::string& bufName)
+{
+    size_t colonPos = bufName.find(':');
+    if (colonPos == std::string::npos) {
+        return "";
+    }
+    return bufName.substr(colonPos + 1);
+}
+
+bool VDecAPI11Sample::IsNumericString(const std::string& str)
+{
+    if (str.empty()) {
+        return false;
+    }
+    for (char c : str) {
+        if (!std::isdigit(static_cast<unsigned char>(c))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void VDecAPI11Sample::CountMatchingRows(std::istringstream& ss, size_t colIndex, const std::string& expectedSuffix,
+    int& totalCount, int& matchCount)
+{
+    totalCount = 0;
+    matchCount = 0;
+    std::string line;
+    while (std::getline(ss, line)) {
+        if (line.empty()) {
+            continue;
+        }
+        std::string bufName = ExtractColumnByIndex(line, colIndex);
+        if (bufName.empty() || IsNumericString(bufName)) {
+            continue;
+        }
+        std::string suffix = ExtractSuffixFromBufName(bufName);
+        totalCount++;
+        bool matched = (suffix == expectedSuffix);
+        matchCount += matched ? 1 : 0;
+        cout << "CheckDmabufNameSuffix: buf_name=[" << bufName << "] suffix=[" << suffix << "] expected=[" <<
+        expectedSuffix << "] " << (matched ? "matched" : "mismatched") << endl;
+    }
+}
+
+bool VDecAPI11Sample::CheckDmabufNameSuffix(const std::string& expectedSuffix)
+{
+    if (expectedSuffix.empty()) {
+        cout << "CheckDmabufNameSuffix: expected suffix is empty" << endl;
+        return false;
+    }
+    pid_t pid = getpid();
+    std::string cmd = "cat /proc/" + std::to_string(pid) + "/mm_dmabuf_info";
+    cout << "CheckDmabufNameSuffix: running [" << cmd << "] expecting [" << expectedSuffix << "]" << endl;
+    std::string output;
+    if (!ReadCmdOutput(cmd, output)) {
+        return false;
+    }
+    std::istringstream ss(output);
+    std::string header;
+    if (!std::getline(ss, header) || header.empty()) {
+        cout << "CheckDmabufNameSuffix: empty or invalid output" << endl;
+        return false;
+    }
+    size_t colIndex = 0;
+    if (!FindBufNameColumnIndex(header, colIndex)) {
+        return false;
+    }
+    int totalCount = 0;
+    int matchCount = 0;
+    CountMatchingRows(ss, colIndex, expectedSuffix, totalCount, matchCount);
+    cout << "CheckDmabufNameSuffix: total=" << totalCount << " matched=" << matchCount << endl;
+    if (matchCount == 0) {
+        cout << "CheckDmabufNameSuffix: not all matched for [" << expectedSuffix << "]" << endl;
+        return false;
+    }
+    return true;
+}
+
+void VDecAPI11Sample::CheckDmabufSuffixOnce()
+{
+    if (!needCheckDmabufNameSuffix || dmabufSuffixChecked) {
+        return;
+    }
+    dmabufSuffixChecked = true;
+    if (!CheckDmabufNameSuffix(expectedDmabufSuffix)) {
+        errCount++;
     }
 }

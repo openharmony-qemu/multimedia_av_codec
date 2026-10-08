@@ -97,6 +97,73 @@ void HwEncFunc3NdkTest::TearDown()
         venc_ = nullptr;
     }
 }
+
+struct DmabufSuffixItem {
+    std::string input;
+    std::string expected;
+};
+
+const std::vector<DmabufSuffixItem> &GetDmabufSuffixCat1()
+{
+    static const std::vector<DmabufSuffixItem> cat1 = {
+        { "!", "!" },
+        { "abc123", "abc123" },
+        { "a_b-c!a1bcX2YZ3!@#$%^&*", "a_b-c!a1bcX2YZ3!@#$%^&*" },
+    };
+    return cat1;
+}
+
+const std::vector<std::string> &GetDmabufSuffixCat2()
+{
+    static const std::vector<std::string> cat2 = {
+        "测试 / cafe /  ", "12 3a", "abc\n \t \r \0", "0123456789", "\n \t",
+    };
+    return cat2;
+}
+
+static void ResetDmabufTestState(const std::shared_ptr<VEncAPI11Sample> &vEncSample)
+{
+    vEncSample->Flush_buffer();
+    vEncSample->errCount = 0;
+    vEncSample->frameCount = 0;
+    vEncSample->outCount = 0;
+    vEncSample->dmabufSuffixChecked = false;
+}
+
+static int RunDmabufSuffixCat1(const std::shared_ptr<VEncAPI11Sample> &vEncSample)
+{
+    const auto &cat1 = GetDmabufSuffixCat1();
+    vEncSample->needCheckDmabufNameSuffix = true;
+    for (size_t i = 0; i < cat1.size(); i++) {
+        if (i > 0) {
+            if (vEncSample->Reset() != AV_ERR_OK) { return -1; }
+            ResetDmabufTestState(vEncSample);
+        }
+        vEncSample->dmabufNameSuffix = cat1[i].input;
+        vEncSample->expectedDmabufSuffix = cat1[i].expected;
+        if (vEncSample->ConfigureVideoEncoder() != AV_ERR_OK) { return -1; }
+        if (vEncSample->StartVideoEncoder() != AV_ERR_OK) { return -1; }
+        vEncSample->WaitForEOS();
+        if (vEncSample->errCount != AV_ERR_OK) { return -1; }
+    }
+    return 0;
+}
+
+static int RunDmabufSuffixCat2(const std::shared_ptr<VEncAPI11Sample> &vEncSample)
+{
+    const auto &cat2 = GetDmabufSuffixCat2();
+    for (size_t i = 0; i < cat2.size(); i++) {
+        if (vEncSample->Reset() != AV_ERR_OK) { return -1; }
+        ResetDmabufTestState(vEncSample);
+        vEncSample->dmabufNameSuffix = cat2[i];
+        int32_t ret = vEncSample->ConfigureVideoEncoder();
+        if (ret != AV_ERR_INVALID_VAL) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 namespace {
 
 /**
@@ -1831,6 +1898,48 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_ENABLE_REPEAT_XPS_0015, TestSize.Level2
         ASSERT_EQ(AV_ERR_OK, vEncSample->StartVideoEncoder());
         vEncSample->WaitForEOS();
         ASSERT_EQ(AV_ERR_OK, vEncSample->errCount);
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODER_264_DMABUF_SUFFIX_0010
+ * @tc.name      : 264硬编config设置dma标签, 有效输入及无效输入
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODER_264_DMABUF_SUFFIX_0010, TestSize.Level0)
+{
+    if (cap != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->enableDmabufNameSuffix = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecName));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(0, RunDmabufSuffixCat1(vEncSample));
+        ASSERT_EQ(0, RunDmabufSuffixCat2(vEncSample));
+    }
+}
+
+/**
+ * @tc.number    : VIDEO_ENCODER_265_DMABUF_SUFFIX_0010
+ * @tc.name      : 265硬编config设置dma标签, 有效输入及无效输入
+ * @tc.desc      : function test
+ */
+HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODER_265_DMABUF_SUFFIX_0010, TestSize.Level2)
+{
+    if (cap_hevc != nullptr && ONLY_FOR_FLAGSHIP_CHIP) {
+        auto vEncSample = make_shared<VEncAPI11Sample>();
+        vEncSample->INP_DIR = "/data/test/media/1280_720_nv.yuv";
+        vEncSample->DEFAULT_WIDTH = 1280;
+        vEncSample->DEFAULT_HEIGHT = 720;
+        vEncSample->DEFAULT_FRAME_RATE = 30;
+        vEncSample->enableDmabufNameSuffix = true;
+        ASSERT_EQ(AV_ERR_OK, vEncSample->CreateVideoEncoder(g_codecNameHEVC));
+        ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
+        ASSERT_EQ(0, RunDmabufSuffixCat1(vEncSample));
+        ASSERT_EQ(0, RunDmabufSuffixCat2(vEncSample));
     }
 }
 } // namespace
