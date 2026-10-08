@@ -239,6 +239,7 @@ struct {
 #endif
     {"msvideo1", &VideoDecSample::CreateMsvideo1Reader, "CreateMsvideo1Reader failed"},
     {"wmv3", &VideoDecSample::CreateWmv3Reader, "CreateWmv3Reader failed"},
+    {"wmv1", &VideoDecSample::CreateWmv1Reader, "CreateWmv1Reader failed"},
 #ifdef SUPPORT_CODEC_VP8
     {"vp8", &VideoDecSample::CreateVp8Reader, "CreateVp8Reader failed"},
 #endif
@@ -424,6 +425,16 @@ int32_t VideoDecSample::CreateWmv3Reader()
 
     signal_->reader_ = std::make_shared<Wmv3Reader>();
     int32_t ret = std::static_pointer_cast<Wmv3Reader>(signal_->reader_)->Init(info);
+    return ret;
+}
+
+int32_t VideoDecSample::CreateWmv1Reader()
+{
+    std::shared_ptr<Wmv1ReaderInfo> info = std::make_shared<Wmv1ReaderInfo>();
+    info->inPath = inPath_;
+
+    signal_->reader_ = std::make_shared<Wmv1Reader>();
+    int32_t ret = std::static_pointer_cast<Wmv1Reader>(signal_->reader_)->Init(info);
     return ret;
 }
 

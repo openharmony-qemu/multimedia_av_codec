@@ -61,6 +61,8 @@ public:
     bool detailedError_ = false;
 
 private:
+    using ReaderFunc = int32_t (VideoDecAsyncSample::*)();
+    void InitReaderMap();
     void FlushInner();
     void PrepareInner();
     void WaitForEos();
@@ -72,6 +74,7 @@ private:
     int32_t ReadOneFrame(uint8_t *bufferAddr, uint32_t &flags);
     int32_t OutputLoopInner();
     int32_t InputLoopInner();
+    void FillReaderBuffer(uint8_t *addr, OH_AVCodecBufferAttr &attr);
 
     void RunInnerExt();
     void OutputLoopFuncExt();
@@ -91,6 +94,7 @@ private:
 #endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
+    int32_t CreateWmv1Reader();
 #ifdef SUPPORT_CODEC_AV1
     int32_t CreateAv1Reader();
 #endif
@@ -131,6 +135,7 @@ private:
     sptr<Surface> consumer_ = nullptr;
     sptr<Surface> producer_ = nullptr;
     std::shared_ptr<AvccReader> avccReader_ = nullptr;
+    std::unordered_map<int32_t, ReaderFunc> readerMap_;
     std::shared_ptr<MpegReader> mpegReader_ = nullptr;
     std::shared_ptr<H263Reader> h263Reader_ = nullptr;
 #ifdef SUPPORT_CODEC_AV1
@@ -142,6 +147,7 @@ private:
 #endif
     std::shared_ptr<Msvideo1Reader> msvideo1Reader_ = nullptr;
     std::shared_ptr<Wmv3Reader> wmv3Reader_ = nullptr;
+    std::shared_ptr<Wmv1Reader> wmv1Reader_ = nullptr;
     std::shared_ptr<std::ifstream> dynamicMetadataFile_ = nullptr;
     std::shared_ptr<std::ifstream> staticMetadataFile_ = nullptr;
 #ifdef SUPPORT_CODEC_RV

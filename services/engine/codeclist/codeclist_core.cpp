@@ -39,6 +39,7 @@ const std::vector<std::string_view> MIME_VEC = {
     OHOS::MediaAVCodec::CodecMimeType::VIDEO_MSVIDEO1,
     OHOS::MediaAVCodec::CodecMimeType::VIDEO_AV1,
     OHOS::MediaAVCodec::CodecMimeType::VIDEO_VC1,
+    OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV1,
     OHOS::MediaAVCodec::CodecMimeType::VIDEO_WMV3,
     OHOS::MediaAVCodec::CodecMimeType::VIDEO_WVC1,
     OHOS::MediaAVCodec::CodecMimeType::VIDEO_MPEG1,

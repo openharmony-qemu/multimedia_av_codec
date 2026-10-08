@@ -120,6 +120,7 @@ private:
 #endif
     int32_t CreateMsvideo1Reader();
     int32_t CreateWmv3Reader();
+    int32_t CreateWmv1Reader();
     int32_t CreateVp8Reader();
     int32_t CreateVp9Reader();
     int32_t CreateDvvideoReader();

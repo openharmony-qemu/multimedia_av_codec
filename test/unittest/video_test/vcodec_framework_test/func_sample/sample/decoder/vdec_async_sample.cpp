@@ -193,7 +193,10 @@ void TestConsumerListener::OnBufferAvailable()
     cs_->ReleaseBuffer(buffer, -1);
 }
 
-VideoDecAsyncSample::VideoDecAsyncSample(std::shared_ptr<VDecSignal> signal) : signal_(signal) {}
+VideoDecAsyncSample::VideoDecAsyncSample(std::shared_ptr<VDecSignal> signal) : signal_(signal)
+{
+    InitReaderMap();
+}
 
 VideoDecAsyncSample::~VideoDecAsyncSample()
 {
@@ -296,54 +299,44 @@ int32_t VideoDecAsyncSample::CreateReader(const std::string &inPath)
         }
     }
 
-    switch (dataProducerType) {
-        case H263_STREAM:
-            return CreateH263Reader();
+    auto it = readerMap_.find(dataProducerType);
+    if (it != readerMap_.end()) {
+        return (this->*(it->second))();
+    }
+    return CreateAvccReader();
+}
+
+void VideoDecAsyncSample::InitReaderMap()
+{
+    readerMap_[H263_STREAM] = &VideoDecAsyncSample::CreateH263Reader;
 #ifdef SUPPORT_CODEC_AV1
-        case AV1_STREAM:
-            return CreateAv1Reader();
+    readerMap_[AV1_STREAM] = &VideoDecAsyncSample::CreateAv1Reader;
 #endif
-        case AVC_STREAM:
-        case HEVC_STREAM:
-            return CreateAvccReader();
-        case MPEG2_STREAM:
-        case MPEG4_STREAM:
-            return CreateMpegReader();
+    readerMap_[AVC_STREAM] = &VideoDecAsyncSample::CreateAvccReader;
+    readerMap_[HEVC_STREAM] = &VideoDecAsyncSample::CreateAvccReader;
+    readerMap_[MPEG2_STREAM] = &VideoDecAsyncSample::CreateMpegReader;
+    readerMap_[MPEG4_STREAM] = &VideoDecAsyncSample::CreateMpegReader;
 #ifdef SUPPORT_CODEC_VC1
-        case VC1_STREAM:
-            return CreateVc1Reader();
-        case WVC1_STREAM:
-            return CreateWVc1Reader();
+    readerMap_[VC1_STREAM] = &VideoDecAsyncSample::CreateVc1Reader;
+    readerMap_[WVC1_STREAM] = &VideoDecAsyncSample::CreateWVc1Reader;
 #endif
-        case MSVIDEO1_STREAM:
-            return CreateMsvideo1Reader();
-        case WMV3_STREAM:
-            return CreateWmv3Reader();
+    readerMap_[MSVIDEO1_STREAM] = &VideoDecAsyncSample::CreateMsvideo1Reader;
+    readerMap_[WMV3_STREAM] = &VideoDecAsyncSample::CreateWmv3Reader;
+    readerMap_[WMV1_STREAM] = &VideoDecAsyncSample::CreateWmv1Reader;
 #ifdef SUPPORT_CODEC_RV
-        case RV30_STREAM:
-            return CreateRv30Reader();
-        case RV40_STREAM:
-            return CreateRv40Reader();
+    readerMap_[RV30_STREAM] = &VideoDecAsyncSample::CreateRv30Reader;
+    readerMap_[RV40_STREAM] = &VideoDecAsyncSample::CreateRv40Reader;
 #endif
-        case MPEG1_STREAM:
-            return CreateMpeg1Reader();
-        case DVVIDEO_STREAM:
-            return CreateDvvideoReader();
-        case RAWVIDEO_STREAM:
-            return CreateRawvideoReader();
-        case CINEPAK_STREAM:
-            return CreateCinepakReader();
+    readerMap_[MPEG1_STREAM] = &VideoDecAsyncSample::CreateMpeg1Reader;
+    readerMap_[DVVIDEO_STREAM] = &VideoDecAsyncSample::CreateDvvideoReader;
+    readerMap_[RAWVIDEO_STREAM] = &VideoDecAsyncSample::CreateRawvideoReader;
+    readerMap_[CINEPAK_STREAM] = &VideoDecAsyncSample::CreateCinepakReader;
 #ifdef SUPPORT_CODEC_VP8
-        case VP8_STREAM:
-            return CreateVp8Reader();
+    readerMap_[VP8_STREAM] = &VideoDecAsyncSample::CreateVp8Reader;
 #endif
 #ifdef SUPPORT_CODEC_VP9
-        case VP9_STREAM:
-            return CreateVp9Reader();
+    readerMap_[VP9_STREAM] = &VideoDecAsyncSample::CreateVp9Reader;
 #endif
-        default:
-            return CreateAvccReader();
-    }
 }
 
 int32_t VideoDecAsyncSample::Start()
@@ -605,6 +598,16 @@ int32_t VideoDecAsyncSample::CreateWmv3Reader()
 
     wmv3Reader_ = std::make_shared<Wmv3Reader>();
     int32_t ret = wmv3Reader_->Init(info);
+    return ret;
+}
+
+int32_t VideoDecAsyncSample::CreateWmv1Reader()
+{
+    std::shared_ptr<Wmv1ReaderInfo> info = std::make_shared<Wmv1ReaderInfo>();
+    info->inPath = inPath_;
+
+    wmv1Reader_ = std::make_shared<Wmv1Reader>();
+    int32_t ret = wmv1Reader_->Init(info);
     return ret;
 }
 
@@ -909,6 +912,56 @@ void VideoDecAsyncSample::UpdateSHA(const char *addr, int32_t size)
     }
 }
 
+void VideoDecAsyncSample::FillReaderBuffer(uint8_t *addr, OH_AVCodecBufferAttr &attr)
+{
+    if (h263Reader_ != nullptr) {
+        h263Reader_->FillBuffer(addr, attr);
+    } else if (avccReader_ != nullptr) {
+        isKeepExecuting_ == false ? avccReader_->FillBuffer(addr, attr)
+                                  : avccReader_->KeepFillBuffer(addr, attr);
+    } else if (mpegReader_ != nullptr) {
+        mpegReader_->FillBuffer(addr, attr);
+#ifdef SUPPORT_CODEC_VC1
+    } else if (vc1Reader_ != nullptr) {
+        vc1Reader_->FillBuffer(addr, attr);
+    } else if (wvc1Reader_ != nullptr) {
+        wvc1Reader_->FillBuffer(addr, attr);
+#endif
+    } else if (wmv3Reader_ != nullptr) {
+        wmv3Reader_->FillBuffer(addr, attr);
+    } else if (wmv1Reader_ != nullptr) {
+        wmv1Reader_->FillBuffer(addr, attr);
+#ifdef SUPPORT_CODEC_AV1
+    } else if (av1Reader_ != nullptr) {
+        av1Reader_->FillBuffer(addr, attr);
+#endif
+#ifdef SUPPORT_CODEC_RV
+    } else if (rv30Reader_ != nullptr) {
+        rv30Reader_->FillBuffer(addr, attr);
+    } else if (rv40Reader_ != nullptr) {
+        rv40Reader_->FillBuffer(addr, attr);
+#endif
+    } else if (mpeg1Reader_ != nullptr) {
+        mpeg1Reader_->FillBuffer(addr, attr);
+    } else if (dvvideoReader_ != nullptr) {
+        dvvideoReader_->FillBuffer(addr, attr);
+    } else if (rawvideoReader_ != nullptr) {
+        rawvideoReader_->FillBuffer(addr, attr);
+    } else if (cinepakReader_ != nullptr) {
+        cinepakReader_->FillBuffer(addr, attr);
+#ifdef SUPPORT_CODEC_VP8
+    } else if (vp8Reader_ != nullptr) {
+        vp8Reader_->FillBuffer(addr, attr);
+#endif
+#ifdef SUPPORT_CODEC_VP9
+    } else if (vp9Reader_ != nullptr) {
+        vp9Reader_->FillBuffer(addr, attr);
+#endif
+    } else {
+        msvideo1Reader_->FillBuffer(addr, attr);
+    }
+}
+
 int32_t VideoDecAsyncSample::InputLoopInner()
 {
     uint32_t index = signal_->inIndexQueue_.front();
@@ -916,50 +969,7 @@ int32_t VideoDecAsyncSample::InputLoopInner()
     UNITTEST_CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->GetAddr() != nullptr, AV_ERR_INVALID_VAL,
                                       "Fatal: GetInputBuffer fail, index: %d", index);
     struct OH_AVCodecBufferAttr attr = {0, 0, 0, AVCODEC_BUFFER_FLAG_NONE};
-    if (h263Reader_ != nullptr) {
-        h263Reader_->FillBuffer(buffer->GetAddr(), attr);
-    } else if (avccReader_ != nullptr) {
-        isKeepExecuting_ == false ? avccReader_->FillBuffer(buffer->GetAddr(), attr)
-                                  : avccReader_->KeepFillBuffer(buffer->GetAddr(), attr);
-    } else if (mpegReader_ != nullptr) {
-        mpegReader_->FillBuffer(buffer->GetAddr(), attr);
-#ifdef SUPPORT_CODEC_VC1
-    } else if (vc1Reader_ != nullptr) {
-        vc1Reader_->FillBuffer(buffer->GetAddr(), attr);
-    } else if (wvc1Reader_ != nullptr) {
-        wvc1Reader_->FillBuffer(buffer->GetAddr(), attr);
-#endif
-    } else if (wmv3Reader_ != nullptr) {
-        wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
-#ifdef SUPPORT_CODEC_AV1
-    } else if (av1Reader_ != nullptr) {
-        av1Reader_->FillBuffer(buffer->GetAddr(), attr);
-#endif
-#ifdef SUPPORT_CODEC_RV
-    } else if (rv30Reader_ != nullptr) {
-        rv30Reader_->FillBuffer(buffer->GetAddr(), attr);
-    } else if (rv40Reader_ != nullptr) {
-        rv40Reader_->FillBuffer(buffer->GetAddr(), attr);
-#endif
-    } else if (mpeg1Reader_ != nullptr) {
-        mpeg1Reader_->FillBuffer(buffer->GetAddr(), attr);
-    } else if (dvvideoReader_ != nullptr) {
-        dvvideoReader_->FillBuffer(buffer->GetAddr(), attr);
-    } else if (rawvideoReader_ != nullptr) {
-        rawvideoReader_->FillBuffer(buffer->GetAddr(), attr);
-    } else if (cinepakReader_ != nullptr) {
-        cinepakReader_->FillBuffer(buffer->GetAddr(), attr);
-#ifdef SUPPORT_CODEC_VP8
-    } else if (vp8Reader_ != nullptr) {
-        vp8Reader_->FillBuffer(buffer->GetAddr(), attr);
-#endif
-#ifdef SUPPORT_CODEC_VP9
-    } else if (vp9Reader_ != nullptr) {
-        vp9Reader_->FillBuffer(buffer->GetAddr(), attr);
-#endif
-    } else {
-        msvideo1Reader_->FillBuffer(buffer->GetAddr(), attr);
-    }
+    FillReaderBuffer(buffer->GetAddr(), attr);
     return PushInputData(index, attr);
 }
 
@@ -1162,7 +1172,8 @@ int32_t VideoDecAsyncSample::OutputLoopInnerExt()
         int32_t size = (testParam_ == VCodecTestParam::SW_AVC || testParam_ == VCodecTestParam::SW_MPEG2 ||
                         testParam_ == VCodecTestParam::SW_MPEG4 || testParam_ == VCodecTestParam::SW_H263 ||
                         testParam_ == VCodecTestParam::SW_VC1 || testParam_ == VCodecTestParam::SW_MSVIDEO1 ||
-                        testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_RV30 ||
+                        testParam_ == VCodecTestParam::SW_WMV3 || testParam_ == VCodecTestParam::SW_WMV1 ||
+                        testParam_ == VCodecTestParam::SW_RV30 ||
                         testParam_ == VCodecTestParam::SW_RV40_TEST || testParam_ == VCodecTestParam::SW_WVC1 ||
                         testParam_ == VCodecTestParam::SW_MPEG1 || testParam_ == VCodecTestParam::SW_DVVIDEO ||
                         testParam_ == VCodecTestParam::SW_RAWVIDEO || testParam_ == VCodecTestParam::SW_CINEPAK ||
@@ -1249,6 +1260,8 @@ int32_t VideoDecAsyncSample::InputLoopInnerExt()
 #endif
     } else if (wmv3Reader_ != nullptr) {
         wmv3Reader_->FillBuffer(buffer->GetAddr(), attr);
+    } else if (wmv1Reader_ != nullptr) {
+        wmv1Reader_->FillBuffer(buffer->GetAddr(), attr);
 #ifdef SUPPORT_CODEC_AV1
     } else if (av1Reader_ != nullptr) {
         av1Reader_->FillBuffer(buffer->GetAddr(), attr);
