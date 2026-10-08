@@ -123,7 +123,8 @@ ohos_unittest("demuxer_native_module_test") {
       "./src/asffunc_test.cpp",
       "./src/sunaufunc_test.cpp",
       "./src/aifcfunc_test.cpp",
-      "./src/aifffunc_test.cpp"
+      "./src/aifffunc_test.cpp",
+      "./src/compare_test.cpp",
     ]
   }
 
@@ -135,6 +136,7 @@ ohos_unittest("demuxer_native_module_test") {
     "media_foundation:media_foundation",
     "media_foundation:native_media_core",
     "window_manager:libwm",
+    "openssl:libcrypto_shared",
   ]
 
   if (target_cpu == "arm64") {
