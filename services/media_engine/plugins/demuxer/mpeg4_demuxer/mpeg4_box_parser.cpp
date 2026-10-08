@@ -63,8 +63,10 @@ constexpr uint64_t MAX_NON_MDAT_ATOM_PAYLOAD_SIZE = 64ULL * 1024 * 1024;
 constexpr int32_t MDAT_ATOM_TYPE = FourccType("mdat");
 constexpr int32_t MOOV_ATOM_TYPE = FourccType("moov");
 constexpr uint64_t MAX_TITLE_SIZE = 24;
-constexpr uint64_t MAX_EXTRA_DATA_SIZE = 1024 * 1024;
-constexpr uint64_t MAX_TOTAL_CODEC_CONFIG_SIZE = 16 * MAX_EXTRA_DATA_SIZE;
+// Align with FFmpegFormatHelper's 10 MiB public extradata limit. This is
+// independent from the cumulative per-stsd codec-config limit below.
+constexpr uint64_t MAX_EXTRA_DATA_SIZE = 10ULL * 1024 * 1024;
+constexpr uint64_t MAX_TOTAL_CODEC_CONFIG_SIZE = 16ULL * 1024 * 1024;
 constexpr uint64_t MAX_DATA_SIZE = 256;
 constexpr uint64_t MIN_COLOR_SIZE = 4;
 constexpr uint64_t MIN_COLOR_PARAM_SIZE = 6;
@@ -750,8 +752,11 @@ Status MPEG4AtomParser::ParseContainerAtom(const MPEG4Atom& containerAtom, int32
         if (isPadding) {
             break;
         }
+        int64_t childOffset = ctx->offset;
         ret = MPEG4ParseAtom(depth + 1, ctx);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Failed to parse atom at offset " PUBLIC_LOG_D64, ctx->offset);
+        FALSE_RETURN_V_MSG_E(ctx->offset > childOffset, Status::ERROR_INVALID_DATA,
+            "Child atom did not advance container offset");
     }
     FALSE_RETURN_V_MSG_E(ctx->offset == endOffset, Status::ERROR_INVALID_DATA,
         "Finished parsing container atom at offset " PUBLIC_LOG_D64 ", expected end at " PUBLIC_LOG_D64,
@@ -780,10 +785,22 @@ Status MPEG4AtomParser::PrepareChildAtomInContainer(int64_t endOffset, ParseCont
         isPadding = true;
         return Status::OK;
     }
-    constexpr int64_t basicHeaderSize = 8;
-    constexpr uint64_t basicHeaderSizeU64 = 8;
+    constexpr int64_t resyncHeaderSize = DEFAULT_HEAD_SIZE + static_cast<int64_t>(sizeof(uint32_t));
+    if (allowTruncatedMoovChildren_ && childSize32 > 1 && childSize32 < DEFAULT_HEAD_SIZE &&
+        endOffset >= resyncHeaderSize && ctx->offset <= endOffset - resyncHeaderSize) {
+        // A damaged moov child may have a 2..7 size prefix immediately before a
+        // complete atom header. Skip only that prefix and retain the real header.
+        ctx->offset += sizeof(uint32_t);
+        MEDIA_LOG_W("Skip truncated moov child prefix at offset " PUBLIC_LOG_D64, ctx->offset - sizeof(uint32_t));
+        return Status::OK;
+    }
+    return ValidateChildAtomSize(childSize32, endOffset, ctx);
+}
+
+Status MPEG4AtomParser::ValidateChildAtomSize(uint32_t childSize32, int64_t endOffset, ParseContext* ctx)
+{
     int64_t childHeaderEndOffset = 0;
-    if (__builtin_add_overflow(ctx->offset, basicHeaderSize, &childHeaderEndOffset) ||
+    if (__builtin_add_overflow(ctx->offset, DEFAULT_HEAD_SIZE, &childHeaderEndOffset) ||
         childHeaderEndOffset > endOffset) {
         MEDIA_LOG_E("Child atom header exceeds container at offset " PUBLIC_LOG_D64, ctx->offset);
         return Status::ERROR_INVALID_DATA;
@@ -795,11 +812,19 @@ Status MPEG4AtomParser::PrepareChildAtomInContainer(int64_t endOffset, ParseCont
             return ret;
         }
     }
-    uint64_t minChildSize = childSize32 == 1 ? sizeof(uint64_t) + sizeof(uint64_t) : basicHeaderSizeU64;
+    uint64_t minChildSize = childSize32 == 1 ? sizeof(uint64_t) + sizeof(uint64_t) :
+        static_cast<uint64_t>(DEFAULT_HEAD_SIZE);
     FALSE_RETURN_V_MSG_E(childSize >= minChildSize, Status::ERROR_INVALID_DATA,
         "Invalid child atom size: " PUBLIC_LOG_U64, childSize);
     int64_t childEndOffset = 0;
     if (__builtin_add_overflow(ctx->offset, childSize, &childEndOffset) || childEndOffset > endOffset) {
+        if (allowTruncatedMoovChildren_) {
+            MEDIA_LOG_W("Trim truncated child atom at offset " PUBLIC_LOG_D64 ", end " PUBLIC_LOG_D64
+                ", container end " PUBLIC_LOG_D64, ctx->offset, childEndOffset, endOffset);
+            // Keep the header offset; MPEG4ParseAtom will trim the child to the
+            // source range and advance ctx->offset after parsing its metadata.
+            return Status::OK;
+        }
         MEDIA_LOG_E("Child atom exceeds container: end " PUBLIC_LOG_D64 ", container end " PUBLIC_LOG_D64,
             childEndOffset, endOffset);
         return Status::ERROR_INVALID_DATA;
@@ -882,7 +907,10 @@ Status MPEG4AtomParser::ParseMoov(MPEG4Atom currentAtom, int32_t depth, ParseCon
         return Status::OK;
     }
 
+    bool oldAllowTruncated = allowTruncatedMoovChildren_;
+    allowTruncatedMoovChildren_ = currentAtom.effectiveSize < currentAtom.size;
     Status ret = ParseContainerAtom(currentAtom, depth, ctx);
+    allowTruncatedMoovChildren_ = oldAllowTruncated;
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse moov atom failed");
 
     moovFound_ = true;
@@ -1571,8 +1599,8 @@ void MPEG4AtomParser::CalculateSampleAspectRatio(std::shared_ptr<Track> track, u
     std::array<double, transformComponents> dispTransform;
 
     for (int32_t i = 0; i < transformComponents; ++i) {
-        double x = static_cast<double>(track->displayMatrix[0 + i]) / CONVERT_SCALE;
-        double y = static_cast<double>(track->displayMatrix[matrixColOffset + i]) / CONVERT_SCALE;
+        double x = static_cast<double>(track->displayMatrix[0 + i]);
+        double y = static_cast<double>(track->displayMatrix[matrixColOffset + i]);
         dispTransform[i] = std::hypot(x, y);
     }
     constexpr double minTransform = 1.0;
@@ -5328,6 +5356,12 @@ Status MPEG4AtomParser::ValidateAtomSourceRange(MPEG4Atom& atom, const std::stri
     FALSE_RETURN_V_MSG_E(ctx != nullptr && ctx->offset >= 0, Status::ERROR_INVALID_DATA, "Invalid atom offset");
     FALSE_RETURN_V_MSG_E(atomInfoSize >= DEFAULT_HEAD_SIZE && atomInfoSize <= atom.size,
         Status::ERROR_INVALID_DATA, "Invalid atom header size");
+    return HandleAtomSourceRange(atom, typeStr, depth, ctx, atomInfoSize);
+}
+
+Status MPEG4AtomParser::HandleAtomSourceRange(MPEG4Atom& atom, const std::string& typeStr, int32_t depth,
+    ParseContext* ctx, uint64_t atomInfoSize)
+{
     uint64_t atomEndOffset = 0;
     if (__builtin_add_overflow(static_cast<uint64_t>(ctx->offset), atom.size, &atomEndOffset)) {
         MEDIA_LOG_E("Atom size overflow at offset: " PUBLIC_LOG_D64, ctx->offset);
@@ -5339,22 +5373,23 @@ Status MPEG4AtomParser::ValidateAtomSourceRange(MPEG4Atom& atom, const std::stri
             Status::ERROR_INVALID_DATA, "Invalid atom offset");
         bool atomExceedsSource = atomEndOffset > dataSourceSize;
         uint64_t remainingSize = dataSourceSize - static_cast<uint64_t>(ctx->offset);
-        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && atom.type == MOOV_ATOM_TYPE) {
+        if (atomExceedsSource && allowTruncatedMoovChildren_) {
             FALSE_RETURN_V_MSG_E(remainingSize >= atomInfoSize, Status::ERROR_INVALID_DATA,
-                "Invalid truncated moov atom header");
+                "Invalid truncated moov child atom header");
             atom.effectiveSize = remainingSize;
-            MEDIA_LOG_W("Trim truncated root moov: offset " PUBLIC_LOG_D64 ", declared size " PUBLIC_LOG_U64
-                ", effective size " PUBLIC_LOG_U64 ", source size " PUBLIC_LOG_U64,
-                ctx->offset, atom.size, atom.effectiveSize, dataSourceSize);
+            MEDIA_LOG_W("Trim truncated moov child: offset " PUBLIC_LOG_D64 ", type " PUBLIC_LOG_S,
+                ctx->offset, typeStr.c_str());
             return Status::OK;
         }
-        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && atom.type == MDAT_ATOM_TYPE) {
+        if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH &&
+            (atom.type == MOOV_ATOM_TYPE || atom.type == MDAT_ATOM_TYPE)) {
             FALSE_RETURN_V_MSG_E(remainingSize >= atomInfoSize, Status::ERROR_INVALID_DATA,
-                "Invalid truncated mdat atom header");
+                "Invalid truncated root atom header");
             atom.effectiveSize = remainingSize;
-            MEDIA_LOG_W("Trim truncated root mdat: offset " PUBLIC_LOG_D64 ", declared size " PUBLIC_LOG_U64
+            MEDIA_LOG_W("Trim truncated root atom: offset " PUBLIC_LOG_D64 ", type " PUBLIC_LOG_S
+                ", declared size " PUBLIC_LOG_U64
                 ", effective size " PUBLIC_LOG_U64 ", source size " PUBLIC_LOG_U64,
-                ctx->offset, atom.size, atom.effectiveSize, dataSourceSize);
+                ctx->offset, typeStr.c_str(), atom.size, atom.effectiveSize, dataSourceSize);
             return Status::OK;
         }
         if (atomExceedsSource && depth == MPEG4_ROOT_DEPTH && moovFound_ && hasMdatBox_ &&
