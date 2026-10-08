@@ -93,6 +93,13 @@ struct SampleDigest {
     uint32_t flag = 0;
 };
 
+struct SeekToEosReadResult {
+    Status seekStatus = Status::ERROR_UNKNOWN;
+    Status nextSampleSizeStatus = Status::ERROR_UNKNOWN;
+    Status readStatus = Status::ERROR_UNKNOWN;
+    bool eosBuffer = false;
+};
+
 struct SeekExpectedResult {
     int64_t seekTimeMs = 0;
     Plugins::SeekMode seekMode = Plugins::SeekMode::SEEK_PREVIOUS_SYNC;
@@ -162,6 +169,9 @@ protected:
     void CompareSampleDigest(const SampleDigest& lhs, const SampleDigest& rhs);
     void CompareSeekReadResult(const std::string& filePath, const std::vector<int64_t>& seekTimes,
         const std::vector<Plugins::SeekMode>& seekModes, bool useUri = false);
+    SeekToEosReadResult ReadToEosAfterSeek(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
+        int64_t seekTimeMs, ReadMode readMode);
+    void CheckAsyncEosAfterSeek(ReadMode readMode);
     void CheckSeekFirstVideoSampleWithSourceTimeline(const std::string& filePath, const std::vector<int64_t>& seekTimes,
         const std::vector<Plugins::SeekMode>& seekModes, bool useUri = false);
     void CheckSeekReadResultWithSourceTimeline(const std::string& filePath, const std::vector<int64_t>& seekTimes,

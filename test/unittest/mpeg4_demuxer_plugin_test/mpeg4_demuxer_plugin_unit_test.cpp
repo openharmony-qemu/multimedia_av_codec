@@ -81,6 +81,8 @@ constexpr int64_t WEAK_NETWORK_FIRST_READ_FAIL_OFFSET = 0;
 constexpr size_t WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT = 1;
 constexpr size_t WEAK_NETWORK_THREAD_RETRY_FAIL_COUNT = 20;
 constexpr size_t MAX_WEBVTT_SAMPLE_READ_COUNT = 100000;
+constexpr size_t MAX_EOS_SEEK_SAMPLE_COUNT = 128;
+constexpr int64_t TEST_EOS_SEEK_TIME_MS = 4000;
 constexpr int64_t TEST_MS_TO_US = 1000;
 constexpr int64_t TEST_US_TO_NS = 1000;
 constexpr int32_t ZERO_LENGTH_AAC_SAMPLE_RATE = 44100;
@@ -2448,6 +2450,69 @@ void Mpeg4DemuxerPluginUnitTest::CompareSeekReadResult(
     }
 }
 
+SeekToEosReadResult Mpeg4DemuxerPluginUnitTest::ReadToEosAfterSeek(
+    const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId, int64_t seekTimeMs, ReadMode readMode)
+{
+    SeekToEosReadResult result;
+    int64_t realSeekTime = 0;
+    result.seekStatus = plugin->SeekTo(static_cast<int32_t>(trackId), seekTimeMs,
+        SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+    if (result.seekStatus != Status::OK) {
+        return result;
+    }
+
+    std::unique_ptr<AVBufferWrapper> copyBuffer;
+    if (readMode == ReadMode::COPY) {
+        copyBuffer = std::make_unique<AVBufferWrapper>(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    }
+    for (size_t sampleIndex = 0; sampleIndex < MAX_EOS_SEEK_SAMPLE_COUNT; ++sampleIndex) {
+        int32_t sampleSize = 0;
+        result.nextSampleSizeStatus = GetNextSampleSizeWithRetry(plugin, trackId, sampleSize);
+        if (result.nextSampleSizeStatus != Status::OK &&
+            result.nextSampleSizeStatus != Status::END_OF_STREAM) {
+            return result;
+        }
+        auto buffer = (readMode == ReadMode::ZERO_COPY) ? MediaAVBuffer::CreateAVBuffer() : copyBuffer->mediaAVBuffer;
+        if (buffer == nullptr) {
+            result.readStatus = Status::ERROR_NO_MEMORY;
+            return result;
+        }
+        result.readStatus = ReadSampleWithRetry(plugin, trackId, buffer, readMode);
+        result.eosBuffer = IsEos(buffer);
+        if (result.nextSampleSizeStatus == Status::END_OF_STREAM || result.readStatus != Status::OK ||
+            result.eosBuffer) {
+            return result;
+        }
+        if (result.nextSampleSizeStatus != Status::OK) {
+            return result;
+        }
+    }
+    result.nextSampleSizeStatus = Status::ERROR_WAIT_TIMEOUT;
+    return result;
+}
+
+void Mpeg4DemuxerPluginUnitTest::CheckAsyncEosAfterSeek(ReadMode readMode)
+{
+    InitPluginsForReadTest(TEST_MP4_PATH_H264_B, false);
+    auto ffmpegTracks = SelectSupportedTracks(ffmpegPlugin_, ffmpegMediaInfo_);
+    auto mpeg4Tracks = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    uint32_t ffmpegVideoTrack = FindFirstVideoTrack(ffmpegMediaInfo_, ffmpegTracks);
+    uint32_t mpeg4VideoTrack = FindFirstVideoTrack(mpeg4MediaInfo_, mpeg4Tracks);
+    ASSERT_NE(ffmpegVideoTrack, INVALID_TRACK_ID);
+    ASSERT_NE(mpeg4VideoTrack, INVALID_TRACK_ID);
+
+    auto ffmpegResult = ReadToEosAfterSeek(ffmpegPlugin_, ffmpegVideoTrack, TEST_EOS_SEEK_TIME_MS, readMode);
+    auto mpeg4Result = ReadToEosAfterSeek(mpeg4Plugin_, mpeg4VideoTrack, TEST_EOS_SEEK_TIME_MS, readMode);
+    EXPECT_EQ(ffmpegResult.seekStatus, Status::OK);
+    EXPECT_EQ(mpeg4Result.seekStatus, ffmpegResult.seekStatus);
+    EXPECT_EQ(ffmpegResult.nextSampleSizeStatus, Status::END_OF_STREAM);
+    EXPECT_EQ(mpeg4Result.nextSampleSizeStatus, ffmpegResult.nextSampleSizeStatus);
+    EXPECT_EQ(ffmpegResult.readStatus, Status::OK);
+    EXPECT_EQ(mpeg4Result.readStatus, ffmpegResult.readStatus);
+    EXPECT_TRUE(ffmpegResult.eosBuffer);
+    EXPECT_EQ(mpeg4Result.eosBuffer, ffmpegResult.eosBuffer);
+}
+
 void Mpeg4DemuxerPluginUnitTest::CheckSeekFirstVideoSampleWithSourceTimeline(
     const std::string& filePath, const std::vector<int64_t>& seekTimes,
     const std::vector<SeekMode>& seekModes, bool useUri)
@@ -3929,6 +3994,59 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MP4_CompareWi
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_EosWaitForCache_001
+ * @tc.desc: Prefer an EOS cache entry over the read-loop EOS status
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EosWaitForCache_001, TestSize.Level1)
+{
+    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    auto plugin = std::static_pointer_cast<MPEG4DemuxerPlugin>(mpeg4Plugin_);
+    ASSERT_NE(plugin, nullptr);
+    uint32_t trackId = selectedTrackIds.front();
+
+    plugin->readLoopStatus_.store(Status::END_OF_STREAM, std::memory_order_release);
+    std::atomic<Status> enqueueStatus {Status::ERROR_UNKNOWN};
+    plugin->readThread_ = std::make_unique<std::thread>([plugin, trackId, &enqueueStatus] {
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        enqueueStatus.store(plugin->PushEosToCache(trackId), std::memory_order_release);
+        std::lock_guard<std::mutex> lock(plugin->readSampleMutex_);
+        plugin->readCacheCv_.notify_all();
+    });
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    Status ret = plugin->ReadSample(trackId, buffer.mediaAVBuffer, 1000);
+    plugin->readThread_->join();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(enqueueStatus.load(std::memory_order_acquire), Status::OK);
+    EXPECT_TRUE(IsEos(buffer.mediaAVBuffer));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AsyncEosAfterSeek_Copy_CompareWithFfmpeg_001
+ * @tc.desc: Compare cached EOS status and output flag after a near-end copy read
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_AsyncEosAfterSeek_Copy_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    ASSERT_NO_FATAL_FAILURE(CheckAsyncEosAfterSeek(ReadMode::COPY));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AsyncEosAfterSeek_ZeroCopy_CompareWithFfmpeg_001
+ * @tc.desc: Compare cached EOS status and output flag after a near-end zero-copy read
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_AsyncEosAfterSeek_ZeroCopy_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    ASSERT_NO_FATAL_FAILURE(CheckAsyncEosAfterSeek(ReadMode::ZERO_COPY));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MP4_WebVtt_CompareWithFfmpeg_001
  * @tc.desc: Compare MPEG4 and FFmpeg demuxer WebVTT sample attributes on mp4
  * @tc.type: FUNC
@@ -4315,6 +4433,31 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     auto ret = ReadSampleWithRetry(mpeg4Plugin_, trackId, buffer.mediaAVBuffer, ReadMode::COPY);
     EXPECT_EQ(ret, Status::OK);
     EXPECT_FALSE(IsEos(buffer.mediaAVBuffer));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetNextSampleSize_WeakNetwork_TimeoutThenRecover_001
+ * @tc.desc: Return timeout while the cache is empty and read-loop status remains OK, then recover
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_GetNextSampleSize_WeakNetwork_TimeoutThenRecover_001, TestSize.Level1)
+{
+    InitDeferredWeakNetworkMpeg4Plugin(TEST_MP4_PATH_H264_B, WEAK_NETWORK_FIRST_READ_FAIL_OFFSET,
+        WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT, WEAK_NETWORK_FAIL_DELAY_MS);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+
+    int32_t sampleSize = 0;
+    uint32_t trackId = selectedTrackIds.front();
+    auto plugin = std::static_pointer_cast<MPEG4DemuxerPlugin>(mpeg4Plugin_);
+    ASSERT_NE(plugin, nullptr);
+    EXPECT_EQ(plugin->readLoopStatus_.load(std::memory_order_acquire), Status::OK);
+    EXPECT_EQ(mpeg4Plugin_->GetNextSampleSize(trackId, sampleSize, WEAK_NETWORK_SHORT_TIMEOUT_MS),
+        Status::ERROR_WAIT_TIMEOUT);
+    EXPECT_EQ(plugin->readLoopStatus_.load(std::memory_order_acquire), Status::OK);
+    EXPECT_EQ(GetNextSampleSizeWithRetry(mpeg4Plugin_, trackId, sampleSize), Status::OK);
+    EXPECT_GT(sampleSize, 0);
 }
 
 /**
