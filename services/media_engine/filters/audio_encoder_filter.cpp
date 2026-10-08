@@ -25,7 +25,6 @@
 #include "avcodec_trace.h"
 #ifdef SUPPORT_AUDIO_CONVERT
 #include "audio_format_converter.h"
-#include "audio_suite_pcm_buffer.h"
 #include "audio_stream_info.h"
 #endif
 
