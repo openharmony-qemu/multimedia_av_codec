@@ -1852,7 +1852,10 @@ void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta 
     std::string mime;
     bool annexbReady = false;
     mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
-    if (HaveValidParser(mime) && streamParsers_ != nullptr &&
+    // FFmpeg keeps the container CSD when no packet exists to initialize the
+    // parser. Do not convert an empty track's hvcC/avcC into Annex-B here.
+    bool hasSamples = track.sampleHelper != nullptr && !track.sampleHelper->IsSampleIndexEmpty();
+    if (hasSamples && HaveValidParser(mime) && streamParsers_ != nullptr &&
         streamParsers_->ParserIsCreated(trackIndex) && !streamParsers_->ParserIsInited(trackIndex)) {
         if (extradata == nullptr || extradataSize <= 0 ||
             !streamParsers_->ConvertExtraDataToAnnexb(trackIndex, extradata, extradataSize)) {
