@@ -1611,7 +1611,7 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(MPEG4AtomParser::Track& track, const
 {
     Meta meta = mediaInfo_.tracks[trackIndex];
     std::string mime;
-    bool avcMetadataParsedFromFirstFrame = false;
+    bool videoMetadataParsedFromFirstFrame = false;
     mediaInfo_.tracks[trackIndex].Get<Tag::MIME_TYPE>(mime);
     if (mime == "video/hevc" || mime == "video/avc") {
         if (streamParsers_ != nullptr && streamParsers_->ParserIsInited(trackIndex) &&
@@ -1627,16 +1627,17 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(MPEG4AtomParser::Track& track, const
             streamParsers_->ResetXPSSendStatus(trackIndex);
             if (mime == "video/hevc") {
                 ParseHEVCMetadataInfo(track, meta);
+                videoMetadataParsedFromFirstFrame = true;
             } else if (mime == "video/avc") {
                 ParseAVCMetadataInfo(track, meta);
-                avcMetadataParsedFromFirstFrame = true;
+                videoMetadataParsedFromFirstFrame = true;
             }
         } else {
             MEDIA_LOG_W("Parse avc/hevc info failed");
         }
     }
     if (HaveValidParser(mime)) {
-        ConvertCsdToAnnexb(track, meta, trackIndex, !avcMetadataParsedFromFirstFrame);
+        ConvertCsdToAnnexb(track, meta, trackIndex, !videoMetadataParsedFromFirstFrame);
     }
     mediaInfo_.tracks[trackIndex] = meta;
     DemuxerLogCompressor::StringifyMeta(meta, trackIndex);
@@ -1842,7 +1843,7 @@ Status MPEG4DemuxerPlugin::FillDrmSubsamples(MetaDrmCencInfo& cencInfo,
 // LCOV_EXCL_STOP
 
 void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta &format, uint32_t trackIndex,
-    bool parseAvcMetadataFromCsd)
+    bool parseVideoMetadataFromCsd)
 {
     track.codecParms.hasValidExtradata = false;
     track.codecParms.annexbExtradataSize = 0;
@@ -1869,8 +1870,12 @@ void MPEG4DemuxerPlugin::ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta 
         format.Set<Tag::MEDIA_CODEC_CONFIG>(extra);
         track.codecParms.annexbExtradataSize = extradataSize;
         track.codecParms.hasValidExtradata = true;
-        if (parseAvcMetadataFromCsd && mime == MimeType::VIDEO_AVC && annexbReady) {
-            ParseAVCMetadataInfo(track, format);
+        if (parseVideoMetadataFromCsd && annexbReady) {
+            if (mime == MimeType::VIDEO_AVC) {
+                ParseAVCMetadataInfo(track, format);
+            } else if (mime == MimeType::VIDEO_HEVC) {
+                ParseHEVCMetadataInfo(track, format);
+            }
         }
     }
 }

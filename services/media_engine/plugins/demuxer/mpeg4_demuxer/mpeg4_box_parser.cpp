@@ -785,9 +785,11 @@ Status MPEG4AtomParser::PrepareChildAtomInContainer(int64_t endOffset, ParseCont
         isPadding = true;
         return Status::OK;
     }
-    constexpr int64_t basicHeaderSize = 8;
-    if (allowTruncatedMoovChildren_ && childSize32 > 1 && childSize32 < basicHeaderSize &&
-        ctx->offset + basicHeaderSize <= endOffset) {
+    constexpr int64_t resyncHeaderSize = DEFAULT_HEAD_SIZE + static_cast<int64_t>(sizeof(uint32_t));
+    if (allowTruncatedMoovChildren_ && childSize32 > 1 && childSize32 < DEFAULT_HEAD_SIZE &&
+        endOffset >= resyncHeaderSize && ctx->offset <= endOffset - resyncHeaderSize) {
+        // A damaged moov child may have a 2..7 size prefix immediately before a
+        // complete atom header. Skip only that prefix and retain the real header.
         ctx->offset += sizeof(uint32_t);
         MEDIA_LOG_W("Skip truncated moov child prefix at offset " PUBLIC_LOG_D64, ctx->offset - sizeof(uint32_t));
         return Status::OK;
@@ -797,10 +799,8 @@ Status MPEG4AtomParser::PrepareChildAtomInContainer(int64_t endOffset, ParseCont
 
 Status MPEG4AtomParser::ValidateChildAtomSize(uint32_t childSize32, int64_t endOffset, ParseContext* ctx)
 {
-    constexpr int64_t basicHeaderSize = 8;
-    constexpr uint64_t basicHeaderSizeU64 = 8;
     int64_t childHeaderEndOffset = 0;
-    if (__builtin_add_overflow(ctx->offset, basicHeaderSize, &childHeaderEndOffset) ||
+    if (__builtin_add_overflow(ctx->offset, DEFAULT_HEAD_SIZE, &childHeaderEndOffset) ||
         childHeaderEndOffset > endOffset) {
         MEDIA_LOG_E("Child atom header exceeds container at offset " PUBLIC_LOG_D64, ctx->offset);
         return Status::ERROR_INVALID_DATA;
@@ -812,7 +812,8 @@ Status MPEG4AtomParser::ValidateChildAtomSize(uint32_t childSize32, int64_t endO
             return ret;
         }
     }
-    uint64_t minChildSize = childSize32 == 1 ? sizeof(uint64_t) + sizeof(uint64_t) : basicHeaderSizeU64;
+    uint64_t minChildSize = childSize32 == 1 ? sizeof(uint64_t) + sizeof(uint64_t) :
+        static_cast<uint64_t>(DEFAULT_HEAD_SIZE);
     FALSE_RETURN_V_MSG_E(childSize >= minChildSize, Status::ERROR_INVALID_DATA,
         "Invalid child atom size: " PUBLIC_LOG_U64, childSize);
     int64_t childEndOffset = 0;

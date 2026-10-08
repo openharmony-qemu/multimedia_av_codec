@@ -428,7 +428,7 @@ private:
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ParseAVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ConvertCsdToAnnexb(MPEG4AtomParser::Track& track, Meta& format, uint32_t trackIndex,
-        bool parseAvcMetadataFromCsd);
+        bool parseVideoMetadataFromCsd);
     int SelectSeekTrack();
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
 
