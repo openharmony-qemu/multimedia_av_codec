@@ -290,7 +290,7 @@ static const std::map<std::string, VideoOrientationType> matrixTypes = {
     {"0 -1 -1 0", VideoOrientationType::FLIP_V_ROT90},
 };
 
-static const AudioChannelLayout AAC_CHANNEL_LAYOUT_TABLE[14] = {
+static const AudioChannelLayout AAC_CHANNEL_LAYOUT_TABLE[15] = {
     AudioChannelLayout::UNKNOWN,
     AudioChannelLayout::MONO,
     AudioChannelLayout::STEREO,
@@ -304,7 +304,8 @@ static const AudioChannelLayout AAC_CHANNEL_LAYOUT_TABLE[14] = {
     AudioChannelLayout::UNKNOWN,
     AudioChannelLayout::CH_6POINT1_BACK,
     AudioChannelLayout::CH_7POINT1,
-    AudioChannelLayout::CH_22POINT2
+    AudioChannelLayout::CH_22POINT2,
+    AudioChannelLayout::CH_7POINT1_WIDE
 };
 
 static const uint32_t AAC_SAMPLE_RATE_TABLE[] = {
@@ -427,6 +428,15 @@ void ReadAACObjectType(DemuxerBitReader& bitReader, uint8_t& audioObjectType)
         return;
     }
     audioObjectType = static_cast<uint8_t>(0x20 + ReadBitsWidePadded(bitReader, audioObjectTypeExtensionSize));
+}
+
+void AdjustPsChannelConfig(bool hasPs, uint32_t& channels, AudioChannelLayout& layout)
+{
+    if (hasPs && channels == 1) {
+        // FFmpeg expands a PS signalled single-channel element to FL|FR output.
+        channels = 2;
+        layout = AudioChannelLayout::STEREO;
+    }
 }
 
 bool GetAv3aChannelConfig(uint8_t channelNumberIndex, AudioChannelLayout& layout, int32_t& channels)
@@ -2808,7 +2818,7 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
     ReadAACSampleRate(bitReader, samplingFreqIndex, sampleRate);
     const uint32_t baseSampleRate = sampleRate;
     uint8_t channelConfig = static_cast<uint8_t>(ReadBitsWidePadded(bitReader, channelConfigSize));
-    static const uint8_t aacAudioChannels[14] = {0, 1, 2, 3, 4, 5, 6, 8, 0, 0, 0, 7, 8, 24};
+    static const uint8_t aacAudioChannels[15] = {0, 1, 2, 3, 4, 5, 6, 8, 0, 0, 0, 7, 8, 24, 8};
     if (channelConfig >= sizeof(aacAudioChannels) / sizeof(aacAudioChannels[0])) {
         MEDIA_LOG_E("Invalid AAC channel configuration: " PUBLIC_LOG_U8, channelConfig);
         return false;
@@ -2819,6 +2829,7 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
     const bool isImplicitPs = audioObjectType == AOT_PS &&
         !((bitReader.ShowBits(0x03) & 0x03) && !(ShowBitsWide(bitReader, 0x09) & 0x3F));
     const bool hasExplicitSbr = audioObjectType == AOT_SBR || isImplicitPs;
+    AdjustPsChannelConfig(isImplicitPs, channels, layout);
     uint32_t extensionSampleRate = 0;
     if (hasExplicitSbr) {
         uint8_t extensionSamplingFreqIndex = 0;
