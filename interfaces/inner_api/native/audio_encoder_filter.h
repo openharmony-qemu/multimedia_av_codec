@@ -29,7 +29,7 @@
 #include "filter/filter.h"
 #ifdef SUPPORT_AUDIO_CONVERT
 #include "audio_format_converter.h"
-#include "audio_suite_pcm_buffer.h"
+#include "audio_suite_base.h"
 #include "audio_stream_info.h"
 #endif
 
@@ -159,8 +159,8 @@ private:
     };
 
     std::shared_ptr<AudioStandard::AudioSuite::AudioFormatConverter> channelConverter_;
-    AudioStandard::AudioSuite::PcmBufferFormat converterInputFormat_;
-    AudioStandard::AudioSuite::PcmBufferFormat converterOutputFormat_;
+    AudioStandard::AudioSuite::AudioFormat converterInputFormat_;
+    AudioStandard::AudioSuite::AudioFormat converterOutputFormat_;
 #endif
     std::atomic<bool> needChannelConvert_ {false};
 };
