@@ -755,7 +755,7 @@ Status MPEG4DemuxerPlugin::WaitForLoop(uint32_t trackId, uint32_t timeout)
         {
             std::unique_lock<std::mutex> readLock(readSampleMutex_);
             if (!readCacheCv_.wait_for(readLock, std::chrono::milliseconds(timeout), [this, track] {
-                    return !ShouldWaitForRead(track) || readLoopStatus_.load(std::memory_order_acquire) != Status::OK;
+                    return !ShouldWaitForRead(track);
                 })) {
                 isWaitingForReadThread_.store(false, std::memory_order_release);
                 FALSE_RETURN_V_MSG_E(readLoopStatus_.load(std::memory_order_acquire) == Status::OK,
@@ -765,9 +765,6 @@ Status MPEG4DemuxerPlugin::WaitForLoop(uint32_t trackId, uint32_t timeout)
         }
     }
     isWaitingForReadThread_.store(false, std::memory_order_release);
-    if (ShouldWaitForRead(track) && readLoopStatus_.load(std::memory_order_acquire) != Status::OK) {
-        return readLoopStatus_.load(std::memory_order_acquire);
-    }
     return Status::OK;
 }
 
