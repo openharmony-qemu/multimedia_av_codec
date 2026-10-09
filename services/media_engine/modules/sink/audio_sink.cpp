@@ -1291,8 +1291,8 @@ void AudioSink::DrainOutputBuffer(bool flushed)
 
     if (isRenderCallbackMode_) {
         if (state_ != Pipeline::FilterState::RUNNING) {
-            MEDIA_LOG_W_LIMIT(LOG_LIMIT_HUNDRED, "DrainOutputBuffer ignore temporarily for not RUNNINT state: " PUBLIC_LOG_D32
-                ", isProcessInputMerged: " PUBLIC_LOG_D32, state_.load(), isProcessInputMerged_);
+            MEDIA_LOG_W_LIMIT(LOG_LIMIT_HUNDRED, "DrainOutputBuffer ignore temporarily for not RUNNINT state: "
+                PUBLIC_LOG_D32 ", isProcessInputMerged: " PUBLIC_LOG_D32, state_.load(), isProcessInputMerged_);
 
             /*
             * As the AudioRender START and PAUSE procedure may consume a long time about 200 ms,
