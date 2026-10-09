@@ -1674,12 +1674,16 @@ HWTEST_F(DemuxerFilterUnitTest, HandleTrackInfos_dsd, TestSize.Level1)
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     trackInfos.push_back(meta);
 
+    meta->Set<Tag::REGULAR_TRACK_ID>(0);
     meta->Set<Tag::MIME_TYPE>(MimeType::AUDIO_DSD);
+    meta->Set<Tag::MEDIA_TYPE>(Plugins::MediaType::AUDIO);
+
+    auto callback = std::make_shared<FilterCallbackMock>();
+    demuxerFilter_->callback_ = callback;
     auto res = demuxerFilter_->HandleTrackInfos(trackInfos, successNodeCount);
-    std::cout << "HandleTrackInfos " << static_cast<int32_t>(res) << std::endl;
+    std::cout << "HandleTrackInfos_dsd " << static_cast<int32_t>(res) << std::endl;
 
     EXPECT_EQ(res, Status::OK);
-    std::cout << "HandleTrackInfos " << static_cast<int32_t>(res) << std::endl;
 }
 
 }  // namespace Pipeline
