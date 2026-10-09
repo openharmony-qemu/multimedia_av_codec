@@ -798,7 +798,7 @@ bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, 
 bool AudioSink::IsBufferDataDrained(AudioStandard::BufferDesc &bufferDesc, std::shared_ptr<AVBuffer> &buffer,
     size_t &size, size_t &cacheBufferSize, bool isAudioVivid, int64_t &bufferPts)
 {
-    FALSE_RETURN_V_MSG(cacheBufferSize <= size || !isAudioVivid || !isAudioPass_, false,
+    FALSE_RETURN_V_MSG(cacheBufferSize <= size || (!isAudioVivid && !isAudioPass_), false,
         "copy from cache buffer may fail.");
     MEDIA_TRACE_DEBUG("AudioSink::CopyBuffer");
     bool ret = isAudioVivid || isAudioPass_
