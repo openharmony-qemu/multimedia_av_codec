@@ -418,10 +418,7 @@ bool DemuxerFilter::IsAudioMime(const std::string& mime)
 
 bool DemuxerFilter::IsDsdFormat(const std::string& mime)
 {
-    std::string lowerMime = mime;
-    std::transform(lowerMime.begin(), lowerMime.end(), lowerMime.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
-    return lowerMime.find("audio_dsd") != std::string::npos;
+    return mime == MimeType::AUDIO_DSD;
 }
 
 void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
