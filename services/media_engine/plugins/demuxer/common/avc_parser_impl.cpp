@@ -860,7 +860,6 @@ bool AvcParserImpl::BuildAnnexbPacket(const uint8_t *packet, int32_t packetSize,
     FALSE_RETURN_V(FilterPsFromPacket(packet, packetSize, state), false);
     std::vector<NalUnitInfo> nalUnits;
     FALSE_RETURN_V_MSG_W(ParseNalUnits(nalUnits, packet, packetSize), false, "ParseNalUnits failed");
-    FALSE_RETURN_V(!nalUnits.empty(), false);
     for (const auto &nal : nalUnits) {
         FALSE_RETURN_V(HandlePacketNal(nal, state, output.buffer, output.bufferSize, output.dataSize), false);
     }

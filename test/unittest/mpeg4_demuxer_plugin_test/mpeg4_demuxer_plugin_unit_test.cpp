@@ -3963,6 +3963,30 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_BufferConvert_
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParser_ZeroLengthNals_001
+ * @tc.desc: Verify zero-length AVCC NAL units produce FFmpeg-compatible empty packet.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_ZeroLengthNals_001, TestSize.Level1)
+{
+    const std::vector<uint8_t> avcc = {
+        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
+    };
+    const std::vector<uint8_t> packet(12, 0);
+    Plugins::AvcParserImpl parser;
+    auto config = avcc;
+    ASSERT_TRUE(parser.ConvertExtraDataToAnnexb(config.data(), static_cast<int32_t>(config.size())));
+    int32_t outputSize = -1;
+    Plugins::PacketConvertToBufferInfo convertInfo(outputSize);
+    convertInfo.srcData = packet.data();
+    convertInfo.srcDataSize = static_cast<int32_t>(packet.size());
+    convertInfo.outBuffer = nullptr;
+    convertInfo.outBufferSize = 0;
+    EXPECT_TRUE(parser.ConvertPacketToAnnexb(convertInfo));
+    EXPECT_EQ(outputSize, 0);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MP4_CompareWithFfmpeg_001
  * @tc.desc: Compare MPEG4 and FFmpeg demuxer full-frame read results on h264 mp4
  * @tc.type: FUNC
