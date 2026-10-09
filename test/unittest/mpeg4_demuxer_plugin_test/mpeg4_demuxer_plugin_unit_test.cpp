@@ -91,6 +91,7 @@ constexpr int32_t AAC_TEST_CHANNEL_COUNT = 2;
 constexpr int32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC = 2;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_SBR = 5;
+constexpr uint8_t AAC_TEST_LC_CONFIG[] = {0x12, 0x10};
 constexpr uint8_t AAC_TEST_PS_CONFIG[] = {0xEC, 0x8B, 0x08, 0x00, 0x00};
 constexpr uint8_t AAC_TEST_AUDIO_OBJECT_TYPE_BITS = 5;
 constexpr uint32_t AAC_TEST_ASC_SYNC_EXTENSION = 0x2B7;
@@ -3586,6 +3587,29 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacPsConfig_001, TestSiz
     EXPECT_EQ(sampleRate, AAC_TEST_CORE_SAMPLE_RATE);
     EXPECT_EQ(channels, static_cast<uint32_t>(AAC_TEST_CHANNEL_COUNT));
     EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacLcConfig_001
+ * @tc.desc: Verify a basic AAC-LC ASC does not expose an unprobed frame size.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacLcConfig_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    ASSERT_NE(track, nullptr);
+    track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    ASSERT_NE(track->sampleHelper, nullptr);
+    parser.lastTrack_ = track;
+    parser.mediaInfo_.tracks.resize(1);
+
+    uint32_t sampleRate = 0;
+    uint32_t channels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(parser.ParseAACConfig(AAC_TEST_LC_CONFIG, sizeof(AAC_TEST_LC_CONFIG), sampleRate, channels, layout));
+    EXPECT_FALSE(parser.mediaInfo_.tracks[0].Find(Tag::AUDIO_SAMPLE_PER_FRAME) !=
+        parser.mediaInfo_.tracks[0].end());
 }
 
 /**
