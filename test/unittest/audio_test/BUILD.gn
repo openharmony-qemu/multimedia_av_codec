@@ -83,7 +83,7 @@ ohos_unittest("av_audio_capi_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -134,7 +134,7 @@ ohos_unittest("av_audio_codecbase_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -185,7 +185,7 @@ ohos_unittest("av_audio_decode_ability_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -242,7 +242,7 @@ ohos_unittest("av_audio_inner_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -293,7 +293,7 @@ ohos_unittest("av_audio_encoder_capi_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -345,7 +345,7 @@ ohos_unittest("av_audio_encoder_avbuffer_capi_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -402,7 +402,7 @@ ohos_unittest("av_audio_decoder_avbuffer_capi_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -629,7 +629,7 @@ ohos_unittest("audio_hdi_codec_inner_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -685,7 +685,7 @@ ohos_unittest("audio_g711mu_encoder_plugin_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -794,7 +794,7 @@ ohos_unittest("audio_resample_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -848,7 +848,7 @@ ohos_unittest("audio_decoder_plugin_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -902,7 +902,7 @@ ohos_unittest("audio_encoder_plugin_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -969,7 +969,7 @@ ohos_unittest("audio_raw_decoder_plugin_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1032,7 +1032,7 @@ ohos_unittest("audio_ffmpeg_base_codec_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1190,7 +1190,7 @@ ohos_unittest("audio_truehd_decoder_capi_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1305,7 +1305,7 @@ ohos_unittest("audio_sync_mode_truehd_capi_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1367,7 +1367,7 @@ ohos_unittest("audio_truehd_capi_decoder_unit_stable_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1429,7 +1429,7 @@ ohos_unittest("audio_eac3_decoder_capi_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1586,7 +1586,7 @@ ohos_unittest("audio_sync_mode_capi_unit_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1636,7 +1636,7 @@ ohos_unittest("audio_sync_mode_eac3_capi_unit_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1685,7 +1685,7 @@ ohos_unittest("audio_sync_mode_gsm_capi_unit_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1734,7 +1734,7 @@ ohos_unittest("audio_sync_mode_gsm_ms_capi_unit_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1858,7 +1858,7 @@ ohos_unittest("audio_gsm_ms_capi_decoder_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -1971,7 +1971,7 @@ ohos_unittest("audio_gsm_capi_decoder_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2047,7 +2047,7 @@ ohos_unittest("audio_wma_decoder_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2111,7 +2111,7 @@ ohos_unittest("audio_adpcm_decoder_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2143,7 +2143,7 @@ ohos_unittest("audio_gsm_ms_capi_decoder_unit_stable_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2192,7 +2192,7 @@ ohos_unittest("audio_eac3_capi_decoder_unit_stable_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2241,7 +2241,7 @@ ohos_unittest("audio_gsm_capi_decoder_unit_stable_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2304,7 +2304,7 @@ ohos_unittest("audio_pcm_capi_decoder_unit_stable_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2429,7 +2429,7 @@ ohos_unittest("audio_ilbc_capi_decoder_unit_stable_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2491,7 +2491,7 @@ ohos_unittest("audio_ilbc_decoder_capi_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2553,7 +2553,7 @@ ohos_unittest("audio_sync_mode_ilbc_capi_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2604,7 +2604,7 @@ ohos_unittest("audio_decoder_skip_info_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2650,7 +2650,7 @@ ohos_unittest("audio_decoder_skip_info_innter_unit_test") {
     "media_foundation:native_media_core",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2763,7 +2763,7 @@ ohos_unittest("audio_sync_mode_twinvq_capi_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2825,7 +2825,7 @@ ohos_unittest("audio_twinvq_capi_decoder_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2887,7 +2887,7 @@ ohos_unittest("audio_twinvq_capi_decoder_unit_stable_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -2961,7 +2961,7 @@ ohos_unittest("audio_dvaudio_decoder_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3035,7 +3035,7 @@ ohos_unittest("audio_dts_decoder_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3154,7 +3154,7 @@ ohos_unittest("audio_dvaudio_capi_decoder_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3216,7 +3216,7 @@ ohos_unittest("audio_cook_capi_decoder_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3254,7 +3254,7 @@ ohos_unittest("audio_sync_mode_dvaudio_capi_unit_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3303,7 +3303,7 @@ ohos_unittest("audio_sync_mode_dts_capi_unit_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3352,7 +3352,7 @@ ohos_unittest("audio_sync_mode_cook_capi_unit_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3402,7 +3402,7 @@ ohos_unittest("audio_dvaudio_capi_decoder_unit_stable_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3451,7 +3451,7 @@ ohos_unittest("audio_cook_capi_decoder_unit_stable_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3500,7 +3500,7 @@ ohos_unittest("audio_dts_capi_decoder_unit_stable_test") {
 
   public_configs = []
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
@@ -3573,7 +3573,7 @@ ohos_unittest("audio_dts_capi_decoder_unit_test") {
     "media_foundation:media_foundation",
   ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""

@@ -203,7 +203,7 @@ ohos_static_library("av_codec_engine_codeclist_mock") {
   if (av_codec_enable_special_codec) {
     defines += [ "AV_CODEC_AUDIO_SPECIAL_CAPACITY" ]
   }
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""

@@ -110,7 +110,7 @@ ohos_unittest("video_sa_avcodec_unit_test") {
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
 
-  if (target_cpu == "arm64") {
+  if (target_cpu == "arm64" || is_emulator) {
     av_codec_path = "\"/system/lib64\""
   } else {
     av_codec_path = "\"/system/lib\""
