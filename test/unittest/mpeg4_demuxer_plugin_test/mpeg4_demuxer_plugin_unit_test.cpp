@@ -89,6 +89,8 @@ constexpr int32_t AAC_TEST_CORE_SAMPLE_RATE = 24000;
 constexpr int32_t AAC_TEST_CORE_SAMPLES_PER_FRAME = 1024;
 constexpr int32_t AAC_TEST_CHANNEL_COUNT = 2;
 constexpr int32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
+constexpr int32_t MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS = 7;
+constexpr int64_t MULTI_TRACK_SYNC_TEST_SEEK_TIME = 100;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC = 2;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_SBR = 5;
 constexpr uint8_t AAC_TEST_LC_CONFIG[] = {0x12, 0x10};
@@ -4210,6 +4212,39 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekTo_CompareWithFfmpeg
         SeekMode::SEEK_CLOSEST_SYNC,
     };
     ASSERT_NO_FATAL_FAILURE(CompareSeekReadResult(TEST_MP4_PATH_H264_B, seekTimes, seekModes));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_MultiTrackSyncAuxiliarySeekFailure_001
+ * @tc.desc: Verify an auxiliary audio seek miss does not fail the resolved primary video seek
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MultiTrackSyncAuxiliarySeekFailure_001, TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(plugin, nullptr);
+    auto videoTrack = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto audioTrack = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    ASSERT_NE(videoTrack, nullptr);
+    ASSERT_NE(audioTrack, nullptr);
+    videoTrack->trackIndex = 0;
+    videoTrack->next = audioTrack;
+    audioTrack->trackIndex = 1;
+    audioTrack->timeScale = 1000;
+    audioTrack->currentSampleIndex = 0;
+    audioTrack->currentSamplePos = MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS;
+    audioTrack->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    ASSERT_NE(audioTrack->sampleHelper, nullptr);
+    audioTrack->sampleHelper->trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    audioTrack->sampleHelper->sampleIndexEntry_.push_back(MakeSampleIndexEntry(0, 0, 0, 1));
+    audioTrack->sampleHelper->stssEntry_ = {{0}};
+    plugin->firstTrack_ = videoTrack;
+    plugin->selectedTrackIds_ = {0, 1};
+
+    EXPECT_EQ(plugin->MultiTrackSync(0, true, MULTI_TRACK_SYNC_TEST_SEEK_TIME, SeekMode::SEEK_NEXT_SYNC),
+        Status::OK);
+    EXPECT_EQ(audioTrack->currentSampleIndex, 0U);
+    EXPECT_EQ(audioTrack->currentSamplePos, MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS);
 }
 
 /**
