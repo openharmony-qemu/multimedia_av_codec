@@ -777,18 +777,19 @@ bool HlsPlayListDownloader::UpdatePlaylists(bool isSimple)
     auto master = GetThreadSafeMaster();
     auto currentVariant = GetThreadSafeCurrentVariant();
     if (isSimple) {
+        bool isNeedClean = isParseFinished_ || playList_.find(M3U8_END_TAG) != std::string::npos;
         if (currentAudio_ && currentAudio_->m3u8_) {
-            ret = currentAudio_->m3u8_->Update(playList_, isParseFinished_, master->totalKeyIndex_);
+            ret = currentAudio_->m3u8_->Update(playList_, isNeedClean, master->totalKeyIndex_);
             master->isParseSuccess_ = ret;
             master->totalKeyIndex_ += currentAudio_->m3u8_->keyIndex_;
             currentAudio_->m3u8_->keyIndex_ = 0;
         } else if (currentSubtitles_ && currentSubtitles_->m3u8_) {
-            ret = currentSubtitles_->m3u8_->Update(playList_, isParseFinished_, master->totalKeyIndex_);
+            ret = currentSubtitles_->m3u8_->Update(playList_, isNeedClean, master->totalKeyIndex_);
             master->isParseSuccess_ = ret;
             master->totalKeyIndex_ += currentSubtitles_->m3u8_->keyIndex_;
             currentSubtitles_->m3u8_->keyIndex_ = 0;
         } else if (currentVariant && currentVariant->m3u8_) {
-            ret = currentVariant->m3u8_->Update(playList_, isParseFinished_, master->totalKeyIndex_);
+            ret = currentVariant->m3u8_->Update(playList_, isNeedClean, master->totalKeyIndex_);
             master->isParseSuccess_ = ret;
             master->totalKeyIndex_ += currentVariant->m3u8_->keyIndex_;
             currentVariant->m3u8_->keyIndex_ = 0;
