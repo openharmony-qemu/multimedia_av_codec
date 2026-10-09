@@ -83,26 +83,6 @@ bool NeedReadPostProcessing(const std::string& mime)
         mime == MimeType::TEXT_WEBVTT;
 }
 
-void UpdateAacFrameSizeFromStableSampleTable(const std::shared_ptr<MPEG4AtomParser::Track>& track,
-    MediaInfo& mediaInfo)
-{
-    if (track == nullptr || track->sampleHelper == nullptr || track->trackIndex >= mediaInfo.tracks.size() ||
-        track->sampleHelper->mimeType_ != MimeType::AUDIO_AAC) {
-        return;
-    }
-    int32_t sampleRate = 0;
-    int32_t samplesPerFrame = 0;
-    if (!mediaInfo.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) || sampleRate <= 0 ||
-        mediaInfo.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) ||
-        track->timeScale != sampleRate || track->sampleHelper->GetSttsEntryCount() != 1) {
-        return;
-    }
-    uint32_t frameSize = track->sampleHelper->GetSampleDeltaOfSttsEntry(0);
-    if (frameSize > 0 && frameSize <= static_cast<uint32_t>(INT32_MAX)) {
-        mediaInfo.tracks[track->trackIndex].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(static_cast<int32_t>(frameSize));
-    }
-}
-
 constexpr int32_t PSSH_UUID_SIZE = 16;
 constexpr int64_t US_TO_NS = 1000;
 constexpr int64_t NS_TIME_BASE = 1000000000LL;
@@ -1511,7 +1491,6 @@ Status MPEG4DemuxerPlugin::ParseAVFirstFrames()
             ret = audioParser->ParseAudioFrame(mpeg4Sample->sample->data.get(), mpeg4Sample->sample->size,
                 currentTrack->sampleHelper->mimeType_, avTrackId, mediaInfo_);
             FALSE_CONTINUE_LOGD(ret == Status::OK, "Parse audio failed in track:" PUBLIC_LOG_U32, avTrackId);
-            UpdateAacFrameSizeFromStableSampleTable(currentTrack, mediaInfo_);
         }
 
         // Unseekable cannot reset SampleIndex

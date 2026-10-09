@@ -2902,9 +2902,7 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
     if (audioObjectType == AAC_ER_LD || (audioObjectType == AAC_ER_ELD)) {
         samplePerFrame >>= 1;
     }
-    if (hasSbr) {
-        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(samplePerFrame);
-    }
+    mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(samplePerFrame);
     MEDIA_LOG_D("AAC Config: objType=" PUBLIC_LOG_U8 ", samplingIdx=" PUBLIC_LOG_U8 ", channels="
         PUBLIC_LOG_U8, audioObjectType, samplingFreqIndex, channelConfig);
     return true;
