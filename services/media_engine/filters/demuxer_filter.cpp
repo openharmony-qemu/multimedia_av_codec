@@ -16,8 +16,6 @@
 #define MEDIA_PIPELINE
 #define HST_LOG_TAG "DemuxerFilter"
 
-#include <algorithm>
-#include <cctype>
 #include <utility>
 #include "avcodec_common.h"
 #include "avcodec_list.h"
