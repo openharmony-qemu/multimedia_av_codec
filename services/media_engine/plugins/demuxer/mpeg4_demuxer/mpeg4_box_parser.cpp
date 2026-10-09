@@ -165,6 +165,8 @@ constexpr size_t DURATION_OFFSET_V1 = 24;
 constexpr size_t DIRECT_META_PATH_SIZE = 2;  // moov/meta 直接结构的路径大小
 constexpr uint8_t AOT_SBR = 5;
 constexpr uint8_t AOT_PS = 29;
+constexpr uint8_t AOT_AAC_LC = 2;
+constexpr uint32_t AAC_STEREO_CHANNELS = 2;
 constexpr uint8_t AAC_ER_LD = 23;
 constexpr uint8_t AAC_ER_ELD = 39;
 constexpr uint32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
@@ -290,21 +292,27 @@ static const std::map<std::string, VideoOrientationType> matrixTypes = {
     {"0 -1 -1 0", VideoOrientationType::FLIP_V_ROT90},
 };
 
-static const AudioChannelLayout AAC_CHANNEL_LAYOUT_TABLE[14] = {
-    AudioChannelLayout::UNKNOWN,
-    AudioChannelLayout::MONO,
-    AudioChannelLayout::STEREO,
-    AudioChannelLayout::SURROUND,
-    AudioChannelLayout::CH_4POINT0,
-    AudioChannelLayout::CH_5POINT0_BACK,
-    AudioChannelLayout::CH_5POINT1_BACK,
-    AudioChannelLayout::CH_7POINT1,
-    AudioChannelLayout::UNKNOWN,
-    AudioChannelLayout::UNKNOWN,
-    AudioChannelLayout::UNKNOWN,
-    AudioChannelLayout::CH_6POINT1_BACK,
-    AudioChannelLayout::CH_7POINT1,
-    AudioChannelLayout::CH_22POINT2
+struct AacChannelConfig {
+    AudioChannelLayout layout;
+    uint8_t channels;
+};
+
+static const AacChannelConfig AAC_CHANNEL_CONFIG_TABLE[] = {
+    {AudioChannelLayout::UNKNOWN, 0},           // 0: PCE
+    {AudioChannelLayout::MONO, 1},              // 1: mono
+    {AudioChannelLayout::STEREO, 2},            // 2: stereo
+    {AudioChannelLayout::SURROUND, 3},          // 3: 3.0
+    {AudioChannelLayout::CH_4POINT0, 4},        // 4: 4.0
+    {AudioChannelLayout::CH_5POINT0_BACK, 5},   // 5: 5.0
+    {AudioChannelLayout::CH_5POINT1_BACK, 6},   // 6: 5.1
+    {AudioChannelLayout::CH_7POINT1, 8},        // 7: 7.1
+    {AudioChannelLayout::UNKNOWN, 0},           // 8: reserved
+    {AudioChannelLayout::UNKNOWN, 0},           // 9: reserved
+    {AudioChannelLayout::UNKNOWN, 0},           // 10: reserved
+    {AudioChannelLayout::CH_6POINT1_BACK, 7},   // 11: 6.1
+    {AudioChannelLayout::CH_7POINT1, 8},        // 12: 7.1
+    {AudioChannelLayout::CH_22POINT2, 24},      // 13: 22.2
+    {AudioChannelLayout::CH_7POINT1_WIDE, 8}    // 14: 7.1 wide
 };
 
 static const uint32_t AAC_SAMPLE_RATE_TABLE[] = {
@@ -427,6 +435,64 @@ void ReadAACObjectType(DemuxerBitReader& bitReader, uint8_t& audioObjectType)
         return;
     }
     audioObjectType = static_cast<uint8_t>(0x20 + ReadBitsWidePadded(bitReader, audioObjectTypeExtensionSize));
+}
+
+void AdjustPsChannelConfig(bool isPsOutput, uint32_t& channels, AudioChannelLayout& layout)
+{
+    if (isPsOutput && channels == 1) {
+        // FFmpeg expands a PS signalled single-channel element to FL|FR output.
+        channels = AAC_STEREO_CHANNELS;
+        layout = AudioChannelLayout::STEREO;
+    }
+}
+
+bool HasAacSyncExtensionPs(DemuxerBitReader bitReader, uint32_t baseSampleRate, uint32_t& extensionSampleRate,
+    bool& hasSbr)
+{
+    constexpr uint8_t syncExtensionBits = 11;
+    constexpr uint8_t objectTypeBits = 5;
+    constexpr uint8_t sampleRateIndexBits = 4;
+    constexpr uint8_t explicitSampleRateIndex = 0x0F;
+    constexpr uint8_t explicitSampleRateBits = 24;
+    constexpr uint16_t syncExtensionType = 0x2B7;
+    constexpr uint16_t psExtensionType = 0x548;
+    // Pass by value so the caller can continue parsing its original ASC position.
+    extensionSampleRate = 0;
+    hasSbr = false;
+    while (bitReader.HasBits(syncExtensionBits + objectTypeBits + 1)) {
+        if (bitReader.ShowBits(syncExtensionBits) != syncExtensionType) {
+            bitReader.SkipBits(1);
+            continue;
+        }
+        bitReader.SkipBits(syncExtensionBits);
+        if (bitReader.ReadBits(objectTypeBits) != AOT_SBR || bitReader.ReadBits(1) == 0) {
+            return false;
+        }
+        FALSE_RETURN_V(bitReader.HasBits(sampleRateIndexBits), false);
+        uint8_t sampleRateIndex = static_cast<uint8_t>(bitReader.ShowBits(sampleRateIndexBits));
+        if (sampleRateIndex == explicitSampleRateIndex) {
+            FALSE_RETURN_V(bitReader.HasBits(sampleRateIndexBits + explicitSampleRateBits), false);
+        }
+        ReadAACSampleRate(bitReader, sampleRateIndex, extensionSampleRate);
+        hasSbr = extensionSampleRate != baseSampleRate;
+        FALSE_RETURN_V(hasSbr, false);
+        FALSE_RETURN_V(bitReader.HasBits(syncExtensionBits + 1) &&
+            bitReader.ShowBits(syncExtensionBits) == psExtensionType, false);
+        bitReader.SkipBits(syncExtensionBits);
+        return bitReader.ReadBits(1) != 0;
+    }
+    return false;
+}
+
+bool GetAacChannelConfig(uint8_t configIndex, AudioChannelLayout& layout, uint32_t& channels)
+{
+    if (configIndex >= sizeof(AAC_CHANNEL_CONFIG_TABLE) / sizeof(AAC_CHANNEL_CONFIG_TABLE[0])) {
+        MEDIA_LOG_E("Invalid AAC channel configuration: " PUBLIC_LOG_U8, configIndex);
+        return false;
+    }
+    channels = AAC_CHANNEL_CONFIG_TABLE[configIndex].channels;
+    layout = AAC_CHANNEL_CONFIG_TABLE[configIndex].layout;
+    return true;
 }
 
 bool GetAv3aChannelConfig(uint8_t channelNumberIndex, AudioChannelLayout& layout, int32_t& channels)
@@ -2808,29 +2874,28 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
     ReadAACSampleRate(bitReader, samplingFreqIndex, sampleRate);
     const uint32_t baseSampleRate = sampleRate;
     uint8_t channelConfig = static_cast<uint8_t>(ReadBitsWidePadded(bitReader, channelConfigSize));
-    static const uint8_t aacAudioChannels[14] = {0, 1, 2, 3, 4, 5, 6, 8, 0, 0, 0, 7, 8, 24};
-    if (channelConfig >= sizeof(aacAudioChannels) / sizeof(aacAudioChannels[0])) {
-        MEDIA_LOG_E("Invalid AAC channel configuration: " PUBLIC_LOG_U8, channelConfig);
-        return false;
-    }
-    channels = aacAudioChannels[channelConfig];
-    layout = AAC_CHANNEL_LAYOUT_TABLE[channelConfig];
-
+    FALSE_RETURN_V(GetAacChannelConfig(channelConfig, layout, channels), false);
     const bool isImplicitPs = audioObjectType == AOT_PS &&
         !((bitReader.ShowBits(0x03) & 0x03) && !(ShowBitsWide(bitReader, 0x09) & 0x3F));
     const bool hasExplicitSbr = audioObjectType == AOT_SBR || isImplicitPs;
     uint32_t extensionSampleRate = 0;
+    bool hasSyncExtensionSbr = false;
+    const bool syncExtensionPs = audioObjectType == AOT_AAC_LC &&
+        HasAacSyncExtensionPs(bitReader, baseSampleRate, extensionSampleRate, hasSyncExtensionSbr);
+    const bool hasSyncExtensionPs = channelConfig == 1 && syncExtensionPs;
+    const bool hasSbr = hasExplicitSbr || hasSyncExtensionSbr;
+    AdjustPsChannelConfig(isImplicitPs || hasSyncExtensionPs, channels, layout);
     if (hasExplicitSbr) {
         uint8_t extensionSamplingFreqIndex = 0;
         ReadAACSampleRate(bitReader, extensionSamplingFreqIndex, extensionSampleRate);
         ReadAACObjectType(bitReader, audioObjectType);
-        if (extensionSampleRate > 0) {
-            sampleRate = extensionSampleRate;
-        }
+    }
+    if (extensionSampleRate > 0) {
+        sampleRate = extensionSampleRate;
     }
     const uint32_t frameLengthFlag = bitReader.HasBits(1) ? bitReader.ReadBits(1) : 0;
     uint32_t samplePerFrame = frameLengthFlag ? 960 : AUDIO_DEFAULT_SAMPLE_PER_FRAME;
-    if (hasExplicitSbr && extensionSampleRate > baseSampleRate &&
+    if (hasSbr && extensionSampleRate > baseSampleRate &&
         samplePerFrame == AUDIO_DEFAULT_SAMPLE_PER_FRAME) {
         samplePerFrame *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
     }
