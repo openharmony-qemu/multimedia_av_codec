@@ -58,7 +58,9 @@ void HEVC_TEST_SUIT::SetUpTestCase(void)
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_HEVC).data(), false,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_HEVC).data() << " can not found!" << std::endl;
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     ISHDR2SDRSupported();
+#endif
 }
 
 void HEVC_TEST_SUIT::TearDownTestCase(void) {}
@@ -1030,7 +1032,9 @@ void AVC_TEST_SUIT::SetUpTestCase(void)
     auto capability = CodecListMockFactory::GetCapabilityByCategory((CodecMimeType::VIDEO_AVC).data(), false,
                                                                     AVCodecCategory::AVCODEC_HARDWARE);
     ASSERT_NE(nullptr, capability) << (CodecMimeType::VIDEO_AVC).data() << " can not found!" << std::endl;
+#ifdef USE_VIDEO_PROCESSING_ENGINE
     ISHDR2SDRSupported();
+#endif
 }
 
 void AVC_TEST_SUIT::TearDownTestCase(void) {}

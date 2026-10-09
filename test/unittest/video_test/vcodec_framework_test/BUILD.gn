@@ -2012,6 +2012,10 @@ ohos_unittest("videodec_hdrvivid2sdr_async_unit_test") {
   if (av_codec_enable_only_for_flagship_chip) {
     defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
   }
+  if (defined(av_codec_support_video_processing_engine) &&
+      av_codec_support_video_processing_engine) {
+    defines += [ "USE_VIDEO_PROCESSING_ENGINE" ]
+  }
 
   cflags = vcodec_unittest_cflags
 
@@ -4332,6 +4336,10 @@ ohos_unittest("videodec_hdrvivid2sdr_sync_unit_test") {
   ]
   if (av_codec_enable_only_for_flagship_chip) {
     defines += [ "ONLY_FOR_FLAGSHIP_CHIP" ]
+  }
+  if (defined(av_codec_support_video_processing_engine) &&
+      av_codec_support_video_processing_engine) {
+    defines += [ "USE_VIDEO_PROCESSING_ENGINE" ]
   }
 
   cflags = vcodec_unittest_cflags

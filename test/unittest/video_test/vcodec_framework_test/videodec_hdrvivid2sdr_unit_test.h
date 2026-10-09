@@ -17,9 +17,13 @@
 #define VIDEODEC_HDRVIVID2SDR_UNIT_TEST_H
 #include "av_common.h"
 #include "meta/meta_key.h"
+#include "videodec_capi_mock.h"
+
+#ifdef USE_VIDEO_PROCESSING_ENGINE
 #include "video_processing.h"
 #include "video_processing_types.h"
-#include "videodec_capi_mock.h"
+#endif
+
 #ifdef VIDEODEC_ASYNC_UNIT_TEST
 #include "vdec_async_sample.h"
 #else
@@ -65,6 +69,7 @@ void HdrVivid2SdrBaseSuit::SetFormatWithParam(VideoPixelFormat format)
     format_->PutIntValue(MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(format));
 }
 
+#ifdef USE_VIDEO_PROCESSING_ENGINE
 void ISHDR2SDRSupported()
 {
     VideoProcessing_ColorSpaceInfo sourceVideoInfo = {-1, -1, -1};
@@ -80,6 +85,7 @@ void ISHDR2SDRSupported()
         GTEST_SKIP() << "Unsupport func of HDR2SDR";
     }
 }
+#endif
 
 void HdrVivid2SdrBaseSuit::IsPixelFormatSupported(OHOS::MediaAVCodec::VideoPixelFormat pixelFormat)
 {
