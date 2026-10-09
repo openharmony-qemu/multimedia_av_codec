@@ -2070,9 +2070,10 @@ void MediaDemuxer::HandleSeekToTime(int64_t seekTime)
     FALSE_RETURN_NOLOG(demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash());
     PushCodecCheckBuffer(audioTrackId_);
     FALSE_RETURN(hiplayerCallback_ != nullptr);
-    FALSE_RETURN_NOLOG(IsValidTrackId(videoTrackId_) &&
-        static_cast<size_t>(videoTrackId_) < mediaMetaData_.trackMetas.size());
-    auto meta = mediaMetaData_.trackMetas[videoTrackId_];
+
+    int32_t videoTrackId = demuxerPluginManager_->GetTmpTrackIdByTrackId(videoTrackId_);
+    FALSE_RETURN(IsValidTrackId(videoTrackId) && static_cast<size_t>(videoTrackId) < mediaMetaData_.trackMetas.size());
+    auto meta = mediaMetaData_.trackMetas[videoTrackId];
     FALSE_RETURN(meta != nullptr);
     bool isCodecChanged = false;
     hiplayerCallback_->HandleVideoCodecChange(std::make_shared<Meta>(*meta), isCodecChanged, false);
