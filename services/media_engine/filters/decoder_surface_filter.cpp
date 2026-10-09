@@ -288,7 +288,7 @@ void DecoderSurfaceFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
     bool needToSwDecoder = !hasToSwDecoder_ && eventReceiver_ != nullptr &&
         errorCode == OHOS::MediaAVCodec::AVCodecServiceErrCode::AVCS_ERR_UNSUPPORTED_CODEC_SPECIFICATION &&
         videoDecoder_->IsHwDecoder();
-    if (needToSwDecoder) {
+    if (needToSwDecoder && !isFirstFrameWrite_) {
         hasReceiveUnsupportError_ = true;
         eventReceiver_->OnEvent({"DecoderSurfaceFilter", EventType::EVENT_HW_DECODER_UNSUPPORT_CAP, 0});
         return;
