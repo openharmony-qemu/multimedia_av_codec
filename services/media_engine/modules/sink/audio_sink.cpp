@@ -44,6 +44,7 @@ constexpr int64_t FORMAT_CHANGE_MS = 100;
 constexpr int64_t BUFFER_CONSUME_MS = 50;
 constexpr int64_t FIX_DELAY_MS_AUDIO_VIVID = 80;
 constexpr int64_t PTS_DISCONTINUE_THRESHOLD_US = 1000000;
+static constexpr uint8_t LOG_LIMIT_HUNDRED = 5;
 }
 
 namespace OHOS {
@@ -147,7 +148,7 @@ void AudioSink::SetAudioPassFlag(bool isAudioPass)
 
 bool AudioSink::HandleAudioRenderRequest(size_t size, bool isAudioVivid, AudioStandard::BufferDesc &bufferDesc)
 {
-    FALSE_RETURN_V(!eosDraining_, false);
+    FALSE_RETURN_V_NOLOG(!eosDraining_, false);
     bool isCopySucess = CopyDataToBufferDesc(static_cast<size_t>(size), isAudioVivid, bufferDesc);
     FALSE_RETURN_V_MSG_D(isCopySucess, false, "CopyDataToBufferDesc failed");
     UpdateAudioWriteTimeMayWait();
@@ -1290,7 +1291,7 @@ void AudioSink::DrainOutputBuffer(bool flushed)
 
     if (isRenderCallbackMode_) {
         if (state_ != Pipeline::FilterState::RUNNING) {
-            MEDIA_LOG_W("DrainOutputBuffer ignore temporarily for not RUNNINT state: " PUBLIC_LOG_D32
+            MEDIA_LOG_W_LIMIT(LOG_LIMIT_HUNDRED, "DrainOutputBuffer ignore temporarily for not RUNNINT state: " PUBLIC_LOG_D32
                 ", isProcessInputMerged: " PUBLIC_LOG_D32, state_.load(), isProcessInputMerged_);
 
             /*
