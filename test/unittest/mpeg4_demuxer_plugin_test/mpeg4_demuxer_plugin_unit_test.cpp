@@ -3984,6 +3984,11 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_ZeroLengthNals
     convertInfo.outBufferSize = 0;
     EXPECT_TRUE(parser.ConvertPacketToAnnexb(convertInfo));
     EXPECT_EQ(outputSize, 0);
+
+    const std::vector<uint8_t> truncatedPacket(2, 0);
+    convertInfo.srcData = truncatedPacket.data();
+    convertInfo.srcDataSize = static_cast<int32_t>(truncatedPacket.size());
+    EXPECT_FALSE(parser.ConvertPacketToAnnexb(convertInfo));
 }
 
 /**

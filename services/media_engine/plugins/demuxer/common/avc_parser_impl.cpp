@@ -851,6 +851,20 @@ bool AvcParserImpl::HandlePacketNal(const NalUnitInfo &nal, PacketState &state,
     return AppendPacketNalUnit(nal, state, outBuffer, outBufferSize, outDataSize);
 }
 
+bool AvcParserImpl::IsZeroLengthAvccPacket(const uint8_t *packet, int32_t packetSize) const
+{
+    if (packet == nullptr || packetSize <= 0 || static_cast<uint32_t>(packetSize) < naluLength_ ||
+        static_cast<uint32_t>(packetSize) % naluLength_ != 0) {
+        return false;
+    }
+    for (int32_t index = 0; index < packetSize; ++index) {
+        if (packet[index] != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool AvcParserImpl::BuildAnnexbPacket(const uint8_t *packet, int32_t packetSize, PacketState &state,
     PacketOutputInfo &output)
 {
@@ -860,6 +874,7 @@ bool AvcParserImpl::BuildAnnexbPacket(const uint8_t *packet, int32_t packetSize,
     FALSE_RETURN_V(FilterPsFromPacket(packet, packetSize, state), false);
     std::vector<NalUnitInfo> nalUnits;
     FALSE_RETURN_V_MSG_W(ParseNalUnits(nalUnits, packet, packetSize), false, "ParseNalUnits failed");
+    FALSE_RETURN_V(!nalUnits.empty() || IsZeroLengthAvccPacket(packet, packetSize), false);
     for (const auto &nal : nalUnits) {
         FALSE_RETURN_V(HandlePacketNal(nal, state, output.buffer, output.bufferSize, output.dataSize), false);
     }

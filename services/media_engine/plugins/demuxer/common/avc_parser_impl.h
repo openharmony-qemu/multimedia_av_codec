@@ -141,6 +141,7 @@ private:
         uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize) const;
     bool HandlePacketNal(const NalUnitInfo &nal, PacketState &state,
         uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize);
+    bool IsZeroLengthAvccPacket(const uint8_t *packet, int32_t packetSize) const;
     bool FilterPsFromPacket(const uint8_t *packet, int32_t packetSize, PacketState &state);
     bool AppendPacketData(uint8_t *outBuffer, int32_t outBufferSize, int32_t &outDataSize,
         const uint8_t *data, size_t size) const;
