@@ -3144,6 +3144,10 @@ Status FFmpegDemuxerPlugin::ReadRmUntilPos(AVPacket *pkt, int64_t pos)
         FALSE_RETURN_V_MSG_E(!timeoutGuard.IsTimeout(), Status::ERROR_WAIT_TIMEOUT,
             "Timeout while reading rm frames");
         int32_t ffRet = AVReadFrameLimit(pkt);
+        if (ffRet == AVERROR_EOF) {
+            MEDIA_LOG_I("read eos");
+            break;
+        }
         FALSE_RETURN_V_MSG_E(ffRet >= 0, Status::ERROR_WRONG_STATE, "Call av_read_frame failed");
         int64_t currentPos = avio_tell(formatContext_->pb);
         if (currentPos >= pos) {
