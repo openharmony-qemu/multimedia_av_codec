@@ -2322,7 +2322,6 @@ Status MPEG4DemuxerPlugin::GetVideoSyncSeekTime(
 
 Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, int64_t syncSeekTime, SeekMode mode)
 {
-    Status ret = Status::OK;
     for (const auto& selectedTrackId : selectedTrackIds_) {
         int32_t currentTrackId = static_cast<int32_t>(selectedTrackId);
         if (currentTrackId == trackIndex) {
@@ -2347,8 +2346,9 @@ Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, 
         if (!editListApplied) {
             otherTrackSeekTime += otherTrack->elstShiftStartTime;
         }
-        ret = otherTrack->sampleHelper->FindSyncSampleByPts(otherTrackSeekTime, isBaseTrack, mode, otherSampleIndex);
-        if (ret == Status::OK) {
+        Status syncRet = otherTrack->sampleHelper->FindSyncSampleByPts(
+            otherTrackSeekTime, isBaseTrack, mode, otherSampleIndex);
+        if (syncRet == Status::OK) {
             otherTrack->currentSampleIndex = otherSampleIndex;
             otherTrack->currentSamplePos = 0;
             MEDIA_LOG_D("Sync track " PUBLIC_LOG_D32 " to sample " PUBLIC_LOG_D32 " at time " PUBLIC_LOG_D64
@@ -2359,7 +2359,9 @@ Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, 
                 currentTrackId, adjustSeekTime);
         }
     }
-    return ret;
+    // FFmpeg seeks the container by the selected video stream and does not fail the seek solely because an
+    // auxiliary track has no sample at that RAP timestamp. Keep the resolved primary-track position playable.
+    return Status::OK;
 }
 
 int MPEG4DemuxerPlugin::SelectSeekTrack()
