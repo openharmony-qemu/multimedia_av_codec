@@ -187,6 +187,8 @@ protected:
         const std::vector<SeekExpectedResult>& expectedResults, bool useUri = false);
     void CheckSeekToFrameByDtsResult(const std::string& filePath, const std::string& testLabel);
     void CompareWeakNetworkReadResult(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
+    void PrepareDynamicTrackSwitchPlugins();
+    void SelectInitialDynamicSwitchTracks();
     void CheckDynamicTrackSwitch(DynamicSwitchScenario scenario, ReadMode readMode);
     void CheckResetAndDataSourceSwitch();
     void ReadAndCompareSwitchSample(uint32_t trackId, ReadMode readMode);

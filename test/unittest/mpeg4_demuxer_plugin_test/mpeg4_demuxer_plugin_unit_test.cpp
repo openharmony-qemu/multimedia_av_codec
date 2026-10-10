@@ -87,6 +87,15 @@ constexpr size_t MAX_EOS_SEEK_SAMPLE_COUNT = 128;
 constexpr int64_t TEST_EOS_SEEK_TIME_MS = 4000;
 constexpr int64_t TEST_MS_TO_US = 1000;
 constexpr int64_t TEST_US_TO_NS = 1000;
+constexpr uint32_t DYNAMIC_SWITCH_PRIMARY_TRACK_ID = 0;
+constexpr uint32_t DYNAMIC_SWITCH_SECONDARY_TRACK_ID = 1;
+constexpr uint32_t DYNAMIC_SWITCH_NEW_TRACK_ID = 2;
+constexpr size_t DYNAMIC_SWITCH_REQUIRED_TRACK_COUNT = 3;
+constexpr uint32_t DYNAMIC_SWITCH_PREROLL_SAMPLE_COUNT = 6;
+constexpr uint32_t DYNAMIC_SWITCH_COMPARE_SAMPLE_COUNT = 3;
+constexpr uint32_t DYNAMIC_SWITCH_RESELECT_SAMPLE_COUNT = 2;
+constexpr int64_t DYNAMIC_SWITCH_SEEK_TIME_MS = 5000;
+constexpr uint32_t IN_FLIGHT_READ_BLOCK_TIMEOUT_SECONDS = 2;
 constexpr int32_t ZERO_LENGTH_AAC_SAMPLE_RATE = 44100;
 constexpr int32_t ZERO_LENGTH_AAC_SAMPLES_PER_FRAME = 1024;
 constexpr int32_t AAC_TEST_CORE_SAMPLE_RATE = 24000;
@@ -621,7 +630,8 @@ public:
     bool WaitUntilBlocked()
     {
         std::unique_lock<std::mutex> lock(mutex_);
-        return condition_.wait_for(lock, std::chrono::seconds(2), [this] { return blocked_; });
+        return condition_.wait_for(lock, std::chrono::seconds(IN_FLIGHT_READ_BLOCK_TIMEOUT_SECONDS),
+            [this] { return blocked_; });
     }
 
     void Release()
@@ -2143,7 +2153,7 @@ void Mpeg4DemuxerPluginUnitTest::ReadAndCompareSwitchSample(uint32_t trackId, Re
     CompareSwitchFrames(mpeg4Sample, ffmpegSample, compareSize);
 }
 
-void Mpeg4DemuxerPluginUnitTest::CheckDynamicTrackSwitch(DynamicSwitchScenario scenario, ReadMode readMode)
+void Mpeg4DemuxerPluginUnitTest::PrepareDynamicTrackSwitchPlugins()
 {
     ffmpegPlugin_ = std::make_shared<FFmpegDemuxerPlugin>(FFMPEG_MP4_PLUGIN_NAME);
     mpeg4Plugin_ = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
@@ -2151,23 +2161,32 @@ void Mpeg4DemuxerPluginUnitTest::CheckDynamicTrackSwitch(DynamicSwitchScenario s
     ASSERT_NE(mpeg4Plugin_, nullptr);
     InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
     InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
-    ASSERT_GE(ffmpegMediaInfo_.tracks.size(), 3U);
-    ASSERT_GE(mpeg4MediaInfo_.tracks.size(), 3U);
+    ASSERT_GE(ffmpegMediaInfo_.tracks.size(), DYNAMIC_SWITCH_REQUIRED_TRACK_COUNT);
+    ASSERT_GE(mpeg4MediaInfo_.tracks.size(), DYNAMIC_SWITCH_REQUIRED_TRACK_COUNT);
+}
 
-    for (uint32_t trackId : {0U, 1U}) {
+void Mpeg4DemuxerPluginUnitTest::SelectInitialDynamicSwitchTracks()
+{
+    for (uint32_t trackId : {DYNAMIC_SWITCH_PRIMARY_TRACK_ID, DYNAMIC_SWITCH_SECONDARY_TRACK_ID}) {
         ASSERT_EQ(ffmpegPlugin_->SelectTrack(trackId), Status::OK);
         ASSERT_EQ(mpeg4Plugin_->SelectTrack(trackId), Status::OK);
     }
+}
+
+void Mpeg4DemuxerPluginUnitTest::CheckDynamicTrackSwitch(DynamicSwitchScenario scenario, ReadMode readMode)
+{
+    ASSERT_NO_FATAL_FAILURE(PrepareDynamicTrackSwitchPlugins());
+    ASSERT_NO_FATAL_FAILURE(SelectInitialDynamicSwitchTracks());
     if (scenario == DynamicSwitchScenario::GET_NEXT_SIZE) {
         int32_t ffmpegSize = 0;
         int32_t mpeg4Size = 0;
-        ASSERT_EQ(GetNextSampleSizeWithRetry(ffmpegPlugin_, 0, ffmpegSize), Status::OK);
-        ASSERT_EQ(GetNextSampleSizeWithRetry(mpeg4Plugin_, 0, mpeg4Size), Status::OK);
+        ASSERT_EQ(GetNextSampleSizeWithRetry(ffmpegPlugin_, DYNAMIC_SWITCH_PRIMARY_TRACK_ID, ffmpegSize), Status::OK);
+        ASSERT_EQ(GetNextSampleSizeWithRetry(mpeg4Plugin_, DYNAMIC_SWITCH_PRIMARY_TRACK_ID, mpeg4Size), Status::OK);
         EXPECT_GT(mpeg4Size, 0);
         EXPECT_GT(ffmpegSize, 0);
     } else {
-        for (uint32_t index = 0; index < 6; ++index) {
-            for (uint32_t trackId : {0U, 1U}) {
+        for (uint32_t index = 0; index < DYNAMIC_SWITCH_PREROLL_SAMPLE_COUNT; ++index) {
+            for (uint32_t trackId : {DYNAMIC_SWITCH_PRIMARY_TRACK_ID, DYNAMIC_SWITCH_SECONDARY_TRACK_ID}) {
                 FrameSampleDigest ignoredFfmpeg;
                 FrameSampleDigest ignoredMpeg4;
                 ASSERT_TRUE(ReadSwitchFrame(ffmpegPlugin_, trackId, readMode, ignoredFfmpeg));
@@ -2177,29 +2196,31 @@ void Mpeg4DemuxerPluginUnitTest::CheckDynamicTrackSwitch(DynamicSwitchScenario s
         if (scenario == DynamicSwitchScenario::PLAYBACK_SEEK) {
             int64_t ffmpegRealSeekTime = 0;
             int64_t mpeg4RealSeekTime = 0;
-            ASSERT_EQ(ffmpegPlugin_->SeekTo(0, 5000, SeekMode::SEEK_PREVIOUS_SYNC, ffmpegRealSeekTime), Status::OK);
-            ASSERT_EQ(mpeg4Plugin_->SeekTo(0, 5000, SeekMode::SEEK_PREVIOUS_SYNC, mpeg4RealSeekTime), Status::OK);
+            ASSERT_EQ(ffmpegPlugin_->SeekTo(DYNAMIC_SWITCH_PRIMARY_TRACK_ID, DYNAMIC_SWITCH_SEEK_TIME_MS,
+                SeekMode::SEEK_PREVIOUS_SYNC, ffmpegRealSeekTime), Status::OK);
+            ASSERT_EQ(mpeg4Plugin_->SeekTo(DYNAMIC_SWITCH_PRIMARY_TRACK_ID, DYNAMIC_SWITCH_SEEK_TIME_MS,
+                SeekMode::SEEK_PREVIOUS_SYNC, mpeg4RealSeekTime), Status::OK);
         } else if (scenario == DynamicSwitchScenario::FLUSH) {
             ASSERT_EQ(ffmpegPlugin_->Flush(), Status::OK);
             ASSERT_EQ(mpeg4Plugin_->Flush(), Status::OK);
         }
     }
 
-    ASSERT_EQ(ffmpegPlugin_->UnselectTrack(0), Status::OK);
-    ASSERT_EQ(mpeg4Plugin_->UnselectTrack(0), Status::OK);
-    ASSERT_EQ(ffmpegPlugin_->SelectTrack(2), Status::OK);
-    ASSERT_EQ(mpeg4Plugin_->SelectTrack(2), Status::OK);
-    ASSERT_EQ(ffmpegPlugin_->SelectTrack(2), Status::OK);
-    ASSERT_EQ(mpeg4Plugin_->SelectTrack(2), Status::OK);
-    for (uint32_t index = 0; index < 3; ++index) {
-        ReadAndCompareSwitchSample(2, readMode);
+    ASSERT_EQ(ffmpegPlugin_->UnselectTrack(DYNAMIC_SWITCH_PRIMARY_TRACK_ID), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->UnselectTrack(DYNAMIC_SWITCH_PRIMARY_TRACK_ID), Status::OK);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
+    for (uint32_t index = 0; index < DYNAMIC_SWITCH_COMPARE_SAMPLE_COUNT; ++index) {
+        ReadAndCompareSwitchSample(DYNAMIC_SWITCH_NEW_TRACK_ID, readMode);
     }
-    ASSERT_EQ(ffmpegPlugin_->UnselectTrack(2), Status::OK);
-    ASSERT_EQ(mpeg4Plugin_->UnselectTrack(2), Status::OK);
-    ASSERT_EQ(ffmpegPlugin_->SelectTrack(2), Status::OK);
-    ASSERT_EQ(mpeg4Plugin_->SelectTrack(2), Status::OK);
-    for (uint32_t index = 0; index < 2; ++index) {
-        ReadAndCompareSwitchSample(2, readMode);
+    ASSERT_EQ(ffmpegPlugin_->UnselectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->UnselectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
+    for (uint32_t index = 0; index < DYNAMIC_SWITCH_RESELECT_SAMPLE_COUNT; ++index) {
+        ReadAndCompareSwitchSample(DYNAMIC_SWITCH_NEW_TRACK_ID, readMode);
     }
 }
 
@@ -2211,9 +2232,9 @@ void Mpeg4DemuxerPluginUnitTest::CheckResetAndDataSourceSwitch()
     ASSERT_NE(mpeg4Plugin_, nullptr);
     InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
     InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
-    ASSERT_EQ(ffmpegPlugin_->SelectTrack(0), Status::OK);
-    ASSERT_EQ(mpeg4Plugin_->SelectTrack(0), Status::OK);
-    ReadAndCompareSwitchSample(0, ReadMode::COPY);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(DYNAMIC_SWITCH_PRIMARY_TRACK_ID), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(DYNAMIC_SWITCH_PRIMARY_TRACK_ID), Status::OK);
+    ReadAndCompareSwitchSample(DYNAMIC_SWITCH_PRIMARY_TRACK_ID, ReadMode::COPY);
 
     ASSERT_EQ(ffmpegPlugin_->Reset(), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->Reset(), Status::OK);
@@ -2223,10 +2244,10 @@ void Mpeg4DemuxerPluginUnitTest::CheckResetAndDataSourceSwitch()
     mpeg4Fd_ = -1;
     InitPlugin(TEST_MP4_PATH_H264_B, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
     InitPlugin(TEST_MP4_PATH_H264_B, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
-    ASSERT_EQ(ffmpegPlugin_->SelectTrack(0), Status::OK);
-    ASSERT_EQ(mpeg4Plugin_->SelectTrack(0), Status::OK);
-    for (uint32_t index = 0; index < 3; ++index) {
-        ReadAndCompareSwitchSample(0, ReadMode::COPY);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(DYNAMIC_SWITCH_PRIMARY_TRACK_ID), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(DYNAMIC_SWITCH_PRIMARY_TRACK_ID), Status::OK);
+    for (uint32_t index = 0; index < DYNAMIC_SWITCH_COMPARE_SAMPLE_COUNT; ++index) {
+        ReadAndCompareSwitchSample(DYNAMIC_SWITCH_PRIMARY_TRACK_ID, ReadMode::COPY);
     }
 }
 
@@ -3807,23 +3828,23 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DynamicTrackSwitchAfterS
     ASSERT_NE(mpeg4Plugin_, nullptr);
     InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
     InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
-    ASSERT_GE(ffmpegMediaInfo_.tracks.size(), 3U);
-    ASSERT_GE(mpeg4MediaInfo_.tracks.size(), 3U);
+    ASSERT_GE(ffmpegMediaInfo_.tracks.size(), DYNAMIC_SWITCH_REQUIRED_TRACK_COUNT);
+    ASSERT_GE(mpeg4MediaInfo_.tracks.size(), DYNAMIC_SWITCH_REQUIRED_TRACK_COUNT);
 
-    constexpr uint32_t seekTrackId = 0;
-    constexpr uint32_t newlySelectedTrackId = 1;
+    constexpr uint32_t seekTrackId = DYNAMIC_SWITCH_PRIMARY_TRACK_ID;
+    constexpr uint32_t newlySelectedTrackId = DYNAMIC_SWITCH_SECONDARY_TRACK_ID;
     ASSERT_EQ(ffmpegPlugin_->SelectTrack(seekTrackId), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->SelectTrack(seekTrackId), Status::OK);
     int64_t ffmpegRealSeekTime = 0;
     int64_t mpeg4RealSeekTime = 0;
-    constexpr int64_t seekTimeMs = 5000;
+    constexpr int64_t seekTimeMs = DYNAMIC_SWITCH_SEEK_TIME_MS;
     ASSERT_EQ(ffmpegPlugin_->SeekTo(seekTrackId, seekTimeMs, SeekMode::SEEK_PREVIOUS_SYNC, ffmpegRealSeekTime),
         Status::OK);
     ASSERT_EQ(mpeg4Plugin_->SeekTo(seekTrackId, seekTimeMs, SeekMode::SEEK_PREVIOUS_SYNC, mpeg4RealSeekTime),
         Status::OK);
     ASSERT_EQ(ffmpegPlugin_->SelectTrack(newlySelectedTrackId), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->SelectTrack(newlySelectedTrackId), Status::OK);
-    for (uint32_t index = 0; index < 3; ++index) {
+    for (uint32_t index = 0; index < DYNAMIC_SWITCH_COMPARE_SAMPLE_COUNT; ++index) {
         ReadAndCompareSwitchSample(newlySelectedTrackId, ReadMode::COPY);
     }
 }
@@ -3898,12 +3919,12 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DynamicTrackSwitchInFlig
     ASSERT_EQ(plugin->SetDataSource(source), Status::OK);
     MediaInfo mediaInfo;
     ASSERT_EQ(plugin->GetMediaInfo(mediaInfo), Status::OK);
-    ASSERT_EQ(plugin->SelectTrack(2), Status::OK);
+    ASSERT_EQ(plugin->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
     {
         std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
         plugin->EnterRuntimeLocked();
-        plugin->ClearTrackCache(2);
-        plugin->trackId_.store(2, std::memory_order_release);
+        plugin->ClearTrackCache(DYNAMIC_SWITCH_NEW_TRACK_ID);
+        plugin->trackId_.store(DYNAMIC_SWITCH_NEW_TRACK_ID, std::memory_order_release);
     }
     source->Arm();
     std::atomic<bool> readContinues {false};
@@ -3923,8 +3944,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DynamicTrackSwitchInFlig
         std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
         oldEpoch = plugin->readConfigEpoch_;
     }
-    Status unselectStatus = plugin->UnselectTrack(2);
-    Status selectStatus = plugin->SelectTrack(2);
+    Status unselectStatus = plugin->UnselectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID);
+    Status selectStatus = plugin->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID);
     uint64_t newEpoch = 0;
     {
         std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
@@ -4164,7 +4185,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthAacSample_001,
     plugin.dataSource_ = dataSource;
     Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
     ASSERT_EQ(track->sampleHelper->GetSampleIndexView(0, view), Status::OK);
-    Plugins::MPEG4::MPEG4DemuxerPlugin::SampleReadInfo sampleInfo {0, 0, view, true};
+    Plugins::MPEG4::detail::SampleReadInfo sampleInfo {0, 0, view, true};
     auto sample = std::make_shared<Plugins::MPEG4::Sample>();
     ASSERT_NE(sample, nullptr);
     ASSERT_EQ(plugin.ReadSampleData(sample, sampleInfo), Status::OK);

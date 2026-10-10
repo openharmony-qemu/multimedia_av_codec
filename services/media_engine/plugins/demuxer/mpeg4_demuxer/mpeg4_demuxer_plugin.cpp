@@ -47,6 +47,8 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace MPEG4 {
+using namespace detail;
+
 const uint32_t SETTIMER_TIMEOUT = 5;
 constexpr uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024;
 constexpr int32_t DEF_PROBE_SCORE_LIMIT = 50;
@@ -1147,16 +1149,16 @@ void MPEG4DemuxerPlugin::Dump(const DumpParam &dumpParam)
 {
     std::string path;
     switch (dumpParam.mode) {
-        case DUMP_READAT_INPUT:
+        case DumpMode::DUMP_READAT_INPUT:
             path = "Readat_index." + std::to_string(dumpParam.index) + "_offset." +
                 std::to_string(dumpParam.offset) + "_size." + std::to_string(dumpParam.size);
             break;
-        case DUMP_AVPACKET_OUTPUT:
+        case DumpMode::DUMP_AVPACKET_OUTPUT:
             path = "AVPacket_index." + std::to_string(dumpParam.index) + "_track." +
                 std::to_string(dumpParam.trackId) + "_pts." + std::to_string(dumpParam.pts) + "_pos." +
                 std::to_string(dumpParam.pos);
             break;
-        case DUMP_AVBUFFER_OUTPUT:
+        case DumpMode::DUMP_AVBUFFER_OUTPUT:
             path = "AVBuffer_track." + std::to_string(dumpParam.trackId) + "_index." +
                 std::to_string(dumpParam.index) + "_pts." + std::to_string(dumpParam.pts);
             break;
@@ -2078,97 +2080,139 @@ Status MPEG4DemuxerPlugin::AlignTrackToReadCursorLocked(
     const size_t sampleCount = track->sampleHelper->GetSampleCount();
     uint32_t alignedIndex = 0;
     if (readCursor_.dtsUs == INT64_MAX) {
-        alignedIndex = static_cast<uint32_t>(sampleCount);
+        alignedIndex = sampleCount;
     } else if (readCursor_.dtsUs == INT64_MIN) {
-        if (readCursor_.pos >= 0) {
-            Status ret = track->sampleHelper->FindFirstSampleAfterPosition(readCursor_.pos, alignedIndex);
-            if (ret != Status::OK) {
-                MPEG4SampleHelper::SampleIndexView lastView;
-                FALSE_RETURN_V_MSG_E(sampleCount > 0 &&
-                    track->sampleHelper->GetSampleIndexView(static_cast<uint32_t>(sampleCount - 1), lastView) ==
-                    Status::OK && readCursor_.pos >= lastView.pos, ret,
-                    "Find sample after read cursor position failed");
-                alignedIndex = static_cast<uint32_t>(sampleCount);
-            }
-        }
+        Status ret = AlignTrackToPositionCursorLocked(track, sampleCount, alignedIndex);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align sample to read cursor position failed");
     } else if (readCursor_.usePresentationTime) {
         if (IsVideoType(*track)) {
-            uint32_t closestIndex = static_cast<uint32_t>(sampleCount);
-            int64_t closestPts = INT64_MAX;
-            for (uint32_t index = 0; index < sampleCount; ++index) {
-                MPEG4SampleHelper::SampleIndexView view;
-                FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(index, view) == Status::OK,
-                    Status::ERROR_INVALID_DATA, "Get sample view while aligning seek PTS failed");
-                ReadSamplePacketAttr attr;
-                FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, index, attr) == Status::OK,
-                    Status::ERROR_INVALID_DATA, "Build sample timeline while aligning seek PTS failed");
-                if (attr.ptsUs == readCursor_.ptsUs) {
-                    closestIndex = index;
-                    break;
-                }
-                if (attr.ptsUs > readCursor_.ptsUs && attr.ptsUs < closestPts) {
-                    closestPts = attr.ptsUs;
-                    closestIndex = index;
-                }
-            }
-            alignedIndex = closestIndex;
+            Status ret = AlignVideoTrackToPresentationCursorLocked(track, sampleCount, alignedIndex);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align video sample to presentation cursor failed");
         } else {
-            int64_t adjustedSeekTimeMs = readCursor_.dtsUs / MS_TO_US;
-            bool editListApplied = track->sampleHelper->HasAppliedEditList();
-            if (!editListApplied) {
-                FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(adjustedSeekTimeMs, track->elstInitEmptyEdit,
-                    &adjustedSeekTimeMs), Status::ERROR_INVALID_DATA,
-                    "Subtract edit-list start from seek cursor failed");
-            }
-            int64_t targetPts = 0;
-            FALSE_RETURN_V_MSG_E(ConvertTimeScale(adjustedSeekTimeMs, static_cast<int64_t>(track->timeScale), 1000,
-                &targetPts) == Status::OK, Status::ERROR_INVALID_DATA, "Convert seek cursor DTS to track time failed");
-            if (!editListApplied) {
-                FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(targetPts, track->elstShiftStartTime, &targetPts),
-                    Status::ERROR_INVALID_DATA, "Add edit-list shift to seek cursor failed");
-            }
-            Status ret = track->sampleHelper->FindSyncSampleByPts(
-                targetPts, false, readCursor_.seekMode, alignedIndex);
-            if (ret == Status::END_OF_STREAM) {
-                alignedIndex = static_cast<uint32_t>(sampleCount);
-            } else {
-                FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find sample by seek cursor DTS failed");
-            }
+            Status ret = AlignAudioTrackToPresentationCursorLocked(track, sampleCount, alignedIndex);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align audio sample to presentation cursor failed");
         }
     } else {
-        int64_t targetDts = 0;
-        FALSE_RETURN_V_MSG_E(ConvertTimeScale(readCursor_.dtsUs, static_cast<int64_t>(track->timeScale),
-            static_cast<int64_t>(S_TO_US), &targetDts) == Status::OK,
-            Status::ERROR_INVALID_PARAMETER, "Convert read cursor DTS failed");
-        if (ShouldApplyMovEditTimelineOffset(track)) {
-            int64_t editOffset = 0;
-            FALSE_RETURN_V_MSG_E(GetMovEditTimelineOffsetTicks(track, track->timeScale, movieTimeScale_, editOffset),
-                Status::ERROR_INVALID_DATA, "Get edit-list offset for read cursor failed");
-            FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(targetDts, editOffset, &targetDts),
-                Status::ERROR_INVALID_DATA, "Read cursor DTS overflow");
-        }
-        Status ret = track->sampleHelper->FindFirstSampleByDts(targetDts, alignedIndex);
-        if (ret == Status::END_OF_STREAM) {
-            alignedIndex = static_cast<uint32_t>(sampleCount);
-        } else {
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find sample by read cursor DTS failed");
-            while (alignedIndex < sampleCount) {
-                MPEG4SampleHelper::SampleIndexView view;
-                FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(alignedIndex, view) == Status::OK,
-                    Status::ERROR_INVALID_DATA, "Get sample view while aligning cursor failed");
-                ReadSamplePacketAttr attr;
-                FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, alignedIndex, attr) == Status::OK,
-                    Status::ERROR_INVALID_DATA, "Build sample timeline while aligning cursor failed");
-                if (attr.dtsUs > readCursor_.dtsUs ||
-                    (attr.dtsUs == readCursor_.dtsUs && view.pos > readCursor_.pos)) {
-                    break;
-                }
-                ++alignedIndex;
-            }
-        }
+        Status ret = AlignTrackToDecodeCursorLocked(track, sampleCount, alignedIndex);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align sample to decode cursor failed");
     }
     track->currentSampleIndex = alignedIndex;
     track->currentSamplePos = 0;
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::AlignTrackToPositionCursorLocked(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex)
+{
+    if (readCursor_.pos < 0) {
+        return Status::OK;
+    }
+    Status ret = track->sampleHelper->FindFirstSampleAfterPosition(readCursor_.pos, sampleIndex);
+    if (ret == Status::OK) {
+        return Status::OK;
+    }
+    MPEG4SampleHelper::SampleIndexView lastView;
+    FALSE_RETURN_V_MSG_E(sampleCount > 0 &&
+        track->sampleHelper->GetSampleIndexView(static_cast<uint32_t>(sampleCount - 1), lastView) == Status::OK &&
+        readCursor_.pos >= lastView.pos, ret, "Find sample after read cursor position failed");
+    sampleIndex = static_cast<uint32_t>(sampleCount);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::FindSampleAtOrAfterPts(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t targetPtsUs,
+    SampleReadInfo& sampleInfo, int64_t& sampleDtsUs)
+{
+    const size_t sampleCount = track->sampleHelper->GetSampleCount();
+    int64_t closestPts = INT64_MAX;
+    for (uint32_t index = 0; index < sampleCount; ++index) {
+        MPEG4SampleHelper::SampleIndexView view;
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(index, view) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get sample view while finding presentation time failed");
+        ReadSamplePacketAttr attr;
+        FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, index, attr) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Build sample timeline while finding presentation time failed");
+        if (attr.ptsUs == targetPtsUs || (attr.ptsUs > targetPtsUs && attr.ptsUs < closestPts)) {
+            sampleInfo.sampleIndex = index;
+            sampleInfo.view = view;
+            sampleInfo.found = true;
+            sampleDtsUs = attr.dtsUs;
+            closestPts = attr.ptsUs;
+            if (attr.ptsUs == targetPtsUs) {
+                break;
+            }
+        }
+    }
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::AlignVideoTrackToPresentationCursorLocked(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex)
+{
+    SampleReadInfo sampleInfo;
+    int64_t sampleDtsUs = 0;
+    Status ret = FindSampleAtOrAfterPts(track, readCursor_.ptsUs, sampleInfo, sampleDtsUs);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find video sample by presentation cursor failed");
+    sampleIndex = sampleInfo.found ? sampleInfo.sampleIndex : static_cast<uint32_t>(sampleCount);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::AlignAudioTrackToPresentationCursorLocked(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex)
+{
+    int64_t adjustedSeekTimeMs = readCursor_.dtsUs / MS_TO_US;
+    bool editListApplied = track->sampleHelper->HasAppliedEditList();
+    if (!editListApplied) {
+        FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(adjustedSeekTimeMs, track->elstInitEmptyEdit,
+            &adjustedSeekTimeMs), Status::ERROR_INVALID_DATA, "Subtract edit-list start from seek cursor failed");
+    }
+    int64_t targetPts = 0;
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(adjustedSeekTimeMs, static_cast<int64_t>(track->timeScale), MS_TIME_SCALE,
+        &targetPts) == Status::OK, Status::ERROR_INVALID_DATA, "Convert seek cursor DTS to track time failed");
+    if (!editListApplied) {
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(targetPts, track->elstShiftStartTime, &targetPts),
+            Status::ERROR_INVALID_DATA, "Add edit-list shift to seek cursor failed");
+    }
+    Status ret = track->sampleHelper->FindSyncSampleByPts(targetPts, false, readCursor_.seekMode, sampleIndex);
+    if (ret == Status::END_OF_STREAM) {
+        sampleIndex = static_cast<uint32_t>(sampleCount);
+        return Status::OK;
+    }
+    return ret;
+}
+
+Status MPEG4DemuxerPlugin::AlignTrackToDecodeCursorLocked(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex)
+{
+    int64_t targetDts = 0;
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(readCursor_.dtsUs, static_cast<int64_t>(track->timeScale),
+        static_cast<int64_t>(S_TO_US), &targetDts) == Status::OK, Status::ERROR_INVALID_PARAMETER,
+        "Convert read cursor DTS failed");
+    if (ShouldApplyMovEditTimelineOffset(track)) {
+        int64_t editOffset = 0;
+        FALSE_RETURN_V_MSG_E(GetMovEditTimelineOffsetTicks(track, track->timeScale, movieTimeScale_, editOffset),
+            Status::ERROR_INVALID_DATA, "Get edit-list offset for read cursor failed");
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(targetDts, editOffset, &targetDts),
+            Status::ERROR_INVALID_DATA, "Read cursor DTS overflow");
+    }
+    Status ret = track->sampleHelper->FindFirstSampleByDts(targetDts, sampleIndex);
+    if (ret == Status::END_OF_STREAM) {
+        sampleIndex = static_cast<uint32_t>(sampleCount);
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find sample by read cursor DTS failed");
+    while (sampleIndex < sampleCount) {
+        MPEG4SampleHelper::SampleIndexView view;
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(sampleIndex, view) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get sample view while aligning cursor failed");
+        ReadSamplePacketAttr attr;
+        FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, sampleIndex, attr) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Build sample timeline while aligning cursor failed");
+        if (attr.dtsUs > readCursor_.dtsUs || (attr.dtsUs == readCursor_.dtsUs && view.pos > readCursor_.pos)) {
+            break;
+        }
+        ++sampleIndex;
+    }
     return Status::OK;
 }
 
@@ -2193,49 +2237,8 @@ Status MPEG4DemuxerPlugin::SetReadCursorFromSeek(
         int64_t cursorDtsUs = attr.dtsUs;
         int64_t cursorPos = samplePos;
         if (usePresentationTime) {
-            // When multiple tracks were selected during seek, use the DTS of the video packet
-            // aligned to the seek track's presentation time as the shared read frontier. The
-            // target track may need to emit an earlier decode-order packet (for example AAC
-            // preroll) than the seek track's own packet.
-            for (uint32_t selectedId : selectedTrackIds_) {
-                if (selectedId == trackId) {
-                    continue;
-                }
-                auto selectedTrack = FindTrackById(static_cast<int32_t>(selectedId));
-                if (selectedTrack == nullptr || selectedTrack->sampleHelper == nullptr || !IsVideoType(*selectedTrack)) {
-                    continue;
-                }
-                size_t selectedCount = selectedTrack->sampleHelper->GetSampleCount();
-                uint32_t selectedIndex = static_cast<uint32_t>(selectedCount);
-                int64_t nextPtsUs = INT64_MAX;
-                int64_t selectedDtsUs = 0;
-                int64_t selectedPos = -1;
-                for (uint32_t index = 0; index < selectedCount; ++index) {
-                    MPEG4SampleHelper::SampleIndexView selectedView;
-                    FALSE_RETURN_V_MSG_E(selectedTrack->sampleHelper->GetSampleIndexView(index, selectedView) ==
-                        Status::OK, Status::ERROR_INVALID_DATA, "Get selected seek track sample failed");
-                    ReadSamplePacketAttr selectedAttr;
-                    FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(selectedTrack, selectedView,
-                        index, selectedAttr) == Status::OK,
-                        Status::ERROR_INVALID_DATA, "Build selected seek track timeline failed");
-                    if (selectedAttr.ptsUs == attr.ptsUs) {
-                        selectedIndex = index;
-                        selectedDtsUs = selectedAttr.dtsUs;
-                        selectedPos = selectedView.pos;
-                        break;
-                    }
-                    if (selectedAttr.ptsUs > attr.ptsUs && selectedAttr.ptsUs < nextPtsUs) {
-                        selectedIndex = index;
-                        selectedDtsUs = selectedAttr.dtsUs;
-                        selectedPos = selectedView.pos;
-                        nextPtsUs = selectedAttr.ptsUs;
-                    }
-                }
-                if (selectedIndex < selectedCount && selectedDtsUs < cursorDtsUs) {
-                    cursorDtsUs = selectedDtsUs;
-                    cursorPos = selectedPos;
-                }
-            }
+            Status ret = AdjustSeekCursorForSelectedVideoTracks(trackId, attr.ptsUs, cursorDtsUs, cursorPos);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align seek cursor to selected video tracks failed");
         }
         std::lock_guard<std::mutex> lock(readConfigMutex_);
         cachePhase_ = CachePhase::RUNTIME;
@@ -2251,10 +2254,34 @@ Status MPEG4DemuxerPlugin::SetReadCursorFromSeek(
     cachePhase_ = CachePhase::RUNTIME;
     readCursor_.valid = true;
     readCursor_.dtsUs = sampleIndex < sampleCount ? INT64_MIN : INT64_MAX;
-        readCursor_.pos = samplePos;
-        readCursor_.usePresentationTime = false;
-        readCursor_.seekMode = mode;
-        return Status::OK;
+    readCursor_.pos = samplePos;
+    readCursor_.usePresentationTime = false;
+    readCursor_.seekMode = mode;
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::AdjustSeekCursorForSelectedVideoTracks(
+    uint32_t seekTrackId, int64_t targetPtsUs, int64_t& cursorDtsUs, int64_t& cursorPos)
+{
+    // Use a selected video's decode time as the shared frontier so audio preroll remains readable.
+    for (uint32_t selectedId : selectedTrackIds_) {
+        if (selectedId == seekTrackId) {
+            continue;
+        }
+        auto selectedTrack = FindTrackById(static_cast<int32_t>(selectedId));
+        if (selectedTrack == nullptr || selectedTrack->sampleHelper == nullptr || !IsVideoType(*selectedTrack)) {
+            continue;
+        }
+        SampleReadInfo sampleInfo;
+        int64_t selectedDtsUs = 0;
+        Status ret = FindSampleAtOrAfterPts(selectedTrack, targetPtsUs, sampleInfo, selectedDtsUs);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find selected video sample by seek PTS failed");
+        if (sampleInfo.found && selectedDtsUs < cursorDtsUs) {
+            cursorDtsUs = selectedDtsUs;
+            cursorPos = sampleInfo.view.pos;
+        }
+    }
+    return Status::OK;
 }
 
 std::shared_ptr<MPEG4AtomParser::Track> MPEG4DemuxerPlugin::FindTrackById(int32_t trackId)
@@ -3533,7 +3560,7 @@ void MPEG4DemuxerPlugin::DumpAVBufferData(
     int32_t size [[maybe_unused]], int64_t pts [[maybe_unused]])
 {
 #ifdef BUILD_ENG_VERSION
-    DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), const_cast<uint8_t*>(data),
+    DumpParam dumpParam {DumpMode(DumpMode::DUMP_AVBUFFER_OUTPUT & dumpMode_), const_cast<uint8_t*>(data),
         static_cast<int>(trackId), -1, size, trackDfxInfoMap_[trackId].frameIndex++, pts, -1};
     Dump(dumpParam);
 #endif
@@ -3700,10 +3727,17 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     if (IsValidMpeg4Sample(mpeg4Sample)) {
         ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
     }
-    FALSE_RETURN_V_NOLOG(ret != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
-    FALSE_RETURN_V_NOLOG(ret == Status::OK || ret == Status::ERROR_PACKET_CONVERT_FAILED, ret);
+    return FinalizeReadSample(trackId, track, mpeg4Sample, useCache, ret);
+}
+
+Status MPEG4DemuxerPlugin::FinalizeReadSample(uint32_t trackId,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, const std::shared_ptr<MPEG4Sample>& sample,
+    bool useCache, Status status)
+{
+    FALSE_RETURN_V_NOLOG(status != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
+    FALSE_RETURN_V_NOLOG(status == Status::OK || status == Status::ERROR_PACKET_CONVERT_FAILED, status);
     if (useCache && seekable_ == Seekable::SEEKABLE) {
-        Status cursorRet = UpdateReadCursor(mpeg4Sample, true);
+        Status cursorRet = UpdateReadCursor(sample, true);
         FALSE_RETURN_V_MSG_E(cursorRet == Status::OK, cursorRet, "Update bootstrap read cursor failed");
     }
     if (seekable_ == Seekable::UNSEEKABLE || useCache) {
@@ -3713,10 +3747,10 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
         ++track->currentSampleIndex;
     }
     if (!useCache && seekable_ == Seekable::SEEKABLE) {
-        Status cursorRet = UpdateReadCursor(mpeg4Sample);
+        Status cursorRet = UpdateReadCursor(sample);
         FALSE_RETURN_V_MSG_E(cursorRet == Status::OK, cursorRet, "Update read cursor after sample read failed");
     }
-    return ret;
+    return status;
 }
 
 Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSize)
