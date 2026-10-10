@@ -863,6 +863,21 @@ int64_t MPEG4DemuxerPlugin::GetWebVTTFlushEndPtsUs(
     return 0;
 }
 
+Status MPEG4DemuxerPlugin::CacheSampleForCurrentReadLocked(uint32_t trackId,
+    uint64_t expectedReadConfigEpoch, const std::shared_ptr<MPEG4Sample>& sample)
+{
+    if (!IsReadConfigCurrentLocked(trackId, expectedReadConfigEpoch)) {
+        return Status::ERROR_AGAIN;
+    }
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->sample != nullptr, Status::ERROR_NULL_POINTER,
+        "Sample is nullptr while caching current read");
+    sample->offset = 0;
+    sample->trackId = trackId;
+    FALSE_RETURN_V_MSG_E(PushTrackCache(trackId, sample), Status::ERROR_UNKNOWN,
+        "Push sample to track cache failed");
+    return Status::OK;
+}
+
 Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
     const std::shared_ptr<MPEG4AtomParser::Track>& track, std::shared_ptr<MPEG4Sample> mpeg4Sample,
     uint64_t expectedReadConfigEpoch)
@@ -877,8 +892,7 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
     uint32_t cacheBytes = UINT32_MAX;
     {
         std::lock_guard<std::mutex> configLock(readConfigMutex_);
-        if (expectedReadConfigEpoch != readConfigEpoch_ || !TrackIsSelectedLocked(trackId) ||
-            trackMtx_.find(trackId) == trackMtx_.end()) {
+        if (!IsReadConfigCurrentLocked(trackId, expectedReadConfigEpoch)) {
             return Status::ERROR_AGAIN;
         }
         AdvanceSampleIndex(track);
@@ -890,14 +904,11 @@ Status MPEG4DemuxerPlugin::ProcessWebVTTSampleForCache(
         committedInfo.found = true;
         UpdateReadCursorLocked(committedInfo, mpeg4Sample->sample->dts);
 
-        auto enqueue = [this, trackId, &cacheBytes](const std::shared_ptr<MPEG4Sample>& queuedSample) {
-            if (queuedSample == nullptr || queuedSample->sample == nullptr) {
-                return Status::ERROR_NULL_POINTER;
-            }
-            queuedSample->offset = 0;
-            queuedSample->trackId = trackId;
-            if (!PushTrackCache(trackId, queuedSample)) {
-                return Status::ERROR_UNKNOWN;
+        auto enqueue = [this, trackId, expectedReadConfigEpoch, &cacheBytes](
+            const std::shared_ptr<MPEG4Sample>& queuedSample) {
+            Status ret = CacheSampleForCurrentReadLocked(trackId, expectedReadConfigEpoch, queuedSample);
+            if (ret != Status::OK) {
+                return ret;
             }
             CheckCacheDataLimit(trackId);
             cacheBytes = GetTrackCacheDataSize(trackId);
@@ -930,8 +941,7 @@ Status MPEG4DemuxerPlugin::FlushPendingWebVTTSample(uint32_t trackId, uint64_t e
     uint32_t cacheBytes = UINT32_MAX;
     {
         std::lock_guard<std::mutex> configLock(readConfigMutex_);
-        if (expectedReadConfigEpoch != readConfigEpoch_ || !TrackIsSelectedLocked(trackId) ||
-            trackMtx_.find(trackId) == trackMtx_.end()) {
+        if (!IsReadConfigCurrentLocked(trackId, expectedReadConfigEpoch)) {
             return Status::ERROR_AGAIN;
         }
         auto iter = pendingWebVttSamples_.find(trackId);
@@ -944,10 +954,8 @@ Status MPEG4DemuxerPlugin::FlushPendingWebVTTSample(uint32_t trackId, uint64_t e
             UpdateWebVTTDuration(iter->second->sample, endPts);
         }
         auto queuedSample = iter->second;
-        queuedSample->offset = 0;
-        queuedSample->trackId = trackId;
-        FALSE_RETURN_V_MSG_E(PushTrackCache(trackId, queuedSample), Status::ERROR_UNKNOWN,
-            "Push pending WebVTT sample failed");
+        Status ret = CacheSampleForCurrentReadLocked(trackId, expectedReadConfigEpoch, queuedSample);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Push pending WebVTT sample failed");
         CheckCacheDataLimit(trackId);
         cacheBytes = GetTrackCacheDataSize(trackId);
         pendingWebVttSamples_.erase(iter);
@@ -1046,7 +1054,7 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId, uint64_t expected
     while (!HasTrackCache(trackId)) {
         {
             std::lock_guard<std::mutex> configLock(readConfigMutex_);
-            if (expectedReadConfigEpoch != readConfigEpoch_ || !TrackIsSelectedLocked(trackId)) {
+            if (!IsReadConfigCurrentLocked(trackId, expectedReadConfigEpoch)) {
                 return Status::ERROR_AGAIN;
             }
         }
@@ -1083,16 +1091,12 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId, uint64_t expected
             uint32_t cacheBytes = UINT32_MAX;
             {
                 std::lock_guard<std::mutex> configLock(readConfigMutex_);
-                if (expectedReadConfigEpoch != readConfigEpoch_ ||
-                    !TrackIsSelectedLocked(sampleInfo.trackId) || trackMtx_.find(sampleInfo.trackId) ==
-                    trackMtx_.end()) {
-                    return Status::ERROR_AGAIN;
-                }
-                mpeg4Sample->offset = 0;
-                mpeg4Sample->trackId = sampleInfo.trackId;
                 mpeg4Sample->sampleIndex = sampleInfo.sampleIndex;
-                FALSE_RETURN_V_MSG_E(PushTrackCache(sampleInfo.trackId, mpeg4Sample), Status::ERROR_UNKNOWN,
-                    "Push sample to track cache failed");
+                ret = CacheSampleForCurrentReadLocked(sampleInfo.trackId, expectedReadConfigEpoch,
+                    mpeg4Sample);
+                if (ret != Status::OK) {
+                    return ret;
+                }
                 AdvanceSampleIndex(currentTrack);
                 SampleReadInfo committedInfo = sampleInfo;
                 UpdateReadCursorLocked(committedInfo, sample->dts);
@@ -1110,11 +1114,10 @@ Status MPEG4DemuxerPlugin::ReadSampleToCache(uint32_t trackId, uint64_t expected
 
 Status MPEG4DemuxerPlugin::PushEosToCache(uint32_t trackId, uint64_t expectedReadConfigEpoch)
 {
-    (void)trackId;
     std::vector<std::pair<uint32_t, uint32_t>> cachePressure;
     {
         std::lock_guard<std::mutex> configLock(readConfigMutex_);
-        if (expectedReadConfigEpoch != readConfigEpoch_) {
+        if (!IsReadConfigCurrentLocked(trackId, expectedReadConfigEpoch)) {
             return Status::ERROR_AGAIN;
         }
         for (const auto& selectedTrackId : selectedTrackIds_) {
@@ -1133,11 +1136,12 @@ Status MPEG4DemuxerPlugin::PushEosToCache(uint32_t trackId, uint64_t expectedRea
             eosSample->sample->duration = 0;
             eosSample->sample->flag = Sample::SampleFlag::EOS;
             eosSample->sample->size = 0;
-            eosSample->trackId = selectedTrackId;
-            FALSE_RETURN_V_MSG_E(PushTrackCache(selectedTrackId, eosSample), Status::ERROR_UNKNOWN,
-                "Push EOS to track cache failed");
+            Status ret = CacheSampleForCurrentReadLocked(selectedTrackId, expectedReadConfigEpoch,
+                eosSample);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Push EOS to track cache failed");
             CheckCacheDataLimit(selectedTrackId);
-            cachePressure.emplace_back(selectedTrackId, GetTrackCacheDataSize(selectedTrackId));
+            uint32_t cacheBytes = GetTrackCacheDataSize(selectedTrackId);
+            cachePressure.emplace_back(selectedTrackId, cacheBytes);
         }
     }
     for (const auto& [selectedTrackId, cacheBytes] : cachePressure) {

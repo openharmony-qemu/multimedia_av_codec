@@ -40,6 +40,7 @@ namespace Plugins {
 namespace MPEG4 {
 
 class MPEG4SampleHelper;
+struct ReadSamplePacketAttr;
 
 class MPEG4DemuxerPlugin : public DemuxerPlugin {
 public:
@@ -271,6 +272,9 @@ private:
     void InitDrmInfoCacheByAtomParser(std::shared_ptr<MPEG4AtomParser> parser);
     bool TrackIsSelected(const uint32_t trackId);
     bool TrackIsSelectedLocked(const uint32_t trackId) const;
+    bool IsReadConfigCurrentLocked(uint32_t trackId, uint64_t expectedReadConfigEpoch) const;
+    Status BuildTrackSamplePacketAttr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        const MPEG4SampleHelper::SampleIndexView& sampleView, uint32_t sampleIndex, ReadSamplePacketAttr& attr);
     void EnterRuntimeLocked();
     void InvalidateTrackCachesLocked(bool resetCursor, bool resetPhase);
     Status AlignTrackToReadCursorLocked(const std::shared_ptr<MPEG4AtomParser::Track>& track);
@@ -489,6 +493,9 @@ private:
     bool NeedWaitForRead(uint32_t trackId);
     void HandleReadWait();
     bool ReadAndCacheSample();
+    // Caller holds readConfigMutex_; keep read-config state ahead of the per-track cache lock.
+    Status CacheSampleForCurrentReadLocked(uint32_t trackId, uint64_t expectedReadConfigEpoch,
+        const std::shared_ptr<MPEG4Sample>& sample);
     Status ReadSampleToCache(uint32_t trackId, uint64_t expectedReadConfigEpoch);
     Status PushEosToCache(uint32_t trackId, uint64_t expectedReadConfigEpoch);
     bool IsWebVTTTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track) const;

@@ -1006,6 +1006,16 @@ bool HasPlayableVideoTrack(const std::shared_ptr<MPEG4AtomParser::Track>& firstT
     return false;
 }
 
+Status MPEG4DemuxerPlugin::BuildTrackSamplePacketAttr(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    const MPEG4SampleHelper::SampleIndexView& sampleView, uint32_t sampleIndex, ReadSamplePacketAttr& attr)
+{
+    FALSE_RETURN_V_NOLOG(track != nullptr, Status::ERROR_NULL_POINTER);
+    ReadSamplePacketContext context { mediaInfo_, track, sampleView, rawDtsPrefix_, sampleIndex,
+        track->timeScale, movieTimeScale_, HasPlayableVideoTrack(firstTrack_) };
+    return BuildReadSamplePacketAttr(context, attr);
+}
+
 bool CheckSeekTimeInFileDuration(const MediaInfo& mediaInfo, int64_t seekTime)
 {
     int64_t fileDuration = 0;
@@ -1927,6 +1937,12 @@ bool MPEG4DemuxerPlugin::TrackIsSelectedLocked(const uint32_t trackId) const
     return std::find(selectedTrackIds_.begin(), selectedTrackIds_.end(), trackId) != selectedTrackIds_.end();
 }
 
+bool MPEG4DemuxerPlugin::IsReadConfigCurrentLocked(uint32_t trackId, uint64_t expectedReadConfigEpoch) const
+{
+    return expectedReadConfigEpoch == readConfigEpoch_ && TrackIsSelectedLocked(trackId) &&
+        trackMtx_.find(trackId) != trackMtx_.end();
+}
+
 void MPEG4DemuxerPlugin::EnterRuntimeLocked()
 {
     if (cachePhase_ == CachePhase::RUNTIME) {
@@ -1961,9 +1977,7 @@ void MPEG4DemuxerPlugin::EnterRuntimeLocked()
                 continue;
             }
             ReadSamplePacketAttr attr;
-            ReadSamplePacketContext context { mediaInfo_, track, view, rawDtsPrefix_, sampleIndex,
-                track->timeScale, movieTimeScale_, HasPlayableVideoTrack(firstTrack_) };
-            if (BuildReadSamplePacketAttr(context, attr) != Status::OK) {
+            if (BuildTrackSamplePacketAttr(track, view, sampleIndex, attr) != Status::OK) {
                 continue;
             }
             SampleReadInfo sampleInfo;
@@ -2024,9 +2038,7 @@ Status MPEG4DemuxerPlugin::UpdateReadCursor(const SampleReadInfo& sampleInfo)
     FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_NULL_POINTER,
         "Track is nullptr while updating read cursor");
     ReadSamplePacketAttr attr;
-    ReadSamplePacketContext context { mediaInfo_, track, sampleInfo.view, rawDtsPrefix_, sampleInfo.sampleIndex,
-        track->timeScale, movieTimeScale_, HasPlayableVideoTrack(firstTrack_) };
-    Status ret = BuildReadSamplePacketAttr(context, attr);
+    Status ret = BuildTrackSamplePacketAttr(track, sampleInfo.view, sampleInfo.sampleIndex, attr);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample timeline for read cursor failed");
     std::lock_guard<std::mutex> lock(readConfigMutex_);
     UpdateReadCursorLocked(sampleInfo, attr.dtsUs);
@@ -2088,9 +2100,7 @@ Status MPEG4DemuxerPlugin::AlignTrackToReadCursorLocked(
                 FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(index, view) == Status::OK,
                     Status::ERROR_INVALID_DATA, "Get sample view while aligning seek PTS failed");
                 ReadSamplePacketAttr attr;
-                ReadSamplePacketContext context { mediaInfo_, track, view, rawDtsPrefix_, index,
-                    track->timeScale, movieTimeScale_, HasPlayableVideoTrack(firstTrack_) };
-                FALSE_RETURN_V_MSG_E(BuildReadSamplePacketAttr(context, attr) == Status::OK,
+                FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, index, attr) == Status::OK,
                     Status::ERROR_INVALID_DATA, "Build sample timeline while aligning seek PTS failed");
                 if (attr.ptsUs == readCursor_.ptsUs) {
                     closestIndex = index;
@@ -2147,9 +2157,7 @@ Status MPEG4DemuxerPlugin::AlignTrackToReadCursorLocked(
                 FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(alignedIndex, view) == Status::OK,
                     Status::ERROR_INVALID_DATA, "Get sample view while aligning cursor failed");
                 ReadSamplePacketAttr attr;
-                ReadSamplePacketContext context { mediaInfo_, track, view, rawDtsPrefix_, alignedIndex,
-                    track->timeScale, movieTimeScale_, HasPlayableVideoTrack(firstTrack_) };
-                FALSE_RETURN_V_MSG_E(BuildReadSamplePacketAttr(context, attr) == Status::OK,
+                FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, alignedIndex, attr) == Status::OK,
                     Status::ERROR_INVALID_DATA, "Build sample timeline while aligning cursor failed");
                 if (attr.dtsUs > readCursor_.dtsUs ||
                     (attr.dtsUs == readCursor_.dtsUs && view.pos > readCursor_.pos)) {
@@ -2180,9 +2188,7 @@ Status MPEG4DemuxerPlugin::SetReadCursorFromSeek(
             Status::ERROR_INVALID_DATA, "Get sample view for seek cursor failed");
         samplePos = view.pos;
         ReadSamplePacketAttr attr;
-        ReadSamplePacketContext context { mediaInfo_, track, view, rawDtsPrefix_, sampleIndex,
-            track->timeScale, movieTimeScale_, HasPlayableVideoTrack(firstTrack_) };
-        FALSE_RETURN_V_MSG_E(BuildReadSamplePacketAttr(context, attr) == Status::OK,
+        FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, sampleIndex, attr) == Status::OK,
             Status::ERROR_INVALID_DATA, "Build seek cursor timestamp failed");
         int64_t cursorDtsUs = attr.dtsUs;
         int64_t cursorPos = samplePos;
@@ -2209,10 +2215,8 @@ Status MPEG4DemuxerPlugin::SetReadCursorFromSeek(
                     FALSE_RETURN_V_MSG_E(selectedTrack->sampleHelper->GetSampleIndexView(index, selectedView) ==
                         Status::OK, Status::ERROR_INVALID_DATA, "Get selected seek track sample failed");
                     ReadSamplePacketAttr selectedAttr;
-                    ReadSamplePacketContext selectedContext { mediaInfo_, selectedTrack, selectedView,
-                        rawDtsPrefix_, index, selectedTrack->timeScale, movieTimeScale_,
-                        HasPlayableVideoTrack(firstTrack_) };
-                    FALSE_RETURN_V_MSG_E(BuildReadSamplePacketAttr(selectedContext, selectedAttr) == Status::OK,
+                    FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(selectedTrack, selectedView,
+                        index, selectedAttr) == Status::OK,
                         Status::ERROR_INVALID_DATA, "Build selected seek track timeline failed");
                     if (selectedAttr.ptsUs == attr.ptsUs) {
                         selectedIndex = index;
@@ -2960,10 +2964,7 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(const SampleReadInfo& sampleInfo, std
     FALSE_RETURN_V_NOLOG(trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER);
 
     ReadSamplePacketAttr attr;
-    ReadSamplePacketContext context { mediaInfo_, track, currentSample, rawDtsPrefix_, sampleInfo.sampleIndex,
-        trackTimeScale, movieTimeScale_,
-        HasPlayableVideoTrack(firstTrack_) };
-    Status ret = BuildReadSamplePacketAttr(context, attr);
+    Status ret = BuildTrackSamplePacketAttr(track, currentSample, sampleInfo.sampleIndex, attr);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build read sample packet attr failed");
     sample->pts = attr.ptsUs;
     sample->dts = attr.dtsUs;
@@ -3391,10 +3392,7 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(const SampleReadInfo& sampleInfo,
     int32_t trackTimeScale = track->timeScale;
     FALSE_RETURN_V_NOLOG(trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER);
     ReadSamplePacketAttr attr;
-    ReadSamplePacketContext context {
-        mediaInfo_, track, sampleInfo.view, rawDtsPrefix_, sampleInfo.sampleIndex,
-        trackTimeScale, movieTimeScale_, HasPlayableVideoTrack(firstTrack_)};
-    Status ret = BuildReadSamplePacketAttr(context, attr);
+    Status ret = BuildTrackSamplePacketAttr(track, sampleInfo.view, sampleInfo.sampleIndex, attr);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample attr failed");
     outBuffer->pts_ = attr.ptsUs;
     outBuffer->dts_ = attr.dtsUs;
