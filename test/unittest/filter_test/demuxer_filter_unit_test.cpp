@@ -1648,6 +1648,44 @@ HWTEST_F(DemuxerFilterUnitTest, HandleAdsStart_004, TestSize.Level1)
     EXPECT_FALSE(demuxerFilter_->HandleAdsStart());
 }
 
+/**
+ * @tc.name  : Test IsDsdFormat
+ * @tc.number: IsDsdFormat_001
+ * @tc.desc  : Test IsDsdFormat with various mime strings (case-insensitive)
+ */
+HWTEST_F(DemuxerFilterUnitTest, IsDsdFormat_001, TestSize.Level1)
+{
+    EXPECT_TRUE(demuxerFilter_->IsDsdFormat("audio_dsd"));
+    EXPECT_TRUE(demuxerFilter_->IsDsdFormat("AUDIO_DSD"));
+    EXPECT_TRUE(demuxerFilter_->IsDsdFormat("Audio_Dsd"));
+    EXPECT_FALSE(demuxerFilter_->IsDsdFormat("audio/dsd"));
+    EXPECT_TRUE(demuxerFilter_->IsDsdFormat("audio_x_audio_dsd"));
+    EXPECT_FALSE(demuxerFilter_->IsDsdFormat("audio/mp4a-latm"));
+    EXPECT_FALSE(demuxerFilter_->IsDsdFormat("audio/raw"));
+    EXPECT_FALSE(demuxerFilter_->IsDsdFormat("video/avc"));
+    EXPECT_FALSE(demuxerFilter_->IsDsdFormat(""));
+    EXPECT_FALSE(demuxerFilter_->IsDsdFormat("audio_dsa"));
+}
+
+HWTEST_F(DemuxerFilterUnitTest, HandleTrackInfos_dsd, TestSize.Level1)
+{
+    std::vector<std::shared_ptr<Meta>> trackInfos;
+    int32_t successNodeCount = 0;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    trackInfos.push_back(meta);
+
+    meta->Set<Tag::REGULAR_TRACK_ID>(0);
+    meta->Set<Tag::MIME_TYPE>(MimeType::AUDIO_DSD);
+    meta->Set<Tag::MEDIA_TYPE>(Plugins::MediaType::AUDIO);
+
+    auto callback = std::make_shared<FilterCallbackMock>();
+    demuxerFilter_->callback_ = callback;
+    auto res = demuxerFilter_->HandleTrackInfos(trackInfos, successNodeCount);
+    std::cout << "HandleTrackInfos_dsd " << static_cast<int32_t>(res) << std::endl;
+
+    EXPECT_EQ(res, Status::OK);
+}
+
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

@@ -323,6 +323,10 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
 
         StreamType streamType;
         FALSE_RETURN_V_NOLOG(FindStreamType(streamType, mediaType, mime, index, meta), Status::ERROR_INVALID_PARAMETER);
+        if (IsDsdFormat(mime)) {
+            MEDIA_LOG_I("DSD audio format detected, treated as invalid, index: %{public}zu", index);
+            mime = MimeType::INVALID_TYPE;
+        }
         bool isTrackInvalid = mime.find("invalid") == 0;
         hasInvalidVideo |= (isTrackInvalid && streamType == StreamType::STREAMTYPE_ENCODED_VIDEO);
         hasInvalidAudio |= (isTrackInvalid && streamType == StreamType::STREAMTYPE_ENCODED_AUDIO);
@@ -408,6 +412,11 @@ bool DemuxerFilter::IsVideoMime(const std::string& mime)
 bool DemuxerFilter::IsAudioMime(const std::string& mime)
 {
     return mime.find("audio/") == 0;
+}
+
+bool DemuxerFilter::IsDsdFormat(const std::string& mime)
+{
+    return mime == MimeType::AUDIO_DSD;
 }
 
 void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
