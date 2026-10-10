@@ -853,7 +853,8 @@ bool AvcParserImpl::HandlePacketNal(const NalUnitInfo &nal, PacketState &state,
 
 bool AvcParserImpl::IsZeroLengthAvccPacket(const uint8_t *packet, int32_t packetSize) const
 {
-    if (packet == nullptr || packetSize <= 0 || static_cast<uint32_t>(packetSize) < naluLength_ ||
+    if (packet == nullptr || packetSize <= 0 || naluLength_ == 0 || naluLength_ > SIZE_CODE_LEN ||
+        static_cast<uint32_t>(packetSize) < naluLength_ ||
         static_cast<uint32_t>(packetSize) % naluLength_ != 0) {
         return false;
     }

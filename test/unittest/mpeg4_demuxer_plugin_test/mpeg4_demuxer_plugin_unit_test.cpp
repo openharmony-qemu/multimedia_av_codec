@@ -3610,7 +3610,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacLcConfig_001, TestSiz
     uint32_t channels = 0;
     AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
     ASSERT_TRUE(parser.ParseAACConfig(AAC_TEST_LC_CONFIG, sizeof(AAC_TEST_LC_CONFIG), sampleRate, channels, layout));
-    EXPECT_FALSE(parser.mediaInfo_.tracks[0].Find(Tag::AUDIO_SAMPLE_PER_FRAME) !=
+    EXPECT_EQ(parser.mediaInfo_.tracks[0].Find(Tag::AUDIO_SAMPLE_PER_FRAME),
         parser.mediaInfo_.tracks[0].end());
 }
 
@@ -4260,7 +4260,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MultiTrackSyncAuxiliaryS
     videoTrack->next = audioTrack;
     audioTrack->trackIndex = 1;
     audioTrack->timeScale = 1000;
-    audioTrack->currentSampleIndex = 0;
+    audioTrack->currentSampleIndex = MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS;
     audioTrack->currentSamplePos = MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS;
     audioTrack->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
     ASSERT_NE(audioTrack->sampleHelper, nullptr);
@@ -4272,7 +4272,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MultiTrackSyncAuxiliaryS
 
     EXPECT_EQ(plugin->MultiTrackSync(0, true, MULTI_TRACK_SYNC_TEST_SEEK_TIME, SeekMode::SEEK_NEXT_SYNC),
         Status::OK);
-    EXPECT_EQ(audioTrack->currentSampleIndex, 0U);
+    EXPECT_EQ(audioTrack->currentSampleIndex, MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS);
     EXPECT_EQ(audioTrack->currentSamplePos, MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS);
 }
 
