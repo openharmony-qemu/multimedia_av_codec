@@ -809,6 +809,9 @@ int32_t CodecServiceStub::GetCodecInfo(MessageParcel &data, MessageParcel &reply
 int32_t CodecServiceStub::SetDecryptConfig(MessageParcel &data, MessageParcel &reply)
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
+    auto uid = IPCSkeleton::GetCallingUid();
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(
+        uid == UID_MEDIA_SERVICE, AVCS_ERR_OK, "Permission denied %{public}d, only supported for media_service", uid);
     sptr<IRemoteObject> object = data.ReadRemoteObject();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(object != nullptr, AVCS_ERR_INVALID_OPERATION,
                                       "SetDecryptConfig read object is null");
