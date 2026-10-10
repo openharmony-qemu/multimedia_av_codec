@@ -18,11 +18,13 @@
 #include <algorithm>
 #include <atomic>
 #include <cctype>
+#include <condition_variable>
 #include <cstdlib>
 #include <dirent.h>
 #include <fcntl.h>
 #include <iostream>
 #include <limits>
+#include <mutex>
 #include <numeric>
 #include <sstream>
 #include <sys/stat.h>
@@ -562,6 +564,105 @@ private:
     std::vector<uint8_t> data_;
     size_t maxReadSize_ = 0;
 };
+
+class BlockingReadAtDataSource final : public DataSource {
+public:
+    explicit BlockingReadAtDataSource(std::vector<uint8_t> data) : data_(std::move(data)) {}
+
+    Status ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override
+    {
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            if (armed_ && !blocked_) {
+                blocked_ = true;
+                condition_.notify_all();
+                condition_.wait(lock, [this] { return released_; });
+                armed_ = false;
+            }
+        }
+        if (offset < 0 || buffer == nullptr || buffer->GetMemory() == nullptr ||
+            static_cast<size_t>(offset) >= data_.size()) {
+            return Status::END_OF_STREAM;
+        }
+        size_t copySize = std::min(expectedLen, data_.size() - static_cast<size_t>(offset));
+        size_t writeSize = buffer->GetMemory()->Write(data_.data() + offset, copySize, 0);
+        return writeSize > 0 ? Status::OK : Status::ERROR_UNKNOWN;
+    }
+
+    Status GetSize(uint64_t& size) override
+    {
+        size = data_.size();
+        return Status::OK;
+    }
+
+    Seekable GetSeekable() override
+    {
+        return Seekable::SEEKABLE;
+    }
+
+    int32_t GetStreamID() override
+    {
+        return 0;
+    }
+
+    bool IsDash() override
+    {
+        return false;
+    }
+
+    void Arm()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        blocked_ = false;
+        released_ = false;
+        armed_ = true;
+    }
+
+    bool WaitUntilBlocked()
+    {
+        std::unique_lock<std::mutex> lock(mutex_);
+        return condition_.wait_for(lock, std::chrono::seconds(2), [this] { return blocked_; });
+    }
+
+    void Release()
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        released_ = true;
+        condition_.notify_all();
+    }
+
+private:
+    std::vector<uint8_t> data_;
+    std::mutex mutex_;
+    std::condition_variable condition_;
+    bool armed_ = false;
+    bool blocked_ = false;
+    bool released_ = false;
+};
+
+std::vector<uint8_t> ReadFileBytes(const std::string& filePath)
+{
+    struct stat fileStatus {};
+    if (stat(filePath.c_str(), &fileStatus) != 0 || fileStatus.st_size <= 0) {
+        return {};
+    }
+    int fd = open(filePath.c_str(), O_RDONLY);
+    if (fd < 0) {
+        return {};
+    }
+    std::vector<uint8_t> data(static_cast<size_t>(fileStatus.st_size));
+    size_t bytesRead = 0;
+    while (bytesRead < data.size()) {
+        ssize_t ret = read(fd, data.data() + bytesRead, data.size() - bytesRead);
+        if (ret <= 0) {
+            data.clear();
+            break;
+        }
+        bytesRead += static_cast<size_t>(ret);
+    }
+    close(fd);
+    return data;
+}
 
 class UnknownSizeDataSource final : public ShortReadDataSource {
 public:
@@ -1657,6 +1758,50 @@ bool CopySamplePayload(const std::shared_ptr<MediaAVBuffer>& buffer, FrameSample
     return true;
 }
 
+bool ReadSwitchFrame(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId, ReadMode readMode,
+    FrameSampleDigest& sample)
+{
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    if (buffer.mediaAVBuffer == nullptr) {
+        ADD_FAILURE() << "Failed to create switch sample buffer";
+        return false;
+    }
+    Status ret = Status::ERROR_WAIT_TIMEOUT;
+    for (int32_t attempt = 0; attempt < WAIT_RETRY_TIMES && ret == Status::ERROR_WAIT_TIMEOUT; ++attempt) {
+        ret = readMode == ReadMode::ZERO_COPY ?
+            plugin->ReadSampleZeroCopy(trackId, buffer.mediaAVBuffer, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT) :
+            plugin->ReadSample(trackId, buffer.mediaAVBuffer, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT);
+    }
+    if (ret != Status::OK && ret != Status::NO_ERROR) {
+        ADD_FAILURE() << "Switch sample read failed, track=" << trackId << ", status="
+                      << static_cast<int32_t>(ret);
+        return false;
+    }
+    if ((buffer.mediaAVBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) != 0) {
+        ADD_FAILURE() << "Unexpected EOS while reading switched track " << trackId;
+        return false;
+    }
+    sample.pts = buffer.mediaAVBuffer->pts_;
+    sample.dts = buffer.mediaAVBuffer->dts_;
+    sample.duration = buffer.mediaAVBuffer->duration_;
+    sample.flag = buffer.mediaAVBuffer->flag_;
+    return CopySamplePayload(buffer.mediaAVBuffer, sample);
+}
+
+void CompareSwitchFrames(const FrameSampleDigest& actual, const FrameSampleDigest& expected, bool compareSize)
+{
+    if (compareSize) {
+        EXPECT_EQ(actual.actualSize, expected.actualSize);
+    } else {
+        EXPECT_GT(actual.actualSize, 0);
+        EXPECT_GT(expected.actualSize, 0);
+    }
+    EXPECT_EQ(actual.pts, expected.pts);
+    EXPECT_EQ(actual.dts, expected.dts);
+    EXPECT_EQ(actual.duration, expected.duration);
+    EXPECT_EQ(actual.flag, expected.flag);
+}
+
 template<typename ReadSampleFunc, typename IsEosFunc>
 std::vector<FrameSampleDigest> ReadTrackSamples(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
     ReadSampleFunc readSample, IsEosFunc isEos)
@@ -1983,6 +2128,106 @@ Status Mpeg4DemuxerPluginUnitTest::GetNextSampleSizeWithRetry(const std::shared_
         }
     }
     return ret;
+}
+
+void Mpeg4DemuxerPluginUnitTest::ReadAndCompareSwitchSample(uint32_t trackId, ReadMode readMode)
+{
+    FrameSampleDigest ffmpegSample;
+    FrameSampleDigest mpeg4Sample;
+    ASSERT_TRUE(ReadSwitchFrame(ffmpegPlugin_, trackId, readMode, ffmpegSample));
+    ASSERT_TRUE(ReadSwitchFrame(mpeg4Plugin_, trackId, readMode, mpeg4Sample));
+    std::string mime;
+    bool hasMime = trackId < mpeg4MediaInfo_.tracks.size() &&
+        mpeg4MediaInfo_.tracks[trackId].GetData(Tag::MIME_TYPE, mime);
+    bool compareSize = !hasMime || mime.find("video/") != 0;
+    CompareSwitchFrames(mpeg4Sample, ffmpegSample, compareSize);
+}
+
+void Mpeg4DemuxerPluginUnitTest::CheckDynamicTrackSwitch(DynamicSwitchScenario scenario, ReadMode readMode)
+{
+    ffmpegPlugin_ = std::make_shared<FFmpegDemuxerPlugin>(FFMPEG_MP4_PLUGIN_NAME);
+    mpeg4Plugin_ = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(ffmpegPlugin_, nullptr);
+    ASSERT_NE(mpeg4Plugin_, nullptr);
+    InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
+    InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
+    ASSERT_GE(ffmpegMediaInfo_.tracks.size(), 3U);
+    ASSERT_GE(mpeg4MediaInfo_.tracks.size(), 3U);
+
+    for (uint32_t trackId : {0U, 1U}) {
+        ASSERT_EQ(ffmpegPlugin_->SelectTrack(trackId), Status::OK);
+        ASSERT_EQ(mpeg4Plugin_->SelectTrack(trackId), Status::OK);
+    }
+    if (scenario == DynamicSwitchScenario::GET_NEXT_SIZE) {
+        int32_t ffmpegSize = 0;
+        int32_t mpeg4Size = 0;
+        ASSERT_EQ(GetNextSampleSizeWithRetry(ffmpegPlugin_, 0, ffmpegSize), Status::OK);
+        ASSERT_EQ(GetNextSampleSizeWithRetry(mpeg4Plugin_, 0, mpeg4Size), Status::OK);
+        EXPECT_GT(mpeg4Size, 0);
+        EXPECT_GT(ffmpegSize, 0);
+    } else {
+        for (uint32_t index = 0; index < 6; ++index) {
+            for (uint32_t trackId : {0U, 1U}) {
+                FrameSampleDigest ignoredFfmpeg;
+                FrameSampleDigest ignoredMpeg4;
+                ASSERT_TRUE(ReadSwitchFrame(ffmpegPlugin_, trackId, readMode, ignoredFfmpeg));
+                ASSERT_TRUE(ReadSwitchFrame(mpeg4Plugin_, trackId, readMode, ignoredMpeg4));
+            }
+        }
+        if (scenario == DynamicSwitchScenario::PLAYBACK_SEEK) {
+            int64_t ffmpegRealSeekTime = 0;
+            int64_t mpeg4RealSeekTime = 0;
+            ASSERT_EQ(ffmpegPlugin_->SeekTo(0, 5000, SeekMode::SEEK_PREVIOUS_SYNC, ffmpegRealSeekTime), Status::OK);
+            ASSERT_EQ(mpeg4Plugin_->SeekTo(0, 5000, SeekMode::SEEK_PREVIOUS_SYNC, mpeg4RealSeekTime), Status::OK);
+        } else if (scenario == DynamicSwitchScenario::FLUSH) {
+            ASSERT_EQ(ffmpegPlugin_->Flush(), Status::OK);
+            ASSERT_EQ(mpeg4Plugin_->Flush(), Status::OK);
+        }
+    }
+
+    ASSERT_EQ(ffmpegPlugin_->UnselectTrack(0), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->UnselectTrack(0), Status::OK);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(2), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(2), Status::OK);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(2), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(2), Status::OK);
+    for (uint32_t index = 0; index < 3; ++index) {
+        ReadAndCompareSwitchSample(2, readMode);
+    }
+    ASSERT_EQ(ffmpegPlugin_->UnselectTrack(2), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->UnselectTrack(2), Status::OK);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(2), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(2), Status::OK);
+    for (uint32_t index = 0; index < 2; ++index) {
+        ReadAndCompareSwitchSample(2, readMode);
+    }
+}
+
+void Mpeg4DemuxerPluginUnitTest::CheckResetAndDataSourceSwitch()
+{
+    ffmpegPlugin_ = std::make_shared<FFmpegDemuxerPlugin>(FFMPEG_MP4_PLUGIN_NAME);
+    mpeg4Plugin_ = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(ffmpegPlugin_, nullptr);
+    ASSERT_NE(mpeg4Plugin_, nullptr);
+    InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
+    InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(0), Status::OK);
+    ReadAndCompareSwitchSample(0, ReadMode::COPY);
+
+    ASSERT_EQ(ffmpegPlugin_->Reset(), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->Reset(), Status::OK);
+    close(ffmpegFd_);
+    close(mpeg4Fd_);
+    ffmpegFd_ = -1;
+    mpeg4Fd_ = -1;
+    InitPlugin(TEST_MP4_PATH_H264_B, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
+    InitPlugin(TEST_MP4_PATH_H264_B, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(0), Status::OK);
+    for (uint32_t index = 0; index < 3; ++index) {
+        ReadAndCompareSwitchSample(0, ReadMode::COPY);
+    }
 }
 
 void Mpeg4DemuxerPluginUnitTest::CheckSeekToFrameByDtsResult(
@@ -3538,6 +3783,166 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_InvalidParameterAndTrack
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_DynamicTrackSwitch_CompareWithFfmpeg_001
+ * @tc.desc: Compare the first sample from a newly selected track after playback has advanced.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DynamicTrackSwitch_CompareWithFfmpeg_001,
+    TestSize.Level1)
+{
+    CheckDynamicTrackSwitch(DynamicSwitchScenario::PLAYBACK, ReadMode::COPY);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_DynamicTrackSwitchAfterSeek_CompareWithFfmpeg_001
+ * @tc.desc: Compare a newly selected track after seeking before the first sample read.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DynamicTrackSwitchAfterSeek_CompareWithFfmpeg_001,
+    TestSize.Level1)
+{
+    ffmpegPlugin_ = std::make_shared<FFmpegDemuxerPlugin>(FFMPEG_MP4_PLUGIN_NAME);
+    mpeg4Plugin_ = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(ffmpegPlugin_, nullptr);
+    ASSERT_NE(mpeg4Plugin_, nullptr);
+    InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
+    InitPlugin(TEST_MP4_MULTIPLE_VIDEO_TRACKS, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
+    ASSERT_GE(ffmpegMediaInfo_.tracks.size(), 3U);
+    ASSERT_GE(mpeg4MediaInfo_.tracks.size(), 3U);
+
+    constexpr uint32_t seekTrackId = 0;
+    constexpr uint32_t newlySelectedTrackId = 1;
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(seekTrackId), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(seekTrackId), Status::OK);
+    int64_t ffmpegRealSeekTime = 0;
+    int64_t mpeg4RealSeekTime = 0;
+    constexpr int64_t seekTimeMs = 5000;
+    ASSERT_EQ(ffmpegPlugin_->SeekTo(seekTrackId, seekTimeMs, SeekMode::SEEK_PREVIOUS_SYNC, ffmpegRealSeekTime),
+        Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SeekTo(seekTrackId, seekTimeMs, SeekMode::SEEK_PREVIOUS_SYNC, mpeg4RealSeekTime),
+        Status::OK);
+    ASSERT_EQ(ffmpegPlugin_->SelectTrack(newlySelectedTrackId), Status::OK);
+    ASSERT_EQ(mpeg4Plugin_->SelectTrack(newlySelectedTrackId), Status::OK);
+    for (uint32_t index = 0; index < 3; ++index) {
+        ReadAndCompareSwitchSample(newlySelectedTrackId, ReadMode::COPY);
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_DynamicTrackSwitchAfterPlaybackSeek_CompareWithFfmpeg_001
+ * @tc.desc: Compare track switching after playback and a seek.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_DynamicTrackSwitchAfterPlaybackSeek_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    CheckDynamicTrackSwitch(DynamicSwitchScenario::PLAYBACK_SEEK, ReadMode::COPY);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_DynamicTrackSwitchAfterFlush_CompareWithFfmpeg_001
+ * @tc.desc: Compare track switching after Flush invalidates cached samples.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_DynamicTrackSwitchAfterFlush_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    CheckDynamicTrackSwitch(DynamicSwitchScenario::FLUSH, ReadMode::COPY);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_DynamicTrackSwitchAfterGetNextSampleSize_CompareWithFfmpeg_001
+ * @tc.desc: Enter runtime through GetNextSampleSize before switching tracks.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_DynamicTrackSwitchAfterGetNextSampleSize_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    CheckDynamicTrackSwitch(DynamicSwitchScenario::GET_NEXT_SIZE, ReadMode::COPY);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_DynamicTrackSwitch_ZeroCopy_CompareWithFfmpeg_001
+ * @tc.desc: Compare switched-track samples using zero-copy reads.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_DynamicTrackSwitch_ZeroCopy_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    CheckDynamicTrackSwitch(DynamicSwitchScenario::PLAYBACK, ReadMode::ZERO_COPY);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ResetAndDataSourceSwitch_CompareWithFfmpeg_001
+ * @tc.desc: Verify Reset clears old-source state before binding a different MP4 resource.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ResetAndDataSourceSwitch_CompareWithFfmpeg_001, TestSize.Level1)
+{
+    CheckResetAndDataSourceSwitch();
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_DynamicTrackSwitchInFlightAba_001
+ * @tc.desc: Reject an in-flight sample after Unselect and Select create a new track epoch.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DynamicTrackSwitchInFlightAba_001, TestSize.Level1)
+{
+    auto data = ReadFileBytes(TEST_MP4_MULTIPLE_VIDEO_TRACKS);
+    ASSERT_FALSE(data.empty());
+    auto source = std::make_shared<BlockingReadAtDataSource>(std::move(data));
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(plugin, nullptr);
+    ASSERT_EQ(plugin->SetDataSource(source), Status::OK);
+    MediaInfo mediaInfo;
+    ASSERT_EQ(plugin->GetMediaInfo(mediaInfo), Status::OK);
+    ASSERT_EQ(plugin->SelectTrack(2), Status::OK);
+    {
+        std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
+        plugin->EnterRuntimeLocked();
+        plugin->ClearTrackCache(2);
+        plugin->trackId_.store(2, std::memory_order_release);
+    }
+    source->Arm();
+    std::atomic<bool> readContinues {false};
+    std::thread reader([plugin, &readContinues] {
+        readContinues.store(plugin->ReadAndCacheSample(), std::memory_order_release);
+    });
+    bool blocked = source->WaitUntilBlocked();
+    if (!blocked) {
+        source->Release();
+        reader.join();
+        FAIL() << "Reader did not reach the armed DataSource::ReadAt";
+        return;
+    }
+
+    uint64_t oldEpoch = 0;
+    {
+        std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
+        oldEpoch = plugin->readConfigEpoch_;
+    }
+    Status unselectStatus = plugin->UnselectTrack(2);
+    Status selectStatus = plugin->SelectTrack(2);
+    uint64_t newEpoch = 0;
+    {
+        std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
+        newEpoch = plugin->readConfigEpoch_;
+    }
+    source->Release();
+    reader.join();
+
+    EXPECT_EQ(unselectStatus, Status::OK);
+    EXPECT_EQ(selectStatus, Status::OK);
+    EXPECT_TRUE(readContinues.load(std::memory_order_acquire));
+    EXPECT_GT(newEpoch, oldEpoch);
+    EXPECT_FALSE(plugin->HasTrackCache(2));
+    EXPECT_TRUE(plugin->ReadAndCacheSample());
+    EXPECT_TRUE(plugin->HasTrackCache(2));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_SyncReadInterfaces_001
  * @tc.desc: Verify synchronous GetNextSampleSize and ReadSample interfaces
  * @tc.type: FUNC
@@ -4036,7 +4441,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EosWaitForCache_001, Tes
     std::atomic<Status> enqueueStatus {Status::ERROR_UNKNOWN};
     plugin->readThread_ = std::make_unique<std::thread>([plugin, trackId, &enqueueStatus] {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        enqueueStatus.store(plugin->PushEosToCache(trackId), std::memory_order_release);
+        enqueueStatus.store(plugin->PushEosToCache(trackId, plugin->readConfigEpoch_), std::memory_order_release);
         std::lock_guard<std::mutex> lock(plugin->readSampleMutex_);
         plugin->readCacheCv_.notify_all();
     });
@@ -4134,7 +4539,10 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_WebVttPendingCue_001, Te
 
     plugin->pendingWebVttSamples_[0] = MakePendingWebVttSample(1000, 2000);
     plugin->pendingWebVttSamples_[1] = MakePendingWebVttSample(5000, 1000);
-    ASSERT_EQ(plugin->FlushPendingWebVTTSample(0), Status::OK);
+    plugin->selectedTrackIds_ = {0, 1};
+    plugin->trackMtx_[0] = std::make_shared<std::mutex>();
+    plugin->trackMtx_[1] = std::make_shared<std::mutex>();
+    ASSERT_EQ(plugin->FlushPendingWebVTTSample(0, plugin->readConfigEpoch_), Status::OK);
     EXPECT_EQ(plugin->pendingWebVttSamples_.count(0), 0U);
     EXPECT_EQ(plugin->pendingWebVttSamples_.count(1), 1U);
     ASSERT_NE(track0->cache, nullptr);
@@ -4172,10 +4580,12 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_WebVttContinuousCue_001,
 
     auto firstCue = MakeWebVttCueSample(1000, 100, "first");
     auto secondCue = MakeWebVttCueSample(2500, 100, "second");
-    ASSERT_EQ(plugin->ProcessWebVTTSampleForCache(track, firstCue), Status::OK);
+    plugin->selectedTrackIds_ = {0};
+    plugin->trackMtx_[0] = std::make_shared<std::mutex>();
+    ASSERT_EQ(plugin->ProcessWebVTTSampleForCache(track, firstCue, plugin->readConfigEpoch_), Status::OK);
     ASSERT_NE(track->cache, nullptr);
     EXPECT_FALSE(track->cache->HasCache());
-    ASSERT_EQ(plugin->ProcessWebVTTSampleForCache(track, secondCue), Status::OK);
+    ASSERT_EQ(plugin->ProcessWebVTTSampleForCache(track, secondCue, plugin->readConfigEpoch_), Status::OK);
     ASSERT_TRUE(track->cache->HasCache());
     auto flushedFirstCue = track->cache->Front();
     ASSERT_NE(flushedFirstCue, nullptr);

@@ -112,6 +112,13 @@ enum class ReadMode : uint32_t {
     ZERO_COPY,
 };
 
+enum class DynamicSwitchScenario : uint32_t {
+    PLAYBACK,
+    PLAYBACK_SEEK,
+    FLUSH,
+    GET_NEXT_SIZE,
+};
+
 struct WeakNetworkPluginContext {
     const std::shared_ptr<BaseDemuxerPlugin>& plugin;
     int& fd;
@@ -180,6 +187,9 @@ protected:
         const std::vector<SeekExpectedResult>& expectedResults, bool useUri = false);
     void CheckSeekToFrameByDtsResult(const std::string& filePath, const std::string& testLabel);
     void CompareWeakNetworkReadResult(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
+    void CheckDynamicTrackSwitch(DynamicSwitchScenario scenario, ReadMode readMode);
+    void CheckResetAndDataSourceSwitch();
+    void ReadAndCompareSwitchSample(uint32_t trackId, ReadMode readMode);
 
     bool IsSupportedTrack(const Meta& meta) const;
     bool IsEos(const std::shared_ptr<MediaAVBuffer>& buffer) const;

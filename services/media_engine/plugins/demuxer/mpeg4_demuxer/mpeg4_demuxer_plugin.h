@@ -122,6 +122,8 @@ private:
     std::mutex mutex_ {};
     std::mutex syncMutex_ {};
     std::shared_mutex sharedMutex_ {};
+    // The async read loop never takes sharedMutex_; this mutex protects its view of selection and read progress.
+    std::mutex readConfigMutex_ {};
     std::unordered_map<uint32_t, std::shared_ptr<std::mutex>> trackMtx_ {};
     Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
     std::atomic<bool> inited_ = false;
@@ -141,6 +143,23 @@ private:
     bool setLimitByUser_ = false;
     bool readToEnd_ = false;
     std::atomic<bool> isInterruptNeeded_{false};
+
+    enum class CachePhase : uint8_t {
+        BOOTSTRAP,
+        RUNTIME,
+    };
+    struct ReadCursor {
+        bool valid = false;
+        int64_t dtsUs = 0;
+        int64_t pos = 0;
+        int64_t ptsUs = 0;
+        bool usePresentationTime = false;
+        SeekMode seekMode {SeekMode::SEEK_PREVIOUS_SYNC};
+    };
+    struct SampleReadInfo;
+    CachePhase cachePhase_ {CachePhase::BOOTSTRAP};
+    uint64_t readConfigEpoch_ {0};
+    ReadCursor readCursor_ {};
 
     std::shared_ptr<DataSource> dataSource_ {nullptr};
     std::shared_ptr<DemuxerDataReader> dataReader_ {nullptr};
@@ -251,6 +270,15 @@ private:
     void InitBaseInfoByAtomParser(std::shared_ptr<MPEG4AtomParser> parser);
     void InitDrmInfoCacheByAtomParser(std::shared_ptr<MPEG4AtomParser> parser);
     bool TrackIsSelected(const uint32_t trackId);
+    bool TrackIsSelectedLocked(const uint32_t trackId) const;
+    void EnterRuntimeLocked();
+    void InvalidateTrackCachesLocked(bool resetCursor, bool resetPhase);
+    Status AlignTrackToReadCursorLocked(const std::shared_ptr<MPEG4AtomParser::Track>& track);
+    void UpdateReadCursorLocked(const SampleReadInfo& sampleInfo, int64_t dtsUs);
+    Status UpdateReadCursor(const SampleReadInfo& sampleInfo);
+    Status UpdateReadCursor(const std::shared_ptr<MPEG4Sample>& sample, bool onlyIfUnset = false);
+    Status SetReadCursorFromSeek(uint32_t trackId, uint32_t sampleIndex, SeekMode mode,
+        bool usePresentationTime = true);
     std::shared_ptr<MPEG4AtomParser::Track> FindTrackById(int32_t trackId);
 
     Status DynamicBaseTrackSelect(int64_t seekTime, int64_t &maxPts, int32_t &baseTrackIndex);
@@ -461,13 +489,14 @@ private:
     bool NeedWaitForRead(uint32_t trackId);
     void HandleReadWait();
     bool ReadAndCacheSample();
-    Status ReadSampleToCache(uint32_t trackId);
-    Status PushEosToCache(uint32_t trackId);
+    Status ReadSampleToCache(uint32_t trackId, uint64_t expectedReadConfigEpoch);
+    Status PushEosToCache(uint32_t trackId, uint64_t expectedReadConfigEpoch);
     bool IsWebVTTTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track) const;
     void AdvanceSampleIndex(const std::shared_ptr<MPEG4AtomParser::Track>& track);
     Status ProcessWebVTTSampleForCache(
-        const std::shared_ptr<MPEG4AtomParser::Track>& track, std::shared_ptr<MPEG4Sample> mpeg4Sample);
-    Status FlushPendingWebVTTSample(uint32_t trackId);
+        const std::shared_ptr<MPEG4AtomParser::Track>& track, std::shared_ptr<MPEG4Sample> mpeg4Sample,
+        uint64_t expectedReadConfigEpoch);
+    Status FlushPendingWebVTTSample(uint32_t trackId, uint64_t expectedReadConfigEpoch);
     Status FlushPendingWebVTTSamples();
     int64_t GetWebVTTFlushEndPtsUs(
         const std::shared_ptr<MPEG4AtomParser::Track>& track, const std::shared_ptr<Sample>& sample) const;
