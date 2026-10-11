@@ -229,6 +229,30 @@ bool NeedsCttsFrameRateDuration(const std::shared_ptr<MPEG4AtomParser::Track>& t
     return IsVideoLikeTrackForDuration(track) && !track->sampleHelper->cttsEntry_.empty();
 }
 
+bool GetNominalSttsDuration(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t& duration)
+{
+    FALSE_RETURN_V_NOLOG(IsValidTrack(track) && track->sampleHelper != nullptr, false);
+    uint32_t entryCount = track->sampleHelper->GetSttsEntryCount();
+    if (track->nominalSttsDurationParsed && track->nominalSttsEntryCount == entryCount) {
+        duration = track->nominalSttsDuration;
+        return duration > 0;
+    }
+    uint32_t bestCount = 0;
+    duration = 0;
+    for (uint32_t i = 0; i < entryCount; ++i) {
+        uint32_t count = track->sampleHelper->GetSampleCountOfSttsEntry(i);
+        uint32_t delta = track->sampleHelper->GetSampleDeltaOfSttsEntry(i);
+        if (delta > 0 && count >= bestCount) {
+            bestCount = count;
+            duration = delta;
+        }
+    }
+    track->nominalSttsDuration = static_cast<uint32_t>(duration);
+    track->nominalSttsEntryCount = entryCount;
+    track->nominalSttsDurationParsed = true;
+    return duration > 0;
+}
+
 bool HasUntimedTrailingZeroAacSample(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 {
     if (!IsValidTrack(track) || track->codecParms.trackType != AUDIO_TYPE ||
@@ -256,6 +280,16 @@ bool GetCttsFrameRateDurationUs(
     int64_t fallbackDurationTicks = static_cast<int64_t>(durationTicks);
     FALSE_RETURN_V_NOLOG(fallbackDurationTicks > 0, false);
     return RescaleTrackTimeToUsRoundNearest(fallbackDurationTicks, trackTimeScale, durationUs) == Status::OK;
+}
+
+bool GetCttsPacketDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    int32_t trackTimeScale, int64_t& durationUs)
+{
+    int64_t nominalDuration = 0;
+    if (GetNominalSttsDuration(track, nominalDuration)) {
+        return RescaleTrackTimeToUsRoundNearest(nominalDuration, trackTimeScale, durationUs) == Status::OK;
+    }
+    return GetCttsFrameRateDurationUs(mediaInfo, track->trackIndex, trackTimeScale, durationUs);
 }
 
 int64_t GetEffectiveStreamDurationTicks(
@@ -309,16 +343,17 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
     const auto& currentSample = context.currentSample;
     FALSE_RETURN_V_NOLOG(sampleCount > 0, false);
     if (NeedsCttsFrameRateDuration(track)) {
-        return GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale, durationUs);
+        return GetCttsPacketDurationUs(context.mediaInfo, track, trackTimeScale, durationUs);
     }
-
     int64_t duration = 0;
     if (sampleIndex + 1 < sampleCount) {
         // For normal packets, duration follows the distance to the next decode timestamp.
         MPEG4SampleHelper::SampleIndexView nextSample;
         FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex + 1, nextSample), false);
         duration = nextSample.dts - currentSample.dts;
-        FALSE_RETURN_V_NOLOG(duration > 0, false);
+        if (duration <= 0) {
+            (void)GetNominalSttsDuration(track, duration);
+        }
     } else {
         // The final packet has no next DTS, so close it against the effective stream duration.
         int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
@@ -336,7 +371,11 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
             duration = streamDuration - currentSample.dts;
         }
     }
-    return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
+    if (duration > 0) {
+        return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
+    }
+    return NeedsCttsFrameRateDuration(track) &&
+        GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale, durationUs);
 }
 
 bool GetMpegAudioFrameDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
