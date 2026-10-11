@@ -987,9 +987,10 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
     if (GetBufferSize() == 0 && seekTime == 0) {
         NotifyInitSuccess();
     }
-    isSeekingFlag = true;
+    isSeekingFlag.store(true);
     seekTime_ = static_cast<uint64_t>(seekTime);
     PrepareToSeek();
+    isSeekingFlag.store(false);
     FALSE_RETURN_V_MSG(!isInterruptNeeded_, true, "HLS Seek return, isInterruptNeeded_.");
     auto totalDuration = playlistDownloader_->GetDuration();
     FALSE_RETURN_V(totalDuration != -1, false);
@@ -1010,7 +1011,6 @@ bool HlsSegmentManager::SeekToTime(int64_t seekTime, SeekMode mode)
     }
     HandleSeekReady(curStreamId_, CheckBreakCondition());
     MEDIA_LOG_I("HLS SeekToTime end, type: %{public}d", type_);
-    isSeekingFlag = false;
     isSeekedFlag_ = true;
     notNeedReadBack_.store(false);
     isSourceLoaderSeeking_.store(false);
@@ -1702,7 +1702,7 @@ void HlsSegmentManager::SeekToTsForRead(uint32_t currentTsIndex)
     MEDIA_LOG_I("SeekToTimeForRead: currentTsIndex " PUBLIC_LOG_U32 ", type: %{public}d", currentTsIndex, type_);
     FALSE_RETURN_MSG(cacheMediaBuffer_ != nullptr, "cacheMediaBuffer_ is nullptr");
     AutoLock lock(switchMutex_);
-    isSeekingFlag = true;
+    isSeekingFlag.store(true);
     PrepareToSeek();
 
     writeTsIndex_ = 0;
@@ -1729,7 +1729,7 @@ void HlsSegmentManager::SeekToTsForRead(uint32_t currentTsIndex)
         }
     }
     MEDIA_LOG_I("SeekToTimeForRead end, type: %{public}d", type_);
-    isSeekingFlag = false;
+    isSeekingFlag.store(false);
 }
 
 int64_t HlsSegmentManager::RequestNewTsForRead(const PlayInfo& item)
@@ -1797,7 +1797,7 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         PutRequestIntoDownloader(playInfo);
     } else {
         isDownloadStarted_ = false;
-        if (isSeekingFlag) {
+        if (isSeekingFlag.load()) {
             return;
         }
         isDownloadFinish_ = true;
@@ -1814,7 +1814,7 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         return;
     }
     if ((bitRate > 0) && !isSelectingBitrate_ && isAutoSelectBitrate_ &&
-        playlistDownloader_ != nullptr && playlistDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag &&
+        playlistDownloader_ != nullptr && playlistDownloader_->IsParseAndNotifyFinished() && !isSeekingFlag.load() &&
         !IsDownloadLastSplice()) {
         AutoSelectBitrate(bitRate);
     }
