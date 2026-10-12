@@ -86,22 +86,27 @@ bool NeedReadPostProcessing(const std::string& mime)
         mime == MimeType::TEXT_WEBVTT;
 }
 
+constexpr size_t MPEG_AUDIO_HEADER_SIZE = 4;
+
 bool GetMpegAudioFrameSize(const uint8_t* data, size_t size, int32_t& frameSize)
 {
-    constexpr size_t headerSize = 4;
     constexpr uint32_t syncWord = 0x7FF;
+    constexpr uint32_t syncWordShift = 21;
     constexpr uint32_t invalidIndex = 3;
     constexpr uint32_t invalidBitrate = 15;
     constexpr uint32_t mpegVersion1 = 3;
     constexpr uint32_t layer1 = 3;
-    constexpr uint32_t bitrates[2][3][15] = {{{0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448},
-        {0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384},
-        {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320}},
+    constexpr uint32_t layer1FrameSizeMultiplier = 4;
+    constexpr uint32_t bitrates[2][3][15] = {
+        {{0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448},
+            {0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384},
+            {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320}},
         {{0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256},
-        {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160},
-        {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160}}};
+            {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160},
+            {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160}},
+    };
     constexpr uint32_t sampleRates[] = {44100, 48000, 32000};
-    if (data == nullptr || size < headerSize) {
+    if (data == nullptr || size < MPEG_AUDIO_HEADER_SIZE) {
         return false;
     }
     uint32_t header = GetU32Value(data);
@@ -109,7 +114,7 @@ bool GetMpegAudioFrameSize(const uint8_t* data, size_t size, int32_t& frameSize)
     uint32_t layer = (header >> 17) & 0x03;
     uint32_t bitrateIndex = (header >> 12) & 0x0F;
     uint32_t rateIndex = (header >> 10) & 0x03;
-    if ((header >> 21) != syncWord || version == 1 || layer == 0 || bitrateIndex == 0 ||
+    if ((header >> syncWordShift) != syncWord || version == 1 || layer == 0 || bitrateIndex == 0 ||
         bitrateIndex == invalidBitrate || rateIndex == invalidIndex) {
         return false;
     }
@@ -118,9 +123,9 @@ bool GetMpegAudioFrameSize(const uint8_t* data, size_t size, int32_t& frameSize)
     uint32_t coefficient = layer == layer1 ? 12 : (layer == 1 && version != mpegVersion1 ? 72 : 144);
     uint64_t sizeValue = static_cast<uint64_t>(coefficient) * bitrate / sampleRate + ((header >> 9) & 0x01);
     if (layer == layer1) {
-        sizeValue *= 4;
+        sizeValue *= layer1FrameSizeMultiplier;
     }
-    if (sizeValue < headerSize || sizeValue > static_cast<uint64_t>(INT32_MAX)) {
+    if (sizeValue < MPEG_AUDIO_HEADER_SIZE || sizeValue > static_cast<uint64_t>(INT32_MAX)) {
         return false;
     }
     frameSize = static_cast<int32_t>(sizeValue);
@@ -3351,10 +3356,11 @@ public:
             return false;
         }
         MPEG4DemuxerPlugin::SampleReadInfo sampleInfo;
-        if (plugin.GetSeekableSampleInfo(trackId, sampleInfo) != Status::OK || sampleInfo.view.size < 4) {
+        if (plugin.GetSeekableSampleInfo(trackId, sampleInfo) != Status::OK ||
+            sampleInfo.view.size < MPEG_AUDIO_HEADER_SIZE) {
             return false;
         }
-        uint8_t header[4] = {};
+        uint8_t header[MPEG_AUDIO_HEADER_SIZE] = {};
         auto buffer = std::make_shared<Buffer>();
         if (plugin.dataSource_ == nullptr || buffer == nullptr ||
             buffer->WrapMemory(header, sizeof(header), 0) == nullptr ||
@@ -3380,17 +3386,19 @@ public:
             MPEG4DemuxerPlugin::SampleReadInfo sampleInfo;
             Status ret = plugin.GetSeekableSampleInfo(trackId, sampleInfo);
             std::vector<std::shared_ptr<Sample>> packets;
-            if (ret == Status::END_OF_STREAM) {
+            bool isEos = ret == Status::END_OF_STREAM;
+            if (isEos) {
                 ret = Flush(plugin, trackId, packets);
                 FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-                FALSE_RETURN_V_NOLOG(!packets.empty(), outBuffer != nullptr ? plugin.SetEosSample(outBuffer) : ret);
+                FALSE_RETURN_V_NOLOG(!packets.empty(),
+                    outBuffer != nullptr ? plugin.SetEosSample(outBuffer) : Status::END_OF_STREAM);
             } else {
                 FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
                 ret = ReadAndProcess(plugin, trackId, sampleInfo, packets);
                 FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
                 ++track->currentSampleIndex;
             }
-            ret = CachePackets(plugin, trackId, sampleInfo.sampleIndex, packets);
+            ret = CachePackets(plugin, trackId, isEos ? UINT32_MAX : sampleInfo.sampleIndex, packets);
             FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
         }
         output = plugin.FrontTrackCache(trackId);
@@ -3519,7 +3527,7 @@ private:
     {
         constexpr size_t headerSize = 4;
         if (header == nullptr || state.scanOffset > state.pendingSize ||
-            headerSize > state.pendingSize - state.scanOffset) {
+            state.pendingSize - state.scanOffset < headerSize) {
             return false;
         }
         size_t copied = 0;
@@ -3610,7 +3618,8 @@ private:
                 return false;
             }
             size_t copySize = std::min(segmentSize - segment.offset, size - copied);
-            if (memcpy_s(output + copied, size - copied, segment.sample->data.get() + segment.offset, copySize) != EOK) {
+            if (memcpy_s(output + copied, size - copied,
+                segment.sample->data.get() + segment.offset, copySize) != EOK) {
                 return false;
             }
             copied += copySize;

@@ -3255,6 +3255,26 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioDirectSizeQuery
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_MpegAudioSizeQueryEos_001
+ * @tc.desc: Verify an MP3 size query reports EOS after the final complete sample.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioSizeQueryEos_001, TestSize.Level1)
+{
+    auto frame = BuildMpegAudioTestFrame();
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    ASSERT_NE(PrepareMpegAudioTestTrack(plugin, {static_cast<uint32_t>(frame.size())}), nullptr);
+    plugin.dataSource_ = CreateDataSourceForBytes(frame);
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(MPEG_AUDIO_TEST_FRAME_SIZE);
+    int32_t sampleSize = 0;
+
+    ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
+    ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::END_OF_STREAM);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_MpegAudioCrossSamplePacket_001
  * @tc.desc: Verify an MP3 frame split across MP4 samples is reassembled once and size query matches read output.
  * @tc.type: FUNC
@@ -3264,7 +3284,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioCrossSamplePack
     auto frame = BuildMpegAudioTestFrame();
     Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
     uint32_t tailSize = static_cast<uint32_t>(frame.size() - MPEG_AUDIO_TEST_SPLIT_SIZE);
-    ASSERT_NE(PrepareMpegAudioTestTrack(plugin, {static_cast<uint32_t>(MPEG_AUDIO_TEST_SPLIT_SIZE), tailSize}), nullptr);
+    ASSERT_NE(PrepareMpegAudioTestTrack(plugin,
+        {static_cast<uint32_t>(MPEG_AUDIO_TEST_SPLIT_SIZE), tailSize}), nullptr);
     plugin.dataSource_ = CreateDataSourceForBytes(frame);
     ASSERT_NE(plugin.dataSource_, nullptr);
     int32_t sampleSize = 0;
@@ -3443,7 +3464,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioUnseekableCross
     auto frame = BuildMpegAudioTestFrame();
     Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
     uint32_t tailSize = static_cast<uint32_t>(frame.size() - MPEG_AUDIO_TEST_SPLIT_SIZE);
-    ASSERT_NE(PrepareMpegAudioTestTrack(plugin, {static_cast<uint32_t>(MPEG_AUDIO_TEST_SPLIT_SIZE), tailSize}), nullptr);
+    ASSERT_NE(PrepareMpegAudioTestTrack(plugin,
+        {static_cast<uint32_t>(MPEG_AUDIO_TEST_SPLIT_SIZE), tailSize}), nullptr);
     plugin.seekable_ = Seekable::UNSEEKABLE;
     plugin.dataSource_ = CreateDataSourceForBytes(frame);
     ASSERT_NE(plugin.dataSource_, nullptr);
@@ -3474,7 +3496,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioAsyncEofFlush_0
     ASSERT_NE(cached, nullptr);
     ASSERT_NE(cached->sample, nullptr);
     EXPECT_EQ(cached->sample->size, static_cast<int32_t>(tail.size()));
-    EXPECT_EQ(std::vector<uint8_t>(cached->sample->data.get(), cached->sample->data.get() + cached->sample->size), tail);
+    EXPECT_EQ(std::vector<uint8_t>(cached->sample->data.get(),
+        cached->sample->data.get() + cached->sample->size), tail);
 }
 
 /**
@@ -3498,6 +3521,23 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioEofFlushAndRese
     EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), tail.size());
     EXPECT_EQ(plugin.Flush(), Status::OK);
     EXPECT_EQ(plugin.mpegAudioParserStates_, nullptr);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SeekToStart_ResetEosState_001
+ * @tc.desc: Verify SeekToStart resets async EOS state even when sample index is already zero.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekToStart_ResetEosState_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    ASSERT_NE(PrepareMpegAudioTestTrack(plugin, {MPEG_AUDIO_TEST_FRAME_SIZE}), nullptr);
+    plugin.readToEnd_ = true;
+    plugin.readLoopStatus_.store(Status::END_OF_STREAM, std::memory_order_release);
+
+    ASSERT_EQ(plugin.SeekToStartInternal(), Status::OK);
+    EXPECT_FALSE(plugin.readToEnd_);
+    EXPECT_EQ(plugin.readLoopStatus_.load(std::memory_order_acquire), Status::OK);
 }
 
 /**
