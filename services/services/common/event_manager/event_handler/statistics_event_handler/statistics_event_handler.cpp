@@ -840,20 +840,8 @@ private:
 
 /*----------------------------------- AppBehaviorsInfo -----------------------------------*/
 
-class DecAbnormalOccupationInfo;
 class SpeedDecodingInfo;
 class SecureDecoderAllocBufFailedInfo;
-class AppBehaviorsInfo : public StatisticsMainEventInfoBase {
-public:
-    AppBehaviorsInfo()
-    {
-        eventInfoMap_.emplace(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO,
-                              std::make_shared<DecAbnormalOccupationInfo>());
-        eventInfoMap_.emplace(StatisticsEventType::SPEED_DECODING_INFO, std::make_shared<SpeedDecodingInfo>());
-        eventInfoMap_.emplace(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO,
-                              std::make_shared<SecureDecoderAllocBufFailedInfo>());
-    }
-};
 
 class DecAbnormalOccupationInfo : public StatisticsMainEventInfoBase {
 public:
@@ -862,6 +850,15 @@ public:
     void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        if (eventType == StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO) {
+            if (isInOccupationHDecEvent_.load()) {
+                hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
+                lastOccupationHDecAppInfoVec_.clear();
+                isInOccupationHDecEvent_.store(false);
+            }
+            return;
+        }
+
         AppNameIndex callerNameIndex = AppNameIndexInfo::GetInstance().GetIndexByMeta(eventMeta);
         if (callerNameIndex == INVALID_APP_NAME_INDEX) {
             return;
@@ -869,19 +866,20 @@ public:
 
         switch (eventType) {
             case StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO: {
+                auto usageStatistics = AVCodecServerManager::GetInstance().GetHDecUsageStatistics();
                 if (hdecLimitExceededInfo_.size() < maxOccupationHDecRecordCount &&
                     !isInOccupationHDecEvent_.load()) {
-                    auto usageStatistics = AVCodecServerManager::GetInstance().GetHDecUsageStatistics();
                     for (const auto& [holder, count] : usageStatistics) {
-                        CHECK_AND_BREAK_LOG(lastOccupationHDecAppInfoVec_.size() < maxOccupationHDecRecordCount,
-                            "lastOccupationHDecAppInfoVec_ reached limit %{public}zu", maxOccupationHDecRecordCount);
+                        CHECK_AND_BREAK_LOG(
+                            lastOccupationHDecAppInfoVec_.size() < maxOccupationHDecRecordCount,
+                            "lastOccupationHDecAppInfoVec_ reached limit %{public}zu",
+                            maxOccupationHDecRecordCount);
                         AppNameIndex appIndex = AppNameIndexInfo::GetInstance().GetIndexByAppName(holder);
                         lastOccupationHDecAppInfoVec_.emplace_back(appIndex, count);
                     }
 
                     lastCallerNameIndex_ = callerNameIndex;
                     isInOccupationHDecEvent_.store(true);
-                    RegisterOccupationHDecLimitExceededEventHook();
                 }
                 break;
             }
@@ -940,24 +938,7 @@ public:
         longTimeInBgInfo_.clear();
     }
 
-private:
-    void RegisterOccupationHDecLimitExceededEventHook()
-    {
-        StatisticsEventInfo::GetInstance().RegisterEventHook(
-            StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO,
-            [this] (const Media::Meta &eventMeta) -> bool {
-                if (!isInOccupationHDecEvent_.load()) {
-                    return true;
-                }
-
-                std::lock_guard<std::mutex> lock(mutex_);
-                hdecLimitExceededInfo_.emplace(lastCallerNameIndex_, lastOccupationHDecAppInfoVec_);
-                lastOccupationHDecAppInfoVec_.clear();
-                isInOccupationHDecEvent_.store(false);
-                return true;
-            });
-    }
-
+ private:
     using HDecLimitExceededAppInfoVector = std::vector<std::pair<AppNameIndex, uint32_t>>; // AppNameIndex, count
     constexpr static size_t maxOccupationHDecRecordCount = 200;
     std::atomic<bool> isInOccupationHDecEvent_{ false };
@@ -965,6 +946,30 @@ private:
     HDecLimitExceededAppInfoVector lastOccupationHDecAppInfoVec_;
     std::unordered_multimap<AppNameIndex, HDecLimitExceededAppInfoVector> hdecLimitExceededInfo_;
     std::unordered_multimap<AppNameIndex, uint32_t> longTimeInBgInfo_;  // AppNameIndex, elapsedTime
+};
+
+class AppBehaviorsInfo : public StatisticsMainEventInfoBase {
+public:
+    AppBehaviorsInfo()
+    {
+        eventInfoMap_.emplace(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO,
+                              std::make_shared<DecAbnormalOccupationInfo>());
+        eventInfoMap_.emplace(StatisticsEventType::SPEED_DECODING_INFO, std::make_shared<SpeedDecodingInfo>());
+        eventInfoMap_.emplace(StatisticsEventType::SECURE_DEC_ALLOC_BUF_FAILED_INFO,
+                              std::make_shared<SecureDecoderAllocBufFailedInfo>());
+    }
+
+    void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
+    {
+        if (eventType == StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO) {
+            auto iter = eventInfoMap_.find(StatisticsEventType::DEC_ABNORMAL_OCCUPATION_INFO);
+            if (iter != eventInfoMap_.end() && iter->second != nullptr) {
+                iter->second->OnAddEventInfo(eventType, eventMeta);
+            }
+            return;
+        }
+        StatisticsMainEventInfoBase::OnAddEventInfo(eventType, eventMeta);
+    }
 };
 
 class SpeedDecodingInfo : public StatisticsMainEventInfoBase {
@@ -1192,23 +1197,10 @@ StatisticsEventInfo::StatisticsEventInfo()
 
 void StatisticsEventInfo::OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta)
 {
-    {
-        std::shared_lock<std::shared_mutex> lock(mutex_);
-        auto iter = eventInfoMap_.find(eventType & StatisticsEventType::MAIN_EVENT_TYPE_MASK);
-        if (iter != eventInfoMap_.end() && iter->second != nullptr) {
-            iter->second->OnAddEventInfo(eventType, eventMeta);
-        }
-    }
-
-    {
-        std::lock_guard<std::shared_mutex> lock(eventHookMutex_);
-        auto hookIter = eventHooks_.find(eventType);
-        if (hookIter != eventHooks_.end()) {
-            auto needErase = hookIter->second(eventMeta);
-            if (needErase) {
-                eventHooks_.erase(hookIter);
-            }
-        }
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    auto iter = eventInfoMap_.find(eventType & StatisticsEventType::MAIN_EVENT_TYPE_MASK);
+    if (iter != eventInfoMap_.end() && iter->second != nullptr) {
+        iter->second->OnAddEventInfo(eventType, eventMeta);
     }
 }
 
@@ -1252,21 +1244,11 @@ void StatisticsEventInfo::OnSubmitEventInfo()
         );
     }
 
-    {
-        std::lock_guard<std::shared_mutex> eventHookLock(eventHookMutex_);
-        eventHooks_.clear();
-    }
     AppNameIndexInfo::GetInstance().Reset();
     for (auto &eventInfo : eventInfoMap_) {
         eventInfo.second->ResetEventInfo();
     }
     RegisterSubmitEventTimer();
-}
-
-void StatisticsEventInfo::RegisterEventHook(StatisticsEventType eventType, EventHook hook)
-{
-    std::lock_guard<std::shared_mutex> lock(eventHookMutex_);
-    eventHooks_[eventType] = std::move(hook);
 }
 
 void StatisticsEventInfo::RegisterSubmitEventTimer()
