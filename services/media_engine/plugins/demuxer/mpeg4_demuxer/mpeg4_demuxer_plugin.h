@@ -42,6 +42,7 @@ namespace MPEG4 {
 
 class MPEG4SampleHelper;
 struct ReadSamplePacketAttr;
+struct MpegAudioParserStates;
 
 class MPEG4DemuxerPlugin : public DemuxerPlugin {
 public:
@@ -100,7 +101,6 @@ public:
     Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
 
-    // cache pressure control
     Status SetCachePressureCallback(CachePressureCallback cb) override;
     Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override;
 private:
@@ -167,6 +167,8 @@ private:
     std::map<int32_t, std::shared_ptr<Sample>> firstFrameMap_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> pendingWebVttSamples_ {};
+    std::unique_ptr<MpegAudioParserStates> mpegAudioParserStates_ {nullptr};
+    std::mutex mpegAudioParserMutex_ {};
     std::unordered_map<uint32_t, std::vector<int64_t>> rawDtsPrefix_ {};
 
     std::unordered_map<uint32_t, detail::TrackDfxInfo> trackDfxInfoMap_ {};
@@ -418,7 +420,6 @@ private:
     int SelectSeekTrack();
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
 
-    // 辅助轨相关函数
     bool IsVideoType(const MPEG4AtomParser::Track& track);
     bool IsAudioType(const MPEG4AtomParser::Track& track);
     void UpdateReferenceIds();
@@ -494,13 +495,12 @@ private:
     std::unordered_map<uint32_t, int64_t> trackLastNotifyMs_ {};
     std::mutex cachePressureMutex_ {};
 
-    // DRM info cache
     std::multimap<std::string, std::vector<uint8_t>> cachedDrmInfo_;
     std::mutex cachedDrmInfoMutex_;
     std::atomic<bool> drmInfoCached_ {false};
 };
-} // namespace MPEG4
-} // namespace Plugins
+}
+}
 } // namespace Media
 } // namespace OHOS
 #endif // MPEG4_DEMUXER_PLUGIN_H
