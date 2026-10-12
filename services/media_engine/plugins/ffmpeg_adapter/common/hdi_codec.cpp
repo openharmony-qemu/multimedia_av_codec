@@ -14,11 +14,14 @@
  */
 #include "hdi_codec.h"
 #include "avcodec_log.h"
+#include <stdio.h>
 #include <unistd.h>
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-HdiCodec"};
 constexpr int TIMEOUT_MS = 1000;
+constexpr int FDSAN_TAG_HDI_CODEC = 78;
+constexpr uint64_t HDICODEC_FDSAN_TAG = static_cast<uint64_t>(LOG_DOMAIN_AUDIO) << 32 | FDSAN_TAG_HDI_CODEC;
 using namespace OHOS::HDI::Codec::V4_0;
 } // namespace
 
@@ -353,7 +356,8 @@ int32_t HdiCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBu
         hdiCodec_->OnEmptyBufferDone(buffer);
     }
     if (buffer.fd >= 0) {
-        close(buffer.fd);
+        fdsan_exchange_owner_tag(buffer.fd, 0, HDICODEC_FDSAN_TAG);
+        fdsan_close_with_tag(buffer.fd, HDICODEC_FDSAN_TAG);
     }
     return HDF_SUCCESS;
 }
@@ -365,7 +369,8 @@ int32_t HdiCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuf
         hdiCodec_->OnFillBufferDone(buffer);
     }
     if (buffer.fd >= 0) {
-        close(buffer.fd);
+        fdsan_exchange_owner_tag(buffer.fd, 0, HDICODEC_FDSAN_TAG);
+        fdsan_close_with_tag(buffer.fd, HDICODEC_FDSAN_TAG);
     }
     return HDF_SUCCESS;
 }
