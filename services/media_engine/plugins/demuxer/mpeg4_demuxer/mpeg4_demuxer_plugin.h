@@ -144,6 +144,10 @@ private:
     detail::CachePhase cachePhase_ {detail::CachePhase::BOOTSTRAP};
     uint64_t readConfigEpoch_ {0};
     detail::ReadCursor readCursor_ {};
+    bool hasInFlightSample_ {false};
+    uint64_t inFlightReadConfigEpoch_ {0};
+    detail::SampleReadInfo inFlightSampleInfo_ {};
+    int64_t inFlightSampleDtsUs_ {0};
 
     std::shared_ptr<DataSource> dataSource_ {nullptr};
     std::shared_ptr<DemuxerDataReader> dataReader_ {nullptr};
@@ -246,17 +250,18 @@ private:
         const MPEG4SampleHelper::SampleIndexView& sampleView, uint32_t sampleIndex, ReadSamplePacketAttr& attr);
     void EnterRuntimeLocked();
     void InvalidateTrackCachesLocked(bool resetCursor, bool resetPhase);
-    Status AlignTrackToReadCursorLocked(const std::shared_ptr<MPEG4AtomParser::Track>& track);
+    Status AlignTrackToReadCursorLocked(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        const detail::ReadCursor* cursor = nullptr);
     Status AlignTrackToPositionCursorLocked(const std::shared_ptr<MPEG4AtomParser::Track>& track,
-        size_t sampleCount, uint32_t& sampleIndex);
+        size_t sampleCount, uint32_t& sampleIndex, const detail::ReadCursor* cursor = nullptr);
     Status AlignVideoTrackToPresentationCursorLocked(
         const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex);
     Status AlignAudioTrackToPresentationCursorLocked(
         const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex);
-    Status AlignTrackToDecodeCursorLocked(
-        const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex);
-    Status FindSampleAtOrAfterPts(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t targetPtsUs,
-        detail::SampleReadInfo& sampleInfo, int64_t& sampleDtsUs);
+    Status AlignTrackToDecodeCursorLocked(const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount,
+        uint32_t& sampleIndex, const detail::ReadCursor* cursor = nullptr);
+    Status FindSampleAtOrAfterPts(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        int64_t targetPtsUs, detail::SampleReadInfo& sampleInfo, int64_t& sampleDtsUs);
     Status AdjustSeekCursorForSelectedVideoTracks(uint32_t seekTrackId, int64_t targetPtsUs,
         int64_t& cursorDtsUs, int64_t& cursorPos);
     Status CommitWebVTTSampleForCacheLocked(const std::shared_ptr<MPEG4AtomParser::Track>& track,
@@ -266,8 +271,10 @@ private:
         uint64_t expectedReadConfigEpoch);
     Status ReadAndCacheNextSample(uint32_t trackId, uint64_t expectedReadConfigEpoch);
     Status FinalizeReadSample(uint32_t trackId, const std::shared_ptr<MPEG4AtomParser::Track>& track,
-        const std::shared_ptr<MPEG4Sample>& sample, bool useCache, Status status);
+        const std::shared_ptr<MPEG4Sample>& sample, bool useCache, bool isEos, Status status);
     void UpdateReadCursorLocked(const detail::SampleReadInfo& sampleInfo, int64_t dtsUs);
+    Status SetInFlightSample(const detail::SampleReadInfo& sampleInfo, uint64_t expectedReadConfigEpoch);
+    void ClearInFlightSampleLocked(const detail::SampleReadInfo& sampleInfo, uint64_t expectedReadConfigEpoch);
     Status UpdateReadCursor(const detail::SampleReadInfo& sampleInfo);
     Status UpdateReadCursor(const std::shared_ptr<MPEG4Sample>& sample, bool onlyIfUnset = false);
     Status SetReadCursorFromSeek(uint32_t trackId, uint32_t sampleIndex, SeekMode mode,

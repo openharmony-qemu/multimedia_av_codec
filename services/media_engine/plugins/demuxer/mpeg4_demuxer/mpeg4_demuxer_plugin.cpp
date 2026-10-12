@@ -2008,6 +2008,9 @@ void MPEG4DemuxerPlugin::InvalidateTrackCachesLocked(bool resetCursor, bool rese
     cacheSamples_.clear();
     pendingWebVttSamples_.clear();
     readToEnd_ = false;
+    hasInFlightSample_ = false;
+    inFlightSampleInfo_ = SampleReadInfo {};
+    inFlightSampleDtsUs_ = 0;
     if (resetCursor) {
         readCursor_ = ReadCursor {};
     }
@@ -2032,6 +2035,39 @@ void MPEG4DemuxerPlugin::UpdateReadCursorLocked(const SampleReadInfo& sampleInfo
     readCursor_.dtsUs = dtsUs;
     readCursor_.pos = sampleInfo.view.pos;
     readCursor_.usePresentationTime = false;
+}
+
+void MPEG4DemuxerPlugin::ClearInFlightSampleLocked(
+    const SampleReadInfo& sampleInfo, uint64_t expectedReadConfigEpoch)
+{
+    if (hasInFlightSample_ && inFlightReadConfigEpoch_ == expectedReadConfigEpoch &&
+        inFlightSampleInfo_.trackId == sampleInfo.trackId &&
+        inFlightSampleInfo_.sampleIndex == sampleInfo.sampleIndex &&
+        inFlightSampleInfo_.view.pos == sampleInfo.view.pos) {
+        hasInFlightSample_ = false;
+        inFlightSampleInfo_ = SampleReadInfo {};
+        inFlightSampleDtsUs_ = 0;
+    }
+}
+
+Status MPEG4DemuxerPlugin::SetInFlightSample(
+    const SampleReadInfo& sampleInfo, uint64_t expectedReadConfigEpoch)
+{
+    std::lock_guard<std::mutex> configLock(readConfigMutex_);
+    if (expectedReadConfigEpoch != readConfigEpoch_ || !TrackIsSelectedLocked(sampleInfo.trackId) ||
+        trackMtx_.find(sampleInfo.trackId) == trackMtx_.end()) {
+        return Status::ERROR_AGAIN;
+    }
+    auto track = FindTrackById(static_cast<int32_t>(sampleInfo.trackId));
+    FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "In-flight sample track is nullptr");
+    ReadSamplePacketAttr attr;
+    Status ret = BuildTrackSamplePacketAttr(track, sampleInfo.view, sampleInfo.sampleIndex, attr);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build in-flight sample timeline failed");
+    hasInFlightSample_ = true;
+    inFlightReadConfigEpoch_ = expectedReadConfigEpoch;
+    inFlightSampleInfo_ = sampleInfo;
+    inFlightSampleDtsUs_ = attr.dtsUs;
+    return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::UpdateReadCursor(const SampleReadInfo& sampleInfo)
@@ -2069,22 +2105,23 @@ Status MPEG4DemuxerPlugin::UpdateReadCursor(const std::shared_ptr<MPEG4Sample>& 
 }
 
 Status MPEG4DemuxerPlugin::AlignTrackToReadCursorLocked(
-    const std::shared_ptr<MPEG4AtomParser::Track>& track)
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, const ReadCursor* cursor)
 {
     FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_NULL_POINTER,
         "Track or sample helper is nullptr while aligning track cursor");
-    if (cachePhase_ != CachePhase::RUNTIME || !readCursor_.valid) {
+    const ReadCursor& alignmentCursor = cursor == nullptr ? readCursor_ : *cursor;
+    if (cachePhase_ != CachePhase::RUNTIME || !alignmentCursor.valid) {
         return Status::OK;
     }
 
     const size_t sampleCount = track->sampleHelper->GetSampleCount();
     uint32_t alignedIndex = 0;
-    if (readCursor_.dtsUs == INT64_MAX) {
+    if (alignmentCursor.dtsUs == INT64_MAX) {
         alignedIndex = sampleCount;
-    } else if (readCursor_.dtsUs == INT64_MIN) {
-        Status ret = AlignTrackToPositionCursorLocked(track, sampleCount, alignedIndex);
+    } else if (alignmentCursor.dtsUs == INT64_MIN) {
+        Status ret = AlignTrackToPositionCursorLocked(track, sampleCount, alignedIndex, &alignmentCursor);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align sample to read cursor position failed");
-    } else if (readCursor_.usePresentationTime) {
+    } else if (alignmentCursor.usePresentationTime) {
         if (IsVideoType(*track)) {
             Status ret = AlignVideoTrackToPresentationCursorLocked(track, sampleCount, alignedIndex);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align video sample to presentation cursor failed");
@@ -2093,7 +2130,7 @@ Status MPEG4DemuxerPlugin::AlignTrackToReadCursorLocked(
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align audio sample to presentation cursor failed");
         }
     } else {
-        Status ret = AlignTrackToDecodeCursorLocked(track, sampleCount, alignedIndex);
+        Status ret = AlignTrackToDecodeCursorLocked(track, sampleCount, alignedIndex, &alignmentCursor);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align sample to decode cursor failed");
     }
     track->currentSampleIndex = alignedIndex;
@@ -2102,19 +2139,21 @@ Status MPEG4DemuxerPlugin::AlignTrackToReadCursorLocked(
 }
 
 Status MPEG4DemuxerPlugin::AlignTrackToPositionCursorLocked(
-    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex)
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex,
+    const ReadCursor* cursor)
 {
-    if (readCursor_.pos < 0) {
+    const ReadCursor& alignmentCursor = cursor == nullptr ? readCursor_ : *cursor;
+    if (alignmentCursor.pos < 0) {
         return Status::OK;
     }
-    Status ret = track->sampleHelper->FindFirstSampleAfterPosition(readCursor_.pos, sampleIndex);
+    Status ret = track->sampleHelper->FindFirstSampleAfterPosition(alignmentCursor.pos, sampleIndex);
     if (ret == Status::OK) {
         return Status::OK;
     }
     MPEG4SampleHelper::SampleIndexView lastView;
     FALSE_RETURN_V_MSG_E(sampleCount > 0 &&
         track->sampleHelper->GetSampleIndexView(static_cast<uint32_t>(sampleCount - 1), lastView) == Status::OK &&
-        readCursor_.pos >= lastView.pos, ret, "Find sample after read cursor position failed");
+        alignmentCursor.pos >= lastView.pos, ret, "Find sample after read cursor position failed");
     sampleIndex = static_cast<uint32_t>(sampleCount);
     return Status::OK;
 }
@@ -2181,11 +2220,12 @@ Status MPEG4DemuxerPlugin::AlignAudioTrackToPresentationCursorLocked(
     return ret;
 }
 
-Status MPEG4DemuxerPlugin::AlignTrackToDecodeCursorLocked(
-    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex)
+Status MPEG4DemuxerPlugin::AlignTrackToDecodeCursorLocked(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    size_t sampleCount, uint32_t& sampleIndex, const ReadCursor* cursor)
 {
+    const ReadCursor& alignmentCursor = cursor == nullptr ? readCursor_ : *cursor;
     int64_t targetDts = 0;
-    FALSE_RETURN_V_MSG_E(ConvertTimeScale(readCursor_.dtsUs, static_cast<int64_t>(track->timeScale),
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(alignmentCursor.dtsUs, static_cast<int64_t>(track->timeScale),
         static_cast<int64_t>(S_TO_US), &targetDts) == Status::OK, Status::ERROR_INVALID_PARAMETER,
         "Convert read cursor DTS failed");
     if (ShouldApplyMovEditTimelineOffset(track)) {
@@ -2208,7 +2248,8 @@ Status MPEG4DemuxerPlugin::AlignTrackToDecodeCursorLocked(
         ReadSamplePacketAttr attr;
         FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, sampleIndex, attr) == Status::OK,
             Status::ERROR_INVALID_DATA, "Build sample timeline while aligning cursor failed");
-        if (attr.dtsUs > readCursor_.dtsUs || (attr.dtsUs == readCursor_.dtsUs && view.pos > readCursor_.pos)) {
+        if (attr.dtsUs > alignmentCursor.dtsUs ||
+            (attr.dtsUs == alignmentCursor.dtsUs && view.pos > alignmentCursor.pos)) {
             break;
         }
         ++sampleIndex;
@@ -2334,7 +2375,22 @@ Status MPEG4DemuxerPlugin::SelectTrack(uint32_t trackId)
     if (cachePhase_ == CachePhase::RUNTIME) {
         ClearTrackCache(trackId);
         pendingWebVttSamples_.erase(trackId);
-        Status ret = AlignTrackToReadCursorLocked(currentTrack);
+        ReadCursor inFlightCursor;
+        const ReadCursor* alignmentCursor = nullptr;
+        if (hasInFlightSample_ && (!readCursor_.valid ||
+            inFlightSampleDtsUs_ > readCursor_.dtsUs ||
+            (inFlightSampleDtsUs_ == readCursor_.dtsUs && inFlightSampleInfo_.view.pos > readCursor_.pos))) {
+            // The worker has already chosen this packet and may have advanced the shared demux
+            // position, but the epoch change will reject its cache commit. Use its position only
+            // as this track's start boundary; do not publish it as the committed read cursor.
+            inFlightCursor = readCursor_;
+            inFlightCursor.valid = true;
+            inFlightCursor.dtsUs = inFlightSampleDtsUs_;
+            inFlightCursor.pos = inFlightSampleInfo_.view.pos;
+            inFlightCursor.usePresentationTime = false;
+            alignmentCursor = &inFlightCursor;
+        }
+        Status ret = AlignTrackToReadCursorLocked(currentTrack, alignmentCursor);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align selected track to read cursor failed");
         trackMtx_[trackId] = std::make_shared<std::mutex>();
     } else if (trackMtx_.find(trackId) == trackMtx_.end()) {
@@ -3727,18 +3783,22 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     if (IsValidMpeg4Sample(mpeg4Sample)) {
         ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
     }
-    return FinalizeReadSample(trackId, track, mpeg4Sample, useCache, ret);
+    bool isEos = (outBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) != 0;
+    return FinalizeReadSample(trackId, track, mpeg4Sample, useCache, isEos, ret);
 }
 
 Status MPEG4DemuxerPlugin::FinalizeReadSample(uint32_t trackId,
     const std::shared_ptr<MPEG4AtomParser::Track>& track, const std::shared_ptr<MPEG4Sample>& sample,
-    bool useCache, Status status)
+    bool useCache, bool isEos, Status status)
 {
     FALSE_RETURN_V_NOLOG(status != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
     FALSE_RETURN_V_NOLOG(status == Status::OK || status == Status::ERROR_PACKET_CONVERT_FAILED, status);
+    if (isEos) {
+        return status;
+    }
     if (useCache && seekable_ == Seekable::SEEKABLE) {
-        Status cursorRet = UpdateReadCursor(sample, true);
-        FALSE_RETURN_V_MSG_E(cursorRet == Status::OK, cursorRet, "Update bootstrap read cursor failed");
+        Status cursorRet = UpdateReadCursor(sample);
+        FALSE_RETURN_V_MSG_E(cursorRet == Status::OK, cursorRet, "Update read cursor after cached sample failed");
     }
     if (seekable_ == Seekable::UNSEEKABLE || useCache) {
         PopTrackCache(trackId);

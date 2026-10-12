@@ -38,6 +38,7 @@
 #include "file_server_demo.h"
 #include "avc_parser_impl.h"
 #include "mpeg4_audio_parser.h"
+#include "mpeg4_demuxer_plugin_internal.h"
 #include "mpeg4_sample_memory.h"
 #include "mpeg4_sample_helper.h"
 #include "rbsp_context.h"
@@ -1777,10 +1778,14 @@ bool ReadSwitchFrame(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t 
         return false;
     }
     Status ret = Status::ERROR_WAIT_TIMEOUT;
-    for (int32_t attempt = 0; attempt < WAIT_RETRY_TIMES && ret == Status::ERROR_WAIT_TIMEOUT; ++attempt) {
-        ret = readMode == ReadMode::ZERO_COPY ?
-            plugin->ReadSampleZeroCopy(trackId, buffer.mediaAVBuffer, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT) :
-            plugin->ReadSample(trackId, buffer.mediaAVBuffer, MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT);
+    if (readMode == ReadMode::ZERO_COPY) {
+        for (int32_t attempt = 0; attempt < WAIT_RETRY_TIMES && ret == Status::ERROR_WAIT_TIMEOUT; ++attempt) {
+            ret = plugin->ReadSampleZeroCopy(trackId, buffer.mediaAVBuffer,
+                MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT);
+        }
+    } else {
+        // Keep timeline parity checks deterministic; async cache races are covered by the ABA test.
+        ret = plugin->ReadSample(trackId, buffer.mediaAVBuffer);
     }
     if (ret != Status::OK && ret != Status::NO_ERROR) {
         ADD_FAILURE() << "Switch sample read failed, track=" << trackId << ", status="
@@ -2180,8 +2185,8 @@ void Mpeg4DemuxerPluginUnitTest::CheckDynamicTrackSwitch(DynamicSwitchScenario s
     if (scenario == DynamicSwitchScenario::GET_NEXT_SIZE) {
         int32_t ffmpegSize = 0;
         int32_t mpeg4Size = 0;
-        ASSERT_EQ(GetNextSampleSizeWithRetry(ffmpegPlugin_, DYNAMIC_SWITCH_PRIMARY_TRACK_ID, ffmpegSize), Status::OK);
-        ASSERT_EQ(GetNextSampleSizeWithRetry(mpeg4Plugin_, DYNAMIC_SWITCH_PRIMARY_TRACK_ID, mpeg4Size), Status::OK);
+        ASSERT_EQ(ffmpegPlugin_->GetNextSampleSize(DYNAMIC_SWITCH_PRIMARY_TRACK_ID, ffmpegSize), Status::OK);
+        ASSERT_EQ(mpeg4Plugin_->GetNextSampleSize(DYNAMIC_SWITCH_PRIMARY_TRACK_ID, mpeg4Size), Status::OK);
         EXPECT_GT(mpeg4Size, 0);
         EXPECT_GT(ffmpegSize, 0);
     } else {
@@ -2212,15 +2217,36 @@ void Mpeg4DemuxerPluginUnitTest::CheckDynamicTrackSwitch(DynamicSwitchScenario s
     ASSERT_EQ(mpeg4Plugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
     ASSERT_EQ(ffmpegPlugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
+    int64_t lastMpeg4Dts = INT64_MIN;
     for (uint32_t index = 0; index < DYNAMIC_SWITCH_COMPARE_SAMPLE_COUNT; ++index) {
-        ReadAndCompareSwitchSample(DYNAMIC_SWITCH_NEW_TRACK_ID, readMode);
+        SCOPED_TRACE("after-switch sample=" + std::to_string(index));
+        FrameSampleDigest ffmpegSample;
+        FrameSampleDigest mpeg4Sample;
+        ASSERT_TRUE(ReadSwitchFrame(ffmpegPlugin_, DYNAMIC_SWITCH_NEW_TRACK_ID, readMode, ffmpegSample));
+        ASSERT_TRUE(ReadSwitchFrame(mpeg4Plugin_, DYNAMIC_SWITCH_NEW_TRACK_ID, readMode, mpeg4Sample));
+        CompareSwitchFrames(mpeg4Sample, ffmpegSample, true);
+        lastMpeg4Dts = mpeg4Sample.dts;
     }
     ASSERT_EQ(ffmpegPlugin_->UnselectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->UnselectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
     ASSERT_EQ(ffmpegPlugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
     ASSERT_EQ(mpeg4Plugin_->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID), Status::OK);
     for (uint32_t index = 0; index < DYNAMIC_SWITCH_RESELECT_SAMPLE_COUNT; ++index) {
-        ReadAndCompareSwitchSample(DYNAMIC_SWITCH_NEW_TRACK_ID, readMode);
+        SCOPED_TRACE("after-reselect sample=" + std::to_string(index));
+        FrameSampleDigest ffmpegSample;
+        FrameSampleDigest mpeg4Sample;
+        ASSERT_TRUE(ReadSwitchFrame(ffmpegPlugin_, DYNAMIC_SWITCH_NEW_TRACK_ID, readMode, ffmpegSample));
+        ASSERT_TRUE(ReadSwitchFrame(mpeg4Plugin_, DYNAMIC_SWITCH_NEW_TRACK_ID, readMode, mpeg4Sample));
+        if (readMode == ReadMode::ZERO_COPY) {
+            // Independent async readers may prefetch different amounts before reselect. Verify
+            // the new selection advances past this plugin's previous delivered packet.
+            EXPECT_GT(mpeg4Sample.dts, lastMpeg4Dts);
+            EXPECT_GT(mpeg4Sample.actualSize, 0);
+            lastMpeg4Dts = mpeg4Sample.dts;
+            continue;
+        }
+        CompareSwitchFrames(mpeg4Sample, ffmpegSample, true);
+        lastMpeg4Dts = mpeg4Sample.dts;
     }
 }
 
@@ -3940,9 +3966,21 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DynamicTrackSwitchInFlig
     }
 
     uint64_t oldEpoch = 0;
+    uint32_t inFlightSampleIndex = 0;
+    bool hasInFlightSample = false;
     {
         std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
         oldEpoch = plugin->readConfigEpoch_;
+        hasInFlightSample = plugin->hasInFlightSample_;
+        if (hasInFlightSample) {
+            inFlightSampleIndex = plugin->inFlightSampleInfo_.sampleIndex;
+        }
+    }
+    if (!hasInFlightSample) {
+        source->Release();
+        reader.join();
+        FAIL() << "Blocked read has no in-flight sample marker";
+        return;
     }
     Status unselectStatus = plugin->UnselectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID);
     Status selectStatus = plugin->SelectTrack(DYNAMIC_SWITCH_NEW_TRACK_ID);
@@ -3950,6 +3988,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DynamicTrackSwitchInFlig
     {
         std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
         newEpoch = plugin->readConfigEpoch_;
+        EXPECT_GT(plugin->FindTrackById(DYNAMIC_SWITCH_NEW_TRACK_ID)->currentSampleIndex, inFlightSampleIndex);
     }
     source->Release();
     reader.join();
@@ -3961,6 +4000,10 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_DynamicTrackSwitchInFlig
     EXPECT_FALSE(plugin->HasTrackCache(2));
     EXPECT_TRUE(plugin->ReadAndCacheSample());
     EXPECT_TRUE(plugin->HasTrackCache(2));
+    auto cachedSample = plugin->FrontTrackCache(DYNAMIC_SWITCH_NEW_TRACK_ID);
+    ASSERT_NE(cachedSample, nullptr);
+    ASSERT_NE(cachedSample->sample, nullptr);
+    EXPECT_GT(cachedSample->sampleIndex, inFlightSampleIndex);
 }
 
 /**
@@ -3991,6 +4034,72 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SyncReadInterfaces_001, 
         Status::ERROR_INVALID_OPERATION);
     EXPECT_EQ(mpeg4Plugin_->ReadSampleZeroCopy(trackId, MediaAVBuffer::CreateAVBuffer(),
         MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT), Status::ERROR_INVALID_OPERATION);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SyncReadEosKeepsCursor_001
+ * @tc.desc: Keep the committed read cursor unchanged for repeated sync EOS reads.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SyncReadEosKeepsCursor_001, TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(plugin, nullptr);
+    int fd = -1;
+    MediaInfo mediaInfo;
+    InitPlugin(TEST_MP4_PATH_H264_B, plugin, fd, mediaInfo);
+    auto selectedTracks = SelectSupportedTracks(plugin, mediaInfo);
+    const uint32_t trackId = FindFirstVideoTrack(mediaInfo, selectedTracks);
+    ASSERT_NE(trackId, INVALID_TRACK_ID);
+    for (uint32_t id : selectedTracks) {
+        if (id != trackId) {
+            ASSERT_EQ(plugin->UnselectTrack(id), Status::OK);
+        }
+    }
+    auto track = plugin->FindTrackById(static_cast<int32_t>(trackId));
+    ASSERT_NE(track, nullptr);
+    const size_t sampleCount = track->sampleHelper->GetSampleCount();
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    auto getCursor = [plugin] {
+        std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
+        return std::make_tuple(plugin->readCursor_.valid, plugin->readCursor_.dtsUs,
+            plugin->readCursor_.pos, plugin->readCursor_.ptsUs, plugin->readCursor_.usePresentationTime);
+    };
+    bool eosReached = false;
+    for (size_t index = 0; index <= sampleCount; ++index) {
+        auto cursorBefore = getCursor();
+        const uint32_t sampleIndexBefore = track->currentSampleIndex;
+        Status ret = plugin->ReadSample(trackId, buffer.mediaAVBuffer);
+        EXPECT_EQ(ret, Status::OK);
+        if (!IsEos(buffer.mediaAVBuffer)) {
+            continue;
+        }
+        eosReached = true;
+        EXPECT_EQ(getCursor(), cursorBefore);
+        EXPECT_EQ(track->currentSampleIndex, sampleIndexBefore);
+        break;
+    }
+    ASSERT_TRUE(eosReached);
+    EXPECT_EQ(plugin->ReadSample(trackId, buffer.mediaAVBuffer), Status::OK);
+    EXPECT_TRUE(IsEos(buffer.mediaAVBuffer));
+
+    int64_t realSeekTime = 0;
+    ASSERT_EQ(plugin->SeekTo(static_cast<int32_t>(trackId), TEST_EOS_SEEK_TIME_MS,
+        SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime), Status::OK);
+    bool seekEosReached = false;
+    for (size_t index = 0; index <= sampleCount; ++index) {
+        auto cursorBefore = getCursor();
+        const uint32_t sampleIndexBefore = track->currentSampleIndex;
+        EXPECT_EQ(plugin->ReadSample(trackId, buffer.mediaAVBuffer), Status::OK);
+        if (!IsEos(buffer.mediaAVBuffer)) {
+            continue;
+        }
+        seekEosReached = true;
+        EXPECT_EQ(getCursor(), cursorBefore);
+        EXPECT_EQ(track->currentSampleIndex, sampleIndexBefore);
+        break;
+    }
+    EXPECT_TRUE(seekEosReached);
 }
 
 /**
@@ -4444,6 +4553,97 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MP4_CompareWi
     ASSERT_NO_FATAL_FAILURE(CompareReadDigest(mpeg4Digest, ffmpegDigest));
 }
 
+void Mpeg4DemuxerPluginUnitTest::CheckEosWaitForCache()
+{
+    auto directPlugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(directPlugin, nullptr);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(directPlugin);
+    InitPlugin(TEST_MP4_PATH_H264_B, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
+    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    ASSERT_FALSE(selectedTrackIds.empty());
+    auto plugin = directPlugin;
+    uint32_t trackId = selectedTrackIds.front();
+
+    uint64_t readConfigEpoch = 0;
+    {
+        std::lock_guard<std::mutex> lock(plugin->readConfigMutex_);
+        plugin->EnterRuntimeLocked();
+        readConfigEpoch = plugin->readConfigEpoch_;
+        plugin->trackId_.store(trackId, std::memory_order_release);
+    }
+    plugin->readLoopStatus_.store(Status::END_OF_STREAM, std::memory_order_release);
+    plugin->readThread_ = std::make_unique<std::thread>([] {});
+    plugin->readThread_->join();
+
+    std::atomic<Status> enqueueStatus {Status::ERROR_UNKNOWN};
+    std::atomic<Status> duplicateEnqueueStatus {Status::ERROR_UNKNOWN};
+    std::atomic<uint32_t> eosCacheFrameCount {0};
+    std::atomic<Status> waitStatus {Status::ERROR_UNKNOWN};
+    std::mutex gateMutex;
+    std::condition_variable gateCv;
+    constexpr auto eosWaitTestTimeout = std::chrono::milliseconds(5000);
+    bool allowEosPush = false;
+    bool eosPushFinished = false;
+    std::thread eosWriter([plugin, trackId, readConfigEpoch, &enqueueStatus,
+        &duplicateEnqueueStatus, &eosCacheFrameCount, &gateMutex, &gateCv, &allowEosPush, &eosPushFinished] {
+        {
+            std::unique_lock<std::mutex> lock(gateMutex);
+            gateCv.wait(lock, [&] { return allowEosPush; });
+        }
+        enqueueStatus.store(plugin->PushEosToCache(trackId, readConfigEpoch), std::memory_order_release);
+        duplicateEnqueueStatus.store(plugin->PushEosToCache(trackId, readConfigEpoch), std::memory_order_release);
+        eosCacheFrameCount.store(plugin->GetTrackCacheFrameCount(trackId), std::memory_order_release);
+        {
+            std::lock_guard<std::mutex> lock(gateMutex);
+            eosPushFinished = true;
+        }
+        gateCv.notify_all();
+        std::lock_guard<std::mutex> lock(plugin->readSampleMutex_);
+        plugin->readCacheCv_.notify_all();
+    });
+
+    std::thread waiter([plugin, trackId, &waitStatus] {
+        waitStatus.store(plugin->WaitForLoop(trackId, 5000), std::memory_order_release);
+    });
+    bool readerWaiting = false;
+    {
+        std::unique_lock<std::mutex> lock(plugin->readSampleMutex_);
+        readerWaiting = plugin->readCacheCv_.wait_for(lock, eosWaitTestTimeout, [plugin] {
+            return plugin->isWaitingForReadThread_.load(std::memory_order_acquire);
+        });
+    }
+    if (!readerWaiting) {
+        {
+            std::lock_guard<std::mutex> lock(gateMutex);
+            allowEosPush = true;
+        }
+        gateCv.notify_all();
+        waiter.join();
+        eosWriter.join();
+        FAIL() << "Reader did not wait for the EOS cache entry";
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(gateMutex);
+        allowEosPush = true;
+    }
+    gateCv.notify_all();
+    {
+        std::unique_lock<std::mutex> lock(gateMutex);
+        EXPECT_TRUE(gateCv.wait_for(lock, eosWaitTestTimeout, [&] { return eosPushFinished; }));
+    }
+    waiter.join();
+    eosWriter.join();
+    EXPECT_EQ(waitStatus.load(std::memory_order_acquire), Status::OK);
+    EXPECT_EQ(enqueueStatus.load(std::memory_order_acquire), Status::OK);
+    EXPECT_EQ(duplicateEnqueueStatus.load(std::memory_order_acquire), Status::OK);
+    EXPECT_EQ(eosCacheFrameCount.load(std::memory_order_acquire), 1U);
+
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    EXPECT_EQ(plugin->ReadSample(trackId, buffer.mediaAVBuffer, 5000), Status::OK);
+    EXPECT_TRUE(IsEos(buffer.mediaAVBuffer));
+}
+
 /**
  * @tc.name: Mpeg4DemuxerPlugin_EosWaitForCache_001
  * @tc.desc: Prefer an EOS cache entry over the read-loop EOS status
@@ -4451,28 +4651,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ReadSample_MP4_CompareWi
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EosWaitForCache_001, TestSize.Level1)
 {
-    InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
-    auto selectedTrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
-    ASSERT_FALSE(selectedTrackIds.empty());
-    auto plugin = std::static_pointer_cast<MPEG4DemuxerPlugin>(mpeg4Plugin_);
-    ASSERT_NE(plugin, nullptr);
-    uint32_t trackId = selectedTrackIds.front();
-
-    plugin->readLoopStatus_.store(Status::END_OF_STREAM, std::memory_order_release);
-    std::atomic<Status> enqueueStatus {Status::ERROR_UNKNOWN};
-    plugin->readThread_ = std::make_unique<std::thread>([plugin, trackId, &enqueueStatus] {
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        enqueueStatus.store(plugin->PushEosToCache(trackId, plugin->readConfigEpoch_), std::memory_order_release);
-        std::lock_guard<std::mutex> lock(plugin->readSampleMutex_);
-        plugin->readCacheCv_.notify_all();
-    });
-
-    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
-    Status ret = plugin->ReadSample(trackId, buffer.mediaAVBuffer, 1000);
-    plugin->readThread_->join();
-    EXPECT_EQ(ret, Status::OK);
-    EXPECT_EQ(enqueueStatus.load(std::memory_order_acquire), Status::OK);
-    EXPECT_TRUE(IsEos(buffer.mediaAVBuffer));
+    ASSERT_NO_FATAL_FAILURE(CheckEosWaitForCache());
 }
 
 /**

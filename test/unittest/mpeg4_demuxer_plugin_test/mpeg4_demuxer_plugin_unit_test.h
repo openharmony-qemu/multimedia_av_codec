@@ -179,6 +179,7 @@ protected:
     SeekToEosReadResult ReadToEosAfterSeek(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
         int64_t seekTimeMs, ReadMode readMode);
     void CheckAsyncEosAfterSeek(ReadMode readMode);
+    void CheckEosWaitForCache();
     void CheckSeekFirstVideoSampleWithSourceTimeline(const std::string& filePath, const std::vector<int64_t>& seekTimes,
         const std::vector<Plugins::SeekMode>& seekModes, bool useUri = false);
     void CheckSeekReadResultWithSourceTimeline(const std::string& filePath, const std::vector<int64_t>& seekTimes,

@@ -764,6 +764,7 @@ Status MPEG4DemuxerPlugin::WaitForLoop(uint32_t trackId, uint32_t timeout)
     auto track = FindTrackById(static_cast<int32_t>(trackId));
     if (ShouldWaitForRead(track)) {
         isWaitingForReadThread_.store(true, std::memory_order_release);
+        readCacheCv_.notify_all();
         if (threadState_.load(std::memory_order_acquire) == ThreadState::WAITING) {
             std::lock_guard<std::mutex> readLock(readThreadMutex_);
             threadReady_.store(true, std::memory_order_release);
@@ -1096,15 +1097,25 @@ Status MPEG4DemuxerPlugin::ReadAndCacheNextSample(uint32_t trackId, uint64_t exp
     mpeg4Sample->sample = sample;
     mpeg4Sample->trackId = sampleInfo.trackId;
     mpeg4Sample->sampleIndex = sampleInfo.sampleIndex;
+    ret = SetInFlightSample(sampleInfo, expectedReadConfigEpoch);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Mark sample in-flight failed");
     {
         std::unique_lock<std::mutex> sLock(syncMutex_);
         ret = ReadSampleData(sample, sampleInfo);
     }
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
+    if (ret != Status::OK) {
+        std::lock_guard<std::mutex> configLock(readConfigMutex_);
+        ClearInFlightSampleLocked(sampleInfo, expectedReadConfigEpoch);
+        return ret;
+    }
     if (IsWebVTTTrack(currentTrack)) {
         ret = ProcessWebVTTSampleForCache(currentTrack, mpeg4Sample, expectedReadConfigEpoch);
     } else {
         ret = CacheReadSampleForCurrentTrack(sampleInfo, currentTrack, mpeg4Sample, expectedReadConfigEpoch);
+    }
+    {
+        std::lock_guard<std::mutex> configLock(readConfigMutex_);
+        ClearInFlightSampleLocked(sampleInfo, expectedReadConfigEpoch);
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
     return Status::OK;
@@ -1142,13 +1153,15 @@ Status MPEG4DemuxerPlugin::PushEosToCache(uint32_t trackId, uint64_t expectedRea
             return Status::ERROR_AGAIN;
         }
         for (const auto& selectedTrackId : selectedTrackIds_) {
-            auto backSample = BackTrackCache(selectedTrackId);
-            if (backSample != nullptr && backSample->sample != nullptr &&
-                (backSample->sample->flag & Sample::SampleFlag::EOS) != 0) {
-                continue;
+            if (!IsReadConfigCurrentLocked(selectedTrackId, expectedReadConfigEpoch)) {
+                return Status::ERROR_AGAIN;
             }
+            auto track = FindTrackById(static_cast<int32_t>(selectedTrackId));
+            FALSE_RETURN_V_MSG_E(track != nullptr && track->cache != nullptr, Status::ERROR_UNKNOWN,
+                "Track cache is unavailable while pushing EOS");
             auto eosSample = std::make_shared<MPEG4Sample>();
             FALSE_RETURN_V_MSG_E(eosSample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate eos sample");
+            eosSample->trackId = selectedTrackId;
             eosSample->sample = std::make_shared<Sample>();
             FALSE_RETURN_V_MSG_E(eosSample->sample != nullptr, Status::ERROR_NO_MEMORY,
                 "Failed to allocate eos sample data");
@@ -1157,9 +1170,12 @@ Status MPEG4DemuxerPlugin::PushEosToCache(uint32_t trackId, uint64_t expectedRea
             eosSample->sample->duration = 0;
             eosSample->sample->flag = Sample::SampleFlag::EOS;
             eosSample->sample->size = 0;
-            Status ret = CacheSampleForCurrentReadLocked(selectedTrackId, expectedReadConfigEpoch,
-                eosSample);
-            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Push EOS to track cache failed");
+            bool inserted = false;
+            FALSE_RETURN_V_MSG_E(track->cache->PushEosIfAbsent(eosSample, inserted), Status::ERROR_UNKNOWN,
+                "Push EOS to track cache failed");
+            if (!inserted) {
+                continue;
+            }
             CheckCacheDataLimit(selectedTrackId);
             uint32_t cacheBytes = GetTrackCacheDataSize(selectedTrackId);
             cachePressure.emplace_back(selectedTrackId, cacheBytes);
