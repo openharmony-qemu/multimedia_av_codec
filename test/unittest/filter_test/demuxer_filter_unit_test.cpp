@@ -1656,6 +1656,7 @@ HWTEST_F(DemuxerFilterUnitTest, HandleAdsStart_004, TestSize.Level1)
 HWTEST_F(DemuxerFilterUnitTest, IsDsdFormat_001, TestSize.Level1)
 {
     EXPECT_TRUE(demuxerFilter_->IsDsdFormat("audio/dsd"));
+    EXPECT_FALSE(demuxerFilter_->IsDsdFormat("AUDIO/DSD"));
     EXPECT_FALSE(demuxerFilter_->IsDsdFormat("AUDIO_DSD"));
     EXPECT_FALSE(demuxerFilter_->IsDsdFormat("Audio_Dsd"));
     EXPECT_FALSE(demuxerFilter_->IsDsdFormat("audio_dsd"));
