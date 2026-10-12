@@ -41,11 +41,11 @@ bool IsCallerNativeOrShell()
 {
     using namespace OHOS::Security::AccessToken;
     auto tokenType = AccessTokenKit::GetTokenTypeFlag(OHOS::IPCSkeleton::GetCallingTokenID());
-    bool ok = tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL;
-    if (!ok) {
+    bool ret = tokenType == ATokenTypeEnum::TOKEN_NATIVE || tokenType == ATokenTypeEnum::TOKEN_SHELL;
+    if (!ret) {
         AVCODEC_LOGE("Caller requires native|shell token, got %{public}d", static_cast<int32_t>(tokenType));
     }
-    return ok;
+    return ret;
 }
 
 template<typename T>
@@ -560,8 +560,10 @@ int32_t CodecServiceStub::Init(MessageParcel &data, MessageParcel &reply)
 
     int32_t instanceId = 0;
     std::string codecName = "";
-    (void)callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
-    (void)callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName);
+    if (!callerInfo.GetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId) ||
+        !callerInfo.GetData(Tag::MEDIA_CODEC_NAME, codecName)) {
+        AVCODEC_LOGW_WITH_TAG("Get instance info from callerInfo failed");
+    }
     Meta replyCallerInfo;
     replyCallerInfo.SetData(EventInfoExtentedKey::INSTANCE_ID.data(), instanceId);
     replyCallerInfo.SetData(Tag::MEDIA_CODEC_NAME, codecName);
@@ -575,7 +577,8 @@ int32_t CodecServiceStub::Configure(MessageParcel &data, MessageParcel &reply)
     AVCODEC_FUNC_INTERACTIVE_QOS;
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Format format;
-    (void)AVCodecParcel::Unmarshalling(data, format);
+    bool parcelRet = AVCodecParcel::Unmarshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
     bool ret = reply.WriteInt32(Configure(format));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");
     return AVCS_ERR_OK;
@@ -776,7 +779,8 @@ int32_t CodecServiceStub::SetParameter(MessageParcel &data, MessageParcel &reply
 {
     AVCODEC_FUNC_TRACE_WITH_TAG_SERVER;
     Format format;
-    (void)AVCodecParcel::Unmarshalling(data, format);
+    bool parcelRet = AVCodecParcel::Unmarshalling(data, format);
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(parcelRet, AVCS_ERR_INVALID_OPERATION, "Read parcel failed");
 
     bool ret = reply.WriteInt32(SetParameter(format));
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret, AVCS_ERR_INVALID_OPERATION, "Reply write failed");

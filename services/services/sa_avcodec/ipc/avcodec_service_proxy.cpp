@@ -174,7 +174,8 @@ int32_t AVCodecServiceProxy::GetActiveSecureDecoderPids(std::vector<pid_t> &pidL
     CHECK_AND_RETURN_RET_LOG(error == 0, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED,
         "Create av_codec proxy failed, error: %{public}d", error);
 
-    (void)reply.ReadInt32Vector(&pidList);
+    ret = reply.ReadInt32Vector(&pidList);
+    CHECK_AND_RETURN_RET_LOG(ret, AVCS_ERR_IPC_GET_SUB_SYSTEM_ABILITY_FAILED, "Failed to read pidList from reply");
     return reply.ReadInt32();
 }
 
