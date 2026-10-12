@@ -106,6 +106,15 @@ public:
 private:
     using DumpMode = detail::DumpMode;
 
+    struct ReadSampleFinalizeContext {
+        uint32_t trackId;
+        std::shared_ptr<MPEG4AtomParser::Track> track;
+        std::shared_ptr<MPEG4Sample> sample;
+        bool useCache;
+        bool isEos;
+        Status status;
+    };
+
     enum IndexAndPTSConversionMode : unsigned int {
         GET_FIRST_SAMPLE_PTS,
         INDEX_TO_RELATIVEPTS,
@@ -270,8 +279,9 @@ private:
         const std::shared_ptr<MPEG4AtomParser::Track>& track, const std::shared_ptr<MPEG4Sample>& sample,
         uint64_t expectedReadConfigEpoch);
     Status ReadAndCacheNextSample(uint32_t trackId, uint64_t expectedReadConfigEpoch);
-    Status FinalizeReadSample(uint32_t trackId, const std::shared_ptr<MPEG4AtomParser::Track>& track,
-        const std::shared_ptr<MPEG4Sample>& sample, bool useCache, bool isEos, Status status);
+    Status FinalizeReadSample(const ReadSampleFinalizeContext& context);
+    Status PrepareTrackForSelection(const std::shared_ptr<MPEG4AtomParser::Track>& track);
+    Status CommitTrackSelection(uint32_t trackId, const std::shared_ptr<MPEG4AtomParser::Track>& track);
     void UpdateReadCursorLocked(const detail::SampleReadInfo& sampleInfo, int64_t dtsUs);
     Status SetInFlightSample(const detail::SampleReadInfo& sampleInfo, uint64_t expectedReadConfigEpoch);
     void ClearInFlightSampleLocked(const detail::SampleReadInfo& sampleInfo, uint64_t expectedReadConfigEpoch);

@@ -2354,19 +2354,35 @@ Status MPEG4DemuxerPlugin::SelectTrack(uint32_t trackId)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
+    Status ret = PrepareTrackForSelection(currentTrack);
+    if (ret != Status::OK) {
+        return ret;
+    }
+    return CommitTrackSelection(trackId, currentTrack);
+}
+
+Status MPEG4DemuxerPlugin::PrepareTrackForSelection(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
     bool alignBySeekPts = false;
     {
         std::lock_guard<std::mutex> configLock(readConfigMutex_);
         alignBySeekPts = cachePhase_ == CachePhase::RUNTIME && readCursor_.usePresentationTime;
     }
-    if (alignBySeekPts) {
-        // Seek stops the async reader. Build a dense index lazily for the newly selected track,
-        // since seek synchronization previously indexed only tracks that were selected then.
-        ReleaseReadLoop();
-        Status ret = currentTrack->sampleHelper->EnsureDenseIndex();
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample index for seek-aligned track failed");
+    if (!alignBySeekPts) {
+        return Status::OK;
     }
 
+    // Seek stops the async reader. Build a dense index lazily for the newly selected track,
+    // since seek synchronization previously indexed only tracks that were selected then.
+    ReleaseReadLoop();
+    Status ret = track->sampleHelper->EnsureDenseIndex();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample index for seek-aligned track failed");
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::CommitTrackSelection(uint32_t trackId,
+    const std::shared_ptr<MPEG4AtomParser::Track>& currentTrack)
+{
     std::lock_guard<std::mutex> configLock(readConfigMutex_);
     if (TrackIsSelectedLocked(trackId)) {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " has been selected", trackId);
@@ -3784,33 +3800,32 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
         ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
     }
     bool isEos = (outBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) != 0;
-    return FinalizeReadSample(trackId, track, mpeg4Sample, useCache, isEos, ret);
+    return FinalizeReadSample({trackId, track, mpeg4Sample, useCache, isEos, ret});
 }
 
-Status MPEG4DemuxerPlugin::FinalizeReadSample(uint32_t trackId,
-    const std::shared_ptr<MPEG4AtomParser::Track>& track, const std::shared_ptr<MPEG4Sample>& sample,
-    bool useCache, bool isEos, Status status)
+Status MPEG4DemuxerPlugin::FinalizeReadSample(const ReadSampleFinalizeContext& context)
 {
-    FALSE_RETURN_V_NOLOG(status != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
-    FALSE_RETURN_V_NOLOG(status == Status::OK || status == Status::ERROR_PACKET_CONVERT_FAILED, status);
-    if (isEos) {
-        return status;
+    FALSE_RETURN_V_NOLOG(context.status != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
+    FALSE_RETURN_V_NOLOG(context.status == Status::OK ||
+        context.status == Status::ERROR_PACKET_CONVERT_FAILED, context.status);
+    if (context.isEos) {
+        return context.status;
     }
-    if (useCache && seekable_ == Seekable::SEEKABLE) {
-        Status cursorRet = UpdateReadCursor(sample);
+    if (context.useCache && seekable_ == Seekable::SEEKABLE) {
+        Status cursorRet = UpdateReadCursor(context.sample);
         FALSE_RETURN_V_MSG_E(cursorRet == Status::OK, cursorRet, "Update read cursor after cached sample failed");
     }
-    if (seekable_ == Seekable::UNSEEKABLE || useCache) {
-        PopTrackCache(trackId);
+    if (seekable_ == Seekable::UNSEEKABLE || context.useCache) {
+        PopTrackCache(context.trackId);
     } else {
-        cacheSamples_.erase(trackId);
-        ++track->currentSampleIndex;
+        cacheSamples_.erase(context.trackId);
+        ++context.track->currentSampleIndex;
     }
-    if (!useCache && seekable_ == Seekable::SEEKABLE) {
-        Status cursorRet = UpdateReadCursor(sample);
+    if (!context.useCache && seekable_ == Seekable::SEEKABLE) {
+        Status cursorRet = UpdateReadCursor(context.sample);
         FALSE_RETURN_V_MSG_E(cursorRet == Status::OK, cursorRet, "Update read cursor after sample read failed");
     }
-    return status;
+    return context.status;
 }
 
 Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSize)
