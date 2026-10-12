@@ -91,6 +91,8 @@ constexpr int32_t AAC_TEST_CORE_SAMPLE_RATE = 24000;
 constexpr int32_t AAC_TEST_CORE_SAMPLES_PER_FRAME = 1024;
 constexpr int32_t AAC_TEST_CHANNEL_COUNT = 2;
 constexpr int32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
+constexpr int32_t MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS = 7;
+constexpr int64_t MULTI_TRACK_SYNC_TEST_SEEK_TIME = 100;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC = 2;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_SBR = 5;
 constexpr uint8_t AAC_TEST_PS_CONFIG[] = {0xEC, 0x8B, 0x08, 0x00, 0x00};
@@ -4002,6 +4004,35 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_BufferConvert_
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParser_ZeroLengthNals_001
+ * @tc.desc: Verify zero-length AVCC NAL units produce FFmpeg-compatible empty packet.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_ZeroLengthNals_001, TestSize.Level1)
+{
+    const std::vector<uint8_t> avcc = {
+        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
+    };
+    const std::vector<uint8_t> packet(12, 0);
+    Plugins::AvcParserImpl parser;
+    auto config = avcc;
+    ASSERT_TRUE(parser.ConvertExtraDataToAnnexb(config.data(), static_cast<int32_t>(config.size())));
+    int32_t outputSize = -1;
+    Plugins::PacketConvertToBufferInfo convertInfo(outputSize);
+    convertInfo.srcData = packet.data();
+    convertInfo.srcDataSize = static_cast<int32_t>(packet.size());
+    convertInfo.outBuffer = nullptr;
+    convertInfo.outBufferSize = 0;
+    EXPECT_TRUE(parser.ConvertPacketToAnnexb(convertInfo));
+    EXPECT_EQ(outputSize, 0);
+
+    const std::vector<uint8_t> truncatedPacket(2, 0);
+    convertInfo.srcData = truncatedPacket.data();
+    convertInfo.srcDataSize = static_cast<int32_t>(truncatedPacket.size());
+    EXPECT_FALSE(parser.ConvertPacketToAnnexb(convertInfo));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_ReadSample_MP4_CompareWithFfmpeg_001
  * @tc.desc: Compare MPEG4 and FFmpeg demuxer full-frame read results on h264 mp4
  * @tc.type: FUNC
@@ -4304,6 +4335,37 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekTo_CompareWithFfmpeg
         SeekMode::SEEK_CLOSEST_SYNC,
     };
     ASSERT_NO_FATAL_FAILURE(CompareSeekReadResult(TEST_MP4_PATH_H264_B, seekTimes, seekModes));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_MultiTrackSyncAuxiliarySeekFailure_001
+ * @tc.desc: Verify an auxiliary audio seek miss does not fail the resolved primary video seek
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MultiTrackSyncAuxiliarySeekFailure_001, TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(plugin, nullptr);
+    auto videoTrack = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto audioTrack = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    ASSERT_NE(videoTrack, nullptr);
+    ASSERT_NE(audioTrack, nullptr);
+    videoTrack->trackIndex = 0;
+    videoTrack->next = audioTrack;
+    audioTrack->trackIndex = 1;
+    audioTrack->timeScale = 1000;
+    audioTrack->currentSampleIndex = MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS;
+    audioTrack->currentSamplePos = MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS;
+    audioTrack->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    ASSERT_NE(audioTrack->sampleHelper, nullptr);
+    audioTrack->sampleHelper->trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    plugin->firstTrack_ = videoTrack;
+    plugin->selectedTrackIds_ = {0, 1};
+
+    EXPECT_EQ(plugin->MultiTrackSync(0, true, MULTI_TRACK_SYNC_TEST_SEEK_TIME, SeekMode::SEEK_NEXT_SYNC),
+        Status::OK);
+    EXPECT_EQ(audioTrack->currentSampleIndex, MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS);
+    EXPECT_EQ(audioTrack->currentSamplePos, MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS);
 }
 
 /**

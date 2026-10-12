@@ -229,6 +229,30 @@ bool NeedsCttsFrameRateDuration(const std::shared_ptr<MPEG4AtomParser::Track>& t
     return IsVideoLikeTrackForDuration(track) && !track->sampleHelper->cttsEntry_.empty();
 }
 
+bool GetNominalSttsDuration(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t& duration)
+{
+    FALSE_RETURN_V_NOLOG(IsValidTrack(track) && track->sampleHelper != nullptr, false);
+    uint32_t entryCount = track->sampleHelper->GetSttsEntryCount();
+    if (track->nominalSttsDurationParsed && track->nominalSttsEntryCount == entryCount) {
+        duration = track->nominalSttsDuration;
+        return duration > 0;
+    }
+    uint32_t bestCount = 0;
+    duration = 0;
+    for (uint32_t i = 0; i < entryCount; ++i) {
+        uint32_t count = track->sampleHelper->GetSampleCountOfSttsEntry(i);
+        uint32_t delta = track->sampleHelper->GetSampleDeltaOfSttsEntry(i);
+        if (delta > 0 && count >= bestCount) {
+            bestCount = count;
+            duration = delta;
+        }
+    }
+    track->nominalSttsDuration = static_cast<uint32_t>(duration);
+    track->nominalSttsEntryCount = entryCount;
+    track->nominalSttsDurationParsed = true;
+    return duration > 0;
+}
+
 bool HasUntimedTrailingZeroAacSample(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 {
     if (!IsValidTrack(track) || track->codecParms.trackType != AUDIO_TYPE ||
@@ -256,6 +280,16 @@ bool GetCttsFrameRateDurationUs(
     int64_t fallbackDurationTicks = static_cast<int64_t>(durationTicks);
     FALSE_RETURN_V_NOLOG(fallbackDurationTicks > 0, false);
     return RescaleTrackTimeToUsRoundNearest(fallbackDurationTicks, trackTimeScale, durationUs) == Status::OK;
+}
+
+bool GetCttsPacketDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    int32_t trackTimeScale, int64_t& durationUs)
+{
+    int64_t nominalDuration = 0;
+    if (GetNominalSttsDuration(track, nominalDuration)) {
+        return RescaleTrackTimeToUsRoundNearest(nominalDuration, trackTimeScale, durationUs) == Status::OK;
+    }
+    return GetCttsFrameRateDurationUs(mediaInfo, track->trackIndex, trackTimeScale, durationUs);
 }
 
 int64_t GetEffectiveStreamDurationTicks(
@@ -309,16 +343,17 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
     const auto& currentSample = context.currentSample;
     FALSE_RETURN_V_NOLOG(sampleCount > 0, false);
     if (NeedsCttsFrameRateDuration(track)) {
-        return GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale, durationUs);
+        return GetCttsPacketDurationUs(context.mediaInfo, track, trackTimeScale, durationUs);
     }
-
     int64_t duration = 0;
     if (sampleIndex + 1 < sampleCount) {
         // For normal packets, duration follows the distance to the next decode timestamp.
         MPEG4SampleHelper::SampleIndexView nextSample;
         FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex + 1, nextSample), false);
         duration = nextSample.dts - currentSample.dts;
-        FALSE_RETURN_V_NOLOG(duration > 0, false);
+        if (duration <= 0) {
+            (void)GetNominalSttsDuration(track, duration);
+        }
     } else {
         // The final packet has no next DTS, so close it against the effective stream duration.
         int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
@@ -336,7 +371,11 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
             duration = streamDuration - currentSample.dts;
         }
     }
-    return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
+    if (duration > 0) {
+        return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
+    }
+    return NeedsCttsFrameRateDuration(track) &&
+        GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale, durationUs);
 }
 
 bool GetMpegAudioFrameDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
@@ -2322,7 +2361,6 @@ Status MPEG4DemuxerPlugin::GetVideoSyncSeekTime(
 
 Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, int64_t syncSeekTime, SeekMode mode)
 {
-    Status ret = Status::OK;
     for (const auto& selectedTrackId : selectedTrackIds_) {
         int32_t currentTrackId = static_cast<int32_t>(selectedTrackId);
         if (currentTrackId == trackIndex) {
@@ -2347,8 +2385,9 @@ Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, 
         if (!editListApplied) {
             otherTrackSeekTime += otherTrack->elstShiftStartTime;
         }
-        ret = otherTrack->sampleHelper->FindSyncSampleByPts(otherTrackSeekTime, isBaseTrack, mode, otherSampleIndex);
-        if (ret == Status::OK) {
+        Status syncRet = otherTrack->sampleHelper->FindSyncSampleByPts(
+            otherTrackSeekTime, isBaseTrack, mode, otherSampleIndex);
+        if (syncRet == Status::OK) {
             otherTrack->currentSampleIndex = otherSampleIndex;
             otherTrack->currentSamplePos = 0;
             MEDIA_LOG_D("Sync track " PUBLIC_LOG_D32 " to sample " PUBLIC_LOG_D32 " at time " PUBLIC_LOG_D64
@@ -2359,7 +2398,9 @@ Status MPEG4DemuxerPlugin::MultiTrackSync(int32_t trackIndex, bool isBaseTrack, 
                 currentTrackId, adjustSeekTime);
         }
     }
-    return ret;
+    // FFmpeg seeks the container by the selected video stream and does not fail the seek solely because an
+    // auxiliary track has no sample at that RAP timestamp. Keep the resolved primary-track position playable.
+    return Status::OK;
 }
 
 int MPEG4DemuxerPlugin::SelectSeekTrack()
@@ -2869,7 +2910,7 @@ Status MPEG4DemuxerPlugin::HandleAnnexbBufferConversionResult(const std::shared_
 {
     FALSE_RETURN_V_MSG_E(context.outputDataSize >= 0, Status::ERROR_PACKET_CONVERT_FAILED,
         "Invalid annexb output size:" PUBLIC_LOG_D32, context.outputDataSize);
-    if (convertRet && context.outputDataSize > 0) {
+    if (convertRet) {
         FALSE_RETURN_V_MSG_E(context.outputDataSize <= context.outputBufferSize, Status::ERROR_PACKET_CONVERT_FAILED,
             "Invalid annexb output size:" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32,
             context.outputDataSize, context.outputBufferSize);
