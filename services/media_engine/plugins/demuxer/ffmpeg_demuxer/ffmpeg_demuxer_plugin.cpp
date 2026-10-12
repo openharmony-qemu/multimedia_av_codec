@@ -4130,7 +4130,8 @@ Status FFmpegDemuxerPlugin::SeekToStartInternal()
     } else if (minTsPktInfo_.isInit) {
         seekTs = (static_cast<uint32_t>(pluginImpl_->flags) & AVFMT_SEEK_TO_PTS) &&
             !FFmpegFormatHelper::IsMpeg4File(fileType_) ? minTsPktInfo_.minPts : minTsPktInfo_.minDts;
-        ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD);
+        int flags = seekTs == 0 ? AVSEEK_FLAG_BACKWARD : AVSEEK_FLAG_ANY | AVSEEK_FLAG_BACKWARD;
+        ffRet = AVSeekFrameLock(minTsPktInfo_.streamIndex, seekTs, flags);
         MEDIA_LOG_I("av_seek_frame stream_index " PUBLIC_LOG_U32 " seekTs " PUBLIC_LOG_D64 " ffRet " PUBLIC_LOG_D32,
             minTsPktInfo_.streamIndex, seekTs, ffRet);
     }
