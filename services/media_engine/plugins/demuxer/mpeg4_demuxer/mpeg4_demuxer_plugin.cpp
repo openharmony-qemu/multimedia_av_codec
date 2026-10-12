@@ -3312,8 +3312,7 @@ public:
         }
         MpegAudioParserState* parserState = FindState(plugin, trackId);
         if ((parserState == nullptr || parserState->pendingSize == 0) &&
-            GetMpegAudioFrameSize(input->data.get(), size, frameSize) &&
-            static_cast<size_t>(frameSize) == size) {
+            GetMpegAudioFrameSize(input->data.get(), size, frameSize)) {
             packets.emplace_back(input);
             return Status::OK;
         }

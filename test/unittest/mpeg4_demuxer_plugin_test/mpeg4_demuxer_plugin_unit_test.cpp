@@ -177,6 +177,14 @@ constexpr int32_t MPEG_AUDIO_TEST_SAMPLE_RATE = 16000;
 constexpr size_t MPEG_AUDIO_TEST_FRAME_SIZE = 504;
 constexpr size_t MPEG_AUDIO_TEST_SPLIT_SIZE = 200;
 constexpr size_t MPEG_AUDIO_TEST_HEADER_SPLIT_SIZE = 2;
+constexpr size_t MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE = 298;
+constexpr size_t MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE = 249;
+constexpr size_t MPEG_AUDIO_TEST_PARTIAL_FRAME_TAIL_SIZE =
+    MPEG_AUDIO_TEST_FRAME_SIZE - MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE;
+constexpr size_t MPEG_AUDIO_TEST_FOLLOWING_FRAME_TAIL_SIZE =
+    MPEG_AUDIO_TEST_FRAME_SIZE - MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE;
+constexpr size_t MPEG_AUDIO_TEST_MIXED_SAMPLE_SIZE =
+    MPEG_AUDIO_TEST_PARTIAL_FRAME_TAIL_SIZE + MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE;
 constexpr size_t MPEG_AUDIO_TEST_PENDING_LIMIT = 64 * 1024;
 constexpr size_t MPEG_AUDIO_TEST_INVALID_SAMPLE_SIZE = 1024;
 constexpr size_t MPEG_AUDIO_TEST_SEGMENT_COALESCE_COUNT = 129;
@@ -1627,6 +1635,19 @@ std::vector<uint8_t> BuildMpegAudioTestFrame()
         frame[index] = static_cast<uint8_t>(index);
     }
     return frame;
+}
+
+std::vector<uint8_t> BuildMpegAudioBoundaryTestFile()
+{
+    constexpr size_t frameCount = 5;
+    std::vector<uint8_t> file;
+    file.reserve(frameCount * MPEG_AUDIO_TEST_FRAME_SIZE);
+    for (size_t index = 0; index < frameCount; ++index) {
+        auto frame = BuildMpegAudioTestFrame();
+        std::fill(frame.begin() + sizeof(MPEG_AUDIO_TEST_HEADER), frame.end(), static_cast<uint8_t>(index));
+        file.insert(file.end(), frame.begin(), frame.end());
+    }
+    return file;
 }
 
 std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareMpegAudioTestTrack(
@@ -3254,6 +3275,39 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioCrossSamplePack
     EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), frame.size());
     EXPECT_EQ(std::vector<uint8_t>(output.mediaAVBuffer->memory_->GetAddr(),
         output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()), frame);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_MpegAudioIrregularSampleBoundary_001
+ * @tc.desc: Verify MP3 parser output follows FFmpeg packet boundaries when MP4 samples split two frames.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioIrregularSampleBoundary_001, TestSize.Level1)
+{
+    const std::vector<uint32_t> sampleSizes = {MPEG_AUDIO_TEST_FRAME_SIZE, MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE,
+        MPEG_AUDIO_TEST_MIXED_SAMPLE_SIZE, MPEG_AUDIO_TEST_FRAME_SIZE,
+        MPEG_AUDIO_TEST_FRAME_SIZE - MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE + MPEG_AUDIO_TEST_FRAME_SIZE};
+    const std::vector<int32_t> expectedSizes = {MPEG_AUDIO_TEST_FRAME_SIZE, MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE,
+        MPEG_AUDIO_TEST_MIXED_SAMPLE_SIZE + MPEG_AUDIO_TEST_FOLLOWING_FRAME_TAIL_SIZE,
+        MPEG_AUDIO_TEST_FRAME_SIZE, MPEG_AUDIO_TEST_FRAME_SIZE};
+    auto input = BuildMpegAudioBoundaryTestFile();
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    ASSERT_NE(PrepareMpegAudioTestTrack(plugin, sampleSizes), nullptr);
+    plugin.dataSource_ = CreateDataSourceForBytes(input);
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(MPEG_AUDIO_TEST_MIXED_SAMPLE_SIZE + MPEG_AUDIO_TEST_FOLLOWING_FRAME_TAIL_SIZE);
+    std::vector<uint8_t> outputData;
+
+    for (int32_t expectedSize : expectedSizes) {
+        int32_t sampleSize = 0;
+        ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
+        EXPECT_EQ(sampleSize, expectedSize);
+        ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), static_cast<size_t>(expectedSize));
+        outputData.insert(outputData.end(), output.mediaAVBuffer->memory_->GetAddr(),
+            output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize());
+    }
+    EXPECT_EQ(outputData, input);
 }
 
 /**
