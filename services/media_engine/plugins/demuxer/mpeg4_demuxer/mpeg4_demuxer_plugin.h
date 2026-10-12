@@ -101,6 +101,7 @@ public:
     Status SeekToFrameByDts(int32_t trackId, int64_t seekTime,
         SeekMode mode, int64_t& realSeekTime, uint32_t timeoutMs) override;
 
+    // cache pressure control
     Status SetCachePressureCallback(CachePressureCallback cb) override;
     Status SetTrackCacheLimit(uint32_t trackId, uint32_t limitBytes, uint32_t windowMs = 500) override;
 private:
@@ -420,6 +421,7 @@ private:
     int SelectSeekTrack();
     Status CheckSeekParams(int64_t seekTime, SeekMode mode) const;
 
+    // 辅助轨相关函数
     bool IsVideoType(const MPEG4AtomParser::Track& track);
     bool IsAudioType(const MPEG4AtomParser::Track& track);
     void UpdateReferenceIds();
@@ -495,12 +497,13 @@ private:
     std::unordered_map<uint32_t, int64_t> trackLastNotifyMs_ {};
     std::mutex cachePressureMutex_ {};
 
+    // DRM info cache
     std::multimap<std::string, std::vector<uint8_t>> cachedDrmInfo_;
     std::mutex cachedDrmInfoMutex_;
     std::atomic<bool> drmInfoCached_ {false};
 };
-}
-}
+} // namespace MPEG4
+} // namespace Plugins
 } // namespace Media
 } // namespace OHOS
 #endif // MPEG4_DEMUXER_PLUGIN_H
