@@ -14,7 +14,7 @@
  */
 #include "hdi_codec.h"
 #include "avcodec_log.h"
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
 
 namespace {
