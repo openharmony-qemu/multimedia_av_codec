@@ -57,6 +57,7 @@
 #include "avcodec_info.h"
 #include "interstitial_controller.h"
 #include "interstitial_scheduler.h"
+#include "osal/task/thread.h"
 
 namespace {
 const std::string DUMP_PARAM = "a";
@@ -67,7 +68,6 @@ const char DEMUXER_PLUGIN_NAME_DELIMITER = ',';
 static constexpr char PERFORMANCE_STATS[] = "PERFORMANCE";
 static constexpr int32_t INVALID_STREAM_OR_TRACK_ID = -1;
 static constexpr int32_t SKIP_NEXT_OPEN_GOP_CNT = 2;
-constexpr uint32_t THREAD_PRIORITY_41 = 7;
 constexpr uint32_t MAX_VIDEO_LEAD_TIME_ON_MUTE_US = 10000000; // Maximum video frame advance time during video mute
 constexpr int64_t MAX_SUBTITLE_LEAD_TIME = 1000000;
 constexpr uint32_t SAMPLE_QUEUE_ADD_SIZE_ON_MUTE = 20; // When samplequeue is full on mute, samplequeue size add 20
@@ -924,20 +924,10 @@ Status MediaDemuxer::AddDemuxerCopyTask(int32_t trackId, TaskType type)
 
 void MediaDemuxer::UpdateThreadPriority(int32_t trackId)
 {
-#ifdef SUPPORT_START_STOP_ON_DEMAND
-    taskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+    taskMap_[trackId]->UpdateThreadPriority(OHOS::Media::Thread::THREAD_PRIORITY_41, "media_service");
     if (GetEnableSampleQueueFlag()) {
-        sampleConsumerTaskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
+        sampleConsumerTaskMap_[trackId]->UpdateThreadPriority(OHOS::Media::Thread::THREAD_PRIORITY_41, "media_service");
     }
-#else
-    if (!HasVideo() && trackId == audioTrackId_) {
-        taskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
-        if (GetEnableSampleQueueFlag()) {
-            sampleConsumerTaskMap_[trackId]->UpdateThreadPriority(THREAD_PRIORITY_41, "media_service");
-        }
-        MEDIA_LOG_I("Update thread priority for audio-only source");
-    }
-#endif
 }
 
 Status MediaDemuxer::AddDemuxerCopyTaskByTrack(int32_t trackId, DemuxerTrackType type)
@@ -1147,37 +1137,8 @@ bool MediaDemuxer::IsWatchDevice()
 
 bool MediaDemuxer::BoostThreadPriorityIfNeeded()
 {
-    if (bundleName_ == "bootanimation") {
-        MEDIA_LOG_I("boosting read thread priority for animation");
-        return BoostReadThreadPriority() == Status::OK;
-    }
-
-#ifdef SUPPORT_START_STOP_ON_DEMAND
-        MEDIA_LOG_I("Watch device, boosting read thread priority");
-        Status boostWatchRet = BoostReadThreadPriority();
-        if (boostWatchRet != Status::OK) {
-            MEDIA_LOG_W("Failed to boost read thread priority, ret: %{public}d",
-                static_cast<int32_t>(boostWatchRet));
-            return false;
-        } else {
-            MEDIA_LOG_I("Successfully boosted read thread priority for watch");
-            return true;
-        }
-#endif
-
-        if (!HasVideo() && HasAudio()) {
-        MEDIA_LOG_I("Audio only, boosting read thread priority");
-        Status boostAudioRet = BoostReadThreadPriority();
-        if (boostAudioRet != Status::OK) {
-            MEDIA_LOG_W("Failed to boost read thread priority for audio, ret: %{public}d",
-                static_cast<int32_t>(boostAudioRet));
-            return false;
-        } else {
-            MEDIA_LOG_I("Successfully boosted read thread priority for audio");
-            return true;
-        }
-    }
-    return false;
+    MEDIA_LOG_I("boosting read thread priority");
+    return BoostReadThreadPriority() == Status::OK;
 }
 
 Status MediaDemuxer::SetDataSource(const std::shared_ptr<MediaSource> &source)
