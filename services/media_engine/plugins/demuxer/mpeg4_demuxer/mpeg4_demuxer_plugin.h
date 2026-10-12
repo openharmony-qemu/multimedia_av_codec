@@ -408,6 +408,8 @@ private:
         bool popSample, bool restoreCacheInfo);
     void CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<Sample> sample);
 
+    friend class MpegAudioPacketParser;
+
     Status CheckCacheDataLimit(uint32_t trackId);
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
     void ParseAVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);
