@@ -4363,6 +4363,87 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetDataSource_AllDemuxer
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AacImplicitSbrEditListParity_001
+ * @tc.desc: Verify FFmpeg and MPEG4 agree on implicit SBR metadata after an edit-list skip.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacImplicitSbrEditListParity_001, TestSize.Level1)
+{
+    const std::string path = TEST_DEMUXER_RESOURCE_DIR + "/aac_implicit_sbr_editlist.mp4";
+    auto getAacTrack = [](const MediaInfo& info) -> const Meta* {
+        for (const auto& track : info.tracks) {
+            Plugins::MediaType mediaType = Plugins::MediaType::UNKNOWN;
+            std::string mime;
+            if (track.Get<Tag::MEDIA_TYPE>(mediaType) && mediaType == Plugins::MediaType::AUDIO &&
+                track.Get<Tag::MIME_TYPE>(mime) && (mime.find("mp4a") != std::string::npos ||
+                mime.find("aac") != std::string::npos)) {
+                return &track;
+            }
+        }
+        return nullptr;
+    };
+
+    auto ffmpegPlugin = std::make_shared<FFmpegDemuxerPlugin>(FFMPEG_MP4_PLUGIN_NAME);
+    auto mpeg4Plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(ffmpegPlugin, nullptr);
+    ASSERT_NE(mpeg4Plugin, nullptr);
+    auto ffmpeg = RunSetDataSourceOnly(ffmpegPlugin, path);
+    auto mpeg4 = RunSetDataSourceOnly(mpeg4Plugin, path);
+    ASSERT_EQ(ffmpeg.ret, Status::OK) << path;
+    ASSERT_EQ(ffmpeg.mediaInfoRet, Status::OK) << path;
+    ASSERT_EQ(mpeg4.ret, Status::OK) << path;
+    ASSERT_EQ(mpeg4.mediaInfoRet, Status::OK) << path;
+    const auto* ffmpegTrack = getAacTrack(ffmpeg.mediaInfo);
+    const auto* mpeg4Track = getAacTrack(mpeg4.mediaInfo);
+    ASSERT_NE(ffmpegTrack, nullptr) << path << " FFmpeg AAC track missing";
+    ASSERT_NE(mpeg4Track, nullptr) << path << " MPEG4 AAC track missing";
+    std::string ffmpegMime;
+    std::string mpeg4Mime;
+    int32_t ffmpegRate = 0;
+    int32_t mpeg4Rate = 0;
+    int32_t ffmpegFrameSize = 0;
+    int32_t mpeg4FrameSize = 0;
+    ASSERT_TRUE(ffmpegTrack->Get<Tag::MIME_TYPE>(ffmpegMime));
+    ASSERT_TRUE(mpeg4Track->Get<Tag::MIME_TYPE>(mpeg4Mime));
+    ASSERT_TRUE(ffmpegTrack->Get<Tag::AUDIO_SAMPLE_RATE>(ffmpegRate));
+    ASSERT_TRUE(mpeg4Track->Get<Tag::AUDIO_SAMPLE_RATE>(mpeg4Rate));
+    ASSERT_TRUE(ffmpegTrack->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(ffmpegFrameSize));
+    ASSERT_TRUE(mpeg4Track->Get<Tag::AUDIO_SAMPLE_PER_FRAME>(mpeg4FrameSize));
+    std::cout << "[AacImplicitSbrEditListParity] file=" << path << " ffmpeg=" << ffmpegMime << ":" <<
+        ffmpegRate << "/" << ffmpegFrameSize << " mpeg4=" << mpeg4Mime <<
+        ":" << mpeg4Rate << "/" << mpeg4FrameSize << std::endl;
+    EXPECT_EQ(ffmpegMime, mpeg4Mime) << path;
+    EXPECT_EQ(ffmpegRate, mpeg4Rate) << path;
+    EXPECT_EQ(ffmpegFrameSize, mpeg4FrameSize) << path;
+    EXPECT_EQ(ffmpegRate, 48000) << path;
+    EXPECT_EQ(ffmpegFrameSize, 2048) << path;
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacImplicitSbrProbePreservesReadCursor_001
+ * @tc.desc: Verify metadata probing does not advance the AAC sample cursor.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacImplicitSbrProbePreservesReadCursor_001,
+    TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    mpeg4Plugin_ = std::static_pointer_cast<BaseDemuxerPlugin>(plugin);
+    ASSERT_NE(plugin, nullptr);
+    InitPlugin(TEST_DEMUXER_RESOURCE_DIR + "/aac_implicit_sbr_editlist.mp4", mpeg4Plugin_, mpeg4Fd_,
+        mpeg4MediaInfo_);
+    auto track = plugin->firstTrack_;
+    ASSERT_NE(track, nullptr);
+    EXPECT_EQ(track->currentSampleIndex, 0U);
+
+    ASSERT_EQ(plugin->SelectTrack(track->trackIndex), Status::OK);
+    AVBufferWrapper buffer(4096);
+    ASSERT_NE(buffer.mediaAVBuffer, nullptr);
+    EXPECT_EQ(plugin->ReadSample(track->trackIndex, buffer.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(track->currentSampleIndex, 1U);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_InvalidParameterAndTrackState_001
  * @tc.desc: Verify invalid parameters and select/unselect state handling
  * @tc.type: FUNC
