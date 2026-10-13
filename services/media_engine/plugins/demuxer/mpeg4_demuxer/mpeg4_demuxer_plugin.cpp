@@ -4167,7 +4167,7 @@ Status MPEG4DemuxerPlugin::GetUnseekableSample(
             ret = AddSampleToCacheQueue(sample, sampleInfo.trackId, sampleInfo.sampleIndex);
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Add cache failed");
-        if (track) {
+        if (track && !MpegAudioPacketParser::IsTrack(track)) {
             track->currentSampleIndex++;
         }
         ret = UpdateReadCursor(sampleInfo);
