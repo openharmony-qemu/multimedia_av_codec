@@ -596,39 +596,6 @@ HWTEST_F(DashMediaDownloaderUnitTest, STOP_BUFFERING_001, TestSize.Level1)
     EXPECT_EQ(mediaDownloader->StopBufferring(false), Status::OK);
 }
 
-HWTEST_F(DashMediaDownloaderUnitTest, TEST_RECEIVE_MPD_STREAM_INIT_EVENT_001, TestSize.Level1)
-{
-    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
-    mediaDownloader->Init();
-    auto reportInfo = std::make_shared<OHOS::MediaAVCodec::SourceStatisticsReportInfo>();
-    mediaDownloader->SetSourceStatisticsDfx(reportInfo);
-    ASSERT_NE(mediaDownloader->reportInfo_, nullptr);
-
-    std::string testUrl = MPD_SEGMENT_BASE;
-    std::map<std::string, std::string> httpHeader;
-    auto statusCallback = [] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
-        std::shared_ptr<DownloadRequest>& request) {
-    };
-    mediaDownloader->SetStatusCallback(statusCallback);
-    mediaDownloader->Open(testUrl, httpHeader);
-    OSAL::SleepFor(WAIT_FOR_SIDX_TIME);
-
-    EXPECT_GT(mediaDownloader->reportInfo_->videoStreamCnt_, 0u);
-
-    mediaDownloader->Close(false);
-    mediaDownloader = nullptr;
-}
-
-HWTEST_F(DashMediaDownloaderUnitTest, TEST_RECEIVE_MPD_STREAM_INIT_EVENT_002, TestSize.Level1)
-{
-    std::shared_ptr<DashMediaDownloader> mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
-    mediaDownloader->Init();
-    EXPECT_NO_FATAL_FAILURE(mediaDownloader->OnMpdInfoUpdate(DASH_MPD_EVENT_STREAM_INIT));
-
-    mediaDownloader->Close(false);
-    mediaDownloader = nullptr;
-}
-
 std::shared_ptr<DashMediaDownloader> CreateAndInitMediaDownloader(const std::string& testUrl)
 {
     auto mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);

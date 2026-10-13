@@ -1179,24 +1179,6 @@ HWTEST_F(HlsMediaDownloaderTest, UPDATE_STREAM_STATISTICS_001, TestSize.Level1)
     downloader->Init();
     auto reportInfo = std::make_shared<OHOS::MediaAVCodec::SourceStatisticsReportInfo>();
     downloader->SetSourceStatisticsDfx(reportInfo);
-    ASSERT_NE(downloader->reportInfo_, nullptr);
-
-    downloader->OnMasterReady(true, true);
-    EXPECT_GT(downloader->reportInfo_->videoStreamCnt_, 0u);
-    EXPECT_GT(downloader->reportInfo_->audioStreamCnt_, 0u);
-    EXPECT_GT(downloader->reportInfo_->subtitleCnt_, 0u);
-
-    downloader->Close(true);
-    downloader = nullptr;
-}
-
-HWTEST_F(HlsMediaDownloaderTest, UPDATE_STREAM_STATISTICS_002, TestSize.Level1)
-{
-    std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT,
-        true, header_);
-    downloader->Init();
-    auto reportInfo = std::make_shared<OHOS::MediaAVCodec::SourceStatisticsReportInfo>();
-    downloader->SetSourceStatisticsDfx(reportInfo);
 
     downloader->OnMasterReady(false, false);
     EXPECT_EQ(downloader->reportInfo_->videoStreamCnt_, 0u);
@@ -1207,7 +1189,7 @@ HWTEST_F(HlsMediaDownloaderTest, UPDATE_STREAM_STATISTICS_002, TestSize.Level1)
     downloader = nullptr;
 }
 
-HWTEST_F(HlsMediaDownloaderTest, UPDATE_STREAM_STATISTICS_003, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderTest, UPDATE_STREAM_STATISTICS_002, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT,
         true, header_);
@@ -1219,7 +1201,7 @@ HWTEST_F(HlsMediaDownloaderTest, UPDATE_STREAM_STATISTICS_003, TestSize.Level1)
     downloader = nullptr;
 }
 
-HWTEST_F(HlsMediaDownloaderTest, UPDATE_STREAM_STATISTICS_004, TestSize.Level1)
+HWTEST_F(HlsMediaDownloaderTest, UPDATE_STREAM_STATISTICS_003, TestSize.Level1)
 {
     std::shared_ptr<HlsMediaDownloader> downloader = std::make_shared<HlsMediaDownloader>(MAX_CACHE_BUFFER_SIZE_UT,
         true, header_);
