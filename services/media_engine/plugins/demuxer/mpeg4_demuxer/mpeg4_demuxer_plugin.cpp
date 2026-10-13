@@ -3355,7 +3355,7 @@ public:
         if (track == nullptr || track->currentSamplePos != 0) {
             return false;
         }
-        MPEG4DemuxerPlugin::SampleReadInfo sampleInfo;
+        SampleReadInfo sampleInfo;
         if (plugin.GetSeekableSampleInfo(trackId, sampleInfo) != Status::OK ||
             sampleInfo.view.size < MPEG_AUDIO_HEADER_SIZE) {
             return false;
@@ -3383,7 +3383,7 @@ public:
         auto track = plugin.FindTrackById(static_cast<int32_t>(trackId));
         FALSE_RETURN_V_NOLOG(track != nullptr, Status::ERROR_NULL_POINTER);
         while (!plugin.HasTrackCache(trackId)) {
-            MPEG4DemuxerPlugin::SampleReadInfo sampleInfo;
+            SampleReadInfo sampleInfo;
             Status ret = plugin.GetSeekableSampleInfo(trackId, sampleInfo);
             std::vector<std::shared_ptr<Sample>> packets;
             bool isEos = ret == Status::END_OF_STREAM;
@@ -3441,7 +3441,7 @@ public:
 
 private:
     static Status ReadAndProcess(MPEG4DemuxerPlugin& plugin, uint32_t trackId,
-        const MPEG4DemuxerPlugin::SampleReadInfo& sampleInfo, std::vector<std::shared_ptr<Sample>>& packets)
+        const SampleReadInfo& sampleInfo, std::vector<std::shared_ptr<Sample>>& packets)
     {
         auto input = std::make_shared<MPEG4Sample>();
         FALSE_RETURN_V_NOLOG(input != nullptr, Status::ERROR_NO_MEMORY);

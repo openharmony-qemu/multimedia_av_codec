@@ -3501,7 +3501,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioAsyncEofFlush_0
     plugin.dataSource_ = CreateDataSourceForBytes(tail);
     ASSERT_NE(plugin.dataSource_, nullptr);
 
-    ASSERT_EQ(plugin.ReadSampleToCache(MPEG_AUDIO_TEST_TRACK_ID), Status::OK);
+    ASSERT_EQ(plugin.ReadSampleToCache(MPEG_AUDIO_TEST_TRACK_ID, plugin.readConfigEpoch_), Status::OK);
     auto cached = plugin.FrontTrackCache(MPEG_AUDIO_TEST_TRACK_ID);
     ASSERT_NE(cached, nullptr);
     ASSERT_NE(cached->sample, nullptr);
