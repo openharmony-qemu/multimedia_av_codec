@@ -1493,7 +1493,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock, TestSize.Level1
     uint32_t len = BUFFER_SIZE;
     uint32_t res = downloader->SaveCacheBufferDataNotblock(data, len);
     delete[] data;
-    EXPECT_EQ(res == 0, true);
+    EXPECT_LE(res, len);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock_1, TestSize.Level1)

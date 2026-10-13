@@ -106,6 +106,7 @@ private:
     void SetDownloadErrorState() override;
     std::shared_ptr<HlsSegmentManager> GetSegmentManager(uint32_t streamId);
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
+    void UpdateStreamStatistics();
 
 private:
     uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
