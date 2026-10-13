@@ -42,6 +42,7 @@ namespace MPEG4 {
 
 class MPEG4SampleHelper;
 struct ReadSamplePacketAttr;
+struct MpegAudioParserStates;
 
 class MPEG4DemuxerPlugin : public DemuxerPlugin {
 public:
@@ -167,6 +168,8 @@ private:
     std::map<int32_t, std::shared_ptr<Sample>> firstFrameMap_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> cacheSamples_ {};
     std::unordered_map<uint32_t, std::shared_ptr<MPEG4Sample>> pendingWebVttSamples_ {};
+    std::unique_ptr<MpegAudioParserStates> mpegAudioParserStates_ {nullptr};
+    std::mutex mpegAudioParserMutex_ {};
     std::unordered_map<uint32_t, std::vector<int64_t>> rawDtsPrefix_ {};
 
     std::unordered_map<uint32_t, detail::TrackDfxInfo> trackDfxInfoMap_ {};
@@ -279,6 +282,8 @@ private:
         const std::shared_ptr<MPEG4AtomParser::Track>& track, const std::shared_ptr<MPEG4Sample>& sample,
         uint64_t expectedReadConfigEpoch);
     Status ReadAndCacheNextSample(uint32_t trackId, uint64_t expectedReadConfigEpoch);
+    Status ReadAndCacheResolvedSample(const detail::SampleReadInfo& sampleInfo, uint32_t trackId,
+        uint64_t expectedReadConfigEpoch);
     Status FinalizeReadSample(const ReadSampleFinalizeContext& context);
     Status PrepareTrackForSelection(const std::shared_ptr<MPEG4AtomParser::Track>& track);
     Status CommitTrackSelection(uint32_t trackId, const std::shared_ptr<MPEG4AtomParser::Track>& track);
@@ -407,6 +412,8 @@ private:
     Status SkipPacketAfterPacketConvertError(uint32_t trackId, const std::shared_ptr<MPEG4Sample>& mpeg4Sample,
         bool popSample, bool restoreCacheInfo);
     void CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<Sample> sample);
+
+    friend class MpegAudioPacketParser;
 
     Status CheckCacheDataLimit(uint32_t trackId);
     void ParseHEVCMetadataInfo(const MPEG4AtomParser::Track& track, Meta &format);

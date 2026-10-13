@@ -36,6 +36,10 @@ namespace Media {
 namespace Plugins {
 namespace MPEG4 {
 using namespace detail;
+void ResetMpegAudioParserStates(MPEG4DemuxerPlugin& plugin);
+void ResetMpegAudioParserTrack(MPEG4DemuxerPlugin& plugin, uint32_t trackId);
+Status ProcessMpegAudioSampleToCache(MPEG4DemuxerPlugin& plugin, const std::shared_ptr<MPEG4Sample>& sample);
+Status FlushMpegAudioSampleToCache(MPEG4DemuxerPlugin& plugin, uint32_t trackId);
 
 namespace {
 constexpr uint8_t READ_RETRY_TIMES = 10;
@@ -154,24 +158,6 @@ Status MPEG4DemuxerPlugin::SeekToStartInternal()
     FALSE_RETURN_V_MSG_E(!selectedTrackIds_.empty(), Status::ERROR_INVALID_OPERATION, "No track has been selected");
 
     ReleaseReadLoop();
-    bool needSeek = !cacheSamples_.empty();
-    for (const auto& selectedTrackId : selectedTrackIds_) {
-        auto track = FindTrackById(static_cast<int32_t>(selectedTrackId));
-        FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
-        if (track->currentSampleIndex != 0 || HasTrackCache(track)) {
-            needSeek = true;
-            break;
-        }
-    }
-    if (!needSeek) {
-        MEDIA_LOG_I("Already at start, do not seek");
-        std::lock_guard<std::mutex> configLock(readConfigMutex_);
-        cachePhase_ = CachePhase::RUNTIME;
-        readCursor_ = ReadCursor {true, INT64_MIN, -1};
-        ++readConfigEpoch_;
-        return Status::OK;
-    }
-
     {
         std::lock_guard<std::mutex> configLock(readConfigMutex_);
         InvalidateTrackCachesLocked(false, false);
@@ -1083,11 +1069,19 @@ Status MPEG4DemuxerPlugin::ReadAndCacheNextSample(uint32_t trackId, uint64_t exp
     Status ret = GetUnseekableSampleInfo(sampleInfo);
     FALSE_RETURN_V_MSG_E(ret == Status::OK || ret == Status::END_OF_STREAM, ret, "Get sample info failed");
     if (ret == Status::END_OF_STREAM) {
+        ret = FlushMpegAudioSampleToCache(*this, trackId);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Flush pending MPEG audio samples failed");
         ret = FlushPendingWebVTTSample(trackId, expectedReadConfigEpoch);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Flush pending WebVTT samples failed");
         return HasTrackCache(trackId) ? Status::OK : Status::END_OF_STREAM;
     }
+    return ReadAndCacheResolvedSample(sampleInfo, trackId, expectedReadConfigEpoch);
+}
 
+Status MPEG4DemuxerPlugin::ReadAndCacheResolvedSample(const SampleReadInfo& sampleInfo, uint32_t trackId,
+    uint64_t expectedReadConfigEpoch)
+{
+    Status ret = Status::OK;
     auto currentTrack = FindTrackById(static_cast<int32_t>(sampleInfo.trackId));
     FALSE_RETURN_V_MSG_E(currentTrack != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
     auto sample = std::make_shared<Sample>();
@@ -1110,6 +1104,18 @@ Status MPEG4DemuxerPlugin::ReadAndCacheNextSample(uint32_t trackId, uint64_t exp
     }
     if (IsWebVTTTrack(currentTrack)) {
         ret = ProcessWebVTTSampleForCache(currentTrack, mpeg4Sample, expectedReadConfigEpoch);
+    } else if (currentTrack->sampleHelper != nullptr &&
+        currentTrack->sampleHelper->mimeType_ == MimeType::AUDIO_MPEG) {
+        ret = ProcessMpegAudioSampleToCache(*this, mpeg4Sample);
+        if (ret == Status::OK) {
+            std::lock_guard<std::mutex> configLock(readConfigMutex_);
+            if (!IsReadConfigCurrentLocked(trackId, expectedReadConfigEpoch)) {
+                ret = Status::ERROR_AGAIN;
+            } else {
+                AdvanceSampleIndex(currentTrack);
+                UpdateReadCursorLocked(sampleInfo, sample->dts);
+            }
+        }
     } else {
         ret = CacheReadSampleForCurrentTrack(sampleInfo, currentTrack, mpeg4Sample, expectedReadConfigEpoch);
     }
