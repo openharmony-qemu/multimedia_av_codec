@@ -16,6 +16,7 @@
 #ifndef MEDIA_PIPELINE_VIDEO_SINK_H
 #define MEDIA_PIPELINE_VIDEO_SINK_H
 
+#include <atomic>
 #include "osal/task/task.h"
 #include "sink/media_synchronous_sink.h"
 #include "buffer/avbuffer.h"
@@ -78,6 +79,7 @@ private:
         int64_t lastBufferTimeMs_ = 0;
         int64_t totalLagDuration_ = 0;
         std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
+        Mutex mutex_ {};
     };
 
     class AVSyncDetector {
@@ -101,15 +103,16 @@ private:
         int32_t lipAsyncType_ = 0;
         int64_t lipAsyncStartPtsMs_ = 0;
         std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
+        Mutex mutex_ {};
     };
 
     std::atomic<bool> needUpdateTimeAnchor_ {true};
     int64_t refreshTime_ {0};
-    bool isFirstFrame_ {true};
+    std::atomic<bool> isFirstFrame_ {true};
     int64_t firstFramePts_ {0};
     int64_t firstFrameClockTime_ {0};
-    int64_t lastBufferRelativePts_ {HST_TIME_NONE};
-    int64_t lastBufferAnchoredClockTime_ {HST_TIME_NONE};
+    std::atomic<int64_t> lastBufferRelativePts_ {HST_TIME_NONE};
+    std::atomic<int64_t> lastBufferAnchoredClockTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
 
     int64_t initialVideoWaitPeriod_ {0};
@@ -120,21 +123,21 @@ private:
     std::shared_ptr<EventReceiver> eventReceiver_ {nullptr};
     int64_t firstPts_ {HST_TIME_NONE};
     int64_t fixDelay_ {0};
-    bool seekFlag_{false};
-    bool isPerfRecEnabled_ { false };
+    std::atomic<bool> seekFlag_{false};
+    std::atomic<bool> isPerfRecEnabled_ { false };
     std::atomic<int32_t> dropFrameContinuouslyCnt_ {0};
-    int64_t lastPts_ = -1;
+    std::atomic<int64_t> lastPts_ {-1};
     int64_t frameInterval_ = -1;
-    int64_t lastClockTime_ = -1;
+    std::atomic<int64_t> lastClockTime_ {-1};
     std::atomic<bool> isRenderStarted_{false};
     VideoLagDetector lagDetector_ {};
     int64_t renderAdvanceThreshold_ { 80000 };
     bool enableRenderAtTime_ {true};
     PerfRecorder perfRecorder_ {};
-    bool isMuted_ = false;
+    std::atomic<bool> isMuted_ {false};
     std::atomic<bool> needDropOnMute_ {false};
     AVSyncDetector avSyncDetector_ {};
-    int64_t lastPtsForDiscontinuity_ {HST_TIME_NONE};
+    std::atomic<int64_t> lastPtsForDiscontinuity_ {HST_TIME_NONE};
     std::atomic<bool> isFirstFrameAfterSeek_ {true};
 };
 } // namespace Pipeline
