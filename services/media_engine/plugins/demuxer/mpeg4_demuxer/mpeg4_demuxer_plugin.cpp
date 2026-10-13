@@ -47,6 +47,8 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace MPEG4 {
+using namespace detail;
+
 const uint32_t SETTIMER_TIMEOUT = 5;
 constexpr uint32_t DEFAULT_CACHE_LIMIT = 50 * 1024 * 1024;
 constexpr int32_t DEF_PROBE_SCORE_LIMIT = 50;
@@ -1045,6 +1047,16 @@ bool HasPlayableVideoTrack(const std::shared_ptr<MPEG4AtomParser::Track>& firstT
     return false;
 }
 
+Status MPEG4DemuxerPlugin::BuildTrackSamplePacketAttr(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    const MPEG4SampleHelper::SampleIndexView& sampleView, uint32_t sampleIndex, ReadSamplePacketAttr& attr)
+{
+    FALSE_RETURN_V_NOLOG(track != nullptr, Status::ERROR_NULL_POINTER);
+    ReadSamplePacketContext context { mediaInfo_, track, sampleView, rawDtsPrefix_, sampleIndex,
+        track->timeScale, movieTimeScale_, HasPlayableVideoTrack(firstTrack_) };
+    return BuildReadSamplePacketAttr(context, attr);
+}
+
 bool CheckSeekTimeInFileDuration(const MediaInfo& mediaInfo, int64_t seekTime)
 {
     int64_t fileDuration = 0;
@@ -1176,16 +1188,16 @@ void MPEG4DemuxerPlugin::Dump(const DumpParam &dumpParam)
 {
     std::string path;
     switch (dumpParam.mode) {
-        case DUMP_READAT_INPUT:
+        case DumpMode::DUMP_READAT_INPUT:
             path = "Readat_index." + std::to_string(dumpParam.index) + "_offset." +
                 std::to_string(dumpParam.offset) + "_size." + std::to_string(dumpParam.size);
             break;
-        case DUMP_AVPACKET_OUTPUT:
+        case DumpMode::DUMP_AVPACKET_OUTPUT:
             path = "AVPacket_index." + std::to_string(dumpParam.index) + "_track." +
                 std::to_string(dumpParam.trackId) + "_pts." + std::to_string(dumpParam.pts) + "_pos." +
                 std::to_string(dumpParam.pos);
             break;
-        case DUMP_AVBUFFER_OUTPUT:
+        case DumpMode::DUMP_AVBUFFER_OUTPUT:
             path = "AVBuffer_track." + std::to_string(dumpParam.trackId) + "_index." +
                 std::to_string(dumpParam.index) + "_pts." + std::to_string(dumpParam.pts);
             break;
@@ -1233,35 +1245,43 @@ void MPEG4DemuxerPlugin::ReleaseReferenceParserState()
 void MPEG4DemuxerPlugin::ResetParam()
 {
     ReleaseReadLoop();
-    for (const auto& selectedTrackId : selectedTrackIds_) {
-        ClearTrackCache(selectedTrackId);
-    }
-    // Clear cache for all video and audio tracks.
-    for (const auto& avTrackId: avTrackIds_) {
-        ClearTrackCache(avTrackId);
+    {
+        std::lock_guard<std::mutex> configLock(readConfigMutex_);
+        InvalidateTrackCachesLocked(true, true);
+        selectedTrackIds_.clear();
+        trackMtx_.clear();
     }
     firstTrack_.reset();
     lastTrack_.reset();
+    fragmentEntry_.clear();
     streamParsers_.reset();
+    streamParserInited_ = false;
+    dataSource_.reset();
+    dataReader_.reset();
+    userformat_.reset();
+    firstFrameMap_.clear();
+    avTrackIds_.clear();
+    trackDfxInfoMap_.clear();
     cacheSamples_.clear();
     pendingWebVttSamples_.clear();
     rawDtsPrefix_.clear();
-    trackDfxInfoMap_.clear();
     ReleaseReferenceParserState();
     
     hasMoofBox_ = false;
     hasSidxBox_ = false;
+    isIsom_ = false;
     readToEnd_ = false;
+    currentFragment_ = 0;
+    minElstInitEmptyEdit_ = INT64_MAX;
+    relativeEndPts_ = 0;
     
-    selectedTrackIds_.clear();
-    trackMtx_.clear();
     mediaInfo_ = MediaInfo();
     movieTimeScale_ = 1;
     readatIndex_ = 0;
     avpacketIndex_ = 0;
+    inited_ = false;
     readModeFlags_.store(0, std::memory_order_release);
     readLoopStatus_.store(Status::OK, std::memory_order_release);
-    readToEnd_ = false;
 }
 
 Status MPEG4DemuxerPlugin::Reset()
@@ -1289,12 +1309,10 @@ Status MPEG4DemuxerPlugin::Flush()
     std::lock_guard<std::shared_mutex> lock(sharedMutex_);
     MEDIA_LOG_I("In");
     ReleaseReadLoop();
-    for (const auto& selectedTrackId : selectedTrackIds_) {
-        ClearTrackCache(selectedTrackId);
+    {
+        std::lock_guard<std::mutex> configLock(readConfigMutex_);
+        InvalidateTrackCachesLocked(false, false);
     }
-    cacheSamples_.clear();
-    pendingWebVttSamples_.clear();
-    readToEnd_ = false;
     return Status::OK;
 }
 
@@ -1955,6 +1973,397 @@ bool MPEG4DemuxerPlugin::TrackIsSelected(const uint32_t trackId)
     return std::find(selectedTrackIds_.begin(), selectedTrackIds_.end(), trackId) != selectedTrackIds_.end();
 }
 
+bool MPEG4DemuxerPlugin::TrackIsSelectedLocked(const uint32_t trackId) const
+{
+    return std::find(selectedTrackIds_.begin(), selectedTrackIds_.end(), trackId) != selectedTrackIds_.end();
+}
+
+bool MPEG4DemuxerPlugin::IsReadConfigCurrentLocked(uint32_t trackId, uint64_t expectedReadConfigEpoch) const
+{
+    return expectedReadConfigEpoch == readConfigEpoch_ && TrackIsSelectedLocked(trackId) &&
+        trackMtx_.find(trackId) != trackMtx_.end();
+}
+
+void MPEG4DemuxerPlugin::EnterRuntimeLocked()
+{
+    if (cachePhase_ == CachePhase::RUNTIME) {
+        return;
+    }
+    cachePhase_ = CachePhase::RUNTIME;
+    ++readConfigEpoch_;
+    for (auto track = firstTrack_; track != nullptr; track = track->next) {
+        // Bootstrap queues contain packets already consumed from the shared demux cursor.
+        // Preserve the furthest queued packet as the runtime cursor before retiring stale queues.
+        auto backSample = BackTrackCache(track->trackIndex);
+        if (backSample != nullptr && backSample->sample != nullptr &&
+            (backSample->sample->flag & Sample::SampleFlag::EOS) == 0) {
+            SampleReadInfo sampleInfo;
+            sampleInfo.trackId = track->trackIndex;
+            sampleInfo.sampleIndex = backSample->sampleIndex;
+            sampleInfo.view.pos = backSample->sample->pos;
+            UpdateReadCursorLocked(sampleInfo, backSample->sample->dts);
+        }
+    }
+    if (!readCursor_.valid) {
+        // Treat each track's initial packet as part of the bootstrap read frontier. FFmpeg may
+        // already have consumed and discarded an unselected stream's bootstrap packet.
+        for (auto track = firstTrack_; track != nullptr; track = track->next) {
+            if (!IsSupportedTrack(track) || track->sampleHelper == nullptr ||
+                track->currentSampleIndex >= track->sampleHelper->GetSampleCount()) {
+                continue;
+            }
+            uint32_t sampleIndex = track->currentSampleIndex;
+            MPEG4SampleHelper::SampleIndexView view;
+            if (track->sampleHelper->GetSampleIndexView(sampleIndex, view) != Status::OK) {
+                continue;
+            }
+            ReadSamplePacketAttr attr;
+            if (BuildTrackSamplePacketAttr(track, view, sampleIndex, attr) != Status::OK) {
+                continue;
+            }
+            SampleReadInfo sampleInfo;
+            sampleInfo.trackId = track->trackIndex;
+            sampleInfo.sampleIndex = sampleIndex;
+            sampleInfo.view = view;
+            UpdateReadCursorLocked(sampleInfo, attr.dtsUs);
+        }
+    }
+    for (auto track = firstTrack_; track != nullptr; track = track->next) {
+        if (TrackIsSelectedLocked(track->trackIndex)) {
+            continue;
+        }
+        ClearTrackCache(track->trackIndex);
+        pendingWebVttSamples_.erase(track->trackIndex);
+        trackMtx_.erase(track->trackIndex);
+    }
+}
+
+void MPEG4DemuxerPlugin::InvalidateTrackCachesLocked(bool resetCursor, bool resetPhase)
+{
+    ++readConfigEpoch_;
+    for (auto track = firstTrack_; track != nullptr; track = track->next) {
+        ClearTrackCache(track->trackIndex);
+    }
+    cacheSamples_.clear();
+    pendingWebVttSamples_.clear();
+    readToEnd_ = false;
+    hasInFlightSample_ = false;
+    inFlightSampleInfo_ = SampleReadInfo {};
+    inFlightSampleDtsUs_ = 0;
+    if (resetCursor) {
+        readCursor_ = ReadCursor {};
+    }
+    if (resetPhase) {
+        cachePhase_ = CachePhase::BOOTSTRAP;
+    } else {
+        cachePhase_ = CachePhase::RUNTIME;
+    }
+}
+
+void MPEG4DemuxerPlugin::UpdateReadCursorLocked(const SampleReadInfo& sampleInfo, int64_t dtsUs)
+{
+    if (cachePhase_ != CachePhase::RUNTIME) {
+        return;
+    }
+    if (readCursor_.valid && !readCursor_.usePresentationTime &&
+        (dtsUs < readCursor_.dtsUs ||
+        (dtsUs == readCursor_.dtsUs && sampleInfo.view.pos <= readCursor_.pos))) {
+        return;
+    }
+    readCursor_.valid = true;
+    readCursor_.dtsUs = dtsUs;
+    readCursor_.pos = sampleInfo.view.pos;
+    readCursor_.usePresentationTime = false;
+}
+
+void MPEG4DemuxerPlugin::ClearInFlightSampleLocked(
+    const SampleReadInfo& sampleInfo, uint64_t expectedReadConfigEpoch)
+{
+    if (hasInFlightSample_ && inFlightReadConfigEpoch_ == expectedReadConfigEpoch &&
+        inFlightSampleInfo_.trackId == sampleInfo.trackId &&
+        inFlightSampleInfo_.sampleIndex == sampleInfo.sampleIndex &&
+        inFlightSampleInfo_.view.pos == sampleInfo.view.pos) {
+        hasInFlightSample_ = false;
+        inFlightSampleInfo_ = SampleReadInfo {};
+        inFlightSampleDtsUs_ = 0;
+    }
+}
+
+Status MPEG4DemuxerPlugin::SetInFlightSample(
+    const SampleReadInfo& sampleInfo, uint64_t expectedReadConfigEpoch)
+{
+    std::lock_guard<std::mutex> configLock(readConfigMutex_);
+    if (expectedReadConfigEpoch != readConfigEpoch_ || !TrackIsSelectedLocked(sampleInfo.trackId) ||
+        trackMtx_.find(sampleInfo.trackId) == trackMtx_.end()) {
+        return Status::ERROR_AGAIN;
+    }
+    auto track = FindTrackById(static_cast<int32_t>(sampleInfo.trackId));
+    FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "In-flight sample track is nullptr");
+    ReadSamplePacketAttr attr;
+    Status ret = BuildTrackSamplePacketAttr(track, sampleInfo.view, sampleInfo.sampleIndex, attr);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build in-flight sample timeline failed");
+    hasInFlightSample_ = true;
+    inFlightReadConfigEpoch_ = expectedReadConfigEpoch;
+    inFlightSampleInfo_ = sampleInfo;
+    inFlightSampleDtsUs_ = attr.dtsUs;
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::UpdateReadCursor(const SampleReadInfo& sampleInfo)
+{
+    auto track = FindTrackById(static_cast<int32_t>(sampleInfo.trackId));
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_NULL_POINTER,
+        "Track is nullptr while updating read cursor");
+    ReadSamplePacketAttr attr;
+    Status ret = BuildTrackSamplePacketAttr(track, sampleInfo.view, sampleInfo.sampleIndex, attr);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample timeline for read cursor failed");
+    std::lock_guard<std::mutex> lock(readConfigMutex_);
+    UpdateReadCursorLocked(sampleInfo, attr.dtsUs);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::UpdateReadCursor(const std::shared_ptr<MPEG4Sample>& sample, bool onlyIfUnset)
+{
+    FALSE_RETURN_V_MSG_E(sample != nullptr && sample->sample != nullptr, Status::ERROR_NULL_POINTER,
+        "Sample is nullptr while updating read cursor");
+    auto track = FindTrackById(static_cast<int32_t>(sample->trackId));
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_NULL_POINTER,
+        "Track is nullptr while updating read cursor");
+    SampleReadInfo sampleInfo;
+    sampleInfo.trackId = sample->trackId;
+    sampleInfo.sampleIndex = sample->sampleIndex;
+    sampleInfo.view.pos = sample->sample->pos;
+    sampleInfo.view.size = sample->sample->size;
+    sampleInfo.found = true;
+    std::lock_guard<std::mutex> lock(readConfigMutex_);
+    if (onlyIfUnset && readCursor_.valid && !readCursor_.usePresentationTime) {
+        return Status::OK;
+    }
+    UpdateReadCursorLocked(sampleInfo, sample->sample->dts);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::AlignTrackToReadCursorLocked(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, const ReadCursor* cursor)
+{
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_NULL_POINTER,
+        "Track or sample helper is nullptr while aligning track cursor");
+    const ReadCursor& alignmentCursor = cursor == nullptr ? readCursor_ : *cursor;
+    if (cachePhase_ != CachePhase::RUNTIME || !alignmentCursor.valid) {
+        return Status::OK;
+    }
+
+    const size_t sampleCount = track->sampleHelper->GetSampleCount();
+    uint32_t alignedIndex = 0;
+    if (alignmentCursor.dtsUs == INT64_MAX) {
+        alignedIndex = sampleCount;
+    } else if (alignmentCursor.dtsUs == INT64_MIN) {
+        Status ret = AlignTrackToPositionCursorLocked(track, sampleCount, alignedIndex, &alignmentCursor);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align sample to read cursor position failed");
+    } else if (alignmentCursor.usePresentationTime) {
+        if (IsVideoType(*track)) {
+            Status ret = AlignVideoTrackToPresentationCursorLocked(track, sampleCount, alignedIndex);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align video sample to presentation cursor failed");
+        } else {
+            Status ret = AlignAudioTrackToPresentationCursorLocked(track, sampleCount, alignedIndex);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align audio sample to presentation cursor failed");
+        }
+    } else {
+        Status ret = AlignTrackToDecodeCursorLocked(track, sampleCount, alignedIndex, &alignmentCursor);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align sample to decode cursor failed");
+    }
+    track->currentSampleIndex = alignedIndex;
+    track->currentSamplePos = 0;
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::AlignTrackToPositionCursorLocked(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex,
+    const ReadCursor* cursor)
+{
+    const ReadCursor& alignmentCursor = cursor == nullptr ? readCursor_ : *cursor;
+    if (alignmentCursor.pos < 0) {
+        return Status::OK;
+    }
+    Status ret = track->sampleHelper->FindFirstSampleAfterPosition(alignmentCursor.pos, sampleIndex);
+    if (ret == Status::OK) {
+        return Status::OK;
+    }
+    MPEG4SampleHelper::SampleIndexView lastView;
+    FALSE_RETURN_V_MSG_E(sampleCount > 0 &&
+        track->sampleHelper->GetSampleIndexView(static_cast<uint32_t>(sampleCount - 1), lastView) == Status::OK &&
+        alignmentCursor.pos >= lastView.pos, ret, "Find sample after read cursor position failed");
+    sampleIndex = static_cast<uint32_t>(sampleCount);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::FindSampleAtOrAfterPts(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t targetPtsUs,
+    SampleReadInfo& sampleInfo, int64_t& sampleDtsUs)
+{
+    const size_t sampleCount = track->sampleHelper->GetSampleCount();
+    int64_t closestPts = INT64_MAX;
+    for (uint32_t index = 0; index < sampleCount; ++index) {
+        MPEG4SampleHelper::SampleIndexView view;
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(index, view) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get sample view while finding presentation time failed");
+        ReadSamplePacketAttr attr;
+        FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, index, attr) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Build sample timeline while finding presentation time failed");
+        if (attr.ptsUs == targetPtsUs || (attr.ptsUs > targetPtsUs && attr.ptsUs < closestPts)) {
+            sampleInfo.sampleIndex = index;
+            sampleInfo.view = view;
+            sampleInfo.found = true;
+            sampleDtsUs = attr.dtsUs;
+            closestPts = attr.ptsUs;
+            if (attr.ptsUs == targetPtsUs) {
+                break;
+            }
+        }
+    }
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::AlignVideoTrackToPresentationCursorLocked(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex)
+{
+    SampleReadInfo sampleInfo;
+    int64_t sampleDtsUs = 0;
+    Status ret = FindSampleAtOrAfterPts(track, readCursor_.ptsUs, sampleInfo, sampleDtsUs);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find video sample by presentation cursor failed");
+    sampleIndex = sampleInfo.found ? sampleInfo.sampleIndex : static_cast<uint32_t>(sampleCount);
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::AlignAudioTrackToPresentationCursorLocked(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, size_t sampleCount, uint32_t& sampleIndex)
+{
+    int64_t adjustedSeekTimeMs = readCursor_.dtsUs / MS_TO_US;
+    bool editListApplied = track->sampleHelper->HasAppliedEditList();
+    if (!editListApplied) {
+        FALSE_RETURN_V_MSG_E(!__builtin_sub_overflow(adjustedSeekTimeMs, track->elstInitEmptyEdit,
+            &adjustedSeekTimeMs), Status::ERROR_INVALID_DATA, "Subtract edit-list start from seek cursor failed");
+    }
+    int64_t targetPts = 0;
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(adjustedSeekTimeMs, static_cast<int64_t>(track->timeScale), MS_TIME_SCALE,
+        &targetPts) == Status::OK, Status::ERROR_INVALID_DATA, "Convert seek cursor DTS to track time failed");
+    if (!editListApplied) {
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(targetPts, track->elstShiftStartTime, &targetPts),
+            Status::ERROR_INVALID_DATA, "Add edit-list shift to seek cursor failed");
+    }
+    Status ret = track->sampleHelper->FindSyncSampleByPts(targetPts, false, readCursor_.seekMode, sampleIndex);
+    if (ret == Status::END_OF_STREAM) {
+        sampleIndex = static_cast<uint32_t>(sampleCount);
+        return Status::OK;
+    }
+    return ret;
+}
+
+Status MPEG4DemuxerPlugin::AlignTrackToDecodeCursorLocked(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    size_t sampleCount, uint32_t& sampleIndex, const ReadCursor* cursor)
+{
+    const ReadCursor& alignmentCursor = cursor == nullptr ? readCursor_ : *cursor;
+    int64_t targetDts = 0;
+    FALSE_RETURN_V_MSG_E(ConvertTimeScale(alignmentCursor.dtsUs, static_cast<int64_t>(track->timeScale),
+        static_cast<int64_t>(S_TO_US), &targetDts) == Status::OK, Status::ERROR_INVALID_PARAMETER,
+        "Convert read cursor DTS failed");
+    if (ShouldApplyMovEditTimelineOffset(track)) {
+        int64_t editOffset = 0;
+        FALSE_RETURN_V_MSG_E(GetMovEditTimelineOffsetTicks(track, track->timeScale, movieTimeScale_, editOffset),
+            Status::ERROR_INVALID_DATA, "Get edit-list offset for read cursor failed");
+        FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(targetDts, editOffset, &targetDts),
+            Status::ERROR_INVALID_DATA, "Read cursor DTS overflow");
+    }
+    Status ret = track->sampleHelper->FindFirstSampleByDts(targetDts, sampleIndex);
+    if (ret == Status::END_OF_STREAM) {
+        sampleIndex = static_cast<uint32_t>(sampleCount);
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find sample by read cursor DTS failed");
+    while (sampleIndex < sampleCount) {
+        MPEG4SampleHelper::SampleIndexView view;
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(sampleIndex, view) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get sample view while aligning cursor failed");
+        ReadSamplePacketAttr attr;
+        FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, sampleIndex, attr) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Build sample timeline while aligning cursor failed");
+        if (attr.dtsUs > alignmentCursor.dtsUs ||
+            (attr.dtsUs == alignmentCursor.dtsUs && view.pos > alignmentCursor.pos)) {
+            break;
+        }
+        ++sampleIndex;
+    }
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::SetReadCursorFromSeek(
+    uint32_t trackId, uint32_t sampleIndex, SeekMode mode, bool usePresentationTime)
+{
+    auto track = FindTrackById(static_cast<int32_t>(trackId));
+    FALSE_RETURN_V_MSG_E(track != nullptr && track->sampleHelper != nullptr, Status::ERROR_NULL_POINTER,
+        "Track or sample helper is nullptr while setting seek cursor");
+    const size_t sampleCount = track->sampleHelper->GetSampleCount();
+    FALSE_RETURN_V_MSG_E(sampleIndex <= sampleCount, Status::ERROR_INVALID_PARAMETER,
+        "Seek sample index is out of range");
+    int64_t samplePos = -1;
+    if (sampleIndex < sampleCount) {
+        MPEG4SampleHelper::SampleIndexView view;
+        FALSE_RETURN_V_MSG_E(track->sampleHelper->GetSampleIndexView(sampleIndex, view) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Get sample view for seek cursor failed");
+        samplePos = view.pos;
+        ReadSamplePacketAttr attr;
+        FALSE_RETURN_V_MSG_E(BuildTrackSamplePacketAttr(track, view, sampleIndex, attr) == Status::OK,
+            Status::ERROR_INVALID_DATA, "Build seek cursor timestamp failed");
+        int64_t cursorDtsUs = attr.dtsUs;
+        int64_t cursorPos = samplePos;
+        if (usePresentationTime) {
+            Status ret = AdjustSeekCursorForSelectedVideoTracks(trackId, attr.ptsUs, cursorDtsUs, cursorPos);
+            FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align seek cursor to selected video tracks failed");
+        }
+        std::lock_guard<std::mutex> lock(readConfigMutex_);
+        cachePhase_ = CachePhase::RUNTIME;
+        readCursor_.valid = true;
+        readCursor_.dtsUs = cursorDtsUs;
+        readCursor_.ptsUs = attr.ptsUs;
+        readCursor_.pos = cursorPos;
+        readCursor_.usePresentationTime = usePresentationTime;
+        readCursor_.seekMode = mode;
+        return Status::OK;
+    }
+    std::lock_guard<std::mutex> lock(readConfigMutex_);
+    cachePhase_ = CachePhase::RUNTIME;
+    readCursor_.valid = true;
+    readCursor_.dtsUs = sampleIndex < sampleCount ? INT64_MIN : INT64_MAX;
+    readCursor_.pos = samplePos;
+    readCursor_.usePresentationTime = false;
+    readCursor_.seekMode = mode;
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::AdjustSeekCursorForSelectedVideoTracks(
+    uint32_t seekTrackId, int64_t targetPtsUs, int64_t& cursorDtsUs, int64_t& cursorPos)
+{
+    // Use a selected video's decode time as the shared frontier so audio preroll remains readable.
+    for (uint32_t selectedId : selectedTrackIds_) {
+        if (selectedId == seekTrackId) {
+            continue;
+        }
+        auto selectedTrack = FindTrackById(static_cast<int32_t>(selectedId));
+        if (selectedTrack == nullptr || selectedTrack->sampleHelper == nullptr || !IsVideoType(*selectedTrack)) {
+            continue;
+        }
+        SampleReadInfo sampleInfo;
+        int64_t selectedDtsUs = 0;
+        Status ret = FindSampleAtOrAfterPts(selectedTrack, targetPtsUs, sampleInfo, selectedDtsUs);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find selected video sample by seek PTS failed");
+        if (sampleInfo.found && selectedDtsUs < cursorDtsUs) {
+            cursorDtsUs = selectedDtsUs;
+            cursorPos = sampleInfo.view.pos;
+        }
+    }
+    return Status::OK;
+}
+
 std::shared_ptr<MPEG4AtomParser::Track> MPEG4DemuxerPlugin::FindTrackById(int32_t trackId)
 {
     auto track = firstTrack_;
@@ -1984,12 +2393,70 @@ Status MPEG4DemuxerPlugin::SelectTrack(uint32_t trackId)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
-    if (!TrackIsSelected(trackId)) {
-        selectedTrackIds_.emplace_back(trackId);
-        trackMtx_[trackId] = std::make_shared<std::mutex>();
+    Status ret = PrepareTrackForSelection(currentTrack);
+    if (ret != Status::OK) {
+        return ret;
+    }
+    return CommitTrackSelection(trackId, currentTrack);
+}
+
+Status MPEG4DemuxerPlugin::PrepareTrackForSelection(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    bool alignBySeekPts = false;
+    {
+        std::lock_guard<std::mutex> configLock(readConfigMutex_);
+        alignBySeekPts = cachePhase_ == CachePhase::RUNTIME && readCursor_.usePresentationTime;
+    }
+    if (!alignBySeekPts) {
         return Status::OK;
-    } else {
+    }
+
+    // Seek stops the async reader. Build a dense index lazily for the newly selected track,
+    // since seek synchronization previously indexed only tracks that were selected then.
+    ReleaseReadLoop();
+    Status ret = track->sampleHelper->EnsureDenseIndex();
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample index for seek-aligned track failed");
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::CommitTrackSelection(uint32_t trackId,
+    const std::shared_ptr<MPEG4AtomParser::Track>& currentTrack)
+{
+    std::lock_guard<std::mutex> configLock(readConfigMutex_);
+    if (TrackIsSelectedLocked(trackId)) {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " has been selected", trackId);
+        return Status::OK;
+    }
+    if (cachePhase_ == CachePhase::RUNTIME) {
+        ClearTrackCache(trackId);
+        pendingWebVttSamples_.erase(trackId);
+        ReadCursor inFlightCursor;
+        const ReadCursor* alignmentCursor = nullptr;
+        if (hasInFlightSample_ && (!readCursor_.valid ||
+            inFlightSampleDtsUs_ > readCursor_.dtsUs ||
+            (inFlightSampleDtsUs_ == readCursor_.dtsUs && inFlightSampleInfo_.view.pos > readCursor_.pos))) {
+            // The worker has already chosen this packet and may have advanced the shared demux
+            // position, but the epoch change will reject its cache commit. Use its position only
+            // as this track's start boundary; do not publish it as the committed read cursor.
+            inFlightCursor = readCursor_;
+            inFlightCursor.valid = true;
+            inFlightCursor.dtsUs = inFlightSampleDtsUs_;
+            inFlightCursor.pos = inFlightSampleInfo_.view.pos;
+            inFlightCursor.usePresentationTime = false;
+            alignmentCursor = &inFlightCursor;
+        }
+        Status ret = AlignTrackToReadCursorLocked(currentTrack, alignmentCursor);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Align selected track to read cursor failed");
+        trackMtx_[trackId] = std::make_shared<std::mutex>();
+    } else if (trackMtx_.find(trackId) == trackMtx_.end()) {
+        trackMtx_[trackId] = std::make_shared<std::mutex>();
+    }
+    selectedTrackIds_.emplace_back(trackId);
+    ++readConfigEpoch_;
+    if (selectedTrackIds_.size() == 1) {
+        trackId_.store(trackId, std::memory_order_release);
+        isPauseReadPacket_.store(false, std::memory_order_release);
+        readLoopCv_.notify_all();
     }
     return Status::OK;
 }
@@ -2007,12 +2474,25 @@ Status MPEG4DemuxerPlugin::UnselectTrack(uint32_t trackId)
         return Status::ERROR_INVALID_PARAMETER;
     }
 
+    std::lock_guard<std::mutex> configLock(readConfigMutex_);
     auto index = std::find(selectedTrackIds_.begin(), selectedTrackIds_.end(), trackId);
     if (index != selectedTrackIds_.end()) {
         selectedTrackIds_.erase(index);
-        trackMtx_.erase(trackId);
-        pendingWebVttSamples_.erase(trackId);
-        ClearTrackCache(trackId);
+        if (cachePhase_ == CachePhase::RUNTIME) {
+            trackMtx_.erase(trackId);
+            pendingWebVttSamples_.erase(trackId);
+            ClearTrackCache(trackId);
+        }
+        ++readConfigEpoch_;
+        if (trackId_.load(std::memory_order_acquire) == trackId) {
+            if (!selectedTrackIds_.empty()) {
+                trackId_.store(selectedTrackIds_.front(), std::memory_order_release);
+                isPauseReadPacket_.store(false, std::memory_order_release);
+            } else {
+                isPauseReadPacket_.store(true, std::memory_order_release);
+            }
+            readLoopCv_.notify_all();
+        }
         return Status::OK;
     } else {
         MEDIA_LOG_W("Track " PUBLIC_LOG_U32 " is not in selected list", trackId);
@@ -2443,17 +2923,23 @@ Status MPEG4DemuxerPlugin::SeekTo(int32_t trackId, int64_t seekTime, SeekMode mo
 
     Status denseRet = EnsureSelectedTracksDense();
     FALSE_RETURN_V_MSG_E(denseRet == Status::OK, denseRet, "Build dense sample index failed");
-    for (const auto& selectedTrackId : selectedTrackIds_) {
-        ClearTrackCache(selectedTrackId);
+    {
+        std::lock_guard<std::mutex> configLock(readConfigMutex_);
+        InvalidateTrackCachesLocked(false, false);
+        readCursor_ = ReadCursor {};
     }
-    cacheSamples_.clear();
-    pendingWebVttSamples_.clear();
-    readToEnd_ = false;
 
     trackId = SelectSeekTrack();
     Status ret = FindBaseTrackAndCalcDelay(seekTime, mode, trackId); // find base track
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Find basetrack failed");
-    return DoSeekInternal(trackId, seekTime, mode, realSeekTime);
+    ret = DoSeekInternal(trackId, seekTime, mode, realSeekTime);
+    if (ret == Status::OK) {
+        auto seekTrack = FindTrackById(trackId);
+        FALSE_RETURN_V_MSG_E(seekTrack != nullptr, Status::ERROR_NULL_POINTER, "Seek track is nullptr");
+        ret = SetReadCursorFromSeek(static_cast<uint32_t>(trackId), seekTrack->currentSampleIndex, mode);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set read cursor after seek failed");
+    }
+    return ret;
 }
 
 Status MPEG4DemuxerPlugin::EnsureSelectedTracksDense()
@@ -2510,7 +2996,7 @@ Status MPEG4DemuxerPlugin::ParseMoof(int64_t offset)
 
 Status MPEG4DemuxerPlugin::FindValidSample(SampleReadInfo& sampleInfo)
 {
-    // Keep a stable snapshot because the asynchronous read loop does not hold sharedMutex_.
+    std::lock_guard<std::mutex> configLock(readConfigMutex_);
     const std::vector<uint32_t> trackIds = selectedTrackIds_.empty() ? avTrackIds_ : selectedTrackIds_;
     for (const auto& trackId : trackIds) {
         auto currentTrack = FindTrackById(trackId);
@@ -2618,10 +3104,7 @@ Status MPEG4DemuxerPlugin::WriteSampleAttr(const SampleReadInfo& sampleInfo, std
     FALSE_RETURN_V_NOLOG(trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER);
 
     ReadSamplePacketAttr attr;
-    ReadSamplePacketContext context { mediaInfo_, track, currentSample, rawDtsPrefix_, sampleInfo.sampleIndex,
-        trackTimeScale, movieTimeScale_,
-        HasPlayableVideoTrack(firstTrack_) };
-    Status ret = BuildReadSamplePacketAttr(context, attr);
+    Status ret = BuildTrackSamplePacketAttr(track, currentSample, sampleInfo.sampleIndex, attr);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build read sample packet attr failed");
     sample->pts = attr.ptsUs;
     sample->dts = attr.dtsUs;
@@ -3049,10 +3532,7 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(const SampleReadInfo& sampleInfo,
     int32_t trackTimeScale = track->timeScale;
     FALSE_RETURN_V_NOLOG(trackTimeScale > 0, Status::ERROR_INVALID_PARAMETER);
     ReadSamplePacketAttr attr;
-    ReadSamplePacketContext context {
-        mediaInfo_, track, sampleInfo.view, rawDtsPrefix_, sampleInfo.sampleIndex,
-        trackTimeScale, movieTimeScale_, HasPlayableVideoTrack(firstTrack_)};
-    Status ret = BuildReadSamplePacketAttr(context, attr);
+    Status ret = BuildTrackSamplePacketAttr(track, sampleInfo.view, sampleInfo.sampleIndex, attr);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample attr failed");
     outBuffer->pts_ = attr.ptsUs;
     outBuffer->dts_ = attr.dtsUs;
@@ -3108,6 +3588,8 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     } else {
         track->currentSamplePos = 0;
         track->currentSampleIndex++;
+        ret = UpdateReadCursor(sampleInfo);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update read cursor after direct sample read failed");
     }
     return ret;
 }
@@ -3170,6 +3652,8 @@ Status MPEG4DemuxerPlugin::GetUnseekableSample(
         if (track) {
             track->currentSampleIndex++;
         }
+        ret = UpdateReadCursor(sampleInfo);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update read cursor after cached sample failed");
     }
     std::lock_guard<std::mutex> lockTrack(*trackMtx_[trackId].get());
     mpeg4Sample = FrontTrackCache(trackId);
@@ -3189,7 +3673,7 @@ void MPEG4DemuxerPlugin::DumpAVBufferData(
     int32_t size [[maybe_unused]], int64_t pts [[maybe_unused]])
 {
 #ifdef BUILD_ENG_VERSION
-    DumpParam dumpParam {DumpMode(DUMP_AVBUFFER_OUTPUT & dumpMode_), const_cast<uint8_t*>(data),
+    DumpParam dumpParam {DumpMode(DumpMode::DUMP_AVBUFFER_OUTPUT & dumpMode_), const_cast<uint8_t*>(data),
         static_cast<int>(trackId), -1, size, trackDfxInfoMap_[trackId].frameIndex++, pts, -1};
     Dump(dumpParam);
 #endif
@@ -3328,6 +3812,10 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     FALSE_RETURN_V_MSG_E(IsValidBuffer(outBuffer, false), Status::ERROR_INVALID_PARAMETER, "AVBuffer is invalid");
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
         Status::ERROR_INVALID_OPERATION, "Cannot use sync and async Read together");
+    {
+        std::lock_guard<std::mutex> configLock(readConfigMutex_);
+        EnterRuntimeLocked();
+    }
     auto track = FindTrackById(trackId);
     FALSE_RETURN_V_MSG_E(IsValidTrack(track), Status::ERROR_INVALID_PARAMETER, "Track is invalid");
     readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
@@ -3352,15 +3840,33 @@ Status MPEG4DemuxerPlugin::ReadSample(uint32_t trackId, std::shared_ptr<AVBuffer
     if (IsValidMpeg4Sample(mpeg4Sample)) {
         ret = WriteBuffer(trackId, outBuffer, mpeg4Sample);
     }
-    FALSE_RETURN_V_NOLOG(ret != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
-    FALSE_RETURN_V_NOLOG(ret == Status::OK || ret == Status::ERROR_PACKET_CONVERT_FAILED, ret);
-    if (seekable_ == Seekable::UNSEEKABLE || useCache) {
-        PopTrackCache(trackId);
-    } else {
-        cacheSamples_.erase(trackId);
-        ++track->currentSampleIndex;
+    bool isEos = (outBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) != 0;
+    return FinalizeReadSample({trackId, track, mpeg4Sample, useCache, isEos, ret});
+}
+
+Status MPEG4DemuxerPlugin::FinalizeReadSample(const ReadSampleFinalizeContext& context)
+{
+    FALSE_RETURN_V_NOLOG(context.status != Status::ERROR_NOT_ENOUGH_DATA, Status::OK);
+    FALSE_RETURN_V_NOLOG(context.status == Status::OK ||
+        context.status == Status::ERROR_PACKET_CONVERT_FAILED, context.status);
+    if (context.isEos) {
+        return context.status;
     }
-    return ret;
+    if (context.useCache && seekable_ == Seekable::SEEKABLE) {
+        Status cursorRet = UpdateReadCursor(context.sample);
+        FALSE_RETURN_V_MSG_E(cursorRet == Status::OK, cursorRet, "Update read cursor after cached sample failed");
+    }
+    if (seekable_ == Seekable::UNSEEKABLE || context.useCache) {
+        PopTrackCache(context.trackId);
+    } else {
+        cacheSamples_.erase(context.trackId);
+        ++context.track->currentSampleIndex;
+    }
+    if (!context.useCache && seekable_ == Seekable::SEEKABLE) {
+        Status cursorRet = UpdateReadCursor(context.sample);
+        FALSE_RETURN_V_MSG_E(cursorRet == Status::OK, cursorRet, "Update read cursor after sample read failed");
+    }
+    return context.status;
 }
 
 Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSize)
@@ -3373,19 +3879,25 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
     FALSE_RETURN_V_MSG_E(TrackIsSelected(trackId), Status::ERROR_INVALID_PARAMETER, "Track has not been selected");
     FALSE_RETURN_V_MSG_E((readModeFlags_.load(std::memory_order_acquire) & ReadModeToFlags(ReadMode::ASYNC)) == 0,
         Status::ERROR_INVALID_OPERATION, "Cannot use sync and async Read together");
+    {
+        std::lock_guard<std::mutex> configLock(readConfigMutex_);
+        EnterRuntimeLocked();
+    }
     readModeFlags_.fetch_or(ReadModeToFlags(ReadMode::SYNC), std::memory_order_acq_rel);
 
     auto sample = std::make_shared<Sample>();
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
     uint32_t sampleTrackId = trackId;
+    Status ret = Status::OK;
     if (HasTrackCache(trackId)) {
         std::shared_ptr<MPEG4Sample> mpeg4Sample = FrontTrackCache(trackId);
         FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr && mpeg4Sample->sample != nullptr,
             Status::ERROR_NULL_POINTER, "Cache sample is nullptr");
         sample = mpeg4Sample->sample;
+        ret = UpdateReadCursor(mpeg4Sample, true);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update read cursor from cached size query failed");
     } else {
         SampleReadInfo sampleInfo;
-        Status ret = Status::OK;
         if (seekable_ == Seekable::SEEKABLE) {
             ret = GetSeekableSampleInfo(trackId, sampleInfo);
         } else if (seekable_ == Seekable::UNSEEKABLE) {
@@ -3399,6 +3911,8 @@ Status MPEG4DemuxerPlugin::GetNextSampleSize(uint32_t trackId, int32_t &sampleSi
         sample->size = sampleInfo.view.size;
         sample->flag = sampleInfo.view.flag;
         sampleTrackId = sampleInfo.trackId;
+        ret = UpdateReadCursor(sampleInfo);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update read cursor from sample-size query failed");
     }
 
     sampleSize = GetSampleSizeWithCodecConfig(sample, sampleTrackId);

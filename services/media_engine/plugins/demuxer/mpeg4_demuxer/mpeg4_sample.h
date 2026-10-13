@@ -115,15 +115,28 @@ public:
     bool Push(std::shared_ptr<MPEG4Sample> block)
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        if (block == nullptr || block->sample == nullptr) {
+        return PushLocked(std::move(block));
+    }
+
+    bool PushEosIfAbsent(std::shared_ptr<MPEG4Sample> block, bool& inserted)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        inserted = false;
+        if (block == nullptr || block->sample == nullptr ||
+            (block->sample->flag & Sample::SampleFlag::EOS) == 0) {
             return false;
         }
-        uint64_t blockSize = 0;
-        if (!GetBlockSize(block, blockSize)) {
+        if (!samples_.empty()) {
+            const auto& tail = samples_.back();
+            if (tail != nullptr && tail->sample != nullptr &&
+                (tail->sample->flag & Sample::SampleFlag::EOS) != 0) {
+                return true;
+            }
+        }
+        if (!PushLocked(std::move(block))) {
             return false;
         }
-        samples_.push_back(std::move(block));
-        UpdateStatsOnPush(blockSize);
+        inserted = true;
         return true;
     }
 
@@ -180,6 +193,19 @@ public:
     }
 
 private:
+    bool PushLocked(std::shared_ptr<MPEG4Sample> block)
+    {
+        if (block == nullptr || block->sample == nullptr) {
+            return false;
+        }
+        uint64_t blockSize = 0;
+        if (!GetBlockSize(block, blockSize)) {
+            return false;
+        }
+        samples_.push_back(std::move(block));
+        UpdateStatsOnPush(blockSize);
+        return true;
+    }
     static bool GetBlockSize(const std::shared_ptr<MPEG4Sample>& block, uint64_t& blockSize)
     {
         if (block == nullptr || block->sample == nullptr || block->sample->size < 0) {

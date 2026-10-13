@@ -112,6 +112,13 @@ enum class ReadMode : uint32_t {
     ZERO_COPY,
 };
 
+enum class DynamicSwitchScenario : uint32_t {
+    PLAYBACK,
+    PLAYBACK_SEEK,
+    FLUSH,
+    GET_NEXT_SIZE,
+};
+
 struct WeakNetworkPluginContext {
     const std::shared_ptr<BaseDemuxerPlugin>& plugin;
     int& fd;
@@ -124,6 +131,9 @@ struct TrackSampleReadContext {
     const std::shared_ptr<MediaAVBuffer>& buffer;
     ReadMode readMode;
 };
+
+struct InFlightAbaTestContext;
+struct EosWaitForCacheContext;
 
 class Mpeg4DemuxerPluginUnitTest : public testing::Test {
 public:
@@ -172,6 +182,11 @@ protected:
     SeekToEosReadResult ReadToEosAfterSeek(const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
         int64_t seekTimeMs, ReadMode readMode);
     void CheckAsyncEosAfterSeek(ReadMode readMode);
+    void CheckEosWaitForCache();
+    void PrepareEosWaitForCache(EosWaitForCacheContext& context);
+    void RunEosWaitForCacheRace(EosWaitForCacheContext& context);
+    void StartEosCacheWriter(EosWaitForCacheContext& context);
+    void StartEosLoopWaiter(EosWaitForCacheContext& context);
     void CheckSeekFirstVideoSampleWithSourceTimeline(const std::string& filePath, const std::vector<int64_t>& seekTimes,
         const std::vector<Plugins::SeekMode>& seekModes, bool useUri = false);
     void CheckSeekReadResultWithSourceTimeline(const std::string& filePath, const std::vector<int64_t>& seekTimes,
@@ -180,6 +195,23 @@ protected:
         const std::vector<SeekExpectedResult>& expectedResults, bool useUri = false);
     void CheckSeekToFrameByDtsResult(const std::string& filePath, const std::string& testLabel);
     void CompareWeakNetworkReadResult(const std::string& filePath, int64_t failOffset, size_t maxFailCount);
+    void PrepareDynamicTrackSwitchPlugins();
+    void SelectInitialDynamicSwitchTracks();
+    void CheckDynamicTrackSwitch(DynamicSwitchScenario scenario, ReadMode readMode);
+    void ReadDynamicSwitchPreroll(DynamicSwitchScenario scenario, ReadMode readMode);
+    void SwitchAndCompareDynamicTrack(ReadMode readMode, int64_t& lastMpeg4Dts);
+    void ReselectAndCompareDynamicTrack(ReadMode readMode, int64_t& lastMpeg4Dts);
+    void CheckResetAndDataSourceSwitch();
+    void ReadAndCompareSwitchSample(uint32_t trackId, ReadMode readMode);
+    void CheckDynamicTrackSwitchInFlightAba();
+    void PrepareInFlightAbaTest(InFlightAbaTestContext& context);
+    void RunInFlightAbaRace(InFlightAbaTestContext& context);
+    void ReleaseInFlightAbaRead(InFlightAbaTestContext& context);
+    void VerifyInFlightAbaResult(InFlightAbaTestContext& context);
+    void CheckSyncReadEosKeepsCursor();
+    bool ReadUntilSyncEosAndVerifyCursor(const std::shared_ptr<MPEG4DemuxerPlugin>& plugin,
+        uint32_t trackId, const std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track>& track, size_t sampleCount,
+        const std::shared_ptr<MediaAVBuffer>& buffer);
 
     bool IsSupportedTrack(const Meta& meta) const;
     bool IsEos(const std::shared_ptr<MediaAVBuffer>& buffer) const;

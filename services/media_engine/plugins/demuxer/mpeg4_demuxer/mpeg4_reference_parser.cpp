@@ -552,7 +552,7 @@ Status MPEG4DemuxerPlugin::PrepareRefParserSample(std::shared_ptr<Sample>& sampl
         MPEG4SampleHelper::SampleIndexView currentSample;
         FALSE_RETURN_V_MSG_E(trackOfRefParser_->sampleHelper->GetSampleIndexView(sampleIndex, currentSample) ==
             Status::OK, Status::ERROR_UNKNOWN, "Get sample view failed");
-        SampleReadInfo sampleInfo {refParserTrackIdx_, sampleIndex, currentSample, true};
+        detail::SampleReadInfo sampleInfo {refParserTrackIdx_, sampleIndex, currentSample, true};
         Status ret = ReadSampleData(sample, sampleInfo);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to read sample.");
         FALSE_RETURN_V_MSG_E(trackOfRefParser_ != nullptr, Status::ERROR_UNKNOWN, "trackOfRefParser_ is nullptr");
