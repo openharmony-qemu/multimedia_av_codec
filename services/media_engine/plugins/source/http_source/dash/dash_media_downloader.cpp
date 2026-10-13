@@ -62,11 +62,6 @@ void DashMediaDownloader::Init()
 bool DashMediaDownloader::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
 {
     mpdDownloader_->Open(url);
-    if (reportInfo_ != nullptr) {
-        std::vector<StreamInfo> streams;
-        GetStreamInfo(streams);
-        reportInfo_->videoStreamCnt_ = streams.size();
-    }
     return true;
 }
 
@@ -436,6 +431,9 @@ void DashMediaDownloader::ReceiveMpdStreamInitEvent()
     MEDIA_LOG_I("Dash ReceiveMpdStreamInitEvent");
     std::vector<StreamInfo> streams;
     mpdDownloader_->GetStreamInfo(streams);
+    if (reportInfo_ != nullptr) {
+        reportInfo_->videoStreamCnt_ = streams.size();
+    }
     std::shared_ptr<DashStreamDescription> streamDesc = nullptr;
     for (unsigned int index = 0; index < streams.size(); index++) {
         streamDesc = mpdDownloader_->GetStreamByStreamId(streams[index].streamId);

@@ -89,6 +89,7 @@ public:
     bool SeekToTime(int64_t seekTime, SeekMode mode);
     void Clone(const std::shared_ptr<HlsSegmentManager> &other);
     void SetMasterReadyCallback(std::function<void(bool, bool)> cb);
+    void SetStreamInfoReadyCallback(std::function<void()> cb);
     HlsSegmentType GetSegType(uint32_t streamId);
 
     size_t GetContentLength() const;
@@ -254,6 +255,8 @@ private:
     DataSaveFunc dataSave_;
     StatusCallbackFunc statusCallback_;
     std::function<void(bool, bool)> masterReadyCallback_;
+    std::function<void()> streamInfoReadyCallback_;
+    bool isStreamInfoReported_ {false};
     std::shared_ptr<PlayListDownloader> playlistDownloader_;
 
     std::shared_ptr<BlockingQueue<PlayInfo>> playList_;

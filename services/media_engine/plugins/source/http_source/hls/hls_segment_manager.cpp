@@ -1094,6 +1094,11 @@ void HlsSegmentManager::OnPlayListChanged(const std::vector<PlayInfo>& playList)
 {
     MEDIA_LOG_I("HLS OnPlayListChanged in: %{public}zu, type: %{public}d", playList.size(), type_);
     AutoLock lock(switchMutex_);
+    if (!isStreamInfoReported_ && type_ == HlsSegmentType::SEG_VIDEO && streamInfoReadyCallback_ &&
+        playlistDownloader_ != nullptr && playlistDownloader_->IsParseFinished()) {
+        isStreamInfoReported_ = true;
+        streamInfoReadyCallback_();
+    }
     HandlePlayListChanged(playList);
     if (!isDownloadStarted_ && !playList_->Empty() && !isInterruptNeeded_.load()) {
         auto playInfo = playList_->Pop();
@@ -2481,6 +2486,11 @@ void HlsSegmentManager::OnMasterReady(bool needAudioManager, bool needSubtitlesM
     if (masterReadyCallback_) {
         masterReadyCallback_(needAudioManager, needSubtitlesManager);
     }
+}
+
+void HlsSegmentManager::SetStreamInfoReadyCallback(std::function<void()> cb)
+{
+    streamInfoReadyCallback_ = std::move(cb);
 }
 
 void HlsSegmentManager::Clone(const std::shared_ptr<HlsSegmentManager> &other)

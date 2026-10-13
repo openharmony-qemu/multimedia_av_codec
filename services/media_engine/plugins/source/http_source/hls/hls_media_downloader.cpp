@@ -68,6 +68,12 @@ void HlsMediaDownloader::Init()
         shareDownloader->OnMasterReady(needAudioManager, needSubtitlesManager);
     };
     videoSegManager_->SetMasterReadyCallback(callback);
+    auto streamInfoReadyCb = [weakDownloader] () {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "streamInfoReadyCb, Hls Media Downloader already destoryed.");
+        shareDownloader->UpdateStreamStatistics();
+    };
+    videoSegManager_->SetStreamInfoReadyCallback(streamInfoReadyCb);
     auto segEventCallback = [weakDownloader] (HlsSegEvent event) {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "allEventCb, Hls Media Downloader already destoryed.");
@@ -118,22 +124,27 @@ bool HlsMediaDownloader::Open(const std::string& url, const std::map<std::string
 {
     FALSE_RETURN_V_MSG(videoSegManager_ != nullptr, false, "hls media downloader open failed, no video seg manager!");
     videoSegManager_->Open(url, httpHeader);
-    if (reportInfo_ != nullptr) {
-        std::vector<StreamInfo> videoStreams;
-        videoSegManager_->GetStreamInfo(videoStreams);
-        reportInfo_->videoStreamCnt_ = videoStreams.size();
-        if (audioSegManager_ != nullptr) {
-            std::vector<StreamInfo> audioStreams;
-            audioSegManager_->GetStreamInfo(audioStreams);
-            reportInfo_->audioStreamCnt_ = audioStreams.size();
-        }
-        if (subtitlesSegManager_ != nullptr) {
-            std::vector<StreamInfo> subtitleStreams;
-            subtitlesSegManager_->GetStreamInfo(subtitleStreams);
-            reportInfo_->subtitleCnt_ = subtitleStreams.size();
-        }
-    }
     return true;
+}
+
+void HlsMediaDownloader::UpdateStreamStatistics()
+{
+    if (reportInfo_ == nullptr || videoSegManager_ == nullptr) {
+        return;
+    }
+    std::vector<StreamInfo> videoStreams;
+    videoSegManager_->GetStreamInfo(videoStreams);
+    reportInfo_->videoStreamCnt_ = videoStreams.size();
+    if (audioSegManager_ != nullptr) {
+        std::vector<StreamInfo> audioStreams;
+        audioSegManager_->GetStreamInfo(audioStreams);
+        reportInfo_->audioStreamCnt_ = audioStreams.size();
+    }
+    if (subtitlesSegManager_ != nullptr) {
+        std::vector<StreamInfo> subtitleStreams;
+        subtitlesSegManager_->GetStreamInfo(subtitleStreams);
+        reportInfo_->subtitleCnt_ = subtitleStreams.size();
+    }
 }
 
 void HlsMediaDownloader::Close(bool isAsync)
