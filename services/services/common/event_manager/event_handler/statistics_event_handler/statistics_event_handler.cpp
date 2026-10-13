@@ -866,9 +866,9 @@ public:
 
         switch (eventType) {
             case StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO: {
-                auto usageStatistics = AVCodecServerManager::GetInstance().GetHDecUsageStatistics();
                 if (hdecLimitExceededInfo_.size() < maxOccupationHDecRecordCount &&
                     !isInOccupationHDecEvent_.load()) {
+                    auto usageStatistics = AVCodecServerManager::GetInstance().GetHDecUsageStatistics();
                     for (const auto& [holder, count] : usageStatistics) {
                         CHECK_AND_BREAK_LOG(
                             lastOccupationHDecAppInfoVec_.size() < maxOccupationHDecRecordCount,
