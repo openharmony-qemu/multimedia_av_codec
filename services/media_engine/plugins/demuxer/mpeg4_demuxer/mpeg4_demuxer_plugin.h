@@ -282,6 +282,8 @@ private:
         const std::shared_ptr<MPEG4AtomParser::Track>& track, const std::shared_ptr<MPEG4Sample>& sample,
         uint64_t expectedReadConfigEpoch);
     Status ReadAndCacheNextSample(uint32_t trackId, uint64_t expectedReadConfigEpoch);
+    Status ReadAndCacheResolvedSample(const detail::SampleReadInfo& sampleInfo, uint32_t trackId,
+        uint64_t expectedReadConfigEpoch);
     Status FinalizeReadSample(const ReadSampleFinalizeContext& context);
     Status PrepareTrackForSelection(const std::shared_ptr<MPEG4AtomParser::Track>& track);
     Status CommitTrackSelection(uint32_t trackId, const std::shared_ptr<MPEG4AtomParser::Track>& track);

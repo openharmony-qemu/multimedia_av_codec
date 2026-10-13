@@ -1666,8 +1666,8 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareMpegAudioTestTrac
         pos += static_cast<int64_t>(sampleSizes[index]);
     }
     if (!sampleSizes.empty() &&
-        helper->AddDurationOverride(static_cast<uint32_t>(sampleSizes.size() - 1), MPEG_AUDIO_TEST_SAMPLES_PER_FRAME)
-            != Status::OK) {
+        helper->AddDurationOverride(static_cast<uint32_t>(sampleSizes.size() - 1),
+            MPEG_AUDIO_TEST_SAMPLES_PER_FRAME) != Status::OK) {
         return nullptr;
     }
     helper->allSamplesSync_ = true;

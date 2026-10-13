@@ -1075,7 +1075,13 @@ Status MPEG4DemuxerPlugin::ReadAndCacheNextSample(uint32_t trackId, uint64_t exp
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Flush pending WebVTT samples failed");
         return HasTrackCache(trackId) ? Status::OK : Status::END_OF_STREAM;
     }
+    return ReadAndCacheResolvedSample(sampleInfo, trackId, expectedReadConfigEpoch);
+}
 
+Status MPEG4DemuxerPlugin::ReadAndCacheResolvedSample(const SampleReadInfo& sampleInfo, uint32_t trackId,
+    uint64_t expectedReadConfigEpoch)
+{
+    Status ret = Status::OK;
     auto currentTrack = FindTrackById(static_cast<int32_t>(sampleInfo.trackId));
     FALSE_RETURN_V_MSG_E(currentTrack != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
     auto sample = std::make_shared<Sample>();
