@@ -174,6 +174,7 @@ constexpr uint32_t RAP_GROUP_NON_KEY_INDEX = 0;
 constexpr uint32_t PARTIAL_SYNC_SAMPLE = 61;
 constexpr uint32_t MPEG_AUDIO_TEST_TRACK_ID = 0;
 constexpr int32_t MPEG_AUDIO_TEST_SAMPLE_RATE = 16000;
+constexpr int32_t MPEG_AUDIO_TEST_SAMPLES_PER_FRAME = 576;
 constexpr size_t MPEG_AUDIO_TEST_FRAME_SIZE = 504;
 constexpr size_t MPEG_AUDIO_TEST_SPLIT_SIZE = 200;
 constexpr size_t MPEG_AUDIO_TEST_HEADER_SPLIT_SIZE = 2;
@@ -1676,6 +1677,9 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareMpegAudioTestTrac
     plugin.lastTrack_ = track;
     plugin.mediaInfo_.tracks.resize(1);
     plugin.mediaInfo_.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
+    plugin.mediaInfo_.tracks[MPEG_AUDIO_TEST_TRACK_ID].Set<Tag::AUDIO_SAMPLE_RATE>(MPEG_AUDIO_TEST_SAMPLE_RATE);
+    plugin.mediaInfo_.tracks[MPEG_AUDIO_TEST_TRACK_ID].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(
+        MPEG_AUDIO_TEST_SAMPLES_PER_FRAME);
     plugin.trackMtx_[MPEG_AUDIO_TEST_TRACK_ID] = std::make_shared<std::mutex>();
     plugin.inited_ = true;
     plugin.seekable_ = Seekable::SEEKABLE;
