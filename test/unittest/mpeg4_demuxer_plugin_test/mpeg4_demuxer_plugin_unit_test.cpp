@@ -1656,13 +1656,19 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareMpegAudioTestTrac
 {
     auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
     auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
-    if (track == nullptr || helper == nullptr) {
+    if (track == nullptr || helper == nullptr || sampleSizes.size() > UINT32_MAX) {
         return nullptr;
     }
     int64_t pos = 0;
-    for (uint32_t size : sampleSizes) {
-        helper->sampleIndexEntry_.emplace_back(MakeSampleIndexEntry(pos, 0, 0, size));
-        pos += static_cast<int64_t>(size);
+    for (size_t index = 0; index < sampleSizes.size(); ++index) {
+        int64_t timestamp = static_cast<int64_t>(index) * MPEG_AUDIO_TEST_SAMPLES_PER_FRAME;
+        helper->sampleIndexEntry_.emplace_back(MakeSampleIndexEntry(pos, timestamp, timestamp, sampleSizes[index]));
+        pos += static_cast<int64_t>(sampleSizes[index]);
+    }
+    if (!sampleSizes.empty() &&
+        helper->AddDurationOverride(static_cast<uint32_t>(sampleSizes.size() - 1), MPEG_AUDIO_TEST_SAMPLES_PER_FRAME)
+            != Status::OK) {
+        return nullptr;
     }
     helper->allSamplesSync_ = true;
     helper->trackType_ = Plugins::MPEG4::AUDIO_TYPE;
