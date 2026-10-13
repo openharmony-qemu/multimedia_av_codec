@@ -3286,7 +3286,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioSizeQueryEos_00
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_MpegAudioCrossSamplePacket_001
- * @tc.desc: Verify an MP3 frame split across MP4 samples is reassembled once and size query matches read output.
+ * @tc.desc: Verify a header-aligned partial MP4 sample preserves its FFmpeg packet boundary.
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioCrossSamplePacket_001, TestSize.Level1)
@@ -3300,12 +3300,13 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioCrossSamplePack
     ASSERT_NE(plugin.dataSource_, nullptr);
     int32_t sampleSize = 0;
     ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
-    EXPECT_EQ(sampleSize, static_cast<int32_t>(frame.size()));
+    EXPECT_EQ(sampleSize, static_cast<int32_t>(MPEG_AUDIO_TEST_SPLIT_SIZE));
     AVBufferWrapper output(MPEG_AUDIO_TEST_FRAME_SIZE);
     ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
-    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), frame.size());
+    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), MPEG_AUDIO_TEST_SPLIT_SIZE);
     EXPECT_EQ(std::vector<uint8_t>(output.mediaAVBuffer->memory_->GetAddr(),
-        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()), frame);
+        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()),
+        std::vector<uint8_t>(frame.begin(), frame.begin() + MPEG_AUDIO_TEST_SPLIT_SIZE));
 }
 
 /**
@@ -3366,7 +3367,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioHeaderAcrossSam
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_MpegAudioMultiplePacketsInSample_001
- * @tc.desc: Verify one MP4 sample containing two MP3 frames produces two parser packets in order.
+ * @tc.desc: Verify a header-aligned MP4 sample preserves multiple MP3 frames as one FFmpeg packet.
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioMultiplePacketsInSample_001, TestSize.Level1)
@@ -3380,19 +3381,14 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioMultiplePackets
     ASSERT_NE(PrepareMpegAudioTestTrack(plugin, {static_cast<uint32_t>(input.size())}), nullptr);
     plugin.dataSource_ = CreateDataSourceForBytes(input);
     ASSERT_NE(plugin.dataSource_, nullptr);
-    AVBufferWrapper output(MPEG_AUDIO_TEST_FRAME_SIZE);
+    AVBufferWrapper output(input.size());
     int32_t sampleSize = 0;
 
     ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
-    EXPECT_EQ(sampleSize, static_cast<int32_t>(firstFrame.size()));
+    EXPECT_EQ(sampleSize, static_cast<int32_t>(input.size()));
     ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
     EXPECT_EQ(std::vector<uint8_t>(output.mediaAVBuffer->memory_->GetAddr(),
-        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()), firstFrame);
-    ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
-    EXPECT_EQ(sampleSize, static_cast<int32_t>(secondFrame.size()));
-    ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
-    EXPECT_EQ(std::vector<uint8_t>(output.mediaAVBuffer->memory_->GetAddr(),
-        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()), secondFrame);
+        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()), input);
 }
 
 /**
@@ -3466,7 +3462,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioFragmentedPendi
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_MpegAudioUnseekableCrossSample_001
- * @tc.desc: Verify the unseekable read path uses the same MP3 packet reassembly result.
+ * @tc.desc: Verify the unseekable path preserves header-aligned partial MP4 sample boundaries.
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioUnseekableCrossSample_001, TestSize.Level1)
@@ -3480,10 +3476,16 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioUnseekableCross
     plugin.dataSource_ = CreateDataSourceForBytes(frame);
     ASSERT_NE(plugin.dataSource_, nullptr);
     AVBufferWrapper output(MPEG_AUDIO_TEST_FRAME_SIZE);
+    std::vector<uint8_t> outputData;
 
     ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
-    EXPECT_EQ(std::vector<uint8_t>(output.mediaAVBuffer->memory_->GetAddr(),
-        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()), frame);
+    outputData.insert(outputData.end(), output.mediaAVBuffer->memory_->GetAddr(),
+        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize());
+    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), MPEG_AUDIO_TEST_SPLIT_SIZE);
+    ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
+    outputData.insert(outputData.end(), output.mediaAVBuffer->memory_->GetAddr(),
+        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize());
+    EXPECT_EQ(outputData, frame);
 }
 
 /**
