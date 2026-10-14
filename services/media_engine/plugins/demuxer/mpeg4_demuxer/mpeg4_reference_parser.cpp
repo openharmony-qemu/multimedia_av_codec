@@ -218,23 +218,28 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
     FALSE_RETURN_V_MSG_E(SelectProGopId() == Status::OK, Status::ERROR_UNKNOWN, "Call selectProGopId failed");
     // sync sample index of current gop(start from 0)
     uint32_t curSampleIndex = syncSamplesIndex_[refParserCurGopId_];
+    return handleParserError(ParseRefInfoGopSamples(curSampleIndex, duration));
+}
+
+Status MPEG4DemuxerPlugin::ParseRefInfoGopSamples(uint32_t sampleIndex, int64_t duration)
+{
     MEDIA_LOG_I("curSampleIndex is " PUBLIC_LOG_U32 ", refParserCurGopId_ is " PUBLIC_LOG_D32
-        ", processingSyncSamplesIndex_ size is " PUBLIC_LOG_ZU, curSampleIndex, refParserCurGopId_,
+        ", processingSyncSamplesIndex_ size is " PUBLIC_LOG_ZU, sampleIndex, refParserCurGopId_,
         processingSyncSamplesIndex_.size());
-    
+
     std::shared_ptr<Sample> sample = std::make_shared<Sample>();
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_UNKNOWN, "sample is nullptr");
     int loopCount = 0;
     SelectTrack(refParserTrackIdx_);
     if (!trackOfRefParser_ || !trackOfRefParser_->sampleHelper) {
         MEDIA_LOG_E("trackOfRefParser_ or sampleHelper is nullptr");
-        return handleParserError(Status::ERROR_INVALID_DATA);
+        return Status::ERROR_INVALID_DATA;
     }
     MEDIA_LOG_I("size of sampleIndexEntries_ is " PUBLIC_LOG_ZU,
         trackOfRefParser_->sampleHelper->GetSampleCount());
 
     while (refParserState_ && refParserCurGopId_ != -1) {
-        Status rlt = ParserRefInfoLoop(sample, curSampleIndex);
+        Status rlt = ParserRefInfoLoop(sample, sampleIndex);
         if (rlt == Status::ERROR_EARLY_STOP) {  // 编码格式等不符合快速解析时，直接跳过
             MEDIA_LOG_I("Exiting reference parsing early due to simple first GOP structure.");
             refParserState_ = true;
@@ -242,15 +247,15 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
         }
         if ((loopCount++ % TRACE_RATE) == 0) {  // trace降采样
             duration = GetDuration(refParserStartTime_);
-            std::string suffix = "_" + std::to_string(refParserCurGopId_) + "_" + std::to_string(curSampleIndex);
+            std::string suffix = "_" + std::to_string(refParserCurGopId_) + "_" + std::to_string(sampleIndex);
             RefTrace traceInLoop("ParserRefCost_3_" + std::to_string(duration) + suffix);
             FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Infoloop timeout");
         }
         if (rlt != Status::OK) {
             refParserState_ = true;
-            return handleParserError(rlt);
+            return rlt;
         }
-        curSampleIndex++;
+        sampleIndex++;
     }
     refParserState_ = true;
     return Status::ERROR_AGAIN;

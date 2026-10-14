@@ -238,6 +238,7 @@ private:
     Status GetSampleIndexBySeekMs(int64_t seekMs, uint32_t &frameId);
     Status RefParserInit();
     Status EnsureParserRefInfoInitialized();
+    Status ParseRefInfoGopSamples(uint32_t sampleIndex, int64_t duration);
     Status ParserRefInfoLoop(std::shared_ptr<Sample> sample, uint32_t sampleIndex);
     Status PrepareRefParserSample(std::shared_ptr<Sample>& sample, uint32_t sampleIndex);
     Status UpdateParserGopId(int32_t syncSamplesPtsSize);
