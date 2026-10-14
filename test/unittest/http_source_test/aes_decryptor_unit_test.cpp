@@ -1006,5 +1006,125 @@ HWTEST_F(AesDecryptorUnitTest, SetIv_003, TestSize.Level1)
     }
 }
 
+HWTEST_F(AesDecryptorUnitTest, Decrypt_UnalignedLength_001, TestSize.Level1)
+{
+    ASSERT_NE(decryptor_, nullptr);
+    uint8_t key[BLOCK_LEN] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+    };
+    uint8_t iv[BLOCK_LEN] = {
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+    };
+    decryptor_->OnSourceKeyChange(key, BLOCK_LEN, iv);
+    ASSERT_EQ(decryptor_->keyLen_, BLOCK_LEN);
+    uint8_t input[BLOCK_LEN] = {0xAA};
+    uint8_t output[BLOCK_LEN] = {0};
+    (void)memcpy_s(output, BLOCK_LEN, input, BLOCK_LEN);
+    decryptor_->Decrypt(input, output, 17);
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(output[i], input[i]);
+    }
+}
+
+HWTEST_F(AesDecryptorUnitTest, ResetIv_001, TestSize.Level1)
+{
+    ASSERT_NE(decryptor_, nullptr);
+    uint8_t key[BLOCK_LEN] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+    };
+    uint8_t iv[BLOCK_LEN] = {
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+    };
+    decryptor_->OnSourceKeyChange(key, BLOCK_LEN, iv);
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(decryptor_->iv_[i], iv[i]);
+        EXPECT_EQ(decryptor_->initIv_[i], iv[i]);
+    }
+    uint8_t ciphertext[BLOCK_LEN] = {
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10
+    };
+    uint8_t decrypted[BLOCK_LEN] = {0};
+    decryptor_->Decrypt(ciphertext, decrypted, BLOCK_LEN);
+    bool ivChanged = false;
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        if (decryptor_->iv_[i] != iv[i]) {
+            ivChanged = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(ivChanged);
+    decryptor_->ResetIv();
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(decryptor_->iv_[i], iv[i]);
+    }
+}
+
+HWTEST_F(AesDecryptorUnitTest, Reset_001, TestSize.Level1)
+{
+    ASSERT_NE(decryptor_, nullptr);
+    uint8_t key[BLOCK_LEN] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+    };
+    uint8_t iv[BLOCK_LEN] = {
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+    };
+    decryptor_->OnSourceKeyChange(key, BLOCK_LEN, iv);
+    ASSERT_EQ(decryptor_->keyLen_, BLOCK_LEN);
+    decryptor_->Reset();
+    EXPECT_EQ(decryptor_->keyLen_, 0u);
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(decryptor_->iv_[i], 0);
+        EXPECT_EQ(decryptor_->initIv_[i], 0);
+        EXPECT_EQ(decryptor_->key_[i], 0);
+    }
+}
+
+HWTEST_F(AesDecryptorUnitTest, OnSourceKeyChange_NullKeyWithNonZeroLen_001, TestSize.Level1)
+{
+    ASSERT_NE(decryptor_, nullptr);
+    uint8_t iv[BLOCK_LEN] = {
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+    };
+    decryptor_->OnSourceKeyChange(nullptr, BLOCK_LEN, iv);
+    EXPECT_EQ(decryptor_->keyLen_, 0u);
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(decryptor_->key_[i], 0);
+    }
+}
+
+HWTEST_F(AesDecryptorUnitTest, SetIv_DefaultLength_001, TestSize.Level1)
+{
+    ASSERT_NE(nullptr, decryptor_);
+    uint8_t key[BLOCK_LEN] = {
+        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+    };
+    uint8_t iv[BLOCK_LEN] = {
+        0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+        0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+    };
+    decryptor_->OnSourceKeyChange(key, BLOCK_LEN, iv);
+    uint8_t newIv[BLOCK_LEN] = {
+        0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+        0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f
+    };
+    decryptor_->SetIv(newIv);
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(decryptor_->iv_[i], newIv[i]);
+        EXPECT_EQ(decryptor_->initIv_[i], newIv[i]);
+    }
+    decryptor_->ResetIv();
+    for (int i = 0; i < BLOCK_LEN; i++) {
+        EXPECT_EQ(decryptor_->iv_[i], newIv[i]);
+    }
+}
 }
 }

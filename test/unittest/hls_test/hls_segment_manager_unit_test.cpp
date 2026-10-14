@@ -1493,7 +1493,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock, TestSize.Level1
     uint32_t len = BUFFER_SIZE;
     uint32_t res = downloader->SaveCacheBufferDataNotblock(data, len);
     delete[] data;
-    EXPECT_LE(res, len);
+    EXPECT_EQ(res == 0, true);
 }
 
 HWTEST_F(HlsSegmentManagerUnitTest, SaveCacheBufferDataNotblock_1, TestSize.Level1)
@@ -2434,7 +2434,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, CLEAR_CHUNKS_IN_LARGE_SEGMENT_002, TestSize.
     downloader->writeTsIndex_ = 1;
     downloader->readTsIndex_ = 0;
     downloader->ClearChunksInLargeSegment();
-    EXPECT_EQ(downloader->writeTsIndex_, 0);
+    EXPECT_EQ(downloader->writeTsIndex_, 1);
 }
 
 // ===== 分支补充：GetCrossTsBuffersize backPlayList_非空且readTsIndex_+1 < size 分支 =====

@@ -1067,4 +1067,124 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_UPDATE_TASK_
     downloader->Close();
     ASSERT_EQ(downloader->IsLive(), true);
 }
+
+/**
+ * @tc.name: PLAYLIST_DOWNLOADER_DATA_SAVE_AFTER_DESTROY
+ * @tc.desc: test dataSave_ lambda after downloader destroyed (weak_ptr expired)
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DATA_SAVE_AFTER_DESTROY, TestSize.Level2)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
+    downloader->Init();
+    auto dataSave = downloader->dataSave_;
+    downloader.reset();
+    uint8_t data[] = {0x23, 0x45, 0x67};
+    uint32_t ret = dataSave(data, 3, true);
+    ASSERT_EQ(ret, 0u);
+}
+
+/**
+ * @tc.name: PLAYLIST_DOWNLOADER_STATUS_CB_AFTER_DESTROY
+ * @tc.desc: test statusCallback_ lambda after downloader destroyed (weak_ptr expired)
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_STATUS_CB_AFTER_DESTROY, TestSize.Level2)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
+    downloader->Init();
+    auto statusCb = downloader->statusCallback_;
+    downloader.reset();
+    std::shared_ptr<Downloader> dl = nullptr;
+    DataSaveFunc saveFunc = [](uint8_t*, uint32_t, bool) -> uint32_t { return 0; };
+    StatusCallbackFunc dummyCb = [](DownloadStatus, std::shared_ptr<Downloader>&,
+        std::shared_ptr<DownloadRequest>&) {};
+    auto req = std::make_shared<DownloadRequest>(saveFunc, dummyCb, RequestInfo{}, true);
+    std::shared_ptr<DownloadRequest> reqPtr = req;
+    statusCb(DownloadStatus::PARTTAL_DOWNLOAD, dl, reqPtr);
+    ASSERT_EQ(req->GetClientError(), 0);
+}
+
+/**
+ * @tc.name: PLAYLIST_DOWNLOADER_DO_OPEN_REAL_STATUS_NULL_REQ
+ * @tc.desc: test realStatusCallback with null request (FALSE_RETURN early)
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_REAL_STATUS_NULL_REQ, TestSize.Level2)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
+    downloader->Init();
+    downloader->downloader_ = nullptr;
+    downloader->DoOpen("http://127.0.0.1:46666/test_null_req_cb.m3u8");
+    auto req = downloader->downloadRequest_;
+    ASSERT_NE(req, nullptr);
+    std::shared_ptr<Downloader> dl = nullptr;
+    downloader->retryStartTime_ = 42;
+    std::shared_ptr<DownloadRequest> nullReq = nullptr;
+    req->statusCallback_(DownloadStatus::PARTTAL_DOWNLOAD, dl, nullReq);
+    ASSERT_EQ(downloader->retryStartTime_, 42);
+}
+
+/**
+ * @tc.name: PLAYLIST_DOWNLOADER_REAL_STATUS_CB_AFTER_DESTROY
+ * @tc.desc: test realStatusCallback after downloader destroyed (weak_ptr expired)
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_REAL_STATUS_CB_AFTER_DESTROY, TestSize.Level2)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
+    downloader->Init();
+    downloader->downloader_ = nullptr;
+    downloader->DoOpen("http://127.0.0.1:46666/test_destroy_status.m3u8");
+    auto req = downloader->downloadRequest_;
+    ASSERT_NE(req, nullptr);
+    auto statusCb = req->statusCallback_;
+    downloader.reset();
+    std::shared_ptr<Downloader> dl = nullptr;
+    req->serverError_ = 0;
+    std::shared_ptr<DownloadRequest> reqPtr = req;
+    statusCb(DownloadStatus::PARTTAL_DOWNLOAD, dl, reqPtr);
+    ASSERT_EQ(req->GetServerError(), 0);
+}
+
+/**
+ * @tc.name: PLAYLIST_DOWNLOADER_DONE_CB_AFTER_DESTROY
+ * @tc.desc: test downloadDoneCallback after downloader destroyed (weak_ptr expired)
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DONE_CB_AFTER_DESTROY, TestSize.Level2)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
+    downloader->Init();
+    downloader->downloader_ = nullptr;
+    downloader->DoOpen("http://127.0.0.1:46666/test_destroy_done.m3u8");
+    auto req = downloader->downloadRequest_;
+    ASSERT_NE(req, nullptr);
+    auto doneCb = req->downloadDoneCallback_;
+    downloader.reset();
+    req->serverError_ = 0;
+    doneCb("url", "location");
+    ASSERT_EQ(req->GetServerError(), 0);
+}
+
+/**
+ * @tc.name: PLAYLIST_DOWNLOADER_DO_OPEN_NATIVE_WRONLY_FD
+ * @tc.desc: test DoOpenNative with write-only fd causing read failure
+ * @tc.type: FUNC
+ */
+HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_NATIVE_WRONLY_FD, TestSize.Level2)
+{
+    const char* path = "/data/test/media/test_wronly.m3u8";
+    int fd = open(path, O_CREAT | O_WRONLY, 0644);
+    ASSERT_NE(fd, -1);
+    write(fd, "data", 4);
+    fsync(fd);
+    auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
+    downloader->Init();
+    std::string uri = "fd://" + std::to_string(fd);
+    downloader->DoOpenNative(uri);
+    ASSERT_EQ(downloader->playList_.empty(), true);
+    close(fd);
+    remove(path);
+}
 }

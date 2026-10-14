@@ -844,8 +844,171 @@ HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_033, TestSize.Level0)
 HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_034, TestSize.Level0)
 {
     auto parser = std::make_shared<SidxBoxParser>();
+    DashList<std::shared_ptr<SubSegmentIndex>> table;
+    int32_t ret = SidxBoxParser::ParseSidxBox(nullptr, 0, 0, table);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(table.size(), 0u);
     parser.reset();
     EXPECT_EQ(parser, nullptr);
+}
+
+/**
+ * @tc.name  : Test ParseSidxBox with two sidx boxes in sequence
+ * @tc.number: ParseSidxBox_035
+ * @tc.desc  : Test while loop iterating twice with valid sidx boxes
+ */
+HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_035, TestSize.Level0)
+{
+    char buffer[] = {
+        0x00, 0x00, 0x00, 0x2C, 0x73, 0x69, 0x64, 0x78,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x03, 0xE8, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xE8,
+        0x10, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x2C, 0x73, 0x69, 0x64, 0x78,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x03, 0xE8, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xE8,
+        0x10, 0x00, 0x00, 0x00
+    };
+    uint32_t len = sizeof(buffer);
+    DashList<std::shared_ptr<SubSegmentIndex>> subSegIndexTable;
+    int32_t ret = SidxBoxParser::ParseSidxBox(buffer, len, 0, subSegIndexTable);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(subSegIndexTable.size(), 2);
+}
+
+/**
+ * @tc.name  : Test ParseSidxBox with sidx followed by non-sidx
+ * @tc.number: ParseSidxBox_036
+ * @tc.desc  : Test while loop second iteration with non-sidx box type
+ */
+HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_036, TestSize.Level0)
+{
+    char buffer[] = {
+        0x00, 0x00, 0x00, 0x2C, 0x73, 0x69, 0x64, 0x78,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x03, 0xE8, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0xE8,
+        0x10, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x08, 0x66, 0x72, 0x65, 0x65,
+        0x00
+    };
+    uint32_t len = sizeof(buffer);
+    DashList<std::shared_ptr<SubSegmentIndex>> subSegIndexTable;
+    int32_t ret = SidxBoxParser::ParseSidxBox(buffer, len, 0, subSegIndexTable);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
+ * @tc.name  : Test ParseSidxBox with buffer ending at firstOffset
+ * @tc.number: ParseSidxBox_037
+ * @tc.desc  : Test reserved check failure when buffer has no reserved bytes
+ */
+HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_037, TestSize.Level0)
+{
+    char buffer[] = {
+        0x00, 0x00, 0x00, 0x2C, 0x73, 0x69, 0x64, 0x78,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x03, 0xE8, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t len = sizeof(buffer);
+    DashList<std::shared_ptr<SubSegmentIndex>> subSegIndexTable;
+    int32_t ret = SidxBoxParser::ParseSidxBox(buffer, len, 0, subSegIndexTable);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
+ * @tc.name  : Test ParseSidxBox with buffer ending after reserved
+ * @tc.number: ParseSidxBox_038
+ * @tc.desc  : Test GetBytes unsigned short failure when buffer has no referenceCount
+ */
+HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_038, TestSize.Level0)
+{
+    char buffer[] = {
+        0x00, 0x00, 0x00, 0x2C, 0x73, 0x69, 0x64, 0x78,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x03, 0xE8, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t len = sizeof(buffer);
+    DashList<std::shared_ptr<SubSegmentIndex>> subSegIndexTable;
+    int32_t ret = SidxBoxParser::ParseSidxBox(buffer, len, 0, subSegIndexTable);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
+ * @tc.name  : Test ParseSidxBox with partial vFlag in ReadSidxHeader
+ * @tc.number: ParseSidxBox_039
+ * @tc.desc  : Test vFlag GetBytes failure with insufficient remaining bytes
+ */
+HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_039, TestSize.Level0)
+{
+    char buffer[] = {
+        0x00, 0x00, 0x00, 0x2C, 0x73, 0x69, 0x64, 0x78,
+        0x00
+    };
+    uint32_t len = sizeof(buffer);
+    DashList<std::shared_ptr<SubSegmentIndex>> subSegIndexTable;
+    int32_t ret = SidxBoxParser::ParseSidxBox(buffer, len, 0, subSegIndexTable);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
+ * @tc.name  : Test ParseSidxBox with partial dummyByte4 in ReadSidxHeader
+ * @tc.number: ParseSidxBox_040
+ * @tc.desc  : Test dummyByte4 GetBytes failure with insufficient remaining bytes
+ */
+HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_040, TestSize.Level0)
+{
+    char buffer[] = {
+        0x00, 0x00, 0x00, 0x2C, 0x73, 0x69, 0x64, 0x78,
+        0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    uint32_t len = sizeof(buffer);
+    DashList<std::shared_ptr<SubSegmentIndex>> subSegIndexTable;
+    int32_t ret = SidxBoxParser::ParseSidxBox(buffer, len, 0, subSegIndexTable);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
+ * @tc.name  : Test ParseSidxBox with partial timescale in ReadSidxHeader
+ * @tc.number: ParseSidxBox_041
+ * @tc.desc  : Test timescale GetBytes failure with insufficient remaining bytes
+ */
+HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_041, TestSize.Level0)
+{
+    char buffer[] = {
+        0x00, 0x00, 0x00, 0x2C, 0x73, 0x69, 0x64, 0x78,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00
+    };
+    uint32_t len = sizeof(buffer);
+    DashList<std::shared_ptr<SubSegmentIndex>> subSegIndexTable;
+    int32_t ret = SidxBoxParser::ParseSidxBox(buffer, len, 0, subSegIndexTable);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
+ * @tc.name  : Test ParseSidxBox with version 1 partial earliestPresentationTime
+ * @tc.number: ParseSidxBox_042
+ * @tc.desc  : Test v1 ept GetBytes int64_t failure with insufficient bytes
+ */
+HWTEST_F(SidxBoxParserUnitTest, ParseSidxBox_042, TestSize.Level0)
+{
+    char buffer[] = {
+        0x00, 0x00, 0x00, 0x34, 0x73, 0x69, 0x64, 0x78,
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+        0x00, 0x00, 0x03, 0xE8, 0x00, 0x00
+    };
+    uint32_t len = sizeof(buffer);
+    DashList<std::shared_ptr<SubSegmentIndex>> subSegIndexTable;
+    int32_t ret = SidxBoxParser::ParseSidxBox(buffer, len, 0, subSegIndexTable);
+    EXPECT_EQ(ret, -1);
 }
 
 } // namespace HttpPlugin

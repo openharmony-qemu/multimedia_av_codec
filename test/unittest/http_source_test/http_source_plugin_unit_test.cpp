@@ -38,8 +38,8 @@ public:
     }
     void Init() override {}
     void Close(bool isAsync) override {(void)isAsync;}
-    void Pause() override {}
-    void Resume() override {}
+    void Pause() override { pauseCalled_ = true; }
+    void Resume() override { resumeCalled_ = true; }
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override
     {
         (void)buff;
@@ -57,11 +57,7 @@ public:
     bool SelectBitRate(uint32_t bitRate) override { return bitRate == 0 ? false : true; }
     void SetIsTriggerAutoMode(bool isAuto) override {(void)isAuto;}
     bool AutoSelectBitRate(uint32_t bitRate) override { return bitRate == 0 ? false : true; }
-    size_t GetSegmentOffset(StreamType streamType = StreamType::VIDEO) override
-    {
-        (void)streamType;
-        return 0;
-    }
+    size_t GetSegmentOffset(StreamType streamType = StreamType::VIDEO) override { return 0; }
     bool GetHLSDiscontinuity() override { return false; }
     void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override
     {
@@ -84,6 +80,158 @@ public:
     int64_t duration_ = 1000;
     Seekable seekable_ = Seekable::SEEKABLE;
     bool seekToTimeResult_ = true;
+
+    void SetReadBlockingFlag(bool isReadBlockingAllowed) override
+    {
+        setReadBlockingFlagCalled_ = true;
+    }
+    Status GetStreamInfo(std::vector<StreamInfo>& streams, bool isUpdate = false) override
+    {
+        return getStreamInfoStatus_;
+    }
+    Status SelectStream(int32_t streamId) override
+    {
+        return selectStreamStatus_;
+    }
+    void SetDemuxerState(int32_t streamId) override
+    {
+        setDemuxerStateCalled_ = true;
+    }
+    void SetDownloadErrorState() override
+    {
+        setDownloadErrorStateCalled_ = true;
+    }
+    Status SetCurrentBitRate(int32_t bitRate, int32_t streamID) override
+    {
+        return setCurrentBitRateStatus_;
+    }
+    void SetPlayStrategy(const std::shared_ptr<PlayStrategy>& playStrategy) override
+    {
+        setPlayStrategyCalled_ = true;
+    }
+    Status StopBufferring(bool isAppBackground) override
+    {
+        return stopBufferringStatus_;
+    }
+    std::pair<int64_t, bool> GetStartInfo() const override
+    {
+        return startInfo_;
+    }
+    void WaitForBufferingEnd() override
+    {
+        waitForBufferingEndCalled_ = true;
+    }
+    void NotifyInitSuccess() override
+    {
+        notifyInitSuccessCalled_ = true;
+    }
+    uint64_t GetCachedDuration() override
+    {
+        return cachedDuration_;
+    }
+    void RestartAndClearBuffer() override
+    {
+        restartAndClearBufferCalled_ = true;
+    }
+    bool IsFlvLive() override
+    {
+        return isFlvLive_;
+    }
+    void SetStartPts(int64_t startPts) override
+    {
+        setStartPtsCalled_ = true;
+    }
+    void SetExtraCache(uint64_t cacheDuration) override
+    {
+        setExtraCacheCalled_ = true;
+    }
+    void SetMediaStreams(const MediaStreamList& mediaStreams) override
+    {
+        setMediaStreamsCalled_ = true;
+    }
+    std::string GetContentType() override
+    {
+        return contentType_;
+    }
+    bool IsHlsFmp4() override
+    {
+        return isHlsFmp4_;
+    }
+    uint64_t GetMemorySize() override
+    {
+        return memorySize_;
+    }
+    std::string GetCurUrl() override
+    {
+        return curUrl_;
+    }
+    bool IsHlsEnd(int32_t streamId = -1) override
+    {
+        return isHlsEnd_;
+    }
+    std::string GetMaskUrlByReadIndex(int32_t streamId) override
+    {
+        return maskUrl_;
+    }
+    void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId) override
+    {
+        setDefaultStreamIdCalled_ = true;
+    }
+    bool SeekToPos(int64_t offset, bool& isSeekHit) override
+    {
+        isSeekHit = seekHit_;
+        return seekToPosResult_;
+    }
+    std::vector<uint32_t> GetBitRates() override
+    {
+        return bitRates_;
+    }
+    void GetDownloadInfo(DownloadInfo& downloadInfo) override
+    {
+        getDownloadInfoCalled_ = true;
+    }
+    void GetPlaybackInfo(PlaybackInfo& playbackInfo) override
+    {
+        getPlaybackInfoCalled_ = true;
+    }
+    void SetMediaDuration(int64_t duration) override
+    {
+        setMediaDurationCalled_ = true;
+    }
+
+    bool pauseCalled_ = false;
+    bool resumeCalled_ = false;
+    bool setReadBlockingFlagCalled_ = false;
+    Status getStreamInfoStatus_ = Status::OK;
+    Status selectStreamStatus_ = Status::OK;
+    bool setDemuxerStateCalled_ = false;
+    bool setDownloadErrorStateCalled_ = false;
+    Status setCurrentBitRateStatus_ = Status::OK;
+    bool setPlayStrategyCalled_ = false;
+    Status stopBufferringStatus_ = Status::OK;
+    std::pair<int64_t, bool> startInfo_ = {0, false};
+    bool waitForBufferingEndCalled_ = false;
+    bool notifyInitSuccessCalled_ = false;
+    uint64_t cachedDuration_ = 0;
+    bool restartAndClearBufferCalled_ = false;
+    bool isFlvLive_ = false;
+    bool setStartPtsCalled_ = false;
+    bool setExtraCacheCalled_ = false;
+    bool setMediaStreamsCalled_ = false;
+    std::string contentType_ = "video/mp4";
+    bool isHlsFmp4_ = false;
+    uint64_t memorySize_ = 0;
+    std::string curUrl_ = "http://test.com/video.mp4";
+    bool isHlsEnd_ = false;
+    std::string maskUrl_ = "";
+    bool setDefaultStreamIdCalled_ = false;
+    bool seekToPosResult_ = true;
+    bool seekHit_ = false;
+    std::vector<uint32_t> bitRates_ = {1000, 2000, 3000};
+    bool getDownloadInfoCalled_ = false;
+    bool getPlaybackInfoCalled_ = false;
+    bool setMediaDurationCalled_ = false;
+
     size_t contentLength_ = 4000;
 };
 }
@@ -412,7 +560,8 @@ HWTEST_F(HttpSourcePluginUnitTest, HttpSourcePlugin_SetCallback, TestSize.Level1
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource, TestSize.Level1)
 {
     httpSourcePlugin->SetDownloaderBySource(nullptr);
-    EXPECT_EQ(httpSourcePlugin->downloader_, nullptr);
+    ASSERT_EQ(httpSourcePlugin->downloader_, nullptr);
+    ASSERT_EQ(httpSourcePlugin->uri_, "");
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported1, TestSize.Level1)
@@ -577,7 +726,8 @@ HWTEST_F(HttpSourcePluginUnitTest, INIT_HTTP_SOURCE_001, TestSize.Level1)
     mediaSource->playMediaStreamVec_ = mediaStreams;
     httpSourcePlugin->SetSource(mediaSource);
     httpSourcePlugin->SetCallback(sourceCallback);
-    EXPECT_NE(httpSourcePlugin->downloader_, nullptr);
+    ASSERT_NE(httpSourcePlugin->downloader_, nullptr);
+    ASSERT_NE(httpSourcePlugin->uri_, "");
 }
 
 HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_001, TestSize.Level1)
@@ -884,6 +1034,917 @@ HWTEST_F(HttpSourcePluginUnitTest, SetSource_https_protocol_001, TestSize.Level1
     mediaSource = std::make_shared<MediaSource>("HTTPS://example.com/video.mp4");
     Status status = httpSourcePlugin->SetSource(mediaSource);
     EXPECT_NE(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Init_Basic, TestSize.Level1)
+{
+    Status status = httpSourcePlugin->Init();
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetContentType_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    std::string result = httpSourcePlugin->GetContentType();
+    ASSERT_EQ(result, "");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetContentType_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    std::string result = httpSourcePlugin->GetContentType();
+    ASSERT_EQ(result, "video/mp4");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetStreamInfo_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    std::vector<StreamInfo> streams;
+    Status status = httpSourcePlugin->GetStreamInfo(streams);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetStreamInfo_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    std::vector<StreamInfo> streams;
+    Status status = httpSourcePlugin->GetStreamInfo(streams);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SelectStream_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->SelectStream(0);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SelectStream_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SelectStream(1);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetSize_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    uint64_t size = 999;
+    Status status = httpSourcePlugin->GetSize(size);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetSize_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->contentLength_ = 8000;
+    httpSourcePlugin->downloader_ = mock;
+    uint64_t size = 0;
+    Status status = httpSourcePlugin->GetSize(size);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_EQ(size, (uint64_t)8000);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetSeekable_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Seekable seekable = httpSourcePlugin->GetSeekable();
+    ASSERT_EQ(seekable, Seekable::INVALID);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetSeekable_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::SEEKABLE;
+    httpSourcePlugin->downloader_ = mock;
+    Seekable seekable = httpSourcePlugin->GetSeekable();
+    ASSERT_EQ(seekable, Seekable::SEEKABLE);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetDuration_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    int64_t duration = 999;
+    Status status = httpSourcePlugin->GetDuration(duration);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetDuration_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->duration_ = 5000;
+    httpSourcePlugin->downloader_ = mock;
+    int64_t duration = 0;
+    Status status = httpSourcePlugin->GetDuration(duration);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_EQ(duration, (int64_t)5000);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetStartInfo_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    std::pair<int64_t, bool> startInfo;
+    Status status = httpSourcePlugin->GetStartInfo(startInfo);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetStartInfo_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    std::pair<int64_t, bool> startInfo;
+    Status status = httpSourcePlugin->GetStartInfo(startInfo);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetBitRates_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    std::vector<uint32_t> bitRates;
+    Status status = httpSourcePlugin->GetBitRates(bitRates);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetBitRates_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    std::vector<uint32_t> bitRates;
+    Status status = httpSourcePlugin->GetBitRates(bitRates);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_EQ(bitRates.size(), (size_t)3);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekTo_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->SeekTo(100);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekTo_Unseekable, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::UNSEEKABLE;
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SeekTo(100);
+    ASSERT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekTo_OffsetExceedsContent, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::SEEKABLE;
+    mock->contentLength_ = 4000;
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SeekTo(5000);
+    ASSERT_EQ(status, Status::ERROR_INVALID_PARAMETER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekTo_SeekToPosFalse, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::SEEKABLE;
+    mock->contentLength_ = 4000;
+    mock->seekToPosResult_ = false;
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SeekTo(100);
+    ASSERT_EQ(status, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekTo_SeekToPosTrue, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::SEEKABLE;
+    mock->contentLength_ = 4000;
+    mock->seekToPosResult_ = true;
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SeekTo(100);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekTo_OffsetZeroContentLength, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::SEEKABLE;
+    mock->contentLength_ = 0;
+    mock->seekToPosResult_ = true;
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SeekTo(5000);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekTo_SeekErrorCountExceedsWithCallback, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::SEEKABLE;
+    mock->contentLength_ = 4000;
+    httpSourcePlugin->downloader_ = mock;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    httpSourcePlugin->SetCallback(sourceCallback);
+    for (int i = 0; i < 6; i++) {
+        httpSourcePlugin->SeekTo(5000);
+    }
+    ASSERT_EQ(httpSourcePlugin->seekErrorCount_, 6);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekTo_SeekErrorCountExceedsWithoutCallback, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::SEEKABLE;
+    mock->contentLength_ = 4000;
+    httpSourcePlugin->downloader_ = mock;
+    for (int i = 0; i < 6; i++) {
+        httpSourcePlugin->SeekTo(5000);
+    }
+    ASSERT_EQ(httpSourcePlugin->seekErrorCount_, 6);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SelectBitRate_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->SelectBitRate(1000);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SelectBitRate_True, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SelectBitRate(1000);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SelectBitRate_False, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SelectBitRate(0);
+    ASSERT_EQ(status, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, AutoSelectBitRate_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->AutoSelectBitRate(1000);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, AutoSelectBitRate_True, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->AutoSelectBitRate(1000);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, AutoSelectBitRate_False, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->AutoSelectBitRate(0);
+    ASSERT_EQ(status, Status::ERROR_UNKNOWN);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetDownloadInfo_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    DownloadInfo downloadInfo;
+    Status status = httpSourcePlugin->GetDownloadInfo(downloadInfo);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetDownloadInfo_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    DownloadInfo downloadInfo;
+    Status status = httpSourcePlugin->GetDownloadInfo(downloadInfo);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_TRUE(mock->getDownloadInfoCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetPlaybackInfo_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    PlaybackInfo playbackInfo;
+    Status status = httpSourcePlugin->GetPlaybackInfo(playbackInfo);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetPlaybackInfo_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    PlaybackInfo playbackInfo;
+    Status status = httpSourcePlugin->GetPlaybackInfo(playbackInfo);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_TRUE(mock->getPlaybackInfoCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetCurrentBitRate_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->SetCurrentBitRate(1000, 0);
+    ASSERT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetCurrentBitRate_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SetCurrentBitRate(1000, 0);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetSegmentOffset_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    size_t offset = httpSourcePlugin->GetSegmentOffset();
+    ASSERT_EQ(offset, (size_t)0);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetSegmentOffset_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    size_t offset = httpSourcePlugin->GetSegmentOffset();
+    ASSERT_EQ(offset, (size_t)0);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetHLSDiscontinuity_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    bool result = httpSourcePlugin->GetHLSDiscontinuity();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetHLSDiscontinuity_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    bool result = httpSourcePlugin->GetHLSDiscontinuity();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSourceInitialBufferSize_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    bool result = httpSourcePlugin->SetSourceInitialBufferSize(0, 100);
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSourceInitialBufferSize_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    bool result = httpSourcePlugin->SetSourceInitialBufferSize(0, 100);
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, StopBufferring_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->StopBufferring(false);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, StopBufferring_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->StopBufferring(false);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, WaitForBufferingEnd_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->WaitForBufferingEnd();
+    ASSERT_TRUE(mock->waitForBufferingEndCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, NotifyInitSuccess_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->NotifyInitSuccess();
+    ASSERT_TRUE(mock->notifyInitSuccessCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetStartPts_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->SetStartPts(1000);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetStartPts_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SetStartPts(1000);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_TRUE(mock->setStartPtsCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetExtraCache_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->SetExtraCache(1000);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetExtraCache_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SetExtraCache(1000);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_TRUE(mock->setExtraCacheCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetCachedDuration_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    uint64_t result = httpSourcePlugin->GetCachedDuration();
+    ASSERT_EQ(result, (uint64_t)0);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetCachedDuration_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->cachedDuration_ = 5000;
+    httpSourcePlugin->downloader_ = mock;
+    uint64_t result = httpSourcePlugin->GetCachedDuration();
+    ASSERT_EQ(result, (uint64_t)5000);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, RestartAndClearBuffer_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->RestartAndClearBuffer();
+    ASSERT_TRUE(mock->restartAndClearBufferCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsFlvLive_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    bool result = httpSourcePlugin->IsFlvLive();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsFlvLive_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    bool result = httpSourcePlugin->IsFlvLive();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsHlsFmp4_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    bool result = httpSourcePlugin->IsHlsFmp4();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsHlsFmp4_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    bool result = httpSourcePlugin->IsHlsFmp4();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetMemorySize_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    uint64_t result = httpSourcePlugin->GetMemorySize();
+    ASSERT_EQ(result, (uint64_t)0);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetMemorySize_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->memorySize_ = 1024;
+    httpSourcePlugin->downloader_ = mock;
+    uint64_t result = httpSourcePlugin->GetMemorySize();
+    ASSERT_EQ(result, (uint64_t)1024);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsHlsEnd_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    bool result = httpSourcePlugin->IsHlsEnd(0);
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsHlsEnd_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    bool result = httpSourcePlugin->IsHlsEnd(0);
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetMaskUrlByReadIndex_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    std::string result = httpSourcePlugin->GetMaskUrlByReadIndex(0);
+    ASSERT_EQ(result, "");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetMaskUrlByReadIndex_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    std::string result = httpSourcePlugin->GetMaskUrlByReadIndex(0);
+    ASSERT_EQ(result, "");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetDefaultStreamId_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    int32_t videoId = 1, audioId = 2, subId = 3;
+    httpSourcePlugin->SetDefaultStreamId(videoId, audioId, subId);
+    ASSERT_TRUE(mock->setDefaultStreamIdCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetDemuxerState_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->SetDemuxerState(0);
+    ASSERT_TRUE(mock->setDemuxerStateCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetReadBlockingFlag_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SetReadBlockingFlag(true);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_TRUE(mock->setReadBlockingFlagCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Pause_WithM3U8Uri, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->uri_ = "http://example.com/test.m3u8";
+    Status status = httpSourcePlugin->Pause();
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_TRUE(mock->pauseCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Pause_WithNonM3U8Uri, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->uri_ = "http://example.com/test.mp4";
+    Status status = httpSourcePlugin->Pause();
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_FALSE(mock->pauseCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Resume_WithM3U8Uri, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->uri_ = "http://example.com/test.m3u8";
+    Status status = httpSourcePlugin->Resume();
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_TRUE(mock->resumeCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Resume_WithNonM3U8Uri, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->uri_ = "http://example.com/test.mp4";
+    Status status = httpSourcePlugin->Resume();
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_FALSE(mock->resumeCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Stop_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->uri_ = "http://example.com/test.mp4";
+    Status status = httpSourcePlugin->Stop();
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_EQ(httpSourcePlugin->uri_, "");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Reset_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->uri_ = "http://example.com/test.mp4";
+    Status status = httpSourcePlugin->Reset();
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_EQ(httpSourcePlugin->uri_, "");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Deinit_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->uri_ = "http://example.com/test.mp4";
+    Status status = httpSourcePlugin->Deinit();
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_EQ(httpSourcePlugin->uri_, "");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsHls_M3U8MimeType, TestSize.Level1)
+{
+    httpSourcePlugin->mimeType_ = AVMimeTypes::APPLICATION_M3U8;
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_TRUE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsHls_M3U8Uri, TestSize.Level1)
+{
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    httpSourcePlugin->uri_ = "http://example.com/test.m3u8";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_TRUE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsHls_NotHls, TestSize.Level1)
+{
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    httpSourcePlugin->uri_ = "http://example.com/test.mp4";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Read_BufferIsNull, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    std::shared_ptr<Buffer> nullBuffer = nullptr;
+    Status status = httpSourcePlugin->Read(1, nullBuffer, 0, 100);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_NE(nullBuffer, nullptr);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetCurUrl_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    std::string url = httpSourcePlugin->GetCurUrl();
+    ASSERT_EQ(url, "http://test.com/video.mp4");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, GetCurUrl_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    std::string url = httpSourcePlugin->GetCurUrl();
+    ASSERT_EQ(url, "");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetCallback_WithDownloader, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    Status status = httpSourcePlugin->SetCallback(sourceCallback);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetMediaDuration_WithDownloaderPositive, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SetMediaDuration(1000);
+    ASSERT_EQ(status, Status::OK);
+    ASSERT_TRUE(mock->setMediaDurationCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_WithQueryM3U8, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://xxx/aaaa?autotype=m3u8";
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_TRUE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_NoDotNoM3U8, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://example.com/justvideo";
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_WithDotButNotM3U8, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://example.com/video.mp4";
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_EmptyUri, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "";
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_NoSlash, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "noslashuri";
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_DotM3U8WithParams, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://example.com/video.m3u8?token=abc";
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_TRUE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_DotNotM3U8WithM3U8Param, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://example.com/video.mp4?type=m3u8";
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_TRUE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_DotNotM3U8WithNoM3U8Param, TestSize.Level1)
+{
+    httpSourcePlugin->uri_ = "http://example.com/video.mp4?type=mp4";
+    httpSourcePlugin->mimeType_ = "video/mp4";
+    bool result = httpSourcePlugin->IsHls();
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Read_NullDownloaderTwoArg, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    Status status = httpSourcePlugin->Read(buffer, 0, 100);
+    ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_Twice, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    httpSourcePlugin->SetSource(mediaSource);
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    ASSERT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_NullSource, TestSize.Level1)
+{
+    Status status = httpSourcePlugin->SetSource(nullptr);
+    ASSERT_EQ(status, Status::ERROR_INVALID_OPERATION);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SeekToTime_NegativeDuration, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::SEEKABLE;
+    mock->duration_ = -2;
+    mock->seekToTimeResult_ = true;
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->SeekToTime(1, SeekMode::SEEK_NEXT_SYNC);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, MediaSeekTimeByStreamId_NegativeDuration, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    mock->seekable_ = Seekable::SEEKABLE;
+    mock->duration_ = -2;
+    mock->seekToTimeResult_ = true;
+    httpSourcePlugin->downloader_ = mock;
+    Status status = httpSourcePlugin->MediaSeekTimeByStreamId(1, SeekMode::SEEK_NEXT_SYNC, 0);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, Read_BufferNotEmpty, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    auto buf = std::make_shared<Buffer>();
+    auto mem = buf->AllocMemory(nullptr, 100);
+    ASSERT_NE(mem, nullptr);
+    Status status = httpSourcePlugin->Read(1, buf, 0, 100);
+    ASSERT_EQ(status, Status::OK);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_M3U8StrategyZeroDuration, TestSize.Level1)
+{
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
+    playStrategy->width = 1920;
+    playStrategy->height = 1080;
+    playStrategy->duration = 0;
+    mediaSource = std::make_shared<MediaSource>(M3U8_SEGMENT_BASE);
+    mediaSource->SetPlayStrategy(playStrategy);
+    auto sourceCallback = std::make_shared<SourceCallback>();
+    httpSourcePlugin->SetSource(mediaSource);
+    httpSourcePlugin->SetCallback(sourceCallback);
+    ASSERT_NE(httpSourcePlugin->downloader_, nullptr);
+    ASSERT_NE(httpSourcePlugin->uri_, "");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_HttpNoCallback, TestSize.Level1)
+{
+    mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);
+    Status status = httpSourcePlugin->SetSource(mediaSource);
+    ASSERT_NE(status, Status::ERROR_INVALID_OPERATION);
+    ASSERT_NE(httpSourcePlugin->downloader_, nullptr);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported_M3U8MimeType, TestSize.Level1)
+{
+    httpSourcePlugin->mimeType_ = AVMimeTypes::APPLICATION_M3U8;
+    httpSourcePlugin->uri_ = "http://example.com/test.mp4";
+    bool result = httpSourcePlugin->IsSeekToTimeSupported();
+    ASSERT_TRUE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, WaitForBufferingEnd_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    httpSourcePlugin->WaitForBufferingEnd();
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->WaitForBufferingEnd();
+    ASSERT_TRUE(mock->waitForBufferingEndCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, NotifyInitSuccess_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    httpSourcePlugin->NotifyInitSuccess();
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->NotifyInitSuccess();
+    ASSERT_TRUE(mock->notifyInitSuccessCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, RestartAndClearBuffer_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    httpSourcePlugin->RestartAndClearBuffer();
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->RestartAndClearBuffer();
+    ASSERT_TRUE(mock->restartAndClearBufferCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetDefaultStreamId_NullDownloader, TestSize.Level1)
+{
+    httpSourcePlugin->downloader_ = nullptr;
+    int32_t videoId = 1, audioId = 2, subId = 3;
+    httpSourcePlugin->SetDefaultStreamId(videoId, audioId, subId);
+    auto mock = std::make_shared<MockMediaDownloaderForSeek>();
+    httpSourcePlugin->downloader_ = mock;
+    httpSourcePlugin->SetDefaultStreamId(videoId, audioId, subId);
+    ASSERT_TRUE(mock->setDefaultStreamIdCalled_);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, SetSource_FlvStrategyZeroDuration, TestSize.Level1)
+{
+    std::shared_ptr<PlayStrategy> playStrategy = std::make_shared<PlayStrategy>();
+    playStrategy->width = 1920;
+    playStrategy->height = 1080;
+    playStrategy->duration = 0;
+    mediaSource = std::make_shared<MediaSource>(FLV_SEGMENT_BASE);
+    mediaSource->SetPlayStrategy(playStrategy);
+    httpSourcePlugin->SetSource(mediaSource);
+    ASSERT_NE(httpSourcePlugin->downloader_, nullptr);
+    ASSERT_NE(httpSourcePlugin->uri_, "");
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_ShortUrl, TestSize.Level1)
+{
+    std::string url = "f";
+    bool result = httpSourcePlugin->IsAllowedProtocol(url);
+    ASSERT_TRUE(result);
+}
+
+HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_ExactFilePrefix, TestSize.Level1)
+{
+    std::string url = "file://";
+    bool result = httpSourcePlugin->IsAllowedProtocol(url);
+    ASSERT_FALSE(result);
 }
 }
 }
