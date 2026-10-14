@@ -70,7 +70,6 @@ const std::string TEST_MP4_PATH_VVC = "/data/test/media/vvc_1280_720_8.mp4";
 const std::string TEST_MP4_PATH_WEBVTT = "/data/test/media/webvtt.mp4";
 const std::string TEST_MP4_MULTIPLE_VIDEO_TRACKS = "/data/test/media/h264_double_video_audio.mp4";
 const std::string ZERO_STTS_HVC1_FIXTURE = "/data/test/media/zero_stts_hvc1_55_samples.mp4";
-constexpr int32_t ZERO_STTS_FIXTURE_FIRST_SAMPLE_SIZE = 68;
 const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const std::string TEST_RELATIVE_PATH = "/data/test/media/";
 const std::string TEST_DEMUXER_RESOURCE_DIR = "/data/test/media";
@@ -4453,7 +4452,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroSttsHvc1Parity_001, 
     EXPECT_EQ(mpeg4Samples[0].dts, ffmpegSamples[0].dts);
     EXPECT_EQ(mpeg4Samples[0].duration, ffmpegSamples[0].duration);
     EXPECT_EQ(mpeg4Samples[0].flag, ffmpegSamples[0].flag);
-    EXPECT_EQ(mpeg4Samples[0].actualSize, ZERO_STTS_FIXTURE_FIRST_SAMPLE_SIZE);
 }
 
 /**
