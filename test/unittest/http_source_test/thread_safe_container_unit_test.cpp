@@ -105,17 +105,12 @@ HWTEST_F(ThreadSafeContainerUnitTest, Map_FindIf, TestSize.Level1)
     mapContainer.Set(2, "two");
     mapContainer.Set(3, "three");
     
-    auto found = mapContainer.FindIf([](const auto& pair) {
-        return pair.second == "two";
-    });
-    
+    auto matcher = [](const auto& pair) { return pair.second == "two"; };
+    auto found = mapContainer.FindIf(matcher);
     EXPECT_TRUE(found.has_value());
     EXPECT_EQ(found.value(), "two");
-    
-    auto notFound = mapContainer.FindIf([](const auto& pair) {
-        return pair.second == "four";
-    });
-    
+    mapContainer.Remove(2);
+    auto notFound = mapContainer.FindIf(matcher);
     EXPECT_FALSE(notFound.has_value());
 }
 
@@ -207,22 +202,15 @@ HWTEST_F(ThreadSafeContainerUnitTest, Set_Foreach, TestSize.Level1)
 HWTEST_F(ThreadSafeContainerUnitTest, Set_FindIf, TestSize.Level1)
 {
     ThreadSafeContainer<std::set<int>> setContainer;
-    
     setContainer.Insert(1);
     setContainer.Insert(2);
     setContainer.Insert(3);
-    
-    auto found = setContainer.FindIf([](int value) {
-        return value > 2;
-    });
-    
+    auto matcher = [](int value) { return value > 2; };
+    auto found = setContainer.FindIf(matcher);
     EXPECT_TRUE(found.has_value());
     EXPECT_EQ(found.value(), 3);
-    
-    auto notFound = setContainer.FindIf([](int value) {
-        return value > 10;
-    });
-    
+    setContainer.Remove(3);
+    auto notFound = setContainer.FindIf(matcher);
     EXPECT_FALSE(notFound.has_value());
 }
 
@@ -313,23 +301,16 @@ HWTEST_F(ThreadSafeContainerUnitTest, Vector_Foreach, TestSize.Level1)
 HWTEST_F(ThreadSafeContainerUnitTest, Vector_FindIf, TestSize.Level1)
 {
     ThreadSafeContainer<std::vector<int>> vectorContainer;
-    
     vectorContainer.PushBack(1);
     vectorContainer.PushBack(2);
     vectorContainer.PushBack(3);
     vectorContainer.PushBack(4);
-    
-    auto found = vectorContainer.FindIf([](int value) {
-        return value % 2 == 0;
-    });
-    
+    auto matcher = [](int value) { return value % 2 == 0; };
+    auto found = vectorContainer.FindIf(matcher);
     EXPECT_TRUE(found.has_value());
     EXPECT_EQ(found.value(), 2);
-    
-    auto notFound = vectorContainer.FindIf([](int value) {
-        return value > 10;
-    });
-    
+    vectorContainer.Clear();
+    auto notFound = vectorContainer.FindIf(matcher);
     EXPECT_FALSE(notFound.has_value());
 }
 
@@ -483,6 +464,268 @@ HWTEST_F(ThreadSafeContainerUnitTest, InitializationWithValues, TestSize.Level1)
     EXPECT_EQ(vectorContainer.Size(), 3);
     auto front = vectorContainer.Front();
     EXPECT_EQ(front.value(), 1);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, MapInt_FindIf, TestSize.Level1)
+{
+    ThreadSafeContainer<std::map<int, int>> mapContainer;
+    mapContainer.Set(1, 10);
+    mapContainer.Set(2, 20);
+    auto matcher = [](const auto& pair) { return pair.second == 20; };
+    auto found = mapContainer.FindIf(matcher);
+    EXPECT_TRUE(found.has_value());
+    EXPECT_EQ(found.value(), 20);
+    mapContainer.Remove(2);
+    auto notFound = mapContainer.FindIf(matcher);
+    EXPECT_FALSE(notFound.has_value());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, MapInt_Get, TestSize.Level1)
+{
+    ThreadSafeContainer<std::map<int, int>> mapContainer;
+    mapContainer.Set(1, 100);
+    auto val = mapContainer.Get(1);
+    EXPECT_TRUE(val.has_value());
+    EXPECT_EQ(val.value(), 100);
+    auto notFound = mapContainer.Get(99);
+    EXPECT_FALSE(notFound.has_value());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, UnorderedMap_FindIf, TestSize.Level1)
+{
+    ThreadSafeContainer<std::unordered_map<int, std::string>> mapContainer;
+    mapContainer.Set(1, "one");
+    mapContainer.Set(2, "two");
+    auto matcher = [](const auto& pair) { return pair.second == "two"; };
+    auto found = mapContainer.FindIf(matcher);
+    EXPECT_TRUE(found.has_value());
+    EXPECT_EQ(found.value(), "two");
+    mapContainer.Remove(2);
+    auto notFound = mapContainer.FindIf(matcher);
+    EXPECT_FALSE(notFound.has_value());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, UnorderedMap_Get, TestSize.Level1)
+{
+    ThreadSafeContainer<std::unordered_map<int, std::string>> mapContainer;
+    mapContainer.Set(1, "one");
+    auto val = mapContainer.Get(1);
+    EXPECT_TRUE(val.has_value());
+    EXPECT_EQ(val.value(), "one");
+    auto notFound = mapContainer.Get(99);
+    EXPECT_FALSE(notFound.has_value());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, UnorderedSet_FindIf, TestSize.Level1)
+{
+    ThreadSafeContainer<std::unordered_set<int>> setContainer;
+    setContainer.Insert(1);
+    setContainer.Insert(2);
+    setContainer.Insert(3);
+    auto matcher = [](int val) { return val == 2; };
+    auto found = setContainer.FindIf(matcher);
+    EXPECT_TRUE(found.has_value());
+    EXPECT_EQ(found.value(), 2);
+    setContainer.Remove(2);
+    auto notFound = setContainer.FindIf(matcher);
+    EXPECT_FALSE(notFound.has_value());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, Deque_FindIf, TestSize.Level1)
+{
+    ThreadSafeContainer<std::deque<int>> dequeContainer;
+    dequeContainer.PushBack(1);
+    dequeContainer.PushBack(2);
+    dequeContainer.PushBack(3);
+    auto matcher = [](int val) { return val == 2; };
+    auto found = dequeContainer.FindIf(matcher);
+    EXPECT_TRUE(found.has_value());
+    EXPECT_EQ(found.value(), 2);
+    dequeContainer.PopBack();
+    dequeContainer.PopBack();
+    auto notFound = dequeContainer.FindIf(matcher);
+    EXPECT_FALSE(notFound.has_value());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, Deque_Back, TestSize.Level1)
+{
+    ThreadSafeContainer<std::deque<int>> dequeContainer;
+    dequeContainer.PushBack(1);
+    dequeContainer.PushBack(2);
+    auto back = dequeContainer.Back();
+    EXPECT_TRUE(back.has_value());
+    EXPECT_EQ(back.value(), 2);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, Deque_EmptyOperations, TestSize.Level1)
+{
+    ThreadSafeContainer<std::deque<int>> dequeContainer;
+    EXPECT_TRUE(dequeContainer.Empty());
+    auto front = dequeContainer.Front();
+    EXPECT_FALSE(front.has_value());
+    auto back = dequeContainer.Back();
+    EXPECT_FALSE(back.has_value());
+    dequeContainer.PopBack();
+    EXPECT_TRUE(dequeContainer.Empty());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, List_FindIf, TestSize.Level1)
+{
+    ThreadSafeContainer<std::list<int>> listContainer;
+    listContainer.PushBack(1);
+    listContainer.PushBack(2);
+    listContainer.PushBack(3);
+    auto matcher = [](int val) { return val == 2; };
+    auto found = listContainer.FindIf(matcher);
+    EXPECT_TRUE(found.has_value());
+    EXPECT_EQ(found.value(), 2);
+    listContainer.PopBack();
+    listContainer.PopBack();
+    listContainer.PopBack();
+    auto notFound = listContainer.FindIf(matcher);
+    EXPECT_FALSE(notFound.has_value());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, List_FrontBack, TestSize.Level1)
+{
+    ThreadSafeContainer<std::list<int>> listContainer;
+    listContainer.PushBack(1);
+    listContainer.PushBack(2);
+    listContainer.PushBack(3);
+    auto front = listContainer.Front();
+    EXPECT_TRUE(front.has_value());
+    EXPECT_EQ(front.value(), 1);
+    auto back = listContainer.Back();
+    EXPECT_TRUE(back.has_value());
+    EXPECT_EQ(back.value(), 3);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, List_EmptyOperations, TestSize.Level1)
+{
+    ThreadSafeContainer<std::list<int>> listContainer;
+    EXPECT_TRUE(listContainer.Empty());
+    auto front = listContainer.Front();
+    EXPECT_FALSE(front.has_value());
+    auto back = listContainer.Back();
+    EXPECT_FALSE(back.has_value());
+    listContainer.PopBack();
+    EXPECT_TRUE(listContainer.Empty());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, List_PopBack, TestSize.Level1)
+{
+    ThreadSafeContainer<std::list<int>> listContainer;
+    listContainer.PushBack(1);
+    listContainer.PushBack(2);
+    listContainer.PopBack();
+    EXPECT_EQ(listContainer.Size(), 1);
+    auto back = listContainer.Back();
+    EXPECT_EQ(back.value(), 1);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, UnorderedMap_ForeachKV, TestSize.Level1)
+{
+    ThreadSafeContainer<std::unordered_map<int, std::string>> mapContainer;
+    mapContainer.Set(1, "one");
+    mapContainer.Set(2, "two");
+    int count = 0;
+    mapContainer.ForeachKV([&count](int key, const std::string& value) { count++; });
+    EXPECT_EQ(count, 2);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, UnorderedMap_InsertRemove, TestSize.Level1)
+{
+    ThreadSafeContainer<std::unordered_map<int, std::string>> mapContainer;
+    mapContainer.Insert(1, "one");
+    mapContainer.Insert(2, std::string("two"));
+    EXPECT_EQ(mapContainer.Size(), 2);
+    mapContainer.Remove(1);
+    EXPECT_EQ(mapContainer.Size(), 1);
+    EXPECT_FALSE(mapContainer.Contains(1));
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, Deque_Foreach, TestSize.Level1)
+{
+    ThreadSafeContainer<std::deque<int>> dequeContainer;
+    dequeContainer.PushBack(1);
+    dequeContainer.PushBack(2);
+    dequeContainer.PushBack(3);
+    int sum = 0;
+    dequeContainer.Foreach([&sum](int val) { sum += val; });
+    EXPECT_EQ(sum, 6);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, Deque_ForeachSnapshot, TestSize.Level1)
+{
+    ThreadSafeContainer<std::deque<int>> dequeContainer;
+    dequeContainer.PushBack(1);
+    dequeContainer.PushBack(2);
+    dequeContainer.PushBack(3);
+    int sum = 0;
+    dequeContainer.ForeachSnapshot([&sum](int val) { sum += val; });
+    EXPECT_EQ(sum, 6);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, List_ForeachSnapshot, TestSize.Level1)
+{
+    ThreadSafeContainer<std::list<int>> listContainer;
+    listContainer.PushBack(1);
+    listContainer.PushBack(2);
+    listContainer.PushBack(3);
+    int sum = 0;
+    listContainer.ForeachSnapshot([&sum](int val) { sum += val; });
+    EXPECT_EQ(sum, 6);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, UnorderedSet_ForeachSnapshot, TestSize.Level1)
+{
+    ThreadSafeContainer<std::unordered_set<int>> setContainer;
+    setContainer.Insert(1);
+    setContainer.Insert(2);
+    setContainer.Insert(3);
+    int sum = 0;
+    setContainer.ForeachSnapshot([&sum](int val) { sum += val; });
+    EXPECT_EQ(sum, 6);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, Vector_Back, TestSize.Level1)
+{
+    ThreadSafeContainer<std::vector<int>> vectorContainer;
+    vectorContainer.PushBack(1);
+    vectorContainer.PushBack(2);
+    vectorContainer.PushBack(3);
+    auto back = vectorContainer.Back();
+    EXPECT_TRUE(back.has_value());
+    EXPECT_EQ(back.value(), 3);
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, VectorString_EmptyFrontBack, TestSize.Level1)
+{
+    ThreadSafeContainer<std::vector<std::string>> vecContainer;
+    EXPECT_TRUE(vecContainer.Empty());
+    auto front = vecContainer.Front();
+    EXPECT_FALSE(front.has_value());
+    auto back = vecContainer.Back();
+    EXPECT_FALSE(back.has_value());
+    vecContainer.PopBack();
+    EXPECT_TRUE(vecContainer.Empty());
+}
+
+HWTEST_F(ThreadSafeContainerUnitTest, VectorString_NonEmptyOps, TestSize.Level1)
+{
+    ThreadSafeContainer<std::vector<std::string>> vecContainer;
+    vecContainer.PushBack("one");
+    vecContainer.PushBack("two");
+    vecContainer.PushBack("three");
+    EXPECT_EQ(vecContainer.Size(), 3);
+    auto front = vecContainer.Front();
+    EXPECT_EQ(front.value(), "one");
+    auto back = vecContainer.Back();
+    EXPECT_EQ(back.value(), "three");
+    vecContainer.PopBack();
+    EXPECT_EQ(vecContainer.Size(), 2);
+    auto newBack = vecContainer.Back();
+    EXPECT_EQ(newBack.value(), "two");
 }
 
 }

@@ -78,6 +78,34 @@ struct RequestDataInfo {
     const RequestInfo requestInfo;
     const HandleResponseCbFunc completeCb;
 };
+
+
+class MockAVSharedMemory : public AVSharedMemory {
+public:
+    explicit MockAVSharedMemory(int32_t size) : size_(size)
+    {
+        data_ = new uint8_t[size];
+    }
+    ~MockAVSharedMemory() override
+    {
+        delete[] data_;
+    }
+    uint8_t *GetBase() const override
+    {
+        return data_;
+    }
+    int32_t GetSize() const override
+    {
+        return size_;
+    }
+    uint32_t GetFlags() const override
+    {
+        return FLAGS_READ_WRITE;
+    }
+private:
+    uint8_t* data_;
+    int32_t size_;
+};
 }
 
 class AppClientUnitTest : public testing::Test {
@@ -92,6 +120,22 @@ protected:
         (void)buffer;
         (void)userParam;
         return size * nitems;
+    }
+
+    static size_t RxBodyDataZero(void* buffer, size_t size, size_t nitems, void* userParam)
+    {
+        (void)buffer;
+        (void)userParam;
+        (void)size;
+        (void)nitems;
+        return 0;
+    }
+
+    static size_t RxBodyDataPartial(void* buffer, size_t size, size_t nitems, void* userParam)
+    {
+        (void)buffer;
+        (void)userParam;
+        return (size * nitems) / 2;
     }
 
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)
@@ -158,7 +202,8 @@ HWTEST_F(AppClientUnitTest, AppClient_Construct, TestSize.Level0)
     auto appClient = std::make_shared<AppClient>(headerCallback, bodyCallback, nullptr);
     auto mockLoader = std::make_shared<SourceLoader>();
     appClient->SetLoader(mockLoader);
-    EXPECT_NE(appClient->sourceLoader_, nullptr);
+    Status status = appClient->Init();
+    ASSERT_EQ(status, Status::OK);
 }
 
 HWTEST_F(AppClientUnitTest, AppClient_Init, TestSize.Level1)
@@ -255,7 +300,8 @@ HWTEST_F(AppClientUnitTest, AppClient_SetLoader, TestSize.Level1)
     appClient_->SetLoader(mockLoader);
     int32_t appUid = 0;
     appClient_->SetAppUid(appUid);
-    EXPECT_NE(appClient_->sourceLoader_, nullptr);
+    Status status = appClient_->Init();
+    ASSERT_EQ(status, Status::OK);
 }
 
 HWTEST_F(AppClientUnitTest, AppClient_SetLoader_Null, TestSize.Level1)
@@ -265,7 +311,8 @@ HWTEST_F(AppClientUnitTest, AppClient_SetLoader_Null, TestSize.Level1)
     auto appClient = std::make_shared<AppClient>(headerCallback, bodyCallback, nullptr);
     std::shared_ptr<IMediaSourceLoader> nullLoader = nullptr;
     appClient->SetLoader(nullLoader);
-    EXPECT_EQ(appClient->sourceLoader_, nullptr);
+    Status status = appClient->Deinit();
+    ASSERT_EQ(status, Status::OK);
 }
 
 HWTEST_F(AppClientUnitTest, AppClient_SetUuid, TestSize.Level1)
@@ -374,43 +421,49 @@ HWTEST_F(AppClientUnitTest, AppClient_RespondData_NullMemory, TestSize.Level1)
 HWTEST_F(AppClientUnitTest, AppClient_FinishLoading, TestSize.Level1)
 {
     int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
     LoadingRequestError state = LoadingRequestError::LOADING_ERROR_SUCCESS;
-
-    std::thread finishLoadingThread([uuid, state, this] {
-        appClient_->FinishLoading(uuid, state);
+    int32_t result = -1;
+    std::thread finishLoadingThread([uuid, state, this, &result] {
+        result = appClient_->FinishLoading(uuid, state);
     });
 
     if (finishLoadingThread.joinable()) {
         finishLoadingThread.join();
     }
+    ASSERT_EQ(result, 0);
 }
 
 HWTEST_F(AppClientUnitTest, AppClient_FinishLoading_ErrorState, TestSize.Level1)
 {
     int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
     LoadingRequestError state = LoadingRequestError::LOADING_ERROR_NOT_READY;
-
-    std::thread finishLoadingThread([uuid, state, this] {
-        appClient_->FinishLoading(uuid, state);
+    int32_t result = -1;
+    std::thread finishLoadingThread([uuid, state, this, &result] {
+        result = appClient_->FinishLoading(uuid, state);
     });
 
     if (finishLoadingThread.joinable()) {
         finishLoadingThread.join();
     }
+    ASSERT_EQ(result, 0);
 }
 
 HWTEST_F(AppClientUnitTest, AppClient_FinishLoading_Timeout, TestSize.Level1)
 {
     int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
     LoadingRequestError state = LoadingRequestError::LOADING_ERROR_NOT_READY;
-
-    std::thread finishLoadingThread([uuid, state, this] {
-        appClient_->FinishLoading(uuid, state);
+    int32_t result = -1;
+    std::thread finishLoadingThread([uuid, state, this, &result] {
+        result = appClient_->FinishLoading(uuid, state);
     });
 
     if (finishLoadingThread.joinable()) {
         finishLoadingThread.join();
     }
+    ASSERT_EQ(result, 0);
 }
 
 HWTEST_F(AppClientUnitTest, AppClient_RequestData_StartPosMinusOne, TestSize.Level1)
@@ -641,7 +694,8 @@ HWTEST_F(AppClientUnitTest, AppClient_NetworkClient_GetAppInstance, TestSize.Lev
     RxBody bodyCallback = &RxBodyData;
 
     auto client = NetworkClient::GetAppInstance(headerCallback, bodyCallback, nullUserParam);
-    EXPECT_NE(client, nullptr);
+    Status status = client->Init();
+    ASSERT_EQ(status, Status::OK);
 }
 
 HWTEST_F(AppClientUnitTest, AppClient_NetworkClient_GetAppInstance_NullCallbacks, TestSize.Level1)
@@ -651,7 +705,8 @@ HWTEST_F(AppClientUnitTest, AppClient_NetworkClient_GetAppInstance_NullCallbacks
     RxBody nullBodyCallback = nullptr;
 
     auto client = NetworkClient::GetAppInstance(nullHeaderCallback, nullBodyCallback, nullUserParam);
-    EXPECT_NE(client, nullptr);
+    Status status = client->Init();
+    ASSERT_EQ(status, Status::OK);
 }
 
 HWTEST_F(AppClientUnitTest, AppClient_NetworkClient_GetAppInstance_WithUserParam, TestSize.Level1)
@@ -662,8 +717,170 @@ HWTEST_F(AppClientUnitTest, AppClient_NetworkClient_GetAppInstance_WithUserParam
     RxBody bodyCallback = &RxBodyData;
 
     auto client = NetworkClient::GetAppInstance(headerCallback, bodyCallback, &userParamValue);
-    EXPECT_NE(client, nullptr);
+    Status status = client->Deinit();
+    ASSERT_EQ(status, Status::OK);
 }
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondData_ValidMemory, TestSize.Level1)
+{
+    int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
+    appClient_->curOffset_.store(0);
+    appClient_->len_.store(0);
+    auto memory = std::make_shared<MockAVSharedMemory>(100);
+    int32_t result = appClient_->RespondData(uuid, 0, memory);
+    ASSERT_EQ(result, 100);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondData_UuidMismatch, TestSize.Level1)
+{
+    int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
+    appClient_->curOffset_.store(0);
+    auto memory = std::make_shared<MockAVSharedMemory>(100);
+    int32_t result = appClient_->RespondData(uuid + 1, 0, memory);
+    ASSERT_EQ(result, -2);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondData_OffsetMismatch, TestSize.Level1)
+{
+    int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
+    appClient_->curOffset_.store(0);
+    auto memory = std::make_shared<MockAVSharedMemory>(100);
+    int32_t result = appClient_->RespondData(uuid, 999, memory);
+    ASSERT_EQ(result, -2);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondData_BufferFull, TestSize.Level1)
+{
+    RxHeader headerCallback = &RxHeaderData;
+    RxBody bodyCallback = &RxBodyDataZero;
+    auto client = std::make_shared<AppClient>(headerCallback, bodyCallback, nullptr);
+    auto mockLoader = std::make_shared<SourceLoader>();
+    client->SetLoader(mockLoader);
+    int64_t uuid = DEFAULT_UUID;
+    client->SetUuid(uuid);
+    client->curOffset_.store(0);
+    auto memory = std::make_shared<MockAVSharedMemory>(100);
+    int32_t result = client->RespondData(uuid, 0, memory);
+    ASSERT_EQ(result, -3);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondData_Complete, TestSize.Level1)
+{
+    int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
+    appClient_->curOffset_.store(0);
+    appClient_->len_.store(100);
+    appClient_->dataInFlight_.store(100);
+    auto memory = std::make_shared<MockAVSharedMemory>(100);
+    int32_t result = appClient_->RespondData(uuid, 0, memory);
+    ASSERT_EQ(result, 100);
+    ASSERT_EQ(appClient_->requestState_.load(), LoadingRequestError::LOADING_ERROR_SUCCESS);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondData_Incomplete, TestSize.Level1)
+{
+    int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
+    appClient_->curOffset_.store(0);
+    appClient_->len_.store(100);
+    appClient_->dataInFlight_.store(1000);
+    auto memory = std::make_shared<MockAVSharedMemory>(100);
+    int32_t result = appClient_->RespondData(uuid, 0, memory);
+    ASSERT_EQ(result, 100);
+    ASSERT_EQ(appClient_->requestState_.load(), LoadingRequestError::LOADING_ERROR_SUCCESS);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondHeader_InvalidUuid, TestSize.Level1)
+{
+    int64_t uuid = 0;
+    std::map<std::string, std::string> httpHeader;
+    httpHeader["Content-Type"] = "video/mp4";
+    std::string redirectUrl = "";
+    int32_t result = appClient_->RespondHeader(uuid, httpHeader, redirectUrl);
+    ASSERT_EQ(result, 0);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_FinishLoading_UuidMismatch, TestSize.Level1)
+{
+    int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
+    LoadingRequestError state = LoadingRequestError::LOADING_ERROR_SUCCESS;
+    int32_t result = appClient_->FinishLoading(uuid + 1, state);
+    ASSERT_EQ(result, 0);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RequestData_ErrorState, TestSize.Level1)
+{
+    long startPos = 0;
+    int len = 1024;
+    RequestInfo requestInfo;
+    requestInfo.url = "http://test.com/video.mp4";
+    requestInfo.httpHeader = {};
+
+    std::mutex m;
+    std::condition_variable cv;
+    Status capturedStatus = Status::OK;
+    bool callbackInvoked = false;
+    auto completedCb = [&callbackInvoked, &m, &cv, &capturedStatus](int32_t clientCode, int32_t serverCode,
+        const std::string &ca, Status status) {
+        (void)clientCode;
+        (void)serverCode;
+        (void)ca;
+        capturedStatus = status;
+        std::unique_lock<std::mutex> lk(m);
+        callbackInvoked = true;
+        cv.notify_all();
+    };
+
+    RequestDataInfo info = {.startPos = startPos, .len = len, .requestInfo = requestInfo, .completeCb = completedCb};
+    ThreadRequestData(appClient_, DEFAULT_UUID, LoadingRequestError::LOADING_ERROR_NOT_READY, info);
+
+    {
+        std::unique_lock lk(m);
+        cv.wait_for(lk, std::chrono::seconds(2), [&callbackInvoked] { return callbackInvoked; });
+    }
+
+    EXPECT_TRUE(callbackInvoked);
+    ASSERT_EQ(capturedStatus, Status::ERROR_CLIENT);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondData_NegativeUuid, TestSize.Level1)
+{
+    int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
+    appClient_->curOffset_.store(0);
+    appClient_->len_.store(0);
+    auto memory = std::make_shared<MockAVSharedMemory>(50);
+    int32_t result = appClient_->RespondData(-1, 0, memory);
+    ASSERT_EQ(result, -2);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondData_CurOffsetDefault, TestSize.Level1)
+{
+    int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
+    appClient_->len_.store(0);
+    auto memory = std::make_shared<MockAVSharedMemory>(100);
+    int32_t result = appClient_->RespondData(uuid, -2, memory);
+    ASSERT_EQ(result, 100);
+}
+
+HWTEST_F(AppClientUnitTest, AppClient_RespondData_AfterComplete, TestSize.Level1)
+{
+    int64_t uuid = DEFAULT_UUID;
+    appClient_->SetUuid(uuid);
+    appClient_->curOffset_.store(0);
+    appClient_->len_.store(50);
+    appClient_->dataInFlight_.store(50);
+    auto memory = std::make_shared<MockAVSharedMemory>(50);
+    int32_t result = appClient_->RespondData(uuid, 0, memory);
+    ASSERT_EQ(result, 50);
+    ASSERT_EQ(appClient_->curOffset_.load(), -2);
+}
+
 }
 }
 }

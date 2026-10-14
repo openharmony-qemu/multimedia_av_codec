@@ -972,4 +972,196 @@ HWTEST_F(AttributeUnitTest, ParseUriQueryInvalidPair, TestSize.Level1)
     ASSERT_EQ(params.size(), static_cast<size_t>(1));
     ASSERT_EQ(params["key"], "val");
 }
+
+HWTEST_F(AttributeUnitTest, QuotedStringEmptyValue, TestSize.Level1)
+{
+    Attribute attr("name", "");
+    ASSERT_EQ(attr.QuotedString(), "");
+}
+
+HWTEST_F(AttributeUnitTest, SafeStringToIntBelowIntMin, TestSize.Level1)
+{
+    std::string input = "-2147483649";
+    int output = 0;
+    int base = 10;
+    auto result = Attribute::SafeStringToInt(input, output, base);
+    ASSERT_FALSE(result);
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQueryInvalidFirstHexDigit, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?key=%G0val";
+    auto params = ParseUriQuery(uri);
+    ASSERT_EQ(params["key"], "%G0val");
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesPlaceholderNoDefine, TestSize.Level1)
+{
+    std::string hlsContent = "{$test}000.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(0));
+    ASSERT_EQ(result.second.size(), static_cast<size_t>(0));
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesTrailingNewlines, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-VERSION:3\n\n";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(1));
+    ASSERT_EQ(tagList.front()->GetType(), HlsTag::EXTXVERSION);
+}
+
+HWTEST_F(AttributeUnitTest, ParseAttributesValueWithTab, TestSize.Level1)
+{
+    AttributesTag testTag(HlsTag::EXTXKEY, "KEY=val\tue");
+    auto keyAttr = testTag.GetAttributeByName("KEY");
+    ASSERT_NE(keyAttr, nullptr);
+    ASSERT_EQ(keyAttr->QuotedString(), "value");
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesPlaceholderReplacedInTag, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-DEFINE:NAME=\"v\",VALUE=\"3\"\n"
+        "#EXT-X-VERSION:{$v}";
+    auto result = ParseEntries(hlsContent, {}, {});
+    ASSERT_EQ(result.second["v"], "3");
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(1));
+    auto svTag = std::static_pointer_cast<SingleValueTag>(tagList.front());
+    ASSERT_EQ(svTag->GetType(), HlsTag::EXTXVERSION);
+    ASSERT_EQ(svTag->GetValue().QuotedString(), "3");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQueryOnlyEquals, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?=&key=val";
+    auto params = ParseUriQuery(uri);
+    ASSERT_EQ(params.size(), static_cast<size_t>(1));
+    ASSERT_EQ(params["key"], "val");
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesUriAfterDiscontinuity, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-DISCONTINUITY\nhttp://example.com/seg.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(2));
+    ASSERT_EQ(tagList.front()->GetType(), HlsTag::EXTXDISCONTINUITY);
+    ASSERT_EQ(tagList.back()->GetType(), HlsTag::URI);
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesEmptyLineAfterTag, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-VERSION:3\n\nhttp://example.com/seg.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(2));
+    ASSERT_EQ(tagList.front()->GetType(), HlsTag::EXTXVERSION);
+    ASSERT_EQ(tagList.back()->GetType(), HlsTag::URI);
+}
+
+HWTEST_F(AttributeUnitTest, GetByteRangeQuotedAtOnly, TestSize.Level1)
+{
+    Attribute attr("name", "\"@100\"");
+    auto byteRange = attr.GetByteRange();
+    ASSERT_EQ(byteRange.first, static_cast<std::size_t>(0));
+    ASSERT_EQ(byteRange.second, static_cast<std::size_t>(0));
+}
+
+HWTEST_F(AttributeUnitTest, GetResolutionCharX, TestSize.Level1)
+{
+    Attribute attr("name", "ax1080");
+    auto resolution = attr.GetResolution();
+    ASSERT_EQ(resolution.first, 0);
+    ASSERT_EQ(resolution.second, 0);
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesCRLFWithNestedLF, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-VERSION:3\r\n#EXTINF:10,\r\nhttp://seg.ts\r\n";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(3));
+    ASSERT_EQ(tagList.front()->GetType(), HlsTag::EXTXVERSION);
+    ASSERT_EQ(tagList.back()->GetType(), HlsTag::URI);
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQueryPercentAtEnd, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?key=val%";
+    auto params = ParseUriQuery(uri);
+    ASSERT_EQ(params["key"], "val%");
+}
+
+HWTEST_F(AttributeUnitTest, ParseUriQueryPlusOnly, TestSize.Level1)
+{
+    std::string uri = "http://example.com/path?key=+";
+    auto params = ParseUriQuery(uri);
+    ASSERT_EQ(params["key"], " ");
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesDefineImportWithMaster, TestSize.Level1)
+{
+    std::unordered_map<std::string, std::string> masterMap = {{"qual", "ity"}};
+    std::string hlsContent = "#EXT-X-DEFINE:IMPORT=\"qual\"\n{$qual}000.ts";
+    auto result = ParseEntries(hlsContent, masterMap, {});
+    ASSERT_EQ(result.second["qual"], "ity");
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(1));
+    ASSERT_EQ(result.first.front()->GetType(), HlsTag::URI);
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesDefineQueryparamWithUri, TestSize.Level1)
+{
+    std::unordered_map<std::string, std::string> uriMap = {{"param", "value"}};
+    std::string hlsContent = "#EXT-X-DEFINE:QUERYPARAM=\"param\"\n{$param}000.ts";
+    auto result = ParseEntries(hlsContent, {}, uriMap);
+    ASSERT_EQ(result.second["param"], "value");
+    ASSERT_EQ(result.first.size(), static_cast<size_t>(1));
+    ASSERT_EQ(result.first.front()->GetType(), HlsTag::URI);
+}
+
+HWTEST_F(AttributeUnitTest, ParseAttributesMultipleQuotedValues, TestSize.Level1)
+{
+    AttributesTag testTag(HlsTag::EXTXKEY, "URI=\"a,b\",METHOD=\"c,d\"");
+    auto uriAttr = testTag.GetAttributeByName("URI");
+    auto methodAttr = testTag.GetAttributeByName("METHOD");
+    ASSERT_NE(uriAttr, nullptr);
+    ASSERT_EQ(uriAttr->QuotedString(), "a,b");
+    ASSERT_NE(methodAttr, nullptr);
+    ASSERT_EQ(methodAttr->QuotedString(), "c,d");
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesTagWithEmptyValue, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-VERSION:\nhttp://example.com/seg.ts";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(2));
+    ASSERT_EQ(tagList.front()->GetType(), HlsTag::EXTXVERSION);
+}
+
+HWTEST_F(AttributeUnitTest, HexSequenceUpperCasePrefix, TestSize.Level1)
+{
+    Attribute attr("name", "0XABCD");
+    auto result = attr.HexSequence();
+    ASSERT_EQ(result.size(), static_cast<size_t>(2));
+    ASSERT_EQ(result[0], 0xAB);
+    ASSERT_EQ(result[1], 0xCD);
+}
+
+HWTEST_F(AttributeUnitTest, ParseEntriesMasterPlaylistWithUri, TestSize.Level1)
+{
+    std::string hlsContent = "#EXT-X-STREAM-INF:BANDWIDTH=1000000\n"
+        "http://example.com/high.m3u8\n"
+        "#EXT-X-STREAM-INF:BANDWIDTH=500000\n"
+        "http://example.com/low.m3u8";
+    auto result = ParseEntries(hlsContent, {}, {});
+    auto& tagList = result.first;
+    ASSERT_EQ(tagList.size(), static_cast<size_t>(2));
+    auto firstTag = std::static_pointer_cast<AttributesTag>(tagList.front());
+    auto uriAttr = firstTag->GetAttributeByName("URI");
+    ASSERT_NE(uriAttr, nullptr);
+    ASSERT_EQ(uriAttr->QuotedString(), "http://example.com/high.m3u8");
+}
 }
