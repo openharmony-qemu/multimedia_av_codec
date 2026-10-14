@@ -121,6 +121,9 @@ uint32_t GetMpegAudioSampleRate(uint32_t version, uint32_t rateIndex)
     constexpr uint32_t sampleRates[] = {44100, 48000, 32000};
     constexpr uint32_t mpegVersion1 = 3;
     constexpr uint32_t mpegVersion2 = 2;
+    if (rateIndex >= sizeof(sampleRates) / sizeof(sampleRates[0])) {
+        return 0;
+    }
     uint32_t sampleRate = sampleRates[rateIndex];
     if (version == mpegVersion1) {
         return sampleRate;
@@ -135,6 +138,8 @@ uint32_t GetMpegAudioBitrate(uint32_t version, uint32_t layer, uint32_t bitrateI
 {
     constexpr uint32_t mpegVersion1 = 3;
     constexpr uint32_t layer1 = 3;
+    constexpr uint32_t bitrateEntryCount = 15;
+    constexpr uint32_t bitratePerKiloBit = 1000;
     constexpr uint32_t bitrates[2][3][15] = {
         {{0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448},
             {0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384},
@@ -143,17 +148,21 @@ uint32_t GetMpegAudioBitrate(uint32_t version, uint32_t layer, uint32_t bitrateI
             {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160},
             {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160}},
     };
-    return bitrates[version == mpegVersion1 ? 0 : 1][layer1 - layer][bitrateIndex] * 1000;
+    if (layer == 0 || layer > layer1 || bitrateIndex == 0 || bitrateIndex >= bitrateEntryCount) {
+        return 0;
+    }
+    return bitrates[version == mpegVersion1 ? 0 : 1][layer1 - layer][bitrateIndex] * bitratePerKiloBit;
 }
 
 uint32_t GetMpegAudioFrameCoefficient(uint32_t version, uint32_t layer)
 {
     constexpr uint32_t layer1 = 3;
+    constexpr uint32_t layer3 = 1;
     constexpr uint32_t mpegVersion1 = 3;
     if (layer == layer1) {
         return 12;
     }
-    if (layer == 1 && version != mpegVersion1) {
+    if (layer == layer3 && version != mpegVersion1) {
         return 72;
     }
     return 144;
@@ -162,11 +171,12 @@ uint32_t GetMpegAudioFrameCoefficient(uint32_t version, uint32_t layer)
 uint32_t GetMpegAudioSamplesPerFrame(uint32_t version, uint32_t layer)
 {
     constexpr uint32_t layer1 = 3;
+    constexpr uint32_t layer3 = 1;
     constexpr uint32_t mpegVersion1 = 3;
     if (layer == layer1) {
         return 384;
     }
-    if (layer == 1 && version != mpegVersion1) {
+    if (layer == layer3 && version != mpegVersion1) {
         return 576;
     }
     return 1152;
@@ -189,6 +199,9 @@ bool GetMpegAudioFrameInfo(const uint8_t* data, size_t size, MpegAudioFrameInfo&
     }
     uint32_t sampleRate = GetMpegAudioSampleRate(version, rateIndex);
     uint32_t bitrate = GetMpegAudioBitrate(version, layer, bitrateIndex);
+    if (sampleRate == 0) {
+        return false;
+    }
     uint32_t coefficient = GetMpegAudioFrameCoefficient(version, layer);
     uint64_t sizeValue = static_cast<uint64_t>(coefficient) * bitrate / sampleRate + ((header >> 9) & 0x01);
     if (layer == layer1) {
@@ -220,10 +233,16 @@ bool IsLegacyHandbrakeEncoder(const std::string& encoder)
     int patch = 0;
     size_t offset = digitPos;
     auto parseNumber = [&encoder, &offset](int& value) {
+        constexpr int decimalRadix = 10;
         value = 0;
         bool found = false;
         while (offset < encoder.size() && encoder[offset] >= '0' && encoder[offset] <= '9') {
-            value = value * 10 + (encoder[offset] - '0');
+            int digit = encoder[offset] - '0';
+            if (value > (std::numeric_limits<int>::max() - digit) / decimalRadix) {
+                value = std::numeric_limits<int>::max();
+            } else {
+                value = value * decimalRadix + digit;
+            }
             found = true;
             ++offset;
         }
@@ -474,7 +493,9 @@ bool GetCttsPacketDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<M
         // FFmpeg compute_frame_duration derives the packet duration from the SPS codec framerate
         // (time_scale / (2 * num_units_in_tick)) when it is a plausible video frame rate
         // (frameRateDen * 1000 > frameRateNum); otherwise the duration stays 0, matching
-        // HandBrake files whose SPS timing claims a bogus rate like 90000/1.
+        // HandBrake files whose SPS timing claims a bogus rate like 90000/1. FFmpeg emits these
+        // packets with duration 0 as well, so consumers must rely on PTS deltas rather than the
+        // per-packet duration for such streams.
         uint64_t frameRateNum = track->codecFrameRateNum;
         uint64_t frameRateDen = track->codecFrameRateDen;
         if (frameRateNum > 0 && frameRateDen > 0 &&
@@ -3441,18 +3462,27 @@ public:
         if (!IsTrack(track) || track->sampleHelper == nullptr) {
             return false;
         }
+        // All inputs (stsd/stts tables, time scale, container flags, encoder tag) are fixed once the
+        // header is parsed, so the decision is memoized per track instead of re-run on every sample.
+        if (track->frameReassemblyChecked) {
+            return track->frameReassemblyNeeded;
+        }
+        bool needed = false;
         if (NeedsStsdAudioParser(plugin, track)) {
-            return true;
+            needed = true;
+        } else if (NeedsSttsReassembly(plugin, track)) {
+            needed = true;
+        } else {
+            // FFmpeg mov_read_header: legacy HandBrake muxers write unreliable MP3 sample timing.
+            std::string encoder;
+            if (plugin.mediaInfo_.general.GetData(Tag::MEDIA_ENCODER, encoder) &&
+                IsLegacyHandbrakeEncoder(encoder)) {
+                needed = true;
+            }
         }
-        if (NeedsSttsReassembly(plugin, track)) {
-            return true;
-        }
-        // FFmpeg mov_read_header: legacy HandBrake muxers write unreliable MP3 sample timing.
-        std::string encoder;
-        if (plugin.mediaInfo_.general.GetData(Tag::MEDIA_ENCODER, encoder) && IsLegacyHandbrakeEncoder(encoder)) {
-            return true;
-        }
-        return false;
+        track->frameReassemblyChecked = true;
+        track->frameReassemblyNeeded = needed;
+        return needed;
     }
 
     static void Reset(MPEG4DemuxerPlugin& plugin)
@@ -3499,8 +3529,8 @@ public:
         return Status::OK;
     }
 
-    static Status Process(MPEG4DemuxerPlugin& plugin, uint32_t trackId, const std::shared_ptr<Sample>& input,
-        std::vector<std::shared_ptr<Sample>>& packets)
+    static Status Process(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex,
+        const std::shared_ptr<Sample>& input, std::vector<std::shared_ptr<Sample>>& packets)
     {
         FALSE_RETURN_V_NOLOG(input != nullptr && input->data != nullptr && input->size >= 0,
             Status::ERROR_INVALID_DATA);
@@ -3516,8 +3546,23 @@ public:
             (parserState == nullptr || parserState->pendingSize == 0) &&
             GetMpegAudioFrameInfo(input->data.get(), size, frameInfo)) {
             // FFmpeg mov_read_packet with need_parsing == 0: any sample whose head is a valid MP3
-            // frame header is delivered as-is (partial frames included), with header-derived duration.
-            input->duration = frameInfo.durationUs;
+            // frame header is delivered as-is (partial frames included). A single-frame sample keeps
+            // the header-derived duration; a sample spanning several frames keeps the container (stts)
+            // duration, matching FFmpeg's next-DTS based packet duration in mov_finalize_packet.
+            if (size > static_cast<size_t>(frameInfo.size)) {
+                int64_t containerDurationUs = 0;
+                auto track = plugin.FindTrackById(static_cast<int32_t>(trackId));
+                if (track != nullptr && track->timeScale > 0) {
+                    MPEG4SampleHelper::SampleIndexView sampleView;
+                    if (GetSampleView(track, sampleIndex, sampleView)) {
+                        (void)RescaleTrackTimeToUsRoundNearest(sampleView.duration, track->timeScale,
+                            containerDurationUs);
+                    }
+                }
+                input->duration = containerDurationUs > 0 ? containerDurationUs : frameInfo.durationUs;
+            } else {
+                input->duration = frameInfo.durationUs;
+            }
             packets.emplace_back(input);
             return Status::OK;
         }
@@ -3641,7 +3686,7 @@ public:
     {
         FALSE_RETURN_V_NOLOG(input != nullptr && input->sample != nullptr, Status::ERROR_NULL_POINTER);
         std::vector<std::shared_ptr<Sample>> packets;
-        Status ret = Process(plugin, input->trackId, input->sample, packets);
+        Status ret = Process(plugin, input->trackId, input->sampleIndex, input->sample, packets);
         return ret == Status::OK ? CachePackets(plugin, input->trackId, input->sampleIndex, packets) : ret;
     }
 
@@ -3664,7 +3709,7 @@ private:
         Status ret = plugin.ReadSampleData(input, sampleInfo);
         lock.unlock();
         FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-        return Process(plugin, trackId, input->sample, packets);
+        return Process(plugin, trackId, input->sampleIndex, input->sample, packets);
     }
 
     static Status CachePackets(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex,

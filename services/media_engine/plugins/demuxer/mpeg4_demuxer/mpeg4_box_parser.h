@@ -123,6 +123,8 @@ public:
         bool codecFrameRateParsed = false;
         uint32_t codecFrameRateNum = 0;
         uint32_t codecFrameRateDen = 0;
+        bool frameReassemblyChecked = false;
+        bool frameReassemblyNeeded = false;
         CodecParams codecParms{};
         std::vector<std::vector<uint8_t>> codecConfigs;
         uint64_t codecConfigsSize = 0;
