@@ -1967,7 +1967,9 @@ Status MPEG4SampleHelper::PrepareEditListEntry(const EditListEntry& edit, EditLi
     if (trackType_ == AUDIO_TYPE) {
         searchTimestamp = std::max(searchTimestamp - trackTimeScale_, buildCtx.oldEntries.front().dts);
     }
-    int64_t startIndex = FindPrevClosestIndex(buildCtx.oldEntries, buildCtx.oldSyncSamples,
+    const bool zeroTimelineVideoEdit = trackType_ == VIDEO_TYPE && edit.mediaTime == 0 &&
+        processCtx.editDuration == 0 && sampleTableSummary_.rawTotalDuration == 0 && !hasExplicitSyncSamples_;
+    int64_t startIndex = zeroTimelineVideoEdit ? 0 : FindPrevClosestIndex(buildCtx.oldEntries, buildCtx.oldSyncSamples,
         buildCtx.oldAllSamplesSync, searchTimestamp, false);
     if (startIndex < 0) {
         MEDIA_LOG_W("Missing key frame while searching edit timestamp: " PUBLIC_LOG_D64, searchTimestamp);
