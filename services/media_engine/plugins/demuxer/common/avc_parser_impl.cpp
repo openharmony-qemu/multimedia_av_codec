@@ -242,9 +242,11 @@ bool ReadH264SpsFrameRate(RbspContext& reader, uint32_t& tmp, H264SpsInfo& info)
             uint64_t num = timeScale;
             uint64_t den = static_cast<uint64_t>(numUnitsInTick) * 2;
             uint64_t common = GcdUint64(num, den);
-            info.frameRateNum = static_cast<uint32_t>(num / common);
-            info.frameRateDen = static_cast<uint32_t>(den / common);
-            info.hasFrameRate = info.frameRateNum > 0 && info.frameRateDen > 0;
+            if (common > 0) {
+                info.frameRateNum = static_cast<uint32_t>(num / common);
+                info.frameRateDen = static_cast<uint32_t>(den / common);
+                info.hasFrameRate = info.frameRateNum > 0 && info.frameRateDen > 0;
+            }
         }
     }
     return true;

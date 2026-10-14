@@ -87,21 +87,54 @@ bool NeedReadPostProcessing(const std::string& mime)
 }
 
 constexpr size_t MPEG_AUDIO_HEADER_SIZE = 4;
+// FFmpeg treats an MP3 stts table as non-uniform when it contains many short runs: the entry count
+// must exceed MIN_NON_UNIFORM_STTS_ENTRIES and outnumber 1/NON_UNIFORM_STTS_SAMPLE_RATIO of the samples.
+constexpr uint32_t MIN_NON_UNIFORM_STTS_ENTRIES = 3;
+constexpr uint32_t NON_UNIFORM_STTS_SAMPLE_RATIO = 10;
+// FFmpeg compute_frame_duration derives video packet durations from the SPS codec framerate only when
+// frameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR > frameRateNum (a plausible rate below 1000 fps);
+// bogus rates such as 90000/1 leave the duration at 0.
+constexpr uint64_t CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR = 1000;
 
 struct MpegAudioFrameInfo {
     int32_t size = 0;
     int64_t durationUs = 0;
 };
 
-bool GetMpegAudioFrameInfo(const uint8_t* data, size_t size, MpegAudioFrameInfo& frameInfo)
+bool IsValidMpegAudioHeader(uint32_t header, uint32_t& version, uint32_t& layer,
+    uint32_t& bitrateIndex, uint32_t& rateIndex)
 {
     constexpr uint32_t syncWord = 0x7FF;
     constexpr uint32_t syncWordShift = 21;
     constexpr uint32_t invalidIndex = 3;
     constexpr uint32_t invalidBitrate = 15;
+    version = (header >> 19) & 0x03;
+    layer = (header >> 17) & 0x03;
+    bitrateIndex = (header >> 12) & 0x0F;
+    rateIndex = (header >> 10) & 0x03;
+    return (header >> syncWordShift) == syncWord && version != 1 && layer != 0 &&
+        bitrateIndex != 0 && bitrateIndex != invalidBitrate && rateIndex != invalidIndex;
+}
+
+uint32_t GetMpegAudioSampleRate(uint32_t version, uint32_t rateIndex)
+{
+    constexpr uint32_t sampleRates[] = {44100, 48000, 32000};
+    constexpr uint32_t mpegVersion1 = 3;
+    constexpr uint32_t mpegVersion2 = 2;
+    uint32_t sampleRate = sampleRates[rateIndex];
+    if (version == mpegVersion1) {
+        return sampleRate;
+    }
+    if (version == mpegVersion2) {
+        return sampleRate >> 1;
+    }
+    return sampleRate >> 2;
+}
+
+uint32_t GetMpegAudioBitrate(uint32_t version, uint32_t layer, uint32_t bitrateIndex)
+{
     constexpr uint32_t mpegVersion1 = 3;
     constexpr uint32_t layer1 = 3;
-    constexpr uint32_t layer1FrameSizeMultiplier = 4;
     constexpr uint32_t bitrates[2][3][15] = {
         {{0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448},
             {0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384},
@@ -110,22 +143,53 @@ bool GetMpegAudioFrameInfo(const uint8_t* data, size_t size, MpegAudioFrameInfo&
             {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160},
             {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160}},
     };
-    constexpr uint32_t sampleRates[] = {44100, 48000, 32000};
+    return bitrates[version == mpegVersion1 ? 0 : 1][layer1 - layer][bitrateIndex] * 1000;
+}
+
+uint32_t GetMpegAudioFrameCoefficient(uint32_t version, uint32_t layer)
+{
+    constexpr uint32_t layer1 = 3;
+    constexpr uint32_t mpegVersion1 = 3;
+    if (layer == layer1) {
+        return 12;
+    }
+    if (layer == 1 && version != mpegVersion1) {
+        return 72;
+    }
+    return 144;
+}
+
+uint32_t GetMpegAudioSamplesPerFrame(uint32_t version, uint32_t layer)
+{
+    constexpr uint32_t layer1 = 3;
+    constexpr uint32_t mpegVersion1 = 3;
+    if (layer == layer1) {
+        return 384;
+    }
+    if (layer == 1 && version != mpegVersion1) {
+        return 576;
+    }
+    return 1152;
+}
+
+bool GetMpegAudioFrameInfo(const uint8_t* data, size_t size, MpegAudioFrameInfo& frameInfo)
+{
+    constexpr uint32_t layer1 = 3;
+    constexpr uint32_t layer1FrameSizeMultiplier = 4;
     if (data == nullptr || size < MPEG_AUDIO_HEADER_SIZE) {
         return false;
     }
     uint32_t header = GetU32Value(data);
-    uint32_t version = (header >> 19) & 0x03;
-    uint32_t layer = (header >> 17) & 0x03;
-    uint32_t bitrateIndex = (header >> 12) & 0x0F;
-    uint32_t rateIndex = (header >> 10) & 0x03;
-    if ((header >> syncWordShift) != syncWord || version == 1 || layer == 0 || bitrateIndex == 0 ||
-        bitrateIndex == invalidBitrate || rateIndex == invalidIndex) {
+    uint32_t version = 0;
+    uint32_t layer = 0;
+    uint32_t bitrateIndex = 0;
+    uint32_t rateIndex = 0;
+    if (!IsValidMpegAudioHeader(header, version, layer, bitrateIndex, rateIndex)) {
         return false;
     }
-    uint32_t sampleRate = sampleRates[rateIndex] >> (version == mpegVersion1 ? 0 : version == 2 ? 1 : 2);
-    uint32_t bitrate = bitrates[version == mpegVersion1 ? 0 : 1][layer1 - layer][bitrateIndex] * 1000;
-    uint32_t coefficient = layer == layer1 ? 12 : (layer == 1 && version != mpegVersion1 ? 72 : 144);
+    uint32_t sampleRate = GetMpegAudioSampleRate(version, rateIndex);
+    uint32_t bitrate = GetMpegAudioBitrate(version, layer, bitrateIndex);
+    uint32_t coefficient = GetMpegAudioFrameCoefficient(version, layer);
     uint64_t sizeValue = static_cast<uint64_t>(coefficient) * bitrate / sampleRate + ((header >> 9) & 0x01);
     if (layer == layer1) {
         sizeValue *= layer1FrameSizeMultiplier;
@@ -133,7 +197,7 @@ bool GetMpegAudioFrameInfo(const uint8_t* data, size_t size, MpegAudioFrameInfo&
     if (sizeValue < MPEG_AUDIO_HEADER_SIZE || sizeValue > static_cast<uint64_t>(INT32_MAX)) {
         return false;
     }
-    uint32_t samplesPerFrame = layer == layer1 ? 384 : (layer == 1 && version != mpegVersion1 ? 576 : 1152);
+    uint32_t samplesPerFrame = GetMpegAudioSamplesPerFrame(version, layer);
     if (ConvertTimeScale(static_cast<int64_t>(samplesPerFrame), static_cast<int64_t>(S_TO_US), sampleRate,
         &frameInfo.durationUs) != Status::OK || frameInfo.durationUs <= 0) {
         return false;
@@ -413,7 +477,8 @@ bool GetCttsPacketDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<M
         // HandBrake files whose SPS timing claims a bogus rate like 90000/1.
         uint64_t frameRateNum = track->codecFrameRateNum;
         uint64_t frameRateDen = track->codecFrameRateDen;
-        if (frameRateNum > 0 && frameRateDen > 0 && frameRateDen * 1000 > frameRateNum) {
+        if (frameRateNum > 0 && frameRateDen > 0 &&
+            frameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR > frameRateNum) {
             uint64_t durationTicks = static_cast<uint64_t>(trackTimeScale) * frameRateDen / frameRateNum;
             if (durationTicks <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
                 return RescaleTrackTimeToUsRoundNearest(static_cast<int64_t>(durationTicks),
@@ -3337,31 +3402,49 @@ public:
             track->sampleHelper->mimeType_ == MimeType::AUDIO_MPEG;
     }
 
+    // FFmpeg mov_parse_stsd_audio: an MP3 sample entry that cannot be treated as a fixed-size
+    // audio unit (a plain version 0 entry, or version 1 without a QT compression id) needs a parser.
+    static bool NeedsStsdAudioParser(MPEG4DemuxerPlugin& plugin,
+        const std::shared_ptr<MPEG4AtomParser::Track>& track)
+    {
+        const uint32_t entryVersion = track->audioSampleEntryVersion;
+        const uint32_t stsdVersion = track->stsdVersion;
+        bool isQtAudioUnit = plugin.isIsom_ && !plugin.hasQtBrand_ &&
+            !(stsdVersion == 0 && entryVersion > 0);
+        if (!track->stsdParsed || isQtAudioUnit) {
+            return false;
+        }
+        return entryVersion == 0 || (entryVersion == 1 && track->audioSampleEntryCid != 0xFFFE);
+    }
+
+    // FFmpeg mov_read_header: many short stts runs whose time scale matches the sample rate
+    // imply non-uniform MP3 frame durations that need a parser.
+    static bool NeedsSttsReassembly(MPEG4DemuxerPlugin& plugin,
+        const std::shared_ptr<MPEG4AtomParser::Track>& track)
+    {
+        const uint32_t sttsCount = track->sampleHelper->GetSttsEntryCount();
+        const uint32_t sampleCount = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
+        int32_t sampleRate = 0;
+        if (sttsCount <= MIN_NON_UNIFORM_STTS_ENTRIES || sampleCount == 0 ||
+            static_cast<uint64_t>(sttsCount) * NON_UNIFORM_STTS_SAMPLE_RATIO <= sampleCount ||
+            track->timeScale <= 0 || track->trackIndex >= plugin.mediaInfo_.tracks.size() ||
+            !plugin.mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) ||
+            sampleRate <= 0 || static_cast<uint32_t>(track->timeScale) != static_cast<uint32_t>(sampleRate)) {
+            return false;
+        }
+        return true;
+    }
+
     static bool NeedsFrameReassembly(MPEG4DemuxerPlugin& plugin, uint32_t trackId)
     {
         auto track = plugin.FindTrackById(static_cast<int32_t>(trackId));
         if (!IsTrack(track) || track->sampleHelper == nullptr) {
             return false;
         }
-        // FFmpeg mov_parse_stsd_audio: an MP3 sample entry that cannot be treated as a fixed-size
-        // audio unit (a plain version 0 entry, or version 1 without a QT compression id) needs a parser.
-        const uint32_t entryVersion = track->audioSampleEntryVersion;
-        const uint32_t stsdVersion = track->stsdVersion;
-        if (track->stsdParsed &&
-            (!plugin.isIsom_ || plugin.hasQtBrand_ || (stsdVersion == 0 && entryVersion > 0))) {
-            if (entryVersion == 0 || (entryVersion == 1 && track->audioSampleEntryCid != 0xFFFE)) {
-                return true;
-            }
+        if (NeedsStsdAudioParser(plugin, track)) {
+            return true;
         }
-        // FFmpeg mov_read_header: many short stts runs whose time scale matches the sample rate
-        // imply non-uniform MP3 frame durations that need a parser.
-        const uint32_t sttsCount = track->sampleHelper->GetSttsEntryCount();
-        const uint32_t sampleCount = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
-        int32_t sampleRate = 0;
-        if (sttsCount > 3 && sampleCount > 0 && static_cast<uint64_t>(sttsCount) * 10 > sampleCount &&
-            track->timeScale > 0 && track->trackIndex < plugin.mediaInfo_.tracks.size() &&
-            plugin.mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) &&
-            sampleRate > 0 && static_cast<uint32_t>(track->timeScale) == static_cast<uint32_t>(sampleRate)) {
+        if (NeedsSttsReassembly(plugin, track)) {
             return true;
         }
         // FFmpeg mov_read_header: legacy HandBrake muxers write unreliable MP3 sample timing.
