@@ -33,7 +33,7 @@
 #include "scoped_timer.h"
 #include "sync_fence.h"
 #include "media_demuxer.h"
-#include "qos.h"
+#include "osal/task/thread.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "VideoDecoderAdapter" };
@@ -467,9 +467,7 @@ void VideoDecoderAdapter::SetOutputBufferMediaChangeMeta(std::shared_ptr<AVBuffe
 
 void VideoDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
-    if (bundleName_ == "bootanimation") {
-        OHOS::QOS::SetThreadQos(OHOS::QOS::QosLevel::QOS_USER_INTERACTIVE);
-    }
+    Thread::BoostThreadPriority("media_service");
     AVCodecTrace trace("VideoDecoderAdapter::OnInputBufferAvailable");
     FALSE_RETURN_MSG(buffer != nullptr && buffer->meta_ != nullptr, "meta_ is nullptr.");
     MEDIA_LOG_D("OnInputBufferAvailable enter. index: %{public}u, bufferid: %{public}" PRIu64", pts: %{public}" PRIu64
