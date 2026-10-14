@@ -1305,14 +1305,12 @@ void MPEG4DemuxerPlugin::ReleaseReferenceParserState()
     refParserPendingSeekMsTime_ = -1;
     refParserCurGopId_ = 0;
     refParserIsForward_ = true;
+    refParserTerminalError_.store(false, std::memory_order_release);
     std::list<uint32_t>().swap(processingSyncSamplesIndex_);
-    std::unordered_map<int32_t, int64_t>().swap(gopId2DecodedSamplePts_);
     mimeTypeOfVideoStream_ = MimeType::INVALID_TYPE;
     startPts_ = 0;
     updatePosIsForward_ = true;
     isSdtpExist_ = false;
-    cacheSample_.reset();
-    isReadSampleDataFromCache_ = false;
     refParserState_.store(true, std::memory_order_release);
 }
 

@@ -202,14 +202,12 @@ private:
     int32_t refParserCurGopId_ = 0;  // Gop Id(start from 0)
     bool refParserIsForward_ = true;
     std::atomic<bool> refParserState_ = true;
+    std::atomic<bool> refParserTerminalError_ = false;
     std::list<uint32_t> processingSyncSamplesIndex_;
-    std::unordered_map<int32_t, int64_t> gopId2DecodedSamplePts_;  // gopId->absolute dts(us)
     std::string mimeTypeOfVideoStream_ = MimeType::INVALID_TYPE;
     int64_t startPts_ = 0;
     bool updatePosIsForward_ = true;
     bool isSdtpExist_ = false;
-    std::shared_ptr<MPEG4Sample> cacheSample_ = nullptr;
-    bool isReadSampleDataFromCache_ = false;
 
     int32_t CountTracks();
     void GetAVTrackIds();

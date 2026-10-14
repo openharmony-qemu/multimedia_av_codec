@@ -194,9 +194,23 @@ Status MPEG4DemuxerPlugin::EnsureParserRefInfoInitialized()
 
 Status MPEG4DemuxerPlugin::ParserRefInfo()
 {
+    if (refParserTerminalError_.load(std::memory_order_acquire)) {
+        MEDIA_LOG_W("Reference parsing already stopped after invalid sample data");
+        return Status::ERROR_UNKNOWN;
+    }
+    auto handleParserError = [this](Status status) {
+        if (status == Status::ERROR_INVALID_DATA) {
+            refParserTerminalError_.store(true, std::memory_order_release);
+            MEDIA_LOG_E("Stop MPEG4 reference parsing after invalid data");
+            return Status::ERROR_UNKNOWN;
+        }
+        return status;
+    };
     MEDIA_LOG_I("ParserRefInfo start, refParserCurGopId_ is " PUBLIC_LOG_D32, refParserCurGopId_);
     Status initRet = EnsureParserRefInfoInitialized();
-    FALSE_RETURN_V(initRet == Status::OK, initRet);
+    if (initRet != Status::OK) {
+        return handleParserError(initRet);
+    }
     int64_t duration = GetDuration(refParserStartTime_);
     RefTrace trace("ParserRefCost_2_" + std::to_string(duration) + "_" + std::to_string(refParserCurGopId_));
     FALSE_RETURN_V_MSG_W(duration < REFERENCE_PARSER_TIMEOUT_MS, Status::ERROR_UNKNOWN, "Reference parser timeout");
@@ -212,8 +226,10 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_UNKNOWN, "sample is nullptr");
     int loopCount = 0;
     SelectTrack(refParserTrackIdx_);
-    FALSE_RETURN_V_MSG_E(trackOfRefParser_ && trackOfRefParser_->sampleHelper, Status::ERROR_INVALID_DATA,
-        "trackOfRefParser_ or sampleHelper is nullptr");
+    if (!trackOfRefParser_ || !trackOfRefParser_->sampleHelper) {
+        MEDIA_LOG_E("trackOfRefParser_ or sampleHelper is nullptr");
+        return handleParserError(Status::ERROR_INVALID_DATA);
+    }
     MEDIA_LOG_I("size of sampleIndexEntries_ is " PUBLIC_LOG_ZU,
         trackOfRefParser_->sampleHelper->GetSampleCount());
 
@@ -232,7 +248,7 @@ Status MPEG4DemuxerPlugin::ParserRefInfo()
         }
         if (rlt != Status::OK) {
             refParserState_ = true;
-            return rlt;
+            return handleParserError(rlt);
         }
         curSampleIndex++;
     }
@@ -495,39 +511,10 @@ Status MPEG4DemuxerPlugin::SelectProGopId()
             Status::ERROR_UNKNOWN, "GetGopIdFromSeekPos failed");
         refParserPendingSeekMsTime_ = -1;
     }
-    int64_t seekDtsUs = 0;
-    if (gopId2DecodedSamplePts_.find(refParserCurGopId_) != gopId2DecodedSamplePts_.end()) {
-        // if I frame pts had got before decoding
-        seekDtsUs = gopId2DecodedSamplePts_[refParserCurGopId_];
-        MEDIA_LOG_I("get I frame pts from which had been decoded, seekDtsUs is " PUBLIC_LOG_D64, seekDtsUs);
-    } else {
-        uint32_t syncSampleIndex = syncSamplesIndex_[refParserCurGopId_];
-        int64_t ptsUs = 0;
-        FALSE_RETURN_V_MSG_E(GetReferenceSampleTime(syncSampleIndex, ptsUs, seekDtsUs) == Status::OK,
-            Status::ERROR_UNKNOWN, "syncSampleIndex(" PUBLIC_LOG_U32 ") is invalid", syncSampleIndex);
-        MEDIA_LOG_I("SelectProGopId, ptsUs is " PUBLIC_LOG_D64 ", seekDtsUs is " PUBLIC_LOG_D64,
-            ptsUs, seekDtsUs);
-    }
-    int64_t realSeekTime = 0;
-    // Using (seekDtsUs / US_TO_MS - 1) is to adapt to SeekToFrameByDts
-    Status ret = SeekToFrameByDts(refParserTrackIdx_, seekDtsUs / US_TO_MS - 1, SeekMode::SEEK_CLOSEST, realSeekTime,
-        0);
-    MEDIA_LOG_I("realSeekTime is " PUBLIC_LOG_D64, realSeekTime);
-    FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "SeekToFrameByDts failed");
-    cacheSample_ = FrontTrackCache(refParserTrackIdx_);
-    isReadSampleDataFromCache_ = true;
+    FALSE_RETURN_V_MSG_E(refParserCurGopId_ >= 0 &&
+        static_cast<size_t>(refParserCurGopId_) < syncSamplesIndex_.size(), Status::ERROR_UNKNOWN,
+        "Reference GOP id is out of range");
     return Status::OK;
-}
-
-static void InsertIframePtsMap(std::shared_ptr<Sample> sample, int32_t gopId,
-    std::unordered_map<int32_t, int64_t> &gopId2DecodedSamplePts)
-{
-    MEDIA_LOG_I("sample info: size is " PUBLIC_LOG_D32 ", dts is " PUBLIC_LOG_D64 ", pts is " PUBLIC_LOG_D64,
-        sample->size, sample->dts, sample->pts);
-    bool validCheck = (sample != nullptr) && (sample->flag & Sample::SampleFlag::SYNC_FRAME) && (gopId != -1);
-    if (validCheck && (gopId2DecodedSamplePts.find(gopId) == gopId2DecodedSamplePts.end())) {
-        gopId2DecodedSamplePts.insert(std::pair<int32_t, int64_t>(gopId, sample->pts));
-    }
 }
 
 Status MPEG4DemuxerPlugin::PrepareRefParserSample(std::shared_ptr<Sample>& sample, uint32_t sampleIndex)
@@ -544,10 +531,6 @@ Status MPEG4DemuxerPlugin::PrepareRefParserSample(std::shared_ptr<Sample>& sampl
         sample->size = 0;
         sample->dts = INT64_MIN;
         sample->flag = Sample::SampleFlag::EOS;
-    } else if (isReadSampleDataFromCache_) {
-        FALSE_RETURN_V_MSG_E(cacheSample_ != nullptr, Status::ERROR_UNKNOWN, "cacheSample_ is nullptr");
-        sample = cacheSample_->sample;
-        isReadSampleDataFromCache_ = false;
     } else {
         MPEG4SampleHelper::SampleIndexView currentSample;
         FALSE_RETURN_V_MSG_E(trackOfRefParser_->sampleHelper->GetSampleIndexView(sampleIndex, currentSample) ==
@@ -573,7 +556,6 @@ Status MPEG4DemuxerPlugin::ParserRefInfoLoop(std::shared_ptr<Sample> sample, uin
     Status result = PrepareRefParserSample(sample, sampleIndex);
     FALSE_RETURN_V_MSG_E(result == Status::OK, result, "Prepare reference parser sample failed");
     FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_UNKNOWN, "sample is nullptr!");
-    InsertIframePtsMap(sample, refParserCurGopId_, gopId2DecodedSamplePts_);
     result = referenceParser_->ParserNalUnits(sample->data.get(), sample->size, sampleIndex, sample->dts);
     FALSE_RETURN_V_MSG_E(result == Status::OK, result, "parse nal units end! ret is " PUBLIC_LOG_D32,
         static_cast<int32_t>(result));
