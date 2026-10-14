@@ -227,6 +227,7 @@ HWTEST_F(DownloaderUnitTest, ClearMiddleReadFragment, TestSize.Level0)
 HWTEST_F(DownloaderUnitTest, Downloader_Construct_nullptr, TestSize.Level0)
 {
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->name_, std::string("test"));
 }
 
 HWTEST_F(DownloaderUnitTest, Retry_1, TestSize.Level1)
@@ -921,6 +922,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_1, TestSize.Level1)
 {
     downloader->StopBufferring();
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->shouldStartNextRequest_.load(), true);
 }
 
 HWTEST_F(DownloaderUnitTest, StopBufferring_2, TestSize.Level1)
@@ -940,6 +942,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_2, TestSize.Level1)
     downloader->isAppBackground_ = true;
     downloader->StopBufferring();
     EXPECT_EQ(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->isAppBackground_.load(), true);
 }
 
 HWTEST_F(DownloaderUnitTest, StopBufferring_3, TestSize.Level1)
@@ -959,6 +962,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_3, TestSize.Level1)
     downloader->isAppBackground_ = false;
     downloader->StopBufferring();
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->shouldStartNextRequest_.load(), true);
 }
 
 HWTEST_F(DownloaderUnitTest, StopBufferring_4, TestSize.Level1)
@@ -977,6 +981,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_4, TestSize.Level1)
     downloader->isAppBackground_ = false;
     downloader->StopBufferring();
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->shouldStartNextRequest_.load(), true);
 }
 
 HWTEST_F(DownloaderUnitTest, StopBufferring_5, TestSize.Level1)
@@ -998,6 +1003,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_5, TestSize.Level1)
     downloader->shouldStartNextRequest_ = false;
     downloader->StopBufferring();
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->shouldStartNextRequest_.load(), false);
 }
 
 HWTEST_F(DownloaderUnitTest, StopBufferring_6, TestSize.Level1)
@@ -1018,6 +1024,7 @@ HWTEST_F(DownloaderUnitTest, StopBufferring_6, TestSize.Level1)
     downloader->shouldStartNextRequest_ = false;
     downloader->StopBufferring();
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->shouldStartNextRequest_.load(), false);
 }
 
 HWTEST_F(DownloaderUnitTest, ToString_EmptyList, TestSize.Level1)
@@ -1684,6 +1691,7 @@ HWTEST_F(DownloaderUnitTest, HandleRetErrorCode001, TestSize.Level1)
     downloader->currentRequest_->serverError_ = 500;
     downloader->HandleRetErrorCode();
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_EQ(downloader->currentRequest_->serverError_, 500);
 }
 HWTEST_F(DownloaderUnitTest, IsChunkedInterrupt, TestSize.Level1)
 {
@@ -1822,6 +1830,7 @@ HWTEST_F(DownloaderUnitTest, DownloadInterrupt, TestSize.Level1)
     int32_t waitMs = 0;
     downloader->Download(Request_, waitMs);
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_TRUE(Request_->isInterruptNeeded_);
 }
 
 HWTEST_F(DownloaderUnitTest, Download002, TestSize.Level1)
@@ -1851,6 +1860,7 @@ HWTEST_F(DownloaderUnitTest, Download002, TestSize.Level1)
     downloader->Cancel();
 
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_FALSE(downloader->isCancelling_.load());
 }
 
 HWTEST_F(DownloaderUnitTest, Seek001, TestSize.Level1)
@@ -1892,6 +1902,7 @@ HWTEST_F(DownloaderUnitTest, HttpDownloadLoop001, TestSize.Level1)
     downloader->requestQue_->Push(Request_, static_cast<int>(-1));
     downloader->isInterruptNeeded_ = true;
     EXPECT_NE(downloader->client_, nullptr);
+    EXPECT_TRUE(downloader->isInterruptNeeded_);
 }
 
 class SourceLoader : public IMediaSourceLoader {
@@ -1944,10 +1955,10 @@ HWTEST_F(DownloaderUnitTest, OPEN_APP_URI_001, TestSize.Level1)
     EXPECT_NE(downloader1->currentRequest_, nullptr);
     EXPECT_EQ(downloader1->sourceId_, 0);
     downloader1->OpenAppUri();
-    EXPECT_NE(downloader1->sourceId_, 0);
+    ASSERT_EQ(downloader1->sourceId_, static_cast<int64_t>(1));
     downloader1->sourceLoader_ = nullptr;
     downloader1->OpenAppUri();
-    EXPECT_NE(downloader1->sourceId_, 0);
+    ASSERT_EQ(downloader1->sourceId_, static_cast<int64_t>(1));
 }
 
 HWTEST_F(DownloaderUnitTest, DROP_RETRY_DATA_001, TestSize.Level1)
@@ -2121,6 +2132,7 @@ HWTEST_F(DownloaderUnitTest, APP_CLIENT_001, TestSize.Level1)
     downloader2->appPreviousRequestUrl_ = testPath;
     downloader2->OpenAppUri();
     EXPECT_NE(downloader2->client_, nullptr);
+    EXPECT_NE(downloader2->sourceId_, static_cast<int64_t>(0));
 
     uint32_t appUid = 3588;
     int64_t uuid = 1;
@@ -2386,6 +2398,7 @@ HWTEST_F(DownloaderUnitTest, HttpCurlClient_HeaderList_Free_In_dtor, TestSize.Le
             size_t { (void)buffer; (void)userParam; return size * nitems; },
         nullptr);
     EXPECT_NE(client, nullptr);
+    EXPECT_EQ(client->Init(), Status::OK);
     (void)client->Init();
     std::map<std::string, std::string> httpHeader = {{"Accpet", "*/*"}};
     (void)client->Open("http://127.0.0.1:46666/test", httpHeader, 1000);
@@ -2521,6 +2534,2318 @@ HWTEST_F(DownloaderUnitTest, RetryCore_RangeSizeUpdate, TestSize.Level1)
     EXPECT_TRUE(result);
     EXPECT_EQ(downloader->currentRequest_->requestSize_, 101);
 }
+
+// Helper: create a DownloadRequest for testing
+static std::shared_ptr<DownloadRequest> MakeTestRequest(const std::string& url = "http://test.com")
+{
+    auto saveData = [](uint8_t*, uint32_t len, bool) { return len; };
+    auto statusCb = [](DownloadStatus, std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {};
+    RequestInfo ri;
+    ri.url = url;
+    return std::make_shared<DownloadRequest>(saveData, statusCb, ri);
+}
+
+// ---- DownloadRequest method coverage ----
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_GetBitRate_Valid, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->downloadStartTime_ = 1000;
+    req->downloadDoneTime_ = 2000;
+    req->realRecvContentLen_ = 8000;
+    ASSERT_EQ(req->GetBitRate(), static_cast<uint32_t>(8000 * 1000 * 1 * 8 / 1000));
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_IsChunked_NotChunked, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->headerInfo_.isChunked = false;
+    ASSERT_EQ(req->IsChunked(false), Seekable::SEEKABLE);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_IsChunked_ChunkedNotLive, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->headerInfo_.isChunked = true;
+    req->headerInfo_.fileContentLen = 100;
+    ASSERT_EQ(req->IsChunked(false), Seekable::UNSEEKABLE);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_IsChunkedVod_True, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->headerInfo_.isChunked = true;
+    req->headerInfo_.fileContentLen = LIVE_CONTENT_LENGTH;
+    ASSERT_TRUE(req->IsChunkedVod());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_IsChunkedVod_False, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->headerInfo_.isChunked = false;
+    ASSERT_FALSE(req->IsChunkedVod());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_IsServerAcceptRange_NotChunked, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->headerInfo_.isChunked = false;
+    req->headerInfo_.isServerAcceptRange = true;
+    ASSERT_TRUE(req->IsServerAcceptRange());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_IsServerAcceptRange_NotChunkedFalse, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->headerInfo_.isChunked = false;
+    req->headerInfo_.isServerAcceptRange = false;
+    ASSERT_FALSE(req->IsServerAcceptRange());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SetStartTimePos_Positive, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->SetStartTimePos(100);
+    ASSERT_FALSE(req->shouldSaveData_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SetStartTimePos_Zero, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->SetStartTimePos(0);
+    ASSERT_TRUE(req->shouldSaveData_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SetRangePos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->SetRangePos(10, 100);
+    ASSERT_EQ(req->startPos_, 10);
+    ASSERT_EQ(req->endPos_, 100);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_GetDuration, TestSize.Level1)
+{
+    auto saveData = [](uint8_t*, uint32_t len, bool) { return len; };
+    auto statusCb = [](DownloadStatus, std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {};
+    auto req = std::make_shared<DownloadRequest>("http://test.com", 5.5, saveData, statusCb);
+    ASSERT_EQ(req->GetDuration(), 5.5);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_GetDownloaderName, TestSize.Level1)
+{
+    auto dl = std::make_shared<Downloader>("myDownloader");
+    dl->Init();
+    dl->currentRequest_ = MakeTestRequest();
+    dl->currentRequest_->downloaderName_ = "myDownloader";
+    ASSERT_EQ(dl->currentRequest_->GetDownloaderName(), "myDownloader");
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_GetClientError, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->clientError_ = 404;
+    ASSERT_EQ(req->GetClientError(), 404);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_GetServerError, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->serverError_ = 500;
+    ASSERT_EQ(req->GetServerError(), 500);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_IsEos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->isEos_.store(true);
+    ASSERT_TRUE(req->IsEos());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_GetRetryTimes, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->retryTimes_.store(3);
+    ASSERT_EQ(req->GetRetryTimes(), 3);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_Close_IsClosed, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    ASSERT_FALSE(req->IsClosed());
+    req->Close();
+    ASSERT_TRUE(req->IsClosed());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SetRequestType_GetRequestType, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->SetRequestType(RequestType::HLS_PLAYLIST);
+    ASSERT_EQ(req->GetRequestType(), RequestType::HLS_PLAYLIST);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_GetLocation, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->location_ = "http://redirect.com";
+    std::string loc;
+    req->GetLocation(loc);
+    ASSERT_EQ(loc, "http://redirect.com");
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SetBitRateToRequestSize, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->SetBitRateToRequestSize(1024);
+    ASSERT_EQ(req->bitRateToRequestSize_, 256);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_GetFileContentLengthNoWait, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->headerInfo_.fileContentLen = 12345;
+    ASSERT_EQ(req->GetFileContentLengthNoWait(), 12345);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SetRequestProtocolType, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->SetRequestProtocolType(RequestProtocolType::HLS);
+    ASSERT_TRUE(req->IsM3u8Request());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SetUrl, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->SetUrl("http://newurl.com");
+    ASSERT_EQ(req->GetUrl(), "http://newurl.com");
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SetIsIndexM3u8Request, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->SetIsIndexM3u8Request(true);
+    ASSERT_TRUE(req->IsIndexM3u8Request());
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SetDownloadDoneCb, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    bool called = false;
+    req->SetDownloadDoneCb([&called](const std::string& url, const std::string& loc) { called = true; });
+    req->downloadDoneCallback_("url", "loc");
+    ASSERT_TRUE(called);
+}
+
+HWTEST_F(DownloaderUnitTest, DownloadRequest_SaveHeader, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    HeaderInfo info;
+    info.fileContentLen = 9999;
+    info.contentLen = 8888;
+    info.isChunked = true;
+    strncpy(info.contentType, "video/mp4", sizeof(info.contentType) - 1);
+    req->SaveHeader(&info);
+    ASSERT_TRUE(req->isHeaderUpdated_.load());
+    ASSERT_EQ(req->headerInfo_.fileContentLen, 9999);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_GetContentType_Destructor, TestSize.Level1)
+{
+    downloader->isDestructor_ = true;
+    ASSERT_EQ(downloader->GetContentType(), downloader->contentType_);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_GetContentType_AlreadyUpdated, TestSize.Level1)
+{
+    downloader->isContentTypeUpdated_.store(true);
+    downloader->contentType_ = "video/mp4";
+    ASSERT_EQ(downloader->GetContentType(), "video/mp4");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_GetIp_WithClient, TestSize.Level1)
+{
+    std::string ip;
+    downloader->GetIp(ip);
+    ASSERT_EQ(downloader->name_, std::string("test"));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetAppUid, TestSize.Level1)
+{
+    downloader->SetAppUid(12345);
+    ASSERT_EQ(downloader->name_, std::string("test"));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_GetCurrentRequest, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    ASSERT_EQ(downloader->GetCurrentRequest(), req);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetInterruptState_Interrupt, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->SetInterruptState(true);
+    ASSERT_TRUE(downloader->isInterruptNeeded_.load());
+    ASSERT_TRUE(req->isInterruptNeeded_);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetInterruptState_NoInterrupt, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->SetInterruptState(false);
+    ASSERT_FALSE(downloader->isInterruptNeeded_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetAppState, TestSize.Level1)
+{
+    downloader->SetAppState(true);
+    ASSERT_TRUE(downloader->isAppBackground_.load());
+    downloader->SetAppState(false);
+    ASSERT_FALSE(downloader->isAppBackground_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_GetCertIssuerNames, TestSize.Level1)
+{
+    downloader->ca_ = "TestCA";
+    ASSERT_EQ(downloader->GetCertIssuerNames(), "TestCA");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetRequestSize, TestSize.Level1)
+{
+    downloader->SetRequestSize(4096);
+    ASSERT_EQ(downloader->downloadRequestSize_, static_cast<size_t>(4096));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_ReStart, TestSize.Level1)
+{
+    downloader->shouldStartNextRequest_.store(false);
+    downloader->ReStart();
+    ASSERT_TRUE(downloader->shouldStartNextRequest_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_PauseLoop_NullTask, TestSize.Level1)
+{
+    downloader->task_ = nullptr;
+    downloader->PauseLoop(true);
+    ASSERT_EQ(downloader->loopStatus_.load(), Downloader::LoopStatus::IDLE);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_PauseLoop_Sync, TestSize.Level1)
+{
+    downloader->PauseLoop(false);
+    ASSERT_EQ(downloader->shouldStartNextRequest_.load(), true);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_PauseLoop_Async, TestSize.Level1)
+{
+    downloader->PauseLoop(true);
+    ASSERT_EQ(downloader->shouldStartNextRequest_.load(), true);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Download_Cancelled, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->isCancelling_.store(true);
+    ASSERT_FALSE(downloader->Download(req, 100));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Download_WithTimeout, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->isCancelling_.store(false);
+    downloader->Download(req, 100);
+    ASSERT_EQ(downloader->isCancelling_.load(), false);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Start_Cancelled, TestSize.Level1)
+{
+    downloader->isCancelling_.store(true);
+    downloader->Start();
+    ASSERT_TRUE(downloader->isCancelling_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Seek_NormalOffset, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->isHeaderUpdated_.store(true);
+    ASSERT_TRUE(downloader->Seek(100));
+    ASSERT_EQ(req->startPos_, 100);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Seek_OffsetOutOfRange, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 1000;
+    req->isHeaderUpdated_.store(true);
+    ASSERT_TRUE(downloader->Seek(2000));
+    ASSERT_EQ(req->startPos_, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Seek_NegativeOffset, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 1000;
+    req->isHeaderUpdated_.store(true);
+    ASSERT_TRUE(downloader->Seek(-1));
+    ASSERT_EQ(req->startPos_, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Seek_WithDownloadRequestSize, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->isHeaderUpdated_.store(true);
+    downloader->downloadRequestSize_ = 500;
+    ASSERT_TRUE(downloader->Seek(100));
+    ASSERT_EQ(req->requestSize_, 500);
+    ASSERT_EQ(downloader->downloadRequestSize_, static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Seek_WithRetryTimes, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->isHeaderUpdated_.store(true);
+    req->retryTimes_.store(5);
+    ASSERT_TRUE(downloader->Seek(100));
+    ASSERT_EQ(req->retryTimes_.load(), 0);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Seek_NullRequest, TestSize.Level1)
+{
+    downloader->currentRequest_ = nullptr;
+    ASSERT_FALSE(downloader->Seek(100));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Seek_Interrupted, TestSize.Level1)
+{
+    downloader->isInterruptNeeded_ = true;
+    ASSERT_FALSE(downloader->Seek(100));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RetryCore_NullClient, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->client_ = nullptr;
+    downloader->shouldStartNextRequest_ = false;
+    ASSERT_FALSE(downloader->RetryCore(req));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Retry_Interrupted, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->isInterruptNeeded_ = true;
+    ASSERT_FALSE(downloader->Retry(req));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Retry_AppBackground, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->isAppBackground_ = true;
+    downloader->shouldStartNextRequest_ = false;
+    ASSERT_TRUE(downloader->Retry(req));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_BeginDownload_EmptyUrl, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "";
+    downloader->currentRequest_ = req;
+    ASSERT_FALSE(downloader->BeginDownload());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_BeginDownload_WithEndPos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://test.com";
+    req->endPos_ = 1000;
+    req->startPos_ = 100;
+    downloader->currentRequest_ = req;
+    ASSERT_TRUE(downloader->BeginDownload());
+    ASSERT_EQ(req->requestSize_, 901);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_BeginDownload_NoEndPos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://test.com";
+    req->endPos_ = -1;
+    downloader->currentRequest_ = req;
+    ASSERT_TRUE(downloader->BeginDownload());
+    ASSERT_EQ(req->requestSize_, 8192);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_BeginDownload_WithUserAgent, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://test.com";
+    req->httpHeader_["User-Agent"] = "MyAgent";
+    downloader->currentRequest_ = req;
+    ASSERT_TRUE(downloader->BeginDownload());
+    ASSERT_EQ(req->httpHeader_.count("User-Agent"), static_cast<size_t>(1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_BeginDownload_NoUserAgent, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://test.com";
+    downloader->currentRequest_ = req;
+    ASSERT_TRUE(downloader->BeginDownload());
+    ASSERT_GT(req->httpHeader_.count("User-Agent"), static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetOK_ChunkedEos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.isChunked = true;
+    req->headerInfo_.fileContentLen = 100;
+    req->isHeaderUpdated_.store(true);
+    downloader->HandleRetOK();
+    ASSERT_TRUE(req->isEos_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetOK_ReachEnd, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 100;
+    req->startPos_ = 200;
+    req->isHeaderUpdated_.store(true);
+    req->downloadDoneCallback_ = [](const std::string&, const std::string&) {};
+    downloader->HandleRetOK();
+    ASSERT_TRUE(req->isEos_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetOK_ZeroContentLen, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 0;
+    req->startPos_ = 200;
+    req->endPos_ = 100;
+    req->isHeaderUpdated_.store(true);
+    req->downloadDoneCallback_ = [](const std::string&, const std::string&) {};
+    downloader->HandleRetOK();
+    ASSERT_TRUE(req->isEos_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetOK_Continue, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->startPos_ = 100;
+    req->isHeaderUpdated_.store(true);
+    req->retryTimes_.store(2);
+    downloader->HandleRetOK();
+    ASSERT_EQ(req->retryTimes_.load(), 0);
+    ASSERT_EQ(req->requestSize_, 9900);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetOK_WithEndPos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->startPos_ = 100;
+    req->endPos_ = 500;
+    req->isHeaderUpdated_.store(true);
+    downloader->HandleRetOK();
+    ASSERT_EQ(req->requestSize_, 401);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetErrorCode_NotOften, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->serverError_ = 404;
+    downloader->HandleRetErrorCode();
+    ASSERT_EQ(req->serverError_, 404);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandlePlayingFinish_WithCallback, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    bool called = false;
+    req->downloadDoneCallback_ = [&called](const std::string& url, const std::string& loc) {
+        called = true;
+        ASSERT_EQ(url, "http://test.com");
+    };
+    downloader->HandlePlayingFinish();
+    ASSERT_TRUE(called);
+    ASSERT_FALSE(req->isFirstRangeRequestReady_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandlePlayingFinish_NoCallback, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->isDestructor_ = true;
+    downloader->HandlePlayingFinish();
+    ASSERT_TRUE(downloader->shouldStartNextRequest_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandlePlayingFinish_QueueNotEmpty, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    auto req2 = MakeTestRequest("http://test2.com");
+    downloader->requestQue_->Push(req2, 1000);
+    bool called = false;
+    req->downloadDoneCallback_ = [&called](const std::string&, const std::string&) { called = true; };
+    downloader->HandlePlayingFinish();
+    ASSERT_TRUE(called);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleFileContentLen_WithContentLen, TestSize.Level1)
+{
+    HeaderInfo info;
+    info.fileContentLen = 0;
+    info.contentLen = 5000;
+    downloader->HandleFileContentLen(&info);
+    ASSERT_EQ(info.fileContentLen, 5000);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleFileContentLen_BothZero, TestSize.Level1)
+{
+    HeaderInfo info;
+    info.fileContentLen = 0;
+    info.contentLen = 0;
+    downloader->HandleFileContentLen(&info);
+    ASSERT_EQ(info.fileContentLen, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleFileContentLen_NonZero, TestSize.Level1)
+{
+    HeaderInfo info;
+    info.fileContentLen = 1000;
+    info.contentLen = 5000;
+    downloader->HandleFileContentLen(&info);
+    ASSERT_EQ(info.fileContentLen, 1000);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateRequestSize_NoEndPos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->startPos_ = 1000;
+    req->endPos_ = -1;
+    downloader->UpdateRequestSize(downloader.get());
+    ASSERT_EQ(req->preRequestSize_, 0);
+    ASSERT_EQ(req->requestSize_, 9000);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateRequestSize_WithEndPos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->endPos_ = 500;
+    req->startPos_ = 100;
+    downloader->UpdateRequestSize(downloader.get());
+    ASSERT_EQ(req->requestSize_, 401);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleResponseCb_Ok, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->isHeaderUpdated_.store(true);
+    req->startPos_ = 0;
+    Status ret = Status::OK;
+    downloader->HandleResponseCb(0, 200, "ca_data", ret);
+    ASSERT_EQ(req->clientError_, 0);
+    ASSERT_EQ(req->serverError_, 200);
+    ASSERT_EQ(downloader->ca_, "ca_data");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleResponseCb_Error, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    Status ret = Status::ERROR_CLIENT;
+    downloader->HandleResponseCb(500, 404, "", ret);
+    ASSERT_EQ(req->clientError_, 500);
+    ASSERT_EQ(req->serverError_, 404);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleResponseCb_Destructor, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->isDestructor_ = true;
+    Status ret = Status::OK;
+    downloader->HandleResponseCb(0, 200, "ca", ret);
+    ASSERT_EQ(req->clientError_, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleResponseCb_RangeError, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->preRequestSize_ = 8192;
+    req->isFirstRangeRequestReady_ = false;
+    req->serverError_ = 416;
+    Status ret = Status::ERROR_SERVER;
+    downloader->HandleResponseCb(0, 416, "", ret);
+    ASSERT_EQ(req->startPos_, 0);
+    ASSERT_EQ(req->requestSize_, 2);
+    ASSERT_TRUE(req->isFirstRangeRequestReady_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_WithLocation, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://example.com/path/file.mp4";
+    req->location_ = "http://newhost.com/newpath";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(ret, Status::ERROR_SERVER);
+    ASSERT_EQ(req->serverError_, 302);
+    ASSERT_TRUE(req->haveRedirectRetry_.load());
+    ASSERT_EQ(req->url_, "http://newhost.com/newpath");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_NoLocation, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(ret, Status::OK);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_AlreadyRetried, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->location_ = "http://newhost.com";
+    req->haveRedirectRetry_.store(true);
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(ret, Status::OK);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_RelativePath, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://example.com/dir/file.mp4";
+    req->location_ = "other.mp4";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(req->url_, "http://example.com/dir/other.mp4");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_ProtocolRelative, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://example.com/dir/file.mp4";
+    req->location_ = "//newhost.com/newpath";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(req->url_, "http://newhost.com/newpath");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_AbsolutePath, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://example.com/dir/file.mp4";
+    req->location_ = "/newpath";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(req->url_, "http://example.com/newpath");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_AbsolutePathNoHostEnd, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://example.com";
+    req->location_ = "/newpath";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(req->url_, "http://example.com/newpath");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_HttpsLocation, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://example.com/dir/file.mp4";
+    req->location_ = "https://secure.com/newpath";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(req->url_, "https://secure.com/newpath");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_QueryBase, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://example.com/dir/file.mp4?q=1";
+    req->location_ = "other.mp4";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(req->url_, "http://example.com/dir/other.mp4");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_NoSlash, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://example.com";
+    req->location_ = "other.mp4";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(req->url_, "http://other.mp4");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_ProtocolRelativeNoScheme, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "noscheme";
+    req->location_ = "//newhost.com/path";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(req->url_, "//newhost.com/path");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRedirect_AbsolutePathNoScheme, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "noscheme";
+    req->location_ = "/newpath";
+    downloader->currentRequest_ = req;
+    Status ret = Status::OK;
+    downloader->HandleRedirect(ret);
+    ASSERT_EQ(req->url_, "/newpath");
+}
+
+// ---- UpdateHeaderInfo coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateHeaderInfo_AlreadyUpdated, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->isHeaderUpdated_.store(true);
+    downloader->UpdateHeaderInfo(downloader.get());
+    ASSERT_TRUE(req->isHeaderUpdated_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateHeaderInfo_WithContentLen, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.contentLen = 5000;
+    req->headerInfo_.fileContentLen = 0;
+    downloader->UpdateHeaderInfo(downloader.get());
+    ASSERT_FALSE(req->headerInfo_.isChunked);
+    ASSERT_TRUE(req->isHeaderUpdated_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateHeaderInfo_ZeroContentLen, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.contentLen = 0;
+    req->headerInfo_.fileContentLen = 0;
+    downloader->UpdateHeaderInfo(downloader.get());
+    ASSERT_TRUE(req->headerInfo_.isChunked);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateHeaderInfo_ChunkedWithFileLen, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.contentLen = 0;
+    req->headerInfo_.fileContentLen = 5000;
+    req->headerInfo_.isChunked = true;
+    downloader->UpdateHeaderInfo(downloader.get());
+    ASSERT_FALSE(req->headerInfo_.isChunked);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateHeaderInfo_M3u8Chunked, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->protocolType_ = RequestProtocolType::HLS;
+    downloader->currentRequest_ = req;
+    req->headerInfo_.contentLen = 0;
+    req->headerInfo_.fileContentLen = 0;
+    downloader->UpdateHeaderInfo(downloader.get());
+    ASSERT_FALSE(req->headerInfo_.isChunked);
+    ASSERT_TRUE(req->isHeaderUpdated_.load());
+}
+
+// ---- IsDropDataRetryRequest coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_IsDropDataRetryRequest_NotWholeFile, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->requestWholeFile_ = false;
+    ASSERT_FALSE(downloader->IsDropDataRetryRequest(downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_IsDropDataRetryRequest_WholeFileNoRetry, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->requestWholeFile_ = true;
+    req->shouldSaveData_.store(true);
+    req->retryOnGoing_ = false;
+    ASSERT_FALSE(downloader->IsDropDataRetryRequest(downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_IsDropDataRetryRequest_WholeFileRetryStartPos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->requestWholeFile_ = true;
+    req->shouldSaveData_.store(true);
+    req->retryOnGoing_ = true;
+    req->startPos_ = 100;
+    ASSERT_TRUE(downloader->IsDropDataRetryRequest(downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_IsDropDataRetryRequest_WholeFileRetryZeroPos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->requestWholeFile_ = true;
+    req->shouldSaveData_.store(true);
+    req->retryOnGoing_ = true;
+    req->startPos_ = 0;
+    ASSERT_FALSE(downloader->IsDropDataRetryRequest(downloader.get()));
+    ASSERT_FALSE(req->retryOnGoing_);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentRange_Valid, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-range: bytes 0-499/1000\r\n";
+    char* next = buf + strlen("content-range");
+    char* key = buf;
+    info.fileContentLen = 0;
+    ASSERT_TRUE(downloader->HandleContentRange(&info, key, next, 1, 1));
+    ASSERT_EQ(info.fileContentLen, 1000);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentRange_InvalidFormat, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-range: invalid\r\n";
+    char* next = buf + strlen("content-range");
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleContentRange(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentRange_NoSeparators, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-range: bytes 04991000\r\n";
+    char* next = buf + strlen("content-range");
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleContentRange(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentRange_InvalidFileLen, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-range: bytes 0-499/-1\r\n";
+    char* next = buf + strlen("content-range");
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleContentRange(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentRange_FileLenTooLarge, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-range: bytes 0-499/99999999999999999\r\n";
+    char* next = buf + strlen("content-range");
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleContentRange(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentRange_NotContentRange, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "other-header: value\r\n";
+    char* next = buf + strlen("other-header");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentRange(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentRange_FileContentLenMismatch, TestSize.Level1)
+{
+    HeaderInfo info;
+    info.fileContentLen = 500;
+    char buf[] = "content-range: bytes 0-499/1000\r\n";
+    char* next = buf + strlen("content-range");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentRange(&info, key, next, 1, 1));
+    ASSERT_EQ(info.fileContentLen, 500);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentType_Valid, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-type: video/mp4\r\n";
+    char* next = buf + strlen("content-type");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentType(&info, key, next, 1, downloader.get()));
+    ASSERT_EQ(std::string(info.contentType), "video/mp4");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentType_LongType, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-type: very/very/very/long/content/type/string/that/exceeds/buffer\r\n";
+    char* next = buf + strlen("content-type");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentType(&info, key, next, 1, downloader.get()));
+    ASSERT_EQ(strlen(info.contentType), static_cast<size_t>(31));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentType_NotContentType, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "other-header: value\r\n";
+    char* next = buf + strlen("other-header");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentType(&info, key, next, 1, downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentEncode_Valid, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-encode: gzip\r\n";
+    char* next = buf + strlen("content-encode");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentEncode(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentEncode_NotContentEncode, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "other-header: value\r\n";
+    char* next = buf + strlen("other-header");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentEncode(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_Valid, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-length: 1024\r\n";
+    char* next = buf + strlen("content-length");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentLength(&info, key, next, downloader.get()));
+    ASSERT_EQ(info.contentLen, 1024);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_Chunked, TestSize.Level1)
+{
+    downloader->currentRequest_ = MakeTestRequest();
+    HeaderInfo info;
+    char buf[] = "content-length: 0\r\n";
+    char* next = buf + strlen("content-length");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentLength(&info, key, next, downloader.get()));
+    ASSERT_TRUE(info.isChunked);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_NotContentLength, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "other-header: value\r\n";
+    char* next = buf + strlen("other-header");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentLength(&info, key, next, downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_InvalidValue, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-length: abc\r\n";
+    char* next = buf + strlen("content-length");
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleContentLength(&info, key, next, downloader.get()));
+}
+
+// ---- HandleRange coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRange_AcceptRanges, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "accept-ranges: bytes\r\n";
+    char* next = buf + strlen("accept-ranges");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleRange(&info, key, next, 1, 1));
+    ASSERT_TRUE(info.isServerAcceptRange);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRange_AcceptRangesNotBytes, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "accept-ranges: none\r\n";
+    char* next = buf + strlen("accept-ranges");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleRange(&info, key, next, 1, 1));
+    ASSERT_FALSE(info.isServerAcceptRange);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRange_ContentRange, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-range: bytes 0-499/1000\r\n";
+    char* next = buf + strlen("content-range");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleRange(&info, key, next, 1, 1));
+    ASSERT_TRUE(info.isServerAcceptRange);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRange_NotRange, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "other-header: value\r\n";
+    char* next = buf + strlen("other-header");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleRange(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_Chunked, TestSize.Level1)
+{
+    downloader->currentRequest_ = MakeTestRequest();
+    HeaderInfo info;
+    char buf[] = "transfer-encoding: chunked\r\n";
+    char* next = buf + strlen("transfer-encoding");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleTransferEncoding(&info, key, next, downloader.get()));
+    ASSERT_TRUE(info.isChunked);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_ChunkedFlv, TestSize.Level1)
+{
+    downloader->currentRequest_ = MakeTestRequest();
+    HeaderInfo info;
+    char buf[] = "transfer-encoding: chunked\r\n";
+    char* next = buf + strlen("transfer-encoding");
+    char* key = buf;
+    downloader->currentRequest_->url_ = "http://test.com/video.flv";
+    ASSERT_TRUE(downloader->HandleTransferEncoding(&info, key, next, downloader.get()));
+    ASSERT_TRUE(info.isChunked);
+    ASSERT_EQ(info.contentLen, 0);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_NotChunked, TestSize.Level1)
+{
+    downloader->currentRequest_ = MakeTestRequest();
+    HeaderInfo info;
+    char buf[] = "transfer-encoding: identity\r\n";
+    char* next = buf + strlen("transfer-encoding");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleTransferEncoding(&info, key, next, downloader.get()));
+    ASSERT_FALSE(info.isChunked);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_ChunkedM3u8, TestSize.Level1)
+{
+    downloader->currentRequest_ = MakeTestRequest();
+    HeaderInfo info;
+    char buf[] = "transfer-encoding: chunked\r\n";
+    char* next = buf + strlen("transfer-encoding");
+    char* key = buf;
+    downloader->currentRequest_->protocolType_ = RequestProtocolType::HLS;
+    ASSERT_TRUE(downloader->HandleTransferEncoding(&info, key, next, downloader.get()));
+    ASSERT_FALSE(info.isChunked);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_ToLower_Normal, TestSize.Level1)
+{
+    char str[] = "HelloWORLD";
+    downloader->ToLower(str);
+    ASSERT_EQ(std::string(str), "helloworld");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_ToLower_Null, TestSize.Level1)
+{
+    downloader->ToLower(nullptr);
+    ASSERT_EQ(downloader->shouldStartNextRequest_.load(), true);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_StopBufferring_NullTask, TestSize.Level1)
+{
+    downloader->task_ = nullptr;
+    downloader->StopBufferring();
+    ASSERT_EQ(downloader->shouldStartNextRequest_.load(), true);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_StopBufferring_AppBackground, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->isAppBackground_ = true;
+    downloader->StopBufferring();
+    ASSERT_EQ(downloader->client_, nullptr);
+    ASSERT_EQ(downloader->isAppBackground_.load(), true);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_StopBufferring_RestartWithStartPos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->isAppBackground_ = false;
+    downloader->client_ = nullptr;
+    req->startPos_ = 100;
+    req->protocolType_ = RequestProtocolType::HLS;
+    downloader->StopBufferring();
+    ASSERT_NE(downloader->client_, nullptr);
+    ASSERT_TRUE(req->retryOnGoing_);
+}
+
+// ---- SetInterruptState with sourceLoader ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetInterruptState_WithSourceLoader, TestSize.Level1)
+{
+    auto loader = std::make_shared<SourceLoader>();
+    auto sourceLoader = std::make_shared<MediaSourceLoaderCombinations>(loader);
+    auto dl = std::make_shared<Downloader>("test_interrupt", sourceLoader);
+    dl->Init();
+    dl->currentRequest_ = MakeTestRequest();
+    dl->SetInterruptState(true);
+    ASSERT_TRUE(dl->isInterruptNeeded_.load());
+}
+
+// ---- NotifyLoopPause / WaitLoopPause coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_NotifyLoopPause_Idle, TestSize.Level1)
+{
+    downloader->loopStatus_ = Downloader::LoopStatus::IDLE;
+    downloader->isInterruptNeeded_ = false;
+    downloader->NotifyLoopPause();
+    ASSERT_EQ(downloader->loopStatus_.load(), Downloader::LoopStatus::IDLE);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_WaitLoopPause_Idle, TestSize.Level1)
+{
+    downloader->loopStatus_ = Downloader::LoopStatus::IDLE;
+    downloader->WaitLoopPause();
+    ASSERT_EQ(downloader->loopStatus_.load(), Downloader::LoopStatus::IDLE);
+}
+
+// ---- UpdateDownloadInfo coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateDownloadInfo_FirstDownload, TestSize.Level1)
+{
+    downloader->startDownTime_ = 1000;
+    downloader->lastDownloadTime_ = 0;
+    downloader->downloadCallback_ = nullptr;
+    int64_t before = downloader->GetCurrentMillisecond();
+    downloader->UpdateDownloadInfo(downloader.get(), 1024);
+    int64_t after = downloader->GetCurrentMillisecond();
+    ASSERT_EQ(downloader->startDownTime_, 1000);
+    ASSERT_GE(downloader->lastDownloadTime_, before);
+    ASSERT_LE(downloader->lastDownloadTime_, after);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateDownloadInfo_SubsequentDownload, TestSize.Level1)
+{
+    downloader->startDownTime_ = 1000;
+    downloader->lastDownloadTime_ = 2000;
+    downloader->downloadCallback_ = nullptr;
+    downloader->UpdateDownloadInfo(downloader.get(), 1024);
+    ASSERT_NE(downloader->lastDownloadTime_, 2000);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateDownloadInfo_NullDownloader, TestSize.Level1)
+{
+    downloader->UpdateDownloadInfo(nullptr, 1024);
+    ASSERT_EQ(downloader->lastDownloadTime_, 0);
+}
+
+// ---- Cancel coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_Cancel_WithRequest, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->retryTimes_.store(5);
+    downloader->Cancel();
+    ASSERT_FALSE(downloader->isCancelling_.load());
+    ASSERT_EQ(req->retryTimes_.load(), 0);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Cancel_NullRequest, TestSize.Level1)
+{
+    downloader->currentRequest_ = nullptr;
+    downloader->Cancel();
+    ASSERT_FALSE(downloader->isCancelling_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Cancel_NullClient, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->client_ = nullptr;
+    downloader->Cancel();
+    ASSERT_FALSE(downloader->isCancelling_.load());
+}
+
+// ---- Resume coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_Resume_ClientClosed, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->isClientClose_ = true;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    req->headerInfo_.fileContentLen = 10000;
+    req->isHeaderUpdated_.store(true);
+    req->startPos_ = 100;
+    req->requestSize_ = 20000;
+    downloader->Resume();
+    ASSERT_FALSE(downloader->isClientClose_);
+    ASSERT_TRUE(req->requestSize_ <= 10000);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Resume_StartPosLessThanFileLen, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->isClientClose_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    req->headerInfo_.fileContentLen = 500;
+    req->isHeaderUpdated_.store(true);
+    req->startPos_ = 100;
+    req->requestSize_ = 1000;
+    downloader->Resume();
+    ASSERT_EQ(req->requestSize_, 400);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Resume_Interrupted, TestSize.Level1)
+{
+    downloader->isInterruptNeeded_ = true;
+    downloader->Resume();
+    ASSERT_TRUE(downloader->isInterruptNeeded_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Resume_Destructor, TestSize.Level1)
+{
+    downloader->isDestructor_ = true;
+    downloader->Resume();
+    ASSERT_TRUE(downloader->isDestructor_.load());
+}
+
+// ---- RxHeaderData coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_TransferEncoding, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "transfer-encoding: chunked\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+    ASSERT_TRUE(downloader->currentRequest_->headerInfo_.isChunked);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_Location, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "location: http://redirect.com\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+    ASSERT_EQ(req->location_, "http://redirect.com");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentLength, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-length: 1024\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+    ASSERT_EQ(req->headerInfo_.contentLen, 1024);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentType, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-type: video/mp4\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+    ASSERT_EQ(std::string(req->headerInfo_.contentType), "video/mp4");
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_AlreadyUpdated, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->isHeaderUpdated_.store(true);
+    const char* header = "content-length: 1024\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_NullUserParam, TestSize.Level1)
+{
+    const char* header = "content-length: 1024\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, nullptr);
+    ASSERT_EQ(ret, static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ZeroTotalLen, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "";
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 0, 0, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(0));
+}
+
+// ---- RxBodyData coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxBodyData_NullUserParam, TestSize.Level1)
+{
+    uint8_t buf[100] = {0};
+    size_t ret = downloader->RxBodyData(buf, 100, 1, nullptr);
+    ASSERT_EQ(ret, static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxBodyData_OverflowCheck, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    uint8_t buf[100] = {0};
+    size_t ret = downloader->RxBodyData(buf, 1, std::numeric_limits<size_t>::max(), downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxBodyData_WithLocation, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->location_ = "http://redirect.com";
+    req->haveRedirectRetry_.store(false);
+    uint8_t buf[100] = {0};
+    size_t ret = downloader->RxBodyData(buf, 100, 1, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxBodyData_NotSaveData, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->shouldSaveData_.store(false);
+    req->headerInfo_.fileContentLen = 1000;
+    req->headerInfo_.contentLen = 1000;
+    uint8_t buf[100] = {0};
+    size_t ret = downloader->RxBodyData(buf, 100, 1, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(100));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxBodyData_SaveData, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->shouldSaveData_.store(true);
+    req->headerInfo_.fileContentLen = 10000;
+    req->headerInfo_.contentLen = 10000;
+    uint8_t buf[100] = {0};
+    size_t ret = downloader->RxBodyData(buf, 100, 1, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(100));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Pause_Async, TestSize.Level1)
+{
+    downloader->Pause(true);
+    ASSERT_EQ(downloader->shouldStartNextRequest_.load(), true);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Pause_NullClient, TestSize.Level1)
+{
+    downloader->client_ = nullptr;
+    downloader->Pause(true);
+    ASSERT_EQ(downloader->shouldStartNextRequest_.load(), true);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Stop_Async, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->Stop(true);
+    ASSERT_TRUE(req->isInterruptNeeded_);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Stop_SyncWithRequest, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->Stop(false);
+    ASSERT_TRUE(req->isInterruptNeeded_);
+    ASSERT_TRUE(req->IsClosed());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_GetIp_NullClient, TestSize.Level1)
+{
+    downloader->client_ = nullptr;
+    std::string ip = "test";
+    downloader->GetIp(ip);
+    ASSERT_EQ(ip, std::string("test"));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetAppUid_NullClient, TestSize.Level1)
+{
+    downloader->client_ = nullptr;
+    downloader->SetAppUid(12345);
+    ASSERT_EQ(downloader->name_, std::string("test"));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_BeginDownload_NullClient, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    req->url_ = "http://test.com";
+    downloader->currentRequest_ = req;
+    downloader->client_ = nullptr;
+    ASSERT_TRUE(downloader->BeginDownload());
+    ASSERT_EQ(req->requestSize_, 8192);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetInterruptState_NoRequest, TestSize.Level1)
+{
+    downloader->currentRequest_ = nullptr;
+    downloader->SetInterruptState(true);
+    ASSERT_TRUE(downloader->isInterruptNeeded_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetInterruptState_NoRequest_NoInterrupt, TestSize.Level1)
+{
+    downloader->currentRequest_ = nullptr;
+    downloader->SetInterruptState(false);
+    ASSERT_FALSE(downloader->isInterruptNeeded_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Download_NotInterrupt, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->isInterruptNeeded_ = false;
+    downloader->isCancelling_.store(false);
+    bool ret = downloader->Download(req, 100);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetErrorCode_OftenError_Interrupted, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->serverError_ = 500;
+    downloader->isInterruptNeeded_ = true;
+    downloader->HandleRetErrorCode();
+    ASSERT_EQ(req->serverError_, 500);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetOK_RetryTimes, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->startPos_ = 100;
+    req->isHeaderUpdated_.store(true);
+    req->retryTimes_.store(0);
+    downloader->HandleRetOK();
+    ASSERT_EQ(req->requestSize_, 9900);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetOK_NotChunked_QueueNotEmpty, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->startPos_ = 0;
+    req->isHeaderUpdated_.store(true);
+    req->headerInfo_.isChunked = true;
+    auto req2 = MakeTestRequest("http://test2.com");
+    downloader->requestQue_->Push(req2, 1000);
+    downloader->HandleRetOK();
+    ASSERT_FALSE(req->isEos_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRetOK_EndPosRemaining, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 10000;
+    req->startPos_ = 100;
+    req->endPos_ = 200;
+    req->isHeaderUpdated_.store(true);
+    downloader->HandleRetOK();
+    ASSERT_EQ(req->requestSize_, 101);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandlePlayingFinish_NoCallbackDestructor, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->isDestructor_ = true;
+    downloader->HandlePlayingFinish();
+    ASSERT_TRUE(downloader->shouldStartNextRequest_.load());
+    ASSERT_TRUE(downloader->isDestructor_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandlePlayingFinish_CallbackDestructor, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    bool called = false;
+    req->downloadDoneCallback_ = [&called](const std::string&, const std::string&) { called = true; };
+    downloader->isDestructor_ = true;
+    downloader->HandlePlayingFinish();
+    ASSERT_FALSE(called);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateHeaderInfo_AlreadyContentTypeUpdated, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.contentLen = 0;
+    req->headerInfo_.fileContentLen = 0;
+    downloader->isContentTypeUpdated_.store(true);
+    downloader->UpdateHeaderInfo(downloader.get());
+    ASSERT_TRUE(req->isHeaderUpdated_.load());
+    ASSERT_TRUE(downloader->isContentTypeUpdated_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateHeaderInfo_LiveContentLen, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.contentLen = LIVE_CONTENT_LENGTH;
+    req->headerInfo_.fileContentLen = 0;
+    downloader->UpdateHeaderInfo(downloader.get());
+    ASSERT_FALSE(req->headerInfo_.isChunked);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SaveBodyData_WithKeyIndex, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    uint8_t buf[100] = {0};
+    req->keyIndex_ = 1;
+    req->keySaveData_ = [](uint8_t*, uint32_t len, bool, uint64_t) { return len; };
+    req->headerInfo_.fileContentLen = 10000;
+    req->startPos_ = 100;
+    req->endPos_ = -1;
+    size_t ret = downloader->SaveBodyData(downloader.get(), buf, 100);
+    ASSERT_EQ(ret, static_cast<size_t>(100));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SaveBodyData_PartialWrite, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    uint8_t buf[100] = {0};
+    req->saveData_ = [](uint8_t*, uint32_t, bool) { return static_cast<uint32_t>(50); };
+    req->headerInfo_.fileContentLen = 10000;
+    req->startPos_ = 100;
+    req->endPos_ = -1;
+    size_t ret = downloader->SaveBodyData(downloader.get(), buf, 100);
+    ASSERT_EQ(ret, static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentType_NullToken, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-type:\r\n";
+    char* next = nullptr;
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleContentType(&info, key, next, 1, downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentType_EmptyType, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-type: \r\n";
+    char* next = buf + strlen("content-type");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentType(&info, key, next, 1, downloader.get()));
+    ASSERT_EQ(strlen(info.contentType), static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentEncode_NullToken, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-encode:\r\n";
+    char* next = nullptr;
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleContentEncode(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_NullKey, TestSize.Level1)
+{
+    HeaderInfo info;
+    ASSERT_FALSE(downloader->HandleContentLength(&info, nullptr, nullptr, downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_NotMatch, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "other: value\r\n";
+    char* next = buf + strlen("other");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentLength(&info, key, next, downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_M3u8Chunked, TestSize.Level1)
+{
+    downloader->currentRequest_ = MakeTestRequest();
+    downloader->currentRequest_->protocolType_ = RequestProtocolType::HLS;
+    HeaderInfo info;
+    char buf[] = "content-length: 0\r\n";
+    char* next = buf + strlen("content-length");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentLength(&info, key, next, downloader.get()));
+    ASSERT_FALSE(info.isChunked);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRange_AcceptRanges_NullToken, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "accept-ranges:\r\n";
+    char* next = nullptr;
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleRange(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRange_ContentRange_NoBytes, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-range: items 0-499/1000\r\n";
+    char* next = buf + strlen("content-range");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleRange(&info, key, next, 1, 1));
+    ASSERT_FALSE(info.isServerAcceptRange);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleRange_ContentRange_NullToken, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-range:\r\n";
+    char* next = nullptr;
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleRange(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_ToLower_LongString, TestSize.Level1)
+{
+    char str[200];
+    memset(str, 'A', 199);
+    str[199] = '\0';
+    downloader->ToLower(str);
+    ASSERT_EQ(str[50], 'a');
+    ASSERT_EQ(str[99], 'a');
+    ASSERT_EQ(str[101], 'A');
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_OtherHeader, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "x-custom-header: value\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_TooLarge, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    std::string bigHeader(20000, 'x');
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(bigHeader.c_str()), 1, bigHeader.size(), downloader.get());
+    ASSERT_EQ(ret, bigHeader.size());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxBodyData_NotDownloading, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->shouldSaveData_.store(true);
+    req->headerInfo_.fileContentLen = 10000;
+    req->headerInfo_.contentLen = 10000;
+    req->isDownloading_.store(true);
+    uint8_t buf[100] = {0};
+    size_t ret = downloader->RxBodyData(buf, 100, 1, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(100));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxBodyData_SizeZero, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->shouldSaveData_.store(true);
+    req->headerInfo_.fileContentLen = 10000;
+    req->headerInfo_.contentLen = 10000;
+    uint8_t buf[100] = {0};
+    size_t ret = downloader->RxBodyData(buf, 0, 100, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_StopBufferring_AppBackgroundNullClient, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
+    downloader->isAppBackground_ = true;
+    downloader->client_ = nullptr;
+    downloader->StopBufferring();
+    ASSERT_EQ(downloader->isAppBackground_.load(), true);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_StopBufferring_ForegroundClientExists, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
+    downloader->isAppBackground_ = false;
+    downloader->StopBufferring();
+    ASSERT_NE(downloader->client_, nullptr);
+    ASSERT_EQ(downloader->isAppBackground_.load(), false);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_StopBufferring_StartPosZeroHttp, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
+    downloader->isAppBackground_ = false;
+    downloader->client_ = nullptr;
+    req->startPos_ = 100;
+    req->protocolType_ = RequestProtocolType::HTTP;
+    downloader->StopBufferring();
+    ASSERT_NE(downloader->client_, nullptr);
+    ASSERT_FALSE(req->retryOnGoing_);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_StopBufferring_StartPosZeroNonHttp, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->task_ = std::make_shared<Task>(std::string("OS_Downloader"));
+    downloader->isAppBackground_ = false;
+    downloader->client_ = nullptr;
+    req->startPos_ = 0;
+    req->protocolType_ = RequestProtocolType::HLS;
+    downloader->StopBufferring();
+    ASSERT_NE(downloader->client_, nullptr);
+    ASSERT_FALSE(req->retryOnGoing_);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Resume_ClientCloseNullRequest, TestSize.Level1)
+{
+    downloader->isClientClose_ = true;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    downloader->currentRequest_ = nullptr;
+    downloader->Resume();
+    ASSERT_TRUE(downloader->isClientClose_);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Resume_NoClientClose, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->isClientClose_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    req->headerInfo_.fileContentLen = 10000;
+    req->isHeaderUpdated_.store(true);
+    req->startPos_ = 100;
+    req->requestSize_ = 50;
+    downloader->Resume();
+    ASSERT_FALSE(downloader->isClientClose_);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Resume_StartPosGEFileLen, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->isClientClose_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    req->headerInfo_.fileContentLen = 100;
+    req->isHeaderUpdated_.store(true);
+    req->startPos_ = 200;
+    req->requestSize_ = 50;
+    downloader->Resume();
+    ASSERT_EQ(req->requestSize_, 50);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_UpdateDownloadInfo_WithCallback, TestSize.Level1)
+{
+    downloader->startDownTime_ = 1000;
+    downloader->lastDownloadTime_ = 0;
+    auto callback = std::make_shared<DownloadMetricsInfo>();
+    downloader->downloadCallback_ = callback;
+    int64_t before = downloader->GetCurrentMillisecond();
+    downloader->UpdateDownloadInfo(downloader.get(), 1024);
+    ASSERT_EQ(downloader->startDownTime_, 1000);
+    ASSERT_GE(downloader->lastDownloadTime_, before);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RetryCore_ShouldStartNext, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->shouldStartNextRequest_ = true;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    ASSERT_FALSE(downloader->RetryCore(req));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Retry_Destructor, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->isDestructor_ = true;
+    ASSERT_FALSE(downloader->Retry(req));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RetryCore_SameRequest, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    downloader->requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>("testQue");
+    bool result = downloader->RetryCore(req);
+    ASSERT_TRUE(result);
+    ASSERT_EQ(req->retryTimes_.load(), 1);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RetryCore_DifferentRequest, TestSize.Level1)
+{
+    auto req1 = MakeTestRequest("http://test1.com");
+    auto req2 = MakeTestRequest("http://test2.com");
+    downloader->currentRequest_ = req1;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    downloader->requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>("testQue");
+    bool result = downloader->RetryCore(req2);
+    ASSERT_TRUE(result);
+    ASSERT_EQ(req1->retryTimes_.load(), 0);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RetryCore_NoEndPosRange, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    downloader->requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>("testQue");
+    req->endPos_ = -1;
+    req->startPos_ = 0;
+    bool result = downloader->RetryCore(req);
+    ASSERT_TRUE(result);
+    ASSERT_EQ(req->requestSize_, 0);
+}
+
+
+HWTEST_F(DownloaderUnitTest, Downloader_Download_WaitMsMinusOne, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->isInterruptNeeded_ = false;
+    downloader->isCancelling_.store(false);
+    bool ret = downloader->Download(req, -1);
+    ASSERT_TRUE(ret);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Cancel_WithRetryTimes, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->retryTimes_.store(3);
+    downloader->Cancel();
+    ASSERT_EQ(req->retryTimes_.load(), 0);
+    ASSERT_FALSE(downloader->isCancelling_.load());
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_GetContentType_Normal, TestSize.Level1)
+{
+    downloader->isDestructor_ = false;
+    downloader->isContentTypeUpdated_.store(false);
+    downloader->isInterruptNeeded_ = true;
+    std::string result = downloader->GetContentType();
+    ASSERT_EQ(result, downloader->contentType_);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetDownloadCallback_Test, TestSize.Level1)
+{
+    auto callback = std::make_shared<DownloadMetricsInfo>();
+    downloader->SetDownloadCallback(callback);
+    ASSERT_EQ(downloader->downloadCallback_, callback);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_GetCurrentMillisecond_Test, TestSize.Level1)
+{
+    int64_t t1 = downloader->GetCurrentMillisecond();
+    int64_t t2 = downloader->GetCurrentMillisecond();
+    ASSERT_GE(t2, t1);
+}
+
+
+// ---- Round 3: more branch coverage ----
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_NoColon, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-range\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentRangeInvalidStart, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-range: bytes abc-499/1000\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentRangeInvalidEnd, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-range: bytes 0-abc/1000\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentRangeInvalidFileLen, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-range: bytes 0-499/abc\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentRangeNoSeparators, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-range: bytes 04991000\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentRangeMismatch, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->headerInfo_.fileContentLen = 500;
+    const char* header = "content-range: bytes 0-499/1000\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+    ASSERT_EQ(req->headerInfo_.fileContentLen, 500);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentLengthNoNext, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-length\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_AcceptRangesNoToken, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "accept-ranges\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentRangeNoToken, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-range\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_LocationNoNext, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "location\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_TransferEncodingNoToken, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "transfer-encoding\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_ContentEncode, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    const char* header = "content-encode: gzip\r\n";
+    size_t len = strlen(header);
+    size_t ret = downloader->RxHeaderData(const_cast<char*>(header), 1, len, downloader.get());
+    ASSERT_EQ(ret, len);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentRange_DirectNoToken, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-range";
+    char* next = nullptr;
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleContentRange(&info, key, next, 1, 1));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_DirectNullNext, TestSize.Level1)
+{
+    downloader->currentRequest_ = MakeTestRequest();
+    HeaderInfo info;
+    char buf[] = "content-length";
+    char* next = nullptr;
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleContentLength(&info, key, next, downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_DirectNullInfo, TestSize.Level1)
+{
+    downloader->currentRequest_ = MakeTestRequest();
+    char buf[] = "content-length: 1024\r\n";
+    char* next = buf + strlen("content-length");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentLength(nullptr, key, next, downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleContentLength_DirectNullDownloader, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "content-length: 1024\r\n";
+    char* next = buf + strlen("content-length");
+    char* key = buf;
+    ASSERT_TRUE(downloader->HandleContentLength(&info, key, next, nullptr));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_NullDownloader, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "transfer-encoding: chunked\r\n";
+    char* next = buf + strlen("transfer-encoding");
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleTransferEncoding(&info, key, next, nullptr));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_NullCurrentRequest, TestSize.Level1)
+{
+    HeaderInfo info;
+    char buf[] = "transfer-encoding: chunked\r\n";
+    char* next = buf + strlen("transfer-encoding");
+    char* key = buf;
+    downloader->currentRequest_ = nullptr;
+    ASSERT_FALSE(downloader->HandleTransferEncoding(&info, key, next, downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_HandleTransferEncoding_NoToken, TestSize.Level1)
+{
+    downloader->currentRequest_ = MakeTestRequest();
+    HeaderInfo info;
+    char buf[] = "transfer-encoding";
+    char* next = nullptr;
+    char* key = buf;
+    ASSERT_FALSE(downloader->HandleTransferEncoding(&info, key, next, downloader.get()));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Pause_AsyncWithMockRetry, TestSize.Level1)
+{
+    auto mock = std::make_shared<MockCloseRetryClient>();
+    mock->closeFailTimes_ = 2;
+    downloader->client_ = mock;
+    downloader->Pause(true);
+    ASSERT_EQ(mock->closeCallCount_, 3);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_DropRetryData_PartialDrop, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->startPos_ = 500;
+    req->dropedDataLen_ = 0;
+    uint8_t buf[1000] = {0};
+    size_t ret = downloader->DropRetryData(buf, 1000, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(1000));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_DropRetryData_AllDrop, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->startPos_ = 500;
+    req->dropedDataLen_ = 0;
+    uint8_t buf[300] = {0};
+    size_t ret = downloader->DropRetryData(buf, 300, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(300));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_DropRetryData_NoDropNeeded, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->startPos_ = 100;
+    req->dropedDataLen_ = 100;
+    uint8_t buf[500] = {0};
+    size_t ret = downloader->DropRetryData(buf, 500, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(0));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_DropRetryData_WithKeyIndex, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->startPos_ = 500;
+    req->dropedDataLen_ = 0;
+    req->keyIndex_ = 1;
+    req->keySaveData_ = [](uint8_t*, uint32_t len, bool, uint64_t) { return len; };
+    uint8_t buf[1000] = {0};
+    size_t ret = downloader->DropRetryData(buf, 1000, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(1000));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxBodyData_DropRetryWithIndex, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->requestWholeFile_ = true;
+    req->shouldSaveData_.store(true);
+    req->retryOnGoing_ = true;
+    req->startPos_ = 100;
+    req->headerInfo_.fileContentLen = 10000;
+    req->headerInfo_.contentLen = 10000;
+    req->SetIsIndexM3u8Request(false);
+    uint8_t buf[200] = {0};
+    size_t ret = downloader->RxBodyData(buf, 200, 1, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(200));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RxBodyData_DropRetryIndexM3u8, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    req->requestWholeFile_ = true;
+    req->shouldSaveData_.store(true);
+    req->retryOnGoing_ = true;
+    req->startPos_ = 100;
+    req->headerInfo_.fileContentLen = 10000;
+    req->headerInfo_.contentLen = 10000;
+    req->SetIsIndexM3u8Request(true);
+    uint8_t buf[200] = {0};
+    size_t ret = downloader->RxBodyData(buf, 200, 1, downloader.get());
+    ASSERT_EQ(ret, static_cast<size_t>(200));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_Retry_ShouldStartNextRequest, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->shouldStartNextRequest_ = true;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    ASSERT_FALSE(downloader->Retry(req));
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_RetryCore_IsSameAndEndPos, TestSize.Level1)
+{
+    auto req = MakeTestRequest();
+    downloader->currentRequest_ = req;
+    downloader->shouldStartNextRequest_ = false;
+    downloader->isDestructor_ = false;
+    downloader->isInterruptNeeded_ = false;
+    downloader->requestQue_ = std::make_shared<BlockingQueue<std::shared_ptr<DownloadRequest>>>("testQue");
+    req->endPos_ = 200;
+    req->startPos_ = 100;
+    bool result = downloader->RetryCore(req);
+    ASSERT_TRUE(result);
+    ASSERT_EQ(req->requestSize_, 101);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_NotifyLoopPause_Pause, TestSize.Level1)
+{
+    downloader->loopStatus_ = Downloader::LoopStatus::PAUSE;
+    downloader->isInterruptNeeded_ = false;
+    downloader->NotifyLoopPause();
+    ASSERT_EQ(downloader->loopStatus_.load(), Downloader::LoopStatus::IDLE);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_NotifyLoopPause_Interrupted, TestSize.Level1)
+{
+    downloader->loopStatus_ = Downloader::LoopStatus::START;
+    downloader->isInterruptNeeded_ = true;
+    downloader->NotifyLoopPause();
+    ASSERT_EQ(downloader->loopStatus_.load(), Downloader::LoopStatus::IDLE);
+}
+
+HWTEST_F(DownloaderUnitTest, Downloader_SetInterruptState_NoRequestTrue, TestSize.Level1)
+{
+    downloader->currentRequest_ = nullptr;
+    downloader->sourceLoader_ = nullptr;
+    downloader->SetInterruptState(true);
+    ASSERT_TRUE(downloader->isInterruptNeeded_.load());
+}
+
 }
 }
 }
