@@ -26,6 +26,8 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
+constexpr size_t TEN = 10;
+
 class MockSourceLoader : public Plugins::IMediaSourceLoader {
 public:
     int32_t Init(std::shared_ptr<Plugins::IMediaSourceLoadingRequest> &request) override { return 0; }
@@ -60,7 +62,11 @@ public:
     void SetCallback(const std::shared_ptr<Callback>& cb) override { setCallbackCalled_ = true; }
     void SetStatusCallback(StatusCallbackFunc cb) override { (void)cb; }
     void SetInterruptState(bool isInterruptNeeded) override { setInterruptStateCalled_ = true; }
-    void SetAppUid(int32_t appUid) override { setAppUidCalled_ = true; lastAppUid_ = appUid; }
+    void SetAppUid(int32_t appUid) override
+    {
+        setAppUidCalled_ = true;
+        lastAppUid_ = appUid;
+    }
     bool SelectBitRate(uint32_t bitRate) override { return bitRate == 0 ? false : true; }
     void SetIsTriggerAutoMode(bool isAuto) override { setIsTriggerAutoModeCalled_ = true; }
     bool AutoSelectBitRate(uint32_t bitRate) override { return bitRate == 0 ? false : true; }

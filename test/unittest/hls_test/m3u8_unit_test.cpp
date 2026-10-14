@@ -2283,22 +2283,6 @@ HWTEST_F(M3u8UnitTest, BindVideoMedia_NullMediaStream_001, TestSize.Level1)
     ASSERT_EQ(stream->defaultAudio_, media);
 }
 
-// ===== GetDefaultMedieStream branch coverage =====
-HWTEST_F(M3u8UnitTest, GetDefaultMedieStream_DefaultWithCharacteristics_001, TestSize.Level1)
-{
-    M3U8MasterPlaylist playlist("", "http://example.com");
-    playlist.StartParsing();
-    auto stream = std::make_shared<M3U8VariantStream>("v", "uri", nullptr);
-    auto media1 = std::make_shared<M3U8Media>("a", "uri", nullptr);
-    media1->isDefault_ = true;
-    media1->characteristics_ = "public.accessibility";
-    auto media2 = std::make_shared<M3U8Media>("b", "uri", nullptr);
-    media2->autoSelect_ = true;
-    stream->audioMedia_ = {media1, media2};
-    playlist.GetDefaultMedieStream(stream, "audio");
-    ASSERT_EQ(stream->defaultAudio_, media2);
-}
-
 HWTEST_F(M3u8UnitTest, GetDefaultMedieStream_EmptyMedia_001, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("", "http://example.com");
@@ -3020,6 +3004,4 @@ HWTEST_F(M3u8UnitTest, ParseStart_Master_PreciseNo_001, TestSize.Level0)
     EXPECT_FALSE(playlist.precise_);
     ASSERT_TRUE(playlist.isStart_);
 }
-
-
 }

@@ -33,6 +33,7 @@ namespace HttpPlugin {
 
 namespace {
 constexpr int64_t DEFAULT_UUID = 123456789;
+constexpr int64_t SECOND = 2;
 
 class SourceLoader : public IMediaSourceLoader {
 public:
@@ -84,6 +85,11 @@ class MockAVSharedMemory : public AVSharedMemory {
 public:
     explicit MockAVSharedMemory(int32_t size) : size_(size)
     {
+        if (size <= 0) {
+            data_ = nullptr;
+            size_ = 0;
+            return;
+        }
         data_ = new uint8_t[size];
     }
     ~MockAVSharedMemory() override
@@ -135,7 +141,7 @@ protected:
     {
         (void)buffer;
         (void)userParam;
-        return (size * nitems) / 2;
+        return (size * nitems) / SECOND;
     }
 
     static size_t RxHeaderData(void* buffer, size_t size, size_t nitems, void* userParam)

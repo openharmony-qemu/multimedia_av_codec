@@ -1801,8 +1801,6 @@ HWTEST_F(HttpSourcePluginUnitTest, Read_NullDownloaderTwoArg, TestSize.Level1)
     ASSERT_EQ(status, Status::ERROR_NULL_POINTER);
 }
 
-
-
 HWTEST_F(HttpSourcePluginUnitTest, SetSource_Twice, TestSize.Level1)
 {
     mediaSource = std::make_shared<MediaSource>(MP4_SEGMENT_BASE);

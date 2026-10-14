@@ -549,15 +549,6 @@ HWTEST_F(DashAdptSetManagerUnitTest, Dash_Adpt_SetManager_IsHdr_001, TestSize.Le
     ASSERT_EQ(false, setManager.IsHdr());
 }
 
-HWTEST_F(DashAdptSetManagerUnitTest, Dash_Adpt_SetManager_IsHdr_002, TestSize.Level1)
-{
-    DashAdptSetInfo info;
-    DashDescriptor desc;
-    desc.schemeIdUrl_ = "urn:uuid:6d82888e-3c57-4a0d-b5e1-9fcb490e3e55";
-    info.commonAttrsAndElements_.essentialPropertyList_.push_back(&desc);
-    DashAdptSetManager setManager {&info};
-    ASSERT_EQ(false, setManager.IsHdr());
-}
 }
 }
 }

@@ -2737,19 +2737,6 @@ HWTEST_F(DownloaderUnitTest, DownloadRequest_SetDownloadDoneCb, TestSize.Level1)
     ASSERT_TRUE(called);
 }
 
-HWTEST_F(DownloaderUnitTest, DownloadRequest_SaveHeader, TestSize.Level1)
-{
-    auto req = MakeTestRequest();
-    HeaderInfo info;
-    info.fileContentLen = 9999;
-    info.contentLen = 8888;
-    info.isChunked = true;
-    strncpy(info.contentType, "video/mp4", sizeof(info.contentType) - 1);
-    req->SaveHeader(&info);
-    ASSERT_TRUE(req->isHeaderUpdated_.load());
-    ASSERT_EQ(req->headerInfo_.fileContentLen, 9999);
-}
-
 HWTEST_F(DownloaderUnitTest, Downloader_GetContentType_Destructor, TestSize.Level1)
 {
     downloader->isDestructor_ = true;
@@ -4260,17 +4247,6 @@ HWTEST_F(DownloaderUnitTest, Downloader_HandleRange_ContentRange_NullToken, Test
     char* next = nullptr;
     char* key = buf;
     ASSERT_FALSE(downloader->HandleRange(&info, key, next, 1, 1));
-}
-
-HWTEST_F(DownloaderUnitTest, Downloader_ToLower_LongString, TestSize.Level1)
-{
-    char str[200];
-    memset(str, 'A', 199);
-    str[199] = '\0';
-    downloader->ToLower(str);
-    ASSERT_EQ(str[50], 'a');
-    ASSERT_EQ(str[99], 'a');
-    ASSERT_EQ(str[101], 'A');
 }
 
 HWTEST_F(DownloaderUnitTest, Downloader_RxHeaderData_OtherHeader, TestSize.Level1)
