@@ -530,8 +530,17 @@ int32_t CodecServiceStub::CheckInitCaller(AVCodecType type, Media::Meta &callerI
         callerPid = ipcPid;
         callerUid = ipcUid;
     }
+    std::string forwardName;
     bool hasForwardPid = GetCallerId(callerInfo, Tag::AV_CODEC_FORWARD_CALLER_PID, forwardPid);
     bool hasForwardUid = GetCallerId(callerInfo, Tag::AV_CODEC_FORWARD_CALLER_UID, forwardUid);
+    bool hasForwardName = callerInfo.GetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, forwardName);
+    if ((hasForwardPid || hasForwardUid || hasForwardName) && !IsCallerNativeOrShell()) {
+        callerInfo.Remove(Tag::AV_CODEC_FORWARD_CALLER_PID);
+        callerInfo.Remove(Tag::AV_CODEC_FORWARD_CALLER_UID);
+        callerInfo.Remove(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME);
+        hasForwardPid = false;
+        hasForwardUid = false;
+    }
     ResetCallerId(callerInfo, Tag::AV_CODEC_CALLER_PID, callerPid);
     ResetCallerId(callerInfo, Tag::AV_CODEC_CALLER_UID, callerUid);
     if (hasForwardPid) {
