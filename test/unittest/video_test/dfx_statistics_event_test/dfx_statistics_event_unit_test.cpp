@@ -47,7 +47,6 @@ constexpr int32_t STATISTIC_EVENT_INFO_TIMEOUT = 10000;
 constexpr int32_t MAX_EVENT_ADD_COUNT = 100000;
 constexpr int32_t BEHAVIORSINFO_EVENT_ADD_COUNT = 200;
 constexpr int32_t ELAPSEDTIME_THREADSHOLD = 600;
-constexpr char TEST_DOMAIN[] = "AV_CODEC";
 std::string g_recordJson;
 enum class RANDOM_MIME_TYPE : int {
     VALID_VIDEO,
@@ -258,31 +257,10 @@ void DfxStatisticsEventTest::TearDown(void)
 }
 
 /**
- * @tc.name: RegisterEventHook_Test_001
- * @tc.desc: 1. eventType key in range
- *           2. EventHooker func not exist
- *           3. add EventHooker func
- * @tc.type: FUNC
- */
-HWTEST_F(DfxStatisticsEventTest, RegisterEventHook_Test_001, TestSize.Level1)
-{
-    bool isRegisterEventHook = false;
-    StatisticsEventInfo::GetInstance().RegisterEventHook(
-        StatisticsEventType::MAIN_EVENT_TYPE_MASK, [&isRegisterEventHook](const Media::Meta &meta) -> bool {
-            HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
-                            "Test", "Success");
-            isRegisterEventHook = true;
-            return true;
-        });
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    ASSERT_NE(true, isRegisterEventHook);
-}
-
-/**
  * @tc.name: AddEventInfo_Invalid_Key_001
  * @tc.desc: 1. eventType key out of range
- *           2. EventHooker func not exist
- *           3. add EventHooker func and report
+ *           2. no event handler exists
+ *           3. submit should complete normally
  * @tc.type: FUNC
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
@@ -293,48 +271,6 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_001, TestSize.Level1)
     WaitForEventJson();
     auto data = std::shared_ptr<cJSON>(cJSON_Parse(g_recordJson.c_str()), cJSON_Delete);
     ASSERT_NE(nullptr, data);
-}
-
-/**
- * @tc.name: AddEventInfo_Invalid_Key_002
- * @tc.desc: 1. eventType key out of range
- *           2. EventHooker func exist, needErase is true
- * @tc.type: FUNC
- */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_002, TestSize.Level1)
-{
-    bool isRegisterEventHook = false;
-    StatisticsEventInfo::GetInstance().RegisterEventHook(
-        static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHook](const Media::Meta &meta) -> bool {
-            HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
-                            "Test", "Success");
-            isRegisterEventHook = true;
-            return true;
-        });
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    ASSERT_EQ(true, isRegisterEventHook);
-}
-
-/**
- * @tc.name: AddEventInfo_Invalid_Key_003
- * @tc.desc: 1. eventType key out of range
- *           2. EventHooker func exist, needErase is false
- * @tc.type: FUNC
- */
-HWTEST_F(DfxStatisticsEventTest, AddEventInfo_Invalid_Key_003, TestSize.Level1)
-{
-    bool isRegisterEventHook = true;
-    StatisticsEventInfo::GetInstance().RegisterEventHook(
-        static_cast<StatisticsEventType>(INT32_MAX), [&isRegisterEventHook](const Media::Meta &meta) -> bool {
-            HiSysEventWrite(TEST_DOMAIN, "DFX_STATISTICS_EVENT_TEST", OHOS::HiviewDFX::HiSysEvent::EventType::BEHAVIOR,
-                            "Test", "Success");
-            isRegisterEventHook = false;
-            return false;
-        });
-    StatisticsEventInfo::GetInstance().OnAddEventInfo(static_cast<StatisticsEventType>(INT32_MAX), *meta_);
-    std::this_thread::sleep_for(std::chrono::milliseconds(QUERY_INTERVAL_TIME));
-    ASSERT_EQ(false, isRegisterEventHook);
 }
 
 /**
@@ -793,12 +729,14 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_AppBehaviorsInfo_001, TestSize.Lev
  */
 HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize.Level1)
 {
+    Media::Meta releaseMeta;
     for (int32_t i = 0; i < BEHAVIORSINFO_EVENT_ADD_COUNT; i++) {
         std::string callerProcessName = "callerProcess";
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(
+            StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, releaseMeta);
     }
 
     for (int32_t i = 0; i < MAX_EVENT_ADD_COUNT; i++) {
@@ -806,7 +744,8 @@ HWTEST_F(DfxStatisticsEventTest, AddEventInfo_DecLimitExceededInfo_001, TestSize
         meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, callerProcessName);
         StatisticsEventInfo::GetInstance().OnAddEventInfo(
             StatisticsEventType::DEC_ABNORMAL_OCCUPATION_HDEC_LIMIT_EXCEEDED_INFO, *meta_);
-        StatisticsEventInfo::GetInstance().OnAddEventInfo(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, *meta_);
+        StatisticsEventInfo::GetInstance().OnAddEventInfo(
+            StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO, releaseMeta);
     }
 
     StatisticsEventInfo::GetInstance().OnSubmitEventInfo();

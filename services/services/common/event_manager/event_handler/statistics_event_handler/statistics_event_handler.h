@@ -16,7 +16,6 @@
 #ifndef AVCODEC_DFX_EVENTINFO_STATISTICS_H
 #define AVCODEC_DFX_EVENTINFO_STATISTICS_H
 
-#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -30,8 +29,6 @@ namespace MediaAVCodec {
 class StatisticsEventInfoBase;
 class StatisticsEventInfo {
 public:
-    using EventHook = std::function<bool(const Media::Meta &)>;   // return true to erase hook
-
     StatisticsEventInfo();
 
     static StatisticsEventInfo &GetInstance()
@@ -42,15 +39,12 @@ public:
 
     void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta);
     void OnSubmitEventInfo();
-    void RegisterEventHook(StatisticsEventType eventType, EventHook hook);
     void RegisterSubmitEventTimer();
     bool IsEventValid();
 
 private:
     std::shared_mutex mutex_;
     std::unordered_map<StatisticsEventType, std::shared_ptr<StatisticsEventInfoBase>> eventInfoMap_;
-    std::shared_mutex eventHookMutex_;
-    std::unordered_map<StatisticsEventType, EventHook> eventHooks_;
     std::shared_ptr<AVCodecXcollieTimer> timer_;
 };
 } // namespace MediaAVCodec

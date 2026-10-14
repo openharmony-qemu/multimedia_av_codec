@@ -148,15 +148,18 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
 {
     std::unique_lock<std::shared_mutex> lock(mutex_);
     pid_t pid = IPCSkeleton::GetCallingPid();
+    bool needReportHDecRelease = false;
     switch (type) {
         case CODEC: {
             auto it = find_if(codecStubMap_.begin(), codecStubMap_.end(),
-                [object] (std::pair<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> objectPair) ->
-                    bool { return objectPair.second.first == object; });
-            CHECK_AND_BREAK_LOG(it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
+                [object](std::pair<pid_t, std::pair<sptr<IRemoteObject>, InstanceInfo>> objectPair) -> bool {
+                    return objectPair.second.first == object;
+                });
+            CHECK_AND_BREAK_LOG(
+                it != codecStubMap_.end(), "find codec object failed, pid(%{public}d)", pid);
 
             if (it->second.second.videoCodecType == VideoCodecType::DECODER_HARDWARE) {
-                EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
+                needReportHDecRelease = true;
             }
 
             auto preSize = codecStubMap_.size();
@@ -166,13 +169,15 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
         }
         case CODECLIST: {
             auto it = find_if(codecListStubMap_.begin(), codecListStubMap_.end(),
-                [object] (std::pair<sptr<IRemoteObject>, pid_t> objectPair) ->
-                    bool { return objectPair.first == object; });
-            CHECK_AND_BREAK_LOG(it != codecListStubMap_.end(), "find codeclist object failed, pid(%{public}d)", pid);
+                [object](std::pair<sptr<IRemoteObject>, pid_t> objectPair) -> bool {
+                    return objectPair.first == object;
+                });
+            CHECK_AND_BREAK_LOG(
+                it != codecListStubMap_.end(), "find codeclist object failed, pid(%{public}d)", pid);
 
             auto preSize = codecListStubMap_.size();
-            AVCODEC_LOGI("codeclist stub services(%{public}zu->%{public}zu) pid(%{public}d)", preSize, preSize - 1,
-                         pid);
+            AVCODEC_LOGI("codeclist stub services(%{public}zu->%{public}zu) pid(%{public}d)", preSize,
+                         preSize - 1, pid);
             codecListStubMap_.erase(it);
             break;
         }
@@ -186,9 +191,13 @@ void AVCodecServerManager::DestroyStubObject(StubType type, sptr<IRemoteObject> 
     if (needSetCritical) {
         SetCritical(false);
     }
+    if (needReportHDecRelease) {
+        EventManager::GetInstance().OnInstanceEvent(
+            StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
+    }
 }
 
-void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>& stubMap, pid_t pid)
+void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t> &stubMap, pid_t pid)
 {
     for (auto it = stubMap.begin(); it != stubMap.end();) {
         if (it->second == pid) {
@@ -198,15 +207,15 @@ void AVCodecServerManager::EraseObject(std::map<sptr<IRemoteObject>, pid_t>& stu
             it++;
         }
     }
-    return;
 }
 
-void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
+bool AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
 {
+    bool needReportHDecRelease = false;
     for (auto it = codecStubMap_.begin(); it != codecStubMap_.end();) {
         if (it->first == pid) {
             if (it->second.second.videoCodecType == VideoCodecType::DECODER_HARDWARE) {
-                EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
+                needReportHDecRelease = true;
             }
             executor_.Commit(it->second.first);
             it = codecStubMap_.erase(it);
@@ -214,20 +223,21 @@ void AVCodecServerManager::EraseCodecObjectByPid(pid_t pid)
             it++;
         }
     }
-    return;
+    return needReportHDecRelease;
 }
 
 void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
 {
     std::unique_lock<std::shared_mutex> lock(mutex_);
     auto preSize = codecStubMap_.size();
-    EraseCodecObjectByPid(pid);
-    AVCODEC_LOGI("codec stub services(%{public}zu->%{public}zu),pid(%{public}d)", preSize, codecStubMap_.size(), pid);
+    bool needReportHDecRelease = EraseCodecObjectByPid(pid);
+    AVCODEC_LOGI("codec stub services(%{public}zu->%{public}zu),pid(%{public}d)", preSize,
+                 codecStubMap_.size(), pid);
 
     preSize = codecListStubMap_.size();
     EraseObject(codecListStubMap_, pid);
-    AVCODEC_LOGI("codeclist stub services(%{public}zu->%{public}zu),pid(%{public}d)", preSize, codecListStubMap_.size(),
-                 pid);
+    AVCODEC_LOGI("codeclist stub services(%{public}zu->%{public}zu),pid(%{public}d)", preSize,
+                 codecListStubMap_.size(), pid);
     executor_.Clear();
     bool needSetCritical = false;
     if (codecStubMap_.size() == 0) {
@@ -238,6 +248,10 @@ void AVCodecServerManager::DestroyStubObjectForPid(pid_t pid)
     lock.unlock();
     if (needSetCritical) {
         SetCritical(false);
+    }
+    if (needReportHDecRelease) {
+        EventManager::GetInstance().OnInstanceEvent(
+            StatisticsEventType::APP_BEHAVIORS_RELEASE_HDEC_INFO);
     }
 }
 
