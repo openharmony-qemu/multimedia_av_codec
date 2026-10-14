@@ -127,9 +127,8 @@ private:
     std::atomic<bool> isPerfRecEnabled_ { false };
     std::atomic<int32_t> dropFrameContinuouslyCnt_ {0};
     std::atomic<int64_t> lastPts_ {-1};
-    int64_t frameInterval_ = -1;
+    std::atomic<int64_t> frameInterval_ {-1};
     std::atomic<int64_t> lastClockTime_ {-1};
-    std::atomic<bool> isRenderStarted_{false};
     VideoLagDetector lagDetector_ {};
     int64_t renderAdvanceThreshold_ { 80000 };
     bool enableRenderAtTime_ {true};
