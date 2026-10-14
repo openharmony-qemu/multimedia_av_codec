@@ -70,7 +70,7 @@ public:
     bool SelectBitRate(uint32_t bitRate) override { return bitRate == 0 ? false : true; }
     void SetIsTriggerAutoMode(bool isAuto) override { setIsTriggerAutoModeCalled_ = true; }
     bool AutoSelectBitRate(uint32_t bitRate) override { return bitRate == 0 ? false : true; }
-    size_t GetSegmentOffset() override { return segmentOffset_; }
+    size_t GetSegmentOffset(StreamType streamType = StreamType::VIDEO) override { return segmentOffset_; }
     bool GetHLSDiscontinuity() override { return hlsDiscontinuity_; }
     void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override
     {
