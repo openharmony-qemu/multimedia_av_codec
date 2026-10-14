@@ -38,14 +38,13 @@ DmaSwaper::DmaSwaper()
 {
     CHECK_AND_RETURN_LOG(reclaimDriverFd_ <= 0, "Already initialized!");
     reclaimDriverFd_ = open(DMA_DEVICE_FILE, O_RDWR | O_CLOEXEC | O_NONBLOCK);
-    fdsan_exchange_owner_tag(reclaimDriverFd_, 0, FDSAN_TAG);
     CHECK_AND_RETURN_LOG(reclaimDriverFd_ > 0, "Fail to open device!");
+    fdsan_exchange_owner_tag(reclaimDriverFd_, 0, FDSAN_TAG);
 }
 
 DmaSwaper::~DmaSwaper()
 {
     CHECK_AND_RETURN_LOG(reclaimDriverFd_ > 0, "Invalid fd!");
-    close(reclaimDriverFd_);
     fdsan_close_with_tag(reclaimDriverFd_, FDSAN_TAG);
     reclaimDriverFd_ = -1;
 }
