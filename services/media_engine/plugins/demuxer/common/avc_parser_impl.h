@@ -34,6 +34,8 @@ public:
         const uint8_t *sample, int32_t size, uint8_t **extraDataBuf, int32_t *extraDataSize) override { return; };
     bool ConvertExtraDataToAnnexb(uint8_t *extraData, int32_t extraDataSize) override;
     bool ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, int32_t extraDataSize);
+    bool ParseSpsFrameRateFromAvcConfig(const uint8_t *extraData, int32_t extraDataSize, uint32_t &frameRateNum,
+        uint32_t &frameRateDen);
     bool ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize,
         bool isExtradata) override;
     bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) override;

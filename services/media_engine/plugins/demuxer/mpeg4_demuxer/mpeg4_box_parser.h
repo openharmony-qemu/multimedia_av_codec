@@ -119,6 +119,10 @@ public:
         uint16_t audioSampleEntryVersion = 0;
         uint16_t audioSampleEntryCid = 0;
         uint8_t stsdVersion = 0;
+        bool stsdParsed = false;
+        bool codecFrameRateParsed = false;
+        uint32_t codecFrameRateNum = 0;
+        uint32_t codecFrameRateDen = 0;
         CodecParams codecParms{};
         std::vector<std::vector<uint8_t>> codecConfigs;
         uint64_t codecConfigsSize = 0;
@@ -281,6 +285,7 @@ private:
     bool HasEnoughSamplesForBitrate(const std::shared_ptr<Track>& track, const std::string& mime);
     bool GetBitrateDurationAndSize(std::shared_ptr<Track> track, int64_t& duration, int64_t& totalSize);
     void CalculateVideoDelay(std::shared_ptr<Track> track);
+    void CalculateCodecFrameRate(std::shared_ptr<Track> track);
     void NormalizeAudioAttributes(std::shared_ptr<Track> track);
     AudioSampleFormat GetAv3aSampleFormat(int32_t bitsPerRawSample) const;
     AudioChannelLayout GetAv3aChannelLayout(int32_t channelCount, int32_t sampleRate) const;

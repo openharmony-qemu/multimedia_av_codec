@@ -60,6 +60,9 @@ struct H264SpsInfo {
     uint32_t separateColourPlaneFlag = 0;
     uint32_t reorderDelay = 0;
     double sar = 0.0;
+    uint32_t frameRateNum = 0;
+    uint32_t frameRateDen = 0;
+    bool hasFrameRate = false;
 };
 
 constexpr std::array<H264SarEntry, 16> H264_SAR_TABLE = {{
@@ -68,6 +71,16 @@ constexpr std::array<H264SarEntry, 16> H264_SAR_TABLE = {{
     {80u, 33u},   {18u, 11u},   {15u, 11u},   {64u, 33u},
     {160u, 99u},  {4u, 3u},     {3u, 2u},     {2u, 1u},
 }};
+
+uint64_t GcdUint64(uint64_t a, uint64_t b)
+{
+    while (b != 0) {
+        uint64_t remainder = a % b;
+        a = b;
+        b = remainder;
+    }
+    return a;
+}
 
 bool SkipH264ScalingList(RbspContext& reader, uint32_t sizeOfScalingList)
 {
@@ -215,6 +228,28 @@ bool ReadH264VuiBeforeRestriction(RbspContext& reader, uint32_t& tmp, H264SpsInf
     return true;
 }
 
+bool ReadH264SpsFrameRate(RbspContext& reader, uint32_t& tmp, H264SpsInfo& info)
+{
+    uint32_t flag = 0;
+    FALSE_RETURN_V(reader.RbspReadBit(flag), false); // timing_info_present_flag
+    if (flag) {
+        uint32_t numUnitsInTick = 0;
+        uint32_t timeScale = 0;
+        FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, numUnitsInTick), false); // num_units_in_tick
+        FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, timeScale), false); // time_scale
+        FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // fixed_frame_rate_flag
+        if (numUnitsInTick > 0 && timeScale > 0) {
+            uint64_t num = timeScale;
+            uint64_t den = static_cast<uint64_t>(numUnitsInTick) * 2;
+            uint64_t common = GcdUint64(num, den);
+            info.frameRateNum = static_cast<uint32_t>(num / common);
+            info.frameRateDen = static_cast<uint32_t>(den / common);
+            info.hasFrameRate = info.frameRateNum > 0 && info.frameRateDen > 0;
+        }
+    }
+    return true;
+}
+
 bool ReadH264GeometrySyntax(RbspContext& reader, uint32_t& tmp, H264SpsInfo& info)
 {
     uint32_t picWidthInMbsMinus1 = 0;
@@ -296,7 +331,7 @@ bool ReadH264ReorderDelayFromVui(RbspContext& reader, uint32_t& tmp, H264SpsInfo
     return reader.RbspReadUE(info.reorderDelay); // num_reorder_frames
 }
 
-bool ParseH264SpsInfo(const uint8_t* sps, size_t size, H264SpsInfo& info)
+bool ParseH264SpsInfo(const uint8_t* sps, size_t size, H264SpsInfo& info, bool readFrameRate = false)
 {
     FALSE_RETURN_V(sps != nullptr && size > AVC_NAL_HEADER_SIZE, false);
     RbspContext reader(sps + AVC_NAL_HEADER_SIZE, static_cast<int32_t>(size - AVC_NAL_HEADER_SIZE), true);
@@ -319,6 +354,10 @@ bool ParseH264SpsInfo(const uint8_t* sps, size_t size, H264SpsInfo& info)
     FALSE_RETURN_V(reader.RbspReadBit(vuiParametersPresent), false); // vui_parameters_present_flag
     if (!vuiParametersPresent) {
         return false;
+    }
+    if (readFrameRate) {
+        return ReadH264VuiBeforeRestriction(reader, tmp, info) &&
+            ReadH264SpsFrameRate(reader, tmp, info);
     }
     return ReadH264ReorderDelayFromVui(reader, tmp, info);
 }
@@ -554,6 +593,32 @@ bool AvcParserImpl::ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, in
         picHetInLumaSamples_ = info.height > 0 ? info.height : picHetInLumaSamples_;
         sar_ = info.sar > 0 ? info.sar : sar_;
         if (parseSuccess) {
+            return true;
+        }
+        offset += spsLength;
+    }
+    return false;
+}
+
+bool AvcParserImpl::ParseSpsFrameRateFromAvcConfig(const uint8_t *extraData, int32_t extraDataSize,
+    uint32_t &frameRateNum, uint32_t &frameRateDen)
+{
+    FALSE_RETURN_V(extraData != nullptr && extraDataSize >= AVC_CONFIG_HEADER_SIZE, false);
+    size_t offset = AVC_CONFIG_SPS_OFFSET;
+    uint8_t spsCount = extraData[offset++] & AVC_CONFIG_SPS_COUNT_MASK;
+    for (uint8_t i = 0; i < spsCount; ++i) {
+        if (offset + sizeof(uint16_t) > static_cast<size_t>(extraDataSize)) {
+            return false;
+        }
+        uint16_t spsLength = (static_cast<uint16_t>(extraData[offset]) << H264_BYTE_BITS) | extraData[offset + 1];
+        offset += sizeof(uint16_t);
+        if (offset + spsLength > static_cast<size_t>(extraDataSize)) {
+            return false;
+        }
+        H264SpsInfo info;
+        if (ParseH264SpsInfo(extraData + offset, spsLength, info, true) && info.hasFrameRate) {
+            frameRateNum = info.frameRateNum;
+            frameRateDen = info.frameRateDen;
             return true;
         }
         offset += spsLength;

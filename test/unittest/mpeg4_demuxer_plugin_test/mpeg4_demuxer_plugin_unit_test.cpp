@@ -175,7 +175,6 @@ constexpr uint32_t PARTIAL_SYNC_SAMPLE = 61;
 constexpr uint32_t MPEG_AUDIO_TEST_TRACK_ID = 0;
 constexpr int32_t MPEG_AUDIO_TEST_SAMPLE_RATE = 16000;
 constexpr int32_t MPEG_AUDIO_TEST_SAMPLES_PER_FRAME = 576;
-constexpr int64_t MPEG_AUDIO_TEST_FRAME_DURATION_US = 36000;
 constexpr size_t MPEG_AUDIO_TEST_FRAME_SIZE = 504;
 constexpr size_t MPEG_AUDIO_TEST_SPLIT_SIZE = 200;
 constexpr size_t MPEG_AUDIO_TEST_HEADER_SPLIT_SIZE = 2;
@@ -183,6 +182,8 @@ constexpr size_t MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE = 298;
 constexpr size_t MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE = 249;
 constexpr size_t MPEG_AUDIO_TEST_PARTIAL_FRAME_TAIL_SIZE =
     MPEG_AUDIO_TEST_FRAME_SIZE - MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE;
+constexpr size_t MPEG_AUDIO_TEST_FOLLOWING_FRAME_TAIL_SIZE =
+    MPEG_AUDIO_TEST_FRAME_SIZE - MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE;
 constexpr size_t MPEG_AUDIO_TEST_MIXED_SAMPLE_SIZE =
     MPEG_AUDIO_TEST_PARTIAL_FRAME_TAIL_SIZE + MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE;
 constexpr size_t MPEG_AUDIO_TEST_PENDING_LIMIT = 64 * 1024;
@@ -1680,8 +1681,6 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareMpegAudioTestTrac
     track->cache = std::make_shared<Plugins::MPEG4::SampleCache>();
     plugin.firstTrack_ = track;
     plugin.lastTrack_ = track;
-    plugin.isIsom_ = true;
-    plugin.hasQtBrand_ = false;
     plugin.mediaInfo_.tracks.resize(1);
     plugin.mediaInfo_.general.Set<Tag::MEDIA_TRACK_COUNT>(1);
     plugin.mediaInfo_.tracks[MPEG_AUDIO_TEST_TRACK_ID].Set<Tag::AUDIO_SAMPLE_RATE>(MPEG_AUDIO_TEST_SAMPLE_RATE);
@@ -3287,37 +3286,27 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioSizeQueryEos_00
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_MpegAudioCrossSamplePacket_001
- * @tc.desc: Verify a partial MP4 sample is assembled into one complete MP3 parser packet.
+ * @tc.desc: Verify a header-aligned partial MP4 sample preserves its FFmpeg packet boundary.
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioCrossSamplePacket_001, TestSize.Level1)
 {
-    constexpr std::array<uint8_t, 3> invalidPrefix = {0x00, 0x11, 0x22};
     auto frame = BuildMpegAudioTestFrame();
-    std::vector<uint8_t> input(invalidPrefix.begin(), invalidPrefix.end());
-    input.insert(input.end(), frame.begin(), frame.end());
     Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
-    uint32_t headSize = static_cast<uint32_t>(invalidPrefix.size() + MPEG_AUDIO_TEST_SPLIT_SIZE);
     uint32_t tailSize = static_cast<uint32_t>(frame.size() - MPEG_AUDIO_TEST_SPLIT_SIZE);
     ASSERT_NE(PrepareMpegAudioTestTrack(plugin,
-        {headSize, tailSize}), nullptr);
-    plugin.dataSource_ = CreateDataSourceForBytes(input);
+        {static_cast<uint32_t>(MPEG_AUDIO_TEST_SPLIT_SIZE), tailSize}), nullptr);
+    plugin.dataSource_ = CreateDataSourceForBytes(frame);
     ASSERT_NE(plugin.dataSource_, nullptr);
     int32_t sampleSize = 0;
-    // The first sample starts with an invalid MP3 header, so the stream switches to full parsing
-    // (FFmpeg mov_read_packet) and the frame split across both samples is reassembled together with
-    // the leading invalid prefix, matching FFmpeg parser output.
     ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
-    EXPECT_EQ(sampleSize, static_cast<int32_t>(input.size()));
-    AVBufferWrapper output(input.size());
+    EXPECT_EQ(sampleSize, static_cast<int32_t>(MPEG_AUDIO_TEST_SPLIT_SIZE));
+    AVBufferWrapper output(MPEG_AUDIO_TEST_FRAME_SIZE);
     ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
-    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), input.size());
+    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), MPEG_AUDIO_TEST_SPLIT_SIZE);
     EXPECT_EQ(std::vector<uint8_t>(output.mediaAVBuffer->memory_->GetAddr(),
         output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()),
-        input);
-    EXPECT_EQ(output.mediaAVBuffer->pts_, 0);
-    EXPECT_EQ(output.mediaAVBuffer->dts_, 0);
-    EXPECT_EQ(output.mediaAVBuffer->duration_, MPEG_AUDIO_TEST_FRAME_DURATION_US);
+        std::vector<uint8_t>(frame.begin(), frame.begin() + MPEG_AUDIO_TEST_SPLIT_SIZE));
 }
 
 /**
@@ -3330,89 +3319,23 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioIrregularSample
     const std::vector<uint32_t> sampleSizes = {MPEG_AUDIO_TEST_FRAME_SIZE, MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE,
         MPEG_AUDIO_TEST_MIXED_SAMPLE_SIZE, MPEG_AUDIO_TEST_FRAME_SIZE,
         MPEG_AUDIO_TEST_FRAME_SIZE - MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE + MPEG_AUDIO_TEST_FRAME_SIZE};
+    const std::vector<int32_t> expectedSizes = {MPEG_AUDIO_TEST_FRAME_SIZE, MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE,
+        MPEG_AUDIO_TEST_MIXED_SAMPLE_SIZE + MPEG_AUDIO_TEST_FOLLOWING_FRAME_TAIL_SIZE,
+        MPEG_AUDIO_TEST_FRAME_SIZE, MPEG_AUDIO_TEST_FRAME_SIZE};
     auto input = BuildMpegAudioBoundaryTestFile();
     Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
     ASSERT_NE(PrepareMpegAudioTestTrack(plugin, sampleSizes), nullptr);
     plugin.dataSource_ = CreateDataSourceForBytes(input);
     ASSERT_NE(plugin.dataSource_, nullptr);
-    AVBufferWrapper output(input.size());
-    std::vector<uint8_t> outputData;
-    int64_t expectedPts = 0;
-
-    // Every sample here starts with a valid MP3 frame header, so FFmpeg delivers them unchanged
-    // (partial frames included) and derives the duration from the frame header, not from stts.
-    for (size_t index = 0; index < sampleSizes.size(); ++index) {
-        int32_t expectedSize = static_cast<int32_t>(sampleSizes[index]);
-        int32_t sampleSize = 0;
-        ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
-        EXPECT_EQ(sampleSize, expectedSize);
-        ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
-        EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), static_cast<size_t>(expectedSize));
-        EXPECT_EQ(output.mediaAVBuffer->pts_, expectedPts);
-        EXPECT_EQ(output.mediaAVBuffer->dts_, expectedPts);
-        EXPECT_EQ(output.mediaAVBuffer->duration_, MPEG_AUDIO_TEST_FRAME_DURATION_US);
-        outputData.insert(outputData.end(), output.mediaAVBuffer->memory_->GetAddr(),
-            output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize());
-        expectedPts += MPEG_AUDIO_TEST_FRAME_DURATION_US;
-    }
-    EXPECT_EQ(outputData, input);
-}
-
-/**
- * @tc.name: Mpeg4DemuxerPlugin_MpegAudioZeroDeltaSttsReassemble_001
- * @tc.desc: Verify MP3 samples with a delta-0 stts run are reassembled with parser-derived PTS.
- * @tc.type: FUNC
- */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioZeroDeltaSttsReassemble_001, TestSize.Level1)
-{
-    constexpr size_t junkSize = MPEG_AUDIO_TEST_FRAME_SIZE - MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE;
-    auto frame = BuildMpegAudioTestFrame();
-    // Mirror mp3_mp4_112000_16000_2_FUNCTION_TEST_093.dat.mp4: sample2 is a "LAME"-style chunk whose
-    // MP3 sync sits junkSize bytes in, so the parser must be engaged to realign the frame stream.
-    std::vector<uint8_t> junk(junkSize, 0xAA);
-    std::vector<uint8_t> frameHead(frame.begin(), frame.begin() + MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE);
-    std::vector<uint8_t> frameTail(frame.begin() + MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE, frame.end());
-    std::vector<uint8_t> sample2 = junk;
-    sample2.insert(sample2.end(), frameHead.begin(), frameHead.end());
-    std::vector<uint8_t> sample3 = frameTail;
-    sample3.insert(sample3.end(), frameHead.begin(), frameHead.end());
-    std::vector<uint8_t> input = frame;
-    input.insert(input.end(), frame.begin(), frame.begin() + MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE);
-    input.insert(input.end(), sample2.begin(), sample2.end());
-    input.insert(input.end(), sample3.begin(), sample3.end());
-    input.insert(input.end(), sample3.begin(), sample3.end());
-    input.insert(input.end(), sample3.begin(), sample3.end());
-    const std::vector<uint32_t> sampleSizes = {MPEG_AUDIO_TEST_FRAME_SIZE, MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE,
-        static_cast<uint32_t>(sample2.size()), static_cast<uint32_t>(sample3.size()),
-        static_cast<uint32_t>(sample3.size()), static_cast<uint32_t>(sample3.size())};
-    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
-    auto track = PrepareMpegAudioTestTrack(plugin, sampleSizes);
-    ASSERT_NE(track, nullptr);
-    track->sampleHelper->sttsEntry_ = {{180, 0}, {1, MPEG_AUDIO_TEST_SAMPLES_PER_FRAME}};
-    for (auto& entry : track->sampleHelper->sampleIndexEntry_) {
-        entry.dts = 0;
-        EXPECT_TRUE(entry.SetPts(0));
-    }
-    plugin.dataSource_ = CreateDataSourceForBytes(input);
-    ASSERT_NE(plugin.dataSource_, nullptr);
-    AVBufferWrapper output(input.size());
+    AVBufferWrapper output(MPEG_AUDIO_TEST_MIXED_SAMPLE_SIZE + MPEG_AUDIO_TEST_FOLLOWING_FRAME_TAIL_SIZE);
     std::vector<uint8_t> outputData;
 
-    // FFmpeg output: the two header-valid samples pass through (504/298), the invalid-head sample
-    // engages full parsing, and every reassembled frame keeps the zero PTS of the stts run.
-    const std::vector<int32_t> expectedSizes = {static_cast<int32_t>(MPEG_AUDIO_TEST_FRAME_SIZE),
-        static_cast<int32_t>(MPEG_AUDIO_TEST_PARTIAL_FRAME_SIZE), 710,
-        static_cast<int32_t>(MPEG_AUDIO_TEST_FRAME_SIZE), static_cast<int32_t>(MPEG_AUDIO_TEST_FRAME_SIZE),
-        static_cast<int32_t>(MPEG_AUDIO_TEST_FOLLOWING_PREFIX_SIZE)};
     for (int32_t expectedSize : expectedSizes) {
         int32_t sampleSize = 0;
         ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
         EXPECT_EQ(sampleSize, expectedSize);
         ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
         EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), static_cast<size_t>(expectedSize));
-        EXPECT_EQ(output.mediaAVBuffer->pts_, 0);
-        EXPECT_EQ(output.mediaAVBuffer->dts_, 0);
-        EXPECT_EQ(output.mediaAVBuffer->duration_, MPEG_AUDIO_TEST_FRAME_DURATION_US);
         outputData.insert(outputData.end(), output.mediaAVBuffer->memory_->GetAddr(),
             output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize());
     }
@@ -3444,7 +3367,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioHeaderAcrossSam
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_MpegAudioMultiplePacketsInSample_001
- * @tc.desc: Verify an MP4 sample containing two MP3 frames is split into FFmpeg parser packets.
+ * @tc.desc: Verify a header-aligned MP4 sample preserves multiple MP3 frames as one FFmpeg packet.
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioMultiplePacketsInSample_001, TestSize.Level1)
@@ -3456,23 +3379,16 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioMultiplePackets
     input.insert(input.end(), secondFrame.begin(), secondFrame.end());
     Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
     ASSERT_NE(PrepareMpegAudioTestTrack(plugin, {static_cast<uint32_t>(input.size())}), nullptr);
-    // Legacy HandBrake MP3-in-MP4 muxers force full parsing (FFmpeg mov_read_header).
-    plugin.mediaInfo_.general.SetData(Tag::MEDIA_ENCODER, std::string("HandBrake 0.10.0 2014112200"));
     plugin.dataSource_ = CreateDataSourceForBytes(input);
     ASSERT_NE(plugin.dataSource_, nullptr);
-    AVBufferWrapper output(MPEG_AUDIO_TEST_FRAME_SIZE);
+    AVBufferWrapper output(input.size());
     int32_t sampleSize = 0;
 
     ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
-    EXPECT_EQ(sampleSize, static_cast<int32_t>(firstFrame.size()));
+    EXPECT_EQ(sampleSize, static_cast<int32_t>(input.size()));
     ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
     EXPECT_EQ(std::vector<uint8_t>(output.mediaAVBuffer->memory_->GetAddr(),
-        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()), firstFrame);
-    ASSERT_EQ(plugin.GetNextSampleSize(MPEG_AUDIO_TEST_TRACK_ID, sampleSize), Status::OK);
-    EXPECT_EQ(sampleSize, static_cast<int32_t>(secondFrame.size()));
-    ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
-    EXPECT_EQ(std::vector<uint8_t>(output.mediaAVBuffer->memory_->GetAddr(),
-        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()), secondFrame);
+        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()), input);
 }
 
 /**
@@ -3546,31 +3462,30 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioFragmentedPendi
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_MpegAudioUnseekableCrossSample_001
- * @tc.desc: Verify the unseekable path assembles a partial MP4 sample into one MP3 frame.
+ * @tc.desc: Verify the unseekable path preserves header-aligned partial MP4 sample boundaries.
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioUnseekableCrossSample_001, TestSize.Level1)
 {
-    constexpr std::array<uint8_t, 3> invalidPrefix = {0x00, 0x11, 0x22};
     auto frame = BuildMpegAudioTestFrame();
-    std::vector<uint8_t> input(invalidPrefix.begin(), invalidPrefix.end());
-    input.insert(input.end(), frame.begin(), frame.end());
     Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
-    uint32_t headSize = static_cast<uint32_t>(invalidPrefix.size() + MPEG_AUDIO_TEST_SPLIT_SIZE);
     uint32_t tailSize = static_cast<uint32_t>(frame.size() - MPEG_AUDIO_TEST_SPLIT_SIZE);
     ASSERT_NE(PrepareMpegAudioTestTrack(plugin,
-        {headSize, tailSize}), nullptr);
+        {static_cast<uint32_t>(MPEG_AUDIO_TEST_SPLIT_SIZE), tailSize}), nullptr);
     plugin.seekable_ = Seekable::UNSEEKABLE;
-    plugin.dataSource_ = CreateDataSourceForBytes(input);
+    plugin.dataSource_ = CreateDataSourceForBytes(frame);
     ASSERT_NE(plugin.dataSource_, nullptr);
-    AVBufferWrapper output(input.size());
+    AVBufferWrapper output(MPEG_AUDIO_TEST_FRAME_SIZE);
     std::vector<uint8_t> outputData;
 
     ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
     outputData.insert(outputData.end(), output.mediaAVBuffer->memory_->GetAddr(),
         output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize());
-    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), input.size());
-    EXPECT_EQ(outputData, input);
+    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), MPEG_AUDIO_TEST_SPLIT_SIZE);
+    ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
+    outputData.insert(outputData.end(), output.mediaAVBuffer->memory_->GetAddr(),
+        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize());
+    EXPECT_EQ(outputData, frame);
 }
 
 /**

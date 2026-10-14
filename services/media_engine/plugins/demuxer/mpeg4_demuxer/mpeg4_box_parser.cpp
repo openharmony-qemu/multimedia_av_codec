@@ -1383,6 +1383,26 @@ void MPEG4AtomParser::CalculateVideoDelay(std::shared_ptr<Track> track)
     mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_DELAY>(videoDelay);
 }
 
+void MPEG4AtomParser::CalculateCodecFrameRate(std::shared_ptr<Track> track)
+{
+    FALSE_RETURN_MSG(track != nullptr, "Invalid track");
+    if (track->codecParms.trackType != VIDEO_TYPE || track->sampleHelper == nullptr ||
+        track->sampleHelper->mimeType_ != MimeType::VIDEO_AVC ||
+        track->codecParms.data == nullptr || track->codecParms.extradataSize <= 0) {
+        return;
+    }
+    AvcParserImpl avcParser;
+    uint32_t frameRateNum = 0;
+    uint32_t frameRateDen = 0;
+    if (avcParser.ParseSpsFrameRateFromAvcConfig(
+        track->codecParms.data.get(), track->codecParms.extradataSize, frameRateNum, frameRateDen) &&
+        frameRateNum > 0 && frameRateDen > 0) {
+        track->codecFrameRateNum = frameRateNum;
+        track->codecFrameRateDen = frameRateDen;
+        track->codecFrameRateParsed = true;
+    }
+}
+
 // LCOV_EXCL_START
 AudioSampleFormat MPEG4AtomParser::GetAv3aSampleFormat(int32_t bitsPerRawSample) const
 {
@@ -2290,6 +2310,7 @@ Status MPEG4AtomParser::ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t stsdData[8];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, stsdData, sizeof(stsdData));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read stsd entry count failed");
+    lastTrack_->stsdParsed = true;
     lastTrack_->stsdVersion = stsdData[0];
     uint32_t entryCount = GetU32Value(&stsdData[4]);
     FALSE_RETURN_V_MSG_E(entryCount > 0 && entryCount <= 0x0400, Status::ERROR_INVALID_DATA, "Invalid STSD entries");
@@ -5613,6 +5634,7 @@ void MPEG4AtomParser::CalculateMPEG4Attributes()
         if (NeedParseVideoInfo(track->sampleHelper->mimeType_, track->codecParms.trackType)) {
             CalculateVideoFrameRate(track);
             CalculateVideoDelay(track);
+            CalculateCodecFrameRate(track);
         }
         if (NeedParseAudioInfo(track->sampleHelper->mimeType_, track->codecParms.trackType)) {
             int32_t channelCount = 0;

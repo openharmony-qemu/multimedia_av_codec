@@ -406,6 +406,23 @@ bool GetCttsFrameRateDurationUs(
 bool GetCttsPacketDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track,
     int32_t trackTimeScale, int64_t& durationUs)
 {
+    if (track->codecFrameRateParsed) {
+        // FFmpeg compute_frame_duration derives the packet duration from the SPS codec framerate
+        // (time_scale / (2 * num_units_in_tick)) when it is a plausible video frame rate
+        // (frameRateDen * 1000 > frameRateNum); otherwise the duration stays 0, matching
+        // HandBrake files whose SPS timing claims a bogus rate like 90000/1.
+        uint64_t frameRateNum = track->codecFrameRateNum;
+        uint64_t frameRateDen = track->codecFrameRateDen;
+        if (frameRateNum > 0 && frameRateDen > 0 && frameRateDen * 1000 > frameRateNum) {
+            uint64_t durationTicks = static_cast<uint64_t>(trackTimeScale) * frameRateDen / frameRateNum;
+            if (durationTicks <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+                return RescaleTrackTimeToUsRoundNearest(static_cast<int64_t>(durationTicks),
+                    trackTimeScale, durationUs) == Status::OK;
+            }
+        }
+        durationUs = 0;
+        return true;
+    }
     int64_t nominalDuration = 0;
     if (GetNominalSttsDuration(track, nominalDuration)) {
         return RescaleTrackTimeToUsRoundNearest(nominalDuration, trackTimeScale, durationUs) == Status::OK;
@@ -3330,7 +3347,8 @@ public:
         // audio unit (a plain version 0 entry, or version 1 without a QT compression id) needs a parser.
         const uint32_t entryVersion = track->audioSampleEntryVersion;
         const uint32_t stsdVersion = track->stsdVersion;
-        if (!plugin.isIsom_ || plugin.hasQtBrand_ || (stsdVersion == 0 && entryVersion > 0)) {
+        if (track->stsdParsed &&
+            (!plugin.isIsom_ || plugin.hasQtBrand_ || (stsdVersion == 0 && entryVersion > 0))) {
             if (entryVersion == 0 || (entryVersion == 1 && track->audioSampleEntryCid != 0xFFFE)) {
                 return true;
             }
