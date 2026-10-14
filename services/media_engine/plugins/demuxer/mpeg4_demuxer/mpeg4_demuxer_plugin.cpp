@@ -87,6 +87,14 @@ bool NeedReadPostProcessing(const std::string& mime)
 }
 
 constexpr size_t MPEG_AUDIO_HEADER_SIZE = 4;
+// MPEG audio frame constants (ISO/IEC 11172-3): frameSize = coefficient * bitrate / sampleRate + padding,
+// with 384/1152/576 samples per frame for Layer I/II/III (MPEG2/2.5 Layer III halves the Layer II value).
+constexpr uint32_t MPEG_AUDIO_COEFF_LAYER1 = 12;
+constexpr uint32_t MPEG_AUDIO_COEFF_LAYER2 = 144;
+constexpr uint32_t MPEG_AUDIO_COEFF_MPEG2_LAYER3 = 72;
+constexpr uint32_t MPEG_AUDIO_SAMPLES_LAYER1 = 384;
+constexpr uint32_t MPEG_AUDIO_SAMPLES_LAYER2 = 1152;
+constexpr uint32_t MPEG_AUDIO_SAMPLES_MPEG2_LAYER3 = 576;
 // FFmpeg treats an MP3 stts table as non-uniform when it contains many short runs: the entry count
 // must exceed MIN_NON_UNIFORM_STTS_ENTRIES and outnumber 1/NON_UNIFORM_STTS_SAMPLE_RATIO of the samples.
 constexpr uint32_t MIN_NON_UNIFORM_STTS_ENTRIES = 3;
@@ -106,12 +114,16 @@ bool IsValidMpegAudioHeader(uint32_t header, uint32_t& version, uint32_t& layer,
 {
     constexpr uint32_t syncWord = 0x7FF;
     constexpr uint32_t syncWordShift = 21;
+    constexpr uint32_t versionShift = 19;
+    constexpr uint32_t layerShift = 17;
+    constexpr uint32_t bitrateShift = 12;
+    constexpr uint32_t rateShift = 10;
     constexpr uint32_t invalidIndex = 3;
     constexpr uint32_t invalidBitrate = 15;
-    version = (header >> 19) & 0x03;
-    layer = (header >> 17) & 0x03;
-    bitrateIndex = (header >> 12) & 0x0F;
-    rateIndex = (header >> 10) & 0x03;
+    version = (header >> versionShift) & 0x03;
+    layer = (header >> layerShift) & 0x03;
+    bitrateIndex = (header >> bitrateShift) & 0x0F;
+    rateIndex = (header >> rateShift) & 0x03;
     return (header >> syncWordShift) == syncWord && version != 1 && layer != 0 &&
         bitrateIndex != 0 && bitrateIndex != invalidBitrate && rateIndex != invalidIndex;
 }
@@ -121,6 +133,8 @@ uint32_t GetMpegAudioSampleRate(uint32_t version, uint32_t rateIndex)
     constexpr uint32_t sampleRates[] = {44100, 48000, 32000};
     constexpr uint32_t mpegVersion1 = 3;
     constexpr uint32_t mpegVersion2 = 2;
+    constexpr uint32_t mpeg2SampleRateShift = 1;
+    constexpr uint32_t mpeg25SampleRateShift = 2;
     if (rateIndex >= sizeof(sampleRates) / sizeof(sampleRates[0])) {
         return 0;
     }
@@ -129,9 +143,9 @@ uint32_t GetMpegAudioSampleRate(uint32_t version, uint32_t rateIndex)
         return sampleRate;
     }
     if (version == mpegVersion2) {
-        return sampleRate >> 1;
+        return sampleRate >> mpeg2SampleRateShift;
     }
-    return sampleRate >> 2;
+    return sampleRate >> mpeg25SampleRateShift;
 }
 
 uint32_t GetMpegAudioBitrate(uint32_t version, uint32_t layer, uint32_t bitrateIndex)
@@ -160,12 +174,12 @@ uint32_t GetMpegAudioFrameCoefficient(uint32_t version, uint32_t layer)
     constexpr uint32_t layer3 = 1;
     constexpr uint32_t mpegVersion1 = 3;
     if (layer == layer1) {
-        return 12;
+        return MPEG_AUDIO_COEFF_LAYER1;
     }
     if (layer == layer3 && version != mpegVersion1) {
-        return 72;
+        return MPEG_AUDIO_COEFF_MPEG2_LAYER3;
     }
-    return 144;
+    return MPEG_AUDIO_COEFF_LAYER2;
 }
 
 uint32_t GetMpegAudioSamplesPerFrame(uint32_t version, uint32_t layer)
@@ -174,18 +188,19 @@ uint32_t GetMpegAudioSamplesPerFrame(uint32_t version, uint32_t layer)
     constexpr uint32_t layer3 = 1;
     constexpr uint32_t mpegVersion1 = 3;
     if (layer == layer1) {
-        return 384;
+        return MPEG_AUDIO_SAMPLES_LAYER1;
     }
     if (layer == layer3 && version != mpegVersion1) {
-        return 576;
+        return MPEG_AUDIO_SAMPLES_MPEG2_LAYER3;
     }
-    return 1152;
+    return MPEG_AUDIO_SAMPLES_LAYER2;
 }
 
 bool GetMpegAudioFrameInfo(const uint8_t* data, size_t size, MpegAudioFrameInfo& frameInfo)
 {
     constexpr uint32_t layer1 = 3;
     constexpr uint32_t layer1FrameSizeMultiplier = 4;
+    constexpr uint32_t paddingBitShift = 9;
     if (data == nullptr || size < MPEG_AUDIO_HEADER_SIZE) {
         return false;
     }
@@ -203,7 +218,8 @@ bool GetMpegAudioFrameInfo(const uint8_t* data, size_t size, MpegAudioFrameInfo&
         return false;
     }
     uint32_t coefficient = GetMpegAudioFrameCoefficient(version, layer);
-    uint64_t sizeValue = static_cast<uint64_t>(coefficient) * bitrate / sampleRate + ((header >> 9) & 0x01);
+    uint64_t sizeValue = static_cast<uint64_t>(coefficient) * bitrate / sampleRate +
+        ((header >> paddingBitShift) & 0x01);
     if (layer == layer1) {
         sizeValue *= layer1FrameSizeMultiplier;
     }
@@ -3529,6 +3545,30 @@ public:
         return Status::OK;
     }
 
+    // FFmpeg mov_finalize_packet: a passed-through sample that spans several MP3 frames keeps the
+    // container (stts) duration; single-frame and partial samples keep the header-derived duration.
+    static int64_t GetPassThroughDurationUs(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex,
+        const MpegAudioFrameInfo& frameInfo, size_t size)
+    {
+        if (size <= static_cast<size_t>(frameInfo.size)) {
+            return frameInfo.durationUs;
+        }
+        auto track = plugin.FindTrackById(static_cast<int32_t>(trackId));
+        if (track == nullptr || track->timeScale <= 0) {
+            return frameInfo.durationUs;
+        }
+        MPEG4SampleHelper::SampleIndexView sampleView;
+        if (!GetSampleView(track, sampleIndex, sampleView)) {
+            return frameInfo.durationUs;
+        }
+        int64_t containerDurationUs = 0;
+        if (RescaleTrackTimeToUsRoundNearest(sampleView.duration, track->timeScale, containerDurationUs) !=
+            Status::OK || containerDurationUs <= 0) {
+            return frameInfo.durationUs;
+        }
+        return containerDurationUs;
+    }
+
     static Status Process(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex,
         const std::shared_ptr<Sample>& input, std::vector<std::shared_ptr<Sample>>& packets)
     {
@@ -3549,20 +3589,7 @@ public:
             // frame header is delivered as-is (partial frames included). A single-frame sample keeps
             // the header-derived duration; a sample spanning several frames keeps the container (stts)
             // duration, matching FFmpeg's next-DTS based packet duration in mov_finalize_packet.
-            if (size > static_cast<size_t>(frameInfo.size)) {
-                int64_t containerDurationUs = 0;
-                auto track = plugin.FindTrackById(static_cast<int32_t>(trackId));
-                if (track != nullptr && track->timeScale > 0) {
-                    MPEG4SampleHelper::SampleIndexView sampleView;
-                    if (GetSampleView(track, sampleIndex, sampleView)) {
-                        (void)RescaleTrackTimeToUsRoundNearest(sampleView.duration, track->timeScale,
-                            containerDurationUs);
-                    }
-                }
-                input->duration = containerDurationUs > 0 ? containerDurationUs : frameInfo.durationUs;
-            } else {
-                input->duration = frameInfo.durationUs;
-            }
+            input->duration = GetPassThroughDurationUs(plugin, trackId, sampleIndex, frameInfo, size);
             packets.emplace_back(input);
             return Status::OK;
         }

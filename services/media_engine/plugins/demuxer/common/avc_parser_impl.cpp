@@ -232,32 +232,36 @@ bool ReadH264SpsFrameRate(RbspContext& reader, uint32_t& tmp, H264SpsInfo& info)
 {
     uint32_t flag = 0;
     FALSE_RETURN_V(reader.RbspReadBit(flag), false); // timing_info_present_flag
-    if (flag) {
-        uint32_t numUnitsInTick = 0;
-        uint32_t timeScale = 0;
-        FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, numUnitsInTick), false); // num_units_in_tick
-        FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, timeScale), false); // time_scale
-        // FFmpeg h264_parser derives the codec framerate whenever timing_info_present_flag is set and
-        // never consults fixed_frame_rate_flag, so its value is intentionally not used here.
-        FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // fixed_frame_rate_flag
-        if (numUnitsInTick > 0 && timeScale > 0) {
-            uint64_t num = timeScale;
-            uint64_t den = static_cast<uint64_t>(numUnitsInTick) * 2;
-            uint64_t common = GcdUint64(num, den);
-            if (common > 0) {
-                uint64_t frameRateNum = num / common;
-                uint64_t frameRateDen = den / common;
-                // A huge num_units_in_tick can make the reduced denominator exceed uint32_t;
-                // drop such implausible rates instead of truncating them.
-                if (frameRateNum > 0 && frameRateDen > 0 &&
-                    frameRateDen <= std::numeric_limits<uint32_t>::max()) {
-                    info.frameRateNum = static_cast<uint32_t>(frameRateNum);
-                    info.frameRateDen = static_cast<uint32_t>(frameRateDen);
-                    info.hasFrameRate = true;
-                }
-            }
-        }
+    if (!flag) {
+        return true;
     }
+    uint32_t numUnitsInTick = 0;
+    uint32_t timeScale = 0;
+    FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, numUnitsInTick), false); // num_units_in_tick
+    FALSE_RETURN_V(reader.RbspReadBits(H264_WORD_BITS, timeScale), false); // time_scale
+    // FFmpeg h264_parser derives the codec framerate whenever timing_info_present_flag is set and
+    // never consults fixed_frame_rate_flag, so its value is intentionally not used here.
+    FALSE_RETURN_V(reader.RbspReadBit(tmp), false); // fixed_frame_rate_flag
+    if (numUnitsInTick == 0 || timeScale == 0) {
+        return true;
+    }
+    uint64_t num = timeScale;
+    uint64_t den = static_cast<uint64_t>(numUnitsInTick) * 2;
+    uint64_t common = GcdUint64(num, den);
+    if (common == 0) {
+        return true;
+    }
+    uint64_t frameRateNum = num / common;
+    uint64_t frameRateDen = den / common;
+    // A huge num_units_in_tick can make the reduced denominator exceed uint32_t;
+    // drop such implausible rates instead of truncating them.
+    if (frameRateNum == 0 || frameRateDen == 0 ||
+        frameRateDen > std::numeric_limits<uint32_t>::max()) {
+        return true;
+    }
+    info.frameRateNum = static_cast<uint32_t>(frameRateNum);
+    info.frameRateDen = static_cast<uint32_t>(frameRateDen);
+    info.hasFrameRate = true;
     return true;
 }
 
