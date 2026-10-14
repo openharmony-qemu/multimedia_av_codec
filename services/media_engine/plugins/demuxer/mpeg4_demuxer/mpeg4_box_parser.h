@@ -116,6 +116,9 @@ public:
         bool hasPasp = false;
         uint16_t audioSampleEntryChannelCount = 0;
         uint16_t audioSampleEntryBitsPerCodedSample = 0;
+        uint16_t audioSampleEntryVersion = 0;
+        uint16_t audioSampleEntryCid = 0;
+        uint8_t stsdVersion = 0;
         CodecParams codecParms{};
         std::vector<std::vector<uint8_t>> codecConfigs;
         uint64_t codecConfigsSize = 0;
@@ -152,6 +155,8 @@ public:
     bool GetHasSidx();
     bool GetHasMoof();
     int32_t GetMovieTimeScale() const;
+    bool IsIsom() const { return isIsom_; }
+    bool HasCompatibleBrand(uint32_t brand) const { return ctx_.compatibleBrands.count(brand) > 0; }
     Status MPEG4ParseHeader(const std::shared_ptr<DataSource>& source, Seekable seekable, int64_t readTimeoutMs = -1,
         Plugins::DemuxerMode mode = Plugins::DemuxerMode::FULL_PARSE);
     Status ParseMoof(const std::shared_ptr<Track>& track, int64_t offset);

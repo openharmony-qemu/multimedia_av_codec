@@ -2290,6 +2290,7 @@ Status MPEG4AtomParser::ParseStsd(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t stsdData[8];
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, stsdData, sizeof(stsdData));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read stsd entry count failed");
+    lastTrack_->stsdVersion = stsdData[0];
     uint32_t entryCount = GetU32Value(&stsdData[4]);
     FALSE_RETURN_V_MSG_E(entryCount > 0 && entryCount <= 0x0400, Status::ERROR_INVALID_DATA, "Invalid STSD entries");
     lastTrack_->codecConfigs.clear();
@@ -2645,6 +2646,8 @@ Status MPEG4AtomParser::ParseAudioAttributes(MPEG4Atom currentAtom, ParseContext
     uint16_t version = GetU16Value(&sampleEntryInfo[0x08]);
     uint16_t channelCount = GetU16Value(&sampleEntryInfo[0x10]);
     uint16_t sampleSize = GetU16Value(&sampleEntryInfo[0x12]); // bits_per_coded_sample
+    lastTrack_->audioSampleEntryVersion = version;
+    lastTrack_->audioSampleEntryCid = GetU16Value(&sampleEntryInfo[0x14]);
     lastTrack_->audioSampleEntryChannelCount = channelCount;
     lastTrack_->audioSampleEntryBitsPerCodedSample = sampleSize;
     //skip unneed distribute
