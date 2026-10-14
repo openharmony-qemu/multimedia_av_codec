@@ -52,7 +52,7 @@ public:
     Status Read(unsigned char* buff, ReadDataInfo& readDataInfo) override
     {
         readCalled_ = true;
-        readDataInfo.realReadLength_ = 10;
+        readDataInfo.realReadLength_ = TEN;
         return readStatus_;
     }
     uint64_t GetBufferSize() const override { return 0; }

@@ -1999,8 +1999,6 @@ HWTEST_F(M3u8UnitTest, ParseDateRange_ContentsAllAttrs_001, TestSize.Level1)
     EXPECT_EQ(dr->contents.size(), 5u);
 }
 
-
-
 // ===== UriJoin branch coverage (via UpdateUri) =====
 HWTEST_F(M3u8UnitTest, UpdateUri_HttpScheme_001, TestSize.Level1)
 {
