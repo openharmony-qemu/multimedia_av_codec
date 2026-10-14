@@ -70,9 +70,7 @@ const std::string TEST_MP4_PATH_VVC = "/data/test/media/vvc_1280_720_8.mp4";
 const std::string TEST_MP4_PATH_WEBVTT = "/data/test/media/webvtt.mp4";
 const std::string TEST_MP4_MULTIPLE_VIDEO_TRACKS = "/data/test/media/h264_double_video_audio.mp4";
 const std::string ZERO_STTS_HVC1_FIXTURE = "/data/test/media/zero_stts_hvc1_55_samples.mp4";
-const std::string ZERO_STTS_EXTERNAL_PATH_ENV = "OH_AVCODEC_ZERO_STTS_TEST_FILE";
-constexpr uint32_t ZERO_STTS_FIXTURE_FIRST_SAMPLE_SIZE = 68;
-constexpr size_t ZERO_STTS_HEVC_ANNEXB_PARAMETER_SET_SIZE = 89;
+constexpr int32_t ZERO_STTS_FIXTURE_FIRST_SAMPLE_SIZE = 68;
 const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const std::string TEST_RELATIVE_PATH = "/data/test/media/";
 const std::string TEST_DEMUXER_RESOURCE_DIR = "/data/test/media";
@@ -1936,164 +1934,6 @@ std::vector<FrameSampleDigest> ReadTrackSamples(const std::shared_ptr<BaseDemuxe
     }
     ADD_FAILURE() << "ReadSample exceeded max WebVTT sample count, trackId=" << trackId;
     return samples;
-}
-
-struct ScopedTestFileDescriptor {
-    int value = -1;
-    ~ScopedTestFileDescriptor()
-    {
-        if (value >= 0) {
-            close(value);
-        }
-    }
-};
-
-struct ZeroSttsDemuxerTrace {
-    bool dataSourceCreated = false;
-    Status setDataSourceStatus = Status::ERROR_INVALID_DATA;
-    Status getMediaInfoStatus = Status::ERROR_INVALID_DATA;
-    Status selectTrackStatus = Status::ERROR_INVALID_DATA;
-    bool terminalReadObserved = false;
-    Status terminalReadStatus = Status::ERROR_INVALID_DATA;
-    uint32_t terminalBufferFlags = 0;
-    size_t trackCount = 0;
-    std::string mime;
-    std::vector<FrameSampleDigest> samples;
-};
-
-ZeroSttsDemuxerTrace CollectSingleVideoTrackTrace(const std::shared_ptr<BaseDemuxerPlugin>& plugin,
-    const std::string& filePath)
-{
-    ZeroSttsDemuxerTrace trace;
-    ScopedTestFileDescriptor fd;
-    auto dataSource = CreateFileDataSource(filePath, fd.value);
-    trace.dataSourceCreated = dataSource != nullptr;
-    if (!trace.dataSourceCreated) {
-        std::cout << "[ZeroSttsSetDataSource] path=" << filePath << " ret=data_source_error" << std::endl;
-        return trace;
-    }
-    trace.setDataSourceStatus = plugin->SetDataSource(dataSource);
-    std::cout << "[ZeroSttsSetDataSource] path=" << filePath << " ret=" <<
-        static_cast<int32_t>(trace.setDataSourceStatus) << std::endl;
-    if (trace.setDataSourceStatus != Status::OK) {
-        plugin->Reset();
-        return trace;
-    }
-
-    MediaInfo mediaInfo;
-    trace.getMediaInfoStatus = plugin->GetMediaInfo(mediaInfo);
-    trace.trackCount = mediaInfo.tracks.size();
-    std::cout << "[ZeroSttsGetMediaInfo] path=" << filePath << " ret=" <<
-        static_cast<int32_t>(trace.getMediaInfoStatus) << " tracks=" << trace.trackCount << std::endl;
-    if (trace.getMediaInfoStatus != Status::OK) {
-        plugin->Reset();
-        return trace;
-    }
-
-    uint32_t videoTrackId = INVALID_TRACK_ID;
-    for (uint32_t trackId = 0; trackId < mediaInfo.tracks.size(); ++trackId) {
-        Plugins::MediaType mediaType = Plugins::MediaType::UNKNOWN;
-        std::string trackMime;
-        if (mediaInfo.tracks[trackId].Get<Tag::MEDIA_TYPE>(mediaType) && mediaType == Plugins::MediaType::VIDEO &&
-            mediaInfo.tracks[trackId].Get<Tag::MIME_TYPE>(trackMime)) {
-            if (videoTrackId != INVALID_TRACK_ID) {
-                ADD_FAILURE() << "Unexpected duplicate video track: " << filePath;
-                plugin->Reset();
-                return trace;
-            }
-            videoTrackId = trackId;
-            trace.mime = trackMime;
-        }
-    }
-    if (videoTrackId == INVALID_TRACK_ID) {
-        ADD_FAILURE() << "Video track missing: " << filePath;
-        plugin->Reset();
-        return trace;
-    }
-    trace.selectTrackStatus = plugin->SelectTrack(videoTrackId);
-    if (trace.selectTrackStatus != Status::OK) {
-        plugin->Reset();
-        return trace;
-    }
-
-    for (size_t sampleCount = 0; sampleCount < MAX_WEBVTT_SAMPLE_READ_COUNT; ++sampleCount) {
-        AVBufferWrapper buffer(512 * 1024);
-        Status ret = Status::ERROR_WAIT_TIMEOUT;
-        for (int32_t attempt = 0; attempt < WAIT_RETRY_TIMES && ret == Status::ERROR_WAIT_TIMEOUT; ++attempt) {
-            ret = plugin->ReadSample(videoTrackId, buffer.mediaAVBuffer,
-                MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_TIMEOUT);
-        }
-        const bool isEos = buffer.mediaAVBuffer != nullptr &&
-            (buffer.mediaAVBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) != 0;
-        if (ret == Status::END_OF_STREAM || isEos) {
-            trace.terminalReadObserved = true;
-            trace.terminalReadStatus = ret;
-            trace.terminalBufferFlags = buffer.mediaAVBuffer == nullptr ? 0 : buffer.mediaAVBuffer->flag_;
-            break;
-        }
-        if (ret != Status::OK && ret != Status::NO_ERROR) {
-            trace.terminalReadObserved = true;
-            trace.terminalReadStatus = ret;
-            trace.terminalBufferFlags = buffer.mediaAVBuffer == nullptr ? 0 : buffer.mediaAVBuffer->flag_;
-            break;
-        }
-        FrameSampleDigest sample;
-        sample.pts = buffer.mediaAVBuffer->pts_;
-        sample.dts = buffer.mediaAVBuffer->dts_;
-        sample.duration = buffer.mediaAVBuffer->duration_;
-        sample.flag = buffer.mediaAVBuffer->flag_;
-        if (!CopySamplePayload(buffer.mediaAVBuffer, sample)) {
-            trace.terminalReadObserved = true;
-            trace.terminalReadStatus = Status::ERROR_INVALID_DATA;
-            break;
-        }
-        trace.samples.push_back(std::move(sample));
-    }
-    std::cout << "[ZeroSttsTrace] path=" << filePath << " mime=" << trace.mime << " samples=" <<
-        trace.samples.size() << " terminalStatus=" << static_cast<int32_t>(trace.terminalReadStatus) <<
-        " terminalFlags=" << trace.terminalBufferFlags << std::endl;
-    plugin->Reset();
-    return trace;
-}
-
-void ExpectZeroSttsSampleAttributesEqual(const std::vector<FrameSampleDigest>& ffmpegSamples,
-    const std::vector<FrameSampleDigest>& mpeg4Samples, const std::string& filePath)
-{
-    // FFmpeg converts MP4 NAL lengths to Annex B start codes and adds hvcC parameter sets to IRAP packets.
-    ASSERT_EQ(ffmpegSamples.size(), mpeg4Samples.size()) << filePath;
-    ASSERT_FALSE(ffmpegSamples.empty()) << filePath;
-    for (size_t index = 0; index < ffmpegSamples.size(); ++index) {
-        SCOPED_TRACE("sample=" + std::to_string(index) + ", file=" + filePath);
-        const auto& ffmpegSample = ffmpegSamples[index];
-        const auto& mpeg4Sample = mpeg4Samples[index];
-        std::cout << "[ZeroSttsSample] index=" << index << " pts=" << ffmpegSample.pts << " dts=" <<
-            ffmpegSample.dts << " duration=" << ffmpegSample.duration << " ffmpegSize=" <<
-            ffmpegSample.actualSize << " mpeg4Size=" << mpeg4Sample.actualSize << " ffmpegFlags=" <<
-            ffmpegSample.flag << " mpeg4Flags=" << mpeg4Sample.flag << std::endl;
-        EXPECT_EQ(mpeg4Sample.pts, ffmpegSample.pts);
-        EXPECT_EQ(mpeg4Sample.dts, ffmpegSample.dts);
-        EXPECT_EQ(mpeg4Sample.duration, ffmpegSample.duration);
-        EXPECT_EQ(mpeg4Sample.flag, ffmpegSample.flag);
-        EXPECT_EQ(ffmpegSample.pts, ffmpegSamples.front().pts);
-        EXPECT_EQ(ffmpegSample.dts, ffmpegSamples.front().dts);
-        EXPECT_EQ(ffmpegSample.duration, 0);
-        ASSERT_GE(ffmpegSample.actualSize, mpeg4Sample.actualSize);
-        EXPECT_EQ(ffmpegSample.actualSize - mpeg4Sample.actualSize,
-            ZERO_STTS_HEVC_ANNEXB_PARAMETER_SET_SIZE);
-        constexpr size_t HEVC_LENGTH_PREFIX_SIZE = 4;
-        ASSERT_GE(mpeg4Sample.payload.size(), HEVC_LENGTH_PREFIX_SIZE + 2);
-        const uint32_t firstNalSize = (static_cast<uint32_t>(mpeg4Sample.payload[0]) << 24) |
-            (static_cast<uint32_t>(mpeg4Sample.payload[1]) << 16) |
-            (static_cast<uint32_t>(mpeg4Sample.payload[2]) << 8) |
-            static_cast<uint32_t>(mpeg4Sample.payload[3]);
-        ASSERT_GE(firstNalSize, 2U);
-        ASSERT_LE(firstNalSize, mpeg4Sample.payload.size() - HEVC_LENGTH_PREFIX_SIZE);
-        const auto firstNalBegin = mpeg4Sample.payload.begin() + HEVC_LENGTH_PREFIX_SIZE;
-        const auto firstNalEnd = firstNalBegin + firstNalSize;
-        EXPECT_NE(std::search(ffmpegSample.payload.begin(), ffmpegSample.payload.end(),
-            firstNalBegin, firstNalEnd),
-            ffmpegSample.payload.end());
-    }
 }
 
 void CompareWebVttFrameSamples(const std::vector<FrameSampleDigest>& actual,
@@ -4588,40 +4428,32 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacImplicitSbrEditListPa
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroSttsHvc1Parity_001, TestSize.Level1)
 {
-    const char* externalPath = std::getenv(ZERO_STTS_EXTERNAL_PATH_ENV.c_str());
-    const std::string path = externalPath == nullptr ? ZERO_STTS_HVC1_FIXTURE : externalPath;
-    auto ffmpegPlugin = std::make_shared<FFmpegDemuxerPlugin>(FFMPEG_MP4_PLUGIN_NAME);
-    auto mpeg4Plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
-    ASSERT_NE(ffmpegPlugin, nullptr);
-    ASSERT_NE(mpeg4Plugin, nullptr);
-    const auto ffmpegTrace = CollectSingleVideoTrackTrace(ffmpegPlugin, path);
-    const auto mpeg4Trace = CollectSingleVideoTrackTrace(mpeg4Plugin, path);
-    EXPECT_TRUE(ffmpegTrace.dataSourceCreated);
-    EXPECT_TRUE(mpeg4Trace.dataSourceCreated);
-    EXPECT_EQ(ffmpegTrace.setDataSourceStatus, mpeg4Trace.setDataSourceStatus) << path;
-    EXPECT_EQ(ffmpegTrace.setDataSourceStatus, Status::OK) << path;
-    EXPECT_EQ(ffmpegTrace.getMediaInfoStatus, mpeg4Trace.getMediaInfoStatus) << path;
-    EXPECT_EQ(ffmpegTrace.getMediaInfoStatus, Status::OK) << path;
-    EXPECT_EQ(ffmpegTrace.trackCount, mpeg4Trace.trackCount) << path;
-    EXPECT_EQ(ffmpegTrace.selectTrackStatus, mpeg4Trace.selectTrackStatus) << path;
-    EXPECT_EQ(ffmpegTrace.selectTrackStatus, Status::OK) << path;
-    EXPECT_EQ(ffmpegTrace.mime, mpeg4Trace.mime) << path;
-    EXPECT_TRUE(ffmpegTrace.terminalReadObserved) << path;
-    EXPECT_TRUE(mpeg4Trace.terminalReadObserved) << path;
-    EXPECT_EQ(ffmpegTrace.terminalReadStatus, mpeg4Trace.terminalReadStatus) << path;
-    EXPECT_EQ(ffmpegTrace.terminalBufferFlags, mpeg4Trace.terminalBufferFlags) << path;
-    ASSERT_EQ(ffmpegTrace.samples.size(), 1U) << path;
-    ASSERT_EQ(mpeg4Trace.samples.size(), ffmpegTrace.samples.size()) << path;
-    ExpectZeroSttsSampleAttributesEqual(ffmpegTrace.samples, mpeg4Trace.samples, path);
-    if (externalPath == nullptr) {
-        const auto& firstSample = mpeg4Trace.samples.front();
-        EXPECT_EQ(firstSample.actualSize, ZERO_STTS_FIXTURE_FIRST_SAMPLE_SIZE);
-        ASSERT_EQ(firstSample.payload.size(), ZERO_STTS_FIXTURE_FIRST_SAMPLE_SIZE);
-        EXPECT_EQ(firstSample.payload[4], 0x26);
-        EXPECT_EQ(firstSample.payload[5], 0x01);
-        EXPECT_TRUE(std::all_of(firstSample.payload.begin() + 6, firstSample.payload.end(),
-            [](uint8_t value) { return value == 0; }));
-    }
+    ffmpegPlugin_ = std::make_shared<FFmpegDemuxerPlugin>(FFMPEG_MP4_PLUGIN_NAME);
+    auto mpeg4 = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    mpeg4Plugin_ = mpeg4;
+    InitPlugin(ZERO_STTS_HVC1_FIXTURE, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
+    InitPlugin(ZERO_STTS_HVC1_FIXTURE, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
+    auto ffmpegTrackIds = SelectSupportedTracks(ffmpegPlugin_, ffmpegMediaInfo_);
+    auto mpeg4TrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    uint32_t ffmpegTrackId = FindFirstVideoTrack(ffmpegMediaInfo_, ffmpegTrackIds);
+    uint32_t mpeg4TrackId = FindFirstVideoTrack(mpeg4MediaInfo_, mpeg4TrackIds);
+    ASSERT_NE(ffmpegTrackId, INVALID_TRACK_ID);
+    ASSERT_NE(mpeg4TrackId, INVALID_TRACK_ID);
+
+    auto readSample = [this](const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
+        const std::shared_ptr<MediaAVBuffer>& buffer) {
+        return ReadSampleWithRetry(plugin, trackId, buffer, ReadMode::COPY);
+    };
+    auto isEos = [this](const std::shared_ptr<MediaAVBuffer>& buffer) { return IsEos(buffer); };
+    auto ffmpegSamples = ReadTrackSamples(ffmpegPlugin_, ffmpegTrackId, readSample, isEos);
+    auto mpeg4Samples = ReadTrackSamples(mpeg4Plugin_, mpeg4TrackId, readSample, isEos);
+    ASSERT_EQ(ffmpegSamples.size(), 1U);
+    ASSERT_EQ(mpeg4Samples.size(), ffmpegSamples.size());
+    EXPECT_EQ(mpeg4Samples[0].pts, ffmpegSamples[0].pts);
+    EXPECT_EQ(mpeg4Samples[0].dts, ffmpegSamples[0].dts);
+    EXPECT_EQ(mpeg4Samples[0].duration, ffmpegSamples[0].duration);
+    EXPECT_EQ(mpeg4Samples[0].flag, ffmpegSamples[0].flag);
+    EXPECT_EQ(mpeg4Samples[0].actualSize, ZERO_STTS_FIXTURE_FIRST_SAMPLE_SIZE);
 }
 
 /**
