@@ -1601,40 +1601,110 @@ Status MPEG4DemuxerPlugin::ParseAVFirstFrames()
         "Get track count failed");
     GetAVTrackIds();
     for (const auto& avTrackId : avTrackIds_) {
-        auto currentTrack = FindTrackById(avTrackId);
-        FALSE_RETURN_V_MSG_E(currentTrack != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
-        FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, "ParseAVFirstFrames interrupt");
-        auto mpeg4Sample = std::make_shared<MPEG4Sample>();
-        FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate mpeg4Sample");
-        mpeg4Sample->trackId = avTrackId;
-        
-        // 使用GetSampleBySeekableStatus获取首帧，传入空AVBuffer
-        Status ret = GetSampleBySeekableStatus(avTrackId, mpeg4Sample, nullptr);
-        FALSE_CONTINUE_LOGD(ret == Status::OK && mpeg4Sample->sample != nullptr && mpeg4Sample->sample->data != nullptr,
-            "Failed to get first frame for track:" PUBLIC_LOG_U32, avTrackId);
+        Status ret = ParseAVFirstFrameForTrack(avTrackId);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse AV first frame failed");
+    }
+    return Status::OK;
+}
 
-        FALSE_CONTINUE_LOGD(ProcessVideoFirstFrame(currentTrack, avTrackId, mpeg4Sample),
-            "ConvertExtraDataToAnnexb failed in track:" PUBLIC_LOG_U32, avTrackId);
+Status MPEG4DemuxerPlugin::ParseAVFirstFrameForTrack(uint32_t trackId)
+{
+    auto currentTrack = FindTrackById(trackId);
+    FALSE_RETURN_V_MSG_E(currentTrack != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
+    FALSE_RETURN_V_MSG_E(!isInterruptNeeded_.load(), Status::ERROR_WRONG_STATE, "ParseAVFirstFrames interrupt");
+    const uint32_t originalSampleIndex = currentTrack->currentSampleIndex;
+    auto mpeg4Sample = std::make_shared<MPEG4Sample>();
+    FALSE_RETURN_V_MSG_E(mpeg4Sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate mpeg4Sample");
+    mpeg4Sample->trackId = trackId;
 
-        // Process audio track
-        if (IsAudioType(*currentTrack)) {
-            auto audioParser = std::make_shared<MPEG4AudioParser>();
-            FALSE_RETURN_V_MSG_E(audioParser != nullptr, Status::ERROR_NO_MEMORY, "Failed create audioParser");
-            ret = audioParser->ParseAudioFrame(mpeg4Sample->sample->data.get(), mpeg4Sample->sample->size,
-                currentTrack->sampleHelper->mimeType_, avTrackId, mediaInfo_);
-            FALSE_CONTINUE_LOGD(ret == Status::OK, "Parse audio failed in track:" PUBLIC_LOG_U32, avTrackId);
+    Status ret = Status::OK;
+    if (IsAudioType(*currentTrack) && seekable_ == Seekable::SEEKABLE) {
+        bool sampleReady = false;
+        ret = ReadAudioMetadataProbeSample(currentTrack, trackId, mpeg4Sample, sampleReady);
+        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read AAC metadata probe sample failed");
+        if (!sampleReady) {
+            return Status::OK;
         }
-
-        // Unseekable cannot reset SampleIndex
-        if (seekable_ == Seekable::SEEKABLE) {
-            currentTrack->currentSampleIndex = 0;
-            if (currentTrack->sampleHelper != nullptr &&
-                currentTrack->sampleHelper->mimeType_ == MimeType::AUDIO_MPEG) {
-                ClearTrackCache(avTrackId);
-                ResetMpegAudioParserTrack(*this, avTrackId);
-            }
+    } else {
+        // 保持视频及不可 seek 音频的原有首帧读取路径。
+        ret = GetSampleBySeekableStatus(trackId, mpeg4Sample, nullptr);
+        if (ret != Status::OK || mpeg4Sample->sample == nullptr || mpeg4Sample->sample->data == nullptr) {
+            MEDIA_LOG_D("Failed to get first frame for track:" PUBLIC_LOG_U32, trackId);
+            return Status::OK;
         }
     }
+
+    if (!ProcessVideoFirstFrame(currentTrack, trackId, mpeg4Sample)) {
+        MEDIA_LOG_D("ConvertExtraDataToAnnexb failed in track:" PUBLIC_LOG_U32, trackId);
+        return Status::OK;
+    }
+    if (IsAudioType(*currentTrack)) {
+        auto audioParser = std::make_shared<MPEG4AudioParser>();
+        FALSE_RETURN_V_MSG_E(audioParser != nullptr, Status::ERROR_NO_MEMORY, "Failed create audioParser");
+        ret = audioParser->ParseAudioFrame(mpeg4Sample->sample->data.get(), mpeg4Sample->sample->size,
+            currentTrack->sampleHelper->mimeType_, trackId, mediaInfo_);
+        if (ret != Status::OK) {
+            MEDIA_LOG_D("Parse audio failed in track:" PUBLIC_LOG_U32, trackId);
+            return Status::OK;
+        }
+    }
+    if (seekable_ == Seekable::SEEKABLE) {
+        currentTrack->currentSampleIndex = originalSampleIndex;
+        if (currentTrack->sampleHelper != nullptr &&
+            currentTrack->sampleHelper->mimeType_ == MimeType::AUDIO_MPEG) {
+            ClearTrackCache(trackId);
+            ResetMpegAudioParserTrack(*this, trackId);
+        }
+    }
+    return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::ReadAudioMetadataProbeSample(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
+    const std::shared_ptr<MPEG4Sample>& mpeg4Sample, bool& sampleReady)
+{
+    sampleReady = false;
+    uint32_t sampleIndex = track->currentSampleIndex;
+    MPEG4SampleHelper::SampleIndexView sampleView;
+    bool foundPlayableSample = false;
+    const size_t sampleCount = track->sampleHelper->GetSampleCount();
+    const bool hasPlayableVideoTrack = HasPlayableVideoTrack(firstTrack_);
+    for (uint32_t index = 0; index < sampleCount; ++index) {
+        MPEG4SampleHelper::SampleIndexView candidateView;
+        FALSE_RETURN_V_MSG_E(GetSampleView(track, index, candidateView), Status::ERROR_INVALID_DATA,
+            "Get AAC probe sample view failed");
+        if (candidateView.size <= 0 ||
+            (GetPacketSampleFlag(track, index, candidateView, hasPlayableVideoTrack) &
+            Sample::SampleFlag::DISCARD) != 0) {
+            continue;
+        }
+        sampleIndex = index;
+        sampleView = candidateView;
+        foundPlayableSample = true;
+        break;
+    }
+    if (!foundPlayableSample) {
+        MEDIA_LOG_D("No playable AAC sample available for metadata probe in track:" PUBLIC_LOG_U32, trackId);
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(sampleView.pos >= 0 && sampleView.size > 0, Status::ERROR_INVALID_DATA,
+        "Invalid AAC probe sample range");
+    mpeg4Sample->sample = std::make_shared<Sample>();
+    FALSE_RETURN_V_MSG_E(mpeg4Sample->sample != nullptr, Status::ERROR_NO_MEMORY,
+        "Failed to allocate AAC probe sample");
+    mpeg4Sample->sampleIndex = sampleIndex;
+    mpeg4Sample->sample->size = sampleView.size;
+    Status ret = CheckReadSampleDataState(sampleView.size);
+    if (ret != Status::OK) {
+        MEDIA_LOG_D("AAC metadata probe read state is not ready");
+        return Status::OK;
+    }
+    ret = ReadSampleDataToBuffer(mpeg4Sample->sample, static_cast<uint64_t>(sampleView.pos), sampleView.size);
+    if (ret != Status::OK || mpeg4Sample->sample->data == nullptr) {
+        MEDIA_LOG_D("Failed to read AAC metadata probe sample in track:" PUBLIC_LOG_U32, trackId);
+        return Status::OK;
+    }
+    sampleReady = true;
     return Status::OK;
 }
 

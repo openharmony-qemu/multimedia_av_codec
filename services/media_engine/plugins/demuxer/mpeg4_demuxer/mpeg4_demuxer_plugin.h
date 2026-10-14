@@ -214,6 +214,9 @@ private:
     int32_t CountTracks();
     void GetAVTrackIds();
     Status ParseAVFirstFrames();
+    Status ParseAVFirstFrameForTrack(uint32_t trackId);
+    Status ReadAudioMetadataProbeSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
+        const std::shared_ptr<MPEG4Sample>& mpeg4Sample, bool& sampleReady);
     bool ProcessVideoFirstFrame(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
         const std::shared_ptr<MPEG4Sample>& mpeg4Sample);
     bool UpdateCodecConfigForSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex);
