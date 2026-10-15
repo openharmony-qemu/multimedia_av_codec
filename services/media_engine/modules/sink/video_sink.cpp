@@ -234,9 +234,6 @@ void VideoSink::SetSeekFlag()
 
 void VideoSink::SetLastPts(int64_t lastPts, int64_t renderDelay)
 {
-    if (isFirstFrame_.load()) {
-        return;
-    }
     lastPts_.store(lastPts);
     auto syncCenter = syncCenter_.lock();
     if (syncCenter != nullptr) {
