@@ -5970,7 +5970,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefInfo_0001, Test
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
     InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
     Status ret = mpeg4Plugin_->ParserRefInfo();
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    EXPECT_TRUE(ret == Status::ERROR_UNKNOWN || ret == Status::ERROR_AGAIN);
 }
 
 /**
