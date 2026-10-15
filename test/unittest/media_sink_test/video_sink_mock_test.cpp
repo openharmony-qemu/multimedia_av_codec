@@ -137,7 +137,6 @@ HWTEST_F(TestVideoSinkMock, Test_SetLastPts_WithSyncCenter_Case1, TestSize.Level
     videoSink_->SetSyncCenter(std::dynamic_pointer_cast<MediaSyncManager>(mockSyncCenter_));
     videoSink_->lastPts_.store(HST_TIME_NONE);
     videoSink_->lastClockTime_.store(HST_TIME_NONE);
-    videoSink_->isFirstFrame_.store(false);
     int64_t lastPts = 1000; // 1000
     int64_t renderDelay = 100; // 100
     int64_t clockNow = 10000; // 10000
@@ -154,7 +153,6 @@ HWTEST_F(TestVideoSinkMock, Test_SetLastPts_WithSyncCenter_Case2, TestSize.Level
     videoSink_->SetSyncCenter(std::dynamic_pointer_cast<MediaSyncManager>(mockSyncCenter_));
     videoSink_->lastPts_.store(HST_TIME_NONE);
     videoSink_->lastClockTime_.store(HST_TIME_NONE);
-    videoSink_->isFirstFrame_.store(false);
     int64_t lastPts = 1000; // 1000
     int64_t renderDelay = -100; // -100
     int64_t clockNow = 10000; // 10000
