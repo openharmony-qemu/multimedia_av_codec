@@ -3139,3 +3139,238 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WMV_WMV1_WMA_URI_0001, TestSi
     }
     EXPECT_TRUE(foundFrames);
 }
+
+/**
+ * @tc.name: Demuxer_ReadSampleZeroCopy_WMV_WMV1_WMA_0001
+ * @tc.desc: ReadSampleZeroCopy uses internal memory for WMV1+WMA WMV file
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSampleZeroCopy_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_NE(demuxerPlugin_, nullptr);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
+    auto oldMemory = buffer.mediaAVBuffer->memory_;
+    ASSERT_EQ(demuxerPlugin_->ReadSampleZeroCopy(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_NE(buffer.mediaAVBuffer->memory_, nullptr);
+    EXPECT_NE(buffer.mediaAVBuffer->memory_, oldMemory);
+}
+
+/**
+ * @tc.name: Demuxer_GetNextSampleSize_WMV_WMV1_WMA_0001
+ * @tc.desc: GetNextSampleSize then ReadSample with allocated size for WMV1+WMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetNextSampleSize_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    int32_t size = 0;
+    demuxerPlugin_->GetNextSampleSize(0, size, DEFAULT_TIMEOUT);
+    EXPECT_GT(size, 0);
+    AVBufferWrapper buffer(size);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+}
+
+/**
+ * @tc.name: Demuxer_BoostReadThreadPriority_WMV_WMV1_WMA_0001
+ * @tc.desc: Boost read thread priority for WMV1+WMA WMV file
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_BoostReadThreadPriority_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->BoostReadThreadPriority(), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->BoostReadThreadPriority(), Status::ERROR_WRONG_STATE);
+    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->BoostReadThreadPriority(), Status::ERROR_WRONG_STATE);
+}
+
+/**
+ * @tc.name: Demuxer_FlushAndRead_WMV_WMV1_WMA_0001
+ * @tc.desc: Flush then verify ReadSample still works for WMV1+WMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_FlushAndRead_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(1, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->Flush(), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+}
+
+/**
+ * @tc.name: Demuxer_Reset_WMV_WMV1_WMA_0001
+ * @tc.desc: Reset clears state, SelectTrack fails after Reset for WMV1+WMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_Reset_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->Reset(), Status::OK);
+    ASSERT_NE(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_NE(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+}
+
+/**
+ * @tc.name: Demuxer_SeekToStart_WMV_WMV1_WMA_0001
+ * @tc.desc: SeekToStart then verify frames readable for WMV1+WMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToStart_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(1, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SeekToStart(), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer, DEFAULT_TIMEOUT), Status::OK);
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfoExt_WMV_WMV1_WMA_0001
+ * @tc.desc: Verify extended media info: bitrate, frame rate, codec config
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfoExt_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *videoTrack = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(videoTrack, nullptr);
+    double frameRate = 0;
+    EXPECT_TRUE(videoTrack->GetData(Tag::VIDEO_FRAME_RATE, frameRate));
+    EXPECT_GT(frameRate, 0);
+    int64_t videoBitrate = 0;
+    if (videoTrack->GetData(Tag::MEDIA_BITRATE, videoBitrate)) {
+        EXPECT_GE(videoBitrate, 0);
+    }
+    std::vector<uint8_t> codecConfig;
+    if (videoTrack->GetData(Tag::MEDIA_CODEC_CONFIG, codecConfig)) {
+        EXPECT_FALSE(codecConfig.empty());
+    }
+    bool hasAudio = false;
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        Plugins::MediaType type = Plugins::MediaType::UNKNOWN;
+        if (mediaInfo_.tracks[i].GetData(Tag::MEDIA_TYPE, type) && type == Plugins::MediaType::AUDIO) {
+            hasAudio = true;
+            int64_t audioBitrate = 0;
+            if (mediaInfo_.tracks[i].GetData(Tag::MEDIA_BITRATE, audioBitrate)) {
+                EXPECT_GE(audioBitrate, 0);
+            }
+            break;
+        }
+    }
+    EXPECT_TRUE(hasAudio);
+}
+
+/**
+ * @tc.name: Demuxer_ErrorReadSample_WMV_WMV1_WMA_0001
+ * @tc.desc: ReadSample with null buffer should fail for WMV1+WMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorReadSample_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    std::shared_ptr<MediaAVBuffer> nullBuffer = nullptr;
+    ASSERT_NE(demuxerPlugin_->ReadSample(0, nullBuffer, DEFAULT_TIMEOUT), Status::OK);
+}
+
+/**
+ * @tc.name: Demuxer_ReadSampleNoTimeout_WMV_WMV1_WMA_0001
+ * @tc.desc: ReadSample without timeout parameter for WMV1+WMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSampleNoTimeout_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(0), Status::OK);
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(1), Status::OK);
+    SetInitValue();
+    OHOS::Media::AVBufferWrapper buffer(videoHeight_ * videoWidth_ * 3);
+    uint32_t frameCount = 0;
+    uint32_t maxFrames = 100;
+    while (frameCount < maxFrames) {
+        auto ret = demuxerPlugin_->ReadSample(0, buffer.mediaAVBuffer);
+        if (ret == Status::END_OF_STREAM) {
+            break;
+        }
+        ASSERT_TRUE(ret == Status::OK || ret == Status::NO_ERROR);
+        frameCount++;
+    }
+    EXPECT_GT(frameCount, 0);
+}
+
+/**
+ * @tc.name: Demuxer_ReadSampleVideoOnly_WMV_WMV1_WMA_0001
+ * @tc.desc: Read only video track (no audio selected) for WMV1+WMA
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSampleVideoOnly_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    Meta *videoTrack = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(videoTrack, nullptr);
+    uint32_t videoTrackId = 0;
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        Plugins::MediaType type = Plugins::MediaType::UNKNOWN;
+        if (mediaInfo_.tracks[i].GetData(Tag::MEDIA_TYPE, type) && type == Plugins::MediaType::VIDEO) {
+            videoTrackId = i;
+            break;
+        }
+    }
+    ASSERT_EQ(demuxerPlugin_->SelectTrack(videoTrackId), Status::OK);
+    OHOS::Media::AVBufferWrapper buffer(DEFAULT_BUFFSIZE);
+    uint32_t frameCount = 0;
+    uint32_t maxFrames = 100;
+    while (frameCount < maxFrames) {
+        auto ret = demuxerPlugin_->ReadSample(videoTrackId, buffer.mediaAVBuffer, DEFAULT_TIMEOUT);
+        if (ret == Status::END_OF_STREAM) {
+            break;
+        }
+        ASSERT_TRUE(ret == Status::OK || ret == Status::NO_ERROR || ret == Status::ERROR_WAIT_TIMEOUT);
+        if (ret == Status::OK || ret == Status::NO_ERROR) {
+            frameCount++;
+        }
+    }
+    EXPECT_GT(frameCount, 0);
+}
+
