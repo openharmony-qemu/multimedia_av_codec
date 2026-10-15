@@ -69,6 +69,7 @@ const std::string TEST_MP4_PATH_HEVC_AVC_AAC = "/data/test/media/muxer_auxl_265_
 const std::string TEST_MP4_PATH_VVC = "/data/test/media/vvc_1280_720_8.mp4";
 const std::string TEST_MP4_PATH_WEBVTT = "/data/test/media/webvtt.mp4";
 const std::string TEST_MP4_MULTIPLE_VIDEO_TRACKS = "/data/test/media/h264_double_video_audio.mp4";
+const std::string ZERO_STTS_HVC1_FIXTURE = "/data/test/media/zero_stts_hvc1_55_samples.mp4";
 const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
 const std::string TEST_RELATIVE_PATH = "/data/test/media/";
 const std::string TEST_DEMUXER_RESOURCE_DIR = "/data/test/media";
@@ -4417,6 +4418,40 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacImplicitSbrEditListPa
     EXPECT_EQ(ffmpegFrameSize, mpeg4FrameSize) << path;
     EXPECT_EQ(ffmpegRate, 48000) << path;
     EXPECT_EQ(ffmpegFrameSize, 2048) << path;
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroSttsHvc1Parity_001
+ * @tc.desc: Verify MPEG4 and FFmpeg expose identical samples for an HEVC track whose STTS deltas are zero
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroSttsHvc1Parity_001, TestSize.Level1)
+{
+    ffmpegPlugin_ = std::make_shared<FFmpegDemuxerPlugin>(FFMPEG_MP4_PLUGIN_NAME);
+    auto mpeg4 = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    mpeg4Plugin_ = mpeg4;
+    InitPlugin(ZERO_STTS_HVC1_FIXTURE, ffmpegPlugin_, ffmpegFd_, ffmpegMediaInfo_);
+    InitPlugin(ZERO_STTS_HVC1_FIXTURE, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
+    auto ffmpegTrackIds = SelectSupportedTracks(ffmpegPlugin_, ffmpegMediaInfo_);
+    auto mpeg4TrackIds = SelectSupportedTracks(mpeg4Plugin_, mpeg4MediaInfo_);
+    uint32_t ffmpegTrackId = FindFirstVideoTrack(ffmpegMediaInfo_, ffmpegTrackIds);
+    uint32_t mpeg4TrackId = FindFirstVideoTrack(mpeg4MediaInfo_, mpeg4TrackIds);
+    ASSERT_NE(ffmpegTrackId, INVALID_TRACK_ID);
+    ASSERT_NE(mpeg4TrackId, INVALID_TRACK_ID);
+
+    auto readSample = [this](const std::shared_ptr<BaseDemuxerPlugin>& plugin, uint32_t trackId,
+        const std::shared_ptr<MediaAVBuffer>& buffer) {
+        return ReadSampleWithRetry(plugin, trackId, buffer, ReadMode::COPY);
+    };
+    auto isEos = [this](const std::shared_ptr<MediaAVBuffer>& buffer) { return IsEos(buffer); };
+    auto ffmpegSamples = ReadTrackSamples(ffmpegPlugin_, ffmpegTrackId, readSample, isEos);
+    auto mpeg4Samples = ReadTrackSamples(mpeg4Plugin_, mpeg4TrackId, readSample, isEos);
+    ASSERT_EQ(ffmpegSamples.size(), 1U);
+    ASSERT_EQ(mpeg4Samples.size(), ffmpegSamples.size());
+    EXPECT_EQ(mpeg4Samples[0].pts, ffmpegSamples[0].pts);
+    EXPECT_EQ(mpeg4Samples[0].dts, ffmpegSamples[0].dts);
+    EXPECT_EQ(mpeg4Samples[0].duration, ffmpegSamples[0].duration);
+    EXPECT_EQ(mpeg4Samples[0].flag, ffmpegSamples[0].flag);
 }
 
 /**
