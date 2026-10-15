@@ -535,6 +535,34 @@ HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_DifferentApps_001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AdvancedFeatureInfo_DirectCaller_001
+ * @tc.desc: Test direct codec caller is used as both caller and forward caller.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_DirectCaller_001, TestSize.Level1)
+{
+    meta_->SetData(Tag::AV_CODEC_CALLER_PID, static_cast<pid_t>(1001));
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "app2");
+    meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "ROI");
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
+}
+
+/**
+ * @tc.name: AdvancedFeatureInfo_ForwardedCaller_001
+ * @tc.desc: Test forwarded codec calls preserve direct and source callers.
+ * @tc.type: FUNC
+ */
+HWTEST_F(TEST_SUIT, AdvancedFeatureInfo_ForwardedCaller_001, TestSize.Level1)
+{
+    meta_->SetData(Tag::AV_CODEC_CALLER_PID, static_cast<pid_t>(1002));
+    meta_->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, "avrecorder");
+    meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PID, static_cast<pid_t>(1003));
+    meta_->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, "app1");
+    meta_->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), "ROI");
+    SubmitEventInfo(StatisticsEventType::ADVANCED_FEATURE_INFO);
+}
+
+/**
  * @tc.name: OnSummateEventInfo_InstanceUsage_001
  * @tc.desc: Test OnSummateEventInfo aggregates codec instance usage info correctly.
  *           Verifies instance create action increments currentCount.
