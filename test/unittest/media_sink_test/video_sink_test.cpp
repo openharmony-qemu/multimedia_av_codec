@@ -285,7 +285,6 @@ HWTEST_F(TestVideoSink, SetLastPts_001, TestSize.Level0)
 {
     auto syncCenter = std::make_shared<MockMediaSyncCenter>();
     videoSink_->SetSyncCenter(syncCenter);
-    videoSink_->isFirstFrame_.store(false);
     syncCenter->returnInt64Queue_.push(987654321);
     int64_t lastPts = 123456789;
     videoSink_->SetLastPts(lastPts, 0);
@@ -296,7 +295,6 @@ HWTEST_F(TestVideoSink, SetLastPts_002, TestSize.Level0)
 {
     auto syncCenter = std::make_shared<MockMediaSyncCenter>();
     videoSink_->SetSyncCenter(nullptr);
-    videoSink_->isFirstFrame_.store(false);
     int64_t lastPts = 123456789;
     videoSink_->SetLastPts(lastPts, 0);
     EXPECT_EQ(videoSink_->lastPts_.load(), lastPts);
@@ -304,7 +302,6 @@ HWTEST_F(TestVideoSink, SetLastPts_002, TestSize.Level0)
 
 HWTEST_F(TestVideoSink, ReportPts_001, TestSize.Level0)
 {
-    videoSink_->isFirstFrame_.store(false);
     int64_t nowPts = 0;
     int64_t lastPts = 2;
     videoSink_->SetLastPts(lastPts, 0);
