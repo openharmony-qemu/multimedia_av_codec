@@ -1908,7 +1908,9 @@ int64_t MPEG4SampleHelper::FindPrevClosestIndex(const std::vector<SampleIndexEnt
         if (entries[i].dts > timestampPts) {
             break;
         }
-        if (anyFrame || IsSyncSample(syncSamples, allSamplesSync, static_cast<uint32_t>(i))) {
+        bool isCandidate = anyFrame || IsSyncSample(syncSamples, allSamplesSync, static_cast<uint32_t>(i));
+        bool isNewerTimestamp = found < 0 || entries[i].dts > entries[static_cast<size_t>(found)].dts;
+        if (isCandidate && isNewerTimestamp) {
             found = static_cast<int64_t>(i);
         }
     }

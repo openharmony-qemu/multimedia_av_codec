@@ -3207,6 +3207,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroDurationMp3EditProje
     helper.SetEditListParams({{0, 36, 1, 0}}, 1000, 16000);
 
     ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
     EXPECT_EQ(helper.GetSampleCount(), 181U);
     EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 1, 180}));
     Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView firstSample;
@@ -3215,6 +3216,59 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroDurationMp3EditProje
     constexpr uint32_t expectedSyncFlag =
         static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
     EXPECT_EQ(firstSample.flag & expectedSyncFlag, expectedSyncFlag);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_FindPrevClosestIndexSameDts_001
+ * @tc.desc: Verify the earliest eligible sync sample is selected for an equal-DTS group.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FindPrevClosestIndexSameDts_001, TestSize.Level1)
+{
+    constexpr int64_t equalDts = 0;
+    constexpr int64_t nextDts = 10;
+    constexpr uint32_t sampleSize = 1;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    std::vector<Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry> entries {
+        MakeSampleIndexEntry(0, equalDts, equalDts, sampleSize),
+        MakeSampleIndexEntry(1, equalDts, equalDts, sampleSize),
+        MakeSampleIndexEntry(2, equalDts, equalDts, sampleSize),
+        MakeSampleIndexEntry(3, nextDts, nextDts, sampleSize),
+    };
+    std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry> syncSamples {{1}, {2}, {3}};
+
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, syncSamples, false, equalDts, false), 1);
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, syncSamples, false, equalDts, true), 0);
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, syncSamples, true, equalDts, false), 0);
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, syncSamples, false, nextDts, false), 3);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_FindPrevClosestIndexBoundary_001
+ * @tc.desc: Verify empty, before-first and no-sync inputs return the expected sentinel or fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FindPrevClosestIndexBoundary_001, TestSize.Level1)
+{
+    constexpr int64_t noSampleIndex = -1;
+    constexpr int64_t firstDts = 10;
+    constexpr uint32_t sampleSize = 1;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    std::vector<Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry> entries {
+        MakeSampleIndexEntry(0, firstDts, firstDts, sampleSize),
+    };
+    std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry> noSyncSamples;
+
+    EXPECT_EQ(helper.FindPrevClosestIndex({}, noSyncSamples, false, firstDts, false), noSampleIndex);
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts - 1, true), noSampleIndex);
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts, false), noSampleIndex);
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts, true), 0);
+    helper.dtsShift_ = 5;
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts + 4, true), noSampleIndex);
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts + 5, true), 0);
+
+    std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry> invalidSyncSamples {{1}};
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, invalidSyncSamples, false, firstDts + 5, false), noSampleIndex);
 }
 
 /**
