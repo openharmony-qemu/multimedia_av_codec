@@ -135,6 +135,7 @@ private:
     Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
     std::atomic<bool> inited_ = false;
     bool isIsom_ = false;
+    bool hasQtBrand_ = false;
     bool hasSidxBox_ = false;
     bool hasMoofBox_ = false;
     int32_t movieTimeScale_ = 1;

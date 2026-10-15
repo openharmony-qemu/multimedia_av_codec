@@ -87,16 +87,73 @@ bool NeedReadPostProcessing(const std::string& mime)
 }
 
 constexpr size_t MPEG_AUDIO_HEADER_SIZE = 4;
+// MPEG audio frame constants (ISO/IEC 11172-3): frameSize = coefficient * bitrate / sampleRate + padding,
+// with 384/1152/576 samples per frame for Layer I/II/III (MPEG2/2.5 Layer III halves the Layer II value).
+constexpr uint32_t MPEG_AUDIO_COEFF_LAYER1 = 12;
+constexpr uint32_t MPEG_AUDIO_COEFF_LAYER2 = 144;
+constexpr uint32_t MPEG_AUDIO_COEFF_MPEG2_LAYER3 = 72;
+constexpr uint32_t MPEG_AUDIO_SAMPLES_LAYER1 = 384;
+constexpr uint32_t MPEG_AUDIO_SAMPLES_LAYER2 = 1152;
+constexpr uint32_t MPEG_AUDIO_SAMPLES_MPEG2_LAYER3 = 576;
+// FFmpeg treats an MP3 stts table as non-uniform when it contains many short runs: the entry count
+// must exceed MIN_NON_UNIFORM_STTS_ENTRIES and outnumber 1/NON_UNIFORM_STTS_SAMPLE_RATIO of the samples.
+constexpr uint32_t MIN_NON_UNIFORM_STTS_ENTRIES = 3;
+constexpr uint32_t NON_UNIFORM_STTS_SAMPLE_RATIO = 10;
+// FFmpeg compute_frame_duration derives video packet durations from the SPS codec framerate only when
+// frameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR > frameRateNum (a plausible rate below 1000 fps);
+// bogus rates such as 90000/1 leave the duration at 0.
+constexpr uint64_t CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR = 1000;
 
-bool GetMpegAudioFrameSize(const uint8_t* data, size_t size, int32_t& frameSize)
+struct MpegAudioFrameInfo {
+    int32_t size = 0;
+    int64_t durationUs = 0;
+};
+
+bool IsValidMpegAudioHeader(uint32_t header, uint32_t& version, uint32_t& layer,
+    uint32_t& bitrateIndex, uint32_t& rateIndex)
 {
     constexpr uint32_t syncWord = 0x7FF;
     constexpr uint32_t syncWordShift = 21;
+    constexpr uint32_t versionShift = 19;
+    constexpr uint32_t layerShift = 17;
+    constexpr uint32_t bitrateShift = 12;
+    constexpr uint32_t rateShift = 10;
     constexpr uint32_t invalidIndex = 3;
     constexpr uint32_t invalidBitrate = 15;
+    version = (header >> versionShift) & 0x03;
+    layer = (header >> layerShift) & 0x03;
+    bitrateIndex = (header >> bitrateShift) & 0x0F;
+    rateIndex = (header >> rateShift) & 0x03;
+    return (header >> syncWordShift) == syncWord && version != 1 && layer != 0 &&
+        bitrateIndex != 0 && bitrateIndex != invalidBitrate && rateIndex != invalidIndex;
+}
+
+uint32_t GetMpegAudioSampleRate(uint32_t version, uint32_t rateIndex)
+{
+    constexpr uint32_t sampleRates[] = {44100, 48000, 32000};
+    constexpr uint32_t mpegVersion1 = 3;
+    constexpr uint32_t mpegVersion2 = 2;
+    constexpr uint32_t mpeg2SampleRateShift = 1;
+    constexpr uint32_t mpeg25SampleRateShift = 2;
+    if (rateIndex >= sizeof(sampleRates) / sizeof(sampleRates[0])) {
+        return 0;
+    }
+    uint32_t sampleRate = sampleRates[rateIndex];
+    if (version == mpegVersion1) {
+        return sampleRate;
+    }
+    if (version == mpegVersion2) {
+        return sampleRate >> mpeg2SampleRateShift;
+    }
+    return sampleRate >> mpeg25SampleRateShift;
+}
+
+uint32_t GetMpegAudioBitrate(uint32_t version, uint32_t layer, uint32_t bitrateIndex)
+{
     constexpr uint32_t mpegVersion1 = 3;
     constexpr uint32_t layer1 = 3;
-    constexpr uint32_t layer1FrameSizeMultiplier = 4;
+    constexpr uint32_t bitrateEntryCount = 15;
+    constexpr uint32_t bitratePerKiloBit = 1000;
     constexpr uint32_t bitrates[2][3][15] = {
         {{0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448},
             {0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384},
@@ -105,31 +162,119 @@ bool GetMpegAudioFrameSize(const uint8_t* data, size_t size, int32_t& frameSize)
             {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160},
             {0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160}},
     };
-    constexpr uint32_t sampleRates[] = {44100, 48000, 32000};
+    if (layer == 0 || layer > layer1 || bitrateIndex == 0 || bitrateIndex >= bitrateEntryCount) {
+        return 0;
+    }
+    return bitrates[version == mpegVersion1 ? 0 : 1][layer1 - layer][bitrateIndex] * bitratePerKiloBit;
+}
+
+uint32_t GetMpegAudioFrameCoefficient(uint32_t version, uint32_t layer)
+{
+    constexpr uint32_t layer1 = 3;
+    constexpr uint32_t layer3 = 1;
+    constexpr uint32_t mpegVersion1 = 3;
+    if (layer == layer1) {
+        return MPEG_AUDIO_COEFF_LAYER1;
+    }
+    if (layer == layer3 && version != mpegVersion1) {
+        return MPEG_AUDIO_COEFF_MPEG2_LAYER3;
+    }
+    return MPEG_AUDIO_COEFF_LAYER2;
+}
+
+uint32_t GetMpegAudioSamplesPerFrame(uint32_t version, uint32_t layer)
+{
+    constexpr uint32_t layer1 = 3;
+    constexpr uint32_t layer3 = 1;
+    constexpr uint32_t mpegVersion1 = 3;
+    if (layer == layer1) {
+        return MPEG_AUDIO_SAMPLES_LAYER1;
+    }
+    if (layer == layer3 && version != mpegVersion1) {
+        return MPEG_AUDIO_SAMPLES_MPEG2_LAYER3;
+    }
+    return MPEG_AUDIO_SAMPLES_LAYER2;
+}
+
+bool GetMpegAudioFrameInfo(const uint8_t* data, size_t size, MpegAudioFrameInfo& frameInfo)
+{
+    constexpr uint32_t layer1 = 3;
+    constexpr uint32_t layer1FrameSizeMultiplier = 4;
+    constexpr uint32_t paddingBitShift = 9;
     if (data == nullptr || size < MPEG_AUDIO_HEADER_SIZE) {
         return false;
     }
     uint32_t header = GetU32Value(data);
-    uint32_t version = (header >> 19) & 0x03;
-    uint32_t layer = (header >> 17) & 0x03;
-    uint32_t bitrateIndex = (header >> 12) & 0x0F;
-    uint32_t rateIndex = (header >> 10) & 0x03;
-    if ((header >> syncWordShift) != syncWord || version == 1 || layer == 0 || bitrateIndex == 0 ||
-        bitrateIndex == invalidBitrate || rateIndex == invalidIndex) {
+    uint32_t version = 0;
+    uint32_t layer = 0;
+    uint32_t bitrateIndex = 0;
+    uint32_t rateIndex = 0;
+    if (!IsValidMpegAudioHeader(header, version, layer, bitrateIndex, rateIndex)) {
         return false;
     }
-    uint32_t sampleRate = sampleRates[rateIndex] >> (version == mpegVersion1 ? 0 : version == 2 ? 1 : 2);
-    uint32_t bitrate = bitrates[version == mpegVersion1 ? 0 : 1][layer1 - layer][bitrateIndex] * 1000;
-    uint32_t coefficient = layer == layer1 ? 12 : (layer == 1 && version != mpegVersion1 ? 72 : 144);
-    uint64_t sizeValue = static_cast<uint64_t>(coefficient) * bitrate / sampleRate + ((header >> 9) & 0x01);
+    uint32_t sampleRate = GetMpegAudioSampleRate(version, rateIndex);
+    uint32_t bitrate = GetMpegAudioBitrate(version, layer, bitrateIndex);
+    if (sampleRate == 0) {
+        return false;
+    }
+    uint32_t coefficient = GetMpegAudioFrameCoefficient(version, layer);
+    uint64_t sizeValue = static_cast<uint64_t>(coefficient) * bitrate / sampleRate +
+        ((header >> paddingBitShift) & 0x01);
     if (layer == layer1) {
         sizeValue *= layer1FrameSizeMultiplier;
     }
     if (sizeValue < MPEG_AUDIO_HEADER_SIZE || sizeValue > static_cast<uint64_t>(INT32_MAX)) {
         return false;
     }
-    frameSize = static_cast<int32_t>(sizeValue);
+    uint32_t samplesPerFrame = GetMpegAudioSamplesPerFrame(version, layer);
+    if (ConvertTimeScale(static_cast<int64_t>(samplesPerFrame), static_cast<int64_t>(S_TO_US), sampleRate,
+        &frameInfo.durationUs) != Status::OK || frameInfo.durationUs <= 0) {
+        return false;
+    }
+    frameInfo.size = static_cast<int32_t>(sizeValue);
     return true;
+}
+
+bool IsLegacyHandbrakeEncoder(const std::string& encoder)
+{
+    if (encoder.find("HandBrake") == std::string::npos) {
+        return false;
+    }
+    size_t digitPos = encoder.find_first_of("0123456789");
+    if (digitPos == std::string::npos) {
+        return true;
+    }
+    int major = 0;
+    int minor = 0;
+    int patch = 0;
+    size_t offset = digitPos;
+    auto parseNumber = [&encoder, &offset](int& value) {
+        constexpr int decimalRadix = 10;
+        value = 0;
+        bool found = false;
+        while (offset < encoder.size() && encoder[offset] >= '0' && encoder[offset] <= '9') {
+            int digit = encoder[offset] - '0';
+            if (value > (std::numeric_limits<int>::max() - digit) / decimalRadix) {
+                value = std::numeric_limits<int>::max();
+            } else {
+                value = value * decimalRadix + digit;
+            }
+            found = true;
+            ++offset;
+        }
+        return found;
+    };
+    if (!parseNumber(major) || offset >= encoder.size() || encoder[offset] != '.') {
+        return true;
+    }
+    ++offset;
+    if (!parseNumber(minor) || offset >= encoder.size() || encoder[offset] != '.') {
+        return true;
+    }
+    ++offset;
+    (void)parseNumber(patch);
+    // HandBrake <= 0.10.2 writes unreliable MP3 sample timing (FFmpeg mov.c).
+    return major == 0 && (minor < 10 || (minor == 10 && patch <= 2));
 }
 
 struct MpegAudioParserSegment {
@@ -143,7 +288,7 @@ struct MpegAudioParserState {
     size_t scanOffset = 0;
     size_t scanSegmentIndex = 0;
     size_t scanSegmentOffset = 0;
-    std::shared_ptr<OHOS::Media::Plugins::MPEG4::Sample> timingSample = nullptr;
+    bool needsParsing = false;
 };
 
 constexpr size_t MAX_MPEG_AUDIO_PENDING_SIZE = 64 * 1024;
@@ -360,6 +505,26 @@ bool GetCttsFrameRateDurationUs(
 bool GetCttsPacketDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<MPEG4AtomParser::Track>& track,
     int32_t trackTimeScale, int64_t& durationUs)
 {
+    if (track->codecFrameRateParsed) {
+        // FFmpeg compute_frame_duration derives the packet duration from the SPS codec framerate
+        // (time_scale / (2 * num_units_in_tick)) when it is a plausible video frame rate
+        // (frameRateDen * 1000 > frameRateNum); otherwise the duration stays 0, matching
+        // HandBrake files whose SPS timing claims a bogus rate like 90000/1. FFmpeg emits these
+        // packets with duration 0 as well, so consumers must rely on PTS deltas rather than the
+        // per-packet duration for such streams.
+        uint64_t frameRateNum = track->codecFrameRateNum;
+        uint64_t frameRateDen = track->codecFrameRateDen;
+        if (frameRateNum > 0 && frameRateDen > 0 &&
+            frameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR > frameRateNum) {
+            uint64_t durationTicks = static_cast<uint64_t>(trackTimeScale) * frameRateDen / frameRateNum;
+            if (durationTicks <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+                return RescaleTrackTimeToUsRoundNearest(static_cast<int64_t>(durationTicks),
+                    trackTimeScale, durationUs) == Status::OK;
+            }
+        }
+        durationUs = 0;
+        return true;
+    }
     int64_t nominalDuration = 0;
     if (GetNominalSttsDuration(track, nominalDuration)) {
         return RescaleTrackTimeToUsRoundNearest(nominalDuration, trackTimeScale, durationUs) == Status::OK;
@@ -453,6 +618,48 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
         GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale, durationUs);
 }
 
+bool GetMpegAudioTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
+{
+    const auto& track = context.track;
+    if (track == nullptr || track->sampleHelper == nullptr || context.trackTimeScale <= 0 ||
+        context.movieTimeScale <= 0) {
+        return false;
+    }
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
+    if (sampleCount == 0 || context.sampleIndex + 1 != sampleCount) {
+        return false;
+    }
+    // FFmpeg mov_fix_index() bounds the stream duration by the edit-list end (sum of the converted
+    // segment durations, st->duration = min(mdhd duration, edit_list_dts_entry_end - start_dts));
+    // mov_finalize_packet() then closes the last packet against st->duration - dts.
+    int64_t streamEndTicks = track->duration > 0 ? track->duration : 0;
+    if (!track->editListEntries.empty()) {
+        int64_t editEndTicks = 0;
+        bool editEndValid = true;
+        for (const auto& edit : track->editListEntries) {
+            int64_t editDurationTicks = 0;
+            if (ConvertTimeScale(edit.duration, context.trackTimeScale, context.movieTimeScale,
+                &editDurationTicks) != Status::OK || editDurationTicks < 0 ||
+                __builtin_add_overflow(editEndTicks, editDurationTicks, &editEndTicks)) {
+                editEndValid = false;
+                break;
+            }
+        }
+        if (editEndValid && editEndTicks > 0) {
+            streamEndTicks = streamEndTicks > 0 ? std::min(streamEndTicks, editEndTicks) : editEndTicks;
+        }
+    }
+    if (streamEndTicks <= 0) {
+        return false;
+    }
+    int64_t durationTicks = 0;
+    if (__builtin_sub_overflow(streamEndTicks, context.currentSample.dts, &durationTicks) || durationTicks <= 0) {
+        return false;
+    }
+    return RescaleTrackTimeToUsRoundNearest(durationTicks, context.trackTimeScale, durationUs) == Status::OK &&
+        durationUs > 0;
+}
+
 bool GetMpegAudioFrameDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
     const auto& mediaInfo = context.mediaInfo;
@@ -470,16 +677,11 @@ bool GetMpegAudioFrameDurationUs(const ReadSamplePacketContext& context, int64_t
         return false;
     }
     size_t sampleCount = track->sampleHelper->GetSampleCount();
-    const auto& currentSample = context.currentSample;
-    uint32_t sampleIndex = context.sampleIndex;
     FALSE_RETURN_V_NOLOG(sampleCount > 0, false);
-    // A short final STTS run means the container already records a real tail duration.
-    bool hasExplicitShortTailStts = track->sampleHelper->GetSttsEntryCount() == SHORT_TAIL_STTS_ENTRY_COUNT &&
-        track->sampleHelper->GetSampleCountOfSttsEntry(1) == SINGLE_SAMPLE_RUN_COUNT &&
-        track->sampleHelper->GetSampleDeltaOfSttsEntry(0) > track->sampleHelper->GetSampleDeltaOfSttsEntry(1);
-    if (hasExplicitShortTailStts && sampleIndex + 1 == sampleCount && currentSample.duration > 0 &&
-        currentSample.duration != samplesPerFrame) {
-        return false;
+    if (context.sampleIndex + 1 == sampleCount) {
+        // FFmpeg mov_finalize_packet: the last packet closes against the stream end minus its dts
+        // instead of the fixed MP3 frame duration, so stts short tails and edit-list tails match.
+        return GetMpegAudioTailDurationUs(context, durationUs);
     }
     return ConvertTimeScale(samplesPerFrame, static_cast<int64_t>(S_TO_US), sampleRate, &durationUs) == Status::OK;
 }
@@ -1345,6 +1547,7 @@ void MPEG4DemuxerPlugin::ResetParam()
     hasMoofBox_ = false;
     hasSidxBox_ = false;
     isIsom_ = false;
+    hasQtBrand_ = false;
     readToEnd_ = false;
     currentFragment_ = 0;
     minElstInitEmptyEdit_ = INT64_MAX;
@@ -1394,6 +1597,8 @@ Status MPEG4DemuxerPlugin::Flush()
 void MPEG4DemuxerPlugin::InitBaseInfoByAtomParser(std::shared_ptr<MPEG4AtomParser> parser)
 {
     mediaInfo_ = parser->GetMediaInfo();
+    isIsom_ = parser->IsIsom();
+    hasQtBrand_ = parser->HasCompatibleBrand(static_cast<uint32_t>(FourccType("qt  ")));
     movieTimeScale_ = parser->GetMovieTimeScale();
     firstTrack_ = parser->GetFirstTrack();
     userformat_ = parser->GetUserFormat();
@@ -3341,6 +3546,68 @@ public:
             track->sampleHelper->mimeType_ == MimeType::AUDIO_MPEG;
     }
 
+    // FFmpeg mov_parse_stsd_audio: an MP3 sample entry that cannot be treated as a fixed-size
+    // audio unit (a plain version 0 entry, or version 1 without a QT compression id) needs a parser.
+    static bool NeedsStsdAudioParser(MPEG4DemuxerPlugin& plugin,
+        const std::shared_ptr<MPEG4AtomParser::Track>& track)
+    {
+        const uint32_t entryVersion = track->audioSampleEntryVersion;
+        const uint32_t stsdVersion = track->stsdVersion;
+        bool isQtAudioUnit = plugin.isIsom_ && !plugin.hasQtBrand_ &&
+            !(stsdVersion == 0 && entryVersion > 0);
+        if (!track->stsdParsed || isQtAudioUnit) {
+            return false;
+        }
+        return entryVersion == 0 || (entryVersion == 1 && track->audioSampleEntryCid != 0xFFFE);
+    }
+
+    // FFmpeg mov_read_header: many short stts runs whose time scale matches the sample rate
+    // imply non-uniform MP3 frame durations that need a parser.
+    static bool NeedsSttsReassembly(MPEG4DemuxerPlugin& plugin,
+        const std::shared_ptr<MPEG4AtomParser::Track>& track)
+    {
+        const uint32_t sttsCount = track->sampleHelper->GetSttsEntryCount();
+        const uint32_t sampleCount = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
+        int32_t sampleRate = 0;
+        if (sttsCount <= MIN_NON_UNIFORM_STTS_ENTRIES || sampleCount == 0 ||
+            static_cast<uint64_t>(sttsCount) * NON_UNIFORM_STTS_SAMPLE_RATIO <= sampleCount ||
+            track->timeScale <= 0 || track->trackIndex >= plugin.mediaInfo_.tracks.size() ||
+            !plugin.mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) ||
+            sampleRate <= 0 || static_cast<uint32_t>(track->timeScale) != static_cast<uint32_t>(sampleRate)) {
+            return false;
+        }
+        return true;
+    }
+
+    static bool NeedsFrameReassembly(MPEG4DemuxerPlugin& plugin, uint32_t trackId)
+    {
+        auto track = plugin.FindTrackById(static_cast<int32_t>(trackId));
+        if (!IsTrack(track) || track->sampleHelper == nullptr) {
+            return false;
+        }
+        // All inputs (stsd/stts tables, time scale, container flags, encoder tag) are fixed once the
+        // header is parsed, so the decision is memoized per track instead of re-run on every sample.
+        if (track->frameReassemblyChecked) {
+            return track->frameReassemblyNeeded;
+        }
+        bool needed = false;
+        if (NeedsStsdAudioParser(plugin, track)) {
+            needed = true;
+        } else if (NeedsSttsReassembly(plugin, track)) {
+            needed = true;
+        } else {
+            // FFmpeg mov_read_header: legacy HandBrake muxers write unreliable MP3 sample timing.
+            std::string encoder;
+            if (plugin.mediaInfo_.general.GetData(Tag::MEDIA_ENCODER, encoder) &&
+                IsLegacyHandbrakeEncoder(encoder)) {
+                needed = true;
+            }
+        }
+        track->frameReassemblyChecked = true;
+        track->frameReassemblyNeeded = needed;
+        return needed;
+    }
+
     static void Reset(MPEG4DemuxerPlugin& plugin)
     {
         std::lock_guard<std::mutex> lock(plugin.mpegAudioParserMutex_);
@@ -3369,31 +3636,87 @@ public:
         auto& state = stateIt->second;
         auto packet = CopyPendingPacket(state, state.pendingSize);
         FALSE_RETURN_V_NOLOG(packet != nullptr, Status::ERROR_NO_MEMORY);
+        auto timingSample = FindTimingSample(state, 0);
+        if (timingSample != nullptr) {
+            uint8_t header[MPEG_AUDIO_HEADER_SIZE] = {};
+            MpegAudioFrameInfo frameInfo;
+            if (ReadPendingHeader(state, 0, header) &&
+                GetMpegAudioFrameInfo(header, sizeof(header), frameInfo)) {
+                CopyFrameTiming(timingSample, *packet, frameInfo.durationUs);
+            } else {
+                CopyFrameTiming(timingSample, *packet, timingSample->duration);
+            }
+        }
         packets.emplace_back(std::move(packet));
         plugin.mpegAudioParserStates_->tracks.erase(stateIt);
         return Status::OK;
     }
 
-    static Status Process(MPEG4DemuxerPlugin& plugin, uint32_t trackId, const std::shared_ptr<Sample>& input,
-        std::vector<std::shared_ptr<Sample>>& packets)
+    static bool IsLastSample(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex)
+    {
+        auto track = plugin.FindTrackById(static_cast<int32_t>(trackId));
+        return track != nullptr && track->sampleHelper != nullptr &&
+            sampleIndex + 1 == track->sampleHelper->GetSampleCount();
+    }
+
+    // FFmpeg mov_finalize_packet: a passed-through sample that spans several MP3 frames keeps the
+    // container (stts) duration; single-frame and partial samples keep the header-derived duration.
+    static int64_t GetPassThroughDurationUs(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex,
+        const MpegAudioFrameInfo& frameInfo, size_t size)
+    {
+        if (size <= static_cast<size_t>(frameInfo.size)) {
+            return frameInfo.durationUs;
+        }
+        auto track = plugin.FindTrackById(static_cast<int32_t>(trackId));
+        if (track == nullptr || track->timeScale <= 0) {
+            return frameInfo.durationUs;
+        }
+        MPEG4SampleHelper::SampleIndexView sampleView;
+        if (!GetSampleView(track, sampleIndex, sampleView)) {
+            return frameInfo.durationUs;
+        }
+        int64_t containerDurationUs = 0;
+        if (RescaleTrackTimeToUsRoundNearest(sampleView.duration, track->timeScale, containerDurationUs) !=
+            Status::OK || containerDurationUs <= 0) {
+            return frameInfo.durationUs;
+        }
+        return containerDurationUs;
+    }
+
+    static Status Process(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex,
+        const std::shared_ptr<Sample>& input, std::vector<std::shared_ptr<Sample>>& packets)
     {
         FALSE_RETURN_V_NOLOG(input != nullptr && input->data != nullptr && input->size >= 0,
             Status::ERROR_INVALID_DATA);
         std::lock_guard<std::mutex> lock(plugin.mpegAudioParserMutex_);
-        int32_t frameSize = 0;
         size_t size = static_cast<size_t>(input->size);
         if (size == 0) {
             return Status::OK;
         }
         MpegAudioParserState* parserState = FindState(plugin, trackId);
-        if ((parserState == nullptr || parserState->pendingSize == 0) &&
-            GetMpegAudioFrameSize(input->data.get(), size, frameSize)) {
+        auto& state = parserState == nullptr ? GetState(plugin, trackId) : *parserState;
+        MpegAudioFrameInfo frameInfo;
+        if (!NeedsFrameReassembly(plugin, trackId) && !state.needsParsing &&
+            (parserState == nullptr || parserState->pendingSize == 0) &&
+            GetMpegAudioFrameInfo(input->data.get(), size, frameInfo)) {
+            // FFmpeg mov_read_packet with need_parsing == 0: any sample whose head is a valid MP3
+            // frame header is delivered as-is (partial frames included). A single-frame sample keeps
+            // the header-derived duration; a sample spanning several frames keeps the container (stts)
+            // duration. The last sample keeps the FFmpeg mov_finalize_packet() stream-end duration
+            // (st->duration - dts) already computed for the sample instead.
+            if (!IsLastSample(plugin, trackId, sampleIndex)) {
+                input->duration = GetPassThroughDurationUs(plugin, trackId, sampleIndex, frameInfo, size);
+            }
             packets.emplace_back(input);
             return Status::OK;
         }
-        auto& state = parserState == nullptr ? GetState(plugin, trackId) : *parserState;
-        if (state.pendingSize == 0) {
-            state.timingSample = input;
+        if (!state.needsParsing && size > MPEG_AUDIO_HEADER_SIZE) {
+            MpegAudioFrameInfo headerInfo;
+            if (!GetMpegAudioFrameInfo(input->data.get(), MPEG_AUDIO_HEADER_SIZE, headerInfo)) {
+                // FFmpeg mov_read_packet: the first sample whose head is not a valid MP3 frame
+                // header switches the whole stream to full parsing (need_parsing = AVSTREAM_PARSE_FULL).
+                state.needsParsing = true;
+            }
         }
         FALSE_RETURN_V_NOLOG(size <= MAX_MPEG_AUDIO_PENDING_SIZE - state.pendingSize,
             Status::ERROR_INVALID_DATA);
@@ -3412,11 +3735,15 @@ public:
 
     static bool GetDirectSize(MPEG4DemuxerPlugin& plugin, uint32_t trackId, int32_t& sampleSize)
     {
+        if (NeedsFrameReassembly(plugin, trackId)) {
+            return false;
+        }
         {
             std::lock_guard<std::mutex> lock(plugin.mpegAudioParserMutex_);
             if (plugin.mpegAudioParserStates_ != nullptr) {
                 auto trackState = plugin.mpegAudioParserStates_->tracks.find(trackId);
-                if (trackState != plugin.mpegAudioParserStates_->tracks.end() && trackState->second.pendingSize != 0) {
+                if (trackState != plugin.mpegAudioParserStates_->tracks.end() &&
+                    (trackState->second.needsParsing || trackState->second.pendingSize != 0)) {
                     return false;
                 }
             }
@@ -3427,7 +3754,7 @@ public:
         }
         SampleReadInfo sampleInfo;
         if (plugin.GetSeekableSampleInfo(trackId, sampleInfo) != Status::OK ||
-            sampleInfo.view.size < MPEG_AUDIO_HEADER_SIZE) {
+            sampleInfo.view.size < static_cast<int32_t>(MPEG_AUDIO_HEADER_SIZE)) {
             return false;
         }
         uint8_t header[MPEG_AUDIO_HEADER_SIZE] = {};
@@ -3438,13 +3765,18 @@ public:
             buffer->GetMemory() == nullptr || buffer->GetMemory()->GetSize() < sizeof(header)) {
             return false;
         }
-        int32_t frameSize = 0;
-        if (!GetMpegAudioFrameSize(header, sizeof(header), frameSize) ||
-            static_cast<size_t>(frameSize) != static_cast<size_t>(sampleInfo.view.size)) {
-            return false;
+        MpegAudioFrameInfo frameInfo;
+        if (GetMpegAudioFrameInfo(header, sizeof(header), frameInfo)) {
+            // FFmpeg passes a sample through unchanged once its head is a valid MP3 frame header,
+            // even when the sample size is smaller than the declared frame size.
+            sampleSize = sampleInfo.view.size;
+            return true;
         }
-        sampleSize = sampleInfo.view.size;
-        return true;
+        {
+            std::lock_guard<std::mutex> lock(plugin.mpegAudioParserMutex_);
+            GetState(plugin, trackId).needsParsing = true;
+        }
+        return false;
     }
 
     static Status Read(MPEG4DemuxerPlugin& plugin, uint32_t trackId, std::shared_ptr<MPEG4Sample>& output,
@@ -3498,7 +3830,7 @@ public:
     {
         FALSE_RETURN_V_NOLOG(input != nullptr && input->sample != nullptr, Status::ERROR_NULL_POINTER);
         std::vector<std::shared_ptr<Sample>> packets;
-        Status ret = Process(plugin, input->trackId, input->sample, packets);
+        Status ret = Process(plugin, input->trackId, input->sampleIndex, input->sample, packets);
         return ret == Status::OK ? CachePackets(plugin, input->trackId, input->sampleIndex, packets) : ret;
     }
 
@@ -3521,7 +3853,7 @@ private:
         Status ret = plugin.ReadSampleData(input, sampleInfo);
         lock.unlock();
         FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);
-        return Process(plugin, trackId, input->sample, packets);
+        return Process(plugin, trackId, input->sampleIndex, input->sample, packets);
     }
 
     static Status CachePackets(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex,
@@ -3537,23 +3869,27 @@ private:
     static Status ExtractPackets(MpegAudioParserState& state, std::vector<std::shared_ptr<Sample>>& packets)
     {
         while (state.scanOffset < state.pendingSize) {
-            int32_t frameSize = 0;
+            MpegAudioFrameInfo frameInfo;
             size_t available = state.pendingSize - state.scanOffset;
             uint8_t header[4] = {};
             if (available < sizeof(header)) {
                 break;
             }
-            if (!ReadPendingHeader(state, header) || !GetMpegAudioFrameSize(header, sizeof(header), frameSize)) {
+            if (!ReadPendingHeader(state, state.scanOffset, header) ||
+                !GetMpegAudioFrameInfo(header, sizeof(header), frameInfo)) {
                 FALSE_RETURN_V_NOLOG(AdvanceScanCursor(state), Status::ERROR_INVALID_DATA);
                 continue;
             }
-            size_t frameSizeValue = static_cast<size_t>(frameSize);
+            size_t frameSizeValue = static_cast<size_t>(frameInfo.size);
             if (frameSizeValue > state.pendingSize - state.scanOffset) {
                 break;
             }
             size_t packetSize = state.scanOffset + frameSizeValue;
             auto packet = CopyPendingPacket(state, packetSize);
             FALSE_RETURN_V_NOLOG(packet != nullptr, Status::ERROR_NO_MEMORY);
+            auto timingSample = FindTimingSample(state, state.scanOffset);
+            FALSE_RETURN_V_NOLOG(timingSample != nullptr, Status::ERROR_INVALID_DATA);
+            CopyFrameTiming(timingSample, *packet, frameInfo.durationUs);
             packets.emplace_back(std::move(packet));
             ConsumePending(state, packetSize);
             ResetScanCursor(state);
@@ -3584,8 +3920,12 @@ private:
             return Status::OK;
         }
         FALSE_RETURN_V_NOLOG(state.scanOffset <= state.pendingSize, Status::ERROR_INVALID_DATA);
+        auto timingSample = FindTimingSample(state, 0);
         auto merged = CopyPendingPacket(state, state.pendingSize);
         FALSE_RETURN_V_NOLOG(merged != nullptr, Status::ERROR_NO_MEMORY);
+        if (timingSample != nullptr) {
+            CopyFrameTiming(timingSample, *merged, timingSample->duration);
+        }
         state.pendingSegments.clear();
         state.pendingSegments.emplace_back(MpegAudioParserSegment {std::move(merged), 0});
         state.scanSegmentIndex = 0;
@@ -3593,35 +3933,67 @@ private:
         return Status::OK;
     }
 
-    static bool ReadPendingHeader(const MpegAudioParserState& state, uint8_t* header)
+    static bool ReadPendingHeader(const MpegAudioParserState& state, size_t startPos, uint8_t* header)
     {
-        constexpr size_t headerSize = 4;
-        if (header == nullptr || state.scanOffset > state.pendingSize ||
-            state.pendingSize - state.scanOffset < headerSize) {
+        constexpr size_t headerSize = MPEG_AUDIO_HEADER_SIZE;
+        if (header == nullptr || startPos > state.pendingSize ||
+            state.pendingSize - startPos < headerSize) {
             return false;
         }
         size_t copied = 0;
-        for (size_t index = state.scanSegmentIndex; index < state.pendingSegments.size(); ++index) {
-            const auto& segment = state.pendingSegments[index];
+        size_t accumulated = 0;
+        for (const auto& segment : state.pendingSegments) {
             if (segment.sample == nullptr || segment.sample->data == nullptr || segment.sample->size < 0) {
                 return false;
             }
-            size_t size = static_cast<size_t>(segment.sample->size);
-            size_t offset = index == state.scanSegmentIndex ? state.scanSegmentOffset : segment.offset;
-            if (offset < segment.offset || offset > size) {
+            size_t segmentSize = static_cast<size_t>(segment.sample->size);
+            if (segment.offset > segmentSize) {
                 return false;
             }
-            size_t copySize = std::min(size - offset, headerSize - copied);
-            if (memcpy_s(header + copied, headerSize - copied, segment.sample->data.get() + offset,
-                copySize) != EOK) {
+            size_t available = segmentSize - segment.offset;
+            if (startPos >= accumulated + available) {
+                accumulated += available;
+                continue;
+            }
+            size_t inSegment = startPos > accumulated ? startPos - accumulated : 0;
+            size_t copyFrom = segment.offset + inSegment;
+            size_t copySize = std::min(segmentSize - copyFrom, headerSize - copied);
+            if (copySize == 0 || memcpy_s(header + copied, headerSize - copied,
+                segment.sample->data.get() + copyFrom, copySize) != EOK) {
                 return false;
             }
             copied += copySize;
             if (copied == headerSize) {
                 return true;
             }
+            accumulated += available;
         }
         return false;
+    }
+
+    static std::shared_ptr<Sample> FindTimingSample(const MpegAudioParserState& state, size_t pos)
+    {
+        if (state.pendingSegments.empty() || pos >= state.pendingSize) {
+            return nullptr;
+        }
+        size_t accumulated = 0;
+        std::shared_ptr<Sample> lastSegmentSample = nullptr;
+        for (const auto& segment : state.pendingSegments) {
+            if (segment.sample == nullptr || segment.sample->size < 0) {
+                continue;
+            }
+            size_t segmentSize = static_cast<size_t>(segment.sample->size);
+            if (segment.offset > segmentSize) {
+                continue;
+            }
+            size_t available = segmentSize - segment.offset;
+            if (pos < accumulated + available) {
+                return segment.sample;
+            }
+            lastSegmentSample = segment.sample;
+            accumulated += available;
+        }
+        return lastSegmentSample;
     }
 
     static bool AdvanceScanCursor(MpegAudioParserState& state)
@@ -3660,8 +4032,7 @@ private:
 
     static std::shared_ptr<Sample> CopyPendingPacket(const MpegAudioParserState& state, size_t size)
     {
-        if (state.timingSample == nullptr || size == 0 || size > state.pendingSize ||
-            size > static_cast<size_t>(INT32_MAX)) {
+        if (size == 0 || size > state.pendingSize || size > static_cast<size_t>(INT32_MAX)) {
             return nullptr;
         }
         auto packet = std::make_shared<Sample>();
@@ -3672,7 +4043,7 @@ private:
         if (packet->data == nullptr || !CopyPendingData(state, packet->data.get(), size)) {
             return nullptr;
         }
-        CopyPacketTiming(*state.timingSample, *packet, size);
+        packet->size = static_cast<int32_t>(size);
         return packet;
     }
 
@@ -3700,15 +4071,17 @@ private:
         return false;
     }
 
-    static void CopyPacketTiming(const Sample& source, Sample& target, size_t size)
+    static void CopyFrameTiming(const std::shared_ptr<Sample>& source, Sample& target, int64_t durationUs)
     {
-        target.size = static_cast<int32_t>(size);
-        target.pts = source.pts;
-        target.dts = source.dts;
-        target.duration = source.duration;
-        target.pos = source.pos;
-        target.flag = source.flag;
-        target.skipSamplesInfo = source.skipSamplesInfo;
+        if (source == nullptr) {
+            return;
+        }
+        target.pts = source->pts;
+        target.dts = source->dts;
+        target.duration = durationUs;
+        target.pos = source->pos;
+        target.flag = source->flag;
+        target.skipSamplesInfo = source->skipSamplesInfo;
     }
 
     static void ConsumePending(MpegAudioParserState& state, size_t size)
@@ -3723,9 +4096,6 @@ private:
             if (segment.offset == static_cast<size_t>(segment.sample->size)) {
                 state.pendingSegments.pop_front();
             }
-        }
-        if (state.pendingSize == 0) {
-            state.timingSample = nullptr;
         }
     }
 };
@@ -4103,6 +4473,19 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(const SampleReadInfo& sampleInfo,
     ReadSamplePacketAttr attr;
     Status ret = BuildTrackSamplePacketAttr(track, sampleInfo.view, sampleInfo.sampleIndex, attr);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample attr failed");
+    if (dataSize >= static_cast<int32_t>(MPEG_AUDIO_HEADER_SIZE) && track->currentSamplePos == 0 &&
+        MpegAudioPacketParser::IsTrack(track) &&
+        !MpegAudioPacketParser::IsLastSample(*this, sampleInfo.trackId, sampleInfo.sampleIndex)) {
+        // FFmpeg derives the packet duration from the MP3 frame header even when the sample
+        // passes through without parsing (stts may carry unreliable deltas). The last sample keeps
+        // the FFmpeg mov_finalize_packet() stream-end duration (st->duration - dts) instead.
+        MpegAudioFrameInfo frameInfo;
+        const uint8_t* data = static_cast<const uint8_t*>(outBuffer->memory_->GetAddr());
+        if (data != nullptr && GetMpegAudioFrameInfo(data, static_cast<size_t>(dataSize), frameInfo) &&
+            frameInfo.durationUs > 0) {
+            attr.durationUs = frameInfo.durationUs;
+        }
+    }
     outBuffer->pts_ = attr.ptsUs;
     outBuffer->dts_ = attr.dtsUs;
     outBuffer->duration_ = attr.durationUs;
