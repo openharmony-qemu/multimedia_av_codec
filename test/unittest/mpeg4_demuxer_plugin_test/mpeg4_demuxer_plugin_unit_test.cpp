@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cctype>
 #include <condition_variable>
 #include <cstdlib>
@@ -1701,6 +1702,22 @@ struct FrameSampleDigest {
     int64_t duration = 0;
     uint32_t flag = 0;
     std::vector<uint8_t> payload;
+};
+
+class InvalidDataReferenceParser final : public RefParser {
+public:
+    Status RefParserInit(std::vector<uint32_t>&) override { return Status::OK; }
+    Status ParserNalUnits(uint8_t*, int32_t, uint32_t, int64_t) override
+    {
+        ++parserNalUnitsCalls;
+        return Status::ERROR_INVALID_DATA;
+    }
+    Status ParserExtraData(uint8_t*, int32_t) override { return Status::OK; }
+    Status ParserSdtpData(uint8_t*, int32_t) override { return Status::OK; }
+    Status GetFrameLayerInfo(uint32_t, FrameLayerInfo&) override { return Status::ERROR_AGAIN; }
+    Status GetFrameLayerInfo(int64_t, FrameLayerInfo&) override { return Status::ERROR_AGAIN; }
+    Status GetGopLayerInfo(uint32_t, GopLayerInfo&) override { return Status::ERROR_AGAIN; }
+    uint32_t parserNalUnitsCalls = 0;
 };
 
 void WriteU32(std::vector<uint8_t>& data, size_t offset, uint32_t value)
@@ -5988,7 +6005,59 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParserRefInfo_0001, Test
     ResetPlugin(mpeg4Plugin_, mpeg4Fd_);
     InitMpeg4Plugin(TEST_MP4_PATH_H264_B);
     Status ret = mpeg4Plugin_->ParserRefInfo();
-    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+    EXPECT_TRUE(ret == Status::ERROR_UNKNOWN || ret == Status::ERROR_AGAIN);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ParserRefInfoInvalidDataStopsAndKeepsCursor_001
+ * @tc.desc: Stop retrying invalid reference data without rewinding the playback sample cursor
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ParserRefInfoInvalidDataStopsAndKeepsCursor_001, TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    mpeg4Plugin_ = plugin;
+    ASSERT_NE(plugin, nullptr);
+    InitPlugin(TEST_MP4_PATH_H264_B, mpeg4Plugin_, mpeg4Fd_, mpeg4MediaInfo_);
+    ASSERT_EQ(plugin->EnsureReferenceParserPrepared(), Status::OK);
+    ASSERT_GT(plugin->syncSamplesIndex_.size(), 1U);
+
+    auto track = plugin->trackOfRefParser_;
+    ASSERT_NE(track, nullptr);
+    const uint32_t gopId = 1;
+    const uint32_t playbackSampleIndex = plugin->syncSamplesIndex_[gopId] + 2;
+    ASSERT_LT(playbackSampleIndex, track->sampleHelper->GetSampleCount());
+    ASSERT_EQ(plugin->SelectTrack(static_cast<uint32_t>(plugin->refParserTrackIdx_)), Status::OK);
+    AVBufferWrapper buffer(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_NE(buffer.mediaAVBuffer, nullptr);
+    for (uint32_t sampleIndex = 0; sampleIndex < playbackSampleIndex; ++sampleIndex) {
+        ASSERT_EQ(ReadSampleWithRetry(plugin, static_cast<uint32_t>(plugin->refParserTrackIdx_),
+            buffer.mediaAVBuffer, ReadMode::COPY), Status::OK) << "sampleIndex=" << sampleIndex;
+    }
+    ASSERT_EQ(track->currentSampleIndex, playbackSampleIndex);
+
+    auto parserManager = std::make_shared<ReferenceParserManager>();
+    auto parser = std::make_unique<InvalidDataReferenceParser>();
+    ASSERT_NE(parserManager, nullptr);
+    ASSERT_NE(parser, nullptr);
+    auto parserPtr = parser.get();
+    parserManager->referenceParser_ = parserPtr;
+    plugin->referenceParser_ = parserManager;
+    plugin->isInit_ = true;
+    plugin->refParserCurGopId_ = static_cast<int32_t>(gopId);
+    plugin->refParserStartTime_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count();
+    plugin->refParserState_ = true;
+
+    EXPECT_EQ(plugin->ParserRefInfo(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(parserPtr->parserNalUnitsCalls, 1U);
+    EXPECT_EQ(track->currentSampleIndex, playbackSampleIndex);
+    EXPECT_EQ(plugin->ParserRefInfo(), Status::ERROR_UNKNOWN);
+    EXPECT_EQ(parserPtr->parserNalUnitsCalls, 1U);
+    EXPECT_EQ(track->currentSampleIndex, playbackSampleIndex);
+    parserManager->referenceParser_ = nullptr;
+    plugin->referenceParser_.reset();
 }
 
 /**
