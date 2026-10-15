@@ -108,7 +108,8 @@ constexpr int MIN_BIT_RATE_VIVID_DECODER = 16000;
 constexpr int MAX_BIT_RATE_VIVID_DECODER = 3075000;
 constexpr int32_t MIN_BIT_RATE_VIVID_ENCODER = 32000;
 constexpr int32_t MAX_BIT_RATE_VIVID_ENCODER = 832000;
-constexpr int MAX_CHANNEL_COUNT_VIVID = 16;
+constexpr int MAX_CHANNEL_COUNT_VIVID_DECODER = 16;
+constexpr int MAX_CHANNEL_COUNT_VIVID_ENCODER = 11;
 #endif
 #ifdef AV_CODEC_AUDIO_SPECIAL_CAPACITY
 const std::vector<int32_t> AUDIO_L2HC_SAMPLE_RATE = {44100, 48000, 88200, 96000, 176400, 192000};
@@ -525,7 +526,7 @@ CapabilityData AudioCodeclistInfo::GetVividDecoderCapability()
     audioVividCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID;
     audioVividCapability.isVendor = false;
     audioVividCapability.bitrate = Range(MIN_BIT_RATE_VIVID_DECODER, MAX_BIT_RATE_VIVID_DECODER);
-    audioVividCapability.channels = Range(1, MAX_CHANNEL_COUNT_VIVID);
+    audioVividCapability.channels = Range(1, MAX_CHANNEL_COUNT_VIVID_DECODER);
     audioVividCapability.sampleRate = AUDIO_VIVID_SAMPLE_RATE;
     audioVividCapability.sampleRateRanges = convertVectorToRange(AUDIO_VIVID_SAMPLE_RATE);
     audioVividCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
@@ -540,7 +541,7 @@ CapabilityData AudioCodeclistInfo::GetVividEncoderCapability()
     audioVividCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_VIVID;
     audioVividCapability.isVendor = false;
     audioVividCapability.bitrate = Range(MIN_BIT_RATE_VIVID_ENCODER, MAX_BIT_RATE_VIVID_ENCODER);
-    audioVividCapability.channels = Range(1, MAX_CHANNEL_COUNT_VIVID);
+    audioVividCapability.channels = Range(1, MAX_CHANNEL_COUNT_VIVID_ENCODER);
     audioVividCapability.sampleRate = AUDIO_VIVID_ENCODER_SAMPLE_RATE;
     audioVividCapability.sampleRateRanges = convertVectorToRange(AUDIO_VIVID_ENCODER_SAMPLE_RATE);
     audioVividCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
