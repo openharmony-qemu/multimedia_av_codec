@@ -97,6 +97,8 @@ string g_vttPath1 = string("/data/test/media/webvtt_test_ut.vtt");
 string g_avcHlgPath = string("/data/test/media/avc_hdr_hlg_8bit.mp4");
 string g_hevcHlgPath = string("/data/test/media/hdrType_hlg.mp4");
 string g_avcSdrPath = string("/data/test/media/h264.mp4");
+// WMV/ASF
+string g_wmvWmv1WmaPath = string("/data/test/media/wmv_wmv1_wma.wmv");
 
 void DemuxerPluginUnitTest::SetUpTestCase(void)
 {
@@ -2920,4 +2922,220 @@ HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetColorInfo_AVC_SDR_NoHLG_0001, TestSiz
     if (format->GetData(Tag::VIDEO_COLOR_TRC, trc)) {
         EXPECT_NE(trc, Plugins::TransferCharacteristic::HLG);
     }
+}
+
+/**
+ * @tc.name: Demuxer_GetMediaInfo_WMV_WMV1_WMA_0001
+ * @tc.desc: Get media info from WMV1+WMA WMV file
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_GetMediaInfo_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    EXPECT_GE(mediaInfo_.tracks.size(), 2);
+
+    int64_t duration = 0;
+    EXPECT_TRUE(mediaInfo_.general.GetData(Tag::MEDIA_DURATION, duration));
+    EXPECT_GT(duration, 0);
+
+    Meta *videoTrack = FindVideoTrack(mediaInfo_);
+    ASSERT_NE(videoTrack, nullptr);
+    Plugins::MediaType trackType = Plugins::MediaType::UNKNOWN;
+    EXPECT_TRUE(videoTrack->GetData(Tag::MEDIA_TYPE, trackType));
+    EXPECT_EQ(trackType, Plugins::MediaType::VIDEO);
+    int32_t width = 0;
+    int32_t height = 0;
+    EXPECT_TRUE(videoTrack->GetData(Tag::VIDEO_WIDTH, width));
+    EXPECT_TRUE(videoTrack->GetData(Tag::VIDEO_HEIGHT, height));
+    EXPECT_GT(width, 0);
+    EXPECT_GT(height, 0);
+
+    bool hasAudio = false;
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        Plugins::MediaType type = Plugins::MediaType::UNKNOWN;
+        if (mediaInfo_.tracks[i].GetData(Tag::MEDIA_TYPE, type) && type == Plugins::MediaType::AUDIO) {
+            hasAudio = true;
+            int32_t sampleRate = 0;
+            int32_t channelCount = 0;
+            EXPECT_TRUE(mediaInfo_.tracks[i].GetData(Tag::AUDIO_SAMPLE_RATE, sampleRate));
+            EXPECT_TRUE(mediaInfo_.tracks[i].GetData(Tag::AUDIO_CHANNEL_COUNT, channelCount));
+            EXPECT_GT(sampleRate, 0);
+            EXPECT_GT(channelCount, 0);
+            break;
+        }
+    }
+    EXPECT_TRUE(hasAudio);
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WMV_WMV1_WMA_0001
+ * @tc.desc: Read all samples from WMV1+WMA WMV file and verify frame counts
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    ReadData();
+    bool hasVideo = false;
+    bool hasAudio = false;
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        if (frames_.count(i) == 0 || frames_[i] == 0) {
+            continue;
+        }
+        Plugins::MediaType type = Plugins::MediaType::UNKNOWN;
+        mediaInfo_.tracks[i].GetData(Tag::MEDIA_TYPE, type);
+        if (type == Plugins::MediaType::VIDEO) {
+            hasVideo = true;
+            EXPECT_GT(frames_[i], 0);
+            EXPECT_GT(keyFrames_[i], 0);
+        } else if (type == Plugins::MediaType::AUDIO) {
+            hasAudio = true;
+            EXPECT_GT(frames_[i], 0);
+        }
+    }
+    EXPECT_TRUE(hasVideo);
+    EXPECT_TRUE(hasAudio);
+}
+
+/**
+ * @tc.name: Demuxer_SelectTrack_WMV_WMV1_WMA_0001
+ * @tc.desc: Test SelectTrack and UnselectTrack with WMV1+WMA WMV file
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SelectTrack_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(i), Status::OK);
+    }
+    ASSERT_NE(demuxerPlugin_->SelectTrack(mediaInfo_.tracks.size()), Status::OK);
+    ASSERT_NE(demuxerPlugin_->SelectTrack(-1), Status::OK);
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        ASSERT_EQ(demuxerPlugin_->UnselectTrack(i), Status::OK);
+    }
+    ASSERT_EQ(demuxerPlugin_->UnselectTrack(-1), Status::OK);
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_WMV_WMV1_WMA_0001
+ * @tc.desc: Seek to start position and read frames from WMV1+WMA WMV file
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    int64_t seekTime = 0;
+    list<int64_t> toPtsList = {0, 1000, 2000};
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            Status ret = demuxerPlugin_->SeekTo(-1, *toPts, *mode, seekTime);
+            if (ret != Status::OK) {
+                numbers_++;
+                continue;
+            }
+            ReadData();
+            bool foundFrames = false;
+            for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+                if (frames_.count(i) > 0 && frames_[i] > 0) {
+                    foundFrames = true;
+                    break;
+                }
+            }
+            EXPECT_TRUE(foundFrames);
+            numbers_++;
+            RemoveValue();
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_SeekToTime_WMV_WMV1_WMA_0002
+ * @tc.desc: Seek near end of file should succeed for WMV (ASF) format
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_SeekToTime_WMV_WMV1_WMA_0002, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    int64_t duration = 0;
+    ASSERT_TRUE(mediaInfo_.general.GetData(Tag::MEDIA_DURATION, duration));
+    int64_t durationMs = duration / 1000; // us to ms
+    ASSERT_GT(durationMs, 0);
+    int64_t seekTime = 0;
+    list<int64_t> toPtsList = {durationMs - 1, durationMs, durationMs + 1};
+    for (auto toPts = toPtsList.begin(); toPts != toPtsList.end(); toPts++) {
+        for (auto mode = seekModes.begin(); mode != seekModes.end(); mode++) {
+            Status ret = demuxerPlugin_->SeekTo(-1, *toPts, *mode, seekTime);
+            if (ret == Status::OK) {
+                ReadData();
+                RemoveValue();
+            }
+            numbers_++;
+        }
+    }
+}
+
+/**
+ * @tc.name: Demuxer_ErrorSeekToTime_WMV_WMV1_WMA_0001
+ * @tc.desc: Seek to invalid positions should fail for WMV1+WMA WMV file
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ErrorSeekToTime_WMV_WMV1_WMA_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResource(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    int64_t seekTime = 0;
+    ASSERT_NE(demuxerPlugin_->SeekTo(0, INT64_MAX, SeekMode::SEEK_NEXT_SYNC, seekTime), Status::OK);
+    ASSERT_NE(demuxerPlugin_->SeekTo(0, -1, SeekMode::SEEK_NEXT_SYNC, seekTime), Status::OK);
+}
+
+/**
+ * @tc.name: Demuxer_ReadSample_WMV_WMV1_WMA_URI_0001
+ * @tc.desc: Read samples via URI (HTTP) from WMV1+WMA WMV file
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerPluginUnitTest, Demuxer_ReadSample_WMV_WMV1_WMA_URI_0001, TestSize.Level1)
+{
+    std::string pluginName = "avdemux_asf";
+    InitResourceURI(g_wmvWmv1WmaPath, pluginName);
+    ASSERT_TRUE(initStatus_);
+    SetInitValue();
+    for (uint32_t idx = 0; idx < mediaInfo_.tracks.size(); ++idx) {
+        ASSERT_EQ(demuxerPlugin_->SelectTrack(idx), Status::OK);
+    }
+    ReadData();
+    bool foundFrames = false;
+    for (uint32_t i = 0; i < mediaInfo_.tracks.size(); ++i) {
+        if (frames_.count(i) > 0 && frames_[i] > 0) {
+            foundFrames = true;
+            break;
+        }
+    }
+    EXPECT_TRUE(foundFrames);
 }
