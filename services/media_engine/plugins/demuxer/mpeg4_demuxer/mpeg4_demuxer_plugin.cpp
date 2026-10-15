@@ -618,6 +618,48 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
         GetCttsFrameRateDurationUs(context.mediaInfo, track->trackIndex, trackTimeScale, durationUs);
 }
 
+bool GetMpegAudioTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
+{
+    const auto& track = context.track;
+    if (track == nullptr || track->sampleHelper == nullptr || context.trackTimeScale <= 0 ||
+        context.movieTimeScale <= 0) {
+        return false;
+    }
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
+    if (sampleCount == 0 || context.sampleIndex + 1 != sampleCount) {
+        return false;
+    }
+    // FFmpeg mov_fix_index() bounds the stream duration by the edit-list end (sum of the converted
+    // segment durations, st->duration = min(mdhd duration, edit_list_dts_entry_end - start_dts));
+    // mov_finalize_packet() then closes the last packet against st->duration - dts.
+    int64_t streamEndTicks = track->duration > 0 ? track->duration : 0;
+    if (!track->editListEntries.empty()) {
+        int64_t editEndTicks = 0;
+        bool editEndValid = true;
+        for (const auto& edit : track->editListEntries) {
+            int64_t editDurationTicks = 0;
+            if (ConvertTimeScale(edit.duration, context.trackTimeScale, context.movieTimeScale,
+                &editDurationTicks) != Status::OK || editDurationTicks < 0 ||
+                __builtin_add_overflow(editEndTicks, editDurationTicks, &editEndTicks)) {
+                editEndValid = false;
+                break;
+            }
+        }
+        if (editEndValid && editEndTicks > 0) {
+            streamEndTicks = streamEndTicks > 0 ? std::min(streamEndTicks, editEndTicks) : editEndTicks;
+        }
+    }
+    if (streamEndTicks <= 0) {
+        return false;
+    }
+    int64_t durationTicks = 0;
+    if (__builtin_sub_overflow(streamEndTicks, context.currentSample.dts, &durationTicks) || durationTicks <= 0) {
+        return false;
+    }
+    return RescaleTrackTimeToUsRoundNearest(durationTicks, context.trackTimeScale, durationUs) == Status::OK &&
+        durationUs > 0;
+}
+
 bool GetMpegAudioFrameDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
     const auto& mediaInfo = context.mediaInfo;
@@ -635,16 +677,11 @@ bool GetMpegAudioFrameDurationUs(const ReadSamplePacketContext& context, int64_t
         return false;
     }
     size_t sampleCount = track->sampleHelper->GetSampleCount();
-    const auto& currentSample = context.currentSample;
-    uint32_t sampleIndex = context.sampleIndex;
     FALSE_RETURN_V_NOLOG(sampleCount > 0, false);
-    // A short final STTS run means the container already records a real tail duration.
-    bool hasExplicitShortTailStts = track->sampleHelper->GetSttsEntryCount() == SHORT_TAIL_STTS_ENTRY_COUNT &&
-        track->sampleHelper->GetSampleCountOfSttsEntry(1) == SINGLE_SAMPLE_RUN_COUNT &&
-        track->sampleHelper->GetSampleDeltaOfSttsEntry(0) > track->sampleHelper->GetSampleDeltaOfSttsEntry(1);
-    if (hasExplicitShortTailStts && sampleIndex + 1 == sampleCount && currentSample.duration > 0 &&
-        currentSample.duration != samplesPerFrame) {
-        return false;
+    if (context.sampleIndex + 1 == sampleCount) {
+        // FFmpeg mov_finalize_packet: the last packet closes against the stream end minus its dts
+        // instead of the fixed MP3 frame duration, so stts short tails and edit-list tails match.
+        return GetMpegAudioTailDurationUs(context, durationUs);
     }
     return ConvertTimeScale(samplesPerFrame, static_cast<int64_t>(S_TO_US), sampleRate, &durationUs) == Status::OK;
 }
@@ -3545,6 +3582,13 @@ public:
         return Status::OK;
     }
 
+    static bool IsLastSample(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex)
+    {
+        auto track = plugin.FindTrackById(static_cast<int32_t>(trackId));
+        return track != nullptr && track->sampleHelper != nullptr &&
+            sampleIndex + 1 == track->sampleHelper->GetSampleCount();
+    }
+
     // FFmpeg mov_finalize_packet: a passed-through sample that spans several MP3 frames keeps the
     // container (stts) duration; single-frame and partial samples keep the header-derived duration.
     static int64_t GetPassThroughDurationUs(MPEG4DemuxerPlugin& plugin, uint32_t trackId, uint32_t sampleIndex,
@@ -3588,8 +3632,11 @@ public:
             // FFmpeg mov_read_packet with need_parsing == 0: any sample whose head is a valid MP3
             // frame header is delivered as-is (partial frames included). A single-frame sample keeps
             // the header-derived duration; a sample spanning several frames keeps the container (stts)
-            // duration, matching FFmpeg's next-DTS based packet duration in mov_finalize_packet.
-            input->duration = GetPassThroughDurationUs(plugin, trackId, sampleIndex, frameInfo, size);
+            // duration. The last sample keeps the FFmpeg mov_finalize_packet() stream-end duration
+            // (st->duration - dts) already computed for the sample instead.
+            if (!IsLastSample(plugin, trackId, sampleIndex)) {
+                input->duration = GetPassThroughDurationUs(plugin, trackId, sampleIndex, frameInfo, size);
+            }
             packets.emplace_back(input);
             return Status::OK;
         }
@@ -4357,9 +4404,11 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(const SampleReadInfo& sampleInfo,
     Status ret = BuildTrackSamplePacketAttr(track, sampleInfo.view, sampleInfo.sampleIndex, attr);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build sample attr failed");
     if (dataSize >= static_cast<int32_t>(MPEG_AUDIO_HEADER_SIZE) && track->currentSamplePos == 0 &&
-        MpegAudioPacketParser::IsTrack(track)) {
+        MpegAudioPacketParser::IsTrack(track) &&
+        !MpegAudioPacketParser::IsLastSample(*this, sampleInfo.trackId, sampleInfo.sampleIndex)) {
         // FFmpeg derives the packet duration from the MP3 frame header even when the sample
-        // passes through without parsing (stts may carry unreliable deltas).
+        // passes through without parsing (stts may carry unreliable deltas). The last sample keeps
+        // the FFmpeg mov_finalize_packet() stream-end duration (st->duration - dts) instead.
         MpegAudioFrameInfo frameInfo;
         const uint8_t* data = static_cast<const uint8_t*>(outBuffer->memory_->GetAddr());
         if (data != nullptr && GetMpegAudioFrameInfo(data, static_cast<size_t>(dataSize), frameInfo) &&
