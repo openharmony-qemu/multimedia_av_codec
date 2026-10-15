@@ -1715,15 +1715,16 @@ std::vector<uint8_t> BuildAvcCTestConfig(const std::vector<uint8_t>& sps)
     constexpr uint8_t avcLengthSize = 0xFF;
     constexpr uint8_t avcSpsCount = 0xE1;
     constexpr uint8_t avcPpsCount = 0x01;
+    constexpr uint8_t avcConfigLengthHighByteShift = 8;
     constexpr std::array<uint8_t, 4> pps = {0x68, 0xCE, 0x3C, 0x80};
     std::vector<uint8_t> config = {
         avcConfigVersion, avcProfile, avcCompat, avcLevel, avcLengthSize, avcSpsCount,
-        static_cast<uint8_t>((sps.size() >> 8) & 0xFF),
+        static_cast<uint8_t>((sps.size() >> avcConfigLengthHighByteShift) & 0xFF),
         static_cast<uint8_t>(sps.size() & 0xFF),
     };
     config.insert(config.end(), sps.begin(), sps.end());
     config.push_back(avcPpsCount);
-    config.push_back(static_cast<uint8_t>((pps.size() >> 8) & 0xFF));
+    config.push_back(static_cast<uint8_t>((pps.size() >> avcConfigLengthHighByteShift) & 0xFF));
     config.push_back(static_cast<uint8_t>(pps.size() & 0xFF));
     config.insert(config.end(), pps.begin(), pps.end());
     return config;
@@ -3695,7 +3696,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioLegacyHandbrake
     std::vector<uint32_t> sampleSizes = {
         static_cast<uint32_t>(MPEG_AUDIO_TEST_SPLIT_SIZE), tailSize,
     };
-    auto readFirstSize = [&](const std::string& encoder) -> size_t {
+    auto readFirstSize = [sampleSizes, frame](const std::string& encoder) -> size_t {
         Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
         EXPECT_NE(PrepareMpegAudioTestTrack(plugin, sampleSizes), nullptr);
         plugin.mediaInfo_.general.SetData(Tag::MEDIA_ENCODER, encoder);
@@ -3752,7 +3753,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioReassembledPtsM
  * @tc.desc: Verify a passed-through sample spanning several MP3 frames keeps the container stts duration.
  * @tc.type: FUNC
  */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioMultiFramePassthroughContainerDuration_001, TestSize.Level1)
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_MpegAudioMultiFramePassthroughContainerDuration_001, TestSize.Level1)
 {
     auto firstFrame = BuildMpegAudioTestFrame();
     auto secondFrame = BuildMpegAudioTestFrame();
@@ -3898,7 +3900,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CttsSpsFrameRatePacketDu
     constexpr int64_t expectedPlausibleDurationUs = 40000;
     constexpr int64_t bogusRateDurationUs = 0;
     const std::vector<uint8_t> sampleData = {0x00, 0x01};
-    auto readFirstDuration = [&](bool frameRateParsed, uint32_t frameRateNum,
+    auto readFirstDuration = [sampleData](bool frameRateParsed, uint32_t frameRateNum,
         uint32_t frameRateDen) -> int64_t {
         Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
         auto track = PrepareVideoCttsTestTrack(plugin, sampleData);
