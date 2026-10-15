@@ -1295,7 +1295,7 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_FUNCTION_MUTI_0030, TestSize.Level0)
         OH_AVFormat_Destroy(trackFormat);
         trackFormat = nullptr;
     }
-    ASSERT_EQ(videoFrame, 19);
+    ASSERT_EQ(videoFrame, 20);
     close(fd);
     fd = -1;
 }
