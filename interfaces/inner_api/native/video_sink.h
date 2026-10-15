@@ -109,8 +109,8 @@ private:
     std::atomic<bool> needUpdateTimeAnchor_ {true};
     int64_t refreshTime_ {0};
     std::atomic<bool> isFirstFrame_ {true};
-    int64_t firstFramePts_ {0};
-    int64_t firstFrameClockTime_ {0};
+    std::atomic<int64_t> firstFramePts_ {0};
+    std::atomic<int64_t> firstFrameClockTime_ {0};
     std::atomic<int64_t> lastBufferRelativePts_ {HST_TIME_NONE};
     std::atomic<int64_t> lastBufferAnchoredClockTime_ {HST_TIME_NONE};
     int64_t deltaTimeAccu_ {0};
@@ -121,7 +121,7 @@ private:
     std::atomic<uint64_t> renderFrameCnt_ {0};
     std::atomic<uint64_t> discardFrameCnt_ {0};
     std::shared_ptr<EventReceiver> eventReceiver_ {nullptr};
-    int64_t firstPts_ {HST_TIME_NONE};
+    std::atomic<int64_t> firstPts_ {HST_TIME_NONE};
     int64_t fixDelay_ {0};
     std::atomic<bool> seekFlag_{false};
     std::atomic<bool> isPerfRecEnabled_ { false };

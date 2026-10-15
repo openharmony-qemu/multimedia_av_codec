@@ -91,27 +91,27 @@ void VideoSink::UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
 {
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN(syncCenter != nullptr && buffer != nullptr);
-    syncCenter->SetLastVideoBufferPts(buffer->pts_ - firstPts_);
+    syncCenter->SetLastVideoBufferPts(buffer->pts_ - firstPts_.load());
     syncCenter->SetLastVideoBufferAbsPts(buffer->pts_);
     if (!needUpdateTimeAnchor_) {
         return;
     }
     uint64_t latency = 0;
     (void)GetLatency(latency);
-    Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_};
+    Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, iMediaTime, this);
-    needUpdateTimeAnchor_ = false;
+    needUpdateTimeAnchor_.store(false);
 }
 
 void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, int64_t renderDelay)
 {
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN(syncCenter != nullptr && buffer != nullptr);
-    syncCenter->SetLastVideoBufferPts(buffer->pts_ - firstPts_);
+    syncCenter->SetLastVideoBufferPts(buffer->pts_ - firstPts_.load());
     int64_t ct4Buffer = syncCenter->GetClockTimeNow() + (renderDelay > 0 ? renderDelay : 0);
     uint64_t latency = 0;
     (void)GetLatency(latency);
-    Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_, buffer->pts_, buffer->duration_};
+    Pipeline::IMediaSyncCenter::IMediaTime iMediaTime = {buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(ct4Buffer, latency, iMediaTime, this);
 }
 void VideoSink::RecordStallingTimestamp(AVBuffer& buffer, int64_t stage, int64_t timeStamp)
@@ -140,15 +140,15 @@ int64_t VideoSink::DoSyncWrite(const std::shared_ptr<OHOS::Media::AVBuffer>& buf
         if (isFirstFrame_.load() && !needDropOnMute_.load()) {
             FALSE_RETURN_V(syncCenter != nullptr, false);
             isFirstFrame_.store(false);
-            firstFrameClockTime_  = nowCt;
-            firstFramePts_ = buffer->pts_;
+            firstFrameClockTime_.store(nowCt);
+            firstFramePts_.store(buffer->pts_);
         } else {
             waitTime = CheckBufferLatenessMayWait(buffer, nowCt);
         }
         UpdateTimeAnchorIfNeeded(nowCt, waitTime, buffer);
         lagDetector_.CalcLag(buffer);
         ReportPts(buffer->pts_);
-        lastBufferRelativePts_.store(buffer->pts_ - firstPts_);
+        lastBufferRelativePts_.store(buffer->pts_ - firstPts_.load());
     } else {
         MEDIA_LOG_I("Video receives EOS.");
         if (syncCenter) {
@@ -201,20 +201,20 @@ void VideoSink::ResetSyncInfo()
     int64_t endPtsMs = (lastPts != HST_TIME_NONE) ? (lastPts / MS_PER_US) : 0;
     avSyncDetector_.OnPlaybackEnd(endPtsMs);
     ResetPrerollReported();
-    renderFrameCnt_ = 0;
-    dropFrameContinuouslyCnt_ = 0;
+    renderFrameCnt_.store(0);
+    dropFrameContinuouslyCnt_.store(0);
     isFirstFrame_.store(true);
     lastBufferRelativePts_.store(HST_TIME_NONE);
     lastBufferAnchoredClockTime_.store(HST_TIME_NONE);
     seekFlag_.store(false);
     lastPts_.store(HST_TIME_NONE);
     lastClockTime_.store(HST_TIME_NONE);
-    needUpdateTimeAnchor_ = true;
+    needUpdateTimeAnchor_.store(true);
     lagDetector_.Reset();
     perfRecorder_.Reset();
     avSyncDetector_.Reset();
     lastPtsForDiscontinuity_.store(HST_TIME_NONE);
-    isFirstFrameAfterSeek_ = true;
+    isFirstFrameAfterSeek_.store(true);
 }
 
 Status VideoSink::GetLatency(uint64_t& nanoSec)
@@ -227,7 +227,7 @@ void VideoSink::SetSeekFlag()
 {
     seekFlag_.store(true);
     lastPtsForDiscontinuity_.store(HST_TIME_NONE);
-    isFirstFrameAfterSeek_ = true;
+    isFirstFrameAfterSeek_.store(true);
 }
 
 void VideoSink::SetLastPts(int64_t lastPts, int64_t renderDelay)
@@ -259,9 +259,9 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
         - static_cast<int64_t>(initialVideoWaitPeriod_ / STARTUP_FRAME_INTERVAL_FACTOR);
 
     auto diff = anchorDiff;
-    if (discardFrameCnt_ + renderFrameCnt_ < VIDEO_SINK_START_FRAME) {
-        float ptsDiffWithSpeed = static_cast<float>(buffer->pts_ - firstFramePts_) / AdjustPlaybackRate(playbackRate);
-        diff = (currentClockTime - firstFrameClockTime_) - static_cast<int64_t>(ptsDiffWithSpeed);
+    if (discardFrameCnt_.load() + renderFrameCnt_.load() < VIDEO_SINK_START_FRAME) {
+        float ptsDiffWithSpeed = static_cast<float>(buffer->pts_ - firstFramePts_.load()) / AdjustPlaybackRate(playbackRate);
+        diff = (currentClockTime - firstFrameClockTime_.load()) - static_cast<int64_t>(ptsDiffWithSpeed);
         MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " us speed %{public}.3f", diff, playbackRate);
     } else if (diff < 0 && videoDiff < SINK_TIME_US_THRESHOLD && diff < thresholdAdjustedVideoDiff) {
         diff = thresholdAdjustedVideoDiff;
@@ -278,7 +278,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     FALSE_RETURN_V(buffer != nullptr, true);
     FALSE_RETURN_V(syncCenter != nullptr, true);
 
-    auto relativePts = buffer->pts_ - firstPts_;
+    auto relativePts = buffer->pts_ - firstPts_.load();
     auto bufferAnchoredClockTime = syncCenter->GetAnchoredClockTime(relativePts);
     MEDIA_LOG_D("VideoSink cur pts: " PUBLIC_LOG_D64 " us, bufferAnchoredClockTime: " PUBLIC_LOG_D64
         " us, buf_pts: " PUBLIC_LOG_D64 " us, fixDelay: " PUBLIC_LOG_D64 " us", relativePts,
@@ -302,7 +302,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     auto diff = CalcBufferDiff(buffer, bufferAnchoredClockTime,
         clockNow, syncCenter->GetPlaybackRate());
     int64_t lastPts = lastPts_.load();
-    frameInterval_ = (lastPts < 0) ? -1 : (buffer->pts_ - lastPts);
+    frameInterval_.store((lastPts < 0) ? -1 : (buffer->pts_ - lastPts));
 
     bool tooLate = false;
     int64_t waitTimeUs = 0;
@@ -372,13 +372,13 @@ void VideoSink::SetEventReceiver(const std::shared_ptr<EventReceiver> &receiver)
 void VideoSink::SetFirstPts(int64_t pts)
 {
     auto syncCenter = syncCenter_.lock();
-    if (firstPts_ == HST_TIME_NONE) {
+    if (firstPts_.load() == HST_TIME_NONE) {
         if (syncCenter && syncCenter->GetMediaStartPts() != HST_TIME_NONE) {
-            firstPts_ = syncCenter->GetMediaStartPts();
+            firstPts_.store(syncCenter->GetMediaStartPts());
         } else {
-            firstPts_ = pts;
+            firstPts_.store(pts);
         }
-        MEDIA_LOG_I("video DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_);
+        MEDIA_LOG_I("video DoSyncWrite set firstPts = " PUBLIC_LOG_D64, firstPts_.load());
     }
 }
 
@@ -411,7 +411,7 @@ Status VideoSink::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t
 
 int64_t VideoSink::GetFrameInterval()
 {
-    return frameInterval_ / MS_PER_US;
+    return frameInterval_.load() / MS_PER_US;
 }
 
 bool VideoSink::VideoLagDetector::CalcLag(std::shared_ptr<AVBuffer> buffer)
@@ -476,8 +476,8 @@ void VideoSink::SetMediaMuted(bool isMuted)
     if (isMuted) {
         needDropOnMute_.store(true);
         dropFrameContinuouslyCnt_.store(0);
-        if (discardFrameCnt_ < VIDEO_SINK_START_FRAME) {
-            discardFrameCnt_ = VIDEO_SINK_START_FRAME;
+        if (discardFrameCnt_.load() < VIDEO_SINK_START_FRAME) {
+            discardFrameCnt_.store(VIDEO_SINK_START_FRAME);
         }
     }
     isMuted_.store(isMuted);
@@ -572,9 +572,9 @@ void VideoSink::UpdateSeekState(const std::shared_ptr<OHOS::Media::AVBuffer>& bu
 {
     if (seekFlag_.load()) {
         seekFlag_.store(false);
-        isFirstFrameAfterSeek_ = true;
+        isFirstFrameAfterSeek_.store(true);
     } else if (isFirstFrameAfterSeek_) {
-        isFirstFrameAfterSeek_ = false;
+        isFirstFrameAfterSeek_.store(false);
     } else {
         CheckPtsDiscontinuity(buffer);
     }
