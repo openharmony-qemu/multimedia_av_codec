@@ -464,7 +464,7 @@ void VideoSink::VideoLagDetector::GetLagInfo(int32_t& lagTimes, int32_t& maxLagD
 
 void VideoSink::VideoLagDetector::Reset()
 {
-    AutoLock lock(mutex_);
+    AutoLock lock(VideoLagMutex_);
     lagTimes_ = 0;
     maxLagDuration_ = 0;
     lastSystemTimeMs_ = 0;
