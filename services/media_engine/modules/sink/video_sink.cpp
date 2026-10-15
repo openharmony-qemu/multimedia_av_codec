@@ -418,7 +418,7 @@ int64_t VideoSink::GetFrameInterval()
 bool VideoSink::VideoLagDetector::CalcLag(std::shared_ptr<AVBuffer> buffer)
 {
     FALSE_RETURN_V(!(buffer->flag_ & (uint32_t)(Plugins::AVBufferFlag::EOS)), false);
-    AutoLock lock(mutex_);
+    AutoLock lock(VideoLagMutex_);
     auto systemTimeMsNow = Plugins::GetCurrentMillisecond();
     auto systemTimeMsDiff = systemTimeMsNow - lastSystemTimeMs_;
     auto bufferTimeUsNow = Plugins::Us2Ms(buffer->pts_);
@@ -452,7 +452,7 @@ void VideoSink::VideoLagDetector::ResolveLagEvent(const int64_t &lagTimeMs)
 
 void VideoSink::VideoLagDetector::GetLagInfo(int32_t& lagTimes, int32_t& maxLagDuration, int32_t& avgLagDuration)
 {
-    AutoLock lock(mutex_);
+    AutoLock lock(VideoLagMutex_);
     lagTimes = lagTimes_;
     maxLagDuration = static_cast<int32_t>(maxLagDuration_);
     if (lagTimes_ != 0) {
@@ -486,14 +486,14 @@ void VideoSink::SetMediaMuted(bool isMuted)
 
 void VideoSink::AVSyncDetector::Reset()
 {
-    AutoLock lock(mutex_);
+    AutoLock lock(AVSyncMutex_);
     isInAVSync_ = false;
     syncStartPts_ = 0;
 }
 
 void VideoSink::AVSyncDetector::CheckSync(int64_t diffUs, int64_t pts)
 {
-    AutoLock lock(mutex_);
+    AutoLock lock(AVSyncMutex_);
     if (std::abs(diffUs) > AV_SYNC_THRESHOLD_US) {
         if (!isInAVSync_) {
             isInAVSync_ = true;
@@ -527,7 +527,7 @@ void VideoSink::AVSyncDetector::CheckSync(int64_t diffUs, int64_t pts)
 
 void VideoSink::AVSyncDetector::GetAVSyncInfo(int64_t& syncCount, int64_t& totalSyncDurationMs)
 {
-    AutoLock lock(mutex_);
+    AutoLock lock(AVSyncMutex_);
     syncCount = syncCount_;
     totalSyncDurationMs = totalSyncDurationUs_ / MS_PER_US;
 }
@@ -549,7 +549,7 @@ void VideoSink::AVSyncDetector::ReportLipAsyncEvent(int64_t endPtsMs)
 
 void VideoSink::AVSyncDetector::OnPlaybackEnd(int64_t endPtsMs)
 {
-    AutoLock lock(mutex_);
+    AutoLock lock(AVSyncMutex_);
     if (isInAVSync_ && eventReceiver_ != nullptr) {
         MEDIA_LOG_I("LipAsync event on playback end, type: " PUBLIC_LOG_D32
             ", start: " PUBLIC_LOG_D64 " ms, end: " PUBLIC_LOG_D64 " ms",
