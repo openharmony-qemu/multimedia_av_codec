@@ -79,7 +79,7 @@ private:
         int64_t lastBufferTimeMs_ = 0;
         int64_t totalLagDuration_ = 0;
         std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
-        Mutex mutex_ {};
+        Mutex VideoLagMutex_ {};
     };
 
     class AVSyncDetector {
@@ -103,7 +103,7 @@ private:
         int32_t lipAsyncType_ = 0;
         int64_t lipAsyncStartPtsMs_ = 0;
         std::shared_ptr<EventReceiver> eventReceiver_ { nullptr };
-        Mutex mutex_ {};
+        Mutex AVSyncMutex_ {};
     };
 
     std::atomic<bool> needUpdateTimeAnchor_ {true};
