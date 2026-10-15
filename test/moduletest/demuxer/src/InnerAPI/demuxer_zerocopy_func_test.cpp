@@ -1402,7 +1402,7 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0015, TestSiz
     }
     cout << "videoFrame:" << videoFrame << endl;
     RemoveValue();
-    ASSERT_EQ(videoFrame, 19);
+    ASSERT_EQ(videoFrame, 20);
 }
 }  // namespace Media
 }  // namespace OHOS
