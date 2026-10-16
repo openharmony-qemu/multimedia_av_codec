@@ -3253,6 +3253,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FindPrevClosestIndexBoun
     constexpr int64_t noSampleIndex = -1;
     constexpr int64_t firstDts = 10;
     constexpr uint32_t sampleSize = 1;
+    constexpr int32_t negativeCttsOffset = -5;
     Plugins::MPEG4::MPEG4SampleHelper helper;
     std::vector<Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry> entries {
         MakeSampleIndexEntry(0, firstDts, firstDts, sampleSize),
@@ -3263,7 +3264,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FindPrevClosestIndexBoun
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts - 1, true), noSampleIndex);
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts, false), noSampleIndex);
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts, true), 0);
-    helper.cttsEntry_ = {{1, -5}};
+    const std::vector<uint8_t> ctts = BuildCttsData({{1, static_cast<uint32_t>(negativeCttsOffset)}});
+    helper.dataReader_ = CreateReaderForBytes(ctts);
+    ASSERT_EQ(helper.SetCompositionTimeToSampleParams(0, ctts.size()), Status::OK);
     helper.CalculateDtsShift();
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts + 4, true), noSampleIndex);
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts + 5, true), 0);
