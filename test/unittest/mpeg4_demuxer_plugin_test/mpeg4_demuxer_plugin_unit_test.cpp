@@ -3268,8 +3268,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FindPrevClosestIndexBoun
     helper.dataReader_ = CreateReaderForBytes(ctts);
     ASSERT_EQ(helper.SetCompositionTimeToSampleParams(0, ctts.size()), Status::OK);
     helper.CalculateDtsShift();
-    EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts + 4, true), noSampleIndex);
-    EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts + 5, true), 0);
+    std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry> firstSyncSamples {{0}};
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, firstSyncSamples, false, firstDts + 4, true), noSampleIndex);
+    EXPECT_EQ(helper.FindPrevClosestIndex(entries, firstSyncSamples, false, firstDts + 5, true), 0);
 
     std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry> invalidSyncSamples {{1}};
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, invalidSyncSamples, false, firstDts + 5, false), noSampleIndex);
