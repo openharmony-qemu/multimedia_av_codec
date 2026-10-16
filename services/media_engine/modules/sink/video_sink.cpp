@@ -67,6 +67,8 @@ constexpr int64_t WAIT_TIME_US_THRESHOLD = 1500000; // max sleep time 1.5s
 
 constexpr int64_t SINK_TIME_US_THRESHOLD = 100000; // max sink time 100ms
 
+constexpr int64_t LATE_THRESHOLD_MS = 40; // buffer is late if diff > 40ms
+
 constexpr int64_t PER_SINK_TIME_THRESHOLD_MAX = 33000; // max per sink time 33ms(30Hz)
 
 constexpr int64_t PER_SINK_TIME_THRESHOLD_MIN = 8333; // min per sink time 8.33ms(120Hz)
@@ -325,7 +327,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     if (diff < 0) {
         waitTimeUs = CalcWaitTimeUs(diff, lastPts, buffer, needDropOnMute_.load());
         RenderAtTimeLog(waitTimeUs);
-    } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) {
+    } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > LATE_THRESHOLD_MS) {
         tooLate = true;
         MEDIA_LOG_D("buffer is too late");
     }
