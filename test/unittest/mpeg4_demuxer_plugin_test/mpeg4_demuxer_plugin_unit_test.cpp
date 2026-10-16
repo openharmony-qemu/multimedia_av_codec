@@ -3263,7 +3263,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FindPrevClosestIndexBoun
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts - 1, true), noSampleIndex);
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts, false), noSampleIndex);
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts, true), 0);
-    helper.dtsShift_ = 5;
+    helper.cttsEntry_ = {{1, -5}};
+    helper.CalculateDtsShift();
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts + 4, true), noSampleIndex);
     EXPECT_EQ(helper.FindPrevClosestIndex(entries, noSyncSamples, false, firstDts + 5, true), 0);
 

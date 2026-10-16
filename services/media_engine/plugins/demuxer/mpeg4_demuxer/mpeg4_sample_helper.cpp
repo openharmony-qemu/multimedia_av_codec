@@ -1904,14 +1904,16 @@ int64_t MPEG4SampleHelper::FindPrevClosestIndex(const std::vector<SampleIndexEnt
         timestampPts -= dtsShift_;
     }
     int64_t found = -1;
+    int64_t foundDts = std::numeric_limits<int64_t>::min();
     for (size_t i = 0; i < entries.size(); ++i) {
         if (entries[i].dts > timestampPts) {
             break;
         }
         bool isCandidate = anyFrame || IsSyncSample(syncSamples, allSamplesSync, static_cast<uint32_t>(i));
-        bool isNewerTimestamp = found < 0 || entries[i].dts > entries[static_cast<size_t>(found)].dts;
-        if (isCandidate && isNewerTimestamp) {
+        bool isNewerDts = found < 0 || entries[i].dts > foundDts;
+        if (isCandidate && isNewerDts) {
             found = static_cast<int64_t>(i);
+            foundDts = entries[i].dts;
         }
     }
     while (!cttsEntry_.empty() && found >= 0) {
