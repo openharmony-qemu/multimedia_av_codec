@@ -99,7 +99,7 @@ void VideoSink::UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
     uint64_t latency = 0;
     (void)GetLatency(latency);
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime =
-    {buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
+        {buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, iMediaTime, this);
     needUpdateTimeAnchor_.store(false);
 }
@@ -113,7 +113,7 @@ void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBu
     uint64_t latency = 0;
     (void)GetLatency(latency);
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime =
-    {buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
+        {buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(ct4Buffer, latency, iMediaTime, this);
 }
 void VideoSink::RecordStallingTimestamp(AVBuffer& buffer, int64_t stage, int64_t timeStamp)
@@ -260,7 +260,7 @@ int64_t VideoSink::CalcBufferDiff(const std::shared_ptr<OHOS::Media::AVBuffer>& 
     auto diff = anchorDiff;
     if (discardFrameCnt_.load() + renderFrameCnt_.load() < VIDEO_SINK_START_FRAME) {
         float ptsDiffWithSpeed =
-        static_cast<float>(buffer->pts_ - firstFramePts_.load()) / AdjustPlaybackRate(playbackRate);
+            static_cast<float>(buffer->pts_ - firstFramePts_.load()) / AdjustPlaybackRate(playbackRate);
         diff = (currentClockTime - firstFrameClockTime_.load()) - static_cast<int64_t>(ptsDiffWithSpeed);
         MEDIA_LOG_I("VideoSink first few times diff is " PUBLIC_LOG_D64 " us speed %{public}.3f", diff, playbackRate);
     } else if (diff < 0 && videoDiff < SINK_TIME_US_THRESHOLD && diff < thresholdAdjustedVideoDiff) {
@@ -288,7 +288,7 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
     int64_t lastBufferAnchoredClockTime = lastBufferAnchoredClockTime_.load();
     if (lastBufferAnchoredClockTime != HST_TIME_NONE && seekFlag_.load() == false) {
         int64_t currentBufferRelativeClockTime =
-        lastBufferAnchoredClockTime + relativePts - lastBufferRelativePts_.load();
+            lastBufferAnchoredClockTime + relativePts - lastBufferRelativePts_.load();
         int64_t deltaTime = bufferAnchoredClockTime - currentBufferRelativeClockTime;
         deltaTimeAccu_ = SmoothDeltaTime(deltaTimeAccu_, deltaTime);
         if (std::abs(deltaTimeAccu_) < DELTA_TIME_THRESHOLD) {
