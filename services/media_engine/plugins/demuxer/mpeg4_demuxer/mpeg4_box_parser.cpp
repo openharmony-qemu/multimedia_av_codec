@@ -4982,10 +4982,8 @@ Status MPEG4AtomParser::ParseSaizBody(int64_t dataOffset, const MPEG4Atom& atom)
 Status MPEG4AtomParser::ParseSaio(const MPEG4Atom& atom)
 {
     FALSE_RETURN_V_MSG_E(currentTrack_ != nullptr, Status::ERROR_NULL_POINTER, "Current track is null");
-    if (currentTrack_->drmInfo.auxiliaryOffsetsCount > 0) {
-        MEDIA_LOG_E("Duplicate saio atom within same moof");
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_MSG_E(currentTrack_->drmInfo.auxiliaryOffsetsCount <= 0, Status::ERROR_INVALID_DATA,
+                         "Duplicate saio atom within same moof");
     FALSE_RETURN_V_MSG_E(atom.dataSize >= MIN_SAIO_SIZE, Status::ERROR_INVALID_DATA, "saio box too small");
 
     uint8_t headerData[MIN_SAIO_SIZE];
