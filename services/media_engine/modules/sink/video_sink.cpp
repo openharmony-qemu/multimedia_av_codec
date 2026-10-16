@@ -99,7 +99,7 @@ void VideoSink::UpdateTimeAnchorIfNeeded(int64_t nowCt, int64_t waitTime,
     uint64_t latency = 0;
     (void)GetLatency(latency);
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime
-        ={buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
+        = {buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(nowCt + waitTime, latency, iMediaTime, this);
     needUpdateTimeAnchor_.store(false);
 }
@@ -113,7 +113,7 @@ void VideoSink::UpdateTimeAnchorActually(const std::shared_ptr<OHOS::Media::AVBu
     uint64_t latency = 0;
     (void)GetLatency(latency);
     Pipeline::IMediaSyncCenter::IMediaTime iMediaTime
-        ={buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
+        = {buffer->pts_ - firstPts_.load(), buffer->pts_, buffer->duration_};
     syncCenter->UpdateTimeAnchor(ct4Buffer, latency, iMediaTime, this);
 }
 void VideoSink::RecordStallingTimestamp(AVBuffer& buffer, int64_t stage, int64_t timeStamp)
