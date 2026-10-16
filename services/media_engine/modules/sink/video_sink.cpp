@@ -32,6 +32,21 @@ constexpr int32_t DROP_FRAME_CONTINUOUSLY_MAX_CNT = 2;
 constexpr int32_t MAX_ADVANCE_US = 80000;
 static const int64_t MS_PER_US = 1000; // us change to ms
 constexpr int64_t STARTUP_FRAME_INTERVAL_FACTOR = 2;
+
+int64_t CalcWaitTimeUs(int64_t diff, int64_t lastPts,
+    const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, bool needDropOnMute)
+{
+    int64_t waitTimeUs = 0 - diff;
+    if (waitTimeUs > WAIT_TIME_US_THRESHOLD && !needDropOnMute) {
+        int64_t ptsDiff = static_cast<int64_t>(buffer->pts_ - lastPts);
+        if (ptsDiff > WAIT_TIME_US_THRESHOLD) {
+            waitTimeUs = ptsDiff;
+        } else {
+            waitTimeUs = WAIT_TIME_US_THRESHOLD;
+        }
+    }
+    return waitTimeUs;
+}
 }
 
 namespace OHOS {
@@ -307,18 +322,10 @@ int64_t VideoSink::CheckBufferLatenessMayWait(const std::shared_ptr<OHOS::Media:
 
     bool tooLate = false;
     int64_t waitTimeUs = 0;
-    if (diff < 0) { // buffer is early, diff < 0 or 0 < diff < 40ms(25Hz) render it
-        waitTimeUs = 0 - diff;
+    if (diff < 0) {
+        waitTimeUs = CalcWaitTimeUs(diff, lastPts, buffer, needDropOnMute_.load());
         RenderAtTimeLog(waitTimeUs);
-        if (waitTimeUs > WAIT_TIME_US_THRESHOLD && !needDropOnMute_.load()) {
-            int64_t ptsDiff = static_cast<int64_t>(buffer->pts_ - lastPts);
-            if (ptsDiff > WAIT_TIME_US_THRESHOLD) {
-                waitTimeUs = ptsDiff;
-            } else {
-                waitTimeUs = WAIT_TIME_US_THRESHOLD;
-            }
-        }
-    } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) { // > 40ms, buffer is late
+    } else if (diff > 0 && Plugins::HstTime2Ms(diff * HST_USECOND) > 40) {
         tooLate = true;
         MEDIA_LOG_D("buffer is too late");
     }
