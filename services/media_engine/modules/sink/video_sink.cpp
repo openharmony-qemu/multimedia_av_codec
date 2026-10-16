@@ -32,21 +32,6 @@ constexpr int32_t DROP_FRAME_CONTINUOUSLY_MAX_CNT = 2;
 constexpr int32_t MAX_ADVANCE_US = 80000;
 static const int64_t MS_PER_US = 1000; // us change to ms
 constexpr int64_t STARTUP_FRAME_INTERVAL_FACTOR = 2;
-
-int64_t CalcWaitTimeUs(int64_t diff, int64_t lastPts,
-    const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, bool needDropOnMute)
-{
-    int64_t waitTimeUs = 0 - diff;
-    if (waitTimeUs > WAIT_TIME_US_THRESHOLD && !needDropOnMute) {
-        int64_t ptsDiff = static_cast<int64_t>(buffer->pts_ - lastPts);
-        if (ptsDiff > WAIT_TIME_US_THRESHOLD) {
-            waitTimeUs = ptsDiff;
-        } else {
-            waitTimeUs = WAIT_TIME_US_THRESHOLD;
-        }
-    }
-    return waitTimeUs;
-}
 }
 
 namespace OHOS {
@@ -85,6 +70,21 @@ constexpr int64_t DELTA_TIME_THRESHOLD = 5000; // max delta time 5ms
 constexpr int64_t US_PER_SECOND = 1000000; // 1000 * 1000 us per second
 
 constexpr int64_t PTS_DISCONTINUE_THRESHOLD_US = 1000000;
+
+int64_t CalcWaitTimeUs(int64_t diff, int64_t lastPts,
+    const std::shared_ptr<OHOS::Media::AVBuffer>& buffer, bool needDropOnMute)
+{
+    int64_t waitTimeUs = 0 - diff;
+    if (waitTimeUs > WAIT_TIME_US_THRESHOLD && !needDropOnMute) {
+        int64_t ptsDiff = static_cast<int64_t>(buffer->pts_ - lastPts);
+        if (ptsDiff > WAIT_TIME_US_THRESHOLD) {
+            waitTimeUs = ptsDiff;
+        } else {
+            waitTimeUs = WAIT_TIME_US_THRESHOLD;
+        }
+    }
+    return waitTimeUs;
+}
 
 VideoSink::VideoSink()
 {
