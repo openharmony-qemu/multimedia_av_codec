@@ -263,6 +263,8 @@ static const string TEST_FILE_LOCAL_ADPCM_MS_WAV = TEST_FILE_PATH + "adpcm_ms.wa
 static const string TEST_FILE_LOCAL_ADPCM_YAMAHA_WAV = TEST_FILE_PATH + "adpcm_yamaha.wav";
 static const string TEST_FILE_LOCAL_PCM_WAV = TEST_FILE_PATH + "audio/WAV_24K_32b_1.wav";
 static const string TEST_FILE_LOCAL_ALAW_WAV = TEST_FILE_PATH + "audio/wav_alaw.wav";
+static const string TEST_FILE_LOCAL_AUDIO_2VIDEO = TEST_FILE_PATH + "audio_2video.avi";
+static const string TEST_FILE_LOCAL_VIDEO_9AUDIO = TEST_FILE_PATH + "video_9audio.mp4";
 
 void DemuxerZerocopyInnerFuncTest::SetUpTestCase(void)
 {
@@ -1333,6 +1335,74 @@ HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0013, TestSiz
     ASSERT_TRUE(PluginSeekTo(218880000, Plugins::SeekMode::SEEK_CLOSEST_SYNC, false));
     ASSERT_TRUE(ResultAssert(seekFrameCount.frameCnt, seekFrameCount.keyFrameCnt));
     RemoveValue();
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0014
+ * @tc.name      : Multi-audio track cross reading
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0014, TestSize.Level2)
+{
+    int audioFrame = 0;
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_MOV_S, TEST_FILE_LOCAL_VIDEO_9AUDIO, configs));
+    demuxerPlugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(0));
+    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(2));
+    uint32_t flag = 0;
+    for (uint32_t count = 0; count < 100; count++) {
+        ASSERT_TRUE(PluginReadSample(0, flag, false));
+        ASSERT_TRUE(PluginReadSample(2, flag, false));
+    }
+    demuxerPlugin_->UnselectTrack(static_cast<uint32_t>(2));
+    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(1));
+    cout << "audioFrame----------------:" << audioFrame << endl;
+    while (true) {
+        ASSERT_TRUE(PluginReadSample(1, flag, false));
+        if (flag & static_cast<uint32_t>(AVBufferFlag::EOS)) {
+            break;
+        }
+        audioFrame++;
+    }
+    cout << "audioFrame:" << audioFrame << endl;
+    RemoveValue();
+    ASSERT_EQ(audioFrame, 333);
+}
+
+/**
+ * @tc.number    : DEMUXER_FASTINIT_INNER_FUNC_0015
+ * @tc.name      : Cross-reading of multiple video tracks
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerZerocopyInnerFuncTest, DEMUXER_FASTINIT_INNER_FUNC_0015, TestSize.Level2)
+{
+    int videoFrame = 0;
+    std::shared_ptr<Media::Meta> configs = std::make_shared<Media::Meta>();
+    configs->SetData(Tag::MEDIA_DEMUXER_MODE, Plugins::DemuxerMode::FAST_INIT);
+    ASSERT_TRUE(CreateDemuxerPluginByNameWithConfig(DEMUXER_PLUGIN_NAME_AVI, TEST_FILE_LOCAL_AUDIO_2VIDEO, configs));
+    demuxerPlugin_ = std::static_pointer_cast<Plugins::DemuxerPlugin>(pluginBase_);
+    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(0));
+    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(2));
+    uint32_t flag = 0;
+    for (uint32_t count = 0; count < 10; count++) {
+        ASSERT_TRUE(PluginReadSample(0, flag, false));
+        ASSERT_TRUE(PluginReadSample(2, flag, false));
+    }
+    demuxerPlugin_->UnselectTrack(static_cast<uint32_t>(0));
+    demuxerPlugin_->SelectTrack(static_cast<uint32_t>(1));
+    cout << "videoFrame----------------:" << videoFrame << endl;
+    while (true) {
+        ASSERT_TRUE(PluginReadSample(1, flag, false));
+        if (flag & static_cast<uint32_t>(AVBufferFlag::EOS)) {
+            break;
+        }
+        videoFrame++;
+    }
+    cout << "videoFrame:" << videoFrame << endl;
+    RemoveValue();
+    ASSERT_EQ(videoFrame, 20);
 }
 }  // namespace Media
 }  // namespace OHOS

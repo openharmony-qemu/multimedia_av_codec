@@ -1202,3 +1202,100 @@ HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_FUNCTION_SAR_0010, TestSize.Level0)
     close(fd);
     fd = -1;
 }
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MUTI_0020
+ * @tc.name      : Multi-audio track cross reading
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_FUNCTION_MUTI_0020, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool audioIsEnd = false;
+    int audioFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/video_9audio.mp4";
+    int fd = 0;
+    int64_t size = 0;
+    fd = open(file, O_RDONLY);
+    size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    int aKeyCount = 0;
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 2));
+    for (uint32_t count = 0; count < 100; count++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 2, avBuffer));
+        ASSERT_NE(avBuffer, nullptr);
+    }
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 2));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 1));
+    while (!audioIsEnd) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 1, avBuffer));
+        ASSERT_NE(avBuffer, nullptr);
+        ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+        if (tarckType == MEDIA_TYPE_AUD) {
+            SetAudioValue(bufferAttr, audioIsEnd, audioFrame, aKeyCount);
+        }
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
+    }
+    ASSERT_EQ(audioFrame, 333);
+    ASSERT_EQ(aKeyCount, 333);
+    close(fd);
+    fd = -1;
+}
+
+/**
+ * @tc.number    : DEMUXER_FUNCTION_MUTI_0030
+ * @tc.name      : Cross-reading of multiple video tracks
+ * @tc.desc      : function test
+ */
+HWTEST_F(DemuxerFunc4NdkTest, DEMUXER_FUNCTION_MUTI_0030, TestSize.Level0)
+{
+    int tarckType = 0;
+    bool videoIsEnd = false;
+    int videoFrame = 0;
+    OH_AVCodecBufferAttr bufferAttr;
+    const char *file = "/data/test/media/audio_2video.avi";
+    int fd = 0;
+    int64_t size = 0;
+    fd = open(file, O_RDONLY);
+    size = GetFileSize(file);
+    cout << file << "----------------------" << fd << "---------" << size << endl;
+    source = OH_AVSource_CreateWithFD(fd, 0, size);
+    ASSERT_NE(source, nullptr);
+    demuxer = OH_AVDemuxer_CreateWithSource(source);
+    ASSERT_NE(demuxer, nullptr);
+    int aKeyCount = 0;
+    avBuffer = OH_AVBuffer_Create(size);
+    ASSERT_NE(avBuffer, nullptr);
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 0));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 2));
+    for (uint32_t count = 0; count < 10; count++) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 0, avBuffer));
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 2, avBuffer));
+        ASSERT_NE(avBuffer, nullptr);
+    }
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_UnselectTrackByID(demuxer, 0));
+    ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_SelectTrackByID(demuxer, 1));
+    while (!videoIsEnd) {
+        ASSERT_EQ(AV_ERR_OK, OH_AVDemuxer_ReadSampleBuffer(demuxer, 1, avBuffer));
+        ASSERT_NE(avBuffer, nullptr);
+        ASSERT_EQ(AV_ERR_OK, OH_AVBuffer_GetBufferAttr(avBuffer, &bufferAttr));
+        if (tarckType == MEDIA_TYPE_AUD) {
+            SetVideoValue(bufferAttr, videoIsEnd, videoFrame, aKeyCount);
+        }
+        OH_AVFormat_Destroy(trackFormat);
+        trackFormat = nullptr;
+    }
+    ASSERT_EQ(videoFrame, 20);
+    close(fd);
+    fd = -1;
+}
