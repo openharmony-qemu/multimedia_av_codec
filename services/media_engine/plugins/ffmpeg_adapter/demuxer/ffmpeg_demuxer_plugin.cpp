@@ -2003,6 +2003,12 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, siz
     MEDIA_LOG_D("In");
     size_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
     for (size_t index = 0; index < infoCount; index++) {
+        if ((metaDrmInfo[index].uuidLen > META_DRM_MAX_DRM_UUID_LEN) ||
+            (metaDrmInfo[index].psshLen > META_DRM_MAX_DRM_PSSH_LEN)) {
+            MEDIA_LOG_E("metaDrmInfo[index] is invalid, uuidLen: %u, psshLen: %u",
+                metaDrmInfo[index].uuidLen, metaDrmInfo[index].psshLen);
+            continue;
+        }
         std::stringstream ssConverter;
         std::string uuid;
         for (uint32_t i = 0; i < metaDrmInfo[index].uuidLen; i++) {
