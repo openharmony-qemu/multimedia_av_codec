@@ -166,8 +166,13 @@ int32_t CodecServer::Init(AVCodecType type, bool isMimeType, const std::string &
         meta = meta ? meta : std::make_shared<Media::Meta>();
         meta->SetData(Media::Tag::MIME_TYPE, codecMime_);
         bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
-        meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME,
-            isForwardCaller ? forwardCaller_.processName : caller_.processName);
+        const CallerInfo &sourceCaller = isForwardCaller ? forwardCaller_ : caller_;
+        meta->SetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
+        meta->SetData(Tag::AV_CODEC_CALLER_UID, caller_.uid);
+        meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, caller_.processName);
+        meta->SetData(Tag::AV_CODEC_FORWARD_CALLER_PID, sourceCaller.pid);
+        meta->SetData(Tag::AV_CODEC_FORWARD_CALLER_UID, sourceCaller.uid);
+        meta->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, sourceCaller.processName);
         EventManager::GetInstance().OnInstanceEvent(type, *meta);
     });
     AVCODEC_LOGI_WITH_TAG("Create %{public}s by %{public}s success", codecName_.c_str(),
@@ -979,8 +984,13 @@ void CodecServer::OnInstanceAdvancedFeatureEvent(std::string feature, std::share
         meta = std::make_shared<Media::Meta>();
     }
     bool isForwardCaller = forwardCaller_.pid >= 0 || !forwardCaller_.processName.empty();
-    std::string processName = isForwardCaller ? forwardCaller_.processName : caller_.processName;
-    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, processName);
+    const CallerInfo &sourceCaller = isForwardCaller ? forwardCaller_ : caller_;
+    meta->SetData(Tag::AV_CODEC_CALLER_PID, caller_.pid);
+    meta->SetData(Tag::AV_CODEC_CALLER_UID, caller_.uid);
+    meta->SetData(Tag::AV_CODEC_CALLER_PROCESS_NAME, caller_.processName);
+    meta->SetData(Tag::AV_CODEC_FORWARD_CALLER_PID, sourceCaller.pid);
+    meta->SetData(Tag::AV_CODEC_FORWARD_CALLER_UID, sourceCaller.uid);
+    meta->SetData(Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, sourceCaller.processName);
     meta->SetData(EventInfoExtentedKey::ADVANCED_FEATURE.data(), feature);
     EventManager::GetInstance().OnInstanceEvent(StatisticsEventType::ADVANCED_FEATURE_INFO, *meta);
 }

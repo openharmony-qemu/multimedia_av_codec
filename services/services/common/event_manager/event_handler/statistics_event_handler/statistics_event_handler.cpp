@@ -294,6 +294,20 @@ public:
         return callerName.empty() ? INVALID_APP_NAME_INDEX : GetIndexByAppName(callerName);
     }
 
+    AppNameIndex GetIndexByCaller(const Media::Meta &meta, std::string_view processNameKey,
+                                  std::string_view pidKey)
+    {
+        std::string callerName;
+        pid_t pid = INVALID_PID;
+        if (!(meta.GetData(processNameKey.data(), callerName) || meta.GetData(pidKey.data(), pid))) {
+            return INVALID_APP_NAME_INDEX;
+        }
+        if (callerName.empty() && pid != INVALID_PID) {
+            callerName = AVCodecServerManager::GetInstance().GetCallerNameByPid(pid);
+        }
+        return callerName.empty() ? INVALID_APP_NAME_INDEX : GetIndexByAppName(callerName);
+    }
+
     std::string GetAppNameByIndex(AppNameIndex appIndex)
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
@@ -809,12 +823,18 @@ public:
             feature == "RC_MODE"s && eventMeta.GetData(EventInfoExtentedKey::RC_MODE.data(), rcMode)) {
             featurePending = ToString(static_cast<VideoEncodeBitrateMode>(rcMode));
         }
-        AppNameIndex appIndex = AppNameIndexInfo::GetInstance().GetIndexByMeta(eventMeta);
-        if (appIndex == INVALID_APP_NAME_INDEX) {
+        AppNameIndex callerIndex = AppNameIndexInfo::GetInstance().GetIndexByCaller(
+            eventMeta, Media::Tag::AV_CODEC_CALLER_PROCESS_NAME, Media::Tag::AV_CODEC_CALLER_PID);
+        AppNameIndex forwardCallerIndex = AppNameIndexInfo::GetInstance().GetIndexByCaller(
+            eventMeta, Media::Tag::AV_CODEC_FORWARD_CALLER_PROCESS_NAME, Media::Tag::AV_CODEC_FORWARD_CALLER_PID);
+        if (callerIndex == INVALID_APP_NAME_INDEX) {
             return;
         }
+        if (forwardCallerIndex == INVALID_APP_NAME_INDEX) {
+            forwardCallerIndex = callerIndex;
+        }
         CreateOrIncrementMapCount(appAdvancedFeatureInfo_,
-            JoinKey({std::to_string(appIndex), feature, featurePending}));
+            JoinKey({std::to_string(callerIndex), std::to_string(forwardCallerIndex), feature, featurePending}));
     }
 
     void OnSummateEventInfo(StatisticsSubmitInfo &submitInfo) override

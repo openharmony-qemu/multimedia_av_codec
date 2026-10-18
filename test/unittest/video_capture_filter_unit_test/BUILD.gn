@@ -95,7 +95,9 @@ ohos_unittest("video_capture_filter_unit_test") {
   external_deps = [
     "audio_framework:audio_capturer",
     "audio_framework:audio_client",
+    "cJSON:cjson",
     "c_utils:utils",
+    "config_policy:configpolicy_util",
     "eventhandler:libeventhandler",
     "ffmpeg:libohosffmpeg",
     "googletest:gmock",
