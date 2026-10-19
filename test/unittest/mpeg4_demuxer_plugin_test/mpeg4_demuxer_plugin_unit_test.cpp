@@ -88,6 +88,9 @@ constexpr size_t WEAK_NETWORK_TIMEOUT_RECOVER_FAIL_COUNT = 1;
 constexpr size_t WEAK_NETWORK_THREAD_RETRY_FAIL_COUNT = 20;
 constexpr size_t MAX_WEBVTT_SAMPLE_READ_COUNT = 100000;
 constexpr size_t MAX_EOS_SEEK_SAMPLE_COUNT = 128;
+const std::vector<uint8_t> H264_AVCC_FIXTURE = {
+    0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
+};
 constexpr int64_t TEST_EOS_SEEK_TIME_MS = 4000;
 constexpr int64_t TEST_MS_TO_US = 1000;
 constexpr int64_t TEST_US_TO_NS = 1000;
@@ -5634,9 +5637,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_BufferConvert_
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_InvalidInbandPps_001, TestSize.Level1)
 {
-    const std::vector<uint8_t> avcc = {
-        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
-    };
     const std::vector<uint8_t> expected = {
         0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0x00, 0x00, 0x00,
         0x01, 0x68, 0xCE, 0x00, 0x00, 0x00, 0x01, 0x65, 0x88,
@@ -5648,7 +5648,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_InvalidInbandP
     };
     for (const auto& packet : packets) {
         Plugins::AvcParserImpl parser;
-        auto config = avcc;
+        auto config = H264_AVCC_FIXTURE;
         ASSERT_TRUE(parser.ConvertExtraDataToAnnexb(config.data(), static_cast<int32_t>(config.size())));
         std::vector<uint8_t> output(expected.size(), 0);
         int32_t outputSize = 0;
@@ -5670,9 +5670,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_InvalidInbandP
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_ValidInbandPps_001, TestSize.Level1)
 {
-    const std::vector<uint8_t> avcc = {
-        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
-    };
     const std::vector<uint8_t> packet = {
         0x00, 0x00, 0x00, 0x02, 0x68, 0xE0, 0x00, 0x00, 0x00, 0x02, 0x65, 0x88,
     };
@@ -5681,7 +5678,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_ValidInbandPps
         0x01, 0x68, 0xE0, 0x00, 0x00, 0x00, 0x01, 0x65, 0x88,
     };
     Plugins::AvcParserImpl parser;
-    auto config = avcc;
+    auto config = H264_AVCC_FIXTURE;
     ASSERT_TRUE(parser.ConvertExtraDataToAnnexb(config.data(), static_cast<int32_t>(config.size())));
     std::vector<uint8_t> output(expected.size(), 0);
     int32_t outputSize = 0;
@@ -5702,9 +5699,6 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_ValidInbandPps
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_InvalidPpsCallerBuffer_001, TestSize.Level1)
 {
-    const std::vector<uint8_t> avcc = {
-        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
-    };
     const std::vector<uint8_t> packet = {
         0x00, 0x00, 0x00, 0x02, 0x65, 0x88, 0x00, 0x00, 0x00, 0x04, 0x68, 0x00, 0x80, 0xE0,
     };
@@ -5716,7 +5710,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_InvalidPpsCall
         0x01, 0x68, 0xCE, 0x00, 0x00, 0x00, 0x01, 0x65, 0x88,
     };
     Plugins::AvcParserImpl parser;
-    auto config = avcc;
+    auto config = H264_AVCC_FIXTURE;
     ASSERT_TRUE(parser.ConvertExtraDataToAnnexb(config.data(), static_cast<int32_t>(config.size())));
     std::vector<uint8_t> output(packet.size() + expectedCodecConfig.size(), 0);
     int32_t outputSize = 0;
@@ -5727,7 +5721,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_InvalidPpsCall
     convertInfo.outBufferSize = static_cast<int32_t>(output.size());
     ASSERT_TRUE(parser.ConvertPacketToAnnexb(convertInfo));
     EXPECT_EQ(outputSize, static_cast<int32_t>(expected.size()));
-    EXPECT_TRUE(std::equal(expected.begin(), expected.end(), output.begin()));
+    EXPECT_TRUE(std::equal(expected.begin(), expected.end(), output.begin(), output.end()));
 }
 
 /**
@@ -5737,12 +5731,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_InvalidPpsCall
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_ZeroLengthNals_001, TestSize.Level1)
 {
-    const std::vector<uint8_t> avcc = {
-        0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
-    };
     const std::vector<uint8_t> packet(12, 0);
     Plugins::AvcParserImpl parser;
-    auto config = avcc;
+    auto config = H264_AVCC_FIXTURE;
     ASSERT_TRUE(parser.ConvertExtraDataToAnnexb(config.data(), static_cast<int32_t>(config.size())));
     int32_t outputSize = -1;
     Plugins::PacketConvertToBufferInfo convertInfo(outputSize);
@@ -5757,6 +5748,29 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_ZeroLengthNals
     convertInfo.srcData = truncatedPacket.data();
     convertInfo.srcDataSize = static_cast<int32_t>(truncatedPacket.size());
     EXPECT_FALSE(parser.ConvertPacketToAnnexb(convertInfo));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParser_InvalidPpsOnlyPacket_001
+ * @tc.desc: Verify a packet containing only an invalid in-band PPS yields an empty AnnexB packet
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_InvalidPpsOnlyPacket_001, TestSize.Level1)
+{
+    const std::vector<uint8_t> packet = {
+        0x00, 0x00, 0x00, 0x01, 0x68, // in-band PPS with no payload (NAL header only)
+    };
+    Plugins::AvcParserImpl parser;
+    auto config = H264_AVCC_FIXTURE;
+    ASSERT_TRUE(parser.ConvertExtraDataToAnnexb(config.data(), static_cast<int32_t>(config.size())));
+    int32_t outputSize = -1;
+    Plugins::PacketConvertToBufferInfo convertInfo(outputSize);
+    convertInfo.srcData = packet.data();
+    convertInfo.srcDataSize = static_cast<int32_t>(packet.size());
+    convertInfo.outBuffer = nullptr;
+    convertInfo.outBufferSize = 0;
+    EXPECT_TRUE(parser.ConvertPacketToAnnexb(convertInfo));
+    EXPECT_EQ(outputSize, 0);
 }
 
 /**
