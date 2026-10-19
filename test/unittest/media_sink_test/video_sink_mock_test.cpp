@@ -26,15 +26,15 @@ HWTEST_F(TestVideoSinkMock, Test_ResetSyncInfo, TestSize.Level1)
     ASSERT_TRUE(videoSink_ != nullptr);
     videoSink_->ResetSyncInfo();
     EXPECT_EQ(videoSink_->hasReportedPreroll_, false);
-    EXPECT_EQ(videoSink_->renderFrameCnt_, 0);
-    EXPECT_EQ(videoSink_->dropFrameContinuouslyCnt_, 0);
-    EXPECT_EQ(videoSink_->isFirstFrame_, true);
-    EXPECT_EQ(videoSink_->lastBufferRelativePts_, HST_TIME_NONE);
-    EXPECT_EQ(videoSink_->lastBufferAnchoredClockTime_, HST_TIME_NONE);
-    EXPECT_EQ(videoSink_->seekFlag_, false);
-    EXPECT_EQ(videoSink_->lastPts_, HST_TIME_NONE);
-    EXPECT_EQ(videoSink_->lastClockTime_, HST_TIME_NONE);
-    EXPECT_EQ(videoSink_->needUpdateTimeAnchor_, true);
+    EXPECT_EQ(videoSink_->renderFrameCnt_.load(), 0);
+    EXPECT_EQ(videoSink_->dropFrameContinuouslyCnt_.load(), 0);
+    EXPECT_EQ(videoSink_->isFirstFrame_.load(), true);
+    EXPECT_EQ(videoSink_->lastBufferRelativePts_.load(), HST_TIME_NONE);
+    EXPECT_EQ(videoSink_->lastBufferAnchoredClockTime_.load(), HST_TIME_NONE);
+    EXPECT_EQ(videoSink_->seekFlag_.load(), false);
+    EXPECT_EQ(videoSink_->lastPts_.load(), HST_TIME_NONE);
+    EXPECT_EQ(videoSink_->lastClockTime_.load(), HST_TIME_NONE);
+    EXPECT_EQ(videoSink_->needUpdateTimeAnchor_.load(), true);
     EXPECT_EQ(videoSink_->lagDetector_.lagTimes_, 0);
     EXPECT_EQ(videoSink_->lagDetector_.maxLagDuration_, 0);
     EXPECT_EQ(videoSink_->lagDetector_.lastSystemTimeMs_, 0);
@@ -76,22 +76,22 @@ HWTEST_F(TestVideoSinkMock, Test_SetFirstPts_AlreadySet, TestSize.Level1)
     ASSERT_TRUE(videoSink_ != nullptr);
     ASSERT_TRUE(mockSyncCenter_ != nullptr);
     videoSink_->SetSyncCenter(std::dynamic_pointer_cast<MediaSyncManager>(mockSyncCenter_));
-    videoSink_->firstPts_ = 1000; // assume first pts is already set to 1000
+    videoSink_->firstPts_.store(1000); // assume first pts is already set to 1000
     mockSyncCenter_->startPtsGetTime_ = 0;
     videoSink_->SetFirstPts(100); // assume current pts is 100
     EXPECT_EQ(mockSyncCenter_->startPtsGetTime_, 0); // GetMediaStartPts is expected not called
-    EXPECT_EQ(videoSink_->firstPts_, 1000); // firstPts_ not changed, remains 1000
+    EXPECT_EQ(videoSink_->firstPts_.load(), 1000); // firstPts_ not changed, remains 1000
 }
  
 HWTEST_F(TestVideoSinkMock, Test_SetFirstPts_FirstSet_NoSyncCenter, TestSize.Level1)
 {
     ASSERT_TRUE(videoSink_ != nullptr);
     videoSink_->syncCenter_.reset();
-    videoSink_->firstPts_ = HST_TIME_NONE;
+    videoSink_->firstPts_.store(HST_TIME_NONE);
     mockSyncCenter_->startPtsGetTime_ = 0;
     videoSink_->SetFirstPts(100); // assume current pts is 100
     EXPECT_EQ(mockSyncCenter_->startPtsGetTime_, 0); // GetMediaStartPts is expected not called
-    EXPECT_EQ(videoSink_->firstPts_, 100); // firstPts_ changed, set to 100;
+    EXPECT_EQ(videoSink_->firstPts_.load(), 100); // firstPts_ changed, set to 100;
 }
  
 HWTEST_F(TestVideoSinkMock, Test_SetFirstPts_FirstSet_HaveGlobalStart, TestSize.Level1)
@@ -99,13 +99,13 @@ HWTEST_F(TestVideoSinkMock, Test_SetFirstPts_FirstSet_HaveGlobalStart, TestSize.
     ASSERT_TRUE(videoSink_ != nullptr);
     ASSERT_TRUE(mockSyncCenter_ != nullptr);
     videoSink_->SetSyncCenter(std::dynamic_pointer_cast<MediaSyncManager>(mockSyncCenter_));
-    videoSink_->firstPts_ = HST_TIME_NONE;
+    videoSink_->firstPts_.store(HST_TIME_NONE);
     mockSyncCenter_->startPtsGetTime_ = 0;
     mockSyncCenter_->returnInt64Queue_.push(1000); // assume golbal startPts is 1000
     mockSyncCenter_->returnInt64Queue_.push(1000); // assume golbal startPts is 1000
     videoSink_->SetFirstPts(100); // assume current pts is 100
     EXPECT_EQ(mockSyncCenter_->startPtsGetTime_, 2); // GetMediaStartPts is expected to be called 2 times
-    EXPECT_EQ(videoSink_->firstPts_, 1000); // firstPts_ not changed, remained 1000;
+    EXPECT_EQ(videoSink_->firstPts_.load(), 1000); // firstPts_ not changed, remained 1000;
 }
  
 HWTEST_F(TestVideoSinkMock, Test_SetFirstPts_FirstSet_NoGlobalStart, TestSize.Level1)
@@ -113,21 +113,21 @@ HWTEST_F(TestVideoSinkMock, Test_SetFirstPts_FirstSet_NoGlobalStart, TestSize.Le
     ASSERT_TRUE(videoSink_ != nullptr);
     ASSERT_TRUE(mockSyncCenter_ != nullptr);
     videoSink_->SetSyncCenter(std::dynamic_pointer_cast<MediaSyncManager>(mockSyncCenter_));
-    videoSink_->firstPts_ = HST_TIME_NONE;
+    videoSink_->firstPts_.store(HST_TIME_NONE);
     mockSyncCenter_->startPtsGetTime_ = 0;
     mockSyncCenter_->returnInt64Queue_.push(HST_TIME_NONE); // assume golbal startPts is not set
     mockSyncCenter_->startPts_ = HST_TIME_NONE;
     videoSink_->SetFirstPts(100); // assume current pts is 100
     EXPECT_EQ(mockSyncCenter_->startPtsGetTime_, 1); // GetMediaStartPts is expected to be called 2 times
-    EXPECT_EQ(videoSink_->firstPts_, 100); // firstPts_ changed, set to 100;
+    EXPECT_EQ(videoSink_->firstPts_.load(), 100); // firstPts_ changed, set to 100;
 }
  
 HWTEST_F(TestVideoSinkMock, Test_SetSeekFlag, TestSize.Level1)
 {
     ASSERT_TRUE(videoSink_ != nullptr);
-    videoSink_->seekFlag_ = false;
+    videoSink_->seekFlag_.store(false);
     videoSink_->SetSeekFlag();
-    EXPECT_TRUE(videoSink_->seekFlag_);
+    EXPECT_TRUE(videoSink_->seekFlag_.load());
 }
  
 HWTEST_F(TestVideoSinkMock, Test_SetLastPts_WithSyncCenter_Case1, TestSize.Level1)
@@ -135,15 +135,15 @@ HWTEST_F(TestVideoSinkMock, Test_SetLastPts_WithSyncCenter_Case1, TestSize.Level
     ASSERT_TRUE(videoSink_ != nullptr);
     ASSERT_TRUE(mockSyncCenter_ != nullptr);
     videoSink_->SetSyncCenter(std::dynamic_pointer_cast<MediaSyncManager>(mockSyncCenter_));
-    videoSink_->lastPts_ = HST_TIME_NONE;
-    videoSink_->lastClockTime_ = HST_TIME_NONE;
+    videoSink_->lastPts_.store(HST_TIME_NONE);
+    videoSink_->lastClockTime_.store(HST_TIME_NONE);
     int64_t lastPts = 1000; // 1000
     int64_t renderDelay = 100; // 100
     int64_t clockNow = 10000; // 10000
     mockSyncCenter_->returnInt64Queue_.push(clockNow);
     videoSink_->SetLastPts(lastPts, renderDelay);
-    EXPECT_EQ(videoSink_->lastPts_, lastPts);
-    EXPECT_EQ(videoSink_->lastClockTime_, clockNow + renderDelay);
+    EXPECT_EQ(videoSink_->lastPts_.load(), lastPts);
+    EXPECT_EQ(videoSink_->lastClockTime_.load(), clockNow + renderDelay);
 }
  
 HWTEST_F(TestVideoSinkMock, Test_SetLastPts_WithSyncCenter_Case2, TestSize.Level1)
@@ -151,28 +151,28 @@ HWTEST_F(TestVideoSinkMock, Test_SetLastPts_WithSyncCenter_Case2, TestSize.Level
     ASSERT_TRUE(videoSink_ != nullptr);
     ASSERT_TRUE(mockSyncCenter_ != nullptr);
     videoSink_->SetSyncCenter(std::dynamic_pointer_cast<MediaSyncManager>(mockSyncCenter_));
-    videoSink_->lastPts_ = HST_TIME_NONE;
-    videoSink_->lastClockTime_ = HST_TIME_NONE;
+    videoSink_->lastPts_.store(HST_TIME_NONE);
+    videoSink_->lastClockTime_.store(HST_TIME_NONE);
     int64_t lastPts = 1000; // 1000
     int64_t renderDelay = -100; // -100
     int64_t clockNow = 10000; // 10000
     mockSyncCenter_->returnInt64Queue_.push(clockNow);
     videoSink_->SetLastPts(lastPts, renderDelay);
-    EXPECT_EQ(videoSink_->lastPts_, lastPts);
-    EXPECT_EQ(videoSink_->lastClockTime_, clockNow);
+    EXPECT_EQ(videoSink_->lastPts_.load(), lastPts);
+    EXPECT_EQ(videoSink_->lastClockTime_.load(), clockNow);
 }
- 
+
 HWTEST_F(TestVideoSinkMock, Test_SetLastPts_NoSyncCenter, TestSize.Level1)
 {
     ASSERT_TRUE(videoSink_ != nullptr);
     videoSink_->syncCenter_.reset();
-    videoSink_->lastPts_ = HST_TIME_NONE;
-    videoSink_->lastClockTime_ = HST_TIME_NONE;
+    videoSink_->lastPts_.store(HST_TIME_NONE);
+    videoSink_->lastClockTime_.store(HST_TIME_NONE);
     int64_t lastPts = 1000; // 1000
     int64_t renderDelay = 100; // 100
     videoSink_->SetLastPts(lastPts, renderDelay);
-    EXPECT_EQ(videoSink_->lastPts_, lastPts);
-    EXPECT_EQ(videoSink_->lastClockTime_, HST_TIME_NONE);
+    EXPECT_EQ(videoSink_->lastPts_.load(), lastPts);
+    EXPECT_EQ(videoSink_->lastClockTime_.load(), HST_TIME_NONE);
 }
  
 HWTEST_F(TestVideoSinkMock, Test_SetParameter_WithSyncCenter_Case1, TestSize.Level1)
@@ -320,11 +320,11 @@ HWTEST_F(TestVideoSinkMock, Test_GetLagInfo_Case2, TestSize.Level1)
 HWTEST_F(TestVideoSinkMock, Test_SetPerfRecEnabled, TestSize.Level1)
 {
     ASSERT_TRUE(videoSink_ != nullptr);
-    videoSink_->isPerfRecEnabled_ = false;
+    videoSink_->isPerfRecEnabled_.store(false);
     EXPECT_EQ(videoSink_->SetPerfRecEnabled(true), Status::OK);
-    EXPECT_TRUE(videoSink_->isPerfRecEnabled_);
+    EXPECT_TRUE(videoSink_->isPerfRecEnabled_.load());
     EXPECT_EQ(videoSink_->SetPerfRecEnabled(false), Status::OK);
-    EXPECT_FALSE(videoSink_->isPerfRecEnabled_);
+    EXPECT_FALSE(videoSink_->isPerfRecEnabled_.load());
 }
  
 } // namespace Test

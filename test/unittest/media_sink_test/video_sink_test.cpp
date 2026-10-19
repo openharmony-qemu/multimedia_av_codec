@@ -93,8 +93,8 @@ HWTEST_F(TestVideoSink, do_sync_write_not_eos, TestSize.Level1)
     writeResult = videoSink_->DoSyncWrite(buffer, actionClock);
     ASSERT_EQ(writeResult, -1);
     buffer->pts_ = 1;
-    videoSink_->lastBufferAnchoredClockTime_ = 1;
-    videoSink_->seekFlag_ = false;
+    videoSink_->lastBufferAnchoredClockTime_.store(1);
+    videoSink_->seekFlag_.store(false);
     bool lateResult = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     ASSERT_TRUE(lateResult == 0 || lateResult == 1);
     float speed = 0;
@@ -133,8 +133,8 @@ HWTEST_F(TestVideoSink, do_sync_write_two_frames, TestSize.Level1)
     writeResult = videoSink_->DoSyncWrite(buffer2, actionClock);
     ASSERT_TRUE(writeResult >= 0);
     buffer->pts_ = 1;
-    videoSink_->lastBufferAnchoredClockTime_ = 1;
-    videoSink_->seekFlag_ = false;
+    videoSink_->lastBufferAnchoredClockTime_.store(1);
+    videoSink_->seekFlag_.store(false);
     bool lateResult = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     ASSERT_TRUE(lateResult == 0 || lateResult == 1);
     float speed = 0;
@@ -173,8 +173,8 @@ HWTEST_F(TestVideoSink, do_sync_write_eos, TestSize.Level1)
     writeResult = videoSink_->DoSyncWrite(buffer, actionClock);
     ASSERT_EQ(writeResult, -1);
     buffer->pts_ = 1;
-    videoSink_->lastBufferAnchoredClockTime_ = 1;
-    videoSink_->seekFlag_ = false;
+    videoSink_->lastBufferAnchoredClockTime_.store(1);
+    videoSink_->seekFlag_.store(false);
     bool lateResult = videoSink_->CheckBufferLatenessMayWait(buffer, 1);
     ASSERT_TRUE(lateResult == 0 || lateResult == 1);
     float speed = 0;
@@ -240,7 +240,7 @@ HWTEST_F(TestVideoSink, CheckBufferLatenessMayWait_004, TestSize.Level1)
     ASSERT_TRUE(buffer != nullptr);
     auto syncCenter = std::make_shared<MockMediaSyncCenter>();
     videoSink_->SetSyncCenter(syncCenter);
-    videoSink_->lastBufferAnchoredClockTime_ = 1000;
+    videoSink_->lastBufferAnchoredClockTime_.store(1000);
     syncCenter->returnInt64Queue_.push(1000);
     syncCenter->returnInt64Queue_.push(2000);
     buffer->pts_ = 1500;
@@ -253,16 +253,16 @@ HWTEST_F(TestVideoSink, SetFirstPts_ShouldSetFirstPts_WhenFirstPtsIsNone, TestSi
 {
     int64_t pts = 100;
     videoSink_->SetFirstPts(pts);
-    EXPECT_EQ(videoSink_->firstPts_, pts);
+    EXPECT_EQ(videoSink_->firstPts_.load(), pts);
 }
 
 // Scenario2: Test when firstPts_ is not HST_TIME_NONE, SetFirstPts should not change firstPts_.
 HWTEST_F(TestVideoSink, SetFirstPts_ShouldNotChangeFirstPts_WhenFirstPtsIsNotNone, TestSize.Level0)
 {
     int64_t pts = 100;
-    videoSink_->firstPts_ = 200;
+    videoSink_->firstPts_.store(200);
     videoSink_->SetFirstPts(pts);
-    EXPECT_EQ(videoSink_->firstPts_, 200);
+    EXPECT_EQ(videoSink_->firstPts_.load(), 200);
 }
 
 // Scenario1: Test when speed is 0.0f then AdjustPlaybackRate returns 1.0f.
@@ -288,7 +288,7 @@ HWTEST_F(TestVideoSink, SetLastPts_001, TestSize.Level0)
     syncCenter->returnInt64Queue_.push(987654321);
     int64_t lastPts = 123456789;
     videoSink_->SetLastPts(lastPts, 0);
-    EXPECT_EQ(videoSink_->lastPts_, lastPts);
+    EXPECT_EQ(videoSink_->lastPts_.load(), lastPts);
 }
 
 HWTEST_F(TestVideoSink, SetLastPts_002, TestSize.Level0)
@@ -297,7 +297,7 @@ HWTEST_F(TestVideoSink, SetLastPts_002, TestSize.Level0)
     videoSink_->SetSyncCenter(nullptr);
     int64_t lastPts = 123456789;
     videoSink_->SetLastPts(lastPts, 0);
-    EXPECT_EQ(videoSink_->lastPts_, lastPts);
+    EXPECT_EQ(videoSink_->lastPts_.load(), lastPts);
 }
 
 HWTEST_F(TestVideoSink, ReportPts_001, TestSize.Level0)
@@ -305,7 +305,7 @@ HWTEST_F(TestVideoSink, ReportPts_001, TestSize.Level0)
     int64_t nowPts = 0;
     int64_t lastPts = 2;
     videoSink_->SetLastPts(lastPts, 0);
-    EXPECT_EQ(videoSink_->lastPts_, lastPts);
+    EXPECT_EQ(videoSink_->lastPts_.load(), lastPts);
     videoSink_->ReportPts(nowPts);
 }
 
