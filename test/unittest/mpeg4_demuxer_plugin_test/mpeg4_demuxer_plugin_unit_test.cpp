@@ -5721,7 +5721,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParser_InvalidPpsCall
     convertInfo.outBufferSize = static_cast<int32_t>(output.size());
     ASSERT_TRUE(parser.ConvertPacketToAnnexb(convertInfo));
     EXPECT_EQ(outputSize, static_cast<int32_t>(expected.size()));
-    EXPECT_TRUE(std::equal(expected.begin(), expected.end(), output.begin(), output.end()));
+    EXPECT_TRUE(std::equal(expected.begin(), expected.end(), output.begin(), output.begin() + outputSize));
 }
 
 /**
