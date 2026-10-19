@@ -63,6 +63,7 @@ group("av_codec_unit_test") {
         "unittest/audio_test:audio_cook_capi_decoder_unit_test",
         "unittest/audio_test:audio_sync_mode_cook_capi_unit_test",
         # "unittest/audio_test:audio_cook_capi_decoder_unit_stable_test",
+        "unittest/audio_test/audio_dsd_test:audio_dsd_decoder_plugin_unit_test",
         "unittest/audio_test:av_audio_capi_unit_test",
         "unittest/audio_test:av_audio_codecbase_unit_test",
         "unittest/audio_test:av_audio_decode_ability_unit_test",

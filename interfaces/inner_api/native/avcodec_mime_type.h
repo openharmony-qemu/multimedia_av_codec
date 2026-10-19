@@ -45,6 +45,7 @@ public:
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_DTS = "audio/dts";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_COOK = "audio/cook";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_AC3 = "audio/ac3";
+    static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_DSD = "audio/dsd";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_EAC3 = "audio/eac3";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_ALAC = "audio/alac";
     static constexpr std::string_view MEDIA_MIMETYPE_AUDIO_RAW = "audio/raw";
@@ -157,6 +158,7 @@ public:
             MEDIA_MIMETYPE_AUDIO_DTS,
 #endif
             MEDIA_MIMETYPE_AUDIO_COOK,
+            MEDIA_MIMETYPE_AUDIO_DSD,
 #ifdef SUPPORT_CODEC_EAC3
             MEDIA_MIMETYPE_AUDIO_EAC3,
 #endif

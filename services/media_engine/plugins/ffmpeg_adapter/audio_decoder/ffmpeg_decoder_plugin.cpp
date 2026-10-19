@@ -87,7 +87,8 @@ static const std::vector<std::string_view> codecVec = {
 #ifdef SUPPORT_CODEC_DTS
     AVCodecCodecName::AUDIO_DECODER_DTS_NAME,              // 48: dts
 #endif
-    AVCodecCodecName::AUDIO_DECODER_COOK_NAME              // 49: cook
+    AVCodecCodecName::AUDIO_DECODER_COOK_NAME,             // 49: cook
+    AVCodecCodecName::AUDIO_DECODER_DSD_NAME               // 50: dsd
 };
 
 template <class T>
@@ -155,7 +156,8 @@ static const std::vector<std::string> codecMimeMap = {
 #ifdef SUPPORT_CODEC_DTS
     MimeType::AUDIO_DTS,              // 48: dts
 #endif
-    MimeType::AUDIO_COOK              // 49: cook
+    MimeType::AUDIO_COOK,             // 49: cook
+    MimeType::AUDIO_DSD               // 50: dsd
 };
 
 static const std::vector<void(*)(const std::string&, const std::string_view&,
@@ -213,7 +215,8 @@ static const std::vector<void(*)(const std::string&, const std::string_view&,
 #ifdef SUPPORT_CODEC_DTS
     InitDefinition<FFmpegDtsDecoderPlugin>,     // 48: dts
 #endif
-    InitDefinition<FFmpegCookDecoderPlugin>     // 49: cook
+    InitDefinition<FFmpegCookDecoderPlugin>,    // 49: cook
+    InitDefinition<FFmpegDsdDecoderPlugin>      // 50: dsd
 };
 
 void SetDefinition(size_t index, CodecPluginDef &definition, Capability &cap)

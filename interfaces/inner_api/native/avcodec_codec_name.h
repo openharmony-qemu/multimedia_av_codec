@@ -43,6 +43,7 @@ public:
     static constexpr std::string_view AUDIO_DECODER_DTS_NAME = "OH.Media.Codec.Decoder.Audio.DTS";
     static constexpr std::string_view AUDIO_DECODER_COOK_NAME = "OH.Media.Codec.Decoder.Audio.COOK";
     static constexpr std::string_view AUDIO_DECODER_AC3_NAME = "OH.Media.Codec.Decoder.Audio.AC3";
+    static constexpr std::string_view AUDIO_DECODER_DSD_NAME = "OH.Media.Codec.Decoder.Audio.DSD";
     static constexpr std::string_view AUDIO_DECODER_EAC3_NAME = "OH.Media.Codec.Decoder.Audio.EAC3";
     static constexpr std::string_view AUDIO_DECODER_ALAC_NAME = "OH.Media.Codec.Decoder.Audio.ALAC";
     static constexpr std::string_view AUDIO_DECODER_RAW_NAME = "OH.Media.Codec.Decoder.Audio.Raw";
@@ -154,7 +155,7 @@ public:
             AUDIO_DECODER_DTS_NAME,
 #endif
             AUDIO_DECODER_COOK_NAME,
-            
+            AUDIO_DECODER_DSD_NAME,
 #ifdef SUPPORT_CODEC_EAC3
             AUDIO_DECODER_EAC3_NAME,
 #endif

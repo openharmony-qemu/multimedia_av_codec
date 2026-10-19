@@ -73,6 +73,7 @@ const char *OH_AVCODEC_MIMETYPE_AUDIO_TWINVQ = "audio/twinvq";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_DVAUDIO = "audio/dvaudio";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_DTS = "audio/dts";
 const char *OH_AVCODEC_MIMETYPE_AUDIO_COOK = "audio/cook";
+const char *OH_AVCODEC_MIMETYPE_AUDIO_DSD = "audio/dsd";
 
 const char *OH_ED_KEY_TIME_STAMP = "timeStamp";
 const char *OH_ED_KEY_EOS = "endOfStream";
@@ -87,6 +88,7 @@ const char *OH_MD_KEY_WIDTH = "width";
 const char *OH_MD_KEY_HEIGHT = "height";
 const char *OH_MD_KEY_PIXEL_FORMAT = "pixel_format";
 const char *OH_MD_KEY_AUDIO_SAMPLE_FORMAT = "audio_sample_format";
+const char *OH_MD_KEY_AUDIO_DSD_CODEC_TYPE = "audio_dsd_codec_type";
 const char *OH_MD_KEY_FRAME_RATE = "frame_rate";
 const char *OH_MD_KEY_VIDEO_ENCODE_BITRATE_MODE = "video_encode_bitrate_mode";
 const char *OH_MD_KEY_PROFILE = "codec_profile";
