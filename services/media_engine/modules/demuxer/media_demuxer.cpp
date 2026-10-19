@@ -2071,8 +2071,8 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     Status ret;
     isSeekError_.store(false);
     lastAudioPts_ = seekTime * US_TO_MS;
-    seekTime_ = seekTime * US_TO_MS;
-    lastVideoDts_ = HST_TIME_NONE;
+    seekTime_.store(seekTime * US_TO_MS);
+    lastVideoDts_.store(HST_TIME_NONE);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("Source seek time: %{public}" PRId64, seekTime);
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
@@ -2135,8 +2135,8 @@ Status MediaDemuxer::SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64
     Status ret;
     isSeekError_.store(false);
     lastAudioPts_ = seekTime * US_TO_MS;
-    seekTime_ = seekTime * US_TO_MS;
-    lastVideoDts_ = HST_TIME_NONE;
+    seekTime_.store(seekTime * US_TO_MS);
+    lastVideoDts_.store(HST_TIME_NONE);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("Source seek");
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
@@ -2190,8 +2190,8 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
     Status ret;
     isSeekError_.store(false);
     lastAudioPts_ = seekTime * US_TO_MS;
-    seekTime_ = seekTime * US_TO_MS;
-    lastVideoDts_ = HST_TIME_NONE;
+    seekTime_.store(seekTime * US_TO_MS);
+    lastVideoDts_.store(HST_TIME_NONE);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("Source seek time: %{public}" PRId64, seekTime);
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
@@ -4196,15 +4196,14 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
     int64_t threshold = trackId == audioTrackId_ ? READSAMPLE_AUIDO_WARNING_MS : READSAMPLE_WARNING_MS;
     Status ret = Status::OK;
     if (trackId == videoTrackId_ && sample != nullptr) {
-        currentVideoDts_ = sample->dts_;
-        currentVideoPts_ = sample->pts_;
+        currentVideoDts_.store(sample->dts_);
+        currentVideoPts_.store(sample->pts_);
         sample->dts_ = INT64_MIN;
         sample->pts_ = INT64_MIN;
     }
     {
         ScopedTimer timer("ReadSample", threshold);
         ret = ReadSampleWithPerfRecord(pluginTemp, innerTrackID, sample, isAVDemuxer);
-        CorrectVideoPtsIfMissing(trackId, sample);
     }
 
     if (ret == Status::END_OF_STREAM) {
@@ -4212,7 +4211,10 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
     } else if (ret != Status::OK) {
         MEDIA_LOG_I("Read error for track " PUBLIC_LOG_D32 ", ret: " PUBLIC_LOG_D32,
             trackId, (int32_t)(ret));
+    } else if (ret == Status::OK) {
+        CorrectVideoPtsIfMissing(trackId, sample);
     }
+
     MEDIA_LOG_D("InnerReadSample Out, track " PUBLIC_LOG_D32, trackId);
 
     if (sample != nullptr && sample->meta_ != nullptr && mediaChangeSeqNum_.load() > 0) {
@@ -7519,7 +7521,7 @@ bool MediaDemuxer::IsSubtitleQueueStale(int32_t queueIndex)
     return true;
 }
 
-void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, std::shared_ptr<AVBuffer> &sample)
+void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
 {
     FALSE_RETURN_MSG(sample != nullptr, "sample is nullptr");
     FALSE_RETURN_NOLOG(trackId == videoTrackId_);
@@ -7529,21 +7531,23 @@ void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, std::shared_ptr<AVB
         return;
     }
     double framerate = framerate_.load();
-    if (framerate <= 1e-9) {
-        sample->dts_ = currentVideoDts_;
-        sample->pts_ = currentVideoPts_;
-        return;
-    }
-    int64_t framIntervalUs = static_cast<int64_t>(US_TO_S / framerate);
-    if (lastVideoDts_ >= INT64_MAX - framIntervalUs) {
-        sample->dts_ = currentVideoDts_;
-        sample->pts_ = currentVideoPts_;
-        return;
-    }
-    sample->dts_ = (lastVideoDts_ == HST_TIME_NONE) ? seekTime_ : lastVideoDts_ + framIntervalUs;
-    lastVideoDts_ = sample->dts_;
+    FALSE_RETURN_NOLOG(framerate >= 1.0);
+    int64_t frameIntervalUs = static_cast<int64_t>(US_TO_S / framerate);
+    FALSE_RETURN_NOLOG(lastVideoDts_ < INT64_MAX - frameIntervalUs);
+    sample->dts_ = (lastVideoDts_.load() == HST_TIME_NONE) ? seekTime_ : lastVideoDts_.load() + frameIntervalUs;
+    lastVideoDts_ .store(sample->dts_);
     sample->pts_ = (sample->pts_ == INT64_MIN) ? sample->dts_ : sample->pts_;
     MEDIA_LOG_D("CorrectVideoPtsIfMissing: corrected pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64, sample->pts_, sample->dts_);
+}
+
+void MediaDemuxer::FixSamplePtsDtsIfInvalid(const std::shared_ptr<AVBuffer> &sample)
+{
+    if (sample->dts_ == INT64_MIN) {
+        sample->dts_ = currentVideoDts_.load();
+    }
+    if (sample->pts == INT64_MIN) {
+        sample->pts_ = currentVideoPts_.load();
+    }
 }
 } // namespace Media
 } // namespace OHOS
