@@ -628,7 +628,7 @@ void MultiplyDisplayMatrix(const int32_t a[3][3], const int32_t b[3][3], int32_t
     // MPEG4 display matrix的位移量，用于定点数运算
     // [0][0], [1][1] 元素使用16位小数
     // [2][2] 元素使用30位小数
-    const int32_t shift[3] = { 16, 16, 30 };
+    const uint32_t shift[3] = { 16, 16, 30 };
     const int32_t elementCount = 9; // 3x3矩阵有9个元素
     // 初始化结果矩阵
     std::fill(&result[0][0], &result[0][0] + elementCount, 0);
@@ -636,9 +636,13 @@ void MultiplyDisplayMatrix(const int32_t a[3][3], const int32_t b[3][3], int32_t
     for (uint16_t i = 0; i < DISPLAY_MATRIX_ROWS; ++i) {
         for (uint16_t j = 0; j < DISPLAY_MATRIX_COLS; ++j) {
             for (uint16_t k = 0; k < DISPLAY_MATRIX_COLS; ++k) {
-                // 使用64位避免中间计算溢出，然后右移恢复定点数精度
-                result[i][j] += static_cast<int32_t>(
-                    (static_cast<int64_t>(a[i][k]) * b[k][j]) >> shift[k]);
+                // 使用64位避免中间计算溢出。除法向零取整，因此负数有余数时需要减一，
+                // 以保持原算术右移的向下取整语义。位移操作只作用于无符号整数。
+                const int64_t product = static_cast<int64_t>(a[i][k]) * b[k][j];
+                const int64_t scale = static_cast<int64_t>(uint64_t{1} << shift[k]);
+                const int64_t quotient = product / scale;
+                const int64_t remainder = product % scale;
+                result[i][j] += static_cast<int32_t>(quotient - (product < 0 && remainder != 0));
             }
         }
     }
@@ -2281,7 +2285,7 @@ Status MPEG4AtomParser::ParseSampleDescriptionEntry(int32_t depth, ParseContext*
         FourccToString(atom.type).c_str(), lastTrack_->codecParms.trackType, mimeType.c_str());
     InferTrackTypeFromMime(mimeType);
     if (lastTrack_->codecParms.trackType == VIDEO_TYPE && IsImageMimeType(mimeType)) {
-        ctx->offset += atom.size;
+        ctx->offset += static_cast<int64_t>(atom.size);
         return Status::OK;
     }
     if (NeedParseVideoInfo(mimeType, lastTrack_->codecParms.trackType) ||
@@ -3428,7 +3432,7 @@ Status MPEG4AtomParser::ParseStsz(MPEG4Atom currentAtom, int32_t depth, ParseCon
 Status MPEG4AtomParser::ParseStco(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
-    ctx->offset += currentAtom.size;
+    ctx->offset += static_cast<int64_t>(currentAtom.size);
     if (currentAtom.size > MIN_BOX_SIZE) {
         Status ret = lastTrack_->sampleHelper->SetChunkOffsetParams(currentAtom.type, ctx->dataOffset,
             currentAtom.dataSize);
@@ -3442,7 +3446,7 @@ Status MPEG4AtomParser::ParseStco(MPEG4Atom currentAtom, int32_t depth, ParseCon
 Status MPEG4AtomParser::ParseSdtp(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
-    ctx->offset += currentAtom.size;
+    ctx->offset += static_cast<int64_t>(currentAtom.size);
     Status ret = lastTrack_->sampleHelper->SetSampleDependencyTypeParams(ctx->offset, ctx->dataOffset,
         currentAtom.dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "SetSampleDependencyTypeParams failed");
@@ -3452,7 +3456,7 @@ Status MPEG4AtomParser::ParseSdtp(MPEG4Atom currentAtom, int32_t depth, ParseCon
 Status MPEG4AtomParser::ParseSbgp(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
-    ctx->offset += currentAtom.size;
+    ctx->offset += static_cast<int64_t>(currentAtom.size);
     Status ret = lastTrack_->sampleHelper->SetRapSampleGroupParams(ctx->dataOffset, currentAtom.dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set RAP sample group params failed");
     return Status::OK;
@@ -3461,7 +3465,7 @@ Status MPEG4AtomParser::ParseSbgp(MPEG4Atom currentAtom, int32_t depth, ParseCon
 Status MPEG4AtomParser::ParseStps(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), Status::ERROR_INVALID_DATA, "Invalid current track");
-    ctx->offset += currentAtom.size;
+    ctx->offset += static_cast<int64_t>(currentAtom.size);
     Status ret = lastTrack_->sampleHelper->SetPartialSyncSampleParams(ctx->dataOffset, currentAtom.dataSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Set partial sync sample params failed");
     return Status::OK;
@@ -3471,7 +3475,7 @@ Status MPEG4AtomParser::ParseStps(MPEG4Atom currentAtom, int32_t depth, ParseCon
 Status MPEG4AtomParser::ParseTrex(MPEG4Atom currentAtom, int32_t depth, ParseContext* ctx)
 {
     FALSE_RETURN_V_MSG_E(depth == MPEG4_DEPTH_TWO, Status::ERROR_INVALID_PARAMETER, "Invalid trex depth");
-    ctx->offset += currentAtom.size;
+    ctx->offset += static_cast<int64_t>(currentAtom.size);
     uint32_t trackId = 0;
     if (currentAtom.dataSize >= TREX_TRACK_ID_SIZE) {
         uint8_t trackIdData[TREX_TRACK_ID_SIZE];
@@ -3721,7 +3725,7 @@ Status MPEG4AtomParser::FindNextMoof(int64_t& headerOffset, uint32_t& atomSize)
             FALSE_RETURN_V_MSG_E(atomData != nullptr, Status::ERROR_NO_MEMORY, "atomHeader is nullptr");
             ret = dataReader_->ReadUintData(headerOffset + atomHeaderSize, atomData.get(), atomDataSize);
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read atom data failed");
-            headerOffset += atomSize;
+            headerOffset += static_cast<int64_t>(atomSize);
         }
     } while (atomType != FourccType("moof"));
     return Status::OK;
@@ -3751,7 +3755,7 @@ Status MPEG4AtomParser::UpdateFragmentEntryAndOffset(bool inEntry, uint32_t frag
             FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read next atom header failed");
             size = GetU32Value(&atomHeader[0]);
             type = static_cast<int32_t>(GetU32Value(&atomHeader[typeOffset]));
-            currentOffset += size;
+            currentOffset += static_cast<int64_t>(size);
         } while (type != FourccType("mdat"));
         fragmentEntry_[fragIndex].nextAtomOffset = currentOffset;
     }
@@ -3764,7 +3768,7 @@ Status MPEG4AtomParser::UpdateFragmentEntryAndOffset(bool inEntry, uint32_t frag
         }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read next atom header failed");
         uint32_t size = GetU32Value(&atomHeader[0]);
-        currentOffset += size;
+        currentOffset += static_cast<int64_t>(size);
         ret = dataReader_->ReadUintData(currentOffset, atomHeader, sizeof(atomHeader));
         if (ret == Status::END_OF_STREAM) {
             return Status::OK;
@@ -3786,7 +3790,7 @@ bool MPEG4AtomParser::UpdataMoofInfo(
         case FourccType("mfhd"):
             return ProcessMoofMfhd(atom, ret, currentOffset);
         case FourccType("traf"):
-            currentOffset += atom.headerSize;
+            currentOffset += static_cast<int64_t>(atom.headerSize);
             return true;
         case FourccType("tfhd"):
             return ProcessMoofTfhd(atom, ret, currentOffset);
@@ -3831,7 +3835,7 @@ Status MPEG4AtomParser::ParseMoof(const std::shared_ptr<Track>& track, int64_t o
     }
     int64_t sidxDts = inEntry ? fragmentEntry_[fragIndex].firstDts : -1;
     firstTrack_ = (firstTrack_ == nullptr) ? track : firstTrack_;
-    int64_t moofEndOffset = moofOffset_ + atomSize;
+    int64_t moofEndOffset = moofOffset_ + static_cast<int64_t>(atomSize);
     int64_t currentOffset = moofOffset_ + sizeof(uint64_t); // Skip size and type
     currentTrack_ = firstTrack_;
     ClearTrackSaizSaioState();
@@ -4352,8 +4356,10 @@ Status MPEG4AtomParser::ReadMetadataString(
     buffer[size] = '\0';
     const bool isTrackMeta = parseCtx != nullptr && lastTrack_ != nullptr &&
         lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
-        parseCtx->path[0] == FourccType("moov") && parseCtx->path[1] == FourccType("trak") &&
-        (parseCtx->path[2] == FourccType("udta") || parseCtx->path[2] == FourccType("ilst"));
+        parseCtx->path[0] == static_cast<uint32_t>(FourccType("moov")) &&
+        parseCtx->path[1] == static_cast<uint32_t>(FourccType("trak")) &&
+        (parseCtx->path[2] == static_cast<uint32_t>(FourccType("udta")) ||
+         parseCtx->path[2] == static_cast<uint32_t>(FourccType("ilst")));
     const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
     if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size), isTrackMeta) && !isUserMeta) {
         return Status::OK;
@@ -4645,7 +4651,7 @@ Status MPEG4AtomParser::ParseSchm(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint32_t schemeType = GetU32Value(&schmData[4]);
     lastTrack_->drmInfo.schemeType = schemeType;
     MEDIA_LOG_I("ParseSchm: scheme_type=%.4s (0x%08X)", FourccToString(schemeType).c_str(), schemeType);
-    ctx->offset += currentAtom.size;
+    ctx->offset += static_cast<int64_t>(currentAtom.size);
     return Status::OK;
 }
 
@@ -4707,7 +4713,7 @@ Status MPEG4AtomParser::ParsePssh(MPEG4Atom currentAtom, int32_t depth, ParseCon
     }
     ret = BuildPsshInfo(ctx->offset, uuidData, static_cast<uint32_t>(currentAtom.size));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Build pssh info failed");
-    ctx->offset += currentAtom.size;
+    ctx->offset += static_cast<int64_t>(currentAtom.size);
     (void) psshDataSize;
     return Status::OK;
 }
@@ -4769,7 +4775,7 @@ Status MPEG4AtomParser::ParseTenc(MPEG4Atom currentAtom, int32_t depth, ParseCon
     ret = ReadTencDefaultConstantIV(ctx, kidOffset, defaultIsProtected, defaultPerSampleIvSize, ivSizeInvalid);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read tenc default constant IV failed");
     lastTrack_->drmInfo.defaultCencInfo.mode = 0; // AV_DRM_CENC_INFO_KEY_IV_SUBSAMPLES_SET
-    ctx->offset += currentAtom.size;
+    ctx->offset += static_cast<int64_t>(currentAtom.size);
     return Status::OK;
 }
 
@@ -4812,13 +4818,13 @@ Status MPEG4AtomParser::ParseSenc(MPEG4Atom currentAtom, int32_t depth, ParseCon
     // fMP4 per-sample encryption info lives in moof, not moov. Skip moov-level senc to avoid
     // polluting sampleEncryptionEntries with stale/default entries that shift moof indices.
     if (depth > 0) {
-        ctx->offset += currentAtom.size;
+        ctx->offset += static_cast<int64_t>(currentAtom.size);
         return Status::OK;
     }
     // If current fragment already has encryption info (from saiz/saio), ignore duplicate senc.
     // Use currentFragmentIndexBase as the boundary: entries before it belong to previous fragments.
     if (lastTrack_->drmInfo.sampleEncryptionEntries.size() > lastTrack_->currentFragmentIndexBase) {
-        ctx->offset += currentAtom.size;
+        ctx->offset += static_cast<int64_t>(currentAtom.size);
         return Status::OK;
     }
     FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_SENC_SIZE, Status::ERROR_INVALID_DATA, "senc box too small");
@@ -4829,7 +4835,7 @@ Status MPEG4AtomParser::ParseSenc(MPEG4Atom currentAtom, int32_t depth, ParseCon
     bool useSubsamples = (flags & SENC_FLAGS_SUBSAMPLE_ENCRYPTION) != 0 ||
         (flags & SENC_FLAGS_PIFF_SAMPLE_ENCRYPTION) != 0;
     uint32_t sampleCount = GetU32Value(&headerData[4]);
-    uint32_t dataOffset = ctx->dataOffset + sizeof(headerData);
+    uint32_t dataOffset = static_cast<uint32_t>(ctx->dataOffset + static_cast<int64_t>(sizeof(headerData)));
     size_t baseIndex = lastTrack_->drmInfo.sampleEncryptionEntries.size();
     lastTrack_->drmInfo.sampleEncryptionEntries.resize(baseIndex + sampleCount);
     for (uint32_t i = 0; i < sampleCount; ++i) {
@@ -4837,7 +4843,7 @@ Status MPEG4AtomParser::ParseSenc(MPEG4Atom currentAtom, int32_t depth, ParseCon
             ctx->dataOffset + currentAtom.dataSize);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Parse senc sample entry failed");
     }
-    ctx->offset += currentAtom.size;
+    ctx->offset += static_cast<int64_t>(currentAtom.size);
     return Status::OK;
 }
 
@@ -4918,9 +4924,11 @@ Status MPEG4AtomParser::ParseSaiz(const MPEG4Atom& atom)
                 return Status::OK;
             }
         } else {
-            if ((auxInfoType == FourccType("cenc") || auxInfoType == FourccType("cens") ||
-                 auxInfoType == FourccType("cbc1") || auxInfoType == FourccType("cbcs")) &&
-                auxInfoParam == 0) {
+            if ((auxInfoType == static_cast<uint32_t>(FourccType("cenc")) ||
+                 auxInfoType == static_cast<uint32_t>(FourccType("cens")) ||
+                 auxInfoType == static_cast<uint32_t>(FourccType("cbc1")) ||
+                 auxInfoType == static_cast<uint32_t>(FourccType("cbcs"))) &&
+                 auxInfoParam == 0) {
                 MEDIA_LOG_E("Saw encrypted saiz without schm/tenc");
                 return Status::ERROR_INVALID_DATA;
             } else {
@@ -4974,10 +4982,8 @@ Status MPEG4AtomParser::ParseSaizBody(int64_t dataOffset, const MPEG4Atom& atom)
 Status MPEG4AtomParser::ParseSaio(const MPEG4Atom& atom)
 {
     FALSE_RETURN_V_MSG_E(currentTrack_ != nullptr, Status::ERROR_NULL_POINTER, "Current track is null");
-    if (currentTrack_->drmInfo.auxiliaryOffsetsCount > 0) {
-        MEDIA_LOG_E("Duplicate saio atom within same moof");
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_MSG_E(currentTrack_->drmInfo.auxiliaryOffsetsCount <= 0, Status::ERROR_INVALID_DATA,
+                         "Duplicate saio atom within same moof");
     FALSE_RETURN_V_MSG_E(atom.dataSize >= MIN_SAIO_SIZE, Status::ERROR_INVALID_DATA, "saio box too small");
 
     uint8_t headerData[MIN_SAIO_SIZE];
@@ -5010,9 +5016,11 @@ Status MPEG4AtomParser::ParseSaio(const MPEG4Atom& atom)
                 return Status::OK;
             }
         } else {
-            if ((auxInfoType == FourccType("cenc") || auxInfoType == FourccType("cens") ||
-                 auxInfoType == FourccType("cbc1") || auxInfoType == FourccType("cbcs")) &&
-                auxInfoParam == 0) {
+            if ((auxInfoType == static_cast<uint32_t>(FourccType("cenc")) ||
+                 auxInfoType == static_cast<uint32_t>(FourccType("cens")) ||
+                 auxInfoType == static_cast<uint32_t>(FourccType("cbc1")) ||
+                 auxInfoType == static_cast<uint32_t>(FourccType("cbcs"))) &&
+                 auxInfoParam == 0) {
                 MEDIA_LOG_E("Saw encrypted saio without schm/tenc");
                 return Status::ERROR_INVALID_DATA;
             } else {
@@ -5051,16 +5059,22 @@ Status MPEG4AtomParser::ReadSaioOffsetEntries(int64_t dataOffset, uint8_t versio
     currentTrack_->drmInfo.auxiliaryOffsetsCount = entryCount;
 
     int64_t baseOffset = moofOffset_;
+    int64_t newDataOffset(0);
     for (uint32_t i = 0; i < entryCount; ++i) {
         uint8_t offsetData[8];
         ret = dataReader_->ReadUintData(dataOffset, offsetData, offsetSize);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read saio offset failed");
         if (version == 0) {
-            currentTrack_->drmInfo.auxiliaryOffsets[i] = GetU32Value(offsetData) + baseOffset;
+            currentTrack_->drmInfo.auxiliaryOffsets[i] = static_cast<int64_t>(GetU32Value(offsetData)) + baseOffset;
         } else {
-            currentTrack_->drmInfo.auxiliaryOffsets[i] = GetU64Value(offsetData) + baseOffset;
+            currentTrack_->drmInfo.auxiliaryOffsets[i] = static_cast<int64_t>(GetU64Value(offsetData)) + baseOffset;
         }
-        dataOffset += offsetSize;
+        if (__builtin_sub_overflow(dataOffset, static_cast<int64_t>(offsetSize), &newDataOffset)) {
+            MEDIA_LOG_E("ReadSaioOffsetEntries dataOffset overflow");
+            continue;
+        }
+        dataOffset = newDataOffset;
+        newDataOffset = 0;
     }
 
     if (currentTrack_->drmInfo.auxiliaryInfoSampleCount > 0) {
@@ -5120,7 +5134,7 @@ Status MPEG4AtomParser::ParseAuxiliarySampleEntry(int64_t& auxiliaryOffset, size
         entry.iv.resize(drmInfo.perSampleIvSize);
         Status ret = dataReader_->ReadUintData(auxiliaryOffset, entry.iv.data(), drmInfo.perSampleIvSize);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read auxiliary IV failed");
-        auxiliaryOffset += drmInfo.perSampleIvSize;
+        auxiliaryOffset += static_cast<int64_t>(drmInfo.perSampleIvSize);
     }
 
     if (sampleInfoSize <= drmInfo.perSampleIvSize) {
@@ -5750,7 +5764,7 @@ bool MPEG4AtomParser::ProcessMoofTrun(MPEG4Atom& atom, Status& ret, int64_t& cur
 
 bool MPEG4AtomParser::ProcessMoofSenc(MPEG4Atom& atom, Status& ret, int64_t& currentOffset)
 {
-    currentOffset += atom.size;
+    currentOffset += static_cast<int64_t>(atom.size);
     auto savedLastTrack = lastTrack_;
     lastTrack_ = currentTrack_;
     MEDIA_LOG_I("ParseMoof senc: currentTrackId=%d, currentFragmentIndexBase=%u, "
@@ -5768,14 +5782,14 @@ bool MPEG4AtomParser::ProcessMoofSenc(MPEG4Atom& atom, Status& ret, int64_t& cur
 
 bool MPEG4AtomParser::ProcessMoofSaiz(MPEG4Atom& atom, Status& ret, int64_t& currentOffset)
 {
-    currentOffset += atom.size;
+    currentOffset += static_cast<int64_t>(atom.size);
     ret = ParseSaiz(atom);
     return true;
 }
 
 bool MPEG4AtomParser::ProcessMoofSaio(MPEG4Atom& atom, Status& ret, int64_t& currentOffset)
 {
-    currentOffset += atom.size;
+    currentOffset += static_cast<int64_t>(atom.size);
     ret = ParseSaio(atom);
     return true;
 }
