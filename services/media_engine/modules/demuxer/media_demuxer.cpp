@@ -7533,8 +7533,9 @@ void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_p
     double framerate = framerate_.load();
     FALSE_RETURN_NOLOG(framerate >= 1.0);
     int64_t frameIntervalUs = static_cast<int64_t>(US_TO_S / framerate);
-    FALSE_RETURN_NOLOG(lastVideoDts_ < INT64_MAX - frameIntervalUs);
-    sample->dts_ = (lastVideoDts_.load() == HST_TIME_NONE) ? seekTime_ : lastVideoDts_.load() + frameIntervalUs;
+    int64_t lastVideoDts = lastVideoDts_.load();
+    FALSE_RETURN_NOLOG(lastVideoDts < INT64_MAX - frameIntervalUs);
+    sample->dts_ = (lastVideoDts == HST_TIME_NONE) ? seekTime_.load() : lastVideoDts + frameIntervalUs;
     lastVideoDts_.store(sample->dts_);
     sample->pts_ = (sample->pts_ == INT64_MIN) ? sample->dts_ : sample->pts_;
     MEDIA_LOG_D("CorrectVideoPtsIfMissing: corrected pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64, sample->pts_, sample->dts_);
