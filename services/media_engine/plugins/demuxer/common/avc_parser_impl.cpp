@@ -75,7 +75,7 @@ bool IsValidH264Pps(const uint8_t *nalData, uint32_t nalSize)
 {
     if (nalData == nullptr || nalSize <= static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) ||
         nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) >
-            static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
+        static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
         return false;
     }
     RbspContext reader(nalData + AVC_NAL_HEADER_SIZE,
