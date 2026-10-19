@@ -596,7 +596,7 @@ private:
     void InitBuiltInSubtitleTrack();
     Status InitBuiltInSubtitleBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer);
     void CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_ptr<AVBuffer> &sample);
-    void FixSamplePtsDtsIfInvalid(const std::shared_ptr<AVBuffer> &sample);
+    void RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shared_ptr<AVBuffer> &sample);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
