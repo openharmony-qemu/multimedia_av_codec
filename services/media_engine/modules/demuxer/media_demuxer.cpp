@@ -4215,7 +4215,6 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
         CorrectVideoPtsIfMissing(trackId, sample);
     }
     FixSamplePtsDtsIfInvalid(sample);
-
     MEDIA_LOG_D("InnerReadSample Out, track " PUBLIC_LOG_D32, trackId);
 
     if (sample != nullptr && sample->meta_ != nullptr && mediaChangeSeqNum_.load() > 0) {
@@ -7546,7 +7545,7 @@ void MediaDemuxer::FixSamplePtsDtsIfInvalid(const std::shared_ptr<AVBuffer> &sam
     if (sample->dts_ == INT64_MIN) {
         sample->dts_ = currentVideoDts_.load();
     }
-    if (sample->pts == INT64_MIN) {
+    if (sample->pts_ == INT64_MIN) {
         sample->pts_ = currentVideoPts_.load();
     }
 }
