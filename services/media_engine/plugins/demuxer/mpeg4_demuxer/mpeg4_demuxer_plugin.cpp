@@ -141,7 +141,9 @@ constexpr uint32_t RFPS_STD_MIN_GAP_COUNT = 1; // duration_count > 1 for the sta
 constexpr int64_t RFPS_TIME_BASE_GRANULARITY = 500;
 constexpr double RFPS_AVG_DURATION_MIN_RATIO = 0.8; // skip rates slower than 80% of the average duration
 constexpr double RFPS_RATE_ACCEPT_RATIO = 1.01; // accept at most 1% above the reference rate
+constexpr double RFPS_INVALID_ERROR_MARK = RFPS_INVALID_ERROR * RFPS_PHASE_COUNT;
 constexpr uint64_t REDUCE_MAX_RATIONAL = std::numeric_limits<int>::max();
+constexpr uint64_t REDUCE_MEDIAN_TERM = 2; // continued-fraction median check, mirrors FFmpeg av_reduce
 // FFmpeg compute_frame_duration uses 2 ticks per frame for field-capable codecs (AV_CODEC_PROP_FIELDS,
 // H.264) when deriving the duration from the SPS codec framerate.
 constexpr uint32_t VIDEO_TICKS_PER_FIELD_FRAME = 2;
@@ -509,10 +511,16 @@ uint32_t GetStdFramerate(int32_t index)
         RFPS_STD_TIMEBASE_DEN;
 }
 
+double DivideByTimeScale(int64_t value, int32_t timeScale)
+{
+    return timeScale > 0 ? static_cast<double>(value) / timeScale : 0.0;
+}
+
 bool ReduceRational(uint64_t num, uint64_t den, uint64_t max, uint32_t& outNum, uint32_t& outDen)
 {
     FALSE_RETURN_V_NOLOG(num > 0 && den > 0 && max > 0, false);
     uint64_t gcd = std::gcd(num, den);
+    FALSE_RETURN_V_NOLOG(gcd > 0, false);
     num /= gcd;
     den /= gcd;
     uint64_t a0Num = 0;
@@ -536,7 +544,7 @@ bool ReduceRational(uint64_t num, uint64_t den, uint64_t max, uint32_t& outNum, 
             if (a1Den != 0) {
                 x = std::min(x, (max - a0Den) / a1Den);
             }
-            if (den * (2 * x * a1Den + a0Den) > num * a1Den) {
+            if (den * (REDUCE_MEDIAN_TERM * x * a1Den + a0Den) > num * a1Den) {
                 a1Num = x * a1Num + a0Num;
                 a1Den = x * a1Den + a0Den;
             }
@@ -556,8 +564,8 @@ bool ReduceRational(uint64_t num, uint64_t den, uint64_t max, uint32_t& outNum, 
 }
 
 struct RfpsAnalyzer {
-    std::array<std::array<double, RFPS_STD_RATE_ENTRY_COUNT>, 2> errorSum{};
-    std::array<std::array<double, RFPS_STD_RATE_ENTRY_COUNT>, 2> errorSq{};
+    std::array<std::array<double, RFPS_STD_RATE_ENTRY_COUNT>, RFPS_PHASE_COUNT> errorSum{};
+    std::array<std::array<double, RFPS_STD_RATE_ENTRY_COUNT>, RFPS_PHASE_COUNT> errorSq{};
     int64_t durationSum = 0;
     uint32_t durationCount = 0;
     uint64_t durationGcd = 0;
@@ -568,7 +576,7 @@ void RfpsAddFrame(RfpsAnalyzer& analyzer, int64_t dts, int64_t lastDts, int32_t 
     if (timeScale <= 0) {
         return;
     }
-    double dtsSeconds = static_cast<double>(dts) / timeScale;
+    double dtsSeconds = DivideByTimeScale(dts, timeScale);
     uint64_t duration = static_cast<uint64_t>(dts - lastDts);
     for (uint32_t i = 0; i < RFPS_STD_RATE_ENTRY_COUNT; ++i) {
         if (analyzer.errorSq[0][i] >= RFPS_INVALID_ERROR) {
@@ -599,8 +607,8 @@ void RfpsAddFrame(RfpsAnalyzer& analyzer, int64_t dts, int64_t lastDts, int32_t 
             double mean1 = analyzer.errorSum[1][i] / count;
             double error1 = analyzer.errorSq[1][i] / count - mean1 * mean1;
             if (error0 > RFPS_ERROR_REJECT_THRESHOLD && error1 > RFPS_ERROR_REJECT_THRESHOLD) {
-                analyzer.errorSq[0][i] = RFPS_INVALID_ERROR * 2;
-                analyzer.errorSq[1][i] = RFPS_INVALID_ERROR * 2;
+                analyzer.errorSq[0][i] = RFPS_INVALID_ERROR_MARK;
+                analyzer.errorSq[1][i] = RFPS_INVALID_ERROR_MARK;
             }
         }
     }
@@ -632,9 +640,13 @@ void RfpsEstimateFrameRate(const RfpsAnalyzer& analyzer, int32_t timeScale, uint
     double bestError = RFPS_INITIAL_BEST_ERROR;
     uint32_t bestRate = 0;
     double refRate = static_cast<double>(timeScale);
-    double avgDuration = static_cast<double>(analyzer.durationSum) / timeScale / analyzer.durationCount;
+    double avgDuration = DivideByTimeScale(analyzer.durationSum, timeScale) /
+        static_cast<double>(analyzer.durationCount);
     for (uint32_t i = 0; i < RFPS_STD_RATE_ENTRY_COUNT; ++i) {
         uint32_t rate = GetStdFramerate(i);
+        if (rate == 0) {
+            continue;
+        }
         // FFmpeg runs the estimate at header time with codec_info_duration == 0, which skips
         // standard rates below 1001 * 12 (demux.c: "if (!codec_info_duration && framerate < 1001*12)").
         if (rate < RFPS_STD_TIMEBASE) {
