@@ -17,6 +17,7 @@
 #include <vector>
 #include <cstdint>
 #include <cstring>
+#include <utility>
 #include "plugin/plugin_manager_v2.h"
 #include "plugin/codec_plugin.h"
 #include "avcodec_codec_name.h"
@@ -47,6 +48,10 @@ constexpr int32_t MAX_INPUT_BUFFER_SIZE_LIMIT = 10 * 1024 * 1024; // 10MB: clamp
 constexpr int32_t OVER_LIMIT_BUFFER_SIZE = 11 * 1024 * 1024; // 11MB: exceeds clamp limit
 // 2: AUDIO_ENCODER_PTS_MODE_FIRST_INPUT_START
 constexpr int32_t PTS_MODE_FIRST_INPUT_START = 2;
+constexpr int32_t AMR_FRAME_DURATION_US = 20000;             // 20000: one amr-nb frame is 20ms
+constexpr int64_t AMR_PTS_BASE = 1000000;                    // 1000000: test base pts
+constexpr int32_t TWO_S32_FRAME_BYTES = S32_FRAME_BYTES * 2; // 1280: two S32LE frames
+constexpr int64_t PTS_NEAR_INT64_MAX = INT64_MAX - 10000;    // 10000 < 20ms, forces pts wrap-around
 }  // namespace
 
 namespace OHOS {
@@ -670,6 +675,215 @@ TEST_F(AmrNbEncoderPluginUnitTest, Prepare_And_Release)
     EXPECT_EQ(Status::OK, plugin_->Init());
     EXPECT_EQ(Status::OK, plugin_->Prepare());
     EXPECT_EQ(Status::OK, plugin_->Release());
+}
+
+TEST_F(AmrNbEncoderPluginUnitTest, SetParameter_AllBitrates_Accepted)
+{
+    ASSERT_NE(plugin_, nullptr);
+    EXPECT_EQ(Status::OK, plugin_->Init());
+    const int32_t bitrates[] = {4750, 5150, 5900, 6700, 7400, 7950, 10200, 12200}; // all valid amr-nb bitrates
+    for (int32_t bitrate : bitrates) {
+        auto meta = make_shared<Meta>();
+        meta->Set<Tag::AUDIO_CHANNEL_COUNT>(AMR_CHANNELS);
+        meta->Set<Tag::AUDIO_SAMPLE_RATE>(AMR_SAMPLE_RATE);
+        meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+        meta->Set<Tag::MEDIA_BITRATE>(bitrate);
+        EXPECT_EQ(Status::OK, plugin_->SetParameter(meta)) << "bitrate: " << bitrate;
+    }
+}
+
+TEST_F(AmrNbEncoderPluginUnitTest, FormatConvert_AllExtendedFormats_Encode)
+{
+    ASSERT_NE(plugin_, nullptr);
+    const vector<pair<AudioSampleFormat, int32_t>> formats = {
+        {AudioSampleFormat::SAMPLE_U8, 1},      // 1: byte per sample
+        {AudioSampleFormat::SAMPLE_S24LE, 3},   // 3: bytes per sample
+        {AudioSampleFormat::SAMPLE_F32LE, 4},   // 4: bytes per sample
+        {AudioSampleFormat::SAMPLE_S32LE, 4},   // 4: bytes per sample
+    };
+    for (const auto &item : formats) {
+        EXPECT_EQ(Status::OK, InitAndConfigure(false, AMR_BITRATE, item.first, true));
+        EXPECT_EQ(Status::OK, plugin_->Start());
+        auto input = CreatePcmInputBuffer(AMR_FRAME_SAMPLES * item.second, false);
+        inputCallbackCount_ = 0;
+        EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
+        EXPECT_EQ(1, inputCallbackCount_);
+        auto output = CreateOutputBuffer(OUTPUT_CAPACITY);
+        outputCallbackCount_ = 0;
+        EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output));
+        EXPECT_EQ(1, outputCallbackCount_);
+        EXPECT_GT(outputCallbackSize_, 0);
+    }
+}
+
+TEST_F(AmrNbEncoderPluginUnitTest, PtsMode_FirstInputStart_DirectMode)
+{
+    ASSERT_NE(plugin_, nullptr);
+    EXPECT_EQ(Status::OK, plugin_->Init());
+    plugin_->SetDataCallback(this);
+    auto meta = make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(AMR_CHANNELS);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(AMR_SAMPLE_RATE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::MEDIA_BITRATE>(AMR_BITRATE);
+    meta->Set<Tag::AUDIO_ENCODE_PTS_MODE>(PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(Status::OK, plugin_->SetParameter(meta));
+    EXPECT_EQ(Status::OK, plugin_->Start());
+
+    // the FIRST input pts becomes the base, later inputs must not affect it
+    auto input1 = CreatePcmInputBuffer(FRAME_BYTES, false);
+    input1->pts_ = AMR_PTS_BASE;
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input1));
+    auto output1 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output1));
+    EXPECT_EQ(AMR_PTS_BASE, output1->pts_);
+    EXPECT_EQ(AMR_FRAME_DURATION_US, output1->duration_);
+
+    auto input2 = CreatePcmInputBuffer(FRAME_BYTES, false);
+    input2->pts_ = AMR_PTS_BASE + 999999; // 999999: arbitrary pts, only the FIRST input pts counts
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input2));
+    auto output2 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output2));
+    EXPECT_EQ(AMR_PTS_BASE + AMR_FRAME_DURATION_US, output2->pts_);
+
+    auto input3 = CreatePcmInputBuffer(FRAME_BYTES, false);
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input3));
+    auto output3 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output3));
+    EXPECT_EQ(AMR_PTS_BASE + 2 * AMR_FRAME_DURATION_US, output3->pts_); // 2: the third frame
+}
+
+TEST_F(AmrNbEncoderPluginUnitTest, PtsMode_FirstInputStart_CacheMode)
+{
+    ASSERT_NE(plugin_, nullptr);
+    EXPECT_EQ(Status::OK, plugin_->Init());
+    plugin_->SetDataCallback(this);
+    auto meta = make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(AMR_CHANNELS);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(AMR_SAMPLE_RATE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::MEDIA_BITRATE>(AMR_BITRATE);
+    meta->Set<Tag::AUDIO_MAX_INPUT_BUFFER_SIZE>(MULTI_FRAME_PCM);
+    meta->Set<Tag::AUDIO_ENCODE_PTS_MODE>(PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(Status::OK, plugin_->SetParameter(meta));
+    EXPECT_EQ(Status::OK, plugin_->Start());
+
+    auto input = CreatePcmInputBuffer(TWO_FRAME_PCM, false);
+    input->pts_ = AMR_PTS_BASE;
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
+    auto output1 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::ERROR_AGAIN, plugin_->QueueOutputBuffer(output1));
+    EXPECT_EQ(AMR_PTS_BASE, output1->pts_);
+    EXPECT_EQ(AMR_FRAME_DURATION_US, output1->duration_);
+    auto output2 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output2));
+    EXPECT_EQ(AMR_PTS_BASE + AMR_FRAME_DURATION_US, output2->pts_);
+}
+
+TEST_F(AmrNbEncoderPluginUnitTest, PtsMode_NegativePts_AdvancesUpward)
+{
+    ASSERT_NE(plugin_, nullptr);
+    EXPECT_EQ(Status::OK, plugin_->Init());
+    plugin_->SetDataCallback(this);
+    auto meta = make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(AMR_CHANNELS);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(AMR_SAMPLE_RATE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::MEDIA_BITRATE>(AMR_BITRATE);
+    meta->Set<Tag::AUDIO_ENCODE_PTS_MODE>(PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(Status::OK, plugin_->SetParameter(meta));
+    EXPECT_EQ(Status::OK, plugin_->Start());
+
+    auto input1 = CreatePcmInputBuffer(FRAME_BYTES, false);
+    input1->pts_ = -10000; // -10000: negative base pts
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input1));
+    auto output1 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output1));
+    EXPECT_EQ(-10000, output1->pts_); // -10000: negative base pts is kept
+    auto input2 = CreatePcmInputBuffer(FRAME_BYTES, false);
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input2));
+    auto output2 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output2));
+    // prevPts_ < 0: prevPts_ += frameDuration -> -10000 + 20000 = 10000
+    EXPECT_EQ(10000, output2->pts_); // 10000: -10000 + 20000
+}
+
+TEST_F(AmrNbEncoderPluginUnitTest, PtsMode_PtsNearInt64Max_WrapsAround)
+{
+    ASSERT_NE(plugin_, nullptr);
+    EXPECT_EQ(Status::OK, plugin_->Init());
+    plugin_->SetDataCallback(this);
+    auto meta = make_shared<Meta>();
+    meta->Set<Tag::AUDIO_CHANNEL_COUNT>(AMR_CHANNELS);
+    meta->Set<Tag::AUDIO_SAMPLE_RATE>(AMR_SAMPLE_RATE);
+    meta->Set<Tag::AUDIO_SAMPLE_FORMAT>(AudioSampleFormat::SAMPLE_S16LE);
+    meta->Set<Tag::MEDIA_BITRATE>(AMR_BITRATE);
+    meta->Set<Tag::AUDIO_ENCODE_PTS_MODE>(PTS_MODE_FIRST_INPUT_START);
+    EXPECT_EQ(Status::OK, plugin_->SetParameter(meta));
+    EXPECT_EQ(Status::OK, plugin_->Start());
+
+    auto input1 = CreatePcmInputBuffer(FRAME_BYTES, false);
+    input1->pts_ = PTS_NEAR_INT64_MAX;
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input1));
+    auto output1 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output1));
+    EXPECT_EQ(PTS_NEAR_INT64_MAX, output1->pts_);
+    auto input2 = CreatePcmInputBuffer(FRAME_BYTES, false);
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input2));
+    auto output2 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output2));
+    // (INT64_MAX - prevPts_) < frameDuration: prevPts_ = frameDuration - (INT64_MAX - prevPts_)
+    // = 20000 - 10000 = 10000
+    EXPECT_EQ(10000, output2->pts_); // 10000: 20000 - 10000, wrapped around
+}
+
+TEST_F(AmrNbEncoderPluginUnitTest, PtsMode_Default_OutputPtsUntouched)
+{
+    ASSERT_NE(plugin_, nullptr);
+    EXPECT_EQ(Status::OK, InitAndConfigure(false)); // no AUDIO_ENCODE_PTS_MODE key -> default mode
+    EXPECT_EQ(Status::OK, plugin_->Start());
+    auto input = CreatePcmInputBuffer(FRAME_BYTES, false);
+    input->pts_ = 555; // 555: arbitrary input pts, ignored in default mode
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
+    auto output = CreateOutputBuffer(OUTPUT_CAPACITY);
+    output->pts_ = 7777; // 7777: preset output pts
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output));
+    // in default pts mode the plugin must not touch the output pts
+    EXPECT_EQ(7777, output->pts_); // 7777: preset value must stay unchanged
+}
+
+TEST_F(AmrNbEncoderPluginUnitTest, QueueOutputBuffer_MetaPassthrough)
+{
+    ASSERT_NE(plugin_, nullptr);
+    EXPECT_EQ(Status::OK, InitAndConfigure(false));
+    EXPECT_EQ(Status::OK, plugin_->Start());
+    auto input = CreatePcmInputBuffer(FRAME_BYTES, false);
+    auto inMeta = make_shared<Meta>();
+    inMeta->Set<Tag::MEDIA_TITLE>("amrnb_meta_test");
+    input->meta_ = inMeta;
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
+    auto output = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output));
+    ASSERT_NE(output->meta_, nullptr);
+    EXPECT_EQ(inMeta, output->meta_); // the input meta is passed through by pointer
+    string title;
+    EXPECT_TRUE(output->meta_->Get<Tag::MEDIA_TITLE>(title));
+    EXPECT_EQ("amrnb_meta_test", title);
+}
+
+TEST_F(AmrNbEncoderPluginUnitTest, CacheMode_WithFormatConvert)
+{
+    ASSERT_NE(plugin_, nullptr);
+    // S32LE input + cache: the converted S16 data goes into pcmCache_
+    EXPECT_EQ(Status::OK, InitAndConfigure(true, AMR_BITRATE,
+        AudioSampleFormat::SAMPLE_S32LE, true));
+    EXPECT_EQ(Status::OK, plugin_->Start());
+    auto input = CreatePcmInputBuffer(TWO_S32_FRAME_BYTES, false); // two S32LE frames
+    EXPECT_EQ(Status::OK, plugin_->QueueInputBuffer(input));
+    auto output1 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::ERROR_AGAIN, plugin_->QueueOutputBuffer(output1));
+    auto output2 = CreateOutputBuffer(OUTPUT_CAPACITY);
+    EXPECT_EQ(Status::OK, plugin_->QueueOutputBuffer(output2));
 }
 
 }  // namespace Plugins
