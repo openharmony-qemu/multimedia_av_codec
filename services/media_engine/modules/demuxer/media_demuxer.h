@@ -286,6 +286,7 @@ public:
     bool IsNeedSelectTrack(int32_t trackId);
     int32_t GetBuiltInSubtitleNum();
     bool IsBuiltInSubtitleTrackId(int32_t trackId);
+    void ResetForSeek(int64_t seekTime);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -597,6 +598,7 @@ private:
     Status InitBuiltInSubtitleBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer);
     void CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_ptr<AVBuffer> &sample);
     void RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shared_ptr<AVBuffer> &sample);
+    void CacheAndInvalidateVideoSample(int32_t trackId, const std::shared_ptr<AVBuffer> &sample);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;

@@ -733,6 +733,7 @@ Status DemuxerFilter::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& 
     MediaAVCodec::AVCodecTrace trace("DemuxerFilter::SeekTo");
     MEDIA_LOG_D("SeekTo in");
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    demuxer_->ResetForSeek(seekTime);
 
     if (interstitialController_ && interstitialController_->IsPlayingInterstitial()) {
         MEDIA_LOG_I("SeekTo: seeking within ad, seekTime=%{public}lld", static_cast<long long>(seekTime));

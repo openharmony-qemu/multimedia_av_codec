@@ -2071,8 +2071,6 @@ Status MediaDemuxer::SeekTo(int64_t seekTime, Plugins::SeekMode mode, int64_t& r
     Status ret;
     isSeekError_.store(false);
     lastAudioPts_ = seekTime * US_TO_MS;
-    seekTime_.store(seekTime * US_TO_MS);
-    lastVideoDts_.store(HST_TIME_NONE);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("Source seek time: %{public}" PRId64, seekTime);
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
@@ -2135,8 +2133,6 @@ Status MediaDemuxer::SeekToStart(int64_t seekTime, Plugins::SeekMode mode, int64
     Status ret;
     isSeekError_.store(false);
     lastAudioPts_ = seekTime * US_TO_MS;
-    seekTime_.store(seekTime * US_TO_MS);
-    lastVideoDts_.store(HST_TIME_NONE);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("Source seek");
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
@@ -2190,8 +2186,6 @@ Status MediaDemuxer::SeekToKeyFrame(int64_t seekTime, Plugins::SeekMode mode,
     Status ret;
     isSeekError_.store(false);
     lastAudioPts_ = seekTime * US_TO_MS;
-    seekTime_.store(seekTime * US_TO_MS);
-    lastVideoDts_.store(HST_TIME_NONE);
     if (source_ != nullptr && source_->IsSeekToTimeSupported()) {
         MEDIA_LOG_I("Source seek time: %{public}" PRId64, seekTime);
         if (mode == SeekMode::SEEK_CLOSEST_INNER) {
@@ -4195,12 +4189,7 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
 
     int64_t threshold = trackId == audioTrackId_ ? READSAMPLE_AUIDO_WARNING_MS : READSAMPLE_WARNING_MS;
     Status ret = Status::OK;
-    if (trackId == videoTrackId_ && sample != nullptr) {
-        currentVideoDts_.store(sample->dts_);
-        currentVideoPts_.store(sample->pts_);
-        sample->dts_ = INT64_MIN;
-        sample->pts_ = INT64_MIN;
-    }
+    CacheAndInvalidateVideoSample(trackId, sample);
     {
         ScopedTimer timer("ReadSample", threshold);
         ret = ReadSampleWithPerfRecord(pluginTemp, innerTrackID, sample, isAVDemuxer);
@@ -7523,8 +7512,8 @@ bool MediaDemuxer::IsSubtitleQueueStale(int32_t queueIndex)
 
 void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
 {
-    FALSE_RETURN_MSG(sample != nullptr, "sample is nullptr");
     FALSE_RETURN_NOLOG(trackId == videoTrackId_);
+    FALSE_RETURN_MSG(sample != nullptr, "sample is nullptr");
     if (sample->dts_ != INT64_MIN) {
         lastVideoDts_.store(sample->dts_);
         sample->pts_ = (sample->pts_ == INT64_MIN) ? sample->dts_ : sample->pts_;
@@ -7538,18 +7527,34 @@ void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_p
     sample->dts_ = (lastVideoDts == HST_TIME_NONE) ? seekTime_.load() : lastVideoDts + frameIntervalUs;
     lastVideoDts_.store(sample->dts_);
     sample->pts_ = (sample->pts_ == INT64_MIN) ? sample->dts_ : sample->pts_;
-    MEDIA_LOG_D("CorrectVideoPtsIfMissing: corrected pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64, sample->pts_, sample->dts_);
+    MEDIA_LOG_D("CorrectVideoPtsIfMissing: corrected pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64,
+        sample->pts_, sample->dts_);
 }
 
 void MediaDemuxer::RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
 {
-    FALSE_RETURN_NOLOG(sample != nullptr && trackId == videoTrackId_);
+    FALSE_RETURN_NOLOG(trackId == videoTrackId_ && sample != nullptr);
     if (sample->dts_ == INT64_MIN) {
         sample->dts_ = currentVideoDts_.load();
     }
     if (sample->pts_ == INT64_MIN) {
         sample->pts_ = currentVideoPts_.load();
     }
+}
+
+void MediaDemuxer::CacheAndInvalidateVideoSample(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
+{
+    FALSE_RETURN_NOLOG(trackId == videoTrackId_ && sample != nullptr);
+    currentVideoDts_.store(sample->dts_);
+    currentVideoPts_.store(sample->pts_);
+    sample->dts_ = INT64_MIN;
+    sample->pts_ = INT64_MIN;
+}
+
+void MediaDemuxer::ResetForSeek(int64_t seekTime)
+{
+    seekTime_.store(seekTime * US_TO_MS);
+    lastVideoDts_.store(HST_TIME_NONE);
 }
 } // namespace Media
 } // namespace OHOS
