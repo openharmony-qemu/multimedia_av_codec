@@ -9251,4 +9251,80 @@ HWTEST_F(MediaDemuxerExtUnitTest, CheckCodecChangeWithBuffer_008, TestSize.Level
     mediaDemuxer_->CheckCodecChange(buffer, trackId, needRelease);
     EXPECT_EQ(needRelease, true);
 }
+
+/**
+ * @tc.name: MediaDemuxerExt_CorrectVideoPtsIfMissing_001
+ * @tc.number: MediaDemuxerExt_CorrectVideoPtsIfMissing_001
+ * @tc.desc: Test trackId != videoTrackId
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CorrectVideoPtsIfMissing_001, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    sample->dts_ = INT64_MIN;
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->CorrectVideoPtsIfMissing(NUM_1, sample);
+    EXPECT_EQ(sample->dts_, INT64_MIN);
+}
+
+/**
+ * @tc.name: MediaDemuxerExt_CorrectVideoPtsIfMissing_002
+ * @tc.number: MediaDemuxerExt_CorrectVideoPtsIfMissing_002
+ * @tc.desc: Test sample->dts_ != INT64_MIN
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CorrectVideoPtsIfMissing_002, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    sample->dts_ = INT64_MAX;
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->CorrectVideoPtsIfMissing(NUM_0, sample);
+    EXPECT_EQ(mediaDemuxer_->lastVideoDts_, INT64_MAX);
+}
+
+/**
+ * @tc.name: MediaDemuxerExt_CorrectVideoPtsIfMissing_003
+ * @tc.number: MediaDemuxerExt_CorrectVideoPtsIfMissing_003
+ * @tc.desc: Test sample->dts_ = INT64_MIN
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CorrectVideoPtsIfMissing_003, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    sample->dts_ = INT64_MIN;
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->framerate_ = 30;
+    mediaDemuxer_->lastVideoDts_ = 0;
+    mediaDemuxer_->CorrectVideoPtsIfMissing(NUM_0, sample);
+    EXPECT_NE(sample->dts_, INT64_MIN);
+}
+
+/**
+ * @tc.name: MediaDemuxerExt_RestoreSamplePtsDtsIfInvalid_001
+ * @tc.number: MediaDemuxerExt_RestoreSamplePtsDtsIfInvalid_001
+ * @tc.desc: Test sample->dts_ = INT64_MIN pts_ = INT64_MIN
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_RestoreSamplePtsDtsIfInvalid_001, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    sample->dts_ = INT64_MIN;
+    sample->pts_ = INT64_MIN;
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->RestoreSamplePtsDtsIfInvalid(NUM_0, sample);
+    EXPECT_NE(sample->dts_, INT64_MIN);
+    EXPECT_NE(sample->pts_, INT64_MIN);
+}
+
+/**
+ * @tc.name: MediaDemuxerExt_RestoreSamplePtsDtsIfInvalid_001
+ * @tc.number: MediaDemuxerExt_RestoreSamplePtsDtsIfInvalid_001
+ * @tc.desc: Test sample->dts_ != INT64_MIN pts_ != INT64_MIN
+ */
+HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_RestoreSamplePtsDtsIfInvalid_002, TestSize.Level1)
+{
+    std::shared_ptr<AVBuffer> sample = std::make_shared<AVBuffer>();
+    sample->dts_ = INT64_MAX;
+    sample->pts_ = INT64_MAX;
+    mediaDemuxer_->videoTrackId_ = NUM_0;
+    mediaDemuxer_->RestoreSamplePtsDtsIfInvalid(NUM_0, sample);
+    EXPECT_EQ(sample->dts_, INT64_MAX);
+    EXPECT_EQ(sample->pts_, INT64_MAX);
+}
 }  // namespace OHOS::Media

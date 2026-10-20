@@ -4201,7 +4201,7 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
     } else if (ret != Status::OK) {
         MEDIA_LOG_I("Read error for track " PUBLIC_LOG_D32 ", ret: " PUBLIC_LOG_D32,
             trackId, (int32_t)(ret));
-    } else if (ret == Status::OK) {
+    } else {
         CorrectVideoPtsIfMissing(trackId, sample);
     }
     RestoreSamplePtsDtsIfInvalid(trackId, sample);
@@ -7515,8 +7515,7 @@ void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_p
 {
     // DTS missing - maintain DTS using framerate
     // PTS missing - PTS = DTS
-    FALSE_RETURN_NOLOG(trackId == videoTrackId_);
-    FALSE_RETURN_MSG(sample != nullptr, "sample is nullptr");
+    FALSE_RETURN_NOLOG(trackId == videoTrackId_ && sample != nullptr);
     if (sample->dts_ != PTS_MISSING_MARKER) {
         lastVideoDts_.store(sample->dts_);
         sample->pts_ = (sample->pts_ == PTS_MISSING_MARKER) ? sample->dts_ : sample->pts_;
@@ -7536,7 +7535,7 @@ void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_p
 
 void MediaDemuxer::RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
 {
-    // canot maintain DTS/PTS - restore to previous values
+    // cannot maintain DTS/PTS - restore to previous values
     FALSE_RETURN_NOLOG(trackId == videoTrackId_ && sample != nullptr);
     if (sample->dts_ == PTS_MISSING_MARKER) {
         sample->dts_ = currentVideoDts_.load();
@@ -7557,6 +7556,7 @@ void MediaDemuxer::CacheAndInvalidateVideoSample(int32_t trackId, const std::sha
 
 void MediaDemuxer::ResetForSeek(int64_t seekTime)
 {
+    FALSE_RETURN(seekTime < (INT64_MAX / US_TO_MS));
     seekTime_.store(seekTime * US_TO_MS);
     lastVideoDts_.store(HST_TIME_NONE);
 }
