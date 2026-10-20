@@ -1291,7 +1291,7 @@ void AudioSink::DrainOutputBuffer(bool flushed)
 
     if (isRenderCallbackMode_) {
         if (state_ != Pipeline::FilterState::RUNNING) {
-            MEDIA_LOG_W_LIMIT(LOG_LIMIT_HUNDRED, "DrainOutputBuffer ignore temporarily for not RUNNINT state: "
+            MEDIA_LOGW_LIMIT(LOG_LIMIT_HUNDRED, "DrainOutputBuffer ignore temporarily for not RUNNINT state: "
                 PUBLIC_LOG_D32 ", isProcessInputMerged: " PUBLIC_LOG_D32, state_.load(), isProcessInputMerged_);
 
             /*
