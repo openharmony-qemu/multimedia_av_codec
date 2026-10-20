@@ -7513,6 +7513,8 @@ bool MediaDemuxer::IsSubtitleQueueStale(int32_t queueIndex)
 
 void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
 {
+    // DTS missing - maintain DTS using framerate
+    // PTS missing - PTS = DTS
     FALSE_RETURN_NOLOG(trackId == videoTrackId_);
     FALSE_RETURN_MSG(sample != nullptr, "sample is nullptr");
     if (sample->dts_ != PTS_MISSING_MARKER) {
@@ -7534,6 +7536,7 @@ void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_p
 
 void MediaDemuxer::RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
 {
+    // canot maintain DTS/PTS - restore to previous values
     FALSE_RETURN_NOLOG(trackId == videoTrackId_ && sample != nullptr);
     if (sample->dts_ == PTS_MISSING_MARKER) {
         sample->dts_ = currentVideoDts_.load();
