@@ -37,6 +37,8 @@ constexpr uint32_t H264_EXTENDED_SAR = 255;
 constexpr uint32_t H264_BYTE_BITS = 8;
 constexpr uint32_t H264_SHORT_BITS = 16;
 constexpr uint32_t H264_WORD_BITS = 32;
+constexpr uint32_t H264_MAX_SPS_COUNT = 32;
+constexpr uint32_t H264_MAX_PPS_COUNT = 256;
 constexpr uint32_t H264_CHROMA_FORMAT_444 = 3;
 constexpr uint32_t H264_SCALING_LIST_4X4_COUNT = 6;
 constexpr uint32_t H264_SCALING_LIST_4X4_SIZE = 16;
@@ -64,6 +66,25 @@ struct H264SpsInfo {
     uint32_t frameRateDen = 0;
     bool hasFrameRate = false;
 };
+
+// Light-weight in-band PPS validation: only checks that pps_id/sps_id are
+// decodable (Exp-Golomb) and stay within the H.264 spec ranges
+// (sps_id 0..31, pps_id 0..255). A PPS with valid IDs but truncated payload
+// is intentionally kept; full PPS parsing is not required for this filter.
+bool IsValidH264Pps(const uint8_t *nalData, uint32_t nalSize)
+{
+    if (nalData == nullptr || nalSize <= static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) ||
+        nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) >
+        static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
+        return false;
+    }
+    RbspContext reader(nalData + AVC_NAL_HEADER_SIZE,
+        static_cast<int32_t>(nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE)), true);
+    uint32_t ppsId = 0;
+    uint32_t spsId = 0;
+    return reader.RbspReadUE(ppsId) && reader.RbspReadUE(spsId) &&
+        ppsId < H264_MAX_PPS_COUNT && spsId < H264_MAX_SPS_COUNT;
+}
 
 constexpr std::array<H264SarEntry, 16> H264_SAR_TABLE = {{
     {1u, 1u},     {12u, 11u},   {10u, 11u},   {16u, 11u},
@@ -822,7 +843,9 @@ bool AvcParserImpl::FilterPsFromPacket(const uint8_t *packet, int32_t packetSize
             state.sps.insert(state.sps.end(), ANNEXB_START_CODE, ANNEXB_START_CODE + sizeof(ANNEXB_START_CODE));
             state.sps.insert(state.sps.end(), buf, buf + nalSize);
             ++spsCount;
-        } else if (unitType == AvcNalType::AVC_NAL_PPS) {
+        } else if (unitType == AvcNalType::AVC_NAL_PPS && IsValidH264Pps(buf, nalSize)) {
+            // Only valid in-band PPS enters the parameter-set state, so an invalid
+            // PPS cannot replace the avcC PPS inserted before IDR/SEI.
             if (ppsCount == 0) {
                 state.pps.clear();
             }
@@ -957,6 +980,13 @@ bool AvcParserImpl::BuildAnnexbPacket(const uint8_t *packet, int32_t packetSize,
     FALSE_RETURN_V_MSG_W(ParseNalUnits(nalUnits, packet, packetSize), false, "ParseNalUnits failed");
     FALSE_RETURN_V(!nalUnits.empty() || IsZeroLengthAvccPacket(packet, packetSize), false);
     for (const auto &nal : nalUnits) {
+        // Same filtering rule as FilterPsFromPacket above: drop invalid in-band
+        // PPS from the output. If every NAL is filtered the result is an empty
+        // packet (dataSize 0), consistent with the zero-length NAL path and
+        // treated as a no-op packet by the caller.
+        if (nal.nalType == AvcNalType::AVC_NAL_PPS && !IsValidH264Pps(nal.data, nal.size)) {
+            continue;
+        }
         FALSE_RETURN_V(HandlePacketNal(nal, state, output.buffer, output.bufferSize, output.dataSize), false);
     }
     return true;
