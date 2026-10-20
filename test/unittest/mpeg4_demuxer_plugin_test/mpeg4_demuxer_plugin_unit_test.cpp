@@ -91,6 +91,8 @@ constexpr size_t MAX_EOS_SEEK_SAMPLE_COUNT = 128;
 const std::vector<uint8_t> H264_AVCC_FIXTURE = {
     0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
 };
+constexpr uint32_t VIDEO_DURATION_READ_BUFFER_SIZE = 64;
+constexpr uint32_t RFPS_LINE77_STTS_EXTEND_COUNT = 40;
 constexpr int64_t TEST_EOS_SEEK_TIME_MS = 4000;
 constexpr int64_t TEST_MS_TO_US = 1000;
 constexpr int64_t TEST_US_TO_NS = 1000;
@@ -1776,12 +1778,19 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareVideoCttsTestTrac
     return track;
 }
 
+struct VideoDurationTrackConfig {
+    std::vector<uint8_t> sampleData;
+    std::string mime;
+    std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry> sttsEntries;
+    bool hasCtts = false;
+    int32_t trackTimeScale = 0;
+};
+
 std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> CreateVideoDurationTestTrack(
-    const std::string& mime, const std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry>& sttsEntries,
-    bool hasCtts, uint32_t testSampleCount, int32_t trackTimeScale)
+    const VideoDurationTrackConfig& config, uint32_t testSampleCount)
 {
     constexpr uint32_t testVideoTrackId = 0;
-    if (testSampleCount == 0 || trackTimeScale <= 0) {
+    if (testSampleCount == 0 || config.trackTimeScale <= 0) {
         return nullptr;
     }
     auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
@@ -1790,9 +1799,9 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> CreateVideoDurationTestT
         return nullptr;
     }
     helper->trackType_ = Plugins::MPEG4::VIDEO_TYPE;
-    helper->mimeType_ = mime;
-    helper->sttsEntry_ = sttsEntries;
-    if (hasCtts) {
+    helper->mimeType_ = config.mime;
+    helper->sttsEntry_ = config.sttsEntries;
+    if (config.hasCtts) {
         helper->cttsEntry_ = {{testSampleCount, 0}};
     }
     helper->stscEntry_ = {{0, testSampleCount, 1}};
@@ -1805,26 +1814,16 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> CreateVideoDurationTestT
     }
     track->trackIndex = testVideoTrackId;
     track->trackId = static_cast<int32_t>(testVideoTrackId);
-    track->timeScale = trackTimeScale;
+    track->timeScale = config.trackTimeScale;
     track->codecParms.trackType = Plugins::MPEG4::VIDEO_TYPE;
     track->sampleHelper = helper;
     return track;
 }
 
-std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareVideoDurationTestTrack(
-    Plugins::MPEG4::MPEG4DemuxerPlugin& plugin, const std::vector<uint8_t>& sampleData,
-    const std::string& mime, const std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry>& sttsEntries,
-    bool hasCtts, int32_t trackTimeScale)
+void ActivateVideoDurationTestTrack(Plugins::MPEG4::MPEG4DemuxerPlugin& plugin,
+    const std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track>& track, const std::string& mime)
 {
     constexpr uint32_t testVideoTrackId = 0;
-    if (sampleData.empty() || trackTimeScale <= 0) {
-        return nullptr;
-    }
-    auto track = CreateVideoDurationTestTrack(mime, sttsEntries, hasCtts,
-        static_cast<uint32_t>(sampleData.size()), trackTimeScale);
-    if (track == nullptr) {
-        return nullptr;
-    }
     plugin.firstTrack_ = track;
     plugin.lastTrack_ = track;
     plugin.mediaInfo_.tracks.resize(1);
@@ -1833,6 +1832,20 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareVideoDurationTest
     plugin.inited_ = true;
     plugin.seekable_ = Seekable::SEEKABLE;
     plugin.selectedTrackIds_ = {testVideoTrackId};
+}
+
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareVideoDurationTestTrack(
+    Plugins::MPEG4::MPEG4DemuxerPlugin& plugin, const VideoDurationTrackConfig& config)
+{
+    if (config.sampleData.empty() || config.trackTimeScale <= 0) {
+        return nullptr;
+    }
+    auto track = CreateVideoDurationTestTrack(config,
+        static_cast<uint32_t>(config.sampleData.size()));
+    if (track == nullptr) {
+        return nullptr;
+    }
+    ActivateVideoDurationTestTrack(plugin, track, config.mime);
     return track;
 }
 
@@ -1841,7 +1854,8 @@ std::vector<int64_t> ReadDurationsWithRFrameRate(const std::vector<uint8_t>& sam
     uint32_t rateNum, uint32_t rateDen)
 {
     Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
-    auto track = PrepareVideoDurationTestTrack(plugin, sampleData, mime, sttsEntries, false, 90000);
+    VideoDurationTrackConfig config {sampleData, mime, sttsEntries, false, 90000};
+    auto track = PrepareVideoDurationTestTrack(plugin, config);
     if (track == nullptr) {
         return {};
     }
@@ -1854,7 +1868,7 @@ std::vector<int64_t> ReadDurationsWithRFrameRate(const std::vector<uint8_t>& sam
     }
     std::vector<int64_t> durations;
     for (size_t i = 0; i < sampleData.size(); ++i) {
-        AVBufferWrapper output(64);
+        AVBufferWrapper output(VIDEO_DURATION_READ_BUFFER_SIZE);
         if (plugin.ReadSample(0, output.mediaAVBuffer) != Status::OK) {
             return {};
         }
@@ -1881,7 +1895,7 @@ const std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry> RFPS_AVC_HIGH_ST
 std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry> BuildLine77Stts()
 {
     std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry> stts = {{1, 0}, {2, 3031}, {1, 3032}};
-    for (uint32_t i = 0; i < 40; ++i) {
+    for (uint32_t i = 0; i < RFPS_LINE77_STTS_EXTEND_COUNT; ++i) {
         stts.push_back({4, 3031});
         stts.push_back({1, 3032});
     }
@@ -4129,7 +4143,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CttsSpsFrameRatePacketDu
         if (plugin.dataSource_ == nullptr) {
             return INT64_MIN;
         }
-        AVBufferWrapper output(64);
+        AVBufferWrapper output(VIDEO_DURATION_READ_BUFFER_SIZE);
         if (plugin.ReadSample(0, output.mediaAVBuffer) != Status::OK) {
             return INT64_MIN;
         }
@@ -4159,8 +4173,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoRFrameRatePacketDur
     auto readFirstDuration = [sampleData](const std::string& mime, int32_t timeScale,
         bool rateParsed, uint32_t rateNum, uint32_t rateDen) -> int64_t {
         Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
-        auto track = PrepareVideoDurationTestTrack(plugin, sampleData, mime,
-            {{static_cast<uint32_t>(sampleData.size()), testSttsDelta}}, true, timeScale);
+        VideoDurationTrackConfig config {sampleData, mime,
+            {{static_cast<uint32_t>(sampleData.size()), testSttsDelta}}, true, timeScale};
+        auto track = PrepareVideoDurationTestTrack(plugin, config);
         if (track == nullptr) {
             return INT64_MIN;
         }
@@ -4173,7 +4188,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoRFrameRatePacketDur
         if (plugin.dataSource_ == nullptr) {
             return INT64_MIN;
         }
-        AVBufferWrapper output(64);
+        AVBufferWrapper output(VIDEO_DURATION_READ_BUFFER_SIZE);
         if (plugin.ReadSample(0, output.mediaAVBuffer) != Status::OK) {
             return INT64_MIN;
         }
