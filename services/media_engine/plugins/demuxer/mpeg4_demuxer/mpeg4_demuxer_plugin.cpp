@@ -16,6 +16,9 @@
 #define MEDIA_PLUGIN
 #define HST_LOG_TAG "MPEG4DemuxerPlugin"
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <numeric>
 #include <string>
 #include <sstream>
 #include <iomanip>
@@ -103,6 +106,45 @@ constexpr uint32_t NON_UNIFORM_STTS_SAMPLE_RATIO = 10;
 // frameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR > frameRateNum (a plausible rate below 1000 fps);
 // bogus rates such as 90000/1 leave the duration at 0.
 constexpr uint64_t CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR = 1000;
+// FFmpeg ff_rfps_calculate estimates r_frame_rate from the first RFPS_ANALYZE_FRAME_LIMIT sample
+// timestamps (mov_build_index feeds ff_rfps_add_frame for the first 100 samples only), matching the
+// container-derived standard frame rate list built by get_std_framerate (demux.c). H.264/HEVC are
+// always considered to have an unreliable time base (tb_unreliable), so only these branches apply.
+constexpr uint32_t RFPS_ANALYZE_FRAME_LIMIT = 100;
+constexpr uint32_t RFPS_STD_RATE_FIRST_SEGMENT = 30 * 12; // 360 rates: (i + 1) * 1001
+constexpr uint32_t RFPS_STD_RATE_SECOND_SEGMENT = 30; // 30 rates: (i + 31) * 1001 * 12
+constexpr uint32_t RFPS_STD_RATE_SECOND_SEGMENT_START = 31; // FFmpeg get_std_framerate offset
+constexpr uint32_t RFPS_STD_RATE_THIRD_SEGMENT = 3; // 3 rates: {80, 120, 240} * 1001 * 12
+constexpr uint32_t RFPS_STD_RATE_FOURTH_SEGMENT = 6; // 6 rates: {24, 30, 60, 12, 15, 48} * 1000 * 12
+constexpr std::array<uint32_t, RFPS_STD_RATE_THIRD_SEGMENT> RFPS_STD_RATE_THIRD_SEGMENT_FACTORS = {
+    80, 120, 240,
+};
+constexpr std::array<uint32_t, RFPS_STD_RATE_FOURTH_SEGMENT> RFPS_STD_RATE_FOURTH_SEGMENT_FACTORS = {
+    24, 30, 60, 12, 15, 48,
+};
+constexpr uint32_t RFPS_STD_RATE_ENTRY_COUNT = RFPS_STD_RATE_FIRST_SEGMENT + RFPS_STD_RATE_SECOND_SEGMENT +
+    RFPS_STD_RATE_THIRD_SEGMENT + RFPS_STD_RATE_FOURTH_SEGMENT;
+constexpr uint32_t RFPS_PHASE_COUNT = 2; // FFmpeg tracks two 1/2-tick phases per standard rate
+constexpr uint32_t RFPS_STD_RATE_FINAL_SEGMENT_SCALE = 1000;
+constexpr int64_t RFPS_STD_TIMEBASE_NUM = 1001;
+constexpr int64_t RFPS_STD_TIMEBASE_DEN = 12;
+constexpr int64_t RFPS_STD_TIMEBASE = RFPS_STD_TIMEBASE_NUM * RFPS_STD_TIMEBASE_DEN;
+constexpr double RFPS_HALF_TICK_DOUBLE = 0.5;
+constexpr double RFPS_INVALID_ERROR = 1e10; // duration_error entries above this are rejected
+constexpr double RFPS_ERROR_REJECT_THRESHOLD = 0.04;
+constexpr double RFPS_INITIAL_BEST_ERROR = 0.01;
+constexpr double RFPS_BEST_ERROR_FLOOR = 1e-9;
+constexpr uint32_t RFPS_ERROR_REFRESH_INTERVAL = 10;
+constexpr uint32_t RFPS_GCD_MIN_GAP_COUNT = 3; // ignore the first 4 duration values (duration_count > 3)
+constexpr uint32_t RFPS_GCD_MIN_FRAME_COUNT = 15; // duration_count > 15 for the gcd branch
+constexpr uint32_t RFPS_STD_MIN_GAP_COUNT = 1; // duration_count > 1 for the standard-rate branch
+constexpr int64_t RFPS_TIME_BASE_GRANULARITY = 500;
+constexpr double RFPS_AVG_DURATION_MIN_RATIO = 0.8; // skip rates slower than 80% of the average duration
+constexpr double RFPS_RATE_ACCEPT_RATIO = 1.01; // accept at most 1% above the reference rate
+constexpr uint64_t REDUCE_MAX_RATIONAL = std::numeric_limits<int>::max();
+// FFmpeg compute_frame_duration uses 2 ticks per frame for field-capable codecs (AV_CODEC_PROP_FIELDS,
+// H.264) when deriving the duration from the SPS codec framerate.
+constexpr uint32_t VIDEO_TICKS_PER_FIELD_FRAME = 2;
 
 struct MpegAudioFrameInfo {
     int32_t size = 0;
@@ -449,6 +491,280 @@ bool NeedsCttsFrameRateDuration(const std::shared_ptr<MPEG4AtomParser::Track>& t
     return IsVideoLikeTrackForDuration(track) && !track->sampleHelper->cttsEntry_.empty();
 }
 
+uint32_t GetStdFramerate(int32_t index)
+{
+    if (index < static_cast<int32_t>(RFPS_STD_RATE_FIRST_SEGMENT)) {
+        return static_cast<uint32_t>(index + 1) * RFPS_STD_TIMEBASE_NUM;
+    }
+    index -= static_cast<int32_t>(RFPS_STD_RATE_FIRST_SEGMENT);
+    if (index < static_cast<int32_t>(RFPS_STD_RATE_SECOND_SEGMENT)) {
+        return static_cast<uint32_t>(index + RFPS_STD_RATE_SECOND_SEGMENT_START) * RFPS_STD_TIMEBASE;
+    }
+    index -= static_cast<int32_t>(RFPS_STD_RATE_SECOND_SEGMENT);
+    if (index < static_cast<int32_t>(RFPS_STD_RATE_THIRD_SEGMENT)) {
+        return RFPS_STD_RATE_THIRD_SEGMENT_FACTORS[index] * RFPS_STD_TIMEBASE;
+    }
+    index -= static_cast<int32_t>(RFPS_STD_RATE_THIRD_SEGMENT);
+    return RFPS_STD_RATE_FOURTH_SEGMENT_FACTORS[index] * RFPS_STD_RATE_FINAL_SEGMENT_SCALE *
+        RFPS_STD_TIMEBASE_DEN;
+}
+
+bool ReduceRational(uint64_t num, uint64_t den, uint64_t max, uint32_t& outNum, uint32_t& outDen)
+{
+    FALSE_RETURN_V_NOLOG(num > 0 && den > 0 && max > 0, false);
+    uint64_t gcd = std::gcd(num, den);
+    num /= gcd;
+    den /= gcd;
+    uint64_t a0Num = 0;
+    uint64_t a0Den = 1;
+    uint64_t a1Num = 1;
+    uint64_t a1Den = 0;
+    if (num <= max && den <= max) {
+        a1Num = num;
+        a1Den = den;
+        den = 0;
+    }
+    while (den != 0) {
+        uint64_t x = num / den;
+        uint64_t nextDen = num - den * x;
+        uint64_t a2Num = x * a1Num + a0Num;
+        uint64_t a2Den = x * a1Den + a0Den;
+        if (a2Num > max || a2Den > max) {
+            if (a1Num != 0) {
+                x = (max - a0Num) / a1Num;
+            }
+            if (a1Den != 0) {
+                x = std::min(x, (max - a0Den) / a1Den);
+            }
+            if (den * (2 * x * a1Den + a0Den) > num * a1Den) {
+                a1Num = x * a1Num + a0Num;
+                a1Den = x * a1Den + a0Den;
+            }
+            break;
+        }
+        a0Num = a1Num;
+        a0Den = a1Den;
+        a1Num = a2Num;
+        a1Den = a2Den;
+        num = den;
+        den = nextDen;
+    }
+    FALSE_RETURN_V_NOLOG(a1Num <= max && a1Den <= max, false);
+    outNum = static_cast<uint32_t>(a1Num);
+    outDen = static_cast<uint32_t>(a1Den);
+    return true;
+}
+
+struct RfpsAnalyzer {
+    std::array<std::array<double, RFPS_STD_RATE_ENTRY_COUNT>, 2> errorSum{};
+    std::array<std::array<double, RFPS_STD_RATE_ENTRY_COUNT>, 2> errorSq{};
+    int64_t durationSum = 0;
+    uint32_t durationCount = 0;
+    uint64_t durationGcd = 0;
+};
+
+void RfpsAddFrame(RfpsAnalyzer& analyzer, int64_t dts, int64_t lastDts, int32_t timeScale)
+{
+    if (timeScale <= 0) {
+        return;
+    }
+    double dtsSeconds = static_cast<double>(dts) / timeScale;
+    uint64_t duration = static_cast<uint64_t>(dts - lastDts);
+    for (uint32_t i = 0; i < RFPS_STD_RATE_ENTRY_COUNT; ++i) {
+        if (analyzer.errorSq[0][i] >= RFPS_INVALID_ERROR) {
+            continue;
+        }
+        double frameRate = static_cast<double>(GetStdFramerate(i));
+        double sdts = dtsSeconds * frameRate / RFPS_STD_TIMEBASE;
+        for (uint32_t j = 0; j < RFPS_PHASE_COUNT; ++j) {
+            double halfTick = static_cast<double>(j) * RFPS_HALF_TICK_DOUBLE;
+            int64_t ticks = static_cast<int64_t>(std::llrint(sdts + halfTick));
+            double error = sdts - static_cast<double>(ticks) + halfTick;
+            analyzer.errorSum[j][i] += error;
+            analyzer.errorSq[j][i] += error * error;
+        }
+    }
+    if (analyzer.durationSum <= std::numeric_limits<int64_t>::max() - static_cast<int64_t>(duration)) {
+        ++analyzer.durationCount;
+        analyzer.durationSum += static_cast<int64_t>(duration);
+    }
+    if (analyzer.durationCount % RFPS_ERROR_REFRESH_INTERVAL == 0) {
+        double count = static_cast<double>(analyzer.durationCount);
+        for (uint32_t i = 0; i < RFPS_STD_RATE_ENTRY_COUNT; ++i) {
+            if (analyzer.errorSq[0][i] >= RFPS_INVALID_ERROR) {
+                continue;
+            }
+            double mean0 = analyzer.errorSum[0][i] / count;
+            double error0 = analyzer.errorSq[0][i] / count - mean0 * mean0;
+            double mean1 = analyzer.errorSum[1][i] / count;
+            double error1 = analyzer.errorSq[1][i] / count - mean1 * mean1;
+            if (error0 > RFPS_ERROR_REJECT_THRESHOLD && error1 > RFPS_ERROR_REJECT_THRESHOLD) {
+                analyzer.errorSq[0][i] = RFPS_INVALID_ERROR * 2;
+                analyzer.errorSq[1][i] = RFPS_INVALID_ERROR * 2;
+            }
+        }
+    }
+    if (analyzer.durationCount > RFPS_GCD_MIN_GAP_COUNT) {
+        analyzer.durationGcd = std::gcd(analyzer.durationGcd, duration);
+    }
+}
+
+void RfpsEstimateFrameRate(const RfpsAnalyzer& analyzer, int32_t timeScale, uint32_t& rateNum,
+    uint32_t& rateDen)
+{
+    rateNum = 0;
+    rateDen = 0;
+    if (timeScale <= 0) {
+        return;
+    }
+    uint64_t timeScaleU = static_cast<uint64_t>(timeScale);
+    if (analyzer.durationCount > RFPS_GCD_MIN_FRAME_COUNT &&
+        analyzer.durationGcd > std::max<uint64_t>(1, timeScaleU / RFPS_TIME_BASE_GRANULARITY) &&
+        analyzer.durationGcd < static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+        if (ReduceRational(timeScaleU, analyzer.durationGcd, REDUCE_MAX_RATIONAL, rateNum, rateDen) &&
+            rateNum != 0) {
+            return;
+        }
+    }
+    if (analyzer.durationCount <= RFPS_STD_MIN_GAP_COUNT || rateNum != 0) {
+        return;
+    }
+    double bestError = RFPS_INITIAL_BEST_ERROR;
+    uint32_t bestRate = 0;
+    double refRate = static_cast<double>(timeScale);
+    double avgDuration = static_cast<double>(analyzer.durationSum) / timeScale / analyzer.durationCount;
+    for (uint32_t i = 0; i < RFPS_STD_RATE_ENTRY_COUNT; ++i) {
+        uint32_t rate = GetStdFramerate(i);
+        // FFmpeg runs the estimate at header time with codec_info_duration == 0, which skips
+        // standard rates below 1001 * 12 (demux.c: "if (!codec_info_duration && framerate < 1001*12)").
+        if (rate < RFPS_STD_TIMEBASE) {
+            continue;
+        }
+        double minDuration = RFPS_STD_TIMEBASE * RFPS_AVG_DURATION_MIN_RATIO / rate;
+        if (avgDuration < minDuration) {
+            continue;
+        }
+        for (uint32_t j = 0; j < RFPS_PHASE_COUNT; ++j) {
+            double count = static_cast<double>(analyzer.durationCount);
+            double mean = analyzer.errorSum[j][i] / count;
+            double error = analyzer.errorSq[j][i] / count - mean * mean;
+            if (error < bestError && bestError > RFPS_BEST_ERROR_FLOOR) {
+                bestError = error;
+                bestRate = rate;
+            }
+        }
+    }
+    if (bestRate != 0 &&
+        static_cast<double>(bestRate) / RFPS_STD_TIMEBASE < RFPS_RATE_ACCEPT_RATIO * refRate) {
+        (void)ReduceRational(bestRate, RFPS_STD_TIMEBASE, REDUCE_MAX_RATIONAL, rateNum, rateDen);
+    }
+}
+
+void CalculateTrackRFrameRate(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    if (track == nullptr || track->sampleHelper == nullptr || track->timeScale <= 0 ||
+        track->codecParms.trackType != VIDEO_TYPE) {
+        return;
+    }
+    const std::string& mime = track->sampleHelper->mimeType_;
+    if (mime != MimeType::VIDEO_AVC && mime != MimeType::VIDEO_HEVC) {
+        return;
+    }
+    uint32_t entryCount = track->sampleHelper->GetSttsEntryCount();
+    if (entryCount == 0) {
+        return;
+    }
+    // FFmpeg mov_build_index feeds ff_rfps_add_frame the first 100 sample timestamps (raw stts
+    // accumulation with advanced_editlist keeping current_dts starting at 0).
+    RfpsAnalyzer analyzer;
+    int64_t dts = 0;
+    int64_t lastDts = 0;
+    bool hasLastDts = false;
+    uint32_t frames = 0;
+    bool limitReached = false;
+    for (uint32_t i = 0; i < entryCount && !limitReached; ++i) {
+        uint32_t count = track->sampleHelper->GetSampleCountOfSttsEntry(i);
+        int64_t delta = static_cast<int64_t>(track->sampleHelper->GetSampleDeltaOfSttsEntry(i));
+        for (uint32_t k = 0; k < count; ++k) {
+            if (frames >= RFPS_ANALYZE_FRAME_LIMIT) {
+                limitReached = true;
+                break;
+            }
+            ++frames;
+            int64_t sampleDts = dts;
+            dts += delta;
+            if (hasLastDts && sampleDts > lastDts &&
+                sampleDts - lastDts < std::numeric_limits<int64_t>::max()) {
+                RfpsAddFrame(analyzer, sampleDts, lastDts, track->timeScale);
+            }
+            lastDts = sampleDts;
+            hasLastDts = true;
+        }
+    }
+    uint32_t rateNum = 0;
+    uint32_t rateDen = 0;
+    RfpsEstimateFrameRate(analyzer, track->timeScale, rateNum, rateDen);
+    track->rFrameRateNum = rateNum;
+    track->rFrameRateDen = rateDen;
+    track->rFrameRateParsed = rateNum != 0 && rateDen != 0;
+}
+
+bool GetVideoFrameDurationFraction(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    uint64_t& num, uint64_t& den)
+{
+    FALSE_RETURN_V_NOLOG(IsValidTrack(track), false);
+    const std::string& mime = track->sampleHelper->mimeType_;
+    if (mime == MimeType::VIDEO_HEVC) {
+        // FFmpeg has no HEVC parser (pc == NULL), so compute_frame_duration branch 1
+        // (r_frame_rate) applies whenever a rate was estimated.
+        if (track->rFrameRateParsed) {
+            num = track->rFrameRateDen;
+            den = track->rFrameRateNum;
+            return num > 0 && den > 0;
+        }
+        return false;
+    }
+    if (mime == MimeType::VIDEO_AVC) {
+        // H.264 always has the h264 parser (pc != NULL): compute_frame_duration branch 1
+        // (r_frame_rate) only applies when no SPS codec framerate exists; otherwise branch 4
+        // derives the duration from the codec framerate with 2 ticks per frame
+        // (AV_CODEC_PROP_FIELDS), and a bogus rate (frameRateDen * 1000 <= frameRateNum) leaves
+        // the duration undefined instead of falling back to r_frame_rate.
+        if (track->codecFrameRateParsed) {
+            if (track->codecFrameRateNum > 0 && track->codecFrameRateDen > 0 &&
+                track->codecFrameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR > track->codecFrameRateNum) {
+                num = track->codecFrameRateDen;
+                den = static_cast<uint64_t>(track->codecFrameRateNum) * VIDEO_TICKS_PER_FIELD_FRAME;
+                return true;
+            }
+            return false;
+        }
+        if (track->rFrameRateParsed) {
+            num = track->rFrameRateDen;
+            den = track->rFrameRateNum;
+            return num > 0 && den > 0;
+        }
+    }
+    return false;
+}
+
+bool GetVideoFrameRateDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    int32_t trackTimeScale, int64_t& durationUs)
+{
+    FALSE_RETURN_V_NOLOG(trackTimeScale > 0, false);
+    uint64_t num = 0;
+    uint64_t den = 0;
+    FALSE_RETURN_V_NOLOG(GetVideoFrameDurationFraction(track, num, den), false);
+    // FFmpeg compute_pkt_fields: pkt->duration = av_rescale_rnd(1, num * tb_den, den * tb_num,
+    // AV_ROUND_DOWN), i.e. the stream ticks rounded down, then the ffmpeg plugin converts the
+    // ticks to us with round-nearest ns (AvTime2Us(ConvertTimeFromFFmpeg)).
+    uint64_t durationTicks = static_cast<uint64_t>(trackTimeScale) * num / den;
+    FALSE_RETURN_V_NOLOG(durationTicks > 0 &&
+        durationTicks <= static_cast<uint64_t>(std::numeric_limits<int64_t>::max()), false);
+    return RescaleTrackTimeToUsRoundNearest(static_cast<int64_t>(durationTicks), trackTimeScale,
+        durationUs) == Status::OK;
+}
+
 bool GetNominalSttsDuration(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t& duration)
 {
     FALSE_RETURN_V_NOLOG(IsValidTrack(track) && track->sampleHelper != nullptr, false);
@@ -525,6 +841,12 @@ bool GetCttsPacketDurationUs(const MediaInfo& mediaInfo, const std::shared_ptr<M
         durationUs = 0;
         return true;
     }
+    // FFmpeg mov_finalize_packet leaves the packet duration 0 for ctts samples, so
+    // compute_frame_duration derives it from the estimated r_frame_rate (branch 1) for H.264/HEVC
+    // instead of the nominal stts delta.
+    if (GetVideoFrameRateDurationUs(track, trackTimeScale, durationUs)) {
+        return true;
+    }
     int64_t nominalDuration = 0;
     if (GetNominalSttsDuration(track, nominalDuration)) {
         return RescaleTrackTimeToUsRoundNearest(nominalDuration, trackTimeScale, durationUs) == Status::OK;
@@ -592,6 +914,13 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
         FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex + 1, nextSample), false);
         duration = nextSample.dts - currentSample.dts;
         if (duration <= 0) {
+            // FFmpeg mov_finalize_packet keeps the packet duration only when the next index
+            // timestamp is strictly ahead; otherwise (broken edit list / zeroed timeline) the
+            // duration stays 0 and compute_frame_duration derives it from the estimated
+            // r_frame_rate / SPS codec framerate instead of the nominal stts delta.
+            if (GetVideoFrameRateDurationUs(track, trackTimeScale, durationUs)) {
+                return true;
+            }
             (void)GetNominalSttsDuration(track, duration);
         }
     } else {
@@ -1605,6 +1934,11 @@ void MPEG4DemuxerPlugin::InitBaseInfoByAtomParser(std::shared_ptr<MPEG4AtomParse
     fragmentEntry_.clear();
     parser->GetFragmentEntry(fragmentEntry_);
     mediaInfo_.general.Set<Tag::MEDIA_TRACK_COUNT>(CountTracks());
+    // Estimate r_frame_rate like FFmpeg ff_rfps_calculate from the first 100 sample timestamps;
+    // packet durations for H.264/HEVC video derive from this rate (compute_frame_duration).
+    for (auto track = firstTrack_; track != nullptr; track = track->next) {
+        CalculateTrackRFrameRate(track);
+    }
 }
 
 void MPEG4DemuxerPlugin::InitDrmInfoCacheByAtomParser(std::shared_ptr<MPEG4AtomParser> parser)

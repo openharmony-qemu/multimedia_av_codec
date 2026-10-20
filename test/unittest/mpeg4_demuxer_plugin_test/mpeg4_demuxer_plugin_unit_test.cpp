@@ -1776,6 +1776,51 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareVideoCttsTestTrac
     return track;
 }
 
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareVideoDurationTestTrack(
+    Plugins::MPEG4::MPEG4DemuxerPlugin& plugin, const std::vector<uint8_t>& sampleData,
+    const std::string& mime, const std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry>& sttsEntries,
+    bool hasCtts, int32_t trackTimeScale)
+{
+    constexpr uint32_t testVideoTrackId = 0;
+    if (sampleData.empty() || trackTimeScale <= 0) {
+        return nullptr;
+    }
+    const uint32_t testSampleCount = static_cast<uint32_t>(sampleData.size());
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track == nullptr || helper == nullptr) {
+        return nullptr;
+    }
+    helper->trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper->mimeType_ = mime;
+    helper->sttsEntry_ = sttsEntries;
+    if (hasCtts) {
+        helper->cttsEntry_ = {{testSampleCount, 0}};
+    }
+    helper->stscEntry_ = {{0, testSampleCount, 1}};
+    helper->stssEntry_ = {{0}};
+    helper->sampleSizes_.assign(testSampleCount, 1);
+    helper->sampleSizeCount_ = testSampleCount;
+    helper->chunkOffsets_ = {0};
+    if (helper->FinalizeSampleTables() != Status::OK) {
+        return nullptr;
+    }
+    track->trackIndex = testVideoTrackId;
+    track->trackId = static_cast<int32_t>(testVideoTrackId);
+    track->timeScale = trackTimeScale;
+    track->codecParms.trackType = Plugins::MPEG4::VIDEO_TYPE;
+    track->sampleHelper = helper;
+    plugin.firstTrack_ = track;
+    plugin.lastTrack_ = track;
+    plugin.mediaInfo_.tracks.resize(1);
+    plugin.mediaInfo_.tracks[testVideoTrackId].Set<Tag::MIME_TYPE>(mime);
+    plugin.trackMtx_[testVideoTrackId] = std::make_shared<std::mutex>();
+    plugin.inited_ = true;
+    plugin.seekable_ = Seekable::SEEKABLE;
+    plugin.selectedTrackIds_ = {testVideoTrackId};
+    return track;
+}
+
 struct FrameSampleDigest {
     int32_t actualSize = 0;
     int64_t pts = 0;
@@ -4011,6 +4056,186 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CttsSpsFrameRatePacketDu
     EXPECT_EQ(readFirstDuration(true, 45000, 1), bogusRateDurationUs);
     // Without parsed SPS timing the nominal stts delta (3600 ticks at 90 kHz) is used.
     EXPECT_EQ(readFirstDuration(false, 0, 0), expectedPlausibleDurationUs);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_VideoRFrameRatePacketDurationCtts_001
+ * @tc.desc: Verify ctts H.264/HEVC packets derive duration from the estimated r_frame_rate
+ *           (FFmpeg compute_frame_duration branch 1) instead of the nominal stts delta.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoRFrameRatePacketDurationCtts_001, TestSize.Level1)
+{
+    constexpr uint32_t testSttsDelta = 3600;
+    const std::vector<uint8_t> sampleData = {0x00, 0x01};
+    auto readFirstDuration = [sampleData](const std::string& mime, int32_t timeScale,
+        bool rateParsed, uint32_t rateNum, uint32_t rateDen) -> int64_t {
+        Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+        auto track = PrepareVideoDurationTestTrack(plugin, sampleData, mime,
+            {{static_cast<uint32_t>(sampleData.size()), testSttsDelta}}, true, timeScale);
+        if (track == nullptr) {
+            return INT64_MIN;
+        }
+        if (rateParsed) {
+            track->rFrameRateParsed = true;
+            track->rFrameRateNum = rateNum;
+            track->rFrameRateDen = rateDen;
+        }
+        plugin.dataSource_ = CreateDataSourceForBytes(sampleData);
+        if (plugin.dataSource_ == nullptr) {
+            return INT64_MIN;
+        }
+        AVBufferWrapper output(64);
+        if (plugin.ReadSample(0, output.mediaAVBuffer) != Status::OK) {
+            return INT64_MIN;
+        }
+        EXPECT_EQ(output.mediaAVBuffer->pts_, 0);
+        EXPECT_EQ(output.mediaAVBuffer->dts_, 0);
+        return output.mediaAVBuffer->duration_;
+    };
+
+    // 90 kHz / (355/12) rounded down to stream ticks: 3042 ticks -> 33800 us (line61 mode).
+    EXPECT_EQ(readFirstDuration(MimeType::VIDEO_HEVC, 90000, true, 355, 12), 33800);
+    // 90 kHz / (24000/1001): 3753 ticks -> 41700 us (bsover mode).
+    EXPECT_EQ(readFirstDuration(MimeType::VIDEO_HEVC, 90000, true, 24000, 1001), 41700);
+    // 90 kHz / (48000/1001): 1876 ticks -> 20844 us (H265 broken stts mode).
+    EXPECT_EQ(readFirstDuration(MimeType::VIDEO_HEVC, 90000, true, 48000, 1001), 20844);
+    // 15360 / (30/1): 512 ticks -> 33333 us (AVC_high mode).
+    EXPECT_EQ(readFirstDuration(MimeType::VIDEO_AVC, 15360, true, 30, 1), 33333);
+    // Without an estimated rate the nominal stts delta (3600 ticks at 90 kHz) is kept.
+    EXPECT_EQ(readFirstDuration(MimeType::VIDEO_HEVC, 90000, false, 0, 0), 40000);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_VideoRFrameRatePacketDurationNoCtts_001
+ * @tc.desc: Verify zero-dts video packets (broken edit list like line61/line77) derive duration
+ *           from r_frame_rate while packets with a valid stts step keep the stts delta.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoRFrameRatePacketDurationNoCtts_001, TestSize.Level1)
+{
+    const std::vector<uint8_t> sampleData = {0x00, 0x01, 0x02};
+    auto readDurations = [sampleData](const std::string& mime,
+        const std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry>& sttsEntries, uint32_t rateNum,
+        uint32_t rateDen) -> std::vector<int64_t> {
+        Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+        auto track = PrepareVideoDurationTestTrack(plugin, sampleData, mime, sttsEntries, false, 90000);
+        if (track == nullptr) {
+            return {};
+        }
+        track->rFrameRateParsed = true;
+        track->rFrameRateNum = rateNum;
+        track->rFrameRateDen = rateDen;
+        plugin.dataSource_ = CreateDataSourceForBytes(sampleData);
+        if (plugin.dataSource_ == nullptr) {
+            return {};
+        }
+        std::vector<int64_t> durations;
+        for (size_t i = 0; i < sampleData.size(); ++i) {
+            AVBufferWrapper output(64);
+            if (plugin.ReadSample(0, output.mediaAVBuffer) != Status::OK) {
+                return {};
+            }
+            durations.push_back(output.mediaAVBuffer->duration_);
+        }
+        return durations;
+    };
+
+    // AVC: first two samples share dts 0 (zeroed timeline), so the first packet uses the
+    // r_frame_rate fallback (3042 ticks -> 33800 us) and the second keeps the stts delta 3040.
+    EXPECT_EQ(readDurations(MimeType::VIDEO_AVC, {{1, 0}, {2, 3040}}, 355, 12),
+        std::vector<int64_t>({33800, 33777, 33777}));
+    // HEVC: same zero-dts pattern with r_frame_rate 89/3 (3033 ticks -> 33700 us).
+    EXPECT_EQ(readDurations(MimeType::VIDEO_HEVC, {{1, 0}, {2, 3031}}, 89, 3),
+        std::vector<int64_t>({33700, 33677, 33677}));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_RFrameRateEstimateFromStts_001
+ * @tc.desc: Verify r_frame_rate is estimated from the first 100 raw stts timestamps exactly like
+ *           FFmpeg ff_rfps_calculate for H.264/HEVC tracks (gcd and standard-rate branches).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_RFrameRateEstimateFromStts_001, TestSize.Level1)
+{
+    using SttsEntry = Plugins::MPEG4::MPEG4SampleHelper::SttsEntry;
+    auto buildTrack = [](const std::string& mime, int32_t timeScale,
+        const std::vector<SttsEntry>& stts) {
+        auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+        auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+        if (track == nullptr || helper == nullptr) {
+            return std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track>(nullptr);
+        }
+        helper->trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+        helper->mimeType_ = mime;
+        helper->sttsEntry_ = stts;
+        track->timeScale = timeScale;
+        track->codecParms.trackType = Plugins::MPEG4::VIDEO_TYPE;
+        track->sampleHelper = helper;
+        return track;
+    };
+
+    // line61 HEVC audio-shifted sample pattern: 355/12 @ 90 kHz.
+    std::vector<SttsEntry> line61Stts = {
+        {4, 3040}, {1, 3039}, {24, 3040}, {1, 3039}, {24, 3040}, {1, 3039}, {24, 3040}, {1, 3039},
+        {23, 3040}, {1, 3039}, {25, 3040}, {1, 3039}, {23, 3040}, {1, 3039}, {24, 3040}, {1, 3039},
+        {23, 3040}, {1, 3039}, {1, 3041}, {1, 3039}, {23, 3040}, {1, 3039}, {22, 3040}, {1, 3039},
+        {1, 3041}, {1, 3039}, {23, 3040}, {1, 3039}, {24, 3040}, {1, 3039}, {14, 3040}, {1, 3000},
+    };
+    // line77 HEVC zeroed-timeline pattern: 89/3 @ 90 kHz.
+    std::vector<SttsEntry> line77Stts = {
+        {1, 0}, {2, 3031}, {1, 3032},
+    };
+    for (uint32_t i = 0; i < 40; ++i) {
+        line77Stts.push_back({4, 3031});
+        line77Stts.push_back({1, 3032});
+    }
+    line77Stts.push_back({4, 3031});
+    line77Stts.push_back({1, 3032});
+    line77Stts.push_back({1, 3031});
+    line77Stts.push_back({1, 3000});
+    // H265_Main_L4 broken stts (1-tick runs) pattern: 48000/1001 @ 90 kHz.
+    const std::vector<SttsEntry> h265L4Stts = {
+        {19, 1}, {1, 30011}, {9, 1}, {1, 37528}, {9, 1}, {1, 37529}, {9, 1}, {1, 37528},
+        {9, 1}, {1, 37529}, {9, 1}, {1, 37528}, {9, 1}, {1, 37529}, {9, 1}, {1, 37528},
+        {9, 1}, {1, 37529}, {9, 1}, {1, 37528}, {9, 1}, {1, 37529}, {9, 1}, {1, 37528},
+        {9, 1}, {1, 41282}, {9, 1}, {1, 33775}, {9, 1}, {1, 37529}, {9, 1}, {1, 37528},
+        {9, 1}, {1, 37529},
+    };
+    // AVC_high uniform 30 fps @ 15360: 30/1.
+    const std::vector<SttsEntry> avcHighStts = {{60, 512}};
+
+    auto track0 = buildTrack(MimeType::VIDEO_HEVC, 90000, line61Stts);
+    auto track1 = buildTrack(MimeType::VIDEO_HEVC, 90000, line77Stts);
+    auto track2 = buildTrack(MimeType::VIDEO_HEVC, 90000, h265L4Stts);
+    auto track3 = buildTrack(MimeType::VIDEO_AVC, 15360, avcHighStts);
+    ASSERT_NE(track0, nullptr);
+    ASSERT_NE(track1, nullptr);
+    ASSERT_NE(track2, nullptr);
+    ASSERT_NE(track3, nullptr);
+    track0->next = track1;
+    track1->next = track2;
+    track2->next = track3;
+
+    auto parser = std::make_shared<Plugins::MPEG4::MPEG4AtomParser>();
+    ASSERT_NE(parser, nullptr);
+    parser->firstTrack_ = track0;
+    parser->lastTrack_ = track3;
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    plugin.InitBaseInfoByAtomParser(parser);
+
+    EXPECT_TRUE(track0->rFrameRateParsed);
+    EXPECT_EQ(track0->rFrameRateNum, 355);
+    EXPECT_EQ(track0->rFrameRateDen, 12);
+    EXPECT_TRUE(track1->rFrameRateParsed);
+    EXPECT_EQ(track1->rFrameRateNum, 89);
+    EXPECT_EQ(track1->rFrameRateDen, 3);
+    EXPECT_TRUE(track2->rFrameRateParsed);
+    EXPECT_EQ(track2->rFrameRateNum, 48000);
+    EXPECT_EQ(track2->rFrameRateDen, 1001);
+    EXPECT_TRUE(track3->rFrameRateParsed);
+    EXPECT_EQ(track3->rFrameRateNum, 30);
+    EXPECT_EQ(track3->rFrameRateDen, 1);
 }
 
 /**
