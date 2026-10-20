@@ -123,6 +123,9 @@ public:
         bool codecFrameRateParsed = false;
         uint32_t codecFrameRateNum = 0;
         uint32_t codecFrameRateDen = 0;
+        bool rFrameRateParsed = false;
+        uint32_t rFrameRateNum = 0;
+        uint32_t rFrameRateDen = 0;
         bool frameReassemblyChecked = false;
         bool frameReassemblyNeeded = false;
         CodecParams codecParms{};
