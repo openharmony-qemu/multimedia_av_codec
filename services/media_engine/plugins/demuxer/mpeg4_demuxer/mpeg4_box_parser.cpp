@@ -5688,7 +5688,8 @@ void MPEG4AtomParser::CalculateMPEG4Attributes()
                 mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount) &&
                 // AVS3DA layout comes from the dca3 entry only; FFmpeg ParseAudioTrackInfo
                 // forces UNKNOWN for AVS3DA instead of the generic mask fallback.
-                track->sampleHelper->mimeType_ != MimeType::AUDIO_AVS3DA) {
+                (track->sampleHelper == nullptr ||
+                    track->sampleHelper->mimeType_ != MimeType::AUDIO_AVS3DA)) {
                 layout = Converter::GetDefaultChannelLayout(channelCount);
                 mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
                 mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);

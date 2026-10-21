@@ -40,6 +40,7 @@ constexpr uint32_t H264_SHORT_BITS = 16;
 constexpr uint32_t H264_WORD_BITS = 32;
 constexpr uint32_t H264_MAX_SPS_COUNT = 32;
 constexpr uint32_t H264_MAX_PPS_COUNT = 256;
+constexpr uint32_t H264_MAX_NUM_REF_IDX_L0 = 31;
 constexpr uint32_t AVCC_UNKNOWN_REF_COUNT = std::numeric_limits<uint32_t>::max();
 constexpr uint32_t H264_CHROMA_FORMAT_444 = 3;
 constexpr uint32_t H264_SCALING_LIST_4X4_COUNT = 6;
@@ -705,6 +706,7 @@ bool AvcParserImpl::ParsePpsNumRefIdxL0(const uint8_t *nal, uint32_t nalSize,
         return false;
     }
     FALSE_RETURN_V(reader.RbspReadUE(refCountMinus1), false); // num_ref_idx_l0_default_active_minus1
+    FALSE_RETURN_V(refCountMinus1 <= H264_MAX_NUM_REF_IDX_L0, false);
     numRefIdxL0 = refCountMinus1 + 1;
     return true;
 }
@@ -712,9 +714,9 @@ bool AvcParserImpl::ParsePpsNumRefIdxL0(const uint8_t *nal, uint32_t nalSize,
 bool AvcParserImpl::ParseSliceHeaderInfo(const uint8_t *nal, uint32_t nalSize,
     uint32_t &firstMbInSlice, uint32_t &sliceType, uint32_t &ppsId)
 {
+    const uint8_t nalType = nal != nullptr ? nal[0] & AVC_NAL_TYPE_MASK : 0;
     FALSE_RETURN_V(nal != nullptr && nalSize > static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) &&
-        (nal[0] & AVC_NAL_TYPE_MASK) >= AVC_NAL_SLICE &&
-        (nal[0] & AVC_NAL_TYPE_MASK) <= AVC_NAL_IDR_SLICE, false);
+        (nalType == AVC_NAL_SLICE || nalType == AVC_NAL_IDR_SLICE), false);
     RbspContext reader(nal + AVC_NAL_HEADER_SIZE,
         static_cast<int32_t>(nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE)), true);
     return reader.RbspReadUE(firstMbInSlice) && reader.RbspReadUE(sliceType) &&
@@ -767,7 +769,7 @@ bool AvcParserImpl::ParseAvcConfigPpsRefCounts(const uint8_t *extraData, int32_t
         uint32_t spsId = 0;
         uint32_t numRefIdxL0 = 0;
         if (ParsePpsNumRefIdxL0(extraData + offset, ppsLength, ppsId, spsId, numRefIdxL0)) {
-            if (ppsId >= H264_MAX_PPS_COUNT) {
+            if (ppsId >= H264_MAX_PPS_COUNT || spsId >= H264_MAX_SPS_COUNT) {
                 return false;
             }
             if (ppsSpsIds.size() <= ppsId) {
