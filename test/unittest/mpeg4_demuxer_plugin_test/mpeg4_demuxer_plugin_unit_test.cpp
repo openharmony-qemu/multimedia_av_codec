@@ -4474,6 +4474,116 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_RFrameRateEstimateFromSt
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_RFrameRateUniformStts_001
+ * @tc.desc: Verify a uniform STTS table (single run, or two runs with a single trailing sample)
+ *           sets r_frame_rate = time_scale / delta directly like FFmpeg mov_read_header, and that
+ *           ff_rfps_calculate is skipped when the container-derived rate already exists.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_RFrameRateUniformStts_001, TestSize.Level1)
+{
+    // AVC aux pattern (timed_metadata_track): stts=(600,1500)+(1,0) @ 90 kHz -> 60/1.
+    auto track0 = BuildRFrameRateTestTrack(MimeType::VIDEO_AVC, 90000, {{600, 1500}, {1, 0}});
+    // HEVC single-run pattern (hdrvivid): stts=(76,3000) @ 90 kHz -> 30/1.
+    auto track1 = BuildRFrameRateTestTrack(MimeType::VIDEO_HEVC, 90000, {{76, 3000}});
+    // HEVC aux pattern (Muxer_Auxiliary): four runs, so ff_rfps_calculate must still estimate 30/1.
+    auto track2 = BuildRFrameRateTestTrack(MimeType::VIDEO_HEVC, 90000,
+        {{6, 3001}, {1, 3002}, {8, 3001}, {1, 0}});
+    ASSERT_NE(track0, nullptr);
+    ASSERT_NE(track1, nullptr);
+    ASSERT_NE(track2, nullptr);
+    track0->next = track1;
+    track1->next = track2;
+
+    auto parser = std::make_shared<Plugins::MPEG4::MPEG4AtomParser>();
+    ASSERT_NE(parser, nullptr);
+    parser->firstTrack_ = track0;
+    parser->lastTrack_ = track2;
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    plugin.InitBaseInfoByAtomParser(parser);
+
+    EXPECT_TRUE(track0->rFrameRateParsed);
+    EXPECT_EQ(track0->rFrameRateNum, 60);
+    EXPECT_EQ(track0->rFrameRateDen, 1);
+    EXPECT_TRUE(track1->rFrameRateParsed);
+    EXPECT_EQ(track1->rFrameRateNum, 30);
+    EXPECT_EQ(track1->rFrameRateDen, 1);
+    EXPECT_TRUE(track2->rFrameRateParsed);
+    EXPECT_EQ(track2->rFrameRateNum, 30);
+    EXPECT_EQ(track2->rFrameRateDen, 1);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_VideoTailStreamEndRFrameRate_001
+ * @tc.desc: Verify a video tail at/past the stream end derives its duration from r_frame_rate
+ *           (FFmpeg compute_pkt_fields branch 1) instead of 0, and that r_frame_rate wins over
+ *           the SPS codec framerate for container-demuxed AVC packets.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoTailStreamEndRFrameRate_001, TestSize.Level1)
+{
+    auto readDurations = [](const std::string& mime,
+        const std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry>& sttsEntries,
+        bool codecRateParsed, uint32_t codecRateNum, uint32_t codecRateDen,
+        uint32_t rateNum, uint32_t rateDen) -> std::vector<int64_t> {
+        uint32_t sampleCount = 0;
+        for (const auto& entry : sttsEntries) {
+            sampleCount += entry.count;
+        }
+        const std::vector<uint8_t> sampleData(sampleCount, 1);
+        Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+        VideoDurationTrackConfig config {sampleData, mime, sttsEntries, false, 90000};
+        auto track = PrepareVideoDurationTestTrack(plugin, config);
+        if (track == nullptr) {
+            return {};
+        }
+        if (rateNum != 0 && rateDen != 0) {
+            track->rFrameRateParsed = true;
+            track->rFrameRateNum = rateNum;
+            track->rFrameRateDen = rateDen;
+        }
+        if (codecRateParsed) {
+            track->codecFrameRateParsed = true;
+            track->codecFrameRateNum = codecRateNum;
+            track->codecFrameRateDen = codecRateDen;
+        }
+        plugin.dataSource_ = CreateDataSourceForBytes(sampleData);
+        if (plugin.dataSource_ == nullptr) {
+            return {};
+        }
+        std::vector<int64_t> durations;
+        AVBufferWrapper output(VIDEO_DURATION_READ_BUFFER_SIZE);
+        for (size_t i = 0; i < sampleData.size(); ++i) {
+            if (plugin.ReadSample(0, output.mediaAVBuffer) != Status::OK) {
+                return {};
+            }
+            durations.push_back(output.mediaAVBuffer->duration_);
+        }
+        return durations;
+    };
+
+    // HEVC aux-like stream (stts=(6,3001)+(1,3002)+(8,3001)+(1,0), 90 kHz): the last sample sits
+    // at the stream end and takes the r_frame_rate duration (30/1 -> 3000 ticks -> 33333 us).
+    const auto hevcDurations = readDurations(MimeType::VIDEO_HEVC,
+        {{6, 3001}, {1, 3002}, {8, 3001}, {1, 0}}, false, 0, 0, 30, 1);
+    ASSERT_EQ(hevcDurations.size(), 16U);
+    EXPECT_EQ(hevcDurations.back(), 33333);
+
+    // AVC aux-like stream (stts=(3,3600)+(1,0), 90 kHz): tail duration comes from r_frame_rate
+    // (25/1 -> 3600 ticks -> 40000 us) and r_frame_rate wins over a plausible SPS codec rate.
+    const auto avcDurations = readDurations(MimeType::VIDEO_AVC,
+        {{3, 3600}, {1, 0}}, true, 30, 1, 25, 1);
+    ASSERT_EQ(avcDurations.size(), 4U);
+    EXPECT_EQ(avcDurations.back(), 40000);
+
+    // Without any parsed frame rate the tail stays 0 (VideoTailZeroSttsStreamEnd_001 behavior).
+    const auto noRateDurations = readDurations(MimeType::VIDEO_AVC,
+        {{3, 3600}, {1, 0}}, false, 0, 0, 0, 0);
+    ASSERT_EQ(noRateDurations.size(), 4U);
+    EXPECT_EQ(noRateDurations.back(), 0);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_SeekToStart_ResetEosState_001
  * @tc.desc: Verify SeekToStart resets async EOS state even when sample index is already zero.
  * @tc.type: FUNC

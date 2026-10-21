@@ -690,6 +690,30 @@ void CalculateTrackRFrameRate(const std::shared_ptr<MPEG4AtomParser::Track>& tra
     if (entryCount == 0) {
         return;
     }
+    // FFmpeg mov_read_header: a uniform STTS table (a single run, or two runs whose second run
+    // holds exactly one trailing sample) sets r_frame_rate = time_scale / stts_delta directly;
+    // ff_rfps_calculate only estimates a rate when r_frame_rate is still zero (mov.c:5608).
+    const uint32_t firstCount = track->sampleHelper->GetSampleCountOfSttsEntry(0);
+    const uint32_t firstDelta = track->sampleHelper->GetSampleDeltaOfSttsEntry(0);
+    const bool uniformStts = entryCount == 1 ||
+        (entryCount == 2 && track->sampleHelper->GetSampleCountOfSttsEntry(1) == 1);
+    if (uniformStts && firstDelta > 0 && firstCount > 0) {
+        int64_t rateNum = track->timeScale;
+        int64_t rateDen = static_cast<int64_t>(firstDelta);
+        int64_t commonDivisor = std::gcd(rateNum, rateDen);
+        if (commonDivisor > 0) {
+            rateNum /= commonDivisor;
+            rateDen /= commonDivisor;
+        }
+        if (rateNum > 0 && rateDen > 0 &&
+            rateNum <= static_cast<int64_t>(std::numeric_limits<uint32_t>::max()) &&
+            rateDen <= static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
+            track->rFrameRateNum = static_cast<uint32_t>(rateNum);
+            track->rFrameRateDen = static_cast<uint32_t>(rateDen);
+            track->rFrameRateParsed = true;
+            return;
+        }
+    }
     // FFmpeg mov_build_index feeds ff_rfps_add_frame the first 100 sample timestamps (raw stts
     // accumulation with advanced_editlist keeping current_dts starting at 0).
     RfpsAnalyzer analyzer;
@@ -741,11 +765,15 @@ bool GetVideoFrameDurationFraction(const std::shared_ptr<MPEG4AtomParser::Track>
         return false;
     }
     if (mime == MimeType::VIDEO_AVC) {
-        // H.264 always has the h264 parser (pc != NULL): compute_frame_duration branch 1
-        // (r_frame_rate) only applies when no SPS codec framerate exists; otherwise branch 4
-        // derives the duration from the codec framerate with 2 ticks per frame
-        // (AV_CODEC_PROP_FIELDS), and a bogus rate (frameRateDen * 1000 <= frameRateNum) leaves
-        // the duration undefined instead of falling back to r_frame_rate.
+        // FFmpeg compute_frame_duration branch 1 (r_frame_rate) wins for MOV H.264: the h264
+        // parser is created only for field detection and avctx->framerate is not populated from
+        // the avcC SPS, so branch 4 (SPS codec framerate) does not fire for container demuxed
+        // packets. Keep branch 4 as the fallback when no r_frame_rate was derived.
+        if (track->rFrameRateParsed) {
+            num = track->rFrameRateDen;
+            den = track->rFrameRateNum;
+            return num > 0 && den > 0;
+        }
         if (track->codecFrameRateParsed) {
             if (track->codecFrameRateNum > 0 && track->codecFrameRateDen > 0 &&
                 track->codecFrameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR > track->codecFrameRateNum) {
@@ -754,11 +782,6 @@ bool GetVideoFrameDurationFraction(const std::shared_ptr<MPEG4AtomParser::Track>
                 return true;
             }
             return false;
-        }
-        if (track->rFrameRateParsed) {
-            num = track->rFrameRateDen;
-            den = track->rFrameRateNum;
-            return num > 0 && den > 0;
         }
     }
     return false;
@@ -1381,8 +1404,12 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
     const auto& currentSample = context.currentSample;
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
     if (streamDuration <= currentSample.dts) {
-        // FFmpeg mov_finalize_packet: a tail at or past the stream end gets duration 0, not the
-        // nominal STTS spacing (e.g. a trailing zero-duration delta).
+        // FFmpeg mov_finalize_packet closes a tail at/past the stream end to 0, then
+        // compute_pkt_fields derives the duration from the estimated r_frame_rate (branch 1)
+        // for H.264/HEVC instead of leaving it 0 (e.g. aux tracks whose last STTS delta is 0).
+        if (GetVideoFrameRateDurationUs(track, context.trackTimeScale, durationUs)) {
+            return true;
+        }
         durationUs = 0;
         return true;
     }
