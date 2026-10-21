@@ -1734,9 +1734,16 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
     double sar = 0.0;
 
     if (track->hasPasp && track->hSpacing > 0 && track->vSpacing > 0) {
-        uint64_t gcd = std::gcd(static_cast<uint64_t>(track->hSpacing),
-            static_cast<uint64_t>(track->vSpacing));
-        sar = static_cast<double>(track->hSpacing / gcd) / static_cast<double>(track->vSpacing / gcd);
+        // Reduce to lowest terms like FFmpeg av_reduce so the double ratio
+        // matches av_q2d on the reduced rational (exact below 2^53 products).
+        uint64_t hSpacing = track->hSpacing;
+        uint64_t vSpacing = track->vSpacing;
+        uint64_t gcd = std::gcd(hSpacing, vSpacing);
+        if (gcd > 1) {
+            hSpacing /= gcd;
+            vSpacing /= gcd;
+        }
+        sar = static_cast<double>(hSpacing) / static_cast<double>(vSpacing);
         MEDIA_LOG_D("SAR from pasp: hSpacing=%{public}u, vSpacing=%{public}u, sar=%{public}f",
             track->hSpacing, track->vSpacing, sar);
         mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);

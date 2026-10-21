@@ -741,13 +741,11 @@ bool AvcParserImpl::ParseAvcConfigSpsRefCounts(const uint8_t *extraData, int32_t
         }
         uint32_t spsId = 0;
         uint32_t maxNumRefFrames = 0;
-        if (ParseSpsMaxNumRefFrames(extraData + offset, spsLength, spsId, maxNumRefFrames)) {
-            if (spsId < H264_MAX_SPS_COUNT) {
-                if (spsRefFrameCounts.size() <= spsId) {
-                    spsRefFrameCounts.resize(spsId + 1, AVCC_UNKNOWN_REF_COUNT);
-                }
-                spsRefFrameCounts[spsId] = maxNumRefFrames;
-            }
+        if (ParseSpsMaxNumRefFrames(extraData + offset, spsLength, spsId, maxNumRefFrames) &&
+            spsId < H264_MAX_SPS_COUNT) {
+            spsRefFrameCounts.resize(std::max(spsRefFrameCounts.size(), static_cast<size_t>(spsId) + 1),
+                AVCC_UNKNOWN_REF_COUNT);
+            spsRefFrameCounts[spsId] = maxNumRefFrames;
         }
         offset += spsLength;
     }
@@ -770,15 +768,14 @@ bool AvcParserImpl::ParseAvcConfigPpsRefCounts(const uint8_t *extraData, int32_t
         uint32_t ppsId = 0;
         uint32_t spsId = 0;
         uint32_t numRefIdxL0 = 0;
-        if (ParsePpsNumRefIdxL0(extraData + offset, ppsLength, ppsId, spsId, numRefIdxL0)) {
-            if (ppsId < H264_MAX_PPS_COUNT && spsId < H264_MAX_SPS_COUNT) {
-                if (ppsSpsIds.size() <= ppsId) {
-                    ppsSpsIds.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
-                    ppsRefCountsL0.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
-                }
-                ppsSpsIds[ppsId] = spsId;
-                ppsRefCountsL0[ppsId] = numRefIdxL0;
-            }
+        if (ParsePpsNumRefIdxL0(extraData + offset, ppsLength, ppsId, spsId, numRefIdxL0) &&
+            ppsId < H264_MAX_PPS_COUNT && spsId < H264_MAX_SPS_COUNT) {
+            ppsSpsIds.resize(std::max(ppsSpsIds.size(), static_cast<size_t>(ppsId) + 1),
+                AVCC_UNKNOWN_REF_COUNT);
+            ppsRefCountsL0.resize(std::max(ppsRefCountsL0.size(), static_cast<size_t>(ppsId) + 1),
+                AVCC_UNKNOWN_REF_COUNT);
+            ppsSpsIds[ppsId] = spsId;
+            ppsRefCountsL0[ppsId] = numRefIdxL0;
         }
         offset += ppsLength;
     }
