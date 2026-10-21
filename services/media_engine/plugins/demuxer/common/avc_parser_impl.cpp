@@ -40,6 +40,7 @@ constexpr uint32_t H264_SHORT_BITS = 16;
 constexpr uint32_t H264_WORD_BITS = 32;
 constexpr uint32_t H264_MAX_SPS_COUNT = 32;
 constexpr uint32_t H264_MAX_PPS_COUNT = 256;
+constexpr uint32_t AVCC_UNKNOWN_REF_COUNT = std::numeric_limits<uint32_t>::max();
 constexpr uint32_t H264_CHROMA_FORMAT_444 = 3;
 constexpr uint32_t H264_SCALING_LIST_4X4_COUNT = 6;
 constexpr uint32_t H264_SCALING_LIST_4X4_SIZE = 16;
@@ -718,16 +719,9 @@ bool AvcParserImpl::ParseSliceHeaderInfo(const uint8_t *nal, uint32_t nalSize,
         reader.RbspReadUE(ppsId);
 }
 
-bool AvcParserImpl::ParseAvcConfigRefCounts(const uint8_t *extraData, int32_t extraDataSize,
-    std::vector<uint32_t> &spsRefFrameCounts, std::vector<uint32_t> &ppsSpsIds,
-    std::vector<uint32_t> &ppsRefCountsL0)
+bool AvcParserImpl::ParseAvcConfigSpsRefCounts(const uint8_t *extraData, int32_t extraDataSize, size_t &offset,
+    std::vector<uint32_t> &spsRefFrameCounts)
 {
-    spsRefFrameCounts.clear();
-    ppsSpsIds.clear();
-    ppsRefCountsL0.clear();
-    const uint32_t unknownRefCount = std::numeric_limits<uint32_t>::max();
-    FALSE_RETURN_V(extraData != nullptr && extraDataSize >= AVC_CONFIG_HEADER_SIZE, false);
-    size_t offset = AVC_CONFIG_SPS_OFFSET;
     uint8_t spsCount = extraData[offset++] & AVC_CONFIG_SPS_COUNT_MASK;
     for (uint8_t i = 0; i < spsCount; ++i) {
         if (offset + sizeof(uint16_t) > static_cast<size_t>(extraDataSize)) {
@@ -742,15 +736,18 @@ bool AvcParserImpl::ParseAvcConfigRefCounts(const uint8_t *extraData, int32_t ex
         uint32_t maxNumRefFrames = 0;
         if (ParseSpsMaxNumRefFrames(extraData + offset, spsLength, spsId, maxNumRefFrames)) {
             if (spsRefFrameCounts.size() <= spsId) {
-                spsRefFrameCounts.resize(spsId + 1, unknownRefCount);
+                spsRefFrameCounts.resize(spsId + 1, AVCC_UNKNOWN_REF_COUNT);
             }
             spsRefFrameCounts[spsId] = maxNumRefFrames;
         }
         offset += spsLength;
     }
-    if (offset >= static_cast<size_t>(extraDataSize)) {
-        return false;
-    }
+    return true;
+}
+
+bool AvcParserImpl::ParseAvcConfigPpsRefCounts(const uint8_t *extraData, int32_t extraDataSize, size_t &offset,
+    std::vector<uint32_t> &ppsSpsIds, std::vector<uint32_t> &ppsRefCountsL0)
+{
     uint8_t ppsCount = extraData[offset++];
     for (uint8_t i = 0; i < ppsCount; ++i) {
         if (offset + sizeof(uint16_t) > static_cast<size_t>(extraDataSize)) {
@@ -766,8 +763,8 @@ bool AvcParserImpl::ParseAvcConfigRefCounts(const uint8_t *extraData, int32_t ex
         uint32_t numRefIdxL0 = 0;
         if (ParsePpsNumRefIdxL0(extraData + offset, ppsLength, ppsId, spsId, numRefIdxL0)) {
             if (ppsSpsIds.size() <= ppsId) {
-                ppsSpsIds.resize(ppsId + 1, unknownRefCount);
-                ppsRefCountsL0.resize(ppsId + 1, unknownRefCount);
+                ppsSpsIds.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
+                ppsRefCountsL0.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
             }
             ppsSpsIds[ppsId] = spsId;
             ppsRefCountsL0[ppsId] = numRefIdxL0;
@@ -775,6 +772,24 @@ bool AvcParserImpl::ParseAvcConfigRefCounts(const uint8_t *extraData, int32_t ex
         offset += ppsLength;
     }
     return true;
+}
+
+bool AvcParserImpl::ParseAvcConfigRefCounts(const uint8_t *extraData, int32_t extraDataSize,
+    std::vector<uint32_t> &spsRefFrameCounts, std::vector<uint32_t> &ppsSpsIds,
+    std::vector<uint32_t> &ppsRefCountsL0)
+{
+    spsRefFrameCounts.clear();
+    ppsSpsIds.clear();
+    ppsRefCountsL0.clear();
+    FALSE_RETURN_V(extraData != nullptr && extraDataSize >= AVC_CONFIG_HEADER_SIZE, false);
+    size_t offset = AVC_CONFIG_SPS_OFFSET;
+    if (!ParseAvcConfigSpsRefCounts(extraData, extraDataSize, offset, spsRefFrameCounts)) {
+        return false;
+    }
+    if (offset >= static_cast<size_t>(extraDataSize)) {
+        return false;
+    }
+    return ParseAvcConfigPpsRefCounts(extraData, extraDataSize, offset, ppsSpsIds, ppsRefCountsL0);
 }
 
 void AvcParserImpl::ConvertExtradata(uint8_t **packet, int32_t &packetSize)

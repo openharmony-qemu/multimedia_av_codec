@@ -1741,6 +1741,77 @@ std::vector<uint8_t> BuildAvcCTestConfig(const std::vector<uint8_t>& sps)
     return config;
 }
 
+std::vector<uint8_t> BuildLengthPrefixedNal(const std::vector<uint8_t>& nal)
+{
+    std::vector<uint8_t> sample;
+    AppendU32(sample, static_cast<uint32_t>(nal.size()));
+    sample.insert(sample.end(), nal.begin(), nal.end());
+    return sample;
+}
+
+void BuildAvcSampleData(const std::vector<std::vector<uint8_t>>& nals, std::vector<uint8_t>& sampleData,
+    std::vector<int32_t>& sampleSizes)
+{
+    sampleSizes.reserve(nals.size());
+    for (const auto& nal : nals) {
+        std::vector<uint8_t> sample = BuildLengthPrefixedNal(nal);
+        sampleSizes.push_back(static_cast<int32_t>(sample.size()));
+        sampleData.insert(sampleData.end(), sample.begin(), sample.end());
+    }
+}
+
+void ActivateVideoDurationTestTrack(Plugins::MPEG4::MPEG4DemuxerPlugin& plugin,
+    const std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track>& track, const std::string& mime);
+
+std::shared_ptr<Plugins::MPEG4::MPEG4DemuxerPlugin> BuildAvcKeyHeuristicTestPlugin(
+    const std::vector<uint8_t>& spsNal, const std::vector<std::vector<uint8_t>>& nals,
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry>& stssIndexes)
+{
+    constexpr uint32_t testVideoTrackId = 0;
+    constexpr int32_t testTrackTimeScale = 90000;
+    constexpr uint32_t testSttsDelta = 3600;
+    const uint32_t testSampleCount = static_cast<uint32_t>(nals.size());
+    const std::vector<uint8_t> avcc = BuildAvcCTestConfig(spsNal);
+    std::vector<uint8_t> sampleData;
+    std::vector<int32_t> sampleSizes;
+    BuildAvcSampleData(nals, sampleData, sampleSizes);
+    auto source = CreateDataSourceForBytes(sampleData);
+    auto reader = std::make_shared<DemuxerDataReader>();
+    if (source == nullptr || reader == nullptr || reader->SetDataReader(source) != Status::OK) {
+        return nullptr;
+    }
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track == nullptr || helper == nullptr) {
+        return nullptr;
+    }
+    helper->trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper->mimeType_ = MimeType::VIDEO_AVC;
+    helper->sttsEntry_ = {{testSampleCount, testSttsDelta}};
+    helper->cttsEntry_ = {{testSampleCount, 0}};
+    helper->stscEntry_ = {{0, testSampleCount, 1}};
+    helper->stssEntry_ = stssIndexes;
+    helper->sampleSizes_ = sampleSizes;
+    helper->sampleSizeCount_ = testSampleCount;
+    helper->chunkOffsets_ = {0};
+    helper->dataReader_ = reader;
+    if (helper->FinalizeSampleTables() != Status::OK) {
+        return nullptr;
+    }
+    track->trackIndex = testVideoTrackId;
+    track->trackId = static_cast<int32_t>(testVideoTrackId);
+    track->timeScale = testTrackTimeScale;
+    track->codecParms.trackType = Plugins::MPEG4::VIDEO_TYPE;
+    track->codecParms.data = std::make_unique<uint8_t[]>(avcc.size());
+    std::copy(avcc.begin(), avcc.end(), track->codecParms.data.get());
+    track->codecParms.extradataSize = static_cast<int64_t>(avcc.size());
+    track->sampleHelper = helper;
+    auto plugin = std::make_shared<Plugins::MPEG4::MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ActivateVideoDurationTestTrack(*plugin, track, MimeType::VIDEO_AVC);
+    plugin->dataSource_ = source;
+    return plugin;
+}
+
 std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareVideoCttsTestTrack(
     Plugins::MPEG4::MPEG4DemuxerPlugin& plugin, const std::vector<uint8_t>& sampleData)
 {
@@ -8076,14 +8147,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SampleIndexCttsRleConsum
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcLowRefISliceSyncFlag_001, TestSize.Level1)
 {
-    constexpr uint32_t testVideoTrackId = 0;
-    constexpr int32_t testTrackTimeScale = 90000;
-    constexpr uint32_t testSttsDelta = 3600;
     constexpr uint32_t testSampleCount = 5;
     // Baseline profile SPS with max_num_ref_frames == 1 (no extended syntax fields).
     const std::vector<uint8_t> lowRefSps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
-    // avcC built with PPS 0x68 0xCE 0x3C 0x80: num_ref_idx_l0_default_active_minus1 == 0.
-    auto avcc = BuildAvcCTestConfig(lowRefSps);
     // Non-IDR I-slice: NAL header type 1, first_mb_in_slice 0, slice_type 7 (I).
     const std::vector<uint8_t> iSliceNal = {0x61, 0x88, 0xAA, 0xAA, 0xAA, 0xAA};
     // P-slice: slice_type 0.
@@ -8092,75 +8158,20 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcLowRefISliceSyncFlag_
     const std::vector<uint8_t> bSliceNal = {0x61, 0xA0, 0xAA, 0xAA, 0xAA, 0xAA};
     // IDR slice: NAL header type 5.
     const std::vector<uint8_t> idrNal = {0x65, 0x88, 0xAA, 0xAA, 0xAA, 0xAA};
-    auto makeSample = [&](const std::vector<uint8_t>& nal) {
-        std::vector<uint8_t> sample;
-        AppendU32(sample, static_cast<uint32_t>(nal.size()));
-        sample.insert(sample.end(), nal.begin(), nal.end());
-        return sample;
-    };
-    std::vector<std::vector<uint8_t>> samples;
-    samples.push_back(makeSample(iSliceNal));  // index 0: stss sync frame
-    samples.push_back(makeSample(pSliceNal));  // index 1: P slice, no heuristic key
-    samples.push_back(makeSample(bSliceNal));  // index 2: B slice, no heuristic key
-    samples.push_back(makeSample(idrNal));     // index 3: IDR, key via NAL type
-    samples.push_back(makeSample(iSliceNal));  // index 4: non-IDR I-slice, key via heuristic
-    std::vector<uint8_t> sampleData;
-    std::vector<int32_t> sampleSizes;
-    sampleSizes.reserve(testSampleCount);
-    for (const auto& sample : samples) {
-        sampleSizes.push_back(static_cast<int32_t>(sample.size()));
-        sampleData.insert(sampleData.end(), sample.begin(), sample.end());
-    }
-
-    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
-    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
-    ASSERT_NE(track, nullptr);
-    ASSERT_NE(helper, nullptr);
-    helper->trackType_ = Plugins::MPEG4::VIDEO_TYPE;
-    helper->mimeType_ = MimeType::VIDEO_AVC;
-    helper->sttsEntry_ = {{testSampleCount, testSttsDelta}};
-    helper->cttsEntry_ = {{testSampleCount, 0}};
-    helper->stscEntry_ = {{0, testSampleCount, 1}};
-    helper->stssEntry_ = {{0}};
-    helper->sampleSizes_ = sampleSizes;
-    helper->sampleSizeCount_ = testSampleCount;
-    helper->chunkOffsets_ = {0};
-    auto source = CreateDataSourceForBytes(sampleData);
-    ASSERT_NE(source, nullptr);
-    auto reader = std::make_shared<DemuxerDataReader>();
-    ASSERT_NE(reader, nullptr);
-    ASSERT_EQ(reader->SetDataReader(source), Status::OK);
-    helper->dataReader_ = reader;
-    ASSERT_EQ(helper->FinalizeSampleTables(), Status::OK);
-    track->trackIndex = testVideoTrackId;
-    track->trackId = static_cast<int32_t>(testVideoTrackId);
-    track->timeScale = testTrackTimeScale;
-    track->codecParms.trackType = Plugins::MPEG4::VIDEO_TYPE;
-    track->codecParms.data = std::make_unique<uint8_t[]>(avcc.size());
-    std::copy(avcc.begin(), avcc.end(), track->codecParms.data.get());
-    track->codecParms.extradataSize = static_cast<int64_t>(avcc.size());
-    track->sampleHelper = helper;
-
-    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
-    plugin.firstTrack_ = track;
-    plugin.lastTrack_ = track;
-    plugin.mediaInfo_.tracks.resize(1);
-    plugin.mediaInfo_.tracks[testVideoTrackId].Set<Tag::MIME_TYPE>(MimeType::VIDEO_AVC);
-    plugin.trackMtx_[testVideoTrackId] = std::make_shared<std::mutex>();
-    plugin.inited_ = true;
-    plugin.seekable_ = Seekable::SEEKABLE;
-    plugin.selectedTrackIds_ = {testVideoTrackId};
-    plugin.dataSource_ = source;
+    // index 0: stss sync frame, index 3: IDR key via NAL type, index 4: non-IDR I-slice key via heuristic.
+    auto plugin = BuildAvcKeyHeuristicTestPlugin(lowRefSps,
+        {iSliceNal, pSliceNal, bSliceNal, idrNal, iSliceNal}, {{0}});
+    ASSERT_NE(plugin, nullptr);
 
     constexpr uint32_t syncFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
     const std::vector<uint32_t> expectedSyncIndexes = {0, 3, 4};
     AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
     for (uint32_t index = 0; index < testSampleCount; ++index) {
-        ASSERT_EQ(plugin.ReadSample(testVideoTrackId, output.mediaAVBuffer), Status::OK);
+        ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
         bool expectSync = std::find(expectedSyncIndexes.begin(), expectedSyncIndexes.end(), index) !=
             expectedSyncIndexes.end();
-        EXPECT_EQ((output.mediaAVBuffer->flag_ & syncFlag) != 0, expectSync)
-            << "sample index " << index << " sync flag mismatch";
+        EXPECT_EQ((output.mediaAVBuffer->flag_ & syncFlag) != 0, expectSync) <<
+            "sample index " << index << " sync flag mismatch";
     }
 }
 
@@ -8171,61 +8182,15 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcLowRefISliceSyncFlag_
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcHighRefISliceNotSync_001, TestSize.Level1)
 {
-    constexpr uint32_t testVideoTrackId = 0;
-    constexpr int32_t testTrackTimeScale = 90000;
-    constexpr uint32_t testSttsDelta = 3600;
-    constexpr uint32_t testSampleCount = 1;
     // Baseline profile SPS with max_num_ref_frames == 2.
     const std::vector<uint8_t> highRefSps = {0x67, 0x42, 0xC0, 0x1E, 0xF6, 0x31, 0xB2};
-    auto avcc = BuildAvcCTestConfig(highRefSps);
     const std::vector<uint8_t> iSliceNal = {0x61, 0x88, 0xAA, 0xAA, 0xAA, 0xAA};
-    std::vector<uint8_t> sample;
-    AppendU32(sample, static_cast<uint32_t>(iSliceNal.size()));
-    sample.insert(sample.end(), iSliceNal.begin(), iSliceNal.end());
-
-    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
-    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
-    ASSERT_NE(track, nullptr);
-    ASSERT_NE(helper, nullptr);
-    helper->trackType_ = Plugins::MPEG4::VIDEO_TYPE;
-    helper->mimeType_ = MimeType::VIDEO_AVC;
-    helper->sttsEntry_ = {{testSampleCount, testSttsDelta}};
-    helper->cttsEntry_ = {{testSampleCount, 0}};
-    helper->stscEntry_ = {{0, testSampleCount, 1}};
-    helper->stssEntry_ = {};
-    helper->sampleSizes_ = {static_cast<uint32_t>(sample.size())};
-    helper->sampleSizeCount_ = testSampleCount;
-    helper->chunkOffsets_ = {0};
-    auto source = CreateDataSourceForBytes(sample);
-    ASSERT_NE(source, nullptr);
-    auto reader = std::make_shared<DemuxerDataReader>();
-    ASSERT_NE(reader, nullptr);
-    ASSERT_EQ(reader->SetDataReader(source), Status::OK);
-    helper->dataReader_ = reader;
-    ASSERT_EQ(helper->FinalizeSampleTables(), Status::OK);
-    track->trackIndex = testVideoTrackId;
-    track->trackId = static_cast<int32_t>(testVideoTrackId);
-    track->timeScale = testTrackTimeScale;
-    track->codecParms.trackType = Plugins::MPEG4::VIDEO_TYPE;
-    track->codecParms.data = std::make_unique<uint8_t[]>(avcc.size());
-    std::copy(avcc.begin(), avcc.end(), track->codecParms.data.get());
-    track->codecParms.extradataSize = static_cast<int64_t>(avcc.size());
-    track->sampleHelper = helper;
-
-    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
-    plugin.firstTrack_ = track;
-    plugin.lastTrack_ = track;
-    plugin.mediaInfo_.tracks.resize(1);
-    plugin.mediaInfo_.tracks[testVideoTrackId].Set<Tag::MIME_TYPE>(MimeType::VIDEO_AVC);
-    plugin.trackMtx_[testVideoTrackId] = std::make_shared<std::mutex>();
-    plugin.inited_ = true;
-    plugin.seekable_ = Seekable::SEEKABLE;
-    plugin.selectedTrackIds_ = {testVideoTrackId};
-    plugin.dataSource_ = source;
+    auto plugin = BuildAvcKeyHeuristicTestPlugin(highRefSps, {iSliceNal}, {});
+    ASSERT_NE(plugin, nullptr);
 
     constexpr uint32_t syncFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
     AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
-    ASSERT_EQ(plugin.ReadSample(testVideoTrackId, output.mediaAVBuffer), Status::OK);
+    ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
     EXPECT_EQ((output.mediaAVBuffer->flag_ & syncFlag) != 0, false);
 }
 

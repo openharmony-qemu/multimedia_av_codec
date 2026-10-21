@@ -369,9 +369,15 @@ constexpr uint8_t AVC_SLICE_NAL_TYPE = 1;
 constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
 constexpr uint8_t AVC_MAX_NAL_LENGTH_SIZE = 4;
 constexpr uint8_t BITS_PER_BYTE = 8;
-constexpr uint32_t AVC_SLICE_TYPE_I = 2; // slice_type %% 5 == 2 maps to an I slice
+constexpr uint32_t AVC_SLICE_TYPE_MODULUS = 5; // H.264 slice_type groups: 0=P, 1=B, 2=I, 3=SP, 4=SI
+constexpr uint32_t AVC_SLICE_TYPE_I = 2; // slice_type %% AVC_SLICE_TYPE_MODULUS == 2 maps to an I slice
 constexpr uint32_t AVC_SLICE_HEADER_SCAN_SIZE = 64;
 constexpr int64_t MAX_AVC_IDR_SCAN_SIZE = 64 * 1024 * 1024;
+
+struct AvcSliceHeaderInfo {
+    uint32_t ppsId = 0;
+    uint32_t pictType = 0;
+};
 
 struct ReadSamplePacketAttr {
     int64_t ptsUs = 0;
@@ -1408,7 +1414,7 @@ void EnsureAvcKeyHeuristicParsed(const std::shared_ptr<MPEG4AtomParser::Track>& 
 }
 
 bool AvcSliceHeaderHasPpsAndType(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t nalOffset,
-    uint32_t nalLength, uint8_t nalLengthSize, uint32_t& ppsId, uint32_t& pictType)
+    uint32_t nalLength, uint8_t nalLengthSize, AvcSliceHeaderInfo& sliceHeader)
 {
     if (track == nullptr || nalLength <= nalLengthSize) {
         return false;
@@ -1419,9 +1425,9 @@ bool AvcSliceHeaderHasPpsAndType(const std::shared_ptr<MPEG4AtomParser::Track>& 
         Status::OK, false);
     uint32_t firstMbInSlice = 0;
     uint32_t sliceType = 0;
-    FALSE_RETURN_V_NOLOG(AvcParserImpl::ParseSliceHeaderInfo(prefix, readSize, firstMbInSlice, sliceType, ppsId),
-        false);
-    pictType = sliceType % 5;
+    FALSE_RETURN_V_NOLOG(AvcParserImpl::ParseSliceHeaderInfo(prefix, readSize, firstMbInSlice, sliceType,
+        sliceHeader.ppsId), false);
+    sliceHeader.pictType = sliceType % AVC_SLICE_TYPE_MODULUS;
     return true;
 }
 
@@ -1456,13 +1462,13 @@ bool AvcSampleContainsLowRefISlice(const std::shared_ptr<MPEG4AtomParser::Track>
             false);
         const uint8_t nalType = nalHeader & AVC_NAL_TYPE_MASK;
         if (nalType == AVC_SLICE_NAL_TYPE || nalType == AVC_IDR_NAL_TYPE) {
-            uint32_t ppsId = 0;
-            uint32_t pictType = 0;
-            if (AvcSliceHeaderHasPpsAndType(track, offset, nalLength, nalLengthSize, ppsId, pictType) &&
-                pictType == AVC_SLICE_TYPE_I && ppsId < track->avcPpsRefCountsL0.size() &&
-                track->avcPpsRefCountsL0[ppsId] <= 1 &&
-                track->avcPpsSpsIds[ppsId] < track->avcSpsRefFrameCounts.size() &&
-                track->avcSpsRefFrameCounts[track->avcPpsSpsIds[ppsId]] <= 1) {
+            AvcSliceHeaderInfo sliceHeader;
+            if (AvcSliceHeaderHasPpsAndType(track, offset, nalLength, nalLengthSize, sliceHeader) &&
+                sliceHeader.pictType == AVC_SLICE_TYPE_I &&
+                sliceHeader.ppsId < track->avcPpsRefCountsL0.size() &&
+                track->avcPpsRefCountsL0[sliceHeader.ppsId] <= 1 &&
+                track->avcPpsSpsIds[sliceHeader.ppsId] < track->avcSpsRefFrameCounts.size() &&
+                track->avcSpsRefFrameCounts[track->avcPpsSpsIds[sliceHeader.ppsId]] <= 1) {
                 return true;
             }
         }

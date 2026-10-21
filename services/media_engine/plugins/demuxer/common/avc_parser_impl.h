@@ -82,6 +82,11 @@ public:
     };
 
 private:
+    static bool ParseAvcConfigSpsRefCounts(const uint8_t *extraData, int32_t extraDataSize, size_t &offset,
+        std::vector<uint32_t> &spsRefFrameCounts);
+    static bool ParseAvcConfigPpsRefCounts(const uint8_t *extraData, int32_t extraDataSize, size_t &offset,
+        std::vector<uint32_t> &ppsSpsIds, std::vector<uint32_t> &ppsRefCountsL0);
+
     struct DataAddrInfo {
         uint32_t bytesIndex;
         uint32_t bufferSize;

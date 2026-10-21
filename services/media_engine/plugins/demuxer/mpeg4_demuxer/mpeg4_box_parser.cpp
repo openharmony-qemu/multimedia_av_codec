@@ -1758,11 +1758,13 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
         }
         if (denominator > 0) {
             uint64_t gcd = std::gcd(numerator, denominator);
-            sar = static_cast<double>(numerator / gcd) / static_cast<double>(denominator / gcd);
-            MEDIA_LOG_D("SAR from width/height diff: [%{public}u/%{public}u/%{public}u/%{public}u], sar=%{public}f",
-                track->stsdWidth, track->stsdHeight, track->tkhdWidth, track->tkhdHeight, sar);
-            mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
-            return;
+            if (gcd > 0) {
+                sar = static_cast<double>(numerator / gcd) / static_cast<double>(denominator / gcd);
+                MEDIA_LOG_D("SAR from width/height diff: [%{public}u/%{public}u/%{public}u/%{public}u], sar=%{public}f",
+                    track->stsdWidth, track->stsdHeight, track->tkhdWidth, track->tkhdHeight, sar);
+                mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
+                return;
+            }
         }
     }
     MEDIA_LOG_D("Track %{public}u SAR: no pasp and no width/height diff, skip", track->trackIndex);
@@ -6040,6 +6042,37 @@ double MPEG4AtomParser::CalculateDuration(std::shared_ptr<Track> track, bool isR
     return duration;
 }
 
+bool SumLeadingEmptyEditDuration(const std::vector<MPEG4SampleHelper::EditListEntry>& editListEntries,
+    int64_t& emptyEditDuration)
+{
+    emptyEditDuration = 0;
+    for (const auto& entry : editListEntries) {
+        if (entry.mediaTime != -1) {
+            break;
+        }
+        int64_t newEmptyEdit = 0;
+        FALSE_RETURN_V(!__builtin_add_overflow(emptyEditDuration, entry.duration, &newEmptyEdit), false);
+        emptyEditDuration = newEmptyEdit;
+    }
+    return true;
+}
+
+bool SetStartTimeFromFirstSamplePts(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t& trackStartTime)
+{
+    if (track->sampleHelper && !track->sampleHelper->IsSampleIndexEmpty()) {
+        int64_t firstPts = 0;
+        FALSE_RETURN_V(track->sampleHelper->GetSamplePts(0, firstPts) == Status::OK, false);
+        int32_t timeScale = track->timeScale;
+        if (timeScale > 0) {
+            FALSE_RETURN_V(ConvertTimeScaleRound(firstPts, S_TO_US, timeScale, &trackStartTime) == Status::OK,
+                false);
+        }
+        trackStartTime = std::max<int64_t>(trackStartTime, 0);
+        return true;
+    }
+    return false;
+}
+
 void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, int64_t& trackStartTime,
     int64_t& containerStartTimeForTrack)
 {
@@ -6065,15 +6098,8 @@ void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, 
         int32_t trackTimeScale = track->timeScale;
         if (fileTimeScale > 0 && trackTimeScale > 0) {
             int64_t emptyEditInTrackTime = 0;
-            for (const auto& entry : track->editListEntries) {
-                if (entry.mediaTime != -1) {
-                    break;
-                }
-                int64_t newEmptyEdit = 0;
-                FALSE_RETURN_MSG(!__builtin_add_overflow(emptyEditInTrackTime, entry.duration,
-                    &newEmptyEdit), "Add overflow");
-                emptyEditInTrackTime = newEmptyEdit;
-            }
+            FALSE_RETURN_MSG(SumLeadingEmptyEditDuration(track->editListEntries, emptyEditInTrackTime),
+                "Add overflow");
             FALSE_RETURN_MSG(ConvertTimeScaleRoundToTimeBase(emptyEditInTrackTime, trackTimeScale,
                 fileTimeScale, &emptyEditInTrackTime) == Status::OK, "Mul overflow");
             FALSE_RETURN_MSG(ConvertTrackTimeToUs(emptyEditInTrackTime, trackTimeScale,
@@ -6086,15 +6112,7 @@ void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, 
             return;
         }
     } else if (track->sampleHelper && !track->sampleHelper->IsSampleIndexEmpty()) {
-        int64_t firstPts = 0;
-        FALSE_RETURN_MSG(track->sampleHelper->GetSamplePts(0, firstPts) == Status::OK,
-            "Get first sample pts failed");
-        int32_t timeScale = track->timeScale;
-        if (timeScale > 0) {
-            FALSE_RETURN_MSG(ConvertTimeScaleRound(firstPts, S_TO_US, timeScale, &trackStartTime) == Status::OK,
-                "Mul overflow");
-        }
-        trackStartTime = std::max<int64_t>(trackStartTime, 0);
+        FALSE_RETURN_MSG(SetStartTimeFromFirstSamplePts(track, trackStartTime), "Get first sample pts failed");
         mediaInfo_.tracks[track->trackIndex].Set<Tag::MEDIA_START_TIME>(trackStartTime);
         containerStartTimeForTrack = trackStartTime;
         return;
