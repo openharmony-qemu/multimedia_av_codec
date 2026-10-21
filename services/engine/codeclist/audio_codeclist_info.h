@@ -77,6 +77,7 @@ public:
     CapabilityData GetDtsDecoderCapability();
 #endif
     CapabilityData GetCookDecoderCapability();
+    CapabilityData GetDsdDecoderCapability();
 private:
     std::vector<CapabilityData> audioCapabilities_;
     AudioCodeclistInfo();

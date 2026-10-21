@@ -42,5 +42,6 @@
 #include "dts/ffmpeg_dts_decoder_plugin.h"
 #endif
 #include "cook/ffmpeg_cook_decoder_plugin.h"
+#include "dsd/ffmpeg_dsd_decoder_plugin.h"
 
 #endif // FFMPEG_DECODER_PLUGIN_H

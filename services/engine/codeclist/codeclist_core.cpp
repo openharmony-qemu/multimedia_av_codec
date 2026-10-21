@@ -61,6 +61,7 @@ const std::vector<std::string_view> MIME_VEC = {
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_GSM,
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_COOK,
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_AC3,
+    OHOS::MediaAVCodec::CodecMimeType::AUDIO_DSD,
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAV1,
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAV2,
     OHOS::MediaAVCodec::CodecMimeType::AUDIO_WMAPRO,

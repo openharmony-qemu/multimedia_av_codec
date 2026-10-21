@@ -145,6 +145,13 @@ const std::vector<int32_t> AUDIO_ALAC_SAMPLE_RATE = {
     32000, 44100, 48000, 88200, 96000, 176400, 192000
 };
 const std::vector<int32_t> AUDIO_AC3_SAMPLE_RATE = {11025, 32000, 44100, 48000};
+// Standard DSD rates (raw rate / 8), informational only. Like the FFmpeg DSD decoders
+// (libavcodec/dsddec.c), there is no upper limit on the accepted sample rate (see sampleRateRanges).
+const std::vector<int32_t> AUDIO_DSD_SAMPLE_RATE = {
+    352800, 705600, 1411200, 2822400, 5644800,   // 44100 family: DSD64 / DSD128 / DSD256 / DSD512 / DSD1024
+    384000, 768000, 1536000, 3072000, 6144000,   // 48000 family: DSD64 / DSD128 / DSD256 / DSD512 / DSD1024
+};
+constexpr int DSD_MAX_AUDIO_CHANNEL_COUNT = 6;
 constexpr int MAX_BIT_RATE_G711MU_DECODER = 64000;
 constexpr int MAX_BIT_RATE_G711MU_ENCODER = 64000;
 constexpr int MAX_BIT_RATE_G711A_DECODER = 64000;
@@ -866,6 +873,21 @@ CapabilityData AudioCodeclistInfo::GetAc3DecoderCapability()
     return audioAc3Capability;
 }
 
+CapabilityData AudioCodeclistInfo::GetDsdDecoderCapability()
+{
+    CapabilityData audioDsdCapability;
+    audioDsdCapability.codecName = AVCodecCodecName::AUDIO_DECODER_DSD_NAME;
+    audioDsdCapability.codecType = AVCODEC_TYPE_AUDIO_DECODER;
+    audioDsdCapability.mimeType = AVCodecMimeType::MEDIA_MIMETYPE_AUDIO_DSD;
+    audioDsdCapability.isVendor = false;
+    audioDsdCapability.bitrate = Range(0, MAX_INT32);
+    audioDsdCapability.channels = Range(1, DSD_MAX_AUDIO_CHANNEL_COUNT);
+    audioDsdCapability.sampleRate = AUDIO_DSD_SAMPLE_RATE;
+    audioDsdCapability.sampleRateRanges = {Range(1, MAX_INT32)};
+    audioDsdCapability.maxInstance = MAX_SUPPORT_AUDIO_INSTANCE;
+    return audioDsdCapability;
+}
+
 #ifdef SUPPORT_CODEC_EAC3
 CapabilityData AudioCodeclistInfo::GetEac3DecoderCapability()
 {
@@ -931,6 +953,7 @@ AudioCodeclistInfo::AudioCodeclistInfo()
     GetDtsDecoderCapability(),
 #endif
     GetCookDecoderCapability(),
+    GetDsdDecoderCapability(),
 #ifdef SUPPORT_CODEC_EAC3
     GetEac3DecoderCapability(),
 #endif
