@@ -177,6 +177,8 @@ protected:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
     static void OnDownloadStatus(DownloadStatus status, std::shared_ptr<Downloader>&,
                           std::shared_ptr<DownloadRequest>& request);
+    static StatusCallbackFunc CreateRealStatusCallback(std::weak_ptr<PlayListDownloader> weakDownloader);
+    static DownloadDoneCbFunc CreateDownloadDoneCallback(std::weak_ptr<PlayListDownloader> weakDownloader);
     void DoOpen(const std::string& url);
     void DoOpenNative(const std::string& url);
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);

@@ -416,7 +416,6 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_CUR_BITRATE_001, TestSize.Level1)
     downloader->Init();
     downloader->SetPlayListForTest(MASTER_LIST);
     std::string testUrl = TEST_URI_PATH + M3U8_PATH_MASTER;
-    downloader->Open(testUrl, httpHeader);
     downloader->ParseManifest(testUrl, false);
     SetDefaultStreamId(downloader);
     EXPECT_EQ(3000000, downloader->GetCurBitrate());

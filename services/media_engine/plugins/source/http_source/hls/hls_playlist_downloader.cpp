@@ -157,7 +157,9 @@ void HlsPlayListDownloader::UpdateManifest()
         isNotifyPlayListFinished_ = false;
         UpdateStreamInfo();
         OnMasterReady(needAudioManager_, needSubtitlesManager_);
-        DoOpen(currentVariant->m3u8_->uri_);
+        if (!isClone_.load()) {
+            DoOpen(currentVariant->m3u8_->uri_);
+        }
     } else {
         MEDIA_LOG_E("UpdateManifest currentVariant_ not ready.");
     }
@@ -195,7 +197,7 @@ void HlsPlayListDownloader::Clone(std::shared_ptr<PlayListDownloader> ptr)
     subtitleStreamId_.store(other->subtitleStreamId_.load());
     isClone_.store(true);
     ParseManifest("", false);
-    // playList_、retryStartTime_ will clear after parse manifest completed, no need clone
+    playList_.clear();
 }
 
 void HlsPlayListDownloader::OnMasterReady(bool needAudioManager, bool needSubtitlesManager)

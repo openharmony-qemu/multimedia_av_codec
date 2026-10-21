@@ -142,13 +142,16 @@ DashMpdDownloader::~DashMpdDownloader()
     reportInfo_->ca_ = downloader_->GetCertIssuerNames();
 }
 
-std::vector<std::string> DashMpdDownloader::ParseMpdResources(const uint8_t* data, size_t size,
+std::vector<MpdStreamResource> DashMpdDownloader::ParseMpdResources(const uint8_t* data, size_t size,
     const std::string& rootUrl)
 {
-    std::vector<std::string> urls;
+    std::vector<MpdStreamResource> resources;
     if (data == nullptr || size == 0) {
-        return urls;
+        MEDIA_LOG_E("ParseMpdResources: data is null or size is 0");
+        return resources;
     }
+
+    MEDIA_LOG_I("ParseMpdResources: rootUrl=%{public}s, data size=%{public}zu", rootUrl.c_str(), size);
 
     auto downloader = std::make_shared<DashMpdDownloader>(nullptr);
     downloader->url_ = rootUrl;
@@ -159,23 +162,51 @@ std::vector<std::string> DashMpdDownloader::ParseMpdResources(const uint8_t* dat
         downloader->downloadContent_ = mpdContent;
     }
     downloader->ParseManifest();
+    MEDIA_LOG_I("ParseMpdResources: streamDescriptions_.size()=%{public}zu",
+        downloader->streamDescriptions_.size());
 
-    for (auto& streamDesc : downloader->streamDescriptions_) {
+    BuildMpdStreamResources(downloader, resources);
+
+    MEDIA_LOG_I("ParseMpdResources: done, total resources=%{public}zu", resources.size());
+    return resources;
+}
+
+void DashMpdDownloader::BuildMpdStreamResources(std::shared_ptr<DashMpdDownloader>& downloader,
+    std::vector<MpdStreamResource>& resources)
+{
+    for (size_t i = 0; i < downloader->streamDescriptions_.size(); i++) {
+        auto& streamDesc = downloader->streamDescriptions_[i];
         if (streamDesc == nullptr) {
             continue;
         }
         downloader->GetSegmentsInMpd(streamDesc);
+
+        StreamInfo si = downloader->AssignStreamInfo(i);
+        if (streamDesc->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_SUBTITLE) {
+            si.type = StreamType::SUBTITLE;
+        } else if (streamDesc->type_ == MediaAVCodec::MediaType::MEDIA_TYPE_AUD) {
+            si.type = StreamType::AUDIO;
+        } else {
+            si.type = StreamType::VIDEO;
+        }
+        si.codecs = downloader->GetMimeType(streamDesc->codecs_, si.type);
+        si.originCodecs = streamDesc->codecs_;
+
+        MpdStreamResource res;
+        res.info = si;
         if (streamDesc->initSegment_ != nullptr && !streamDesc->initSegment_->url_.empty()) {
-            urls.push_back(streamDesc->initSegment_->url_);
+            res.urls.push_back(streamDesc->initSegment_->url_);
         }
         for (const auto& segment : streamDesc->mediaSegments_) {
             if (!segment->url_.empty()) {
-                urls.push_back(segment->url_);
+                res.urls.push_back(segment->url_);
             }
         }
+        MEDIA_LOG_D("ParseMpdResources: stream[%{public}zu] type=%{public}d, bw=%{public}u, "
+            "res=%{public}dx%{public}d, urls=%{public}zu",
+            i, static_cast<int>(si.type), si.bitRate, si.videoWidth, si.videoHeight, res.urls.size());
+        resources.push_back(std::move(res));
     }
-
-    return urls;
 }
 
 void DashMpdDownloader::Init()

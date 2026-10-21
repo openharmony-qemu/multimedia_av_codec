@@ -51,6 +51,7 @@ config("http_source_plugin_config") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
+    "$av_codec_root_dir/services/media_engine/utils",
   ]
 }
 
@@ -79,16 +80,14 @@ ohos_shared_library("media_plugin_HttpSource") {
     "ipc:ipc_single",
     "libxml2:libxml2",
     "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
-    "netmanager_base:net_conn_manager_if",
-   ]
+  ]
 
   version_script = "libmedia_plugin_HttpSource.map"
- 
-  ldflags = [
-    "-Wl,--exclude-libs=libc++_static.a",
-  ]
+
+  ldflags = [ "-Wl,--exclude-libs=libc++_static.a" ]
 
   relative_install_dir = "media/media_plugins"
   subsystem_name = "multimedia"
@@ -110,13 +109,13 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "dash/dash_mpd_downloader.cpp",
     "dash/dash_segment_downloader.cpp",
     "dash/mpd_parser/dash_adpt_set_manager.cpp",
+    "dash/mpd_parser/dash_generic_node.cpp",
     "dash/mpd_parser/dash_manager_util.cpp",
     "dash/mpd_parser/dash_mpd_manager.cpp",
     "dash/mpd_parser/dash_mpd_parser.cpp",
     "dash/mpd_parser/dash_mpd_util.cpp",
     "dash/mpd_parser/dash_period_manager.cpp",
     "dash/mpd_parser/dash_representation_manager.cpp",
-    "dash/mpd_parser/dash_generic_node.cpp",
     "dash/mpd_parser/i_dash_mpd_node.cpp",
     "dash/mpd_parser/sidx_box_parser.cpp",
     "download/app_client.cpp",
@@ -125,22 +124,22 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "hls/hls_key_downloader.cpp",
     "hls/hls_media_downloader.cpp",
     "hls/hls_playlist_downloader.cpp",
+    "hls/hls_segment_manager.cpp",
     "hls/hls_tags.cpp",
     "hls/m3u8.cpp",
     "hls/playlist_downloader.cpp",
-    "hls/hls_segment_manager.cpp",
     "http/http_media_downloader.cpp",
     "http_source_plugin.cpp",
     "http_source_plugin_stream_protocol_sniffer.cpp",
     "http_source_plugin_stream_resource_parser.cpp",
-    "utils/http_media_utils.cpp",
     "monitor/download_monitor.cpp",
     "utils/aes_decryptor.cpp",
+    "utils/http_media_utils.cpp",
     "utils/media_cached_buffer.cpp",
-    "xml/xml_element.cpp",
-    "xml/xml_parser.cpp",
     "utils/storage_usage_util.cpp",
     "utils/string_utils.cpp",
+    "xml/xml_element.cpp",
+    "xml/xml_parser.cpp",
   ]
 
   deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
@@ -148,7 +147,6 @@ ohos_static_library("media_plugin_HttpSource_static") {
   external_deps = [
     "bundle_framework:appexecfwk_base",
     "bundle_framework:appexecfwk_core",
-    "samgr:samgr_proxy",
     "c_utils:utils",
     "ffmpeg:libohosffmpeg",
     "graphic_surface:surface",
@@ -158,9 +156,10 @@ ohos_static_library("media_plugin_HttpSource_static") {
     "ipc:ipc_single",
     "libxml2:libxml2",
     "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
     "openssl:libcrypto_shared",
     "safwk:system_ability_fwk",
-    "netmanager_base:net_conn_manager_if",
+    "samgr:samgr_proxy",
   ]
 
   subsystem_name = "multimedia"
