@@ -93,7 +93,6 @@ struct VideoDecoderObject : public OH_AVCodec {
     std::unordered_map<uint32_t, uint8_t> outputBufferStateMap_;
     std::shared_ptr<NativeVideoDecoderCallback> callback_ = nullptr;
     bool isSetMemoryCallback_ = false;
-    bool isOutputSurfaceMode_ = false;
     std::shared_mutex objListMutex_;
 };
 
@@ -183,7 +182,7 @@ public:
             info.presentationTimeUs, info.size, info.offset, flag
         };
         OH_AVMemory *data = nullptr;
-        if (!videoDecObj->isOutputSurfaceMode_) {
+        if (buffer != nullptr) {
             data = videoDecObj->GetTransData(index, buffer, true);
         }
 
@@ -605,7 +604,6 @@ OH_AVErrCode OH_VideoDecoder_Reset(struct OH_AVCodec *codec)
         AVCODEC_LOGE("Video decoder reset failed!");
         return AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret));
     }
-    videoDecObj->isOutputSurfaceMode_ = false;
     videoDecObj->ClearBufferList();
     return AV_ERR_OK;
 }
@@ -632,7 +630,6 @@ OH_AVErrCode OH_VideoDecoder_SetSurface(OH_AVCodec *codec, OHNativeWindow *windo
         AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)));
     CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, AVCSErrorToOHAVErrCode(static_cast<AVCodecServiceErrCode>(ret)),
                              "Video decoder set output surface failed!");
-    videoDecObj->isOutputSurfaceMode_ = true;
 
     return AV_ERR_OK;
 }

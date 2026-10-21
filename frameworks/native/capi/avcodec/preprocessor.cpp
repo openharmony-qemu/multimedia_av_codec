@@ -725,11 +725,10 @@ void Preprocessor::UpdateConfiguredValues(const Media::Format &format, bool conf
 bool Preprocessor::GetEncoderRange(const Media::Format &format, Range &encWidth, Range &encHeight)
 {
     AVCodecListImpl codecList;
-    CHECK_AND_RETURN_RET_LOG(codecList.Init() == AVCS_ERR_OK, false, "Init AVCodecList failed!");
+    int32_t ret = codecList.Init();
+    CHECK_AND_RETURN_RET_LOG(ret == AVCS_ERR_OK, false, "Init AVCodecList failed: %{public}d", ret);
     CapabilityData *cap = codecList.GetCapability(std::string(mime_.c_str()), true, AVCodecCategory::AVCODEC_NONE);
-    if (cap == nullptr) {
-        return false;
-    }
+    CHECK_AND_RETURN_RET_LOG(cap != nullptr, false, "Get encoder capability failed: %{public}s", mime_.c_str());
     encWidth = cap->width;
     encHeight = cap->height;
     return true;
@@ -754,9 +753,7 @@ bool Preprocessor::CheckOrReallocOutSurfaceBuffer(int32_t targetWidth, int32_t t
     if (needRealloc) {
         CHECK_AND_RETURN_RET_LOG(output && callback, false, "Output buffer or realloc callback is nullptr");
         sptr<SurfaceBuffer> newBuffer = SurfaceBuffer::Create();
-        if (!newBuffer) {
-            return false;
-        }
+        CHECK_AND_RETURN_RET_LOG(newBuffer != nullptr, false, "Create surface buffer failed");
         constexpr auto DEFAULT_USAGE = BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_MMZ_CACHE;
         BufferRequestConfig config = {
             .width = targetWidth,

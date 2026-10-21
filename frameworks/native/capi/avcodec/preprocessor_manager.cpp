@@ -299,8 +299,12 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
         "Get a nullptr, %s %s", preprocessor ? "" : "preprocessor", surface ? "" : "surface");
     std::weak_ptr<EncoderInfo> weakThis = shared_from_this();
     encoderSurface_ = surface;
-    encoderSurface_->Connect();
-    encoderSurface_->RegisterReleaseListener([weakThis](uint32_t seq, const sptr<SyncFence>& fence) {
+    auto ret = encoderSurface_->Connect();
+    if (ret != GSERROR_OK) {
+        AVCODEC_LOGE("Connect encoder surface failed, GSError: %{public}d", ret);
+    }
+    ret = encoderSurface_->RegisterReleaseListener([weakThis](uint32_t seq,
+        const sptr<SyncFence>& fence) {
         std::shared_ptr<EncoderInfo> encoderInfo = weakThis.lock();
         if (encoderInfo == nullptr) {
             return GSERROR_OK;
@@ -309,6 +313,9 @@ void PreprocessorManager::EncoderInfo::Init(std::shared_ptr<Preprocessor> prepro
         encoderInfo->OnNewEncoderSurfaceBufferAvailable(seq, fence);
         return GSERROR_OK;
     });
+    if (ret != GSERROR_OK) {
+        AVCODEC_LOGE("Register release listener failed, GSError: %{public}d", ret);
+    }
 
     preprocessor_ = preprocessor;
     preprocessor_->SetOnBufferReallocCallback(
