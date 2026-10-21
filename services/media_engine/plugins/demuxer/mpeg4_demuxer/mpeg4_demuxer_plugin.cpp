@@ -27,6 +27,7 @@
 #include <deque>
 
 #include "avcodec_trace.h"
+#include "avc_parser_impl.h"
 #include "demuxer_utils.h"
 #include "securec.h"
 #include "converter.h"
@@ -364,9 +365,12 @@ constexpr uint8_t AVC_NAL_LENGTH_SIZE_OFFSET = 4;
 constexpr uint8_t AVC_NAL_LENGTH_SIZE_MASK = 0x03;
 constexpr uint8_t AVC_NAL_TYPE_MASK = 0x1F;
 constexpr uint8_t AVC_IDR_NAL_TYPE = 5;
+constexpr uint8_t AVC_SLICE_NAL_TYPE = 1;
 constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
 constexpr uint8_t AVC_MAX_NAL_LENGTH_SIZE = 4;
 constexpr uint8_t BITS_PER_BYTE = 8;
+constexpr uint32_t AVC_SLICE_TYPE_I = 2; // slice_type %% 5 == 2 maps to an I slice
+constexpr uint32_t AVC_SLICE_HEADER_SCAN_SIZE = 64;
 constexpr int64_t MAX_AVC_IDR_SCAN_SIZE = 64 * 1024 * 1024;
 
 struct ReadSamplePacketAttr {
@@ -904,6 +908,24 @@ int64_t GetEffectiveStreamDurationTicks(
         }
         // LCOV_EXCL_STOP
     }
+    // A degenerate edit list (all segments zero length) that starts at media time 0 contributes
+    // nothing to the timeline; FFmpeg caps st->duration to 0 (min with the edit-list end).
+    if (streamDuration > 0 && !track->editListEntries.empty() &&
+        track->editListEntries.front().mediaTime == 0) {
+        int64_t editEndTicks = 0;
+        bool editEndValid = true;
+        for (const auto& edit : track->editListEntries) {
+            int64_t editDurationTicks = 0;
+            if (ConvertTimeScale(edit.duration, trackTimeScale, movieTimeScale, &editDurationTicks) != Status::OK ||
+                editDurationTicks < 0 || __builtin_add_overflow(editEndTicks, editDurationTicks, &editEndTicks)) {
+                editEndValid = false;
+                break;
+            }
+        }
+        if (editEndValid && editEndTicks == 0) {
+            streamDuration = 0;
+        }
+    }
     return streamDuration;
 }
 
@@ -936,21 +958,17 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
             (void)GetNominalSttsDuration(track, duration);
         }
     } else {
-        // The final packet has no next DTS, so close it against the effective stream duration.
+        // The final packet has no next DTS. FFmpeg mov_finalize_packet closes the last packet
+        // against st->duration (bounded by mdhd/stts totals and the edit list): pkt->duration =
+        // max(0, st->duration - dts). A tail at or past the stream end yields 0 instead of
+        // borrowing the previous sample spacing.
         int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
-        if (streamDuration < currentSample.dts && currentSample.duration != 0) {
-            durationUs = 0;
-            return true;
+        int64_t tailDurationTicks = streamDuration - currentSample.dts;
+        if (tailDurationTicks > 0) {
+            return RescaleTrackTimeToUsRoundNearest(tailDurationTicks, trackTimeScale, durationUs) == Status::OK;
         }
-        if (streamDuration <= currentSample.dts) {
-            FALSE_RETURN_V_NOLOG(sampleIndex != 0, false);
-            MPEG4SampleHelper::SampleIndexView previousSample;
-            FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
-            duration = currentSample.dts - previousSample.dts;
-            FALSE_RETURN_V_NOLOG(duration > 0, false);
-        } else {
-            duration = streamDuration - currentSample.dts;
-        }
+        durationUs = 0;
+        return true;
     }
     if (duration > 0) {
         return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
@@ -1041,6 +1059,14 @@ bool GetAacFrameDurationUs(const ReadSamplePacketContext& context, int64_t& dura
     if (!context.mediaInfo.tracks[trackId].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) || sampleRate <= 0 ||
         !context.mediaInfo.tracks[trackId].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) ||
         samplesPerFrame <= 0) {
+        return false;
+    }
+    size_t sampleCount = track->sampleHelper->GetSampleCount();
+    if (sampleCount > 0 && context.sampleIndex + 1 == sampleCount &&
+        GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale) <=
+            context.currentSample.dts) {
+        // FFmpeg mov_finalize_packet leaves the tail at 0 once the stream end is consumed; do not
+        // substitute the fixed AAC frame duration for such packets.
         return false;
     }
 
@@ -1282,17 +1308,14 @@ bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_
     int64_t rawTotalDuration = track->sampleHelper->GetRawTotalDuration();
     int64_t rawTailDuration = rawTotalDuration - currentSample.dts;
     FALSE_RETURN_V_NOLOG(!(GetSkipInfoEditedAudioDurationUs(entryContext, rawTailDuration, durationUs)), true);
-    FALSE_RETURN_V_NOLOG(rawTailDuration <= 0, false);
-    int64_t duration = currentSample.duration;
-    if (context.sampleIndex > 0) {
-        MPEG4SampleHelper::SampleIndexView previousSample;
-        FALSE_RETURN_V_NOLOG(GetSampleView(track, context.sampleIndex - 1, previousSample), false);
-        int64_t previousDuration = currentSample.dts - previousSample.dts;
-        if (previousDuration > 0 && rawTailDuration < 0) {
-            duration = previousDuration;
-        }
+    if (rawTailDuration < 0) {
+        // The edit-list timeline extends past the media end; FFmpeg closes the tail packet to 0
+        // (st->duration < pkt->dts) instead of borrowing the previous sample spacing.
+        durationUs = 0;
+        return true;
     }
-    return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
+    FALSE_RETURN_V_NOLOG(rawTailDuration <= 0, false);
+    return RescaleTrackTimeToUsRoundNearest(currentSample.duration, context.trackTimeScale, durationUs) == Status::OK;
 }
 
 bool GetTimedMetaTailDurationUs(
@@ -1357,6 +1380,12 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
     FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
     const auto& currentSample = context.currentSample;
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
+    if (streamDuration <= currentSample.dts) {
+        // FFmpeg mov_finalize_packet: a tail at or past the stream end gets duration 0, not the
+        // nominal STTS spacing (e.g. a trailing zero-duration delta).
+        durationUs = 0;
+        return true;
+    }
     if (GetNominalSttsFrameDurationUs(track, context.trackTimeScale, durationUs)) {
         return true;
     }
@@ -1364,7 +1393,7 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
         return false;
     }
     int64_t duration = currentSample.duration;
-    if (duration <= 0 || streamDuration <= currentSample.dts) {
+    if (duration <= 0) {
         duration = currentSample.dts - previousSample.dts;
     }
     FALSE_RETURN_V_NOLOG(duration > 0, false);
@@ -1386,6 +1415,85 @@ uint8_t GetAvcNalLengthSize(const std::shared_ptr<MPEG4AtomParser::Track>& track
         track->codecParms.extradataSize > AVC_NAL_LENGTH_SIZE_OFFSET, 0);
     uint8_t nalLengthSize = (track->codecParms.data[AVC_NAL_LENGTH_SIZE_OFFSET] & AVC_NAL_LENGTH_SIZE_MASK) + 1;
     return nalLengthSize >= AVC_MIN_NAL_LENGTH_SIZE && nalLengthSize <= AVC_MAX_NAL_LENGTH_SIZE ? nalLengthSize : 0;
+}
+
+void EnsureAvcKeyHeuristicParsed(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    if (track == nullptr || track->avcKeyHeuristicParsed) {
+        return;
+    }
+    track->avcKeyHeuristicParsed = true;
+    const uint8_t* ext = track->codecParms.data.get();
+    const int64_t extSize = track->codecParms.extradataSize;
+    if (ext == nullptr || extSize <= 0 || extSize > std::numeric_limits<int32_t>::max()) {
+        return;
+    }
+    AvcParserImpl::ParseAvcConfigRefCounts(ext, static_cast<int32_t>(extSize),
+        track->avcSpsRefFrameCounts, track->avcPpsSpsIds, track->avcPpsRefCountsL0);
+}
+
+bool AvcSliceHeaderHasPpsAndType(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t nalOffset,
+    uint32_t nalLength, uint8_t nalLengthSize, uint32_t& ppsId, uint32_t& pictType)
+{
+    if (track == nullptr || nalLength <= nalLengthSize) {
+        return false;
+    }
+    const uint32_t readSize = std::min<uint32_t>(nalLength, AVC_SLICE_HEADER_SCAN_SIZE);
+    uint8_t prefix[AVC_SLICE_HEADER_SCAN_SIZE] = {0};
+    FALSE_RETURN_V_NOLOG(track->sampleHelper->dataReader_->ReadUintData(nalOffset, prefix, readSize) ==
+        Status::OK, false);
+    uint32_t firstMbInSlice = 0;
+    uint32_t sliceType = 0;
+    FALSE_RETURN_V_NOLOG(AvcParserImpl::ParseSliceHeaderInfo(prefix, readSize, firstMbInSlice, sliceType, ppsId),
+        false);
+    pictType = sliceType % 5;
+    return true;
+}
+
+bool AvcSampleContainsLowRefISlice(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    const MPEG4SampleHelper::SampleIndexView& sample)
+{
+    if (track == nullptr || track->sampleHelper == nullptr || track->sampleHelper->dataReader_ == nullptr ||
+        track->sampleHelper->mimeType_ != MimeType::VIDEO_AVC || sample.pos < 0 || sample.size <= 0 ||
+        sample.size > MAX_AVC_IDR_SCAN_SIZE) {
+        return false;
+    }
+    EnsureAvcKeyHeuristicParsed(track);
+    if (track->avcPpsRefCountsL0.empty() || track->avcSpsRefFrameCounts.empty()) {
+        return false;
+    }
+    uint8_t nalLengthSize = GetAvcNalLengthSize(track);
+    FALSE_RETURN_V_NOLOG(nalLengthSize != 0 && sample.size >= nalLengthSize, false);
+    int64_t sampleEnd = 0;
+    FALSE_RETURN_V_NOLOG(SafeAddInt64(sample.pos, sample.size, sampleEnd), false);
+    int64_t offset = sample.pos;
+    uint8_t lengthData[AVC_MAX_NAL_LENGTH_SIZE] = {0};
+    uint8_t nalHeader = 0;
+    while (offset <= sampleEnd - nalLengthSize) {
+        FALSE_RETURN_V_NOLOG(
+            track->sampleHelper->dataReader_->ReadUintData(offset, lengthData, nalLengthSize) == Status::OK,
+            false);
+        const uint32_t nalLength = ReadNalLength(lengthData, nalLengthSize);
+        FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, nalLengthSize, offset), false);
+        FALSE_RETURN_V_NOLOG(nalLength != 0 && nalLength <= static_cast<uint64_t>(sampleEnd - offset), false);
+        FALSE_RETURN_V_NOLOG(
+            track->sampleHelper->dataReader_->ReadUintData(offset, &nalHeader, sizeof(nalHeader)) == Status::OK,
+            false);
+        const uint8_t nalType = nalHeader & AVC_NAL_TYPE_MASK;
+        if (nalType == AVC_SLICE_NAL_TYPE || nalType == AVC_IDR_NAL_TYPE) {
+            uint32_t ppsId = 0;
+            uint32_t pictType = 0;
+            if (AvcSliceHeaderHasPpsAndType(track, offset, nalLength, nalLengthSize, ppsId, pictType) &&
+                pictType == AVC_SLICE_TYPE_I && ppsId < track->avcPpsRefCountsL0.size() &&
+                track->avcPpsRefCountsL0[ppsId] <= 1 &&
+                track->avcPpsSpsIds[ppsId] < track->avcSpsRefFrameCounts.size() &&
+                track->avcSpsRefFrameCounts[track->avcPpsSpsIds[ppsId]] <= 1) {
+                return true;
+            }
+        }
+        FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, static_cast<int64_t>(nalLength), offset), false);
+    }
+    return false;
 }
 
 bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
@@ -1420,14 +1528,14 @@ bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
 
 bool ShouldApplyMovEditTimelineOffset(const std::shared_ptr<MPEG4AtomParser::Track>& track);
 
-bool ShouldMarkAvcIdrSampleKey(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+bool ShouldMarkAvcSampleKey(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     const MPEG4SampleHelper::SampleIndexView& currentSample)
 {
     if (track == nullptr || track->codecParms.trackType != VIDEO_TYPE ||
         (currentSample.flag & Sample::SampleFlag::SYNC_FRAME) != 0) {
         return false;
     }
-    return AvcSampleContainsIdr(track, currentSample);
+    return AvcSampleContainsIdr(track, currentSample) || AvcSampleContainsLowRefISlice(track, currentSample);
 }
 
 uint32_t GetSkipSamplesFromInfo(const std::vector<uint8_t>& skipSamplesInfo)
@@ -1467,7 +1575,7 @@ uint32_t GetPacketSampleFlag(const std::shared_ptr<MPEG4AtomParser::Track>& trac
     const MPEG4SampleHelper::SampleIndexView& currentSample, bool hasPlayableVideoTrack)
 {
     uint32_t flag = currentSample.flag;
-    if (ShouldMarkAvcIdrSampleKey(track, currentSample)) {
+    if (ShouldMarkAvcSampleKey(track, currentSample)) {
         flag |= static_cast<uint32_t>(Sample::SampleFlag::SYNC_FRAME);
     }
     if (sampleIndex == 0 && IsValidTrack(track) && track->codecParms.trackType == AUDIO_TYPE &&
@@ -2358,7 +2466,11 @@ void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& trac
         format.Set<Tag::VIDEO_WIDTH>(w);
         format.Set<Tag::VIDEO_HEIGHT>(h);
     }
-    if (sar > 0) {
+    // Aligned with FFmpeg av_guess_sample_aspect_ratio: container-derived SAR (pasp /
+    // tkhd-stsd difference) takes precedence; SPS VUI SAR is only a fallback when the
+    // container does not provide one.
+    double containerSar = 0.0;
+    if (!format.Get<Tag::VIDEO_SAR>(containerSar) && sar > 0) {
         format.Set<Tag::VIDEO_SAR>(sar);
     }
 }

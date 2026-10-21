@@ -32,6 +32,7 @@ constexpr int32_t AVC_CONFIG_HEADER_SIZE = 6;
 constexpr int32_t AVC_CONFIG_SPS_OFFSET = 5;
 constexpr uint8_t AVC_CONFIG_SPS_COUNT_MASK = 0x1F;
 constexpr int32_t AVC_NAL_HEADER_SIZE = 1;
+constexpr uint8_t AVC_NAL_TYPE_MASK = 0x1F;
 constexpr int32_t H264_SCALING_LIST_MOD = 256;
 constexpr uint32_t H264_EXTENDED_SAR = 255;
 constexpr uint32_t H264_BYTE_BITS = 8;
@@ -660,6 +661,120 @@ bool AvcParserImpl::ParseSpsFrameRateFromAvcConfig(const uint8_t *extraData, int
         offset += spsLength;
     }
     return false;
+}
+
+bool AvcParserImpl::ParseSpsMaxNumRefFrames(const uint8_t *nal, uint32_t nalSize,
+    uint32_t &spsId, uint32_t &maxNumRefFrames)
+{
+    FALSE_RETURN_V(nal != nullptr && nalSize > static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) &&
+        (nal[0] & AVC_NAL_TYPE_MASK) == AVC_NAL_SPS, false);
+    RbspContext reader(nal + AVC_NAL_HEADER_SIZE,
+        static_cast<int32_t>(nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE)), true);
+    H264SpsInfo info;
+    uint32_t profileIdc = 0;
+    uint32_t tmp = 0;
+    FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, profileIdc), false); // profile_idc
+    FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false); // constraint + reserved
+    FALSE_RETURN_V(reader.RbspReadBits(H264_BYTE_BITS, tmp), false); // level_idc
+    FALSE_RETURN_V(reader.RbspReadUE(spsId), false); // seq_parameter_set_id
+    if (IsH264HighProfile(profileIdc) && !ReadH264HighProfileSyntax(reader, tmp, info)) {
+        return false;
+    }
+    FALSE_RETURN_V(SkipH264PictureOrderSyntax(reader, tmp), false);
+    return reader.RbspReadUE(maxNumRefFrames); // max_num_ref_frames
+}
+
+bool AvcParserImpl::ParsePpsNumRefIdxL0(const uint8_t *nal, uint32_t nalSize,
+    uint32_t &ppsId, uint32_t &spsId, uint32_t &numRefIdxL0)
+{
+    FALSE_RETURN_V(nal != nullptr && nalSize > static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) &&
+        (nal[0] & AVC_NAL_TYPE_MASK) == AVC_NAL_PPS, false);
+    RbspContext reader(nal + AVC_NAL_HEADER_SIZE,
+        static_cast<int32_t>(nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE)), true);
+    uint32_t dummy = 0;
+    uint32_t sliceGroupsMinus1 = 0;
+    uint32_t refCountMinus1 = 0;
+    FALSE_RETURN_V(reader.RbspReadUE(ppsId), false); // pic_parameter_set_id
+    FALSE_RETURN_V(reader.RbspReadUE(spsId), false); // seq_parameter_set_id
+    FALSE_RETURN_V(reader.RbspReadBit(dummy), false); // entropy_coding_mode_flag
+    FALSE_RETURN_V(reader.RbspReadBit(dummy), false); // bottom_field_pic_order_in_frame_present_flag
+    FALSE_RETURN_V(reader.RbspReadUE(sliceGroupsMinus1), false); // num_slice_groups_minus1
+    if (sliceGroupsMinus1 > 0) {
+        // FMO streams: slice group fields must be skipped, ref counts are not directly usable.
+        return false;
+    }
+    FALSE_RETURN_V(reader.RbspReadUE(refCountMinus1), false); // num_ref_idx_l0_default_active_minus1
+    numRefIdxL0 = refCountMinus1 + 1;
+    return true;
+}
+
+bool AvcParserImpl::ParseSliceHeaderInfo(const uint8_t *nal, uint32_t nalSize,
+    uint32_t &firstMbInSlice, uint32_t &sliceType, uint32_t &ppsId)
+{
+    FALSE_RETURN_V(nal != nullptr && nalSize > static_cast<uint32_t>(AVC_NAL_HEADER_SIZE), false);
+    RbspContext reader(nal + AVC_NAL_HEADER_SIZE,
+        static_cast<int32_t>(nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE)), true);
+    return reader.RbspReadUE(firstMbInSlice) && reader.RbspReadUE(sliceType) &&
+        reader.RbspReadUE(ppsId);
+}
+
+bool AvcParserImpl::ParseAvcConfigRefCounts(const uint8_t *extraData, int32_t extraDataSize,
+    std::vector<uint32_t> &spsRefFrameCounts, std::vector<uint32_t> &ppsSpsIds,
+    std::vector<uint32_t> &ppsRefCountsL0)
+{
+    spsRefFrameCounts.clear();
+    ppsSpsIds.clear();
+    ppsRefCountsL0.clear();
+    const uint32_t unknownRefCount = std::numeric_limits<uint32_t>::max();
+    FALSE_RETURN_V(extraData != nullptr && extraDataSize >= AVC_CONFIG_HEADER_SIZE, false);
+    size_t offset = AVC_CONFIG_SPS_OFFSET;
+    uint8_t spsCount = extraData[offset++] & AVC_CONFIG_SPS_COUNT_MASK;
+    for (uint8_t i = 0; i < spsCount; ++i) {
+        if (offset + sizeof(uint16_t) > static_cast<size_t>(extraDataSize)) {
+            return false;
+        }
+        uint16_t spsLength = (static_cast<uint16_t>(extraData[offset]) << H264_BYTE_BITS) | extraData[offset + 1];
+        offset += sizeof(uint16_t);
+        if (offset + spsLength > static_cast<size_t>(extraDataSize)) {
+            return false;
+        }
+        uint32_t spsId = 0;
+        uint32_t maxNumRefFrames = 0;
+        if (ParseSpsMaxNumRefFrames(extraData + offset, spsLength, spsId, maxNumRefFrames)) {
+            if (spsRefFrameCounts.size() <= spsId) {
+                spsRefFrameCounts.resize(spsId + 1, unknownRefCount);
+            }
+            spsRefFrameCounts[spsId] = maxNumRefFrames;
+        }
+        offset += spsLength;
+    }
+    if (offset >= static_cast<size_t>(extraDataSize)) {
+        return false;
+    }
+    uint8_t ppsCount = extraData[offset++];
+    for (uint8_t i = 0; i < ppsCount; ++i) {
+        if (offset + sizeof(uint16_t) > static_cast<size_t>(extraDataSize)) {
+            return false;
+        }
+        uint16_t ppsLength = (static_cast<uint16_t>(extraData[offset]) << H264_BYTE_BITS) | extraData[offset + 1];
+        offset += sizeof(uint16_t);
+        if (offset + ppsLength > static_cast<size_t>(extraDataSize)) {
+            return false;
+        }
+        uint32_t ppsId = 0;
+        uint32_t spsId = 0;
+        uint32_t numRefIdxL0 = 0;
+        if (ParsePpsNumRefIdxL0(extraData + offset, ppsLength, ppsId, spsId, numRefIdxL0)) {
+            if (ppsSpsIds.size() <= ppsId) {
+                ppsSpsIds.resize(ppsId + 1, unknownRefCount);
+                ppsRefCountsL0.resize(ppsId + 1, unknownRefCount);
+            }
+            ppsSpsIds[ppsId] = spsId;
+            ppsRefCountsL0[ppsId] = numRefIdxL0;
+        }
+        offset += ppsLength;
+    }
+    return true;
 }
 
 void AvcParserImpl::ConvertExtradata(uint8_t **packet, int32_t &packetSize)

@@ -36,6 +36,15 @@ public:
     bool ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, int32_t extraDataSize);
     bool ParseSpsFrameRateFromAvcConfig(const uint8_t *extraData, int32_t extraDataSize, uint32_t &frameRateNum,
         uint32_t &frameRateDen);
+    static bool ParseSpsMaxNumRefFrames(const uint8_t *nal, uint32_t nalSize, uint32_t &spsId,
+        uint32_t &maxNumRefFrames);
+    static bool ParsePpsNumRefIdxL0(const uint8_t *nal, uint32_t nalSize, uint32_t &ppsId, uint32_t &spsId,
+        uint32_t &numRefIdxL0);
+    static bool ParseSliceHeaderInfo(const uint8_t *nal, uint32_t nalSize, uint32_t &firstMbInSlice,
+        uint32_t &sliceType, uint32_t &ppsId);
+    static bool ParseAvcConfigRefCounts(const uint8_t *extraData, int32_t extraDataSize,
+        std::vector<uint32_t> &spsRefFrameCounts, std::vector<uint32_t> &ppsSpsIds,
+        std::vector<uint32_t> &ppsRefCountsL0);
     bool ConvertPacketToAnnexb(uint8_t **hvccPacket, int32_t &hvccPacketSize, uint8_t *sideData, size_t sideDataSize,
         bool isExtradata) override;
     bool ConvertPacketToAnnexb(const PacketConvertToBufferInfo &convertInfo) override;

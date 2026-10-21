@@ -18,6 +18,7 @@
 #include <limits>
 #include "meta/mime_type.h"
 #include "common/log.h"
+#include "mpeg4_format_checker.h"
 #include "mpeg4_sample_helper.h"
 
 namespace {
@@ -2091,7 +2092,9 @@ void MPEG4SampleHelper::FinalizeAppliedEditList(EditListBuildContext& buildCtx)
 {
     if (buildCtx.minCorrectedPts >= 0) {
         buildCtx.minCorrectedPts -= buildCtx.emptyEditsDuration;
-        if (trackType_ == VIDEO_TYPE && buildCtx.minCorrectedPts > 0) {
+        bool isVideoLike = trackType_ == VIDEO_TYPE ||
+            (trackType_ == AUXILIARY_TYPE && IsVideoMimeType(mimeType_));
+        if (isVideoLike && buildCtx.minCorrectedPts > 0) {
             for (auto& entry : buildCtx.newEntries) {
                 entry.dts -= buildCtx.minCorrectedPts;
             }
