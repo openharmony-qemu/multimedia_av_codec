@@ -690,30 +690,6 @@ void CalculateTrackRFrameRate(const std::shared_ptr<MPEG4AtomParser::Track>& tra
     if (entryCount == 0) {
         return;
     }
-    // FFmpeg mov_read_header: a uniform STTS table (a single run, or two runs whose second run
-    // holds exactly one trailing sample) sets r_frame_rate = time_scale / stts_delta directly;
-    // ff_rfps_calculate only estimates a rate when r_frame_rate is still zero (mov.c:5608).
-    const uint32_t firstCount = track->sampleHelper->GetSampleCountOfSttsEntry(0);
-    const uint32_t firstDelta = track->sampleHelper->GetSampleDeltaOfSttsEntry(0);
-    const bool uniformStts = entryCount == 1 ||
-        (entryCount == 2 && track->sampleHelper->GetSampleCountOfSttsEntry(1) == 1);
-    if (uniformStts && firstDelta > 0 && firstCount > 0) {
-        int64_t rateNum = track->timeScale;
-        int64_t rateDen = static_cast<int64_t>(firstDelta);
-        int64_t commonDivisor = std::gcd(rateNum, rateDen);
-        if (commonDivisor > 0) {
-            rateNum /= commonDivisor;
-            rateDen /= commonDivisor;
-        }
-        if (rateNum > 0 && rateDen > 0 &&
-            rateNum <= static_cast<int64_t>(std::numeric_limits<uint32_t>::max()) &&
-            rateDen <= static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
-            track->rFrameRateNum = static_cast<uint32_t>(rateNum);
-            track->rFrameRateDen = static_cast<uint32_t>(rateDen);
-            track->rFrameRateParsed = true;
-            return;
-        }
-    }
     // FFmpeg mov_build_index feeds ff_rfps_add_frame the first 100 sample timestamps (raw stts
     // accumulation with advanced_editlist keeping current_dts starting at 0).
     RfpsAnalyzer analyzer;
@@ -765,15 +741,11 @@ bool GetVideoFrameDurationFraction(const std::shared_ptr<MPEG4AtomParser::Track>
         return false;
     }
     if (mime == MimeType::VIDEO_AVC) {
-        // FFmpeg compute_frame_duration branch 1 (r_frame_rate) wins for MOV H.264: the h264
-        // parser is created only for field detection and avctx->framerate is not populated from
-        // the avcC SPS, so branch 4 (SPS codec framerate) does not fire for container demuxed
-        // packets. Keep branch 4 as the fallback when no r_frame_rate was derived.
-        if (track->rFrameRateParsed) {
-            num = track->rFrameRateDen;
-            den = track->rFrameRateNum;
-            return num > 0 && den > 0;
-        }
+        // H.264 always has the h264 parser (pc != NULL): compute_frame_duration branch 1
+        // (r_frame_rate) only applies when no SPS codec framerate exists; otherwise branch 4
+        // derives the duration from the codec framerate with 2 ticks per frame
+        // (AV_CODEC_PROP_FIELDS), and a bogus rate (frameRateDen * 1000 <= frameRateNum) leaves
+        // the duration undefined instead of falling back to r_frame_rate.
         if (track->codecFrameRateParsed) {
             if (track->codecFrameRateNum > 0 && track->codecFrameRateDen > 0 &&
                 track->codecFrameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR > track->codecFrameRateNum) {
@@ -782,6 +754,11 @@ bool GetVideoFrameDurationFraction(const std::shared_ptr<MPEG4AtomParser::Track>
                 return true;
             }
             return false;
+        }
+        if (track->rFrameRateParsed) {
+            num = track->rFrameRateDen;
+            den = track->rFrameRateNum;
+            return num > 0 && den > 0;
         }
     }
     return false;
@@ -931,24 +908,6 @@ int64_t GetEffectiveStreamDurationTicks(
         }
         // LCOV_EXCL_STOP
     }
-    // A degenerate edit list (all segments zero length) that starts at media time 0 contributes
-    // nothing to the timeline; FFmpeg caps st->duration to 0 (min with the edit-list end).
-    if (streamDuration > 0 && !track->editListEntries.empty() &&
-        track->editListEntries.front().mediaTime == 0) {
-        int64_t editEndTicks = 0;
-        bool editEndValid = true;
-        for (const auto& edit : track->editListEntries) {
-            int64_t editDurationTicks = 0;
-            if (ConvertTimeScale(edit.duration, trackTimeScale, movieTimeScale, &editDurationTicks) != Status::OK ||
-                editDurationTicks < 0 || __builtin_add_overflow(editEndTicks, editDurationTicks, &editEndTicks)) {
-                editEndValid = false;
-                break;
-            }
-        }
-        if (editEndValid && editEndTicks == 0) {
-            streamDuration = 0;
-        }
-    }
     return streamDuration;
 }
 
@@ -981,17 +940,21 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
             (void)GetNominalSttsDuration(track, duration);
         }
     } else {
-        // The final packet has no next DTS. FFmpeg mov_finalize_packet closes the last packet
-        // against st->duration (bounded by mdhd/stts totals and the edit list): pkt->duration =
-        // max(0, st->duration - dts). A tail at or past the stream end yields 0 instead of
-        // borrowing the previous sample spacing.
+        // The final packet has no next DTS, so close it against the effective stream duration.
         int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
-        int64_t tailDurationTicks = streamDuration - currentSample.dts;
-        if (tailDurationTicks > 0) {
-            return RescaleTrackTimeToUsRoundNearest(tailDurationTicks, trackTimeScale, durationUs) == Status::OK;
+        if (streamDuration < currentSample.dts && currentSample.duration != 0) {
+            durationUs = 0;
+            return true;
         }
-        durationUs = 0;
-        return true;
+        if (streamDuration <= currentSample.dts) {
+            FALSE_RETURN_V_NOLOG(sampleIndex != 0, false);
+            MPEG4SampleHelper::SampleIndexView previousSample;
+            FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
+            duration = currentSample.dts - previousSample.dts;
+            FALSE_RETURN_V_NOLOG(duration > 0, false);
+        } else {
+            duration = streamDuration - currentSample.dts;
+        }
     }
     if (duration > 0) {
         return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
@@ -1082,14 +1045,6 @@ bool GetAacFrameDurationUs(const ReadSamplePacketContext& context, int64_t& dura
     if (!context.mediaInfo.tracks[trackId].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) || sampleRate <= 0 ||
         !context.mediaInfo.tracks[trackId].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) ||
         samplesPerFrame <= 0) {
-        return false;
-    }
-    size_t sampleCount = track->sampleHelper->GetSampleCount();
-    if (sampleCount > 0 && context.sampleIndex + 1 == sampleCount &&
-        GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale) <=
-            context.currentSample.dts) {
-        // FFmpeg mov_finalize_packet leaves the tail at 0 once the stream end is consumed; do not
-        // substitute the fixed AAC frame duration for such packets.
         return false;
     }
 
@@ -1331,14 +1286,17 @@ bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_
     int64_t rawTotalDuration = track->sampleHelper->GetRawTotalDuration();
     int64_t rawTailDuration = rawTotalDuration - currentSample.dts;
     FALSE_RETURN_V_NOLOG(!(GetSkipInfoEditedAudioDurationUs(entryContext, rawTailDuration, durationUs)), true);
-    if (rawTailDuration < 0) {
-        // The edit-list timeline extends past the media end; FFmpeg closes the tail packet to 0
-        // (st->duration < pkt->dts) instead of borrowing the previous sample spacing.
-        durationUs = 0;
-        return true;
-    }
     FALSE_RETURN_V_NOLOG(rawTailDuration <= 0, false);
-    return RescaleTrackTimeToUsRoundNearest(currentSample.duration, context.trackTimeScale, durationUs) == Status::OK;
+    int64_t duration = currentSample.duration;
+    if (context.sampleIndex > 0) {
+        MPEG4SampleHelper::SampleIndexView previousSample;
+        FALSE_RETURN_V_NOLOG(GetSampleView(track, context.sampleIndex - 1, previousSample), false);
+        int64_t previousDuration = currentSample.dts - previousSample.dts;
+        if (previousDuration > 0 && rawTailDuration < 0) {
+            duration = previousDuration;
+        }
+    }
+    return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
 }
 
 bool GetTimedMetaTailDurationUs(
@@ -1403,16 +1361,6 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
     FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
     const auto& currentSample = context.currentSample;
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
-    if (streamDuration <= currentSample.dts) {
-        // FFmpeg mov_finalize_packet closes a tail at/past the stream end to 0, then
-        // compute_pkt_fields derives the duration from the estimated r_frame_rate (branch 1)
-        // for H.264/HEVC instead of leaving it 0 (e.g. aux tracks whose last STTS delta is 0).
-        if (GetVideoFrameRateDurationUs(track, context.trackTimeScale, durationUs)) {
-            return true;
-        }
-        durationUs = 0;
-        return true;
-    }
     if (GetNominalSttsFrameDurationUs(track, context.trackTimeScale, durationUs)) {
         return true;
     }
@@ -1420,7 +1368,7 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
         return false;
     }
     int64_t duration = currentSample.duration;
-    if (duration <= 0) {
+    if (duration <= 0 || streamDuration <= currentSample.dts) {
         duration = currentSample.dts - previousSample.dts;
     }
     FALSE_RETURN_V_NOLOG(duration > 0, false);
