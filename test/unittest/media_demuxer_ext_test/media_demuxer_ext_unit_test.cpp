@@ -9293,7 +9293,7 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_CorrectVideoPtsIfMissing_003, 
     mediaDemuxer_->framerate_ = 30;
     mediaDemuxer_->lastVideoDts_ = 0;
     mediaDemuxer_->CorrectVideoPtsIfMissing(NUM_0, sample);
-    EXPECT_NE(sample->dts_, INT64_MIN);
+    EXPECT_EQ(sample->dts_, 33333);
 }
 
 /**
@@ -9308,8 +9308,8 @@ HWTEST_F(MediaDemuxerExtUnitTest, MediaDemuxerExt_RestoreSamplePtsDtsIfInvalid_0
     sample->pts_ = INT64_MIN;
     mediaDemuxer_->videoTrackId_ = NUM_0;
     mediaDemuxer_->RestoreSamplePtsDtsIfInvalid(NUM_0, sample);
-    EXPECT_NE(sample->dts_, INT64_MIN);
-    EXPECT_NE(sample->pts_, INT64_MIN);
+    EXPECT_EQ(sample->dts_, mediaDemuxer_->currentVideoDts_);
+    EXPECT_EQ(sample->pts_, mediaDemuxer_->currentVideoPts_);
 }
 
 /**
