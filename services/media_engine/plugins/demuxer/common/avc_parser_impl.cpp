@@ -712,7 +712,9 @@ bool AvcParserImpl::ParsePpsNumRefIdxL0(const uint8_t *nal, uint32_t nalSize,
 bool AvcParserImpl::ParseSliceHeaderInfo(const uint8_t *nal, uint32_t nalSize,
     uint32_t &firstMbInSlice, uint32_t &sliceType, uint32_t &ppsId)
 {
-    FALSE_RETURN_V(nal != nullptr && nalSize > static_cast<uint32_t>(AVC_NAL_HEADER_SIZE), false);
+    FALSE_RETURN_V(nal != nullptr && nalSize > static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) &&
+        (nal[0] & AVC_NAL_TYPE_MASK) >= AVC_NAL_SLICE &&
+        (nal[0] & AVC_NAL_TYPE_MASK) <= AVC_NAL_IDR_SLICE, false);
     RbspContext reader(nal + AVC_NAL_HEADER_SIZE,
         static_cast<int32_t>(nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE)), true);
     return reader.RbspReadUE(firstMbInSlice) && reader.RbspReadUE(sliceType) &&
@@ -735,6 +737,9 @@ bool AvcParserImpl::ParseAvcConfigSpsRefCounts(const uint8_t *extraData, int32_t
         uint32_t spsId = 0;
         uint32_t maxNumRefFrames = 0;
         if (ParseSpsMaxNumRefFrames(extraData + offset, spsLength, spsId, maxNumRefFrames)) {
+            if (spsId >= H264_MAX_SPS_COUNT) {
+                return false;
+            }
             if (spsRefFrameCounts.size() <= spsId) {
                 spsRefFrameCounts.resize(spsId + 1, AVCC_UNKNOWN_REF_COUNT);
             }
@@ -762,6 +767,9 @@ bool AvcParserImpl::ParseAvcConfigPpsRefCounts(const uint8_t *extraData, int32_t
         uint32_t spsId = 0;
         uint32_t numRefIdxL0 = 0;
         if (ParsePpsNumRefIdxL0(extraData + offset, ppsLength, ppsId, spsId, numRefIdxL0)) {
+            if (ppsId >= H264_MAX_PPS_COUNT) {
+                return false;
+            }
             if (ppsSpsIds.size() <= ppsId) {
                 ppsSpsIds.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
                 ppsRefCountsL0.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
@@ -787,6 +795,8 @@ bool AvcParserImpl::ParseAvcConfigRefCounts(const uint8_t *extraData, int32_t ex
         return false;
     }
     if (offset >= static_cast<size_t>(extraDataSize)) {
+        // ISO 14496-15 requires the numOfPictureParameterSets byte even when it is 0; reaching the
+        // end of extraData without it means the avcC is truncated and the parse cannot be trusted.
         return false;
     }
     return ParseAvcConfigPpsRefCounts(extraData, extraDataSize, offset, ppsSpsIds, ppsRefCountsL0);
