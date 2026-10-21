@@ -232,7 +232,7 @@ Status AudioAmrNbEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &parame
         return Status::ERROR_INVALID_PARAMETER;
     }
     int32_t ptsMode = DEFAULT_ENCODE_PTS_MODE;
-    if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(sampleRate_)) {
+    if (parameter->Get<Tag::AUDIO_ENCODE_PTS_MODE>(ptsMode)) {
         ptsMode_ = ptsMode;
     }
     AVCODEC_LOGI("AudioAmrNbEncoderPlugin SetParameter success");
