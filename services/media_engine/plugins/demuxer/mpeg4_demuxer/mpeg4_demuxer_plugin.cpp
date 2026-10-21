@@ -369,7 +369,7 @@ constexpr uint8_t AVC_SLICE_NAL_TYPE = 1;
 constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
 constexpr uint8_t AVC_MAX_NAL_LENGTH_SIZE = 4;
 constexpr uint8_t BITS_PER_BYTE = 8;
-constexpr uint32_t AVC_SLICE_TYPE_MODULUS = 5; // H.264 slice_type groups: 0=P, 1=B, 2=I, 3=SP, 4=SI
+constexpr uint32_t AVC_SLICE_TYPE_MODULUS = 5; // H.264 slice_type 0~9 mapped by %5: 0/5=P, 1/6=B, 2/7=I, 3/8=SP, 4/9=SI
 constexpr uint32_t AVC_SLICE_TYPE_I = 2; // slice_type %% AVC_SLICE_TYPE_MODULUS == 2 maps to an I slice
 constexpr uint32_t AVC_SLICE_HEADER_SCAN_SIZE = 64;
 constexpr int64_t MAX_AVC_IDR_SCAN_SIZE = 64 * 1024 * 1024;

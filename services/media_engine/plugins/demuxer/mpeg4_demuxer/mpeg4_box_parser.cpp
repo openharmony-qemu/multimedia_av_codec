@@ -1757,14 +1757,18 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
             return;
         }
         if (denominator > 0) {
+            // Reduce to lowest terms like FFmpeg av_reduce so the double ratio
+            // matches av_q2d on the reduced rational (exact below 2^53 products).
             uint64_t gcd = std::gcd(numerator, denominator);
-            if (gcd > 0) {
-                sar = static_cast<double>(numerator / gcd) / static_cast<double>(denominator / gcd);
-                MEDIA_LOG_D("SAR from width/height diff: [%{public}u/%{public}u/%{public}u/%{public}u], sar=%{public}f",
-                    track->stsdWidth, track->stsdHeight, track->tkhdWidth, track->tkhdHeight, sar);
-                mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
-                return;
+            if (gcd > 1) {
+                numerator /= gcd;
+                denominator /= gcd;
             }
+            sar = static_cast<double>(numerator) / static_cast<double>(denominator);
+            MEDIA_LOG_D("SAR from width/height diff: [%{public}u/%{public}u/%{public}u/%{public}u], sar=%{public}f",
+                track->stsdWidth, track->stsdHeight, track->tkhdWidth, track->tkhdHeight, sar);
+            mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
+            return;
         }
     }
     MEDIA_LOG_D("Track %{public}u SAR: no pasp and no width/height diff, skip", track->trackIndex);
@@ -2934,12 +2938,13 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
     bool hasSyncExtensionSbr = false;
     bool hasSyncExtensionPs = false;
     if (audioObjectType == AOT_AAC_LC) {
-        HasAacSyncExtensionSbr(bitReader, baseSampleRate, extensionSampleRate,
+        // On absence or truncation the function returns false with the out-params
+        // already reset to false, so the parsed flags below stay reliable either way.
+        (void)HasAacSyncExtensionSbr(bitReader, baseSampleRate, extensionSampleRate,
             hasSyncExtensionSbr, hasSyncExtensionPs);
     }
-    hasSyncExtensionPs = channelConfig == 1 && hasSyncExtensionPs;
     const bool hasSbr = hasExplicitSbr || hasSyncExtensionSbr;
-    AdjustPsChannelConfig(isImplicitPs || hasSyncExtensionPs, channels, layout);
+    AdjustPsChannelConfig(isImplicitPs || (channelConfig == 1 && hasSyncExtensionPs), channels, layout);
     if (hasExplicitSbr) {
         uint8_t extensionSamplingFreqIndex = 0;
         ReadAACSampleRate(bitReader, extensionSamplingFreqIndex, extensionSampleRate);

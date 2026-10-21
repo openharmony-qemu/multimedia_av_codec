@@ -669,7 +669,8 @@ bool AvcParserImpl::ParseSpsMaxNumRefFrames(const uint8_t *nal, uint32_t nalSize
     uint32_t &spsId, uint32_t &maxNumRefFrames)
 {
     FALSE_RETURN_V(nal != nullptr && nalSize > static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) &&
-        (nal[0] & AVC_NAL_TYPE_MASK) == AVC_NAL_SPS, false);
+        (nal[0] & AVC_NAL_TYPE_MASK) == AVC_NAL_SPS &&
+        nalSize <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max()), false);
     RbspContext reader(nal + AVC_NAL_HEADER_SIZE,
         static_cast<int32_t>(nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE)), true);
     H264SpsInfo info;
@@ -690,7 +691,8 @@ bool AvcParserImpl::ParsePpsNumRefIdxL0(const uint8_t *nal, uint32_t nalSize,
     uint32_t &ppsId, uint32_t &spsId, uint32_t &numRefIdxL0)
 {
     FALSE_RETURN_V(nal != nullptr && nalSize > static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) &&
-        (nal[0] & AVC_NAL_TYPE_MASK) == AVC_NAL_PPS, false);
+        (nal[0] & AVC_NAL_TYPE_MASK) == AVC_NAL_PPS &&
+        nalSize <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max()), false);
     RbspContext reader(nal + AVC_NAL_HEADER_SIZE,
         static_cast<int32_t>(nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE)), true);
     uint32_t dummy = 0;
@@ -716,7 +718,8 @@ bool AvcParserImpl::ParseSliceHeaderInfo(const uint8_t *nal, uint32_t nalSize,
 {
     const uint8_t nalType = nal != nullptr ? nal[0] & AVC_NAL_TYPE_MASK : 0;
     FALSE_RETURN_V(nal != nullptr && nalSize > static_cast<uint32_t>(AVC_NAL_HEADER_SIZE) &&
-        (nalType == AVC_NAL_SLICE || nalType == AVC_NAL_IDR_SLICE), false);
+        (nalType == AVC_NAL_SLICE || nalType == AVC_NAL_IDR_SLICE) &&
+        nalSize <= static_cast<uint32_t>(std::numeric_limits<int32_t>::max()), false);
     RbspContext reader(nal + AVC_NAL_HEADER_SIZE,
         static_cast<int32_t>(nalSize - static_cast<uint32_t>(AVC_NAL_HEADER_SIZE)), true);
     return reader.RbspReadUE(firstMbInSlice) && reader.RbspReadUE(sliceType) &&
@@ -739,13 +742,12 @@ bool AvcParserImpl::ParseAvcConfigSpsRefCounts(const uint8_t *extraData, int32_t
         uint32_t spsId = 0;
         uint32_t maxNumRefFrames = 0;
         if (ParseSpsMaxNumRefFrames(extraData + offset, spsLength, spsId, maxNumRefFrames)) {
-            if (spsId >= H264_MAX_SPS_COUNT) {
-                return false;
+            if (spsId < H264_MAX_SPS_COUNT) {
+                if (spsRefFrameCounts.size() <= spsId) {
+                    spsRefFrameCounts.resize(spsId + 1, AVCC_UNKNOWN_REF_COUNT);
+                }
+                spsRefFrameCounts[spsId] = maxNumRefFrames;
             }
-            if (spsRefFrameCounts.size() <= spsId) {
-                spsRefFrameCounts.resize(spsId + 1, AVCC_UNKNOWN_REF_COUNT);
-            }
-            spsRefFrameCounts[spsId] = maxNumRefFrames;
         }
         offset += spsLength;
     }
@@ -769,15 +771,14 @@ bool AvcParserImpl::ParseAvcConfigPpsRefCounts(const uint8_t *extraData, int32_t
         uint32_t spsId = 0;
         uint32_t numRefIdxL0 = 0;
         if (ParsePpsNumRefIdxL0(extraData + offset, ppsLength, ppsId, spsId, numRefIdxL0)) {
-            if (ppsId >= H264_MAX_PPS_COUNT || spsId >= H264_MAX_SPS_COUNT) {
-                return false;
+            if (ppsId < H264_MAX_PPS_COUNT && spsId < H264_MAX_SPS_COUNT) {
+                if (ppsSpsIds.size() <= ppsId) {
+                    ppsSpsIds.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
+                    ppsRefCountsL0.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
+                }
+                ppsSpsIds[ppsId] = spsId;
+                ppsRefCountsL0[ppsId] = numRefIdxL0;
             }
-            if (ppsSpsIds.size() <= ppsId) {
-                ppsSpsIds.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
-                ppsRefCountsL0.resize(ppsId + 1, AVCC_UNKNOWN_REF_COUNT);
-            }
-            ppsSpsIds[ppsId] = spsId;
-            ppsRefCountsL0[ppsId] = numRefIdxL0;
         }
         offset += ppsLength;
     }
