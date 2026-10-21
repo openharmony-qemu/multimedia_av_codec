@@ -7515,7 +7515,7 @@ void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_p
 {
     // DTS missing - maintain DTS using framerate
     // PTS missing - PTS = DTS
-    FALSE_RETURN_NOLOG(trackId == videoTrackId_ && sample != nullptr);
+    FALSE_RETURN_NOLOG(isPlayerMode_ &&  trackId == videoTrackId_ && sample != nullptr);
     if (sample->dts_ != PTS_MISSING_MARKER) {
         lastVideoDts_.store(sample->dts_);
         sample->pts_ = (sample->pts_ == PTS_MISSING_MARKER) ? sample->dts_ : sample->pts_;
@@ -7536,7 +7536,7 @@ void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_p
 void MediaDemuxer::RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
 {
     // cannot maintain DTS/PTS - restore to previous values
-    FALSE_RETURN_NOLOG(trackId == videoTrackId_ && sample != nullptr);
+    FALSE_RETURN_NOLOG(isPlayerMode_ && trackId == videoTrackId_ && sample != nullptr);
     if (sample->dts_ == PTS_MISSING_MARKER) {
         sample->dts_ = currentVideoDts_.load();
     }
@@ -7547,7 +7547,7 @@ void MediaDemuxer::RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shar
 
 void MediaDemuxer::CacheAndInvalidateVideoSample(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
 {
-    FALSE_RETURN_NOLOG(trackId == videoTrackId_ && sample != nullptr);
+    FALSE_RETURN_NOLOG(isPlayerMode_ && trackId == videoTrackId_ && sample != nullptr);
     currentVideoDts_.store(sample->dts_);
     currentVideoPts_.store(sample->pts_);
     sample->dts_ = PTS_MISSING_MARKER;
