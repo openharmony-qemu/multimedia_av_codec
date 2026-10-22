@@ -352,11 +352,13 @@ int32_t HdiCodec::HdiCallback::EventHandler(CodecEventType event, const EventInf
 
 int32_t HdiCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBuffer &buffer)
 {
+    if (buffer.fd >= 0) {
+        fdsan_exchange_owner_tag(buffer.fd, 0, HDICODEC_FDSAN_TAG);
+    }
     if (hdiCodec_) {
         hdiCodec_->OnEmptyBufferDone(buffer);
     }
     if (buffer.fd >= 0) {
-        fdsan_exchange_owner_tag(buffer.fd, 0, HDICODEC_FDSAN_TAG);
         fdsan_close_with_tag(buffer.fd, HDICODEC_FDSAN_TAG);
     }
     return HDF_SUCCESS;
@@ -365,11 +367,13 @@ int32_t HdiCodec::HdiCallback::EmptyBufferDone(int64_t appData, const OmxCodecBu
 int32_t HdiCodec::HdiCallback::FillBufferDone(int64_t appData, const OmxCodecBuffer &buffer)
 {
     AVCODEC_LOGD("FillBufferDone");
+    if (buffer.fd >= 0) {
+        fdsan_exchange_owner_tag(buffer.fd, 0, HDICODEC_FDSAN_TAG);
+    }
     if (hdiCodec_) {
         hdiCodec_->OnFillBufferDone(buffer);
     }
     if (buffer.fd >= 0) {
-        fdsan_exchange_owner_tag(buffer.fd, 0, HDICODEC_FDSAN_TAG);
         fdsan_close_with_tag(buffer.fd, HDICODEC_FDSAN_TAG);
     }
     return HDF_SUCCESS;
