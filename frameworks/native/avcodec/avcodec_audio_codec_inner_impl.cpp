@@ -23,7 +23,7 @@
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AVCodecAudioCodecInnerImpl"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AVCodecInner"};
 constexpr size_t DEFAULT_OUTPUT_BUFFER_NUM = 4;
 }
 
@@ -97,7 +97,7 @@ AVCodecAudioCodecInnerImpl::~AVCodecAudioCodecInnerImpl()
 int32_t AVCodecAudioCodecInnerImpl::Init(AVCodecType type, bool isMimeType, const std::string &name)
 {
     AVCODEC_SYNC_TRACE;
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Init");
+    AVCODEC_LOGI("Init");
     Format format;
     codecService_ = AudioCodecServer::Create();
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
@@ -108,17 +108,17 @@ int32_t AVCodecAudioCodecInnerImpl::Init(AVCodecType type, bool isMimeType, cons
 
 int32_t AVCodecAudioCodecInnerImpl::Configure(const std::shared_ptr<Media::Meta> &meta)
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Configure");
+    AVCODEC_LOGI("Configure");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     bool enableSyncMode = false;
     meta->GetData(Tag::AV_CODEC_ENABLE_SYNC_MODE, enableSyncMode);
     if (enableSyncMode) {
-        AVCODEC_LOGI("AVCodecAudioCodecInnerImpl create SyncCodecAdapter");
+        AVCODEC_LOGI("create SyncCodecAdapter");
         syncCodecAdapter_ = std::make_shared<SyncCodecAdapter>(DEFAULT_OUTPUT_BUFFER_NUM);
         int32_t ret = codecService_->SetOutputBufferQueue(syncCodecAdapter_->GetProducer());
         if (ret != static_cast<int32_t>(AVCodecServiceErrCode::AVCS_ERR_OK)) {
-            AVCODEC_LOGW("AVCodecAudioCodecInnerImpl set sync mode set failed, ret %{public}d", ret);
+            AVCODEC_LOGW("set sync mode set failed, ret %{public}d", ret);
             syncCodecAdapter_.reset();
             return ret;
         }
@@ -130,7 +130,7 @@ int32_t AVCodecAudioCodecInnerImpl::Configure(const std::shared_ptr<Media::Meta>
 int32_t AVCodecAudioCodecInnerImpl::SetOutputBufferQueue(
     const sptr<Media::AVBufferQueueProducer> &bufferQueueProducer)
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetOutputBufferQueue");
+    AVCODEC_LOGI("SetOutputBufferQueue");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     if (syncCodecAdapter_ != nullptr) {
@@ -142,7 +142,7 @@ int32_t AVCodecAudioCodecInnerImpl::SetOutputBufferQueue(
 
 int32_t AVCodecAudioCodecInnerImpl::Prepare()
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Prepare");
+    AVCODEC_LOGI("Prepare");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     int32_t ret = codecService_->Prepare();
@@ -154,7 +154,7 @@ int32_t AVCodecAudioCodecInnerImpl::Prepare()
 
 sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetInputBufferQueue()
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl GetInputBufferQueue");
+    AVCODEC_LOGI("GetInputBufferQueue");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr,
                              "service died");
     return codecService_->GetInputBufferQueue();
@@ -162,14 +162,14 @@ sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetInputBufferQue
 
 sptr<Media::AVBufferQueueConsumer> AVCodecAudioCodecInnerImpl::GetInputBufferQueueConsumer()
 {
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl GetInputBufferQueueConsumer");
+    AVCODEC_LOGD("GetInputBufferQueueConsumer");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "GetInputBufferQueueConsumer service died");
     return codecService_->GetInputBufferQueueConsumer();
 }
 
 sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetOutputBufferQueueProducer()
 {
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl GetOutputBufferQueueProducer");
+    AVCODEC_LOGD("GetOutputBufferQueueProducer");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, nullptr, "GetOutputBufferQueueProducer service died");
     return codecService_->GetOutputBufferQueueProducer();
 }
@@ -177,14 +177,14 @@ sptr<Media::AVBufferQueueProducer> AVCodecAudioCodecInnerImpl::GetOutputBufferQu
 void AVCodecAudioCodecInnerImpl::ProcessInputBufferInner(bool isTriggeredByOutPort, bool isFlushed,
     uint32_t &bufferStatus)
 {
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl ProcessInputBufferInner");
+    AVCODEC_LOGD("ProcessInputBufferInner");
     CHECK_AND_RETURN_LOG(codecService_ != nullptr, "ProcessInputBufferInner service died");
     codecService_->ProcessInputBufferInner(isTriggeredByOutPort, isFlushed, bufferStatus);
 }
 
 int32_t AVCodecAudioCodecInnerImpl::Start()
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Start");
+    AVCODEC_LOGI("Start");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     int32_t ret = codecService_->Start();
@@ -193,7 +193,7 @@ int32_t AVCodecAudioCodecInnerImpl::Start()
 
 int32_t AVCodecAudioCodecInnerImpl::Stop()
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Stop");
+    AVCODEC_LOGI("Stop");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     int32_t ret = codecService_->Stop();
@@ -202,7 +202,7 @@ int32_t AVCodecAudioCodecInnerImpl::Stop()
 
 int32_t AVCodecAudioCodecInnerImpl::Flush()
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Flush");
+    AVCODEC_LOGI("Flush");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     int32_t ret = codecService_->Flush();
@@ -211,7 +211,7 @@ int32_t AVCodecAudioCodecInnerImpl::Flush()
 
 int32_t AVCodecAudioCodecInnerImpl::Reset()
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Reset");
+    AVCODEC_LOGI("Reset");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     int32_t ret = codecService_->Reset();
@@ -220,7 +220,7 @@ int32_t AVCodecAudioCodecInnerImpl::Reset()
 
 int32_t AVCodecAudioCodecInnerImpl::Release()
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl Release");
+    AVCODEC_LOGI("Release");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     int32_t ret = codecService_->Release();
@@ -229,7 +229,7 @@ int32_t AVCodecAudioCodecInnerImpl::Release()
 
 int32_t AVCodecAudioCodecInnerImpl::NotifyEos()
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl NotifyEos");
+    AVCODEC_LOGI("NotifyEos");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     int32_t ret = codecService_->NotifyEos();
@@ -238,7 +238,7 @@ int32_t AVCodecAudioCodecInnerImpl::NotifyEos()
 
 int32_t AVCodecAudioCodecInnerImpl::SetParameter(const std::shared_ptr<Media::Meta> &parameter)
 {
-    AVCODEC_LOGI("AVCodecAudioCodecInnerImpl SetParameter");
+    AVCODEC_LOGI("SetParameter");
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     int32_t ret = codecService_->SetParameter(parameter);
@@ -247,7 +247,7 @@ int32_t AVCodecAudioCodecInnerImpl::SetParameter(const std::shared_ptr<Media::Me
 
 int32_t AVCodecAudioCodecInnerImpl::GetOutputFormat(std::shared_ptr<Media::Meta> &parameter)
 {
-    AVCODEC_LOGD_LIMIT(10, "AVCodecAudioCodecInnerImpl GetOutputFormat");   // limit10
+    AVCODEC_LOGD_LIMIT(10, "GetOutputFormat");   // limit10
     CHECK_AND_RETURN_RET_LOG(codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION,
                              "service died");
     int32_t ret = codecService_->GetOutputFormat(parameter);
@@ -257,7 +257,7 @@ int32_t AVCodecAudioCodecInnerImpl::GetOutputFormat(std::shared_ptr<Media::Meta>
 int32_t AVCodecAudioCodecInnerImpl::ChangePlugin(
     const std::string &mime, bool isEncoder, const std::shared_ptr<Media::Meta> &meta)
 {
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl ChangePlugin");
+    AVCODEC_LOGD("ChangePlugin");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->ChangePlugin(mime, isEncoder, meta);
@@ -265,7 +265,7 @@ int32_t AVCodecAudioCodecInnerImpl::ChangePlugin(
 
 int32_t AVCodecAudioCodecInnerImpl::SetCodecCallback(const std::shared_ptr<MediaCodecCallback> &codecCallback)
 {
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetCodecCallback");
+    AVCODEC_LOGD("SetCodecCallback");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->SetCodecCallback(codecCallback);
@@ -275,7 +275,7 @@ int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
     const sptr<DrmStandard::IMediaKeySessionService> &keySession, const bool svpFlag)
 {
 #ifdef SUPPORT_DRM
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetAudioDecryptionConfig");
+    AVCODEC_LOGD("SetAudioDecryptionConfig");
     CHECK_AND_RETURN_RET_LOG(
         codecService_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_INVALID_OPERATION, "service died");
     return codecService_->SetAudioDecryptionConfig(keySession, svpFlag);
@@ -286,14 +286,14 @@ int32_t AVCodecAudioCodecInnerImpl::SetAudioDecryptionConfig(
 
 void AVCodecAudioCodecInnerImpl::SetDumpInfo(bool isDump, uint64_t instanceId)
 {
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl SetDumpInfo");
+    AVCODEC_LOGD("SetDumpInfo");
     CHECK_AND_RETURN_LOG(codecService_ != nullptr, "service died");
     return codecService_->SetDumpInfo(isDump, instanceId);
 }
 
 void AVCodecAudioCodecInnerImpl::ProcessInputBuffer()
 {
-    AVCODEC_LOGD("AVCodecAudioCodecInnerImpl ProcessInputBuffer");
+    AVCODEC_LOGD("ProcessInputBuffer");
     CHECK_AND_RETURN_LOG(codecService_ != nullptr, "service died");
     codecService_->ProcessInputBuffer();
 }

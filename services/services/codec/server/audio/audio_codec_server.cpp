@@ -33,7 +33,7 @@
 #include "statistics_event_reporter.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AudioCodecServer"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "ACodecSrv"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 
 const std::map<OHOS::MediaAVCodec::AudioCodecServer::CodecStatus, std::string> CODEC_STATE_MAP = {
@@ -270,7 +270,7 @@ int32_t AudioCodecServer::Release()
 {
     SetFreeStatus(true);
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
+    CHECK_AND_RETURN_RET_LOGD(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
 
     int32_t ret = codecBase_->Release();
 
@@ -461,7 +461,7 @@ inline void AudioCodecServer::StatusChanged(CodecStatus newStatus)
     if (status_ == ERROR && videoCb_ != nullptr) {
         videoCb_->OnError(AVCODEC_ERROR_FRAMEWORK_FAILED, AVCS_ERR_INVALID_STATE);
     }
-    AVCODEC_LOGI("Status %{public}s -> %{public}s", GetStatusDescription(status_).data(),
+    AVCODEC_LOGI("%{public}s -> %{public}s", GetStatusDescription(status_).data(),
                  GetStatusDescription(newStatus).data());
     status_ = newStatus;
 }
@@ -516,18 +516,18 @@ void AudioCodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<A
     CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr!");
 
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
-    CHECK_AND_RETURN_LOG(videoCb_ != nullptr, "videoCb_ is nullptr!");
+    CHECK_AND_RETURN_LOGD(videoCb_ != nullptr, "audioCb_ is nullptr!");
     videoCb_->OnOutputBufferAvailable(index, buffer);
 }
 
 CodecBaseCallback::CodecBaseCallback(const std::shared_ptr<AudioCodecServer> &codec) : codec_(codec)
 {
-    AVCODEC_LOGD("%{public}" PRIu64 " Instances create", avcodecUniqueId_);
+    AVCODEC_LOGD("%{public}" PRIu64 " ctor", avcodecUniqueId_);
 }
 
 CodecBaseCallback::~CodecBaseCallback()
 {
-    AVCODEC_LOGD("%{public}" PRIu64 " Instances destroy", avcodecUniqueId_);
+    AVCODEC_LOGD("%{public}" PRIu64 " dtor", avcodecUniqueId_);
 }
 
 void CodecBaseCallback::OnError(AVCodecErrorType errorType, int32_t errorCode)
