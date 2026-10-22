@@ -536,7 +536,8 @@ private:
     void SaveSimpleEditSkipSamples(uint32_t skipOutputIndex, uint32_t skipSamples);
     Status ApplySimpleEditProjection(uint32_t rawIndex, SampleIndexView& view) const;
     uint32_t CalculateLogicalSampleCount(uint32_t rawSampleCount) const;
-    bool IsGroupedRawAudio() const;
+    uint32_t EstimateVideoDelayFromRawTimingEntries() const;
+    uint32_t EstimateSparseProjectedVideoDelay() const;
 };
 } // namespace MPEG4
 } // namespace Plugins

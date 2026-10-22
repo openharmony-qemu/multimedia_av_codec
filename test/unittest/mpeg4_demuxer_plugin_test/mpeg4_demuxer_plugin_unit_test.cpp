@@ -1752,8 +1752,16 @@ std::vector<uint8_t> BuildLengthPrefixedNal(const std::vector<uint8_t>& nal)
 }
 
 void BuildAvcSampleData(const std::vector<std::vector<uint8_t>>& nals, std::vector<uint8_t>& sampleData,
-    std::vector<int32_t>& sampleSizes)
+    std::vector<int32_t>& sampleSizes, bool separateSamples)
 {
+    if (!separateSamples) {
+        for (const auto& nal : nals) {
+            std::vector<uint8_t> data = BuildLengthPrefixedNal(nal);
+            sampleData.insert(sampleData.end(), data.begin(), data.end());
+        }
+        sampleSizes.push_back(static_cast<int32_t>(sampleData.size()));
+        return;
+    }
     sampleSizes.reserve(nals.size());
     for (const auto& nal : nals) {
         std::vector<uint8_t> sample = BuildLengthPrefixedNal(nal);
@@ -1767,16 +1775,16 @@ void ActivateVideoDurationTestTrack(Plugins::MPEG4::MPEG4DemuxerPlugin& plugin,
 
 std::shared_ptr<Plugins::MPEG4::MPEG4DemuxerPlugin> BuildAvcKeyHeuristicTestPlugin(
     const std::vector<uint8_t>& spsNal, const std::vector<std::vector<uint8_t>>& nals,
-    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry>& stssIndexes)
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry>& stssIndexes, bool separateSamples = true)
 {
     constexpr uint32_t testVideoTrackId = 0;
     constexpr int32_t testTrackTimeScale = 90000;
     constexpr uint32_t testSttsDelta = 3600;
-    const uint32_t testSampleCount = static_cast<uint32_t>(nals.size());
     const std::vector<uint8_t> avcc = BuildAvcCTestConfig(spsNal);
     std::vector<uint8_t> sampleData;
     std::vector<int32_t> sampleSizes;
-    BuildAvcSampleData(nals, sampleData, sampleSizes);
+    BuildAvcSampleData(nals, sampleData, sampleSizes, separateSamples);
+    const uint32_t testSampleCount = static_cast<uint32_t>(sampleSizes.size());
     auto source = CreateDataSourceForBytes(sampleData);
     auto reader = std::make_shared<DemuxerDataReader>();
     if (source == nullptr || reader == nullptr || reader->SetDataReader(source) != Status::OK) {
@@ -8229,6 +8237,25 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcPrefixNalEmbeddedIdrS
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcEmptyPrefixThenIdrSyncFlag_001
+ * @tc.desc: Verify an empty Prefix NAL does not stop FFmpeg-style scanning for a following IDR
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcEmptyPrefixThenIdrSyncFlag_001, TestSize.Level1)
+{
+    const std::vector<uint8_t> sps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
+    const std::vector<uint8_t> emptyPrefix = {0x6E};
+    const std::vector<uint8_t> idr = {0x65, 0x88};
+    auto plugin = BuildAvcKeyHeuristicTestPlugin(sps, {emptyPrefix, idr}, {}, false);
+    ASSERT_NE(plugin, nullptr);
+
+    AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
+    constexpr uint32_t syncFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
+    EXPECT_NE(output.mediaAVBuffer->flag_ & syncFlag, 0U);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_EditProjectedVideoDelay_001
  * @tc.desc: Verify H.264 delay uses edit-projected output timestamps like FFmpeg mov_fix_index
  * @tc.type: FUNC
@@ -8251,6 +8278,30 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EditProjectedVideoDelay_
 
     helper.editListApplied_ = false;
     EXPECT_EQ(helper.EstimateVideoDelay(), 0U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SparseEditProjectedVideoDelay_001
+ * @tc.desc: Verify sparse edit output delay matches FFmpeg-style projected PTS ordering
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SparseEditProjectedVideoDelay_001, TestSize.Level1)
+{
+    constexpr uint32_t testSampleCount = 3;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper.mimeType_ = MimeType::VIDEO_AVC;
+    helper.allSamplesSync_ = true;
+    helper.sttsEntry_ = {{testSampleCount, 10}};
+    helper.cttsEntry_ = {{1, 0}, {1, 10}, {1, -10}};
+    helper.stscEntry_ = {{0, testSampleCount, 1}};
+    helper.sampleSizes_.assign(testSampleCount, 1);
+    helper.sampleSizeCount_ = testSampleCount;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{0, 30, 1, 0}}, 1, 1);
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    EXPECT_EQ(helper.GetSampleIndexState(), Plugins::MPEG4::MPEG4SampleHelper::SampleIndexState::UNBUILT);
+    EXPECT_EQ(helper.EstimateVideoDelay(), 1U);
 }
 
 /**
