@@ -7562,3 +7562,867 @@ void MediaDemuxer::ResetForSeek(int64_t seekTime)
 }
 } // namespace Media
 } // namespace OHOS
+void MediaDemuxer::SetHiplayerCallback(const std::shared_ptr<Pipeline::FilterCallback> &callback)
+{
+    hiplayerCallback_ = callback;
+}
+
+bool MediaDemuxer::IsCloudFd()
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
+    return source_->IsCloudFd();
+}
+
+bool MediaDemuxer::IsNeedPreDownload() const
+{
+    FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
+    return source_->IsNeedPreDownload();
+}
+ 
+bool MediaDemuxer::IsSubtitleTrackId(int32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, false, "demuxerPluginManger_ is nullptr");
+    TrackType trackType = demuxerPluginManager_->GetTrackTypeByTrackID(trackId);
+    return trackType == TrackType::TRACK_SUBTITLE;
+}
+
+std::deque<MediaDemuxer::MediaChangeRecord>::iterator MediaDemuxer::GetLatestUnreportedRecord()
+{
+    for (auto it = mediaChangeHistory_.begin(); it != mediaChangeHistory_.end(); ++it) {
+        if (!it->hasReported) {
+            return it;
+        }
+    }
+    return mediaChangeHistory_.end();
+}
+
+void MediaDemuxer::FillChangeInfoFromRecord(MediaChangeInfo& changeInfo,
+    const MediaChangeRecord& record, bool isFailed)
+{
+    changeInfo.isLocalFd = record.isLocalFd;
+    changeInfo.streamType = record.streamType;
+    changeInfo.changeReason = static_cast<int32_t>(record.changeReason);
+    changeInfo.changeResult = isFailed ? MEDIA_CHANGE_FAILED : MEDIA_CHANGE_SUCCESS;
+    FillChangeInfo(changeInfo, record, isFailed, record.isLocalFd);
+    FillChangeInfoCommon(changeInfo, record, isFailed);
+}
+
+void MediaDemuxer::FillChangeInfo(MediaChangeInfo& changeInfo,
+    const MediaChangeRecord& record, bool isFailed, bool isLocalFd)
+{
+    if (isLocalFd) {
+        changeInfo.streamIdBefore = -1;
+        changeInfo.streamIdAfter = -1;
+        changeInfo.bitrateBefore = 0;
+        changeInfo.bitrateAfter = 0;
+        changeInfo.originCodecsBefore = "";
+        changeInfo.originCodecsAfter = "";
+        return;
+    }
+    changeInfo.streamIdBefore = record.streamIdBefore;
+    changeInfo.streamIdAfter = record.streamIdAfter;
+    changeInfo.bitrateBefore = record.bitrateBefore;
+    changeInfo.bitrateAfter = isFailed ? 0 : record.bitrateAfter;
+    changeInfo.originCodecsBefore = record.originCodecsBefore;
+    changeInfo.originCodecsAfter = isFailed ? "" : record.originCodecsAfter;
+}
+
+void MediaDemuxer::FillChangeInfoCommon(MediaChangeInfo& changeInfo,
+    const MediaChangeRecord& record, bool isFailed)
+{
+    changeInfo.videoWidthBefore = record.videoWidthBefore;
+    changeInfo.videoHeightBefore = record.videoHeightBefore;
+    changeInfo.videoFrameRateBefore = record.videoFrameRateBefore;
+    changeInfo.audioChannelsBefore = record.audioChannelsBefore;
+    changeInfo.audioSampleRateBefore = record.audioSampleRateBefore;
+    changeInfo.audioLangBefore = record.audioLangBefore;
+    changeInfo.subtitleLangBefore = record.subtitleLangBefore;
+    changeInfo.audioMimeTypeBefore = record.audioMimeTypeBefore;
+    changeInfo.videoMimeTypeBefore = record.videoMimeTypeBefore;
+    changeInfo.videoTypeBefore = record.videoTypeBefore;
+    changeInfo.codecsBefore = record.codecsBefore;
+    
+    changeInfo.videoWidthAfter = isFailed ? 0 : record.videoWidthAfter;
+    changeInfo.videoHeightAfter = isFailed ? 0 : record.videoHeightAfter;
+    changeInfo.videoFrameRateAfter = isFailed ? 0 : record.videoFrameRateAfter;
+    changeInfo.audioChannelsAfter = isFailed ? 0 : record.audioChannelsAfter;
+    changeInfo.audioSampleRateAfter = isFailed ? 0 : record.audioSampleRateAfter;
+    changeInfo.audioLangAfter = isFailed ? "" : record.audioLangAfter;
+    changeInfo.subtitleLangAfter = isFailed ? "" : record.subtitleLangAfter;
+    changeInfo.audioMimeTypeAfter = isFailed ? "" : record.audioMimeTypeAfter;
+    changeInfo.videoMimeTypeAfter = isFailed ? "" : record.videoMimeTypeAfter;
+    changeInfo.videoTypeAfter = isFailed ? 0 : record.videoTypeAfter;
+    changeInfo.codecsAfter = isFailed ? "" : record.codecsAfter;
+}
+
+void MediaDemuxer::FillVideoParamsFromVideoTrack(MediaChangeRecord& record,
+    int32_t videoTrackIdBefore, int32_t videoTrackIdAfter)
+{
+    if (videoTrackIdBefore >= 0 && static_cast<size_t>(videoTrackIdBefore) < mediaMetaData_.trackMetas.size()) {
+        auto videoTrackMeta = mediaMetaData_.trackMetas[videoTrackIdBefore];
+        if (videoTrackMeta != nullptr) {
+            int32_t width = 0;
+            int32_t height = 0;
+            double frameRate = 0.0;
+            int32_t videoType = 0;
+            std::string mimeType;
+            videoTrackMeta->Get<Tag::VIDEO_WIDTH>(width);
+            videoTrackMeta->Get<Tag::VIDEO_HEIGHT>(height);
+            videoTrackMeta->Get<Tag::VIDEO_FRAME_RATE>(frameRate);
+            videoTrackMeta->Get<Tag::VIDEO_TYPE>(videoType);
+            videoTrackMeta->Get<Tag::MIME_TYPE>(mimeType);
+            record.videoWidthBefore = width;
+            record.videoHeightBefore = height;
+            record.videoFrameRateBefore = static_cast<uint32_t>(frameRate);
+            record.videoTypeBefore = videoType;
+            record.videoMimeTypeBefore = mimeType;
+        }
+    }
+
+    if (videoTrackIdAfter >= 0 && static_cast<size_t>(videoTrackIdAfter) < mediaMetaData_.trackMetas.size()) {
+        auto videoTrackMeta = mediaMetaData_.trackMetas[videoTrackIdAfter];
+        if (videoTrackMeta != nullptr) {
+            int32_t width = 0;
+            int32_t height = 0;
+            double frameRate = 0.0;
+            int32_t videoType = 0;
+            std::string mimeType;
+            videoTrackMeta->Get<Tag::VIDEO_WIDTH>(width);
+            videoTrackMeta->Get<Tag::VIDEO_HEIGHT>(height);
+            videoTrackMeta->Get<Tag::VIDEO_FRAME_RATE>(frameRate);
+            videoTrackMeta->Get<Tag::VIDEO_TYPE>(videoType);
+            videoTrackMeta->Get<Tag::MIME_TYPE>(mimeType);
+            
+            record.videoWidthAfter = width;
+            record.videoHeightAfter = height;
+            record.videoFrameRateAfter = static_cast<uint32_t>(frameRate);
+            record.videoTypeAfter = videoType;
+            record.videoMimeTypeAfter = mimeType;
+        }
+    }
+}
+
+void MediaDemuxer::FillSubtitleParamsFromSubtitleTrack(MediaChangeRecord& record,
+    int32_t subtitleTrackIdBefore, int32_t subtitleTrackIdAfter)
+{
+    if (subtitleTrackIdBefore >= 0 && static_cast<size_t>(subtitleTrackIdBefore) < mediaMetaData_.trackMetas.size()) {
+        auto subtitleTrackMeta = mediaMetaData_.trackMetas[subtitleTrackIdBefore];
+        if (subtitleTrackMeta != nullptr) {
+            std::string lang;
+            subtitleTrackMeta->Get<Tag::MEDIA_LANGUAGE>(lang);
+            record.subtitleLangBefore = lang;
+        }
+    }
+
+    if (subtitleTrackIdAfter >= 0 && static_cast<size_t>(subtitleTrackIdAfter) < mediaMetaData_.trackMetas.size()) {
+        auto subtitleTrackMeta = mediaMetaData_.trackMetas[subtitleTrackIdAfter];
+        if (subtitleTrackMeta != nullptr) {
+            std::string lang;
+            subtitleTrackMeta->Get<Tag::MEDIA_LANGUAGE>(lang);
+            record.subtitleLangAfter = lang;
+        }
+    }
+}
+
+void MediaDemuxer::FillAudioParamsFromAudioTrack(MediaChangeRecord& record,
+    int32_t audioTrackIdBefore, int32_t audioTrackIdAfter)
+{
+    if (audioTrackIdBefore >= 0 && static_cast<size_t>(audioTrackIdBefore) < mediaMetaData_.trackMetas.size()) {
+        auto audioTrackMeta = mediaMetaData_.trackMetas[audioTrackIdBefore];
+        if (audioTrackMeta != nullptr) {
+            int32_t channels = 0;
+            int32_t sampleRate = 0;
+            Plugins::AudioSampleFormat sampleFormat = Plugins::AudioSampleFormat::SAMPLE_F32LE;
+            std::string mimeType;
+            std::string lang;
+            audioTrackMeta->Get<Tag::AUDIO_CHANNEL_COUNT>(channels);
+            audioTrackMeta->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+            audioTrackMeta->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat);
+            audioTrackMeta->Get<Tag::MIME_TYPE>(mimeType);
+            audioTrackMeta->Get<Tag::MEDIA_LANGUAGE>(lang);
+            record.audioChannelsBefore = static_cast<uint32_t>(channels);
+            record.audioSampleRateBefore = static_cast<uint32_t>(sampleRate);
+            record.audioMimeTypeBefore = mimeType;
+            record.audioLangBefore = lang;
+        }
+    }
+    if (audioTrackIdAfter >= 0 && static_cast<size_t>(audioTrackIdAfter) < mediaMetaData_.trackMetas.size()) {
+        auto audioTrackMeta = mediaMetaData_.trackMetas[audioTrackIdAfter];
+        if (audioTrackMeta != nullptr) {
+            int32_t channels = 0;
+            int32_t sampleRate = 0;
+            Plugins::AudioSampleFormat sampleFormat = Plugins::AudioSampleFormat::SAMPLE_F32LE;
+            std::string mimeType;
+            std::string lang;
+            audioTrackMeta->Get<Tag::AUDIO_CHANNEL_COUNT>(channels);
+            audioTrackMeta->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+            audioTrackMeta->Get<Tag::AUDIO_SAMPLE_FORMAT>(sampleFormat);
+            audioTrackMeta->Get<Tag::MIME_TYPE>(mimeType);
+            audioTrackMeta->Get<Tag::MEDIA_LANGUAGE>(lang);
+            record.audioChannelsAfter = static_cast<uint32_t>(channels);
+            record.audioSampleRateAfter = static_cast<uint32_t>(sampleRate);
+            record.audioMimeTypeAfter = mimeType;
+            record.audioLangAfter = lang;
+        }
+    }
+}
+
+void MediaDemuxer::FillVideoParamsFromVideoStream(MediaChangeRecord& record)
+{
+    if (videoTrackId_ < 0 || static_cast<size_t>(videoTrackId_) >= mediaMetaData_.trackMetas.size()) {
+        return;
+    }
+    auto meta = mediaMetaData_.trackMetas[videoTrackId_];
+    if (meta == nullptr) {
+        return;
+    }
+    int32_t width = 0;
+    int32_t height = 0;
+    int32_t videoType = 0;
+    double frameRate = 0.0;
+    std::string mimeType;
+    meta->Get<Tag::VIDEO_WIDTH>(width);
+    meta->Get<Tag::VIDEO_HEIGHT>(height);
+    meta->Get<Tag::VIDEO_FRAME_RATE>(frameRate);
+    meta->Get<Tag::VIDEO_TYPE>(videoType);
+    meta->Get<Tag::MIME_TYPE>(mimeType);
+    FillIfEmpty(record.videoWidthAfter, width);
+    FillIfEmpty(record.videoHeightAfter, height);
+    FillIfEmpty(record.videoFrameRateAfter, static_cast<uint32_t>(frameRate));
+    FillIfEmpty(record.videoTypeAfter, videoType);
+    FillIfEmpty(record.videoMimeTypeAfter, mimeType);
+    FillIfEmpty(record.videoWidthBefore, width);
+    FillIfEmpty(record.videoHeightBefore, height);
+    FillIfEmpty(record.videoFrameRateBefore, static_cast<uint32_t>(frameRate));
+    FillIfEmpty(record.videoTypeBefore, videoType);
+    FillIfEmpty(record.videoMimeTypeBefore, mimeType);
+}
+
+void MediaDemuxer::FillAudioParamsFromAudioStream(MediaChangeRecord& record)
+{
+    if (audioTrackId_ < 0 || static_cast<size_t>(audioTrackId_) >= mediaMetaData_.trackMetas.size()) {
+        return;
+    }
+    auto meta = mediaMetaData_.trackMetas[audioTrackId_];
+    if (meta == nullptr) {
+        return;
+    }
+    int32_t sampleRate = 0;
+    int32_t channels = 0;
+    std::string mimeType;
+    std::string lang;
+    meta->Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+    meta->Get<Tag::AUDIO_CHANNEL_COUNT>(channels);
+    meta->Get<Tag::MIME_TYPE>(mimeType);
+    meta->Get<Tag::MEDIA_LANGUAGE>(lang);
+    FillIfEmpty(record.audioSampleRateAfter, static_cast<uint32_t>(sampleRate));
+    FillIfEmpty(record.audioChannelsAfter, static_cast<uint32_t>(channels));
+    FillIfEmpty(record.audioMimeTypeAfter, mimeType);
+    FillIfEmpty(record.audioLangAfter, lang);
+    FillIfEmpty(record.audioSampleRateBefore, static_cast<uint32_t>(sampleRate));
+    FillIfEmpty(record.audioChannelsBefore, static_cast<uint32_t>(channels));
+    FillIfEmpty(record.audioMimeTypeBefore, mimeType);
+    FillIfEmpty(record.audioLangBefore, lang);
+}
+
+void MediaDemuxer::FillSubtitleParamsFromSubtitleStream(MediaChangeRecord& record)
+{
+    if (subtitleTrackId_ < 0 || static_cast<size_t>(subtitleTrackId_) >= mediaMetaData_.trackMetas.size()) {
+        return;
+    }
+    auto meta = mediaMetaData_.trackMetas[subtitleTrackId_];
+    if (meta == nullptr) {
+        return;
+    }
+    std::string lang;
+    meta->Get<Tag::MEDIA_LANGUAGE>(lang);
+    FillIfEmpty(record.subtitleLangAfter, lang);
+    FillIfEmpty(record.subtitleLangBefore, lang);
+}
+
+void MediaDemuxer::FillRecordFromStream(MediaChangeRecord& record, int32_t streamIdBefore, int32_t streamIdAfter)
+{
+    FALSE_RETURN_MSG_W(source_ != nullptr, "source_ is nullptr");
+    std::vector<Plugins::StreamInfo> streams;
+    source_->GetStreamInfo(streams);
+    std::optional<Plugins::StreamInfo> streamInfoBefore;
+    std::optional<Plugins::StreamInfo> streamInfoAfter;
+    for (const auto& stream : streams) {
+        if (stream.streamId == streamIdBefore) {
+            streamInfoBefore = stream;
+        } else if (stream.streamId == streamIdAfter) {
+            streamInfoAfter = stream;
+        } else {
+            // other stream
+        }
+    }
+    FALSE_RETURN_MSG_W(streamInfoBefore.has_value() && streamInfoAfter.has_value(), "no streamInfo");
+    record.streamType = static_cast<int32_t>(streamInfoBefore.value().type);
+    record.videoWidthBefore = streamInfoBefore.value().videoWidth;
+    record.videoHeightBefore = streamInfoBefore.value().videoHeight;
+    record.videoFrameRateBefore = streamInfoBefore.value().frameRate;
+    record.audioChannelsBefore = streamInfoBefore.value().channels;
+    record.bitrateBefore = streamInfoBefore.value().bitRate;
+    record.videoTypeBefore = static_cast<int32_t>(streamInfoBefore.value().videoType);
+    record.codecsBefore = streamInfoBefore.value().codecs;
+    record.originCodecsBefore = streamInfoBefore.value().originCodecs;
+    if (streamInfoBefore.value().mimeType.find("audio/") == 0) {
+        record.audioMimeTypeBefore = streamInfoBefore.value().mimeType;
+        record.audioLangBefore = streamInfoBefore.value().lang;
+    } else if (streamInfoBefore.value().mimeType.find("video/") == 0) {
+        record.videoMimeTypeBefore = streamInfoBefore.value().mimeType;
+    } else if (streamInfoBefore.value().type == Plugins::StreamType::SUBTITLE) {
+        record.subtitleLangBefore = streamInfoBefore.value().lang;
+    }
+    record.videoWidthAfter = streamInfoAfter.value().videoWidth;
+    record.videoHeightAfter = streamInfoAfter.value().videoHeight;
+    record.videoFrameRateAfter = streamInfoAfter.value().frameRate;
+    record.audioChannelsAfter = streamInfoAfter.value().channels;
+    record.bitrateAfter = streamInfoAfter.value().bitRate;
+    record.videoTypeAfter = static_cast<int32_t>(streamInfoAfter.value().videoType);
+    record.codecsAfter = streamInfoAfter.value().codecs;
+    record.originCodecsAfter = streamInfoAfter.value().originCodecs;
+    if (streamInfoAfter.value().mimeType.find("audio/") == 0) {
+        record.audioMimeTypeAfter = streamInfoAfter.value().mimeType;
+        record.audioLangAfter = streamInfoAfter.value().lang;
+    } else if (streamInfoAfter.value().mimeType.find("video/") == 0) {
+        record.videoMimeTypeAfter = streamInfoAfter.value().mimeType;
+    } else if (streamInfoAfter.value().type == Plugins::StreamType::SUBTITLE) {
+        record.subtitleLangAfter = streamInfoAfter.value().lang;
+    }
+}
+
+void MediaDemuxer::FillRecordBeforeFromLastReported(MediaChangeRecord& record)
+{
+    record.bitrateBefore = lastReportedBitrate_;
+    record.videoWidthBefore = lastReportedVideoWidth_;
+    record.videoHeightBefore = lastReportedVideoHeight_;
+    record.videoFrameRateBefore = lastReportedVideoFrameRate_;
+    record.audioChannelsBefore = lastReportedAudioChannels_;
+    record.audioSampleRateBefore = lastReportedAudioSampleRate_;
+    record.codecsBefore = lastReportedCodecs_;
+    record.originCodecsBefore = lastReportedOriginCodecs_;
+    record.videoTypeBefore = lastReportedVideoType_;
+}
+
+void MediaDemuxer::FillRecordAfterFromRecord(MediaChangeRecord& record, const MediaChangeRecord& source)
+{
+    record.bitrateAfter = source.bitrateAfter;
+    record.videoWidthAfter = source.videoWidthAfter;
+    record.videoHeightAfter = source.videoHeightAfter;
+    record.videoFrameRateAfter = source.videoFrameRateAfter;
+    record.audioChannelsAfter = source.audioChannelsAfter;
+    record.audioSampleRateAfter = source.audioSampleRateAfter;
+    record.codecsAfter = source.codecsAfter;
+    record.originCodecsAfter = source.originCodecsAfter;
+    record.videoTypeAfter = source.videoTypeAfter;
+}
+
+void MediaDemuxer::TrimHistorySize()
+{
+    const size_t maxHistorySize = 10;
+    while (mediaChangeHistory_.size() > maxHistorySize) {
+        auto& oldest = mediaChangeHistory_.front();
+        if (oldest.hasReported) {
+            mediaChangeHistory_.pop_front();
+        } else {
+            MEDIA_LOG_W("Force remove unreported change record");
+            mediaChangeHistory_.pop_front();
+        }
+    }
+}
+
+void MediaDemuxer::ReportMediaChangedFailedEvent()
+{
+    FALSE_RETURN(eventReceiver_ != nullptr);
+    
+    auto latestUnreported = GetLatestUnreportedRecord();
+    if (latestUnreported == mediaChangeHistory_.end()) {
+        MEDIA_LOG_W("No unreported media change record for failed event");
+        return;
+    }
+    
+    MediaChangeInfo changeInfo;
+    FillChangeInfoFromRecord(changeInfo, *latestUnreported, true);
+    
+    eventReceiver_->OnDfxEvent({"DEMUX", DfxEventType::DFX_EVENT_MEDIA_CHANGED, changeInfo});
+    
+    latestUnreported->hasReported = true;
+    CleanUpReportedRecords();
+}
+
+void MediaDemuxer::RecordMediaChange(const MediaChangeParams& params)
+{
+    if (!params.isLocalFd) {
+        for (const auto& record : mediaChangeHistory_) {
+            if (!record.hasReported && record.streamIdBefore == params.streamIdBefore &&
+                record.streamIdAfter == params.streamIdAfter &&
+                record.streamType == params.streamType) {
+                MEDIA_LOG_I("Duplicate media change detected, skip recording");
+                return;
+            }
+        }
+    }
+    MediaChangeRecord record;
+    record.changeSeqNum = ++mediaChangeSeqNum_;
+    record.isLocalFd = params.isLocalFd;
+    record.trackIdBefore = params.trackIdBefore;
+    record.trackIdAfter = params.trackIdAfter;
+    record.streamIdBefore = params.streamIdBefore;
+    record.streamIdAfter = params.streamIdAfter;
+    record.isStreamIdChange = (params.streamIdBefore != params.streamIdAfter);
+    record.streamType = params.streamType;
+    record.changeReason = params.reason;
+    record.hasReported = false;
+
+    if (params.isLocalFd) {
+        FillVideoParamsFromVideoTrack(record, params.videoTrackIdBefore, params.videoTrackIdAfter);
+        FillAudioParamsFromAudioTrack(record, params.audioTrackIdBefore, params.audioTrackIdAfter);
+        FillSubtitleParamsFromSubtitleTrack(record, params.subtitleTrackIdBefore, params.subtitleTrackIdAfter);
+    } else {
+        FillRecordFromStream(record, params.streamIdBefore, params.streamIdAfter);
+        if (record.streamType == static_cast<int32_t>(Plugins::StreamType::VIDEO)) {
+            FillVideoParamsFromVideoStream(record);
+            FillAudioParamsFromAudioStream(record);
+            FillSubtitleParamsFromSubtitleStream(record);
+        } else if (record.streamType == static_cast<int32_t>(Plugins::StreamType::AUDIO)) {
+            FillVideoParamsFromVideoStream(record);
+            FillAudioParamsFromAudioStream(record);
+            FillSubtitleParamsFromSubtitleStream(record);
+        } else if (record.streamType == static_cast<int32_t>(Plugins::StreamType::MIXED)) {
+            FillVideoParamsFromVideoStream(record);
+            FillAudioParamsFromAudioStream(record);
+            FillSubtitleParamsFromSubtitleStream(record);
+        } else if (record.streamType == static_cast<int32_t>(Plugins::StreamType::SUBTITLE)) {
+            FillVideoParamsFromVideoStream(record);
+            FillAudioParamsFromAudioStream(record);
+        } else {
+            // do nothing
+        }
+    }
+    mediaChangeHistory_.push_back(record);
+    TrimHistorySize();
+}
+
+bool MediaDemuxer::IsBackToOriginalStream(const MediaChangeRecord& firstRecord,
+    const MediaChangeRecord& lastRecord)
+{
+    if (firstRecord.isLocalFd) {
+        return (firstRecord.trackIdBefore == lastRecord.trackIdAfter);
+    }
+    
+    bool isSameStream = (firstRecord.streamIdBefore == lastRecord.streamIdAfter);
+    bool isSameTrack = (firstRecord.trackIdBefore == lastRecord.trackIdAfter);
+    
+    return isSameStream && isSameTrack;
+}
+
+bool MediaDemuxer::CheckParameterChange(const MediaChangeRecord& firstRecord,
+    const MediaChangeRecord& lastRecord)
+{
+    if (firstRecord.videoWidthBefore != lastRecord.videoWidthAfter ||
+        firstRecord.videoHeightBefore != lastRecord.videoHeightAfter ||
+        firstRecord.videoFrameRateBefore != lastRecord.videoFrameRateAfter ||
+        firstRecord.bitrateBefore != lastRecord.bitrateAfter ||
+        firstRecord.videoMimeTypeBefore != lastRecord.videoMimeTypeAfter ||
+        firstRecord.codecsBefore != lastRecord.codecsAfter ||
+        firstRecord.videoTypeBefore != lastRecord.videoTypeAfter) {
+        return true;
+    }
+    
+    if (firstRecord.audioChannelsBefore != lastRecord.audioChannelsAfter ||
+        firstRecord.audioSampleRateBefore != lastRecord.audioSampleRateAfter ||
+        firstRecord.audioMimeTypeBefore != lastRecord.audioMimeTypeAfter ||
+        firstRecord.audioLangBefore != lastRecord.audioLangAfter ||
+        firstRecord.subtitleLangBefore != lastRecord.subtitleLangAfter ||
+        firstRecord.codecsBefore != lastRecord.codecsAfter) {
+        return true;
+    }
+    
+    return false;
+}
+
+void MediaDemuxer::ProcessHistoryOnSeek()
+{
+    std::vector<size_t> unreportedIndices;
+    for (size_t i = 0; i < mediaChangeHistory_.size(); i++) {
+        if (!mediaChangeHistory_[i].hasReported) {
+            unreportedIndices.push_back(i);
+        }
+    }
+    if (unreportedIndices.empty()) {
+        return;
+    }
+    size_t firstIdx = unreportedIndices.front();
+    size_t lastIdx = unreportedIndices.back();
+    auto& firstRecord = mediaChangeHistory_[firstIdx];
+    auto& lastRecord = mediaChangeHistory_[lastIdx];
+    if (IsBackToOriginalStream(firstRecord, lastRecord) &&
+        !CheckParameterChange(firstRecord, lastRecord)) {
+        RemoveUnreportedRecords();
+        return;
+    }
+    MediaChangeRecord newRecord;
+    newRecord.changeSeqNum = ++mediaChangeSeqNum_;
+    newRecord.isLocalFd = firstRecord.isLocalFd;
+    newRecord.trackIdBefore = firstRecord.trackIdBefore;
+    newRecord.trackIdAfter = lastRecord.trackIdAfter;
+    newRecord.streamIdBefore = firstRecord.streamIdBefore;
+    newRecord.streamIdAfter = lastRecord.streamIdAfter;
+    newRecord.isStreamIdChange = lastRecord.isStreamIdChange;
+    newRecord.streamType = lastRecord.streamType;
+    newRecord.changeReason = lastRecord.changeReason;
+    newRecord.hasReported = false;
+    FillRecordBeforeFromLastReported(newRecord);
+    FillRecordAfterFromRecord(newRecord, lastRecord);
+    RemoveUnreportedRecords();
+    mediaChangeHistory_.push_back(newRecord);
+}
+
+void MediaDemuxer::RemoveUnreportedRecords()
+{
+    auto it = mediaChangeHistory_.begin();
+    while (it != mediaChangeHistory_.end()) {
+        if (!it->hasReported) {
+            it = mediaChangeHistory_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void MediaDemuxer::CleanUpReportedRecords()
+{
+    auto it = mediaChangeHistory_.begin();
+    while (it != mediaChangeHistory_.end()) {
+        if (it->hasReported) {
+            it = mediaChangeHistory_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void MediaDemuxer::ClearMediaChangeHistory()
+{
+    mediaChangeHistory_.clear();
+    mediaChangeSeqNum_ = 0;
+    lastReportedSeqNum_ = 0;
+    lastReportedStreamId_ = -1;
+    lastReportedTrackId_ = -1;
+    lastReportedBitrate_ = 0;
+    lastReportedVideoWidth_ = 0;
+    lastReportedVideoHeight_ = 0;
+    lastReportedVideoFrameRate_ = 0;
+    lastReportedAudioChannels_ = 0;
+    lastReportedAudioSampleRate_ = 0;
+    lastReportedCodecs_.clear();
+    lastReportedOriginCodecs_.clear();
+    lastReportedVideoType_ = 0;
+}
+
+void MediaDemuxer::UpdateLastReportedState(const MediaChangeRecord& record)
+{
+    lastReportedSeqNum_ = record.changeSeqNum;
+    lastReportedStreamId_ = record.streamIdAfter;
+    lastReportedTrackId_ = record.trackIdAfter;
+    lastReportedBitrate_ = record.bitrateAfter;
+    lastReportedVideoWidth_ = record.videoWidthAfter;
+    lastReportedVideoHeight_ = record.videoHeightAfter;
+    lastReportedVideoFrameRate_ = record.videoFrameRateAfter;
+    lastReportedAudioChannels_ = record.audioChannelsAfter;
+    lastReportedAudioSampleRate_ = record.audioSampleRateAfter;
+    lastReportedCodecs_ = record.codecsAfter;
+    lastReportedOriginCodecs_ = record.originCodecsAfter;
+    lastReportedVideoType_ = record.videoTypeAfter;
+}
+
+void MediaDemuxer::OnNewTrackRender(uint64_t renderSeqNum)
+{
+    for (auto& record : mediaChangeHistory_) {
+        if (record.changeSeqNum != renderSeqNum || record.hasReported) {
+            continue;
+        }
+        
+        MediaChangeInfo changeInfo;
+        FillChangeInfoFromRecord(changeInfo, record, false);
+        
+        FALSE_RETURN(eventReceiver_ != nullptr);
+        eventReceiver_->OnDfxEvent({"DEMUX", DfxEventType::DFX_EVENT_MEDIA_CHANGED, changeInfo});
+        
+        record.hasReported = true;
+        UpdateLastReportedState(record);
+        CleanUpReportedRecords();
+        break;
+    }
+}
+
+void MediaDemuxer::PushCodecCheckBuffer(int32_t trackId)
+{
+    FALSE_RETURN_NOLOG(demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash());
+    FALSE_RETURN_NOLOG(IsValidTrackId(trackId) && (trackId == videoTrackId_ || trackId == audioTrackId_));
+
+    int32_t retryCount = 0;
+    while (!GetBufferFromUserQueue(trackId, SampleQueue::DEFAULT_SAMPLE_BUFFER_CAP) &&
+        retryCount < PUSH_CODEC_CHECK_BUFFER_RETRY_COUNT) {
+        retryCount++;
+        usleep(PUSH_CODEC_CHECK_BUFFER_RETRY_INTERVAL_US);
+    }
+
+    auto buffer = bufferMap_[trackId];
+    FALSE_RETURN(buffer != nullptr);
+    buffer->flag_ = static_cast<uint32_t>(AVBufferFlag::EOS);
+    buffer->pts_ = 0;
+    int32_t tmpTrackId = demuxerPluginManager_->GetTmpTrackIdByTrackId(trackId);
+    FALSE_RETURN(IsValidTrackId(tmpTrackId) && static_cast<size_t>(tmpTrackId) < mediaMetaData_.trackMetas.size());
+    auto meta = mediaMetaData_.trackMetas[tmpTrackId];
+    FALSE_RETURN(meta != nullptr);
+    buffer->meta_ = std::make_shared<Meta>(*meta);
+    buffer->meta_->SetData(Tag::CHECK_CODEC_CHANGE, true);
+    if (buffer->memory_ == nullptr) {
+        auto tmpBuffer = AVBuffer::CreateAVBuffer(buffer->GetConfig());
+        buffer->memory_ = tmpBuffer->memory_;
+        tmpBuffer->memory_ = nullptr;
+    }
+    PushBufferToQueue(trackId, buffer, true);
+}
+
+void MediaDemuxer::CheckCodecChange(const std::shared_ptr<SampleQueue> &sampleQueue, int32_t trackId, bool& needRelease)
+{
+    needRelease = false;
+    FALSE_RETURN_NOLOG(demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash());
+
+    std::shared_ptr<AVBuffer> buffer;
+    Status ret = sampleQueue->AcquireBuffer(buffer);
+    FALSE_RETURN_NOLOG(ret == Status::OK);
+
+    CheckCodecChange(buffer, trackId, needRelease);
+    needRelease ? sampleQueue->ReleaseBuffer(buffer) : sampleQueue->RollbackBuffer(buffer);
+}
+
+void MediaDemuxer::CheckCodecChange(const std::shared_ptr<AVBuffer>& buffer, int32_t trackId, bool& needRelease)
+{
+    needRelease = false;
+    FALSE_RETURN(buffer != nullptr && buffer->meta_ != nullptr);
+
+    bool needCheckCodecChange = false;
+    buffer->meta_->GetData(Tag::CHECK_CODEC_CHANGE, needCheckCodecChange);
+    FALSE_RETURN_NOLOG((buffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)) && needCheckCodecChange);
+
+    if (trackId == audioTrackId_) {
+        PauseConsumerTaskByTrackId(trackId);
+        needRelease = true;
+        FALSE_RETURN(eventReceiver_ != nullptr);
+        eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_DECODER_CHANGE, buffer->meta_});
+        return;
+    }
+
+    FALSE_RETURN(hiplayerCallback_ != nullptr);
+    bool isCodecChanged = false;
+    hiplayerCallback_->HandleVideoCodecChange(buffer->meta_, isCodecChanged, true);
+    if (isCodecChanged) {
+        PauseConsumerTaskByTrackId(trackId);
+    } else {
+        needRelease = true;
+    }
+}
+
+Status MediaDemuxer::PauseConsumerTaskByTrackId(int32_t trackId)
+{
+    auto iter = sampleConsumerTaskMap_.find(trackId);
+    FALSE_RETURN_V_MSG_E(iter != sampleConsumerTaskMap_.end(), Status::ERROR_INVALID_PARAMETER, "Invalid track");
+    iter->second->PauseAsync();
+    iter->second->Pause();
+    return Status::OK;
+}
+
+bool MediaDemuxer::IsNeedSelectTrack(int32_t trackId)
+{
+    if (subtitleTrackIdVec_.empty()) {
+        return true;
+    }
+    for (size_t i = 0; i < subtitleTrackIdVec_.size(); ++i) {
+        if (trackId == subtitleTrackIdVec_[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int32_t MediaDemuxer::GetBuiltInSubtitleNum()
+{
+    return subtitleTrackIdVec_.size();
+}
+
+bool MediaDemuxer::IsBuiltInSubtitleTrackId(int32_t trackId)
+{
+    FALSE_RETURN_V(IsSubtitleTrackId(trackId), false);
+    FALSE_RETURN_V_MSG_E(demuxerPluginManager_ != nullptr, true, "plugin manager is nullptr");
+    int32_t audioStreamId = demuxerPluginManager_->GetStreamIDByTrackID(audioTrackId_);
+    int32_t videoStreamId = demuxerPluginManager_->GetStreamIDByTrackID(videoTrackId_);
+    int32_t subtitleStreamId = demuxerPluginManager_->GetStreamIDByTrackID(trackId);
+    MEDIA_LOG_I("IsBuiltInSubtitleTrackId audioStreamId:" PUBLIC_LOG_D32 ",videoStreamId:" PUBLIC_LOG_D32
+        ",subtitleStreamId:" PUBLIC_LOG_D32, audioStreamId, videoStreamId, subtitleStreamId);
+    return audioStreamId == subtitleStreamId || videoStreamId == subtitleStreamId;
+}
+
+void MediaDemuxer::InitBuiltInSubtitleTrack()
+{
+    FALSE_RETURN(!subtitleTrackIdVec_.empty());
+    for (size_t i = 0; i < subtitleTrackIdVec_.size(); ++i) {
+        int32_t tempTrackId = subtitleTrackIdVec_[i];
+        if (tempTrackId == subtitleTrackId_) {
+            continue;
+        }
+        GetEnableSampleQueueFlag() ? AddDemuxerCopyTaskByTrackIfFilter(tempTrackId, DemuxerTrackType::SUBTITLE)
+            : AddDemuxerCopyTaskIfFilter(tempTrackId, TaskType::SUBTITLE);
+        demuxerPluginManager_->UpdateTempTrackMapInfo(tempTrackId, tempTrackId, -1);
+        int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(tempTrackId);
+        MEDIA_LOG_I("InnerPrepare streamID:" PUBLIC_LOG_D32, streamId);
+    }
+}
+
+Status MediaDemuxer::InitBuiltInSubtitleBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer)
+{
+    Status ret = Status::OK;
+    if (!IsSubtitleTrackId(trackId) || subtitleTrackIdVec_.empty()) {
+        return ret;
+    }
+    for (size_t i = 0; i < subtitleTrackIdVec_.size(); ++i) {
+        int32_t tempTrackId = subtitleTrackIdVec_[i];
+        MEDIA_LOG_I("Set bufferQueue for track" PUBLIC_LOG_D32, tempTrackId);
+        if (bufferQueueMap_.find(tempTrackId) != bufferQueueMap_.end()) {
+            MEDIA_LOG_W("Has been set already");
+        }
+        ret = InnerSelectTrack(tempTrackId);
+        FALSE_CONTINUE_NOLOG(ret == Status::OK);
+        auto track = trackMap_.find(tempTrackId);
+        if (track != trackMap_.end()) {
+            auto listener = track->second->GetProducerListener();
+            if (listener) {
+                MEDIA_LOG_W("Set listener");
+                producer->SetBufferAvailableListener(listener);
+            }
+        }
+        bufferQueueMap_.insert(std::pair<int32_t, sptr<AVBufferQueueProducer>>(tempTrackId, producer));
+        bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(tempTrackId, nullptr));
+        MEDIA_LOG_I("Set bufferQueue successfully");
+        if (GetEnableSampleQueueFlag()) {
+            ret = AddSampleBufferQueue(tempTrackId);
+            FALSE_RETURN_V_MSG_E(
+                ret == Status::OK, ret, "AddSampleBufferQueue failed for track " PUBLIC_LOG_D32, tempTrackId);
+        }
+    }
+    return ret;
+}
+
+Status MediaDemuxer::SelectBuiltInSubtitleTrack(int32_t trackId, int32_t curTrackId)
+{
+    if (!IsNeedSelectTrack(trackId) && !IsNeedSelectTrack(curTrackId)) {
+        return Status::OK;
+    }
+    if (IsNeedSelectTrack(curTrackId)) {
+        // 当前字幕不是内置字幕，目标字幕是内置字幕
+        if (taskMap_.find(curTrackId) != taskMap_.end() && taskMap_[curTrackId] != nullptr) {
+            taskMap_[curTrackId]->Stop();
+        }
+        if (sampleConsumerTaskMap_.find(curTrackId) != sampleConsumerTaskMap_.end() &&
+            sampleConsumerTaskMap_[curTrackId] != nullptr) {
+            sampleConsumerTaskMap_[curTrackId]->Stop();
+        }
+        UnselectTrack(curTrackId);
+
+        bufferQueueMap_.erase(curTrackId);
+        bufferMap_.erase(curTrackId);
+        if (GetEnableSampleQueueFlag()) {
+            AutoLock lock(mapMutex_);
+            sampleQueueMap_.erase(curTrackId);
+        }
+        return Status::OK;
+    } else if (IsNeedSelectTrack(trackId)) {
+        // 当前字幕是内置字幕，目标字幕不是内置字幕
+        bufferQueueMap_.insert(
+            std::pair<int32_t, sptr<AVBufferQueueProducer>>(trackId, bufferQueueMap_[curTrackId]));
+        bufferMap_.insert(std::pair<int32_t, std::shared_ptr<AVBuffer>>(trackId, nullptr));
+        demuxerPluginManager_->UpdateTempTrackMapInfo(trackId, trackId, -1);
+        if (GetEnableSampleQueueFlag()) {
+            AutoLock lock(mapMutex_);
+            AddSampleBufferQueue(trackId);
+            if (sampleQueueMap_[trackId] != nullptr) {
+                sampleQueueMap_[trackId]->UpdateQueueId(trackId);
+            }
+        }
+        return InnerSelectTrack(trackId);
+    }
+    return Status::ERROR_UNKNOWN;
+}
+
+Status MediaDemuxer::UpdateSubtitleLastPts(int32_t trackId)
+{
+    if (!subtitleTrackIdVec_.empty() && IsSubtitleTrackId(trackId) && bufferMap_[trackId] != nullptr) {
+        lastSubtitlePtsMap_[trackId] = bufferMap_[trackId]->pts_;
+    }
+    return Status::OK;
+}
+
+bool MediaDemuxer::IsSubtitleQueueStale(int32_t queueIndex)
+{
+    auto iter = lastSubtitlePtsMap_.find(queueIndex);
+    if (iter != lastSubtitlePtsMap_.end() && syncCenter_ != nullptr
+        && iter->second - syncCenter_->GetMediaTimeNow() > MAX_SUBTITLE_LEAD_TIME) {
+        return false;
+    }
+    return true;
+}
+
+void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
+{
+    // DTS missing - maintain DTS using framerate
+    // PTS missing - PTS = DTS
+    FALSE_RETURN_NOLOG(isPlayerMode_ &&  trackId == videoTrackId_ && sample != nullptr);
+    if (sample->dts_ != PTS_MISSING_MARKER) {
+        lastVideoDts_.store(sample->dts_);
+        sample->pts_ = (sample->pts_ == PTS_MISSING_MARKER) ? sample->dts_ : sample->pts_;
+        return;
+    }
+    double framerate = framerate_.load();
+    FALSE_RETURN_NOLOG(framerate >= 1.0);
+    int64_t frameIntervalUs = static_cast<int64_t>(US_TO_S / framerate);
+    int64_t lastVideoDts = lastVideoDts_.load();
+    FALSE_RETURN_NOLOG(lastVideoDts < INT64_MAX - frameIntervalUs);
+    sample->dts_ = (lastVideoDts == HST_TIME_NONE) ? seekTime_.load() : lastVideoDts + frameIntervalUs;
+    lastVideoDts_.store(sample->dts_);
+    sample->pts_ = (sample->pts_ == PTS_MISSING_MARKER) ? sample->dts_ : sample->pts_;
+    MEDIA_LOG_D("CorrectVideoPtsIfMissing: corrected pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64,
+        sample->pts_, sample->dts_);
+}
+
+void MediaDemuxer::RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
+{
+    // cannot maintain DTS/PTS - restore to previous values
+    FALSE_RETURN_NOLOG(isPlayerMode_ && trackId == videoTrackId_ && sample != nullptr);
+    if (sample->dts_ == PTS_MISSING_MARKER) {
+        sample->dts_ = currentVideoDts_.load();
+    }
+    if (sample->pts_ == PTS_MISSING_MARKER) {
+        sample->pts_ = currentVideoPts_.load();
+    }
+}
+
+void MediaDemuxer::CacheAndInvalidateVideoSample(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
+{
+    FALSE_RETURN_NOLOG(isPlayerMode_ && trackId == videoTrackId_ && sample != nullptr);
+    currentVideoDts_.store(sample->dts_);
+    currentVideoPts_.store(sample->pts_);
+    sample->dts_ = PTS_MISSING_MARKER;
+    sample->pts_ = PTS_MISSING_MARKER;
+}
+
+void MediaDemuxer::ResetForSeek(int64_t seekTime)
+{
+    FALSE_RETURN(seekTime < (INT64_MAX / US_TO_MS));
+    seekTime_.store(seekTime * US_TO_MS);
+    lastVideoDts_.store(HST_TIME_NONE);
+}
+} // namespace Media
+} // namespace OHOS
