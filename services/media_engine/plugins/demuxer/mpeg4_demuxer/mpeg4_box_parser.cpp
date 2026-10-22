@@ -5100,15 +5100,17 @@ Status MPEG4AtomParser::ReadSaioOffsetEntries(int64_t dataOffset, uint8_t versio
 
     int64_t baseOffset = moofOffset_;
     int64_t newDataOffset(0);
+    uint64_t newAuxiliaryOffsets(0);
     for (uint32_t i = 0; i < entryCount; ++i) {
         uint8_t offsetData[8];
         ret = dataReader_->ReadUintData(dataOffset, offsetData, offsetSize);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read saio offset failed");
         if (version == 0) {
-            currentTrack_->drmInfo.auxiliaryOffsets[i] = static_cast<int64_t>(GetU32Value(offsetData)) + baseOffset;
+            newAuxiliaryOffsets = static_cast<uint64_t>(static_cast<int64_t>(GetU32Value(offsetData)) + baseOffset);
         } else {
-            currentTrack_->drmInfo.auxiliaryOffsets[i] = static_cast<int64_t>(GetU64Value(offsetData)) + baseOffset;
+            newAuxiliaryOffsets = static_cast<uint64_t>(static_cast<int64_t>(GetU64Value(offsetData)) + baseOffset);
         }
+        currentTrack_->drmInfo.auxiliaryOffsets[i] = newAuxiliaryOffsets;
         if (__builtin_sub_overflow(dataOffset, static_cast<int64_t>(offsetSize), &newDataOffset)) {
             MEDIA_LOG_E("ReadSaioOffsetEntries dataOffset overflow");
             continue;
