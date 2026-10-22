@@ -1509,11 +1509,19 @@ bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
 
 bool ShouldApplyMovEditTimelineOffset(const std::shared_ptr<MPEG4AtomParser::Track>& track);
 
+bool IsAvcVideoTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    return track != nullptr && track->sampleHelper != nullptr &&
+        track->sampleHelper->mimeType_ == MimeType::VIDEO_AVC &&
+        (track->codecParms.trackType == VIDEO_TYPE ||
+         (track->codecParms.trackType == AUXILIARY_TYPE &&
+          IsVideoMimeType(track->sampleHelper->mimeType_)));
+}
+
 bool ShouldMarkAvcSampleKey(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     const MPEG4SampleHelper::SampleIndexView& currentSample)
 {
-    if (track == nullptr || track->codecParms.trackType != VIDEO_TYPE ||
-        (currentSample.flag & Sample::SampleFlag::SYNC_FRAME) != 0) {
+    if (!IsAvcVideoTrack(track)) {
         return false;
     }
     return AvcSampleContainsIdr(track, currentSample) || AvcSampleContainsLowRefISlice(track, currentSample);
@@ -1558,6 +1566,13 @@ uint32_t GetPacketSampleFlag(const std::shared_ptr<MPEG4AtomParser::Track>& trac
     uint32_t flag = currentSample.flag;
     if (ShouldMarkAvcSampleKey(track, currentSample)) {
         flag |= static_cast<uint32_t>(Sample::SampleFlag::SYNC_FRAME);
+    } else if (IsAvcVideoTrack(track)) {
+        // FFmpeg always runs the H.264 parser for MP4 video tracks (AVSTREAM_PARSE_HEADERS set in
+        // ff_mov_read_stsd_entries, regardless of track type). The parser derives key frames from
+        // slice content (IDR or a low-ref-count I-slice) and overrides the container sync marks
+        // (stss / absent stss), so a high-ref-count non-IDR I-slice stays non-sync even when the
+        // container marks it as sync.
+        flag &= ~static_cast<uint32_t>(Sample::SampleFlag::SYNC_FRAME);
     }
     if (sampleIndex == 0 && IsValidTrack(track) && track->codecParms.trackType == AUDIO_TYPE &&
         track->editListEntries.size() == 1 &&

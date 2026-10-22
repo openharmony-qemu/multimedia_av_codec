@@ -8208,10 +8208,11 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AuxEditListMinCorrectedP
     constexpr int64_t mediaEditTime = 0;
     constexpr int32_t movieTimeScale = 1000;
     constexpr int32_t trackTimeScale = 90000;
-    // Empty edit (2005 ms) + media edit starting at media time 0; ctts offsets shift min PTS to 2 ticks.
+    // Empty edit (2005 ms, mediaTime -1) + media edit starting at media time 0;
+    // ctts offsets shift min PTS to 2 ticks. EditListEntry fields are (mediaTime, duration).
     const std::vector<Plugins::MPEG4::MPEG4SampleHelper::EditListEntry> editList = {
-        {mediaEditDuration, mediaTime, 1, 0},
-        {emptyEditDuration, mediaEditTime, 1, 0},
+        {mediaTime, emptyEditDuration, 1, 0},
+        {mediaEditTime, mediaEditDuration, 1, 0},
     };
     const std::vector<Plugins::MPEG4::MPEG4SampleHelper::SampleIndexEntry> entries = {
         MakeSampleIndexEntry(0, 0, 2, sampleSize),
