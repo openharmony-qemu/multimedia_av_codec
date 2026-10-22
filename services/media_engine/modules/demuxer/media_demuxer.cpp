@@ -357,6 +357,7 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
     return ret;
 }
 
+
 void MediaDemuxer::TryReclaimParserTask()
 {
     std::lock_guard<std::mutex> lock(parserTaskMutex_);
