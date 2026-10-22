@@ -16,6 +16,7 @@
 #include "mpeg4_demuxer_plugin_unit_test.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <chrono>
 #include <cctype>
@@ -135,6 +136,7 @@ constexpr uint8_t AAC_TEST_ELEMENT_END = 7;
 constexpr uint8_t AAC_TEST_EXTENSION_SBR = 0x0D;
 constexpr uint8_t AAC_TEST_EXTENSION_SBR_CRC = 0x0E;
 constexpr uint8_t AAC_TEST_EXTENSION_OTHER = 1;
+constexpr size_t AVC_PREFIX_NAL_TEST_SCAN_BUFFER_SIZE = 4 * 1024;
 constexpr uint8_t AAC_TEST_ELEMENT_TYPE_BITS = 3;
 constexpr uint8_t AAC_TEST_INSTANCE_TAG_BITS = 4;
 constexpr uint8_t AAC_TEST_FILL_COUNT_BITS = 4;
@@ -8192,6 +8194,63 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcHighRefISliceNotSync_
     AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
     ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
     EXPECT_EQ((output.mediaAVBuffer->flag_ & syncFlag) != 0, false);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcPrefixNalEmbeddedIdrSyncFlag_001
+ * @tc.desc: Verify FFmpeg-style key detection for an Annex-B IDR inside an AVC Prefix NAL
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcPrefixNalEmbeddedIdrSyncFlag_001, TestSize.Level1)
+{
+    constexpr size_t testSampleCount = 4;
+    constexpr size_t annexbStartCodeOffset = AVC_PREFIX_NAL_TEST_SCAN_BUFFER_SIZE - 2;
+    const std::vector<uint8_t> sps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
+    const std::vector<uint8_t> idr = {0x6E, 0x00, 0x00, 0x00, 0x01, 0x06, 0x00, 0x00, 0x00, 0x01, 0x65, 0x88};
+    const std::vector<uint8_t> sei = {0x6E, 0x00, 0x00, 0x00, 0x01, 0x06, 0x88};
+    const std::vector<uint8_t> truncated = {0x6E, 0x00, 0x00, 0x00, 0x01};
+    std::vector<uint8_t> crossChunkIdr(AVC_PREFIX_NAL_TEST_SCAN_BUFFER_SIZE + 3, 0xFF);
+    crossChunkIdr[0] = 0x6E;
+    crossChunkIdr[annexbStartCodeOffset + 1] = 0;
+    crossChunkIdr[annexbStartCodeOffset + 2] = 0;
+    crossChunkIdr[annexbStartCodeOffset + 3] = 1;
+    crossChunkIdr[annexbStartCodeOffset + 4] = 0x65;
+    auto plugin = BuildAvcKeyHeuristicTestPlugin(sps, {idr, sei, truncated, crossChunkIdr},
+        {{0}, {1}, {2}, {3}});
+    ASSERT_NE(plugin, nullptr);
+
+    constexpr uint32_t syncFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
+    const std::array<bool, testSampleCount> expectedSync = {true, false, false, true};
+    AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    for (bool expectSync : expectedSync) {
+        ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ((output.mediaAVBuffer->flag_ & syncFlag) != 0, expectSync);
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_EditProjectedVideoDelay_001
+ * @tc.desc: Verify H.264 delay uses edit-projected output timestamps like FFmpeg mov_fix_index
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EditProjectedVideoDelay_001, TestSize.Level1)
+{
+    constexpr uint32_t sampleSize = 1;
+    constexpr uint32_t testSampleCount = 3;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.sttsEntry_ = {{testSampleCount, 10}};
+    helper.cttsEntry_ = {{testSampleCount, 0}};
+    helper.sampleTableSummary_.rawSampleCount = testSampleCount;
+    helper.sampleIndexEntry_ = {
+        MakeSampleIndexEntry(0, 0, 0, sampleSize),
+        MakeSampleIndexEntry(1, 10, 20, sampleSize),
+        MakeSampleIndexEntry(2, 20, 10, sampleSize),
+    };
+    helper.editListApplied_ = true;
+    EXPECT_EQ(helper.EstimateVideoDelay(), 1U);
+
+    helper.editListApplied_ = false;
+    EXPECT_EQ(helper.EstimateVideoDelay(), 0U);
 }
 
 /**

@@ -366,8 +366,12 @@ constexpr uint8_t AVC_NAL_LENGTH_SIZE_MASK = 0x03;
 constexpr uint8_t AVC_NAL_TYPE_MASK = 0x1F;
 constexpr uint8_t AVC_IDR_NAL_TYPE = 5;
 constexpr uint8_t AVC_SLICE_NAL_TYPE = 1;
+// AVC Prefix NALs can carry Annex-B units in malformed NALFF samples.
+constexpr uint8_t AVC_PREFIX_NAL_TYPE = 14;
 constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
 constexpr uint8_t AVC_MAX_NAL_LENGTH_SIZE = 4;
+constexpr size_t AVC_ANNEXB_SCAN_BUFFER_SIZE = 4 * 1024;
+constexpr uint8_t AVC_ANNEXB_START_CODE_ZERO_COUNT = 2;
 constexpr uint8_t BITS_PER_BYTE = 8;
 constexpr uint32_t AVC_SLICE_TYPE_MODULUS = 5; // H.264 slice_type 0~9 mapped by %5: 0/5=P, 1/6=B, 2/7=I, 3/8=SP, 4/9=SI
 constexpr uint32_t AVC_SLICE_TYPE_I = 2; // slice_type %% AVC_SLICE_TYPE_MODULUS == 2 maps to an I slice
@@ -1390,6 +1394,46 @@ uint32_t ReadNalLength(const uint8_t* data, uint8_t nalLengthSize)
     return nalLength;
 }
 
+bool AvcPrefixNalPayloadContainsAnnexbIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    int64_t payloadOffset, int64_t payloadEnd)
+{
+    if (track == nullptr || track->sampleHelper == nullptr || track->sampleHelper->dataReader_ == nullptr ||
+        payloadOffset < 0 || payloadEnd <= payloadOffset) {
+        return false;
+    }
+    std::array<uint8_t, AVC_ANNEXB_SCAN_BUFFER_SIZE> buffer = {};
+    uint32_t zeroCount = 0;
+    bool expectNalHeader = false;
+    while (payloadOffset < payloadEnd) {
+        int64_t remaining = payloadEnd - payloadOffset;
+        size_t readSize = static_cast<size_t>(std::min<int64_t>(remaining, buffer.size()));
+        if (track->sampleHelper->dataReader_->ReadUintData(payloadOffset, buffer.data(), readSize) != Status::OK) {
+            return false;
+        }
+        for (size_t index = 0; index < readSize; ++index) {
+            uint8_t value = buffer[index];
+            if (expectNalHeader) {
+                if ((value & AVC_NAL_TYPE_MASK) == AVC_IDR_NAL_TYPE) {
+                    return true;
+                }
+                expectNalHeader = false;
+                zeroCount = value == 0 ? 1 : 0;
+                continue;
+            }
+            if (value == 0) {
+                ++zeroCount;
+            } else {
+                expectNalHeader = value == 1 && zeroCount >= AVC_ANNEXB_START_CODE_ZERO_COUNT;
+                zeroCount = 0;
+            }
+        }
+        if (!SafeAddInt64(payloadOffset, static_cast<int64_t>(readSize), payloadOffset)) {
+            return false;
+        }
+    }
+    return false;
+}
+
 uint8_t GetAvcNalLengthSize(const std::shared_ptr<MPEG4AtomParser::Track>& track)
 {
     FALSE_RETURN_V_NOLOG(track != nullptr && track->codecParms.data != nullptr &&
@@ -1501,7 +1545,17 @@ bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
         FALSE_RETURN_V_NOLOG(nalLength != 0 && nalLength <= static_cast<uint64_t>(sampleEnd - offset), false);
         FALSE_RETURN_V_NOLOG(
             track->sampleHelper->dataReader_->ReadUintData(offset, &nalHeader, sizeof(nalHeader)) == Status::OK, false);
-        FALSE_RETURN_V_NOLOG((nalHeader & AVC_NAL_TYPE_MASK) != AVC_IDR_NAL_TYPE, true);
+        const uint8_t nalType = nalHeader & AVC_NAL_TYPE_MASK;
+        FALSE_RETURN_V_NOLOG(nalType != AVC_IDR_NAL_TYPE, true);
+        if (nalType == AVC_PREFIX_NAL_TYPE) {
+            int64_t payloadOffset = 0;
+            int64_t payloadEnd = 0;
+            FALSE_RETURN_V_NOLOG(nalLength > sizeof(nalHeader) &&
+                SafeAddInt64(offset, static_cast<int64_t>(sizeof(nalHeader)), payloadOffset) &&
+                SafeAddInt64(offset, static_cast<int64_t>(nalLength), payloadEnd), false);
+            // FFmpeg's H.264 parser keeps searching start codes inside a Prefix NAL's NALFF payload.
+            FALSE_RETURN_V_NOLOG(!AvcPrefixNalPayloadContainsAnnexbIdr(track, payloadOffset, payloadEnd), true);
+        }
         FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, static_cast<int64_t>(nalLength), offset), false);
     }
     return false;

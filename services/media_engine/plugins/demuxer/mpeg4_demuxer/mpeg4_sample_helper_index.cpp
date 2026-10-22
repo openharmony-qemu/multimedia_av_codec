@@ -73,6 +73,46 @@ struct MPEG4SampleHelper::SimpleEditProjectionSampleContext {
     bool shouldBreak = false;
 };
 
+namespace {
+void InsertVideoDelayPts(std::array<int64_t, MAX_REORDER_DELAY + 1>& ptsBuffer, uint32_t& bufferStart,
+    int64_t samplePts, uint32_t& videoDelay)
+{
+    uint32_t pos = bufferStart;
+    ++bufferStart;
+    if (bufferStart == ptsBuffer.size()) {
+        bufferStart = 0;
+    }
+    ptsBuffer[pos] = samplePts;
+    uint32_t swaps = 0;
+    while (pos != bufferStart) {
+        uint32_t previous = pos == 0 ? MAX_REORDER_DELAY : pos - 1;
+        if (ptsBuffer[pos] >= ptsBuffer[previous]) {
+            break;
+        }
+        std::swap(ptsBuffer[pos], ptsBuffer[previous]);
+        ++swaps;
+        pos = previous;
+    }
+    videoDelay = std::max(videoDelay, swaps);
+}
+
+uint32_t EstimateVideoDelayFromOutputViews(const MPEG4SampleHelper& helper)
+{
+    std::array<int64_t, MAX_REORDER_DELAY + 1> ptsBuffer;
+    ptsBuffer.fill(INT64_MIN);
+    uint32_t bufferStart = 0;
+    uint32_t videoDelay = 0;
+    for (uint32_t index = 0; index < helper.GetSampleCount(); ++index) {
+        int64_t samplePts = 0;
+        if (helper.GetSamplePts(index, samplePts) != Status::OK) {
+            return 0;
+        }
+        InsertVideoDelayPts(ptsBuffer, bufferStart, samplePts, videoDelay);
+    }
+    return videoDelay;
+}
+}
+
 bool MPEG4SampleHelper::IsGroupedRawAudio() const
 {
     return mimeType_ == MimeType::AUDIO_G711MU || mimeType_ == MimeType::AUDIO_G711A ||
@@ -370,6 +410,10 @@ int64_t MPEG4SampleHelper::GetSyncSamplePts(size_t stssIndex) const
 uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
 {
     FALSE_RETURN_V_NOLOG(!sttsEntry_.empty() && !cttsEntry_.empty() && sampleTableSummary_.rawSampleCount > 0, 0);
+    if (editListApplied_ || simpleEditProjection_.enabled) {
+        // FFmpeg estimates delay after mov_fix_index has applied the edit-list output timeline.
+        return EstimateVideoDelayFromOutputViews(*this);
+    }
     // Keep metadata parsing index-free: VIDEO_DELAY only needs DTS plus CTTS order, not full sample offsets.
     std::array<int64_t, MAX_REORDER_DELAY + 1> ptsBuffer;
     ptsBuffer.fill(INT64_MIN);
@@ -386,24 +430,7 @@ uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
         FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(dtsShift_,
             static_cast<int64_t>(cttsEntry_[cttsIndex].delta), &ptsOffset) &&
             !__builtin_add_overflow(currentDts, ptsOffset, &samplePts), 0);
-        uint32_t pos = bufferStart;
-        bufferStart = (bufferStart + 1) % ptsBuffer.size();
-        ptsBuffer[pos] = samplePts;
-
-        uint32_t swaps = 0;
-        while (pos != bufferStart) {
-            int32_t previous = static_cast<int32_t>(pos) - 1;
-            if (previous < 0) {
-                previous = MAX_REORDER_DELAY;
-            }
-            if (ptsBuffer[pos] >= ptsBuffer[previous]) {
-                break;
-            }
-            std::swap(ptsBuffer[pos], ptsBuffer[previous]);
-            ++swaps;
-            pos = static_cast<uint32_t>(previous);
-        }
-        videoDelay = std::max(videoDelay, swaps);
+        InsertVideoDelayPts(ptsBuffer, bufferStart, samplePts, videoDelay);
 
         FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(currentDts, static_cast<int64_t>(sttsEntry_[sttsIndex].delta),
             &currentDts), 0);
