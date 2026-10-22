@@ -8264,14 +8264,19 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EditProjectedVideoDelay_
 {
     constexpr uint32_t sampleSize = 1;
     constexpr uint32_t testSampleCount = 3;
+    constexpr uint32_t sampleDuration = 10;
+    constexpr int64_t firstSampleDts = -static_cast<int64_t>(sampleDuration);
+    constexpr int64_t reorderedSamplePts = static_cast<int64_t>(sampleDuration) + sampleDuration;
     Plugins::MPEG4::MPEG4SampleHelper helper;
-    helper.sttsEntry_ = {{testSampleCount, 10}};
+    helper.sttsEntry_ = {{testSampleCount, sampleDuration}};
     helper.cttsEntry_ = {{testSampleCount, 0}};
     helper.sampleTableSummary_.rawSampleCount = testSampleCount;
     helper.sampleIndexEntry_ = {
-        MakeSampleIndexEntry(0, 0, 0, sampleSize),
-        MakeSampleIndexEntry(1, 10, 20, sampleSize),
-        MakeSampleIndexEntry(2, 20, 10, sampleSize),
+        // SampleIndexEntry stores PTS as a non-negative offset from DTS. These normalized DTS values preserve
+        // the edit-projected PTS order {0, 20, 10}, which has one frame of display reordering.
+        MakeSampleIndexEntry(0, firstSampleDts, 0, sampleSize),
+        MakeSampleIndexEntry(1, 0, reorderedSamplePts, sampleSize),
+        MakeSampleIndexEntry(2, sampleDuration, sampleDuration, sampleSize),
     };
     helper.editListApplied_ = true;
     EXPECT_EQ(helper.EstimateVideoDelay(), 1U);
