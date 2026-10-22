@@ -73,15 +73,55 @@ struct MPEG4SampleHelper::SimpleEditProjectionSampleContext {
     bool shouldBreak = false;
 };
 
-bool MPEG4SampleHelper::IsGroupedRawAudio() const
+namespace {
+void InsertVideoDelayPts(std::array<int64_t, MAX_REORDER_DELAY + 1>& ptsBuffer, uint32_t& bufferStart,
+    int64_t samplePts, uint32_t& videoDelay)
 {
-    return mimeType_ == MimeType::AUDIO_G711MU || mimeType_ == MimeType::AUDIO_G711A ||
-        mimeType_ == MimeType::AUDIO_RAW;
+    uint32_t pos = bufferStart;
+    ++bufferStart;
+    if (bufferStart == ptsBuffer.size()) {
+        bufferStart = 0;
+    }
+    ptsBuffer[pos] = samplePts;
+    uint32_t swaps = 0;
+    while (pos != bufferStart) {
+        uint32_t previous = pos == 0 ? MAX_REORDER_DELAY : pos - 1;
+        if (ptsBuffer[pos] >= ptsBuffer[previous]) {
+            break;
+        }
+        std::swap(ptsBuffer[pos], ptsBuffer[previous]);
+        ++swaps;
+        pos = previous;
+    }
+    videoDelay = std::max(videoDelay, swaps);
+}
+
+uint32_t EstimateVideoDelayFromOutputViews(const MPEG4SampleHelper& helper)
+{
+    std::array<int64_t, MAX_REORDER_DELAY + 1> ptsBuffer;
+    ptsBuffer.fill(INT64_MIN);
+    uint32_t bufferStart = 0;
+    uint32_t videoDelay = 0;
+    for (uint32_t index = 0; index < helper.GetSampleCount(); ++index) {
+        int64_t samplePts = 0;
+        if (helper.GetSamplePts(index, samplePts) != Status::OK) {
+            return 0;
+        }
+        InsertVideoDelayPts(ptsBuffer, bufferStart, samplePts, videoDelay);
+    }
+    return videoDelay;
+}
+}
+
+bool IsGroupedRawAudio(const std::string& mimeType)
+{
+    return mimeType == MimeType::AUDIO_G711MU || mimeType == MimeType::AUDIO_G711A ||
+        mimeType == MimeType::AUDIO_RAW;
 }
 
 uint32_t MPEG4SampleHelper::CalculateLogicalSampleCount(uint32_t rawSampleCount) const
 {
-    if (!IsGroupedRawAudio()) {
+    if (!IsGroupedRawAudio(mimeType_)) {
         return rawSampleCount;
     }
     uint64_t logicalCount = 0;
@@ -370,6 +410,15 @@ int64_t MPEG4SampleHelper::GetSyncSamplePts(size_t stssIndex) const
 uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
 {
     FALSE_RETURN_V_NOLOG(!sttsEntry_.empty() && !cttsEntry_.empty() && sampleTableSummary_.rawSampleCount > 0, 0);
+    if (editListApplied_ || simpleEditProjection_.enabled) {
+        // FFmpeg estimates delay after mov_fix_index has applied the edit-list output timeline.
+        return UseSparseIndex() ? EstimateSparseProjectedVideoDelay() : EstimateVideoDelayFromOutputViews(*this);
+    }
+    return EstimateVideoDelayFromRawTimingEntries();
+}
+
+uint32_t MPEG4SampleHelper::EstimateVideoDelayFromRawTimingEntries() const
+{
     // Keep metadata parsing index-free: VIDEO_DELAY only needs DTS plus CTTS order, not full sample offsets.
     std::array<int64_t, MAX_REORDER_DELAY + 1> ptsBuffer;
     ptsBuffer.fill(INT64_MIN);
@@ -386,24 +435,7 @@ uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
         FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(dtsShift_,
             static_cast<int64_t>(cttsEntry_[cttsIndex].delta), &ptsOffset) &&
             !__builtin_add_overflow(currentDts, ptsOffset, &samplePts), 0);
-        uint32_t pos = bufferStart;
-        bufferStart = (bufferStart + 1) % ptsBuffer.size();
-        ptsBuffer[pos] = samplePts;
-
-        uint32_t swaps = 0;
-        while (pos != bufferStart) {
-            int32_t previous = static_cast<int32_t>(pos) - 1;
-            if (previous < 0) {
-                previous = MAX_REORDER_DELAY;
-            }
-            if (ptsBuffer[pos] >= ptsBuffer[previous]) {
-                break;
-            }
-            std::swap(ptsBuffer[pos], ptsBuffer[previous]);
-            ++swaps;
-            pos = static_cast<uint32_t>(previous);
-        }
-        videoDelay = std::max(videoDelay, swaps);
+        InsertVideoDelayPts(ptsBuffer, bufferStart, samplePts, videoDelay);
 
         FALSE_RETURN_V_NOLOG(!__builtin_add_overflow(currentDts, static_cast<int64_t>(sttsEntry_[sttsIndex].delta),
             &currentDts), 0);
@@ -417,6 +449,27 @@ uint32_t MPEG4SampleHelper::EstimateVideoDelay() const
             FALSE_RETURN_V_NOLOG(cttsIndex < cttsEntry_.size(), 0);
             cttsRemaining = cttsEntry_[cttsIndex].count;
         }
+    }
+    return videoDelay;
+}
+
+uint32_t MPEG4SampleHelper::EstimateSparseProjectedVideoDelay() const
+{
+    FALSE_RETURN_V_NOLOG(EnsureSparseIndex() == Status::OK, 0);
+    std::lock_guard<std::mutex> lock(indexMutex_);
+    FALSE_RETURN_V_NOLOG(!sparseCheckpoints_.empty(), 0);
+    SampleTableCursor cursor = sparseCheckpoints_.front().cursor;
+    std::array<int64_t, MAX_REORDER_DELAY + 1> ptsBuffer;
+    ptsBuffer.fill(INT64_MIN);
+    uint32_t bufferStart = 0;
+    uint32_t videoDelay = 0;
+    uint32_t sampleCount = GetSampleCount();
+    for (uint32_t index = 0; index < sampleCount; ++index) {
+        uint32_t rawIndex = static_cast<uint32_t>(cursor.processedRawSamples);
+        SampleIndexView view;
+        FALSE_RETURN_V_NOLOG(ReadRawSampleAndAdvance(cursor, view) == Status::OK &&
+            ApplySimpleEditProjection(rawIndex, view) == Status::OK, 0);
+        InsertVideoDelayPts(ptsBuffer, bufferStart, view.pts, videoDelay);
     }
     return videoDelay;
 }
@@ -454,7 +507,7 @@ Status MPEG4SampleHelper::PrepareRawSampleStep(const SampleTableCursor& cursor, 
     FALSE_RETURN_V_NOLOG(cursor.sampleInChunk < step.samplesInChunk && cursor.sttsRemaining > 0,
         Status::ERROR_INVALID_DATA);
     step.samplesPerFrame = 1;
-    if (IsGroupedRawAudio()) {
+    if (IsGroupedRawAudio(mimeType_)) {
         step.samplesPerFrame = std::min({maxGroupedSamplesPerFrame, step.samplesInChunk - cursor.sampleInChunk,
             cursor.sttsRemaining});
     }
@@ -469,7 +522,7 @@ Status MPEG4SampleHelper::PrepareRawSampleStep(const SampleTableCursor& cursor, 
 Status MPEG4SampleHelper::ResolveRawSampleSize(
     const SampleTableCursor& cursor, uint32_t samplesPerFrame, int32_t& sampleSize) const
 {
-    if (IsGroupedRawAudio()) {
+    if (IsGroupedRawAudio(mimeType_)) {
         int64_t groupedSize = static_cast<int64_t>(sampleSizes_.front()) * static_cast<int64_t>(samplesPerFrame);
         FALSE_RETURN_V_NOLOG(groupedSize >= 0 &&
             groupedSize <= static_cast<int64_t>(SampleIndexEntry::sizeMask),
@@ -573,7 +626,7 @@ Status MPEG4SampleHelper::CalculateSampleTableSummary()
     FALSE_RETURN_V_NOLOG(sampleTableSummary_.logicalSampleCount > 0, Status::ERROR_INVALID_DATA);
 
     int64_t maxPts = INT64_MIN;
-    if (IsGroupedRawAudio()) {
+    if (IsGroupedRawAudio(mimeType_)) {
         FALSE_RETURN_V_NOLOG(CalculateGroupedSampleTableSummary(maxPts) == Status::OK, Status::ERROR_INVALID_DATA);
     } else {
         int64_t initialDts = editListEntries_.empty() ? -timeOffset_ - dtsShift_ : -dtsShift_;
@@ -737,7 +790,7 @@ bool MPEG4SampleHelper::IsSimpleEditProjectionSupported() const
     // Sparse ELST is intentionally limited to the common linear projection cases.
     // Complex edit lists still use the existing dense ApplyEditList path for exact compatibility.
     if (editListEntries_.empty() || editListEntries_.size() > MAX_SIMPLE_EDIT_ENTRY_COUNT ||
-        IsGroupedRawAudio() || movieTimeScale_ <= 0 || trackTimeScale_ <= 0) {
+        IsGroupedRawAudio(mimeType_) || movieTimeScale_ <= 0 || trackTimeScale_ <= 0) {
         return false;
     }
     bool hasLeadingEmptyEdit = editListEntries_.size() == MAX_SIMPLE_EDIT_ENTRY_COUNT &&
