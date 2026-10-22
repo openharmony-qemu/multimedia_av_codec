@@ -21,7 +21,7 @@
 #include "media_description.h"
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-AudioCodecAdapter"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "ACodecAdpt"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 } // namespace
 
@@ -99,7 +99,7 @@ int32_t AudioCodecAdapter::Configure(const Format &format)
 
 int32_t AudioCodecAdapter::Start()
 {
-    AVCODEC_LOGD("Start enter");
+    AVCODEC_LOGD("in");
     CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
         "adapter start error, callback not initialized .");
 
@@ -117,7 +117,7 @@ int32_t AudioCodecAdapter::Start()
         AVCODEC_LOGE("Start is incorrect, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    AVCODEC_LOGI("state %{public}s to STARTING then RUNNING", stateToString(state_).data());
+    AVCODEC_LOGI("%{public}s to STARTING then RUNNING", stateToString(state_).data());
     state_ = CodecState::STARTING;
     auto ret = doStart();
     return ret;
@@ -137,7 +137,7 @@ int32_t AudioCodecAdapter::Stop()
     }
     state_ = CodecState::STOPPING;
     auto ret = doStop();
-    AVCODEC_LOGI("state %{public}s to INITIALIZED", stateToString(state_).data());
+    AVCODEC_LOGI("%{public}s to INITIALIZED", stateToString(state_).data());
     state_ = CodecState::CONFIGURED;
     return ret;
 }
@@ -158,7 +158,7 @@ int32_t AudioCodecAdapter::Flush()
         AVCODEC_LOGE("Flush failed, state =%{public}s", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
     }
-    AVCODEC_LOGI("state %{public}s to FLUSHING then FLUSHED", stateToString(state_).data());
+    AVCODEC_LOGI("%{public}s to FLUSHING then FLUSHED", stateToString(state_).data());
     state_ = CodecState::FLUSHING;
     auto ret = doFlush();
     return ret;
@@ -176,7 +176,7 @@ int32_t AudioCodecAdapter::Reset()
     }
     if (audioCodec) {
         status = audioCodec->Reset();
-        AVCODEC_LOGI("state %{public}s to INITIALIZED",  stateToString(state_).data());
+        AVCODEC_LOGI("%{public}s to INITIALIZED",  stateToString(state_).data());
         state_ = CodecState::INITIALIZED;
     } else {
         auto ret = doInit();
@@ -205,7 +205,7 @@ int32_t AudioCodecAdapter::Release()
     if (state_ == CodecState::STARTING || state_ == CodecState::RUNNING || state_ == CodecState::STOPPING) {
         AVCODEC_LOGE("adapter Release, state is running, state =%{public}s .", stateToString(state_).data());
     }
-    AVCODEC_LOGI("state %{public}s to RELEASING then RELEASED", stateToString(state_).data());
+    AVCODEC_LOGI("%{public}s to RELEASING then RELEASED", stateToString(state_).data());
     state_ = CodecState::RELEASING;
     auto ret = doRelease();
     return ret;
@@ -338,7 +338,7 @@ int32_t AudioCodecAdapter::doInit()
         AVCODEC_LOGE("Initlize failed, because create codec failed. name: %{public}s.", name_.data());
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
     }
-    AVCODEC_LOGI("adapter doInit, state from %{public}s to INITIALIZED",
+    AVCODEC_LOGI("%{public}s to INITIALIZED",
         stateToString(state_).data());
     state_ = CodecState::INITIALIZED;
     return AVCodecServiceErrCode::AVCS_ERR_OK;

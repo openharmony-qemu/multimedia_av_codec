@@ -20,7 +20,7 @@
 #include <set>
 
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "AvCodec-FfmpegBaseDecoder"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, LOG_DOMAIN_AUDIO, "FfmpegBaseDec"};
 constexpr uint8_t LOGD_FREQUENCY = 5;
 constexpr uint8_t LOGE_FREQUENCY = 3;
 constexpr float TIME_BASE_FFMPEG = 1000000.f;
