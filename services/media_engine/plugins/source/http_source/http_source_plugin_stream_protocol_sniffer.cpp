@@ -30,7 +30,7 @@ size_t StreamProtocolSniffer::GetMinSniffBufferSize()
 
 StreamProtocolType StreamProtocolSniffer::SniffStreamProtocolFromData(const uint8_t* data, size_t size)
 {
-    if (data == nullptr || size < MIN_SNIFF_BUFFER_SIZE) {
+    if (data == nullptr || size < HLS_SIGNATURE_LEN) {
         return StreamProtocolType::HTTP;
     }
 

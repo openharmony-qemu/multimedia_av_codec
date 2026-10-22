@@ -35,11 +35,17 @@
 #include "meta/media_types.h"
 #include "download/download_metrics_info.h"
 #include "plugin/plugin_base.h"
+#include "plugin/source_plugin.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
+struct MpdStreamResource {
+    std::vector<std::string> urls;
+    StreamInfo info {};
+};
 
 using DashMpdEvent = enum DashMpdEvent {
     DASH_MPD_EVENT_OPEN_OK,
@@ -175,7 +181,11 @@ public:
     void SetCallback(const std::shared_ptr<Callback>& cb);
     void SetDefaultStreamId(int32_t &videoStreamId, int32_t &audioStreamId, int32_t &subTitleStreamId);
     DashList<DashEventStreamInfo *> GetCurrentPeriodEventStreams() const;
-    static std::vector<std::string> ParseMpdResources(const uint8_t* data, size_t size, const std::string& rootUrl);
+    static std::vector<MpdStreamResource> ParseMpdResources(const uint8_t* data, size_t size,
+        const std::string& rootUrl);
+
+    static void BuildMpdStreamResources(std::shared_ptr<DashMpdDownloader>& downloader,
+        std::vector<MpdStreamResource>& resources);
 
 private:
     void ParseManifest();

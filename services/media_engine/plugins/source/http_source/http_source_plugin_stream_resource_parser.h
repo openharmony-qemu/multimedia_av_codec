@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include "http_source_plugin_stream_protocol_sniffer.h"
+#include "media_source.h"
 
 namespace OHOS {
 namespace Media {
@@ -37,7 +38,8 @@ struct StreamResourceInfo {
 class __attribute__((visibility("default"))) StreamResourceParser {
 public:
     static StreamResourceParser* Parse(
-        const uint8_t* data, size_t size, StreamProtocolType protocol, const std::string& rootUrl);
+        const uint8_t* data, size_t size, StreamProtocolType protocol, const std::string& rootUrl,
+        const TrackSelectionFilter& filter = {});
 
     bool HasNext() const;
     StreamResourceInfo Next();
@@ -61,6 +63,7 @@ private:
     size_t currentIndex_ = 0;
     StreamProtocolType protocol_ = StreamProtocolType::HTTP;
     std::string rootUrl_;
+    TrackSelectionFilter filter_ {};
 };
 
 } // namespace HttpPlugin
@@ -71,6 +74,6 @@ private:
 extern "C" {
 OHOS::Media::Plugins::HttpPlugin::StreamResourceParser* __attribute__((visibility("default")))GetStreamResourceParser(
     const uint8_t* data, size_t size, OHOS::Media::Plugins::HttpPlugin::StreamProtocolType protocol,
-    const std::string& rootUrl);
+    const std::string& rootUrl, const OHOS::Media::Plugins::TrackSelectionFilter& filter = {});
 }
 #endif

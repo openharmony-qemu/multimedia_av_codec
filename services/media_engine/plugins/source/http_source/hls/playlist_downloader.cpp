@@ -113,16 +113,14 @@ void PlayListDownloader::SaveHttpHeader(const std::map<std::string, std::string>
     httpHeader_ = httpHeader;
 }
 
-void PlayListDownloader::DoOpen(const std::string& url)
+StatusCallbackFunc PlayListDownloader::CreateRealStatusCallback(
+    std::weak_ptr<PlayListDownloader> weakDownloader)
 {
-    auto weakDownloader = weak_from_this();
-    auto realStatusCallback = [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
+    return [weakDownloader] (DownloadStatus&& status, std::shared_ptr<Downloader>& downloader,
         std::shared_ptr<DownloadRequest>& request) {
         FALSE_RETURN(request != nullptr);
-
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_MSG(shareDownloader != nullptr, "realStatusCb, playlist downloader already destructed.");
-        // 目标资源永久删除，需要重头重新请求
         if (request->GetServerError() == HTTP_SERVER_ERROR_410) {
             shareDownloader->ReOpen();
             return;
@@ -138,13 +136,29 @@ void PlayListDownloader::DoOpen(const std::string& url)
             MEDIA_LOG_E("fail to download m3u8.");
             eventCallback->OnEvent({PluginEventType::CLIENT_ERROR,
                 {NetworkClientErrorCode::ERROR_TIME_OUT}, "errorMessage:HLS download m3u8 fail"});
-
             return;
         }
         shareDownloader->playList_.clear();
         shareDownloader->statusCallback_(status, shareDownloader->downloader_,
             std::forward<decltype(request)>(request));
     };
+}
+
+DownloadDoneCbFunc PlayListDownloader::CreateDownloadDoneCallback(
+    std::weak_ptr<PlayListDownloader> weakDownloader)
+{
+    return [weakDownloader] (const std::string& url, const std::string& location) {
+        auto shareDownloader = weakDownloader.lock();
+        FALSE_RETURN_MSG(shareDownloader != nullptr, "handleResponseCb, PlayListDownloader is nullptr!");
+        shareDownloader->UpdateDownloadFinished(url, location);
+    };
+}
+
+void PlayListDownloader::DoOpen(const std::string& url)
+{
+    playList_.clear();
+    auto weakDownloader = weak_from_this();
+    auto realStatusCallback = CreateRealStatusCallback(weakDownloader);
 
     RequestInfo requestInfo;
     requestInfo.url = url;
@@ -154,17 +168,13 @@ void PlayListDownloader::DoOpen(const std::string& url)
         MEDIA_LOG_E("no enough memory downloadRequest_ is nullptr");
         return;
     }
-    auto downloadDoneCallback = [weakDownloader] (const std::string& url, const std::string& location) {
-        auto shareDownloader = weakDownloader.lock();
-        FALSE_RETURN_MSG(shareDownloader != nullptr, "handleResponseCb, PlayListDownloader is nullptr!");
-        shareDownloader->UpdateDownloadFinished(url, location);
-    };
+    auto downloadDoneCallback = CreateDownloadDoneCallback(weakDownloader);
     downloadRequest_->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest_->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest_->SetIsIndexM3u8Request(true);
     downloadRequest_->SetRequestType(RequestType::HLS_PLAYLIST);
     if (downloader_ != nullptr) {
-        downloader_->Download(downloadRequest_, -1); // -1
+        downloader_->Download(downloadRequest_, -1);
         downloader_->Start();
     }
 }
@@ -299,6 +309,7 @@ uint32_t PlayListDownloader::SaveData(uint8_t* data, uint32_t len, bool notBlock
 
 void PlayListDownloader::UpdateDownloadFinished(const std::string& url, const std::string& location)
 {
+    MEDIA_LOG_I("HLS PlayList Download done: %{public}zu", playList_.length());
     ParseManifest(location);
     playList_.clear();
     retryStartTime_ = 0;
