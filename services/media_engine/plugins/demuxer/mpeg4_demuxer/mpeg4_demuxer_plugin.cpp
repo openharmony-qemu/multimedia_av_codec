@@ -27,6 +27,7 @@
 #include <deque>
 
 #include "avcodec_trace.h"
+#include "avc_parser_impl.h"
 #include "demuxer_utils.h"
 #include "securec.h"
 #include "converter.h"
@@ -364,10 +365,19 @@ constexpr uint8_t AVC_NAL_LENGTH_SIZE_OFFSET = 4;
 constexpr uint8_t AVC_NAL_LENGTH_SIZE_MASK = 0x03;
 constexpr uint8_t AVC_NAL_TYPE_MASK = 0x1F;
 constexpr uint8_t AVC_IDR_NAL_TYPE = 5;
+constexpr uint8_t AVC_SLICE_NAL_TYPE = 1;
 constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
 constexpr uint8_t AVC_MAX_NAL_LENGTH_SIZE = 4;
 constexpr uint8_t BITS_PER_BYTE = 8;
+constexpr uint32_t AVC_SLICE_TYPE_MODULUS = 5; // H.264 slice_type 0~9 mapped by %5: 0/5=P, 1/6=B, 2/7=I, 3/8=SP, 4/9=SI
+constexpr uint32_t AVC_SLICE_TYPE_I = 2; // slice_type %% AVC_SLICE_TYPE_MODULUS == 2 maps to an I slice
+constexpr uint32_t AVC_SLICE_HEADER_SCAN_SIZE = 64;
 constexpr int64_t MAX_AVC_IDR_SCAN_SIZE = 64 * 1024 * 1024;
+
+struct AvcSliceHeaderInfo {
+    uint32_t ppsId = 0;
+    uint32_t pictType = 0;
+};
 
 struct ReadSamplePacketAttr {
     int64_t ptsUs = 0;
@@ -1388,6 +1398,85 @@ uint8_t GetAvcNalLengthSize(const std::shared_ptr<MPEG4AtomParser::Track>& track
     return nalLengthSize >= AVC_MIN_NAL_LENGTH_SIZE && nalLengthSize <= AVC_MAX_NAL_LENGTH_SIZE ? nalLengthSize : 0;
 }
 
+void EnsureAvcKeyHeuristicParsed(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    if (track == nullptr || track->avcKeyHeuristicParsed) {
+        return;
+    }
+    track->avcKeyHeuristicParsed = true;
+    const uint8_t* ext = track->codecParms.data.get();
+    const int64_t extSize = track->codecParms.extradataSize;
+    if (ext == nullptr || extSize <= 0 || extSize > std::numeric_limits<int32_t>::max()) {
+        return;
+    }
+    AvcParserImpl::ParseAvcConfigRefCounts(ext, static_cast<int32_t>(extSize),
+        track->avcSpsRefFrameCounts, track->avcPpsSpsIds, track->avcPpsRefCountsL0);
+}
+
+bool AvcSliceHeaderHasPpsAndType(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t nalOffset,
+    uint32_t nalLength, uint8_t nalLengthSize, AvcSliceHeaderInfo& sliceHeader)
+{
+    if (track == nullptr || nalLength <= nalLengthSize) {
+        return false;
+    }
+    const uint32_t readSize = std::min<uint32_t>(nalLength, AVC_SLICE_HEADER_SCAN_SIZE);
+    uint8_t prefix[AVC_SLICE_HEADER_SCAN_SIZE] = {0};
+    FALSE_RETURN_V_NOLOG(track->sampleHelper->dataReader_->ReadUintData(nalOffset, prefix, readSize) ==
+        Status::OK, false);
+    uint32_t firstMbInSlice = 0;
+    uint32_t sliceType = 0;
+    FALSE_RETURN_V_NOLOG(AvcParserImpl::ParseSliceHeaderInfo(prefix, readSize, firstMbInSlice, sliceType,
+        sliceHeader.ppsId), false);
+    sliceHeader.pictType = sliceType % AVC_SLICE_TYPE_MODULUS;
+    return true;
+}
+
+bool AvcSampleContainsLowRefISlice(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    const MPEG4SampleHelper::SampleIndexView& sample)
+{
+    if (track == nullptr || track->sampleHelper == nullptr || track->sampleHelper->dataReader_ == nullptr ||
+        track->sampleHelper->mimeType_ != MimeType::VIDEO_AVC || sample.pos < 0 || sample.size <= 0 ||
+        sample.size > MAX_AVC_IDR_SCAN_SIZE) {
+        return false;
+    }
+    EnsureAvcKeyHeuristicParsed(track);
+    if (track->avcPpsRefCountsL0.empty() || track->avcSpsRefFrameCounts.empty()) {
+        return false;
+    }
+    uint8_t nalLengthSize = GetAvcNalLengthSize(track);
+    FALSE_RETURN_V_NOLOG(nalLengthSize != 0 && sample.size >= nalLengthSize, false);
+    int64_t sampleEnd = 0;
+    FALSE_RETURN_V_NOLOG(SafeAddInt64(sample.pos, sample.size, sampleEnd), false);
+    int64_t offset = sample.pos;
+    uint8_t lengthData[AVC_MAX_NAL_LENGTH_SIZE] = {0};
+    uint8_t nalHeader = 0;
+    while (offset <= sampleEnd - nalLengthSize) {
+        FALSE_RETURN_V_NOLOG(
+            track->sampleHelper->dataReader_->ReadUintData(offset, lengthData, nalLengthSize) == Status::OK,
+            false);
+        const uint32_t nalLength = ReadNalLength(lengthData, nalLengthSize);
+        FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, nalLengthSize, offset), false);
+        FALSE_RETURN_V_NOLOG(nalLength != 0 && nalLength <= static_cast<uint64_t>(sampleEnd - offset), false);
+        FALSE_RETURN_V_NOLOG(
+            track->sampleHelper->dataReader_->ReadUintData(offset, &nalHeader, sizeof(nalHeader)) == Status::OK,
+            false);
+        const uint8_t nalType = nalHeader & AVC_NAL_TYPE_MASK;
+        if (nalType == AVC_SLICE_NAL_TYPE || nalType == AVC_IDR_NAL_TYPE) {
+            AvcSliceHeaderInfo sliceHeader;
+            if (AvcSliceHeaderHasPpsAndType(track, offset, nalLength, nalLengthSize, sliceHeader) &&
+                sliceHeader.pictType == AVC_SLICE_TYPE_I &&
+                sliceHeader.ppsId < track->avcPpsRefCountsL0.size() &&
+                track->avcPpsRefCountsL0[sliceHeader.ppsId] <= 1 &&
+                track->avcPpsSpsIds[sliceHeader.ppsId] < track->avcSpsRefFrameCounts.size() &&
+                track->avcSpsRefFrameCounts[track->avcPpsSpsIds[sliceHeader.ppsId]] <= 1) {
+                return true;
+            }
+        }
+        FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, static_cast<int64_t>(nalLength), offset), false);
+    }
+    return false;
+}
+
 bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     const MPEG4SampleHelper::SampleIndexView& sample)
 {
@@ -1420,14 +1509,22 @@ bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
 
 bool ShouldApplyMovEditTimelineOffset(const std::shared_ptr<MPEG4AtomParser::Track>& track);
 
-bool ShouldMarkAvcIdrSampleKey(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+bool IsAvcVideoTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    return track != nullptr && track->sampleHelper != nullptr &&
+        track->sampleHelper->mimeType_ == MimeType::VIDEO_AVC &&
+        (track->codecParms.trackType == VIDEO_TYPE ||
+         (track->codecParms.trackType == AUXILIARY_TYPE &&
+          IsVideoMimeType(track->sampleHelper->mimeType_)));
+}
+
+bool ShouldMarkAvcSampleKey(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     const MPEG4SampleHelper::SampleIndexView& currentSample)
 {
-    if (track == nullptr || track->codecParms.trackType != VIDEO_TYPE ||
-        (currentSample.flag & Sample::SampleFlag::SYNC_FRAME) != 0) {
+    if (!IsAvcVideoTrack(track)) {
         return false;
     }
-    return AvcSampleContainsIdr(track, currentSample);
+    return AvcSampleContainsIdr(track, currentSample) || AvcSampleContainsLowRefISlice(track, currentSample);
 }
 
 uint32_t GetSkipSamplesFromInfo(const std::vector<uint8_t>& skipSamplesInfo)
@@ -1467,8 +1564,15 @@ uint32_t GetPacketSampleFlag(const std::shared_ptr<MPEG4AtomParser::Track>& trac
     const MPEG4SampleHelper::SampleIndexView& currentSample, bool hasPlayableVideoTrack)
 {
     uint32_t flag = currentSample.flag;
-    if (ShouldMarkAvcIdrSampleKey(track, currentSample)) {
+    if (ShouldMarkAvcSampleKey(track, currentSample)) {
         flag |= static_cast<uint32_t>(Sample::SampleFlag::SYNC_FRAME);
+    } else if (IsAvcVideoTrack(track)) {
+        // FFmpeg always runs the H.264 parser for MP4 video tracks (AVSTREAM_PARSE_HEADERS set in
+        // ff_mov_read_stsd_entries, regardless of track type). The parser derives key frames from
+        // slice content (IDR or a low-ref-count I-slice) and overrides the container sync marks
+        // (stss / absent stss), so a high-ref-count non-IDR I-slice stays non-sync even when the
+        // container marks it as sync.
+        flag &= ~static_cast<uint32_t>(Sample::SampleFlag::SYNC_FRAME);
     }
     if (sampleIndex == 0 && IsValidTrack(track) && track->codecParms.trackType == AUDIO_TYPE &&
         track->editListEntries.size() == 1 &&
@@ -2358,7 +2462,11 @@ void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& trac
         format.Set<Tag::VIDEO_WIDTH>(w);
         format.Set<Tag::VIDEO_HEIGHT>(h);
     }
-    if (sar > 0) {
+    // Aligned with FFmpeg av_guess_sample_aspect_ratio: container-derived SAR (pasp /
+    // tkhd-stsd difference) takes precedence; SPS VUI SAR is only a fallback when the
+    // container does not provide one.
+    double containerSar = 0.0;
+    if (!format.Get<Tag::VIDEO_SAR>(containerSar) && sar > 0) {
         format.Set<Tag::VIDEO_SAR>(sar);
     }
 }

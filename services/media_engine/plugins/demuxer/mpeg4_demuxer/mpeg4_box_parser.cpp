@@ -21,6 +21,7 @@
 #include <sstream>
 #include <iomanip>
 #include <limits>
+#include <numeric>
 #include <regex>
 #include <set>
 #include <array>
@@ -36,6 +37,19 @@
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_DEMUXER, "MPEG4BoxParser" };
+
+// Align with FFmpeg mov demuxer: metadata text values are stored with C-string
+// semantics (av_dict_set), so a value is terminated at the first '\0' instead of
+// keeping the NUL padding that MP4 writers append to udta string atoms.
+std::string TrimMetadataStringAtNul(const std::string& value)
+{
+    std::string result = value;
+    size_t nulPos = result.find('\0');
+    if (nulPos != std::string::npos) {
+        result.resize(nulPos);
+    }
+    return result;
+}
 }
 
 namespace OHOS {
@@ -446,8 +460,8 @@ void AdjustPsChannelConfig(bool isPsOutput, uint32_t& channels, AudioChannelLayo
     }
 }
 
-bool HasAacSyncExtensionPs(DemuxerBitReader bitReader, uint32_t baseSampleRate, uint32_t& extensionSampleRate,
-    bool& hasSbr)
+bool HasAacSyncExtensionSbr(DemuxerBitReader bitReader, uint32_t baseSampleRate,
+    uint32_t& extensionSampleRate, bool& hasSbr, bool& hasPs)
 {
     constexpr uint8_t syncExtensionBits = 11;
     constexpr uint8_t objectTypeBits = 5;
@@ -459,8 +473,11 @@ bool HasAacSyncExtensionPs(DemuxerBitReader bitReader, uint32_t baseSampleRate, 
     // Pass by value so the caller can continue parsing its original ASC position.
     extensionSampleRate = 0;
     hasSbr = false;
+    hasPs = false;
     while (bitReader.HasBits(syncExtensionBits + objectTypeBits + 1)) {
-        if (bitReader.ShowBits(syncExtensionBits) != syncExtensionType) {
+        // ShowBits is limited to BYTE_LENGTH bits; the sync extension marker is 11 bits,
+        // so peek with the wide helper that consumes a copy without advancing the reader.
+        if (ShowBitsWide(bitReader, syncExtensionBits) != syncExtensionType) {
             bitReader.SkipBits(1);
             continue;
         }
@@ -475,11 +492,17 @@ bool HasAacSyncExtensionPs(DemuxerBitReader bitReader, uint32_t baseSampleRate, 
         }
         ReadAACSampleRate(bitReader, sampleRateIndex, extensionSampleRate);
         hasSbr = extensionSampleRate != baseSampleRate;
-        FALSE_RETURN_V(hasSbr, false);
-        FALSE_RETURN_V(bitReader.HasBits(syncExtensionBits + 1) &&
-            bitReader.ShowBits(syncExtensionBits) == psExtensionType, false);
-        bitReader.SkipBits(syncExtensionBits);
-        return bitReader.ReadBits(1) != 0;
+        // PS (0x548) is optional and only meaningful when SBR is present, aligned with
+        // ff_mpeg4audio_get_config_gb.
+        if (bitReader.HasBits(syncExtensionBits + 1) &&
+            ShowBitsWide(bitReader, syncExtensionBits) == psExtensionType) {
+            bitReader.SkipBits(syncExtensionBits);
+            hasPs = bitReader.ReadBits(1) != 0;
+        }
+        if (!hasSbr) {
+            hasPs = false;
+        }
+        return hasSbr;
     }
     return false;
 }
@@ -1370,10 +1393,6 @@ void MPEG4AtomParser::CalculateVideoDelay(std::shared_ptr<Track> track)
     if (track->sampleHelper->mimeType_ == MimeType::VIDEO_AVC) {
         if (!track->sampleHelper->cttsEntry_.empty()) {
             videoDelay = track->sampleHelper->EstimateVideoDelay();
-            if (videoDelay == 0) {
-                constexpr uint32_t avcDefaultReorderDelay = 2;
-                videoDelay = avcDefaultReorderDelay;
-            }
         } else if (track->codecParms.data != nullptr && track->codecParms.extradataSize > 0) {
             AvcParserImpl avcParser;
             int64_t sampleCount = GetEffectiveSampleCount(track->sampleHelper);
@@ -1715,7 +1734,16 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
     double sar = 0.0;
 
     if (track->hasPasp && track->hSpacing > 0 && track->vSpacing > 0) {
-        sar = static_cast<double>(track->hSpacing) / static_cast<double>(track->vSpacing);
+        // Reduce to lowest terms like FFmpeg av_reduce so the double ratio
+        // matches av_q2d on the reduced rational (exact below 2^53 products).
+        uint64_t hSpacing = track->hSpacing;
+        uint64_t vSpacing = track->vSpacing;
+        uint64_t gcd = std::gcd(hSpacing, vSpacing);
+        if (gcd > 1) {
+            hSpacing /= gcd;
+            vSpacing /= gcd;
+        }
+        sar = static_cast<double>(hSpacing) / static_cast<double>(vSpacing);
         MEDIA_LOG_D("SAR from pasp: hSpacing=%{public}u, vSpacing=%{public}u, sar=%{public}f",
             track->hSpacing, track->vSpacing, sar);
         mediaInfo_.tracks[track->trackIndex].Set<Tag::VIDEO_SAR>(sar);
@@ -1736,6 +1764,13 @@ void MPEG4AtomParser::CalculateSARFromTrackInfo(std::shared_ptr<Track> track)
             return;
         }
         if (denominator > 0) {
+            // Reduce to lowest terms like FFmpeg av_reduce so the double ratio
+            // matches av_q2d on the reduced rational (exact below 2^53 products).
+            uint64_t gcd = std::gcd(numerator, denominator);
+            if (gcd > 1) {
+                numerator /= gcd;
+                denominator /= gcd;
+            }
             sar = static_cast<double>(numerator) / static_cast<double>(denominator);
             MEDIA_LOG_D("SAR from width/height diff: [%{public}u/%{public}u/%{public}u/%{public}u], sar=%{public}f",
                 track->stsdWidth, track->stsdHeight, track->tkhdWidth, track->tkhdHeight, sar);
@@ -2908,11 +2943,15 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
     const bool hasExplicitSbr = audioObjectType == AOT_SBR || isImplicitPs;
     uint32_t extensionSampleRate = 0;
     bool hasSyncExtensionSbr = false;
-    const bool syncExtensionPs = audioObjectType == AOT_AAC_LC &&
-        HasAacSyncExtensionPs(bitReader, baseSampleRate, extensionSampleRate, hasSyncExtensionSbr);
-    const bool hasSyncExtensionPs = channelConfig == 1 && syncExtensionPs;
+    bool hasSyncExtensionPs = false;
+    if (audioObjectType == AOT_AAC_LC) {
+        // On absence or truncation the function returns false with the out-params
+        // already reset to false, so the parsed flags below stay reliable either way.
+        (void)HasAacSyncExtensionSbr(bitReader, baseSampleRate, extensionSampleRate,
+            hasSyncExtensionSbr, hasSyncExtensionPs);
+    }
     const bool hasSbr = hasExplicitSbr || hasSyncExtensionSbr;
-    AdjustPsChannelConfig(isImplicitPs || hasSyncExtensionPs, channels, layout);
+    AdjustPsChannelConfig(isImplicitPs || (channelConfig == 1 && hasSyncExtensionPs), channels, layout);
     if (hasExplicitSbr) {
         uint8_t extensionSamplingFreqIndex = 0;
         ReadAACSampleRate(bitReader, extensionSamplingFreqIndex, extensionSampleRate);
@@ -4250,6 +4289,7 @@ std::string DecodeMacString(const uint8_t* data, size_t size)
 
 bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string& value, bool isTrackMetadata)
 {
+    std::string trimmedValue = TrimMetadataStringAtNul(value);
     static const std::map<std::string, TagType> keyToTagMap = {
         {"title",         Tag::MEDIA_TITLE},
         {"artist",        Tag::MEDIA_ARTIST},
@@ -4272,10 +4312,10 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
     auto it = keyToTagMap.find(Converter::ToLower(key));
     if (it != keyToTagMap.end()) {
         std::string resultStr = "";
-        if (!Converter::IsUTF8(value) && Converter::IsGBK(value.c_str())) {
-            resultStr = Converter::ConvertGBKToUTF8(value);
+        if (!Converter::IsUTF8(trimmedValue) && Converter::IsGBK(trimmedValue.c_str())) {
+            resultStr = Converter::ConvertGBKToUTF8(trimmedValue);
         }
-        resultStr = resultStr.length() > 0 ? resultStr : value;
+        resultStr = resultStr.length() > 0 ? resultStr : trimmedValue;
         if (resultStr.length() > 0) {
             mediaInfo_.general.SetData(it->second, resultStr);
             if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
@@ -4284,7 +4324,7 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
         }
         return true;
     } else if (key == "location") {
-        ParseLocationString(value);
+        ParseLocationString(trimmedValue);
         return true;
     }
     return false;
@@ -4332,7 +4372,7 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
         default: { // UTF-8 string
             FALSE_RETURN_V_MSG_D(
                 dataType <= 1 || dataType == SUPPORT_DATA_TYPE, Status::OK, "Unsupport meta %{public}d", dataType);
-            std::string stringValue = std::string(reinterpret_cast<char*>(buffer), size);
+            std::string stringValue = TrimMetadataStringAtNul(std::string(reinterpret_cast<char*>(buffer), size));
             if (!stringValue.empty()) {
                 userFormat_->SetData(key, stringValue);
             }
@@ -5205,6 +5245,9 @@ Status MPEG4AtomParser::ParseChan(MPEG4Atom currentAtom, int32_t depth, ParseCon
         auto audioParser = std::make_shared<MPEG4AudioParser>();
         FALSE_RETURN_V_MSG_E(audioParser != nullptr, Status::ERROR_NO_MEMORY, "Failed create audioParser");
         AudioChannelLayout layout = audioParser->FindValidChannelLayout(static_cast<uint64_t>(channelLayoutMask));
+        // Aligned with the full FFmpeg pipeline (ff_mov_read_chan + ffmpeg_demuxer
+        // ConvertFFToOHAudioChannelLayoutV2): when the chan mask maps to no standard OH
+        // layout, both sides fall back to GetDefaultChannelLayout(channelCount).
         if (layout == AudioChannelLayout::UNKNOWN) {
             int32_t channelCount = 0;
             FALSE_RETURN_V_MSG_E(
@@ -5654,7 +5697,11 @@ void MPEG4AtomParser::CalculateMPEG4Attributes()
             int32_t channelCount = 0;
             AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
             if (!mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout) &&
-                mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount)) {
+                mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount) &&
+                // AVS3DA layout comes from the dca3 entry only; FFmpeg ParseAudioTrackInfo
+                // forces UNKNOWN for AVS3DA instead of the generic mask fallback.
+                (track->sampleHelper == nullptr ||
+                    track->sampleHelper->mimeType_ != MimeType::AUDIO_AVS3DA)) {
                 layout = Converter::GetDefaultChannelLayout(channelCount);
                 mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
                 mediaInfo_.tracks[track->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
@@ -6008,6 +6055,37 @@ double MPEG4AtomParser::CalculateDuration(std::shared_ptr<Track> track, bool isR
     return duration;
 }
 
+bool SumLeadingEmptyEditDuration(const std::vector<MPEG4SampleHelper::EditListEntry>& editListEntries,
+    int64_t& emptyEditDuration)
+{
+    emptyEditDuration = 0;
+    for (const auto& entry : editListEntries) {
+        if (entry.mediaTime != -1) {
+            break;
+        }
+        int64_t newEmptyEdit = 0;
+        FALSE_RETURN_V(!__builtin_add_overflow(emptyEditDuration, entry.duration, &newEmptyEdit), false);
+        emptyEditDuration = newEmptyEdit;
+    }
+    return true;
+}
+
+bool SetStartTimeFromFirstSamplePts(const std::shared_ptr<MPEG4AtomParser::Track>& track, int64_t& trackStartTime)
+{
+    if (track->sampleHelper && !track->sampleHelper->IsSampleIndexEmpty()) {
+        int64_t firstPts = 0;
+        FALSE_RETURN_V(track->sampleHelper->GetSamplePts(0, firstPts) == Status::OK, false);
+        int32_t timeScale = track->timeScale;
+        if (timeScale > 0) {
+            FALSE_RETURN_V(ConvertTimeScaleRound(firstPts, S_TO_US, timeScale, &trackStartTime) == Status::OK,
+                false);
+        }
+        trackStartTime = std::max<int64_t>(trackStartTime, 0);
+        return true;
+    }
+    return false;
+}
+
 void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, int64_t& trackStartTime,
     int64_t& containerStartTimeForTrack)
 {
@@ -6025,12 +6103,17 @@ void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, 
         containerStartTimeForTrack = trackStartTime;
         return;
     }
-    if (track->elstInitEmptyEdit > 0) {
+    if (!track->editListEntries.empty()) {
+        // FFmpeg mov_fix_index: start_time equals the sum of the leading empty edit
+        // durations (mediaTime == -1); the first non-empty edit contributes 0. Durations
+        // are in movie time scale and are rescaled to the track time scale first.
         int32_t fileTimeScale = movieTimeScale_;
         int32_t trackTimeScale = track->timeScale;
         if (fileTimeScale > 0 && trackTimeScale > 0) {
             int64_t emptyEditInTrackTime = 0;
-            FALSE_RETURN_MSG(ConvertTimeScaleRoundToTimeBase(track->elstInitEmptyEdit, trackTimeScale,
+            FALSE_RETURN_MSG(SumLeadingEmptyEditDuration(track->editListEntries, emptyEditInTrackTime),
+                "Add overflow");
+            FALSE_RETURN_MSG(ConvertTimeScaleRoundToTimeBase(emptyEditInTrackTime, trackTimeScale,
                 fileTimeScale, &emptyEditInTrackTime) == Status::OK, "Mul overflow");
             FALSE_RETURN_MSG(ConvertTrackTimeToUs(emptyEditInTrackTime, trackTimeScale,
                 &trackStartTime) == Status::OK, "Mul overflow");
@@ -6042,15 +6125,7 @@ void MPEG4AtomParser::UpdateTrackStartTime(const std::shared_ptr<Track>& track, 
             return;
         }
     } else if (track->sampleHelper && !track->sampleHelper->IsSampleIndexEmpty()) {
-        int64_t firstPts = 0;
-        FALSE_RETURN_MSG(track->sampleHelper->GetSamplePts(0, firstPts) == Status::OK,
-            "Get first sample pts failed");
-        int32_t timeScale = track->timeScale;
-        if (timeScale > 0) {
-            FALSE_RETURN_MSG(ConvertTimeScaleRound(firstPts, S_TO_US, timeScale, &trackStartTime) == Status::OK,
-                "Mul overflow");
-        }
-        trackStartTime = std::max<int64_t>(trackStartTime, 0);
+        FALSE_RETURN_MSG(SetStartTimeFromFirstSamplePts(track, trackStartTime), "Get first sample pts failed");
         mediaInfo_.tracks[track->trackIndex].Set<Tag::MEDIA_START_TIME>(trackStartTime);
         containerStartTimeForTrack = trackStartTime;
         return;

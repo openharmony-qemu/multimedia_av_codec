@@ -128,6 +128,10 @@ public:
         uint32_t rFrameRateDen = 0;
         bool frameReassemblyChecked = false;
         bool frameReassemblyNeeded = false;
+        bool avcKeyHeuristicParsed = false;
+        std::vector<uint32_t> avcSpsRefFrameCounts; // indexed by sps id; UINT32_MAX means unknown
+        std::vector<uint32_t> avcPpsSpsIds;         // indexed by pps id; UINT32_MAX means unknown
+        std::vector<uint32_t> avcPpsRefCountsL0;    // num_ref_idx_l0_default_active_minus1 + 1 by pps id
         CodecParams codecParms{};
         std::vector<std::vector<uint8_t>> codecConfigs;
         uint64_t codecConfigsSize = 0;
