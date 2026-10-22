@@ -547,7 +547,7 @@ Status DecoderSurfaceFilter::DoStart()
 
 Status DecoderSurfaceFilter::DoPause()
 {
-    MEDIA_LOG_I("Pause");
+    MEDIA_LOG_D("Pause enter.");
     if (state_ == FilterState::FROZEN) {
         MEDIA_LOG_I("current state is frozen");
         state_ = FilterState::PAUSED;
@@ -1075,7 +1075,7 @@ void DecoderSurfaceFilter::HandleRender(
     int64_t lastRenderTimeNs = lastRenderTimeNs_.load();
     int64_t minRendererTime = std::max(currentSysTimeNs, lastRenderTimeNs == HST_TIME_NONE ? 0 : lastRenderTimeNs);
     renderTime = renderTime < minRendererTime ? minRendererTime : renderTime;
-    MEDIA_LOG_I("HandleRender index " PUBLIC_LOG_U32 " renderTime " PUBLIC_LOG_D64 " curTime " PUBLIC_LOG_D64
+    MEDIA_LOG_D("HandleRender index " PUBLIC_LOG_U32 " renderTime " PUBLIC_LOG_D64 " curTime " PUBLIC_LOG_D64
         " lastRenderTimeNs " PUBLIC_LOG_D64, index, renderTime, currentSysTimeNs, lastRenderTimeNs);
 
     RenderAtTimeDfx(renderTime, currentSysTimeNs, lastRenderTimeNs);

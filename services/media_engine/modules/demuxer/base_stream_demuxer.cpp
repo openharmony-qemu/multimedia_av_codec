@@ -148,7 +148,7 @@ void BaseStreamDemuxer::SetIsDash(bool flag)
 
 Status BaseStreamDemuxer::SetNewVideoStreamID(int32_t streamID)
 {
-    MEDIA_LOG_I_SHORT("SetNewVideoStreamID id: " PUBLIC_LOG_D32, streamID);
+    MEDIA_LOG_D_SHORT("SetNewVideoStreamID id: " PUBLIC_LOG_D32, streamID);
     SetChangeFlag(false);
     newVideoStreamID_.store(streamID);
     return Status::OK;

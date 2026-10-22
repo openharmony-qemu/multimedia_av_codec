@@ -98,7 +98,7 @@ void AudioSinkFilter::DoSetIsInPrePausing(bool isInPrePausing)
 {
     MediaAVCodec::AVCodecTrace trace("AudioSinkFilter::DoSetIsInPrePausing:" + std::to_string(isInPrePausing));
     FALSE_GOON_NOEXEC(audioSink_, audioSink_->SetIsInPrePausing(isInPrePausing));
-    MEDIA_LOG_I("AudioSinkFilter::DoSetIsInPrePausing isInPrePausing:%{public}d", isInPrePausing);
+    MEDIA_LOG_D("AudioSinkFilter::DoSetIsInPrePausing isInPrePausing:%{public}d", isInPrePausing);
 }
 
 void AudioSinkFilter::Init(const std::shared_ptr<EventReceiver> &receiver,

@@ -102,7 +102,7 @@ void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& met
     int64_t trackStartTime = 0;
     meta->GetData(Tag::MEDIA_START_TIME, trackStartTime);
     int32_t trackId = 0;
-    FALSE_LOG(meta->GetData(Tag::REGULAR_TRACK_ID, trackId));
+    FALSE_LOG_MSG_D(meta->GetData(Tag::REGULAR_TRACK_ID, trackId), "Get trackId failed");
     auto syncCenter = syncCenter_.lock();
     if (syncCenter) {
         syncCenter->SetMediaTimeRangeStart(trackStartTime, trackId, this);
@@ -113,7 +113,7 @@ void MediaSynchronousSink::UpdateMediaTimeRange(const std::shared_ptr<Meta>& met
             syncCenter->SetMediaTimeRangeEnd(trackDuration + trackStartTime, trackId, this);
         }
     } else {
-        MEDIA_LOG_W("Get duration failed");
+        MEDIA_LOG_D_SHORT("Get duration failed");
         if (syncCenter) {
             syncCenter->SetMediaTimeRangeEnd(INT64_MAX, trackId, this);
         }

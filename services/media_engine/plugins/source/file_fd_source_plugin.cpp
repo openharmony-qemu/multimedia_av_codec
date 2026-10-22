@@ -651,7 +651,7 @@ void FileFdSourcePlugin::SetDemuxerState(int32_t streamId)
 
 Status FileFdSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
 {
-    MEDIA_LOG_I("bitRate: " PUBLIC_LOG_D32, bitRate);
+    MEDIA_LOG_D("bitRate: " PUBLIC_LOG_D32, bitRate);
     currentBitRate_ = std::max(currentBitRate_, bitRate / TO_BYTE); // 8b
     // default cache 0.3s
     waterLineAbove_ = CACHE_LEVEL_1 * currentBitRate_;
@@ -665,7 +665,7 @@ void FileFdSourcePlugin::SetBundleName(const std::string& bundleName)
 
 Status FileFdSourcePlugin::SetReadBlockingFlag(bool isAllowed)
 {
-    MEDIA_LOG_I("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isAllowed);
+    MEDIA_LOG_D("SetReadBlockingFlag entered, IsReadBlockingAllowed %{public}d", isAllowed);
     if (ringBuffer_) {
         ringBuffer_->SetReadBlocking(isAllowed);
     }
@@ -734,7 +734,7 @@ void FileFdSourcePlugin::CheckFileType()
 {
     int loc; // 1本地，2云端
     int ioResult = ioctl(fd_, HMDFS_IOC_GET_LOCATION, &loc);
-    MEDIA_LOG_I("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
+    MEDIA_LOG_D("SetSource ioctl loc, ret " PUBLIC_LOG_D32 ", loc " PUBLIC_LOG_D32 ", errno"
         PUBLIC_LOG_D32, ioResult, loc, errno);
 
     if (ioResult == 0) {

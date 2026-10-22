@@ -48,12 +48,12 @@ const int32_t TRY_READ_TIMES = 10;
 constexpr int64_t SOURCE_READ_WARNING_MS = 100;
 StreamDemuxer::StreamDemuxer() : position_(0)
 {
-    MEDIA_LOG_I("VodStreamDemuxer called");
+    MEDIA_LOG_D("VodStreamDemuxer called");
 }
 
 StreamDemuxer::~StreamDemuxer()
 {
-    MEDIA_LOG_I("~VodStreamDemuxer called");
+    MEDIA_LOG_D("~VodStreamDemuxer called");
     ResetAllCache();
 }
 
@@ -117,7 +117,7 @@ Status StreamDemuxer::GetPeekRange(int32_t streamID, uint64_t offset, size_t siz
 Status StreamDemuxer::Init(const std::string& uri)
 {
     MediaAVCodec::AVCodecTrace trace("StreamDemuxer::Init");
-    MEDIA_LOG_I("StreamDemuxer::Init called");
+    MEDIA_LOG_D("StreamDemuxer::Init called");
     checkRange_ = [](int32_t streamID, uint64_t offset, uint32_t size) {
         return Status::OK;
     };
@@ -478,7 +478,7 @@ Status StreamDemuxer::CallbackReadAt(int32_t streamID, int64_t offset, std::shar
 
 void StreamDemuxer::SetInterruptState(bool isInterruptNeeded)
 {
-    MEDIA_LOG_I("StreamDemuxer OnInterrupted %{public}d", isInterruptNeeded);
+    MEDIA_LOG_D("StreamDemuxer OnInterrupted %{public}d", isInterruptNeeded);
     {
         std::unique_lock<std::mutex> lock(mutex_);
         isInterruptNeeded_ = isInterruptNeeded;
