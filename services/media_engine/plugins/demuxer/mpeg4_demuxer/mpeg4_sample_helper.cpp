@@ -47,8 +47,20 @@ constexpr uint32_t BYTE_BITS = 8;
 constexpr uint32_t DUL_BYTE_BITS = 16;
 constexpr uint32_t HALF_BYTE_NUMBER = 2;
 constexpr size_t PREVIOUS_ENTRY_INDEX_OFFSET = 2;
+constexpr size_t SINGLE_MEDIA_EDIT_COUNT = 1;
 // Match FFmpeg's default max_stts_delta: allow a negative correction up to 10 seconds at 48 kHz.
 constexpr uint32_t MAX_STTS_DELTA = std::numeric_limits<uint32_t>::max() - 48000U * 10U;
+
+static bool ShouldKeepRawTimelineForZeroDurationVideoEdit(
+    const std::vector<MPEG4SampleHelper::EditListEntry>& editListEntries, TrackType trackType,
+    const std::string& mimeType)
+{
+    if (editListEntries.size() != SINGLE_MEDIA_EDIT_COUNT || editListEntries.front().mediaTime < 0 ||
+        editListEntries.front().duration != 0) {
+        return false;
+    }
+    return trackType == VIDEO_TYPE || (trackType == AUXILIARY_TYPE && IsVideoMimeType(mimeType));
+}
 
 static int64_t SaturatingAdd(int64_t left, int64_t right)
 {
@@ -2142,6 +2154,12 @@ MPEG4SampleHelper::EditListRestoreGuard::~EditListRestoreGuard()
 Status MPEG4SampleHelper::ApplyEditList()
 {
     if (editListEntries_.empty() || sampleIndexEntry_.empty()) {
+        return Status::OK;
+    }
+    if (ShouldKeepRawTimelineForZeroDurationVideoEdit(editListEntries_, trackType_, mimeType_)) {
+        // FFmpeg mov_fix_index projects this malformed media edit to a zero-duration index. Preserve the
+        // native timeline so video seeks remain usable; editListApplied_ prevents media_time from shifting seek.
+        editListApplied_ = true;
         return Status::OK;
     }
     FALSE_RETURN_V_MSG_E(movieTimeScale_ > 0 && trackTimeScale_ > 0, Status::ERROR_INVALID_DATA,

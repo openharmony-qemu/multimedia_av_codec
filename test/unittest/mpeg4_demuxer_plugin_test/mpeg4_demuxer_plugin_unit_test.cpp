@@ -3549,6 +3549,72 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroDurationMp3EditProje
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationVideoEditKeepsRawTimeline_001
+ * @tc.desc: Verify malformed zero-duration video media edits keep the native seek timeline.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ZeroDurationVideoEditKeepsRawTimeline_001, TestSize.Level1)
+{
+    constexpr uint32_t sampleCount = 3;
+    constexpr uint32_t sampleDuration = 10;
+    constexpr uint32_t sampleSize = 1;
+    constexpr int64_t invalidEditMediaTime = 25;
+    constexpr int64_t seekPts = 15;
+    constexpr uint32_t expectedSyncSample = 2;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper.mimeType_ = MimeType::VIDEO_AVC;
+    helper.sttsEntry_ = {{sampleCount, sampleDuration}};
+    helper.cttsEntry_ = {{sampleCount, 0}};
+    helper.stscEntry_ = {{0, sampleCount, 1}};
+    helper.stssEntry_ = {{0}, {expectedSyncSample}};
+    helper.sampleSizes_.assign(sampleCount, static_cast<int32_t>(sampleSize));
+    helper.sampleSizeCount_ = sampleCount;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{invalidEditMediaTime, 0, 1, 0}}, 1, 1);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    EXPECT_TRUE(helper.HasAppliedEditList());
+    EXPECT_EQ(helper.GetSampleCount(), static_cast<size_t>(sampleCount));
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, expectedSyncSample}));
+    uint32_t sampleIndex = 0;
+    EXPECT_EQ(helper.FindSyncSampleByPts(seekPts, true, SeekMode::SEEK_CLOSEST_SYNC, sampleIndex), Status::OK);
+    EXPECT_EQ(sampleIndex, expectedSyncSample);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationAudioEditKeepsProjection_001
+ * @tc.desc: Verify zero-duration media edits on audio keep the existing edit-list projection.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ZeroDurationAudioEditKeepsProjection_001, TestSize.Level1)
+{
+    constexpr uint32_t sampleCount = 5;
+    constexpr uint32_t sampleDuration = 10;
+    constexpr uint32_t sampleSize = 1;
+    constexpr int64_t editMediaTime = 25;
+    constexpr size_t expectedProjectedSampleCount = 1;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper.mimeType_ = MimeType::AUDIO_MPEG;
+    helper.sttsEntry_ = {{sampleCount, sampleDuration}};
+    helper.stscEntry_ = {{0, sampleCount, 1}};
+    helper.sampleSizes_.assign(sampleCount, static_cast<int32_t>(sampleSize));
+    helper.sampleSizeCount_ = sampleCount;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{editMediaTime, 0, 1, 0}}, 1, 1);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    EXPECT_TRUE(helper.HasAppliedEditList());
+    EXPECT_EQ(helper.GetSampleCount(), expectedProjectedSampleCount);
+    EXPECT_NE(helper.GetSampleCount(), static_cast<size_t>(sampleCount));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_FindPrevClosestIndexSameDts_001
  * @tc.desc: Verify the earliest eligible sync sample is selected for an equal-DTS group.
  * @tc.type: FUNC
