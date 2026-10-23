@@ -161,6 +161,7 @@ constexpr uint32_t AAC_TEST_96KHZ_SBR_SAMPLES_PER_FRAME = 2048;
 // AOT=AAC_LC, samplingFreqIndex=3 (48000), chanConfig=2, 0x2B7 sync extension -> SBR at 96000.
 constexpr uint8_t AAC_TEST_SYNC_EXTENSION_SBR_CONFIG[] = {0x11, 0x90, 0x56, 0xE5, 0x80};
 constexpr uint8_t AAC_TEST_ELEMENT_CPE = 1;
+constexpr uint8_t AAC_TEST_ELEMENT_SCE = 0;
 constexpr uint8_t AAC_TEST_ELEMENT_FIL = 6;
 constexpr uint8_t AAC_TEST_ELEMENT_END = 7;
 constexpr uint8_t AAC_TEST_EXTENSION_SBR = 0x0D;
@@ -255,6 +256,23 @@ std::vector<uint8_t> BuildAacRawDataBlock(uint8_t extensionType, bool truncated 
     if (!truncated) {
         AppendAacTestBits(bits, AAC_TEST_ELEMENT_END, AAC_TEST_END_BITS);
     }
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    std::vector<uint8_t> data(bits.size() / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        data[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    return data;
+}
+
+std::vector<uint8_t> BuildAacSceRawDataBlock()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_SCE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_END, AAC_TEST_END_BITS);
     while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
         bits.push_back(0);
     }
@@ -5967,11 +5985,12 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacExplicitChannelConfig
 }
 
 /**
- * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbePreservesMetadata_001
- * @tc.desc: Verify a raw AAC CPE does not overwrite positive container channel metadata.
+ * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbeRaisesMetadata_001
+ * @tc.desc: Verify a raw AAC CPE raises an understated ASC channel count, matching
+ *           FFmpeg stream-info probing where the decoded frame count wins.
  * @tc.type: FUNC
  */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbePreservesMetadata_001, TestSize.Level1)
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeRaisesMetadata_001, TestSize.Level1)
 {
     MediaInfo mediaInfo = MakeAacFrameMediaInfo();
     mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_MONO_CHANNEL_COUNT);
@@ -5988,8 +6007,71 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbePres
     ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
     ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
     ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbePreservesHigherMetadata_001
+ * @tc.desc: Verify a raw AAC CPE never lowers a higher container/ASC channel count
+ *           (multi-CPE 5.1 frames probe as stereo from the first element only).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbePreservesHigherMetadata_001,
+    TestSize.Level1)
+{
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_PCE_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_PCE_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+    auto data = BuildAacRawDataBlock(AAC_TEST_EXTENSION_OTHER);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::CH_5POINT1);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbeMonoLowerBound_001
+ * @tc.desc: Verify a mono SCE frame is a lower bound: it fills missing channel
+ *           metadata but never lowers a declared higher count.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeMonoLowerBound_001, TestSize.Level1)
+{
+    auto data = BuildAacSceRawDataBlock();
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t channels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+
+    MediaInfo missing = MakeAacFrameMediaInfo();
+    missing.tracks[0].Remove(Tag::AUDIO_CHANNEL_COUNT);
+    Plugins::MPEG4::MPEG4AudioParser fillParser;
+    EXPECT_EQ(fillParser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, missing), Status::OK);
+    ASSERT_TRUE(missing.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(missing.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
     EXPECT_EQ(channels, AAC_TEST_MONO_CHANNEL_COUNT);
-    EXPECT_EQ(outputChannels, AAC_TEST_MONO_CHANNEL_COUNT);
     EXPECT_EQ(layout, AudioChannelLayout::MONO);
 }
 
