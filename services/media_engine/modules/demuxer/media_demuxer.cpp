@@ -73,6 +73,7 @@ constexpr uint32_t MAX_VIDEO_LEAD_TIME_ON_MUTE_US = 10000000; // Maximum video f
 constexpr int64_t MAX_SUBTITLE_LEAD_TIME = 1000000;
 constexpr uint32_t SAMPLE_QUEUE_ADD_SIZE_ON_MUTE = 20; // When samplequeue is full on mute, samplequeue size add 20
 constexpr int64_t INTERSTITIAL_CHECK_INTERVAL_MS = 200;
+constexpr int64_t PTS_MISSING_MARKER = INT64_MIN;
 std::map<OHOS::Media::TrackType, OHOS::Media::Plugins::StreamType> TRACK_TO_STREAM_MAP = {
     {OHOS::Media::TrackType::TRACK_VIDEO, OHOS::Media::Plugins::StreamType::VIDEO},
     {OHOS::Media::TrackType::TRACK_AUDIO, OHOS::Media::Plugins::StreamType::AUDIO},
@@ -4188,6 +4189,7 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
 
     int64_t threshold = trackId == audioTrackId_ ? READSAMPLE_AUIDO_WARNING_MS : READSAMPLE_WARNING_MS;
     Status ret = Status::OK;
+    CacheAndInvalidateVideoSample(trackId, sample);
     {
         ScopedTimer timer("ReadSample", threshold);
         ret = ReadSampleWithPerfRecord(pluginTemp, innerTrackID, sample, isAVDemuxer);
@@ -4198,7 +4200,10 @@ Status MediaDemuxer::InnerReadSample(int32_t trackId, std::shared_ptr<AVBuffer> 
     } else if (ret != Status::OK) {
         MEDIA_LOG_I("Read error for track " PUBLIC_LOG_D32 ", ret: " PUBLIC_LOG_D32,
             trackId, (int32_t)(ret));
+    } else {
+        CorrectVideoPtsIfMissing(trackId, sample);
     }
+    RestoreSamplePtsDtsIfInvalid(trackId, sample);
     MEDIA_LOG_D("InnerReadSample Out, track " PUBLIC_LOG_D32, trackId);
 
     if (sample != nullptr && sample->meta_ != nullptr && mediaChangeSeqNum_.load() > 0) {
@@ -7317,6 +7322,56 @@ bool MediaDemuxer::IsSubtitleQueueStale(int32_t queueIndex)
         return false;
     }
     return true;
+}
+
+void MediaDemuxer::CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
+{
+    // DTS missing - maintain DTS using framerate
+    // PTS missing - PTS = DTS
+    FALSE_RETURN_NOLOG(isPlayerMode_ &&  trackId == videoTrackId_ && sample != nullptr);
+    if (sample->dts_ != PTS_MISSING_MARKER) {
+        lastVideoDts_.store(sample->dts_);
+        sample->pts_ = (sample->pts_ == PTS_MISSING_MARKER) ? sample->dts_ : sample->pts_;
+        return;
+    }
+    double framerate = framerate_.load();
+    FALSE_RETURN_NOLOG(framerate >= 1.0);
+    int64_t frameIntervalUs = static_cast<int64_t>(US_TO_S / framerate);
+    int64_t lastVideoDts = lastVideoDts_.load();
+    FALSE_RETURN_NOLOG(lastVideoDts < INT64_MAX - frameIntervalUs);
+    sample->dts_ = (lastVideoDts == HST_TIME_NONE) ? seekTime_.load() : lastVideoDts + frameIntervalUs;
+    lastVideoDts_.store(sample->dts_);
+    sample->pts_ = (sample->pts_ == PTS_MISSING_MARKER) ? sample->dts_ : sample->pts_;
+    MEDIA_LOG_D("CorrectVideoPtsIfMissing: corrected pts=" PUBLIC_LOG_D64 " dts=" PUBLIC_LOG_D64,
+        sample->pts_, sample->dts_);
+}
+
+void MediaDemuxer::RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
+{
+    // cannot maintain DTS/PTS - restore to previous values
+    FALSE_RETURN_NOLOG(isPlayerMode_ && trackId == videoTrackId_ && sample != nullptr);
+    if (sample->dts_ == PTS_MISSING_MARKER) {
+        sample->dts_ = currentVideoDts_.load();
+    }
+    if (sample->pts_ == PTS_MISSING_MARKER) {
+        sample->pts_ = currentVideoPts_.load();
+    }
+}
+
+void MediaDemuxer::CacheAndInvalidateVideoSample(int32_t trackId, const std::shared_ptr<AVBuffer> &sample)
+{
+    FALSE_RETURN_NOLOG(isPlayerMode_ && trackId == videoTrackId_ && sample != nullptr);
+    currentVideoDts_.store(sample->dts_);
+    currentVideoPts_.store(sample->pts_);
+    sample->dts_ = PTS_MISSING_MARKER;
+    sample->pts_ = PTS_MISSING_MARKER;
+}
+
+void MediaDemuxer::ResetForSeek(int64_t seekTime)
+{
+    FALSE_RETURN(seekTime < (INT64_MAX / US_TO_MS));
+    seekTime_.store(seekTime * US_TO_MS);
+    lastVideoDts_.store(HST_TIME_NONE);
 }
 } // namespace Media
 } // namespace OHOS

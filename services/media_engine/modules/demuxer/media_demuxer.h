@@ -286,6 +286,7 @@ public:
     bool IsNeedSelectTrack(int32_t trackId);
     int32_t GetBuiltInSubtitleNum();
     bool IsBuiltInSubtitleTrackId(int32_t trackId);
+    void ResetForSeek(int64_t seekTime);
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -595,6 +596,9 @@ private:
     Status PauseConsumerTaskByTrackId(int32_t trackId);
     void InitBuiltInSubtitleTrack();
     Status InitBuiltInSubtitleBufferQueue(int32_t trackId, const sptr<AVBufferQueueProducer>& producer);
+    void CorrectVideoPtsIfMissing(int32_t trackId, const std::shared_ptr<AVBuffer> &sample);
+    void RestoreSamplePtsDtsIfInvalid(int32_t trackId, const std::shared_ptr<AVBuffer> &sample);
+    void CacheAndInvalidateVideoSample(int32_t trackId, const std::shared_ptr<AVBuffer> &sample);
 
     std::atomic<bool> isFlvLiveSelectingBitRate_ = false;
     uint64_t demuxerCacheDuration_ = 0;
@@ -797,6 +801,10 @@ private:
     std::string lastReportedOriginCodecs_;
     int32_t lastReportedVideoType_{0};
     std::map<int32_t, int64_t> lastSubtitlePtsMap_;
+    std::atomic<int64_t> lastVideoDts_ {HST_TIME_NONE};
+    std::atomic<int64_t> seekTime_ {0};
+    std::atomic<int64_t> currentVideoPts_ {0};
+    std::atomic<int64_t> currentVideoDts_ {0};
     
     void RecordMediaChange(const MediaChangeParams& params);
     bool IsBackToOriginalStream(const MediaChangeRecord& firstRecord, const MediaChangeRecord& lastRecord);
