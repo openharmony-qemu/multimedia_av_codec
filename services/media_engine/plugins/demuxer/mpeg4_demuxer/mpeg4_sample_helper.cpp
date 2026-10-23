@@ -51,7 +51,7 @@ constexpr size_t SINGLE_MEDIA_EDIT_COUNT = 1;
 // Match FFmpeg's default max_stts_delta: allow a negative correction up to 10 seconds at 48 kHz.
 constexpr uint32_t MAX_STTS_DELTA = std::numeric_limits<uint32_t>::max() - 48000U * 10U;
 
-static bool ShouldKeepRawTimelineForZeroDurationVideoEdit(
+static bool ShouldKeepRawTimelineForZeroDurationMediaEdit(
     const std::vector<MPEG4SampleHelper::EditListEntry>& editListEntries, TrackType trackType,
     const std::string& mimeType, int64_t rawTotalDuration)
 {
@@ -59,7 +59,12 @@ static bool ShouldKeepRawTimelineForZeroDurationVideoEdit(
         editListEntries.front().duration != 0 || rawTotalDuration <= 0) {
         return false;
     }
-    return trackType == VIDEO_TYPE || (trackType == AUXILIARY_TYPE && IsVideoMimeType(mimeType));
+    bool isVideoLike = trackType == VIDEO_TYPE ||
+        (trackType == AUXILIARY_TYPE && IsVideoMimeType(mimeType));
+    if (isVideoLike) {
+        return true;
+    }
+    return trackType == AUDIO_TYPE && editListEntries.front().mediaTime == 0;
 }
 
 static int64_t SaturatingAdd(int64_t left, int64_t right)
@@ -2156,9 +2161,9 @@ Status MPEG4SampleHelper::ApplyEditList()
     if (editListEntries_.empty() || sampleIndexEntry_.empty()) {
         return Status::OK;
     }
-    if (ShouldKeepRawTimelineForZeroDurationVideoEdit(editListEntries_, trackType_, mimeType_, rawTotalDuration_)) {
-        // FFmpeg mov_fix_index projects this malformed media edit to a zero-duration index. Preserve the
-        // native timeline so video seeks remain usable; editListApplied_ prevents media_time from shifting seek.
+    if (ShouldKeepRawTimelineForZeroDurationMediaEdit(editListEntries_, trackType_, mimeType_, rawTotalDuration_)) {
+        // FFmpeg mov_fix_index projects this malformed zero-duration edit to an empty index. Deliberately
+        // preserve the positive native media timeline for playback recovery; editListApplied_ prevents seek shifts.
         editListApplied_ = true;
         return Status::OK;
     }

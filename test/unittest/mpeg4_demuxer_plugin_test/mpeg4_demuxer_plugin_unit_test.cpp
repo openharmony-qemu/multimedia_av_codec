@@ -3644,6 +3644,45 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationAudioEditKeepsRawTimeline_001
+ * @tc.desc: Verify a zero-origin media edit cannot discard a positive raw AAC timeline.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ZeroDurationAudioEditKeepsRawTimeline_001, TestSize.Level1)
+{
+    constexpr uint32_t sampleCount = 5;
+    constexpr uint32_t sampleDuration = 10;
+    constexpr uint32_t sampleSize = 1;
+    constexpr uint32_t lastSampleIndex = sampleCount - 1;
+    constexpr uint32_t discardFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::DISCARD);
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper.mimeType_ = MimeType::AUDIO_AAC;
+    helper.sttsEntry_ = {{sampleCount, sampleDuration}};
+    helper.stscEntry_ = {{0, sampleCount, 1}};
+    helper.sampleSizes_.assign(sampleCount, static_cast<int32_t>(sampleSize));
+    helper.sampleSizeCount_ = sampleCount;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{0, 0, 1, 0}}, 1, 1);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    ASSERT_TRUE(helper.HasAppliedEditList());
+    ASSERT_EQ(helper.GetSampleCount(), static_cast<size_t>(sampleCount));
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView firstSample;
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView lastSample;
+    ASSERT_EQ(helper.GetSampleIndexView(0, firstSample), Status::OK);
+    ASSERT_EQ(helper.GetSampleIndexView(lastSampleIndex, lastSample), Status::OK);
+    EXPECT_EQ(firstSample.dts, 0);
+    EXPECT_EQ(firstSample.duration, sampleDuration);
+    EXPECT_EQ(firstSample.flag & discardFlag, 0U);
+    EXPECT_EQ(lastSample.dts, static_cast<int64_t>(lastSampleIndex) * sampleDuration);
+    EXPECT_EQ(lastSample.duration, sampleDuration);
+    EXPECT_EQ(lastSample.flag & discardFlag, 0U);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_FindPrevClosestIndexSameDts_001
  * @tc.desc: Verify the earliest eligible sync sample is selected for an equal-DTS group.
  * @tc.type: FUNC
