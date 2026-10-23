@@ -53,10 +53,10 @@ constexpr uint32_t MAX_STTS_DELTA = std::numeric_limits<uint32_t>::max() - 48000
 
 static bool ShouldKeepRawTimelineForZeroDurationVideoEdit(
     const std::vector<MPEG4SampleHelper::EditListEntry>& editListEntries, TrackType trackType,
-    const std::string& mimeType)
+    const std::string& mimeType, int64_t rawTotalDuration)
 {
     if (editListEntries.size() != SINGLE_MEDIA_EDIT_COUNT || editListEntries.front().mediaTime < 0 ||
-        editListEntries.front().duration != 0) {
+        editListEntries.front().duration != 0 || rawTotalDuration <= 0) {
         return false;
     }
     return trackType == VIDEO_TYPE || (trackType == AUXILIARY_TYPE && IsVideoMimeType(mimeType));
@@ -2156,7 +2156,7 @@ Status MPEG4SampleHelper::ApplyEditList()
     if (editListEntries_.empty() || sampleIndexEntry_.empty()) {
         return Status::OK;
     }
-    if (ShouldKeepRawTimelineForZeroDurationVideoEdit(editListEntries_, trackType_, mimeType_)) {
+    if (ShouldKeepRawTimelineForZeroDurationVideoEdit(editListEntries_, trackType_, mimeType_, rawTotalDuration_)) {
         // FFmpeg mov_fix_index projects this malformed media edit to a zero-duration index. Preserve the
         // native timeline so video seeks remain usable; editListApplied_ prevents media_time from shifting seek.
         editListApplied_ = true;

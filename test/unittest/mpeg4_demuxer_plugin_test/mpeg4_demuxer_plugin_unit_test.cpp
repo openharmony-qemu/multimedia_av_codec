@@ -3585,6 +3585,35 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationSingleFrameVideoEditKeepsDiscard_001
+ * @tc.desc: Verify a zero-timeline video sample remains discardable like FFmpeg mov_fix_index.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ZeroDurationSingleFrameVideoEditKeepsDiscard_001, TestSize.Level1)
+{
+    constexpr uint32_t sampleCount = 1;
+    constexpr uint32_t sampleSize = 1;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper.mimeType_ = MimeType::VIDEO_AVC;
+    helper.sttsEntry_ = {{sampleCount, 0}};
+    helper.stscEntry_ = {{0, sampleCount, 1}};
+    helper.stssEntry_ = {{0}};
+    helper.sampleSizes_.assign(sampleCount, static_cast<int32_t>(sampleSize));
+    helper.sampleSizeCount_ = sampleCount;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{0, 0, 1, 0}}, 1, 1);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView sample;
+    ASSERT_EQ(helper.GetSampleIndexView(0, sample), Status::OK);
+    constexpr uint32_t discardFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::DISCARD);
+    EXPECT_NE(sample.flag & discardFlag, 0U);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationAudioEditKeepsProjection_001
  * @tc.desc: Verify zero-duration media edits on audio keep the existing edit-list projection.
  * @tc.type: FUNC
