@@ -133,19 +133,16 @@ private:
         CHECK_AND_RETURN_RET_LOG(audioDecObj->audioDecoder_ != nullptr, nullptr, "audioDecoder_ is nullptr!");
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "get input buffer is nullptr!");
 
-        {
-            std::shared_lock<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
-            for (auto &memoryObj : audioDecObj->memoryObjList_) {
-                if (memoryObj->IsEqualMemory(memory)) {
-                    return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
-                }
+        std::unique_lock<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
+        for (auto &memoryObj : audioDecObj->memoryObjList_) {
+            if (memoryObj->IsEqualMemory(memory)) {
+                return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
             }
         }
 
         OHOS::sptr<OH_AVMemory> object = new(std::nothrow) OH_AVMemory(memory);
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVMemory");
 
-        std::lock_guard<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
         audioDecObj->memoryObjList_.push_back(object);
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
@@ -159,19 +156,16 @@ private:
         CHECK_AND_RETURN_RET_LOG(audioDecObj->audioDecoder_ != nullptr, nullptr, "audioDecoder_ is nullptr!");
         CHECK_AND_RETURN_RET_LOG(memory != nullptr, nullptr, "get output buffer is nullptr!");
 
-        {
-            std::shared_lock<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
-            for (auto &memoryObj : audioDecObj->memoryObjList_) {
-                if (memoryObj->IsEqualMemory(memory)) {
-                    return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
-                }
+        std::unique_lock<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
+        for (auto &memoryObj : audioDecObj->memoryObjList_) {
+            if (memoryObj->IsEqualMemory(memory)) {
+                return reinterpret_cast<OH_AVMemory *>(memoryObj.GetRefPtr());
             }
         }
 
         OHOS::sptr<OH_AVMemory> object = new(std::nothrow) OH_AVMemory(memory);
         CHECK_AND_RETURN_RET_LOG(object != nullptr, nullptr, "failed to new OH_AVMemory");
 
-        std::lock_guard<std::shared_mutex> lock(audioDecObj->memoryObjListMutex_);
         audioDecObj->memoryObjList_.push_back(object);
         return reinterpret_cast<OH_AVMemory *>(object.GetRefPtr());
     }
