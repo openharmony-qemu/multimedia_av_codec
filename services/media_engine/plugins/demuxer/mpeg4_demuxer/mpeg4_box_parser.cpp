@@ -870,7 +870,7 @@ Status MPEG4AtomParser::PrepareChildAtomInContainer(int64_t endOffset, ParseCont
     uint8_t atomSizeData[sizeof(uint32_t)] = {0};
     Status sizeRet = dataReader_->ReadUintData(ctx->offset, atomSizeData, sizeof(atomSizeData));
     FALSE_RETURN_V_MSG_E(sizeRet == Status::OK, sizeRet, "Read child atom size failed");
-    uint32_t childSize32 = GetU32Value(atomSizeData);
+    uint32_t childSize32 = GetU32Value(atomSizeData, sizeof(atomSizeData));
     if (childSize32 == 0) {
         MEDIA_LOG_D("Zero-size child atom at offset " PUBLIC_LOG_D64 ", treat remaining container as padding",
             ctx->offset);
@@ -938,7 +938,7 @@ Status MPEG4AtomParser::ReadExtendedChildAtomSize(int64_t childHeaderEndOffset, 
     Status extSizeRet = dataReader_->ReadUintData(childHeaderEndOffset, extendedSizeData,
         sizeof(extendedSizeData));
     FALSE_RETURN_V_MSG_E(extSizeRet == Status::OK, extSizeRet, "Read child atom extended size failed");
-    childSize = GetU64Value(extendedSizeData);
+    childSize = GetU64Value(extendedSizeData, sizeof(extendedSizeData));
     return Status::OK;
 }
 
@@ -3521,7 +3521,7 @@ Status MPEG4AtomParser::ParseTrex(MPEG4Atom currentAtom, int32_t depth, ParseCon
         Status ret = dataReader_->ReadUintData(ctx->dataOffset + TREX_TRACK_ID_OFFSET, trackIdData,
             sizeof(trackIdData));
         if (ret == Status::OK) {
-            trackId = GetU32Value(trackIdData);
+            trackId = GetU32Value(trackIdData, sizeof(trackIdData));
         } else {
             MEDIA_LOG_W("Failed to read trex trackId");
         }
@@ -4193,7 +4193,7 @@ Status MPEG4AtomParser::ParseTraditionalMetadata(MPEG4Atom currentAtom, std::str
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, lengthData, sizeof(lengthData));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read string length failed");
 
-    uint16_t stringLength = GetU16Value(lengthData);
+    uint16_t stringLength = GetU16Value(lengthData, sizeof(lengthData));
     constexpr uint16_t defaultSkipSize = 4;
     if (stringLength > currentAtom.dataSize - defaultSkipSize) {
         // 作为原始数据处理
@@ -4649,7 +4649,7 @@ Status MPEG4AtomParser::ParseFrma(MPEG4Atom currentAtom, int32_t depth, ParseCon
     uint8_t info[sizeof(uint32_t)] = {0};
     Status ret = dataReader_->ReadUintData(ctx->dataOffset, info, sizeof(info));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read frma atom info failed");
-    uint32_t originalFormat = GetU32Value(info);
+    uint32_t originalFormat = GetU32Value(info, sizeof(info));
     std::string originalFormatStr = FourccToString(originalFormat);
     MEDIA_LOG_D("Parsing frma atom with original format: " PUBLIC_LOG_S, originalFormatStr.c_str());
     // For encrypted tracks (encv/enca), set mime type based on original format
@@ -4731,7 +4731,7 @@ Status MPEG4AtomParser::ParsePssh(MPEG4Atom currentAtom, int32_t depth, ParseCon
         uint8_t sizeData[sizeof(uint32_t)];
         ret = dataReader_->ReadUintData(dataOffset, sizeData, sizeof(sizeData));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read pssh data size failed");
-        psshDataSize = GetU32Value(sizeData);
+        psshDataSize = GetU32Value(sizeData, sizeof(sizeData));
         dataOffset += sizeof(sizeData);
     } else if (version == 1) {
         FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_PSSH_SIZE + sizeof(uint32_t),
@@ -4739,7 +4739,7 @@ Status MPEG4AtomParser::ParsePssh(MPEG4Atom currentAtom, int32_t depth, ParseCon
         uint8_t kidCountData[sizeof(uint32_t)];
         ret = dataReader_->ReadUintData(dataOffset, kidCountData, sizeof(kidCountData));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read pssh kid count failed");
-        uint32_t kidCount = GetU32Value(kidCountData);
+        uint32_t kidCount = GetU32Value(kidCountData, sizeof(kidCountData));
         dataOffset += sizeof(kidCountData);
         FALSE_RETURN_V_MSG_E(currentAtom.dataSize >= MIN_PSSH_SIZE + sizeof(uint32_t) +
             static_cast<uint64_t>(kidCount) * PSSH_UUID_SIZE + sizeof(uint32_t),
@@ -4748,7 +4748,7 @@ Status MPEG4AtomParser::ParsePssh(MPEG4Atom currentAtom, int32_t depth, ParseCon
         uint8_t sizeData[sizeof(uint32_t)];
         ret = dataReader_->ReadUintData(dataOffset, sizeData, sizeof(sizeData));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read pssh data size failed");
-        psshDataSize = GetU32Value(sizeData);
+        psshDataSize = GetU32Value(sizeData, sizeof(sizeData));
         dataOffset += sizeof(sizeData);
     }
     ret = BuildPsshInfo(ctx->offset, uuidData, static_cast<uint32_t>(currentAtom.size));
@@ -4908,7 +4908,7 @@ Status MPEG4AtomParser::ParseSencSampleEntry(uint32_t& dataOffset, size_t entryI
     uint8_t subsampleCountData[SUBSAMPLE_COUNT_SIZE];
     Status ret = dataReader_->ReadUintData(dataOffset, subsampleCountData, sizeof(subsampleCountData));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read senc subsample count failed");
-    uint16_t subsampleCount = GetU16Value(subsampleCountData);
+    uint16_t subsampleCount = GetU16Value(subsampleCountData, sizeof(subsampleCountData));
     dataOffset += sizeof(subsampleCountData);
     lastTrack_->drmInfo.sampleEncryptionEntries[entryIndex].subSamples.resize(subsampleCount);
     for (uint16_t j = 0; j < subsampleCount; ++j) {
@@ -5086,7 +5086,7 @@ Status MPEG4AtomParser::ReadSaioOffsetEntries(int64_t dataOffset, uint8_t versio
     Status ret = dataReader_->ReadUintData(dataOffset, countData, sizeof(countData));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read saio entry count failed");
 
-    uint32_t entryCount = GetU32Value(countData);
+    uint32_t entryCount = GetU32Value(countData, sizeof(countData));
     dataOffset += SAIO_ENTRY_COUNT_SIZE;
 
     uint32_t offsetSize = (version == 0) ? 4 : 8;
@@ -5106,9 +5106,11 @@ Status MPEG4AtomParser::ReadSaioOffsetEntries(int64_t dataOffset, uint8_t versio
         ret = dataReader_->ReadUintData(dataOffset, offsetData, offsetSize);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read saio offset failed");
         if (version == 0) {
-            newAuxiliaryOffsets = static_cast<uint64_t>(static_cast<int64_t>(GetU32Value(offsetData)) + baseOffset);
+            newAuxiliaryOffsets = static_cast<uint64_t>(
+                static_cast<int64_t>(GetU32Value(offsetData, sizeof(offsetData))) + baseOffset);
         } else {
-            newAuxiliaryOffsets = static_cast<uint64_t>(static_cast<int64_t>(GetU64Value(offsetData)) + baseOffset);
+            newAuxiliaryOffsets = static_cast<uint64_t>(
+                static_cast<int64_t>(GetU64Value(offsetData, sizeof(offsetData))) + baseOffset);
         }
         currentTrack_->drmInfo.auxiliaryOffsets[i] = newAuxiliaryOffsets;
         if (__builtin_sub_overflow(dataOffset, static_cast<int64_t>(offsetSize), &newDataOffset)) {
@@ -5187,7 +5189,7 @@ Status MPEG4AtomParser::ParseAuxiliarySampleEntry(int64_t& auxiliaryOffset, size
     uint8_t subsampleCountData[SUBSAMPLE_COUNT_SIZE];
     Status ret = dataReader_->ReadUintData(auxiliaryOffset, subsampleCountData, sizeof(subsampleCountData));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read auxiliary subsample count failed");
-    uint16_t subsampleCount = GetU16Value(subsampleCountData);
+    uint16_t subsampleCount = GetU16Value(subsampleCountData, sizeof(subsampleCountData));
     auxiliaryOffset += SUBSAMPLE_COUNT_SIZE;
 
     uint32_t expectedSize = drmInfo.perSampleIvSize + SUBSAMPLE_COUNT_SIZE +

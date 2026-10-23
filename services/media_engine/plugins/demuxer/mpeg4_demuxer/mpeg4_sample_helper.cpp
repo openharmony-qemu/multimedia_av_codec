@@ -886,7 +886,7 @@ Status MPEG4SampleHelper::SetFieldSize(uint32_t atomType, int64_t &currentOffset
         uint8_t sizeBuffer[4];
         Status ret = dataReader_->ReadUintData(currentOffset, sizeBuffer, sizeof(sizeBuffer));
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read sizeBuffer failed");
-        fieldSize = GetU32Value(sizeBuffer);
+        fieldSize = GetU32Value(sizeBuffer, sizeof(sizeBuffer));
         currentOffset += sizeof(uint32_t);
 
         FALSE_RETURN_V_NOLOG(fieldSize == HALF_BYTE_BITS || fieldSize == BYTE_BITS || fieldSize == DUL_BYTE_BITS,
@@ -969,7 +969,7 @@ Status MPEG4SampleHelper::SetSampleSizeParams(uint32_t atomType, int64_t dataOff
     uint8_t entryBuffer[4];
     ret = dataReader_->ReadUintData(currentOffset, entryBuffer, sizeof(entryBuffer));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read entryBuffer failed");
-    uint32_t numSampleSizes = GetU32Value(entryBuffer);
+    uint32_t numSampleSizes = GetU32Value(entryBuffer, sizeof(entryBuffer));
     sampleSizeCount_ = numSampleSizes;
     currentOffset += sizeof(uint32_t);
     if (!numSampleSizes) {
