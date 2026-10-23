@@ -55,6 +55,10 @@ public:
     uint8_t ReadBits(uint8_t numBits);
     bool HasBits(size_t numBits) const;
     bool SkipBits(uint8_t numBits);
+    uint8_t GetBitOffset() const
+    {
+        return bitOffset_;
+    }
 private:
     const uint8_t* data_; // Pointer to the raw data buffer
     size_t byteOffset_;   // Current byte offset indicating the position within the buffer

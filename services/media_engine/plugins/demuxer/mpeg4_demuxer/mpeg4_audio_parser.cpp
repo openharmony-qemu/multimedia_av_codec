@@ -592,8 +592,9 @@ Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
     }
 
     int32_t parsedChannels = 0;
-    if (mediaInfo.tracks[index_].Get<Tag::AUDIO_CHANNEL_COUNT>(parsedChannels) && parsedChannels > 0 &&
-        channels <= parsedChannels) {
+    // Align with FFmpeg MOV: AAC channel metadata comes from sample entry/ASC,
+    // and a raw frame probe may only fill missing metadata, never override it.
+    if (mediaInfo.tracks[index_].Get<Tag::AUDIO_CHANNEL_COUNT>(parsedChannels) && parsedChannels > 0) {
         return Status::OK;
     }
     mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_COUNT>(channels);

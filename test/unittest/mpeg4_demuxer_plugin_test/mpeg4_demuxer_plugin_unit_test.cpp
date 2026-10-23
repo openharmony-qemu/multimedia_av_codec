@@ -118,11 +118,41 @@ constexpr int64_t MULTI_TRACK_SYNC_TEST_SEEK_TIME = 100;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC = 2;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_SBR = 5;
 constexpr uint8_t AAC_TEST_PS_CONFIG[] = {0xEC, 0x8B, 0x08, 0x00, 0x00};
+constexpr uint8_t AAC_TEST_EXPLICIT_STEREO_CONFIG[] = {0x11, 0x90};
+constexpr uint8_t AAC_TEST_PCE_CONFIG[] = {
+    0x11, 0x80, 0x04, 0xC8, 0x44,
+    0x00, 0x20, 0x08, 0x84, 0x00,
+};
 constexpr uint8_t AAC_TEST_AUDIO_OBJECT_TYPE_BITS = 5;
 constexpr uint32_t AAC_TEST_ASC_SYNC_EXTENSION = 0x2B7;
 constexpr uint8_t AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS = 4;
 constexpr uint8_t AAC_TEST_CHANNEL_CONFIGURATION_BITS = 4;
 constexpr uint8_t AAC_TEST_GA_SPECIFIC_CONFIG_FLAGS_BITS = 3;
+constexpr uint8_t AAC_TEST_PCE_OBJECT_TYPE_BITS = 2;
+constexpr uint8_t AAC_TEST_PCE_ELEMENT_COUNT_BITS = 4;
+constexpr uint8_t AAC_TEST_PCE_LFE_COUNT_BITS = 2;
+constexpr uint8_t AAC_TEST_PCE_ASSOC_DATA_COUNT_BITS = 3;
+constexpr uint8_t AAC_TEST_PCE_COMMENT_COUNT_BITS = 8;
+constexpr uint8_t AAC_TEST_PCE_ELEMENT_IS_CPE_BITS = 1;
+constexpr uint8_t AAC_TEST_PCE_ELEMENT_TAG_BITS = 4;
+constexpr uint8_t AAC_TEST_PCE_FLAG_BITS = 1;
+constexpr uint8_t AAC_TEST_PCE_AAC_LC_OBJECT_TYPE = 1;
+constexpr uint8_t AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX = 3;
+constexpr uint8_t AAC_TEST_PCE_CHANNEL_CONFIGURATION = 0;
+constexpr uint8_t AAC_TEST_PCE_FRONT_ELEMENT_COUNT = 2;
+constexpr uint8_t AAC_TEST_PCE_SIDE_ELEMENT_COUNT = 1;
+constexpr uint8_t AAC_TEST_PCE_BACK_ELEMENT_COUNT = 1;
+constexpr uint8_t AAC_TEST_PCE_NO_LFE_ELEMENT = 0;
+constexpr uint8_t AAC_TEST_PCE_NO_ASSOC_DATA_ELEMENT = 0;
+constexpr uint8_t AAC_TEST_PCE_NO_VALID_CC_ELEMENT = 0;
+constexpr uint8_t AAC_TEST_PCE_SINGLE_CHANNEL_ELEMENT = 0;
+constexpr uint8_t AAC_TEST_PCE_CHANNEL_PAIR_ELEMENT = 1;
+constexpr uint8_t AAC_TEST_PCE_ZERO_VALUE = 0;
+constexpr uint8_t AAC_TEST_PCE_SECONDARY_TAG = 1;
+constexpr int32_t AAC_TEST_MONO_CHANNEL_COUNT = 1;
+constexpr int32_t AAC_TEST_PCE_CHANNEL_COUNT = 6;
+constexpr int32_t AAC_TEST_PCE_SAMPLE_RATE = 48000;
+constexpr size_t AAC_TEST_TRACK_COUNT = 1;
 constexpr uint8_t AAC_TEST_SYNC_EXTENSION_TYPE_BITS = 11;
 constexpr uint32_t AAC_TEST_96KHZ_SAMPLE_RATE = 96000;
 constexpr uint32_t AAC_TEST_96KHZ_SAMPLES_PER_FRAME = 1024;
@@ -255,6 +285,66 @@ std::vector<uint8_t> BuildAacAudioSpecificConfig(bool sbrPresent)
             bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
     }
     return data;
+}
+
+void AppendAacPceChannelElement(std::vector<uint8_t>& bits, uint8_t elementType, uint8_t elementTag)
+{
+    AppendAacTestBits(bits, elementType, AAC_TEST_PCE_ELEMENT_IS_CPE_BITS);
+    AppendAacTestBits(bits, elementTag, AAC_TEST_PCE_ELEMENT_TAG_BITS);
+}
+
+std::vector<uint8_t> BuildAacPceSpecificConfig(bool truncated)
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC, AAC_TEST_AUDIO_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_CHANNEL_CONFIGURATION, AAC_TEST_CHANNEL_CONFIGURATION_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_GA_SPECIFIC_CONFIG_FLAGS_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_AAC_LC_OBJECT_TYPE, AAC_TEST_PCE_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_FRONT_ELEMENT_COUNT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_SIDE_ELEMENT_COUNT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_BACK_ELEMENT_COUNT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_NO_LFE_ELEMENT, AAC_TEST_PCE_LFE_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_NO_ASSOC_DATA_ELEMENT, AAC_TEST_PCE_ASSOC_DATA_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_NO_VALID_CC_ELEMENT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_CHANNEL_PAIR_ELEMENT, AAC_TEST_PCE_ZERO_VALUE);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_SINGLE_CHANNEL_ELEMENT, AAC_TEST_PCE_ZERO_VALUE);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_CHANNEL_PAIR_ELEMENT, AAC_TEST_PCE_SECONDARY_TAG);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_SINGLE_CHANNEL_ELEMENT, AAC_TEST_PCE_SECONDARY_TAG);
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_COMMENT_COUNT_BITS);
+    std::vector<uint8_t> config(bits.size() / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        config[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    if (truncated) {
+        config.pop_back();
+    }
+    return config;
+}
+
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareAacConfigTestParser(
+    Plugins::MPEG4::MPEG4AtomParser& parser)
+{
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    if (track == nullptr) {
+        return nullptr;
+    }
+    track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track->sampleHelper == nullptr) {
+        return nullptr;
+    }
+    parser.lastTrack_ = track;
+    parser.mediaInfo_.tracks.resize(AAC_TEST_TRACK_COUNT);
+    return track;
 }
 
 MediaInfo MakeAacFrameMediaInfo()
@@ -5794,6 +5884,113 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacSyncExtensionSbr_001,
     int32_t parsedSampleRate = 0;
     ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(parsedSampleRate));
     EXPECT_EQ(parsedSampleRate, static_cast<int32_t>(AAC_TEST_96KHZ_SAMPLE_RATE));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacPceConfig_001
+ * @tc.desc: Verify channelConfiguration zero uses a valid PCE channel count.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacPceConfig_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    ASSERT_NE(PrepareAacConfigTestParser(parser), nullptr);
+    auto config = BuildAacPceSpecificConfig(false);
+    const std::vector<uint8_t> expected(AAC_TEST_PCE_CONFIG, AAC_TEST_PCE_CONFIG + sizeof(AAC_TEST_PCE_CONFIG));
+    ASSERT_EQ(config, expected);
+
+    ASSERT_TRUE(parser.ParseAACSpecificConfig(config.data(), config.size()));
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    int32_t sampleRate = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(sampleRate, AAC_TEST_PCE_SAMPLE_RATE);
+    EXPECT_EQ(layout, AudioChannelLayout::CH_5POINT1);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacTruncatedPceFallback_001
+ * @tc.desc: Verify a truncated PCE preserves valid sample-entry channel metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacTruncatedPceFallback_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    ASSERT_NE(PrepareAacConfigTestParser(parser), nullptr);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_PCE_CHANNEL_COUNT);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_PCE_CHANNEL_COUNT);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+    auto config = BuildAacPceSpecificConfig(true);
+
+    ASSERT_TRUE(parser.ParseAACSpecificConfig(config.data(), config.size()));
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::CH_5POINT1);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacExplicitChannelConfigOverride_001
+ * @tc.desc: Verify an expressible ASC channel configuration overrides sample-entry metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacExplicitChannelConfigOverride_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    ASSERT_NE(PrepareAacConfigTestParser(parser), nullptr);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_PCE_CHANNEL_COUNT);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+
+    ASSERT_TRUE(parser.ParseAACSpecificConfig(AAC_TEST_EXPLICIT_STEREO_CONFIG,
+        sizeof(AAC_TEST_EXPLICIT_STEREO_CONFIG)));
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbePreservesMetadata_001
+ * @tc.desc: Verify a raw AAC CPE does not overwrite positive container channel metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbePreservesMetadata_001, TestSize.Level1)
+{
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_MONO_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_MONO_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::MONO);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::MONO);
+    auto data = BuildAacRawDataBlock(AAC_TEST_EXTENSION_OTHER);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_MONO_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_MONO_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::MONO);
 }
 
 /**
