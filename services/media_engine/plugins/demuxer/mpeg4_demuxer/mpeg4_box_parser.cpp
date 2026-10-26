@@ -648,8 +648,10 @@ bool ReadAacPceElementCounts(DemuxerBitReader& bitReader, AacPceElementCounts& c
 {
     uint32_t discarded = 0;
     if (!ReadAacBits(bitReader, AAC_PCE_OBJECT_TYPE_BITS, discarded) ||
-        !ReadAacBits(bitReader, AAC_PCE_SAMPLING_INDEX_BITS, discarded) ||
-        !ReadAacBits(bitReader, AAC_PCE_ELEMENT_COUNT_BITS, discarded)) {
+        !ReadAacBits(bitReader, AAC_PCE_SAMPLING_INDEX_BITS, discarded)) {
+        return false;
+    }
+    if (!ReadAacBits(bitReader, AAC_PCE_ELEMENT_COUNT_BITS, discarded)) {
         return false;
     }
     counts.front = static_cast<uint8_t>(discarded);
@@ -812,7 +814,11 @@ int32_t CountAacPcePositionChannels(const AacPceInfo& info, AacPcePosition posit
             firstCpe = true;
             channels += static_cast<int32_t>(AAC_STEREO_CHANNELS);
         } else {
-            sceParity = sceParity != (position != AacPcePosition::LFE);
+            // FFmpeg toggles parity only for non-LFE single elements:
+            // sce_parity ^= (pos != AAC_CHANNEL_LFE).
+            if (position != AacPcePosition::LFE) {
+                sceParity = !sceParity;
+            }
             channels += static_cast<int32_t>(AAC_MONO_CHANNELS);
         }
     }
@@ -853,24 +859,28 @@ bool MapAacPcePositionChannels(AacPcePosition position, size_t layer, int32_t ch
     // index 5 (the position center). FFmpeg's map marks BACK/SIDE index 0 as
     // AV_CHAN_UNUSED, so odd BACK/SIDE counts skip it and resolve through the
     // trailing center slot (e.g. back-3 maps to BL/BR/BC).
-    int32_t remaining = channels;
-    if ((remaining & 1) != 0 && position == AacPcePosition::FRONT) {
+    // channels is validated non-negative above, so the parity/arithmetic below
+    // operates on unsigned values (bit operations are only allowed on unsigned).
+    uint32_t remaining = static_cast<uint32_t>(channels);
+    if ((remaining & 1U) != 0U && position == AacPcePosition::FRONT) {
         if (!AddAacPceMappedChannel(position, layer, 0, layout)) {
             return false;
         }
         --remaining;
     }
     size_t index = position != AacPcePosition::SIDE && remaining <= 3 ? 3 : 1;
-    while (remaining >= static_cast<int32_t>(AAC_STEREO_CHANNELS)) {
+    while (remaining >= AAC_STEREO_CHANNELS) {
         if (!AddAacPceMappedChannel(position, layer, index++, layout) ||
             !AddAacPceMappedChannel(position, layer, index++, layout)) {
             return false;
         }
-        remaining -= static_cast<int32_t>(AAC_STEREO_CHANNELS);
+        remaining -= AAC_STEREO_CHANNELS;
     }
-    if ((remaining & 1) != 0 &&
-        !AddAacPceMappedChannel(position, layer, AAC_PCE_CENTER_CHANNEL_INDEX, layout)) {
-        return false;
+    if ((remaining & 1U) != 0U) {
+        if (!AddAacPceMappedChannel(position, layer, AAC_PCE_CENTER_CHANNEL_INDEX, layout)) {
+            return false;
+        }
+        --remaining;
     }
     return remaining == 0;
 }
