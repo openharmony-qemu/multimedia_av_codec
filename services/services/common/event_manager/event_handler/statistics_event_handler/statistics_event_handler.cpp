@@ -16,6 +16,7 @@
 #include "statistics_event_handler.h"
 #include <algorithm>
 #include <cmath>
+#include <chrono>
 #include <mutex>
 #include <ctime>
 #include <type_traits>
@@ -389,7 +390,10 @@ public:
 
 class BasicInfo : public StatisticsMainEventInfoBase {
 public:
-    BasicInfo() {}
+    BasicInfo()
+    {
+        RegisterResourceSampleTimer();
+    }
 
     void OnAddEventInfo(StatisticsEventType eventType, const Media::Meta &eventMeta) override
     {
@@ -461,6 +465,7 @@ public:
     void ResetEventInfo() override
     {
         std::lock_guard<std::mutex> lock(mutex_);
+        std::lock_guard<std::mutex> memoryLock(memoryMutex_);
         queryCapTimes_ = 0;
         createCodecTimes_ = 0;
         codecSpecInfo_.clear();
@@ -470,12 +475,17 @@ public:
         demuxerFormatInfo_.clear();
         muxerFormatInfo_.clear();
         codecModeInfo_.clear();
+        memoryAverage_ = 0;
+        averageCodecInstanceCount_ = 0;
+        sampleMinuteCount_ = 0;
+        lastMemorySampleMinute_ = -1;
     }
 
     bool IsEventValid() override
     {
+        std::lock_guard<std::mutex> memoryLock(memoryMutex_);
         return queryCapTimes_ > 0 || createCodecTimes_ > 0 || !codecSpecInfo_.empty() ||
-               !audioCodecSpecInfo_.empty();
+               !audioCodecSpecInfo_.empty() || sampleMinuteCount_ > 0;
     }
 
 private:
@@ -668,6 +678,7 @@ private:
 
     std::shared_ptr<cJSON> BuildInstanceUsageJson() const
     {
+        std::lock_guard<std::mutex> memoryLock(memoryMutex_);
         auto jsonObj = std::shared_ptr<cJSON>(cJSON_CreateObject(), cJSON_Delete);
         if (jsonObj == nullptr) {
             return jsonObj;
@@ -680,7 +691,71 @@ private:
             double average = duration > 0 ? static_cast<double>(usage.weightedSum) / duration : usage.currentCount;
             cJSON_AddNumberToObject(infoObj, "WeightedAverage", average);
         }
+
+        auto memoryObj = cJSON_AddObjectToObject(jsonObj.get(), "Memory");
+        cJSON_AddNumberToObject(memoryObj, "ProcessAverageMemory", memoryAverage_);
+        cJSON_AddNumberToObject(memoryObj, "MinuteCount", static_cast<double>(sampleMinuteCount_));
+        cJSON_AddStringToObject(memoryObj, "Unit", "KB");
+
+        auto instanceCountObj = cJSON_AddObjectToObject(jsonObj.get(), "Total");
+        cJSON_AddNumberToObject(instanceCountObj, "Average", averageCodecInstanceCount_);
+        cJSON_AddNumberToObject(instanceCountObj, "MinuteCount", static_cast<double>(sampleMinuteCount_));
+        cJSON_AddStringToObject(instanceCountObj, "Unit", "count");
         return jsonObj;
+    }
+
+    void RegisterResourceSampleTimer()
+    {
+        const auto now = std::chrono::system_clock::now();
+        const auto currentMinute = std::chrono::time_point_cast<std::chrono::minutes>(now);
+        const auto nextMinute = currentMinute + std::chrono::minutes(1);
+        auto timeout = std::chrono::duration_cast<std::chrono::seconds>(nextMinute - now).count();
+        timeout = std::max<int64_t>(1, timeout);
+        memorySampleTimer_ = std::make_shared<AVCodecXcollieTimer>(
+            "SampleAVCodecResource", false, false, static_cast<uint32_t>(timeout),
+            [this](void *) {
+                OnResourceSample();
+                RegisterResourceSampleTimer();
+            });
+    }
+
+    void OnResourceSample()
+    {
+        uint64_t memoryUsage = 0;
+        const auto instances = AVCodecServerManager::GetInstance().GetAllInstanceInfo();
+        for (const auto &instance : instances) {
+            memoryUsage += instance.second.memoryUsage;
+        }
+        const uint64_t instanceCount = instances.size();
+
+        const auto now = std::chrono::system_clock::now();
+        const auto minute = std::chrono::duration_cast<std::chrono::minutes>(
+            now.time_since_epoch()).count();
+        std::lock_guard<std::mutex> lock(memoryMutex_);
+        if (minute <= lastMemorySampleMinute_) {
+            return;
+        }
+
+        // Keep only the running average and covered minute count; do not accumulate a raw memory sum.
+        const uint64_t minuteDelta = lastMemorySampleMinute_ < 0
+            ? 1
+            : static_cast<uint64_t>(minute - lastMemorySampleMinute_);
+        const uint64_t previousMinuteCount = sampleMinuteCount_;
+        const uint64_t currentMinuteCount = previousMinuteCount >
+            std::numeric_limits<uint64_t>::max() - minuteDelta
+            ? std::numeric_limits<uint64_t>::max()
+            : previousMinuteCount + minuteDelta;
+        if (previousMinuteCount == 0) {
+            memoryAverage_ = static_cast<double>(memoryUsage);
+            averageCodecInstanceCount_ = static_cast<double>(instanceCount);
+        } else if (currentMinuteCount != 0) {
+            memoryAverage_ = (memoryAverage_ * static_cast<double>(minuteDelta) +
+                static_cast<double>(memoryUsage)) / static_cast<double>(currentMinuteCount);
+            averageCodecInstanceCount_ = (averageCodecInstanceCount_ * static_cast<double>(minuteDelta) +
+                static_cast<double>(instanceCount)) / static_cast<double>(currentMinuteCount);
+        }
+        sampleMinuteCount_ = currentMinuteCount;
+        lastMemorySampleMinute_ = minute;
     }
 
     uint32_t queryCapTimes_ { 0 };
@@ -693,6 +768,12 @@ private:
     std::unordered_map<std::string, uint32_t> demuxerFormatInfo_;
     std::unordered_map<std::string, uint32_t> muxerFormatInfo_;
     std::unordered_map<std::string, uint32_t> codecModeInfo_;
+    std::shared_ptr<AVCodecXcollieTimer> memorySampleTimer_;
+    mutable std::mutex memoryMutex_;
+    double memoryAverage_ {0};
+    double averageCodecInstanceCount_ {0};
+    uint64_t sampleMinuteCount_ {0};
+    int64_t lastMemorySampleMinute_ {-1};
 };
 
 /*----------------------------------- AppSpecificationsInfo -----------------------------------*/
