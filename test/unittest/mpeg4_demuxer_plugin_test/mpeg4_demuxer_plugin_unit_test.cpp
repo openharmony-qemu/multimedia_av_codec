@@ -118,19 +118,57 @@ constexpr int64_t MULTI_TRACK_SYNC_TEST_SEEK_TIME = 100;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC = 2;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_SBR = 5;
 constexpr uint8_t AAC_TEST_PS_CONFIG[] = {0xEC, 0x8B, 0x08, 0x00, 0x00};
+constexpr uint8_t AAC_TEST_EXPLICIT_STEREO_CONFIG[] = {0x11, 0x90};
+constexpr uint8_t AAC_TEST_PCE_CONFIG[] = {
+    0x11, 0x80, 0x04, 0xC8, 0x44,
+    0x00, 0x20, 0x08, 0x84, 0x00,
+};
 constexpr uint8_t AAC_TEST_AUDIO_OBJECT_TYPE_BITS = 5;
 constexpr uint32_t AAC_TEST_ASC_SYNC_EXTENSION = 0x2B7;
 constexpr uint8_t AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS = 4;
 constexpr uint8_t AAC_TEST_CHANNEL_CONFIGURATION_BITS = 4;
 constexpr uint8_t AAC_TEST_GA_SPECIFIC_CONFIG_FLAGS_BITS = 3;
+constexpr uint8_t AAC_TEST_PCE_OBJECT_TYPE_BITS = 2;
+constexpr uint8_t AAC_TEST_PCE_ELEMENT_COUNT_BITS = 4;
+constexpr uint8_t AAC_TEST_PCE_LFE_COUNT_BITS = 2;
+constexpr uint8_t AAC_TEST_PCE_ASSOC_DATA_COUNT_BITS = 3;
+constexpr uint8_t AAC_TEST_PCE_COMMENT_COUNT_BITS = 8;
+constexpr uint8_t AAC_TEST_PCE_ELEMENT_IS_CPE_BITS = 1;
+constexpr uint8_t AAC_TEST_PCE_ELEMENT_TAG_BITS = 4;
+constexpr uint8_t AAC_TEST_PCE_FLAG_BITS = 1;
+constexpr uint8_t AAC_TEST_PCE_AAC_LC_OBJECT_TYPE = 1;
+constexpr uint8_t AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX = 3;
+constexpr uint8_t AAC_TEST_PCE_CHANNEL_CONFIGURATION = 0;
+constexpr uint8_t AAC_TEST_PCE_FRONT_ELEMENT_COUNT = 2;
+constexpr uint8_t AAC_TEST_PCE_SIDE_ELEMENT_COUNT = 1;
+constexpr uint8_t AAC_TEST_PCE_BACK_ELEMENT_COUNT = 1;
+constexpr uint8_t AAC_TEST_PCE_NO_LFE_ELEMENT = 0;
+constexpr uint8_t AAC_TEST_PCE_NO_ASSOC_DATA_ELEMENT = 0;
+constexpr uint8_t AAC_TEST_PCE_NO_VALID_CC_ELEMENT = 0;
+constexpr uint8_t AAC_TEST_PCE_SINGLE_CHANNEL_ELEMENT = 0;
+constexpr uint8_t AAC_TEST_PCE_CHANNEL_PAIR_ELEMENT = 1;
+constexpr uint8_t AAC_TEST_PCE_ZERO_VALUE = 0;
+constexpr uint8_t AAC_TEST_PCE_SECONDARY_TAG = 1;
+constexpr int32_t AAC_TEST_MONO_CHANNEL_COUNT = 1;
+constexpr int32_t AAC_TEST_PCE_CHANNEL_COUNT = 6;
+constexpr int32_t AAC_TEST_PCE_SAMPLE_RATE = 48000;
+constexpr size_t AAC_TEST_TRACK_COUNT = 1;
 constexpr uint8_t AAC_TEST_SYNC_EXTENSION_TYPE_BITS = 11;
 constexpr uint32_t AAC_TEST_96KHZ_SAMPLE_RATE = 96000;
 constexpr uint32_t AAC_TEST_96KHZ_SAMPLES_PER_FRAME = 1024;
 constexpr uint32_t AAC_TEST_96KHZ_SBR_SAMPLES_PER_FRAME = 2048;
+constexpr int32_t AAC_TEST_ELD_SHORT_SAMPLES_PER_FRAME = 480;
+constexpr int32_t AAC_TEST_ELD_LONG_SAMPLES_PER_FRAME = 512;
+// ER-AAC-ELD(39) AudioSpecificConfig with samplingFreqIndex=3 (48000),
+// channelConfiguration=2 and frameLengthFlag 1/0 -> 480/512 samples per frame.
+constexpr uint8_t AAC_TEST_ELD_SHORT_FRAME_CONFIG[] = {0xF8, 0xE6, 0x50};
+constexpr uint8_t AAC_TEST_ELD_LONG_FRAME_CONFIG[] = {0xF8, 0xE6, 0x40};
 // ASC of AVC_Main_L5.1_3735Kbps_2448x960_25.000fps_AAC_HE_AAC_LC_128Kbps_2channels_96.0_48.0KHz_earlyend.mp4:
 // AOT=AAC_LC, samplingFreqIndex=3 (48000), chanConfig=2, 0x2B7 sync extension -> SBR at 96000.
 constexpr uint8_t AAC_TEST_SYNC_EXTENSION_SBR_CONFIG[] = {0x11, 0x90, 0x56, 0xE5, 0x80};
 constexpr uint8_t AAC_TEST_ELEMENT_CPE = 1;
+constexpr uint8_t AAC_TEST_ELEMENT_SCE = 0;
+constexpr uint8_t AAC_TEST_ELEMENT_LFE = 3;
 constexpr uint8_t AAC_TEST_ELEMENT_FIL = 6;
 constexpr uint8_t AAC_TEST_ELEMENT_END = 7;
 constexpr uint8_t AAC_TEST_EXTENSION_SBR = 0x0D;
@@ -236,6 +274,23 @@ std::vector<uint8_t> BuildAacRawDataBlock(uint8_t extensionType, bool truncated 
     return data;
 }
 
+std::vector<uint8_t> BuildAacSceRawDataBlock()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_SCE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_END, AAC_TEST_END_BITS);
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    std::vector<uint8_t> data(bits.size() / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        data[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    return data;
+}
+
 std::vector<uint8_t> BuildAacAudioSpecificConfig(bool sbrPresent)
 {
     std::vector<uint8_t> bits;
@@ -255,6 +310,125 @@ std::vector<uint8_t> BuildAacAudioSpecificConfig(bool sbrPresent)
             bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
     }
     return data;
+}
+
+void AppendAacPceChannelElement(std::vector<uint8_t>& bits, uint8_t elementType, uint8_t elementTag)
+{
+    AppendAacTestBits(bits, elementType, AAC_TEST_PCE_ELEMENT_IS_CPE_BITS);
+    AppendAacTestBits(bits, elementTag, AAC_TEST_PCE_ELEMENT_TAG_BITS);
+}
+
+std::vector<uint8_t> BuildAacPceSpecificConfig(bool truncated)
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC, AAC_TEST_AUDIO_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_CHANNEL_CONFIGURATION, AAC_TEST_CHANNEL_CONFIGURATION_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_GA_SPECIFIC_CONFIG_FLAGS_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_AAC_LC_OBJECT_TYPE, AAC_TEST_PCE_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_FRONT_ELEMENT_COUNT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_SIDE_ELEMENT_COUNT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_BACK_ELEMENT_COUNT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_NO_LFE_ELEMENT, AAC_TEST_PCE_LFE_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_NO_ASSOC_DATA_ELEMENT, AAC_TEST_PCE_ASSOC_DATA_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_NO_VALID_CC_ELEMENT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_CHANNEL_PAIR_ELEMENT, AAC_TEST_PCE_ZERO_VALUE);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_SINGLE_CHANNEL_ELEMENT, AAC_TEST_PCE_ZERO_VALUE);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_CHANNEL_PAIR_ELEMENT, AAC_TEST_PCE_SECONDARY_TAG);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_SINGLE_CHANNEL_ELEMENT, AAC_TEST_PCE_SECONDARY_TAG);
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_COMMENT_COUNT_BITS);
+    std::vector<uint8_t> config(bits.size() / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        config[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    if (truncated) {
+        config.pop_back();
+    }
+    return config;
+}
+
+std::vector<uint8_t> BuildAacPceConfigWithElements(uint8_t frontCount, uint8_t sideCount, uint8_t backCount,
+    const std::vector<uint8_t>& frontElements, const std::vector<uint8_t>& sideElements,
+    const std::vector<uint8_t>& backElements)
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC, AAC_TEST_AUDIO_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_CHANNEL_CONFIGURATION, AAC_TEST_CHANNEL_CONFIGURATION_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_GA_SPECIFIC_CONFIG_FLAGS_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_AAC_LC_OBJECT_TYPE, AAC_TEST_PCE_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS);
+    AppendAacTestBits(bits, frontCount, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, sideCount, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, backCount, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_NO_LFE_ELEMENT, AAC_TEST_PCE_LFE_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_NO_ASSOC_DATA_ELEMENT, AAC_TEST_PCE_ASSOC_DATA_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_NO_VALID_CC_ELEMENT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    for (uint8_t isCpe : frontElements) {
+        AppendAacPceChannelElement(bits, isCpe, AAC_TEST_PCE_ZERO_VALUE);
+    }
+    for (uint8_t isCpe : sideElements) {
+        AppendAacPceChannelElement(bits, isCpe, AAC_TEST_PCE_ZERO_VALUE);
+    }
+    for (uint8_t isCpe : backElements) {
+        AppendAacPceChannelElement(bits, isCpe, AAC_TEST_PCE_ZERO_VALUE);
+    }
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_COMMENT_COUNT_BITS);
+    std::vector<uint8_t> config(bits.size() / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        config[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    return config;
+}
+
+std::vector<uint8_t> BuildAacLfeRawDataBlock()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_LFE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_END, AAC_TEST_END_BITS);
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    std::vector<uint8_t> data(bits.size() / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        data[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    return data;
+}
+
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareAacConfigTestParser(
+    Plugins::MPEG4::MPEG4AtomParser& parser)
+{
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    if (track == nullptr) {
+        return nullptr;
+    }
+    track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track->sampleHelper == nullptr) {
+        return nullptr;
+    }
+    parser.lastTrack_ = track;
+    parser.mediaInfo_.tracks.resize(AAC_TEST_TRACK_COUNT);
+    return track;
 }
 
 MediaInfo MakeAacFrameMediaInfo()
@@ -3549,6 +3723,140 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroDurationMp3EditProje
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationVideoEditKeepsRawTimeline_001
+ * @tc.desc: Verify malformed zero-duration video media edits keep the native seek timeline.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ZeroDurationVideoEditKeepsRawTimeline_001, TestSize.Level1)
+{
+    constexpr uint32_t sampleCount = 3;
+    constexpr uint32_t sampleDuration = 10;
+    constexpr uint32_t sampleSize = 1;
+    constexpr int64_t invalidEditMediaTime = 25;
+    constexpr int64_t seekPts = 15;
+    constexpr uint32_t expectedSyncSample = 2;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper.mimeType_ = MimeType::VIDEO_AVC;
+    helper.sttsEntry_ = {{sampleCount, sampleDuration}};
+    helper.cttsEntry_ = {{sampleCount, 0}};
+    helper.stscEntry_ = {{0, sampleCount, 1}};
+    helper.stssEntry_ = {{0}, {expectedSyncSample}};
+    helper.sampleSizes_.assign(sampleCount, static_cast<int32_t>(sampleSize));
+    helper.sampleSizeCount_ = sampleCount;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{invalidEditMediaTime, 0, 1, 0}}, 1, 1);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    EXPECT_TRUE(helper.HasAppliedEditList());
+    EXPECT_EQ(helper.GetSampleCount(), static_cast<size_t>(sampleCount));
+    EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, expectedSyncSample}));
+    uint32_t sampleIndex = 0;
+    EXPECT_EQ(helper.FindSyncSampleByPts(seekPts, true, SeekMode::SEEK_CLOSEST_SYNC, sampleIndex), Status::OK);
+    EXPECT_EQ(sampleIndex, expectedSyncSample);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationSingleFrameVideoEditKeepsDiscard_001
+ * @tc.desc: Verify a zero-timeline video sample remains discardable like FFmpeg mov_fix_index.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ZeroDurationSingleFrameVideoEditKeepsDiscard_001, TestSize.Level1)
+{
+    constexpr uint32_t sampleCount = 1;
+    constexpr uint32_t sampleSize = 1;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper.mimeType_ = MimeType::VIDEO_AVC;
+    helper.sttsEntry_ = {{sampleCount, 0}};
+    helper.stscEntry_ = {{0, sampleCount, 1}};
+    helper.stssEntry_ = {{0}};
+    helper.sampleSizes_.assign(sampleCount, static_cast<int32_t>(sampleSize));
+    helper.sampleSizeCount_ = sampleCount;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{0, 0, 1, 0}}, 1, 1);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView sample;
+    ASSERT_EQ(helper.GetSampleIndexView(0, sample), Status::OK);
+    constexpr uint32_t discardFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::DISCARD);
+    EXPECT_NE(sample.flag & discardFlag, 0U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationAudioEditKeepsProjection_001
+ * @tc.desc: Verify zero-duration media edits on audio keep the existing edit-list projection.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ZeroDurationAudioEditKeepsProjection_001, TestSize.Level1)
+{
+    constexpr uint32_t sampleCount = 5;
+    constexpr uint32_t sampleDuration = 10;
+    constexpr uint32_t sampleSize = 1;
+    constexpr int64_t editMediaTime = 25;
+    constexpr size_t expectedProjectedSampleCount = 1;
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper.mimeType_ = MimeType::AUDIO_MPEG;
+    helper.sttsEntry_ = {{sampleCount, sampleDuration}};
+    helper.stscEntry_ = {{0, sampleCount, 1}};
+    helper.sampleSizes_.assign(sampleCount, static_cast<int32_t>(sampleSize));
+    helper.sampleSizeCount_ = sampleCount;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{editMediaTime, 0, 1, 0}}, 1, 1);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    EXPECT_TRUE(helper.HasAppliedEditList());
+    EXPECT_EQ(helper.GetSampleCount(), expectedProjectedSampleCount);
+    EXPECT_NE(helper.GetSampleCount(), static_cast<size_t>(sampleCount));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroDurationAudioEditKeepsRawTimeline_001
+ * @tc.desc: Verify a zero-origin media edit cannot discard a positive raw AAC timeline.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_ZeroDurationAudioEditKeepsRawTimeline_001, TestSize.Level1)
+{
+    constexpr uint32_t sampleCount = 5;
+    constexpr uint32_t sampleDuration = 10;
+    constexpr uint32_t sampleSize = 1;
+    constexpr uint32_t lastSampleIndex = sampleCount - 1;
+    constexpr uint32_t discardFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::DISCARD);
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper.mimeType_ = MimeType::AUDIO_AAC;
+    helper.sttsEntry_ = {{sampleCount, sampleDuration}};
+    helper.stscEntry_ = {{0, sampleCount, 1}};
+    helper.sampleSizes_.assign(sampleCount, static_cast<int32_t>(sampleSize));
+    helper.sampleSizeCount_ = sampleCount;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{0, 0, 1, 0}}, 1, 1);
+
+    ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(helper.EnsureDenseIndex(), Status::OK);
+    ASSERT_TRUE(helper.HasAppliedEditList());
+    ASSERT_EQ(helper.GetSampleCount(), static_cast<size_t>(sampleCount));
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView firstSample;
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView lastSample;
+    ASSERT_EQ(helper.GetSampleIndexView(0, firstSample), Status::OK);
+    ASSERT_EQ(helper.GetSampleIndexView(lastSampleIndex, lastSample), Status::OK);
+    EXPECT_EQ(firstSample.dts, 0);
+    EXPECT_EQ(firstSample.duration, sampleDuration);
+    EXPECT_EQ(firstSample.flag & discardFlag, 0U);
+    EXPECT_EQ(lastSample.dts, static_cast<int64_t>(lastSampleIndex) * sampleDuration);
+    EXPECT_EQ(lastSample.duration, sampleDuration);
+    EXPECT_EQ(lastSample.flag & discardFlag, 0U);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_FindPrevClosestIndexSameDts_001
  * @tc.desc: Verify the earliest eligible sync sample is selected for an equal-DTS group.
  * @tc.type: FUNC
@@ -5660,6 +5968,264 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacSyncExtensionSbr_001,
     int32_t parsedSampleRate = 0;
     ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(parsedSampleRate));
     EXPECT_EQ(parsedSampleRate, static_cast<int32_t>(AAC_TEST_96KHZ_SAMPLE_RATE));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacPceConfig_001
+ * @tc.desc: Verify channelConfiguration zero uses a valid PCE channel count.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacPceConfig_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    ASSERT_NE(PrepareAacConfigTestParser(parser), nullptr);
+    auto config = BuildAacPceSpecificConfig(false);
+    const std::vector<uint8_t> expected(AAC_TEST_PCE_CONFIG, AAC_TEST_PCE_CONFIG + sizeof(AAC_TEST_PCE_CONFIG));
+    ASSERT_EQ(config, expected);
+
+    ASSERT_TRUE(parser.ParseAACSpecificConfig(config.data(), config.size()));
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    int32_t sampleRate = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(sampleRate, AAC_TEST_PCE_SAMPLE_RATE);
+    EXPECT_EQ(layout, AudioChannelLayout::CH_5POINT1);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacTruncatedPceFallback_001
+ * @tc.desc: Verify a truncated PCE preserves valid sample-entry channel metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacTruncatedPceFallback_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    ASSERT_NE(PrepareAacConfigTestParser(parser), nullptr);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_PCE_CHANNEL_COUNT);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_PCE_CHANNEL_COUNT);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+    auto config = BuildAacPceSpecificConfig(true);
+
+    ASSERT_TRUE(parser.ParseAACSpecificConfig(config.data(), config.size()));
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::CH_5POINT1);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacExplicitChannelConfigOverride_001
+ * @tc.desc: Verify an expressible ASC channel configuration overrides sample-entry metadata.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacExplicitChannelConfigOverride_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    ASSERT_NE(PrepareAacConfigTestParser(parser), nullptr);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_PCE_CHANNEL_COUNT);
+    parser.mediaInfo_.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+
+    ASSERT_TRUE(parser.ParseAACSpecificConfig(AAC_TEST_EXPLICIT_STEREO_CONFIG,
+        sizeof(AAC_TEST_EXPLICIT_STEREO_CONFIG)));
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacPceOddBackLayout_001
+ * @tc.desc: Verify an odd BACK channel count resolves through the position center
+ *           slot (BL/BR/BC), matching FFmpeg assign_channels.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacPceOddBackLayout_001, TestSize.Level1)
+{
+    // FRONT: SCE,CPE -> 3 (FC,FL,FR); BACK: CPE,SCE -> 3 (BL,BR,BC). The combined
+    // mask FC|FL|FR|BL|BR|BC equals AudioChannelLayout::HEXAGONAL.
+    auto config = BuildAacPceConfigWithElements(2, 0, 2, {AAC_TEST_PCE_SINGLE_CHANNEL_ELEMENT,
+        AAC_TEST_PCE_CHANNEL_PAIR_ELEMENT}, {}, {AAC_TEST_PCE_CHANNEL_PAIR_ELEMENT,
+        AAC_TEST_PCE_SINGLE_CHANNEL_ELEMENT});
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    ASSERT_NE(PrepareAacConfigTestParser(parser), nullptr);
+    ASSERT_TRUE(parser.ParseAACSpecificConfig(config.data(), config.size()));
+    int32_t channels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::HEXAGONAL);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacEldFrameLength_001
+ * @tc.desc: Verify ER-AAC-ELD frame length follows frameLengthFlag (480/512),
+ *           matching FFmpeg aac_decode_er_frame.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacEldFrameLength_001, TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    ASSERT_NE(PrepareAacConfigTestParser(parser), nullptr);
+    ASSERT_TRUE(parser.ParseAACSpecificConfig(AAC_TEST_ELD_SHORT_FRAME_CONFIG,
+        sizeof(AAC_TEST_ELD_SHORT_FRAME_CONFIG)));
+    int32_t samplesPerFrame = 0;
+    int32_t sampleRate = 0;
+    int32_t channels = 0;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
+    ASSERT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    EXPECT_EQ(samplesPerFrame, AAC_TEST_ELD_SHORT_SAMPLES_PER_FRAME);
+    EXPECT_EQ(sampleRate, AAC_TEST_PCE_SAMPLE_RATE);
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+
+    Plugins::MPEG4::MPEG4AtomParser longParser;
+    ASSERT_NE(PrepareAacConfigTestParser(longParser), nullptr);
+    ASSERT_TRUE(longParser.ParseAACSpecificConfig(AAC_TEST_ELD_LONG_FRAME_CONFIG,
+        sizeof(AAC_TEST_ELD_LONG_FRAME_CONFIG)));
+    ASSERT_TRUE(longParser.mediaInfo_.tracks[0].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(samplesPerFrame, AAC_TEST_ELD_LONG_SAMPLES_PER_FRAME);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacLfeProbeKeepsLayoutUnknown_001
+ * @tc.desc: Verify a pure LFE first element only proves a channel count and keeps
+ *           the layout UNKNOWN instead of reporting a mono front channel.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacLfeProbeKeepsLayoutUnknown_001, TestSize.Level1)
+{
+    auto data = BuildAacLfeRawDataBlock();
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Remove(Tag::AUDIO_CHANNEL_COUNT);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t channels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_MONO_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::UNKNOWN);
+
+    MediaInfo stereo = MakeAacFrameMediaInfo();
+    stereo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_CHANNEL_COUNT);
+    stereo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_CHANNEL_COUNT);
+    stereo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    stereo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    Plugins::MPEG4::MPEG4AudioParser stereoParser;
+    EXPECT_EQ(stereoParser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, stereo), Status::OK);
+    ASSERT_TRUE(stereo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(stereo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbeRaisesMetadata_001
+ * @tc.desc: Verify a raw AAC CPE raises an understated ASC channel count, matching
+ *           FFmpeg stream-info probing where the decoded frame count wins.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeRaisesMetadata_001, TestSize.Level1)
+{
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_MONO_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_MONO_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::MONO);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::MONO);
+    auto data = BuildAacRawDataBlock(AAC_TEST_EXTENSION_OTHER);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbePreservesHigherMetadata_001
+ * @tc.desc: Verify a raw AAC CPE never lowers a higher container/ASC channel count
+ *           (multi-CPE 5.1 frames probe as stereo from the first element only).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbePreservesHigherMetadata_001,
+    TestSize.Level1)
+{
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_PCE_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_PCE_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::CH_5POINT1);
+    auto data = BuildAacRawDataBlock(AAC_TEST_EXTENSION_OTHER);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t channels = 0;
+    int32_t outputChannels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_PCE_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::CH_5POINT1);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbeMonoLowerBound_001
+ * @tc.desc: Verify a mono SCE frame is a lower bound: it fills missing channel
+ *           metadata but never lowers a declared higher count.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeMonoLowerBound_001, TestSize.Level1)
+{
+    auto data = BuildAacSceRawDataBlock();
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(AAC_TEST_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_CHANNEL_COUNT);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t channels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+
+    MediaInfo missing = MakeAacFrameMediaInfo();
+    missing.tracks[0].Remove(Tag::AUDIO_CHANNEL_COUNT);
+    Plugins::MPEG4::MPEG4AudioParser fillParser;
+    EXPECT_EQ(fillParser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, missing), Status::OK);
+    ASSERT_TRUE(missing.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(missing.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(channels, AAC_TEST_MONO_CHANNEL_COUNT);
+    EXPECT_EQ(layout, AudioChannelLayout::MONO);
 }
 
 /**

@@ -48,6 +48,7 @@ constexpr int32_t MPEG_AUDIO_MONO_CHANNELS = 1;
 constexpr int32_t MPEG_AUDIO_STEREO_CHANNELS = 2;
 constexpr uint8_t AAC_ELEMENT_TYPE_SCE = 0;
 constexpr uint8_t AAC_ELEMENT_TYPE_CPE = 1;
+constexpr uint8_t AAC_ELEMENT_TYPE_LFE = 3;
 constexpr uint8_t AAC_ELEMENT_TYPE_FIL = 6;
 constexpr uint8_t AAC_ELEMENT_TYPE_END = 7;
 constexpr uint8_t AAC_EXTENSION_TYPE_SBR = 0x0D;
@@ -65,6 +66,7 @@ constexpr uint8_t AAC_EXTENSION_TYPE_BITS = 4;
 constexpr uint8_t AAC_PADDING_BITS_MAX = 7;
 constexpr uint8_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
 constexpr int32_t AAC_DEFAULT_SAMPLES_PER_FRAME = 1024;
+constexpr int32_t AAC_MONO_CHANNELS = 1;
 constexpr int32_t AAC_STEREO_CHANNELS = 2;
 constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_BITS = 5;
 constexpr uint8_t AAC_AUDIO_OBJECT_TYPE_ESCAPE = 0x1F;
@@ -465,6 +467,11 @@ bool DetectAacSbrFillElement(const uint8_t* data, uint32_t size, AacRawDataBlock
 bool ParseAacRawDataBlockChannels(const uint8_t* data, uint32_t size, int32_t& channels, AudioChannelLayout& layout,
     AacRawDataBlockInfo& info)
 {
+    // The demuxer has no AAC decoder, so the raw-frame probe observes only the
+    // first channel element and returns its channel count as a lower bound of
+    // the real frame channels (a channel element's Huffman-coded payload cannot
+    // be skipped to count further elements). SCE/LFE prove at least one channel
+    // and CPE at least two; fill elements are skipped and do not affect it.
     if (data == nullptr || size == 0) {
         return false;
     }
@@ -477,8 +484,14 @@ bool ParseAacRawDataBlockChannels(const uint8_t* data, uint32_t size, int32_t& c
         }
         FALSE_RETURN_V(bitReader.HasBits(AAC_ELEMENT_INSTANCE_TAG_BITS), false);
         bitReader.SkipBits(AAC_ELEMENT_INSTANCE_TAG_BITS);
-        if (elementType == AAC_ELEMENT_TYPE_SCE) {
-            return false;
+        if (elementType == AAC_ELEMENT_TYPE_SCE || elementType == AAC_ELEMENT_TYPE_LFE) {
+            channels = AAC_MONO_CHANNELS;
+            // LFE is not a mono front channel; the probe only proves a channel
+            // count, so an LFE-only first element keeps the layout UNKNOWN.
+            if (elementType == AAC_ELEMENT_TYPE_SCE) {
+                layout = AudioChannelLayout::MONO;
+            }
+            return true;
         }
         if (elementType == AAC_ELEMENT_TYPE_CPE) {
             channels = AAC_STEREO_CHANNELS;
@@ -592,6 +605,15 @@ Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
     }
 
     int32_t parsedChannels = 0;
+    // FFmpeg's stream-info probing overrides container/ASC channel metadata with
+    // the exact value decoded from a real frame (avcodec_parameters_from_context
+    // copies the decoder ch_layout unconditionally). This demuxer has no AAC
+    // decoder; ParseAacRawDataBlockChannels yields only a lower bound of the real
+    // channel count (first channel element only). With one-sided evidence the
+    // probe may only correct metadata upward: a frame that proves more channels
+    // (e.g. ASC says mono, frame is CPE stereo) raises the declared count, while
+    // a declared count above the lower bound is kept because the probe cannot
+    // disprove it (e.g. a multi-CPE 5.1 frame whose first element looks stereo).
     if (mediaInfo.tracks[index_].Get<Tag::AUDIO_CHANNEL_COUNT>(parsedChannels) && parsedChannels > 0 &&
         channels <= parsedChannels) {
         return Status::OK;

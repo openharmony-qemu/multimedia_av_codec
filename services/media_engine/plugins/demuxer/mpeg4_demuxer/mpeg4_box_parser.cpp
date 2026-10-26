@@ -179,11 +179,53 @@ constexpr size_t DURATION_OFFSET_V1 = 24;
 constexpr size_t DIRECT_META_PATH_SIZE = 2;  // moov/meta 直接结构的路径大小
 constexpr uint8_t AOT_SBR = 5;
 constexpr uint8_t AOT_PS = 29;
+// FFmpeg ff_mpeg4audio_get_config_gb (libavcodec/mpeg4audio.c) implicit-PS probe
+// widths for the W6132 draft MP3onMP4 check: !(show_bits(gb,3) & 0x03 && !(show_bits(gb,9) & 0x3F)).
+constexpr uint8_t AAC_PS_IMPLICIT_LEADING_BITS = 3;
+constexpr uint8_t AAC_PS_IMPLICIT_TRAILING_BITS = 9;
+constexpr uint8_t AOT_AAC_MAIN = 1;
 constexpr uint8_t AOT_AAC_LC = 2;
+constexpr uint8_t AOT_AAC_SSR = 3;
+constexpr uint8_t AOT_AAC_LTP = 4;
+constexpr uint32_t AAC_MONO_CHANNELS = 1;
 constexpr uint32_t AAC_STEREO_CHANNELS = 2;
+constexpr uint8_t AAC_ER_AAC_LC = 17;
 constexpr uint8_t AAC_ER_LD = 23;
 constexpr uint8_t AAC_ER_ELD = 39;
 constexpr uint32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
+constexpr uint32_t AAC_SHORT_FRAME_SAMPLES_PER_FRAME = 960;
+constexpr uint8_t AAC_BITS_PER_BYTE = 8;
+constexpr uint8_t AAC_GA_FRAME_LENGTH_FLAG_BITS = 1;
+constexpr uint8_t AAC_GA_DEPENDS_ON_CORE_CODER_BITS = 1;
+constexpr uint8_t AAC_GA_CORE_CODER_DELAY_BITS = 14;
+constexpr uint8_t AAC_GA_EXTENSION_FLAG_BITS = 1;
+constexpr uint8_t AAC_PCE_OBJECT_TYPE_BITS = 2;
+constexpr uint8_t AAC_PCE_SAMPLING_INDEX_BITS = 4;
+constexpr uint8_t AAC_PCE_ELEMENT_COUNT_BITS = 4;
+constexpr uint8_t AAC_PCE_LFE_COUNT_BITS = 2;
+constexpr uint8_t AAC_PCE_ASSOC_DATA_COUNT_BITS = 3;
+constexpr uint8_t AAC_PCE_MIXDOWN_PRESENT_BITS = 1;
+constexpr uint8_t AAC_PCE_MIXDOWN_TAG_BITS = 4;
+constexpr uint8_t AAC_PCE_MATRIX_MIXDOWN_BITS = 3;
+constexpr uint8_t AAC_PCE_ELEMENT_IS_CPE_BITS = 1;
+constexpr uint8_t AAC_PCE_ELEMENT_TAG_BITS = 4;
+constexpr uint8_t AAC_PCE_CC_ELEMENT_BITS = 5;
+constexpr uint8_t AAC_PCE_COMMENT_LENGTH_BITS = 8;
+// Dimensions of AAC_PCE_CHANNEL_MAP, mirroring FFmpeg ff_aac_channel_map[3][4][6]:
+// 3 layer rows (base/top/bottom), 4 positions (FRONT/SIDE/BACK/LFE), 6 channel
+// slots per position.
+constexpr size_t AAC_PCE_LAYER_COUNT = 3;
+constexpr size_t AAC_PCE_POSITION_COUNT = 4;
+constexpr size_t AAC_PCE_CHANNELS_PER_POSITION = 6;
+// Position center slot (index 5) used for the trailing single channel of an odd
+// BACK/SIDE count, mirroring FFmpeg assign_channels (libavcodec/aac/aacdec.c).
+constexpr size_t AAC_PCE_CENTER_CHANNEL_INDEX = 5;
+constexpr uint32_t AAC_PCE_MAX_CHANNELS = 64; // FFmpeg libavcodec/aac/aac.h MAX_CHANNELS.
+constexpr uint8_t AAC_PCE_MAX_CHANNEL_ELEMENTS =
+    static_cast<uint8_t>((1U << AAC_PCE_ELEMENT_COUNT_BITS) - 1U);
+constexpr uint8_t AAC_PCE_MAX_LFE_ELEMENTS =
+    static_cast<uint8_t>((1U << AAC_PCE_LFE_COUNT_BITS) - 1U);
+constexpr size_t AAC_PCE_MAX_LAYOUT_ELEMENTS = AAC_PCE_MAX_CHANNEL_ELEMENTS * 3U + AAC_PCE_MAX_LFE_ELEMENTS;
 // ESDS 描述符标签常量
 constexpr uint8_t MPEG4_ES_DESCR_TAG = 0x03;
 constexpr uint8_t MPEG4_DEC_CONFIG_DESCR_TAG = 0x04;
@@ -516,6 +558,439 @@ bool GetAacChannelConfig(uint8_t configIndex, AudioChannelLayout& layout, uint32
     channels = AAC_CHANNEL_CONFIG_TABLE[configIndex].channels;
     layout = AAC_CHANNEL_CONFIG_TABLE[configIndex].layout;
     return true;
+}
+
+struct AacPceElementCounts {
+    uint8_t front = 0;
+    uint8_t side = 0;
+    uint8_t back = 0;
+    uint8_t lfe = 0;
+    uint8_t assocData = 0;
+    uint8_t cc = 0;
+};
+
+enum class AacPcePosition : uint8_t {
+    FRONT = 0,
+    SIDE,
+    BACK,
+    LFE,
+};
+
+struct AacPceElement {
+    AacPcePosition position = AacPcePosition::FRONT;
+    bool isCpe = false;
+};
+
+struct AacPceInfo {
+    uint32_t channels = 0;
+    size_t elementCount = 0;
+    std::array<AacPceElement, AAC_PCE_MAX_LAYOUT_ELEMENTS> elements = {};
+};
+
+struct AacGaConfigInfo {
+    bool frameLengthFlag = false;
+    bool pceParsed = false;
+    AacPceInfo pce;
+};
+
+struct AacConfigInfo {
+    uint8_t audioObjectType = 0;
+    uint8_t samplingFreqIndex = 0;
+    uint8_t channelConfig = 0;
+    uint32_t baseSampleRate = 0;
+    uint32_t sampleRate = 0;
+    uint32_t channels = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    bool hasSbr = false;
+};
+
+bool ReadAacBits(DemuxerBitReader& bitReader, uint8_t bitCount, uint32_t& value)
+{
+    if (!bitReader.HasBits(bitCount)) {
+        return false;
+    }
+    value = ReadBitsWide(bitReader, bitCount);
+    return true;
+}
+
+bool SkipAacBits(DemuxerBitReader& bitReader, size_t bitCount)
+{
+    if (!bitReader.HasBits(bitCount)) {
+        return false;
+    }
+    while (bitCount > 0) {
+        uint8_t bitsToSkip = static_cast<uint8_t>(std::min(bitCount, static_cast<size_t>(AAC_BITS_PER_BYTE)));
+        if (!bitReader.SkipBits(bitsToSkip)) {
+            return false;
+        }
+        bitCount -= bitsToSkip;
+    }
+    return true;
+}
+
+bool IsAacGaSpecificConfig(uint8_t audioObjectType)
+{
+    return audioObjectType == AOT_AAC_MAIN || audioObjectType == AOT_AAC_LC ||
+        audioObjectType == AOT_AAC_SSR || audioObjectType == AOT_AAC_LTP ||
+        audioObjectType == AAC_ER_AAC_LC || audioObjectType == AAC_ER_LD;
+}
+
+bool SkipAacPceMixdownElement(DemuxerBitReader& bitReader, uint8_t payloadBits)
+{
+    uint32_t present = 0;
+    if (!ReadAacBits(bitReader, AAC_PCE_MIXDOWN_PRESENT_BITS, present)) {
+        return false;
+    }
+    return present == 0 || SkipAacBits(bitReader, payloadBits);
+}
+
+bool ReadAacPceElementCounts(DemuxerBitReader& bitReader, AacPceElementCounts& counts)
+{
+    uint32_t discarded = 0;
+    if (!ReadAacBits(bitReader, AAC_PCE_OBJECT_TYPE_BITS, discarded) ||
+        !ReadAacBits(bitReader, AAC_PCE_SAMPLING_INDEX_BITS, discarded)) {
+        return false;
+    }
+    if (!ReadAacBits(bitReader, AAC_PCE_ELEMENT_COUNT_BITS, discarded)) {
+        return false;
+    }
+    counts.front = static_cast<uint8_t>(discarded);
+    if (!ReadAacBits(bitReader, AAC_PCE_ELEMENT_COUNT_BITS, discarded)) {
+        return false;
+    }
+    counts.side = static_cast<uint8_t>(discarded);
+    if (!ReadAacBits(bitReader, AAC_PCE_ELEMENT_COUNT_BITS, discarded)) {
+        return false;
+    }
+    counts.back = static_cast<uint8_t>(discarded);
+    if (!ReadAacBits(bitReader, AAC_PCE_LFE_COUNT_BITS, discarded)) {
+        return false;
+    }
+    counts.lfe = static_cast<uint8_t>(discarded);
+    if (!ReadAacBits(bitReader, AAC_PCE_ASSOC_DATA_COUNT_BITS, discarded)) {
+        return false;
+    }
+    counts.assocData = static_cast<uint8_t>(discarded);
+    if (!ReadAacBits(bitReader, AAC_PCE_ELEMENT_COUNT_BITS, discarded)) {
+        return false;
+    }
+    counts.cc = static_cast<uint8_t>(discarded);
+    return true;
+}
+
+bool SkipAacPceMixdownFields(DemuxerBitReader& bitReader)
+{
+    return SkipAacPceMixdownElement(bitReader, AAC_PCE_MIXDOWN_TAG_BITS) &&
+        SkipAacPceMixdownElement(bitReader, AAC_PCE_MIXDOWN_TAG_BITS) &&
+        SkipAacPceMixdownElement(bitReader, AAC_PCE_MATRIX_MIXDOWN_BITS);
+}
+
+bool AddAacPceElement(AacPceInfo& info, bool isCpe, AacPcePosition position)
+{
+    uint32_t channelIncrement = isCpe ? AAC_STEREO_CHANNELS : AAC_MONO_CHANNELS;
+    if (info.elementCount >= info.elements.size() || info.channels > AAC_PCE_MAX_CHANNELS - channelIncrement) {
+        return false;
+    }
+    info.elements[info.elementCount++] = {position, isCpe};
+    info.channels += channelIncrement;
+    return true;
+}
+
+bool ReadAacPceChannelElements(DemuxerBitReader& bitReader, uint8_t count, AacPcePosition position, AacPceInfo& info)
+{
+    for (uint8_t index = 0; index < count; ++index) {
+        uint32_t isCpe = 0;
+        if (!ReadAacBits(bitReader, AAC_PCE_ELEMENT_IS_CPE_BITS, isCpe) ||
+            !SkipAacBits(bitReader, AAC_PCE_ELEMENT_TAG_BITS) ||
+            !AddAacPceElement(info, isCpe != 0, position)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ReadAacPceLfeElements(DemuxerBitReader& bitReader, uint8_t count, AacPceInfo& info)
+{
+    for (uint8_t index = 0; index < count; ++index) {
+        if (!SkipAacBits(bitReader, AAC_PCE_ELEMENT_TAG_BITS) ||
+            !AddAacPceElement(info, false, AacPcePosition::LFE)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ReadAacPceComment(DemuxerBitReader& bitReader)
+{
+    uint8_t bitOffset = bitReader.GetBitOffset();
+    if (bitOffset != 0 && !SkipAacBits(bitReader, AAC_BITS_PER_BYTE - bitOffset)) {
+        return false;
+    }
+    uint32_t commentBytes = 0;
+    return ReadAacBits(bitReader, AAC_PCE_COMMENT_LENGTH_BITS, commentBytes) &&
+        SkipAacBits(bitReader, static_cast<size_t>(commentBytes) * AAC_BITS_PER_BYTE);
+}
+
+bool ParseAacProgramConfigElement(DemuxerBitReader& bitReader, AacPceInfo& info)
+{
+    AacPceElementCounts counts;
+    if (!SkipAacBits(bitReader, AAC_PCE_ELEMENT_TAG_BITS) ||
+        !ReadAacPceElementCounts(bitReader, counts) || !SkipAacPceMixdownFields(bitReader)) {
+        return false;
+    }
+    if (!ReadAacPceChannelElements(bitReader, counts.front, AacPcePosition::FRONT, info) ||
+        !ReadAacPceChannelElements(bitReader, counts.side, AacPcePosition::SIDE, info) ||
+        !ReadAacPceChannelElements(bitReader, counts.back, AacPcePosition::BACK, info) ||
+        !ReadAacPceLfeElements(bitReader, counts.lfe, info) ||
+        !SkipAacBits(bitReader, static_cast<size_t>(counts.assocData) * AAC_PCE_ELEMENT_TAG_BITS) ||
+        !SkipAacBits(bitReader, static_cast<size_t>(counts.cc) * AAC_PCE_CC_ELEMENT_BITS) ||
+        !ReadAacPceComment(bitReader) || info.channels == 0) {
+        return false;
+    }
+    return true;
+}
+
+using AacPceChannelMap = std::array<uint64_t, AAC_PCE_CHANNELS_PER_POSITION>;
+using AacPcePositionMap = std::array<AacPceChannelMap, AAC_PCE_POSITION_COUNT>;
+
+constexpr uint64_t AAC_PCE_NO_CHANNEL = 0;
+constexpr std::array<AacPcePositionMap, AAC_PCE_LAYER_COUNT> AAC_PCE_CHANNEL_MAP = {{
+    {{{static_cast<uint64_t>(AudioChannelSet::FRONT_CENTER),
+       static_cast<uint64_t>(AudioChannelSet::FRONT_LEFT_OF_CENTER),
+       static_cast<uint64_t>(AudioChannelSet::FRONT_RIGHT_OF_CENTER),
+       static_cast<uint64_t>(AudioChannelSet::FRONT_LEFT),
+       static_cast<uint64_t>(AudioChannelSet::FRONT_RIGHT), AAC_PCE_NO_CHANNEL},
+      {AAC_PCE_NO_CHANNEL, static_cast<uint64_t>(AudioChannelSet::SIDE_LEFT),
+       static_cast<uint64_t>(AudioChannelSet::SIDE_RIGHT), AAC_PCE_NO_CHANNEL,
+       AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL},
+      {AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL,
+       static_cast<uint64_t>(AudioChannelSet::BACK_LEFT),
+       static_cast<uint64_t>(AudioChannelSet::BACK_RIGHT),
+       static_cast<uint64_t>(AudioChannelSet::BACK_CENTER)},
+      {static_cast<uint64_t>(AudioChannelSet::LOW_FREQUENCY),
+       static_cast<uint64_t>(AudioChannelSet::LOW_FREQUENCY_2), AAC_PCE_NO_CHANNEL,
+       AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL}}},
+    {{{static_cast<uint64_t>(AudioChannelSet::TOP_FRONT_CENTER), AAC_PCE_NO_CHANNEL,
+       AAC_PCE_NO_CHANNEL, static_cast<uint64_t>(AudioChannelSet::TOP_FRONT_LEFT),
+       static_cast<uint64_t>(AudioChannelSet::TOP_FRONT_RIGHT), AAC_PCE_NO_CHANNEL},
+      {AAC_PCE_NO_CHANNEL, static_cast<uint64_t>(AudioChannelSet::TOP_SIDE_LEFT),
+       static_cast<uint64_t>(AudioChannelSet::TOP_SIDE_RIGHT), AAC_PCE_NO_CHANNEL,
+       AAC_PCE_NO_CHANNEL, static_cast<uint64_t>(AudioChannelSet::TOP_CENTER)},
+      {AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL,
+       static_cast<uint64_t>(AudioChannelSet::TOP_BACK_LEFT),
+       static_cast<uint64_t>(AudioChannelSet::TOP_BACK_RIGHT),
+       static_cast<uint64_t>(AudioChannelSet::TOP_BACK_CENTER)},
+      {AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL,
+       AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL}}},
+    {{{static_cast<uint64_t>(AudioChannelSet::BOTTOM_FRONT_CENTER), AAC_PCE_NO_CHANNEL,
+       AAC_PCE_NO_CHANNEL, static_cast<uint64_t>(AudioChannelSet::BOTTOM_FRONT_LEFT),
+       static_cast<uint64_t>(AudioChannelSet::BOTTOM_FRONT_RIGHT), AAC_PCE_NO_CHANNEL},
+      {AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL,
+       AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL},
+      {AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL,
+       AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL},
+      {AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL,
+       AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL, AAC_PCE_NO_CHANNEL}}},
+}};
+
+int32_t CountAacPcePositionChannels(const AacPceInfo& info, AacPcePosition position, size_t& current)
+{
+    // Port of FFmpeg count_paired_channels (libavcodec/aac/aacdec.c). The rule is
+    // intentionally asymmetric, exactly as in FFmpeg: a leading SCE before the first
+    // CPE is absorbed (SCE,CPE,CPE passes) while a trailing SCE after a CPE fails
+    // (CPE,SCE,CPE fails); odd SIDE/BACK counts are deferred to
+    // MapAacPcePositionChannels (FFmpeg assign_channels), which resolves the extra
+    // channel through the position center slot.
+    int32_t channels = 0;
+    bool firstCpe = false;
+    bool sceParity = false;
+    while (current < info.elementCount && info.elements[current].position == position) {
+        bool isCpe = info.elements[current++].isCpe;
+        if (isCpe) {
+            if (sceParity && (position != AacPcePosition::FRONT || firstCpe)) {
+                return -1;
+            }
+            sceParity = false;
+            firstCpe = true;
+            channels += static_cast<int32_t>(AAC_STEREO_CHANNELS);
+        } else {
+            // FFmpeg toggles parity only for non-LFE single elements:
+            // sce_parity ^= (pos != AAC_CHANNEL_LFE).
+            if (position != AacPcePosition::LFE) {
+                sceParity = !sceParity;
+            }
+            channels += static_cast<int32_t>(AAC_MONO_CHANNELS);
+        }
+    }
+    return sceParity && position == AacPcePosition::FRONT && firstCpe ? -1 : channels;
+}
+
+bool AddAacPceMappedChannel(AacPcePosition position, size_t layer, size_t index, uint64_t& layout)
+{
+    size_t positionIndex = static_cast<size_t>(position);
+    if (layer >= AAC_PCE_CHANNEL_MAP.size() || positionIndex >= AAC_PCE_CHANNEL_MAP[layer].size() ||
+        index >= AAC_PCE_CHANNEL_MAP[layer][positionIndex].size()) {
+        return false;
+    }
+    uint64_t channel = AAC_PCE_CHANNEL_MAP[layer][positionIndex][index];
+    if (channel == AAC_PCE_NO_CHANNEL || (layout & channel) != 0) {
+        return false;
+    }
+    layout |= channel;
+    return true;
+}
+
+bool MapAacPcePositionChannels(AacPcePosition position, size_t layer, int32_t channels, uint64_t& layout)
+{
+    if (channels < 0 || channels > static_cast<int32_t>(AAC_PCE_CHANNEL_MAP.front().front().size())) {
+        return false;
+    }
+    if (position == AacPcePosition::LFE) {
+        for (size_t index = 0; index < static_cast<size_t>(channels); ++index) {
+            if (!AddAacPceMappedChannel(position, layer, index, layout)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    // Port of FFmpeg assign_channels (libavcodec/aac/aacdec.c): an odd channel
+    // count first takes the single-channel slot at index 0 (FRONT_CENTER); then
+    // pairs are filled from index 1/3; any leftover single channel is placed at
+    // index 5 (the position center). FFmpeg's map marks BACK/SIDE index 0 as
+    // AV_CHAN_UNUSED, so odd BACK/SIDE counts skip it and resolve through the
+    // trailing center slot (e.g. back-3 maps to BL/BR/BC).
+    // channels is validated non-negative above, so the parity/arithmetic below
+    // operates on unsigned values (bit operations are only allowed on unsigned).
+    uint32_t remaining = static_cast<uint32_t>(channels);
+    if ((remaining & 1U) != 0U && position == AacPcePosition::FRONT) {
+        if (!AddAacPceMappedChannel(position, layer, 0, layout)) {
+            return false;
+        }
+        --remaining;
+    }
+    size_t index = position != AacPcePosition::SIDE && remaining <= 3 ? 3 : 1;
+    while (remaining >= AAC_STEREO_CHANNELS) {
+        if (!AddAacPceMappedChannel(position, layer, index++, layout) ||
+            !AddAacPceMappedChannel(position, layer, index++, layout)) {
+            return false;
+        }
+        remaining -= AAC_STEREO_CHANNELS;
+    }
+    if ((remaining & 1U) != 0U) {
+        if (!AddAacPceMappedChannel(position, layer, AAC_PCE_CENTER_CHANNEL_INDEX, layout)) {
+            return false;
+        }
+        --remaining;
+    }
+    return remaining == 0;
+}
+
+AudioChannelLayout GetAacPceLayout(const AacPceInfo& info)
+{
+    uint64_t layout = 0;
+    size_t current = 0;
+    constexpr std::array<AacPcePosition, AAC_PCE_POSITION_COUNT> positions = {
+        AacPcePosition::FRONT, AacPcePosition::SIDE, AacPcePosition::BACK, AacPcePosition::LFE};
+    for (size_t layer = 0; layer < AAC_PCE_CHANNEL_MAP.size() && current < info.elementCount; ++layer) {
+        for (AacPcePosition position : positions) {
+            int32_t channels = CountAacPcePositionChannels(info, position, current);
+            if (!MapAacPcePositionChannels(position, layer, channels, layout)) {
+                return AudioChannelLayout::UNKNOWN;
+            }
+        }
+    }
+    return current == info.elementCount ? static_cast<AudioChannelLayout>(layout) : AudioChannelLayout::UNKNOWN;
+}
+
+bool ParseAacGaSpecificConfig(DemuxerBitReader& bitReader, uint8_t audioObjectType, uint8_t channelConfig,
+    AacGaConfigInfo& info)
+{
+    if (audioObjectType == AAC_ER_ELD) {
+        // ELD specific config (ISO 14496-3 / FFmpeg decode_eld_specific_config):
+        // the leading frameLengthFlag selects 480 (short) vs 512 samples, matching
+        // FFmpeg aac_decode_er_frame: (frameLengthFlag ? 960 : 1024) >> 1.
+        uint32_t field = 0;
+        if (!ReadAacBits(bitReader, AAC_GA_FRAME_LENGTH_FLAG_BITS, field)) {
+            return false;
+        }
+        info.frameLengthFlag = field != 0;
+        return true;
+    }
+    if (!IsAacGaSpecificConfig(audioObjectType)) {
+        return true;
+    }
+    uint32_t field = 0;
+    if (!ReadAacBits(bitReader, AAC_GA_FRAME_LENGTH_FLAG_BITS, field)) {
+        return false;
+    }
+    info.frameLengthFlag = field != 0;
+    if (!ReadAacBits(bitReader, AAC_GA_DEPENDS_ON_CORE_CODER_BITS, field)) {
+        return false;
+    }
+    if (field != 0 && !SkipAacBits(bitReader, AAC_GA_CORE_CODER_DELAY_BITS)) {
+        return false;
+    }
+    if (!ReadAacBits(bitReader, AAC_GA_EXTENSION_FLAG_BITS, field)) {
+        return false;
+    }
+    if (channelConfig == 0) {
+        // PCE is only present when channelConfiguration is zero; otherwise the
+        // GASpecificConfig is complete and the already-parsed frameLengthFlag
+        // must be kept (e.g. ER-LD 480/512 selection).
+        info.pceParsed = ParseAacProgramConfigElement(bitReader, info.pce);
+    }
+    return true;
+}
+
+bool ParseAacConfigHeader(DemuxerBitReader& bitReader, AacConfigInfo& info)
+{
+    ReadAACObjectType(bitReader, info.audioObjectType);
+    ReadAACSampleRate(bitReader, info.samplingFreqIndex, info.sampleRate);
+    info.baseSampleRate = info.sampleRate;
+    info.channelConfig = static_cast<uint8_t>(ReadBitsWidePadded(bitReader, AAC_PCE_SAMPLING_INDEX_BITS));
+    return GetAacChannelConfig(info.channelConfig, info.layout, info.channels);
+}
+
+void ParseAacConfigExtensions(DemuxerBitReader& bitReader, AacConfigInfo& info)
+{
+    const bool isImplicitPs = info.audioObjectType == AOT_PS &&
+        !((bitReader.ShowBits(AAC_PS_IMPLICIT_LEADING_BITS) & 0x03) &&
+          !(ShowBitsWide(bitReader, AAC_PS_IMPLICIT_TRAILING_BITS) & 0x3F));
+    const bool hasExplicitSbr = info.audioObjectType == AOT_SBR || isImplicitPs;
+    uint32_t extensionSampleRate = 0;
+    bool hasSyncExtensionSbr = false;
+    bool hasSyncExtensionPs = false;
+    if (info.audioObjectType == AOT_AAC_LC) {
+        (void)HasAacSyncExtensionSbr(bitReader, info.baseSampleRate, extensionSampleRate,
+            hasSyncExtensionSbr, hasSyncExtensionPs);
+    }
+    info.hasSbr = hasExplicitSbr || hasSyncExtensionSbr;
+    AdjustPsChannelConfig(isImplicitPs || (info.channelConfig == AAC_MONO_CHANNELS && hasSyncExtensionPs),
+        info.channels, info.layout);
+    if (hasExplicitSbr) {
+        uint8_t extensionSamplingFreqIndex = 0;
+        ReadAACSampleRate(bitReader, extensionSamplingFreqIndex, extensionSampleRate);
+        ReadAACObjectType(bitReader, info.audioObjectType);
+    }
+    if (extensionSampleRate > 0) {
+        info.sampleRate = extensionSampleRate;
+    }
+}
+
+uint32_t GetAacSamplesPerFrame(const AacConfigInfo& config, const AacGaConfigInfo& gaConfig)
+{
+    uint32_t samplePerFrame = gaConfig.frameLengthFlag ? AAC_SHORT_FRAME_SAMPLES_PER_FRAME :
+        AUDIO_DEFAULT_SAMPLE_PER_FRAME;
+    if (config.hasSbr && config.sampleRate > config.baseSampleRate &&
+        samplePerFrame == AUDIO_DEFAULT_SAMPLE_PER_FRAME) {
+        samplePerFrame *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
+    }
+    if (config.audioObjectType == AAC_ER_LD || config.audioObjectType == AAC_ER_ELD) {
+        // FFmpeg aac_decode_er_frame (libavcodec/aac/aacdec.c): ER LD/ELD frames
+        // are (frame_length_short ? 960 : 1024) >> 1, i.e. 480 or 512 samples.
+        samplePerFrame >>= 1;
+    }
+    return samplePerFrame;
 }
 
 bool GetAv3aChannelConfig(uint8_t channelNumberIndex, AudioChannelLayout& layout, int32_t& channels)
@@ -2926,52 +3401,32 @@ bool MPEG4AtomParser::ParseAACConfig(const uint8_t* data, uint32_t size, uint32_
 {
     FALSE_RETURN_V_MSG_E(IsLastTrackValid(), false, "Invalid current track");
     FALSE_RETURN_V_MSG_E(data != nullptr, false, "Invalid AAC config data");
-    constexpr uint8_t channelConfigSize = 4;
     constexpr uint8_t baseConfigSize = 13;
     DemuxerBitReader bitReader(data, size);
     FALSE_RETURN_V(bitReader.HasBits(baseConfigSize), false);
-    uint8_t audioObjectType = 0;
-    ReadAACObjectType(bitReader, audioObjectType);
-    uint8_t samplingFreqIndex = 0;
-    sampleRate = 0;
-    ReadAACSampleRate(bitReader, samplingFreqIndex, sampleRate);
-    const uint32_t baseSampleRate = sampleRate;
-    uint8_t channelConfig = static_cast<uint8_t>(ReadBitsWidePadded(bitReader, channelConfigSize));
-    FALSE_RETURN_V(GetAacChannelConfig(channelConfig, layout, channels), false);
-    const bool isImplicitPs = audioObjectType == AOT_PS &&
-        !((bitReader.ShowBits(0x03) & 0x03) && !(ShowBitsWide(bitReader, 0x09) & 0x3F));
-    const bool hasExplicitSbr = audioObjectType == AOT_SBR || isImplicitPs;
-    uint32_t extensionSampleRate = 0;
-    bool hasSyncExtensionSbr = false;
-    bool hasSyncExtensionPs = false;
-    if (audioObjectType == AOT_AAC_LC) {
-        // On absence or truncation the function returns false with the out-params
-        // already reset to false, so the parsed flags below stay reliable either way.
-        (void)HasAacSyncExtensionSbr(bitReader, baseSampleRate, extensionSampleRate,
-            hasSyncExtensionSbr, hasSyncExtensionPs);
+    AacConfigInfo config;
+    FALSE_RETURN_V(ParseAacConfigHeader(bitReader, config), false);
+    ParseAacConfigExtensions(bitReader, config);
+    AacGaConfigInfo gaConfig;
+    // A truncated GASpecificConfig must not leak half-parsed fields (e.g. a
+    // frameLengthFlag without its PCE) into frame-size/channel computation.
+    if (!ParseAacGaSpecificConfig(bitReader, config.audioObjectType, config.channelConfig, gaConfig)) {
+        gaConfig = AacGaConfigInfo();
     }
-    const bool hasSbr = hasExplicitSbr || hasSyncExtensionSbr;
-    AdjustPsChannelConfig(isImplicitPs || (channelConfig == 1 && hasSyncExtensionPs), channels, layout);
-    if (hasExplicitSbr) {
-        uint8_t extensionSamplingFreqIndex = 0;
-        ReadAACSampleRate(bitReader, extensionSamplingFreqIndex, extensionSampleRate);
-        ReadAACObjectType(bitReader, audioObjectType);
+    if (gaConfig.pceParsed) {
+        // FFmpeg's AAC decoder resolves channelConfiguration zero through the global
+        // ASC PCE during stream-info probing. Keep UNKNOWN here so the common
+        // channel-count fallback produces the same public default layout.
+        config.channels = gaConfig.pce.channels;
+        config.layout = GetAacPceLayout(gaConfig.pce);
     }
-    if (extensionSampleRate > 0) {
-        sampleRate = extensionSampleRate;
-    }
-    const uint32_t frameLengthFlag = bitReader.HasBits(1) ? bitReader.ReadBits(1) : 0;
-    uint32_t samplePerFrame = frameLengthFlag ? 960 : AUDIO_DEFAULT_SAMPLE_PER_FRAME;
-    if (hasSbr && extensionSampleRate > baseSampleRate &&
-        samplePerFrame == AUDIO_DEFAULT_SAMPLE_PER_FRAME) {
-        samplePerFrame *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
-    }
-    if (audioObjectType == AAC_ER_LD || (audioObjectType == AAC_ER_ELD)) {
-        samplePerFrame >>= 1;
-    }
+    sampleRate = config.sampleRate;
+    channels = config.channels;
+    layout = config.layout;
+    uint32_t samplePerFrame = GetAacSamplesPerFrame(config, gaConfig);
     mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(samplePerFrame);
     MEDIA_LOG_D("AAC Config: objType=" PUBLIC_LOG_U8 ", samplingIdx=" PUBLIC_LOG_U8 ", channels="
-        PUBLIC_LOG_U8, audioObjectType, samplingFreqIndex, channelConfig);
+        PUBLIC_LOG_U8, config.audioObjectType, config.samplingFreqIndex, config.channelConfig);
     return true;
 }
 
@@ -2984,17 +3439,22 @@ bool MPEG4AtomParser::ParseAACSpecificConfig(const uint8_t* data, uint32_t size)
     uint32_t channels = 2;
     AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
     if (ParseAACConfig(data, size, sampleRate, channels, layout)) {
-        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_COUNT>(static_cast<int32_t>(channels));
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_SAMPLE_RATE>(static_cast<int32_t>(sampleRate));
+        int32_t existingChannels = 0;
+        bool hasExistingChannels = mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(
+            existingChannels) && existingChannels > 0;
+        AudioChannelLayout existingLayout = AudioChannelLayout::UNKNOWN;
+        (void)mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::AUDIO_CHANNEL_LAYOUT>(existingLayout);
+        if (channels == 0 && hasExistingChannels) {
+            channels = static_cast<uint32_t>(existingChannels);
+            layout = existingLayout;
+        }
         if (channels > 0 && layout == AudioChannelLayout::UNKNOWN) {
-            int32_t channelCount = 0;
             auto audioParser = std::make_shared<MPEG4AudioParser>();
             FALSE_RETURN_V_MSG_E(audioParser != nullptr, false, "Failed create audioParser");
-            FALSE_RETURN_V_MSG_E(
-                mediaInfo_.tracks[lastTrack_->trackIndex].Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount),
-                false, "Channel count missed");
-            layout = audioParser->GetDefaultChannelLayout(channelCount);
+            layout = audioParser->GetDefaultChannelLayout(static_cast<int32_t>(channels));
         }
+        mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_COUNT>(static_cast<int32_t>(channels));
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNELS>(static_cast<int32_t>(channels));
         mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
