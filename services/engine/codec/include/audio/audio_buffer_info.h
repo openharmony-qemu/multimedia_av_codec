@@ -69,8 +69,8 @@ public:
 
 private:
     bool isHasMeta_;
-    bool isEos_;
-    bool isFirstFrame_;
+    std::atomic<bool> isEos_;
+    std::atomic<bool> isFirstFrame_;
     std::atomic<bool> isUsing;
     std::atomic<BufferStatus> status_;
     uint32_t bufferSize_;
@@ -79,7 +79,7 @@ private:
     std::shared_ptr<Media::AVSharedMemoryBase> buffer_;
     std::shared_ptr<Media::AVSharedMemoryBase> metadata_;
     AVCodecBufferInfo info_;
-    AVCodecBufferFlag flag_;
+    std::atomic<AVCodecBufferFlag> flag_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
