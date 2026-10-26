@@ -59,12 +59,9 @@ static bool ShouldKeepRawTimelineForZeroDurationMediaEdit(
         editListEntries.front().duration != 0 || rawTotalDuration <= 0) {
         return false;
     }
-    bool isVideoLike = trackType == VIDEO_TYPE ||
+    const bool isVideoLike = trackType == VIDEO_TYPE ||
         (trackType == AUXILIARY_TYPE && IsVideoMimeType(mimeType));
-    if (isVideoLike) {
-        return true;
-    }
-    return trackType == AUDIO_TYPE && editListEntries.front().mediaTime == 0;
+    return isVideoLike || (trackType == AUDIO_TYPE && editListEntries.front().mediaTime == 0);
 }
 
 static int64_t SaturatingAdd(int64_t left, int64_t right)

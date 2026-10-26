@@ -486,7 +486,11 @@ bool ParseAacRawDataBlockChannels(const uint8_t* data, uint32_t size, int32_t& c
         bitReader.SkipBits(AAC_ELEMENT_INSTANCE_TAG_BITS);
         if (elementType == AAC_ELEMENT_TYPE_SCE || elementType == AAC_ELEMENT_TYPE_LFE) {
             channels = AAC_MONO_CHANNELS;
-            layout = AudioChannelLayout::MONO;
+            // LFE is not a mono front channel; the probe only proves a channel
+            // count, so an LFE-only first element keeps the layout UNKNOWN.
+            if (elementType == AAC_ELEMENT_TYPE_SCE) {
+                layout = AudioChannelLayout::MONO;
+            }
             return true;
         }
         if (elementType == AAC_ELEMENT_TYPE_CPE) {
