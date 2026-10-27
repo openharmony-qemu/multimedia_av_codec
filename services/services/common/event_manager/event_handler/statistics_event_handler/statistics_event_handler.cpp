@@ -694,12 +694,12 @@ private:
 
         auto memoryObj = cJSON_AddObjectToObject(jsonObj.get(), "Memory");
         cJSON_AddNumberToObject(memoryObj, "ProcessAverageMemory", memoryAverage_);
-        cJSON_AddNumberToObject(memoryObj, "MinuteCount", static_cast<double>(sampleMinuteCount_));
+        cJSON_AddNumberToObject(memoryObj, "SampleCount", static_cast<double>(sampleMinuteCount_));
         cJSON_AddStringToObject(memoryObj, "Unit", "KB");
 
         auto instanceCountObj = cJSON_AddObjectToObject(jsonObj.get(), "Total");
         cJSON_AddNumberToObject(instanceCountObj, "Average", averageCodecInstanceCount_);
-        cJSON_AddNumberToObject(instanceCountObj, "MinuteCount", static_cast<double>(sampleMinuteCount_));
+        cJSON_AddNumberToObject(instanceCountObj, "SampleCount", static_cast<double>(sampleMinuteCount_));
         cJSON_AddStringToObject(instanceCountObj, "Unit", "count");
         return jsonObj;
     }
@@ -736,22 +736,19 @@ private:
             return;
         }
 
-        // Keep only the running average and covered minute count; do not accumulate a raw memory sum.
-        const uint64_t minuteDelta = lastMemorySampleMinute_ < 0
-            ? 1
-            : static_cast<uint64_t>(minute - lastMemorySampleMinute_);
+        // Keep only the running average and valid sample count; skipped minutes are not counted.
         const uint64_t previousMinuteCount = sampleMinuteCount_;
-        const uint64_t currentMinuteCount = previousMinuteCount >
-            std::numeric_limits<uint64_t>::max() - minuteDelta
-            ? std::numeric_limits<uint64_t>::max()
-            : previousMinuteCount + minuteDelta;
+        const uint64_t currentMinuteCount = previousMinuteCount ==
+            std::numeric_limits<uint64_t>::max()
+            ? previousMinuteCount
+            : previousMinuteCount + 1;
         if (previousMinuteCount == 0) {
             memoryAverage_ = static_cast<double>(memoryUsage);
             averageCodecInstanceCount_ = static_cast<double>(instanceCount);
         } else if (currentMinuteCount != 0) {
-            memoryAverage_ = (memoryAverage_ * static_cast<double>(minuteDelta) +
+            memoryAverage_ = (memoryAverage_ * static_cast<double>(previousMinuteCount) +
                 static_cast<double>(memoryUsage)) / static_cast<double>(currentMinuteCount);
-            averageCodecInstanceCount_ = (averageCodecInstanceCount_ * static_cast<double>(minuteDelta) +
+            averageCodecInstanceCount_ = (averageCodecInstanceCount_ * static_cast<double>(previousMinuteCount) +
                 static_cast<double>(instanceCount)) / static_cast<double>(currentMinuteCount);
         }
         sampleMinuteCount_ = currentMinuteCount;
