@@ -114,7 +114,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SECOND, TestSize.Level1)
     EXPECT_EQ(surfaceDecoderFilter_->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
     std::shared_ptr<FilterLinkCallback> filterLinkCallback = std::make_shared<TestFilterLinkCallback>();
     EXPECT_EQ(surfaceDecoderFilter_->OnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
-        Status::ERROR_UNKNOWN);
+        Status::ERROR_VID_DEC_INIT_FAILED);
     EXPECT_EQ(surfaceDecoderFilter_->OnUpdated(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
         Status::OK);
     EXPECT_EQ(surfaceDecoderFilter_->OnUnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, filterLinkCallback),
@@ -379,7 +379,7 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetOutputSurface_010
     format->Set<Tag::MIME_TYPE>("test");
     format->Set<Tag::MEDIA_END_OF_STREAM>(true);
     EXPECT_EQ(surfaceDecoderFilter_->OnLinked(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
-        Status::ERROR_UNKNOWN);
+        Status::ERROR_VID_DEC_INIT_FAILED);
     EXPECT_EQ(surfaceDecoderFilter_->OnUpdated(Pipeline::StreamType::STREAMTYPE_PACKED, format, filterLinkCallback),
         Status::OK);
     EXPECT_EQ(
@@ -429,6 +429,217 @@ HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_SetCodecFormat_0300,
     surfaceDecoderFilter_->SetCodecFormat(meta);
     EXPECT_EQ(surfaceDecoderFilter_->transcoderIsHdrVivid_, true);
     EXPECT_EQ(surfaceDecoderFilter_->colorSpace_, 0);
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_0100
+ * @tc.desc: IsHdrColorSpace returns true for BT2020 HLG FULL
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_0100, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_FULL);
+    EXPECT_TRUE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_0200
+ * @tc.desc: IsHdrColorSpace returns true for BT2020 HLG LIMIT
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_0200, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+    EXPECT_TRUE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_0300
+ * @tc.desc: IsHdrColorSpace returns true for BT2020 PQ FULL
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_0300, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_PQ_FULL);
+    EXPECT_TRUE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_0400
+ * @tc.desc: IsHdrColorSpace returns true for BT2020 PQ LIMIT
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_0400, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_PQ_LIMIT);
+    EXPECT_TRUE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_0500
+ * @tc.desc: IsHdrColorSpace returns true for P3 HLG FULL
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_0500, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_HLG_FULL);
+    EXPECT_TRUE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_0600
+ * @tc.desc: IsHdrColorSpace returns true for P3 HLG LIMIT
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_0600, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_HLG_LIMIT);
+    EXPECT_TRUE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_0700
+ * @tc.desc: IsHdrColorSpace returns true for P3 PQ FULL
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_0700, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_PQ_FULL);
+    EXPECT_TRUE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_0800
+ * @tc.desc: IsHdrColorSpace returns true for P3 PQ LIMIT
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_0800, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_PQ_LIMIT);
+    EXPECT_TRUE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_0900
+ * @tc.desc: IsHdrColorSpace returns false for SDR BT709 LIMIT
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_0900, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+    EXPECT_FALSE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_1000
+ * @tc.desc: IsHdrColorSpace returns false for SDR BT709 FULL
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_1000, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
+    EXPECT_FALSE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_1100
+ * @tc.desc: IsHdrColorSpace returns false for SDR BT601 EBU LIMIT
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_1100, TestSize.Level1)
+{
+    int32_t cs = static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT601_EBU_LIMIT);
+    EXPECT_FALSE(surfaceDecoderFilter_->IsHdrColorSpace(cs));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_1200
+ * @tc.desc: IsHdrColorSpace returns false for invalid value 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_1200, TestSize.Level1)
+{
+    EXPECT_FALSE(surfaceDecoderFilter_->IsHdrColorSpace(0));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_IsHdrColorSpace_1300
+ * @tc.desc: IsHdrColorSpace returns false for negative value
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_IsHdrColorSpace_1300, TestSize.Level1)
+{
+    EXPECT_FALSE(surfaceDecoderFilter_->IsHdrColorSpace(-1));
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_Configure_HdrPassthrough_0100
+ * @tc.desc: Configure with HDRVivid + HDR dst colorSpace => HDR2HDR passthrough path (no crash)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_HdrPassthrough_0100, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    surfaceDecoderFilter_->colorSpace_ =
+        static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_PQ_LIMIT);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_Configure_Hdr2Sdr_0100
+ * @tc.desc: Configure with HDRVivid + SDR dst colorSpace => HDR2SDR path sets NV12 (no crash)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_Hdr2Sdr_0100, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    surfaceDecoderFilter_->colorSpace_ =
+        static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(true);
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_Configure_HdrType_HLG_0100
+ * @tc.desc: Configure with HLG HDRType + HDR dst colorSpace => HDR2HDR passthrough (no crash)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_HdrType_HLG_0100, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    surfaceDecoderFilter_->colorSpace_ =
+        static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(false);
+    parameter->SetData(Tag::VIDEO_HDR_TYPE, Plugins::HDRType::HLG);
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+/**
+ * @tc.name: SurfaceDecoderFilter_Configure_HdrType_HDR10_0100
+ * @tc.desc: Configure with HDR10 HDRType + SDR dst colorSpace => HDR2SDR path (no crash)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceDecoderFilterUnitTest, SurfaceDecoderFilter_Configure_HdrType_HDR10_0100, TestSize.Level1)
+{
+    EXPECT_NE(surfaceDecoderFilter_, nullptr);
+    surfaceDecoderFilter_->colorSpace_ =
+        static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_FULL);
+    surfaceDecoderFilter_->mediaCodec_ = mediaCodec_;
+    std::shared_ptr<Meta> parameter = std::make_shared<Meta>();
+    parameter->Set<Tag::VIDEO_IS_HDR_VIVID>(false);
+    parameter->SetData(Tag::VIDEO_HDR_TYPE, Plugins::HDRType::HDR_10);
+    auto ret = surfaceDecoderFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 }  // namespace Pipeline
 }  // namespace Media

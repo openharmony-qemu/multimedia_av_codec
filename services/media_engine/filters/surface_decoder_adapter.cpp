@@ -14,8 +14,8 @@
  */
 
 #include "surface_decoder_adapter.h"
-#include <ctime>
 #include "avcodec_info.h"
+#include "avcodec_log.h"
 #include "avcodec_common.h"
 #include "meta/format.h"
 #include "media_description.h"
@@ -67,6 +67,7 @@ public:
 
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override
     {
+        CHECK_AND_RETURN_LOG(buffer != nullptr, "buffer is nullptr, OnOutputBufferAvailable fail");
         if (auto surfaceDecoderAdapter = surfaceDecoderAdapter_.lock()) {
             MEDIA_LOG_D("OnOutputBuffer flag " PUBLIC_LOG_D32, buffer->flag_);
             surfaceDecoderAdapter->OnOutputBufferAvailable(index, buffer);
@@ -107,6 +108,14 @@ SurfaceDecoderAdapter::SurfaceDecoderAdapter()
 SurfaceDecoderAdapter::~SurfaceDecoderAdapter()
 {
     MEDIA_LOG_I("encoder adapter destroy");
+    if (releaseBufferTask_) {
+        {
+            std::unique_lock<std::mutex> lock(releaseBufferMutex_);
+            isThreadExit_ = true;
+        }
+        releaseBufferCondition_.notify_all();
+        releaseBufferTask_->Stop();
+    }
     std::unique_lock<std::shared_mutex> lock(codecServerMutex_);
     if (codecServer_) {
         codecServer_->Release();
@@ -419,10 +428,7 @@ void SurfaceDecoderAdapter::OnInputBufferAvailable(uint32_t index, std::shared_p
     MEDIA_LOG_D("OnInputBufferAvailable enter. index: %{public}u, bufferid: %{public}" PRIu64", pts: %{public}" PRIu64
         ", flag: %{public}u", index, buffer->GetUniqueId(), buffer->pts_, buffer->flag_);
     buffer->meta_->SetData(Tag::REGULAR_TRACK_ID, static_cast<int32_t>(index));
-    if (inputBufferQueueConsumer_ == nullptr) {
-        MEDIA_LOG_E("inputBufferQueueConsumer_ is null");
-        return;
-    }
+    FALSE_RETURN_MSG(inputBufferQueueConsumer_ != nullptr, "inputBufferQueueConsumer_ is null");
     if (inputBufferQueueConsumer_->IsBufferInQueue(buffer)) {
         if (inputBufferQueueConsumer_->ReleaseBuffer(buffer) != Status::OK) {
             MEDIA_LOG_E("IsBufferInQueue ReleaseBuffer failed. index: %{public}u, bufferid: %{public}" PRIu64
@@ -474,6 +480,7 @@ void SurfaceDecoderAdapter::AcquireAvailableInputBuffer()
         return;
     }
     FALSE_RETURN_MSG(filledInputBuffer->meta_ != nullptr, "filledInputBuffer meta is nullptr.");
+
     int32_t metaIndex;
     FALSE_RETURN_MSG(filledInputBuffer->meta_->GetData(Tag::REGULAR_TRACK_ID, metaIndex), "get index failed.");
     uint32_t index = static_cast<uint32_t>(metaIndex);
@@ -509,6 +516,8 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
         for (auto &index : indexs) {
             MEDIA_LOG_D("Release buffer, index: " PUBLIC_LOG_U32, index);
             std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
+            CHECK_AND_CONTINUE_LOG(codecServer_ != nullptr,
+                "codecServer_ is nullptr, skip release buffer index: %{public}u", index);
             codecServer_->ReleaseOutputBuffer(index, true);
             if (index == eosBufferIndex_.load()) {
                 int64_t lastBufferPts = GetLastBufferPts();
@@ -524,6 +533,8 @@ void SurfaceDecoderAdapter::ReleaseBuffer()
             MediaAVCodec::AVCodecTrace trace("ReleaseBuffer drop " + std::to_string(dropIndex));
             MEDIA_LOG_D("Drop buffer, index: " PUBLIC_LOG_U32, dropIndex);
             std::shared_lock<std::shared_mutex> lock(codecServerMutex_);
+            CHECK_AND_CONTINUE_LOG(codecServer_ != nullptr,
+                "codecServer_ is nullptr, skip drop buffer index: %{public}u", dropIndex);
             codecServer_->ReleaseOutputBuffer(dropIndex, false);
         }
     }

@@ -16,6 +16,8 @@
 #define MEDIA_PIPELINE
 #define HST_LOG_TAG "DemuxerFilter"
 
+#include <algorithm>
+#include <optional>
 #include <utility>
 #include "avcodec_common.h"
 #include "avcodec_list.h"
@@ -203,6 +205,30 @@ Status DemuxerFilter::SetSkippingAudioDecAndEnc()
 {
     FALSE_RETURN_V(demuxer_ != nullptr, Status::ERROR_NULL_POINTER);
     return demuxer_->SetSkippingAudioDecAndEnc();
+}
+
+Status DemuxerFilter::SetTimeRange(int64_t startTimeMs, int64_t endTimeMs)
+{
+    MEDIA_LOG_I("SetTimeRange, startTimeMs: " PUBLIC_LOG_D64 ", endTimeMs: " PUBLIC_LOG_D64, startTimeMs, endTimeMs);
+    startTimeMs_ = startTimeMs;
+    endTimeMs_ = endTimeMs;
+    return Status::OK;
+}
+
+Status DemuxerFilter::SeekToClipStartTime()
+{
+    MEDIA_LOG_I("SeekToClipStartTime, time: " PUBLIC_LOG_D64, startTimeMs_);
+    FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, Status::ERROR_UNKNOWN, "demuxer_ is nullptr");
+    FALSE_RETURN_V_MSG_E(startTimeMs_ > 0, Status::ERROR_TIME_RANGE_INVALID, "startTimeMs_ <= 0");
+    int64_t realSeekTime = 0;
+    return demuxer_->SeekTo(startTimeMs_, Plugins::SeekMode::SEEK_PREVIOUS_SYNC, realSeekTime);
+}
+
+int64_t DemuxerFilter::GetTranscoderStartPts() const
+{
+    // 获取转码模式下起始pts
+    FALSE_RETURN_V(demuxer_ != nullptr, 0);
+    return demuxer_->GetTranscoderStartPtsValue();
 }
 
 Status DemuxerFilter::SetDataSource(const std::shared_ptr<MediaSource> source)

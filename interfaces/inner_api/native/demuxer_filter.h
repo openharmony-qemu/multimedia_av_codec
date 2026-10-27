@@ -66,6 +66,9 @@ public:
     Status SetTranscoderMode();
     Status SetPlayerMode();
     Status SetSkippingAudioDecAndEnc();
+    Status SetTimeRange(int64_t startTimeMs, int64_t endTimeMs);
+    Status SeekToClipStartTime();
+    int64_t GetTranscoderStartPts() const;
     Status SetDataSource(const std::shared_ptr<MediaSource> source);
     Status SetSubtitleSource(const std::shared_ptr<MediaSource> source);
     void SetBundleName(const std::string& bundleName);
@@ -201,6 +204,8 @@ private:
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
     bool isTransCoderMode_ {false};
     bool isPlayerMode_ {false};
+    int64_t startTimeMs_ = -1;
+    int64_t endTimeMs_ = -1;
 
     std::map<StreamType, std::vector<int32_t>> track_id_map_;
     Mutex mapMutex_ {};

@@ -86,6 +86,7 @@ public:
         const std::shared_ptr<EncoderAdapterKeyFramePtsCallback> &encoderAdapterKeyFramePtsCallback);
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
+    void SetClipStartTime(int64_t clipStartRelativeUs);
     Status SetWatermarkMode();
     Status SetStabilizationMode(bool enableStabilization);
     sptr<Surface> GetInputSurface();
@@ -130,7 +131,9 @@ private:
     Status GetMaxFrameRate(int32_t &maxFrameRate);
     Status CheckAndAdjustFrameRate();
     bool IsSupportBoostFrameRate();
-    void HandleTranscoderMode(uint32_t index, std::shared_ptr<Format> &parameter);
+    void HandleTranscoderMode(uint32_t index, std::shared_ptr<Format> &attribute,
+        std::shared_ptr<Format> &parameter);
+    bool DecideFrameDiscardAndRequestIdr(int64_t currentPts, std::shared_ptr<Format> &parameter);
     Status CheckTransCoderResolution();
     void Clear();
 
@@ -146,6 +149,8 @@ private:
     int64_t checkFramesPauseTime_{0};
     std::atomic<bool> isThreadExit_ = true;
     bool isTransCoderMode = false;
+    int64_t clipStartRelativeUs_ = -1;
+    std::atomic<bool> firstNonDiscardFrameProcessed_ = false;
 
     std::mutex mappingPtsMutex_;
     std::mutex checkFramesMutex_;

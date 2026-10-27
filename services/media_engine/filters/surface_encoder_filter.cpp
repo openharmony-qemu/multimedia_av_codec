@@ -246,6 +246,22 @@ Status SurfaceEncoderFilter::SetTransCoderMode()
     return Status::OK;
 }
 
+Status SurfaceEncoderFilter::SetTimeRange(int64_t startTimeMs, int64_t endTimeMs)
+{
+    MEDIA_LOG_I("SetTimeRange, startTimeMs: " PUBLIC_LOG_D64 ", endTimeMs: " PUBLIC_LOG_D64, startTimeMs, endTimeMs);
+    startTimeMs_ = startTimeMs;
+    return Status::OK;
+}
+
+void SurfaceEncoderFilter::SetClipStartRelativeUs(int64_t clipStartRelativeUs)
+{
+    MEDIA_LOG_I("SetClipStartRelativeUs: " PUBLIC_LOG_D64, clipStartRelativeUs);
+    clipStartRelativeUs_ = clipStartRelativeUs;
+    if (mediaCodec_ != nullptr) {
+        mediaCodec_->SetClipStartTime(clipStartRelativeUs);
+    }
+}
+
 Status SurfaceEncoderFilter::SetWatermarkMode()
 {
     MEDIA_LOG_I("SetWatermarkMode");

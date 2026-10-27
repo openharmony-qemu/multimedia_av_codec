@@ -45,6 +45,8 @@ public:
     Status SetStopTime();
     Status SetInputSurface(sptr<Surface> surface);
     Status SetTransCoderMode();
+    Status SetTimeRange(int64_t startTimeMs, int64_t endTimeMs);
+    void SetClipStartRelativeUs(int64_t clipStartRelativeUs);
     Status SetWatermarkMode();
     Status SetStabilizationMode(bool enableStabilization);
     void SetTransCoderCapabilityCheckInfo(int32_t width, int32_t height);
@@ -99,6 +101,8 @@ private:
     sptr<Surface> surface_{nullptr};
     std::string bundleName_;
     bool isTranscoderMode_ {false};
+    int64_t startTimeMs_ = -1;
+    int64_t clipStartRelativeUs_ = -1;
     uint64_t instanceId_{0};
     int32_t appUid_ {0};
     int32_t appPid_ {0};

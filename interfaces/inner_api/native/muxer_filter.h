@@ -35,6 +35,8 @@ public:
     ~MuxerFilter() override;
     Status SetOutputParameter(int32_t appUid, int32_t appPid, int32_t fd, int32_t format);
     Status SetTransCoderMode();
+    void SetClipEndTimeUs(int64_t endTimeUs);
+    void SetClipStartTimeUs(int64_t startTimeUs);
     int64_t GetCurrentPtsMs();
     void Init(const std::shared_ptr<EventReceiver> &receiver, const std::shared_ptr<FilterCallback> &callback) override;
     Status DoPrepare() override;
@@ -71,6 +73,19 @@ private:
     void HandleTransCoderComplete();
     void ConfigureTrackMeta(const std::shared_ptr<Meta> &meta, const std::string &mimeType);
     Status AddPendingMetaTracks();
+    // Returns true if the buffer was consumed (discarded) and caller should return early.
+    bool FilterPreClipBuffers(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType,
+        sptr<AVBufferQueueProducer> inputBufferQueue);
+    // Returns true if the buffer was consumed (track already EOS) and caller should return early.
+    bool HandleClipEnd(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType,
+        sptr<AVBufferQueueProducer> inputBufferQueue);
+    void AdjustPtsForClip(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType);
+    void HandleTransCoderEos(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType, bool &isCompleted);
+    void LogFirstAudioAfterClip(const std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType);
+    bool IsTrackEos(StreamType streamType);
+    void UpdateTrackEosState(const std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType);
+    void WriteTransCoderBuffer(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType,
+        sptr<AVBufferQueueProducer> inputBufferQueue);
 
     std::string name_;
 
@@ -81,7 +96,7 @@ private:
 
     int32_t preFilterCount_{0};
     std::atomic<int32_t> stopCount_{0};
-    int32_t eosCount_{0};
+    std::atomic<int32_t> eosCount_{0};
     std::map<int32_t, int64_t> bufferPtsMap_;
     std::map<std::string, int32_t> trackIndexMap_;
     std::string videoCodecMimeType_;
@@ -99,6 +114,11 @@ private:
     std::atomic<bool> audioIsEos{false};
     std::atomic<bool> isTransCoderMode{false};
 
+    int64_t clipEndTimeUs_ = -1;
+    int64_t clipStartTimeUs_ = -1;
+    std::atomic<int32_t> audioClipPassedCount_{0};
+    std::atomic<int32_t> audioClipFilteredCount_{0};
+ 
     std::mutex stopMutex_;
     std::condition_variable stopCondition_;
     std::mutex eosMutex_;

@@ -74,6 +74,7 @@ ohos_unittest("watermark_filter_test") {
  
   if (av_codec_support_test) {
     sources = [
+      "$av_codec_root_dir/services/media_engine/filters/opengl_video_filter_base.cpp",
       "$av_codec_root_dir/services/media_engine/filters/water_mark_filter.cpp",
       "./water_mark_filter_test.cpp",
  

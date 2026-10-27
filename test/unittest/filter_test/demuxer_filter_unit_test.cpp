@@ -1667,26 +1667,150 @@ HWTEST_F(DemuxerFilterUnitTest, IsDsdFormat_001, TestSize.Level1)
     EXPECT_FALSE(demuxerFilter_->IsDsdFormat(""));
     EXPECT_FALSE(demuxerFilter_->IsDsdFormat("audio_dsa"));
 }
-
+ 
 HWTEST_F(DemuxerFilterUnitTest, HandleTrackInfos_dsd, TestSize.Level1)
 {
     std::vector<std::shared_ptr<Meta>> trackInfos;
     int32_t successNodeCount = 0;
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     trackInfos.push_back(meta);
-
+ 
     meta->Set<Tag::REGULAR_TRACK_ID>(0);
     meta->Set<Tag::MIME_TYPE>(MimeType::AUDIO_DSD);
     meta->Set<Tag::MEDIA_TYPE>(Plugins::MediaType::AUDIO);
-
+ 
     auto callback = std::make_shared<FilterCallbackMock>();
     demuxerFilter_->callback_ = callback;
     auto res = demuxerFilter_->HandleTrackInfos(trackInfos, successNodeCount);
     std::cout << "HandleTrackInfos_dsd " << static_cast<int32_t>(res) << std::endl;
-
+ 
     EXPECT_EQ(res, Status::OK);
 }
+ 
+/**
+ * @tc.name: DemuxerFilter_SetTimeRange_0100
+ * @tc.desc: SetTimeRange sets the start and end time
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, DemuxerFilter_SetTimeRange_0100, TestSize.Level1)
+{
+    int64_t start = 1000;
+    int64_t end = 5000;
+    demuxerFilter_->SetTimeRange(start, end);
+    EXPECT_EQ(demuxerFilter_->startTimeMs_, start);
+    EXPECT_EQ(demuxerFilter_->endTimeMs_, end);
+}
 
+/**
+ * @tc.name: DemuxerFilter_SeekToClipStartTime_0100
+ * @tc.desc: SeekToClipStartTime returns error when demuxer is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, DemuxerFilter_SeekToClipStartTime_0100, TestSize.Level1)
+{
+    demuxerFilter_->demuxer_ = nullptr;
+    auto res = demuxerFilter_->SeekToClipStartTime();
+    EXPECT_NE(res, Status::OK);
+}
+
+/**
+ * @tc.name: DemuxerFilter_SeekToClipStartTime_0200
+ * @tc.desc: SeekToClipStartTime returns error when startTimeMs_ <= 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, DemuxerFilter_SeekToClipStartTime_0200, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter_->demuxer_ = demuxer;
+    demuxerFilter_->startTimeMs_ = 0;
+    auto res = demuxerFilter_->SeekToClipStartTime();
+    EXPECT_NE(res, Status::OK);
+}
+
+/**
+ * @tc.name: DemuxerFilter_GetTranscoderStartPts_0100
+ * @tc.desc: GetTranscoderStartPts with no track metadata returns 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, DemuxerFilter_GetTranscoderStartPts_0100, TestSize.Level1)
+{
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxerFilter_->demuxer_ = demuxer;
+    int64_t startPts = demuxerFilter_->GetTranscoderStartPts();
+    EXPECT_EQ(startPts, 0);
+}
+
+/**
+ * @tc.name: DemuxerFilter_GetTranscoderStartPts_0200
+ * @tc.desc: GetTranscoderStartPts with both video and audio tracks
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, DemuxerFilter_GetTranscoderStartPts_0200, TestSize.Level1)
+{
+    std::shared_ptr<Meta> videoMeta = std::make_shared<Meta>();
+    videoMeta->Set<Tag::MEDIA_TYPE>(Plugins::MediaType::VIDEO);
+    videoMeta->Set<Tag::MIME_TYPE>("video/avc");
+    videoMeta->Set<Tag::MEDIA_START_TIME>(1000000);
+    std::shared_ptr<Meta> audioMeta = std::make_shared<Meta>();
+    audioMeta->Set<Tag::MEDIA_TYPE>(Plugins::MediaType::AUDIO);
+    audioMeta->Set<Tag::MIME_TYPE>("audio/mp4a-latm");
+    audioMeta->Set<Tag::MEDIA_START_TIME>(2000000);
+    std::vector<std::shared_ptr<Meta>> trackInfos;
+    trackInfos.push_back(videoMeta);
+    trackInfos.push_back(audioMeta);
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    // GetTranscoderStartPts delegates to MediaDemuxer::transcoderStartPts_, which is computed
+    // by TranscoderInitMediaStartPts() (called during DoPrepare via InitMediaMetaData).
+    // Populate mediaMetaData_.trackMetas and invoke TranscoderInitMediaStartPts to mirror
+    // the canonical computation path.
+    demuxer->mediaMetaData_.trackMetas = trackInfos;
+    demuxer->TranscoderInitMediaStartPts();
+    demuxerFilter_->demuxer_ = demuxer;
+    int64_t startPts = demuxerFilter_->GetTranscoderStartPts();
+    EXPECT_EQ(startPts, 1000000);  // min(firstVideo 1000000, firstAudio 2000000)
+}
+
+/**
+ * @tc.name: DemuxerFilter_GetTranscoderStartPts_0300
+ * @tc.desc: GetTranscoderStartPts with only video track
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, DemuxerFilter_GetTranscoderStartPts_0300, TestSize.Level1)
+{
+    std::shared_ptr<Meta> videoMeta = std::make_shared<Meta>();
+    videoMeta->Set<Tag::MEDIA_TYPE>(Plugins::MediaType::VIDEO);
+    videoMeta->Set<Tag::MIME_TYPE>("video/avc");
+    videoMeta->Set<Tag::MEDIA_START_TIME>(500000);
+    std::vector<std::shared_ptr<Meta>> trackInfos;
+    trackInfos.push_back(videoMeta);
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxer->mediaMetaData_.trackMetas = trackInfos;
+    demuxer->TranscoderInitMediaStartPts();
+    demuxerFilter_->demuxer_ = demuxer;
+    int64_t startPts = demuxerFilter_->GetTranscoderStartPts();
+    EXPECT_EQ(startPts, 500000);
+}
+
+/**
+ * @tc.name: DemuxerFilter_GetTranscoderStartPts_0400
+ * @tc.desc: GetTranscoderStartPts with only audio track
+ * @tc.type: FUNC
+ */
+HWTEST_F(DemuxerFilterUnitTest, DemuxerFilter_GetTranscoderStartPts_0400, TestSize.Level1)
+{
+    std::shared_ptr<Meta> audioMeta = std::make_shared<Meta>();
+    audioMeta->Set<Tag::MEDIA_TYPE>(Plugins::MediaType::AUDIO);
+    audioMeta->Set<Tag::MIME_TYPE>("audio/mp4a-latm");
+    audioMeta->Set<Tag::MEDIA_START_TIME>(800000);
+    std::vector<std::shared_ptr<Meta>> trackInfos;
+    trackInfos.push_back(audioMeta);
+    auto demuxer = std::make_shared<MediaDemuxerMock>();
+    demuxer->mediaMetaData_.trackMetas = trackInfos;
+    demuxer->TranscoderInitMediaStartPts();
+    demuxerFilter_->demuxer_ = demuxer;
+    int64_t startPts = demuxerFilter_->GetTranscoderStartPts();
+    EXPECT_EQ(startPts, 800000);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

@@ -258,6 +258,7 @@ public:
     std::shared_ptr<InterstitialScheduler> GetInterstitialScheduler() const;
     bool HasVideo();
     bool HasAudio();
+    int64_t GetTranscoderStartPtsValue() const { return transcoderStartPts_ > 0 ? transcoderStartPts_ : 0; }
     bool IsSeekToTimeSupported();
     const std::string& GetOriginalCodecName() const;
 

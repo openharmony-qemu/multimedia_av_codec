@@ -89,6 +89,8 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "video_capture_filter.cpp",
     "video_decoder_adapter.cpp",
     "video_resize_filter.cpp",
+    "video_resize_opengl_filter.cpp",
+    "opengl_video_filter_base.cpp",
     "water_mark_filter.cpp",
     "egl_render_context.cpp",
     "shader_porgram.cpp",

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -224,15 +224,18 @@ Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
         return Status::ERROR_UNKNOWN;
     }
     int32_t ret = static_cast<int32_t>(Status::OK);
-    if (!isTransCoderMode) {
-        std::shared_ptr<MediaAVCodec::MediaCodecParameterWithAttrCallback> droppedFramesCallback =
+    // Register parameter callback for both transcoder and non-transcoder modes.
+    // In transcoder mode, this enables per-frame VIDEO_REQUEST_I_FRAME and
+    // VIDEO_ENCODER_PER_FRAME_DISCARD through HandleTranscoderMode().
+    std::shared_ptr<MediaAVCodec::MediaCodecParameterWithAttrCallback> droppedFramesCallback =
         std::make_shared<DroppedFramesCallback>(shared_from_this());
-        ret = codecServer_->SetCallback(droppedFramesCallback);
-        if (ret != 0) {
-            MEDIA_LOG_I("Set dropped Frames Callback failed");
-            SetFaultEvent("DroppedFramesCallback::DroppedFramesCallback error", ret);
-            return Status::ERROR_UNKNOWN;
-        }
+    ret = codecServer_->SetCallback(droppedFramesCallback);
+    if (ret != 0) {
+        MEDIA_LOG_I("Set dropped Frames Callback failed");
+        SetFaultEvent("DroppedFramesCallback::DroppedFramesCallback error", ret);
+        return Status::ERROR_UNKNOWN;
+    }
+    if (!isTransCoderMode) {
         format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_B_FRAME, enableBFrame_);
     } else {
         ConfigureSQRMode(format, meta);
@@ -374,6 +377,12 @@ Status SurfaceEncoderAdapter::SetTransCoderMode()
     MEDIA_LOG_I("SetTransCoderMode");
     isTransCoderMode = true;
     return Status::OK;
+}
+
+void SurfaceEncoderAdapter::SetClipStartTime(int64_t clipStartRelativeUs)
+{
+    MEDIA_LOG_I("SetClipStartTime: " PUBLIC_LOG_D64, clipStartRelativeUs);
+    clipStartRelativeUs_ = clipStartRelativeUs;
 }
 
 Status SurfaceEncoderAdapter::SetWatermarkMode()
@@ -737,7 +746,14 @@ void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, con
     if (meta->Find(Tag::VIDEO_PIXEL_FORMAT) != meta->end()) {
         meta->Get<Tag::VIDEO_PIXEL_FORMAT>(pixelFormat);
     }
-    format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(pixelFormat));
+    bool isHdrVivid = false;
+    if (isTransCoderMode && meta->GetData(Tag::VIDEO_IS_HDR_VIVID, isHdrVivid) && isHdrVivid) {
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+            static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT));
+        MEDIA_LOG_I("TransCoder HDR->HDR, set pixel format P010");
+    } else {
+        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, static_cast<int32_t>(pixelFormat));
+    }
 
     if (meta->Find(Tag::VIDEO_ENCODE_BITRATE_MODE) != meta->end()) {
         Plugins::VideoEncodeBitrateMode videoEncodeBitrateMode;
@@ -805,7 +821,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
 {
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable");
     if (isTransCoderMode) {
-        HandleTranscoderMode(index, parameter);
+        HandleTranscoderMode(index, attribute, parameter);
         return;
     }
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
@@ -860,11 +876,40 @@ void SurfaceEncoderAdapter::HandlePtsMapping(int64_t currentPts, bool isDroppedF
     lastBufferTime_ = currentPts;
 }
 
-void SurfaceEncoderAdapter::HandleTranscoderMode(uint32_t index, std::shared_ptr<Format> &parameter)
+void SurfaceEncoderAdapter::HandleTranscoderMode(uint32_t index, std::shared_ptr<Format> &attribute,
+    std::shared_ptr<Format> &parameter)
 {
     MEDIA_LOG_D("isTransCoderMode");
-    parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, false);
+    FALSE_RETURN_MSG(parameter != nullptr, "HandleTranscoderMode parameter is nullptr");
+    bool shouldDiscard = false;
+    // Non-clip mode (clipStartRelativeUs_ <= 0) or no attribute: keep shouldDiscard=false, no IDR request.
+    if (clipStartRelativeUs_ > 0 && attribute != nullptr) {
+        int64_t currentPts = 0;
+        attribute->GetLongValue(Tag::MEDIA_TIME_STAMP, currentPts);
+        // clipStartRelativeUs_ is the clip start time in us, relative to transcoderStartPts_
+        // currentPts (after TranscoderUpdateOutputBufferPts) is also relative to transcoderStartPts_
+        shouldDiscard = DecideFrameDiscardAndRequestIdr(currentPts, parameter);
+    }
+    parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, shouldDiscard);
+    FALSE_RETURN_MSG(codecServer_ != nullptr, "codecServer_ is nullptr in HandleTranscoderMode");
     codecServer_->QueueInputParameter(index);
+}
+
+bool SurfaceEncoderAdapter::DecideFrameDiscardAndRequestIdr(int64_t currentPts,
+    std::shared_ptr<Format> &parameter)
+{
+    // Frame before clip start: discard. Guard returns true when currentPts < clipStartRelativeUs_.
+    FALSE_RETURN_V_MSG_D(currentPts >= clipStartRelativeUs_, true,
+        "HandleTranscoderMode discard frame, pts: " PUBLIC_LOG_D64
+        ", clipStartRelativeUs: " PUBLIC_LOG_D64, currentPts, clipStartRelativeUs_);
+    // First non-discard frame - request IDR to ensure output starts with key frame.
+    // Use compare_exchange_strong to guarantee only one thread enters this branch.
+    bool expected = false;
+    if (firstNonDiscardFrameProcessed_.compare_exchange_strong(expected, true)) {
+        parameter->PutIntValue(Tag::VIDEO_REQUEST_I_FRAME, 1);
+        MEDIA_LOG_I("Request IDR for first non-discard frame, pts: " PUBLIC_LOG_D64, currentPts);
+    }
+    return false;
 }
 
 bool SurfaceEncoderAdapter::CheckFrames(int64_t currentPts, int64_t &checkFramesPauseTime)
@@ -1114,6 +1159,7 @@ void SurfaceEncoderAdapter::Clear()
     stoppedVideoFrameCount_ = 0;
     hasBoostVideoFrameRate_ = false;
     isSupportBoostFrameRate_ = false;
+    firstNonDiscardFrameProcessed_ = false;
 }
 
 bool SurfaceEncoderAdapter::GetIsTransCoderMode()

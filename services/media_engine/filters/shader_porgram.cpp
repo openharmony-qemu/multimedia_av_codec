@@ -21,7 +21,7 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_SYSTEM_PLAYER, "WaterMarkFilter" };
 }
 
-namespace OHOS {
+namespace OHOS {//water_mark_filter
 namespace Media {
 
 ShaderProgram::ShaderProgram(const std::string &vertexShader, const std::string &fragShader)
@@ -30,21 +30,35 @@ ShaderProgram::ShaderProgram(const std::string &vertexShader, const std::string 
     GLuint vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vShaderCode, nullptr);
     glCompileShader(vertex);
-    CheckCompileErrors(vertex, "VERTEX");
+    if (!CheckCompileErrors(vertex, "VERTEX")) {
+        glDeleteShader(vertex);
+        return;
+    }
 
     auto fShaderCode = fragShader.c_str();
     GLuint fragment = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment, 1, &fShaderCode, nullptr);
     glCompileShader(fragment);
-    CheckCompileErrors(fragment, "FRAGMENT");
-    
+    if (!CheckCompileErrors(fragment, "FRAGMENT")) {
+        glDeleteShader(vertex);
+        glDeleteShader(fragment);
+        return;
+    }
+
     id_ = glCreateProgram();
     glAttachShader(id_, vertex);
     glAttachShader(id_, fragment);
     glBindAttribLocation(id_, 0, "position");
     glBindAttribLocation(id_, 1, "texCoord");
     glLinkProgram(id_);
-    CheckCompileErrors(id_, "PROGRAM");
+    if (!CheckCompileErrors(id_, "PROGRAM")) {
+        glDeleteProgram(id_);
+        id_ = 0;
+        glDeleteShader(vertex);
+        glDeleteShader(fragment);
+        return;
+    }
+    valid_ = true;
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 }
@@ -56,16 +70,17 @@ ShaderProgram::~ShaderProgram() noexcept
     }
 }
 
-void ShaderProgram::CheckCompileErrors(GLuint shader, const std::string &shaderType)
+bool ShaderProgram::CheckCompileErrors(GLuint shader, const std::string &shaderType)
 {
     int success = 0;
     if (shaderType != "PROGRAM") {
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-        FALSE_RETURN_MSG(success, "ERROR::SHADER_COMPILATION_ERROR of glGetShaderiv");
+        FALSE_RETURN_V_MSG_E(success, false, "ERROR::SHADER_COMPILATION_ERROR of glGetShaderiv");
     } else {
         glGetProgramiv(shader, GL_LINK_STATUS, &success);
-        FALSE_RETURN_MSG(success, "ERROR::PROGRAM_LINKING_ERROR of glGetProgramiv");
+        FALSE_RETURN_V_MSG_E(success, false, "ERROR::PROGRAM_LINKING_ERROR of glGetProgramiv");
     }
+    return true;
 }
 
 void ShaderProgram::SetInt(const std::string &name, int value)

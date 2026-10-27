@@ -369,6 +369,18 @@ Status AudioEncoderFilter::SetTranscoderMode()
     return Status::OK;
 }
 
+void AudioEncoderFilter::SetClipStartTimeUs(int64_t startTimeUs)
+{
+    MEDIA_LOG_I("SetClipStartTimeUs: " PUBLIC_LOG_D64, startTimeUs);
+    clipStartTimeUs_ = startTimeUs;
+}
+
+void AudioEncoderFilter::SetClipTimeFilterNeeded()
+{
+    MEDIA_LOG_I("SetClipTimeFilterNeeded");
+    needClipTimeFilter_.store(true);
+}
+
 Status AudioEncoderFilter::SetPureAudioMode()
 {
     MEDIA_LOG_I("SetPureAudioMode");
@@ -672,6 +684,11 @@ Status AudioEncoderFilter::UpdateParameterToConfigure(const std::shared_ptr<Meta
         }
     }
 
+    // AMR-NB encoder requires explicit PTS mode to output valid PTS for time-slice clipping
+    if (codecMimeType_ == AMR_NB_FORMAT_CONFIG.mimeType) {
+        configureParameter_->Set<Tag::AUDIO_ENCODE_PTS_MODE>(FIRST_INPUT_START_ENCODE_PTS_MODE);
+    }
+
     FALSE_RETURN_V(mediaCodec_ != nullptr, Status::ERROR_NULL_POINTER);
     int32_t ret = mediaCodec_->Configure(configureParameter_);
     if (ret != 0) {
@@ -748,13 +765,19 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
         }
 #endif
 
-        if (needChannelConvert_.load() && shouldJudgeChange.load()) {
+        // 使用中间队列对需要声道数转换和时间片提取的音频信息进行处理
+        if ((needChannelConvert_.load() && shouldJudgeChange.load()) || needClipTimeFilter_.load()) {
             AddInternalBufferQueue();
             FALSE_RETURN_MSG(intermediateQueueProducer_ != nullptr, "intermediateBufferQueue_ is nullptr");
             onLinkedResultCallback_->OnLinkedResult(intermediateQueueProducer_, transcoderMeta_);
+            if (needChannelConvert_.load() && shouldJudgeChange.load() && needClipTimeFilter_.load()) {
+                MEDIA_LOG_I("channel convert + clip-time mode: also active in ProcessIntermediateBuffer");
+            } else if (needClipTimeFilter_.load()) {
+                MEDIA_LOG_I("clip-time mode: using intermediate buffer queue for audio filtering");
+            }
         } else {
             onLinkedResultCallback_->OnLinkedResult(mediaCodec_->GetInputBufferQueue(), transcoderMeta_);
-            MEDIA_LOG_I("not pura audio mode");
+            MEDIA_LOG_I("no intermediate buffer needed, direct codec input");
         }
 
         MEDIA_LOG_I("OnLinkedResult completed, processing thread started");
@@ -882,15 +905,18 @@ void AudioEncoderFilter::ProcessingThreadFunc()
 Status AudioEncoderFilter::AcquireIntermediateBuffer(std::shared_ptr<AVBuffer>& buffer)
 {
     FALSE_RETURN_V(intermediateQueueConsumer_ != nullptr, Status::ERROR_NULL_POINTER);
-    
+
     buffer = nullptr;
     Status ret = intermediateQueueConsumer_->AcquireBuffer(buffer);
     if (ret != Status::OK || buffer == nullptr) {
-        MEDIA_LOG_E("AcquireBuffer failed, ret: %{public}d", ret);
+        // 降低正常日志的打印频率
+        if (ret != Status::ERROR_NO_DIRTY_BUFFER) {
+            MEDIA_LOG_E("AcquireBuffer failed, ret: %{public}d", ret);
+        }
         buffer = nullptr;
-        return Status::ERROR_UNKNOWN;
+        return ret;
     }
-    
+
     MEDIA_LOG_D("Processing buffer, before flag: 0x%{public}u", buffer->flag_);
     return Status::OK;
 }
@@ -1011,12 +1037,25 @@ void AudioEncoderFilter::ProcessIntermediateBuffer()
 {
     FALSE_RETURN_MSG(intermediateQueueConsumer_ != nullptr, "intermediateQueueConsumer_ is nullptr");
 
+    bool clipFilterEnabled = needClipTimeFilter_.load() && clipStartTimeUs_ > 0;
     Status ret;
     do {
         MediaAVCodec::AVCodecTrace trace("AudioEncoderFilter::ProcessIntermediateBuffer");
         std::shared_ptr<AVBuffer> intermediateBuffer;
         ret = AcquireIntermediateBuffer(intermediateBuffer);
         FALSE_BREAK_NOLOG(ret == Status::OK);
+
+        // In clip-time mode, discard input frames before clip start time so the
+        // encoder output PTS starts from the correct position.
+        bool isPreClipFrame = clipFilterEnabled && (intermediateBuffer->flag_ & BUFFER_IS_EOS) == 0 &&
+            intermediateBuffer->pts_ < clipStartTimeUs_;
+        if (isPreClipFrame) {
+            MEDIA_LOG_D("Audio frame before clip start, discarding. pts: "
+                PUBLIC_LOG_D64 " clipStartTime: " PUBLIC_LOG_D64,
+                intermediateBuffer->pts_, clipStartTimeUs_);
+            intermediateQueueConsumer_->ReleaseBuffer(intermediateBuffer);
+            continue;
+        }
 
         std::shared_ptr<AVBuffer> codecBuffer;
         AVBufferConfig config;
