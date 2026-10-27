@@ -692,15 +692,9 @@ private:
             cJSON_AddNumberToObject(infoObj, "WeightedAverage", average);
         }
 
-        auto memoryObj = cJSON_AddObjectToObject(jsonObj.get(), "Memory");
-        cJSON_AddNumberToObject(memoryObj, "ProcessAverageMemory", memoryAverage_);
-        cJSON_AddNumberToObject(memoryObj, "SampleCount", static_cast<double>(sampleMinuteCount_));
-        cJSON_AddStringToObject(memoryObj, "Unit", "KB");
-
-        auto instanceCountObj = cJSON_AddObjectToObject(jsonObj.get(), "Total");
-        cJSON_AddNumberToObject(instanceCountObj, "Average", averageCodecInstanceCount_);
-        cJSON_AddNumberToObject(instanceCountObj, "SampleCount", static_cast<double>(sampleMinuteCount_));
-        cJSON_AddStringToObject(instanceCountObj, "Unit", "count");
+        auto averageObj = cJSON_AddObjectToObject(jsonObj.get(), "Average");
+        cJSON_AddNumberToObject(averageObj, "Memory", memoryAverage_);
+        cJSON_AddNumberToObject(averageObj, "InstanceCount", averageCodecInstanceCount_);
         return jsonObj;
     }
 
