@@ -952,19 +952,15 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
     } else {
         // The final packet has no next DTS, so close it against the effective stream duration.
         int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
-        if (streamDuration < currentSample.dts && currentSample.duration != 0) {
+        if (streamDuration <= currentSample.dts) {
+            // FFmpeg mov_finalize_packet: a tail at or past the stream end keeps the native
+            // duration 0 (next_dts - dts <= 0); compute_pkt_fields backfills from the codec frame
+            // size (AAC/MP3) or the estimated frame rate when available, otherwise the duration
+            // stays 0 instead of borrowing the previous sample spacing.
             durationUs = 0;
             return true;
         }
-        if (streamDuration <= currentSample.dts) {
-            FALSE_RETURN_V_NOLOG(sampleIndex != 0, false);
-            MPEG4SampleHelper::SampleIndexView previousSample;
-            FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
-            duration = currentSample.dts - previousSample.dts;
-            FALSE_RETURN_V_NOLOG(duration > 0, false);
-        } else {
-            duration = streamDuration - currentSample.dts;
-        }
+        duration = streamDuration - currentSample.dts;
     }
     if (duration > 0) {
         return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
@@ -1296,17 +1292,12 @@ bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_
     int64_t rawTotalDuration = track->sampleHelper->GetRawTotalDuration();
     int64_t rawTailDuration = rawTotalDuration - currentSample.dts;
     FALSE_RETURN_V_NOLOG(!(GetSkipInfoEditedAudioDurationUs(entryContext, rawTailDuration, durationUs)), true);
-    FALSE_RETURN_V_NOLOG(rawTailDuration <= 0, false);
-    int64_t duration = currentSample.duration;
-    if (context.sampleIndex > 0) {
-        MPEG4SampleHelper::SampleIndexView previousSample;
-        FALSE_RETURN_V_NOLOG(GetSampleView(track, context.sampleIndex - 1, previousSample), false);
-        int64_t previousDuration = currentSample.dts - previousSample.dts;
-        if (previousDuration > 0 && rawTailDuration < 0) {
-            duration = previousDuration;
-        }
-    }
-    return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
+    // FFmpeg mov_finalize_packet closes the last packet against the stream duration (native
+    // duration = st->duration - dts when positive, otherwise 0), and compute_pkt_fields only
+    // backfills the AAC frame duration when the native duration is <= 0. The generic chain
+    // (GetPacketDurationUs then GetAacFrameDurationUs) reproduces both cases, so an edit-list
+    // tail is not borrowed from the previous sample spacing or the stts delta.
+    return false;
 }
 
 bool GetTimedMetaTailDurationUs(
@@ -1327,34 +1318,6 @@ bool GetTimedMetaTailDurationUs(
     return true;
 }
 
-bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>& track, int32_t trackTimeScale,
-    int64_t& durationUs)
-{
-    if (track == nullptr || track->sampleHelper == nullptr || trackTimeScale <= 0 ||
-        !track->sampleHelper->HasTrailingZeroSttsDuration()) {
-        return false;
-    }
-
-    // Use the smallest non-zero STTS delta as the nominal frame spacing for zero-duration tails.
-    int64_t minDeltaTicks = 0;
-    uint32_t entryCount = track->sampleHelper->GetSttsEntryCount();
-    for (uint32_t i = 0; i < entryCount; ++i) {
-        int64_t deltaTicks = static_cast<int64_t>(track->sampleHelper->GetSampleDeltaOfSttsEntry(i));
-        if (deltaTicks == 0) {
-            continue;
-        }
-        minDeltaTicks = minDeltaTicks == 0 ? deltaTicks : std::min(minDeltaTicks, deltaTicks);
-    }
-    FALSE_RETURN_V_NOLOG(minDeltaTicks != 0, false);
-
-    int64_t timeScale = static_cast<int64_t>(trackTimeScale);
-    int64_t frameRate = (timeScale + minDeltaTicks / ROUND_HALF_DIVISOR) / minDeltaTicks;
-    FALSE_RETURN_V_NOLOG(frameRate != 0, false);
-    int64_t nominalDuration = timeScale / frameRate;
-    FALSE_RETURN_V_NOLOG(nominalDuration > 0, false);
-    return RescaleTrackTimeToUsRoundNearest(nominalDuration, timeScale, durationUs) == Status::OK;
-}
-
 bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
     const auto& track = context.track;
@@ -1367,22 +1330,22 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
         return false;
     }
 
-    MPEG4SampleHelper::SampleIndexView previousSample;
-    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
     const auto& currentSample = context.currentSample;
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
-    if (GetNominalSttsFrameDurationUs(track, context.trackTimeScale, durationUs)) {
+    if (streamDuration > currentSample.dts) {
+        // FFmpeg mov_finalize_packet closes the last packet against the stream end: native
+        // duration = st->duration - dts.
+        return RescaleTrackTimeToUsRoundNearest(streamDuration - currentSample.dts,
+            context.trackTimeScale, durationUs) == Status::OK;
+    }
+    // Tail at/past the stream end: FFmpeg keeps the native duration 0, then compute_pkt_fields
+    // derives it from the estimated r_frame_rate / SPS codec framerate (branch 1/4); a bogus
+    // rate (e.g. HandBrake SPS 1000000/1) keeps 0 instead of reusing the nominal stts spacing.
+    if (GetVideoFrameRateDurationUs(track, context.trackTimeScale, durationUs)) {
         return true;
     }
-    if (currentSample.duration != 0 && streamDuration > currentSample.dts) {
-        return false;
-    }
-    int64_t duration = currentSample.duration;
-    if (duration <= 0 || streamDuration <= currentSample.dts) {
-        duration = currentSample.dts - previousSample.dts;
-    }
-    FALSE_RETURN_V_NOLOG(duration > 0, false);
-    return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
+    durationUs = 0;
+    return true;
 }
 
 uint32_t ReadNalLength(const uint8_t* data, uint8_t nalLengthSize)
