@@ -6104,6 +6104,162 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacEldFrameLength_001, T
     EXPECT_EQ(samplesPerFrame, AAC_TEST_ELD_LONG_SAMPLES_PER_FRAME);
 }
 
+namespace {
+// FFmpeg avformat_find_stream_info default probesize (options_table.h); the
+// demuxer keeps it for MP4, so AAC tracks beyond it are never probe-decoded.
+constexpr int64_t AAC_PROBE_TEST_FFMPEG_PROBE_SIZE = 5000000;
+constexpr uint32_t AAC_PROBE_TEST_VIDEO_TIMESCALE = 90000;
+constexpr uint32_t AAC_PROBE_TEST_AUDIO_TIMESCALE = 48000;
+constexpr uint32_t AAC_PROBE_TEST_AUDIO_DELTA = 1024;
+constexpr uint32_t AAC_PROBE_TEST_VIDEO_DELTA = 1;
+constexpr int32_t AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE = 200;
+constexpr int32_t AAC_PROBE_TEST_SMALL_VIDEO_SAMPLE_SIZE = 100000;
+constexpr int32_t AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE = 2000000;
+constexpr int32_t AAC_PROBE_TEST_SAMPLES_PER_FRAME = 1024;
+
+std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper> BuildProbeTestSampleHelper(
+    Plugins::MPEG4::TrackType trackType, const std::vector<int32_t>& sampleSizes,
+    uint32_t sttsDelta, int64_t baseOffset)
+{
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (helper == nullptr) {
+        return nullptr;
+    }
+    const uint32_t sampleCount = static_cast<uint32_t>(sampleSizes.size());
+    helper->trackType_ = trackType;
+    helper->sttsEntry_ = {{sampleCount, sttsDelta}};
+    helper->stscEntry_ = {{0, sampleCount, 1}};
+    helper->sampleSizes_ = sampleSizes;
+    helper->sampleSizeCount_ = sampleCount;
+    helper->chunkOffsets_ = {baseOffset};
+    if (helper->FinalizeSampleTables() != Status::OK) {
+        return nullptr;
+    }
+    return helper;
+}
+
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareProbeTestTracks(
+    Plugins::MPEG4::MPEG4AtomParser& parser,
+    const std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper>& videoHelper,
+    const std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper>& audioHelper)
+{
+    auto video = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto audio = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    if (video == nullptr || audio == nullptr) {
+        return nullptr;
+    }
+    video->trackIndex = 0;
+    video->timeScale = AAC_PROBE_TEST_VIDEO_TIMESCALE;
+    video->sampleHelper = videoHelper;
+    audio->trackIndex = 1;
+    audio->timeScale = AAC_PROBE_TEST_AUDIO_TIMESCALE;
+    audio->sampleHelper = audioHelper;
+    video->next = audio;
+    parser.firstTrack_ = video;
+    parser.mediaInfo_.tracks.resize(2);
+    parser.mediaInfo_.tracks[0].Set<Tag::MIME_TYPE>(MimeType::VIDEO_AVC);
+    parser.mediaInfo_.tracks[1].Set<Tag::MIME_TYPE>(MimeType::AUDIO_AAC);
+    parser.mediaInfo_.tracks[1].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AAC_PROBE_TEST_SAMPLES_PER_FRAME);
+    return audio;
+}
+} // namespace
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeWindowReached_KeepsSamplePerFrame_001
+ * @tc.desc: Verify AAC keeps audio_samples_per_frame when the FFmpeg probe window
+ *           reaches the first audio sample (interleaved dts order).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeWindowReached_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto videoHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::VIDEO_TYPE,
+        {AAC_PROBE_TEST_SMALL_VIDEO_SAMPLE_SIZE}, AAC_PROBE_TEST_VIDEO_DELTA, 0);
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE}, AAC_PROBE_TEST_AUDIO_DELTA, AAC_PROBE_TEST_SMALL_VIDEO_SAMPLE_SIZE);
+    auto audio = PrepareProbeTestTracks(parser, videoHelper, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(videoHelper, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(samplesPerFrame, AAC_PROBE_TEST_SAMPLES_PER_FRAME);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeWindowExhausted_RemovesSamplePerFrame_001
+ * @tc.desc: Verify AAC drops audio_samples_per_frame when cumulative video packets
+ *           before the first audio sample already exhaust the FFmpeg probe window.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeWindowExhausted_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    std::vector<int32_t> videoSizes = {AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE,
+        AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE, AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE};
+    const int64_t audioOffset = static_cast<int64_t>(AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE) * 3;
+    auto videoHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::VIDEO_TYPE, videoSizes,
+        AAC_PROBE_TEST_VIDEO_DELTA, 0);
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE}, AAC_PROBE_TEST_AUDIO_DELTA, audioOffset);
+    auto audio = PrepareProbeTestTracks(parser, videoHelper, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(videoHelper, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+
+    const int64_t videoBytesBeforeAudio = static_cast<int64_t>(AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE) * 3;
+    EXPECT_GE(videoBytesBeforeAudio, AAC_PROBE_TEST_FFMPEG_PROBE_SIZE);
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    EXPECT_FALSE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeWindowAudioFirst_KeepsSamplePerFrame_001
+ * @tc.desc: Verify an AAC track selected first by the probe window keeps the value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeWindowAudioFirst_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE}, AAC_PROBE_TEST_AUDIO_DELTA, 0);
+    auto audio = PrepareProbeTestTracks(parser, nullptr, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(samplesPerFrame, AAC_PROBE_TEST_SAMPLES_PER_FRAME);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeWindowNoSamples_RemovesSamplePerFrame_001
+ * @tc.desc: Verify an AAC track without samples never reaches the probe decoder.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeWindowNoSamples_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto audio = PrepareProbeTestTracks(parser, nullptr, nullptr);
+    ASSERT_NE(audio, nullptr);
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    EXPECT_FALSE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+}
+
 /**
  * @tc.name: Mpeg4DemuxerPlugin_AacLfeProbeKeepsLayoutUnknown_001
  * @tc.desc: Verify a pure LFE first element only proves a channel count and keeps

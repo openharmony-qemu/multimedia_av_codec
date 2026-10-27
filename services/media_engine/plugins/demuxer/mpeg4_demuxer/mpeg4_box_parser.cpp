@@ -61,6 +61,13 @@ constexpr uint64_t MIN_FLOAT_SIZE = 4;
 constexpr int32_t BYTE_TO_BITS = 8;
 constexpr int32_t CREATION_TIME_OFFSET = 4;
 constexpr int32_t CONVERT_SCALE = 1 << 16;
+// FFmpeg avformat_find_stream_info stops probing when read_size reaches the default
+// probesize (5000000, options_table.h); ffmpeg_demuxer keeps that default for MP4.
+constexpr int64_t FFMPEG_AAC_PROBE_SIZE = 5000000;
+// AV_TIME_BASE: mov_find_next_sample orders per-track sample dts in microseconds.
+constexpr int64_t FFMPEG_AV_TIME_BASE_US = 1000000;
+// mov_find_next_sample: samples whose dts differ by no more than 1 s are ordered by pos.
+constexpr int64_t FFMPEG_MOV_TIEBREAK_DIFF_US = 1000000;
 constexpr uint16_t DISPLAY_MATRIX_ROWS = 3;
 constexpr uint16_t DISPLAY_MATRIX_COLS = 3;
 constexpr uint32_t DISPLAY_MATRIX_SIZE = 36;
@@ -1935,7 +1942,12 @@ void MPEG4AtomParser::NormalizeAudioAttributes(std::shared_ptr<Track> track)
     }
     if (mime == MimeType::AUDIO_AAC) {
         int32_t samplesPerFrame = 0;
-        keepSamplePerFrame = mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
+        // FFmpeg only exports frame_size when the probe window reaches the AAC track
+        // (demux.c avformat_find_stream_info + mov_find_next_sample); mirror that.
+        bool probeReached = track->trackIndex < aacProbeReachedFlags_.size() &&
+            aacProbeReachedFlags_[track->trackIndex] != 0;
+        keepSamplePerFrame = probeReached &&
+            mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
             samplesPerFrame > 0;
     } else if (mime == MimeType::AUDIO_AVS3DA) {
         AudioSampleFormat sampleFormat = AudioSampleFormat::INVALID_WIDTH;
@@ -6139,9 +6151,143 @@ auto MPEG4AtomParser::FindAtomParser(const MPEG4Atom& atom, ParseContext* ctx) -
 }
 
 
+namespace {
+struct AacProbeStream {
+    std::shared_ptr<MPEG4AtomParser::Track> track;
+    uint32_t sampleIndex = 0;
+    MPEG4SampleHelper::SampleIndexView view;
+    bool hasView = false;
+    int64_t dtsUs = 0;
+    bool isAac = false;
+};
+
+bool LoadAacProbeStreamView(AacProbeStream& stream)
+{
+    if (stream.hasView) {
+        return true;
+    }
+    if (stream.sampleIndex >= stream.track->sampleHelper->GetSampleCount()) {
+        return false;
+    }
+    if (stream.track->sampleHelper->GetSampleIndexView(stream.sampleIndex, stream.view) != Status::OK) {
+        stream.sampleIndex = UINT32_MAX;
+        return false;
+    }
+    stream.dtsUs = 0;
+    if (ConvertRoundedTimeScale(stream.view.dts, FFMPEG_AV_TIME_BASE_US, stream.track->timeScale,
+        &stream.dtsUs) != Status::OK) {
+        stream.sampleIndex = UINT32_MAX;
+        stream.hasView = false;
+        return false;
+    }
+    stream.hasView = true;
+    return true;
+}
+
+bool CollectAacProbeStreams(const std::shared_ptr<MPEG4AtomParser::Track>& firstTrack, const MediaInfo& mediaInfo,
+    std::vector<AacProbeStream>& streams, size_t& pendingAacTracks)
+{
+    for (auto track = firstTrack; track != nullptr; track = track->next) {
+        if (track->sampleHelper == nullptr || track->trackIndex >= mediaInfo.tracks.size() ||
+            track->timeScale <= 0 || track->sampleHelper->GetSampleCount() == 0) {
+            continue;
+        }
+        AacProbeStream stream;
+        stream.track = track;
+        std::string mime;
+        stream.isAac = mediaInfo.tracks[track->trackIndex].Get<Tag::MIME_TYPE>(mime) &&
+            mime == MimeType::AUDIO_AAC;
+        if (stream.isAac) {
+            pendingAacTracks++;
+        }
+        streams.push_back(stream);
+    }
+    return pendingAacTracks > 0;
+}
+
+bool IsAacProbeStreamBetter(const AacProbeStream& stream, const AacProbeStream& best, bool orderByPosOnly)
+{
+    if (orderByPosOnly) {
+        return stream.view.pos < best.view.pos;
+    }
+    const int64_t dtsDiff = stream.dtsUs > best.dtsUs ? stream.dtsUs - best.dtsUs : best.dtsUs - stream.dtsUs;
+    if (dtsDiff <= FFMPEG_MOV_TIEBREAK_DIFF_US) {
+        return stream.view.pos < best.view.pos;
+    }
+    return stream.dtsUs < best.dtsUs;
+}
+
+int32_t SelectNextAacProbeStream(std::vector<AacProbeStream>& streams, bool orderByPosOnly)
+{
+    int32_t bestStream = -1;
+    AacProbeStream best;
+    for (size_t i = 0; i < streams.size(); ++i) {
+        AacProbeStream& stream = streams[i];
+        if (!LoadAacProbeStreamView(stream)) {
+            continue;
+        }
+        if (bestStream < 0 || IsAacProbeStreamBetter(stream, best, orderByPosOnly)) {
+            bestStream = static_cast<int32_t>(i);
+            best = stream;
+        }
+    }
+    return bestStream;
+}
+} // namespace
+
+
+void MPEG4AtomParser::CalculateAacProbeSamplePerFrame()
+{
+    // Emulate the FFmpeg stream-info probe window (mov.c mov_find_next_sample +
+    // demux.c avformat_find_stream_info) for AAC tracks: the AAC decoder only sees
+    // the first audio packet if the cumulative size of packets read before it stays
+    // below the default probesize. mpeg4 has no AAC decoder, so the read-reachability
+    // part of the probe is replicated exactly; the value itself stays ASC-derived.
+    aacProbeReachedFlags_.assign(mediaInfo_.tracks.size(), 0);
+    // Unseekable fragmented inputs only parse the first moof during header init, so
+    // per-track sample counts are incomplete and the ffmpeg interleave model does not
+    // apply; keep the legacy ASC-exported value there instead of a false drop.
+    if (hasMoofBox_ && seekable_ != Seekable::SEEKABLE) {
+        std::fill(aacProbeReachedFlags_.begin(), aacProbeReachedFlags_.end(), 1);
+        return;
+    }
+    std::vector<AacProbeStream> streams;
+    size_t pendingAacTracks = 0;
+    if (!CollectAacProbeStreams(firstTrack_, mediaInfo_, streams, pendingAacTracks)) {
+        return;
+    }
+    // mov_find_next_sample falls back to pure file-offset order on non-seekable
+    // input (mov.c no_interleave); the hybrid dts/pos rule only applies to seekable files.
+    const bool orderByPosOnly = seekable_ != Seekable::SEEKABLE;
+    int64_t readSize = 0;
+    while (pendingAacTracks > 0) {
+        if (readSize >= FFMPEG_AAC_PROBE_SIZE) {
+            break;
+        }
+        const int32_t bestStream = SelectNextAacProbeStream(streams, orderByPosOnly);
+        if (bestStream < 0) {
+            break;
+        }
+        AacProbeStream& selected = streams[bestStream];
+        if (selected.isAac && selected.track->trackIndex < aacProbeReachedFlags_.size() &&
+            aacProbeReachedFlags_[selected.track->trackIndex] == 0) {
+            aacProbeReachedFlags_[selected.track->trackIndex] = 1;
+            pendingAacTracks--;
+        }
+        if (readSize <= FFMPEG_AAC_PROBE_SIZE - selected.view.size) {
+            readSize += selected.view.size;
+        } else {
+            readSize = FFMPEG_AAC_PROBE_SIZE;
+        }
+        selected.sampleIndex++;
+        selected.hasView = false;
+    }
+}
+
 void MPEG4AtomParser::CalculateMPEG4Attributes()
 {
     MEDIA_LOG_D("In");
+    CalculateAacProbeSamplePerFrame();
     mediaInfo_.general.Set<Tag::MEDIA_HAS_VIDEO>(false);
     mediaInfo_.general.Set<Tag::MEDIA_HAS_AUDIO>(false);
     mediaInfo_.general.Set<Tag::MEDIA_HAS_SUBTITLE>(false);
