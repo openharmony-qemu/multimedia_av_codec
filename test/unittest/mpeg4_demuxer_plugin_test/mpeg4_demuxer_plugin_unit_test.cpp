@@ -4805,6 +4805,72 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoTailStreamEndKeepsZ
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_VideoTailPlausibleSpsKeepsNominalSpacing_001
+ * @tc.desc: Verify a video tail at the stream end with a plausible SPS codec framerate keeps the
+ *           nominal STTS spacing, matching FFmpeg compute_frame_duration (r_frame_rate / codec
+ *           framerate equals the stream spacing for constant-rate tracks, with the H.264 parser
+ *           repeat_pict quirk also yielding the spacing).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoTailPlausibleSpsKeepsNominalSpacing_001,
+    TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 90000;
+    constexpr int64_t testFrameTicks = 1500;
+    constexpr int64_t expectedFrameUs = 16666;
+    const std::vector<uint8_t> sampleData(5, 0x01);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    VideoDurationTrackConfig config {sampleData, MimeType::VIDEO_AVC,
+        {{4, testFrameTicks}, {1, 0}}, false, testTimeScale};
+    auto track = PrepareVideoDurationTestTrack(plugin, config);
+    ASSERT_NE(track, nullptr);
+    // mdhd duration equals the STTS total: the tail dts hits the stream end exactly.
+    track->duration = 4 * testFrameTicks;
+    // Plausible SPS timing (60/1) does not block the backfill, so the nominal spacing applies.
+    track->codecFrameRateParsed = true;
+    track->codecFrameRateNum = 60;
+    track->codecFrameRateDen = 1;
+    plugin.dataSource_ = CreateDataSourceForBytes(sampleData);
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(VIDEO_DURATION_READ_BUFFER_SIZE);
+    for (size_t index = 0; index < 5; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AuxVideoTailKeepsNominalSpacing_001
+ * @tc.desc: Verify an auxiliary video track tail at the stream end keeps the nominal STTS spacing
+ *           (FFmpeg estimates r_frame_rate for auxiliary video streams too; the mpeg4 demuxer has
+ *           no per-track rate for auxiliary tracks, so the spacing backfill applies).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AuxVideoTailKeepsNominalSpacing_001,
+    TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 90000;
+    constexpr int64_t testFrameTicks = 3000;
+    constexpr int64_t expectedFrameUs = 33333;
+    const std::vector<uint8_t> sampleData(5, 0x01);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    VideoDurationTrackConfig config {sampleData, MimeType::VIDEO_HEVC,
+        {{4, testFrameTicks}, {1, 0}}, false, testTimeScale};
+    auto track = PrepareVideoDurationTestTrack(plugin, config);
+    ASSERT_NE(track, nullptr);
+    track->codecParms.trackType = Plugins::MPEG4::AUXILIARY_TYPE;
+    // mdhd duration equals the STTS total: the tail dts hits the stream end exactly.
+    track->duration = 4 * testFrameTicks;
+    plugin.dataSource_ = CreateDataSourceForBytes(sampleData);
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(VIDEO_DURATION_READ_BUFFER_SIZE);
+    for (size_t index = 0; index < 5; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_RFrameRateEstimateFromStts_001
  * @tc.desc: Verify r_frame_rate is estimated from the first 100 raw stts timestamps exactly like
  *           FFmpeg ff_rfps_calculate for H.264/HEVC tracks (gcd and standard-rate branches).

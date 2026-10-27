@@ -1318,6 +1318,44 @@ bool GetTimedMetaTailDurationUs(
     return true;
 }
 
+bool HasImplausibleCodecFrameRate(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    // FFmpeg compute_frame_duration branch 4 accepts an SPS codec framerate only when
+    // frameRateDen * 1000 > frameRateNum; a bogus rate (e.g. HandBrake 1000000/1) leaves the
+    // duration undefined and also blocks the r_frame_rate branch (the H.264 parser is present).
+    return track != nullptr && track->codecFrameRateParsed &&
+        track->codecFrameRateNum > 0 && track->codecFrameRateDen > 0 &&
+        track->codecFrameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR <= track->codecFrameRateNum;
+}
+
+bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>& track, int32_t trackTimeScale,
+    int64_t& durationUs)
+{
+    if (track == nullptr || track->sampleHelper == nullptr || trackTimeScale <= 0 ||
+        !track->sampleHelper->HasTrailingZeroSttsDuration()) {
+        return false;
+    }
+
+    // Use the smallest non-zero STTS delta as the nominal frame spacing for zero-duration tails.
+    int64_t minDeltaTicks = 0;
+    uint32_t entryCount = track->sampleHelper->GetSttsEntryCount();
+    for (uint32_t i = 0; i < entryCount; ++i) {
+        int64_t deltaTicks = static_cast<int64_t>(track->sampleHelper->GetSampleDeltaOfSttsEntry(i));
+        if (deltaTicks == 0) {
+            continue;
+        }
+        minDeltaTicks = minDeltaTicks == 0 ? deltaTicks : std::min(minDeltaTicks, deltaTicks);
+    }
+    FALSE_RETURN_V_NOLOG(minDeltaTicks != 0, false);
+
+    int64_t timeScale = static_cast<int64_t>(trackTimeScale);
+    int64_t frameRate = (timeScale + minDeltaTicks / ROUND_HALF_DIVISOR) / minDeltaTicks;
+    FALSE_RETURN_V_NOLOG(frameRate != 0, false);
+    int64_t nominalDuration = timeScale / frameRate;
+    FALSE_RETURN_V_NOLOG(nominalDuration > 0, false);
+    return RescaleTrackTimeToUsRoundNearest(nominalDuration, timeScale, durationUs) == Status::OK;
+}
+
 bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
     const auto& track = context.track;
@@ -1338,14 +1376,23 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
         return RescaleTrackTimeToUsRoundNearest(streamDuration - currentSample.dts,
             context.trackTimeScale, durationUs) == Status::OK;
     }
-    // Tail at/past the stream end: FFmpeg keeps the native duration 0, then compute_pkt_fields
-    // derives it from the estimated r_frame_rate / SPS codec framerate (branch 1/4); a bogus
-    // rate (e.g. HandBrake SPS 1000000/1) keeps 0 instead of reusing the nominal stts spacing.
-    if (GetVideoFrameRateDurationUs(track, context.trackTimeScale, durationUs)) {
+    // Tail at/past the stream end: FFmpeg's native duration is 0 and compute_frame_duration
+    // backfills it from r_frame_rate / SPS codec framerate. An implausible SPS rate (e.g.
+    // HandBrake 1000000/1) keeps 0; otherwise the backfill equals the stream frame spacing for
+    // constant-rate tracks (and the H.264 parser repeat_pict quirk also yields the spacing), so
+    // the nominal STTS spacing matches FFmpeg without replicating the parser.
+    if (HasImplausibleCodecFrameRate(track)) {
+        durationUs = 0;
         return true;
     }
-    durationUs = 0;
-    return true;
+    if (GetNominalSttsFrameDurationUs(track, context.trackTimeScale, durationUs)) {
+        return true;
+    }
+    MPEG4SampleHelper::SampleIndexView previousSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
+    int64_t duration = currentSample.dts - previousSample.dts;
+    FALSE_RETURN_V_NOLOG(duration > 0, false);
+    return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
 }
 
 uint32_t ReadNalLength(const uint8_t* data, uint8_t nalLengthSize)
