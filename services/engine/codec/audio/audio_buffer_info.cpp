@@ -92,7 +92,7 @@ bool AudioBufferInfo::IsAvailable() const noexcept
 
 bool AudioBufferInfo::CheckIsEos() const noexcept
 {
-    return isEos_;
+    return isEos_.load();
 }
 
 bool AudioBufferInfo::SetBufferOwned()
@@ -104,7 +104,7 @@ bool AudioBufferInfo::SetBufferOwned()
 void AudioBufferInfo::SetEos(bool eos)
 {
     isEos_ = eos;
-    if (isEos_) {
+    if (eos) {
         flag_ = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS;
     } else {
         flag_ = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_NONE;
@@ -123,12 +123,12 @@ AVCodecBufferInfo AudioBufferInfo::GetBufferAttr() const noexcept
 
 AVCodecBufferFlag AudioBufferInfo::GetFlag() const noexcept
 {
-    return flag_;
+    return flag_.load();
 }
 
 bool AudioBufferInfo::CheckIsFirstFrame() const noexcept
 {
-    return isFirstFrame_;
+    return isFirstFrame_.load();
 }
 
 void AudioBufferInfo::SetFirstFrame() noexcept
