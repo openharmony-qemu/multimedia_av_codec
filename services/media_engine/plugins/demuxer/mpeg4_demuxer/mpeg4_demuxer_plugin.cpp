@@ -954,12 +954,13 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
         int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
         if (streamDuration <= currentSample.dts) {
             // FFmpeg mov_finalize_packet: a tail at or past the stream end keeps the native
-            // duration 0 (next_dts - dts <= 0); compute_pkt_fields backfills from the codec frame
-            // size (AAC/MP3) or the estimated frame rate when available, otherwise the duration
-            // stays 0 instead of borrowing the previous sample spacing. Codec-specific tail entries
-            // (GetMpegAudioFrameDurationUs, GetVideoTailDurationUs, AAC frame-size backfill) run
-            // before this generic branch, so 0 only surfaces for codecs without a backfill path
-            // (e.g. PCM), matching FFmpeg compute_pkt_fields.
+            // duration 0 (next_dts - dts <= 0). The caller (UpdatePacketDurationUs) backfills a
+            // 0 result from the AAC frame size (GetAacFrameDurationUs) or leaves it 0 for codecs
+            // without a backfill path (MP3 with a zero-length tail, PCM), matching FFmpeg
+            // compute_pkt_fields instead of borrowing the previous sample spacing. This also
+            // covers single-sample streams (sampleIndex == 0): FFmpeg closes that packet against
+            // the stream duration the same way. Codec-specific tail entries (MP3 frame duration,
+            // video tail, edit-list AAC entries) run before this branch and keep their values.
             durationUs = 0;
             return true;
         }
@@ -1276,10 +1277,11 @@ bool GetSkipInfoEditedAudioDurationUs(
     return RescaleTrackTimeToUsRoundNearest(duration, context.packet.trackTimeScale, durationUs) == Status::OK;
 }
 
-// Only resolves edit-list tails carrying skip/trailing-zero sample information; the plain edit-list
-// tail (no skip info) is intentionally delegated to the generic chain (GetPacketDurationUs then the
-// AAC/MP3 frame-size backfill) to match FFmpeg mov_finalize_packet closing the last packet against
-// the stream duration. Kept as a named entry so the per-codec priority stays explicit.
+// Only resolves edit-list tails carrying skip/trailing-zero sample information. The plain edit-list
+// tail (no skip info) falls through to GetPacketDurationUs, which closes the last packet against
+// the stream duration (native 0 at the stream end); the caller (UpdatePacketDurationUs) then
+// backfills the AAC frame size when the native result is 0, matching FFmpeg mov_finalize_packet +
+// compute_pkt_fields. Kept as a named entry so the per-codec priority stays explicit.
 bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
     const auto& track = context.track;
