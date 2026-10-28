@@ -265,6 +265,8 @@ private:
     Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
     int32_t movieTimeScale_ = 1;
     MediaInfo mediaInfo_;
+    // Per-track flag: first AAC sample is reached by the FFmpeg probe window.
+    std::vector<uint8_t> aacProbeReachedFlags_;
     Seekable seekable_;
     std::shared_ptr<Meta> userFormat_ = nullptr;
     void InitParseTable();
@@ -296,6 +298,8 @@ private:
     void CalculateVideoDelay(std::shared_ptr<Track> track);
     void CalculateCodecFrameRate(std::shared_ptr<Track> track);
     void NormalizeAudioAttributes(std::shared_ptr<Track> track);
+    // FFmpeg probe-window emulation for AAC audio_samples_per_frame.
+    void CalculateAacProbeSamplePerFrame();
     AudioSampleFormat GetAv3aSampleFormat(int32_t bitsPerRawSample) const;
     AudioChannelLayout GetAv3aChannelLayout(int32_t channelCount, int32_t sampleRate) const;
     void CalculateMPEG4Attributes();

@@ -1864,6 +1864,9 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareMpegAudioTestTrac
     track->trackIndex = MPEG_AUDIO_TEST_TRACK_ID;
     track->trackId = static_cast<int32_t>(MPEG_AUDIO_TEST_TRACK_ID);
     track->timeScale = MPEG_AUDIO_TEST_SAMPLE_RATE;
+    // Model the mdhd duration as the STTS total (one MP3 frame per sample), matching real parses
+    // where the stream end is always known; tests may override track->duration for tail scenarios.
+    track->duration = static_cast<int64_t>(sampleSizes.size()) * MPEG_AUDIO_TEST_SAMPLES_PER_FRAME;
     track->codecParms.trackType = Plugins::MPEG4::AUDIO_TYPE;
     track->sampleHelper = helper;
     track->cache = std::make_shared<Plugins::MPEG4::SampleCache>();
@@ -1878,6 +1881,59 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareMpegAudioTestTrac
     plugin.inited_ = true;
     plugin.seekable_ = Seekable::SEEKABLE;
     plugin.selectedTrackIds_ = {MPEG_AUDIO_TEST_TRACK_ID};
+    return track;
+}
+
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareAacTailTestTrack(
+    Plugins::MPEG4::MPEG4DemuxerPlugin& plugin, const std::vector<uint32_t>& sampleSizes,
+    int32_t timeScale, int64_t mdhdDuration, int64_t tailDurationTicks, int64_t tailOverrideTicks,
+    bool exportSamplePerFrame, int64_t emptyEditTicks, int64_t rawTotalDuration)
+{
+    constexpr uint32_t testAacTrackId = 0;
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track == nullptr || helper == nullptr || sampleSizes.empty() || timeScale <= 0) {
+        return nullptr;
+    }
+    int64_t pos = 0;
+    int64_t dts = emptyEditTicks;
+    for (size_t index = 0; index < sampleSizes.size(); ++index) {
+        helper->sampleIndexEntry_.emplace_back(MakeSampleIndexEntry(pos, dts, dts, sampleSizes[index]));
+        dts += tailDurationTicks;
+        pos += static_cast<int64_t>(sampleSizes[index]);
+    }
+    if (helper->AddDurationOverride(static_cast<uint32_t>(sampleSizes.size() - 1),
+        static_cast<uint32_t>(tailOverrideTicks)) != Status::OK) {
+        return nullptr;
+    }
+    helper->allSamplesSync_ = true;
+    helper->trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper->mimeType_ = MimeType::AUDIO_AAC;
+    helper->rawTotalDuration_ = rawTotalDuration;
+    track->trackIndex = testAacTrackId;
+    track->trackId = static_cast<int32_t>(testAacTrackId);
+    track->timeScale = timeScale;
+    track->duration = mdhdDuration;
+    if (emptyEditTicks > 0) {
+        track->elstInitEmptyEdit = emptyEditTicks;
+        track->editListEntries = {{-1, emptyEditTicks, 1, 0}};
+    }
+    track->codecParms.trackType = Plugins::MPEG4::AUDIO_TYPE;
+    track->sampleHelper = helper;
+    track->cache = std::make_shared<Plugins::MPEG4::SampleCache>();
+    plugin.firstTrack_ = track;
+    plugin.lastTrack_ = track;
+    plugin.mediaInfo_.tracks.resize(1);
+    plugin.mediaInfo_.tracks[testAacTrackId].Set<Tag::MIME_TYPE>(MimeType::AUDIO_AAC);
+    plugin.mediaInfo_.tracks[testAacTrackId].Set<Tag::AUDIO_SAMPLE_RATE>(timeScale);
+    if (exportSamplePerFrame) {
+        plugin.mediaInfo_.tracks[testAacTrackId].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(
+            AAC_TEST_CORE_SAMPLES_PER_FRAME);
+    }
+    plugin.trackMtx_[testAacTrackId] = std::make_shared<std::mutex>();
+    plugin.inited_ = true;
+    plugin.seekable_ = Seekable::SEEKABLE;
+    plugin.selectedTrackIds_ = {testAacTrackId};
     return track;
 }
 
@@ -4387,6 +4443,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     // The container records two MP3 frames in one sample: duration 2 * 576 ticks at 16 kHz.
     ASSERT_EQ(track->sampleHelper->AddDurationOverride(0,
         MPEG_AUDIO_TEST_SAMPLES_PER_FRAME * 2), Status::OK);
+    track->duration = static_cast<int64_t>(MPEG_AUDIO_TEST_SAMPLES_PER_FRAME) * 2;
     plugin.seekable_ = Seekable::UNSEEKABLE;
     plugin.dataSource_ = CreateDataSourceForBytes(input);
     ASSERT_NE(plugin.dataSource_, nullptr);
@@ -4457,6 +4514,129 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioInvalidHeaderNe
     EXPECT_EQ(output.mediaAVBuffer->duration_, MPEG_AUDIO_TEST_FRAME_DURATION_US);
     ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
     EXPECT_TRUE(IsEos(output.mediaAVBuffer));
+}
+
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AudioTailStreamEndKeepsZeroDuration_001
+ * @tc.desc: Verify an AAC tail whose dts equals the stream end keeps duration 0 when no AAC probe
+ *           frame size is exported (FFmpeg mov_finalize_packet native 0, no compute_pkt_fields
+ *           backfill), instead of borrowing the previous STTS spacing.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AudioTailStreamEndKeepsZeroDuration_001, TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 48000;
+    constexpr int64_t testMdhdDuration = 199 * 1024;
+    constexpr int64_t testFrameTicks = 1024;
+    constexpr int64_t expectedFrameUs = 21333;
+    std::vector<uint32_t> sampleSizes(200, 1);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    auto track = PrepareAacTailTestTrack(plugin, sampleSizes, testTimeScale, testMdhdDuration,
+        testFrameTicks, 0, false, 0, 0);
+    ASSERT_NE(track, nullptr);
+    plugin.dataSource_ = CreateDataSourceForBytes(std::vector<uint8_t>(200, 0x01));
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(256);
+    for (size_t index = 0; index < 199; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
+    ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(output.mediaAVBuffer->duration_, 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_MpegAudioTailStreamEndKeepsZeroDuration_001
+ * @tc.desc: Verify an MP3 tail whose dts equals the stream end keeps duration 0 (FFmpeg
+ *           mov_finalize_packet native 0; MP3 has no frame-size backfill for a zero-length
+ *           tail) instead of borrowing the previous MP3 frame spacing.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioTailStreamEndKeepsZeroDuration_001,
+    TestSize.Level1)
+{
+    constexpr size_t testFrameCount = 3;
+    constexpr int64_t testFrameTicks = MPEG_AUDIO_TEST_SAMPLES_PER_FRAME;
+    std::vector<uint32_t> sampleSizes(testFrameCount, static_cast<uint32_t>(MPEG_AUDIO_TEST_FRAME_SIZE));
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    auto track = PrepareMpegAudioTestTrack(plugin, sampleSizes);
+    ASSERT_NE(track, nullptr);
+    // mdhd duration excludes the final frame: st->duration == last dts.
+    track->duration = static_cast<int64_t>(testFrameCount - 1) * testFrameTicks;
+    plugin.dataSource_ = CreateDataSourceForBytes(BuildMpegAudioTestFrames(testFrameCount));
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(MPEG_AUDIO_TEST_FRAME_SIZE);
+    for (size_t index = 0; index + 1 < testFrameCount; ++index) {
+        ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, MPEG_AUDIO_TEST_FRAME_DURATION_US) << "sample " << index;
+    }
+    ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(output.mediaAVBuffer->duration_, 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_EditedAudioTailAacFrameBackfill_001
+ * @tc.desc: Verify an AAC tail past the raw media end (empty edit) keeps native 0 and is then
+ *           backfilled from the probed AAC frame size (1024 ticks) exactly like FFmpeg
+ *           compute_pkt_fields, instead of the nominal STTS spacing.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EditedAudioTailAacFrameBackfill_001, TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 32000;
+    constexpr int64_t testMdhdDuration = 98548;
+    constexpr int64_t testFrameTicks = 1024;
+    constexpr int64_t testTailOverrideTicks = 627;
+    constexpr int64_t testEmptyEditTicks = 2000;
+    constexpr int64_t testRawTotalDuration = 94 * 1024 + 627;
+    constexpr int64_t expectedFrameUs = 32000;
+    std::vector<uint32_t> sampleSizes(95, 1);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    auto track = PrepareAacTailTestTrack(plugin, sampleSizes, testTimeScale, testMdhdDuration,
+        testFrameTicks, testTailOverrideTicks, true, testEmptyEditTicks, testRawTotalDuration);
+    ASSERT_NE(track, nullptr);
+    plugin.dataSource_ = CreateDataSourceForBytes(std::vector<uint8_t>(95, 0x01));
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(256);
+    for (size_t index = 0; index < 95; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_EditedAudioTailInsideMediaKeepsNativeDuration_001
+ * @tc.desc: Verify an AAC tail still inside the raw media (rawTailDuration > 0) keeps the native
+ *           st->duration - dts value instead of the stts delta or the probed AAC frame duration,
+ *           matching FFmpeg mov_finalize_packet (compute_pkt_fields only backfills duration <= 0).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EditedAudioTailInsideMediaKeepsNativeDuration_001,
+    TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 48000;
+    constexpr int32_t testSampleCount = 501;
+    constexpr int64_t testFrameTicks = 1024;
+    constexpr int64_t testEmptyEditTicks = 1016;
+    constexpr int64_t testRawTotalDuration = testEmptyEditTicks +
+        static_cast<int64_t>(testSampleCount - 1) * testFrameTicks + 16;
+    constexpr int64_t expectedFrameUs = 21333;
+    constexpr int64_t expectedTailUs = 333;
+    std::vector<uint32_t> sampleSizes(testSampleCount, 1);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    auto track = PrepareAacTailTestTrack(plugin, sampleSizes, testTimeScale, testRawTotalDuration,
+        testFrameTicks, testFrameTicks, true, testEmptyEditTicks, testRawTotalDuration);
+    ASSERT_NE(track, nullptr);
+    plugin.dataSource_ = CreateDataSourceForBytes(std::vector<uint8_t>(testSampleCount, 0x01));
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(256);
+    for (size_t index = 0; index + 1 < testSampleCount; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
+    ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(output.mediaAVBuffer->duration_, expectedTailUs);
 }
 
 /**
@@ -4619,6 +4799,109 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoRFrameRatePacketDur
     // HEVC: same zero-dts pattern with r_frame_rate 89/3 (3033 ticks -> 33700 us).
     EXPECT_EQ(ReadDurationsWithRFrameRate(sampleData, MimeType::VIDEO_HEVC, {{1, 0}, {2, 3031}}, 89, 3),
         std::vector<int64_t>({33700, 33677, 33677}));
+}
+
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_VideoTailStreamEndKeepsZeroDuration_001
+ * @tc.desc: Verify a video tail whose dts equals the stream end keeps duration 0 when the SPS
+ *           codec framerate is bogus (FFmpeg compute_frame_duration branch 4 fails), instead of
+ *           reusing the nominal STTS spacing.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoTailStreamEndKeepsZeroDuration_001,
+    TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 1000000;
+    constexpr int64_t testFrameTicks = 19330;
+    constexpr int64_t expectedFrameUs = 19330;
+    const std::vector<uint8_t> sampleData(5, 0x01);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    VideoDurationTrackConfig config {sampleData, MimeType::VIDEO_AVC,
+        {{4, testFrameTicks}, {1, 0}}, false, testTimeScale};
+    auto track = PrepareVideoDurationTestTrack(plugin, config);
+    ASSERT_NE(track, nullptr);
+    // mdhd duration equals the STTS total: the tail dts hits the stream end exactly.
+    track->duration = 4 * testFrameTicks;
+    // HandBrake-style SPS timing (1000000/1) fails the plausibility check, so FFmpeg keeps 0.
+    track->codecFrameRateParsed = true;
+    track->codecFrameRateNum = 1000000;
+    track->codecFrameRateDen = 1;
+    plugin.dataSource_ = CreateDataSourceForBytes(sampleData);
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(VIDEO_DURATION_READ_BUFFER_SIZE);
+    for (size_t index = 0; index < 4; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
+    ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(output.mediaAVBuffer->duration_, 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_VideoTailPlausibleSpsKeepsNominalSpacing_001
+ * @tc.desc: Verify a video tail at the stream end with a plausible SPS codec framerate keeps the
+ *           nominal STTS spacing, matching FFmpeg compute_frame_duration (r_frame_rate / codec
+ *           framerate equals the stream spacing for constant-rate tracks, with the H.264 parser
+ *           repeat_pict quirk also yielding the spacing).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_VideoTailPlausibleSpsKeepsNominalSpacing_001,
+    TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 90000;
+    constexpr int64_t testFrameTicks = 1500;
+    constexpr int64_t expectedFrameUs = 16666;
+    const std::vector<uint8_t> sampleData(5, 0x01);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    VideoDurationTrackConfig config {sampleData, MimeType::VIDEO_AVC,
+        {{4, testFrameTicks}, {1, 0}}, false, testTimeScale};
+    auto track = PrepareVideoDurationTestTrack(plugin, config);
+    ASSERT_NE(track, nullptr);
+    // mdhd duration equals the STTS total: the tail dts hits the stream end exactly.
+    track->duration = 4 * testFrameTicks;
+    // Plausible SPS timing (60/1) does not block the backfill, so the nominal spacing applies.
+    track->codecFrameRateParsed = true;
+    track->codecFrameRateNum = 60;
+    track->codecFrameRateDen = 1;
+    plugin.dataSource_ = CreateDataSourceForBytes(sampleData);
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(VIDEO_DURATION_READ_BUFFER_SIZE);
+    for (size_t index = 0; index < 5; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AuxVideoTailKeepsNominalSpacing_001
+ * @tc.desc: Verify an auxiliary video track tail at the stream end keeps the nominal STTS spacing
+ *           (FFmpeg estimates r_frame_rate for auxiliary video streams too; the mpeg4 demuxer has
+ *           no per-track rate for auxiliary tracks, so the spacing backfill applies).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AuxVideoTailKeepsNominalSpacing_001,
+    TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 90000;
+    constexpr int64_t testFrameTicks = 3000;
+    constexpr int64_t expectedFrameUs = 33333;
+    const std::vector<uint8_t> sampleData(5, 0x01);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    VideoDurationTrackConfig config {sampleData, MimeType::VIDEO_HEVC,
+        {{4, testFrameTicks}, {1, 0}}, false, testTimeScale};
+    auto track = PrepareVideoDurationTestTrack(plugin, config);
+    ASSERT_NE(track, nullptr);
+    track->codecParms.trackType = Plugins::MPEG4::AUXILIARY_TYPE;
+    // mdhd duration equals the STTS total: the tail dts hits the stream end exactly.
+    track->duration = 4 * testFrameTicks;
+    plugin.dataSource_ = CreateDataSourceForBytes(sampleData);
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(VIDEO_DURATION_READ_BUFFER_SIZE);
+    for (size_t index = 0; index < 5; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
 }
 
 /**
@@ -6102,6 +6385,188 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacEldFrameLength_001, T
         sizeof(AAC_TEST_ELD_LONG_FRAME_CONFIG)));
     ASSERT_TRUE(longParser.mediaInfo_.tracks[0].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
     EXPECT_EQ(samplesPerFrame, AAC_TEST_ELD_LONG_SAMPLES_PER_FRAME);
+}
+
+namespace {
+// FFmpeg avformat_find_stream_info default probesize (options_table.h); the
+// demuxer keeps it for MP4, so AAC tracks beyond it are never probe-decoded.
+constexpr int64_t AAC_PROBE_TEST_FFMPEG_PROBE_SIZE = 5000000;
+constexpr uint32_t AAC_PROBE_TEST_VIDEO_TIMESCALE = 90000;
+constexpr uint32_t AAC_PROBE_TEST_AUDIO_TIMESCALE = 48000;
+constexpr uint32_t AAC_PROBE_TEST_AUDIO_DELTA = 1024;
+constexpr uint32_t AAC_PROBE_TEST_VIDEO_DELTA = 1;
+constexpr int32_t AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE = 200;
+constexpr int32_t AAC_PROBE_TEST_SMALL_VIDEO_SAMPLE_SIZE = 100000;
+constexpr int32_t AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE = 2000000;
+constexpr int32_t AAC_PROBE_TEST_SAMPLES_PER_FRAME = 1024;
+constexpr uint32_t AAC_PROBE_TEST_TRACK_COUNT = 2;
+
+std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper> BuildProbeTestSampleHelper(
+    Plugins::MPEG4::TrackType trackType, const std::vector<int32_t>& sampleSizes,
+    uint32_t sttsDelta, int64_t baseOffset)
+{
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (helper == nullptr) {
+        return nullptr;
+    }
+    const uint32_t sampleCount = static_cast<uint32_t>(sampleSizes.size());
+    helper->trackType_ = trackType;
+    helper->sttsEntry_ = {{sampleCount, sttsDelta}};
+    helper->stscEntry_ = {{0, sampleCount, 1}};
+    helper->sampleSizes_ = sampleSizes;
+    helper->sampleSizeCount_ = sampleCount;
+    helper->chunkOffsets_ = {baseOffset};
+    if (helper->FinalizeSampleTables() != Status::OK) {
+        return nullptr;
+    }
+    return helper;
+}
+
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareProbeTestTracks(
+    Plugins::MPEG4::MPEG4AtomParser& parser,
+    const std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper>& videoHelper,
+    const std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper>& audioHelper)
+{
+    auto video = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto audio = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    if (video == nullptr || audio == nullptr) {
+        return nullptr;
+    }
+    video->trackIndex = 0;
+    video->timeScale = AAC_PROBE_TEST_VIDEO_TIMESCALE;
+    video->sampleHelper = videoHelper;
+    audio->trackIndex = 1;
+    audio->timeScale = AAC_PROBE_TEST_AUDIO_TIMESCALE;
+    audio->sampleHelper = audioHelper;
+    video->next = audio;
+    parser.firstTrack_ = video;
+    parser.mediaInfo_.tracks.resize(AAC_PROBE_TEST_TRACK_COUNT);
+    parser.mediaInfo_.tracks[0].Set<Tag::MIME_TYPE>(MimeType::VIDEO_AVC);
+    parser.mediaInfo_.tracks[1].Set<Tag::MIME_TYPE>(MimeType::AUDIO_AAC);
+    parser.mediaInfo_.tracks[1].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AAC_PROBE_TEST_SAMPLES_PER_FRAME);
+    return audio;
+}
+} // namespace
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeWindowReached_KeepsSamplePerFrame_001
+ * @tc.desc: Verify AAC keeps audio_samples_per_frame when the FFmpeg probe window
+ *           reaches the first audio sample (interleaved dts order).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeWindowReached_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto videoHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::VIDEO_TYPE,
+        {AAC_PROBE_TEST_SMALL_VIDEO_SAMPLE_SIZE}, AAC_PROBE_TEST_VIDEO_DELTA, 0);
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE}, AAC_PROBE_TEST_AUDIO_DELTA, AAC_PROBE_TEST_SMALL_VIDEO_SAMPLE_SIZE);
+    auto audio = PrepareProbeTestTracks(parser, videoHelper, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(videoHelper, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(samplesPerFrame, AAC_PROBE_TEST_SAMPLES_PER_FRAME);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeWindowExhausted_RemovesSamplePerFrame_001
+ * @tc.desc: Verify AAC drops audio_samples_per_frame when cumulative video packets
+ *           before the first audio sample already exhaust the FFmpeg probe window.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeWindowExhausted_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    std::vector<int32_t> videoSizes = {AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE,
+        AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE, AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE};
+    const int64_t audioOffset = static_cast<int64_t>(AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE) * 3;
+    auto videoHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::VIDEO_TYPE, videoSizes,
+        AAC_PROBE_TEST_VIDEO_DELTA, 0);
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE}, AAC_PROBE_TEST_AUDIO_DELTA, audioOffset);
+    auto audio = PrepareProbeTestTracks(parser, videoHelper, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(videoHelper, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+
+    const int64_t videoBytesBeforeAudio = static_cast<int64_t>(AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE) * 3;
+    EXPECT_GE(videoBytesBeforeAudio, AAC_PROBE_TEST_FFMPEG_PROBE_SIZE);
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    EXPECT_FALSE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeWindowAudioFirst_KeepsSamplePerFrame_001
+ * @tc.desc: Verify an AAC track selected first by the probe window keeps the value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeWindowAudioFirst_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE}, AAC_PROBE_TEST_AUDIO_DELTA, 0);
+    auto audio = PrepareProbeTestTracks(parser, nullptr, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(samplesPerFrame, AAC_PROBE_TEST_SAMPLES_PER_FRAME);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeWindowNoSamples_RemovesSamplePerFrame_001
+ * @tc.desc: Verify an AAC track without samples never reaches the probe decoder.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeWindowNoSamples_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto audio = PrepareProbeTestTracks(parser, nullptr, nullptr);
+    ASSERT_NE(audio, nullptr);
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    EXPECT_FALSE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeFragmentedUnseekable_KeepsSamplePerFrame_001
+ * @tc.desc: Verify a fragmented unseekable input keeps the ASC-exported AAC frame size: the
+ *           FFmpeg probe interleave model does not apply and the probe window is skipped.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeFragmentedUnseekable_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE}, AAC_PROBE_TEST_AUDIO_DELTA, 0);
+    auto audio = PrepareProbeTestTracks(parser, nullptr, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+    parser.hasMoofBox_ = true;
+    parser.seekable_ = Seekable::UNSEEKABLE;
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(samplesPerFrame, AAC_PROBE_TEST_SAMPLES_PER_FRAME);
 }
 
 /**

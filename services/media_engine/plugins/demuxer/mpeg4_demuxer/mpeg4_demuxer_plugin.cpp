@@ -952,19 +952,19 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
     } else {
         // The final packet has no next DTS, so close it against the effective stream duration.
         int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
-        if (streamDuration < currentSample.dts && currentSample.duration != 0) {
+        if (streamDuration <= currentSample.dts) {
+            // FFmpeg mov_finalize_packet: a tail at or past the stream end keeps the native
+            // duration 0 (next_dts - dts <= 0). The caller (UpdatePacketDurationUs) backfills a
+            // 0 result from the AAC frame size (GetAacFrameDurationUs) or leaves it 0 for codecs
+            // without a backfill path (MP3 with a zero-length tail, PCM), matching FFmpeg
+            // compute_pkt_fields instead of borrowing the previous sample spacing. This also
+            // covers single-sample streams (sampleIndex == 0): FFmpeg closes that packet against
+            // the stream duration the same way. Codec-specific tail entries (MP3 frame duration,
+            // video tail, edit-list AAC entries) run before this branch and keep their values.
             durationUs = 0;
             return true;
         }
-        if (streamDuration <= currentSample.dts) {
-            FALSE_RETURN_V_NOLOG(sampleIndex != 0, false);
-            MPEG4SampleHelper::SampleIndexView previousSample;
-            FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
-            duration = currentSample.dts - previousSample.dts;
-            FALSE_RETURN_V_NOLOG(duration > 0, false);
-        } else {
-            duration = streamDuration - currentSample.dts;
-        }
+        duration = streamDuration - currentSample.dts;
     }
     if (duration > 0) {
         return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
@@ -1277,6 +1277,11 @@ bool GetSkipInfoEditedAudioDurationUs(
     return RescaleTrackTimeToUsRoundNearest(duration, context.packet.trackTimeScale, durationUs) == Status::OK;
 }
 
+// Only resolves edit-list tails carrying skip/trailing-zero sample information. The plain edit-list
+// tail (no skip info) falls through to GetPacketDurationUs, which closes the last packet against
+// the stream duration (native 0 at the stream end); the caller (UpdatePacketDurationUs) then
+// backfills the AAC frame size when the native result is 0, matching FFmpeg mov_finalize_packet +
+// compute_pkt_fields. Kept as a named entry so the per-codec priority stays explicit.
 bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
     const auto& track = context.track;
@@ -1296,17 +1301,12 @@ bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_
     int64_t rawTotalDuration = track->sampleHelper->GetRawTotalDuration();
     int64_t rawTailDuration = rawTotalDuration - currentSample.dts;
     FALSE_RETURN_V_NOLOG(!(GetSkipInfoEditedAudioDurationUs(entryContext, rawTailDuration, durationUs)), true);
-    FALSE_RETURN_V_NOLOG(rawTailDuration <= 0, false);
-    int64_t duration = currentSample.duration;
-    if (context.sampleIndex > 0) {
-        MPEG4SampleHelper::SampleIndexView previousSample;
-        FALSE_RETURN_V_NOLOG(GetSampleView(track, context.sampleIndex - 1, previousSample), false);
-        int64_t previousDuration = currentSample.dts - previousSample.dts;
-        if (previousDuration > 0 && rawTailDuration < 0) {
-            duration = previousDuration;
-        }
-    }
-    return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
+    // FFmpeg mov_finalize_packet closes the last packet against the stream duration (native
+    // duration = st->duration - dts when positive, otherwise 0), and compute_pkt_fields only
+    // backfills the AAC frame duration when the native duration is <= 0. The generic chain
+    // (GetPacketDurationUs then GetAacFrameDurationUs) reproduces both cases, so an edit-list
+    // tail is not borrowed from the previous sample spacing or the stts delta.
+    return false;
 }
 
 bool GetTimedMetaTailDurationUs(
@@ -1325,6 +1325,17 @@ bool GetTimedMetaTailDurationUs(
     FALSE_RETURN_V_NOLOG(rawDuration <= 0 || track->duration <= 0 || rawDuration <= track->duration, false);
     durationUs = 0;
     return true;
+}
+
+bool HasImplausibleCodecFrameRate(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    // FFmpeg compute_frame_duration branch 4 accepts an SPS codec framerate only when
+    // frameRateDen * 1000 > frameRateNum; a bogus rate (e.g. HandBrake 1000000/1) leaves the
+    // duration undefined and also blocks the r_frame_rate branch (the H.264 parser is present).
+    return track != nullptr && track->codecFrameRateParsed &&
+        track->codecFrameRateNum > 0 && track->codecFrameRateDen > 0 &&
+        static_cast<uint64_t>(track->codecFrameRateDen) * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR <=
+            track->codecFrameRateNum;
 }
 
 bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>& track, int32_t trackTimeScale,
@@ -1367,20 +1378,29 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
         return false;
     }
 
-    MPEG4SampleHelper::SampleIndexView previousSample;
-    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
     const auto& currentSample = context.currentSample;
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
+    if (streamDuration > currentSample.dts) {
+        // FFmpeg mov_finalize_packet closes the last packet against the stream end: native
+        // duration = st->duration - dts.
+        return RescaleTrackTimeToUsRoundNearest(streamDuration - currentSample.dts,
+            context.trackTimeScale, durationUs) == Status::OK;
+    }
+    // Tail at/past the stream end: FFmpeg's native duration is 0 and compute_frame_duration
+    // backfills it from r_frame_rate / SPS codec framerate. An implausible SPS rate (e.g.
+    // HandBrake 1000000/1) keeps 0; otherwise the backfill equals the stream frame spacing for
+    // constant-rate tracks (and the H.264 parser repeat_pict quirk also yields the spacing), so
+    // the nominal STTS spacing matches FFmpeg without replicating the parser.
+    if (HasImplausibleCodecFrameRate(track)) {
+        durationUs = 0;
+        return true;
+    }
     if (GetNominalSttsFrameDurationUs(track, context.trackTimeScale, durationUs)) {
         return true;
     }
-    if (currentSample.duration != 0 && streamDuration > currentSample.dts) {
-        return false;
-    }
-    int64_t duration = currentSample.duration;
-    if (duration <= 0 || streamDuration <= currentSample.dts) {
-        duration = currentSample.dts - previousSample.dts;
-    }
+    MPEG4SampleHelper::SampleIndexView previousSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
+    int64_t duration = currentSample.dts - previousSample.dts;
     FALSE_RETURN_V_NOLOG(duration > 0, false);
     return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
 }
