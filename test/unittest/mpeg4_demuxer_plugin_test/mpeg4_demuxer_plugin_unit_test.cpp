@@ -1864,6 +1864,9 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareMpegAudioTestTrac
     track->trackIndex = MPEG_AUDIO_TEST_TRACK_ID;
     track->trackId = static_cast<int32_t>(MPEG_AUDIO_TEST_TRACK_ID);
     track->timeScale = MPEG_AUDIO_TEST_SAMPLE_RATE;
+    // Model the mdhd duration as the STTS total (one MP3 frame per sample), matching real parses
+    // where the stream end is always known; tests may override track->duration for tail scenarios.
+    track->duration = static_cast<int64_t>(sampleSizes.size()) * MPEG_AUDIO_TEST_SAMPLES_PER_FRAME;
     track->codecParms.trackType = Plugins::MPEG4::AUDIO_TYPE;
     track->sampleHelper = helper;
     track->cache = std::make_shared<Plugins::MPEG4::SampleCache>();
@@ -4440,6 +4443,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
     // The container records two MP3 frames in one sample: duration 2 * 576 ticks at 16 kHz.
     ASSERT_EQ(track->sampleHelper->AddDurationOverride(0,
         MPEG_AUDIO_TEST_SAMPLES_PER_FRAME * 2), Status::OK);
+    track->duration = static_cast<int64_t>(MPEG_AUDIO_TEST_SAMPLES_PER_FRAME) * 2;
     plugin.seekable_ = Seekable::UNSEEKABLE;
     plugin.dataSource_ = CreateDataSourceForBytes(input);
     ASSERT_NE(plugin.dataSource_, nullptr);
