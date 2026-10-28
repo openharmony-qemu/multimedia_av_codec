@@ -2130,9 +2130,9 @@ void FFmpegDemuxerPlugin::ParseDrmInfo(const MetaDrmInfo *const metaDrmInfo, siz
     MEDIA_LOG_D("In");
     size_t infoCount = drmInfoSize / sizeof(MetaDrmInfo);
     for (size_t index = 0; index < infoCount; index++) {
-        if ((metaDrmInfo[index].uuidLen > META_DRM_MAX_DRM_UUID_LEN) ||
+        if ((metaDrmInfo[index].uuidLen > META_DRM_MAX_DRM_UUID_LEN) || 
             (metaDrmInfo[index].psshLen > META_DRM_MAX_DRM_PSSH_LEN)) {
-            MEDIA_LOG_E("metaDrmInfo[index] is invalid, uuidLen: %u, psshLen: %u",
+            MEDIA_LOG_E("metaDrmInfo[index] is invalid, uuidLen: %u, psshLen: %u", 
                 metaDrmInfo[index].uuidLen, metaDrmInfo[index].psshLen);
             continue;
         }
@@ -3622,6 +3622,7 @@ void FFmpegDemuxerPlugin::InitPTSandIndexConvert()
     relativePTSToIndexRightDiff_ = INT64_MAX;
     relativePTSToIndexLeftDiff_ = INT64_MAX;
     relativePTSToIndexTempDiff_ = INT64_MAX;
+    absolutePTSIndexZero_ = INT64_MAX;
 }
 
 Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t trackIndex,
@@ -3637,6 +3638,9 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
     bool frameCheck = IsLessMaxReferenceParserFrames(trackIndex);
     FALSE_RETURN_V_MSG_E(frameCheck, Status::ERROR_INVALID_DATA, "Frame count exceeds limit");
 
+    FALSE_RETURN_V_MSG_E(relativePresentationTimeUs <= static_cast<uint64_t>(INT64_MAX),
+        Status::ERROR_INVALID_DATA, "Relative PTS is out of range");
+
     InitPTSandIndexConvert();
 
     auto avStream = formatContext_->streams[trackIndex];
@@ -3646,7 +3650,12 @@ Status FFmpegDemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t 
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Get pts failed");
 
-    int64_t absolutePTS = static_cast<int64_t>(relativePresentationTimeUs) + absolutePTSIndexZero_;
+    FALSE_RETURN_V_MSG_E(absolutePTSIndexZero_ != INT64_MAX, Status::ERROR_INVALID_DATA,
+        "Absolute PTS index zero is invalid");
+
+    int64_t absolutePTS = 0;
+    FALSE_RETURN_V_MSG_E(SignedIntSafeAdd(static_cast<int64_t>(relativePresentationTimeUs),
+        absolutePTSIndexZero_, absolutePTS), Status::ERROR_INVALID_DATA, "Absolute PTS overflow");
 
     ret = GetPresentationTimeUsFromFfmpegMOV(RELATIVEPTS_TO_INDEX, trackIndex,
         absolutePTS, index);
@@ -3870,7 +3879,11 @@ void FFmpegDemuxerPlugin::RelativePTSToIndexProcess(int64_t pts, int64_t absolut
     if (relativePTSToIndexPTSMax_ < pts) {
         relativePTSToIndexPTSMax_ = pts;
     }
-    relativePTSToIndexTempDiff_ = abs(pts - absolutePTS);
+    uint64_t tempDiff = (pts >= absolutePTS) ?
+        static_cast<uint64_t>(pts) - static_cast<uint64_t>(absolutePTS) :
+        static_cast<uint64_t>(absolutePTS) - static_cast<uint64_t>(pts);
+    relativePTSToIndexTempDiff_ = (tempDiff > static_cast<uint64_t>(INT64_MAX)) ?
+        INT64_MAX : static_cast<int64_t>(tempDiff);
     if (pts < absolutePTS && relativePTSToIndexTempDiff_ < relativePTSToIndexLeftDiff_) {
         relativePTSToIndexLeftDiff_ = relativePTSToIndexTempDiff_;
     }
