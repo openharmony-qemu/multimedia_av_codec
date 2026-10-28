@@ -623,7 +623,7 @@ private:
     std::unordered_map<uint32_t, uint32_t> trackMemoryUsages_; // Event parameter
     std::mutex memoryReportLimitMutex_ {};
     std::unordered_map<int32_t, uint32_t> memoryReportLimitCount_;
-    std::unordered_map<uint32_t, funcPreReadSample> funcBeforeReadSampleMap_;
+    std::unordered_map<uint32_t, FuncPreReadSample> funcBeforeReadSampleMap_;
 
     std::map<int32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
     std::map<int32_t, bool> hlsSegmentEosMap_;
