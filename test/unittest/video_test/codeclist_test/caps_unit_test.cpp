@@ -1998,6 +1998,7 @@ HWTEST_F(CapsUnitTest, AVCaps_IsFeatureSupported_001, TestSize.Level1)
             EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_TEMPORAL_SCALABILITY), false);
             EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_LONG_TERM_REFERENCE), false);
             EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_LOW_LATENCY), false);
+            EXPECT_EQ(OH_AVCapability_IsFeatureSupported(cap, VIDEO_ENCODER_OPEN_GOP), false);
         }
     }
 }
@@ -2013,6 +2014,8 @@ HWTEST_F(CapsUnitTest, AVCaps_GetFeatureProperties_001, TestSize.Level1)
     OH_AVCapability *cap = OH_AVCodec_GetCapabilityByCategory(OH_AVCODEC_MIMETYPE_VIDEO_WMV3, false, SOFTWARE);
     EXPECT_NE(cap, nullptr);
     OH_AVFormat *property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_B_FRAME);
+    EXPECT_EQ(property, nullptr);
+    property = OH_AVCapability_GetFeatureProperties(cap, VIDEO_ENCODER_OPEN_GOP);
     EXPECT_EQ(property, nullptr);
 }
 
