@@ -1944,7 +1944,11 @@ void MPEG4AtomParser::NormalizeAudioAttributes(std::shared_ptr<Track> track)
         int32_t samplesPerFrame = 0;
         // FFmpeg only exports frame_size when the probe window reaches the AAC track
         // (demux.c avformat_find_stream_info + mov_find_next_sample); mirror that.
-        bool probeReached = track->trackIndex < aacProbeReachedFlags_.size() &&
+        // Fall back to the legacy export when the probe pass did not cover this track (flags empty
+        // or track index out of range), so a standalone NormalizeAudioAttributes call or an early
+        // probe exit never silently drops the AAC frame size.
+        bool probeReached = aacProbeReachedFlags_.empty() ||
+            track->trackIndex >= aacProbeReachedFlags_.size() ||
             aacProbeReachedFlags_[track->trackIndex] != 0;
         keepSamplePerFrame = probeReached &&
             mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&

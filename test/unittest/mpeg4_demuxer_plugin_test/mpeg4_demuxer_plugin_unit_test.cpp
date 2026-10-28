@@ -1924,7 +1924,8 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareAacTailTestTrack(
     plugin.mediaInfo_.tracks[testAacTrackId].Set<Tag::MIME_TYPE>(MimeType::AUDIO_AAC);
     plugin.mediaInfo_.tracks[testAacTrackId].Set<Tag::AUDIO_SAMPLE_RATE>(timeScale);
     if (exportSamplePerFrame) {
-        plugin.mediaInfo_.tracks[testAacTrackId].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(1024);
+        plugin.mediaInfo_.tracks[testAacTrackId].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(
+            AAC_TEST_CORE_SAMPLES_PER_FRAME);
     }
     plugin.trackMtx_[testAacTrackId] = std::make_shared<std::mutex>();
     plugin.inited_ = true;
@@ -4542,6 +4543,35 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AudioTailStreamEndKeepsZ
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_MpegAudioTailStreamEndKeepsZeroDuration_001
+ * @tc.desc: Verify an MP3 tail whose dts equals the stream end keeps duration 0 (FFmpeg
+ *           mov_finalize_packet native 0; MP3 has no frame-size backfill for a zero-length
+ *           tail) instead of borrowing the previous MP3 frame spacing.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_MpegAudioTailStreamEndKeepsZeroDuration_001,
+    TestSize.Level1)
+{
+    constexpr size_t testFrameCount = 3;
+    constexpr int64_t testFrameTicks = MPEG_AUDIO_TEST_SAMPLES_PER_FRAME;
+    std::vector<uint32_t> sampleSizes(testFrameCount, static_cast<uint32_t>(MPEG_AUDIO_TEST_FRAME_SIZE));
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    auto track = PrepareMpegAudioTestTrack(plugin, sampleSizes);
+    ASSERT_NE(track, nullptr);
+    // mdhd duration excludes the final frame: st->duration == last dts.
+    track->duration = static_cast<int64_t>(testFrameCount - 1) * testFrameTicks;
+    plugin.dataSource_ = CreateDataSourceForBytes(BuildMpegAudioTestFrames(testFrameCount));
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(MPEG_AUDIO_TEST_FRAME_SIZE);
+    for (size_t index = 0; index + 1 < testFrameCount; ++index) {
+        ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, MPEG_AUDIO_TEST_FRAME_DURATION_US) << "sample " << index;
+    }
+    ASSERT_EQ(plugin.ReadSample(MPEG_AUDIO_TEST_TRACK_ID, output.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(output.mediaAVBuffer->duration_, 0);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_EditedAudioTailAacFrameBackfill_001
  * @tc.desc: Verify an AAC tail past the raw media end (empty edit) keeps native 0 and is then
  *           backfilled from the probed AAC frame size (1024 ticks) exactly like FFmpeg
@@ -6365,6 +6395,7 @@ constexpr int32_t AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE = 200;
 constexpr int32_t AAC_PROBE_TEST_SMALL_VIDEO_SAMPLE_SIZE = 100000;
 constexpr int32_t AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE = 2000000;
 constexpr int32_t AAC_PROBE_TEST_SAMPLES_PER_FRAME = 1024;
+constexpr uint32_t AAC_PROBE_TEST_TRACK_COUNT = 2;
 
 std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper> BuildProbeTestSampleHelper(
     Plugins::MPEG4::TrackType trackType, const std::vector<int32_t>& sampleSizes,
@@ -6405,7 +6436,7 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareProbeTestTracks(
     audio->sampleHelper = audioHelper;
     video->next = audio;
     parser.firstTrack_ = video;
-    parser.mediaInfo_.tracks.resize(2);
+    parser.mediaInfo_.tracks.resize(AAC_PROBE_TEST_TRACK_COUNT);
     parser.mediaInfo_.tracks[0].Set<Tag::MIME_TYPE>(MimeType::VIDEO_AVC);
     parser.mediaInfo_.tracks[1].Set<Tag::MIME_TYPE>(MimeType::AUDIO_AAC);
     parser.mediaInfo_.tracks[1].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AAC_PROBE_TEST_SAMPLES_PER_FRAME);
@@ -6507,6 +6538,31 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeWindowNoSamples_
     parser.NormalizeAudioAttributes(audio);
     int32_t samplesPerFrame = 0;
     EXPECT_FALSE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeFragmentedUnseekable_KeepsSamplePerFrame_001
+ * @tc.desc: Verify a fragmented unseekable input keeps the ASC-exported AAC frame size: the
+ *           FFmpeg probe interleave model does not apply and the probe window is skipped.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeFragmentedUnseekable_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE}, AAC_PROBE_TEST_AUDIO_DELTA, 0);
+    auto audio = PrepareProbeTestTracks(parser, nullptr, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+    parser.hasMoofBox_ = true;
+    parser.seekable_ = Seekable::UNSEEKABLE;
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(samplesPerFrame, AAC_PROBE_TEST_SAMPLES_PER_FRAME);
 }
 
 /**

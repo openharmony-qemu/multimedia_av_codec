@@ -956,7 +956,10 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
             // FFmpeg mov_finalize_packet: a tail at or past the stream end keeps the native
             // duration 0 (next_dts - dts <= 0); compute_pkt_fields backfills from the codec frame
             // size (AAC/MP3) or the estimated frame rate when available, otherwise the duration
-            // stays 0 instead of borrowing the previous sample spacing.
+            // stays 0 instead of borrowing the previous sample spacing. Codec-specific tail entries
+            // (GetMpegAudioFrameDurationUs, GetVideoTailDurationUs, AAC frame-size backfill) run
+            // before this generic branch, so 0 only surfaces for codecs without a backfill path
+            // (e.g. PCM), matching FFmpeg compute_pkt_fields.
             durationUs = 0;
             return true;
         }
@@ -1273,6 +1276,10 @@ bool GetSkipInfoEditedAudioDurationUs(
     return RescaleTrackTimeToUsRoundNearest(duration, context.packet.trackTimeScale, durationUs) == Status::OK;
 }
 
+// Only resolves edit-list tails carrying skip/trailing-zero sample information; the plain edit-list
+// tail (no skip info) is intentionally delegated to the generic chain (GetPacketDurationUs then the
+// AAC/MP3 frame-size backfill) to match FFmpeg mov_finalize_packet closing the last packet against
+// the stream duration. Kept as a named entry so the per-codec priority stays explicit.
 bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
     const auto& track = context.track;
@@ -1325,7 +1332,8 @@ bool HasImplausibleCodecFrameRate(const std::shared_ptr<MPEG4AtomParser::Track>&
     // duration undefined and also blocks the r_frame_rate branch (the H.264 parser is present).
     return track != nullptr && track->codecFrameRateParsed &&
         track->codecFrameRateNum > 0 && track->codecFrameRateDen > 0 &&
-        track->codecFrameRateDen * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR <= track->codecFrameRateNum;
+        static_cast<uint64_t>(track->codecFrameRateDen) * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR <=
+            track->codecFrameRateNum;
 }
 
 bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>& track, int32_t trackTimeScale,
