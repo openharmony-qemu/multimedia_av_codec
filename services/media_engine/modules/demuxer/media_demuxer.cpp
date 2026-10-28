@@ -3495,7 +3495,12 @@ void MediaDemuxer::SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList>
     codecList_ = codecList;
 }
 
-bool CheckStreamCodec(const std::string &codecs, StreamType type, std::shared_ptr<MediaAVCodec::AVCodecList> &codecList)
+void MediaDemuxer::SetCodecListCreator(CodecListCreator creator)
+{
+    codecListCreator_ = creator;
+}
+
+bool CheckStreamCodec(const std::string &codecs, StreamType type, std::shared_ptr<MediaAVCodec::AVCodecList> codecList)
 {
     bool isSupported = true;
     if (type == Plugins::AUDIO) {
@@ -3510,9 +3515,6 @@ bool CheckStreamCodec(const std::string &codecs, StreamType type, std::shared_pt
                 }
             });
     } else {
-        if (codecList == nullptr) {
-            codecList = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
-        }
         if (codecList == nullptr) {
             MEDIA_LOG_W("codecList is nullptr");
             return true;
@@ -6335,7 +6337,7 @@ int32_t SelectSubtitleDefaultId(std::map<StreamType, std::vector<StreamInfo>> &f
 }
 
 std::vector<StreamInfo> CollectValidStreams(std::vector<StreamInfo> &allStreams, const std::string &currentPlayType,
-    const TrackSelectionFilter &trackSelectionFilter, std::shared_ptr<MediaAVCodec::AVCodecList> &codecList)
+    const TrackSelectionFilter &trackSelectionFilter, std::shared_ptr<MediaAVCodec::AVCodecList> codecList)
 {
     std::vector<StreamInfo> filteredStreams;
     bool hasVideoValid = false;
@@ -6414,6 +6416,9 @@ void MediaDemuxer::ChooseDefaultStreams()
 
     std::vector<StreamInfo> streams;
     source_->GetStreamInfo(streams, true);
+    if (codecList_ == nullptr && codecListCreator_) {
+        codecList_ = codecListCreator_();
+    }
     streams = CollectValidStreams(streams, currentPlayType_, trackSelectionFilter_, codecList_);
 
     std::map<StreamType, std::vector<StreamInfo>> filteredStreamMap;

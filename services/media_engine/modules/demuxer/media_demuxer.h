@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <deque>
+#include <functional>
 #include <limits>
 #include <string>
 #include <shared_mutex>
@@ -283,6 +284,8 @@ public:
     Status SetPlayStrategy(const std::shared_ptr<PlayStrategy> playStrategy);
     bool IsCloudFd();
     void SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList> &codecList);
+    using CodecListCreator = std::function<std::shared_ptr<MediaAVCodec::AVCodecList>()>;
+    void SetCodecListCreator(CodecListCreator creator);
     void OnNewTrackRender(uint64_t renderSeqNum);
     bool IsNeedSelectTrack(int32_t trackId);
     int32_t GetBuiltInSubtitleNum();
@@ -783,6 +786,7 @@ private:
     int64_t lastCheckAutoSelectTimeMs_ {0};
     uint32_t lastAutoSelectBitRate_ {0};
     std::shared_ptr<MediaAVCodec::AVCodecList> codecList_ {nullptr};
+    CodecListCreator codecListCreator_ {nullptr};
     std::unique_ptr<FilteredStreamMap> filteredStreamMap_;
     int64_t videoAudioBasePtsDiff = -1;
 
