@@ -108,6 +108,122 @@ HWTEST_F(AudioEncoderFilterUnitest, GetInputSurface_002, TestSize.Level0)
     EXPECT_EQ(ret, nullptr);
 }
 
+/**
+ * @tc.name  : Test SetClipStartTimeUs
+ * @tc.number: SetClipStartTimeUs_001
+ * @tc.desc  : SetClipStartTimeUs stores the clip start time to clipStartTimeUs_
+ */
+HWTEST_F(AudioEncoderFilterUnitest, SetClipStartTimeUs_001, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    int64_t expected = 5000000;
+    audioEncoderFilter_->SetClipStartTimeUs(expected);
+    EXPECT_EQ(audioEncoderFilter_->clipStartTimeUs_, expected);
+}
+
+/**
+ * @tc.name  : Test SetClipStartTimeUs with negative value
+ * @tc.number: SetClipStartTimeUs_002
+ * @tc.desc  : SetClipStartTimeUs accepts negative sentinel value (-1)
+ */
+HWTEST_F(AudioEncoderFilterUnitest, SetClipStartTimeUs_002, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    audioEncoderFilter_->SetClipStartTimeUs(-1);
+    EXPECT_EQ(audioEncoderFilter_->clipStartTimeUs_, -1);
+}
+
+/**
+ * @tc.name  : Test SetClipTimeFilterNeeded
+ * @tc.number: SetClipTimeFilterNeeded_001
+ * @tc.desc  : SetClipTimeFilterNeeded sets needClipTimeFilter_ to true
+ */
+HWTEST_F(AudioEncoderFilterUnitest, SetClipTimeFilterNeeded_001, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    audioEncoderFilter_->needClipTimeFilter_.store(false);
+    audioEncoderFilter_->SetClipTimeFilterNeeded();
+    EXPECT_TRUE(audioEncoderFilter_->needClipTimeFilter_.load());
+}
+
+/**
+ * @tc.name  : Test SetTranscoderMode
+ * @tc.number: SetTranscoderMode_001
+ * @tc.desc  : SetTranscoderMode sets isTranscoderMode_ to true
+ */
+HWTEST_F(AudioEncoderFilterUnitest, SetTranscoderMode_001, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    audioEncoderFilter_->isTranscoderMode_ = false;
+    auto ret = audioEncoderFilter_->SetTranscoderMode();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(audioEncoderFilter_->isTranscoderMode_);
+}
+
+/**
+ * @tc.name  : Test SetPureAudioMode
+ * @tc.number: SetPureAudioMode_001
+ * @tc.desc  : SetPureAudioMode sets isPureAudioMode_ to true
+ */
+HWTEST_F(AudioEncoderFilterUnitest, SetPureAudioMode_001, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    audioEncoderFilter_->isPureAudioMode_.store(false);
+    auto ret = audioEncoderFilter_->SetPureAudioMode();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_TRUE(audioEncoderFilter_->isPureAudioMode_.load());
+}
+
+/**
+ * @tc.name  : Test ProcessIntermediateBuffer clip filter disabled
+ * @tc.number: ProcessIntermediateBuffer_001
+ * @tc.desc  : ProcessIntermediateBuffer returns early when intermediateQueueConsumer_ is nullptr
+ */
+HWTEST_F(AudioEncoderFilterUnitest, ProcessIntermediateBuffer_001, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    audioEncoderFilter_->intermediateQueueConsumer_ = nullptr;
+    // Should return early without crash due to FALSE_RETURN_MSG guard
+    audioEncoderFilter_->ProcessIntermediateBuffer();
+    // No crash, no side effects
+}
+
+/**
+ * @tc.name  : Test ProcessIntermediateBuffer with clip filter enabled but no buffer
+ * @tc.number: ProcessIntermediateBuffer_002
+ * @tc.desc  : ProcessIntermediateBuffer with clip filter enabled and consumer set, no buffer available
+ */
+HWTEST_F(AudioEncoderFilterUnitest, ProcessIntermediateBuffer_002, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    // Set up clip filter mode
+    audioEncoderFilter_->needClipTimeFilter_.store(true);
+    audioEncoderFilter_->clipStartTimeUs_ = 1000000;
+    // Set isProcessingRunning_ so do-while condition is met
+    audioEncoderFilter_->isProcessingRunning_.store(true);
+    // consumer is nullptr — should return early
+    audioEncoderFilter_->intermediateQueueConsumer_ = nullptr;
+    audioEncoderFilter_->ProcessIntermediateBuffer();
+    // No crash — FALSE_RETURN_MSG guard on intermediateQueueConsumer_
+    audioEncoderFilter_->needClipTimeFilter_.store(false);
+    audioEncoderFilter_->clipStartTimeUs_ = -1;
+    audioEncoderFilter_->isProcessingRunning_.store(false);
+}
+
+/**
+ * @tc.name  : Test AcquireIntermediateBuffer with nullptr consumer
+ * @tc.number: AcquireIntermediateBuffer_001
+ * @tc.desc  : AcquireIntermediateBuffer returns ERROR_NULL_POINTER when consumer is nullptr
+ */
+HWTEST_F(AudioEncoderFilterUnitest, AcquireIntermediateBuffer_001, TestSize.Level0)
+{
+    ASSERT_NE(audioEncoderFilter_, nullptr);
+    audioEncoderFilter_->intermediateQueueConsumer_ = nullptr;
+    std::shared_ptr<AVBuffer> buffer;
+    auto ret = audioEncoderFilter_->AcquireIntermediateBuffer(buffer);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
+}
+
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

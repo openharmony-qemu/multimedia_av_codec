@@ -141,6 +141,7 @@ group("av_codec_unit_test") {
         "unittest/subtitle_sink_unittest:subtitle_sink_unittest",
         "unittest/surface_encoder_adapter_unittest:surface_encoder_adapter_unittest",
         "unittest/video_resize_filter_test:video_resize_filter_test",
+        "unittest/video_resize_opengl_filter_test:video_resize_opengl_filter_test",
         "unittest/video_sink_unittest:video_sink_unittest",
         "unittest/video_capture_filter_unit_test:video_capture_filter_unit_test",
         "unittest/interstitial_unit_test:interstitial_controller_unittest",

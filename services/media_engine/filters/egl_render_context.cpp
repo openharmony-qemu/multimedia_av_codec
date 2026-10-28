@@ -13,6 +13,8 @@
  * limitations under the License.
  */
 
+#define GL_GLEXT_PROTOTYPES
+#define EGL_EGLEXT_PROTOTYPES
 #include "egl_render_context.h"
 #include <cstring>
 #include "common/log.h"
@@ -63,6 +65,11 @@ using GetPlatformDisplayExt = PFNEGLGETPLATFORMDISPLAYEXTPROC;
 
 EglRenderContext::EglRenderContext() {}
 
+void EglRenderContext::SetHdrMode(bool hdrMode)
+{
+    isHdrMode_ = hdrMode;
+}
+
 EglRenderContext::~EglRenderContext() noexcept
 {
     if (eglDisplay_ == EGL_NO_DISPLAY) {
@@ -95,29 +102,69 @@ bool EglRenderContext::Init()
     FALSE_RETURN_V_MSG(eglDisplay_ != EGL_NO_DISPLAY, false, "EglRenderContext::Init: failed to create eglDisplay");
     EGLint major;
     EGLint minor;
-    FALSE_RETURN_V_MSG(eglInitialize(eglDisplay_, &major, &minor) != EGL_FALSE,
+    FALSE_RETURN_V_MSG(eglInitialize(eglDisplay_, &major, &minor) != EGL_FALSE, 
         false, "eglInitialize failed to create");
     FALSE_RETURN_V_MSG(eglBindAPI(EGL_OPENGL_ES_API) != EGL_FALSE,
         false, "eglInitialize failed to create");
     EGLint count;
-    EGLint configAttribs[] = { EGL_SURFACE_TYPE,
-                               EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
-                               EGL_RED_SIZE,
-                               BIT_SIZE,
-                               EGL_GREEN_SIZE,
-                               BIT_SIZE,
-                               EGL_BLUE_SIZE,
-                               BIT_SIZE,
-                               EGL_ALPHA_SIZE,
-                               BIT_SIZE,
-                               EGL_RENDERABLE_TYPE,
-                               EGL_OPENGL_ES3_BIT,
-                               EGL_NONE };
-
+    if (isHdrMode_) {
+        // HDR模式: 优先选择10bit config (RGB10_A2: 10+10+10+2=32bit)
+        EGLint configAttribs10bit[] = { EGL_SURFACE_TYPE,
+                                       EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
+                                       EGL_RED_SIZE,
+                                       10,
+                                       EGL_GREEN_SIZE,
+                                       10,
+                                       EGL_BLUE_SIZE,
+                                       10,
+                                       EGL_ALPHA_SIZE,
+                                       2,
+                                       EGL_RENDERABLE_TYPE,
+                                       EGL_OPENGL_ES3_BIT,
+                                       EGL_COLOR_BUFFER_TYPE,
+                                       EGL_RGB_BUFFER,
+                                       EGL_NONE };
+        if (eglChooseConfig(eglDisplay_, configAttribs10bit, &config_, 1, &count) && count > 0) {
+            MEDIA_LOG_I("EGL: 10bit config selected for HDR mode");
+        } else {
+            MEDIA_LOG_W("EGL: 10bit config not available, fallback to 8bit");
+            EGLint configAttribs8bit[] = { EGL_SURFACE_TYPE,
+                                           EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
+                                           EGL_RED_SIZE,
+                                           BIT_SIZE,
+                                           EGL_GREEN_SIZE,
+                                           BIT_SIZE,
+                                           EGL_BLUE_SIZE,
+                                           BIT_SIZE,
+                                           EGL_ALPHA_SIZE,
+                                           BIT_SIZE,
+                                           EGL_RENDERABLE_TYPE,
+                                           EGL_OPENGL_ES3_BIT,
+                                           EGL_NONE };
+            FALSE_RETURN_V_MSG(eglChooseConfig(eglDisplay_, configAttribs8bit, &config_, 1, &count) != EGL_FALSE,
+                false, "Failed to choose EGL config (8bit fallback)");
+        }
+    } else {
+        // SDR模式: 使用8bit配置
+        EGLint configAttribs[] = { EGL_SURFACE_TYPE,
+                                   EGL_WINDOW_BIT | EGL_PBUFFER_BIT,
+                                   EGL_RED_SIZE,
+                                   BIT_SIZE,
+                                   EGL_GREEN_SIZE,
+                                   BIT_SIZE,
+                                   EGL_BLUE_SIZE,
+                                   BIT_SIZE,
+                                   EGL_ALPHA_SIZE,
+                                   BIT_SIZE,
+                                   EGL_RENDERABLE_TYPE,
+                                   EGL_OPENGL_ES3_BIT,
+                                   EGL_NONE };
         FALSE_RETURN_V_MSG(eglChooseConfig(eglDisplay_, configAttribs, &config_, 1, &count) != EGL_FALSE,
             false, "Failed to bind choose config");
+    }
     
-    const EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
+    const EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 3,
+                                       EGL_CONTEXT_MINOR_VERSION_KHR, 1, EGL_NONE };
 
     eglContext_ = eglCreateContext(eglDisplay_, config_, EGL_NO_CONTEXT, contextAttribs);
     FALSE_RETURN_V_MSG(eglContext_ != EGL_NO_CONTEXT, false, "Failed to eglCreateContext");
@@ -172,23 +219,50 @@ EGLSurface EglRenderContext::CreateEglSurface(EGLNativeWindowType eglNativeWindo
     return surface;
 }
 
-EGLSurface EglRenderContext::CreatePbufferSurface(const EGLint *attribList)
+EGLSurface EglRenderContext::CreatePbufferSurface(int32_t width, int32_t height)
 {
     FALSE_RETURN_V_MSG(IsEglContextReady(), EGL_NO_SURFACE,
-        "EglRenderContext::CreatePbufferSurface: EGL context has not initialized");
+        "CreatePbufferSurface: EGL context has not initialized");
 
-    EGLint defaultAttribs[] = {
-        EGL_WIDTH, 1,
-        EGL_HEIGHT, 1,
-        EGL_NONE,
+    EGLint pbufferAttribs[] = {
+        EGL_WIDTH, width,
+        EGL_HEIGHT, height,
+        EGL_NONE
     };
-
-    const EGLint *attribs = attribList != nullptr ? attribList : defaultAttribs;
-    EGLSurface surface = eglCreatePbufferSurface(eglDisplay_, config_, attribs);
+    EGLSurface surface = eglCreatePbufferSurface(eglDisplay_, config_, pbufferAttribs);
     FALSE_RETURN_V_MSG(surface != EGL_NO_SURFACE, EGL_NO_SURFACE,
-        "EglRenderContext::CreatePbufferSurface: Failed to create Pbuffer surface, error is %{public}s",
-        GetEglErrorString());
+        "CreatePbufferSurface: Failed to create pbuffer surface, error: %{public}s", GetEglErrorString());
     return surface;
+}
+
+EGLImageKHR EglRenderContext::CreateEGLImage(OHNativeWindowBuffer *buffer)
+{
+    FALSE_RETURN_V_MSG(IsEglContextReady() && buffer != nullptr, EGL_NO_IMAGE_KHR,
+        "CreateEGLImage: EGL context not ready or buffer is null");
+
+    EGLint attrs[] = { EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE };
+    EGLImageKHR image = eglCreateImageKHR(eglDisplay_, eglContext_,
+        EGL_NATIVE_BUFFER_OHOS, static_cast<EGLClientBuffer>(buffer), attrs);
+    if (image == EGL_NO_IMAGE_KHR) {
+        MEDIA_LOG_E("eglCreateImageKHR failed: %{public}s", GetEglErrorString());
+    }
+    return image;
+}
+
+void EglRenderContext::DeleteEGLImage(EGLImageKHR image)
+{
+    if (image != EGL_NO_IMAGE_KHR) {
+        eglDestroyImageKHR(eglDisplay_, image);
+    }
+}
+
+void EglRenderContext::EGLImageTargetTexture2DOES(EGLImageKHR image)
+{
+    FALSE_RETURN_MSG(image != EGL_NO_IMAGE_KHR, "EGLImageTargetTexture2DOES: image is null");
+    glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, static_cast<GLeglImageOES>(image));
+    GLenum error = glGetError();
+    FALSE_RETURN_MSG(error == GL_NO_ERROR,
+        "glEGLImageTargetTexture2DOES failed: GL error %{public}d", error);
 }
 }
 }  // namespace OHOS::Media

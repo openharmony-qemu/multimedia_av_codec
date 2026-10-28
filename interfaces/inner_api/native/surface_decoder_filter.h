@@ -73,6 +73,7 @@ protected:
 
 private:
     Status ConfigureMediaCodecByMimeType(std::string codecMimeType, bool isHdrVivid);
+    bool IsHdrColorSpace(int32_t colorSpace) const;
     std::string name_;
     FilterType filterType_ = FilterType::FILTERTYPE_MAX;
 

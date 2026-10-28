@@ -16,25 +16,14 @@
 #ifndef FILTERS_WATER_MARK_FILTER_H
 #define FILTERS_WATER_MARK_FILTER_H
 
-#include <atomic>
-#include <cstring>
-#include "filter/filter.h"
-#include "osal/task/task.h"
-#include "common/status.h"
-#include "common/log.h"
-#include "external_window.h"
-#include <egl_render_context.h>
-#include "shader_program.h"
+#include <vector>
+#include "opengl_video_filter_base.h"
 #include "surface.h"
 
-struct OH_NativeImage;
-struct OH_OnFrameAvailableListener;
-
-namespace OHOS {//water_mark_filter
+namespace OHOS {
 namespace Media {
 namespace Pipeline {
-using RenderTask = std::function<void(EglRenderContext &renderContext)>;
-const GLuint DEFINED_VALUE = 9999U;
+
 struct WaterMarkConfig {
    int32_t top;             // 水印左上角在视频行数
    int32_t left;            // 水印左上角在视频列数
@@ -47,39 +36,17 @@ struct WaterMarkConfig {
    int32_t rotation = 0;    // 水印旋转角度（0/90/180/270）
 };
 
-class WaterMarkFilter : public Filter, public std::enable_shared_from_this<WaterMarkFilter> {
+// WaterMarkFilter 仅负责 SDR 视频水印叠加（含可选的 SDR 降分辨率）。
+// 通用 GL 视频渲染基础设施（EGL context、NativeImage、渲染线程、视频 OES 纹理渲染、VAO/VBO、
+// Surface 管理、生命周期）由 OpenGLVideoFilterBase 提供。HDR/10bit 转码管线由兄弟类
+// VideoResizeOpenGLFilter 通过同样的 virtual hook 注入，互不耦合。
+class WaterMarkFilter : public OpenGLVideoFilterBase {
 public:
     explicit WaterMarkFilter(std::string name, FilterType type);
     ~WaterMarkFilter() override;
-    Status SetCodecFormat(const std::shared_ptr<Meta> &format);
-    void Init(const std::shared_ptr<EventReceiver> &receiver,
-        const std::shared_ptr<FilterCallback> &callback) override;
-    void InitOpenGl();
-    Status Configure(const std::shared_ptr<Meta> &parameter);
-    sptr<Surface> GetInputSurface();
-    Status SetOutputSurface(sptr<Surface> surface, int32_t width, int32_t height, int32_t rotation);
-    Status DoPrepare() override;
-    Status DoStart() override;
-    Status DoPause() override;
-    Status DoResume() override;
-    Status DoStop() override;
-    Status DoFlush() override;
-    Status DoRelease() override;
-    Status NotifyNextFilterEos();
-    void SetParameter(const std::shared_ptr<Meta> &parameter) override;
-    void GetParameter(std::shared_ptr<Meta> &parameter) override;
-    Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
-    Status UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
-    Status UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
-    void OnLinkedResult(const sptr<AVBufferQueueProducer> &outputBufferQueue, std::shared_ptr<Meta> &meta);
-    void OnUpdatedResult(std::shared_ptr<Meta> &meta);
-    void OnUnlinkedResult(std::shared_ptr<Meta> &meta);
-    void OnOutputBufferAvailable(uint32_t index, uint32_t flag);
-    void SetFaultEvent(const std::string &errMsg);
-    void SetFaultEvent(const std::string &errMsg, int32_t ret);
-    void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
+
     Status SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer, int32_t width, int32_t height);
-    Status SetVideoResize(int32_t width, int32_t height);  // 设置视频缩放的目标宽高
+    Status SetVideoResize(int32_t width, int32_t height) override;  // 设置视频缩放的目标宽高
     void SetAVRecorderMode();
     Status PreprocessWatermarks();
     Status ApplyRotation(int32_t rotation);
@@ -88,81 +55,33 @@ public:
     bool HasHardWatermarkPositionViolation() const;
 
 protected:
-    Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
-        const std::shared_ptr<FilterLinkCallback> &callback) override;
-    Status OnUpdated(StreamType inType, const std::shared_ptr<Meta> &meta,
-        const std::shared_ptr<FilterLinkCallback> &callback) override;
-    Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
+    // ---- OpenGLVideoFilterBase virtual hook overrides ----
+    Status DoPrepare() override;
+    void RenderFrame(int32_t viewWidth, int32_t viewHeight) override;
+    bool OnGLResourcesCreated() override;
+    void OnSetupOverlayUniforms() override;
+    void OnReleaseGpuResources() override;
+    void OnReleaseCpuResources() override;
+    void OnReleaseShaders() override;
+    // -------------------------------------------------------
 
-private:
-    std::shared_ptr<EventReceiver> eventReceiver_;
-    std::shared_ptr<FilterCallback> filterCallback_;
-    std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
-    std::shared_ptr<Meta> configureParameter_;
-    std::shared_ptr<Filter> nextFilter_;
-    std::atomic<int64_t> eosPts_ {-1};
-    std::atomic<bool> eosNotified_ {false};   // 防止重复发送EOS
-    std::atomic<int64_t> lastPts_ {INT64_MAX};
-    std::atomic<int64_t> currentFrameNum_ = 0;
-    std::string bundleName_;
-    int64_t frameNum_ {INT64_MAX};
-    uint64_t instanceId_{0};
-    int32_t appUid_ {0};
-    int32_t appPid_ {0};
-    std::atomic<int32_t> targetWidth_ = -1;      // 视频缩放后的目标宽度
-    std::atomic<int32_t> targetHeight_ = -1;     // 视频缩放后的目标高度
-    std::atomic<int32_t> videoWidth_ = 0;
-    std::atomic<int32_t> videoHeight_ = 0;
-    OH_NativeImage *nativeImage_ = nullptr;
-    std::unique_ptr<OH_OnFrameAvailableListener> nativeImageFrameAvailableListener_;
-    std::unique_ptr<ShaderProgram> shaderProgram_;
+    // ---- 水印专属成员 ----
     std::vector<WaterMarkConfig> watermarkList_;
-    std::thread thread_;
-    std::mutex wakeUpMutex_;
-    std::mutex releaseMutex_;
-    std::atomic<int> availableFrameCnt_{ 0 };
-    float matrix_[16] = {};
-    std::atomic<bool> running_{ true };
-    std::atomic<bool> hasReleased_ = false;  // 标记是否已释放资源，防止重复释放
-    std::unique_ptr<EglRenderContext> renderContext_;
-    EGLSurface eglSurface_ = EGL_NO_SURFACE;
-    OHNativeWindow *nativeWindow_ = nullptr;
-    OHNativeWindow *nativeImageWindow_ = nullptr;
-    GLuint nativeImageTexId_ = DEFINED_VALUE;
+    std::vector<GLuint> watermarkTexIds_;  // 各水印的 GL 纹理 ID
     GLuint textTexId_ = DEFINED_VALUE;
     GLuint mergedWatermarkTexId_ = 0;         // 合并后的水印纹理ID
     GLuint watermarkFBO_ = 0;                 // 用于合成的帧缓冲对象
     GLuint watermarkVAO_ = 0;                 // 水印合成用的VAO
     GLuint watermarkVBO_ = 0;
-    GLuint vertexArrayObject_ = 0;
-    GLuint vertexBufferObject_ = 0;
-    std::condition_variable wakeUpCond_;
-    std::vector<GLuint> watermarkTexIds_;     // 每个水印的纹理ID
     std::unique_ptr<ShaderProgram> watermarkMergeShaderProgram_;  // 水印合成shader
     std::unique_ptr<ShaderProgram> watermarkOverlayProgram_;     // 水印叠加着色器
-    std::atomic<int32_t> rotation_ = 0;
-    std::atomic<bool> isAVRecorderMode_ = false; //是否录制模式，默认否
     std::atomic<bool> isHardWatermarkMode_ = false; //是否硬编水印模式
-    std::atomic<bool> eglContextReady_ = false; // EGL上下文是否已初始化（预处理用）
     int32_t wmBBoxLeft_ = 0;      // 水印包围盒左边界（像素，屏幕坐标系）
     int32_t wmBBoxTop_ = 0;       // 水印包围盒上边界
     int32_t wmBBoxWidth_ = 0;     // 水印包围盒宽度
     int32_t wmBBoxHeight_ = 0;    // 水印包围盒高度
 
-    bool CreateNativeImage();
-    void UpdateNativeWindow(void *window, uint64_t width, uint64_t height);
-    void RenderThreadEntry();
-    void DrawImage(const int64_t pts);
-    void UpdateVideoFrame();
-    void SwapFrameBuffers();
-    static void OnNativeImageFrameAvailable(void *data);
-    bool CreateGLResources();
-    bool InitializeEGLContext();
-    bool CreateVideoTexture();
-    bool SetupShaderUniforms();
-    void RenderLoop();
-    bool StartRenderThread();
-    void StopRenderThread();
+    // ---- 水印专属方法 ----
     bool CreateWatermarkTextures();           // 为每个水印创建纹理
     bool MergeWaterMarksWithOpenGL();         // 使用OpenGL合成多个水印
     Status MergeAndSaveBBox();                // 合成水印并保存包围盒（PreprocessWatermarks/ApplyRotation共用）
@@ -180,11 +99,8 @@ private:
     bool CopyPixelsToSurfaceBuffer(const std::unique_ptr<uint8_t[]>& srcBuf,
         int32_t rowStride, int32_t wmHeight, const sptr<SurfaceBuffer>& surfaceBuffer);
     void ReleaseMergeResources();
-    void ReleaseCpuResources();
-    void ReleaseGpuResources();
-    void ReleaseEGLResources();
-    FilterType GetFilterType();
     std::shared_ptr<AVBuffer> ReadMergedWatermarkPixels();
+    void RenderWatermarkOverlay(int32_t viewWidth, int32_t viewHeight);
 };
 } // namespace Pipeline
 } // namespace MEDIA

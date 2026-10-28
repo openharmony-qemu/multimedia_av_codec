@@ -12,29 +12,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #ifndef NATIVEIMAGEDEMO_SHADER_PROGRAM_H
 #define NATIVEIMAGEDEMO_SHADER_PROGRAM_H
- 
+
 #include <string>
 #include <GLES3/gl3.h>
- 
+
 namespace OHOS {
 namespace Media {
 class ShaderProgram {
 public:
     ShaderProgram(const std::string &vertexShader, const std::string &fragShader);
     ~ShaderProgram() noexcept;
- 
+
     // disallow copy and move
     ShaderProgram(const ShaderProgram &other) = delete;
     void operator=(const ShaderProgram &other) = delete;
     ShaderProgram(ShaderProgram &&other) = delete;
     void operator=(ShaderProgram &&other) = delete;
- 
+
     bool Valid() const
     {
-        return id_ > 0;
+        return valid_;
     }
     void Use() const
     {
@@ -44,10 +44,11 @@ public:
     void SetInt(const std::string &name, int value);
     void SetVec2(const std::string &name, float v0, float v1);
     void SetMatrix4v(const std::string &name, const float *matrix, int cnt, bool transpose = false);
- 
+
 private:
-    void CheckCompileErrors(GLuint shader, const std::string &shaderType);
+    bool CheckCompileErrors(GLuint shader, const std::string &shaderType);
     GLuint id_ = 0;
+    bool valid_ = false;
 };
 }
 }

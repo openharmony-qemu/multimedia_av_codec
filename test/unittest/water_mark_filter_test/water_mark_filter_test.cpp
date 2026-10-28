@@ -15,6 +15,8 @@
 
 #include <memory>
 #include "water_mark_filter_test.h"
+#include "meta/video_types.h"
+#include "surface/native_buffer.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -432,12 +434,14 @@ HWTEST_F(WaterMarkFilterTest, UpdateNativeWindow_001, TestSize.Level1)
 /**
  * @tc.name  : Test UpdateNativeWindow
  * @tc.number: UpdateNativeWindow_002
- * @tc.desc  : Test UpdateNativeWindow with non-null window sets nativeWindow_
+ * @tc.desc  : Test UpdateNativeWindow with non-null window sets nativeWindow_ (verify via nullptr path only)
  */
 HWTEST_F(WaterMarkFilterTest, UpdateNativeWindow_002, TestSize.Level1)
 {
-    waterMarkFilter_->nativeWindow_ = reinterpret_cast<OHNativeWindow*>(0x1);
-    EXPECT_NE(waterMarkFilter_->nativeWindow_, nullptr);
+    // Cannot pass a real non-null window without a valid surface; verify the nullptr early-return path
+    // leaves nativeWindow_ as nullptr (reinterpret_cast of nullptr)
+    waterMarkFilter_->UpdateNativeWindow(nullptr, 1920, 1080);
+    EXPECT_EQ(waterMarkFilter_->nativeWindow_, nullptr);
 }
 
 /**
@@ -806,7 +810,7 @@ HWTEST_F(WaterMarkFilterTest, ReleaseCpuResources_001, TestSize.Level1)
     config2.size = 0;
     waterMarkFilter_->watermarkList_.push_back(std::move(config1));
     waterMarkFilter_->watermarkList_.push_back(std::move(config2));
-    waterMarkFilter_->ReleaseCpuResources();
+    waterMarkFilter_->OnReleaseCpuResources();
     EXPECT_TRUE(waterMarkFilter_->watermarkList_.empty());
 }
 
@@ -1628,11 +1632,18 @@ HWTEST_F(WaterMarkFilterTest, RenderLoop_001, TestSize.Level1)
  */
 HWTEST_F(WaterMarkFilterTest, RenderLoop_002, TestSize.Level1)
 {
+    waterMarkFilter_->nextFiltersMap_.clear();
     waterMarkFilter_->lastPts_.store(100);
     waterMarkFilter_->eosPts_.store(100);
     waterMarkFilter_->availableFrameCnt_.store(0);
+    waterMarkFilter_->eosReceived_.store(true);
     waterMarkFilter_->running_ = true;
     waterMarkFilter_->RenderLoop();
+    // RenderLoop breaks on EOS; verify the EOS path was taken (availableFrameCnt_ still 0, eosReceived_ unchanged)
+    EXPECT_EQ(waterMarkFilter_->availableFrameCnt_.load(), 0);
+    EXPECT_TRUE(waterMarkFilter_->eosReceived_.load());
+    // RenderLoop breaks on EOS but does not reset running_; ensure cleanup for safe teardown
+    waterMarkFilter_->running_ = false;
 }
 
 /**
@@ -2280,6 +2291,169 @@ HWTEST_F(WaterMarkFilterTest, HasHardWatermarkPositionViolation_008, TestSize.Le
     config2.watermarkHeight = 50;
     waterMarkFilter_->watermarkList_.push_back(std::move(config2));
     EXPECT_TRUE(waterMarkFilter_->HasHardWatermarkPositionViolation());
+}
+
+// ---- OpenGLVideoFilterBase base class coverage (HDR color space / codec format) ----
+
+/**
+ * @tc.name  : Test SetCodecFormat with HDR color space
+ * @tc.number: SetCodecFormat_002
+ * @tc.desc  : SetCodecFormat with AV_TRANSCODER_DST_COLOR_SPACE invokes OnSetCodecFormat (base no-op)
+ */
+HWTEST_F(WaterMarkFilterTest, SetCodecFormat_002, TestSize.Level1)
+{
+    auto format = std::make_shared<Meta>();
+    ASSERT_TRUE(format != nullptr);
+    format->Set<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(
+        static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT709_LIMIT));
+    Status ret = waterMarkFilter_->SetCodecFormat(format);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test SetCodecFormat with null format
+ * @tc.number: SetCodecFormat_003
+ * @tc.desc  : SetCodecFormat with null format still returns OK (base handles via FALSE_RETURN_NOLOG)
+ */
+HWTEST_F(WaterMarkFilterTest, SetCodecFormat_003, TestSize.Level1)
+{
+    std::shared_ptr<Meta> format = nullptr;
+    Status ret = waterMarkFilter_->SetCodecFormat(format);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test SetCodecFormat with HDR BT2020 color space
+ * @tc.number: SetCodecFormat_004
+ * @tc.desc  : SetCodecFormat with BT2020 HDR color space invokes base OnSetCodecFormat no-op
+ */
+HWTEST_F(WaterMarkFilterTest, SetCodecFormat_004, TestSize.Level1)
+{
+    auto format = std::make_shared<Meta>();
+    ASSERT_TRUE(format != nullptr);
+    format->Set<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(
+        static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_PQ_LIMIT));
+    Status ret = waterMarkFilter_->SetCodecFormat(format);
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name  : Test Configure with null parameter
+ * @tc.number: Configure_002
+ * @tc.desc  : Configure with null parameter stores nullptr and returns OK
+ */
+HWTEST_F(WaterMarkFilterTest, Configure_002, TestSize.Level1)
+{
+    std::shared_ptr<Meta> parameter = nullptr;
+    Status ret = waterMarkFilter_->Configure(parameter);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(waterMarkFilter_->configureParameter_, nullptr);
+}
+
+/**
+ * @tc.name  : Test SetParameter with EOS and frameNum
+ * @tc.number: SetParameter_003
+ * @tc.desc  : SetParameter with only USER_FRAME_PTS sets eosPts_ and eosReceived_
+ */
+HWTEST_F(WaterMarkFilterTest, SetParameter_003, TestSize.Level1)
+{
+    auto parameter = std::make_shared<Meta>();
+    ASSERT_TRUE(parameter != nullptr);
+    parameter->Set<Tag::USER_FRAME_PTS>(200);
+    waterMarkFilter_->SetParameter(parameter);
+    EXPECT_EQ(waterMarkFilter_->eosPts_.load(), 200);
+    EXPECT_TRUE(waterMarkFilter_->eosReceived_.load());
+}
+
+/**
+ * @tc.name  : Test GetParameter default
+ * @tc.number: GetParameter_002
+ * @tc.desc  : GetParameter is a no-op and leaves the meta unchanged
+ */
+HWTEST_F(WaterMarkFilterTest, GetParameter_002, TestSize.Level1)
+{
+    auto parameter = std::make_shared<Meta>();
+    ASSERT_TRUE(parameter != nullptr);
+    parameter->Set<Tag::USER_FRAME_PTS>(999);
+    waterMarkFilter_->GetParameter(parameter);
+    // GetParameter is a base no-op; verify meta is not modified
+    int64_t pts = 0;
+    EXPECT_TRUE(parameter->Get<Tag::USER_FRAME_PTS>(pts));
+    EXPECT_EQ(pts, 999);
+}
+
+/**
+ * @tc.name  : Test NotifyNextFilterEos with null filter in map
+ * @tc.number: NotifyNextFilterEos_004
+ * @tc.desc  : NotifyNextFilterEos with a null filter entry in nextFiltersMap_ does not crash
+ */
+HWTEST_F(WaterMarkFilterTest, NotifyNextFilterEos_004, TestSize.Level1)
+{
+    std::shared_ptr<Filter> nullFilter = nullptr;
+    waterMarkFilter_->nextFiltersMap_[StreamType::STREAMTYPE_RAW_VIDEO].push_back(nullFilter);
+    waterMarkFilter_->eosPts_.store(100);
+    Status ret = waterMarkFilter_->NotifyNextFilterEos();
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
+}
+
+/**
+ * @tc.name  : Test SetVideoResize with 4K dimensions
+ * @tc.number: SetVideoResize_005
+ * @tc.desc  : SetVideoResize with 3840x2160 sets video/target dimensions and returns OK
+ */
+HWTEST_F(WaterMarkFilterTest, SetVideoResize_005, TestSize.Level1)
+{
+    waterMarkFilter_->nativeImage_ = nullptr;
+    Status ret = waterMarkFilter_->SetVideoResize(3840, 2160);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(waterMarkFilter_->videoWidth_.load(), 3840);
+    EXPECT_EQ(waterMarkFilter_->videoHeight_.load(), 2160);
+}
+
+/**
+ * @tc.name  : Test SetVideoResize with zero height
+ * @tc.number: SetVideoResize_006
+ * @tc.desc  : SetVideoResize with zero height returns ERROR_INVALID_PARAMETER
+ */
+HWTEST_F(WaterMarkFilterTest, SetVideoResize_006, TestSize.Level1)
+{
+    Status ret = waterMarkFilter_->SetVideoResize(1920, 0);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test SetVideoResize with negative width
+ * @tc.number: SetVideoResize_007
+ * @tc.desc  : SetVideoResize with negative width returns ERROR_INVALID_PARAMETER
+ */
+HWTEST_F(WaterMarkFilterTest, SetVideoResize_007, TestSize.Level1)
+{
+    Status ret = waterMarkFilter_->SetVideoResize(-1, 1080);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+}
+
+/**
+ * @tc.name  : Test OnUpdatedResult with null meta
+ * @tc.number: OnUpdatedResult_002
+ * @tc.desc  : OnUpdatedResult with null meta does not crash (base no-op)
+ */
+HWTEST_F(WaterMarkFilterTest, OnUpdatedResult_002, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = nullptr;
+    waterMarkFilter_->OnUpdatedResult(meta);
+    SUCCEED();
+}
+
+/**
+ * @tc.name  : Test OnUnlinkedResult with null meta
+ * @tc.number: OnUnlinkedResult_002
+ * @tc.desc  : OnUnlinkedResult with null meta does not crash (base no-op)
+ */
+HWTEST_F(WaterMarkFilterTest, OnUnlinkedResult_002, TestSize.Level1)
+{
+    std::shared_ptr<Meta> meta = nullptr;
+    waterMarkFilter_->OnUnlinkedResult(meta);
+    SUCCEED();
 }
 
 }  // namespace Pipeline

@@ -12,11 +12,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "muxer_filter.h"
+#include <algorithm>
 #include <sys/timeb.h>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 #include "common/log.h"
 #include "common/media_core.h"
 #include "filter/filter_factory.h"
@@ -47,6 +48,7 @@ constexpr int64_t US_TO_MS = 1000;
 constexpr int64_t S_TO_MS = 1000;
 constexpr int64_t SYNC_THRESHOLD_US = 200000; // 200ms
 constexpr uint32_t BUFFER_IS_EOS = 1;
+constexpr uint32_t BUFFER_IS_CODEC_CONFIG = 1 << 3; // AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_CODEC_DATA
 constexpr int32_t VALID_MIN_DURATION = 1;
 static AutoRegisterFilter<MuxerFilter> g_registerMuxerFilter("builtin.recorder.muxer", FilterType::FILTERTYPE_MUXER,
     [](const std::string& name, const FilterType type) {
@@ -115,15 +117,25 @@ Status MuxerFilter::SetTransCoderMode()
     return Status::OK;
 }
 
+void MuxerFilter::SetClipEndTimeUs(int64_t endTimeUs)
+{
+    MEDIA_LOG_I("SetClipEndTimeUs: " PUBLIC_LOG_D64, endTimeUs);
+    clipEndTimeUs_ = endTimeUs;
+}
+
+void MuxerFilter::SetClipStartTimeUs(int64_t startTimeUs)
+{
+    MEDIA_LOG_I("SetClipStartTimeUs: " PUBLIC_LOG_D64, startTimeUs);
+    clipStartTimeUs_ = startTimeUs;
+}
+
 int64_t MuxerFilter::GetCurrentPtsMs()
 {
-    int64_t videoPts = lastVideoPts_.load();
-    int64_t audioPts = lastAudioPts_.load();
-    if (videoPts != 0) {
-        return videoPts / US_TO_MS;
-    } else {
-        return audioPts / US_TO_MS;
+    // 只要有视频轨，都以视频pts为准，反之以音频pts为准
+    if (videoCodecMimeType_.empty()) {
+        return lastAudioPts_.load() / US_TO_MS;
     }
+    return lastVideoPts_.load() / US_TO_MS;
 }
 
 void MuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
@@ -446,21 +458,152 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
     StreamType streamType, sptr<AVBufferQueueProducer> inputBufferQueue)
 {
     MEDIA_LOG_D("OnTransCoderBufferFilled");
+    FALSE_RETURN_MSG(inputBuffer != nullptr && inputBufferQueue != nullptr,
+        "OnTransCoderBufferFilled invalid params, inputBuffer or inputBufferQueue is nullptr");
+
+    // Step 1: Discard frames whose PTS is before the clip start time.
+    FALSE_RETURN_NOLOG(!FilterPreClipBuffers(inputBuffer, streamType, inputBufferQueue));
+
+    // Step 2: If clip end time is set, truncate frames past the end and send EOS.
+    FALSE_RETURN_NOLOG(!HandleClipEnd(inputBuffer, streamType, inputBufferQueue));
+
+    // Step 3: Adjust PTS so output starts from 0.
+    AdjustPtsForClip(inputBuffer, streamType);
+
+    // Step 4: Handle EOS bookkeeping.
     bool isCompleted = false;
-    if ((inputBuffer->flag_ & BUFFER_IS_EOS) == 1) {
-        {
-            std::unique_lock<std::mutex> lock(eosMutex_);
-            eosCount_++;
-            if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
-                MEDIA_LOG_I("video is eos");
-                videoIsEos.store(true);
-            } else if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
-                MEDIA_LOG_I("audio is eos");
-                audioIsEos.store(true);
-            }
-            isCompleted = (eosCount_ == preFilterCount_) || (videoIsEos.load() && audioIsEos.load());
-        }
+    HandleTransCoderEos(inputBuffer, streamType, isCompleted);
+
+    // Step 5: Write the buffer to the muxer with audio/video sync.
+    WriteTransCoderBuffer(inputBuffer, streamType, inputBufferQueue);
+
+    if (eventReceiver_ != nullptr && isCompleted) {
+        HandleTransCoderComplete();
     }
+}
+
+bool MuxerFilter::FilterPreClipBuffers(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType,
+    sptr<AVBufferQueueProducer> inputBufferQueue)
+{
+    // Discard buffers before clip start time (handles pre-clip audio frames after seek).
+    // Always keep CODEC_CONFIG frames (SPS/PPS) and EOS frames regardless of PTS.
+    bool shouldFilter = clipStartTimeUs_ > 0 && (inputBuffer->flag_ & BUFFER_IS_EOS) == 0 &&
+        (inputBuffer->flag_ & BUFFER_IS_CODEC_CONFIG) == 0 && inputBuffer->pts_ < clipStartTimeUs_;
+    if (!shouldFilter) {
+        LogFirstAudioAfterClip(inputBuffer, streamType);
+        return false;
+    }
+    if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
+        audioClipFilteredCount_.fetch_add(1, std::memory_order_relaxed);
+        MEDIA_LOG_D("Audio before clip start, discarding. pts: " PUBLIC_LOG_D64
+            " clipStartTime: " PUBLIC_LOG_D64 " filteredCount: " PUBLIC_LOG_D32,
+            inputBuffer->pts_, clipStartTimeUs_, audioClipFilteredCount_.load());
+    } else {
+        MEDIA_LOG_D("Buffer before clip start, discarding. streamType: " PUBLIC_LOG_D32
+            " pts: " PUBLIC_LOG_D64 " clipStartTime: " PUBLIC_LOG_D64,
+            static_cast<int32_t>(streamType), inputBuffer->pts_, clipStartTimeUs_);
+    }
+    inputBufferQueue->ReturnBuffer(inputBuffer, false);
+    return true;
+}
+
+bool MuxerFilter::HandleClipEnd(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType,
+    sptr<AVBufferQueueProducer> inputBufferQueue)
+{
+    FALSE_RETURN_V_MSG_E(clipEndTimeUs_ > 0, false, "clipEndTimeUs_ is not set");
+    // If this track already hit EOS (clip end or real EOS), discard further buffers.
+    bool trackAlreadyEos = IsTrackEos(streamType);
+    if (trackAlreadyEos) {
+        inputBufferQueue->ReturnBuffer(inputBuffer, false);
+        return true;
+    }
+    // Frames past clip end: discard data but send an empty EOS buffer to signal completion.
+    if ((inputBuffer->flag_ & BUFFER_IS_EOS) == 0 && inputBuffer->pts_ > clipEndTimeUs_) {
+        MEDIA_LOG_I("Clip end time reached, pts: " PUBLIC_LOG_D64 " clipEndTime: " PUBLIC_LOG_D64
+            ", discarding frame data and sending EOS only, flag=0x%{public}08x isCodecConfig=%{public}d",
+            inputBuffer->pts_, clipEndTimeUs_, inputBuffer->flag_,
+            (inputBuffer->flag_ & BUFFER_IS_CODEC_CONFIG) != 0);
+        if (inputBuffer->memory_ != nullptr) {
+            inputBuffer->memory_->SetSize(0);
+        }
+        inputBuffer->flag_ |= BUFFER_IS_EOS;
+    }
+    return false;
+}
+
+void MuxerFilter::AdjustPtsForClip(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType)
+{
+    // Make output start from 0 so the player shows correct duration.
+    FALSE_RETURN_NOLOG(clipStartTimeUs_ > 0);
+    int64_t ptsBefore = inputBuffer->pts_;
+    // Video CODEC_CONFIG frames (SPS/PPS) should be at pts=0 in the output.
+    // Audio frames may carry the CODEC_CONFIG flag but are regular data frames
+    // with valid PTS that must be offset, not zeroed.
+    bool isVideoCodecConfig = (inputBuffer->flag_ & BUFFER_IS_CODEC_CONFIG) != 0 &&
+        streamType != StreamType::STREAMTYPE_ENCODED_AUDIO;
+    if (isVideoCodecConfig) {
+        inputBuffer->pts_ = 0;
+    } else {
+        inputBuffer->pts_ = std::max(inputBuffer->pts_ - clipStartTimeUs_, static_cast<int64_t>(0));
+    }
+    if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO &&
+        ((inputBuffer->flag_ & BUFFER_IS_EOS) != 0 || audioClipPassedCount_.load() <= 5)) {
+        MEDIA_LOG_I("Audio PTS adjust: " PUBLIC_LOG_D64 " -> " PUBLIC_LOG_D64
+            " clipStart=" PUBLIC_LOG_D64 " flag=0x%{public}08x passedCount=" PUBLIC_LOG_D32,
+            ptsBefore, inputBuffer->pts_, clipStartTimeUs_, inputBuffer->flag_, audioClipPassedCount_.load());
+    }
+}
+
+void MuxerFilter::HandleTransCoderEos(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType,
+    bool &isCompleted)
+{
+    FALSE_RETURN_NOLOG((inputBuffer->flag_ & BUFFER_IS_EOS) != 0);
+    std::unique_lock<std::mutex> lock(eosMutex_);
+    eosCount_++;
+    UpdateTrackEosState(inputBuffer, streamType);
+    isCompleted = (eosCount_ == preFilterCount_) || (videoIsEos.load() && audioIsEos.load());
+}
+
+void MuxerFilter::LogFirstAudioAfterClip(const std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType)
+{
+    FALSE_RETURN_NOLOG(streamType == StreamType::STREAMTYPE_ENCODED_AUDIO);
+    int32_t passed = audioClipPassedCount_.fetch_add(1, std::memory_order_relaxed) + 1;
+    if (passed == 1) {
+        MEDIA_LOG_I("First audio frame after clip filter, pts: " PUBLIC_LOG_D64
+            " clipStartTime: " PUBLIC_LOG_D64, inputBuffer->pts_, clipStartTimeUs_);
+    }
+}
+
+bool MuxerFilter::IsTrackEos(StreamType streamType)
+{
+    if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
+        return videoIsEos.load();
+    }
+    if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
+        return audioIsEos.load();
+    }
+    return false;
+}
+
+void MuxerFilter::UpdateTrackEosState(const std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType)
+{
+    if (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO) {
+        MEDIA_LOG_I("video is eos");
+        videoIsEos.store(true);
+        return;
+    }
+    if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
+        MEDIA_LOG_I("audio is eos, passedCount: " PUBLIC_LOG_D32
+            " filteredCount: " PUBLIC_LOG_D32
+            " lastAudioPts: " PUBLIC_LOG_D64,
+            audioClipPassedCount_.load(), audioClipFilteredCount_.load(), inputBuffer->pts_);
+        audioIsEos.store(true);
+    }
+}
+
+void MuxerFilter::WriteTransCoderBuffer(std::shared_ptr<AVBuffer> &inputBuffer, StreamType streamType,
+    sptr<AVBufferQueueProducer> inputBufferQueue)
+{
     if (streamType == StreamType::STREAMTYPE_ENCODED_AUDIO) {
         lastAudioPts_.store(inputBuffer->pts_);
         if (videoCodecMimeType_.empty()) {
@@ -472,10 +615,11 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
                 " lastVideoPts: " PUBLIC_LOG_D64 " diff: " PUBLIC_LOG_D64 " us",
                 inputBuffer->pts_, lastVideoPts_.load(),
                 inputBuffer->pts_ - lastVideoPts_.load());
+            int64_t audioPts = inputBuffer->pts_;
             std::unique_lock<std::mutex> lock(stopMutex_);
             stopCondition_.wait_for(lock, std::chrono::milliseconds(US_TO_MS),
-                [this, &inputBuffer]() {
-                    return inputBuffer->pts_ <= lastVideoPts_.load() + SYNC_THRESHOLD_US
+                [this, audioPts]() {
+                    return audioPts <= lastVideoPts_.load() + SYNC_THRESHOLD_US
                         || videoIsEos.load();
                 });
             inputBufferQueue->ReturnBuffer(inputBuffer, true);
@@ -489,9 +633,6 @@ void MuxerFilter::OnTransCoderBufferFilled(std::shared_ptr<AVBuffer> &inputBuffe
         inputBufferQueue->ReturnBuffer(inputBuffer, true);
     } else {
         inputBufferQueue->ReturnBuffer(inputBuffer, true);
-    }
-    if (eventReceiver_ != nullptr && isCompleted) {
-        HandleTransCoderComplete();
     }
 }
 

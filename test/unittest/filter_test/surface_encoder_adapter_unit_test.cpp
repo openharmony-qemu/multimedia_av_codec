@@ -888,6 +888,325 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetEnableBFrame_01
     EXPECT_EQ(surfaceEncoderAdapter_->Configure(meta), Status::OK);
     EXPECT_EQ(surfaceEncoderAdapter_->enableBFrame_, true);
 }
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_HandleTranscoderMode_0100
+ * @tc.desc: HandleTranscoderMode returns early when parameter is nullptr (null guard)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_HandleTranscoderMode_0100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = 1000000;
+    surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.store(false);
+    std::shared_ptr<Format> attribute = std::make_shared<Format>();
+    attribute->PutLongValue(Tag::MEDIA_TIME_STAMP, 2000000);
+    std::shared_ptr<Format> nullParameter = nullptr;
+    // Should return early without crash due to parameter null guard
+    surfaceEncoderAdapter_->HandleTranscoderMode(0, attribute, nullParameter);
+    // firstNonDiscardFrameProcessed_ should remain false (early return before any logic)
+    EXPECT_FALSE(surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.load());
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = -1;
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_HandleTranscoderMode_0200
+ * @tc.desc: HandleTranscoderMode in non-clip mode (clipStartRelativeUs_ <= 0) sets shouldDiscard=false
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_HandleTranscoderMode_0200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = -1; // non-clip mode
+    std::shared_ptr<Format> attribute = std::make_shared<Format>();
+    attribute->PutLongValue(Tag::MEDIA_TIME_STAMP, 2000000);
+    std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    surfaceEncoderAdapter_->HandleTranscoderMode(0, attribute, parameter);
+    // shouldDiscard=false, PER_FRAME_DISCARD should be 0
+    int32_t discardValue = 1;
+    parameter->GetIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discardValue);
+    EXPECT_EQ(discardValue, 0);
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_HandleTranscoderMode_0300
+ * @tc.desc: HandleTranscoderMode with null attribute keeps shouldDiscard=false
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_HandleTranscoderMode_0300, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = 1000000;
+    std::shared_ptr<Format> nullAttribute = nullptr;
+    std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    surfaceEncoderAdapter_->HandleTranscoderMode(0, nullAttribute, parameter);
+    // attribute is null → shouldDiscard=false
+    int32_t discardValue = 1;
+    parameter->GetIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discardValue);
+    EXPECT_EQ(discardValue, 0);
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = -1;
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_HandleTranscoderMode_0400
+ * @tc.desc: HandleTranscoderMode discards frame when currentPts < clipStartRelativeUs_
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_HandleTranscoderMode_0400, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = 1000000;
+    std::shared_ptr<Format> attribute = std::make_shared<Format>();
+    attribute->PutLongValue(Tag::MEDIA_TIME_STAMP, 500000); // pts < clipStartRelativeUs_ → discard
+    std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    surfaceEncoderAdapter_->HandleTranscoderMode(0, attribute, parameter);
+    // shouldDiscard=true, PER_FRAME_DISCARD should be 1
+    int32_t discardValue = 0;
+    parameter->GetIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discardValue);
+    EXPECT_EQ(discardValue, 1);
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = -1;
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_HandleTranscoderMode_0500
+ * @tc.desc: HandleTranscoderMode requests IDR for first non-discard frame
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_HandleTranscoderMode_0500, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = 1000000;
+    surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.store(false);
+    std::shared_ptr<Format> attribute = std::make_shared<Format>();
+    attribute->PutLongValue(Tag::MEDIA_TIME_STAMP, 2000000); // pts >= clipStartRelativeUs_ → keep
+    std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    surfaceEncoderAdapter_->HandleTranscoderMode(0, attribute, parameter);
+    // shouldDiscard=false, IDR requested for first non-discard frame
+    int32_t discardValue = 1;
+    parameter->GetIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discardValue);
+    EXPECT_EQ(discardValue, 0);
+    int32_t idrValue = 0;
+    parameter->GetIntValue(Tag::VIDEO_REQUEST_I_FRAME, idrValue);
+    EXPECT_EQ(idrValue, 1);
+    EXPECT_TRUE(surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.load());
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = -1;
+    surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.store(false);
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_HandleTranscoderMode_0600
+ * @tc.desc: HandleTranscoderMode does not request IDR for subsequent non-discard frames
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_HandleTranscoderMode_0600, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = 1000000;
+    surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.store(true); // already processed
+    std::shared_ptr<Format> attribute = std::make_shared<Format>();
+    attribute->PutLongValue(Tag::MEDIA_TIME_STAMP, 3000000); // pts >= clipStartRelativeUs_ → keep
+    std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    surfaceEncoderAdapter_->HandleTranscoderMode(0, attribute, parameter);
+    // shouldDiscard=false, IDR NOT requested (firstNonDiscardFrameProcessed_ already true)
+    int32_t discardValue = 1;
+    parameter->GetIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, discardValue);
+    EXPECT_EQ(discardValue, 0);
+    // VIDEO_REQUEST_I_FRAME should not be set (default 0)
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = -1;
+    surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.store(false);
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_DecideFrameDiscardAndRequestIdr_0100
+ * @tc.desc: DecideFrameDiscardAndRequestIdr returns true (discard) when pts < clipStart
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_DecideFrameDiscardAndRequestIdr_0100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = 1000000;
+    std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    bool result = surfaceEncoderAdapter_->DecideFrameDiscardAndRequestIdr(500000, parameter);
+    EXPECT_TRUE(result); // discard
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = -1;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_DecideFrameDiscardAndRequestIdr_0200
+ * @tc.desc: DecideFrameDiscardAndRequestIdr returns false (keep) and requests IDR for first kept frame
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_DecideFrameDiscardAndRequestIdr_0200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = 1000000;
+    surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.store(false);
+    std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    bool result = surfaceEncoderAdapter_->DecideFrameDiscardAndRequestIdr(2000000, parameter);
+    EXPECT_FALSE(result); // keep
+    int32_t idrValue = 0;
+    parameter->GetIntValue(Tag::VIDEO_REQUEST_I_FRAME, idrValue);
+    EXPECT_EQ(idrValue, 1);
+    EXPECT_TRUE(surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.load());
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = -1;
+    surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.store(false);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_DecideFrameDiscardAndRequestIdr_0300
+ * @tc.desc: DecideFrameDiscardAndRequestIdr returns false and no IDR for subsequent kept frames
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_DecideFrameDiscardAndRequestIdr_0300, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = 1000000;
+    surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.store(true); // already processed
+    std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    bool result = surfaceEncoderAdapter_->DecideFrameDiscardAndRequestIdr(3000000, parameter);
+    EXPECT_FALSE(result); // keep
+    // IDR not requested — VIDEO_REQUEST_I_FRAME not set
+    surfaceEncoderAdapter_->clipStartRelativeUs_ = -1;
+    surfaceEncoderAdapter_->firstNonDiscardFrameProcessed_.store(false);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_SetClipStartTime_0100
+ * @tc.desc: SetClipStartTime sets clipStartRelativeUs_ and calls mediaCodec_->SetClipStartTime
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetClipStartTime_0100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    int64_t expected = 5000000;
+    surfaceEncoderAdapter_->SetClipStartTime(expected);
+    EXPECT_EQ(surfaceEncoderAdapter_->clipStartRelativeUs_, expected);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_SetClipStartTime_0200
+ * @tc.desc: SetClipStartTime with null codecServer_ does not crash
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetClipStartTime_0200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = nullptr;
+    int64_t expected = 3000000;
+    surfaceEncoderAdapter_->SetClipStartTime(expected);
+    EXPECT_EQ(surfaceEncoderAdapter_->clipStartRelativeUs_, expected);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0100
+ * @tc.desc: TransCoder HDR->HDR with HDRVivid flag sets pixel format to SURFACE_FORMAT (P010)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->SetData(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
+    meta->SetData(Tag::VIDEO_IS_HDR_VIVID, true);
+    MediaAVCodec::Format format;
+    surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
+
+    int32_t actualPixelFormat = -1;
+    EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, actualPixelFormat));
+    EXPECT_EQ(actualPixelFormat, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT));
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0200
+ * @tc.desc: Non-transcoder mode with HDRVivid flag does NOT change pixel format (uses original)
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    int32_t originalPixelFormat = static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12);
+    meta->SetData(Tag::VIDEO_PIXEL_FORMAT, originalPixelFormat);
+    meta->SetData(Tag::VIDEO_IS_HDR_VIVID, true);
+    MediaAVCodec::Format format;
+    surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
+
+    int32_t actualPixelFormat = -1;
+    EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, actualPixelFormat));
+    EXPECT_EQ(actualPixelFormat, originalPixelFormat);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0300
+ * @tc.desc: TransCoder mode but HDRVivid flag is false uses original pixel format
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0300, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    int32_t originalPixelFormat = static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12);
+    meta->SetData(Tag::VIDEO_PIXEL_FORMAT, originalPixelFormat);
+    meta->SetData(Tag::VIDEO_IS_HDR_VIVID, false);
+    MediaAVCodec::Format format;
+    surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
+
+    int32_t actualPixelFormat = -1;
+    EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, actualPixelFormat));
+    EXPECT_EQ(actualPixelFormat, originalPixelFormat);
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0400
+ * @tc.desc: TransCoder mode with HDRVivid flag missing uses original pixel format
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0400, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    int32_t originalPixelFormat = static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12);
+    meta->SetData(Tag::VIDEO_PIXEL_FORMAT, originalPixelFormat);
+    // No VIDEO_IS_HDR_VIVID set
+    MediaAVCodec::Format format;
+    surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
+
+    int32_t actualPixelFormat = -1;
+    EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, actualPixelFormat));
+    EXPECT_EQ(actualPixelFormat, originalPixelFormat);
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0500
+ * @tc.desc: TransCoder HDR->HDR with no VIDEO_PIXEL_FORMAT in meta still writes SURFACE_FORMAT
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0500, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->SetData(Tag::VIDEO_IS_HDR_VIVID, true);
+    // No VIDEO_PIXEL_FORMAT set - default VideoPixelFormat::UNKNOWN will be used in else branch,
+    // but HDRVivid path takes precedence
+    MediaAVCodec::Format format;
+    surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
+
+    int32_t actualPixelFormat = -1;
+    EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, actualPixelFormat));
+    EXPECT_EQ(actualPixelFormat, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT));
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS

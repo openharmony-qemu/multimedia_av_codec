@@ -134,6 +134,18 @@ void SurfaceDecoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
     FALSE_LOG_MSG_W(format->Get<Tag::AV_TRANSCODER_DST_COLOR_SPACE>(colorSpace_), "Get dst_color_space failed");
 }
 
+bool SurfaceDecoderFilter::IsHdrColorSpace(int32_t colorSpace) const
+{
+    return colorSpace == static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_FULL) ||
+           colorSpace == static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_HLG_LIMIT) ||
+           colorSpace == static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_PQ_FULL) ||
+           colorSpace == static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_BT2020_PQ_LIMIT) ||
+           colorSpace == static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_HLG_FULL) ||
+           colorSpace == static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_HLG_LIMIT) ||
+           colorSpace == static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_PQ_FULL) ||
+           colorSpace == static_cast<int32_t>(OH_NativeBuffer_ColorSpace::OH_COLORSPACE_P3_PQ_LIMIT);
+}
+
 void SurfaceDecoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     const std::shared_ptr<FilterCallback> &callback)
 {
@@ -194,12 +206,16 @@ Status SurfaceDecoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
     Plugins::HDRType videoHdrType = Plugins::HDRType::NONE;
     FALSE_LOG_MSG_W(parameter->GetData(Tag::VIDEO_HDR_TYPE, videoHdrType), "Get video_hdr_type failed");
     if (isHdrVivid || videoHdrType == Plugins::HDRType::HLG || videoHdrType == Plugins::HDRType::HDR_10) {
-        MEDIA_LOG_I("Is hdrVivid,set colorspace format(%{public}d), pixel format(%{public}d)",
-            static_cast<int32_t>(colorSpace_), static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
-        configFormat.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
-            colorSpace_);
-        configFormat.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
-            static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
+        if (IsHdrColorSpace(colorSpace_)) {
+            MEDIA_LOG_I("Is hdr, HDR->HDR passthrough, skip color_space and pixel_format");
+        } else {
+            MEDIA_LOG_I("Is hdr, HDR->SDR, set colorspace format(%{public}d), pixel format(NV12)",
+                static_cast<int32_t>(colorSpace_));
+            configFormat.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_DECODER_OUTPUT_COLOR_SPACE,
+                colorSpace_);
+            configFormat.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT,
+                static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
+        }
     }
     configFormat.PutIntValue(Tag::VIDEO_FRAME_RATE_ADAPTIVE_MODE, true);
     Status ret = mediaCodec_->Configure(configFormat);

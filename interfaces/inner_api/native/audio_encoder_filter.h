@@ -70,6 +70,8 @@ public:
     Status NotifyEos();
     Status SetTranscoderMode();
     Status SetPureAudioMode();
+    void SetClipStartTimeUs(int64_t startTimeUs);
+    void SetClipTimeFilterNeeded();
     void SetParameter(const std::shared_ptr<Meta> &parameter) override;
     void GetParameter(std::shared_ptr<Meta> &parameter) override;
     Status LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType) override;
@@ -163,6 +165,8 @@ private:
     AudioStandard::AudioSuite::AudioFormat converterOutputFormat_;
 #endif
     std::atomic<bool> needChannelConvert_ {false};
+    std::atomic<bool> needClipTimeFilter_ {false};
+    int64_t clipStartTimeUs_ = -1;
 };
 } // namespace Pipeline
 } // namespace MEDIA
