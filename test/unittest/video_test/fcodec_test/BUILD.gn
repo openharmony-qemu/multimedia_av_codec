@@ -93,6 +93,63 @@ ohos_unittest("videodec_fcodec_capi_unit_test") {
 }
 
 ##################################################################################################################
+ohos_unittest("videodec_fcodec_capability_unit_test") {
+  sanitize = av_codec_test_sanitize
+  module_out_path = module_output_path
+  include_dirs = av_codec_unittest_include_dirs
+  include_dirs += [
+    "./",
+    "$av_codec_root_dir/services/engine/base/include",
+    "$av_codec_root_dir/services/engine/common/include",
+    "$av_codec_root_dir/services/utils/include",
+    "$av_codec_root_dir/services/dfx/include",
+    "$av_codec_root_dir/services/engine/codec/video/fcodec/include",
+  ]
+
+  defines = av_codec_defines
+
+  cflags = av_codec_unittest_cflags
+  cflags_cc = cflags
+
+  public_configs = []
+  configs = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+
+  if (av_codec_support_test) {
+    sources = [
+      "$av_codec_root_dir/services/engine/codec/video/fcodec/fcodec_capability_register.cpp",
+      "./fcodec_capability_register_unit_test.cpp",
+    ]
+  }
+
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/engine/base:av_codec_codec_base",
+    "$av_codec_root_dir/services/engine/common:av_codec_engine_common",
+    "$av_codec_root_dir/services/utils:av_codec_service_utils",
+  ]
+
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+    "drivers_interface_display:libdisplay_commontype_proxy_2.0",
+    "ffmpeg:libohosffmpeg",
+    "graphic_surface:surface",
+    "graphic_surface:sync_fence",
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "hitrace:hitrace_meter",
+    "init:libbegetutil",
+    "media_foundation:media_foundation",
+    "media_foundation:native_media_core",
+  ]
+
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}
+
+##################################################################################################################
 ohos_unittest("videodec_mjpeg_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path

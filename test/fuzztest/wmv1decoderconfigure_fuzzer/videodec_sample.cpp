@@ -23,9 +23,6 @@ namespace {
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 
-constexpr int32_t EIGHT = 8;
-constexpr int32_t SIXTEEN = 16;
-constexpr int32_t TWENTY_FOUR = 24;
 constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
 VDecFuzzSample *g_decSample = nullptr;
