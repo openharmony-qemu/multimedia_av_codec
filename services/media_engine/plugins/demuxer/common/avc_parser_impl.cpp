@@ -72,6 +72,14 @@ struct H264SpsInfo {
     bool hasFrameRate = false;
 };
 
+void UpdateSpsCropFromInfo(uint32_t &cropLeftOffset, uint32_t &cropTopOffset, const H264SpsInfo &info)
+{
+    if (info.width > 0) {
+        cropLeftOffset = info.frameCropLeftOffset;
+        cropTopOffset = info.frameCropTopOffset;
+    }
+}
+
 // Light-weight in-band PPS validation: only checks that pps_id/sps_id are
 // decodable (Exp-Golomb) and stay within the H.264 spec ranges
 // (sps_id 0..31, pps_id 0..255). A PPS with valid IDs but truncated payload
@@ -552,10 +560,7 @@ void AvcParserImpl::ParseAnnexbExtraData(const uint8_t *sample, int32_t size)
             maxReorderPic_ = info.reorderDelay > 0 ? info.reorderDelay : maxReorderPic_;
             picWidInLumaSamples_ = info.width > 0 ? info.width : picWidInLumaSamples_;
             picHetInLumaSamples_ = info.height > 0 ? info.height : picHetInLumaSamples_;
-            if (info.width > 0) {
-                spsCropLeftOffset_ = info.frameCropLeftOffset;
-                spsCropTopOffset_ = info.frameCropTopOffset;
-            }
+            UpdateSpsCropFromInfo(spsCropLeftOffset_, spsCropTopOffset_, info);
             sar_ = info.sar > 0 ? info.sar : sar_;
             if (parseSuccess) {
                 return;
@@ -638,10 +643,7 @@ bool AvcParserImpl::ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, in
         maxReorderPic_ = info.reorderDelay > 0 ? info.reorderDelay : maxReorderPic_;
         picWidInLumaSamples_ = info.width > 0 ? info.width : picWidInLumaSamples_;
         picHetInLumaSamples_ = info.height > 0 ? info.height : picHetInLumaSamples_;
-        if (info.width > 0) {
-            spsCropLeftOffset_ = info.frameCropLeftOffset;
-            spsCropTopOffset_ = info.frameCropTopOffset;
-        }
+        UpdateSpsCropFromInfo(spsCropLeftOffset_, spsCropTopOffset_, info);
         sar_ = info.sar > 0 ? info.sar : sar_;
         if (parseSuccess) {
             return true;

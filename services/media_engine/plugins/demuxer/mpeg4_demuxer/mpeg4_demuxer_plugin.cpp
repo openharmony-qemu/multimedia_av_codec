@@ -2546,10 +2546,12 @@ void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& trac
     int32_t containerHeight = 0;
     bool hasValidContainerWidth = format.Get<Tag::VIDEO_WIDTH>(containerWidth) && containerWidth > 0;
     bool hasValidContainerHeight = format.Get<Tag::VIDEO_HEIGHT>(containerHeight) && containerHeight > 0;
-    // Aligned with FFmpeg h264 decoder init_dimensions (h264_slice.c): when the container
-    // stsd dims are valid, the SPS has no top/left crop, the container dims fit within the
-    // SPS cropped frame and align to the 16-px macroblock grid like the SPS dims, the
-    // container dims are kept; otherwise the SPS cropped dims overwrite both fields.
+    // Aligned with FFmpeg h264 decoder init_dimensions (h264_slice.c): the container stsd dims
+    // are kept only when the SPS has no top/left crop, the container fits within the SPS cropped
+    // frame and shares its 16-px macroblock alignment. FFmpeg uses that FFALIGN consistency in
+    // place of an exact crop_right/crop_bottom match, so a container slightly smaller than the
+    // cropped frame (e.g. 2161 vs 2176) is intentionally kept; otherwise the SPS cropped dims
+    // overwrite both fields.
     bool keepContainerDims = hasValidContainerWidth && hasValidContainerHeight && w > 0 && h > 0 &&
         streamParsers_->GetSpsCropLeftOffset(trackIndex) == 0 &&
         streamParsers_->GetSpsCropTopOffset(trackIndex) == 0 &&
