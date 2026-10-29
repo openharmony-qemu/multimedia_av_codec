@@ -4759,7 +4759,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParserDimensionsFillM
     auto config = H264_REORDER_TWO_AVCC_FIXTURE;
     ASSERT_TRUE(plugin.streamParsers_->ConvertExtraDataToAnnexb(
         trackId, config.data(), static_cast<int32_t>(config.size())));
-    MPEG4AtomParser::Track track;
+    Plugins::MPEG4::MPEG4AtomParser::Track track;
     track.trackIndex = trackId;
     Meta format;
     format.Set<Tag::VIDEO_WIDTH>(containerWidth);
@@ -9456,6 +9456,20 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsDelayOverridesZero
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcSpsDelayRaisesLowerCtts_001
+ * @tc.desc: Verify FFmpeg FFMAX semantics retain the larger SPS reorder depth when CTTS is nonzero
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsDelayRaisesLowerCtts_001, TestSize.Level1)
+{
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::CttsEntry> ctts = {
+        {1, 0}, {1, 1}, {1, -1}, {1, 0},
+    };
+    EXPECT_EQ(CalculateAvcVideoDelayForTest(H264_REORDER_TWO_AVCC_FIXTURE, ctts,
+        VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT), static_cast<int32_t>(VIDEO_DELAY_TEST_SPS_REORDER));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_AvcCttsDelayRetainedWithoutSps_001
  * @tc.desc: Verify a valid MOV CTTS estimate is retained when codec reorder parsing is unavailable
  * @tc.type: FUNC
@@ -9613,6 +9627,41 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TraditionalNulCopyrightP
     std::string copyrightValue = "unexpected";
     ASSERT_TRUE(test.parser.mediaInfo_.general.Get<Tag::MEDIA_COPYRIGHT>(copyrightValue));
     EXPECT_TRUE(copyrightValue.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroLengthMetadataDataType_001
+ * @tc.desc: Verify zero-length numeric and unsupported metadata follow FFmpeg type handling
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthMetadataDataType_001, TestSize.Level1)
+{
+    constexpr uint32_t signedIntegerType = 21;
+    constexpr uint32_t unsignedIntegerType = 22;
+    constexpr uint32_t floatType = 23;
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    std::string key = "copyright";
+    ASSERT_EQ(parser.ReadMetadataString(key, 0, 0, signedIntegerType, &ctx), Status::OK);
+    std::string value;
+    ASSERT_TRUE(parser.mediaInfo_.general.Get<Tag::MEDIA_COPYRIGHT>(value));
+    EXPECT_EQ(value, "0");
+
+    Plugins::MPEG4::MPEG4AtomParser unsupportedParser;
+    ASSERT_EQ(unsupportedParser.ReadMetadataString(key, 0, 0, floatType, &ctx), Status::OK);
+    EXPECT_FALSE(unsupportedParser.mediaInfo_.general.Get<Tag::MEDIA_COPYRIGHT>(value));
+
+    Plugins::MPEG4::MPEG4AtomParser userParser;
+    ctx.isUserMeta = true;
+    key = "signed";
+    ASSERT_EQ(userParser.ReadMetadataString(key, 0, 0, signedIntegerType, &ctx), Status::OK);
+    int32_t integerValue = -1;
+    ASSERT_TRUE(userParser.userFormat_->GetData(key, integerValue));
+    EXPECT_EQ(integerValue, 0);
+    key = "unsigned";
+    ASSERT_EQ(userParser.ReadMetadataString(key, 0, 0, unsignedIntegerType, &ctx), Status::OK);
+    ASSERT_TRUE(userParser.userFormat_->GetData(key, value));
+    EXPECT_EQ(value, "0");
 }
 
 /**

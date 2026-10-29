@@ -93,6 +93,12 @@ constexpr uint64_t MIN_COLOR_SIZE = 4;
 constexpr uint64_t MIN_COLOR_PARAM_SIZE = 6;
 constexpr uint64_t MIN_MVHD_SIZE = 32;
 constexpr uint64_t SUPPORT_DATA_TYPE = 4;
+constexpr uint32_t METADATA_TYPE_RESERVED = 0;
+constexpr uint32_t METADATA_TYPE_UTF8 = 1;
+constexpr uint32_t METADATA_TYPE_SIGNED_INT = 21;
+constexpr uint32_t METADATA_TYPE_UNSIGNED_INT = 22;
+constexpr uint32_t METADATA_TYPE_FLOAT = 23;
+constexpr uint32_t METADATA_TYPE_SIGNED_INT_ALT = 67;
 Status ConvertTimeScaleRound(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result);
 Status ConvertTimeScaleRoundToTimeBase(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result);
 Status ConvertTrackTimeToUs(int64_t trackTime, int64_t trackTimeScale, int64_t* result);
@@ -1882,8 +1888,8 @@ void MPEG4AtomParser::CalculateVideoDelay(std::shared_ptr<Track> track)
             if (avcParser.ParseMaxReorderPicFromAvcConfig(
                 track->codecParms.data.get(), track->codecParms.extradataSize) &&
                 sampleCount > static_cast<int64_t>(avcParser.GetMaxReorderPic() + 1)) {
-                // FFmpeg seeds has_b_frames from the MOV CTTS estimate, then the H.264 decoder
-                // raises it to SPS num_reorder_frames when codec probing supplies stronger evidence.
+                // FFmpeg seeds has_b_frames from MOV CTTS, then h264_slice.c applies FFMAX with
+                // SPS num_reorder_frames. Keep the larger value even when both sources are nonzero.
                 videoDelay = std::max(videoDelay, avcParser.GetMaxReorderPic());
             }
         }
@@ -4796,6 +4802,7 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
         }
         resultStr = resultStr.length() > 0 ? resultStr : trimmedValue;
         // FFmpeg av_dict_set preserves a recognized key whose value is an empty C string.
+        // TrimMetadataStringAtNul only applies C-string termination; it does not trim whitespace.
         mediaInfo_.general.SetData(it->second, resultStr);
         if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
             mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TITLE>(resultStr);
@@ -4860,6 +4867,32 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
     return Status::OK;
 }
 
+Status MPEG4AtomParser::SetZeroLengthMetadataValue(
+    const std::string& key, uint32_t dataType, bool isTrackMetadata, bool isUserMetadata)
+{
+    if (dataType == METADATA_TYPE_FLOAT) {
+        return Status::OK;
+    }
+    if (isUserMetadata) {
+        FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
+        if (dataType == METADATA_TYPE_SIGNED_INT || dataType == METADATA_TYPE_SIGNED_INT_ALT) {
+            userFormat_->SetData(key, static_cast<int32_t>(0));
+        } else if (dataType == METADATA_TYPE_UNSIGNED_INT) {
+            // FFmpeg labels type 22 as unknown in its OHOS prefix, so the upper layer exports "0".
+            userFormat_->SetData(key, std::string("0"));
+        }
+        return Status::OK;
+    }
+    const bool isText = dataType == METADATA_TYPE_RESERVED || dataType == METADATA_TYPE_UTF8 ||
+        dataType == SUPPORT_DATA_TYPE;
+    const bool isInteger = dataType == METADATA_TYPE_SIGNED_INT || dataType == METADATA_TYPE_UNSIGNED_INT ||
+        dataType == METADATA_TYPE_SIGNED_INT_ALT;
+    if ((isText || isInteger) && !SetMetadataValue(key, isInteger ? "0" : "", isTrackMetadata)) {
+        MEDIA_LOG_D("Skip unsupported zero-length metadata key: " PUBLIC_LOG_S, key.c_str());
+    }
+    return Status::OK;
+}
+
 Status MPEG4AtomParser::ReadMetadataString(
     std::string& key, int64_t offset, uint64_t size, uint32_t dataType, ParseContext* parseCtx)
 {
@@ -4870,9 +4903,9 @@ Status MPEG4AtomParser::ReadMetadataString(
         (parseCtx->path[2] == static_cast<uint32_t>(FourccType("udta")) ||
          parseCtx->path[2] == static_cast<uint32_t>(FourccType("ilst")));
     if (size == 0) {
-        // A zero-length payload is still a present standard metadata entry in FFmpeg.
-        (void)SetMetadataValue(key, "", isTrackMeta);
-        return Status::OK;
+        const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
+        // FFmpeg keeps zero-length text, emits integer zero, and skips float/unsupported values.
+        return SetZeroLengthMetadataValue(key, dataType, isTrackMeta, isUserMeta);
     }
     FALSE_RETURN_V_MSG_E(size <= std::min(MPEG4_MAX_BOX_DATA_SIZE, static_cast<uint64_t>(SIZE_MAX - 1)),
         Status::ERROR_INVALID_DATA, "Invalid metadata size");

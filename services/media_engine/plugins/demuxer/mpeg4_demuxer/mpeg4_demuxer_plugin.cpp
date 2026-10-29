@@ -2537,7 +2537,8 @@ void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& trac
     double sar = streamParsers_->GetSar(trackIndex);
     int32_t containerWidth = 0;
     int32_t containerHeight = 0;
-    // Match FFmpeg parser.c FILL semantics: parser dimensions only fill missing container fields.
+    // Match FFmpeg parser.c FILL semantics: width and height are filled independently, so a
+    // valid container dimension may intentionally be paired with the missing dimension from SPS.
     if ((!format.Get<Tag::VIDEO_WIDTH>(containerWidth) || containerWidth <= 0) && w > 0) {
         format.Set<Tag::VIDEO_WIDTH>(w);
     }

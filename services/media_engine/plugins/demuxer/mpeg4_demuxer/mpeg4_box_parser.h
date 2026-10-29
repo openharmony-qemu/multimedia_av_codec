@@ -383,6 +383,8 @@ private:
     Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ReadMetadataString(
         std::string& key, int64_t offset, uint64_t size, uint32_t dataType, ParseContext* parseCtx);
+    Status SetZeroLengthMetadataValue(
+        const std::string& key, uint32_t dataType, bool isTrackMetadata, bool isUserMetadata);
     Status SetMetadata(std::string& key, uint8_t* buffer, uint64_t size, uint32_t dataType);
     Status ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);
