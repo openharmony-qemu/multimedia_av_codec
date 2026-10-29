@@ -4858,14 +4858,19 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
             FALSE_RETURN_V_MSG_D(
                 dataType <= 1 || dataType == METADATA_TYPE_UTF8_SORT,
                 Status::OK, "Unsupport meta %{public}d", dataType);
-            std::string stringValue = TrimMetadataStringAtNul(std::string(reinterpret_cast<char*>(buffer), size));
-            if (!stringValue.empty()) {
-                userFormat_->SetData(key, stringValue);
-            }
+            SetUserStringMetadata(key, buffer, size);
             break;
         }
     }
     return Status::OK;
+}
+
+void MPEG4AtomParser::SetUserStringMetadata(const std::string& key, const uint8_t* buffer, uint64_t size)
+{
+    std::string stringValue = TrimMetadataStringAtNul(std::string(reinterpret_cast<const char*>(buffer), size));
+    if (!stringValue.empty()) {
+        userFormat_->SetData(key, stringValue);
+    }
 }
 
 Status MPEG4AtomParser::SetZeroLengthMetadataValue(

@@ -386,6 +386,7 @@ private:
     Status SetZeroLengthMetadataValue(
         const std::string& key, uint32_t dataType, bool isTrackMetadata, bool isUserMetadata);
     Status SetMetadata(std::string& key, uint8_t* buffer, uint64_t size, uint32_t dataType);
+    void SetUserStringMetadata(const std::string& key, const uint8_t* buffer, uint64_t size);
     Status ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);
     std::shared_ptr<Track> FindSidxTrack(uint32_t referenceId);

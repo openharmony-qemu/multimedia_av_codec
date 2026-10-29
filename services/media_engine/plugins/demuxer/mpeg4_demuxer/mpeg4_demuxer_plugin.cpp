@@ -2535,14 +2535,14 @@ void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& trac
     uint32_t w = streamParsers_->GetPicWidInLumaSamples(trackIndex);
     uint32_t h = streamParsers_->GetPicHetInLumaSamples(trackIndex);
     double sar = streamParsers_->GetSar(trackIndex);
-    int32_t containerWidth = 0;
-    int32_t containerHeight = 0;
-    // Match FFmpeg parser.c FILL semantics: width and height are filled independently, so a
-    // valid container dimension may intentionally be paired with the missing dimension from SPS.
-    if ((!format.Get<Tag::VIDEO_WIDTH>(containerWidth) || containerWidth <= 0) && w > 0) {
+    // Match FFmpeg avformat_find_stream_info: after probing, the h264 codec context (SPS)
+    // overwrites codecpar width/height even when the container stsd provides valid values;
+    // each dimension is filled independently from the parsed SPS. Container dims remain in
+    // place only when the SPS parse did not yield a valid dimension.
+    if (w > 0) {
         format.Set<Tag::VIDEO_WIDTH>(w);
     }
-    if ((!format.Get<Tag::VIDEO_HEIGHT>(containerHeight) || containerHeight <= 0) && h > 0) {
+    if (h > 0) {
         format.Set<Tag::VIDEO_HEIGHT>(h);
     }
     // Aligned with FFmpeg av_guess_sample_aspect_ratio: container-derived SAR (pasp /
