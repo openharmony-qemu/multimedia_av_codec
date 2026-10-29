@@ -92,7 +92,25 @@ constexpr size_t MAX_EOS_SEEK_SAMPLE_COUNT = 128;
 const std::vector<uint8_t> H264_AVCC_FIXTURE = {
     0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
 };
+const std::vector<uint8_t> H264_REORDER_TWO_AVCC_FIXTURE = {
+    0x01, 0x64, 0x00, 0x32, 0xFF, 0xE1, 0x00, 0x19, 0x67, 0x64, 0x00, 0x32, 0xAC, 0xD9, 0x40, 0x28,
+    0x00, 0xB5, 0xB0, 0x11, 0x00, 0x00, 0x03, 0x03, 0xE9, 0x00, 0x00, 0xEA, 0x60, 0x0F, 0x18, 0x31,
+    0x96, 0x01, 0x00, 0x05, 0x68, 0xEB, 0xEC, 0xB2, 0x2C, 0xFD, 0xF8, 0xF8, 0x00,
+};
+// video_oddheight_lvxian.mp4 SPS: 136x182 MBs (2176x2912 coded), crop bottom 5 -> 2176x2902.
+const std::vector<uint8_t> H264_ODDHEIGHT_CROP_AVCC_FIXTURE = {
+    0x01, 0x64, 0x00, 0x34, 0xFF, 0xE1, 0x00, 0x2A, 0x67, 0x64, 0x00, 0x34, 0xAC, 0x2B, 0x20, 0x04,
+    0x40, 0x0B, 0x6F, 0xCD, 0x80, 0xB7, 0x01, 0x01, 0x05, 0x40, 0x00, 0x00, 0xFA, 0x00, 0x00, 0x73,
+    0x3C, 0x38, 0x00, 0x00, 0x03, 0x00, 0x4B, 0xF2, 0x4C, 0x00, 0x00, 0x04, 0xBF, 0x24, 0xC6, 0xEF,
+    0x2E, 0x0A, 0x01, 0x00, 0x04, 0x68, 0xEB, 0x8F, 0x2C,
+};
 constexpr uint32_t VIDEO_DURATION_READ_BUFFER_SIZE = 64;
+constexpr size_t VIDEO_DELAY_TEST_TRACK_COUNT = 1;
+constexpr uint32_t VIDEO_DELAY_TEST_SAMPLE_DURATION = 1;
+constexpr uint32_t VIDEO_DELAY_TEST_SPS_REORDER = 2;
+constexpr uint32_t VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT = VIDEO_DELAY_TEST_SPS_REORDER + 2;
+constexpr uint32_t VIDEO_DELAY_TEST_INSUFFICIENT_SAMPLE_COUNT = VIDEO_DELAY_TEST_SPS_REORDER + 1;
+constexpr uint32_t TRADITIONAL_METADATA_LENGTH_SHIFT = 8;
 constexpr uint32_t RFPS_LINE77_STTS_EXTEND_COUNT = 40;
 constexpr int64_t TEST_EOS_SEEK_TIME_MS = 4000;
 constexpr int64_t TEST_MS_TO_US = 1000;
@@ -1054,6 +1072,46 @@ std::vector<uint8_t> BuildAtomHeader(uint64_t payloadSize, uint32_t atomType, bo
         AppendU32(data, atomType);
     }
     return data;
+}
+
+std::vector<uint8_t> BuildTraditionalMetadataFile(uint32_t atomType, const std::vector<uint8_t>& value)
+{
+    EXPECT_LE(value.size(), std::numeric_limits<uint16_t>::max());
+    std::vector<uint8_t> payload;
+    payload.emplace_back(static_cast<uint8_t>(value.size() >> TRADITIONAL_METADATA_LENGTH_SHIFT));
+    payload.emplace_back(static_cast<uint8_t>(value.size()));
+    payload.insert(payload.end(), {0, 0}); // language
+    payload.insert(payload.end(), value.begin(), value.end());
+    auto metadata = BuildAtomHeader(payload.size(), atomType, false);
+    metadata.insert(metadata.end(), payload.begin(), payload.end());
+    auto udta = BuildAtomHeader(metadata.size(), Plugins::MPEG4::FourccType("udta"), false);
+    udta.insert(udta.end(), metadata.begin(), metadata.end());
+    auto moov = BuildAtomHeader(udta.size(), Plugins::MPEG4::FourccType("moov"), false);
+    moov.insert(moov.end(), udta.begin(), udta.end());
+    return moov;
+}
+
+int32_t CalculateAvcVideoDelayForTest(const std::vector<uint8_t>& config,
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::CttsEntry>& ctts, uint32_t sampleCount)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    track->sampleHelper->mimeType_ = MimeType::VIDEO_AVC;
+    track->sampleHelper->sttsEntry_ = {{sampleCount, VIDEO_DELAY_TEST_SAMPLE_DURATION}};
+    track->sampleHelper->cttsEntry_ = ctts;
+    track->sampleHelper->sampleTableSummary_.rawSampleCount = sampleCount;
+    track->sampleHelper->sampleTableSummary_.logicalSampleCount = sampleCount;
+    if (!config.empty()) {
+        track->codecParms.data = std::make_unique<uint8_t[]>(config.size());
+        std::copy(config.begin(), config.end(), track->codecParms.data.get());
+        track->codecParms.extradataSize = static_cast<int64_t>(config.size());
+    }
+    parser.mediaInfo_.tracks.resize(VIDEO_DELAY_TEST_TRACK_COUNT);
+    parser.CalculateVideoDelay(track);
+    int32_t videoDelay = -1;
+    EXPECT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::VIDEO_DELAY>(videoDelay));
+    return videoDelay;
 }
 
 void WriteU16(std::vector<uint8_t>& data, size_t offset, uint16_t value)
@@ -4688,6 +4746,119 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsFrameRateFromAvcCo
         config.data(), static_cast<int32_t>(config.size()), frameRateNum, frameRateDen));
     EXPECT_EQ(frameRateNum, 90000U);
     EXPECT_EQ(frameRateDen, 1U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParserDimensionsOverrideContainer_001
+ * @tc.desc: Verify SPS dimensions overwrite valid container dimensions like FFmpeg probing.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParserDimensionsOverrideContainer_001,
+    TestSize.Level1)
+{
+    constexpr uint32_t trackId = 0;
+    constexpr int32_t containerWidth = 2176;
+    constexpr int32_t containerHeight = 2901;
+    MPEG4DemuxerPlugin plugin(MPEG4_PLUGIN_NAME);
+    plugin.streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin.streamParsers_, nullptr);
+    ASSERT_EQ(plugin.streamParsers_->Create(trackId, VideoStreamType::AVC), Status::OK);
+
+    auto config = H264_REORDER_TWO_AVCC_FIXTURE;
+    ASSERT_TRUE(plugin.streamParsers_->ConvertExtraDataToAnnexb(
+        trackId, config.data(), static_cast<int32_t>(config.size())));
+    Plugins::MPEG4::MPEG4AtomParser::Track track;
+    track.trackIndex = trackId;
+    int32_t spsWidth = static_cast<int32_t>(plugin.streamParsers_->GetPicWidInLumaSamples(trackId));
+    int32_t spsHeight = static_cast<int32_t>(plugin.streamParsers_->GetPicHetInLumaSamples(trackId));
+    ASSERT_GT(spsWidth, 0);
+    ASSERT_GT(spsHeight, 0);
+
+    Meta format;
+    format.Set<Tag::VIDEO_WIDTH>(containerWidth);
+    format.Set<Tag::VIDEO_HEIGHT>(containerHeight);
+    plugin.ParseAVCMetadataInfo(track, format);
+    int32_t width = 0;
+    int32_t height = 0;
+    ASSERT_TRUE(format.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(format.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, spsWidth);
+    EXPECT_EQ(height, spsHeight);
+
+    Meta missingHeightFormat;
+    missingHeightFormat.Set<Tag::VIDEO_WIDTH>(containerWidth);
+    plugin.ParseAVCMetadataInfo(track, missingHeightFormat);
+    ASSERT_TRUE(missingHeightFormat.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(missingHeightFormat.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, spsWidth);
+    EXPECT_EQ(height, spsHeight);
+
+    Meta zeroWidthFormat;
+    zeroWidthFormat.Set<Tag::VIDEO_WIDTH>(0);
+    zeroWidthFormat.Set<Tag::VIDEO_HEIGHT>(containerHeight);
+    plugin.ParseAVCMetadataInfo(track, zeroWidthFormat);
+    ASSERT_TRUE(zeroWidthFormat.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(zeroWidthFormat.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, spsWidth);
+    EXPECT_EQ(height, spsHeight);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParserKeepContainerDimensions_001
+ * @tc.desc: Verify FFmpeg init_dimensions rule keeps container dims when the SPS frame has
+ *           no top/left crop and the container dims fit the SPS cropped frame on the 16-px grid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParserKeepContainerDimensions_001, TestSize.Level1)
+{
+    constexpr uint32_t trackId = 0;
+    constexpr int32_t containerWidth = 2176;
+    constexpr int32_t containerHeight = 2901;
+    MPEG4DemuxerPlugin plugin(MPEG4_PLUGIN_NAME);
+    plugin.streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin.streamParsers_, nullptr);
+    ASSERT_EQ(plugin.streamParsers_->Create(trackId, VideoStreamType::AVC), Status::OK);
+
+    auto config = H264_ODDHEIGHT_CROP_AVCC_FIXTURE;
+    ASSERT_TRUE(plugin.streamParsers_->ConvertExtraDataToAnnexb(
+        trackId, config.data(), static_cast<int32_t>(config.size())));
+    Plugins::MPEG4::MPEG4AtomParser::Track track;
+    track.trackIndex = trackId;
+    int32_t spsWidth = static_cast<int32_t>(plugin.streamParsers_->GetPicWidInLumaSamples(trackId));
+    int32_t spsHeight = static_cast<int32_t>(plugin.streamParsers_->GetPicHetInLumaSamples(trackId));
+    ASSERT_GT(spsWidth, 0);
+    ASSERT_GT(spsHeight, 0);
+    EXPECT_EQ(plugin.streamParsers_->GetSpsCropLeftOffset(trackId), 0U);
+    EXPECT_EQ(plugin.streamParsers_->GetSpsCropTopOffset(trackId), 0U);
+
+    Meta format;
+    format.Set<Tag::VIDEO_WIDTH>(containerWidth);
+    format.Set<Tag::VIDEO_HEIGHT>(containerHeight);
+    plugin.ParseAVCMetadataInfo(track, format);
+    int32_t width = 0;
+    int32_t height = 0;
+    ASSERT_TRUE(format.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(format.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, containerWidth);
+    EXPECT_EQ(height, containerHeight);
+
+    Meta misalignedFormat;
+    misalignedFormat.Set<Tag::VIDEO_WIDTH>(1280);
+    misalignedFormat.Set<Tag::VIDEO_HEIGHT>(720);
+    plugin.ParseAVCMetadataInfo(track, misalignedFormat);
+    ASSERT_TRUE(misalignedFormat.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(misalignedFormat.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, spsWidth);
+    EXPECT_EQ(height, spsHeight);
+
+    Meta oversizedFormat;
+    oversizedFormat.Set<Tag::VIDEO_WIDTH>(containerWidth);
+    oversizedFormat.Set<Tag::VIDEO_HEIGHT>(2910);
+    plugin.ParseAVCMetadataInfo(track, oversizedFormat);
+    ASSERT_TRUE(oversizedFormat.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(oversizedFormat.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, spsWidth);
+    EXPECT_EQ(height, spsHeight);
 }
 
 /**
@@ -9341,6 +9512,69 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SparseEditProjectedVideo
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcSpsDelayOverridesZeroCtts_001
+ * @tc.desc: Verify codec SPS reorder evidence raises a zero MOV CTTS delay like FFmpeg probing
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsDelayOverridesZeroCtts_001, TestSize.Level1)
+{
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::CttsEntry> ctts = {
+        {VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT, 0},
+    };
+    EXPECT_EQ(CalculateAvcVideoDelayForTest(H264_REORDER_TWO_AVCC_FIXTURE, ctts,
+        VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT), static_cast<int32_t>(VIDEO_DELAY_TEST_SPS_REORDER));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcSpsDelayRaisesLowerCtts_001
+ * @tc.desc: Verify FFmpeg FFMAX semantics retain the larger SPS reorder depth when CTTS is nonzero
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsDelayRaisesLowerCtts_001, TestSize.Level1)
+{
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::CttsEntry> ctts = {
+        {1, 0}, {1, 1}, {1, -1}, {1, 0},
+    };
+    EXPECT_EQ(CalculateAvcVideoDelayForTest(H264_REORDER_TWO_AVCC_FIXTURE, ctts,
+        VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT), static_cast<int32_t>(VIDEO_DELAY_TEST_SPS_REORDER));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcCttsDelayRetainedWithoutSps_001
+ * @tc.desc: Verify a valid MOV CTTS estimate is retained when codec reorder parsing is unavailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcCttsDelayRetainedWithoutSps_001, TestSize.Level1)
+{
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::CttsEntry> ctts = {
+        {1, 0}, {1, 1}, {1, -1}, {1, 0},
+    };
+    EXPECT_EQ(CalculateAvcVideoDelayForTest({}, ctts, VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT), 1);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcSpsDelayWithoutCtts_001
+ * @tc.desc: Verify codec SPS reorder evidence supplies delay when MOV CTTS is absent
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsDelayWithoutCtts_001, TestSize.Level1)
+{
+    EXPECT_EQ(CalculateAvcVideoDelayForTest(H264_REORDER_TWO_AVCC_FIXTURE, {},
+        VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT), static_cast<int32_t>(VIDEO_DELAY_TEST_SPS_REORDER));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcSpsDelayNeedsEnoughSamples_001
+ * @tc.desc: Verify SPS delay is not exposed when the track cannot contain the reorder depth
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsDelayNeedsEnoughSamples_001, TestSize.Level1)
+{
+    EXPECT_EQ(CalculateAvcVideoDelayForTest(H264_REORDER_TWO_AVCC_FIXTURE, {},
+        VIDEO_DELAY_TEST_INSUFFICIENT_SAMPLE_COUNT), 0);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_AuxEditListMinCorrectedPtsShift_001
  * @tc.desc: Verify auxiliary video-like tracks apply the min corrected PTS shift like FFmpeg need_parse_video_info
  * @tc.type: FUNC
@@ -9429,6 +9663,94 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_IlstStringNulPaddingTrim
     std::string actualComment;
     ASSERT_TRUE(test.parser.mediaInfo_.general.Get<Tag::MEDIA_COMMENT>(actualComment));
     EXPECT_EQ(actualComment, expectedComment);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TraditionalEmptyCopyrightPreserved_001
+ * @tc.desc: Verify a recognized zero-length cprt value remains present like FFmpeg metadata
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TraditionalEmptyCopyrightPreserved_001, TestSize.Level1)
+{
+    auto file = BuildTraditionalMetadataFile(Plugins::MPEG4::FourccType("cprt"), {});
+    AtomParserTestContext test(file);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    ASSERT_EQ(test.parser.MPEG4ParseAtom(0, &ctx), Status::OK);
+
+    std::string copyrightValue = "unexpected";
+    ASSERT_TRUE(test.parser.mediaInfo_.general.Get<Tag::MEDIA_COPYRIGHT>(copyrightValue));
+    EXPECT_TRUE(copyrightValue.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TraditionalNulCopyrightPreserved_001
+ * @tc.desc: Verify a recognized NUL-only cprt value is trimmed but not removed
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TraditionalNulCopyrightPreserved_001, TestSize.Level1)
+{
+    auto file = BuildTraditionalMetadataFile(Plugins::MPEG4::FourccType("cprt"), {'\0'});
+    AtomParserTestContext test(file);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    ASSERT_EQ(test.parser.MPEG4ParseAtom(0, &ctx), Status::OK);
+
+    std::string copyrightValue = "unexpected";
+    ASSERT_TRUE(test.parser.mediaInfo_.general.Get<Tag::MEDIA_COPYRIGHT>(copyrightValue));
+    EXPECT_TRUE(copyrightValue.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ZeroLengthMetadataDataType_001
+ * @tc.desc: Verify zero-length numeric and unsupported metadata follow FFmpeg type handling
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthMetadataDataType_001, TestSize.Level1)
+{
+    constexpr uint32_t reservedType = 0;
+    constexpr uint32_t utf8Type = 1;
+    constexpr uint32_t utf8SortType = 4;
+    constexpr uint32_t signedIntegerType = 21;
+    constexpr uint32_t unsignedIntegerType = 22;
+    constexpr uint32_t floatType = 23;
+    constexpr uint32_t signedIntegerAltType = 67;
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    std::string key = "copyright";
+    ASSERT_EQ(parser.ReadMetadataString(key, 0, 0, signedIntegerType, &ctx), Status::OK);
+    std::string value;
+    ASSERT_TRUE(parser.mediaInfo_.general.Get<Tag::MEDIA_COPYRIGHT>(value));
+    EXPECT_EQ(value, "0");
+
+    Plugins::MPEG4::MPEG4AtomParser unsupportedParser;
+    ASSERT_EQ(unsupportedParser.ReadMetadataString(key, 0, 0, floatType, &ctx), Status::OK);
+    EXPECT_FALSE(unsupportedParser.mediaInfo_.general.Get<Tag::MEDIA_COPYRIGHT>(value));
+
+    Plugins::MPEG4::MPEG4AtomParser userParser;
+    ctx.isUserMeta = true;
+    for (uint32_t textType : {reservedType, utf8Type, utf8SortType}) {
+        key = "empty_text_" + std::to_string(textType);
+        EXPECT_EQ(userParser.ReadMetadataString(key, 0, 0, textType, &ctx), Status::OK);
+        EXPECT_FALSE(userParser.userFormat_->GetData(key, value));
+    }
+    userParser.userFormat_.reset();
+    EXPECT_EQ(userParser.ReadMetadataString(key, 0, 0, utf8Type, &ctx), Status::OK);
+    userParser.userFormat_ = std::make_shared<Meta>();
+    key = "signed";
+    ASSERT_EQ(userParser.ReadMetadataString(key, 0, 0, signedIntegerType, &ctx), Status::OK);
+    int32_t integerValue = -1;
+    ASSERT_TRUE(userParser.userFormat_->GetData(key, integerValue));
+    EXPECT_EQ(integerValue, 0);
+    key = "unsigned";
+    ASSERT_EQ(userParser.ReadMetadataString(key, 0, 0, unsignedIntegerType, &ctx), Status::OK);
+    ASSERT_TRUE(userParser.userFormat_->GetData(key, value));
+    EXPECT_EQ(value, "0");
+    key = "signed_alt";
+    ASSERT_EQ(userParser.ReadMetadataString(key, 0, 0, signedIntegerAltType, &ctx), Status::OK);
+    ASSERT_TRUE(userParser.userFormat_->GetData(key, integerValue));
+    EXPECT_EQ(integerValue, 0);
+    key = "float";
+    EXPECT_EQ(userParser.ReadMetadataString(key, 0, 0, floatType, &ctx), Status::OK);
+    EXPECT_FALSE(userParser.userFormat_->GetData(key, value));
 }
 
 /**

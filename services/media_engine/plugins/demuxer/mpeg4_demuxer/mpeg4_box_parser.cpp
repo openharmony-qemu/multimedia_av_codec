@@ -92,7 +92,13 @@ constexpr uint64_t MAX_DATA_SIZE = 256;
 constexpr uint64_t MIN_COLOR_SIZE = 4;
 constexpr uint64_t MIN_COLOR_PARAM_SIZE = 6;
 constexpr uint64_t MIN_MVHD_SIZE = 32;
-constexpr uint64_t SUPPORT_DATA_TYPE = 4;
+constexpr uint32_t METADATA_TYPE_RESERVED = 0;
+constexpr uint32_t METADATA_TYPE_UTF8 = 1;
+constexpr uint32_t METADATA_TYPE_UTF8_SORT = 4;
+constexpr uint32_t METADATA_TYPE_SIGNED_INT = 21;
+constexpr uint32_t METADATA_TYPE_UNSIGNED_INT = 22;
+constexpr uint32_t METADATA_TYPE_FLOAT = 23;
+constexpr uint32_t METADATA_TYPE_SIGNED_INT_ALT = 67;
 Status ConvertTimeScaleRound(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result);
 Status ConvertTimeScaleRoundToTimeBase(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result);
 Status ConvertTrackTimeToUs(int64_t trackTime, int64_t trackTimeScale, int64_t* result);
@@ -1875,13 +1881,16 @@ void MPEG4AtomParser::CalculateVideoDelay(std::shared_ptr<Track> track)
     if (track->sampleHelper->mimeType_ == MimeType::VIDEO_AVC) {
         if (!track->sampleHelper->cttsEntry_.empty()) {
             videoDelay = track->sampleHelper->EstimateVideoDelay();
-        } else if (track->codecParms.data != nullptr && track->codecParms.extradataSize > 0) {
+        }
+        if (track->codecParms.data != nullptr && track->codecParms.extradataSize > 0) {
             AvcParserImpl avcParser;
             int64_t sampleCount = GetEffectiveSampleCount(track->sampleHelper);
             if (avcParser.ParseMaxReorderPicFromAvcConfig(
                 track->codecParms.data.get(), track->codecParms.extradataSize) &&
                 sampleCount > static_cast<int64_t>(avcParser.GetMaxReorderPic() + 1)) {
-                videoDelay = avcParser.GetMaxReorderPic();
+                // FFmpeg seeds has_b_frames from MOV CTTS, then h264_slice.c applies FFMAX with
+                // SPS num_reorder_frames. Keep the larger value even when both sources are nonzero.
+                videoDelay = std::max(videoDelay, avcParser.GetMaxReorderPic());
             }
         }
     }
@@ -4792,11 +4801,11 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
             resultStr = Converter::ConvertGBKToUTF8(trimmedValue);
         }
         resultStr = resultStr.length() > 0 ? resultStr : trimmedValue;
-        if (resultStr.length() > 0) {
-            mediaInfo_.general.SetData(it->second, resultStr);
-            if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
-                mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TITLE>(resultStr);
-            }
+        // FFmpeg av_dict_set preserves a recognized key whose value is an empty C string.
+        // TrimMetadataStringAtNul only applies C-string termination; it does not trim whitespace.
+        mediaInfo_.general.SetData(it->second, resultStr);
+        if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
+            mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TITLE>(resultStr);
         }
         return true;
     } else if (key == "location") {
@@ -4847,13 +4856,51 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
         }
         default: { // UTF-8 string
             FALSE_RETURN_V_MSG_D(
-                dataType <= 1 || dataType == SUPPORT_DATA_TYPE, Status::OK, "Unsupport meta %{public}d", dataType);
-            std::string stringValue = TrimMetadataStringAtNul(std::string(reinterpret_cast<char*>(buffer), size));
-            if (!stringValue.empty()) {
-                userFormat_->SetData(key, stringValue);
-            }
+                dataType <= 1 || dataType == METADATA_TYPE_UTF8_SORT,
+                Status::OK, "Unsupport meta %{public}d", dataType);
+            SetUserStringMetadata(key, buffer, size);
             break;
         }
+    }
+    return Status::OK;
+}
+
+void MPEG4AtomParser::SetUserStringMetadata(const std::string& key, const uint8_t* buffer, uint64_t size)
+{
+    std::string stringValue = TrimMetadataStringAtNul(std::string(reinterpret_cast<const char*>(buffer), size));
+    if (!stringValue.empty()) {
+        userFormat_->SetData(key, stringValue);
+    }
+}
+
+Status MPEG4AtomParser::SetZeroLengthMetadataValue(
+    const std::string& key, uint32_t dataType, bool isTrackMetadata, bool isUserMetadata)
+{
+    if (dataType == METADATA_TYPE_FLOAT) {
+        return Status::OK;
+    }
+    if (isUserMetadata) {
+        const bool isSignedInteger =
+            dataType == METADATA_TYPE_SIGNED_INT || dataType == METADATA_TYPE_SIGNED_INT_ALT;
+        const bool isUnsignedInteger = dataType == METADATA_TYPE_UNSIGNED_INT;
+        if (!isSignedInteger && !isUnsignedInteger) {
+            return Status::OK;
+        }
+        FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
+        if (isSignedInteger) {
+            userFormat_->SetData(key, static_cast<int32_t>(0));
+        } else {
+            // FFmpeg labels type 22 as unknown in its OHOS prefix, so the upper layer exports "0".
+            userFormat_->SetData(key, std::string("0"));
+        }
+        return Status::OK;
+    }
+    const bool isText = dataType == METADATA_TYPE_RESERVED || dataType == METADATA_TYPE_UTF8 ||
+        dataType == METADATA_TYPE_UTF8_SORT;
+    const bool isInteger = dataType == METADATA_TYPE_SIGNED_INT || dataType == METADATA_TYPE_UNSIGNED_INT ||
+        dataType == METADATA_TYPE_SIGNED_INT_ALT;
+    if ((isText || isInteger) && !SetMetadataValue(key, isInteger ? "0" : "", isTrackMetadata)) {
+        MEDIA_LOG_D("Skip unsupported zero-length metadata key: " PUBLIC_LOG_S, key.c_str());
     }
     return Status::OK;
 }
@@ -4861,7 +4908,18 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
 Status MPEG4AtomParser::ReadMetadataString(
     std::string& key, int64_t offset, uint64_t size, uint32_t dataType, ParseContext* parseCtx)
 {
-    FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
+    const bool isTrackMeta = parseCtx != nullptr && lastTrack_ != nullptr &&
+        lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
+        parseCtx->path[0] == static_cast<uint32_t>(FourccType("moov")) &&
+        parseCtx->path[1] == static_cast<uint32_t>(FourccType("trak")) &&
+        (parseCtx->path[2] == static_cast<uint32_t>(FourccType("udta")) ||
+         parseCtx->path[2] == static_cast<uint32_t>(FourccType("ilst")));
+    if (size == 0) {
+        const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
+        // Standard metadata keeps empty text and integer zero. FFmpegFormatHelper skips prefix-only
+        // user text/buffer values, exports integer zero, and ignores float/unsupported values.
+        return SetZeroLengthMetadataValue(key, dataType, isTrackMeta, isUserMeta);
+    }
     FALSE_RETURN_V_MSG_E(size <= std::min(MPEG4_MAX_BOX_DATA_SIZE, static_cast<uint64_t>(SIZE_MAX - 1)),
         Status::ERROR_INVALID_DATA, "Invalid metadata size");
     auto buffer = std::make_unique<uint8_t[]>(size + 1);
@@ -4870,12 +4928,6 @@ Status MPEG4AtomParser::ReadMetadataString(
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
 
     buffer[size] = '\0';
-    const bool isTrackMeta = parseCtx != nullptr && lastTrack_ != nullptr &&
-        lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
-        parseCtx->path[0] == static_cast<uint32_t>(FourccType("moov")) &&
-        parseCtx->path[1] == static_cast<uint32_t>(FourccType("trak")) &&
-        (parseCtx->path[2] == static_cast<uint32_t>(FourccType("udta")) ||
-         parseCtx->path[2] == static_cast<uint32_t>(FourccType("ilst")));
     const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
     if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size), isTrackMeta) && !isUserMeta) {
         return Status::OK;
