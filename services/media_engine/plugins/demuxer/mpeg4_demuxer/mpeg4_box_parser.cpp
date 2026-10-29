@@ -92,9 +92,9 @@ constexpr uint64_t MAX_DATA_SIZE = 256;
 constexpr uint64_t MIN_COLOR_SIZE = 4;
 constexpr uint64_t MIN_COLOR_PARAM_SIZE = 6;
 constexpr uint64_t MIN_MVHD_SIZE = 32;
-constexpr uint64_t SUPPORT_DATA_TYPE = 4;
 constexpr uint32_t METADATA_TYPE_RESERVED = 0;
 constexpr uint32_t METADATA_TYPE_UTF8 = 1;
+constexpr uint32_t METADATA_TYPE_UTF8_SORT = 4;
 constexpr uint32_t METADATA_TYPE_SIGNED_INT = 21;
 constexpr uint32_t METADATA_TYPE_UNSIGNED_INT = 22;
 constexpr uint32_t METADATA_TYPE_FLOAT = 23;
@@ -4856,7 +4856,8 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
         }
         default: { // UTF-8 string
             FALSE_RETURN_V_MSG_D(
-                dataType <= 1 || dataType == SUPPORT_DATA_TYPE, Status::OK, "Unsupport meta %{public}d", dataType);
+                dataType <= 1 || dataType == METADATA_TYPE_UTF8_SORT,
+                Status::OK, "Unsupport meta %{public}d", dataType);
             std::string stringValue = TrimMetadataStringAtNul(std::string(reinterpret_cast<char*>(buffer), size));
             if (!stringValue.empty()) {
                 userFormat_->SetData(key, stringValue);
@@ -4874,17 +4875,23 @@ Status MPEG4AtomParser::SetZeroLengthMetadataValue(
         return Status::OK;
     }
     if (isUserMetadata) {
+        const bool isSignedInteger =
+            dataType == METADATA_TYPE_SIGNED_INT || dataType == METADATA_TYPE_SIGNED_INT_ALT;
+        const bool isUnsignedInteger = dataType == METADATA_TYPE_UNSIGNED_INT;
+        if (!isSignedInteger && !isUnsignedInteger) {
+            return Status::OK;
+        }
         FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
-        if (dataType == METADATA_TYPE_SIGNED_INT || dataType == METADATA_TYPE_SIGNED_INT_ALT) {
+        if (isSignedInteger) {
             userFormat_->SetData(key, static_cast<int32_t>(0));
-        } else if (dataType == METADATA_TYPE_UNSIGNED_INT) {
+        } else {
             // FFmpeg labels type 22 as unknown in its OHOS prefix, so the upper layer exports "0".
             userFormat_->SetData(key, std::string("0"));
         }
         return Status::OK;
     }
     const bool isText = dataType == METADATA_TYPE_RESERVED || dataType == METADATA_TYPE_UTF8 ||
-        dataType == SUPPORT_DATA_TYPE;
+        dataType == METADATA_TYPE_UTF8_SORT;
     const bool isInteger = dataType == METADATA_TYPE_SIGNED_INT || dataType == METADATA_TYPE_UNSIGNED_INT ||
         dataType == METADATA_TYPE_SIGNED_INT_ALT;
     if ((isText || isInteger) && !SetMetadataValue(key, isInteger ? "0" : "", isTrackMetadata)) {
@@ -4904,7 +4911,8 @@ Status MPEG4AtomParser::ReadMetadataString(
          parseCtx->path[2] == static_cast<uint32_t>(FourccType("ilst")));
     if (size == 0) {
         const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
-        // FFmpeg keeps zero-length text, emits integer zero, and skips float/unsupported values.
+        // Standard metadata keeps empty text and integer zero. FFmpegFormatHelper skips prefix-only
+        // user text/buffer values, exports integer zero, and ignores float/unsupported values.
         return SetZeroLengthMetadataValue(key, dataType, isTrackMeta, isUserMeta);
     }
     FALSE_RETURN_V_MSG_E(size <= std::min(MPEG4_MAX_BOX_DATA_SIZE, static_cast<uint64_t>(SIZE_MAX - 1)),

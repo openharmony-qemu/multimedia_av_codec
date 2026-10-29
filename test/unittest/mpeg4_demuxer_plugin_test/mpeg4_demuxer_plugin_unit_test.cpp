@@ -9636,9 +9636,13 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TraditionalNulCopyrightP
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthMetadataDataType_001, TestSize.Level1)
 {
+    constexpr uint32_t reservedType = 0;
+    constexpr uint32_t utf8Type = 1;
+    constexpr uint32_t utf8SortType = 4;
     constexpr uint32_t signedIntegerType = 21;
     constexpr uint32_t unsignedIntegerType = 22;
     constexpr uint32_t floatType = 23;
+    constexpr uint32_t signedIntegerAltType = 67;
     Plugins::MPEG4::MPEG4AtomParser parser;
     Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
     std::string key = "copyright";
@@ -9653,6 +9657,14 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthMetadataDataTy
 
     Plugins::MPEG4::MPEG4AtomParser userParser;
     ctx.isUserMeta = true;
+    for (uint32_t textType : {reservedType, utf8Type, utf8SortType}) {
+        key = "empty_text_" + std::to_string(textType);
+        EXPECT_EQ(userParser.ReadMetadataString(key, 0, 0, textType, &ctx), Status::OK);
+        EXPECT_FALSE(userParser.userFormat_->GetData(key, value));
+    }
+    userParser.userFormat_.reset();
+    EXPECT_EQ(userParser.ReadMetadataString(key, 0, 0, utf8Type, &ctx), Status::OK);
+    userParser.userFormat_ = std::make_shared<Meta>();
     key = "signed";
     ASSERT_EQ(userParser.ReadMetadataString(key, 0, 0, signedIntegerType, &ctx), Status::OK);
     int32_t integerValue = -1;
@@ -9662,6 +9674,13 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ZeroLengthMetadataDataTy
     ASSERT_EQ(userParser.ReadMetadataString(key, 0, 0, unsignedIntegerType, &ctx), Status::OK);
     ASSERT_TRUE(userParser.userFormat_->GetData(key, value));
     EXPECT_EQ(value, "0");
+    key = "signed_alt";
+    ASSERT_EQ(userParser.ReadMetadataString(key, 0, 0, signedIntegerAltType, &ctx), Status::OK);
+    ASSERT_TRUE(userParser.userFormat_->GetData(key, integerValue));
+    EXPECT_EQ(integerValue, 0);
+    key = "float";
+    EXPECT_EQ(userParser.ReadMetadataString(key, 0, 0, floatType, &ctx), Status::OK);
+    EXPECT_FALSE(userParser.userFormat_->GetData(key, value));
 }
 
 /**
