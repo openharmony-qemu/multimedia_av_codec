@@ -64,6 +64,8 @@ struct H264SpsInfo {
     uint32_t chromaFormatIdc = 1;
     uint32_t separateColourPlaneFlag = 0;
     uint32_t reorderDelay = 0;
+    uint32_t frameCropLeftOffset = 0;
+    uint32_t frameCropTopOffset = 0;
     double sar = 0.0;
     uint32_t frameRateNum = 0;
     uint32_t frameRateDen = 0;
@@ -314,6 +316,8 @@ bool ReadH264GeometrySyntax(RbspContext& reader, uint32_t& tmp, H264SpsInfo& inf
         FALSE_RETURN_V(reader.RbspReadUE(frameCropTopOffset), false); // crop_top
         FALSE_RETURN_V(reader.RbspReadUE(frameCropBottomOffset), false); // crop_bottom
     }
+    info.frameCropLeftOffset = frameCropLeftOffset;
+    info.frameCropTopOffset = frameCropTopOffset;
 
     uint32_t frameMbsFactor = frameMbsOnlyFlag ? 1u : 2u;
     uint32_t width = (picWidthInMbsMinus1 + 1u) * H264_MB_SIZE;
@@ -548,6 +552,10 @@ void AvcParserImpl::ParseAnnexbExtraData(const uint8_t *sample, int32_t size)
             maxReorderPic_ = info.reorderDelay > 0 ? info.reorderDelay : maxReorderPic_;
             picWidInLumaSamples_ = info.width > 0 ? info.width : picWidInLumaSamples_;
             picHetInLumaSamples_ = info.height > 0 ? info.height : picHetInLumaSamples_;
+            if (info.width > 0) {
+                spsCropLeftOffset_ = info.frameCropLeftOffset;
+                spsCropTopOffset_ = info.frameCropTopOffset;
+            }
             sar_ = info.sar > 0 ? info.sar : sar_;
             if (parseSuccess) {
                 return;
@@ -630,6 +638,10 @@ bool AvcParserImpl::ParseMaxReorderPicFromAvcConfig(const uint8_t *extraData, in
         maxReorderPic_ = info.reorderDelay > 0 ? info.reorderDelay : maxReorderPic_;
         picWidInLumaSamples_ = info.width > 0 ? info.width : picWidInLumaSamples_;
         picHetInLumaSamples_ = info.height > 0 ? info.height : picHetInLumaSamples_;
+        if (info.width > 0) {
+            spsCropLeftOffset_ = info.frameCropLeftOffset;
+            spsCropTopOffset_ = info.frameCropTopOffset;
+        }
         sar_ = info.sar > 0 ? info.sar : sar_;
         if (parseSuccess) {
             return true;

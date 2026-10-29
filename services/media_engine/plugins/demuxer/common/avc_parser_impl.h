@@ -60,6 +60,8 @@ public:
     uint32_t GetChromaLocation() override { return false; };;
     uint32_t GetPicWidInLumaSamples() override { return picWidInLumaSamples_; };;
     uint32_t GetPicHetInLumaSamples() override { return picHetInLumaSamples_; };;
+    uint32_t GetSpsCropLeftOffset() override { return spsCropLeftOffset_; };
+    uint32_t GetSpsCropTopOffset() override { return spsCropTopOffset_; };
     void ResetXPSSendStatus() override;
     std::vector<uint8_t> GetLogInfo() override { return {}; };;
     uint32_t GetMaxReorderPic() override { return maxReorderPic_; };;
@@ -120,6 +122,8 @@ private:
     uint32_t maxReorderPic_ = 0;
     uint32_t picWidInLumaSamples_ = 0;
     uint32_t picHetInLumaSamples_ = 0;
+    uint32_t spsCropLeftOffset_ = 0;
+    uint32_t spsCropTopOffset_ = 0;
     double sar_ = 0.0;
     bool extradataParsed_ = false;
     bool newIdr_ = false;

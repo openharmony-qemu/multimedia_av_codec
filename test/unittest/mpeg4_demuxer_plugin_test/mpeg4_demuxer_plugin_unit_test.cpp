@@ -97,6 +97,13 @@ const std::vector<uint8_t> H264_REORDER_TWO_AVCC_FIXTURE = {
     0x00, 0xB5, 0xB0, 0x11, 0x00, 0x00, 0x03, 0x03, 0xE9, 0x00, 0x00, 0xEA, 0x60, 0x0F, 0x18, 0x31,
     0x96, 0x01, 0x00, 0x05, 0x68, 0xEB, 0xEC, 0xB2, 0x2C, 0xFD, 0xF8, 0xF8, 0x00,
 };
+// video_oddheight_lvxian.mp4 SPS: 136x182 MBs (2176x2912 coded), crop bottom 5 -> 2176x2902.
+const std::vector<uint8_t> H264_ODDHEIGHT_CROP_AVCC_FIXTURE = {
+    0x01, 0x64, 0x00, 0x34, 0xFF, 0xE1, 0x00, 0x2A, 0x67, 0x64, 0x00, 0x34, 0xAC, 0x2B, 0x20, 0x04,
+    0x40, 0x0B, 0x6F, 0xCD, 0x80, 0xB7, 0x01, 0x01, 0x05, 0x40, 0x00, 0x00, 0xFA, 0x00, 0x00, 0x73,
+    0x3C, 0x38, 0x00, 0x00, 0x03, 0x00, 0x4B, 0xF2, 0x4C, 0x00, 0x00, 0x04, 0xBF, 0x24, 0xC6, 0xEF,
+    0x2E, 0x0A, 0x01, 0x00, 0x04, 0x68, 0xEB, 0x8F, 0x2C,
+};
 constexpr uint32_t VIDEO_DURATION_READ_BUFFER_SIZE = 64;
 constexpr size_t VIDEO_DELAY_TEST_TRACK_COUNT = 1;
 constexpr uint32_t VIDEO_DELAY_TEST_SAMPLE_DURATION = 1;
@@ -4792,6 +4799,64 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParserDimensionsOverr
     plugin.ParseAVCMetadataInfo(track, zeroWidthFormat);
     ASSERT_TRUE(zeroWidthFormat.Get<Tag::VIDEO_WIDTH>(width));
     ASSERT_TRUE(zeroWidthFormat.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, spsWidth);
+    EXPECT_EQ(height, spsHeight);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParserKeepContainerDimensions_001
+ * @tc.desc: Verify FFmpeg init_dimensions rule keeps container dims when the SPS frame has
+ *           no top/left crop and the container dims fit the SPS cropped frame on the 16-px grid.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParserKeepContainerDimensions_001, TestSize.Level1)
+{
+    constexpr uint32_t trackId = 0;
+    constexpr int32_t containerWidth = 2176;
+    constexpr int32_t containerHeight = 2901;
+    MPEG4DemuxerPlugin plugin(MPEG4_PLUGIN_NAME);
+    plugin.streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin.streamParsers_, nullptr);
+    ASSERT_EQ(plugin.streamParsers_->Create(trackId, VideoStreamType::AVC), Status::OK);
+
+    auto config = H264_ODDHEIGHT_CROP_AVCC_FIXTURE;
+    ASSERT_TRUE(plugin.streamParsers_->ConvertExtraDataToAnnexb(
+        trackId, config.data(), static_cast<int32_t>(config.size())));
+    Plugins::MPEG4::MPEG4AtomParser::Track track;
+    track.trackIndex = trackId;
+    int32_t spsWidth = static_cast<int32_t>(plugin.streamParsers_->GetPicWidInLumaSamples(trackId));
+    int32_t spsHeight = static_cast<int32_t>(plugin.streamParsers_->GetPicHetInLumaSamples(trackId));
+    ASSERT_GT(spsWidth, 0);
+    ASSERT_GT(spsHeight, 0);
+    EXPECT_EQ(plugin.streamParsers_->GetSpsCropLeftOffset(trackId), 0U);
+    EXPECT_EQ(plugin.streamParsers_->GetSpsCropTopOffset(trackId), 0U);
+
+    Meta format;
+    format.Set<Tag::VIDEO_WIDTH>(containerWidth);
+    format.Set<Tag::VIDEO_HEIGHT>(containerHeight);
+    plugin.ParseAVCMetadataInfo(track, format);
+    int32_t width = 0;
+    int32_t height = 0;
+    ASSERT_TRUE(format.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(format.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, containerWidth);
+    EXPECT_EQ(height, containerHeight);
+
+    Meta misalignedFormat;
+    misalignedFormat.Set<Tag::VIDEO_WIDTH>(1280);
+    misalignedFormat.Set<Tag::VIDEO_HEIGHT>(720);
+    plugin.ParseAVCMetadataInfo(track, misalignedFormat);
+    ASSERT_TRUE(misalignedFormat.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(misalignedFormat.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, spsWidth);
+    EXPECT_EQ(height, spsHeight);
+
+    Meta oversizedFormat;
+    oversizedFormat.Set<Tag::VIDEO_WIDTH>(containerWidth);
+    oversizedFormat.Set<Tag::VIDEO_HEIGHT>(2910);
+    plugin.ParseAVCMetadataInfo(track, oversizedFormat);
+    ASSERT_TRUE(oversizedFormat.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(oversizedFormat.Get<Tag::VIDEO_HEIGHT>(height));
     EXPECT_EQ(width, spsWidth);
     EXPECT_EQ(height, spsHeight);
 }

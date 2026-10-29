@@ -66,6 +66,13 @@ constexpr int32_t RANK_MAX = 100 + 1; // 适配自研优先
 constexpr int32_t READ_LEN = 8;
 constexpr int32_t MIN_ATOM_SIZE = 16;
 constexpr int64_t SNIFF_DATA_SIZE = 2048;
+constexpr uint32_t H264_MACROBLOCK_ALIGN_SIZE = 16;
+
+uint32_t AlignToH264MacroBlock(uint32_t value)
+{
+    return (value + H264_MACROBLOCK_ALIGN_SIZE - 1) / H264_MACROBLOCK_ALIGN_SIZE *
+        H264_MACROBLOCK_ALIGN_SIZE;
+}
 
 static const std::set<SeekMode>  g_seekMode = {
     SeekMode::SEEK_PREVIOUS_SYNC,
@@ -2535,15 +2542,27 @@ void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& trac
     uint32_t w = streamParsers_->GetPicWidInLumaSamples(trackIndex);
     uint32_t h = streamParsers_->GetPicHetInLumaSamples(trackIndex);
     double sar = streamParsers_->GetSar(trackIndex);
-    // Match FFmpeg avformat_find_stream_info: after probing, the h264 codec context (SPS)
-    // overwrites codecpar width/height even when the container stsd provides valid values;
-    // each dimension is filled independently from the parsed SPS. Container dims remain in
-    // place only when the SPS parse did not yield a valid dimension.
-    if (w > 0) {
-        format.Set<Tag::VIDEO_WIDTH>(w);
-    }
-    if (h > 0) {
-        format.Set<Tag::VIDEO_HEIGHT>(h);
+    int32_t containerWidth = 0;
+    int32_t containerHeight = 0;
+    bool hasValidContainerWidth = format.Get<Tag::VIDEO_WIDTH>(containerWidth) && containerWidth > 0;
+    bool hasValidContainerHeight = format.Get<Tag::VIDEO_HEIGHT>(containerHeight) && containerHeight > 0;
+    // Aligned with FFmpeg h264 decoder init_dimensions (h264_slice.c): when the container
+    // stsd dims are valid, the SPS has no top/left crop, the container dims fit within the
+    // SPS cropped frame and align to the 16-px macroblock grid like the SPS dims, the
+    // container dims are kept; otherwise the SPS cropped dims overwrite both fields.
+    bool keepContainerDims = hasValidContainerWidth && hasValidContainerHeight && w > 0 && h > 0 &&
+        streamParsers_->GetSpsCropLeftOffset(trackIndex) == 0 &&
+        streamParsers_->GetSpsCropTopOffset(trackIndex) == 0 &&
+        AlignToH264MacroBlock(static_cast<uint32_t>(containerWidth)) == AlignToH264MacroBlock(w) &&
+        AlignToH264MacroBlock(static_cast<uint32_t>(containerHeight)) == AlignToH264MacroBlock(h) &&
+        static_cast<uint32_t>(containerWidth) <= w && static_cast<uint32_t>(containerHeight) <= h;
+    if (!keepContainerDims) {
+        if (w > 0) {
+            format.Set<Tag::VIDEO_WIDTH>(w);
+        }
+        if (h > 0) {
+            format.Set<Tag::VIDEO_HEIGHT>(h);
+        }
     }
     // Aligned with FFmpeg av_guess_sample_aspect_ratio: container-derived SAR (pasp /
     // tkhd-stsd difference) takes precedence; SPS VUI SAR is only a fallback when the

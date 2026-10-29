@@ -57,6 +57,8 @@ public:
     uint32_t GetChromaLocation(uint32_t trackId);
     uint32_t GetPicWidInLumaSamples(uint32_t trackId);
     uint32_t GetPicHetInLumaSamples(uint32_t trackId);
+    uint32_t GetSpsCropLeftOffset(uint32_t trackId);
+    uint32_t GetSpsCropTopOffset(uint32_t trackId);
     double GetSar(uint32_t trackId);
 
     void ResetXPSSendStatus(uint32_t trackId);
