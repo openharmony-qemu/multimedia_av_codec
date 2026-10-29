@@ -107,6 +107,7 @@ int32_t ScalingModeChecker(CapabilityData &capData, Format &format, CodecScenari
 int32_t OutputInDecodingOrderChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t PostProcessingChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
+int32_t OpenGopParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t TransformTypeChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t VideoCodecScenarioChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
 int32_t MaxFrameDelayCountChecker(CapabilityData &capData, Format &format, CodecScenario scenario);
@@ -131,6 +132,7 @@ const ParamCheckerListType VIDEO_ENCODER_CONFIGURE_CHECKER_LIST = {
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
     BFrameParamChecker,
+    OpenGopParamChecker,
     VideoCodecScenarioChecker,
     MaxFrameDelayCountChecker,
     CodecDmaTagChecker,
@@ -151,6 +153,7 @@ const ParamCheckerListType VIDEO_ENCODER_TEMPORAL_SCALABILITY_CONFIGURE_CHECKER_
     TransferCharacteristicsChecker,
     MatrixCoefficientsChecker,
     LTRFrameCountChecker,
+    OpenGopParamChecker,
     VideoCodecScenarioChecker,
     MaxFrameDelayCountChecker,
     CodecDmaTagChecker,
@@ -850,6 +853,24 @@ int32_t BFrameParamChecker(CapabilityData &capData, Format &format, CodecScenari
     if (maxBFrameExist) {
         AVCODEC_LOGE("UnSupported config VIDEO_ENCODER_MAX_B_FRAME!");
         format.RemoveKey(Tag::VIDEO_ENCODER_MAX_B_FRAME);
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t OpenGopParamChecker(CapabilityData &capData, Format &format, CodecScenario scenario)
+{
+    (void)scenario;
+    int32_t enable = 0;
+    bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_OPEN_GOP, enable);
+    if (!enableExist || enable <= 0) {
+        return AVCS_ERR_OK;
+    }
+
+    auto openGopCap = capData.featuresMap.find(
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_OPEN_GOP));
+    if (openGopCap == capData.featuresMap.end()) {
+        AVCODEC_LOGE("Unsupported config VIDEO_ENCODER_ENABLE_OPEN_GOP!");
+        return AVCS_ERR_INVALID_VAL;
     }
     return AVCS_ERR_OK;
 }
