@@ -4741,6 +4741,57 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsFrameRateFromAvcCo
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcParserDimensionsFillMissingOnly_001
+ * @tc.desc: Verify SPS dimensions fill missing fields without replacing valid container dimensions.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcParserDimensionsFillMissingOnly_001,
+    TestSize.Level1)
+{
+    constexpr uint32_t trackId = 0;
+    constexpr int32_t containerWidth = 2176;
+    constexpr int32_t containerHeight = 2901;
+    MPEG4DemuxerPlugin plugin(MPEG4_PLUGIN_NAME);
+    plugin.streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin.streamParsers_, nullptr);
+    ASSERT_EQ(plugin.streamParsers_->Create(trackId, VideoStreamType::AVC), Status::OK);
+
+    auto config = H264_REORDER_TWO_AVCC_FIXTURE;
+    ASSERT_TRUE(plugin.streamParsers_->ConvertExtraDataToAnnexb(
+        trackId, config.data(), static_cast<int32_t>(config.size())));
+    MPEG4AtomParser::Track track;
+    track.trackIndex = trackId;
+    Meta format;
+    format.Set<Tag::VIDEO_WIDTH>(containerWidth);
+    format.Set<Tag::VIDEO_HEIGHT>(containerHeight);
+
+    plugin.ParseAVCMetadataInfo(track, format);
+    int32_t width = 0;
+    int32_t height = 0;
+    ASSERT_TRUE(format.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(format.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, containerWidth);
+    EXPECT_EQ(height, containerHeight);
+
+    Meta missingHeightFormat;
+    missingHeightFormat.Set<Tag::VIDEO_WIDTH>(containerWidth);
+    plugin.ParseAVCMetadataInfo(track, missingHeightFormat);
+    ASSERT_TRUE(missingHeightFormat.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(missingHeightFormat.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, containerWidth);
+    EXPECT_EQ(height, static_cast<int32_t>(plugin.streamParsers_->GetPicHetInLumaSamples(trackId)));
+
+    Meta zeroWidthFormat;
+    zeroWidthFormat.Set<Tag::VIDEO_WIDTH>(0);
+    zeroWidthFormat.Set<Tag::VIDEO_HEIGHT>(containerHeight);
+    plugin.ParseAVCMetadataInfo(track, zeroWidthFormat);
+    ASSERT_TRUE(zeroWidthFormat.Get<Tag::VIDEO_WIDTH>(width));
+    ASSERT_TRUE(zeroWidthFormat.Get<Tag::VIDEO_HEIGHT>(height));
+    EXPECT_EQ(width, static_cast<int32_t>(plugin.streamParsers_->GetPicWidInLumaSamples(trackId)));
+    EXPECT_EQ(height, containerHeight);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_CttsSpsFrameRatePacketDuration_001
  * @tc.desc: Verify ctts video packets derive duration from the SPS frame rate and keep 0 for bogus rates.
  * @tc.type: FUNC

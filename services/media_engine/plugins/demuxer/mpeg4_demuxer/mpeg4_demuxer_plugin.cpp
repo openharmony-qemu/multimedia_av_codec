@@ -2535,8 +2535,13 @@ void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& trac
     uint32_t w = streamParsers_->GetPicWidInLumaSamples(trackIndex);
     uint32_t h = streamParsers_->GetPicHetInLumaSamples(trackIndex);
     double sar = streamParsers_->GetSar(trackIndex);
-    if (w > 0 && h > 0) {
+    int32_t containerWidth = 0;
+    int32_t containerHeight = 0;
+    // Match FFmpeg parser.c FILL semantics: parser dimensions only fill missing container fields.
+    if ((!format.Get<Tag::VIDEO_WIDTH>(containerWidth) || containerWidth <= 0) && w > 0) {
         format.Set<Tag::VIDEO_WIDTH>(w);
+    }
+    if ((!format.Get<Tag::VIDEO_HEIGHT>(containerHeight) || containerHeight <= 0) && h > 0) {
         format.Set<Tag::VIDEO_HEIGHT>(h);
     }
     // Aligned with FFmpeg av_guess_sample_aspect_ratio: container-derived SAR (pasp /
