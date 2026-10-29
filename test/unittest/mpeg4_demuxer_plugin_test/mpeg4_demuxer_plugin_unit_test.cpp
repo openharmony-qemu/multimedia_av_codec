@@ -92,7 +92,18 @@ constexpr size_t MAX_EOS_SEEK_SAMPLE_COUNT = 128;
 const std::vector<uint8_t> H264_AVCC_FIXTURE = {
     0x01, 0x42, 0x00, 0x1E, 0xFF, 0xE1, 0x00, 0x02, 0x67, 0x42, 0x01, 0x00, 0x02, 0x68, 0xCE,
 };
+const std::vector<uint8_t> H264_REORDER_TWO_AVCC_FIXTURE = {
+    0x01, 0x64, 0x00, 0x32, 0xFF, 0xE1, 0x00, 0x19, 0x67, 0x64, 0x00, 0x32, 0xAC, 0xD9, 0x40, 0x28,
+    0x00, 0xB5, 0xB0, 0x11, 0x00, 0x00, 0x03, 0x03, 0xE9, 0x00, 0x00, 0xEA, 0x60, 0x0F, 0x18, 0x31,
+    0x96, 0x01, 0x00, 0x05, 0x68, 0xEB, 0xEC, 0xB2, 0x2C, 0xFD, 0xF8, 0xF8, 0x00,
+};
 constexpr uint32_t VIDEO_DURATION_READ_BUFFER_SIZE = 64;
+constexpr size_t VIDEO_DELAY_TEST_TRACK_COUNT = 1;
+constexpr uint32_t VIDEO_DELAY_TEST_SAMPLE_DURATION = 1;
+constexpr uint32_t VIDEO_DELAY_TEST_SPS_REORDER = 2;
+constexpr uint32_t VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT = VIDEO_DELAY_TEST_SPS_REORDER + 2;
+constexpr uint32_t VIDEO_DELAY_TEST_INSUFFICIENT_SAMPLE_COUNT = VIDEO_DELAY_TEST_SPS_REORDER + 1;
+constexpr uint32_t TRADITIONAL_METADATA_LENGTH_SHIFT = 8;
 constexpr uint32_t RFPS_LINE77_STTS_EXTEND_COUNT = 40;
 constexpr int64_t TEST_EOS_SEEK_TIME_MS = 4000;
 constexpr int64_t TEST_MS_TO_US = 1000;
@@ -1054,6 +1065,45 @@ std::vector<uint8_t> BuildAtomHeader(uint64_t payloadSize, uint32_t atomType, bo
         AppendU32(data, atomType);
     }
     return data;
+}
+
+std::vector<uint8_t> BuildTraditionalMetadataFile(uint32_t atomType, const std::vector<uint8_t>& value)
+{
+    EXPECT_LE(value.size(), std::numeric_limits<uint16_t>::max());
+    std::vector<uint8_t> payload;
+    payload.emplace_back(static_cast<uint8_t>(value.size() >> TRADITIONAL_METADATA_LENGTH_SHIFT));
+    payload.emplace_back(static_cast<uint8_t>(value.size()));
+    payload.insert(payload.end(), {0, 0}); // language
+    payload.insert(payload.end(), value.begin(), value.end());
+    auto metadata = BuildAtomHeader(payload.size(), atomType, false);
+    metadata.insert(metadata.end(), payload.begin(), payload.end());
+    auto udta = BuildAtomHeader(metadata.size(), Plugins::MPEG4::FourccType("udta"), false);
+    udta.insert(udta.end(), metadata.begin(), metadata.end());
+    auto moov = BuildAtomHeader(udta.size(), Plugins::MPEG4::FourccType("moov"), false);
+    moov.insert(moov.end(), udta.begin(), udta.end());
+    return moov;
+}
+
+int32_t CalculateAvcVideoDelayForTest(const std::vector<uint8_t>& config,
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::CttsEntry>& ctts, uint32_t sampleCount)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    track->sampleHelper->mimeType_ = MimeType::VIDEO_AVC;
+    track->sampleHelper->sttsEntry_ = {{sampleCount, VIDEO_DELAY_TEST_SAMPLE_DURATION}};
+    track->sampleHelper->cttsEntry_ = ctts;
+    track->sampleHelper->sampleTableSummary_.rawSampleCount = sampleCount;
+    if (!config.empty()) {
+        track->codecParms.data = std::make_unique<uint8_t[]>(config.size());
+        std::copy(config.begin(), config.end(), track->codecParms.data.get());
+        track->codecParms.extradataSize = static_cast<int64_t>(config.size());
+    }
+    parser.mediaInfo_.tracks.resize(VIDEO_DELAY_TEST_TRACK_COUNT);
+    parser.CalculateVideoDelay(track);
+    int32_t videoDelay = -1;
+    EXPECT_TRUE(parser.mediaInfo_.tracks[0].Get<Tag::VIDEO_DELAY>(videoDelay));
+    return videoDelay;
 }
 
 void WriteU16(std::vector<uint8_t>& data, size_t offset, uint16_t value)
@@ -9341,6 +9391,55 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SparseEditProjectedVideo
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcSpsDelayOverridesZeroCtts_001
+ * @tc.desc: Verify codec SPS reorder evidence raises a zero MOV CTTS delay like FFmpeg probing
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsDelayOverridesZeroCtts_001, TestSize.Level1)
+{
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::CttsEntry> ctts = {
+        {VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT, 0},
+    };
+    EXPECT_EQ(CalculateAvcVideoDelayForTest(H264_REORDER_TWO_AVCC_FIXTURE, ctts,
+        VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT), static_cast<int32_t>(VIDEO_DELAY_TEST_SPS_REORDER));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcCttsDelayRetainedWithoutSps_001
+ * @tc.desc: Verify a valid MOV CTTS estimate is retained when codec reorder parsing is unavailable
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcCttsDelayRetainedWithoutSps_001, TestSize.Level1)
+{
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::CttsEntry> ctts = {
+        {1, 0}, {1, 1}, {1, -1}, {1, 0},
+    };
+    EXPECT_EQ(CalculateAvcVideoDelayForTest({}, ctts, VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT), 1);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcSpsDelayWithoutCtts_001
+ * @tc.desc: Verify codec SPS reorder evidence supplies delay when MOV CTTS is absent
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsDelayWithoutCtts_001, TestSize.Level1)
+{
+    EXPECT_EQ(CalculateAvcVideoDelayForTest(H264_REORDER_TWO_AVCC_FIXTURE, {},
+        VIDEO_DELAY_TEST_SUPPORTED_SAMPLE_COUNT), static_cast<int32_t>(VIDEO_DELAY_TEST_SPS_REORDER));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcSpsDelayNeedsEnoughSamples_001
+ * @tc.desc: Verify SPS delay is not exposed when the track cannot contain the reorder depth
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcSpsDelayNeedsEnoughSamples_001, TestSize.Level1)
+{
+    EXPECT_EQ(CalculateAvcVideoDelayForTest(H264_REORDER_TWO_AVCC_FIXTURE, {},
+        VIDEO_DELAY_TEST_INSUFFICIENT_SAMPLE_COUNT), 0);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_AuxEditListMinCorrectedPtsShift_001
  * @tc.desc: Verify auxiliary video-like tracks apply the min corrected PTS shift like FFmpeg need_parse_video_info
  * @tc.type: FUNC
@@ -9429,6 +9528,40 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_IlstStringNulPaddingTrim
     std::string actualComment;
     ASSERT_TRUE(test.parser.mediaInfo_.general.Get<Tag::MEDIA_COMMENT>(actualComment));
     EXPECT_EQ(actualComment, expectedComment);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TraditionalEmptyCopyrightPreserved_001
+ * @tc.desc: Verify a recognized zero-length cprt value remains present like FFmpeg metadata
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TraditionalEmptyCopyrightPreserved_001, TestSize.Level1)
+{
+    auto file = BuildTraditionalMetadataFile(Plugins::MPEG4::FourccType("cprt"), {});
+    AtomParserTestContext test(file);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    ASSERT_EQ(test.parser.MPEG4ParseAtom(0, &ctx), Status::OK);
+
+    std::string copyrightValue = "unexpected";
+    ASSERT_TRUE(test.parser.mediaInfo_.general.Get<Tag::MEDIA_COPYRIGHT>(copyrightValue));
+    EXPECT_TRUE(copyrightValue.empty());
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TraditionalNulCopyrightPreserved_001
+ * @tc.desc: Verify a recognized NUL-only cprt value is trimmed but not removed
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TraditionalNulCopyrightPreserved_001, TestSize.Level1)
+{
+    auto file = BuildTraditionalMetadataFile(Plugins::MPEG4::FourccType("cprt"), {'\0'});
+    AtomParserTestContext test(file);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+    ASSERT_EQ(test.parser.MPEG4ParseAtom(0, &ctx), Status::OK);
+
+    std::string copyrightValue = "unexpected";
+    ASSERT_TRUE(test.parser.mediaInfo_.general.Get<Tag::MEDIA_COPYRIGHT>(copyrightValue));
+    EXPECT_TRUE(copyrightValue.empty());
 }
 
 /**

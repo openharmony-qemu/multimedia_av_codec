@@ -1875,13 +1875,16 @@ void MPEG4AtomParser::CalculateVideoDelay(std::shared_ptr<Track> track)
     if (track->sampleHelper->mimeType_ == MimeType::VIDEO_AVC) {
         if (!track->sampleHelper->cttsEntry_.empty()) {
             videoDelay = track->sampleHelper->EstimateVideoDelay();
-        } else if (track->codecParms.data != nullptr && track->codecParms.extradataSize > 0) {
+        }
+        if (track->codecParms.data != nullptr && track->codecParms.extradataSize > 0) {
             AvcParserImpl avcParser;
             int64_t sampleCount = GetEffectiveSampleCount(track->sampleHelper);
             if (avcParser.ParseMaxReorderPicFromAvcConfig(
                 track->codecParms.data.get(), track->codecParms.extradataSize) &&
                 sampleCount > static_cast<int64_t>(avcParser.GetMaxReorderPic() + 1)) {
-                videoDelay = avcParser.GetMaxReorderPic();
+                // FFmpeg seeds has_b_frames from the MOV CTTS estimate, then the H.264 decoder
+                // raises it to SPS num_reorder_frames when codec probing supplies stronger evidence.
+                videoDelay = std::max(videoDelay, avcParser.GetMaxReorderPic());
             }
         }
     }
@@ -4792,11 +4795,10 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
             resultStr = Converter::ConvertGBKToUTF8(trimmedValue);
         }
         resultStr = resultStr.length() > 0 ? resultStr : trimmedValue;
-        if (resultStr.length() > 0) {
-            mediaInfo_.general.SetData(it->second, resultStr);
-            if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
-                mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TITLE>(resultStr);
-            }
+        // FFmpeg av_dict_set preserves a recognized key whose value is an empty C string.
+        mediaInfo_.general.SetData(it->second, resultStr);
+        if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
+            mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TITLE>(resultStr);
         }
         return true;
     } else if (key == "location") {
@@ -4861,7 +4863,17 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
 Status MPEG4AtomParser::ReadMetadataString(
     std::string& key, int64_t offset, uint64_t size, uint32_t dataType, ParseContext* parseCtx)
 {
-    FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
+    const bool isTrackMeta = parseCtx != nullptr && lastTrack_ != nullptr &&
+        lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
+        parseCtx->path[0] == static_cast<uint32_t>(FourccType("moov")) &&
+        parseCtx->path[1] == static_cast<uint32_t>(FourccType("trak")) &&
+        (parseCtx->path[2] == static_cast<uint32_t>(FourccType("udta")) ||
+         parseCtx->path[2] == static_cast<uint32_t>(FourccType("ilst")));
+    if (size == 0) {
+        // A zero-length payload is still a present standard metadata entry in FFmpeg.
+        (void)SetMetadataValue(key, "", isTrackMeta);
+        return Status::OK;
+    }
     FALSE_RETURN_V_MSG_E(size <= std::min(MPEG4_MAX_BOX_DATA_SIZE, static_cast<uint64_t>(SIZE_MAX - 1)),
         Status::ERROR_INVALID_DATA, "Invalid metadata size");
     auto buffer = std::make_unique<uint8_t[]>(size + 1);
@@ -4870,12 +4882,6 @@ Status MPEG4AtomParser::ReadMetadataString(
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
 
     buffer[size] = '\0';
-    const bool isTrackMeta = parseCtx != nullptr && lastTrack_ != nullptr &&
-        lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
-        parseCtx->path[0] == static_cast<uint32_t>(FourccType("moov")) &&
-        parseCtx->path[1] == static_cast<uint32_t>(FourccType("trak")) &&
-        (parseCtx->path[2] == static_cast<uint32_t>(FourccType("udta")) ||
-         parseCtx->path[2] == static_cast<uint32_t>(FourccType("ilst")));
     const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
     if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size), isTrackMeta) && !isUserMeta) {
         return Status::OK;
