@@ -464,7 +464,7 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, const 
     int32_t clampedSize = readSize;
     // Aligned with FFmpeg mov demuxer: EOF-clamp the read (short-read delivery) and let the
     // caller terminate with a proper EOS flag when the sample lies fully beyond EOF.
-    ret = ClampReadSizeToFileEnd(static_cast<uint64_t>(sampleInfo.view.pos), readSize, clampedSize);
+    ret = ClampReadSizeToFileEnd(sampleInfo.view.pos, readSize, clampedSize);
     if (ret == Status::END_OF_STREAM) {
         return Status::END_OF_STREAM;
     }

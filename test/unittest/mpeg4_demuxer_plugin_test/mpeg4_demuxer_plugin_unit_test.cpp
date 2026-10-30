@@ -5362,6 +5362,14 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EmptyStssAudioAllSync_00
     for (uint32_t index = 1; index < testSampleCount; ++index) {
         EXPECT_FALSE(videoHelper->IsSyncSample(index));
     }
+    auto videoAudioMimeHelper = BuildEmptyStssSyncTestHelper(Plugins::MPEG4::VIDEO_TYPE, MimeType::AUDIO_AAC);
+    ASSERT_NE(videoAudioMimeHelper, nullptr);
+    ASSERT_EQ(videoAudioMimeHelper->FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(videoAudioMimeHelper->EnsureDenseIndex(), Status::OK);
+    EXPECT_TRUE(videoAudioMimeHelper->IsSyncSample(0));
+    for (uint32_t index = 1; index < testSampleCount; ++index) {
+        EXPECT_FALSE(videoAudioMimeHelper->IsSyncSample(index));
+    }
 }
 
 /**

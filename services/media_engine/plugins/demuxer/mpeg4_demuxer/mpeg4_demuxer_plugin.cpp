@@ -5064,20 +5064,22 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(const SampleReadInfo& sampleInfo,
     return Status::OK;
 }
 
-Status MPEG4DemuxerPlugin::ClampReadSizeToFileEnd(uint64_t readPos, int32_t readSize, int32_t &clampedSize)
+Status MPEG4DemuxerPlugin::ClampReadSizeToFileEnd(int64_t readPos, int32_t readSize, int32_t &clampedSize)
 {
     clampedSize = readSize;
     if (readSize <= 0) {
         return Status::OK;
     }
+    FALSE_RETURN_V_MSG_E(readPos >= 0, Status::ERROR_INVALID_PARAMETER, "Invalid read pos");
     uint64_t fileSize = 0;
     if (dataSource_ == nullptr || dataSource_->GetSize(fileSize) != Status::OK) {
         return Status::OK;
     }
-    if (readPos >= fileSize) {
+    uint64_t pos = static_cast<uint64_t>(readPos);
+    if (pos >= fileSize) {
         return Status::END_OF_STREAM;
     }
-    uint64_t available = fileSize - readPos;
+    uint64_t available = fileSize - pos;
     if (available >= static_cast<uint64_t>(readSize)) {
         return Status::OK;
     }
@@ -5112,7 +5114,7 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     // available short read (e.g. 6348 of 32768 bytes) instead of failing, and a sample whose
     // chunk lies fully beyond EOF terminates with a proper EOS flag so the caller stops reading.
     int32_t clampedSize = readSize;
-    ret = ClampReadSizeToFileEnd(static_cast<uint64_t>(readPos), readSize, clampedSize);
+    ret = ClampReadSizeToFileEnd(readPos, readSize, clampedSize);
     if (ret == Status::END_OF_STREAM) {
         track->currentSamplePos = 0;
         return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
@@ -5133,16 +5135,16 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     FALSE_RETURN_V(ret == Status::OK, ret);
     MEDIA_LOG_D("Convert size [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
         sampleSize, remainSize, readSize, track->currentSamplePos);
-    return FinalizeDirectSampleRead(sampleInfo, trackId, outBuffer, readSize, capacityEnough);
+    return FinalizeDirectSampleRead(sampleInfo, track, outBuffer, readSize, capacityEnough);
 }
 
-Status MPEG4DemuxerPlugin::FinalizeDirectSampleRead(const SampleReadInfo& sampleInfo, uint32_t trackId,
-    std::shared_ptr<AVBuffer> outBuffer, int32_t readSize, bool capacityEnough)
+Status MPEG4DemuxerPlugin::FinalizeDirectSampleRead(const SampleReadInfo& sampleInfo,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, std::shared_ptr<AVBuffer> outBuffer,
+    int32_t readSize, bool capacityEnough)
 {
-    auto track = FindTrackById(static_cast<int32_t>(trackId));
     FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
     if (readSize > 0) {
-        DumpAVBufferData(outBuffer->memory_->GetAddr(), trackId, readSize, outBuffer->pts_);
+        DumpAVBufferData(outBuffer->memory_->GetAddr(), track->trackIndex, readSize, outBuffer->pts_);
     }
     if (!capacityEnough) {
         track->currentSamplePos += readSize;
