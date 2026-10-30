@@ -76,7 +76,8 @@ int32_t VideoDecoder::Init(Meta &callerInfo)
 #ifdef BUILD_ENG_VERSION
 void VideoDecoder::OpenDumpFile()
 {
-    std::string dumpModeStr = OHOS::system::GetParameter("decoder.dump", "0");
+    std::string dumpModeStr = OHOS::system::GetParameter("decoder.dump", "00");
+    CHECK_AND_RETURN_LOG(dumpModeStr.length() == DEFAULT_MIN_BUFFER_CNT, "dumpModeStr length isValid");
     AVCODEC_LOGI("dumpModeStr %{public}s", dumpModeStr.c_str());
 
     char fileName[PATH_MAX_LEN] = {0};
@@ -91,7 +92,6 @@ void VideoDecoder::OpenDumpFile()
             }
         }
     }
-    CHECK_AND_RETURN_LOG(dumpModeStr.length() == DEFAULT_MIN_BUFFER_CNT, "dumpModeStr length isValid");
     if (dumpModeStr[1] == '1') {
         int ret = sprintf_s(fileName, sizeof(fileName), "%s/output_%p.yuv", DUMP_PATH, this);
         if (ret > 0) {
@@ -297,12 +297,19 @@ void VideoDecoder::InitBuffers()
         }
         return;
     }
+
+    // 排空-重建-去重
     std::lock_guard<std::mutex> sLock(surfaceMutex_);
+    codecAvailQue_->Clear();
     for (uint32_t i = 0u; i < buffers_[INDEX_OUTPUT].size(); i++) {
-        if (buffers_[INDEX_OUTPUT][i]->owner_ != Owner::OWNED_BY_SURFACE) {
-            buffers_[INDEX_OUTPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
-            codecAvailQue_->Push(i);
+        std::shared_ptr<CodecBuffer> &buf = buffers_[INDEX_OUTPUT][i];
+        // 避免把显示管线中的 buffer 交给解码器
+        if (buf->owner_ == Owner::OWNED_BY_SURFACE ||
+            (buf->sMemory != nullptr && buf->sMemory->owner == Owner::OWNED_BY_SURFACE)) {
+            continue;
         }
+        buf->owner_ = Owner::OWNED_BY_CODEC;
+        codecAvailQue_->Push(i);
     }
 }
 
@@ -324,6 +331,10 @@ void VideoDecoder::ResetData()
 
 void VideoDecoder::ResetBuffers()
 {
+    size_t dropedInputs = inputAvailQue_->Size();
+    if (dropedInputs > 0) {
+        AVCODEC_LOGI("Num %{public}u Drop %{public}zu input buffers", decInstanceID_, dropedInputs);
+    }
     inputAvailQue_->Clear();
     codecAvailQue_->Clear();
     ResetData();
