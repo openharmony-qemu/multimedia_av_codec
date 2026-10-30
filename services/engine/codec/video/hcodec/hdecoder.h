@@ -181,6 +181,7 @@ private:
     using VrrProcess = void (*)(Media::VideoProcessingEngine::VideoRefreshRatePredictionHandle*,
         OH_NativeBuffer*, int32_t, int32_t);
     using VpeVideoGetSupportedListByType = bool (*)(uint32_t, std::vector<std::string>&);
+    void InitVpeSupportList(const VpeVideoGetSupportedListByType& getSupportedListByTypeFunc);
     VrrCreate VrrCreateFunc_ = nullptr;
     VrrDestroy VrrDestroyFunc_ = nullptr;
     VrrCheckSupport VrrCheckSupportFunc_ = nullptr;
