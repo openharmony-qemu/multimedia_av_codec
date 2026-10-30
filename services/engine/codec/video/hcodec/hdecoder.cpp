@@ -134,6 +134,10 @@ int32_t HDecoder::OnConfigure(const Format &format)
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
+    ret = SetDecModeI(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
 
     SetColorAspects(format);
     SetMasteringDisplayColourVolumeFromContainer(format);
@@ -507,11 +511,43 @@ int32_t HDecoder::SetScaleMode()
     return AVCS_ERR_OK;
 }
 
+int32_t HDecoder::SetDecModeI(const Format &format)
+{
+    int32_t isDecModeI = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ONLY_I_FRAME, isDecModeI) || isDecModeI != 1) {
+        HLOGD("I dec mode disabled");
+        return AVCS_ERR_OK;
+    }
+
+    CodecHDI::VideoFeature feature =
+        HCodecList::FindFeature(caps_.port.video.features,
+            static_cast<CodecHDI::VideoFeatureKey>(CODEC_VIDEO_FEATURE_ONLY_I_FRAME));
+    if (!feature.support) {
+        HLOGE("this device do not support I frame only dec");
+        return AVCS_ERR_UNSUPPORT;
+    }
+
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = OMX_TRUE;
+    if (!SetParameter(OMX_IndexParamDecModeI, param)) {
+        HLOGW("set I dec mode failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    isDecModeI_ = isDecModeI;
+    HLOGI("set I dec mode succ");
+    return AVCS_ERR_OK;
+}
+
 void HDecoder::SetIsMvUpload(const Format &format)
 {
     int32_t isMvUpload = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, isMvUpload) || isMvUpload != 1) {
         HLOGD("isMvUpload disabled");
+        return;
+    }
+    if (isDecModeI_) {
+        HLOGW("isMvUpload shall be disabled under I-frame dec mode (no MV available)");
         return;
     }
 
@@ -536,6 +572,15 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGD("VRR disabled");
         return AVCS_ERR_OK;
     }
+
+    if (isDecModeI_) {
+        HLOGE("VRR not supported under I-frame dec mode (no MV available)");
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+        vrrDynamicSwitch_ = false;
+#endif
+        return AVCS_ERR_UNSUPPORT;
+    }
+
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     if (isVrrInitialized_) {
         vrrDynamicSwitch_ = true;

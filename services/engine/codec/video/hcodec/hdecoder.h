@@ -165,6 +165,8 @@ private:
     int32_t SetVrrEnable(const Format &format);
     void SetIsMvUpload(const Format &format);
 
+    int32_t SetDecModeI(const Format &format);
+
     // swap dma buffer
     bool CanSwapOut(OMX_DIRTYPE portIndex, BufferInfo& info);
     int32_t SwapInBufferByPortIndex(OMX_DIRTYPE portIndex);
@@ -238,6 +240,7 @@ private:
     uint32_t outBufferCnt_ = 0;
     GraphicTransformType transform_ = GRAPHIC_ROTATE_NONE;
     std::optional<ScalingMode> scaleMode_;
+    int32_t isDecModeI_ = 0;
 
     bool detect_ = false;
 };

@@ -151,9 +151,11 @@ struct CommandOpt {
 
     // decoder only
     bool decThenEnc = false;
+    std::optional<int32_t> decModeI = 0;
     VideoRotation rotation = VIDEO_ROTATION_0;
     int flushCnt = 0;
     std::optional<uint32_t> scaleMode;
+    std::optional<int32_t> mvUpload = 0;
 
     // associate with frame number
     std::map<uint32_t, SetParameterParams> setParameterParamsMap;

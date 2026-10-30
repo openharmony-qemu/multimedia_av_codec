@@ -76,6 +76,9 @@ enum ShortOption {
     OPT_ROTATION,
     OPT_FLUSH_CNT,
     OPT_SCALE_MODE,
+    OPT_DEC_MODE_I,
+    OPT_VRR_ENABLE,
+    OPT_MV_UPLOAD,
 };
 
 static struct option g_longOptions[] = {
@@ -130,6 +133,9 @@ static struct option g_longOptions[] = {
     {"decThenEnc",      required_argument,  nullptr, OPT_DEC_THEN_ENC},
     {"flushCnt",        required_argument,  nullptr, OPT_FLUSH_CNT},
     {"scaleMode",       required_argument,  nullptr, OPT_SCALE_MODE},
+    {"decModeI",        required_argument,  nullptr, OPT_DEC_MODE_I},
+    {"vrrEnable",       required_argument,  nullptr, OPT_VRR_ENABLE},
+    {"mvUpload",        required_argument,  nullptr, OPT_MV_UPLOAD},
     {nullptr,           no_argument,        nullptr, OPT_UNKONWN},
 };
 
@@ -187,6 +193,9 @@ void ShowUsage()
     std::cout << " --decThenEnc         do surface encode after surface decode" << std::endl;
     std::cout << " --flushCnt           total flush count during decoding" << std::endl;
     std::cout << " --scaleMode          target scale mode after decode, see @OH_ScalingMode" << std::endl;
+    std::cout << " --decModeI           enable decModeI. 1:enable, 0:disable" << std::endl;
+    std::cout << " --vrrEnable          enable VRR. 1:enable, 0:disable" << std::endl;
+    std::cout << " --mvUpload           enable mvUpload. 1:enable, 0:disable" << std::endl;
 }
 
 CommandOpt Parse(int argc, char *argv[])
@@ -342,6 +351,15 @@ CommandOpt Parse(int argc, char *argv[])
                 break;
             case OPT_SCALE_MODE:
                 opt.scaleMode = static_cast<OH_ScalingMode>(stol(optarg));
+                break;
+            case OPT_DEC_MODE_I:
+                opt.decModeI = stol(optarg);
+                break;
+            case OPT_VRR_ENABLE:
+                opt.isVrrEnable = stol(optarg);
+                break;
+            case OPT_MV_UPLOAD:
+                opt.mvUpload = stol(optarg);
                 break;
             default:
                 break;
