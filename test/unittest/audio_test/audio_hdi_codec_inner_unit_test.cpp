@@ -17,6 +17,7 @@
 #include <audio_hdi_codec_inner_unit_test.h>
 #include <gtest/gtest.h>
 #include <atomic>
+#include <fcntl.h>
 #include <fstream>
 #include <thread>
 #include <queue>
@@ -410,8 +411,14 @@ HWTEST_F(AudioHdiCodecInnerUnitTest, EmptyBufferDone_001, TestSize.Level1)
     auto& hdiCodec_ = hdiCodecCb->HdiCallback::GetHdiCodec();
     EXPECT_NE(hdiCodec_, nullptr);
     int64_t appData = 0;
-    const OmxCodecBuffer& buffer = {};
-    int32_t ret =hdiCodecCb->EmptyBufferDone(appData, buffer);
+    OmxCodecBuffer buffer = {};
+    // simulate the fd duplicated to this process by HDI IPC; any valid fd
+    // works, so open the test binary itself as a harmless fd source;
+    // ownership is transferred to the callback, do not close it again
+    buffer.fd = open("/proc/self/exe", O_RDONLY);
+    buffer.fenceFd = -1;
+    ASSERT_GE(buffer.fd, 0);
+    int32_t ret = hdiCodecCb->EmptyBufferDone(appData, buffer);
     EXPECT_EQ(Status::OK, static_cast<Status>(ret));
 }
 
@@ -430,8 +437,36 @@ HWTEST_F(AudioHdiCodecInnerUnitTest, EmptyBufferDone_002, TestSize.Level1)
     auto& hdiCodec_ = hdiCodecCb->HdiCallback::GetHdiCodec();
     hdiCodec_ = nullptr;
     int64_t appData = 0;
-    const OmxCodecBuffer& buffer = {};
-    int32_t ret =hdiCodecCb->EmptyBufferDone(appData, buffer);
+    OmxCodecBuffer buffer = {};
+    // simulate the fd duplicated to this process by HDI IPC; any valid fd
+    // works, so open the test binary itself as a harmless fd source;
+    // ownership is transferred to the callback, do not close it again
+    buffer.fd = open("/proc/self/exe", O_RDONLY);
+    buffer.fenceFd = -1;
+    ASSERT_GE(buffer.fd, 0);
+    int32_t ret = hdiCodecCb->EmptyBufferDone(appData, buffer);
+    EXPECT_EQ(Status::OK, static_cast<Status>(ret));
+}
+ 
+/**
+ * @tc.name: EmptyBufferDone_003
+ * @tc.desc: buffer.fd is -1, close is skipped
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioHdiCodecInnerUnitTest, EmptyBufferDone_003, TestSize.Level1)
+{
+    if (CheckInit() != Status::OK) {
+        return;
+    }
+    auto hdiCodec = std::make_shared<HdiCodec>();
+    auto hdiCodecCb = std::make_shared<HdiCodec::HdiCallback>(hdiCodec);
+    auto& hdiCodec_ = hdiCodecCb->HdiCallback::GetHdiCodec();
+    EXPECT_NE(hdiCodec_, nullptr);
+    int64_t appData = 0;
+    OmxCodecBuffer buffer = {};
+    buffer.fd = -1;
+    buffer.fenceFd = -1;
+    int32_t ret = hdiCodecCb->EmptyBufferDone(appData, buffer);
     EXPECT_EQ(Status::OK, static_cast<Status>(ret));
 }
 
@@ -450,8 +485,14 @@ HWTEST_F(AudioHdiCodecInnerUnitTest, FillBufferDone_001, TestSize.Level1)
     auto& hdiCodec_ = hdiCodecCb->HdiCallback::GetHdiCodec();
     EXPECT_NE(hdiCodec_, nullptr);
     int64_t appData = 0;
-    const OmxCodecBuffer& buffer = {};
-    int32_t ret =hdiCodecCb->FillBufferDone(appData, buffer);
+    OmxCodecBuffer buffer = {};
+    // simulate the fd duplicated to this process by HDI IPC; any valid fd
+    // works, so open the test binary itself as a harmless fd source;
+    // ownership is transferred to the callback, do not close it again
+    buffer.fd = open("/proc/self/exe", O_RDONLY);
+    buffer.fenceFd = -1;
+    ASSERT_GE(buffer.fd, 0);
+    int32_t ret = hdiCodecCb->FillBufferDone(appData, buffer);
     EXPECT_EQ(Status::OK, static_cast<Status>(ret));
 }
 
@@ -470,8 +511,36 @@ HWTEST_F(AudioHdiCodecInnerUnitTest, FillBufferDone_002, TestSize.Level1)
     auto& hdiCodec_ = hdiCodecCb->HdiCallback::GetHdiCodec();
     hdiCodec_ = nullptr;
     int64_t appData = 0;
-    const OmxCodecBuffer& buffer = {};
-    int32_t ret =hdiCodecCb->FillBufferDone(appData, buffer);
+    OmxCodecBuffer buffer = {};
+    // simulate the fd duplicated to this process by HDI IPC; any valid fd
+    // works, so open the test binary itself as a harmless fd source;
+    // ownership is transferred to the callback, do not close it again
+    buffer.fd = open("/proc/self/exe", O_RDONLY);
+    buffer.fenceFd = -1;
+    ASSERT_GE(buffer.fd, 0);
+    int32_t ret = hdiCodecCb->FillBufferDone(appData, buffer);
+    EXPECT_EQ(Status::OK, static_cast<Status>(ret));
+}
+ 
+/**
+ * @tc.name: FillBufferDone_003
+ * @tc.desc: buffer.fd is -1, close is skipped
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioHdiCodecInnerUnitTest, FillBufferDone_003, TestSize.Level1)
+{
+    if (CheckInit() != Status::OK) {
+        return;
+    }
+    auto hdiCodec = std::make_shared<HdiCodec>();
+    auto hdiCodecCb = std::make_shared<HdiCodec::HdiCallback>(hdiCodec);
+    auto& hdiCodec_ = hdiCodecCb->HdiCallback::GetHdiCodec();
+    EXPECT_NE(hdiCodec_, nullptr);
+    int64_t appData = 0;
+    OmxCodecBuffer buffer = {};
+    buffer.fd = -1;
+    buffer.fenceFd = -1;
+    int32_t ret = hdiCodecCb->FillBufferDone(appData, buffer);
     EXPECT_EQ(Status::OK, static_cast<Status>(ret));
 }
 }
