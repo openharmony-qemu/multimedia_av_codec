@@ -4626,9 +4626,10 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AudioTailStreamEndKeepsZ
 /**
  * @tc.name: Mpeg4DemuxerPlugin_AacTrailingZeroTailKeepsZeroDuration_001
  * @tc.desc: Verify a non-zero-size AAC tail with a trailing-zero STTS delta and an initial empty
- *           edit closed at/after the stream end keeps duration 0 even when AUDIO_SAMPLE_PER_FRAME
- *           is exported, matching FFmpeg mov_finalize_packet native 0 without the decoder-probe
- *           AAC frame size backfill (dog_tail.mp4 track1 frame230: ff duration 0).
+ *           edit closed at/after the stream end keeps duration 0 when the interleaved probe never
+ *           reached the track (AUDIO_SAMPLE_PER_FRAME not exported), matching FFmpeg native 0
+ *           without the decoder-probe AAC frame size backfill (dog_tail.mp4 track1 frame230 and
+ *           line58.mp4 track1 frame200: ff duration 0).
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacTrailingZeroTailKeepsZeroDuration_001,
@@ -4643,11 +4644,11 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacTrailingZeroTailKeeps
     std::vector<uint32_t> sampleSizes(testSampleCount, 1);
     Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
     auto track = PrepareAacTailTestTrack(plugin, sampleSizes, testTimeScale, testMdhdDuration,
-        testFrameTicks, 0, true, testEmptyEditTicks, testMdhdDuration);
+        testFrameTicks, 0, false, testEmptyEditTicks, testMdhdDuration);
     ASSERT_NE(track, nullptr);
-    // Model dog_tail's trailing-zero STTS plus empty edit: the last delta is 0 and the stream end
-    // (mdhd/raw total) sits before the last dts, so the native duration is 0 through both the
-    // edit-list tail chain and the generic tail chain, and the AAC frame-size backfill must stay off.
+    // Model dog_tail's trailing-zero STTS plus empty edit with the probe unreached (probe window
+    // consumed by the large video/meta samples): the last delta is 0, the stream end (mdhd/raw
+    // total) sits before the last dts, and AUDIO_SAMPLE_PER_FRAME is absent, so the native 0 stays.
     track->sampleHelper->sttsEntry_ = {{199, 1024}, {1, 0}};
     plugin.dataSource_ = CreateDataSourceForBytes(std::vector<uint8_t>(testSampleCount, 0x01));
     ASSERT_NE(plugin.dataSource_, nullptr);
@@ -4658,6 +4659,43 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacTrailingZeroTailKeeps
     }
     ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
     EXPECT_EQ(output.mediaAVBuffer->duration_, 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacTrailingZeroTailProbeReachedBackfill_001
+ * @tc.desc: Verify a non-zero-size AAC tail with a trailing-zero STTS delta and an initial empty
+ *           edit closed at the stream end is backfilled from the probed AAC frame size when the
+ *           probe reached the track (AUDIO_SAMPLE_PER_FRAME exported), matching FFmpeg
+ *           compute_pkt_fields av_get_audio_frame_duration (video_audio_one_frame_test.mp4 frame5 /
+ *           single_rk.mp4 frame60: ff 21333; H264_3_720x1280.mp4 frame668: ff 23219).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacTrailingZeroTailProbeReachedBackfill_001,
+    TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 48000;
+    constexpr int64_t testMdhdDuration = 199 * 1024;
+    constexpr int64_t testFrameTicks = 1024;
+    constexpr int64_t testSampleCount = 200;
+    constexpr int64_t testEmptyEditTicks = 624;
+    constexpr int64_t expectedFrameUs = 21333;
+    std::vector<uint32_t> sampleSizes(testSampleCount, 1);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    auto track = PrepareAacTailTestTrack(plugin, sampleSizes, testTimeScale, testMdhdDuration,
+        testFrameTicks, 0, true, testEmptyEditTicks, testMdhdDuration);
+    ASSERT_NE(track, nullptr);
+    // Same container shape as the unreached case above, but the probe reached the track so the
+    // exported AAC frame size backfills the native 0 tail, exactly like the demov5 full-set cases.
+    track->sampleHelper->sttsEntry_ = {{199, 1024}, {1, 0}};
+    plugin.dataSource_ = CreateDataSourceForBytes(std::vector<uint8_t>(testSampleCount, 0x01));
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(256);
+    for (size_t index = 0; index + 1 < testSampleCount; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
+    ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs);
 }
 
 /**
