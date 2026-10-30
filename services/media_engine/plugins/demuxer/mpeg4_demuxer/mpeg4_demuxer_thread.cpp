@@ -460,10 +460,24 @@ Status MPEG4DemuxerPlugin::ReadSampleData(std::shared_ptr<Sample> sample, const 
     if (sampleInfo.view.size == 0) {
         return WriteSampleAttr(sampleInfo, sample);
     }
-    ret = ReadSampleDataToBuffer(sample, sampleInfo.view.pos, sampleInfo.view.size);
+    int32_t readSize = sampleInfo.view.size;
+    int32_t clampedSize = readSize;
+    // Aligned with FFmpeg mov demuxer: EOF-clamp the read (short-read delivery) and let the
+    // caller terminate with a proper EOS flag when the sample lies fully beyond EOF.
+    ret = ClampReadSizeToFileEnd(static_cast<uint64_t>(sampleInfo.view.pos), readSize, clampedSize);
+    if (ret == Status::END_OF_STREAM) {
+        return Status::END_OF_STREAM;
+    }
+    if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
+        readSize = clampedSize;
+    }
+    ret = ReadSampleDataToBuffer(sample, sampleInfo.view.pos, readSize);
     if (ret == Status::OK) {
         ret = WriteSampleAttr(sampleInfo, sample);
         FALSE_RETURN_V(ret == Status::OK, ret);
+        if (readSize != sampleInfo.view.size) {
+            sample->size = readSize;
+        }
         DumpAVPacketData(sample, sampleInfo.trackId, sampleInfo.view.pos);
         return Status::OK;
     }

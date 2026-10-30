@@ -9820,5 +9820,96 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_UserMetaStringNulPadding
     EXPECT_EQ(actualValue, expectedValue);
 }
 
+constexpr uint32_t EOF_STRADDLE_SAMPLE_SIZE = 4;
+constexpr uint32_t EOF_STRADDLE_PARTIAL_AVAILABLE_SIZE = 2;
+constexpr uint32_t EOF_STRADDLE_BUFFER_CAPACITY = 64;
+constexpr int32_t EOF_STRADDLE_TIMESCALE = 32000;
+constexpr uint32_t EOF_STRADDLE_SAMPLE_COUNT = 2;
+
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareEofStraddleTestTrack(
+    Plugins::MPEG4::MPEG4DemuxerPlugin& plugin)
+{
+    constexpr uint32_t testTrackId = 0;
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track == nullptr || helper == nullptr) {
+        return nullptr;
+    }
+    helper->sampleIndexEntry_ = {
+        MakeSampleIndexEntry(0, 0, 0, EOF_STRADDLE_SAMPLE_SIZE),
+        MakeSampleIndexEntry(EOF_STRADDLE_SAMPLE_SIZE, AAC_TEST_CORE_SAMPLES_PER_FRAME,
+            AAC_TEST_CORE_SAMPLES_PER_FRAME, EOF_STRADDLE_SAMPLE_SIZE),
+    };
+    helper->allSamplesSync_ = true;
+    helper->trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper->mimeType_ = MimeType::AUDIO_AAC;
+    helper->rawTotalDuration_ = EOF_STRADDLE_SAMPLE_COUNT * AAC_TEST_CORE_SAMPLES_PER_FRAME;
+    track->trackIndex = testTrackId;
+    track->trackId = static_cast<int32_t>(testTrackId);
+    track->timeScale = EOF_STRADDLE_TIMESCALE;
+    track->duration = EOF_STRADDLE_SAMPLE_COUNT * AAC_TEST_CORE_SAMPLES_PER_FRAME;
+    track->codecParms.trackType = Plugins::MPEG4::AUDIO_TYPE;
+    track->sampleHelper = helper;
+    plugin.firstTrack_ = track;
+    plugin.lastTrack_ = track;
+    plugin.mediaInfo_.tracks.resize(1);
+    plugin.mediaInfo_.tracks[testTrackId].Set<Tag::MIME_TYPE>(MimeType::AUDIO_AAC);
+    plugin.mediaInfo_.tracks[testTrackId].Set<Tag::AUDIO_SAMPLE_RATE>(EOF_STRADDLE_TIMESCALE);
+    plugin.mediaInfo_.tracks[testTrackId].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(
+        AAC_TEST_CORE_SAMPLES_PER_FRAME);
+    plugin.trackMtx_[testTrackId] = std::make_shared<std::mutex>();
+    plugin.inited_ = true;
+    plugin.seekable_ = Seekable::SEEKABLE;
+    plugin.selectedTrackIds_ = {testTrackId};
+    return track;
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_EofStraddlePartialReadAndEos_001
+ * @tc.desc: Verify a sample extending past EOF is delivered as the available short read (FFmpeg
+ *           mov alignment) and a sample fully beyond EOF terminates with the EOS flag instead of
+ *           looping on END_OF_STREAM without the flag.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EofStraddlePartialReadAndEos_001, TestSize.Level1)
+{
+    // 6-byte source: EOF_STRADDLE_SAMPLE_SIZE bytes for the first sample, then
+    // EOF_STRADDLE_PARTIAL_AVAILABLE_SIZE bytes available for the truncated second sample.
+    const std::vector<uint8_t> sampleData = {
+        0xAA, 0xBB, 0xCC, 0xDD,
+        0x11, 0x22,
+    };
+    const std::vector<uint8_t> firstExpected = {0xAA, 0xBB, 0xCC, 0xDD};
+    const std::vector<uint8_t> partialExpected = {0x11, 0x22};
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin(MPEG4_PLUGIN_NAME);
+    auto track = PrepareEofStraddleTestTrack(plugin);
+    ASSERT_NE(track, nullptr);
+    plugin.dataSource_ = CreateDataSourceForBytes(sampleData);
+    ASSERT_NE(plugin.dataSource_, nullptr);
+
+    AVBufferWrapper first(EOF_STRADDLE_BUFFER_CAPACITY);
+    ASSERT_EQ(plugin.ReadSample(0, first.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(first.mediaAVBuffer->memory_->GetSize(), EOF_STRADDLE_SAMPLE_SIZE);
+    EXPECT_EQ((first.mediaAVBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)), 0U);
+    const uint8_t* firstData = static_cast<const uint8_t*>(first.mediaAVBuffer->memory_->GetAddr());
+    EXPECT_EQ(std::vector<uint8_t>(firstData, firstData + EOF_STRADDLE_SAMPLE_SIZE), firstExpected);
+
+    AVBufferWrapper partial(EOF_STRADDLE_BUFFER_CAPACITY);
+    ASSERT_EQ(plugin.ReadSample(0, partial.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(partial.mediaAVBuffer->memory_->GetSize(), EOF_STRADDLE_PARTIAL_AVAILABLE_SIZE);
+    EXPECT_EQ((partial.mediaAVBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)), 0U);
+    const uint8_t* partialData = static_cast<const uint8_t*>(partial.mediaAVBuffer->memory_->GetAddr());
+    EXPECT_EQ(std::vector<uint8_t>(partialData, partialData + EOF_STRADDLE_PARTIAL_AVAILABLE_SIZE),
+        partialExpected);
+
+    AVBufferWrapper eos(EOF_STRADDLE_BUFFER_CAPACITY);
+    ASSERT_EQ(plugin.ReadSample(0, eos.mediaAVBuffer), Status::OK);
+    EXPECT_NE((eos.mediaAVBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)), 0U);
+
+    AVBufferWrapper eosAgain(EOF_STRADDLE_BUFFER_CAPACITY);
+    ASSERT_EQ(plugin.ReadSample(0, eosAgain.mediaAVBuffer), Status::OK);
+    EXPECT_NE((eosAgain.mediaAVBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)), 0U);
+}
+
 } // namespace Media
 } // namespace OHOS

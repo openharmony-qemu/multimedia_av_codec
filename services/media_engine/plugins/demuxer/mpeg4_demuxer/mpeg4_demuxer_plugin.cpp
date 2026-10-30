@@ -5054,6 +5054,27 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(const SampleReadInfo& sampleInfo,
     return Status::OK;
 }
 
+Status MPEG4DemuxerPlugin::ClampReadSizeToFileEnd(uint64_t readPos, int32_t readSize, int32_t &clampedSize)
+{
+    clampedSize = readSize;
+    if (readSize <= 0) {
+        return Status::OK;
+    }
+    uint64_t fileSize = 0;
+    if (dataSource_ == nullptr || dataSource_->GetSize(fileSize) != Status::OK || fileSize == 0) {
+        return Status::OK;
+    }
+    if (readPos >= fileSize) {
+        return Status::END_OF_STREAM;
+    }
+    uint64_t available = fileSize - readPos;
+    if (available >= static_cast<uint64_t>(readSize)) {
+        return Status::OK;
+    }
+    clampedSize = static_cast<int32_t>(available);
+    return Status::ERROR_NOT_ENOUGH_DATA;
+}
+
 Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer)
 {
     std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -5077,6 +5098,21 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     int32_t readSize = std::min(remainSize, capacity);
     int64_t readPos = pos + track->currentSamplePos;
     bool capacityEnough = readSize >= remainSize;
+    // Aligned with FFmpeg mov demuxer: a sample that extends past EOF is delivered as the
+    // available short read (e.g. 6348 of 32768 bytes) instead of failing, and a sample whose
+    // chunk lies fully beyond EOF terminates with a proper EOS flag so the caller stops reading.
+    int32_t clampedSize = readSize;
+    ret = ClampReadSizeToFileEnd(static_cast<uint64_t>(readPos), readSize, clampedSize);
+    if (ret == Status::END_OF_STREAM) {
+        track->currentSamplePos = 0;
+        return SetEosSample(outBuffer);
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK || ret == Status::ERROR_NOT_ENOUGH_DATA, ret,
+        "Clamp sample read size to file end failed");
+    if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
+        readSize = clampedSize;
+        capacityEnough = true;
+    }
     ret = CheckReadSampleDataState(readSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Invalid read state");
     if (readSize > 0) {
@@ -5136,6 +5172,9 @@ Status MPEG4DemuxerPlugin::GetSeekableSample(
     std::unique_lock<std::mutex> sLock(syncMutex_);
     ret = ReadSampleData(mpeg4Sample, sampleInfo);
     sLock.unlock();
+    if (ret == Status::END_OF_STREAM) {
+        return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
+    }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
     return Status::OK;
 }
@@ -5164,6 +5203,9 @@ Status MPEG4DemuxerPlugin::GetUnseekableSample(
         FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
         ret = ReadSampleData(sample, sampleInfo);
         sLock.unlock();
+        if (ret == Status::END_OF_STREAM) {
+            return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
+        }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
         if (MpegAudioPacketParser::IsTrack(track)) {
             auto input = std::make_shared<MPEG4Sample>();
