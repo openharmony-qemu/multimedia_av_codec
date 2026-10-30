@@ -9973,6 +9973,10 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareEofStraddleTestTr
     helper->trackType_ = Plugins::MPEG4::AUDIO_TYPE;
     helper->mimeType_ = MimeType::AUDIO_AAC;
     helper->rawTotalDuration_ = EOF_STRADDLE_SAMPLE_COUNT * AAC_TEST_CORE_SAMPLES_PER_FRAME;
+    if (helper->AddDurationOverride(EOF_STRADDLE_SAMPLE_COUNT - 1,
+        AAC_TEST_CORE_SAMPLES_PER_FRAME) != Status::OK) {
+        return nullptr;
+    }
     track->trackIndex = testTrackId;
     track->trackId = static_cast<int32_t>(testTrackId);
     track->timeScale = EOF_STRADDLE_TIMESCALE;

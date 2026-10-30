@@ -1797,9 +1797,9 @@ bool UpdatePacketDurationUs(const ReadSamplePacketContext& context, ReadSamplePa
         hasDuration = RescaleTrackTimeToUsRoundNearest(currentSample.duration, trackTimeScale, attr.durationUs) ==
             Status::OK;
     }
-    // FFmpeg mov_finalize_packet closes the last AAC packet against the stream end: a
-    // trailing-zero STTS delta that places the last sample at/after st->duration keeps the native
-    // duration 0, then compute_pkt_fields backfills the AAC frame size (av_get_audio_frame_duration)
+    // FFmpeg mov_finalize_packet closes the last AAC packet against the stream end: when a
+    // trailing-zero STTS delta leaves the last sample's dts at or past st->duration, the native
+    // duration stays 0, then compute_pkt_fields backfills the AAC frame size (av_get_audio_frame_duration)
     // only when the stream-info probe opened the AAC decoder (avctx->frame_size == 1024).
     // NormalizeAudioAttributes mirrors that probe window: it removes AUDIO_SAMPLE_PER_FRAME for
     // tracks the interleaved probe never reached (dog_tail.mp4 / line58.mp4 last frame 0), and
@@ -5071,7 +5071,7 @@ Status MPEG4DemuxerPlugin::ClampReadSizeToFileEnd(uint64_t readPos, int32_t read
         return Status::OK;
     }
     uint64_t fileSize = 0;
-    if (dataSource_ == nullptr || dataSource_->GetSize(fileSize) != Status::OK || fileSize == 0) {
+    if (dataSource_ == nullptr || dataSource_->GetSize(fileSize) != Status::OK) {
         return Status::OK;
     }
     if (readPos >= fileSize) {
@@ -5115,7 +5115,7 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     ret = ClampReadSizeToFileEnd(static_cast<uint64_t>(readPos), readSize, clampedSize);
     if (ret == Status::END_OF_STREAM) {
         track->currentSamplePos = 0;
-        return SetEosSample(outBuffer);
+        return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
     }
     FALSE_RETURN_V_MSG_E(ret == Status::OK || ret == Status::ERROR_NOT_ENOUGH_DATA, ret,
         "Clamp sample read size to file end failed");
@@ -5133,19 +5133,27 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     FALSE_RETURN_V(ret == Status::OK, ret);
     MEDIA_LOG_D("Convert size [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
         sampleSize, remainSize, readSize, track->currentSamplePos);
+    return FinalizeDirectSampleRead(sampleInfo, trackId, outBuffer, readSize, capacityEnough);
+}
+
+Status MPEG4DemuxerPlugin::FinalizeDirectSampleRead(const SampleReadInfo& sampleInfo, uint32_t trackId,
+    std::shared_ptr<AVBuffer> outBuffer, int32_t readSize, bool capacityEnough)
+{
+    auto track = FindTrackById(static_cast<int32_t>(trackId));
+    FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
     if (readSize > 0) {
         DumpAVBufferData(outBuffer->memory_->GetAddr(), trackId, readSize, outBuffer->pts_);
     }
     if (!capacityEnough) {
         track->currentSamplePos += readSize;
         MEDIA_LOG_D("Buffer is not enough");
-    } else {
-        track->currentSamplePos = 0;
-        track->currentSampleIndex++;
-        ret = UpdateReadCursor(sampleInfo);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update read cursor after direct sample read failed");
+        return Status::OK;
     }
-    return ret;
+    track->currentSamplePos = 0;
+    track->currentSampleIndex++;
+    Status ret = UpdateReadCursor(sampleInfo);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update read cursor after direct sample read failed");
+    return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::GetSampleForWebvtt(uint32_t trackId,

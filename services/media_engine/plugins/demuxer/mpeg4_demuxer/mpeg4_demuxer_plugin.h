@@ -390,6 +390,8 @@ private:
     Status GetSampleForWebvtt(
         uint32_t trackId, std::shared_ptr<MPEG4Sample> &mpeg4Sample, std::shared_ptr<AVBuffer> outBuffer);
     Status GetSeekableSampleDirectly(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer);
+    Status FinalizeDirectSampleRead(const detail::SampleReadInfo& sampleInfo, uint32_t trackId,
+        std::shared_ptr<AVBuffer> outBuffer, int32_t readSize, bool capacityEnough);
     Status ClampReadSizeToFileEnd(uint64_t readPos, int32_t readSize, int32_t &clampedSize);
     Status FillBufferDirectly(std::shared_ptr<AVBuffer> sample, uint64_t pos, int32_t size);
     Status WriteBufferAttr(const detail::SampleReadInfo& sampleInfo, std::shared_ptr<AVBuffer> outBuffer,
