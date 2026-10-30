@@ -25,6 +25,7 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <mutex>
 #include <regex>
 #include <securec.h>
@@ -42,6 +43,7 @@
 #include <sys/types.h>
 #include <thread_pool.h>
 #include "nocopyable.h"
+#include "http_response_control.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
@@ -53,6 +55,28 @@ public:
     void StartServer(int32_t port);
     void StopServer();
 
+    // In-memory content registry: tests register synthetic content (large manifests,
+    // deterministic byte patterns) by URL path so FileReadFunc serves it instead of opening
+    // a disk file. Backward-compatible: empty registry falls through to the file path.
+    struct Response {
+        std::string content;
+        int32_t status {200}; // HTTP OK by default.
+        std::map<std::string, std::string> headers;
+        bool chunked {false};
+        bool ignoreRange {false}; // Live endpoints may ignore Range and return an unbounded 200 response.
+        int32_t delayMs {0};
+        size_t chunkSize {4096}; // Default response write granularity: 4 KiB.
+        int32_t intervalMs {0};
+        std::string subsequentContent;
+        std::shared_ptr<HttpResponseControl> control;
+        HttpResponseControl::Point pausePoint {HttpResponseControl::Point::NONE};
+        bool controlAfterFirstRequest {false};
+    };
+    static void RegisterResponse(const std::string& path, const Response& response);
+    static std::vector<std::string> GetRequests(const std::string& path);
+    static void RegisterContent(const std::string &urlPath, const std::string &content);
+    static void ClearContent();
+
 private:
     void ServerLoopFunc();
     static void FileReadFunc(int32_t connFd);
@@ -61,9 +85,17 @@ private:
     static void GetRange(const std::string &recvStr, int32_t &startPos, int32_t &endPos);
     static void GetKeepAlive(const std::string &recvStr, int32_t &keep);
     static void GetFilePath(const std::string &recvStr, std::string &path);
+    static void GetUrlPath(const std::string &recvStr, std::string &urlPath);
+    static void ServeMemContent(int32_t connFd, const std::string &recvStr, const Response &response);
+    static bool GetMemResponse(const std::string& recvStr, Response& response);
+    static void SendMemBody(int32_t connFd, const std::string& body, const Response& response);
 
     static int32_t SendRequestSize(int32_t &connFd, int32_t &fileFd, const std::string &recvStr);
     static int32_t SetKeepAlive(int32_t &connFd, int32_t &keepAlive, int32_t &keepIdle);
+
+    static std::map<std::string, Response> contentRegistry_;
+    static std::map<std::string, std::vector<std::string>> requests_;
+    static std::mutex registryMutex_;
 
     std::atomic<bool> isRunning_ = false;
     std::unique_ptr<std::thread> serverLoop_ = nullptr;

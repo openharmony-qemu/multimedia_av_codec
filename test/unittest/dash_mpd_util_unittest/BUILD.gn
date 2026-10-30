@@ -13,31 +13,10 @@
 
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
+import("//foundation/multimedia/av_codec/test/unittest/http_source_test.gni")
 
 module_output_path = "av_codec/stream_player_framework"
-dash_test_sources = [
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64/base64_utils.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_media_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_mpd_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/dash_segment_downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_adpt_set_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_generic_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/i_dash_mpd_node.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_manager_util.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_parser.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_mpd_util.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_period_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/dash_representation_manager.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/mpd_parser/sidx_box_parser.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/app_client.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/downloader.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/media_source_loading_request.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client/http_curl_client.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_element.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml/xml_parser.cpp",
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/string_utils.cpp",
-]
+dash_test_sources = http_source_ut_dash_sources
 config("dash_unittest_cfg") {
   defines = [
     "HST_ANY_WITH_NO_RTTI",

@@ -78,6 +78,9 @@ private:
     Status SetIp();
 
 private:
+    static int TransferProgress(void* user, curl_off_t, curl_off_t, curl_off_t, curl_off_t);
+    std::atomic<bool> closeRequested_ {false};
+    std::atomic<bool> deinitRequested_ {false};
     RxHeader rxHeader_;
     RxBody rxBody_;
     void *userParam_;

@@ -72,6 +72,7 @@ private:
  
 private:
     uint64_t avcodecUniqueId_ = MediaAVCodec::AllocateUniqueId();
+    std::atomic<bool> forceClosed_ {false};
     RxHeader rxHeader_;
     RxBody rxBody_;
     void *userParam_;

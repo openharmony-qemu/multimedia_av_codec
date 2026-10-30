@@ -186,7 +186,13 @@ void CallHttpDownloaderFuncs(std::shared_ptr<HttpMediaDownloader> httpMediaDownl
     std::string sizeString = "offset";
     std::string numString = "0";
     httpMediaDownloader->AddParamForUrl(outString, sizeString, numString);
-    httpMediaDownloader->GetResolutionDelta(fdp.ConsumeIntegral<uint32_t>(), fdp.ConsumeIntegral<uint32_t>());
+    auto candidate = std::make_shared<PlayMediaStream>();
+    candidate->width = fdp.ConsumeIntegral<uint16_t>();
+    candidate->height = fdp.ConsumeIntegral<uint16_t>();
+    candidate->bitrate = fdp.ConsumeIntegral<uint32_t>();
+    httpMediaDownloader->playMediaStreams_.push_back(candidate);
+    httpMediaDownloader->initResolution_ = fdp.ConsumeIntegral<uint32_t>();
+    httpMediaDownloader->ChooseStreamByResolution();
     httpMediaDownloader->IsFlvLive();
     httpMediaDownloader->GetBufferSize();
     httpMediaDownloader->GetStatusCallbackFunc();

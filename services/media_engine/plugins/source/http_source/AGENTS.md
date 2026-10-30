@@ -3,7 +3,7 @@
 ## 基本信息
 
 本模块是 HarmonyOS 媒体引擎的 HTTP 网络数据源插件，为 Demuxer 提供 HTTP/HLS/DASH 协议的网络流数据读取能力。主要功能包括：
-- 根据 URL 特征和 mimeType 自动路由协议类型，创建对应的 MediaDownloader
+- 根据来源字节内容识别并路由协议类型，创建对应的 MediaDownloader
 - 提供统一的 Read/Seek/码率切换接口，对上层 Demuxer 屏蔽协议差异
 - 支持自适应码率切换（ABR），根据网络带宽动态选择最优画质
 - 支持 HLS AES-128 加密分片解密和 DASH DRM 信息上报
@@ -17,7 +17,7 @@
 采用策略模式 + 装饰器模式的分层架构：
 
 1. **插件入口层**：
-- HttpSourcePlugin：继承 SourcePlugin，基于 URL 字符串匹配（IsDash/CheckIsM3U8Uri）和 mimeType 判断协议类型，创建对应的 MediaDownloader
+- HttpSourcePlugin：继承 SourcePlugin，通过独立小数据嗅探判断协议类型，创建对应的 MediaDownloader
 
 2. **监控层**：
 - DownloadMonitor：装饰器，包装真实 MediaDownloader，透明添加重试和监控能力
@@ -35,17 +35,18 @@
 - RingBuffer / CacheMediaChunkBuffer：双模式缓冲区
 - AesDecryptor：AES-128-CBC 解密
 - WriteBitrateCaculator：码率计算
-- StreamProtocolSniffer：独立协议嗅探工具（不参与内部路由）
+- StreamProtocolSniffer：增量内容识别工具，参与内部路由
 - StreamResourceParser：子资源解析
 
 ### 协议路由决策链
 
-SetDownloaderBySource 按优先级判断协议类型：
+SetDownloaderBySource 先选择实际媒体资源，再独立嗅探其内容：
 
-1. IsDash() → DashMediaDownloader
-2. IsSeekToTimeSupported() + mimeType 非 APPLICATION_M3U8 → HlsMediaDownloader
-3. uri_ 以 "http" 开头 → HttpMediaDownloader
-4. mimeType_ == APPLICATION_M3U8 → 覆盖为 HlsMediaDownloader
+1. 网络 GET 或本地 FD 显式偏移预读，通常保留不超过 256B；长 XML 前缀最多 16KiB。
+2. 识别 HLS、DASH 或 HTTP，并记录 HTTP 下的 FLV 特征。
+3. 协调层统一计时并确定唯一终态；ForceClose 返回后释放探测请求、回调及缓冲，成功才创建经 DownloadMonitor 装饰的协议下载器。dataReceive 主动返回 0 引发的 response=23 不覆盖已发布终态。
+4. 配置回调、策略和媒体流信息，再由 Open() 从头正式下载。
+5. IsHls、Seek 能力及 HLS 暂停/恢复使用实际识别类型，不再猜测 URL 后缀。
 
 ### 数据流
 
@@ -177,7 +178,7 @@ http_source/
 
 ## 项目宪法
 
-1. **URL 匹配是协议路由的唯一决策方式**：SetDownloaderBySource 基于 URL 字符串匹配（IsDash/CheckIsM3U8Uri）和 mimeType 判断协议类型，严禁在路由决策中引入 StreamProtocolSniffer 数据嗅探。
+1. **内容嗅探是协议路由的唯一决策方式**：SnifferCoordinator 独立读取少量数据（初始目标 256B、上限 16KiB、总预算 5s）判断 HLS/DASH/HTTP 和 FLV 特征，结束探测并丢弃数据，正式 MediaDownloader 通过 Open() 从头下载。禁止下载会话或缓冲数据移交；移交方案延期单独设计。IsAllowedProtocol 保留前置校验，不得恢复 URL 字符串匹配路由。详见 [协议嗅探与路由](docs/knowledge/technologies/protocol-sniffing-and-routing.md)。
 2. **DownloadMonitor 是必经装饰层**：所有 MediaDownloader 实例必须被 DownloadMonitor 装饰后才存入 downloader_，由 CreateXxxDownloader 内部自动完成，严禁绕过装饰器直接使用裸 MediaDownloader。
 3. **IsAllowedProtocol 是黑名单机制**：仅阻止 file:// 等本地协议，不是白名单，严禁将其理解为仅允许 http/https/ftps。
 4. **缓冲区选择由协议决定**：HTTP 单文件和 DASH 分片用 RingBuffer，HLS 分片和 HTTP 大文件用 CacheMediaChunkBuffer，严禁混用。

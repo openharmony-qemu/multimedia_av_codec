@@ -18,6 +18,8 @@
 
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <chrono>
 #include "avcodec_dfx_component.h"
@@ -135,6 +137,7 @@ public:
     {
         url_ = url;
     }
+    void SetIsFlv(bool isFlv) { isFlv_ = isFlv; }
     void SetIsAuthRequest(bool isAuthRequest)
     {
         isAuthRequest_ = isAuthRequest;
@@ -191,6 +194,7 @@ private:
     int64_t startTimePos_ {0};
     std::atomic<bool> isDownloading_ {false};
     bool requestWholeFile_ {false};
+    bool isFlv_ {false};
     int requestSize_ {0};
     int preRequestSize_ {0};
     std::atomic<int> retryTimes_ {0};
@@ -224,6 +228,11 @@ public:
     explicit Downloader(const std::string& name, std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader) noexcept;
     virtual ~Downloader();
 
+    // Serialized by the owner, outside callbacks. Stops the task before releasing resources.
+    void ForceClose();
+    std::shared_ptr<NetworkClient> GetClient() const;
+    uint64_t GetUniqueId() const { return avcodecUniqueId_; }
+    void SetClient(std::shared_ptr<NetworkClient> client);
     void Init();
     bool Download(const std::shared_ptr<DownloadRequest>& request, int32_t waitMs);
     void Start();
@@ -280,7 +289,9 @@ private:
     int64_t GetCurrentMillisecond();
     static void UpdateDownloadInfo(Downloader *downloader, size_t dataLen);
 
+    bool forceClosed_ {false};
     std::string name_;
+    mutable std::shared_mutex clientMutex_;
     std::shared_ptr<NetworkClient> client_;
     std::shared_ptr<BlockingQueue<std::shared_ptr<DownloadRequest>>> requestQue_;
     FairMutex operatorMutex_{};

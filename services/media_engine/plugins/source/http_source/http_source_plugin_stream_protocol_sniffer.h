@@ -31,19 +31,18 @@ enum class StreamProtocolType : int32_t {
     DASH = 2,
 };
 
-class __attribute__((visibility("default"))) StreamProtocolSniffer {
-public:
-    static size_t GetMinSniffBufferSize();
-    static StreamProtocolType SniffStreamProtocolFromData(const uint8_t* data, size_t size);
-
-private:
-    static constexpr const char* HLS_SIGNATURE = "#EXTM3U";
-    static constexpr size_t HLS_SIGNATURE_LEN = 7;
-    static constexpr const char* DASH_XML_SIGNATURE = "<?xml";
-    static constexpr size_t DASH_XML_SIGNATURE_LEN = 5;
-    static constexpr const char* DASH_MPD_SIGNATURE = "MPD";
+struct ProtocolProbeResult {
+    StreamProtocolType type {StreamProtocolType::HTTP};
+    bool isFlv {false};
+    bool needMore {true};
 };
 
+class __attribute__((visibility("default"))) StreamProtocolSniffer {
+public:
+    static ProtocolProbeResult Probe(const uint8_t* data, size_t size, bool isEos = false);
+    static size_t GetMinSniffBufferSize();
+    static StreamProtocolType SniffStreamProtocolFromData(const uint8_t* data, size_t size);
+};
 } // namespace HttpPlugin
 } // namespace Plugins
 } // namespace Media

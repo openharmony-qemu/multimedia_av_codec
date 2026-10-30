@@ -5781,4 +5781,113 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, COLLECT_KEY_INFOS_AUDIO_NULL_M3U8, TestS
     EXPECT_TRUE(keyInfos.empty());
 }
 
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, FEED_MANIFEST_PREPARSE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // live media：2 个 #EXTINF，无 #EXT-X-ENDLIST，无 #EXT-X-MAP → PreParse 会触发
+    std::string liveMedia =
+        "#EXTM3U\n"
+        "#EXT-X-VERSION:3\n"
+        "#EXT-X-TARGETDURATION:6\n"
+        "#EXTINF:5.0,\n"
+        "seg0.ts\n"
+        "#EXTINF:5.0,\n"
+        "seg1.ts\n";
+    downloader->SetPlayListForTest(liveMedia);
+    downloader->PreParseManifest("http://127.0.0.1:46666/spike/live.m3u8");
+
+    EXPECT_FALSE(cb->savedPlayList.empty());
+    if (!cb->savedPlayList.empty()) {
+        EXPECT_NE(cb->savedPlayList[0].url_.find("seg0.ts"), std::string::npos);
+    }
+    EXPECT_FALSE(downloader->IsParseFinished());  // pre-parse 保持 false
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, FEED_MANIFEST_PREPARSE_VOD_SKIP_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // VOD：含 #EXT-X-ENDLIST → PreParseManifest 在 ENDLIST 检查处早退
+    std::string vod =
+        "#EXTM3U\n"
+        "#EXT-X-TARGETDURATION:6\n"
+        "#EXTINF:5.0,\n"
+        "seg0.ts\n"
+        "#EXTINF:5.0,\n"
+        "seg1.ts\n"
+        "#EXT-X-ENDLIST\n";
+    downloader->SetPlayListForTest(vod);
+    downloader->PreParseManifest("http://127.0.0.1:46666/spike/vod.m3u8");
+
+    EXPECT_TRUE(cb->savedPlayList.empty());
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, PREPARSE_BOUNDARY_XMAP_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // #EXT-X-MAP present (fMP4 init segment) -> PreParse early-exits (truncation risks init).
+    std::string fmp4 =
+        "#EXTM3U\n"
+        "#EXT-X-VERSION:6\n"
+        "#EXT-X-TARGETDURATION:6\n"
+        "#EXT-X-MAP:URI=\"init.mp4\"\n"
+        "#EXTINF:5.0,\n"
+        "seg0.ts\n"
+        "#EXTINF:5.0,\n"
+        "seg1.ts\n";
+    downloader->SetPlayListForTest(fmp4);
+    downloader->PreParseManifest("http://127.0.0.1:46666/spike/fmp4.m3u8");
+    EXPECT_TRUE(cb->savedPlayList.empty()) << "X-MAP present -> PreParse must skip";
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, PREPARSE_BOUNDARY_SINGLE_EXTINF_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // Only 1 #EXTINF (< MIN_PRE_PARSE_NUM=2) -> find loop aborts -> no PreParse.
+    std::string single =
+        "#EXTM3U\n"
+        "#EXT-X-VERSION:3\n"
+        "#EXT-X-TARGETDURATION:6\n"
+        "#EXTINF:5.0,\n"
+        "seg0.ts\n";
+    downloader->SetPlayListForTest(single);
+    downloader->PreParseManifest("http://127.0.0.1:46666/spike/single.m3u8");
+    EXPECT_TRUE(cb->savedPlayList.empty()) << "<2 #EXTINF -> PreParse must skip";
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, PREPARSE_BOUNDARY_MASTER_PLAYLIST_005, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // Master playlist (#EXT-X-STREAM-INF, no #EXTINF) -> no segments to pre-parse.
+    std::string master =
+        "#EXTM3U\n"
+        "#EXT-X-VERSION:6\n"
+        "#EXT-X-STREAM-INF:BANDWIDTH=1280000,RESOLUTION=720x480\n"
+        "720p.m3u8\n"
+        "#EXT-X-STREAM-INF:BANDWIDTH=2560000,RESOLUTION=1280x720\n"
+        "1080p.m3u8\n";
+    downloader->SetPlayListForTest(master);
+    downloader->PreParseManifest("http://127.0.0.1:46666/spike/master.m3u8");
+    EXPECT_TRUE(cb->savedPlayList.empty()) << "master playlist (no #EXTINF) -> PreParse must skip";
+}
 }

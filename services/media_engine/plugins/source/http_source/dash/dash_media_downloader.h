@@ -40,6 +40,7 @@ struct DashPreparedAction {
 class DashMediaDownloader : public MediaDownloader, public DashMpdCallback,
     public std::enable_shared_from_this<DashMediaDownloader> {
 public:
+    uint64_t GetLogId() const override { return avcodecUniqueId_; }
     explicit DashMediaDownloader(std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
     ~DashMediaDownloader() override;
 

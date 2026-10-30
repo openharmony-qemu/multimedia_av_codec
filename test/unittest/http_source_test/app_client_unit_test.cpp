@@ -59,6 +59,7 @@ public:
         (void)requestedLength;
         std::unique_lock lk(mutex_);
         isWaitRespond_ = true;
+        cond_.notify_all();
         return static_cast<int32_t>(requestedLength);
     }
 
@@ -885,6 +886,60 @@ HWTEST_F(AppClientUnitTest, AppClient_RespondData_AfterComplete, TestSize.Level1
     int32_t result = appClient_->RespondData(uuid, 0, memory);
     ASSERT_EQ(result, 50);
     ASSERT_EQ(appClient_->curOffset_.load(), -2);
+}
+
+HWTEST_F(AppClientUnitTest, CloseWakesRequestAndRejectsLateData, TestSize.Level1)
+{
+    RequestInfo info;
+    bool completed = false;
+    auto loader = std::static_pointer_cast<SourceLoader>(appClient_->sourceLoader_);
+    auto start = std::chrono::steady_clock::now();
+    std::thread download([&] {
+        appClient_->RequestData(-1, 0, info, [&](int32_t, int32_t, const std::string&, Status) {
+            completed = true;
+        });
+    });
+    {
+        std::unique_lock<std::mutex> lock(loader->mutex_);
+        EXPECT_TRUE(loader->cond_.wait_for(lock, std::chrono::seconds(1), [&] { return loader->isWaitRespond_; }));
+    }
+    EXPECT_EQ(appClient_->Close(true), Status::OK);
+    EXPECT_EQ(appClient_->Deinit(), Status::OK);
+    download.join();
+    EXPECT_TRUE(completed);
+    EXPECT_NE(appClient_->RequestData(-1, 0, info, [](int32_t, int32_t, const std::string&, Status) {}), Status::OK);
+    auto memory = std::make_shared<MockAVSharedMemory>(50); // Any nonempty late payload must be rejected after close.
+    EXPECT_LT(appClient_->RespondData(DEFAULT_UUID, 0, memory), 0);
+    EXPECT_EQ(appClient_->Close(true), Status::OK);
+    EXPECT_LT(std::chrono::steady_clock::now() - start, std::chrono::seconds(1));
+}
+
+HWTEST_F(AppClientUnitTest, DeinitRejectsAllLateCallbacksAndInitAllowsOpen_001, TestSize.Level2)
+{
+    size_t calls = 0;
+    auto receive = [](void*, size_t size, size_t count, void* user) -> size_t {
+        ++*static_cast<size_t*>(user);
+        return size * count;
+    };
+    appClient_->rxHeader_ = receive;
+    appClient_->rxBody_ = receive;
+    appClient_->userParam_ = &calls;
+    auto offset = appClient_->curOffset_.load();
+    auto requestState = appClient_->requestState_.load();
+    auto redirect = appClient_->GetRedirectUrl();
+    constexpr int32_t BUFFER_FULL_ERROR = -3; // AppClient rejects a nonempty late payload with BUFFER_FULL.
+    ASSERT_EQ(appClient_->Deinit(), Status::OK);
+    EXPECT_EQ(appClient_->RespondHeader(DEFAULT_UUID, {{"content-length", "50"}}, "/late"), 0);
+    auto memory = std::make_shared<MockAVSharedMemory>(50); // A nonempty callback must be rejected.
+    EXPECT_EQ(appClient_->RespondData(DEFAULT_UUID, 0, memory), BUFFER_FULL_ERROR);
+    EXPECT_EQ(appClient_->FinishLoading(DEFAULT_UUID, LoadingRequestError::LOADING_ERROR_SUCCESS), 0);
+    EXPECT_EQ(appClient_->curOffset_.load(), offset);
+    EXPECT_EQ(appClient_->requestState_.load(), requestState);
+    EXPECT_EQ(appClient_->GetRedirectUrl(), redirect);
+    EXPECT_EQ(calls, 0u);
+    EXPECT_EQ(appClient_->Open("http://app/no-request", {}, 0), Status::ERROR_INVALID_OPERATION);
+    EXPECT_EQ(appClient_->Init(), Status::OK);
+    EXPECT_EQ(appClient_->Open("http://app/no-request", {}, 0), Status::OK);
 }
 
 }

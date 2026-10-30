@@ -180,7 +180,6 @@ void HlsPlayListDownloader::Clone(std::shared_ptr<PlayListDownloader> ptr)
     startedDownloadStatus_ = other->startedDownloadStatus_;
     offset_ = other->offset_;
     size_ = other->size_;
-    fileSize_ = other->fileSize_;
     seekable_ = other->seekable_;
     position_ = other->position_;
     eventCallback_ = other->eventCallback_;

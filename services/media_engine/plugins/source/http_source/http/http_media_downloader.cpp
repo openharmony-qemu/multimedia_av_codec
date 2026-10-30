@@ -19,6 +19,7 @@
 #include <regex>
 #include <climits>
 #include "http_media_downloader.h"
+#include "utils/initial_stream_selection.h"
 #include "network/network_typs.h"
 #include "common/media_core.h"
 #include "avcodec_trace.h"
@@ -84,10 +85,11 @@ void HttpMediaDownloader::InitCacheBuffer(size_t duration)
 }
 
 HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferDuration,
-    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader)
+    std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader, std::optional<bool> isFlv)
 {
-    if (url.find(".flv") != std::string::npos) {
-        isLive_.store(true);
+    isFlvContent_ = isFlv.value_or(url.find(".flv") != std::string::npos);
+    if (isFlvContent_) {
+        isLive_.store(!isFlv.has_value());
         MEDIA_LOG_I("HTTP isflv.");
         isRingBuffer_ = true;
         if (sourceLoader != nullptr && sourceLoader->GetenableOfflineCache()) {
@@ -108,6 +110,8 @@ HttpMediaDownloader::HttpMediaDownloader(std::string url, uint32_t expectBufferD
     }
     downloader->Init();
     SetDownloader(downloader);
+    MEDIA_LOG_I("media=%{public}" PRIu64 " event=http_downloader_created downloader=%{public}" PRIu64,
+        avcodecUniqueId_, downloader->GetUniqueId());
 
     timeoutInterval_ = MAX_BUFFERING_TIME_OUT;
     writeBitrateCaculator_ = std::make_shared<WriteBitrateCaculator>();
@@ -218,6 +222,7 @@ bool HttpMediaDownloader::Open(const std::string& url, const std::map<std::strin
     auto downloadRequest = std::make_shared<DownloadRequest>(saveData, realStatusCallback, requestInfo);
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
     downloadRequest->SetRequestType(RequestType::HTTP_MEDIA_DATA);
+    downloadRequest->SetIsFlv(isFlvContent_);
     auto downloader = GetDownloader();
     if (downloader) {
         downloader->Download(downloadRequest, -1); // -1
@@ -911,6 +916,10 @@ uint32_t HttpMediaDownloader::SaveData(uint8_t* data, uint32_t len, bool notBloc
             PUBLIC_LOG_ZU, len, totalBufferSize_);
         return 0;
     }
+    if (isFlvContent_) {
+        auto request = GetDownloadRequest();
+        isLive_.store(request != nullptr && request->GetFileContentLengthNoWait() == 0);
+    }
     OnWriteBuffer(len);
     uint32_t ret = 0;
     if (isRingBuffer_) {
@@ -1575,6 +1584,7 @@ void HttpMediaDownloader::SetMediaStreams(const MediaStreamList& mediaStreams)
     MEDIA_LOG_I("HTTP MediaStreams size is " PUBLIC_LOG_ZU, static_cast<size_t>(mediaStreams.size()));
     playMediaStreams_ = mediaStreams;
     defaultStream_ = playMediaStreams_.empty() ? nullptr : playMediaStreams_.front();
+    ChooseStreamByResolution();
     auto callback = callback_.lock();
     if (!playMediaStreams_.empty() && callback != nullptr) {
         std::string type = "http";
@@ -1584,44 +1594,12 @@ void HttpMediaDownloader::SetMediaStreams(const MediaStreamList& mediaStreams)
 
 void HttpMediaDownloader::ChooseStreamByResolution()
 {
-    if (initResolution_ == 0 || defaultStream_ == nullptr) {
+    if (initResolution_ == 0) {
         return;
     }
-    for (const auto &stream : playMediaStreams_) {
-        if (stream == nullptr) {
-            continue;
-        }
-        if (IsNearToInitResolution(defaultStream_, stream)) {
-            defaultStream_ = stream;
-        }
-    }
-    MEDIA_LOG_I("resolution, width:" PUBLIC_LOG_U32 ", height:" PUBLIC_LOG_U32,
-                defaultStream_->width, defaultStream_->height);
-}
-
-bool HttpMediaDownloader::IsNearToInitResolution(const std::shared_ptr<PlayMediaStream> &choosedStream,
-    const std::shared_ptr<PlayMediaStream> &currentStream)
-{
-    if (choosedStream == nullptr || currentStream == nullptr || initResolution_ == 0) {
-        return false;
-    }
-    uint32_t choosedDelta = GetResolutionDelta(choosedStream->width, choosedStream->height);
-    uint32_t currentDelta = GetResolutionDelta(currentStream->width, currentStream->height);
-    return (currentDelta < choosedDelta)
-           || (currentDelta == choosedDelta && currentStream->bitrate < choosedStream->bitrate);
-}
-
-uint32_t HttpMediaDownloader::GetResolutionDelta(uint32_t width, uint32_t height)
-{
-    if (width >= USHRT_MAX || height >= USHRT_MAX) {
-        return 0;
-    }
-
-    uint32_t resolution = width * height;
-    if (resolution > initResolution_) {
-        return resolution - initResolution_;
-    } else {
-        return initResolution_ - resolution;
+    auto selected = ChooseInitialStream(playMediaStreams_, initResolution_);
+    if (selected != nullptr) {
+        defaultStream_ = selected;
     }
 }
 
