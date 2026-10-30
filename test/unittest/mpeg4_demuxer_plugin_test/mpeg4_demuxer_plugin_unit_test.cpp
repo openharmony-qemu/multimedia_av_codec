@@ -8989,6 +8989,29 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_FtypZeroCompatibleBrandsAccepted_001
+ * @tc.desc: Verify a legal ftyp box with only major brand and no compatible brands is accepted
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FtypZeroCompatibleBrandsAccepted_001, TestSize.Level1)
+{
+    constexpr uint32_t ftypAtomSize = 16;
+    constexpr uint32_t ftypType = static_cast<uint32_t>(Plugins::MPEG4::FourccType("ftyp"));
+    constexpr uint32_t mp41Brand = static_cast<uint32_t>(Plugins::MPEG4::FourccType("mp41"));
+    std::vector<uint8_t> data;
+    AppendU32(data, ftypAtomSize);
+    AppendU32(data, ftypType);
+    AppendU32(data, mp41Brand);
+    AppendU32(data, 0); // minor version, no compatible brands
+    AtomParserTestContext test(data);
+    Plugins::MPEG4::MPEG4AtomParser::ParseContext ctx;
+
+    ASSERT_EQ(test.parser.MPEG4ParseAtom(0, &ctx), Status::OK);
+    EXPECT_TRUE(test.parser.IsIsom());
+    EXPECT_EQ(ctx.offset, static_cast<int64_t>(data.size()));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_AtomHeader_RejectInvalidBoundaries_001
  * @tc.desc: Verify invalid offsets, overflow, nested truncation, and malformed declared sizes are rejected
  * @tc.type: FUNC

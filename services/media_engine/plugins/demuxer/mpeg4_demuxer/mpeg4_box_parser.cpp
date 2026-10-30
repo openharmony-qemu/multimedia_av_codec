@@ -1445,7 +1445,6 @@ Status MPEG4AtomParser::ParseFtyp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_W(IsSupportedBrand(majorBrand),
         Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, "Unsupported file: brand[%{public}s]", majorBrand.c_str());
     uint32_t compatibleBrandsCount = (currentAtom.dataSize - 8) / 4;
-    FALSE_RETURN_V_MSG_E(compatibleBrandsCount > 0, Status::ERROR_INVALID_DATA, "Invalid compatible brands number");
     // 一次性读取所有compatible brands数据
     bool hasGltfBrand = false;
     if (compatibleBrandsCount > 0) {
