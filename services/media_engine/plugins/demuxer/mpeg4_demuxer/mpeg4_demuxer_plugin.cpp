@@ -1253,16 +1253,17 @@ bool GetTrailingZeroEditedAudioDurationUs(const ReadSampleEntryContext& context,
     if (!track->sampleHelper->HasTrailingZeroSttsDuration() || sampleIndex == 0) {
         return false;
     }
-    MPEG4SampleHelper::SampleIndexView previousSample;
-    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
-    // Trailing zero STTS entries borrow the previous packet spacing unless stream tail is shorter.
-    int64_t previousDuration = currentSample.dts - previousSample.dts;
-    FALSE_RETURN_V_NOLOG(previousDuration > 0, false);
+    // FFmpeg mov_finalize_packet closes the last packet against the stream end: duration =
+    // st->duration - dts when positive, otherwise native 0 (compute_pkt_fields may then backfill
+    // the AAC frame size). A trailing zero STTS delta does not borrow the previous spacing; fall
+    // through to the generic chain (GetPacketDurationUs / AAC frame-size backfill) when the stream
+    // end is at or before this dts.
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, packet.trackTimeScale, packet.movieTimeScale);
     int64_t tailDuration = streamDuration - currentSample.dts;
-    FALSE_RETURN_V_NOLOG(tailDuration <= 0 || tailDuration >= previousDuration,
-        RescaleTrackTimeToUsRoundNearest(tailDuration, packet.trackTimeScale, durationUs) == Status::OK);
-    return RescaleTrackTimeToUsRoundNearest(previousDuration, packet.trackTimeScale, durationUs) == Status::OK;
+    if (tailDuration <= 0) {
+        return false;
+    }
+    return RescaleTrackTimeToUsRoundNearest(tailDuration, packet.trackTimeScale, durationUs) == Status::OK;
 }
 
 bool GetSkipInfoEditedAudioDurationUs(
@@ -1774,6 +1775,32 @@ Status SetPacketTimelineUs(const ReadSamplePacketContext& context, int64_t& dts,
     return Status::OK;
 }
 
+// FFmpeg mov_finalize_packet closes the last AAC packet against the stream end; a trailing-zero
+// STTS delta that places the last sample at/after st->duration keeps the native duration 0.
+// compute_pkt_fields only backfills the AAC frame size (av_get_audio_frame_duration) when the
+// probe opened the AAC decoder (avctx->frame_size == 1024); the observed FFmpeg output for such
+// trailing-zero tails (dog_tail.mp4) is duration 0, so skip the backfill for a non-zero-size
+// trailing-zero tail. Zero-size untimed AAC tails keep the backfill
+// (HasUntimedTrailingZeroAacSample), as do edit-list tails inside/after the media.
+bool IsAacTrailingZeroTailAtStreamEnd(const ReadSamplePacketContext& context)
+{
+    const auto& track = context.track;
+    if (track == nullptr || track->sampleHelper == nullptr ||
+        track->codecParms.trackType != AUDIO_TYPE ||
+        track->sampleHelper->mimeType_ != MimeType::AUDIO_AAC ||
+        context.sampleIndex + 1 != track->sampleHelper->GetSampleCount()) {
+        return false;
+    }
+    const auto& currentSample = context.currentSample;
+    if (currentSample.size == 0 || currentSample.duration > 0 ||
+        !track->sampleHelper->HasTrailingZeroSttsDuration()) {
+        return false;
+    }
+    int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale,
+        context.movieTimeScale);
+    return streamDuration <= currentSample.dts;
+}
+
 bool UpdatePacketDurationUs(const ReadSamplePacketContext& context, ReadSamplePacketAttr& attr)
 {
     const auto& track = context.track;
@@ -1795,7 +1822,8 @@ bool UpdatePacketDurationUs(const ReadSamplePacketContext& context, ReadSamplePa
         hasDuration = RescaleTrackTimeToUsRoundNearest(currentSample.duration, trackTimeScale, attr.durationUs) ==
             Status::OK;
     }
-    if (attr.durationUs == 0 && GetAacFrameDurationUs(context, attr.durationUs)) {
+    if (attr.durationUs == 0 && !IsAacTrailingZeroTailAtStreamEnd(context) &&
+        GetAacFrameDurationUs(context, attr.durationUs)) {
         hasDuration = true;
     }
     return hasDuration;

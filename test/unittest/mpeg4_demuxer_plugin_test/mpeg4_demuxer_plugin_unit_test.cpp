@@ -2007,6 +2007,25 @@ std::vector<uint8_t> BuildMpegAudioTestFrames(size_t frameCount)
     return frames;
 }
 
+std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper> BuildEmptyStssSyncTestHelper(
+    Plugins::MPEG4::TrackType trackType, const std::string& mimeType)
+{
+    constexpr uint32_t emptyStssTestSampleCount = 4;
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (helper == nullptr) {
+        return nullptr;
+    }
+    helper->emptyStss_ = true;
+    helper->trackType_ = trackType;
+    helper->mimeType_ = mimeType;
+    helper->sttsEntry_ = {{emptyStssTestSampleCount, 1}};
+    helper->stscEntry_ = {{0, emptyStssTestSampleCount, 1}};
+    helper->sampleSizes_ = {1, 1, 1, 1};
+    helper->sampleSizeCount_ = emptyStssTestSampleCount;
+    helper->chunkOffsets_ = {0};
+    return helper;
+}
+
 std::vector<uint8_t> BuildAvcCTestConfig(const std::vector<uint8_t>& sps)
 {
     constexpr uint8_t avcConfigVersion = 0x01;
@@ -4605,6 +4624,43 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AudioTailStreamEndKeepsZ
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AacTrailingZeroTailKeepsZeroDuration_001
+ * @tc.desc: Verify a non-zero-size AAC tail with a trailing-zero STTS delta and an initial empty
+ *           edit closed at/after the stream end keeps duration 0 even when AUDIO_SAMPLE_PER_FRAME
+ *           is exported, matching FFmpeg mov_finalize_packet native 0 without the decoder-probe
+ *           AAC frame size backfill (dog_tail.mp4 track1 frame230: ff duration 0).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacTrailingZeroTailKeepsZeroDuration_001,
+    TestSize.Level1)
+{
+    constexpr int32_t testTimeScale = 48000;
+    constexpr int64_t testMdhdDuration = 199 * 1024;
+    constexpr int64_t testFrameTicks = 1024;
+    constexpr int64_t testSampleCount = 200;
+    constexpr int64_t testEmptyEditTicks = 624;
+    constexpr int64_t expectedFrameUs = 21333;
+    std::vector<uint32_t> sampleSizes(testSampleCount, 1);
+    Plugins::MPEG4::MPEG4DemuxerPlugin plugin("avdemux_mpeg4");
+    auto track = PrepareAacTailTestTrack(plugin, sampleSizes, testTimeScale, testMdhdDuration,
+        testFrameTicks, 0, true, testEmptyEditTicks, testMdhdDuration);
+    ASSERT_NE(track, nullptr);
+    // Model dog_tail's trailing-zero STTS plus empty edit: the last delta is 0 and the stream end
+    // (mdhd/raw total) sits before the last dts, so the native duration is 0 through both the
+    // edit-list tail chain and the generic tail chain, and the AAC frame-size backfill must stay off.
+    track->sampleHelper->sttsEntry_ = {{199, 1024}, {1, 0}};
+    plugin.dataSource_ = CreateDataSourceForBytes(std::vector<uint8_t>(testSampleCount, 0x01));
+    ASSERT_NE(plugin.dataSource_, nullptr);
+    AVBufferWrapper output(256);
+    for (size_t index = 0; index + 1 < testSampleCount; ++index) {
+        ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ(output.mediaAVBuffer->duration_, expectedFrameUs) << "sample " << index;
+    }
+    ASSERT_EQ(plugin.ReadSample(0, output.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(output.mediaAVBuffer->duration_, 0);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_MpegAudioTailStreamEndKeepsZeroDuration_001
  * @tc.desc: Verify an MP3 tail whose dts equals the stream end keeps duration 0 (FFmpeg
  *           mov_finalize_packet native 0; MP3 has no frame-size backfill for a zero-length
@@ -5233,6 +5289,41 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_StpsPartialSync_001, Tes
     ASSERT_EQ(helper.SetPartialSyncSampleParams(0, stps.size()), Status::OK);
     EXPECT_FALSE(helper.emptyStss_);
     EXPECT_EQ(helper.GetSyncSamplesIndexFromStssEntry(), std::vector<uint32_t>({0, 60}));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_EmptyStssAudioAllSync_001
+ * @tc.desc: Verify an empty stss marks every sample of an audio/aux-audio track as sync (FFmpeg
+ *           mov_read_stss keyframe_absent + mov_build_index need_parse_audio_info), while other
+ *           tracks keep only the first sample.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EmptyStssAudioAllSync_001, TestSize.Level1)
+{
+    constexpr uint32_t testSampleCount = 4;
+    auto audioHelper = BuildEmptyStssSyncTestHelper(Plugins::MPEG4::AUDIO_TYPE, MimeType::AUDIO_AAC);
+    ASSERT_NE(audioHelper, nullptr);
+    ASSERT_EQ(audioHelper->FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(audioHelper->EnsureDenseIndex(), Status::OK);
+    ASSERT_EQ(audioHelper->GetSampleCount(), testSampleCount);
+    for (uint32_t index = 0; index < testSampleCount; ++index) {
+        EXPECT_TRUE(audioHelper->IsSyncSample(index));
+    }
+    auto auxAudioHelper = BuildEmptyStssSyncTestHelper(Plugins::MPEG4::AUXILIARY_TYPE, MimeType::AUDIO_AAC);
+    ASSERT_NE(auxAudioHelper, nullptr);
+    ASSERT_EQ(auxAudioHelper->FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(auxAudioHelper->EnsureDenseIndex(), Status::OK);
+    for (uint32_t index = 0; index < testSampleCount; ++index) {
+        EXPECT_TRUE(auxAudioHelper->IsSyncSample(index));
+    }
+    auto videoHelper = BuildEmptyStssSyncTestHelper(Plugins::MPEG4::VIDEO_TYPE, MimeType::VIDEO_AVC);
+    ASSERT_NE(videoHelper, nullptr);
+    ASSERT_EQ(videoHelper->FinalizeSampleTables(), Status::OK);
+    ASSERT_EQ(videoHelper->EnsureDenseIndex(), Status::OK);
+    EXPECT_TRUE(videoHelper->IsSyncSample(0));
+    for (uint32_t index = 1; index < testSampleCount; ++index) {
+        EXPECT_FALSE(videoHelper->IsSyncSample(index));
+    }
 }
 
 /**

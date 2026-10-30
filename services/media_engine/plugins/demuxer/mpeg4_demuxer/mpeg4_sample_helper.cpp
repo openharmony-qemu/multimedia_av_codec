@@ -1902,7 +1902,10 @@ bool MPEG4SampleHelper::IsSyncSample(const std::vector<StssEntry>& syncSamples, 
     uint32_t sampleIndex) const
 {
     if (emptyStss_) {
-        return sampleIndex == 0;
+        // FFmpeg mov_read_stss sets keyframe_absent for an empty stss (entries == 0); mov_build_index
+        // then marks every sample of an audio track (need_parse_audio_info: AUDIO or AUXILIARY + audio
+        // mime) as keyframe, while other tracks fall back to the first sample only.
+        return NeedParseAudioInfo(mimeType_, trackType_) || sampleIndex == 0;
     }
     if (allSamplesSync) {
         return true;
