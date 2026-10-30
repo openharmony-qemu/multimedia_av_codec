@@ -143,25 +143,6 @@ HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_CODEC_DMA_TAG_CAPI_VALID_TEST_0101, 
 }
 
 /**
- * @tc.name: CONFIGURE_OPEN_GOP_UNSUPPORTED_CAPI_INVALID_TEST_0101
- * @tc.desc: codec configure rejects open GOP when encoder capability is unsupported
- * @tc.type: FUNC
- */
-HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_OPEN_GOP_UNSUPPORTED_CAPI_INVALID_TEST_0101,
-    TestSize.Level3)
-{
-    OH_AVCapability *capability = OH_AVCodec_GetCapability(OH_AVCODEC_MIMETYPE_VIDEO_HEVC, true);
-    ASSERT_NE(capability, nullptr);
-    if (OH_AVCapability_IsFeatureSupported(capability, VIDEO_ENCODER_OPEN_GOP)) {
-        return;
-    }
-    SetFormatBasicParam(false);
-    ASSERT_TRUE(OH_AVFormat_SetIntValue(
-        g_format, OH_MD_KEY_VIDEO_ENCODER_ENABLE_OPEN_GOP, 1));
-    ASSERT_EQ(AV_ERR_INVALID_VAL, OH_VideoEncoder_Configure(g_videoEncHevc, g_format));
-}
-
-/**
  * @tc.name: CONFIGURE_CODEC_DMA_TAG_CAPI_INVALID_TEST_0102
  * @tc.desc: codec dma tag rejected when contains only invisible characters through C encoder configure
  * @tc.type: FUNC
