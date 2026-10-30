@@ -1262,7 +1262,8 @@ extern const char *OH_MD_KEY_ENABLE_MOOV_FRONT;
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME;
 
 /**
- * @brief Key for enabling open GOP encoding for video encoder, value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
+ * @brief Key for enabling open GOP encoding for video encoder.
+ * The value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
  * @since <next>

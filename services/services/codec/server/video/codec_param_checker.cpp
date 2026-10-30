@@ -861,7 +861,8 @@ int32_t OpenGopParamChecker(CapabilityData &capData, Format &format, CodecScenar
 {
     (void)scenario;
     int32_t enable = 0;
-    bool enableExist = format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_OPEN_GOP, enable);
+    bool enableExist =
+        format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_OPEN_GOP, enable);
     if (!enableExist || enable <= 0) {
         return AVCS_ERR_OK;
     }
@@ -869,7 +870,7 @@ int32_t OpenGopParamChecker(CapabilityData &capData, Format &format, CodecScenar
     auto openGopCap = capData.featuresMap.find(
         static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_OPEN_GOP));
     if (openGopCap == capData.featuresMap.end()) {
-        AVCODEC_LOGE("Unsupported config VIDEO_ENCODER_ENABLE_OPEN_GOP!");
+        AVCODEC_LOGE("Unsupported config VIDEO_ENCODER_ENABLE_OPEN_GOP");
         return AVCS_ERR_INVALID_VAL;
     }
     return AVCS_ERR_OK;

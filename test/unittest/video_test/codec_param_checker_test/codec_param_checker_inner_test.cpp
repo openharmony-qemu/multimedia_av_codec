@@ -1241,13 +1241,15 @@ HWTEST_F(AVCodecParamCheckerTest, VIDEO_CODEC_SCENARIO_TEST_003, TestSize.Level3
 
 /**
  * @tc.name: CONFIGURE_OPEN_GOP_UNSUPPORTED_INNER_INVALID_TEST_0101
- * @tc.desc: codec configure rejects open GOP when the encoder capability does not support it
+ * @tc.desc: codec configure rejects open GOP when encoder capability is unsupported
  * @tc.type: FUNC
  */
-HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_OPEN_GOP_UNSUPPORTED_INNER_INVALID_TEST_0101, TestSize.Level3)
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_OPEN_GOP_UNSUPPORTED_INNER_INVALID_TEST_0101,
+    TestSize.Level3)
 {
-    if (capabilityDataHevc_ == nullptr || capabilityDataHevc_->featuresMap.count(
-        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_OPEN_GOP)) != 0) {
+    if (capabilityDataHevc_ == nullptr ||
+        capabilityDataHevc_->featuresMap.count(
+            static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_OPEN_GOP)) != 0) {
         return;
     }
     SetFormatBasicParam(formatInner_);
