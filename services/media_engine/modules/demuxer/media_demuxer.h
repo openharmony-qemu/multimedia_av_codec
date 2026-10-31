@@ -18,7 +18,6 @@
 
 #include <atomic>
 #include <deque>
-#include <functional>
 #include <limits>
 #include <string>
 #include <shared_mutex>
