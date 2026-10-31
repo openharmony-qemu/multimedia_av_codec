@@ -18,7 +18,7 @@
 - **禁止**使用 -fno-stack-protector，采用 -fstack-protector-all 编译选项
 - **禁止**在符号导出版本脚本（.map 文件）中导出内部符号，采用仅导出插件注册接口
 - **禁止**对 int64 整型字段做无守卫算术（加减乘、类型转换），采用 safe_arithmetic.h 的 SafeAdd/SafeSub/SafeMul/SafeIntCast，溢出时返回 false 并由调用方决定降级路径
-- **禁止**在 SafeIntCast 中直接比较 `src < numeric_limits<Dst>::min()`，当 Src 无符号、Dst 有符号时 min() 负数会隐式提升为大无符号值导致永远误判溢出，采用按 `is_signed_v` 分支派到 SafeIntCastSameSign/SignedToUnsigned/UnsignedToSigned 三个 helper
+- **禁止**在 SafeIntCast 中直接比较 `src < numeric_limits<Dst>::min()`，当 Src 无符号、Dst 有符号时 min() 负数会隐式提升为大无符号值，使有效范围内的 src 恒触发溢出误报，采用按 `is_signed_v` 分支派到 SafeIntCastSameSign/SignedToUnsigned/UnsignedToSigned 三个 helper
 - **禁止**函数内部多种错误路径返回不同哨兵值（如越界返 -1、溢出返 INT64_MAX），调用方用单一 `< 0` 守卫会漏检正值哨兵，采用统一错误哨兵（GetMediaSegmentNumberSeq/GetTimelineSegmentNumberSeq 越界与溢出均返 -1）
 - **禁止**把 DASH/HLS 内部纳秒时长（int64_t）直接传入期望毫秒的上层接口，采用显式 `/ MS_2_NS` 缩放（如 NotifyDateRanges 的 duration/start 转 AVTimedMetaData 时）
 

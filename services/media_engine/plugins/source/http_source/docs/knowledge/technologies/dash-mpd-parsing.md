@@ -72,4 +72,4 @@ SwitchStreamIfNeeded → 切换 Representation
 | 性能约束 | MPD 解析为同步操作，复杂 MPD 可能耗时数百毫秒 |
 | 安全约束 | MPD 中的 URL 需校验协议合法性（阻止 file:// 等本地协议）；DRM PSSH 数据需正确提取 |
 | 整数溢出防护 | **period/segment duration 内部统一纳秒（int64_t ns）**，秒级 duration 乘 S_2_NS 必须用 SafeMul 守护；`GetMediaSegmentNumberSeq`/`GetTimelineSegmentNumberSeq` 的 startNumberSeq+index 加法必须用 SafeAdd，**越界与溢出统一返回 -1**（调用方用 `numberSeq_ < 0` 校验），禁止返回 INT64_MAX 等正值哨兵致 `< 0` 守卫漏检 |
-| 类型转换防护 | `uint64_t index → int64_t` 等无符号→有符号转换必须用 SafeIntCast；SafeIntCast 内部按 `is_signed_v<Src>`/`is_signed_v<Dst>` 三路分派（同符号/SignedToUnsigned/UnsignedToSigned），避免 `min()` 负数隐式提升为大无符号值导致永远误判溢出 |
+| 类型转换防护 | `uint64_t index → int64_t` 等无符号→有符号转换必须用 SafeIntCast；SafeIntCast 内部按 `is_signed_v<Src>`/`is_signed_v<Dst>` 三路分派（同符号/SignedToUnsigned/UnsignedToSigned），避免 `min()` 负数隐式提升为大无符号值使有效输入恒触发溢出误报 |
