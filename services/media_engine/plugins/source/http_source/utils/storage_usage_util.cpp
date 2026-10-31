@@ -14,18 +14,22 @@
  */
  
 #include <sys/statvfs.h>
+#include <cstdint>
+#include <limits>
 #include "storage_usage_util.h"
 #include "common/media_core.h"
 #include "common/log.h"
- 
+#include "safe_arithmetic.h"
+
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_PLAYER, "HiStreamerStorageUsageUtil" };
 }
- 
+
 namespace OHOS {
 namespace Media {
-constexpr int64_t STORAGE_THRESHOLD_500G = 500000000000;
-constexpr int64_t STORAGE_EXTRA_2G = 2000000000;
+constexpr double DOUBLE_TO_INT64_SAFE_MAX = 9.0e15;
+constexpr int64_t STORAGE_THRESHOLD_500G = 500LL * 1000 * 1000 * 1000;
+constexpr int64_t STORAGE_EXTRA_2G = 2LL * 1000 * 1000 * 1000;
 constexpr double STORAGE_PERCENT_THRESHOLD_OVER_500G = 0.05;
 constexpr double STORAGE_PERCENT_THRESHOLD = 0.1;
  
@@ -37,11 +41,13 @@ int64_t StorageUsageUtil::GetFreeSize()
         MEDIA_LOG_I("get freesize failed, errno:%{public}d", errno);
         return -1;
     }
-    int64_t freeSize =
-        static_cast<long long>(diskInfo.f_bsize) * static_cast<long long>(diskInfo.f_bfree);
-    return freeSize;
+    uint64_t result = static_cast<uint64_t>(diskInfo.f_bsize) * diskInfo.f_bfree;
+    if (result > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+        return std::numeric_limits<int64_t>::max();
+    }
+    return static_cast<int64_t>(result);
 }
- 
+
 int64_t StorageUsageUtil::GetTotalSize()
 {
     struct statvfs diskInfo;
@@ -50,9 +56,11 @@ int64_t StorageUsageUtil::GetTotalSize()
         MEDIA_LOG_I("get totalsize failed, errno:%{public}d", errno);
         return -1;
     }
-    int64_t totalSize =
-        static_cast<long long>(diskInfo.f_bsize) * static_cast<long long>(diskInfo.f_blocks);
-    return totalSize;
+    uint64_t result = static_cast<uint64_t>(diskInfo.f_bsize) * diskInfo.f_blocks;
+    if (result > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
+        return std::numeric_limits<int64_t>::max();
+    }
+    return static_cast<int64_t>(result);
 }
  
 bool StorageUsageUtil::HasEnoughStorage()
@@ -65,8 +73,7 @@ bool StorageUsageUtil::HasEnoughStorage()
     MEDIA_LOG_I("StorageUsageUtil freesize:" PUBLIC_LOG_D64 "; totalsize:" PUBLIC_LOG_D64, freesize, totalSize);
     auto safeThreshold = [](int64_t total, double percent) -> int64_t {
         double r = static_cast<double>(total) * percent;
-        constexpr double kInt64MaxAsDouble = 9.0e18;
-        if (r >= kInt64MaxAsDouble) {
+        if (r >= DOUBLE_TO_INT64_SAFE_MAX) {
             return std::numeric_limits<int64_t>::max() - STORAGE_EXTRA_2G;
         }
         return static_cast<int64_t>(r);

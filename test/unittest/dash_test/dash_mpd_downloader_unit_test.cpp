@@ -364,13 +364,13 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_GET_BREAK_POINT_SEGMENT, TestSize.Level
 {
     int usingStreamId = mpdDownloader_->GetInUseVideoStreamId();
     std::shared_ptr<DashSegment> seg = nullptr;
-    int64_t breakPoint = 30000;
+    int64_t breakPoint = static_cast<int64_t>(30000 * MS_2_NS);
     DashMpdGetRet getRet = mpdDownloader_->GetBreakPointSegment(usingStreamId, breakPoint, seg);
 
     std::shared_ptr<DashSegment> segError = nullptr;
-    int64_t breakPointError = 300000;
+    int64_t breakPointError = static_cast<int64_t>(300000 * MS_2_NS);
     mpdDownloader_->GetBreakPointSegment(usingStreamId, breakPointError, segError);
-    
+
     EXPECT_NE(getRet, DASH_MPD_GET_ERROR);
     EXPECT_EQ(segError, nullptr);
 }
@@ -381,9 +381,12 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_SEEK_TO_TS, TestSize.Level1)
     int64_t duration = mpdDownloader_->GetDuration();
     int64_t seekTime = duration / 2;
     std::shared_ptr<DashSegment> seg = nullptr;
-    mpdDownloader_->SeekToTs(usingStreamId, seekTime / MS_2_NS, seg);
+    mpdDownloader_->SeekToTs(usingStreamId, seekTime, seg);
 
-    EXPECT_NE(seg, nullptr);
+    ASSERT_NE(seg, nullptr);
+    EXPECT_GE(seg->numberSeq_, 1); // segment sequence number must be valid (>= startNumberSeq)
+    EXPECT_GT(seg->duration_, 0);  // segment duration must be positive
+    EXPECT_FALSE(seg->url_.empty()); // segment URL must be populated
 }
 
 HWTEST_F(DashMpdDownloaderUnitTest, TEST_GET_NEXT_SEGMENT, TestSize.Level1)
@@ -740,7 +743,9 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegmentsInMpd_002, TestSize.Level0)
     period->adptSetList_.push_back(adptSet);
     auto ret = mpdDownloader_->GetSegmentsInMpd(streamDesc);
     EXPECT_EQ(ret, DASH_SEGMENT_INIT_SUCCESS);
-    EXPECT_GT(streamDesc->mediaSegments_.size(), 0u);
+    // Lazy loading: mediaSegments_ is not expanded, check lazy state instead
+    EXPECT_TRUE(streamDesc->lazyMode_ != DASH_LAZY_MODE_NONE);
+    EXPECT_GT(streamDesc->GetMediaSegmentCount(), 0u);
     delete segTmplt;
     delete adptSet;
     delete period;
@@ -905,7 +910,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, UpdateCurrentNumberSeqByTime_003, TestSize.L
     streamDesc->mediaSegments_.push_back(seg2);
     streamDesc->currentNumberSeq_ = 0;
     
-    mpdDownloader_->UpdateCurrentNumberSeqByTime(streamDesc, 150);
+    mpdDownloader_->UpdateCurrentNumberSeqByTime(streamDesc, 200);
     EXPECT_EQ(streamDesc->currentNumberSeq_, 2);
 }
 
@@ -981,14 +986,15 @@ HWTEST_F(DashMpdDownloaderUnitTest, ProcessDrmInfos_003, TestSize.Level0)
 /**
  * @tc.name  : Test BuildDashSegment with overflow
  * @tc.number: BuildDashSegment_003
- * @tc.desc  : Test BuildDashSegment with segDurMsSum overflow
+ * @tc.desc  : Test BuildSidxEntries with SafeMul(duration, S_2_NS) overflow
  */
 HWTEST_F(DashMpdDownloaderUnitTest, BuildDashSegment_003, TestSize.Level0)
 {
     EXPECT_NE(mpdDownloader_, nullptr);
     std::list<std::shared_ptr<SubSegmentIndex>> subSegIndexList;
     auto subSeg = std::make_shared<SubSegmentIndex>();
-    subSeg->duration_ = UINT_MAX;
+    // UINT64_MAX * S_2_NS overflows uint64_t → SafeMul returns false → entry is skipped.
+    subSeg->duration_ = UINT64_MAX;
     subSeg->timeScale_ = 1;
     subSegIndexList.push_back(subSeg);
     
@@ -1003,8 +1009,8 @@ HWTEST_F(DashMpdDownloaderUnitTest, BuildDashSegment_003, TestSize.Level0)
     mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
     mpdDownloader_->mpdInfo_ = mpdInfo;
     
-    mpdDownloader_->BuildDashSegment(subSegIndexList);
-    EXPECT_EQ(mpdDownloader_->currentDownloadStream_->mediaSegments_.size(), 0u);
+    mpdDownloader_->BuildSidxEntries(subSegIndexList);
+    EXPECT_EQ(mpdDownloader_->currentDownloadStream_->sidxEntries_.size(), 0u);
     
     delete mpdInfo;
     mpdDownloader_->mpdInfo_ = nullptr;
@@ -1035,9 +1041,13 @@ HWTEST_F(DashMpdDownloaderUnitTest, BuildDashSegment_004, TestSize.Level0)
     mpdInfo->type_ = DashType::DASH_TYPE_DYNAMIC;
     mpdDownloader_->mpdInfo_ = mpdInfo;
     
-    mpdDownloader_->BuildDashSegment(subSegIndexList);
-    EXPECT_GT(mpdDownloader_->currentDownloadStream_->mediaSegments_.size(), 0u);
-    
+    mpdDownloader_->BuildSidxEntries(subSegIndexList);
+    const auto& entries = mpdDownloader_->currentDownloadStream_->sidxEntries_;
+    ASSERT_EQ(entries.size(), 1u); // exactly one subSeg pushed
+    EXPECT_EQ(entries[0].numberSeq, 1); // startNumberSeq_ = 1
+    EXPECT_GT(entries[0].durationNs, 0u); // (1000 * 1e9) / 1000 = 1e9 ns
+    EXPECT_EQ(entries[0].url, "http://test.com/segment.mp4"); // from indexSegment_->url_
+
     delete mpdInfo;
     mpdDownloader_->mpdInfo_ = nullptr;
 }
@@ -1093,7 +1103,9 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegmentsWithTmpltDurationStatic_005, Test
     streamDesc->startNumberSeq_ = 1;
     auto ret = mpdDownloader_->GetSegmentsWithTmpltDurationStatic(segTmpltInfo, mediaUrl, timeScale, streamDesc);
     EXPECT_EQ(ret, DASH_SEGMENT_INIT_SUCCESS);
-    EXPECT_GT(streamDesc->mediaSegments_.size(), 0u);
+    // Lazy loading: mediaSegments_ is not expanded, check lazy state instead
+    EXPECT_TRUE(streamDesc->lazyMode_ != DASH_LAZY_MODE_NONE);
+    EXPECT_GT(streamDesc->GetMediaSegmentCount(), 0u);
     delete segTmpltInfo;
 }
 
@@ -1113,11 +1125,14 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegmentsWithTmpltTimelineStatic_005, Test
     std::string mediaUrl = "segment$Number$.m4s";
     unsigned int timeScale = 1000;
     auto streamDesc = std::make_shared<DashStreamDescription>();
-    streamDesc->duration_ = 10000;
+    streamDesc->duration_ = 10000 * MS_2_NS;
     streamDesc->startNumberSeq_ = 1;
     auto ret = mpdDownloader_->GetSegmentsWithTmpltTimelineStatic(segTmpltInfo, mediaUrl, timeScale, streamDesc);
     EXPECT_EQ(ret, DASH_SEGMENT_INIT_SUCCESS);
-    EXPECT_GT(streamDesc->mediaSegments_.size(), 0u);
+    // Lazy loading: mediaSegments_ is not expanded, check lazy state instead
+    EXPECT_TRUE(streamDesc->lazyMode_ != DASH_LAZY_MODE_NONE);
+    EXPECT_GT(streamDesc->timelineEntries_.size(), 0u);
+    EXPECT_GT(streamDesc->GetMediaSegmentCount(), 0u);
     delete timeline;
     delete segTmpltInfo;
 }
@@ -1138,7 +1153,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegCountFromTimeline_005, TestSize.Level0
     dashList.push_back(dashSegTimeline);
     DashList<DashSegTimeline*>::iterator it = dashList.begin();
     DashList<DashSegTimeline*>::iterator end = dashList.end();
-    unsigned int periodDuration = 10000;
+    uint64_t periodDuration = 10000 * MS_2_NS;
     unsigned int timeScale = 1000;
     uint64_t startTime = 1000;
     auto ret = mpdDownloader_->GetSegCountFromTimeline(it, end, periodDuration, timeScale, startTime);
@@ -1162,7 +1177,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegCountFromTimeline_006, TestSize.Level0
     dashList.push_back(dashSegTimeline);
     DashList<DashSegTimeline*>::iterator it = dashList.begin();
     DashList<DashSegTimeline*>::iterator end = dashList.end();
-    unsigned int periodDuration = 10000;
+    uint64_t periodDuration = 10000 * MS_2_NS;
     unsigned int timeScale = 1000;
     uint64_t startTime = 0;
     auto ret = mpdDownloader_->GetSegCountFromTimeline(it, end, periodDuration, timeScale, startTime);
@@ -1179,8 +1194,8 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegmentsWithSegList_006, TestSize.Level0)
 {
     EXPECT_NE(mpdDownloader_, nullptr);
     DashSegListInfo* segListInfo = new DashSegListInfo();
-    DashSegUrl* segUrl = new DashSegUrl();
-    segUrl->media_ = "segment1.m4s";
+    DashSegUrlEntry segUrl;
+    segUrl.media_ = "segment1.m4s";
     segListInfo->segmentUrl_.push_back(segUrl);
     segListInfo->multSegBaseInfo_.duration_ = 1000;
     segListInfo->multSegBaseInfo_.segBaseInfo_.timeScale_ = 1000;
@@ -1195,8 +1210,8 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegmentsWithSegList_006, TestSize.Level0)
     streamDesc->startNumberSeq_ = 1;
     auto ret = mpdDownloader_->GetSegmentsWithSegList(segListInfo, baseUrl, streamDesc);
     EXPECT_EQ(ret, DASH_SEGMENT_INIT_SUCCESS);
-    EXPECT_GT(streamDesc->mediaSegments_.size(), 0u);
-    delete segUrl;
+    // Lazy loading: mediaSegments_ is not expanded, check segListEntries_ instead
+    EXPECT_GT(streamDesc->segListEntries_.size(), 0u);
     delete timeline;
     delete segListInfo;
 }
@@ -1210,10 +1225,10 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegmentsWithSegList_007, TestSize.Level0)
 {
     EXPECT_NE(mpdDownloader_, nullptr);
     DashSegListInfo* segListInfo = new DashSegListInfo();
-    DashSegUrl* segUrl1 = new DashSegUrl();
-    segUrl1->media_ = "segment1.m4s";
-    DashSegUrl* segUrl2 = new DashSegUrl();
-    segUrl2->media_ = "segment2.m4s";
+    DashSegUrlEntry segUrl1;
+    segUrl1.media_ = "segment1.m4s";
+    DashSegUrlEntry segUrl2;
+    segUrl2.media_ = "segment2.m4s";
     segListInfo->segmentUrl_.push_back(segUrl1);
     segListInfo->segmentUrl_.push_back(segUrl2);
     segListInfo->multSegBaseInfo_.duration_ = 1000;
@@ -1229,9 +1244,8 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegmentsWithSegList_007, TestSize.Level0)
     streamDesc->startNumberSeq_ = 1;
     auto ret = mpdDownloader_->GetSegmentsWithSegList(segListInfo, baseUrl, streamDesc);
     EXPECT_EQ(ret, DASH_SEGMENT_INIT_SUCCESS);
-    EXPECT_EQ(streamDesc->mediaSegments_.size(), 2u);
-    delete segUrl1;
-    delete segUrl2;
+    // Lazy loading: mediaSegments_ is not expanded, check segListEntries_ instead
+    EXPECT_EQ(streamDesc->segListEntries_.size(), 2u);
     delete timeline;
     delete segListInfo;
 }
@@ -1252,12 +1266,17 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegDurationFromTimeline_007, TestSize.Lev
     timeline->d_ = 1000;
     timeline->r_ = 4;
     multSegBaseInfo->segTimeline_.push_back(timeline);
-    DashList<unsigned int> durationList;
+    DashList<uint64_t> durationList;
     DashMpdInfo* mpdInfo = new DashMpdInfo();
     mpdInfo->type_ = DashType::DASH_TYPE_STATIC;
     mpdDownloader_->mpdInfo_ = mpdInfo;
     mpdDownloader_->GetSegDurationFromTimeline(periodDuration, timeScale, multSegBaseInfo, durationList);
-    EXPECT_GT(durationList.size(), 0u);
+    // d_=1000, r_=4, timeScale=1000 → segDuration = (1000 * 1e9) / 1000 = 1e9 ns, repeat 5 times
+    ASSERT_EQ(durationList.size(), 5u); // r_=4 means 5 segments (repeat 0..4)
+    constexpr uint64_t expectedSegDurationNs = 1000000000ULL; // (1000 * S_2_NS) / 1000
+    for (const auto& dur : durationList) {
+        EXPECT_EQ(dur, expectedSegDurationNs); // each segment duration = 1e9 ns = 1s
+    }
     delete timeline;
     delete multSegBaseInfo;
     delete mpdInfo;
@@ -1674,7 +1693,730 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetSegmentsInRepresentation_005, TestSize.Le
     EXPECT_GT(streamDesc->mediaSegments_.size(), 0u);
     delete repInfo;
 }
+
+// ===========================================================================
+// Lazy expansion branch coverage tests for vulnerability fix commit 2ca11db0a
+// Covers GetMediaSegmentCount/GetMediaSegmentDuration/GetMediaSegmentNumberSeq
+// per lazy mode, BuildLazySegment per lazy mode, DashParseRange rejection,
+// and UpdateCurrentNumberSeqByTime with lazy modes.
+// ===========================================================================
+
+/**
+ * @tc.name  : Test GetMediaSegmentCount in TIMELINE mode
+ * @tc.number: GetMediaSegmentCount_Timeline_001
+ * @tc.desc  : TIMELINE mode counts repeatCount across entries
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentCount_Timeline_001, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_TIMELINE;
+    DashTimelineEntry entry1;
+    entry1.repeatCount = 3;
+    entry1.duration = 1000;
+    entry1.segDurationNs = 1000000;
+    entry1.startTime = 0;
+    entry1.startSeq = 1;
+    stream->timelineEntries_.push_back(entry1);
+    DashTimelineEntry entry2;
+    entry2.repeatCount = 2;
+    entry2.duration = 1000;
+    entry2.segDurationNs = 1000000;
+    entry2.startTime = 3000;
+    entry2.startSeq = 4;
+    stream->timelineEntries_.push_back(entry2);
+    EXPECT_EQ(stream->GetMediaSegmentCount(), 5u);
 }
+
+/**
+ * @tc.name  : Test GetMediaSegmentCount in TIMELINE mode with zero repeat
+ * @tc.number: GetMediaSegmentCount_Timeline_002
+ * @tc.desc  : TIMELINE mode skips entries with repeatCount <= 0
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentCount_Timeline_002, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_TIMELINE;
+    DashTimelineEntry entry1;
+    entry1.repeatCount = 0; // should be skipped
+    entry1.duration = 1000;
+    entry1.segDurationNs = 1000000;
+    stream->timelineEntries_.push_back(entry1);
+    DashTimelineEntry entry2;
+    entry2.repeatCount = 4;
+    entry2.duration = 1000;
+    entry2.segDurationNs = 1000000;
+    stream->timelineEntries_.push_back(entry2);
+    EXPECT_EQ(stream->GetMediaSegmentCount(), 4u);
 }
+
+/**
+ * @tc.name  : Test GetMediaSegmentCount in DURATION mode
+ * @tc.number: GetMediaSegmentCount_Duration_001
+ * @tc.desc  : DURATION mode computes count from totalDuration/segDurationNs
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentCount_Duration_001, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_DURATION;
+    stream->durationSegInfo_.segDurationNs = 1000000; // 1s
+    stream->durationSegInfo_.totalDuration = 9500000; // 9.5s
+    // ceil(9.5 / 1) = 10
+    EXPECT_EQ(stream->GetMediaSegmentCount(), 10u);
 }
+
+/**
+ * @tc.name  : Test GetMediaSegmentCount in DURATION mode with zero values
+ * @tc.number: GetMediaSegmentCount_Duration_002
+ * @tc.desc  : DURATION mode returns 0 when segDurationNs or totalDuration is 0
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentCount_Duration_002, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_DURATION;
+    stream->durationSegInfo_.segDurationNs = 0;
+    stream->durationSegInfo_.totalDuration = 1000000;
+    EXPECT_EQ(stream->GetMediaSegmentCount(), 0u);
+
+    stream->durationSegInfo_.segDurationNs = 1000000;
+    stream->durationSegInfo_.totalDuration = 0;
+    EXPECT_EQ(stream->GetMediaSegmentCount(), 0u);
 }
+
+/**
+ * @tc.name  : Test GetMediaSegmentCount in SIDX and SEGLIST modes
+ * @tc.number: GetMediaSegmentCount_SidxSegList_001
+ * @tc.desc  : SIDX and SEGLIST modes return entry vector sizes
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentCount_SidxSegList_001, TestSize.Level0)
+{
+    auto streamSidx = std::make_shared<DashStreamDescription>();
+    streamSidx->lazyMode_ = DASH_LAZY_MODE_SIDX;
+    streamSidx->sidxEntries_.push_back(DashSidxEntry{1000000, 1, 0, 100, "url1"});
+    streamSidx->sidxEntries_.push_back(DashSidxEntry{2000000, 2, 101, 200, "url2"});
+    EXPECT_EQ(streamSidx->GetMediaSegmentCount(), 2u);
+
+    auto streamList = std::make_shared<DashStreamDescription>();
+    streamList->lazyMode_ = DASH_LAZY_MODE_SEGLIST;
+    streamList->segListEntries_.push_back(DashSegListEntry{"seg1.m4s", "0-100", 1000000, 1});
+    streamList->segListEntries_.push_back(DashSegListEntry{"seg2.m4s", "101-200", 1000000, 2});
+    streamList->segListEntries_.push_back(DashSegListEntry{"seg3.m4s", "201-300", 1000000, 3});
+    EXPECT_EQ(streamList->GetMediaSegmentCount(), 3u);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentCount in NONE mode
+ * @tc.number: GetMediaSegmentCount_None_001
+ * @tc.desc  : NONE mode returns mediaSegments_ size
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentCount_None_001, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_NONE;
+    auto seg1 = std::make_shared<DashSegment>();
+    auto seg2 = std::make_shared<DashSegment>();
+    stream->mediaSegments_.push_back(seg1);
+    stream->mediaSegments_.push_back(seg2);
+    EXPECT_EQ(stream->GetMediaSegmentCount(), 2u);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentDuration in DURATION mode with remainder
+ * @tc.number: GetMediaSegmentDuration_Duration_001
+ * @tc.desc  : DURATION mode last segment uses remainder when totalDuration % segDurationNs != 0
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentDuration_Duration_001, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_DURATION;
+    stream->durationSegInfo_.segDurationNs = 1000000;
+    stream->durationSegInfo_.totalDuration = 9500000;
+    // 10 segments (0..9), last (index 9) should have remainder 500000
+    EXPECT_EQ(stream->GetMediaSegmentDuration(0), 1000000u);
+    EXPECT_EQ(stream->GetMediaSegmentDuration(8), 1000000u);
+    EXPECT_EQ(stream->GetMediaSegmentDuration(9), 500000u);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentDuration in DURATION mode exact division
+ * @tc.number: GetMediaSegmentDuration_Duration_002
+ * @tc.desc  : DURATION mode last segment returns segDurationNs when totalDuration is exact multiple
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentDuration_Duration_002, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_DURATION;
+    stream->durationSegInfo_.segDurationNs = 1000000;
+    stream->durationSegInfo_.totalDuration = 10000000; // exact multiple
+    // 10 segments (0..9), last (index 9) should have full segDurationNs since remainder == 0
+    EXPECT_EQ(stream->GetMediaSegmentDuration(9), 1000000u);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentDuration out-of-bounds
+ * @tc.number: GetMediaSegmentDuration_OOB_001
+ * @tc.desc  : Out-of-bounds index returns 0 for each lazy mode
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentDuration_OOB_001, TestSize.Level0)
+{
+    auto streamDur = std::make_shared<DashStreamDescription>();
+    streamDur->lazyMode_ = DASH_LAZY_MODE_DURATION;
+    streamDur->durationSegInfo_.segDurationNs = 1000000;
+    streamDur->durationSegInfo_.totalDuration = 5000000;
+    EXPECT_EQ(streamDur->GetMediaSegmentDuration(100), 0u);
+
+    auto streamSidx = std::make_shared<DashStreamDescription>();
+    streamSidx->lazyMode_ = DASH_LAZY_MODE_SIDX;
+    streamSidx->sidxEntries_.push_back(DashSidxEntry{1000000, 1, 0, 100, "url1"});
+    EXPECT_EQ(streamSidx->GetMediaSegmentDuration(5), 0u);
+
+    auto streamList = std::make_shared<DashStreamDescription>();
+    streamList->lazyMode_ = DASH_LAZY_MODE_SEGLIST;
+    streamList->segListEntries_.push_back(DashSegListEntry{"seg1.m4s", "0-100", 1000000, 1});
+    EXPECT_EQ(streamList->GetMediaSegmentDuration(5), 0u);
+
+    auto streamNone = std::make_shared<DashStreamDescription>();
+    streamNone->lazyMode_ = DASH_LAZY_MODE_NONE;
+    auto seg = std::make_shared<DashSegment>();
+    seg->duration_ = 1000000;
+    streamNone->mediaSegments_.push_back(seg);
+    EXPECT_EQ(streamNone->GetMediaSegmentDuration(5), 0u);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentDuration in TIMELINE mode
+ * @tc.number: GetMediaSegmentDuration_Timeline_001
+ * @tc.desc  : TIMELINE mode returns segDurationNs for segments within each entry
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentDuration_Timeline_001, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_TIMELINE;
+    DashTimelineEntry entry1;
+    entry1.repeatCount = 3;
+    entry1.duration = 1000;
+    entry1.segDurationNs = 500000;
+    entry1.startTime = 0;
+    entry1.startSeq = 1;
+    stream->timelineEntries_.push_back(entry1);
+    DashTimelineEntry entry2;
+    entry2.repeatCount = 2;
+    entry2.duration = 2000;
+    entry2.segDurationNs = 800000;
+    entry2.startTime = 3000;
+    entry2.startSeq = 4;
+    stream->timelineEntries_.push_back(entry2);
+    // First 3 segments belong to entry1 (500000us each)
+    EXPECT_EQ(stream->GetMediaSegmentDuration(0), 500000u);
+    EXPECT_EQ(stream->GetMediaSegmentDuration(2), 500000u);
+    // Segments 3-4 belong to entry2 (800000us each)
+    EXPECT_EQ(stream->GetMediaSegmentDuration(3), 800000u);
+    EXPECT_EQ(stream->GetMediaSegmentDuration(4), 800000u);
+    // Out of bounds
+    EXPECT_EQ(stream->GetMediaSegmentDuration(5), 0u);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentDuration in SIDX and SEGLIST modes
+ * @tc.number: GetMediaSegmentDuration_SidxSegList_001
+ * @tc.desc  : SIDX and SEGLIST modes return per-entry durationNs
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentDuration_SidxSegList_001, TestSize.Level0)
+{
+    auto streamSidx = std::make_shared<DashStreamDescription>();
+    streamSidx->lazyMode_ = DASH_LAZY_MODE_SIDX;
+    streamSidx->sidxEntries_.push_back(DashSidxEntry{1500000, 1, 0, 100, "url1"});
+    streamSidx->sidxEntries_.push_back(DashSidxEntry{2500000, 2, 101, 200, "url2"});
+    EXPECT_EQ(streamSidx->GetMediaSegmentDuration(0), 1500000u);
+    EXPECT_EQ(streamSidx->GetMediaSegmentDuration(1), 2500000u);
+
+    auto streamList = std::make_shared<DashStreamDescription>();
+    streamList->lazyMode_ = DASH_LAZY_MODE_SEGLIST;
+    streamList->segListEntries_.push_back(DashSegListEntry{"seg1.m4s", "0-100", 3000000, 1});
+    streamList->segListEntries_.push_back(DashSegListEntry{"seg2.m4s", "101-200", 4000000, 2});
+    EXPECT_EQ(streamList->GetMediaSegmentDuration(0), 3000000u);
+    EXPECT_EQ(streamList->GetMediaSegmentDuration(1), 4000000u);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentNumberSeq in TIMELINE mode
+ * @tc.number: GetMediaSegmentNumberSeq_Timeline_001
+ * @tc.desc  : TIMELINE mode uses SafeAdd(entry.startSeq, indexWithinEntry)
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentNumberSeq_Timeline_001, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_TIMELINE;
+    DashTimelineEntry entry1;
+    entry1.repeatCount = 3;
+    entry1.duration = 1000;
+    entry1.segDurationNs = 1000000;
+    entry1.startTime = 0;
+    entry1.startSeq = 5;
+    stream->timelineEntries_.push_back(entry1);
+    // Segment 0 -> seq 5, segment 2 -> seq 7
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(0), 5);
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(2), 7);
+    // Out of bounds
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(3), -1);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentNumberSeq in DURATION mode
+ * @tc.number: GetMediaSegmentNumberSeq_Duration_001
+ * @tc.desc  : DURATION mode uses SafeAdd(startNumberSeq, index)
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentNumberSeq_Duration_001, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_DURATION;
+    stream->durationSegInfo_.segDurationNs = 1000000;
+    stream->durationSegInfo_.totalDuration = 5000000;
+    stream->durationSegInfo_.startNumberSeq = 10;
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(0), 10);
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(4), 14);
+    // Out of bounds
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(5), -1);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentNumberSeq in DURATION mode overflow
+ * @tc.number: GetMediaSegmentNumberSeq_Duration_002
+ * @tc.desc  : DURATION mode SafeAdd returns false on overflow, caller returns INT64_MAX
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentNumberSeq_Duration_002, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_DURATION;
+    stream->durationSegInfo_.segDurationNs = 1000000;
+    stream->durationSegInfo_.totalDuration = 2000000;
+    stream->durationSegInfo_.startNumberSeq = INT64_MAX;
+    // SafeAdd(INT64_MAX, 0) == INT64_MAX (no overflow for index 0)
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(0), INT64_MAX);
+    // SafeAdd(INT64_MAX, 1) overflows → returns false → caller returns INT64_MAX
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(1), INT64_MAX);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentNumberSeq in SIDX and SEGLIST modes
+ * @tc.number: GetMediaSegmentNumberSeq_SidxSegList_001
+ * @tc.desc  : SIDX and SEGLIST modes return per-entry numberSeq, -1 for OOB
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentNumberSeq_SidxSegList_001, TestSize.Level0)
+{
+    auto streamSidx = std::make_shared<DashStreamDescription>();
+    streamSidx->lazyMode_ = DASH_LAZY_MODE_SIDX;
+    streamSidx->sidxEntries_.push_back(DashSidxEntry{1000000, 7, 0, 100, "url1"});
+    streamSidx->sidxEntries_.push_back(DashSidxEntry{2000000, 8, 101, 200, "url2"});
+    EXPECT_EQ(streamSidx->GetMediaSegmentNumberSeq(0), 7);
+    EXPECT_EQ(streamSidx->GetMediaSegmentNumberSeq(1), 8);
+    EXPECT_EQ(streamSidx->GetMediaSegmentNumberSeq(2), -1);
+
+    auto streamList = std::make_shared<DashStreamDescription>();
+    streamList->lazyMode_ = DASH_LAZY_MODE_SEGLIST;
+    streamList->segListEntries_.push_back(DashSegListEntry{"seg1.m4s", "0-100", 1000000, 3});
+    streamList->segListEntries_.push_back(DashSegListEntry{"seg2.m4s", "101-200", 1000000, 4});
+    EXPECT_EQ(streamList->GetMediaSegmentNumberSeq(0), 3);
+    EXPECT_EQ(streamList->GetMediaSegmentNumberSeq(1), 4);
+    EXPECT_EQ(streamList->GetMediaSegmentNumberSeq(2), -1);
+}
+
+/**
+ * @tc.name  : Test GetMediaSegmentNumberSeq in NONE mode
+ * @tc.number: GetMediaSegmentNumberSeq_None_001
+ * @tc.desc  : NONE mode returns numberSeq_ from mediaSegments_, -1 for OOB
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentNumberSeq_None_001, TestSize.Level0)
+{
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_NONE;
+    auto seg1 = std::make_shared<DashSegment>();
+    seg1->numberSeq_ = 15;
+    stream->mediaSegments_.push_back(seg1);
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(0), 15);
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(1), -1);
+}
+
+/**
+ * @tc.name  : Test BuildLazySegment in TIMELINE mode
+ * @tc.number: BuildLazySegment_Timeline_001
+ * @tc.desc  : BuildLazySegment builds DashSegment with correct URL and numberSeq for TIMELINE
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, BuildLazySegment_Timeline_001, TestSize.Level0)
+{
+    EXPECT_NE(mpdDownloader_, nullptr);
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_TIMELINE;
+    stream->streamId_ = 5;
+    stream->bandwidth_ = 500000;
+    stream->startNumberSeq_ = 1;
+    DashTimelineEntry entry;
+    entry.repeatCount = 2;
+    entry.duration = 1000;
+    entry.segDurationNs = 1000000;
+    entry.startTime = 0;
+    entry.startSeq = 1;
+    stream->timelineEntries_.push_back(entry);
+    // Need durationSegInfo_.mediaUrlTemplate for URL building
+    stream->durationSegInfo_.mediaUrlTemplate = "segment$Number$_$Time$.m4s";
+
+    auto seg = mpdDownloader_->BuildLazySegment(stream, 0);
+    ASSERT_NE(seg, nullptr);
+    EXPECT_EQ(seg->streamId_, 5);
+    EXPECT_EQ(seg->bandwidth_, 500000u);
+    EXPECT_EQ(seg->duration_, 1000000u);
+    EXPECT_EQ(seg->numberSeq_, 1);
+    EXPECT_EQ(seg->startNumberSeq_, 1);
+    EXPECT_FALSE(seg->isLast_); // index 0 of 2, last is index 1
+    EXPECT_FALSE(seg->url_.find("$Number") != std::string::npos);
+    EXPECT_FALSE(seg->url_.find("$Time") != std::string::npos);
+
+    auto seg2 = mpdDownloader_->BuildLazySegment(stream, 1);
+    ASSERT_NE(seg2, nullptr);
+    EXPECT_EQ(seg2->numberSeq_, 2);
+    EXPECT_TRUE(seg2->isLast_);
+
+    // Out of bounds
+    auto segOob = mpdDownloader_->BuildLazySegment(stream, 2);
+    EXPECT_EQ(segOob, nullptr);
+}
+
+/**
+ * @tc.name  : Test BuildLazySegment in DURATION mode
+ * @tc.number: BuildLazySegment_Duration_001
+ * @tc.desc  : BuildLazySegment builds DashSegment with correct URL and numberSeq for DURATION
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, BuildLazySegment_Duration_001, TestSize.Level0)
+{
+    EXPECT_NE(mpdDownloader_, nullptr);
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_DURATION;
+    stream->streamId_ = 3;
+    stream->bandwidth_ = 300000;
+    stream->startNumberSeq_ = 1;
+    stream->durationSegInfo_.mediaUrlTemplate = "seg$Number$_$Time$.m4s";
+    stream->durationSegInfo_.segDurationNs = 1000000;
+    stream->durationSegInfo_.totalDuration = 3000000;
+    stream->durationSegInfo_.baseDuration = 1000;
+    stream->durationSegInfo_.startNumberSeq = 1;
+
+    auto seg = mpdDownloader_->BuildLazySegment(stream, 0);
+    ASSERT_NE(seg, nullptr);
+    EXPECT_EQ(seg->streamId_, 3);
+    EXPECT_EQ(seg->bandwidth_, 300000u);
+    EXPECT_EQ(seg->numberSeq_, 1);
+    EXPECT_EQ(seg->duration_, 1000000u);
+    EXPECT_EQ(seg->startNumberSeq_, 1);
+    EXPECT_FALSE(seg->isLast_);
+    EXPECT_FALSE(seg->url_.find("$Number") != std::string::npos);
+    EXPECT_FALSE(seg->url_.find("$Time") != std::string::npos);
+
+    auto segLast = mpdDownloader_->BuildLazySegment(stream, 2);
+    ASSERT_NE(segLast, nullptr);
+    EXPECT_EQ(segLast->numberSeq_, 3);
+    EXPECT_TRUE(segLast->isLast_);
+    EXPECT_FALSE(segLast->url_.find("$Number") != std::string::npos);
+    EXPECT_FALSE(segLast->url_.find("$Time") != std::string::npos);
+
+    // Out of bounds
+    auto segOob = mpdDownloader_->BuildLazySegment(stream, 3);
+    EXPECT_EQ(segOob, nullptr);
+}
+
+/**
+ * @tc.name  : Test BuildLazySegment in SIDX mode
+ * @tc.number: BuildLazySegment_Sidx_001
+ * @tc.desc  : BuildLazySegment builds DashSegment with correct URL, range, numberSeq for SIDX
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, BuildLazySegment_Sidx_001, TestSize.Level0)
+{
+    EXPECT_NE(mpdDownloader_, nullptr);
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_SIDX;
+    stream->streamId_ = 7;
+    stream->bandwidth_ = 700000;
+    stream->startNumberSeq_ = 1;
+    stream->sidxEntries_.push_back(DashSidxEntry{1000000, 10, 0, 500, "http://test.com/seg1.m4s"});
+    stream->sidxEntries_.push_back(DashSidxEntry{2000000, 11, 501, 1000, "http://test.com/seg2.m4s"});
+
+    auto seg = mpdDownloader_->BuildLazySegment(stream, 0);
+    ASSERT_NE(seg, nullptr);
+    EXPECT_EQ(seg->streamId_, 7);
+    EXPECT_EQ(seg->bandwidth_, 700000u);
+    EXPECT_EQ(seg->duration_, 1000000u);
+    EXPECT_EQ(seg->numberSeq_, 10);
+    EXPECT_EQ(seg->startNumberSeq_, 1);
+    EXPECT_EQ(seg->startRangeValue_, 0);
+    EXPECT_EQ(seg->endRangeValue_, 500);
+    EXPECT_EQ(seg->url_, "http://test.com/seg1.m4s");
+    EXPECT_FALSE(seg->isLast_);
+
+    auto segLast = mpdDownloader_->BuildLazySegment(stream, 1);
+    ASSERT_NE(segLast, nullptr);
+    EXPECT_EQ(segLast->numberSeq_, 11);
+    EXPECT_TRUE(segLast->isLast_);
+
+    // Out of bounds
+    auto segOob = mpdDownloader_->BuildLazySegment(stream, 2);
+    EXPECT_EQ(segOob, nullptr);
+}
+
+/**
+ * @tc.name  : Test BuildLazySegment in SEGLIST mode
+ * @tc.number: BuildLazySegment_SegList_001
+ * @tc.desc  : BuildLazySegment builds DashSegment with correct URL, range, numberSeq for SEGLIST
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, BuildLazySegment_SegList_001, TestSize.Level0)
+{
+    EXPECT_NE(mpdDownloader_, nullptr);
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_SEGLIST;
+    stream->streamId_ = 9;
+    stream->bandwidth_ = 900000;
+    stream->startNumberSeq_ = 1;
+    stream->segListEntries_.push_back(DashSegListEntry{"http://test.com/s1.m4s", "0-200", 1000000, 20});
+    stream->segListEntries_.push_back(DashSegListEntry{"http://test.com/s2.m4s", "201-400", 2000000, 21});
+
+    auto seg = mpdDownloader_->BuildLazySegment(stream, 0);
+    ASSERT_NE(seg, nullptr);
+    EXPECT_EQ(seg->streamId_, 9);
+    EXPECT_EQ(seg->bandwidth_, 900000u);
+    EXPECT_EQ(seg->duration_, 1000000u);
+    EXPECT_EQ(seg->numberSeq_, 20);
+    EXPECT_EQ(seg->startNumberSeq_, 1);
+    EXPECT_EQ(seg->url_, "http://test.com/s1.m4s");
+    EXPECT_EQ(seg->byteRange_, "0-200");
+    EXPECT_FALSE(seg->isLast_);
+
+    auto segLast = mpdDownloader_->BuildLazySegment(stream, 1);
+    ASSERT_NE(segLast, nullptr);
+    EXPECT_EQ(segLast->numberSeq_, 21);
+    EXPECT_EQ(segLast->duration_, 2000000u);
+    EXPECT_TRUE(segLast->isLast_);
+
+    // Out of bounds
+    auto segOob = mpdDownloader_->BuildLazySegment(stream, 2);
+    EXPECT_EQ(segOob, nullptr);
+}
+
+/**
+ * @tc.name  : Test BuildLazySegment with null stream and NONE mode
+ * @tc.number: BuildLazySegment_NullAndNone_001
+ * @tc.desc  : BuildLazySegment returns nullptr for null stream, falls back for NONE mode
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, BuildLazySegment_NullAndNone_001, TestSize.Level0)
+{
+    EXPECT_NE(mpdDownloader_, nullptr);
+    // Null stream
+    std::shared_ptr<DashStreamDescription> nullStream = nullptr;
+    auto seg = mpdDownloader_->BuildLazySegment(nullStream, 0);
+    EXPECT_EQ(seg, nullptr);
+
+    // NONE mode with valid index
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_NONE;
+    auto seg1 = std::make_shared<DashSegment>();
+    seg1->numberSeq_ = 42;
+    stream->mediaSegments_.push_back(seg1);
+    auto builtSeg = mpdDownloader_->BuildLazySegment(stream, 0);
+    ASSERT_NE(builtSeg, nullptr);
+    EXPECT_EQ(builtSeg->numberSeq_, 42);
+
+    // NONE mode out of bounds
+    auto segOob = mpdDownloader_->BuildLazySegment(stream, 5);
+    EXPECT_EQ(segOob, nullptr);
+}
+
+/**
+ * @tc.name  : Test DashParseRange with end < start rejection
+ * @tc.number: DashParseRange_EndLessThanStart_001
+ * @tc.desc  : DashParseRange rejects ranges where end < start, leaving outputs unchanged
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, DashParseRange_EndLessThanStart_001, TestSize.Level0)
+{
+    int64_t startRange = 999;
+    int64_t endRange = 888;
+    // end < start should be rejected, outputs remain unchanged
+    DashParseRange("500-100", startRange, endRange);
+    EXPECT_EQ(startRange, 999);
+    EXPECT_EQ(endRange, 888);
+}
+
+/**
+ * @tc.name  : Test DashParseRange with valid range
+ * @tc.number: DashParseRange_Valid_001
+ * @tc.desc  : DashParseRange parses valid range string correctly
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, DashParseRange_Valid_001, TestSize.Level0)
+{
+    int64_t startRange = -1;
+    int64_t endRange = -1;
+    DashParseRange("100-500", startRange, endRange);
+    EXPECT_EQ(startRange, 100);
+    EXPECT_EQ(endRange, 500);
+}
+
+/**
+ * @tc.name  : Test DashParseRange with no dash
+ * @tc.number: DashParseRange_NoDash_001
+ * @tc.desc  : DashParseRange rejects range string without dash separator
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, DashParseRange_NoDash_001, TestSize.Level0)
+{
+    int64_t startRange = 111;
+    int64_t endRange = 222;
+    DashParseRange("100500", startRange, endRange);
+    EXPECT_EQ(startRange, 111);
+    EXPECT_EQ(endRange, 222);
+}
+
+/**
+ * @tc.name  : Test DashParseRange with dash at beginning
+ * @tc.number: DashParseRange_DashAtBegin_001
+ * @tc.desc  : DashParseRange rejects range string starting with dash
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, DashParseRange_DashAtBegin_001, TestSize.Level0)
+{
+    int64_t startRange = 111;
+    int64_t endRange = 222;
+    DashParseRange("-500", startRange, endRange);
+    EXPECT_EQ(startRange, 111);
+    EXPECT_EQ(endRange, 222);
+}
+
+/**
+ * @tc.name  : Test DashParseRange with negative start
+ * @tc.number: DashParseRange_NegativeStart_001
+ * @tc.desc  : DashParseRange rejects range starting with dash (negative start)
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, DashParseRange_NegativeStart_001, TestSize.Level0)
+{
+    int64_t startRange = 111;
+    int64_t endRange = 222;
+    DashParseRange("-100-500", startRange, endRange);
+    EXPECT_EQ(startRange, 111);
+    EXPECT_EQ(endRange, 222);
+}
+
+/**
+ * @tc.name  : Test DashParseRange with empty string
+ * @tc.number: DashParseRange_Empty_001
+ * @tc.desc  : DashParseRange does nothing on empty string
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, DashParseRange_Empty_001, TestSize.Level0)
+{
+    int64_t startRange = 111;
+    int64_t endRange = 222;
+    DashParseRange("", startRange, endRange);
+    EXPECT_EQ(startRange, 111);
+    EXPECT_EQ(endRange, 222);
+}
+
+/**
+ * @tc.name  : Test DashParseRange with end equal to start
+ * @tc.number: DashParseRange_EqualStartEnd_001
+ * @tc.desc  : DashParseRange accepts range where end == start
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, DashParseRange_EqualStartEnd_001, TestSize.Level0)
+{
+    int64_t startRange = -1;
+    int64_t endRange = -1;
+    DashParseRange("100-100", startRange, endRange);
+    EXPECT_EQ(startRange, 100);
+    EXPECT_EQ(endRange, 100);
+}
+
+/**
+ * @tc.name  : Test UpdateCurrentNumberSeqByTime with DURATION lazy mode
+ * @tc.number: UpdateCurrentNumberSeqByTime_Duration_001
+ * @tc.desc  : UpdateCurrentNumberSeqByTime correctly seeks in DURATION lazy mode
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, UpdateCurrentNumberSeqByTime_Duration_001, TestSize.Level0)
+{
+    EXPECT_NE(mpdDownloader_, nullptr);
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_DURATION;
+    stream->startNumberSeq_ = 1;
+    stream->currentNumberSeq_ = -1;
+    stream->durationSegInfo_.segDurationNs = 1000000000; // 1s per segment in ns
+    stream->durationSegInfo_.totalDuration = 5000000000; // 5 segments total in ns
+    stream->durationSegInfo_.startNumberSeq = 1;
+
+    // nextSegTime = 2.5s: after seg0(1s)+seg1(2s) prev=2s<=2.5s,
+    // seg2 makes prev=3s>2.5s so break with numberSeq=2
+    mpdDownloader_->UpdateCurrentNumberSeqByTime(stream, 2500000000);
+    EXPECT_EQ(stream->currentNumberSeq_, 2);
+}
+
+/**
+ * @tc.name  : Test UpdateCurrentNumberSeqByTime with TIMELINE lazy mode
+ * @tc.number: UpdateCurrentNumberSeqByTime_Timeline_001
+ * @tc.desc  : UpdateCurrentNumberSeqByTime correctly seeks in TIMELINE lazy mode
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, UpdateCurrentNumberSeqByTime_Timeline_001, TestSize.Level0)
+{
+    EXPECT_NE(mpdDownloader_, nullptr);
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_TIMELINE;
+    stream->startNumberSeq_ = 1;
+    stream->currentNumberSeq_ = -1;
+    DashTimelineEntry entry;
+    entry.repeatCount = 5;
+    entry.duration = 1000;
+    entry.segDurationNs = 1000000000; // 1s in ns
+    entry.startTime = 0;
+    entry.startSeq = 1;
+    stream->timelineEntries_.push_back(entry);
+
+    // nextSegTime = 3.5s: after seg0..2 prev=3s<=3.5s,
+    // seg3 makes prev=4s>3.5s so break with numberSeq=3
+    mpdDownloader_->UpdateCurrentNumberSeqByTime(stream, 3500000000);
+    EXPECT_EQ(stream->currentNumberSeq_, 3);
+}
+
+/**
+ * @tc.name  : Test UpdateCurrentNumberSeqByTime with SEGLIST lazy mode
+ * @tc.number: UpdateCurrentNumberSeqByTime_SegList_001
+ * @tc.desc  : UpdateCurrentNumberSeqByTime correctly seeks in SEGLIST lazy mode
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, UpdateCurrentNumberSeqByTime_SegList_001, TestSize.Level0)
+{
+    EXPECT_NE(mpdDownloader_, nullptr);
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_SEGLIST;
+    stream->startNumberSeq_ = 1;
+    stream->currentNumberSeq_ = -1;
+    stream->segListEntries_.push_back(DashSegListEntry{"s1.m4s", "0-100", 1000000000, 1});
+    stream->segListEntries_.push_back(DashSegListEntry{"s2.m4s", "101-200", 1000000000, 2});
+    stream->segListEntries_.push_back(DashSegListEntry{"s3.m4s", "201-300", 1000000000, 3});
+
+    // nextSegTime = 2.5s: after seg0+seg1 prev=2s<=2.5s,
+    // seg2 makes prev=3s>2.5s so break with numberSeq=2
+    mpdDownloader_->UpdateCurrentNumberSeqByTime(stream, 2500000000);
+    EXPECT_EQ(stream->currentNumberSeq_, 2);
+}
+
+/**
+ * @tc.name  : Test UpdateCurrentNumberSeqByTime with SIDX lazy mode
+ * @tc.number: UpdateCurrentNumberSeqByTime_Sidx_001
+ * @tc.desc  : UpdateCurrentNumberSeqByTime correctly seeks in SIDX lazy mode
+ */
+HWTEST_F(DashMpdDownloaderUnitTest, UpdateCurrentNumberSeqByTime_Sidx_001, TestSize.Level0)
+{
+    EXPECT_NE(mpdDownloader_, nullptr);
+    auto stream = std::make_shared<DashStreamDescription>();
+    stream->lazyMode_ = DASH_LAZY_MODE_SIDX;
+    stream->startNumberSeq_ = 1;
+    stream->currentNumberSeq_ = -1;
+    stream->sidxEntries_.push_back(DashSidxEntry{1000000000, 1, 0, 100, "url1"});
+    stream->sidxEntries_.push_back(DashSidxEntry{1000000000, 2, 101, 200, "url2"});
+    stream->sidxEntries_.push_back(DashSidxEntry{1000000000, 3, 201, 300, "url3"});
+
+    // nextSegTime = 2.5s: after seg0+seg1 prev=2s<=2.5s,
+    // seg2 makes prev=3s>2.5s so break with numberSeq=2
+    mpdDownloader_->UpdateCurrentNumberSeqByTime(stream, 2500000000);
+    EXPECT_EQ(stream->currentNumberSeq_, 2);
+}
+} // namespace HttpPlugin
+} // namespace Plugins
+} // namespace Media
+} // namespace OHOS

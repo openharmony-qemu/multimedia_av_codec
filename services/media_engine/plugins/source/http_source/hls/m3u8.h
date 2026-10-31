@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <list>
+#include <vector>
 #include <unordered_map>
 #include <functional>
 #include <utility>
@@ -44,18 +45,15 @@ enum class M3U8MediaType : int32_t {
     M3U8_N_MEDIA_TYPES,
 };
 
-struct M3U8Fragment {
-    M3U8Fragment(const std::string &uri, double duration, int sequence, bool discont);
-    M3U8Fragment(const M3U8Fragment &m3u8, const uint8_t *key, const uint8_t *iv);
-    ~M3U8Fragment();
+struct M3U8Segment {
+    M3U8Segment(const std::string &uri, uint64_t duration, int64_t sequence, bool discont)
+        : uri_(uri), duration_(duration), sequence_(sequence), discont_(discont) {}
     std::string uri_;
-    double duration_;
+    uint64_t duration_;  // nanoseconds
     int64_t sequence_;
     bool discont_ {false};
-    uint8_t iv_[16] {0};
-    uint8_t key_[16] {0};
-    uint32_t offset_ {0};
-    uint32_t length_ {0};
+    int64_t offset_ {0};
+    int64_t length_ {0};
     uint64_t keyIndex_ {0};
 };
 
@@ -70,7 +68,7 @@ struct DateRange {
 
 struct M3U8Info {
     std::string uri;
-    double duration = 0;
+    uint64_t duration = 0;  // nanoseconds
     bool discontinuity = false;
     bool bVod {false};
 };
@@ -99,25 +97,26 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     void UpdateDateRange(std::shared_ptr<Tag>& tag, M3U8Info& info);
     bool Update(const std::string& playList, bool isNeedCleanFiles, uint64_t totalKeyIndex = 0);
     void UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags);
-    void AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration);
-    void GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const;
-    double GetDuration() const;
+    void AddFile(M3U8Segment fragment, uint64_t duration);
+    void GetExtInf(const std::shared_ptr<Tag>& tag, uint64_t& duration) const;
+    void ParseExtInfDuration(const std::shared_ptr<ValuesListTag>& item, uint64_t& duration) const;
+    uint64_t GetDuration() const;  // nanoseconds
     bool IsLive() const;
-    size_t GetLiveUpdateGap() const;
+    uint64_t GetLiveUpdateGap() const;  // nanoseconds
 
     std::string uri_;
     std::string name_;
     std::unordered_map<HlsTag, std::function<void(std::shared_ptr<Tag>&, M3U8Info&)>> tagUpdatersMap_;
     std::unordered_map<std::string, std::string> tagMasterMap_;
 
-    double targetDuration_ {0.0};
+    uint64_t targetDuration_ {0};  // nanoseconds
     bool bLive_ {};
-    std::list<std::shared_ptr<M3U8Fragment>> files_;
+    std::vector<M3U8Segment> files_;
     uint64_t sequence_ {1}; // default 1
     uint64_t initSequence_ {1}; // default 1
-    int discontSequence_ {0};
+    int64_t discontSequence_ {0};
     uint64_t skipSegmentsNum_ {0};
-    double timeOffset_ {0.0};
+    int64_t timeOffset_ {0};  // nanoseconds (EXT-X-START TIME-OFFSET, may be negative)
     bool precise_ {false};
     bool isStart_ {false};
     std::string playList_;
@@ -138,7 +137,8 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     uint64_t ExtractNumber(const std::string& uri);
     bool ShouldSkipSegment(const std::string& uri, uint64_t skippedSegments,
         uint64_t initSequence);
-    void ProcessInfo(M3U8Info& info, size_t& duration);
+    void ProcessInfo(M3U8Info& info, uint64_t& duration);
+    uint64_t CalcExistingDuration();
     void InitDownloadHeader();
     void GetKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos);
     void ParseDateRange(const std::shared_ptr<AttributesTag>& tag);
@@ -164,9 +164,9 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     M3U8Info firstFragment_;
     std::atomic<bool> isFirstFragmentReady_ {false};
     bool hasDiscontinuity_ {false};
-    std::vector<size_t> segmentOffsets_;
+    std::vector<uint64_t> segmentOffsets_;
     std::map<std::string, std::string> httpHeader_ {};
-    std::atomic<size_t> minFragDuration_ {0};
+    std::atomic<uint64_t> minFragDuration_ {0};  // nanoseconds
     std::atomic<bool> isInterruptNeeded_{false};
     uint8_t* fmp4Header_ {nullptr};
     std::string fmp4HeaderUri_;     // 存XMAP下载链接
@@ -177,8 +177,8 @@ struct M3U8 : public std::enable_shared_from_this<M3U8> {
     uint32_t downloadHeaderLen_ {0};
     uint32_t fmp4HeaderLen {0};
     std::shared_ptr<DownloadRequest> downloadHeaderRequest_;
-    uint32_t offset_ {0};
-    uint32_t length_ {0};
+    int64_t offset_ {0};
+    int64_t length_ {0};
     StatusCallbackFunc monitorStatusCallback_;
     ConditionVariable sleepCond_ {};
     Mutex sleepMutex_ {};
@@ -273,8 +273,8 @@ struct M3U8MasterPlaylist {
     std::string uri_;
     std::string playList_;
     std::unordered_map<std::string, std::string> tagMasterMap_;
-    double duration_ {0};
-    double timeOffset_ {0.0};
+    uint64_t duration_ {0};  // nanoseconds
+    int64_t timeOffset_ {0};  // nanoseconds (EXT-X-START TIME-OFFSET, may be negative)
     bool precise_ {false};
     bool isStart_ {false};
     std::atomic<bool> isSimple_ {false};
@@ -287,7 +287,7 @@ struct M3U8MasterPlaylist {
     std::atomic<bool> hasExplicitIv_ {false};
     std::atomic<bool> isParseSuccess_ {true};
     bool hasDiscontinuity_ {false};
-    std::vector<size_t> segmentOffsets_;
+    std::vector<uint64_t> segmentOffsets_;  // nanoseconds
     std::map<std::string, std::string> httpHeader_ {};
     uint32_t initResolution_ {0};
     std::atomic<bool> isInterruptNeeded_{false};

@@ -18,7 +18,10 @@
 #include "cpp_ext/algorithm_ext.h"
 #include "common/event.h"
 #include "utils/string_utils.h"
+#include "safe_arithmetic.h"
+#include "utils/time_utils.h"
 #include <sstream>
+#include <limits>
 
 namespace OHOS {
 namespace Media {
@@ -33,7 +36,6 @@ namespace {
     };
     constexpr int SERVER_ERROR_THRESHOLD = 500;
     constexpr int32_t READ_LOG_FREQUENCY = 50;
-    constexpr int64_t MICROSECONDS_TO_MILLISECOND = 1000;
     constexpr int64_t RETRY_SEG = 50;
     constexpr int32_t REDIRECT_CODE = 302;
     const std::string CLIENT_ERROR_MSG = "client error";
@@ -125,7 +127,7 @@ int64_t DownloadMonitor::HttpMonitorLoop()
         auto retryTimes = task.request->GetRetryTimes();
         retryDelayTime = retryTimes > APP_DOWNLOAD_RETRY_TIMES ? RETRY_SEG : RETRY_DELAY_TIME[retryTimes];
     }
-    return retryDelayTime * MICROSECONDS_TO_MILLISECOND;
+    return retryDelayTime * static_cast<int64_t>(MS_2_US);
 }
 
 bool DownloadMonitor::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader)
@@ -173,8 +175,12 @@ Status DownloadMonitor::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
     auto ret = downloader_->Read(buff, readDataInfo);
     time(&lastReadTime_);
-    if (ULLONG_MAX - haveReadData_ > readDataInfo.realReadLength_) {
-        haveReadData_ += readDataInfo.realReadLength_;
+    uint64_t newHaveRead = 0;
+    if (!SafeAdd(haveReadData_, static_cast<uint64_t>(readDataInfo.realReadLength_), newHaveRead)) {
+        MEDIA_LOG_W("DownloadMonitor: SafeAdd overflow, haveReadData saturated to UINT64_MAX");
+        haveReadData_ = std::numeric_limits<uint64_t>::max();
+    } else {
+        haveReadData_ = newHaveRead;
     }
     MEDIA_LOGI_LIMIT(READ_LOG_FREQUENCY, "DownloadMonitor: haveReadData " PUBLIC_LOG_U64, haveReadData_);
     if (readDataInfo.isEos_ && ret == Status::END_OF_STREAM) {

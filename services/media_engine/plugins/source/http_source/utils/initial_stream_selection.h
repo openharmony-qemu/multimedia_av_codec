@@ -36,7 +36,8 @@ typename Streams::value_type ChooseInitialStream(const Streams& streams, uint64_
         if (resolution == 0) {
             return selected;
         }
-        if (stream->width >= USHRT_MAX || stream->height >= USHRT_MAX) {
+        if (stream->width >= std::numeric_limits<unsigned short>::max() ||
+            stream->height >= std::numeric_limits<unsigned short>::max()) {
             continue;
         }
         uint64_t pixels = static_cast<uint64_t>(stream->width) * stream->height;

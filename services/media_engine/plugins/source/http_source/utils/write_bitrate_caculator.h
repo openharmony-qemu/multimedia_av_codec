@@ -18,14 +18,15 @@
 
 #include "common/log.h"
 #include "osal/utils/steady_clock.h"
+#include "utils/time_utils.h"
+#include "safe_arithmetic.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 
-constexpr uint32_t BYTES_TO_BIT = 8;
-constexpr uint32_t SECOND_TO_MILLISECONDS = 1000;
+constexpr uint64_t BYTES_TO_BIT = 8;
 
 class WriteBitrateCaculator {
 public:
@@ -75,7 +76,12 @@ public:
             writeBitrate_ = 0;
             return;
         }
-        writeBitrate_ = static_cast<float>(writeBytes_ * BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / writeTime;
+        uint64_t bits;
+        if (!SafeMul(writeBytes_, BYTES_TO_BIT * S_2_MS, bits)) {
+            writeBitrate_ = 0;
+            return;
+        }
+        writeBitrate_ = bits / writeTime;
     }
     uint64_t GetWriteBitrate()
     {

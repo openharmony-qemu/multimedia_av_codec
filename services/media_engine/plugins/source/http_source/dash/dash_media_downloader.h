@@ -100,8 +100,8 @@ private:
     uint32_t GetNextBitrate(std::shared_ptr<DashSegmentDownloader> segmentDownloader);
     bool AutoSelectBitrateInternal(uint32_t bitrate);
     bool IsSeekingInSwitch();
-    int64_t GetVideoSeekTime(int64_t seekTimeMs);
-    void SeekInternal(int64_t seekTimeMs);
+    int64_t GetVideoSeekTime(int64_t seekTimeNs);
+    void SeekInternal(int64_t seekTimeNs);
     Status SelectAudio(const std::shared_ptr<DashStreamDescription> &streamDesc);
     Status SelectAudioInternal(const std::shared_ptr<DashStreamDescription> &streamDesc);
     Status SelectSubtitle(const std::shared_ptr<DashStreamDescription> &streamDesc);
@@ -119,7 +119,7 @@ private:
     std::shared_ptr<DashSegmentDownloader> GetSegmentDownloaderByType(MediaAVCodec::MediaType type) const;
     void OpenInitSegment(const std::shared_ptr<DashStreamDescription> &streamDesc,
                          const std::shared_ptr<DashSegment> &seg);
-    void HandleSeekReady(int32_t streamType, int32_t streamId, int64_t seekTimeMs, int32_t isEos);
+    void HandleSeekReady(int32_t streamType, int32_t streamId, int64_t seekTimeNs, int32_t isEos);
     bool NeedRestartDecoder(const std::shared_ptr<DashStreamDescription>& oldStream,
         const std::shared_ptr<DashStreamDescription>& newStream);
     void SwitchToPeriod(uint32_t newPeriodIndex);
@@ -129,7 +129,7 @@ private:
         const std::shared_ptr<DashStreamDescription> &newVideoStream,
         const std::shared_ptr<DashStreamDescription> &newAudioStream);
     void SeekToSegment(const std::shared_ptr<DashSegmentDownloader> &segDownloader,
-    int64_t seekTimeMs, bool isSwitching);
+        int64_t seekTimeNs, bool isSwitching);
     bool ApplyPendingPeriodSwitch(const std::shared_ptr<DashSegmentDownloader> &segDownloader);
     bool GetStreamsForPeriodSwitch(uint32_t newPeriodIndex,
         std::shared_ptr<DashStreamDescription> &oldVideoStream,
@@ -140,6 +140,7 @@ private:
     void SwitchAudioStream(const std::shared_ptr<DashStreamDescription> &newAudioStream,
         const std::shared_ptr<DashSegmentDownloader> &segDownloader);
     Status HandleDownloadError();
+    void HandleParseFailed();
 
 private:
 

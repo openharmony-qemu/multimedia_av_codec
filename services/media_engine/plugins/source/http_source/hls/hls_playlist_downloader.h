@@ -59,7 +59,7 @@ public:
     bool IsParseAndNotifyFinished() override;
     bool IsParseFinished() override;
     bool IsFragmentInCurrentPlayList(const std::string& url, const std::string& rangeUrl,
-        uint32_t offset, uint32_t length) override;
+        int64_t offset, int64_t length) override;
     std::string GetUrl();
     std::shared_ptr<M3U8MasterPlaylist> GetMaster();
     std::shared_ptr<M3U8VariantStream> GetCurrentVariant();
@@ -99,15 +99,15 @@ private:
     bool ReadStreamHeader(const std::list<std::shared_ptr<M3U8VariantStream>>& streamList, uint8_t* buffer,
         uint32_t wantLen, uint32_t& readLen, uint32_t streamId);
     void GetMediaStreams(StreamType streamType, std::vector<StreamInfo>& streams);
-    void UpdateSeekRanges(const std::list<std::shared_ptr<M3U8Fragment>>& files);
-    void CheckAllFragmentsSeekable(const std::list<std::shared_ptr<M3U8Fragment>>& files);
-    void UpdateLiveBaseOffset(const std::list<std::shared_ptr<M3U8Fragment>>& files);
-    void CopyFragmentInfo(PlayInfo& playInfo, std::shared_ptr<M3U8Fragment> file, uint64_t sessionKeyIndex);
+    void UpdateSeekRanges(const std::vector<M3U8Segment>& files);
+    void CheckAllFragmentsSeekable(const std::vector<M3U8Segment>& files);
+    void UpdateLiveBaseOffset(const std::vector<M3U8Segment>& files);
+    void CopyFragmentInfo(PlayInfo& playInfo, const M3U8Segment& file, uint64_t sessionKeyIndex);
     void CollectAllKeyInfos(std::unordered_map<uint64_t, KeyInfo>& keyInfos,
-        std::list<std::shared_ptr<M3U8Fragment>>& files, uint64_t& sessionKeyIndex);
+        std::vector<M3U8Segment>& files, uint64_t& sessionKeyIndex);
     void StartPendingKeyDownload(const std::unordered_map<uint64_t, KeyInfo>& keyInfos,
         const std::string& baseUri);
-    uint64_t KeyChange(std::list<std::shared_ptr<M3U8Fragment>>& files);
+    uint64_t KeyChange(std::vector<M3U8Segment>& files);
     void OnMasterReady(bool needAudioManager, bool needSubtitlesManager);
     bool ContainsNonDigit(const std::string& str);
     void UpdateManifestAndNotifyListChange(bool isPreParse);

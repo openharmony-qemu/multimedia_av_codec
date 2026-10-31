@@ -24,12 +24,14 @@
 #include "monitor/download_monitor.h"
 #include "sniffer/sniffer_coordinator.h"
 #include <climits>
+#include <limits>
 #include "utils/initial_stream_selection.h"
 #include "utils/string_utils.h"
 #include "avcodec_sysevent.h"
 #include "http_media_utils.h"
 #include "storage_usage_util.h"
 #include "meta/meta_key.h"
+#include "utils/time_utils.h"
 #include <array>
 
 namespace OHOS {
@@ -206,7 +208,7 @@ Status HttpSourcePlugin::SetMediaDuration(int64_t mediaDuration)
     MEDIA_LOG_I("SetMediaDuration enter.");
     auto downloader = GetDownloader();
     if (downloader != nullptr && mediaDuration > 0) {
-        downloader->SetMediaDuration(mediaDuration);
+        downloader->SetMediaDuration(mediaDuration);  // ns
     }
     return Status::OK;
 }
@@ -438,8 +440,10 @@ void HttpSourcePlugin::SelectInitialStream(MediaStreamList& streams)
                 static_cast<uint64_t>(a->width) * a->height < static_cast<uint64_t>(b->width) * b->height);
         });
         uint64_t resolution = 0;
-        if (playStrategy_ != nullptr && playStrategy_->width > 0 && playStrategy_->width < USHRT_MAX &&
-            playStrategy_->height > 0 && playStrategy_->height < USHRT_MAX) {
+        if (playStrategy_ != nullptr && playStrategy_->width > 0 &&
+            playStrategy_->width < std::numeric_limits<unsigned short>::max() &&
+            playStrategy_->height > 0 &&
+            playStrategy_->height < std::numeric_limits<unsigned short>::max()) {
             resolution = static_cast<uint64_t>(playStrategy_->width) * playStrategy_->height;
         }
         uri_ = ChooseInitialStream(streams, resolution)->url;
@@ -706,12 +710,13 @@ Status HttpSourcePlugin::SeekTo(uint64_t offset)
     return Status::OK;
 }
 
+// seekTime: ns
 Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
 {
     auto downloader = GetDownloader();
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    auto duration = downloader->GetDuration();
+    auto duration = downloader->GetDuration();  // ns
     if (duration < -1) {
         duration *= -1;
     }
@@ -720,12 +725,13 @@ Status HttpSourcePlugin::SeekToTime(int64_t seekTime, SeekMode mode)
     return Status::OK;
 }
 
+// seekTime: ns
 Status HttpSourcePlugin::MediaSeekTimeByStreamId(int64_t seekTime, SeekMode mode, int32_t streamId)
 {
     auto downloader = GetDownloader();
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     FALSE_RETURN_V(downloader->GetSeekable() == Seekable::SEEKABLE, Status::ERROR_INVALID_OPERATION);
-    auto duration = downloader->GetDuration();
+    auto duration = downloader->GetDuration();  // ns
     if (duration < -1) {
         duration *= -1;
     }
@@ -757,19 +763,22 @@ void HttpSourcePlugin::CloseUri(bool isAsync)
     protocolType_.store(StreamProtocolType::HTTP);
 }
 
+// duration: ns
 Status HttpSourcePlugin::GetDuration(int64_t& duration)
 {
     auto downloader = GetDownloader();
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
-    duration = downloader->GetDuration();
+    duration = downloader->GetDuration();  // ns
     return Status::OK;
 }
 
+// startInfo.first: converted from downloader ns to ms
 Status HttpSourcePlugin::GetStartInfo(std::pair<int64_t, bool>& startInfo)
 {
     auto downloader = GetDownloader();
     FALSE_RETURN_V(downloader != nullptr, Status::ERROR_NULL_POINTER);
     startInfo = downloader->GetStartInfo();
+    startInfo.first = startInfo.first / static_cast<int64_t>(MS_2_NS);
     return Status::OK;
 }
 
@@ -821,11 +830,13 @@ Status HttpSourcePlugin::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     return Status::OK;
 }
 
+// SeekRange start/end: ns
 std::vector<SeekRange> HttpSourcePlugin::GetSeekableRanges() const
 {
     auto downloader = GetDownloader();
     FALSE_RETURN_V(downloader != nullptr, {});
-    return downloader->GetSeekableRanges();
+    auto ranges = downloader->GetSeekableRanges();  // ns
+    return ranges;
 }
 
 void HttpSourcePlugin::SetDemuxerState(int32_t streamId)
@@ -854,11 +865,12 @@ Status HttpSourcePlugin::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     return downloader->SetCurrentBitRate(bitRate, streamID);
 }
 
+// returns us
 size_t HttpSourcePlugin::GetSegmentOffset(StreamType streamType)
 {
     auto downloader = GetDownloader();
     if (downloader) {
-        return downloader->GetSegmentOffset(streamType);
+        return downloader->GetSegmentOffset(streamType) / static_cast<size_t>(US_2_NS);
     }
     return 0;
 }
@@ -916,6 +928,7 @@ Status HttpSourcePlugin::SetExtraCache(uint64_t cacheDuration)
     return Status::OK;
 }
 
+// returns ms
 uint64_t HttpSourcePlugin::GetCachedDuration()
 {
     auto downloader = GetDownloader();

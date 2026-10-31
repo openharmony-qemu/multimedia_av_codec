@@ -84,7 +84,8 @@ HWTEST_F(DashSegmentDownloaderUnitTest, Open_001, TestSize.Level1)
     segmentSp->byteRange_ = "1024-0";
     segmentDownloader_->Open(segmentSp);
     segmentDownloader_->Close(true, true);
-    EXPECT_EQ(segmentDownloader_->mediaSegment_->startRangeValue_, 1024);
+    // DashParseRange now rejects ranges where end < start, so "1024-0" leaves both values at 0
+    EXPECT_EQ(segmentDownloader_->mediaSegment_->startRangeValue_, 0);
     EXPECT_EQ(segmentDownloader_->mediaSegment_->endRangeValue_, 0);
 }
 
@@ -509,7 +510,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, CleanByTimeInternal_005, TestSize.Level1
     segment->bufferPosTail_ = 1100;
     segment->numberSeq_ = 1;
     segment->contentLength_ = 1;
-    segment->duration_ = 1;
+    segment->duration_ = 1000000; // 1ms in ns (was 1 ms, now 1000000 ns after unit migration)
     segmentDownloader_->segmentList_.emplace_back(segment);
     segmentDownloader_->CleanByTimeInternal(remainLastNumberSeq, clearTail, isEnd);
     EXPECT_EQ(clearTail, 1001);
@@ -697,7 +698,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, GetBufferSize_001, TestSize.Level1)
  */
 HWTEST_F(DashSegmentDownloaderUnitTest, PutRequestIntoDownloader_001, TestSize.Level1)
 {
-    unsigned int duration = 10;
+    uint64_t duration = 10;
     int64_t startPos = 0;
     int64_t endPos = 0;
     std::string url = "";
@@ -767,7 +768,7 @@ HWTEST_F(DashSegmentDownloaderUnitTest, GetSegmentRemainDuration_001, TestSize.L
     currentSegment->bufferPosTail_ = 2;
     currentSegment->duration_ = 2;
     currentSegment->bufferPosHead_ = 0;
-    uint32_t duration = segmentDownloader_->GetSegmentRemainDuration(currentSegment);
+    uint64_t duration = segmentDownloader_->GetSegmentRemainDuration(currentSegment);
     EXPECT_EQ(duration, 1);
 }
 

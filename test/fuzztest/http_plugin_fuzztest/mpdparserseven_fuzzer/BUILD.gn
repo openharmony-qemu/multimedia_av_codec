@@ -46,6 +46,7 @@ config("fuzz_config") {
     "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/include",
     "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$AV_CODEC_ROOT_DIR/test/unittest/common",
+    "$AV_CODEC_ROOT_DIR/services/media_engine/plugins/source/http_source/utils",
   ]
 }  
 

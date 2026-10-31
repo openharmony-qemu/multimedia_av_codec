@@ -81,7 +81,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
     if (durStr.find('P') == std::string::npos) {
         durStr.insert(durStr.begin(), 'P');
     }
-    uint32_t duration = 0;
+    uint64_t duration = 0;
     (void)DashStrToDuration(durStr, duration);
 
     // 3) 属性索引

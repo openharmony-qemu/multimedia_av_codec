@@ -32,11 +32,12 @@ enum class VideoScanType { VIDEO_SCAN_PROGRESSIVE, VIDEO_SCAN_INTERLACED, VIDEO_
 
 enum class DashType { DASH_TYPE_STATIC, DASH_TYPE_DYNAMIC };
 
-struct DashSegUrl {
+// Compact value-type entry for <SegmentURL>. Stored by value in DashSegListInfo
+// to avoid per-element heap allocation (DashSegUrl*). Only media/mediaRange are
+// parsed here; durationNs/numberSeq are filled later in GetSegmentsWithSegList.
+struct DashSegUrlEntry {
     std::string media_;
     std::string mediaRange_;
-    std::string index_;
-    std::string indexRange_;
 };
 
 struct DashDescriptor {
@@ -59,7 +60,7 @@ struct DashUrlType {
 
 struct DashSegBaseInfo {
     uint32_t timeScale_{0};
-    uint32_t presentationTimeOffset_{0};
+    uint64_t presentationTimeOffset_{0};
     std::string indexRange_;
     bool indexRangeExact_{false};
 
@@ -68,7 +69,7 @@ struct DashSegBaseInfo {
 };
 
 struct DashMultSegBaseInfo {
-    uint32_t duration_{0};
+    uint64_t duration_{0};
     std::string startNumber_; // if not present, the value set to 1.
 
     DashUrlType *bitstreamSwitching_{nullptr};
@@ -87,7 +88,7 @@ struct DashSegTmpltInfo {
 
 // SegmentList Element Infomation. <href> <actuate> are not support
 struct DashSegListInfo {
-    DashList<DashSegUrl *> segmentUrl_;
+    DashList<DashSegUrlEntry> segmentUrl_;
     DashMultSegBaseInfo multSegBaseInfo_;
 };
 
@@ -174,9 +175,9 @@ struct DashAdptSetInfo {
 
 struct DashEventInfo {
     std::string id_;
-    uint64_t duration_{0};
+    uint64_t duration_{0};   // nanoseconds
     uint64_t presentationTime_{0};
-    uint64_t start_{0};
+    uint64_t start_{0};      // nanoseconds
     std::string value_;
     std::string messageData_;
     std::string classify_;
@@ -194,8 +195,8 @@ struct DashEventStreamInfo {
 
 // Period Element Infomation. <href> <actuate> <subset> are not support
 struct DashPeriodInfo {
-    uint32_t start_{0};
-    uint32_t duration_{0};
+    uint64_t start_{0};      // nanoseconds
+    uint64_t duration_{0};   // nanoseconds
     bool bitstreamSwitching_{false};
     std::string id_;
     std::list<std::string> baseUrl_;
@@ -210,17 +211,17 @@ struct DashPeriodInfo {
 // MPD Element Infomation. ProgramInfomation Location Metrics are not support
 struct DashMpdInfo {
     DashType type_{DashType::DASH_TYPE_STATIC};
-    uint32_t mediaPresentationDuration_{0};
-    uint32_t minimumUpdatePeriod_{0};
-    uint32_t minBufferTime_{0};
-    uint32_t timeShiftBufferDepth_{0};
-    uint32_t suggestedPresentationDelay_{0};
-    uint32_t maxSegmentDuration_{0};
-    uint32_t maxSubSegmentDuration_{0};
+    uint64_t mediaPresentationDuration_{0};   // nanoseconds
+    uint64_t minimumUpdatePeriod_{0};         // nanoseconds
+    uint64_t minBufferTime_{0};               // nanoseconds
+    uint64_t timeShiftBufferDepth_{0};        // nanoseconds
+    uint64_t suggestedPresentationDelay_{0};  // nanoseconds
+    uint64_t maxSegmentDuration_{0};          // nanoseconds
+    uint64_t maxSubSegmentDuration_{0};       // nanoseconds
     uint32_t hwTotalViewNumber_{0};
     uint32_t hwDefaultViewIndex_{0};
-    int64_t availabilityStartTime_{0};
-    int64_t availabilityEndTime_{0};
+    int64_t availabilityStartTime_{0};  // nanoseconds
+    int64_t availabilityEndTime_{0};    // nanoseconds
     std::string mediaType_;
     std::string profile_;
     std::list<std::string> baseUrl_;

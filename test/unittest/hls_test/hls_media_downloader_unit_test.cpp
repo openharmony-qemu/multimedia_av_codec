@@ -1503,7 +1503,7 @@ HWTEST_F(HlsMediaDownloaderTest, LIVE_ENDLIST_MEDIA_PLAYLIST, TestSize.Level1)
 {
     std::map<std::string, int64_t> mediaPlaylistArr = {
         {"test_detach_hls/cmaf/avc/540p_2000/avc_540p_2000_live_endlist.m3u8", 60060000000},
-        {"test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8", 60097999999},
+        {"test_detach_hls/cmaf/aac/lc_192/aac_lc_192_live_endlist.m3u8", 60098000000},
         {"test_detach_hls/subtitles/eng/prog_index_live_endlist.m3u8", 66066000000}
     };
     for (const auto &[playlist, duration]: mediaPlaylistArr) {

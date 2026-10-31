@@ -40,8 +40,10 @@ public:
     std::string GetName() const;
     Attribute UnescapeQuotes() const;
     uint64_t Decimal() const;
+    uint64_t Decimal(uint64_t maxVal) const;
     std::string QuotedString() const;
     double FloatingPoint() const;
+    double FloatingPoint(double maxVal) const;
     std::vector<uint8_t> HexSequence() const;
     std::pair<std::size_t, std::size_t> GetByteRange() const;
     std::pair<int, int> GetResolution() const;

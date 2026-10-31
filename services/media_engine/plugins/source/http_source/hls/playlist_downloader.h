@@ -34,10 +34,10 @@ namespace Plugins {
 namespace HttpPlugin {
 struct PlayInfo {
     std::string url_;
-    double duration_;
+    uint64_t duration_ {0};  // nanoseconds
     int64_t startTimePos_ {0};
-    uint32_t offset_ {0};
-    uint32_t length_ {0};
+    int64_t offset_ {0};
+    int64_t length_ {0};
     std::string rangeUrl_;
     uint32_t streamId_ {0};
     uint64_t sumDuration_ {0};
@@ -113,7 +113,7 @@ public:
     virtual bool IsParseAndNotifyFinished() = 0;
     virtual bool IsParseFinished() = 0;
     virtual bool IsFragmentInCurrentPlayList(const std::string& url, const std::string& rangeUrl,
-        uint32_t offset, uint32_t length)
+        int64_t offset, int64_t length)
     {
         return false;
     }

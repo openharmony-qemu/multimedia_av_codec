@@ -276,7 +276,7 @@ bool TestDashMpdManagerUncovered(const std::string &mpdContent)
     mpdManager->Update(newMpdInfo);
 
     mpdInfo->mediaPresentationDuration_ = 0; // 设置为0以测试从Period计算
-    uint32_t duration = 0;
+    uint64_t duration = 0;
     mpdManager->GetDuration(&duration);
     if (!mpdInfo->baseUrl_.empty()) {
         mpdInfo->baseUrl_.front() = "/relative/path";

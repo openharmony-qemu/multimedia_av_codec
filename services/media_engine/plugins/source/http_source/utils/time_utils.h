@@ -13,14 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef DASH_TIME_UTILS_H
-#define DASH_TIME_UTILS_H
+#ifndef HTTP_SOURCE_TIME_UTILS_H
+#define HTTP_SOURCE_TIME_UTILS_H
 
 #include <cstdint>
 #include <ctime>
 #include <cstring>
 #include <iostream>
-#include <errno.h>
+#include <limits>
+#include <cerrno>
 #include "securec.h"
 
 namespace OHOS {
@@ -28,35 +29,37 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 
-constexpr unsigned int DEFAULT_YEAR = 1900;
-constexpr unsigned int BASE_YEAR = 70;
-constexpr unsigned int BASE_DAY = 1;
+constexpr int DEFAULT_YEAR = 1900;
+constexpr int BASE_YEAR = 70;
+constexpr int BASE_DAY = 1;
 
-constexpr int64_t D_2_H = 24;
-constexpr int64_t H_2_M = 60;
-constexpr int64_t M_2_S = 60;
+constexpr uint64_t D_2_H = 24;
+constexpr uint64_t H_2_M = 60;
+constexpr uint64_t M_2_S = 60;
 
-constexpr int64_t S_2_MS = 1000;
-constexpr int64_t MS_2_US = 1000;
-constexpr int64_t US_2_NS = 1000;
+constexpr uint64_t S_2_MS = 1000;
+constexpr uint64_t MS_2_US = 1000;
+constexpr uint64_t US_2_NS = 1000;
 
-constexpr int64_t H_2_S = H_2_M * M_2_S;
-constexpr int64_t D_2_S = D_2_H * H_2_S;
+constexpr uint64_t H_2_S = H_2_M * M_2_S;
+constexpr uint64_t D_2_S = D_2_H * H_2_S;
 
-constexpr int64_t M_2_MS = M_2_S * S_2_MS;
-constexpr int64_t H_2_MS = H_2_M * M_2_MS;
-constexpr int64_t D_2_MS = D_2_H * H_2_MS;
+constexpr uint64_t M_2_MS = M_2_S * S_2_MS;
+constexpr uint64_t H_2_MS = H_2_M * M_2_MS;
+constexpr uint64_t D_2_MS = D_2_H * H_2_MS;
 
-constexpr int64_t S_2_US = S_2_MS * MS_2_US;
-constexpr int64_t MS_2_NS = MS_2_US * US_2_NS;
-constexpr int64_t S_2_NS = S_2_MS * MS_2_NS;
+constexpr uint64_t S_2_US = S_2_MS * MS_2_US;
+constexpr uint64_t MS_2_NS = MS_2_US * US_2_NS;
+constexpr uint64_t S_2_NS = S_2_MS * MS_2_NS;
+constexpr uint64_t D_2_NS = D_2_S * S_2_NS;
 
-constexpr int64_t MEDIA_PTS_UNSET = INT64_MIN + 1;
+// 分片时长下限，单位纳秒
+constexpr uint64_t MIN_SEGMENT_DURATION_NS = 10 * MS_2_NS;     // 10 ms
 
 class String2Time {
     std::string str_;
 public:
-    String2Time(const std::string& s): str_(s) {}
+    explicit String2Time(const std::string& s): str_(s) {}
 
     time_t operator()() const
     {
@@ -95,4 +98,4 @@ public:
 } // namespace Media
 } // namespace OHOS
 
-#endif // DASH_TIME_UTILS_H
+#endif // HTTP_SOURCE_TIME_UTILS_H

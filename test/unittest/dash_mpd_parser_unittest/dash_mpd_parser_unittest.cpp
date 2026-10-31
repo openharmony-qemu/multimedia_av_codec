@@ -154,14 +154,11 @@ HWTEST_F(DashMpdParserUnitTest, ProcessAdpSetElement_001, TestSize.Level0)
 HWTEST_F(DashMpdParserUnitTest, ParseSegmentUrl_001, TestSize.Level0)
 {
     ASSERT_NE(dashMpdParser_, nullptr);
-    DashSegUrl *segUrl = new (std::nothrow) DashSegUrl;
-    ASSERT_NE(segUrl, nullptr);
     auto xmlParser = std::make_shared<XmlParser>();
     auto rootElement = std::make_shared<XmlElement>();
-    DashList<DashSegUrl *> segUrlList;
+    DashList<DashSegUrlEntry> segUrlList;
     dashMpdParser_->ParseSegmentUrl(xmlParser, rootElement, segUrlList);
     EXPECT_EQ(segUrlList.size(), NUM_0);
-    delete segUrl;
 }
 
 /**

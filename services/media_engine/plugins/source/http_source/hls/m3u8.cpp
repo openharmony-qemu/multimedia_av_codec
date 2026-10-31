@@ -25,6 +25,8 @@
 #include <limits>
 #include "m3u8.h"
 #include "base64_utils.h"
+#include "utils/time_utils.h"
+#include "safe_arithmetic.h"
 
 namespace OHOS {
 namespace Media {
@@ -36,15 +38,19 @@ constexpr uint32_t DRM_UUID_OFFSET = 12;
 constexpr uint32_t DRM_PSSH_TITLE_LEN = 16;
 constexpr uint32_t WAIT_KEY_SLEEP_TIME = 10;
 constexpr uint32_t MAX_DOWNLOAD_TIME = 500;
-constexpr int32_t S_TO_MS = 1000;
 constexpr uint64_t BAND_WIDTH_LIMIT = 3 * 1024 * 1024;
 constexpr uint32_t DEFAULT_HEADER_SIZE = 1 * 1024 * 1024;
 constexpr uint32_t DEFAULT_MAX_SIZE = 100 * 1024 * 1024;
-constexpr double SECOND_TO_MICROSECOND = 1000.0 * 1000.0;
-constexpr uint64_t MAX_UINT64_NUM = UINT64_MAX;
-constexpr size_t AES_IV_LEN = 16;
-constexpr int BITS_PER_BYTE = 8;
-constexpr size_t SEQ_IV_OFFSET = AES_IV_LEN / 2;
+constexpr uint32_t MAX_PSSH_BASE64_LEN = 2730;
+constexpr size_t MAX_FRAGMENT_COUNT = 1000000;  // max segments in a single m3u8 playlist
+constexpr double SECOND_TO_NANOSECOND = static_cast<double>(S_2_NS);
+constexpr uint64_t MAX_UINT64_NUM = std::numeric_limits<uint64_t>::max();
+// Upper bound for EXT-X-START TIME-OFFSET (seconds). Prevents double→int64 overflow
+// when converting to nanoseconds: INT64_MAX / S_2_NS ≈ 9.22e9 seconds.
+constexpr double MAX_TIME_OFFSET_SEC = static_cast<double>(std::numeric_limits<int64_t>::max()) /
+    static_cast<double>(S_2_NS);
+constexpr uint32_t MAX_EXTRACT_NUMBER_DIGITS = 19; // 19 digits always fits in uint64_t
+constexpr uint64_t DECIMAL_BASE = 10;
 const char DRM_PSSH_TITLE[] = "data:text/plain;";
 constexpr char EXT_X_DEFINE_TAG[] = "#EXT-X-DEFINE";
 static const std::unordered_map<std::string, M3U8MediaType> kTypeMap = {
@@ -102,33 +108,6 @@ std::string UriJoin(std::string& baseUrl, const std::string& uri)
         }
         return uriMain.substr(0, pos + 1) + uri;
     }
-}
-
-M3U8Fragment::M3U8Fragment(const M3U8Fragment& m3u8, const uint8_t *key, const uint8_t *iv)
-    : uri_(std::move(m3u8.uri_)),
-      duration_(m3u8.duration_),
-      sequence_(m3u8.sequence_),
-      discont_(m3u8.discont_)
-{
-    if (iv == nullptr || key == nullptr) {
-        return;
-    }
-
-    for (int i = 0; i < static_cast<int>(MAX_LOOP); i++) {
-        iv_[i] = iv[i];
-        key_[i] = key[i];
-    }
-}
-
-M3U8Fragment::M3U8Fragment(const std::string &uri, double duration, int sequence, bool discont)
-    : uri_(std::move(uri)), duration_(duration), sequence_(sequence), discont_(discont)
-{
-}
-
-M3U8Fragment::~M3U8Fragment()
-{
-    NZERO_LOG(memset_s(key_, sizeof(key_), 0, sizeof(key_)));
-    NZERO_LOG(memset_s(iv_, sizeof(iv_), 0, sizeof(iv_)));
 }
 
 M3U8::M3U8(const std::string &uri, const std::string &name,
@@ -238,7 +217,12 @@ void M3U8::UpdateTargetDuration(std::shared_ptr<Tag>& tag, M3U8Info& info)
     std::ignore = info;
     FALSE_RETURN(IsSingleValueSection(tag->GetType()));
     auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
-    targetDuration_ = svTag->GetValue().FloatingPoint();
+    uint64_t dur;
+    if (SafeMul<uint64_t>(svTag->GetValue().Decimal(), S_2_NS, dur)) {
+        targetDuration_ = dur;
+    } else {
+        MEDIA_LOG_W("EXT-X-TARGETDURATION overflow, keep 0");
+    }
 }
 
 void M3U8::UpdateMediaSequence(std::shared_ptr<Tag>& tag, M3U8Info& info)
@@ -256,7 +240,7 @@ void M3U8::UpdateDiscontSequence(std::shared_ptr<Tag>& tag, M3U8Info& info)
     FALSE_RETURN(tag != nullptr);
     FALSE_RETURN(IsSingleValueSection(tag->GetType()));
     auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
-    discontSequence_ = static_cast<int>(svTag->GetValue().Decimal());
+    discontSequence_ = static_cast<int64_t>(svTag->GetValue().Decimal());
     info.discontinuity = true;
 }
 
@@ -282,8 +266,17 @@ void M3U8::UpdateByteRange(std::shared_ptr<Tag>& tag, M3U8Info& info)
     auto svTag = std::static_pointer_cast<SingleValueTag>(tag);
     std::string value = svTag->GetValue().QuotedString();
     std::shared_ptr<Attribute> attr = std::make_shared<Attribute>("BYTERANGE", value);
-    offset_ = attr->GetByteRange().first;
-    length_ = attr->GetByteRange().second;
+    auto byteRange = attr->GetByteRange();
+    if (byteRange.second > DEFAULT_MAX_SIZE) {
+        MEDIA_LOG_W("ByteRange length too large: %{public}zu, reject", byteRange.second);
+        return;
+    }
+    if (byteRange.first > static_cast<size_t>(std::numeric_limits<int64_t>::max()) - byteRange.second) {
+        MEDIA_LOG_W("ByteRange offset + length overflow, reject");
+        return;
+    }
+    offset_ = static_cast<int64_t>(byteRange.first);
+    length_ = static_cast<int64_t>(byteRange.second);
     if (!isHeaderReady_.load()) {
         isPureByteRange_.store(true);
     }
@@ -335,7 +328,10 @@ void M3U8::UpdateStart(std::shared_ptr<Tag>& tag, M3U8Info& info)
     }
     auto timeOffset = item->GetAttributeByName("TIME-OFFSET");
     if (timeOffset) {
-        timeOffset_ = timeOffset->FloatingPoint();
+        double offsetSec = timeOffset->FloatingPoint();
+        if (std::isfinite(offsetSec) && std::abs(offsetSec) <= MAX_TIME_OFFSET_SEC) {
+            timeOffset_ = static_cast<int64_t>(offsetSec * SECOND_TO_NANOSECOND);
+        }
     }
     isStart_ = true;
 }
@@ -392,8 +388,17 @@ void M3U8::PrepareDecrptionKeys(std::shared_ptr<Tag>& tag)
         keyInfo.uri_ = *keyUri_;
         {
             std::unique_lock<std::shared_mutex> lock(keyMutex_);
-            keyIndex_++;
-            keyInfo.index_ = keyIndex_ + totalKeyIndex_;
+            if (keyIndex_ < MAX_UINT64_NUM) {
+                keyIndex_++;
+            } else {
+                MEDIA_LOG_W("keyIndex_ overflow, skip increment");
+            }
+            if (totalKeyIndex_ > MAX_UINT64_NUM - keyIndex_) {
+                MEDIA_LOG_W("keyInfo.index_ overflow, clamped to MAX_UINT64_NUM");
+                keyInfo.index_ = MAX_UINT64_NUM;
+            } else {
+                keyInfo.index_ = keyIndex_ + totalKeyIndex_;
+            }
             keyInfos_[keyInfo.index_] = keyInfo;
         }
     }
@@ -421,8 +426,8 @@ void M3U8::ParseMap(const std::shared_ptr<AttributesTag>& tag)
         return;
     }
     if (length > 0 && length < DEFAULT_MAX_SIZE) {
-        FALSE_RETURN_MSG(offset <= SIZE_MAX - length,
-            "ParseMap: offset + length overflow, offset " PUBLIC_LOG_ZU " length " PUBLIC_LOG_ZU, offset, length);
+        FALSE_RETURN_MSG(offset <= std::numeric_limits<size_t>::max() - length,
+            "ParseMap: offset + length overflow, offset " PUBLIC_LOG_ZU ", length " PUBLIC_LOG_ZU, offset, length);
         AutoLock lock(headerMutex_);
         if (fmp4Header_ != nullptr) {
             delete[] fmp4Header_;
@@ -465,7 +470,12 @@ int64_t M3U8::CalculateDateTimeOffset(const std::string& programDateTime, const 
     double startTime = parseDateTime(startDate);
     MEDIA_LOG_I("programTime: " PUBLIC_LOG_D32 " startTime: " PUBLIC_LOG_D32,
         static_cast<int32_t>(programTime), static_cast<int32_t>(startTime));
-    return static_cast<int64_t>((startTime - programTime) * S_TO_MS);
+    // Convert seconds delta to nanoseconds (int64_t).
+    double deltaSec = startTime - programTime;
+    if (!std::isfinite(deltaSec) || std::abs(deltaSec) > MAX_TIME_OFFSET_SEC) {
+        return 0;
+    }
+    return static_cast<int64_t>(deltaSec * SECOND_TO_NANOSECOND);
 }
 
 void M3U8::ParseDateRange(const std::shared_ptr<AttributesTag>& tag)
@@ -493,7 +503,14 @@ void M3U8::ParseDateRange(const std::shared_ptr<AttributesTag>& tag)
     
     auto durationAttr = tag->GetAttributeByName("DURATION");
     if (durationAttr) {
-        dateRange->duration = static_cast<int64_t>(durationAttr->Decimal()) * S_TO_MS;
+        double durSec = durationAttr->FloatingPoint();
+        // Single-attribute parse: on overflow/non-finite, keep dateRange->duration=0 (silent downgrade, no abort).
+        if (std::isfinite(durSec) && durSec >= 0) {
+            int64_t dur = 0;
+            if (SafeDoubleToInt64(durSec * SECOND_TO_NANOSECOND, dur)) {
+                dateRange->duration = dur;
+            }
+        }
     }
     
     auto assetListAttr = tag->GetAttributeByName("X-ASSET-LIST");
@@ -572,8 +589,8 @@ void M3U8::InitializeDownloadHeader(const std::string& uri, size_t offset, size_
                                                         requestInfo, length > 0 ? false : true);
     downloadHeaderRequest_->SetDownloadDoneCb(downloadDoneCallback);
     if (length > 0) {
-        FALSE_RETURN_MSG(offset <= SIZE_MAX - length, "offset + length overflow, offset " PUBLIC_LOG_ZU
-            " length " PUBLIC_LOG_ZU, offset, length);
+        FALSE_RETURN_MSG(offset <= std::numeric_limits<size_t>::max() - length,
+            "offset + length overflow, offset " PUBLIC_LOG_ZU ", length " PUBLIC_LOG_ZU, offset, length);
         downloadHeaderRequest_->SetRangePos(offset, offset + length - 1);
     }
     downloadHeaderRequest_->SetIsAuthRequest(true);
@@ -600,9 +617,13 @@ uint32_t M3U8::SaveMapData(uint8_t* data, uint32_t len, bool notBlock)
     FALSE_RETURN_V(data != nullptr, 0);
     AutoLock lock(headerMutex_);
     if (fmp4Header_ == nullptr && downloadHeaderRequest_) {
-        uint32_t headerLen = static_cast<uint32_t>(downloadHeaderRequest_->GetFileContentLengthNoWait());
-        headerLen = headerLen > 0 ? headerLen : DEFAULT_HEADER_SIZE; // 1MB
-        headerLen = std::min(headerLen, DEFAULT_MAX_SIZE);
+        int64_t rawLen = downloadHeaderRequest_->GetFileContentLengthNoWait();
+        uint32_t headerLen;
+        if (rawLen <= 0 || static_cast<uint64_t>(rawLen) > DEFAULT_MAX_SIZE) {
+            headerLen = (rawLen <= 0) ? DEFAULT_HEADER_SIZE : DEFAULT_MAX_SIZE;
+        } else {
+            headerLen = static_cast<uint32_t>(rawLen);
+        }
         fmp4Header_ = new(std::nothrow) uint8_t[headerLen];
         FALSE_RETURN_V_MSG(fmp4Header_ != nullptr, 0u, "SaveMapData error, no memory.");
         fmp4HeaderLen = headerLen;
@@ -651,24 +672,47 @@ uint64_t M3U8::ExtractNumber(const std::string& uri)
         return MAX_UINT64_NUM;
     }
     uint64_t num = 0;
+    uint32_t digitCount = 0;
     for (uint64_t i = start; i < dotPos; ++i) {
-        num = num * 10 + (uri[i] - '0'); // 10
+        if (digitCount >= MAX_EXTRACT_NUMBER_DIGITS) {
+            return MAX_UINT64_NUM;
+        }
+        num = num * DECIMAL_BASE + static_cast<uint64_t>(uri[i] - '0');
+        digitCount++;
     }
     return num;
+}
+
+uint64_t M3U8::CalcExistingDuration()
+{
+    uint64_t duration = 0;
+    for (const auto &frag : files_) {
+        if (frag.duration_ <= 0) {
+            continue;
+        }
+        uint64_t newDur = 0;
+        if (!SafeAdd(duration, frag.duration_, newDur)) {
+            MEDIA_LOG_W("CalcExistingDuration overflow, stop accumulating");
+            break;
+        }
+        duration = newDur;
+    }
+    return duration;
 }
 
 void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
 {
     M3U8Info info;
     bLive_ = !info.bVod;
-    size_t segmentTimeOffset = 0;
-    size_t duration = 0;
     minFragDuration_.store(0);
-    for (const auto &frag : files_) {
-        duration += static_cast<size_t>(frag->duration_ * SECOND_TO_MICROSECOND);
-    }
+    uint64_t duration = CalcExistingDuration();
     for (auto& tag : tags) {
         if (isInterruptNeeded_.load()) {
+            break;
+        }
+        if (files_.size() >= MAX_FRAGMENT_COUNT) {
+            MEDIA_LOG_W("files_ count " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
+                ", stop parsing tags", files_.size(), MAX_FRAGMENT_COUNT);
             break;
         }
         HlsTag hlsTag = tag->GetType();
@@ -678,9 +722,9 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
             MEDIA_LOG_I("UpdateFromTags not live with EXTXENDLIST.");
         }
         if (hlsTag == HlsTag::EXTXDISCONTINUITY) {
-            segmentTimeOffset = duration;
+            uint64_t segmentTimeOffset = duration;
             hasDiscontinuity_ = true;
-            MEDIA_LOG_I("segmentTimeOffset here is: " PUBLIC_LOG_ZU, segmentTimeOffset);
+            MEDIA_LOG_I("segmentTimeOffset here is: " PUBLIC_LOG_U64, segmentTimeOffset);
             continue;
         }
         auto iter = tagUpdatersMap_.find(hlsTag);
@@ -698,39 +742,33 @@ void M3U8::UpdateFromTags(std::list<std::shared_ptr<Tag>>& tags)
     }
 }
 
-void M3U8::ProcessInfo(M3U8Info& info, size_t& duration)
+void M3U8::ProcessInfo(M3U8Info& info, uint64_t& duration)
 {
+    if (files_.size() >= MAX_FRAGMENT_COUNT) {
+        MEDIA_LOG_W("fragment count " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
+            ", stop parsing", files_.size(), MAX_FRAGMENT_COUNT);
+        info.uri = "";
+        info.duration = 0;
+        info.discontinuity = false;
+        return;
+    }
     if (!isFirstFragmentReady_ && !isDecryptAble_) {
         firstFragment_ = info;
         isFirstFragmentReady_ = true;
     }
-    auto fragment = std::make_shared<M3U8Fragment>(info.uri, info.duration, sequence_, info.discontinuity);
-    if (isDecryptAble_) {
-        uint8_t fragmentIv[AES_IV_LEN] = {0};
-        std::shared_lock<std::shared_mutex> lock(keyMutex_);
-        if (hasExplicitIv_.load()) {
-            std::copy(std::begin(iv_), std::end(iv_), std::begin(fragmentIv));
-        } else {
-            uint64_t seq = static_cast<uint64_t>(sequence_);
-            for (size_t i = 0; i < SEQ_IV_OFFSET; i++) {
-                fragmentIv[SEQ_IV_OFFSET + i] = static_cast<uint8_t>(seq >> ((SEQ_IV_OFFSET - 1 - i) * BITS_PER_BYTE));
-            }
-        }
-        auto m3u8 = M3U8Fragment(info.uri, info.duration, sequence_, info.discontinuity);
-        fragment = std::make_shared<M3U8Fragment>(m3u8, key_, fragmentIv);
-    }
+    M3U8Segment segment(info.uri, info.duration, sequence_, info.discontinuity);
     if (sequence_ < std::numeric_limits<uint64_t>::max()) {
         sequence_++;
     } else {
         MEDIA_LOG_W("sequence_ overflow, skip increment");
     }
-    AddFile(fragment, duration);
-    size_t fragmentDuration = static_cast<size_t>(info.duration * SECOND_TO_MICROSECOND);
-    if (duration > std::numeric_limits<size_t>::max() - fragmentDuration) {
-        MEDIA_LOG_W("duration overflow, skip accumulation");
-        duration = std::numeric_limits<size_t>::max();
+    AddFile(std::move(segment), duration);
+    uint64_t fragmentDuration = (info.duration > 0) ? info.duration : 0;
+    uint64_t newDur = 0;
+    if (SafeAdd(duration, fragmentDuration, newDur)) {
+        duration = newDur;
     } else {
-        duration += fragmentDuration;
+        MEDIA_LOG_W("duration overflow, skip accumulation");
     }
     info.uri = "";
     info.duration = 0;
@@ -743,26 +781,31 @@ bool M3U8::ShouldSkipSegment(const std::string& uri, uint64_t skippedSegments, u
         return false;
     }
     uint64_t uriSequence = ExtractNumber(uri);
-    return (uriSequence >= initSequence && uriSequence < initSequence + skippedSegments);
+    return (uriSequence >= initSequence && uriSequence - initSequence < skippedSegments);
 }
 
-void M3U8::AddFile(std::shared_ptr<M3U8Fragment> fragment, size_t duration)
+void M3U8::AddFile(M3U8Segment fragment, uint64_t duration)
 {
     if (minFragDuration_.load() <= 0 || minFragDuration_.load() > duration) {
         minFragDuration_.store(duration);
     }
     segmentOffsets_.emplace_back(duration);
-    fragment->offset_ = offset_;
-    fragment->length_ = length_;
+    fragment.offset_ = offset_;
+    fragment.length_ = length_;
     if (isDecryptAble_ && method_ != nullptr && *method_ == "NONE") {
-        fragment->keyIndex_ = UINT64_MAX;
+        fragment.keyIndex_ = std::numeric_limits<uint64_t>::max();
     } else {
-        fragment->keyIndex_ = totalKeyIndex_ + keyIndex_;
+        if (totalKeyIndex_ > MAX_UINT64_NUM - keyIndex_) {
+            MEDIA_LOG_W("fragment.keyIndex_ overflow, clamped to MAX_UINT64_NUM");
+            fragment.keyIndex_ = MAX_UINT64_NUM;
+        } else {
+            fragment.keyIndex_ = totalKeyIndex_ + keyIndex_;
+        }
     }
-    files_.emplace_back(fragment);
+    files_.emplace_back(std::move(fragment));
 }
 
-size_t M3U8::GetLiveUpdateGap() const
+uint64_t M3U8::GetLiveUpdateGap() const
 {
     if (minFragDuration_.load() <= 0) {
         return 0;
@@ -770,24 +813,52 @@ size_t M3U8::GetLiveUpdateGap() const
     return (minFragDuration_.load() - 1) / 2; // 2
 }
 
-void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, double& duration) const
+void M3U8::GetExtInf(const std::shared_ptr<Tag>& tag, uint64_t& duration) const
 {
     FALSE_RETURN(tag != nullptr && IsValuesListSection(tag->GetType()));
     auto item = std::static_pointer_cast<ValuesListTag>(tag);
+    ParseExtInfDuration(item, duration);
+}
+
+void M3U8::ParseExtInfDuration(const std::shared_ptr<ValuesListTag>& item, uint64_t& duration) const
+{
     auto durationAttr = item->GetAttributeByName("DURATION");
-    if (durationAttr != nullptr) {
-        duration = durationAttr->FloatingPoint();
+    if (durationAttr == nullptr) {
+        return;
+    }
+    double durSec = durationAttr->FloatingPoint();
+    // Single-attribute parse: on overflow/non-finite, set duration=0 (silent downgrade, no abort).
+    if (durSec <= 0 || !std::isfinite(durSec)) {
+        duration = 0;
+        return;
+    }
+    uint64_t dur = 0;
+    if (!SafeDoubleToUint64(durSec * SECOND_TO_NANOSECOND, dur)) {
+        return;
+    }
+    // RFC 8216: EXTINF duration MUST be <= EXT-X-TARGETDURATION.
+    // Exceeding target duration → invalid segment (duration stays 0).
+    if (targetDuration_ == 0 || dur <= targetDuration_) {
+        duration = dur;
+    } else {
+        MEDIA_LOG_W("EXTINF duration " PUBLIC_LOG_U64 " exceeds targetDuration " PUBLIC_LOG_U64
+            ", mark segment invalid", dur, targetDuration_);
     }
 }
 
-double M3U8::GetDuration() const
+uint64_t M3U8::GetDuration() const
 {
-    double duration = 0;
-    for (auto file : files_) {
-        duration += file->duration_;
+    uint64_t duration = 0;
+    for (const auto& file : files_) {
+        uint64_t newDur = 0;
+        if (!SafeAdd(duration, file.duration_, newDur)) {
+            MEDIA_LOG_W("GetDuration overflow, stop accumulating");
+            break;
+        }
+        duration = newDur;
     }
 
-    MEDIA_LOG_I("duration = " PUBLIC_LOG_F ", files num " PUBLIC_LOG_ZU, duration, files_.size());
+    MEDIA_LOG_I("duration = " PUBLIC_LOG_U64 ", files num " PUBLIC_LOG_ZU, duration, files_.size());
     return duration;
 }
 
@@ -926,6 +997,10 @@ bool M3U8::SetDrmInfo(std::multimap<std::string, std::vector<uint8_t>>& drmInfo)
         psshString = keyUri_->substr(n + 7); // 7: len of "base64,"
     }
     if (psshString.length() == 0) {
+        return false;
+    }
+    if (psshString.length() > MAX_PSSH_BASE64_LEN) {
+        MEDIA_LOG_W("PSSH string too long: %{public}zu, reject", psshString.length());
         return false;
     }
     bool ret = Base64Utils::Base64Decode(reinterpret_cast<const uint8_t *>(psshString.c_str()),
@@ -1074,7 +1149,7 @@ void M3U8MasterPlaylist::UpdateMediaPlaylist()
     isFmp4_ = m3u8->isHeaderReady_.load();
     isPureByteRange_.store(m3u8->isPureByteRange_.load());
     isSimple_ = true;
-    MEDIA_LOG_I("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_F, duration_);
+    MEDIA_LOG_I("UpdateMediaPlaylist called, duration_ = " PUBLIC_LOG_U64, duration_);
 }
 
 void M3U8MasterPlaylist::DownloadSessionKey(std::shared_ptr<Tag>& tag)
@@ -1292,7 +1367,10 @@ void M3U8MasterPlaylist::ParseStart(std::shared_ptr<Tag> &tag)
     auto item = std::static_pointer_cast<AttributesTag>(tag);
     auto timeOffset = item->GetAttributeByName("TIME-OFFSET");
     if (timeOffset) {
-        timeOffset_ = timeOffset->Decimal();
+        double offsetSec = timeOffset->FloatingPoint();
+        if (std::isfinite(offsetSec) && std::abs(offsetSec) <= MAX_TIME_OFFSET_SEC) {
+            timeOffset_ = static_cast<int64_t>(offsetSec * SECOND_TO_NANOSECOND);
+        }
     }
     auto precise = item->GetAttributeByName("PRECISE");
     if (precise) {
@@ -1556,7 +1634,11 @@ bool M3U8MasterPlaylist::IsNearToInitResolution(const std::shared_ptr<M3U8Varian
 
 uint32_t M3U8MasterPlaylist::GetResolutionDelta(uint32_t width, uint32_t height)
 {
-    uint32_t resolution = width * height;
+    uint32_t resolution = 0;
+    if (!SafeMul(width, height, resolution)) {
+        MEDIA_LOG_W("GetResolutionDelta SafeMul overflow, w " PUBLIC_LOG_U32 " h " PUBLIC_LOG_U32, width, height);
+        resolution = std::numeric_limits<uint32_t>::max();
+    }
     if (resolution > initResolution_) {
         return resolution - initResolution_;
     } else {

@@ -23,6 +23,7 @@
 #include "network/network_typs.h"
 #include "osal/filesystem/file_system.h"
 #include "utils/string_utils.h"
+#include "safe_arithmetic.h"
 
 namespace OHOS {
 namespace Media {
@@ -220,12 +221,18 @@ bool PlayListDownloader::SeekTo(uint64_t offset)
     if (fd_ == -1) {
         return false;
     }
-    int32_t ret = lseek(fd_, offset + static_cast<uint64_t>(offset_), SEEK_SET);
-    if (ret == -1) {
-        MEDIA_LOG_E("seek to " PUBLIC_LOG_U64 " failed due to " PUBLIC_LOG_S, offset, strerror(errno));
+    uint64_t base = static_cast<uint64_t>(offset_);
+    uint64_t target = 0;
+    if (!SafeAdd(offset, base, target)) {
+        MEDIA_LOG_E("seek offset " PUBLIC_LOG_U64 " + base " PUBLIC_LOG_U64 " overflow", offset, base);
         return false;
     }
-    position_ = offset + static_cast<uint64_t>(offset_);
+    int32_t ret = lseek(fd_, static_cast<off_t>(target), SEEK_SET);
+    if (ret == -1) {
+        MEDIA_LOG_E("seek to " PUBLIC_LOG_U64 " failed due to " PUBLIC_LOG_S, target, strerror(errno));
+        return false;
+    }
+    position_ = target;
     MEDIA_LOG_D("now seek to " PUBLIC_LOG_D32, ret);
     return true;
 }

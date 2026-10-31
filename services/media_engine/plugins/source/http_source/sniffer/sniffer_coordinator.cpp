@@ -21,6 +21,7 @@
 #include "common/log.h"
 #include "common/media_source.h"
 #include "utils/fd_source.h"
+#include "safe_arithmetic.h"
 
 namespace OHOS::Media::Plugins::HttpPlugin {
 namespace {
@@ -383,9 +384,20 @@ void SnifferCoordinator::ProbeFd(const std::string& url)
         if (!CanReadFd()) {
             return;
         }
-        size_t count = std::min<size_t>(MIN_SNIFF_BUFFER_SIZE, source.size - offset);
+        int64_t remaining = 0;
+        if (!SafeSub(source.size, static_cast<int64_t>(offset), remaining) || remaining <= 0) {
+            break;
+        }
+        size_t count = std::min<size_t>(MIN_SNIFF_BUFFER_SIZE, static_cast<size_t>(remaining));
         std::array<uint8_t, MIN_SNIFF_BUFFER_SIZE> chunk {};
-        auto n = pread(source.fd, chunk.data(), count, source.offset + offset);
+        int64_t readOffset = 0;
+        if (!SafeAdd(source.offset, static_cast<int64_t>(offset), readOffset)) {
+            MEDIA_LOG_W("route=%{public}" PRIu64 " event=fd_offset_overflow offset=%{public}" PRId64
+                " delta=%{public}" PRId64, routeId_, source.offset, static_cast<int64_t>(offset));
+            MarkReady(false, UNKNOWN_CLIENT_ERROR);
+            return;
+        }
+        auto n = pread(source.fd, chunk.data(), count, readOffset);
         if (n < 0 && errno == EINTR) {
             continue;
         }

@@ -41,7 +41,7 @@ void BuildSrcUrl(std::string &srcUrl, std::string &baseUrl);
 int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segTmpltIdentifier,
                                std::string substitutionStr);
 
-int32_t DashStrToDuration(const std::string &str, uint32_t &duration);
+int32_t DashStrToDuration(const std::string &str, uint64_t &duration);
 uint32_t DashGetAttrIndex(const std::string &attrName, const char *const *nodeAttrs, uint32_t attrNums);
 void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &endRange);
 bool DashStreamIsHdr(DashList<DashDescriptor*> essentialPropertyList);

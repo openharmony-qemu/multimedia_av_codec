@@ -213,13 +213,13 @@ private:
         uint64_t bufferDuring {0};
     };
     std::shared_ptr<RecordData> recordData_ {};
-    uint64_t readBitrate_ {1 * 1024 * 1024}; // bps
+    std::atomic<uint64_t> readBitrate_ {1 * 1024 * 1024}; // bps
     uint64_t lastReadCheckTime_ {0};
     uint64_t readTotalBytes_ {0};
     uint64_t readRecordDuringTime_ {0};
     uint64_t downloadDuringTime_ {0}; // 有效下载时长 ms
     uint64_t totalDownloadDuringTime_ {0};
-    int32_t currentBitRate_ {0};
+    std::atomic<int32_t> currentBitRate_ {0};
     uint64_t lastDurationRecord_ {0};
     std::shared_ptr<WriteBitrateCaculator> writeBitrateCaculator_;
 

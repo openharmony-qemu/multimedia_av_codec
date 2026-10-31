@@ -2682,8 +2682,8 @@ HWTEST_F(DownloaderUnitTest, DownloadRequest_GetDuration, TestSize.Level1)
 {
     auto saveData = [](uint8_t*, uint32_t len, bool) { return len; };
     auto statusCb = [](DownloadStatus, std::shared_ptr<Downloader>&, std::shared_ptr<DownloadRequest>&) {};
-    auto req = std::make_shared<DownloadRequest>("http://test.com", 5.5, saveData, statusCb);
-    ASSERT_EQ(req->GetDuration(), 5.5);
+    auto req = std::make_shared<DownloadRequest>("http://test.com", 6, saveData, statusCb);
+    ASSERT_EQ(req->GetDuration(), 6);
 }
 
 HWTEST_F(DownloaderUnitTest, DownloadRequest_GetDownloaderName, TestSize.Level1)
@@ -3074,7 +3074,7 @@ HWTEST_F(DownloaderUnitTest, Downloader_HandleRetOK_ZeroContentLen, TestSize.Lev
     downloader->currentRequest_ = req;
     req->headerInfo_.fileContentLen = 0;
     req->startPos_ = 200;
-    req->endPos_ = 100;
+    req->endPos_ = 0;
     req->isHeaderUpdated_.store(true);
     req->downloadDoneCallback_ = [](const std::string&, const std::string&) {};
     downloader->HandleRetOK();
