@@ -68,6 +68,19 @@ constexpr int64_t FFMPEG_AAC_PROBE_SIZE = 5000000;
 constexpr int64_t FFMPEG_AV_TIME_BASE_US = 1000000;
 // mov_find_next_sample: samples whose dts differ by no more than 1 s are ordered by pos.
 constexpr int64_t FFMPEG_MOV_TIEBREAK_DIFF_US = 1000000;
+// FFmpeg avformat_find_stream_info default max_stream_analyze_duration (demux.c):
+// the probe breaks as soon as any stream's t = max(codec_info_duration,
+// nb_frames/avg_frame_rate) in microseconds reaches this limit.
+constexpr int64_t FFMPEG_MAX_STREAM_ANALYZE_DURATION_US = 5000000;
+// FFmpeg default fps_analyze_framecount; doubled when the track time base is coarser
+// than 1/2000 (av_q2d(st->time_base) > 0.0005).
+constexpr uint32_t FFMPEG_FPS_ANALYZE_FRAMECOUNT = 20;
+constexpr int32_t FFMPEG_COARSE_TIMEBASE_TIMESCALE = 2000;
+// demux.c doubles fps_analyze_framecount when the stream time base is coarser than 1/2000.
+constexpr uint32_t FFMPEG_COARSE_TIMEBASE_FPS_ANALYZE_MULTIPLIER = 2;
+// FFmpeg demux.c: when both duration terms are zero, the probe falls back to the
+// span between the first and last seen dts once this many frames were read.
+constexpr uint32_t FFMPEG_FPS_DTS_FALLBACK_FRAMES = 30;
 constexpr uint16_t DISPLAY_MATRIX_ROWS = 3;
 constexpr uint16_t DISPLAY_MATRIX_COLS = 3;
 constexpr uint32_t DISPLAY_MATRIX_SIZE = 36;
@@ -6214,6 +6227,14 @@ struct AacProbeStream {
     bool hasView = false;
     int64_t dtsUs = 0;
     bool isAac = false;
+    // FFmpeg avformat_find_stream_info per-stream probe state (demux.c).
+    uint32_t nbFrames = 0;          // codec_info_nb_frames
+    uint32_t durationCount = 0;     // packets with strictly increasing dts
+    int64_t codecInfoDuration = 0;  // codec_info_duration in track time-scale ticks
+    int64_t firstDtsUs = 0;
+    int64_t lastDtsUs = 0;
+    bool hasDts = false;
+    bool aacFrameValid = false;     // a reached AAC sample passed the probe check
 };
 
 bool LoadAacProbeStreamView(AacProbeStream& stream)
@@ -6288,6 +6309,426 @@ int32_t SelectNextAacProbeStream(std::vector<AacProbeStream>& streams, bool orde
     }
     return bestStream;
 }
+
+// AAC raw-data-stream element ids and bit counts (ISO/IEC 14496-3); the probe
+// mirrors the checks the FFmpeg AAC decoder needs before it outputs a frame.
+constexpr uint32_t AAC_ELEMENT_TYPE_BITS = 3;
+constexpr uint32_t AAC_ELEMENT_ID_BITS = 4;
+constexpr uint32_t AAC_ELEMENT_SCE = 0;
+constexpr uint32_t AAC_ELEMENT_CPE = 1;
+constexpr uint32_t AAC_ELEMENT_LFE = 3;
+constexpr uint32_t AAC_ELEMENT_DSE = 4;
+constexpr uint32_t AAC_ELEMENT_FIL = 6;
+constexpr uint32_t AAC_ELEMENT_END = 7;
+constexpr uint32_t AAC_ASC_MIN_SIZE = 2;
+constexpr uint32_t AAC_FIL_COUNT_ESCAPE = 15;
+constexpr uint32_t AAC_FIL_COUNT_ESCAPE_BASE = 14;
+constexpr uint32_t AAC_DSE_COUNT_ESCAPE = 255;
+constexpr uint32_t AAC_EXTENSION_TYPE_BITS = 4;
+constexpr uint32_t AAC_GLOBAL_GAIN_BITS = 8;
+constexpr uint32_t AAC_ICS_RESERVED_BITS = 1;
+constexpr uint32_t AAC_WINDOW_SEQUENCE_BITS = 2;
+constexpr uint32_t AAC_WINDOW_SHAPE_BITS = 1;
+constexpr uint32_t AAC_WINDOW_SEQUENCE_EIGHT_SHORT = 3;
+constexpr uint32_t AAC_MAX_SFB_SHORT_BITS = 4;
+constexpr uint32_t AAC_MAX_SFB_LONG_BITS = 6;
+constexpr uint32_t AAC_SCALE_FACTOR_GROUPING_BITS = 7;
+constexpr uint32_t AAC_SECTION_TYPE_BITS = 4;
+constexpr uint32_t AAC_SECTION_TYPE_ZERO_HCB = 12;
+constexpr uint32_t AAC_BAND_INCR_LONG_BITS = 5;
+constexpr uint32_t AAC_BAND_INCR_SHORT_BITS = 3;
+constexpr uint32_t AAC_MS_MASK_PRESENT_BITS = 2;
+constexpr uint32_t AAC_MS_MASK_PRESENT_INVALID = 3;
+constexpr uint32_t AAC_SINGLE_BIT = 1;
+constexpr uint32_t AAC_PROBE_MAX_READ_BITS = 8;
+constexpr uint32_t AAC_ASC_SF_INDEX_MASK = 0x07;
+constexpr uint32_t AAC_ASC_SF_INDEX_SHIFT = 1;
+constexpr uint32_t AAC_ASC_SF_INDEX_HIGH_BIT_SHIFT = 7;
+constexpr uint32_t AAC_NUM_SWB_TABLE_SIZE = 13;
+constexpr std::array<uint8_t, AAC_NUM_SWB_TABLE_SIZE> AAC_NUM_SWB_1024 = {
+    41, 41, 47, 49, 49, 51, 47, 47, 43, 43, 43, 40, 40};
+constexpr std::array<uint8_t, AAC_NUM_SWB_TABLE_SIZE> AAC_NUM_SWB_128 = {
+    12, 12, 12, 14, 14, 14, 15, 15, 15, 15, 15, 15, 15};
+
+class AacProbeBitReader {
+public:
+    AacProbeBitReader(const uint8_t* data, size_t size) : data_(data)
+    {
+        if (__builtin_mul_overflow(size, AAC_BITS_PER_BYTE, &totalBits_)) {
+            totalBits_ = 0;
+        }
+    }
+
+    size_t BitsLeft() const
+    {
+        return totalBits_ > pos_ ? totalBits_ - pos_ : 0;
+    }
+
+    int32_t Read(uint8_t numBits)
+    {
+        if (numBits == 0 || numBits > AAC_PROBE_MAX_READ_BITS || numBits > BitsLeft()) {
+            return AAC_PROBE_READ_FAILED;
+        }
+        int32_t value = 0;
+        for (uint8_t i = 0; i < numBits; ++i) {
+            const size_t bitPos = pos_ + i;
+            value = (value << 1) |
+                ((data_[bitPos / AAC_BITS_PER_BYTE] >> (AAC_BITS_PER_BYTE - 1 - bitPos % AAC_BITS_PER_BYTE)) & 1);
+        }
+        pos_ += numBits;
+        return value;
+    }
+
+    bool Skip(uint32_t numBits)
+    {
+        if (numBits > BitsLeft()) {
+            return false;
+        }
+        pos_ += numBits;
+        return true;
+    }
+
+private:
+    static constexpr int32_t AAC_PROBE_READ_FAILED = -1;
+    const uint8_t* data_;
+    size_t totalBits_ = 0;
+    size_t pos_ = 0;
+};
+
+bool IsProbeVideoStream(const AacProbeStream& stream)
+{
+    const auto& helper = stream.track->sampleHelper;
+    return helper != nullptr && NeedParseVideoInfo(helper->mimeType_, helper->trackType_);
+}
+
+double GetProbeAvgFrameRate(const AacProbeStream& stream)
+{
+    if (!IsProbeVideoStream(stream) || stream.track->timeScale <= 0) {
+        return 0;
+    }
+    const auto& helper = stream.track->sampleHelper;
+    const int64_t totalSamples = helper->GetRawSampleCount();
+    const int64_t totalDuration = helper->GetRawTotalDuration();
+    if (totalSamples <= 0 || totalDuration <= 0) {
+        return 0;
+    }
+    return static_cast<double>(stream.track->timeScale) * totalSamples / totalDuration;
+}
+
+bool IsProbeStreamFpsDone(const AacProbeStream& stream)
+{
+    if (!IsProbeVideoStream(stream)) {
+        return true;
+    }
+    const auto& helper = stream.track->sampleHelper;
+    if (helper == nullptr) {
+        return true;
+    }
+    const int64_t totalDuration = helper->GetRawTotalDuration();
+    const uint32_t sttsCount = helper->GetSttsEntryCount();
+    // mov.c sets r_frame_rate only for a single stts entry (or one trailing sample),
+    // so the fps analysis is done when avg_frame_rate is known and r_frame_rate is
+    // set, or once fps_analyze_framecount frames with increasing dts were read.
+    if (totalDuration > 0 && (sttsCount == 1 ||
+        (sttsCount == 2 && helper->GetSampleCountOfSttsEntry(1) == 1))) {
+        return true;
+    }
+    const uint32_t analyzeFrameCount = stream.track->timeScale < FFMPEG_COARSE_TIMEBASE_TIMESCALE ?
+        FFMPEG_FPS_ANALYZE_FRAMECOUNT * FFMPEG_COARSE_TIMEBASE_FPS_ANALYZE_MULTIPLIER :
+        FFMPEG_FPS_ANALYZE_FRAMECOUNT;
+    return stream.durationCount >= analyzeFrameCount;
+}
+
+bool IsProbeStreamAnalyzed(const AacProbeStream& stream)
+{
+    // FFmpeg loop-top: a stream forces more reads while its first dts is unknown
+    // or (video) the frame rate has not been established yet.
+    if (stream.nbFrames == 0) {
+        return false;
+    }
+    return IsProbeStreamFpsDone(stream);
+}
+
+bool AreAllProbeStreamsAnalyzed(const std::vector<AacProbeStream>& streams)
+{
+    for (const auto& stream : streams) {
+        if (!IsProbeStreamAnalyzed(stream)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool IsProbeDurationExhausted(const AacProbeStream& stream)
+{
+    // FFmpeg demux.c: t = max(codec_info_duration, nb_frames/avg_frame_rate) in
+    // microseconds, with a dts-span fallback when both are zero.
+    int64_t t = 0;
+    if (stream.track->timeScale > 0) {
+        int64_t scaled = 0;
+        if (!__builtin_mul_overflow(stream.codecInfoDuration, FFMPEG_AV_TIME_BASE_US, &scaled)) {
+            t = scaled / stream.track->timeScale;
+        }
+    }
+    const double avgFps = GetProbeAvgFrameRate(stream);
+    if (avgFps > 0 && stream.nbFrames > 0) {
+        int64_t avgTerm = 0;
+        if (!__builtin_mul_overflow(stream.nbFrames, FFMPEG_AV_TIME_BASE_US, &avgTerm)) {
+            t = std::max(t, static_cast<int64_t>(avgTerm / avgFps));
+        }
+    }
+    if (t == 0 && stream.nbFrames > FFMPEG_FPS_DTS_FALLBACK_FRAMES && stream.hasDts &&
+        stream.lastDtsUs > stream.firstDtsUs) {
+        t = stream.lastDtsUs - stream.firstDtsUs;
+    }
+    return t >= FFMPEG_MAX_STREAM_ANALYZE_DURATION_US;
+}
+
+bool ParseAacProbeIcsInfo(AacProbeBitReader& bitReader, uint32_t samplingIndex, int32_t& maxSfb,
+    int32_t& windowSequence)
+{
+    if (samplingIndex >= AAC_NUM_SWB_1024.size() ||
+        bitReader.Read(AAC_ICS_RESERVED_BITS) < 0) {
+        return false;
+    }
+    windowSequence = bitReader.Read(AAC_WINDOW_SEQUENCE_BITS);
+    if (windowSequence < 0 || bitReader.Read(AAC_WINDOW_SHAPE_BITS) < 0) {
+        return false;
+    }
+    if (windowSequence == AAC_WINDOW_SEQUENCE_EIGHT_SHORT) {
+        maxSfb = bitReader.Read(AAC_MAX_SFB_SHORT_BITS);
+        if (maxSfb < 0) {
+            return false;
+        }
+        for (uint32_t i = 0; i < AAC_SCALE_FACTOR_GROUPING_BITS; ++i) {
+            if (bitReader.Read(AAC_SINGLE_BIT) < 0) {
+                return false;
+            }
+        }
+        return maxSfb <= AAC_NUM_SWB_128[samplingIndex];
+    }
+    maxSfb = bitReader.Read(AAC_MAX_SFB_LONG_BITS);
+    if (maxSfb < 0 || bitReader.Read(AAC_SINGLE_BIT) < 0) {
+        return false;
+    }
+    return maxSfb <= AAC_NUM_SWB_1024[samplingIndex];
+}
+
+bool ParseAacProbeBandTypes(AacProbeBitReader& bitReader, int32_t maxSfb, int32_t windowSequence)
+{
+    const uint32_t incrBits = windowSequence == AAC_WINDOW_SEQUENCE_EIGHT_SHORT ?
+        AAC_BAND_INCR_SHORT_BITS : AAC_BAND_INCR_LONG_BITS;
+    const int32_t maxIncr = (1 << incrBits) - 1;
+    int32_t k = 0;
+    while (k < maxSfb) {
+        const int32_t sectionType = bitReader.Read(AAC_SECTION_TYPE_BITS);
+        if (sectionType < 0 || sectionType == AAC_SECTION_TYPE_ZERO_HCB) {
+            return false;
+        }
+        int32_t incr = 0;
+        do {
+            incr = bitReader.Read(incrBits);
+            if (incr <= 0) {
+                return false;
+            }
+            k += incr;
+        } while (incr == maxIncr && k <= maxSfb);
+        if (k > maxSfb) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool ParseAacProbeCpeCommonWindow(AacProbeBitReader& bitReader, uint32_t samplingIndex,
+    int32_t& maxSfb, int32_t& windowSequence)
+{
+    if (!ParseAacProbeIcsInfo(bitReader, samplingIndex, maxSfb, windowSequence)) {
+        return false;
+    }
+    const int32_t msMaskPresent = bitReader.Read(AAC_MS_MASK_PRESENT_BITS);
+    if (msMaskPresent < 0 || msMaskPresent == AAC_MS_MASK_PRESENT_INVALID) {
+        return false;
+    }
+    if (msMaskPresent == 1) {
+        for (int32_t i = 0; i < maxSfb; ++i) {
+            if (bitReader.Read(AAC_SINGLE_BIT) < 0) {
+                return false;
+            }
+        }
+    }
+    return bitReader.Read(AAC_GLOBAL_GAIN_BITS) >= 0;
+}
+
+bool SkipAacProbeFillElement(AacProbeBitReader& bitReader, int32_t elementId)
+{
+    int32_t count = elementId;
+    if (count == AAC_FIL_COUNT_ESCAPE) {
+        const int32_t v = bitReader.Read(AAC_GLOBAL_GAIN_BITS);
+        if (v < 0) {
+            return false;
+        }
+        count = AAC_FIL_COUNT_ESCAPE_BASE + v;
+    }
+    if (count == 0) {
+        return true;
+    }
+    if (bitReader.BitsLeft() < static_cast<size_t>(count) * AAC_BITS_PER_BYTE) {
+        return false;
+    }
+    if (bitReader.Read(AAC_EXTENSION_TYPE_BITS) < 0) {
+        return false;
+    }
+    return bitReader.Skip(static_cast<size_t>(count) * AAC_BITS_PER_BYTE -
+        AAC_EXTENSION_TYPE_BITS);
+}
+
+bool SkipAacProbeDataStreamElement(AacProbeBitReader& bitReader, int32_t elementId)
+{
+    int32_t count = elementId;
+    if (count == AAC_DSE_COUNT_ESCAPE) {
+        const int32_t v = bitReader.Read(AAC_GLOBAL_GAIN_BITS);
+        if (v < 0) {
+            return false;
+        }
+        count = v;
+    }
+    return bitReader.Skip(static_cast<size_t>(count) * AAC_BITS_PER_BYTE);
+}
+
+bool ParseAacProbeSingleChannelElement(AacProbeBitReader& bitReader, uint32_t samplingIndex)
+{
+    if (bitReader.Read(AAC_GLOBAL_GAIN_BITS) < 0) {
+        return false;
+    }
+    int32_t maxSfb = 0;
+    int32_t windowSequence = 0;
+    if (!ParseAacProbeIcsInfo(bitReader, samplingIndex, maxSfb, windowSequence)) {
+        return false;
+    }
+    return ParseAacProbeBandTypes(bitReader, maxSfb, windowSequence);
+}
+
+bool ParseAacProbeChannelPairElement(AacProbeBitReader& bitReader, uint32_t samplingIndex)
+{
+    const int32_t commonWindow = bitReader.Read(AAC_SINGLE_BIT);
+    if (commonWindow < 0) {
+        return false;
+    }
+    if (commonWindow != 0) {
+        int32_t maxSfb = 0;
+        int32_t windowSequence = 0;
+        if (!ParseAacProbeCpeCommonWindow(bitReader, samplingIndex, maxSfb, windowSequence)) {
+            return false;
+        }
+        return ParseAacProbeBandTypes(bitReader, maxSfb, windowSequence);
+    }
+    return ParseAacProbeSingleChannelElement(bitReader, samplingIndex);
+}
+
+bool ValidateAacProbeFrame(const uint8_t* data, size_t size, uint32_t samplingIndex)
+{
+    AacProbeBitReader bitReader(data, size);
+    for (;;) {
+        const int32_t elementType = bitReader.Read(AAC_ELEMENT_TYPE_BITS);
+        if (elementType < 0 || elementType == AAC_ELEMENT_END) {
+            return false;
+        }
+        const int32_t elementId = bitReader.Read(AAC_ELEMENT_ID_BITS);
+        if (elementId < 0) {
+            return false;
+        }
+        if (elementType == AAC_ELEMENT_FIL) {
+            if (!SkipAacProbeFillElement(bitReader, elementId)) {
+                return false;
+            }
+            continue;
+        }
+        if (elementType == AAC_ELEMENT_DSE) {
+            if (!SkipAacProbeDataStreamElement(bitReader, elementId)) {
+                return false;
+            }
+            continue;
+        }
+        if (elementType == AAC_ELEMENT_SCE || elementType == AAC_ELEMENT_LFE) {
+            return ParseAacProbeSingleChannelElement(bitReader, samplingIndex);
+        }
+        if (elementType == AAC_ELEMENT_CPE) {
+            return ParseAacProbeChannelPairElement(bitReader, samplingIndex);
+        }
+        return false;
+    }
+}
+
+bool ValidateAacProbeSample(AacProbeStream& stream,
+    const std::shared_ptr<DemuxerDataReader>& dataReader)
+{
+    const auto& parms = stream.track->codecParms;
+    if (parms.data == nullptr || parms.extradataSize < AAC_ASC_MIN_SIZE) {
+        return true;
+    }
+    const uint32_t samplingIndex = static_cast<uint32_t>(
+        ((parms.data[0] & AAC_ASC_SF_INDEX_MASK) << AAC_ASC_SF_INDEX_SHIFT) |
+        (parms.data[1] >> AAC_ASC_SF_INDEX_HIGH_BIT_SHIFT));
+    if (samplingIndex >= AAC_NUM_SWB_1024.size() || dataReader == nullptr ||
+        stream.view.size <= 0 || stream.view.pos < 0) {
+        return true;
+    }
+    // A single AAC raw-data block never approaches the probe budget; guard the
+    // allocation so a corrupt sample size cannot allocate an unbounded buffer.
+    if (static_cast<int64_t>(stream.view.size) > FFMPEG_AAC_PROBE_SIZE) {
+        stream.aacFrameValid = false;
+        return false;
+    }
+    std::vector<uint8_t> buffer(static_cast<size_t>(stream.view.size));
+    if (dataReader->ReadUintData(stream.view.pos, buffer.data(), buffer.size()) != Status::OK) {
+        return true;
+    }
+    stream.aacFrameValid = ValidateAacProbeFrame(buffer.data(), buffer.size(), samplingIndex);
+    return stream.aacFrameValid;
+}
+
+int64_t AccumulateAacProbeReadSize(int64_t readSize, int32_t sampleSize)
+{
+    if (readSize <= FFMPEG_AAC_PROBE_SIZE - sampleSize) {
+        return readSize + sampleSize;
+    }
+    return FFMPEG_AAC_PROBE_SIZE;
+}
+
+void ReachAacProbeTrack(AacProbeStream& stream,
+    const std::shared_ptr<DemuxerDataReader>& dataReader, std::vector<uint8_t>& reachedFlags,
+    size_t& pendingAacTracks)
+{
+    if (!stream.isAac || stream.track->trackIndex >= reachedFlags.size() ||
+        reachedFlags[stream.track->trackIndex] != 0) {
+        return;
+    }
+    // The AAC frame size is only exported when the probe decoder would have produced
+    // a frame from a reached packet; a failed first sample can still recover on a
+    // later packet, mirroring try_decode_frame.
+    if (stream.aacFrameValid || ValidateAacProbeSample(stream, dataReader)) {
+        reachedFlags[stream.track->trackIndex] = 1;
+        pendingAacTracks--;
+    }
+}
+
+void AdvanceAacProbeStreamState(AacProbeStream& stream)
+{
+    // codec_info_duration accumulates packet durations from the third packet on
+    // (demux.c guards the block with codec_info_nb_frames > 1), feeding the t-check.
+    if (stream.nbFrames > 1 && stream.view.duration > 0) {
+        stream.codecInfoDuration += stream.view.duration;
+    }
+    if (!stream.hasDts) {
+        stream.firstDtsUs = stream.dtsUs;
+        stream.hasDts = true;
+    } else if (stream.dtsUs > stream.lastDtsUs) {
+        stream.durationCount++;
+    }
+    stream.lastDtsUs = stream.dtsUs;
+    stream.nbFrames++;
+}
 } // namespace
 
 
@@ -6295,9 +6736,10 @@ void MPEG4AtomParser::CalculateAacProbeSamplePerFrame()
 {
     // Emulate the FFmpeg stream-info probe window (mov.c mov_find_next_sample +
     // demux.c avformat_find_stream_info) for AAC tracks: the AAC decoder only sees
-    // the first audio packet if the cumulative size of packets read before it stays
-    // below the default probesize. mpeg4 has no AAC decoder, so the read-reachability
-    // part of the probe is replicated exactly; the value itself stays ASC-derived.
+    // packets read before the probe exits (probesize, "All info found", or the
+    // max_stream_analyze_duration 5s cap). mpeg4 has no AAC decoder, so the
+    // reachability is replicated exactly and a lightweight frame-structure check
+    // stands in for the decoder output; the value itself stays ASC-derived.
     aacProbeReachedFlags_.assign(mediaInfo_.tracks.size(), 0);
     // Unseekable fragmented inputs only parse the first moof during header init, so
     // per-track sample counts are incomplete and the ffmpeg interleave model does not
@@ -6316,7 +6758,9 @@ void MPEG4AtomParser::CalculateAacProbeSamplePerFrame()
     const bool orderByPosOnly = seekable_ != Seekable::SEEKABLE;
     int64_t readSize = 0;
     while (pendingAacTracks > 0) {
-        if (readSize >= FFMPEG_AAC_PROBE_SIZE) {
+        // "All info found" stops probing once every stream has a known first dts and
+        // video fps analysis is complete; the probesize cap applies as well.
+        if (readSize >= FFMPEG_AAC_PROBE_SIZE || AreAllProbeStreamsAnalyzed(streams)) {
             break;
         }
         const int32_t bestStream = SelectNextAacProbeStream(streams, orderByPosOnly);
@@ -6324,16 +6768,14 @@ void MPEG4AtomParser::CalculateAacProbeSamplePerFrame()
             break;
         }
         AacProbeStream& selected = streams[bestStream];
-        if (selected.isAac && selected.track->trackIndex < aacProbeReachedFlags_.size() &&
-            aacProbeReachedFlags_[selected.track->trackIndex] == 0) {
-            aacProbeReachedFlags_[selected.track->trackIndex] = 1;
-            pendingAacTracks--;
+        // max_stream_analyze_duration is checked before the current packet reaches
+        // the decoder and before codec_info_duration accumulates it (demux.c).
+        if (selected.nbFrames > 1 && IsProbeDurationExhausted(selected)) {
+            break;
         }
-        if (readSize <= FFMPEG_AAC_PROBE_SIZE - selected.view.size) {
-            readSize += selected.view.size;
-        } else {
-            readSize = FFMPEG_AAC_PROBE_SIZE;
-        }
+        readSize = AccumulateAacProbeReadSize(readSize, selected.view.size);
+        ReachAacProbeTrack(selected, dataReader_, aacProbeReachedFlags_, pendingAacTracks);
+        AdvanceAacProbeStreamState(selected);
         selected.sampleIndex++;
         selected.hasView = false;
     }
