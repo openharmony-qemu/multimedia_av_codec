@@ -1238,4 +1238,20 @@ HWTEST_F(AVCodecParamCheckerTest, VIDEO_CODEC_SCENARIO_TEST_003, TestSize.Level3
     formatInner_.PutIntValue(OHOS::Media::Tag::VIDEO_CODEC_SCENARIO, SCENARIO_INVALID);
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
 }
+
+/**
+ * @tc.name: CONFIGURE_OPEN_GOP_UNSUPPORTED_INNER_INVALID_TEST_0101
+ * @tc.desc: codec configure rejects open GOP when the encoder capability does not support it
+ * @tc.type: FUNC
+ */
+HWTEST_F(AVCodecParamCheckerTest, CONFIGURE_OPEN_GOP_UNSUPPORTED_INNER_INVALID_TEST_0101, TestSize.Level3)
+{
+    if (capabilityDataHevc_ == nullptr || capabilityDataHevc_->featuresMap.count(
+        static_cast<int32_t>(AVCapabilityFeature::VIDEO_ENCODER_OPEN_GOP)) != 0) {
+        return;
+    }
+    SetFormatBasicParam(formatInner_);
+    formatInner_.PutIntValue(OHOS::Media::Tag::VIDEO_ENCODER_ENABLE_OPEN_GOP, 1);
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, videoEncHevcInner_->Configure(formatInner_));
+}
 }
