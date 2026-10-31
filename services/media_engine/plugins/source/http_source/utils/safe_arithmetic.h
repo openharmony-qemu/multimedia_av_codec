@@ -56,7 +56,6 @@ inline typename std::enable_if<std::is_integral<T>::value, bool>::type SafeMul(T
 // Note: must dispatch by sign-combination to avoid implicit promotions in the
 // boundary comparison (e.g. uint64_t src vs int64_t::min() negative would
 // promote the negative to a huge unsigned value and falsely report overflow).
-namespace {
 template <typename Src, typename Dst>
 inline bool SafeIntCastSameSign(Src src, Dst& dst)
 {
@@ -86,7 +85,6 @@ inline bool SafeIntCastUnsignedToSigned(Src src, Dst& dst)
     dst = static_cast<Dst>(src);
     return true;
 }
-} // namespace
 
 template <typename Src, typename Dst>
 inline bool SafeIntCast(Src src, Dst& dst)
