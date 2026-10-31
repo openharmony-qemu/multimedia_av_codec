@@ -1981,7 +1981,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentNumberSeq_Duration_001, TestS
 /**
  * @tc.name  : Test GetMediaSegmentNumberSeq in DURATION mode overflow
  * @tc.number: GetMediaSegmentNumberSeq_Duration_002
- * @tc.desc  : DURATION mode SafeAdd returns false on overflow, caller returns INT64_MAX
+ * @tc.desc  : DURATION mode SafeAdd returns false on overflow, caller returns -1
  */
 HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentNumberSeq_Duration_002, TestSize.Level0)
 {
@@ -1990,10 +1990,8 @@ HWTEST_F(DashMpdDownloaderUnitTest, GetMediaSegmentNumberSeq_Duration_002, TestS
     stream->durationSegInfo_.segDurationNs = 1000000;
     stream->durationSegInfo_.totalDuration = 2000000;
     stream->durationSegInfo_.startNumberSeq = INT64_MAX;
-    // SafeAdd(INT64_MAX, 0) == INT64_MAX (no overflow for index 0)
     EXPECT_EQ(stream->GetMediaSegmentNumberSeq(0), INT64_MAX);
-    // SafeAdd(INT64_MAX, 1) overflows → returns false → caller returns INT64_MAX
-    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(1), INT64_MAX);
+    EXPECT_EQ(stream->GetMediaSegmentNumberSeq(1), -1);
 }
 
 /**

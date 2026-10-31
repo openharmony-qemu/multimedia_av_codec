@@ -53,14 +53,51 @@ inline typename std::enable_if<std::is_integral<T>::value, bool>::type SafeMul(T
 // SafeIntCast: safe integer type conversion.
 // Returns true if src fits in Dst, false otherwise.
 // On success, dst = static_cast<Dst>(src); on failure dst is unchanged.
+// Note: must dispatch by sign-combination to avoid implicit promotions in the
+// boundary comparison (e.g. uint64_t src vs int64_t::min() negative would
+// promote the negative to a huge unsigned value and falsely report overflow).
+namespace {
 template <typename Src, typename Dst>
-inline bool SafeIntCast(Src src, Dst& dst)
+inline bool SafeIntCastSameSign(Src src, Dst& dst)
 {
     if (src < std::numeric_limits<Dst>::min() || src > std::numeric_limits<Dst>::max()) {
         return false;
     }
     dst = static_cast<Dst>(src);
     return true;
+}
+
+template <typename Src, typename Dst>
+inline bool SafeIntCastSignedToUnsigned(Src src, Dst& dst)
+{
+    if (src < 0 || static_cast<std::make_unsigned_t<Src>>(src) > std::numeric_limits<Dst>::max()) {
+        return false;
+    }
+    dst = static_cast<Dst>(src);
+    return true;
+}
+
+template <typename Src, typename Dst>
+inline bool SafeIntCastUnsignedToSigned(Src src, Dst& dst)
+{
+    if (src > static_cast<std::make_unsigned_t<Dst>>(std::numeric_limits<Dst>::max())) {
+        return false;
+    }
+    dst = static_cast<Dst>(src);
+    return true;
+}
+} // namespace
+
+template <typename Src, typename Dst>
+inline bool SafeIntCast(Src src, Dst& dst)
+{
+    if constexpr (std::is_signed_v<Src> == std::is_signed_v<Dst>) {
+        return SafeIntCastSameSign<Src, Dst>(src, dst);
+    } else if constexpr (std::is_signed_v<Src>) {
+        return SafeIntCastSignedToUnsigned<Src, Dst>(src, dst);
+    } else {
+        return SafeIntCastUnsignedToSigned<Src, Dst>(src, dst);
+    }
 }
 
 // SafeDoubleToUint64: converts a double to uint64_t safely.

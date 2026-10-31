@@ -44,6 +44,9 @@ const std::string M3U8_TS_TAG = "#EXTINF";
 const std::string M3U8_X_MAP_TAG = "#EXT-X-MAP";
 constexpr unsigned int MAX_LIVE_TS_NUM = 3;
 constexpr uint64_t DEFAULT_SUBTITLE_SNIFFSIZE = 128;
+// CopyFragmentInfo url 拼接预分配：两个 int64 最多各 20 位 + 3 个下划线
+constexpr size_t INT64_MAX_DIGITS = 20;
+constexpr size_t URL_SEPARATORS = 3; // offset_ 与 length_ 间 1 个，length_ 后 2 个
 
 int64_t GetFragmentDuration(const M3U8Segment& file)
 {
@@ -656,8 +659,12 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, const M3U8Segme
     auto master = GetThreadSafeMaster();
     auto currentVariant = GetThreadSafeCurrentVariant();
     if (master && currentVariant && (master->isFmp4_.load() || master->isPureByteRange_.load())) {
-        playInfo.url_ =
-            std::to_string(playInfo.offset_) + "_" + std::to_string(playInfo.length_) + "_" + "_" + file.uri_;
+        // 预分配容量，避免 operator+ 链式拼接产生多个临时 string 堆分配
+        std::string url;
+        url.reserve(2 * INT64_MAX_DIGITS + URL_SEPARATORS + file.uri_.size());
+        url.append(std::to_string(playInfo.offset_)).append("_")
+            .append(std::to_string(playInfo.length_)).append("__").append(file.uri_);
+        playInfo.url_ = std::move(url);
         playInfo.rangeUrl_ = file.uri_;
     } else {
         playInfo.url_ = file.uri_;

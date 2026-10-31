@@ -64,5 +64,6 @@
 | --- | -- |
 | 系统限制 | AES 解密仅支持 AES-128-CBC 模式；fMP4 头数据需在 X-MAP 标签中指定 |
 | 环境依赖 | 依赖 Downloader 执行 HTTP 请求；依赖 AesDecryptor 执行解密；依赖 CacheMediaChunkBufferImpl 做缓冲管理 |
-| 性能约束 | 解密缓冲区固定 256 字节（AES_DECRYPT_LEN）；分片队列默认无上限（由 Playlist 内容决定） |
+| 性能约束 | 解密缓冲区固定 256 字节（AES_DECRYPT_LEN）；分片队列默认无上限（由 Playlist 内容决定）；CopyFragmentInfo 在 NotifyListChange 循环中按分片数调用，url 拼接须用 `reserve(2*INT64_MAX_DIGITS + URL_SEPARATORS + uri.size())` + `append` 预分配，禁止 `std::to_string + operator+` 链式拼接产生多次堆分配 |
 | 安全约束 | 密钥通过 HTTPS 下载；IV 可为显式或隐式（序列号） |
+| 时长单位约束 | **HLS fragment duration 内部统一纳秒（int64_t ns）**；dateRange->duration/start 为 ns，传入期望毫秒的 AVTimedMetaData 时必须 `/ MS_2_NS` 显式缩放，禁止隐式截断 |

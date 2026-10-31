@@ -331,7 +331,7 @@ struct DashStreamDescription {
                 int64_t result;
                 if (!SafeIntCast<uint64_t, int64_t>(index, indexI) ||
                     !SafeAdd(durationSegInfo_.startNumberSeq, indexI, result)) {
-                    return std::numeric_limits<int64_t>::max();
+                    return -1;
                 }
                 return result;
             case DASH_LAZY_MODE_SIDX:
@@ -355,7 +355,7 @@ struct DashStreamDescription {
             if (index < cnt) {
                 int64_t result;
                 if (!SafeAdd(entry.startSeq, static_cast<int64_t>(index), result)) {
-                    return std::numeric_limits<int64_t>::max();
+                    return -1;
                 }
                 return result;
             }
