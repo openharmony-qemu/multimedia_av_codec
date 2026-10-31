@@ -6311,7 +6311,11 @@ int32_t SelectNextAacProbeStream(std::vector<AacProbeStream>& streams, bool orde
 }
 
 // AAC raw-data-stream element ids and bit counts (ISO/IEC 14496-3); the probe
-// mirrors the checks the FFmpeg AAC decoder needs before it outputs a frame.
+// mirrors the checks the FFmpeg AAC decoder applies to the first reached packet:
+// it validates the first audio element (FIL/DSE skipped) up to the first channel's
+// band types, which is where valid frames and structurally broken frames diverge in
+// the FFmpeg decode path (decode_frame_ga -> decode_cpe/ff_aac_decode_ics ->
+// decode_band_types). Later scalefactor/spectrum Huffman data is left unchecked.
 constexpr uint32_t AAC_ELEMENT_TYPE_BITS = 3;
 constexpr uint32_t AAC_ELEMENT_ID_BITS = 4;
 constexpr uint32_t AAC_ELEMENT_SCE = 0;
@@ -6329,7 +6333,9 @@ constexpr uint32_t AAC_GLOBAL_GAIN_BITS = 8;
 constexpr uint32_t AAC_ICS_RESERVED_BITS = 1;
 constexpr uint32_t AAC_WINDOW_SEQUENCE_BITS = 2;
 constexpr uint32_t AAC_WINDOW_SHAPE_BITS = 1;
-constexpr uint32_t AAC_WINDOW_SEQUENCE_EIGHT_SHORT = 3;
+// FFmpeg enum WindowSequence (libavcodec/aac.h): ONLY_LONG_SEQUENCE=0,
+// LONG_START_SEQUENCE=1, EIGHT_SHORT_SEQUENCE=2, LONG_STOP_SEQUENCE=3.
+constexpr uint32_t AAC_WINDOW_SEQUENCE_EIGHT_SHORT = 2;
 constexpr uint32_t AAC_MAX_SFB_SHORT_BITS = 4;
 constexpr uint32_t AAC_MAX_SFB_LONG_BITS = 6;
 constexpr uint32_t AAC_SCALE_FACTOR_GROUPING_BITS = 7;
@@ -6485,8 +6491,11 @@ bool IsProbeDurationExhausted(const AacProbeStream& stream)
 }
 
 bool ParseAacProbeIcsInfo(AacProbeBitReader& bitReader, uint32_t samplingIndex, int32_t& maxSfb,
-    int32_t& windowSequence)
+    int32_t& windowSequence, int32_t& numWindowGroups)
 {
+    // Mirrors FFmpeg decode_ics_info (aac/aacdec.c): the scale_factor_grouping bits
+    // count window groups (a zero bit opens a new group) and both band types and the
+    // ms_mask iterate over num_window_groups * max_sfb.
     if (samplingIndex >= AAC_NUM_SWB_1024.size() ||
         bitReader.Read(AAC_ICS_RESERVED_BITS) < 0) {
         return false;
@@ -6500,9 +6509,14 @@ bool ParseAacProbeIcsInfo(AacProbeBitReader& bitReader, uint32_t samplingIndex, 
         if (maxSfb < 0) {
             return false;
         }
+        numWindowGroups = 1;
         for (uint32_t i = 0; i < AAC_SCALE_FACTOR_GROUPING_BITS; ++i) {
-            if (bitReader.Read(AAC_SINGLE_BIT) < 0) {
+            const int32_t groupBit = bitReader.Read(AAC_SINGLE_BIT);
+            if (groupBit < 0) {
                 return false;
+            }
+            if (groupBit == 0) {
+                numWindowGroups++;
             }
         }
         return maxSfb <= AAC_NUM_SWB_128[samplingIndex];
@@ -6511,39 +6525,46 @@ bool ParseAacProbeIcsInfo(AacProbeBitReader& bitReader, uint32_t samplingIndex, 
     if (maxSfb < 0 || bitReader.Read(AAC_SINGLE_BIT) < 0) {
         return false;
     }
+    numWindowGroups = 1;
     return maxSfb <= AAC_NUM_SWB_1024[samplingIndex];
 }
 
-bool ParseAacProbeBandTypes(AacProbeBitReader& bitReader, int32_t maxSfb, int32_t windowSequence)
+bool ParseAacProbeBandTypes(AacProbeBitReader& bitReader, int32_t maxSfb, int32_t windowSequence,
+    int32_t numWindowGroups)
 {
+    // Mirrors FFmpeg decode_band_types: k restarts at zero for every window group,
+    // a zero sect_len_incr is legal (the section simply does not advance), and the
+    // only failures are overreads and a section end beyond max_sfb.
     const uint32_t incrBits = windowSequence == AAC_WINDOW_SEQUENCE_EIGHT_SHORT ?
         AAC_BAND_INCR_SHORT_BITS : AAC_BAND_INCR_LONG_BITS;
     const int32_t maxIncr = (1 << incrBits) - 1;
-    int32_t k = 0;
-    while (k < maxSfb) {
-        const int32_t sectionType = bitReader.Read(AAC_SECTION_TYPE_BITS);
-        if (sectionType < 0 || sectionType == AAC_SECTION_TYPE_ZERO_HCB) {
-            return false;
-        }
-        int32_t incr = 0;
-        do {
-            incr = bitReader.Read(incrBits);
-            if (incr <= 0) {
+    for (int32_t group = 0; group < numWindowGroups; ++group) {
+        int32_t k = 0;
+        while (k < maxSfb) {
+            const int32_t sectionType = bitReader.Read(AAC_SECTION_TYPE_BITS);
+            if (sectionType < 0 || sectionType == AAC_SECTION_TYPE_ZERO_HCB) {
                 return false;
             }
-            k += incr;
-        } while (incr == maxIncr && k <= maxSfb);
-        if (k > maxSfb) {
-            return false;
+            int32_t incr = 0;
+            do {
+                incr = bitReader.Read(incrBits);
+                if (incr < 0) {
+                    return false;
+                }
+                k += incr;
+                if (k > maxSfb) {
+                    return false;
+                }
+            } while (incr == maxIncr);
         }
     }
     return true;
 }
 
 bool ParseAacProbeCpeCommonWindow(AacProbeBitReader& bitReader, uint32_t samplingIndex,
-    int32_t& maxSfb, int32_t& windowSequence)
+    int32_t& maxSfb, int32_t& windowSequence, int32_t& numWindowGroups)
 {
-    if (!ParseAacProbeIcsInfo(bitReader, samplingIndex, maxSfb, windowSequence)) {
+    if (!ParseAacProbeIcsInfo(bitReader, samplingIndex, maxSfb, windowSequence, numWindowGroups)) {
         return false;
     }
     const int32_t msMaskPresent = bitReader.Read(AAC_MS_MASK_PRESENT_BITS);
@@ -6551,12 +6572,15 @@ bool ParseAacProbeCpeCommonWindow(AacProbeBitReader& bitReader, uint32_t samplin
         return false;
     }
     if (msMaskPresent == 1) {
-        for (int32_t i = 0; i < maxSfb; ++i) {
+        // decode_mid_side_stereo reads num_window_groups * max_sfb mask bits.
+        for (int32_t i = 0; i < numWindowGroups * maxSfb; ++i) {
             if (bitReader.Read(AAC_SINGLE_BIT) < 0) {
                 return false;
             }
         }
     }
+    // First channel global_gain only; the first channel's band types are the
+    // earliest structural check shared by valid and broken frames.
     return bitReader.Read(AAC_GLOBAL_GAIN_BITS) >= 0;
 }
 
@@ -6603,10 +6627,11 @@ bool ParseAacProbeSingleChannelElement(AacProbeBitReader& bitReader, uint32_t sa
     }
     int32_t maxSfb = 0;
     int32_t windowSequence = 0;
-    if (!ParseAacProbeIcsInfo(bitReader, samplingIndex, maxSfb, windowSequence)) {
+    int32_t numWindowGroups = 1;
+    if (!ParseAacProbeIcsInfo(bitReader, samplingIndex, maxSfb, windowSequence, numWindowGroups)) {
         return false;
     }
-    return ParseAacProbeBandTypes(bitReader, maxSfb, windowSequence);
+    return ParseAacProbeBandTypes(bitReader, maxSfb, windowSequence, numWindowGroups);
 }
 
 bool ParseAacProbeChannelPairElement(AacProbeBitReader& bitReader, uint32_t samplingIndex)
@@ -6618,10 +6643,12 @@ bool ParseAacProbeChannelPairElement(AacProbeBitReader& bitReader, uint32_t samp
     if (commonWindow != 0) {
         int32_t maxSfb = 0;
         int32_t windowSequence = 0;
-        if (!ParseAacProbeCpeCommonWindow(bitReader, samplingIndex, maxSfb, windowSequence)) {
+        int32_t numWindowGroups = 1;
+        if (!ParseAacProbeCpeCommonWindow(bitReader, samplingIndex, maxSfb, windowSequence,
+            numWindowGroups)) {
             return false;
         }
-        return ParseAacProbeBandTypes(bitReader, maxSfb, windowSequence);
+        return ParseAacProbeBandTypes(bitReader, maxSfb, windowSequence, numWindowGroups);
     }
     return ParseAacProbeSingleChannelElement(bitReader, samplingIndex);
 }
