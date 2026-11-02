@@ -6238,6 +6238,7 @@ struct AacProbeStream {
     int64_t lastDtsUs = 0;
     bool hasDts = false;
     bool aacFrameValid = false;     // a reached AAC sample passed the probe check
+    std::vector<uint8_t> aacProbeScratch;  // reused sample buffer, grown on demand
 };
 
 bool LoadAacProbeStreamView(AacProbeStream& stream)
@@ -6323,8 +6324,10 @@ constexpr uint32_t AAC_ELEMENT_TYPE_BITS = 3;
 constexpr uint32_t AAC_ELEMENT_ID_BITS = 4;
 constexpr uint32_t AAC_ELEMENT_SCE = 0;
 constexpr uint32_t AAC_ELEMENT_CPE = 1;
+constexpr uint32_t AAC_ELEMENT_CCE = 2;
 constexpr uint32_t AAC_ELEMENT_LFE = 3;
 constexpr uint32_t AAC_ELEMENT_DSE = 4;
+constexpr uint32_t AAC_ELEMENT_PCE = 5;
 constexpr uint32_t AAC_ELEMENT_FIL = 6;
 constexpr uint32_t AAC_ELEMENT_END = 7;
 constexpr uint32_t AAC_ASC_MIN_SIZE = 2;
@@ -6332,6 +6335,18 @@ constexpr uint32_t AAC_FIL_COUNT_ESCAPE = 15;
 constexpr uint32_t AAC_FIL_COUNT_ESCAPE_BASE = 14;
 constexpr uint32_t AAC_DSE_COUNT_ESCAPE = 255;
 constexpr uint32_t AAC_DSE_COUNT_BITS = 8;
+constexpr uint32_t AAC_CCE_NUM_COUPLED_BITS = 3;
+constexpr uint32_t AAC_CCE_ID_SELECT_BITS = 4;
+constexpr uint32_t AAC_CCE_CH_SELECT_BITS = 2;
+constexpr uint32_t AAC_CCE_SCALE_BITS = 2;
+constexpr uint32_t AAC_PCE_OBJECT_TYPE_BITS = 2;
+constexpr uint32_t AAC_PCE_SAMPLING_INDEX_BITS = 4;
+constexpr uint32_t AAC_PCE_CHANNEL_COUNT_BITS = 4;
+constexpr uint32_t AAC_PCE_NUM_LFE_BITS = 2;
+constexpr uint32_t AAC_PCE_NUM_ASSOC_BITS = 3;
+constexpr uint32_t AAC_PCE_TAG_BITS = 4;
+constexpr uint32_t AAC_PCE_MATRIX_MIXDOWN_BITS = 3;
+constexpr uint32_t AAC_PCE_COMMENT_LEN_BITS = 8;
 constexpr uint32_t AAC_EXTENSION_TYPE_BITS = 4;
 constexpr uint32_t AAC_GLOBAL_GAIN_BITS = 8;
 // A single AAC raw-data block never approaches the probe budget; this bounds the
@@ -6357,6 +6372,7 @@ constexpr uint32_t AAC_MS_MASK_PRESENT_BITS = 2;
 constexpr uint32_t AAC_MS_MASK_PRESENT_INVALID = 3;
 constexpr uint32_t AAC_SINGLE_BIT = 1;
 constexpr uint32_t AAC_PROBE_MAX_READ_BITS = 8;
+constexpr int32_t AAC_PROBE_READ_FAILED = -1;
 constexpr uint32_t AAC_ASC_SF_INDEX_MASK = 0x07;
 constexpr uint32_t AAC_ASC_SF_INDEX_SHIFT = 1;
 constexpr uint32_t AAC_ASC_SF_INDEX_HIGH_BIT_SHIFT = 7;
@@ -6383,7 +6399,7 @@ public:
     int32_t Read(uint8_t numBits)
     {
         if (numBits == 0 || numBits > AAC_PROBE_MAX_READ_BITS || numBits > BitsLeft()) {
-            return aacProbeReadFailed;
+            return AAC_PROBE_READ_FAILED;
         }
         int32_t value = 0;
         for (uint8_t i = 0; i < numBits; ++i) {
@@ -6410,8 +6426,19 @@ public:
         return Skip(toSkip);
     }
 
+    size_t Pos() const
+    {
+        return pos_;
+    }
+
+    // FFmpeg relative_align_get_bits: skip to the byte phase of referencePosition.
+    bool AlignToByteRelative(size_t referencePosition)
+    {
+        const size_t toSkip = (referencePosition - pos_) & (AAC_BITS_PER_BYTE - 1);
+        return Skip(toSkip);
+    }
+
 private:
-    static constexpr int32_t aacProbeReadFailed = -1;
     const uint8_t* data_;
     size_t totalBits_ = 0;
     size_t pos_ = 0;
@@ -6515,7 +6542,8 @@ bool ParseAacProbeIcsInfo(AacProbeBitReader& bitReader, uint32_t samplingIndex, 
 {
     // Mirrors FFmpeg decode_ics_info (aac/aacdec.c): the scale_factor_grouping bits
     // count window groups (a zero bit opens a new group) and both band types and the
-    // ms_mask iterate over num_window_groups * max_sfb.
+    // ms_mask iterate over num_window_groups * max_sfb. This matches decode_ics_info,
+    // where a set bit extends the current group and a zero bit starts a new one.
     if (samplingIndex >= AAC_NUM_SWB_1024.size() ||
         bitReader.Read(AAC_ICS_RESERVED_BITS) < 0) {
         return false;
@@ -6561,6 +6589,9 @@ bool ParseAacProbeBandIncrements(AacProbeBitReader& bitReader, int32_t incrBits,
     int32_t maxSfb, int32_t& k)
 {
     // One section may span several increments when sect_len_incr saturates (== maxIncr).
+    // FFmpeg decode_band_types re-reads a saturated increment even when the section
+    // end already equals max_sfb; that exact case then overflows max_sfb and errors
+    // in both implementations, so the loop below is not guarded by k < maxSfb.
     int32_t incr = 0;
     do {
         incr = bitReader.Read(incrBits);
@@ -6687,6 +6718,102 @@ bool ParseAacProbeSingleChannelElement(AacProbeBitReader& bitReader, uint32_t sa
     return ParseAacProbeBandTypes(bitReader, maxSfb, windowSequence, numWindowGroups);
 }
 
+bool ParseAacProbeCouplingChannelElement(AacProbeBitReader& bitReader, uint32_t samplingIndex)
+{
+    // Mirrors FFmpeg decode_cce (aacdec_proc_template.c, table 4.8) up to its first
+    // ff_aac_decode_ics: coupling_point bit0, num_coupled, per-couple is_cpe/id_select
+    // (/ch_select), then coupling_point bit1, sign, scale and the first channel's
+    // global_gain/ics/band types.
+    if (bitReader.Read(AAC_SINGLE_BIT) < 0) {
+        return false;
+    }
+    const int32_t numCoupled = bitReader.Read(AAC_CCE_NUM_COUPLED_BITS);
+    if (numCoupled < 0) {
+        return false;
+    }
+    for (int32_t c = 0; c <= numCoupled; ++c) {
+        const int32_t isCpe = bitReader.Read(AAC_SINGLE_BIT);
+        if (isCpe < 0 || bitReader.Read(AAC_CCE_ID_SELECT_BITS) < 0) {
+            return false;
+        }
+        if (isCpe == 1 && bitReader.Read(AAC_CCE_CH_SELECT_BITS) < 0) {
+            return false;
+        }
+    }
+    if (bitReader.Read(AAC_SINGLE_BIT) < 0 || bitReader.Read(AAC_SINGLE_BIT) < 0 ||
+        bitReader.Read(AAC_CCE_SCALE_BITS) < 0) {
+        return false;
+    }
+    return ParseAacProbeSingleChannelElement(bitReader, samplingIndex);
+}
+
+bool SkipAacProbePceMixdownTags(AacProbeBitReader& bitReader)
+{
+    // Optional mixdown fields of decode_pce: present flags with their payload bits.
+    const int32_t monoMixdownPresent = bitReader.Read(AAC_SINGLE_BIT);
+    if (monoMixdownPresent < 0 || (monoMixdownPresent == 1 && bitReader.Read(AAC_PCE_TAG_BITS) < 0)) {
+        return false;
+    }
+    const int32_t stereoMixdownPresent = bitReader.Read(AAC_SINGLE_BIT);
+    if (stereoMixdownPresent < 0 || (stereoMixdownPresent == 1 && bitReader.Read(AAC_PCE_TAG_BITS) < 0)) {
+        return false;
+    }
+    const int32_t matrixMixdownPresent = bitReader.Read(AAC_SINGLE_BIT);
+    if (matrixMixdownPresent < 0 ||
+        (matrixMixdownPresent == 1 && bitReader.Read(AAC_PCE_MATRIX_MIXDOWN_BITS) < 0)) {
+        return false;
+    }
+    return true;
+}
+
+bool SkipAacProbeProgramConfigElement(AacProbeBitReader& bitReader, size_t frameStartBitPos)
+{
+    // Mirrors FFmpeg decode_pce (table 4.2): object_type/sampling_index, the element
+    // counts, optional mixdown tags, the channel maps, byte alignment relative to the
+    // raw-data-block start, and the comment field. Only overreads fail the element.
+    if (bitReader.Read(AAC_PCE_OBJECT_TYPE_BITS) < 0 ||
+        bitReader.Read(AAC_PCE_SAMPLING_INDEX_BITS) < 0) {
+        return false;
+    }
+    const int32_t numFront = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
+    const int32_t numSide = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
+    const int32_t numBack = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
+    const int32_t numLfe = bitReader.Read(AAC_PCE_NUM_LFE_BITS);
+    const int32_t numAssoc = bitReader.Read(AAC_PCE_NUM_ASSOC_BITS);
+    const int32_t numCc = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
+    if (numFront < 0 || numSide < 0 || numBack < 0 || numLfe < 0 || numAssoc < 0 || numCc < 0) {
+        return false;
+    }
+    if (!SkipAacProbePceMixdownTags(bitReader)) {
+        return false;
+    }
+    // Front/side/back entries carry an is_cpe flag plus a tag, lfe and associated
+    // data carry only a tag, coupling channels repeat the is_cpe/tag pattern.
+    for (int32_t i = 0; i < numFront + numSide + numBack; ++i) {
+        if (bitReader.Read(AAC_SINGLE_BIT) < 0 || bitReader.Read(AAC_PCE_TAG_BITS) < 0) {
+            return false;
+        }
+    }
+    for (int32_t i = 0; i < numLfe + numAssoc; ++i) {
+        if (bitReader.Read(AAC_PCE_TAG_BITS) < 0) {
+            return false;
+        }
+    }
+    for (int32_t i = 0; i < numCc; ++i) {
+        if (bitReader.Read(AAC_SINGLE_BIT) < 0 || bitReader.Read(AAC_PCE_TAG_BITS) < 0) {
+            return false;
+        }
+    }
+    if (!bitReader.AlignToByteRelative(frameStartBitPos)) {
+        return false;
+    }
+    const int32_t commentBytes = bitReader.Read(AAC_PCE_COMMENT_LEN_BITS);
+    if (commentBytes < 0 || bitReader.BitsLeft() < static_cast<size_t>(commentBytes) * AAC_BITS_PER_BYTE) {
+        return false;
+    }
+    return bitReader.Skip(static_cast<size_t>(commentBytes) * AAC_BITS_PER_BYTE);
+}
+
 bool ParseAacProbeChannelPairElement(AacProbeBitReader& bitReader, uint32_t samplingIndex)
 {
     const int32_t commonWindow = bitReader.Read(AAC_SINGLE_BIT);
@@ -6709,6 +6836,8 @@ bool ParseAacProbeChannelPairElement(AacProbeBitReader& bitReader, uint32_t samp
 bool ValidateAacProbeFrame(const uint8_t* data, size_t size, uint32_t samplingIndex)
 {
     AacProbeBitReader bitReader(data, size);
+    // FFmpeg decode_pce aligns relative to the raw-data-block start (payload_alignment).
+    const size_t frameStartBitPos = bitReader.Pos();
     for (;;) {
         const int32_t elementType = bitReader.Read(AAC_ELEMENT_TYPE_BITS);
         if (elementType < 0 || elementType == AAC_ELEMENT_END) {
@@ -6729,6 +6858,15 @@ bool ValidateAacProbeFrame(const uint8_t* data, size_t size, uint32_t samplingIn
                 return false;
             }
             continue;
+        }
+        if (elementType == AAC_ELEMENT_PCE) {
+            if (!SkipAacProbeProgramConfigElement(bitReader, frameStartBitPos)) {
+                return false;
+            }
+            continue;
+        }
+        if (elementType == AAC_ELEMENT_CCE) {
+            return ParseAacProbeCouplingChannelElement(bitReader, samplingIndex);
         }
         if (elementType == AAC_ELEMENT_SCE || elementType == AAC_ELEMENT_LFE) {
             return ParseAacProbeSingleChannelElement(bitReader, samplingIndex);
@@ -6760,11 +6898,14 @@ bool ValidateAacProbeSample(AacProbeStream& stream,
         stream.aacFrameValid = false;
         return false;
     }
-    std::vector<uint8_t> buffer(static_cast<size_t>(stream.view.size));
-    if (dataReader->ReadUintData(stream.view.pos, buffer.data(), buffer.size()) != Status::OK) {
+    // Reuse the per-stream scratch buffer so repeated samples do not allocate anew.
+    stream.aacProbeScratch.resize(static_cast<size_t>(stream.view.size));
+    if (dataReader->ReadUintData(stream.view.pos, stream.aacProbeScratch.data(),
+        stream.aacProbeScratch.size()) != Status::OK) {
         return true;
     }
-    stream.aacFrameValid = ValidateAacProbeFrame(buffer.data(), buffer.size(), samplingIndex);
+    stream.aacFrameValid = ValidateAacProbeFrame(stream.aacProbeScratch.data(),
+        stream.aacProbeScratch.size(), samplingIndex);
     return stream.aacFrameValid;
 }
 
