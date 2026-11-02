@@ -576,6 +576,12 @@ bool TesterCodecBase::ConfigureDecoder()
     if (opt_.isVrrEnable.has_value()) {
         fmt.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_OUTPUT_ENABLE_VRR, opt_.isVrrEnable.value());
     }
+    if (opt_.decModeI.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_ONLY_I_FRAME, opt_.decModeI.value());
+    }
+    if (opt_.mvUpload.has_value()) {
+        fmt.PutIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, opt_.mvUpload.value());
+    }
     auto begin = std::chrono::steady_clock::now();
     int32_t err = codec_->Configure(fmt);
     if (err != AVCS_ERR_OK) {

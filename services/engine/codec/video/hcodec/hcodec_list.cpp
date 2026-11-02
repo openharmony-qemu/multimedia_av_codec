@@ -25,6 +25,7 @@
 #include "hcodec_utils.h"
 #include "type_converter.h"
 #include "avcodec_info.h"
+#include "codec_omx_ext.h"
 #include "meta/meta.h"
 
 namespace OHOS::MediaAVCodec {
@@ -376,6 +377,9 @@ void HCodecList::GetSupportedFeatureParam(const CodecVideoPortCap& hdiVideoCap,
         },
         {   CodecHDI::VIDEO_FEATURE_QP_MAP,
             {AVCapabilityFeature::VIDEO_ENCODER_QP_MAP, "isSupportQPMap"}
+        },
+        {   static_cast<CodecHDI::VideoFeatureKey>(CODEC_VIDEO_FEATURE_ONLY_I_FRAME),
+            {AVCapabilityFeature::VIDEO_DECODER_ONLY_I_FRAME, "isSupportOnlyIFrame"}
         },
     };
 
