@@ -6756,8 +6756,9 @@ constexpr uint8_t AAC_PROBE_TEST_MS_MASK_BITS = AAC_PROBE_TEST_WINDOW_GROUP_COUN
 constexpr uint8_t AAC_PROBE_TEST_BAND_INCR_SHORT_BITS = 3;
 constexpr uint32_t AAC_PROBE_TEST_MAX_SHORT_INCR = 7;
 constexpr uint32_t AAC_PROBE_TEST_FINAL_SHORT_INCR = 3;
-constexpr uint8_t AAC_PROBE_TEST_GROUP_OPEN_BIT = 0;
-constexpr uint8_t AAC_PROBE_TEST_GROUP_BIT_COUNT = 1;
+// scale_factor_grouping 0111111: the first (MSB) zero opens the second window group and
+// the six set bits extend it, so FFmpeg decode_ics_info counts two window groups.
+constexpr uint32_t AAC_PROBE_TEST_GROUP_EXTEND_MASK = 0x3F;
 // DSE/PCE/CCE element payloads mirroring the parser-side probe checks (ISO/IEC 14496-3
 // table 4.x): the DSE count escape 255 -> +8 bits, and band type 12 that FFmpeg
 // decode_band_types rejects ("invalid band type").
@@ -7034,8 +7035,7 @@ std::vector<uint8_t> BuildAacProbeShortCpeRawDataBlock()
     AppendAacTestBits(bits, AAC_PROBE_TEST_SHORT_WINDOW_SEQUENCE, AAC_PROBE_TEST_WINDOW_SEQUENCE_BITS);
     AppendAacTestBits(bits, 0, AAC_PROBE_TEST_WINDOW_SHAPE_BITS);
     AppendAacTestBits(bits, AAC_PROBE_TEST_SHORT_MAX_SFB, AAC_PROBE_TEST_MAX_SFB_SHORT_BITS);
-    AppendAacTestBits(bits, AAC_PROBE_TEST_GROUP_OPEN_BIT, AAC_PROBE_TEST_GROUP_BIT_COUNT);
-    AppendAacTestBits(bits, AAC_PROBE_TEST_WINDOW_GROUP_COUNT - 1, AAC_PROBE_TEST_GROUPING_BITS - 1);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_GROUP_EXTEND_MASK, AAC_PROBE_TEST_GROUPING_BITS);
     AppendAacTestBits(bits, 1, AAC_PROBE_TEST_MS_MASK_PRESENT_BITS);
     AppendAacTestBits(bits, 0, AAC_PROBE_TEST_MS_MASK_BITS);
     AppendAacTestBits(bits, 0, AAC_PROBE_TEST_GLOBAL_GAIN_BITS);
