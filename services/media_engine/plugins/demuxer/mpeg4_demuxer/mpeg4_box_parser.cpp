@@ -6458,10 +6458,10 @@ double GetProbeAvgFrameRate(const AacProbeStream& stream)
     const auto& helper = stream.track->sampleHelper;
     const int64_t totalSamples = helper->GetRawSampleCount();
     const int64_t totalDuration = helper->GetRawTotalDuration();
-    if (totalSamples <= 0 || totalDuration <= 0) {
-        return 0;
+    if (totalSamples > 0 && totalDuration > 0) {
+        return static_cast<double>(stream.track->timeScale) * totalSamples / totalDuration;
     }
-    return static_cast<double>(stream.track->timeScale) * totalSamples / totalDuration;
+    return 0;
 }
 
 bool IsProbeStreamFpsDone(const AacProbeStream& stream)
