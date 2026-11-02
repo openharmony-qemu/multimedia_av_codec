@@ -24,6 +24,7 @@
 #include "http_curl_client.h"
 #include "osal/task/autolock.h"
 #include "net_conn_client.h"
+#include "utils/time_utils.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -36,7 +37,6 @@ namespace HttpPlugin {
 const uint32_t MAX_STRING_LENGTH = 4096;
 constexpr uint32_t DEFAULT_LOW_SPEED_LIMIT = 1L;
 constexpr uint32_t DEFAULT_LOW_SPEED_TIME = 10L;
-constexpr uint32_t MILLS_TO_SECOND = 1000;
 constexpr uint32_t HTTP_ERROR_THRESHOLD = 400;
 constexpr uint32_t CONNECT_TIMEOUT = 5;
 constexpr char S_ALPHA_NUM_LINE_E[] = "^[a-zA-Z0-9\\-_\\.*]+$";
@@ -386,7 +386,7 @@ Status HttpCurlClient::InitCurlEnvironment(const std::string& url, int32_t timeo
     curl_easy_setopt(easyHandle_, CURLOPT_HEADERDATA, userParam_);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easyHandle_, CURLOPT_TCP_KEEPINTVL, 5L); // 5 心跳
-    int32_t timeout = timeoutMs > 0 ? timeoutMs / MILLS_TO_SECOND : DEFAULT_LOW_SPEED_TIME;
+    int32_t timeout = timeoutMs > 0 ? static_cast<int32_t>(timeoutMs / S_2_MS) : DEFAULT_LOW_SPEED_TIME;
     curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_LIMIT, DEFAULT_LOW_SPEED_LIMIT);
     curl_easy_setopt(easyHandle_, CURLOPT_LOW_SPEED_TIME, timeout);
     curl_easy_setopt(easyHandle_, CURLOPT_PROTOCOLS, CURLPROTO_HTTP | CURLPROTO_HTTPS);

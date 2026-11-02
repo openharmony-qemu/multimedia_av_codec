@@ -117,7 +117,7 @@ struct DashBufferSegment {
     }
 
     int32_t streamId_;
-    unsigned int duration_;
+    uint64_t duration_;
     unsigned int bandwidth_;
     int64_t startNumberSeq_;
     int64_t numberSeq_;
@@ -177,16 +177,16 @@ public:
     void SetDownloadCallback(const std::shared_ptr<DownloadMetricsInfo> &callback);
 private:
     uint32_t SaveData(uint8_t* data, uint32_t len, bool notBlock);
-    void PutRequestIntoDownloader(unsigned int duration, int64_t startPos, int64_t endPos, const std::string &url);
+    void PutRequestIntoDownloader(uint64_t duration, int64_t startPos, int64_t endPos, const std::string &url);
     void UpdateDownloadFinished(const std::string& url, const std::string& location);
     void CloseInternal(bool isAsync, bool isClean);
     bool UpdateInitSegmentFinish();
-    uint32_t GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment);
+    uint64_t GetSegmentRemainDuration(const std::shared_ptr<DashBufferSegment>& currentSegment);
     std::shared_ptr<DashInitSegment> GetDashInitSegment(int32_t streamId);
     bool CleanAllSegmentBuffer(bool isCleanAll, int64_t& remainLastNumberSeq);
     void CleanByTimeInternal(int64_t& remainLastNumberSeq, size_t& clearTail, bool& isEnd);
     void CalcClearPositionInSegment(const std::shared_ptr<DashBufferSegment> &segment,
-        uint32_t segmentKeepDuration, size_t &clearTail, bool &isEnd);
+        uint64_t segmentKeepDuration, size_t &clearTail, bool &isEnd);
     void ClearReadSegmentList();
     void UpdateInitSegmentState(int32_t currentStreamId);
     bool ReadInitSegment(uint8_t *buff, uint32_t wantReadLength, uint32_t &realReadLength,
@@ -200,7 +200,7 @@ private:
     uint32_t GetMaxReadLength(uint32_t wantReadLength, const std::shared_ptr<DashBufferSegment> &currentSegment,
                               int32_t currentStreamId) const;
     void OnWriteRingBuffer(uint32_t len);
-    void CalculateBitRate(size_t fragmentSize, double duration);
+    void CalculateBitRate(size_t fragmentSize, uint64_t duration);
     void UpdateBufferSegment(const std::shared_ptr<DashBufferSegment> &mediaSegment, uint32_t len);
     void UpdateMediaSegments(size_t bufferTail, uint32_t len);
     bool CheckLoopTimeout(int64_t startLoopTime);
@@ -211,7 +211,6 @@ private:
     void SetDownloader(std::shared_ptr<Downloader> downloader);
 
 private:
-    static constexpr uint32_t MIN_RETENTION_DURATION_MS = 5 * 1000;
     std::shared_ptr<RingBuffer> buffer_;
     std::shared_ptr<Downloader> downloader_;
     std::shared_ptr<DownloadRequest> downloadRequest_;

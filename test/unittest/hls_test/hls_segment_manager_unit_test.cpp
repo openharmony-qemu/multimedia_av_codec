@@ -15,6 +15,7 @@
 #include "hls_segment_manager_unit_test.h"
 #include "http_server_demo.h"
 #include "source_callback.h"
+#include "utils/time_utils.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -133,7 +134,7 @@ public:
     bool IsParseAndNotifyFinished() override { return isParseAndNotifyFinished_; }
     bool IsParseFinished() override { return isParseFinished_; }
     bool IsFragmentInCurrentPlayList(const std::string& url, const std::string& rangeUrl,
-        uint32_t offset, uint32_t length) override
+        int64_t offset, int64_t length) override
     {
         (void)url;
         (void)rangeUrl;
@@ -1782,10 +1783,10 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_DELEGATE_001, TestSize.Level1)
     downloader->GetSeekable();
     std::vector<StreamInfo> streams;
     downloader->GetStreamInfo(streams);
-    OSAL::SleepFor(3 * 1000);
+    OSAL::SleepFor(5 * 1000);
     downloader->cacheMediaBuffer_->Clear();
     downloader->writeTsIndex_ = 0;
-    
+
     EXPECT_EQ(downloader->GetDuration() != 0, true);
     EXPECT_EQ(downloader->CheckReadStatus(), true);
     EXPECT_EQ(downloader->GetBufferSize(), 0);
@@ -1802,7 +1803,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, READ_DELEGATE_001, TestSize.Level1)
     EXPECT_EQ(downloader->IsHlsEnd(), false);
     EXPECT_EQ(downloader->writeTsIndex_, 0);
 
-    downloader->seekTime_ = 100000000000;
+    downloader->seekTime_ = 100ULL * S_2_NS;
     EXPECT_EQ(downloader->backPlayList_.size(), 2);
     downloader->readTsIndex_ = 1;
     downloader->tsStorageInfo_[downloader->readTsIndex_] = std::make_pair(0, true);
@@ -1863,10 +1864,10 @@ HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_001, TestSize.Level1)
     downloader->PrepareToSeek();
     downloader->SeekToTime(10000, SeekMode::SEEK_NEXT_SYNC);
     EXPECT_EQ(downloader->isNeedReadHeader_, true);
-    downloader->SeekToTime(50000000000, SeekMode::SEEK_NEXT_SYNC);
+    downloader->SeekToTime(static_cast<int64_t>(50ULL * S_2_NS), SeekMode::SEEK_NEXT_SYNC);
     EXPECT_EQ(downloader->readTsIndex_, 0);
     downloader->backPlayList_.clear();
-    downloader->SeekToTime(50000000000, SeekMode::SEEK_NEXT_SYNC);
+    downloader->SeekToTime(static_cast<int64_t>(50ULL * S_2_NS), SeekMode::SEEK_NEXT_SYNC);
     EXPECT_EQ(downloader->readTsIndex_, 0);
 }
 
@@ -2058,7 +2059,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SEEK_TO_TIME_002, TestSize.Level1)
     downloader->SetStatusCallback(statusCallback);
     downloader->Open(testUrl, httpHeader);
     downloader->GetSeekable();
-    bool result = downloader->SeekToTime(1000000000, SeekMode::SEEK_NEXT_SYNC);
+    bool result = downloader->SeekToTime(static_cast<int64_t>(1ULL * S_2_NS), SeekMode::SEEK_NEXT_SYNC);
     downloader->Close(true);
     downloader = nullptr;
     EXPECT_TRUE(result);
@@ -2508,17 +2509,16 @@ HWTEST_F(HlsSegmentManagerUnitTest, RequestNewTs_001, TestSize.Level1)
     PlayInfo item;
     item.url_ = "test.ts";
     item.streamId_ = 0;
-    item.duration_ = 10.0;
+    item.duration_ = 10ULL * S_2_NS;
     item.offset_ = 0;
     item.length_ = 1000;
     item.keyIndex_ = 0;
     
     uint64_t seekTime = 5000;
-    double totalDuration = 100.0;
-    double hstTime = 50.0;
-    
+    uint64_t totalDuration = 100;
+
     // Test SEEK_PREVIOUS_SYNC mode with lastTotalDuration <= seekTime
-    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, totalDuration, hstTime, item);
+    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, totalDuration, item, false);
     downloader->Close(true);
     EXPECT_EQ(res, -1);
 }
@@ -2539,17 +2539,16 @@ HWTEST_F(HlsSegmentManagerUnitTest, RequestNewTs_002, TestSize.Level1)
     PlayInfo item;
     item.url_ = "test.ts";
     item.streamId_ = 0;
-    item.duration_ = 10.0;
+    item.duration_ = 10ULL * S_2_NS;
     item.offset_ = 0;
     item.length_ = 1000;
     item.keyIndex_ = 0;
     
     uint64_t seekTime = 100;
-    double totalDuration = 100.0;
-    double hstTime = 50.0;
-    
+    uint64_t totalDuration = 100;
+
     // Test else branch (SEEK_CLOSEST) with lastTotalDuration > seekTime
-    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_CLOSEST, totalDuration, hstTime, item);
+    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_CLOSEST, totalDuration, item, false);
     downloader->Close(true);
     EXPECT_EQ(res, -1);
 }
@@ -2569,17 +2568,16 @@ HWTEST_F(HlsSegmentManagerUnitTest, RequestNewTs_003, TestSize.Level1)
     PlayInfo item;
     item.url_ = "test_not_in_playlist.ts";
     item.streamId_ = 0;
-    item.duration_ = 10.0;
+    item.duration_ = 10ULL * S_2_NS;
     item.offset_ = 0;
     item.length_ = 1000;
     item.keyIndex_ = 0;
     
     uint64_t seekTime = 100;
-    double totalDuration = 100.0;
-    double hstTime = 50.0;
-    
+    uint64_t totalDuration = 100;
+
     // Test inCurrentPlaylist == false branch, should return -1
-    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_CLOSEST, totalDuration, hstTime, item);
+    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_CLOSEST, totalDuration, item, false);
     downloader->Close(true);
     EXPECT_EQ(res, -1);
 }
@@ -2600,17 +2598,16 @@ HWTEST_F(HlsSegmentManagerUnitTest, RequestNewTs_004, TestSize.Level1)
     PlayInfo item;
     item.url_ = "test.ts";
     item.streamId_ = 0;
-    item.duration_ = 10.0;
+    item.duration_ = 10ULL * S_2_NS;
     item.offset_ = 0;
     item.length_ = 1000;
     item.keyIndex_ = 0;
     
     uint64_t seekTime = 200;
-    double totalDuration = 100.0;
-    double hstTime = 50.0;
-    
+    uint64_t totalDuration = 100;
+
     // Test SEEK_PREVIOUS_SYNC mode with lastTotalDuration > seekTime
-    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, totalDuration, hstTime, item);
+    auto res = downloader->RequestNewTs(seekTime, SeekMode::SEEK_PREVIOUS_SYNC, totalDuration, item, false);
     downloader->Close(true);
     EXPECT_EQ(res, -1);
 }
@@ -2626,7 +2623,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_001, TestSize.Level1)
     PlayInfo frag1;
     frag1.url_ = "test1.ts";
     frag1.streamId_ = 0;
-    frag1.duration_ = 10.0;
+    frag1.duration_ = 10ULL * S_2_NS;
     frag1.offset_ = 0;
     frag1.length_ = 1000;
     manager->seekCandidates_.push_back(frag1);
@@ -2647,7 +2644,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_002, TestSize.Level1)
     PlayInfo frag1;
     frag1.url_ = "test1.ts";
     frag1.streamId_ = 0;
-    frag1.duration_ = 10.0;
+    frag1.duration_ = 10ULL * S_2_NS;
     frag1.offset_ = 0;
     frag1.length_ = 1000;
     manager->seekCandidates_.push_back(frag1);
@@ -2665,7 +2662,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_003, TestSize.Level1)
     PlayInfo frag1;
     frag1.url_ = "test1.ts";
     frag1.streamId_ = 0;
-    frag1.duration_ = 10.0;
+    frag1.duration_ = 10ULL * S_2_NS;
     frag1.offset_ = 0;
     frag1.length_ = 1000;
     manager->seekCandidates_.push_back(frag1);
@@ -2696,13 +2693,13 @@ HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_005, TestSize.Level1)
     PlayInfo frag1, frag2, frag3;
     frag1.url_ = "test1.ts";
     frag1.streamId_ = 0;
-    frag1.duration_ = 10.0;
+    frag1.duration_ = 10ULL * S_2_NS;
     frag2.url_ = "test2.ts";
     frag2.streamId_ = 0;
-    frag2.duration_ = 10.0;
+    frag2.duration_ = 10ULL * S_2_NS;
     frag3.url_ = "test3.ts";
     frag3.streamId_ = 0;
-    frag3.duration_ = 10.0;
+    frag3.duration_ = 10ULL * S_2_NS;
     manager->seekCandidates_.push_back(frag1);
     manager->seekCandidates_.push_back(frag2);
     manager->seekCandidates_.push_back(frag3);
@@ -2728,10 +2725,10 @@ HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_007, TestSize.Level1)
     PlayInfo item1, item2;
     item1.url_ = "vod1.ts";
     item1.streamId_ = 0;
-    item1.duration_ = 10.0;
+    item1.duration_ = 10ULL * S_2_NS;
     item2.url_ = "vod2.ts";
     item2.streamId_ = 0;
-    item2.duration_ = 10.0;
+    item2.duration_ = 10ULL * S_2_NS;
     manager->backPlayList_.push_back(item1);
     manager->backPlayList_.push_back(item2);
     
@@ -2752,12 +2749,12 @@ HWTEST_F(HlsSegmentManagerUnitTest, SeekListHelper_008, TestSize.Level1)
     PlayInfo frag1, frag2;
     frag1.url_ = "test1.ts";
     frag1.streamId_ = 0;
-    frag1.duration_ = 10.0;
+    frag1.duration_ = 10ULL * S_2_NS;
     frag1.offset_ = 0;
     frag1.length_ = 1000;
     frag2.url_ = "test2.ts";
     frag2.streamId_ = 0;
-    frag2.duration_ = 10.0;
+    frag2.duration_ = 10ULL * S_2_NS;
     frag2.offset_ = 1000;
     frag2.length_ = 1000;
     manager->seekCandidates_.push_back(frag1);
@@ -3623,7 +3620,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, GET_SEGMENT_OFFSET_LIVE_SUM_001, TestSize.Le
     downloader->readTsIndex_ = 0;
     PlayInfo p;
     p.url_ = "test_url";
-    p.duration_ = 10;
+    p.duration_ = 200;  // ns, > sumDuration_ to trigger sumDuration < lastDuration → offset=0
     p.sumDuration_ = 100;
     downloader->InfoIndexMap_.writeMap[0] = "test_url";
     downloader->InfoIndexMap_.urlMap["test_url"] = p;
@@ -4890,7 +4887,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, ON_PLAYLIST_CHANGED_START_001, TestSize.Leve
     std::vector<PlayInfo> playList;
     PlayInfo p;
     p.url_ = "test.ts";
-    p.duration_ = 10.0;
+    p.duration_ = 10ULL * S_2_NS;
     playList.push_back(p);
     downloader->isDownloadStarted_ = false;
     downloader->OnPlayListChanged(playList);
@@ -5254,7 +5251,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, ON_PLAYLIST_CHANGED_WT_001, TestSize.Level1)
     std::vector<PlayInfo> playList;
     PlayInfo p;
     p.url_ = "test.ts";
-    p.duration_ = 10.0;
+    p.duration_ = 10ULL * S_2_NS;
     playList.push_back(p);
     downloader->isDownloadStarted_ = false;
     downloader->writeTsIndex_ = 0;
@@ -5274,7 +5271,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, ON_PLAYLIST_CHANGED_LIVE_END_001, TestSize.L
     std::vector<PlayInfo> playList;
     PlayInfo p;
     p.url_ = "test.ts";
-    p.duration_ = 10.0;
+    p.duration_ = 10ULL * S_2_NS;
     playList.push_back(p);
     downloader->isDownloadStarted_ = true;
     downloader->OnPlayListChanged(playList);

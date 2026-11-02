@@ -50,7 +50,8 @@ struct MpdStreamResource {
 using DashMpdEvent = enum DashMpdEvent {
     DASH_MPD_EVENT_OPEN_OK,
     DASH_MPD_EVENT_STREAM_INIT,
-    DASH_MPD_EVENT_PARSE_OK
+    DASH_MPD_EVENT_PARSE_OK,
+    DASH_MPD_EVENT_PARSE_FAILED
 };
 
 enum DashMpdGetRet {
@@ -84,7 +85,7 @@ struct DashMpdBitrateParam {
     unsigned int bitrate_;
     DashMpdSwitchType type_;
     int64_t position_;
-    unsigned int nextSegTime_;
+    uint64_t nextSegTime_;
 };
 
 struct DashMpdTrackParam {
@@ -103,7 +104,7 @@ struct DashMpdTrackParam {
     MediaAVCodec::MediaType type_;
     int streamId_;
     int64_t position_;
-    unsigned int nextSegTime_;
+    uint64_t nextSegTime_;
 };
 
 struct MediaSegSampleInfo {
@@ -114,7 +115,7 @@ struct MediaSegSampleInfo {
     }
 
     int segCount_;
-    unsigned int segDuration_;
+    uint64_t segDuration_;  // nanoseconds
     std::string mediaUrl_;
 };
 
@@ -170,7 +171,7 @@ public:
         return mpdInfo_;
     }
     void SetCurrentNumberSeqByStreamId(int streamId, int64_t numberSeq);
-    void UpdateCurrentNumberSeqByTime(const std::shared_ptr<DashStreamDescription> &streamDesc, uint32_t nextSegTime);
+    void UpdateCurrentNumberSeqByTime(const std::shared_ptr<DashStreamDescription> &streamDesc, uint64_t nextSegTime);
     void SetHdrStart(bool isHdrStart);
     void SetInitResolution(unsigned int width, unsigned int height);
     void SetDefaultLang(const std::string &lang, MediaAVCodec::MediaType type);
@@ -186,8 +187,13 @@ public:
 
     static void BuildMpdStreamResources(std::shared_ptr<DashMpdDownloader>& downloader,
         std::vector<MpdStreamResource>& resources);
+    void CollectSegmentUrls(const std::shared_ptr<DashStreamDescription>& streamDesc, std::vector<std::string>& urls);
 
 private:
+    struct TimelineIterState {
+        int64_t segmentSeq = -1;
+        uint64_t startTime = 0;
+    };
     void ParseManifest();
     void ParseSidx();
     void NotifyParseSidxResult();
@@ -210,7 +216,8 @@ private:
     bool IsLangMatch(const std::string &lang, MediaAVCodec::MediaType type);
     bool ChooseStreamToPlay(MediaAVCodec::MediaType type, int32_t streamId);
     bool ChooseStreamToPlay(MediaAVCodec::MediaType type);
-    unsigned int GetSegTimeBySeq(const std::vector<std::shared_ptr<DashSegment>> &segments, int64_t segSeq);
+    uint64_t GetSegTimeBySeq(const std::vector<std::shared_ptr<DashSegment>> &segments, int64_t segSeq);
+    uint64_t GetSegTimeByStream(const std::shared_ptr<DashStreamDescription> &streamDesc, int64_t segSeq);
     DashSegmentInitValue GetSegmentsInMpd(std::shared_ptr<DashStreamDescription> streamDesc);
     DashSegmentInitValue GetSegmentsInPeriod(DashPeriodInfo *periodInfo, const std::string &mpdBaseUrl,
                                              std::shared_ptr<DashStreamDescription> streamDesc);
@@ -222,9 +229,8 @@ private:
                                                  std::string &periodBaseUrl,
                                                  std::shared_ptr<DashStreamDescription> streamDesc);
     DashSegmentInitValue GetSegmentsByAdptSetInfo(const DashAdptSetInfo *adptSetInfo,
-                                                  const DashRepresentationInfo *repInfo,
-                                                  std::string &baseUrl,
-                                                  std::shared_ptr<DashStreamDescription> streamDesc);
+        const DashRepresentationInfo *repInfo, std::string &baseUrl,
+        std::shared_ptr<DashStreamDescription> streamDesc);
     DashRepresentationInfo *GetRepresemtationFromAdptSet(DashAdptSetInfo *adptSetInfo, unsigned int repIndex);
 
     DashSegmentInitValue GetSegmentsWithSegTemplate(const DashSegTmpltInfo *segTmpltInfo, std::string id,
@@ -232,24 +238,22 @@ private:
     DashSegmentInitValue GetSegmentsWithTmpltStatic(const DashSegTmpltInfo *segTmpltInfo, const std::string &mediaUrl,
                                                     std::shared_ptr<DashStreamDescription> streamDesc);
     DashSegmentInitValue GetSegmentsWithTmpltDurationStatic(const DashSegTmpltInfo *segTmpltInfo,
-                                                            const std::string &mediaUrl, unsigned int timeScale,
-                                                            std::shared_ptr<DashStreamDescription> desc);
+        const std::string &mediaUrl, unsigned int timeScale, std::shared_ptr<DashStreamDescription> desc);
     DashSegmentInitValue GetSegmentsWithTmpltTimelineStatic(const DashSegTmpltInfo *segTmpltInfo,
-                                                            const std::string &mediaUrl, unsigned int timeScale,
-                                                            std::shared_ptr<DashStreamDescription> desc);
-    DashSegmentInitValue GetSegmentsInOneTimeline(const DashSegTimeline *timeline, const MediaSegSampleInfo &sampleInfo,
-                                                  int64_t &segmentSeq, uint64_t &startTime,
-                                                  std::shared_ptr<DashStreamDescription> streamDesc);
+        const std::string &mediaUrl, unsigned int timeScale, std::shared_ptr<DashStreamDescription> desc);
+    bool ProcessTimelineEntry(std::list<DashSegTimeline*>::iterator &it,
+        const std::list<DashSegTimeline*>& timelineList, uint64_t timeScale,
+        std::shared_ptr<DashStreamDescription> desc, TimelineIterState &state);
 
-    DashSegmentInitValue GetSegmentsWithSegList(const DashSegListInfo *segListInfo, const std::string &baseUrl,
+    DashSegmentInitValue GetSegmentsWithSegList(DashSegListInfo *segListInfo, const std::string &baseUrl,
                                                 std::shared_ptr<DashStreamDescription> streamDesc);
-    void GetSegDurationFromTimeline(unsigned int periodDuration, unsigned int timeScale,
-                                    const DashMultSegBaseInfo *multSegBaseInfo, std::list<unsigned int> &durationList);
-    void ExpandSegDuration(const DashSegTimeline *timeline, int segCount, unsigned int timeScale,
-                           uint64_t &startTime, DashList<unsigned int> &durationList);
-    int GetSegCountFromTimeline(DashList<DashSegTimeline *>::iterator &it,
-                                const DashList<DashSegTimeline *>::iterator &end,
-                                unsigned int periodDuration, unsigned int timeScale, uint64_t startTime);
+    void GetSegDurationFromTimeline(uint64_t periodDuration, unsigned int timeScale,
+                                    const DashMultSegBaseInfo *multSegBaseInfo, DashList<uint64_t> &durationList);
+    void ExpandSegDuration(const DashSegTimeline *timeline, int64_t segCount, unsigned int timeScale,
+                           uint64_t &startTime, DashList<uint64_t> &durationList);
+    int64_t GetSegCountFromTimeline(DashList<DashSegTimeline *>::iterator &it,
+                                const DashList<DashSegTimeline *>::const_iterator &end,
+                                uint64_t periodDuration, unsigned int timeScale, uint64_t startTime);
 
     DashSegmentInitValue GetSegmentsWithBaseUrl(std::list<std::string> baseUrlList,
                                                 std::shared_ptr<DashStreamDescription> streamDesc);
@@ -262,20 +266,22 @@ private:
                                       std::shared_ptr<DashStreamDescription> streamDesc);
     DashMpdGetRet GetSegmentsInNewStream(std::shared_ptr<DashStreamDescription> destStream);
     void UpdateInitSegUrl(std::shared_ptr<DashStreamDescription> streamDesc, const DashUrlType *urlType,
-                          int segTmpltFlag,
-                          std::string representationID);
+        int segTmpltFlag, std::string representationID);
 
     bool PutStreamToDownload();
     void GetDrmInfos(std::vector<DashDrmInfo>& drmInfos);
     void ProcessDrmInfos();
     void GetDrmInfos(const std::string &drmId, const DashList<DashDescriptor *> &contentProtections,
                      std::vector<DashDrmInfo> &drmInfoList);
-    void BuildDashSegment(std::list<std::shared_ptr<SubSegmentIndex>> &subSegIndexList) const;
+    void BuildSidxEntries(std::list<std::shared_ptr<SubSegmentIndex>> &subSegIndexList) const;
+    bool AppendSidxEntry(const std::shared_ptr<SubSegmentIndex> &subSegIndex, const std::string &segUrl,
+                         uint64_t &segDurSum, uint64_t &segAddDuration, int64_t &segSeq) const;
+    bool ComputeNextSegmentIndex(const std::shared_ptr<DashStreamDescription> &streamDesc,
+                                 int64_t &segmentIndex) const;
     void GetStreamDescriptions(const std::string &periodBaseUrl, DashStreamDescription &streamDesc,
-                               const std::string &adptSetBaseUrl,
-                               std::list<DashRepresentationInfo *> &repList);
+        const std::string &adptSetBaseUrl, std::list<DashRepresentationInfo *> &repList);
     void FillStreamDescription(DashStreamDescription &streamDesc, const DashRepresentationInfo *rep,
-                           unsigned int index, DashVideoType defaultType);
+        unsigned int index, DashVideoType defaultType);
     void GetAdpDrmInfos(std::vector<DashDrmInfo> &drmInfos, DashPeriodInfo *const &periodInfo,
                         const std::string &periodDrmId);
 
@@ -293,7 +299,18 @@ private:
         int64_t seekTime, uint32_t &targetPeriodIndex, uint64_t &periodStartTime) const;
     void SwitchStreamIfNeeded(std::shared_ptr<DashStreamDescription> &currentStream, uint32_t targetPeriodIndex);
     void FindSegmentByRelativeTime(std::shared_ptr<DashStreamDescription> &currentStream,
-        int64_t relativeTime, std::shared_ptr<DashSegment> &seg, uint32_t targetPeriodIndex, int64_t &totalDuration);
+        int64_t relativeTime, std::shared_ptr<DashSegment> &seg, uint32_t targetPeriodIndex, uint64_t &totalDuration);
+
+    std::shared_ptr<DashSegment> BuildLazyFromTimeline(
+        const std::shared_ptr<DashStreamDescription>& streamDesc, uint64_t index, uint64_t totalCount) const;
+    std::shared_ptr<DashSegment> BuildLazyFromSidx(
+        const std::shared_ptr<DashStreamDescription>& streamDesc, uint64_t index, uint64_t totalCount) const;
+    std::shared_ptr<DashSegment> BuildLazyFromSegList(
+        const std::shared_ptr<DashStreamDescription>& streamDesc, uint64_t index, uint64_t totalCount) const;
+    std::shared_ptr<DashSegment> BuildLazyFromDuration(
+        const std::shared_ptr<DashStreamDescription>& streamDesc, uint64_t index, uint64_t totalCount) const;
+    std::shared_ptr<DashSegment> BuildLazySegment(const std::shared_ptr<DashStreamDescription>& streamDesc,
+        uint64_t index) const;
 
 private:
     std::string url_ {};
@@ -310,7 +327,7 @@ private:
     std::shared_ptr<DashAdptSetManager> adptSetManager_ {nullptr};
     std::shared_ptr<DashRepresentationManager> representationManager_ {nullptr};
     DashMpdInfo* mpdInfo_ {nullptr};
-    unsigned int duration_ {0};
+    uint64_t duration_ {0};  // nanoseconds
     std::vector<std::shared_ptr<DashStreamDescription>> streamDescriptions_;
     std::shared_ptr<DashStreamDescription> currentDownloadStream_ {nullptr};
     DataSaveFunc dataSave_ {nullptr};

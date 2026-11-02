@@ -20,6 +20,10 @@ config("http_curl_client_config") {
     "MEDIA_OHOS",
   ]
 
+  include_dirs = [
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source",
+  ]
+
   cflags = [
     "-Wno-sign-compare",
     "-fno-exceptions",

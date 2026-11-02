@@ -17,6 +17,8 @@
 
 #include "sidx_box_parser.h"
 #include "common/log.h"
+#include <limits>
+#include "safe_arithmetic.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -114,6 +116,25 @@ int32_t SidxBoxParser::ParseSidxBox(char *bitStream, uint32_t streamSize, int64_
     return 0;
 }
 
+bool SidxBoxParser::CalcMediaSegOffset(int64_t firstOffset, int64_t sidxEndOffset, int64_t &mediaSegOffset)
+{
+    if (sidxEndOffset >= 0) {
+        if (firstOffset > std::numeric_limits<int64_t>::max() - 1 - sidxEndOffset) {
+            MEDIA_LOG_W("sidx firstOffset " PUBLIC_LOG_D64 " + sidxEndOffset " PUBLIC_LOG_D64 " overflow",
+                firstOffset, sidxEndOffset);
+            return false;
+        }
+    } else {
+        if (firstOffset < std::numeric_limits<int64_t>::min() + 1 - sidxEndOffset) {
+            MEDIA_LOG_W("sidx firstOffset " PUBLIC_LOG_D64 " + sidxEndOffset " PUBLIC_LOG_D64 " underflow",
+                firstOffset, sidxEndOffset);
+            return false;
+        }
+    }
+    mediaSegOffset = firstOffset + sidxEndOffset + 1;
+    return true;
+}
+
 bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize, int64_t sidxEndOffset,
     DashList<std::shared_ptr<SubSegmentIndex>> &subSegIndexTable, uint32_t &currPos)
 {
@@ -130,7 +151,10 @@ bool SidxBoxParser::BuildSubSegmentIndexes(char *bitStream, uint32_t streamSize,
 
     // In the file containing the Segment Index box, the anchor point for a Segment Index box is the first byte
     // after that box
-    int64_t mediaSegOffset = firstOffset + sidxEndOffset + 1;
+    int64_t mediaSegOffset = 0;
+    if (!CalcMediaSegOffset(firstOffset, sidxEndOffset, mediaSegOffset)) {
+        return false;
+    }
 
     // skip reserved
     if (streamSize < currPos || streamSize - currPos < SHIFT_NUM_2) {
@@ -222,15 +246,28 @@ std::shared_ptr<SubSegmentIndex> SidxBoxParser::ReadOneSubSegmentIndex(char *bit
     subSegIndex->referenceType_ = static_cast<int32_t>(GetReferenceType(typeAndSize));
     subSegIndex->referencedSize_ = GetReferenceSize(typeAndSize);
     subSegIndex->startPos_ = mediaSegOffset;
- 
-    // No overflow check: referenceCount is uint16_t (max 65535) and referencedSize_ is 31-bit,
-    // so max accumulated mediaSegOffset is ~2^47, far below INT64_MAX.
-    subSegIndex->endPos_ = mediaSegOffset + static_cast<int64_t>(subSegIndex->referencedSize_) - 1;
-    mediaSegOffset = subSegIndex->endPos_ + 1;
-    subSegIndex->duration_ = 0;
-    if (!GetBytes<uint32_t>(bitStream, currPos, streamSize, subSegIndex->duration_)) {
+
+    int64_t sum = 0;
+    if (!SafeAdd(mediaSegOffset, static_cast<int64_t>(subSegIndex->referencedSize_), sum)) {
+        MEDIA_LOG_E("ReadOneSubSegmentIndex SafeAdd overflow, offset " PUBLIC_LOG_D64 " size " PUBLIC_LOG_U32,
+            mediaSegOffset, subSegIndex->referencedSize_);
         return nullptr;
     }
+    if (!SafeSub<int64_t>(sum, 1, subSegIndex->endPos_)) {
+        MEDIA_LOG_E("ReadOneSubSegmentIndex SafeSub overflow, sum " PUBLIC_LOG_D64, sum);
+        return nullptr;
+    }
+    if (!SafeAdd<int64_t>(subSegIndex->endPos_, 1, mediaSegOffset)) {
+        MEDIA_LOG_E("ReadOneSubSegmentIndex SafeAdd mediaSegOffset overflow, endPos " PUBLIC_LOG_D64,
+            subSegIndex->endPos_);
+        return nullptr;
+    }
+    subSegIndex->duration_ = 0;
+    uint32_t subSegDuration = 0;
+    if (!GetBytes<uint32_t>(bitStream, currPos, streamSize, subSegDuration)) {
+        return nullptr;
+    }
+    subSegIndex->duration_ = subSegDuration;
     subSegIndex->timeScale_ = timescale;
     uint32_t dummyByte4 = 0;
     if (!GetBytes<uint32_t>(bitStream, currPos, streamSize, dummyByte4)) {

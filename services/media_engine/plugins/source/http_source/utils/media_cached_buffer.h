@@ -17,6 +17,8 @@
 #define HISTREAMER_CACHED_MEDIA_BUFFER_H
 
 #include <cstdint>
+#include <cmath>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <list>
@@ -169,9 +171,11 @@ protected:
     void DeleteUnreadFragmentCacheBuffer(FragmentIterator& fragmentIter, size_t allowChunkNum);
     size_t CalcAllowMaxChunkNum(uint64_t fragmentReadSize, uint64_t offset)
     {
-        size_t allowNum = static_cast<size_t>((static_cast<double>(fragmentReadSize) /
-            static_cast<double>(totalReadSize_)) * chunkMaxNum_);
-        return allowNum;
+        if (totalReadSize_ == 0) {
+            return 0;
+        }
+        double ratio = static_cast<double>(fragmentReadSize) / static_cast<double>(totalReadSize_);
+        return static_cast<size_t>(ratio * chunkMaxNum_);
     }
     void ResetReadSizeAlloc();
     CacheChunk* UpdateFragmentCacheForDelHead(FragmentIterator& fragmentIter);
@@ -256,6 +260,8 @@ protected:
     CacheChunk* GetFreeCacheChunk(uint64_t offset, bool checkAllowFailContinue = false) override;
     ChunkIterator SplitFragmentCacheBuffer(FragmentIterator& currFragmentIter, uint64_t offset,
         ChunkIterator chunkPos) override;
+    void SplitChunkForFragment(FragmentIterator& newFragmentPos, FragmentIterator& currFragmentIter,
+        ChunkIterator& chunkPos, CacheChunk* splitHead, uint64_t offset);
     bool AddFragmentCacheBuffer(uint64_t offset, ChunkIterator& chunkPos) override;
     size_t Write(void* ptr, uint64_t inOffset, size_t inWriteSize) override;
 };

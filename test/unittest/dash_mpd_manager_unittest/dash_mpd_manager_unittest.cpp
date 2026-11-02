@@ -175,10 +175,10 @@ HWTEST_F(DashMpdManagerUnittest, Update_001, TestSize.Level0)
 HWTEST_F(DashMpdManagerUnittest, GetDuration_001, TestSize.Level0)
 {
     ASSERT_NE(mpdManager_, nullptr);
-    uint32_t *duration = nullptr;
+    uint64_t *duration = nullptr;
     mpdManager_->GetDuration(duration);
 
-    uint32_t testNum = ID_TEST;
+    uint64_t testNum = ID_TEST;
     duration = &testNum;
     auto mpdInfo = new DashMpdInfo();
     mpdManager_->mpdInfo_ = mpdInfo;

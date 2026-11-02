@@ -193,7 +193,7 @@ public:
     std::vector<SeekRange> seekableRanges_ {};
     bool setSourceStatisticsDfxCalled_ {false};
     size_t contentLength_ {4};
-    size_t segmentOffset_ {1};
+    size_t segmentOffset_ {1000};  // nanoseconds; HttpSourcePlugin converts to microseconds (/ US_2_NS)
     int64_t duration_ {1000};
     Seekable seekable_ {Seekable::SEEKABLE};
     bool hlsDiscontinuity_ {true};
@@ -1360,7 +1360,7 @@ HWTEST_F(HttpSourcePluginUnitTest, GetStartInfo_001, TestSize.Level1)
 {
     ASSERT_NE(nullptr, plugin_);
     auto mock = std::make_shared<MockMediaDownloader>();
-    mock->startInfo_ = {100, true};
+    mock->startInfo_ = {100000000, true};  // nanoseconds; HttpSourcePlugin converts to milliseconds (/ MS_2_NS)
     plugin_->downloader_ = mock;
     std::pair<int64_t, bool> startInfo {0, false};
     ASSERT_EQ(Status::OK, plugin_->GetStartInfo(startInfo));

@@ -15,6 +15,7 @@
 #define HST_LOG_TAG "DashMpdParser"
 
 #include <ctime>
+#include <limits>
 #include <stdexcept>
 #include "common/log.h"
 #include "securec.h"
@@ -22,6 +23,7 @@
 #include "dash_mpd_util.h"
 #include "utils/string_utils.h"
 #include "utils/time_utils.h"
+#include "safe_arithmetic.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
@@ -31,8 +33,8 @@ namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
-constexpr uint64_t S_TO_MS = 1000;
-constexpr size_t MAX_SEGMENT_URL_COUNT = 100000;
+constexpr size_t MAX_SEGMENT_URL_COUNT = 1000000;
+constexpr size_t MAX_TIMELINE_S_COUNT = 1000000;  // max <S> elements in SegmentTimeline
 
 DashMpdParser::~DashMpdParser()
 {
@@ -67,10 +69,16 @@ void DashMpdParser::GetPeriodAttr(IDashMpdNode *periodNode, DashPeriodInfo *peri
     periodNode->GetAttr("id", periodInfo->id_);
 
     periodNode->GetAttr("start", tempStr);
-    DashStrToDuration(tempStr, periodInfo->start_);
+    if (!tempStr.empty() && DashStrToDuration(tempStr, periodInfo->start_) != 0) {
+        MEDIA_LOG_E("period start parse failed");
+        parseFailed_.store(true);
+    }
 
     periodNode->GetAttr("duration", tempStr);
-    DashStrToDuration(tempStr, periodInfo->duration_);
+    if (!tempStr.empty() && DashStrToDuration(tempStr, periodInfo->duration_) != 0) {
+        MEDIA_LOG_E("period duration parse failed");
+        parseFailed_.store(true);
+    }
 
     periodNode->GetAttr("bitstreamSwitching", tempStr);
     if (tempStr == "true") {
@@ -353,24 +361,17 @@ void DashMpdParser::ProcessAdpSetElement(std::shared_ptr<XmlParser> &xmlParser, 
 }
 
 void DashMpdParser::ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-                                    DashList<DashSegUrl *> &segUrlList)
+                                    DashList<DashSegUrlEntry> &segUrlList)
 {
-    DashSegUrl *segUrl = new (std::nothrow) DashSegUrl;
-    if (segUrl == nullptr) {
-        return;
-    }
-
     IDashMpdNode *segUrlNode = IDashMpdNode::CreateNode(MPD_LABEL_SEGMENT_URL);
     if (segUrlNode == nullptr) {
-        delete segUrl;
         return;
     }
 
+    DashSegUrlEntry segUrl;
     segUrlNode->ParseNode(xmlParser, rootElement);
-    segUrlNode->GetAttr("media", segUrl->media_);
-    segUrlNode->GetAttr("mediaRange", segUrl->mediaRange_);
-    segUrlNode->GetAttr("index", segUrl->index_);
-    segUrlNode->GetAttr("indexRange", segUrl->indexRange_);
+    segUrlNode->GetAttr("media", segUrl.media_);
+    segUrlNode->GetAttr("mediaRange", segUrl.mediaRange_);
 
     segUrlList.push_back(segUrl);
     IDashMpdNode::DestroyNode(segUrlNode);
@@ -515,8 +516,19 @@ void DashMpdParser::FillEventMetadata(DashEventInfo *eventInfo, uint64_t duratio
     if (timescale > 0) {
         uint64_t timeDiff = eventInfo->presentationTime_ >= eventStreamInfo->presentationTimeOffset_ ?
             eventInfo->presentationTime_ - eventStreamInfo->presentationTimeOffset_ : 0;
-        eventInfo->start_ = timeDiff / timescale * S_TO_MS;
-        eventInfo->duration_ = duration / timescale * S_TO_MS;
+        uint64_t mulRes = 0;
+        if (!SafeMul(timeDiff, S_2_NS, mulRes)) {
+            MEDIA_LOG_E("FillEventMetadata start SafeMul overflow, reject");
+            eventInfo->start_ = 0;
+        } else {
+            eventInfo->start_ = mulRes / timescale;
+        }
+        if (!SafeMul(duration, S_2_NS, mulRes)) {
+            MEDIA_LOG_E("FillEventMetadata duration SafeMul overflow, reject");
+            eventInfo->duration_ = 0;
+        } else {
+            eventInfo->duration_ = mulRes / timescale;
+        }
     }
     eventInfo->classify_ = eventStreamInfo->schemeIdUri_ + eventStreamInfo->value_;
 }
@@ -1128,7 +1140,7 @@ void DashMpdParser::ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xm
         const std::string &val = channelProperty->value_;
         int64_t tempVal = 0;
         if (!val.empty() && StringUtil::SafeStoInt64(val, tempVal)) {
-            if (tempVal >= 0 && tempVal <= UINT32_MAX) {
+            if (tempVal >= 0 && tempVal <= std::numeric_limits<uint32_t>::max()) {
                 channels = static_cast<uint32_t>(tempVal);
             } else {
                 MEDIA_LOG_E("audioChannelConfigurationNode out of range");
@@ -1168,17 +1180,7 @@ void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, s
                 break;
             }
 
-            IDashMpdNode *node = IDashMpdNode::CreateNode("SegmentTimeline");
-            if (node != nullptr) {
-                node->ParseNode(xmlParser, childElement);
-                node->GetAttr("t", segTimeLine->t_);
-                node->GetAttr("d", segTimeLine->d_);
-                node->GetAttr("r", segTimeLine->r_);
-
-                segTmlineList.push_back(segTimeLine);
-                IDashMpdNode::DestroyNode(node);
-            } else {
-                MEDIA_LOG_E("SegmentTimeline node == nullptr");
+            if (!ParseSingleSegmentTimeline(xmlParser, childElement, segTimeLine, segTmlineList)) {
                 delete segTimeLine;
                 break;
             }
@@ -1186,6 +1188,31 @@ void DashMpdParser::ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, s
 
         childElement = childElement->GetSiblingNext();
     }
+}
+
+bool DashMpdParser::ParseSingleSegmentTimeline(std::shared_ptr<XmlParser> xmlParser,
+    std::shared_ptr<XmlElement> childElement, DashSegTimeline *segTimeLine,
+    DashList<DashSegTimeline *> &segTmlineList)
+{
+    IDashMpdNode *node = IDashMpdNode::CreateNode("SegmentTimeline");
+    if (node == nullptr) {
+        MEDIA_LOG_E("SegmentTimeline node == nullptr");
+        return false;
+    }
+    node->ParseNode(xmlParser, childElement);
+    node->GetAttr("t", segTimeLine->t_);
+    node->GetAttr("d", segTimeLine->d_);
+    node->GetAttr("r", segTimeLine->r_);
+
+    if (segTmlineList.size() >= MAX_TIMELINE_S_COUNT) {
+        MEDIA_LOG_W("SegmentTimeline S count " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU
+            ", stop parsing", segTmlineList.size(), MAX_TIMELINE_S_COUNT);
+        IDashMpdNode::DestroyNode(node);
+        return false;
+    }
+    segTmlineList.push_back(segTimeLine);
+    IDashMpdNode::DestroyNode(node);
+    return true;
 }
 
 void DashMpdParser::ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
@@ -1238,38 +1265,65 @@ void DashMpdParser::GetMpdAttr(IDashMpdNode *mpdNode)
 
     std::string type;
     mpdNode->GetAttr("type", type);
-
     if (type == "dynamic") {
         dashMpdInfo_.type_ = DashType::DASH_TYPE_DYNAMIC;
     } else {
         dashMpdInfo_.type_ = DashType::DASH_TYPE_STATIC;
     }
 
-    std::string time;
-    mpdNode->GetAttr("mediaPresentationDuration", time);
-    DashStrToDuration(time, dashMpdInfo_.mediaPresentationDuration_);
-
-    mpdNode->GetAttr("minimumUpdatePeriod", time);
-    DashStrToDuration(time, dashMpdInfo_.minimumUpdatePeriod_);
-
-    mpdNode->GetAttr("minBufferTime", time);
-    DashStrToDuration(time, dashMpdInfo_.minBufferTime_);
-
-    mpdNode->GetAttr("timeShiftBufferDepth", time);
-    DashStrToDuration(time, dashMpdInfo_.timeShiftBufferDepth_);
-
-    mpdNode->GetAttr("suggestedPresentationDelay", time);
-    DashStrToDuration(time, dashMpdInfo_.suggestedPresentationDelay_);
-
-    mpdNode->GetAttr("maxSegmentDuration", time);
-    DashStrToDuration(time, dashMpdInfo_.maxSegmentDuration_);
-
-    mpdNode->GetAttr("maxSubsegmentDuration", time);
-    DashStrToDuration(time, dashMpdInfo_.maxSubSegmentDuration_);
+    ParseDurationAttrs(mpdNode);
 
     std::string startTime;
     mpdNode->GetAttr("availabilityStartTime", startTime);
-    dashMpdInfo_.availabilityStartTime_ = (int64_t)String2Time(startTime)() * S_2_MS;
+    {
+        int64_t sec = static_cast<int64_t>(String2Time(startTime)());
+        int64_t result = 0;
+        if (!SafeMul(sec, static_cast<int64_t>(S_2_NS), result)) {
+            MEDIA_LOG_E("availabilityStartTime overflow, sec=" PUBLIC_LOG_D64 ", keep 0", sec);
+            result = 0;
+        }
+        dashMpdInfo_.availabilityStartTime_ = result;
+    }
+}
+
+void DashMpdParser::ParseDurationAttrs(IDashMpdNode *mpdNode)
+{
+    std::string time;
+    mpdNode->GetAttr("mediaPresentationDuration", time);
+    if (!time.empty() && DashStrToDuration(time, dashMpdInfo_.mediaPresentationDuration_) != 0) {
+        MEDIA_LOG_E("mediaPresentationDuration parse failed");
+        parseFailed_.store(true);
+    }
+
+    mpdNode->GetAttr("minimumUpdatePeriod", time);
+    if (DashStrToDuration(time, dashMpdInfo_.minimumUpdatePeriod_) != 0) {
+        MEDIA_LOG_W("minimumUpdatePeriod parse failed, keep 0");
+    }
+
+    mpdNode->GetAttr("minBufferTime", time);
+    if (DashStrToDuration(time, dashMpdInfo_.minBufferTime_) != 0) {
+        MEDIA_LOG_W("minBufferTime parse failed, keep 0");
+    }
+
+    mpdNode->GetAttr("timeShiftBufferDepth", time);
+    if (DashStrToDuration(time, dashMpdInfo_.timeShiftBufferDepth_) != 0) {
+        MEDIA_LOG_W("timeShiftBufferDepth parse failed, keep 0");
+    }
+
+    mpdNode->GetAttr("suggestedPresentationDelay", time);
+    if (DashStrToDuration(time, dashMpdInfo_.suggestedPresentationDelay_) != 0) {
+        MEDIA_LOG_W("suggestedPresentationDelay parse failed, keep 0");
+    }
+
+    mpdNode->GetAttr("maxSegmentDuration", time);
+    if (DashStrToDuration(time, dashMpdInfo_.maxSegmentDuration_) != 0) {
+        MEDIA_LOG_W("maxSegmentDuration parse failed, keep 0");
+    }
+
+    mpdNode->GetAttr("maxSubsegmentDuration", time);
+    if (DashStrToDuration(time, dashMpdInfo_.maxSubSegmentDuration_) != 0) {
+        MEDIA_LOG_W("maxSubsegmentDuration parse failed, keep 0");
+    }
 }
 
 void DashMpdParser::GetMpdElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement)
@@ -1396,6 +1450,7 @@ void DashMpdParser::Clear()
     dashMpdInfo_.profile_ = "";
     dashMpdInfo_.mediaType_ = "";
     stopFlag_.store(0);
+    parseFailed_.store(false);
 }
 
 void DashMpdParser::StopParseMpd()
@@ -1417,17 +1472,8 @@ void DashMpdParser::FreeSegmentList(DashSegListInfo *&segListInfo)
 {
     if (segListInfo != nullptr) {
         ClearMultSegBase(&segListInfo->multSegBaseInfo_);
-
-        while (segListInfo->segmentUrl_.size() > 0) {
-            DashSegUrl *segUrl = segListInfo->segmentUrl_.front();
-            if (segUrl != nullptr) {
-                delete segUrl;
-                segUrl = nullptr;
-            }
-
-            segListInfo->segmentUrl_.pop_front();
-        }
-
+        // segmentUrl_ now holds DashSegUrlEntry by value; list destructor cleans up automatically.
+        segListInfo->segmentUrl_.clear();
         delete segListInfo;
         segListInfo = nullptr;
     }

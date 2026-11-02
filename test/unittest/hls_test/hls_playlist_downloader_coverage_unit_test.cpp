@@ -79,7 +79,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, TEST_ENCRYPTION, TestSize.Level1
     downloader->Open(testUrl, httpHeader);
     OSAL::SleepFor(100);
     
-    std::list<std::shared_ptr<M3U8Fragment>> files;
+    std::vector<M3U8Segment> files;
     std::ignore = downloader->KeyChange(files);
     ASSERT_FALSE(files.empty());
     
@@ -145,7 +145,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, TEST_SESSION_KEY, TestSize.Level
     
     EXPECT_FALSE(downloader->GetMaster()->isDecryptAble_);
     
-    std::list<std::shared_ptr<M3U8Fragment>> files;
+    std::vector<M3U8Segment> files;
     auto sessionKeyIndex = downloader->KeyChange(files);
     ASSERT_TRUE(sessionKeyIndex > 0);
 }

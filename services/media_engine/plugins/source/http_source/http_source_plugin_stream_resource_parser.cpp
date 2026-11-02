@@ -133,8 +133,8 @@ void CollectSimplePlaylistResources(std::vector<StreamResourceInfo>& resources,
         resources.push_back({variant->m3u8_->fmp4HeaderUri_, false, StreamProtocolType::HLS});
     }
     for (const auto& file : variant->m3u8_->files_) {
-        if (!file->uri_.empty()) {
-            resources.push_back({file->uri_, false, StreamProtocolType::HLS});
+        if (!file.uri_.empty()) {
+            resources.push_back({file.uri_, false, StreamProtocolType::HLS});
         }
     }
 }

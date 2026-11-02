@@ -101,7 +101,7 @@ HWTEST_F(DashMediaDownloaderUnittest, Read_002, TestSize.Level0)
     auto callback = std::make_shared<TestCallback>();
     mediaDownloader_->callback_ = callback;
     auto ret = mediaDownloader_->Read(&buff, readDataInfo);
-    EXPECT_EQ(ret, Status::ERROR_AGAIN);
+    EXPECT_EQ(ret, Status::ERROR_UNKNOWN);
 }
 
 /**

@@ -44,6 +44,7 @@ public:
     ~DashMpdParser();
 
     void ParseMPD(const char *mpdData, uint32_t length);
+    bool IsParseFailed() const { return parseFailed_.load(); }
     void GetMPD(DashMpdInfo *&mpdInfo);
     void Clear();
     void StopParseMpd();
@@ -64,6 +65,8 @@ private:
         DashSegTmpltInfo **segTmpltInfo);
     void ParseSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
         DashList<DashSegTimeline *> &segTmlineList);
+    bool ParseSingleSegmentTimeline(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> childElement,
+        DashSegTimeline *segTimeLine, DashList<DashSegTimeline *> &segTmlineList);
     void ParseUrlType(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
         const std::string urlTypeName, DashUrlType **urlTypeInfo);
     void ParseContentProtection(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
@@ -73,7 +76,7 @@ private:
     void ParseAudioChannelConfiguration(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
         DashList<DashDescriptor *> &propertyList, uint32_t &channels);
     void ParseSegmentUrl(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
-        DashList<DashSegUrl *> &segUrlList);
+        DashList<DashSegUrlEntry> &segUrlList);
     void ParseContentComponent(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
         DashList<DashContentCompInfo *> &contentCompInfoList);
     void ParseEventStream(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement,
@@ -113,6 +116,7 @@ private:
     void ClearEventStream(DashList<DashEventStreamInfo *> &eventStreamList);
 
     void GetMpdAttr(IDashMpdNode *mpdNode);
+    void ParseDurationAttrs(IDashMpdNode *mpdNode);
     void GetMpdElement(std::shared_ptr<XmlParser> xmlParser, std::shared_ptr<XmlElement> rootElement);
     void ProcessMpdElement(const std::shared_ptr<XmlParser> &xmlParser,
         DashList <std::shared_ptr<XmlElement>> &periodElementList, std::shared_ptr<XmlElement> &childElement);
@@ -174,6 +178,7 @@ private:
     static constexpr const char *MPD_LABEL_BREAK_DURATION = "BreakDuration";
 
     DashMpdInfo dashMpdInfo_;
+    std::atomic<bool> parseFailed_{false};
     std::atomic<int32_t> stopFlag_{0};
 };
 } // namespace HttpPlugin

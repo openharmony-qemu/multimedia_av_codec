@@ -22,6 +22,7 @@
 #include <string>
 #include <sys/stat.h>
 #include "utils/string_utils.h"
+#include "safe_arithmetic.h"
 
 namespace OHOS::Media::Plugins::HttpPlugin {
 struct FdSource {
@@ -63,7 +64,11 @@ struct FdSource {
                 size = 0;
             }
             source.offset = offset < 0 ? source.fileSize : std::min(offset, source.fileSize);
-            source.size = std::min(std::max<int64_t>(size, 0), source.fileSize - source.offset);
+            int64_t remaining = 0;
+            if (!SafeSub(source.fileSize, source.offset, remaining) || remaining < 0) {
+                remaining = 0;
+            }
+            source.size = std::min(std::max<int64_t>(size, 0), remaining);
         }
         return true;
     }

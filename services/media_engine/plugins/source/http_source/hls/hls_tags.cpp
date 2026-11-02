@@ -14,6 +14,9 @@
  */
 #include <cstdint>
 #include <cstring>
+#include <cmath>
+#include <limits>
+#include <locale>
 #include <sstream>
 #include <stack>
 #include <utility>
@@ -36,6 +39,9 @@ constexpr size_t EXT_X_DEFINE_LEN = 14;
 constexpr size_t MIN_MATCH_GROUPS = 3;
 constexpr size_t QUOTE_PAIR_LEN = 2; // leading and trailing quotes
 constexpr size_t HEX_ENCODE_LEN = 2; // percent-encoded hex digit count after '%'
+// Reuse a single "C" locale instead of constructing one per attribute parse call
+// (std::locale construction is ~0.4 ms; EXTINF loops call FloatingPoint per segment).
+const std::locale LOCALE_C("C");
 }
 struct {
     const char* name;
@@ -74,7 +80,7 @@ Attribute::Attribute(std::string name, std::string value)
 uint64_t Attribute::Decimal() const
 {
     std::istringstream is(value_);
-    is.imbue(std::locale("C"));
+    is.imbue(LOCALE_C);
     uint64_t ret;
     is >> ret;
     if (is.fail()) {
@@ -84,15 +90,38 @@ uint64_t Attribute::Decimal() const
     return ret;
 }
 
+uint64_t Attribute::Decimal(uint64_t maxVal) const
+{
+    uint64_t ret = Decimal();
+    if (ret > maxVal) {
+        MEDIA_LOG_W("HLS Decimal clamped to max, value: %{public}s", value_.c_str());
+        return maxVal;
+    }
+    return ret;
+}
+
 double Attribute::FloatingPoint() const
 {
     std::istringstream is(value_);
-    is.imbue(std::locale("C"));
+    is.imbue(LOCALE_C);
     double ret;
     is >> ret;
-    if (is.fail()) {
-        MEDIA_LOG_W("HLS FloatingPoint parse failed, value: %{public}s", value_.c_str());
+    if (is.fail() || !std::isfinite(ret)) {
+        MEDIA_LOG_W("HLS FloatingPoint parse failed or non-finite, value: %{public}s", value_.c_str());
         return 0;
+    }
+    return ret;
+}
+
+double Attribute::FloatingPoint(double maxVal) const
+{
+    double ret = FloatingPoint();
+    if (ret > maxVal) {
+        MEDIA_LOG_W("HLS FloatingPoint clamped to max, value: %{public}s", value_.c_str());
+        return maxVal;
+    }
+    if (ret < -maxVal) {
+        return -maxVal;
     }
     return ret;
 }
@@ -104,7 +133,7 @@ std::vector<uint8_t> Attribute::HexSequence() const
         for (size_t i = 2; i <= (value_.length() - 2); i += 2) { // 2
             unsigned val;
             std::stringstream ss(value_.substr(i, 2));  // 2
-            ss.imbue(std::locale("C"));
+            ss.imbue(LOCALE_C);
             ss >> std::hex >> val;
             ret.push_back(val);
         }
@@ -128,7 +157,7 @@ bool Attribute::SafeStringToInt(const std::string& str, int& result, int base)
         return false;
     }
 
-    if (num < INT_MIN || num > INT_MAX) {
+    if (num < std::numeric_limits<int>::min() || num > std::numeric_limits<int>::max()) {
         return false;
     }
     result = static_cast<int>(num);
@@ -149,7 +178,7 @@ std::pair<std::size_t, std::size_t> Attribute::GetByteRange() const
         newValue = value_.substr(1, value_.size() - QUOTE_PAIR_LEN);
     }
     std::istringstream is(newValue);
-    is.imbue(std::locale("C"));
+    is.imbue(LOCALE_C);
     if (!is.eof()) {
         is >> length;
         if (!is.eof()) {
@@ -167,7 +196,7 @@ std::pair<int, int> Attribute::GetResolution() const
     int w = 0;
     int h = 0;
     std::istringstream is(value_);
-    is.imbue(std::locale("C"));
+    is.imbue(LOCALE_C);
     if (!is.eof()) {
         is >> w;
         if (!is.eof()) {

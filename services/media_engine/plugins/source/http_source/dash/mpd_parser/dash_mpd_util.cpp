@@ -22,6 +22,7 @@
 #include <string>
 #include "common/log.h"
 #include "dash_mpd_util.h"
+#include "utils/safe_arithmetic.h"
 #include "utils/string_utils.h"
 #include "utils/time_utils.h"
 
@@ -39,6 +40,9 @@ constexpr int32_t COLOUR_PRIMARIES_BT_2020 = 9;
 constexpr int32_t TRANSFER_CHARACTERISTICS_BT_2020 = 14;
 
 constexpr int32_t MAX_SUBSTITUTION_FORMAT_WIDTH = 32;
+// 模板替换防护：限制替换后字符串最大长度与循环次数，防止恶意 MPD 触发内存/CPU 耗尽
+constexpr size_t MAX_SUBSTITUTED_TMPLT_LEN = 10 * 1024 * 1024; // 10MB
+constexpr uint32_t MAX_SUBSTITUTION_LOOP_COUNT = 100000;
  
 static const std::string MPD_SCHEME_CICP_MATRIX_COEFFICIENTS = "cicp:MatrixCoefficients";
 static const std::string MPD_SCHEME_CICP_COLOUR_PRIMARIES = "cicp:ColourPrimaries";
@@ -109,9 +113,21 @@ static std::string &ReplaceSubStr(std::string &str, uint32_t position, uint32_t 
 int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segTmpltIdentifier,
                                std::string substitutionStr)
 {
+    // 自引用检测：substitutionStr 含标识符会导致替换后字符串仍含标识符，形成无限递归替换
+    if (substitutionStr.find(segTmpltIdentifier) != std::string::npos) {
+        MEDIA_LOG_E("Substitution string contains identifier, drop the representation");
+        return -1;
+    }
+
     std::string::size_type pos = segTmpltStr.find(segTmpltIdentifier);
     uint32_t identifierLength = segTmpltIdentifier.length();
+    uint32_t loopCount = 0;
     while (pos != std::string::npos && (pos + identifierLength) <= segTmpltStr.length()) {
+        // 循环次数上限：防止模板中塞入海量标识符长时间占用 CPU/内存
+        if (++loopCount > MAX_SUBSTITUTION_LOOP_COUNT) {
+            MEDIA_LOG_E("Substitution loop count exceeds max " PUBLIC_LOG_U32, MAX_SUBSTITUTION_LOOP_COUNT);
+            return -1;
+        }
         std::string str = segTmpltStr.substr(pos + identifierLength);
         // contain format %0[width]d
         if (str.length() > 1 && str[0] == '%' && str[1] == '0') {
@@ -132,6 +148,13 @@ int32_t DashSubstituteTmpltStr(std::string &segTmpltStr, const std::string &segT
             return -1;
         }
 
+        // 结果长度上限：防止"长 id × 多标识符"导致的字符串膨胀
+        if (segTmpltStr.length() > MAX_SUBSTITUTED_TMPLT_LEN) {
+            MEDIA_LOG_E("Substituted segTmpltStr length " PUBLIC_LOG_ZU " exceeds max " PUBLIC_LOG_ZU,
+                segTmpltStr.length(), MAX_SUBSTITUTED_TMPLT_LEN);
+            return -1;
+        }
+
         pos = segTmpltStr.find(segTmpltIdentifier);
     }
 
@@ -144,8 +167,9 @@ void GetSubstitutionStr(std::string &substitutionStr, std::string &str)
     str = str.substr(strLength);
     int32_t formatWidth = 0;
     int64_t tmpWidth = 0;
-    if (StringUtil::SafeStoInt64(str, tmpWidth) && tmpWidth > 0 && tmpWidth <= INT32_MAX) {
-        formatWidth = static_cast<int32_t>(tmpWidth);
+    StringUtil::SafeStoInt64(str, tmpWidth);
+    if (!SafeIntCast(tmpWidth, formatWidth)) {
+        formatWidth = 0;
     }
     if (formatWidth <= 0) {
         MEDIA_LOG_W("Invalid format width " PUBLIC_LOG_D32 ", no padding applied", formatWidth);
@@ -167,6 +191,8 @@ void GetSubstitutionStr(std::string &substitutionStr, std::string &str)
 static int32_t GetDurationCoefficient(char unit, int32_t &secondTime)
 {
     switch (unit) {
+        case 'W':
+            return D_2_S * 7; // 7 days per week
         case 'M':
             return secondTime ? M_2_S : 0;
         case 'D':
@@ -183,17 +209,6 @@ static int32_t GetDurationCoefficient(char unit, int32_t &secondTime)
     }
 }
 
-static void ClampDurationToUint32(int64_t time, uint32_t &duration)
-{
-    if (time < 0) {
-        duration = 0;
-    } else if (time > static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
-        duration = std::numeric_limits<uint32_t>::max();
-    } else {
-        duration = static_cast<uint32_t>(time);
-    }
-}
-
 void ClampDurationToUint32(uint64_t time, uint32_t &duration)
 {
     if (time > std::numeric_limits<uint32_t>::max()) {
@@ -203,7 +218,7 @@ void ClampDurationToUint32(uint64_t time, uint32_t &duration)
     }
 }
 
-int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
+int32_t DashStrToDuration(const std::string &str, uint64_t &duration)
 {
     int64_t time = 0;
     int32_t secondTime = 0;
@@ -219,6 +234,9 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
             char* end = nullptr;
             num = strtod(remain.c_str(), &end);
             parsedPos = static_cast<size_t>(end - remain.c_str());
+            if (!std::isfinite(num)) {
+                num = 0.0;
+            }
         }
         if (parsedPos > 0) {
             remain = remain.substr(parsedPos);
@@ -228,18 +246,28 @@ int32_t DashStrToDuration(const std::string &str, uint32_t &duration)
         }
         int32_t coefficient = GetDurationCoefficient(remain[0], secondTime);
         if (coefficient > 0 && num > 0) {
-            double scaled = num * static_cast<double>(S_2_MS) * static_cast<double>(coefficient);
-            if (scaled > static_cast<double>(std::numeric_limits<int64_t>::max() - time)) {
-                duration = std::numeric_limits<uint32_t>::max();
-                return 0;
+            double scaled = num * static_cast<double>(S_2_NS) * static_cast<double>(coefficient);
+            int64_t scaledInt = 0;
+            if (!SafeDoubleToInt64(scaled, scaledInt)) {
+                MEDIA_LOG_W("DashStrToDuration scaled value overflow, reject");
+                return -1;
             }
-            time += static_cast<int64_t>(scaled);
+            int64_t newTime = 0;
+            if (!SafeAdd(time, scaledInt, newTime)) {
+                MEDIA_LOG_W("DashStrToDuration accumulation overflow, reject");
+                return -1;
+            }
+            time = newTime;
         }
 
         remain = remain.substr(1);
     }
 
-    ClampDurationToUint32(time, duration);
+    if (time < 0) {
+        MEDIA_LOG_W("DashStrToDuration invalid duration, time=" PUBLIC_LOG_D64, time);
+        return -1;
+    }
+    duration = static_cast<uint64_t>(time);
     return 0;
 }
 
@@ -271,17 +299,27 @@ void DashParseRange(const std::string &rangeStr, int64_t &startRange, int64_t &e
 
         std::string firstRange = rangeStr.substr(0, separatePosition);
         int64_t tmpStart = 0;
-        if (StringUtil::SafeStoInt64(firstRange, tmpStart) && tmpStart >= 0) {
-            startRange = tmpStart;
+        if (!StringUtil::SafeStoInt64(firstRange, tmpStart) || tmpStart < 0) {
+            MEDIA_LOG_W("invalid startRange in " PUBLIC_LOG_S, rangeStr.c_str());
+            return;
         }
 
+        int64_t tmpEnd = 0;
         if (separatePosition < rangeStr.length() - 1) {
             std::string lastRange = rangeStr.substr(separatePosition + 1, rangeStr.length() - separatePosition - 1);
-            int64_t tmpEnd = 0;
-            if (StringUtil::SafeStoInt64(lastRange, tmpEnd) && tmpEnd >= 0) {
-                endRange = tmpEnd;
+            if (!StringUtil::SafeStoInt64(lastRange, tmpEnd) || tmpEnd < 0) {
+                MEDIA_LOG_W("invalid endRange in " PUBLIC_LOG_S, rangeStr.c_str());
+                return;
             }
         }
+
+        if (tmpEnd < tmpStart) {
+            MEDIA_LOG_W("endRange < startRange in " PUBLIC_LOG_S, rangeStr.c_str());
+            return;
+        }
+
+        startRange = tmpStart;
+        endRange = tmpEnd;
         MEDIA_LOG_D("startRange=" PUBLIC_LOG_D64 ", endRange=" PUBLIC_LOG_D64 ", range="
             PUBLIC_LOG_S, startRange, endRange, rangeStr.c_str());
     }
@@ -295,15 +333,18 @@ static void ParseCicpValue(DashDescriptor* descriptor, int32_t &matrixCoefficien
     }
     int64_t tmp = 0;
     if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_MATRIX_COEFFICIENTS) != std::string::npos) {
-        if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
+        if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 &&
+            tmp <= std::numeric_limits<int32_t>::max()) {
             matrixCoefficients = static_cast<int32_t>(tmp);
         }
     } else if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_COLOUR_PRIMARIES) != std::string::npos) {
-        if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
+        if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 &&
+            tmp <= std::numeric_limits<int32_t>::max()) {
             colourPrimaries = static_cast<int32_t>(tmp);
         }
     } else if (descriptor->schemeIdUrl_.find(MPD_SCHEME_CICP_TRANSFER_CHARACTERISTICS) != std::string::npos) {
-        if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 && tmp <= INT32_MAX) {
+        if (StringUtil::SafeStoInt64(descriptor->value_, tmp) && tmp >= 0 &&
+            tmp <= std::numeric_limits<int32_t>::max()) {
             transferCharacteristics = static_cast<int32_t>(tmp);
         }
     }

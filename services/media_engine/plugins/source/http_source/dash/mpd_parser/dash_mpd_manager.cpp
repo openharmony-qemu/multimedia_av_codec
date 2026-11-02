@@ -15,11 +15,19 @@
 
 #include "dash_mpd_manager.h"
 #include "dash_mpd_util.h"
+#include "common/log.h"
+#include "utils/time_utils.h"
+#include "safe_arithmetic.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
+}
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
+
 DashMpdManager::DashMpdManager(DashMpdInfo *mpdInfomation, const std::string &mpdUrlStr)
     : mpdInfo_(nullptr), mpdUrl_(mpdUrlStr)
 {
@@ -168,7 +176,7 @@ void DashMpdManager::Update(DashMpdInfo *newMpdInfo)
     this->mpdInfo_ = newMpdInfo;
 }
 
-void DashMpdManager::GetDuration(uint32_t *duration)
+void DashMpdManager::GetDuration(uint64_t *duration)
 {
     std::lock_guard<std::mutex> lock(mpdMutex_);
     if (duration == nullptr || this->mpdInfo_ == nullptr) {
@@ -177,7 +185,7 @@ void DashMpdManager::GetDuration(uint32_t *duration)
 
     *duration = 0;
 
-    uint32_t dur = this->mpdInfo_->mediaPresentationDuration_;
+    uint64_t dur = this->mpdInfo_->mediaPresentationDuration_;
     if (dur > 0) {
         *duration = dur;
         return;
@@ -186,7 +194,15 @@ void DashMpdManager::GetDuration(uint32_t *duration)
     // get duration from Period
     for (DashList<DashPeriodInfo *>::iterator it = this->mpdInfo_->periodInfoList_.begin();
         it != this->mpdInfo_->periodInfoList_.end(); ++it) {
-        dur += ((*it) == nullptr) ? 0 :(*it)->duration_;
+        if ((*it) == nullptr) {
+            continue;
+        }
+        uint64_t newDur = 0;
+        if (!SafeAdd(dur, (*it)->duration_, newDur)) {
+            MEDIA_LOG_E("GetDuration SafeAdd overflow, stop accumulating");
+            break;
+        }
+        dur = newDur;
     }
 
     // count duration by segments not implement

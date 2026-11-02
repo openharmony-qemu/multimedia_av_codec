@@ -19,12 +19,15 @@
 #include "downloader.h"
 #include <cstdint>
 #include <cstring>
+#include <cmath>
 #include <limits>
 #include "avcodec_trace.h"
 #include "securec.h"
 #include "plugin/plugin_time.h"
 #include "syspara/parameter.h"
 #include "utils/string_utils.h"
+#include "utils/time_utils.h"
+#include "safe_arithmetic.h"
 
 namespace OHOS {
 namespace Media {
@@ -33,6 +36,7 @@ namespace HttpPlugin {
 namespace {
 constexpr int32_t PER_REQUEST_SIZE = 2 * 1024 * 1024;
 constexpr int32_t BITRATE_REQUEST_SIZE = 4;
+constexpr uint64_t BYTES_TO_BIT = 8;                 // byte to bit
 constexpr unsigned int SLEEP_TIME = 5;    // Sleep 5ms
 constexpr size_t RETRY_TIMES = 6000;  // Retry 6000 times
 constexpr int32_t CLIENT_RETRY_TIME_LIMIT = 4; // 3, 15, 75, 375
@@ -101,7 +105,7 @@ DownloadRequest::DownloadRequest(const std::string& url, DataSaveFunc saveData, 
 }
 
 DownloadRequest::DownloadRequest(const std::string& url,
-                                 double duration,
+                                 uint64_t duration,
                                  DataSaveFunc saveData,
                                  StatusCallbackFunc statusCallback,
                                  bool requestWholeFile)
@@ -125,7 +129,7 @@ DownloadRequest::DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statu
     httpHeader_ = requestInfo.httpHeader;
 }
 
-DownloadRequest::DownloadRequest(double duration,
+DownloadRequest::DownloadRequest(uint64_t duration,
                                  DataSaveFunc saveData,
                                  StatusCallbackFunc statusCallback,
                                  RequestInfo requestInfo,
@@ -239,7 +243,7 @@ void DownloadRequest::WaitHeaderUpdated() const
     isHeaderUpdating_ = false;
 }
 
-double DownloadRequest::GetDuration() const
+uint64_t DownloadRequest::GetDuration() const
 {
     return duration_;
 }
@@ -256,6 +260,24 @@ void DownloadRequest::SetRangePos(int64_t startPos, int64_t endPos)
 {
     startPos_ = startPos;
     endPos_ = endPos;
+}
+
+int64_t DownloadRequest::GetRangeLength() const
+{
+    if (endPos_ <= 0 || startPos_ < 0) {
+        return -1;  // 整文件模式或非法范围
+    }
+    // 不拦截 endPos_ < startPos_：范围已完成时算术结果为 0，下游依赖 0 触发 EOS。
+    // SafeSub/SafeAdd 对 int64_t 不溢出（差值在 int64 值域内），自然返回 0。
+    int64_t sub = 0;
+    if (!SafeSub(endPos_, startPos_, sub)) {
+        return -1;
+    }
+    int64_t total = 0;
+    if (!SafeAdd<int64_t>(sub, 1, total)) {
+        return std::numeric_limits<int32_t>::max();  // 加法溢出,用业务上限(INT32_MAX,requestSize_ 是 int)
+    }
+    return std::min(total, static_cast<int64_t>(std::numeric_limits<int32_t>::max()));
 }
 
 void DownloadRequest::SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback)
@@ -278,8 +300,16 @@ uint32_t DownloadRequest::GetBitRate() const
     if (timeGap == 0) {
         return 0;
     }
-    uint32_t bitRate = static_cast<uint32_t>(realRecvContentLen_ * 1000 *
-                        1 * 8 / timeGap); // 1000:ms to sec 1:weight 8:byte to bit
+    int64_t mulResult = 0;
+    if (!SafeMul(realRecvContentLen_, static_cast<int64_t>(BYTES_TO_BIT * S_2_MS), mulResult)) {
+        MEDIA_LOG_W("GetDownloadBitRate SafeMul overflow, return 0");
+        return 0;
+    }
+    int64_t bitRateVal = mulResult / timeGap;
+    if (bitRateVal > static_cast<int64_t>(std::numeric_limits<uint32_t>::max())) {
+        bitRateVal = std::numeric_limits<uint32_t>::max();
+    }
+    uint32_t bitRate = static_cast<uint32_t>(bitRateVal);
     return bitRate;
 }
 
@@ -666,9 +696,9 @@ bool Downloader::RetryCore(const std::shared_ptr<DownloadRequest>& request)
         client->Open(currentRequest_->url_, currentRequest_->httpHeader_, currentRequest_->requestInfo_.timeoutMs);
         requestQue_->SetActive(true);
         currentRequest_->isEos_.store(false);
-        if (currentRequest_->endPos_ > 0 && currentRequest_->startPos_ >= 0 &&
-            currentRequest_->endPos_ >= currentRequest_->startPos_) {
-            currentRequest_->requestSize_ = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
+        int64_t rangeLen = currentRequest_->GetRangeLength();
+        if (rangeLen > 0) {
+            currentRequest_->requestSize_ = static_cast<int>(rangeLen);
         }
     }
     return true;
@@ -747,8 +777,11 @@ bool Downloader::BeginDownload()
         currentRequest_->startPos_ = 0;
         currentRequest_->requestSize_ = FIRST_REQUEST_SIZE;
     } else {
-        int64_t temp = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
-        currentRequest_->requestSize_ = static_cast<int>(std::min(temp,
+        int64_t rangeLen = currentRequest_->GetRangeLength();
+        if (rangeLen < 0) {
+            rangeLen = std::numeric_limits<int32_t>::max();  // 非法范围,用业务上限兜底
+        }
+        currentRequest_->requestSize_ = static_cast<int>(std::min(rangeLen,
             static_cast<int64_t>(std::max(currentRequest_->bitRateToRequestSize_, PER_REQUEST_SIZE))));
     }
     currentRequest_->isEos_.store(false);
@@ -974,7 +1007,7 @@ void Downloader::HandleRetOK()
         int64_t fileContentLenTmp = currentRequest_->headerInfo_.fileContentLen;
         remaining = fileContentLenTmp - std::min(fileContentLenTmp, currentRequest_->startPos_);
     } else {
-        remaining = currentRequest_->endPos_ - currentRequest_->startPos_ + 1;
+        remaining = currentRequest_->GetRangeLength();
     }
     if (currentRequest_->headerInfo_.fileContentLen > 0 && remaining <= 0) { // Check whether the playback ends.
         MEDIA_LOG_I("http transfer reach end, startPos_ " PUBLIC_LOG_D64, currentRequest_->startPos_);
@@ -1045,18 +1078,7 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
     bool dropRet = false;
     uint32_t writeLen = 0;
     if (writeOffSet > 0) {
-        int64_t secondParam = static_cast<int64_t>(dataLen) - writeOffSet;
-        if (secondParam < 0) {
-            secondParam = 0;
-        }
-        writeLen = (currentRequest->keyIndex_ > 0) ? currentRequest->keySaveData_(static_cast<uint8_t *>(buffer) +
-            writeOffSet, static_cast<uint32_t>(secondParam), mediaDownloader->isNotBlock_, currentRequest->keyIndex_) :
-            currentRequest->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet, static_cast<uint32_t>(secondParam),
-            mediaDownloader->isNotBlock_);
-        dropRet = writeLen == secondParam;
-        currentRequest->dropedDataLen_ = currentRequest->dropedDataLen_ + writeOffSet;
-        MEDIA_LOG_D("DropRetryData: last drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
-                    currentRequest->dropedDataLen_, currentRequest->startPos_);
+        dropRet = HandleDropPartialWrite(buffer, dataLen, writeOffSet, mediaDownloader, writeLen);
     } else if (writeOffSet == 0) {
         currentRequest->dropedDataLen_ += static_cast<int64_t>(dataLen);
         dropRet = true;
@@ -1066,31 +1088,77 @@ size_t Downloader::DropRetryData(void* buffer, size_t dataLen, Downloader* media
         MEDIA_LOG_E("drop data error");
     }
     if (dropRet && currentRequest->startPos_ == currentRequest->dropedDataLen_) {
-        currentRequest->retryOnGoing_ = false;
-        currentRequest->dropedDataLen_ = 0;
-        if (writeOffSet > 0) {
-            currentRequest->startPos_ += static_cast<int64_t>(dataLen) - writeOffSet;
-        }
-        MEDIA_LOG_I("drop data finished, startPos_ " PUBLIC_LOG_D64, currentRequest->startPos_);
+        HandleDropFinished(mediaDownloader, writeOffSet, dataLen);
     }
     if (!dropRet && mediaDownloader->sourceLoader_ != nullptr) {
-        mediaDownloader->currentRequest_->startPos_ += static_cast<int64_t>(writeLen);
-        mediaDownloader->PauseLoop(true);
-        mediaDownloader->currentRequest_->retryOnGoing_ = true;
-        mediaDownloader->currentRequest_->dropedDataLen_ = 0;
+        HandleDropFailed(mediaDownloader, writeLen);
     }
     return dropRet ? dataLen : 0; // 0:save data failed or drop error
 }
 
+bool Downloader::HandleDropPartialWrite(void* buffer, size_t dataLen, int64_t writeOffSet,
+    Downloader* mediaDownloader, uint32_t& writeLen)
+{
+    auto currentRequest = mediaDownloader->currentRequest_;
+    int64_t secondParam = static_cast<int64_t>(dataLen) - writeOffSet;
+    if (secondParam < 0) {
+        secondParam = 0;
+    }
+    writeLen = (currentRequest->keyIndex_ > 0) ? currentRequest->keySaveData_(static_cast<uint8_t *>(buffer) +
+        writeOffSet, static_cast<uint32_t>(secondParam), mediaDownloader->isNotBlock_, currentRequest->keyIndex_) :
+        currentRequest->saveData_(static_cast<uint8_t *>(buffer) + writeOffSet, static_cast<uint32_t>(secondParam),
+        mediaDownloader->isNotBlock_);
+    currentRequest->dropedDataLen_ = currentRequest->dropedDataLen_ + writeOffSet;
+    MEDIA_LOG_D("DropRetryData: last drop, droped len " PUBLIC_LOG_D64 ", startPos_ " PUBLIC_LOG_D64,
+                currentRequest->dropedDataLen_, currentRequest->startPos_);
+    return writeLen == secondParam;
+}
+
+void Downloader::HandleDropFinished(Downloader* mediaDownloader, int64_t writeOffSet, size_t dataLen)
+{
+    auto currentRequest = mediaDownloader->currentRequest_;
+    currentRequest->retryOnGoing_ = false;
+    currentRequest->dropedDataLen_ = 0;
+    if (writeOffSet > 0) {
+        int64_t delta = static_cast<int64_t>(dataLen) - writeOffSet;
+        int64_t newPos = 0;
+        if (!SafeAdd(currentRequest->startPos_, delta, newPos)) {
+            MEDIA_LOG_W("DropRetryData startPos_ overflow, clamped to INT64_MAX");
+            newPos = std::numeric_limits<int64_t>::max();
+        }
+        currentRequest->startPos_ = newPos;
+    }
+    MEDIA_LOG_I("drop data finished, startPos_ " PUBLIC_LOG_D64, currentRequest->startPos_);
+}
+
+void Downloader::HandleDropFailed(Downloader* mediaDownloader, uint32_t writeLen)
+{
+    int64_t newPos = 0;
+    if (!SafeAdd(mediaDownloader->currentRequest_->startPos_, static_cast<int64_t>(writeLen), newPos)) {
+        MEDIA_LOG_W("DropRetryData startPos_ overflow, clamped to INT64_MAX");
+        newPos = std::numeric_limits<int64_t>::max();
+    }
+    mediaDownloader->currentRequest_->startPos_ = newPos;
+    mediaDownloader->PauseLoop(true);
+    mediaDownloader->currentRequest_->retryOnGoing_ = true;
+    mediaDownloader->currentRequest_->dropedDataLen_ = 0;
+}
+
 void Downloader::UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header)
 {
-    int64_t hstTime = 0;
-    Sec2HstTime(mediaDownloader->currentRequest_->GetDuration(), hstTime);
+    // GetDuration() now returns nanoseconds (HstTime base = ns), so no
+    // HST_USECOND conversion is needed.
+    int64_t hstTime = static_cast<int64_t>(mediaDownloader->currentRequest_->GetDuration());
     int64_t startTimePos = mediaDownloader->currentRequest_->startTimePos_;
     int64_t contenLen = header->fileContentLen;
     int64_t startPos = 0;
     if (hstTime != 0) {
-        startPos = contenLen * startTimePos / (HstTime2Ns(hstTime));
+        int64_t mulResult = 0;
+        if (SafeMul(contenLen, startTimePos, mulResult)) {
+            startPos = mulResult / hstTime;  // HstTime2Ns(hstTime) == hstTime (HST_NSECOND = 1)
+        } else {
+            MEDIA_LOG_W("UpdateCurRequest SafeMul overflow, startPos set to 0");
+        }
     }
     mediaDownloader->currentRequest_->startPos_ = startPos;
     mediaDownloader->currentRequest_->shouldSaveData_.store(true);
@@ -1120,7 +1188,10 @@ void Downloader::UpdateRequestSize(Downloader* mediaDownloader)
         remaining = mediaDownloader->currentRequest_->headerInfo_.fileContentLen -
                     mediaDownloader->currentRequest_->startPos_;
     } else {
-        remaining = mediaDownloader->currentRequest_->endPos_ - mediaDownloader->currentRequest_->startPos_ + 1;
+        remaining = mediaDownloader->currentRequest_->GetRangeLength();
+        if (remaining < 0) {
+            remaining = 1;
+        }
     }
 
     mediaDownloader->currentRequest_->preRequestSize_ = mediaDownloader->currentRequest_->requestSize_;
@@ -1177,8 +1248,14 @@ size_t Downloader::SaveBodyData(Downloader* mediaDownloader, void* buffer, size_
         mediaDownloader->isNotBlock_);
     MEDIA_LOGI_LIMIT(DOWNLOAD_LOG_FEQUENCE, "RxBodyData: dataLen " PUBLIC_LOG_ZU ", startPos_ " PUBLIC_LOG_D64, dataLen,
                      mediaDownloader->currentRequest_->startPos_);
-    mediaDownloader->currentRequest_->startPos_ = mediaDownloader->currentRequest_->startPos_ +
-                                                  static_cast<int64_t>(writeLen);
+    {
+        int64_t newPos = 0;
+        if (!SafeAdd(mediaDownloader->currentRequest_->startPos_, static_cast<int64_t>(writeLen), newPos)) {
+            MEDIA_LOG_W("RxBodyData startPos_ overflow, clamped to INT64_MAX");
+            newPos = std::numeric_limits<int64_t>::max();
+        }
+        mediaDownloader->currentRequest_->startPos_ = newPos;
+    }
     UpdateRequestSize(mediaDownloader);
     if (writeLen != dataLen) {
         if (mediaDownloader->sourceLoader_ != nullptr) {
@@ -1543,7 +1620,7 @@ void Downloader::UpdateDownloadInfo(Downloader *downloader, size_t dataLen)
 {
     if (downloader) {
         auto now = downloader->GetCurrentMillisecond();
-        if (downloader->lastDownloadTime_  == 0) {
+        if (downloader->lastDownloadTime_ == 0) {
             int64_t firstDownloadTime = now - downloader->startDownTime_;
             downloader->lastDownloadTime_ = downloader->startDownTime_;
             if (downloader->downloadCallback_ != nullptr) {

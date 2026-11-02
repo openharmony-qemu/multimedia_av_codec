@@ -55,6 +55,7 @@ config("dash_unittest_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
     "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
     "$av_codec_root_dir/test/unittest/common",
+    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
   ]
 }
 

@@ -25,7 +25,7 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 
-constexpr double BUFFER_LOW_LIMIT  = 0.3;
+constexpr double BUFFER_LOW_LIMIT = 0.3;
 constexpr double BYTE_TO_BIT = 8.0;
 constexpr size_t RETRY_TIMES = 15000;
 constexpr unsigned int SLEEP_TIME = 1;
@@ -164,7 +164,24 @@ Status DashMediaDownloader::HandleDownloadError()
         }
         segDownloader->Close(false, true);
     });
-    return Status::ERROR_AGAIN;
+
+    return Status::ERROR_UNKNOWN;
+}
+
+void DashMediaDownloader::HandleParseFailed()
+{
+    MEDIA_LOG_E("Dash MPD parse failed, report error");
+    auto callback = callback_.lock();
+    if (callback) {
+        callback->OnEvent({PluginEventType::CLIENT_ERROR, {NetworkClientErrorCode::ERROR_NOT_RETRY},
+            "errorMessage:Dash MPD parse failed due to invalid data"});
+    }
+    segmentDownloaders_.Foreach([](const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
+        if (segDownloader == nullptr) {
+            return;
+        }
+        segDownloader->Close(false, true);
+    });
 }
 
 std::shared_ptr<DashSegmentDownloader> DashMediaDownloader::GetSegmentDownloader(int32_t streamId)
@@ -348,17 +365,13 @@ Status DashMediaDownloader::SelectStream(int32_t streamId)
 
 void DashMediaDownloader::SeekToTs(int64_t seekTime)
 {
-    int64_t seekTimeMs;
     std::lock_guard<std::mutex> lock(parseSidxMutex_);
     {
         if (seekTime < 0 || seekTime > mpdDownloader_->GetDuration()) {
             return;
         }
-        seekTimeMs = seekTime / MS_2_NS;
-        if (preparedAction_.seekPosition_ != -1 ||
-            bitrateParam_.waitSidxFinish_ ||
-            trackParam_.waitSidxFinish_) {
-            preparedAction_.seekPosition_ = seekTimeMs;
+        if (preparedAction_.seekPosition_ != -1 || bitrateParam_.waitSidxFinish_ || trackParam_.waitSidxFinish_) {
+            preparedAction_.seekPosition_ = seekTime;
             MEDIA_LOG_I("SeekToTs:" PUBLIC_LOG_D64 ", wait sidx finish, bitrate:" PUBLIC_LOG_U32 ", type:"
                 PUBLIC_LOG_D32, preparedAction_.seekPosition_, bitrateParam_.bitrate_, (int) bitrateParam_.type_);
 
@@ -373,8 +386,8 @@ void DashMediaDownloader::SeekToTs(int64_t seekTime)
             return;
         }
     }
-    
-    SeekInternal(seekTimeMs);
+
+    SeekInternal(seekTime);
 }
 
 void DashMediaDownloader::SetIsTriggerAutoMode(bool isAuto)
@@ -420,6 +433,9 @@ void DashMediaDownloader::OnMpdInfoUpdate(DashMpdEvent mpdEvent)
             break;
         case DASH_MPD_EVENT_PARSE_OK:
             ReceiveMpdParseOkEvent();
+            break;
+        case DASH_MPD_EVENT_PARSE_FAILED:
+            HandleParseFailed();
             break;
         default:
             break;
@@ -530,7 +546,7 @@ void DashMediaDownloader::VideoSegmentDownloadFinished(int streamId)
         if (bitrateParam_.type_ != DASH_MPD_SWITCH_TYPE_NONE) {
             // no need to auto switch
             if (bitrateParam_.waitSegmentFinish_) {
-                bitrateParam_.waitSegmentFinish_  = false;
+                bitrateParam_.waitSegmentFinish_ = false;
             } else {
                 MEDIA_LOG_I("old segment download finish, should get next segment in select bitrate");
                 return;
@@ -811,8 +827,9 @@ bool DashMediaDownloader::IsSeekingInSwitch()
     return isSwitching;
 }
 
-void DashMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, int64_t seekTimeMs, int32_t isEos)
+void DashMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, int64_t seekTimeNs, int32_t isEos)
 {
+    int64_t seekTimeMs = seekTimeNs / static_cast<int64_t>(MS_2_NS);
     Format seekReadyInfo {};
     seekReadyInfo.PutIntValue("currentStreamType", streamType);
     seekReadyInfo.PutIntValue("currentStreamId", streamId);
@@ -827,45 +844,46 @@ void DashMediaDownloader::HandleSeekReady(int32_t streamType, int32_t streamId, 
     }
 }
 
-int64_t DashMediaDownloader::GetVideoSeekTime(int64_t seekTimeMs)
+int64_t DashMediaDownloader::GetVideoSeekTime(int64_t seekTimeNs)
 {
     auto videoSegmentDownloader = GetSegmentDownloaderByType(MediaAVCodec::MediaType::MEDIA_TYPE_VID);
-    FALSE_RETURN_V_NOLOG(videoSegmentDownloader != nullptr, seekTimeMs);
+    FALSE_RETURN_V_NOLOG(videoSegmentDownloader != nullptr, seekTimeNs);
 
     std::shared_ptr<DashSegment> segment;
-    return mpdDownloader_->SeekToTs(videoSegmentDownloader->GetStreamId(), seekTimeMs, segment);
+    return mpdDownloader_->SeekToTs(videoSegmentDownloader->GetStreamId(), seekTimeNs, segment);
 }
 
 void DashMediaDownloader::SeekToSegment(const std::shared_ptr<DashSegmentDownloader> &segDownloader,
-    int64_t seekTimeMs, bool isSwitching)
+    int64_t seekTimeNs, bool isSwitching)
 {
     if (segDownloader == nullptr) {
         return;
     }
     std::shared_ptr<DashSegment> segment;
     int32_t streamId = static_cast<int32_t>(segDownloader->GetStreamId());
-    mpdDownloader_->SeekToTs(segDownloader->GetStreamId(), seekTimeMs, segment);
+    mpdDownloader_->SeekToTs(segDownloader->GetStreamId(), seekTimeNs, segment);
     if (segment == nullptr) {
         MEDIA_LOG_I("Dash SeekToTs end streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
             segDownloader->GetStreamId(), segDownloader->GetStreamType());
         int64_t remainLastNumberSeq = -1;
         segDownloader->CleanSegmentBuffer(true, remainLastNumberSeq);
         segDownloader->SetAllSegmentFinished();
-        this->HandleSeekReady(static_cast<int32_t>(segDownloader->GetStreamType()), streamId, seekTimeMs, 1);
+        this->HandleSeekReady(static_cast<int32_t>(segDownloader->GetStreamType()), streamId, seekTimeNs, 1);
         return;
     }
 
     if (segDownloader->GetStreamType() == MediaAVCodec::MediaType::MEDIA_TYPE_VID &&
-        segDownloader->GetBufferSize() == 0 && seekTimeMs == 0) {
+        segDownloader->GetBufferSize() == 0 && seekTimeNs == 0) {
         segDownloader->NotifyInitSuccess();
     }
     MEDIA_LOG_D("Dash SeekToTs segment " PUBLIC_LOG_D64 ", duration:"
-        PUBLIC_LOG_U32, segment->numberSeq_, segment->duration_);
+        PUBLIC_LOG_U64, segment->numberSeq_, segment->duration_);
     std::shared_ptr<DashInitSegment> initSeg = mpdDownloader_->GetInitSegmentByStreamId(
         segDownloader->GetStreamId());
     if (!isSwitching && segDownloader->SeekToTime(segment, streamId)) {
         MEDIA_LOG_I("Dash SeekToTs of buffered streamId " PUBLIC_LOG_D32 ", type " PUBLIC_LOG_D32,
             segDownloader->GetStreamId(), segDownloader->GetStreamType());
+        mpdDownloader_->SetCurrentNumberSeqByStreamId(segDownloader->GetStreamId(), segment->numberSeq_);
         segDownloader->SetInitSegment(initSeg, true);
     } else {
         int64_t remainLastNumberSeq = -1;
@@ -874,10 +892,10 @@ void DashMediaDownloader::SeekToSegment(const std::shared_ptr<DashSegmentDownloa
         segDownloader->SetInitSegment(initSeg, true);
         segDownloader->Open(segment);
     }
-    this->HandleSeekReady(static_cast<int32_t>(segDownloader->GetStreamType()), streamId, seekTimeMs, 0);
+    this->HandleSeekReady(static_cast<int32_t>(segDownloader->GetStreamType()), streamId, seekTimeNs, 0);
 }
 
-void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
+void DashMediaDownloader::SeekInternal(int64_t seekTimeNs)
 {
     bool isSwitching = IsSeekingInSwitch();
 
@@ -887,16 +905,16 @@ void DashMediaDownloader::SeekInternal(int64_t seekTimeMs)
         pendingAudioSwitch_ = {};
     }
 
-    seekTimeMs = GetVideoSeekTime(seekTimeMs);
-    unsigned int tragetPeriodIndex = mpdDownloader_->GetPeriodIndexBySeekTime(seekTimeMs);
-    if (tragetPeriodIndex != currentPeriodIndex_.load()) {
+    seekTimeNs = GetVideoSeekTime(seekTimeNs);
+    uint32_t targetPeriodIndex = mpdDownloader_->GetPeriodIndexBySeekTime(seekTimeNs);
+    if (targetPeriodIndex != currentPeriodIndex_.load()) {
         MEDIA_LOG_I("SeekInternal: seek from period " PUBLIC_LOG_U32 " to period " PUBLIC_LOG_U32,
-            currentPeriodIndex_.load(), tragetPeriodIndex);
-        SwitchToPeriod(tragetPeriodIndex);
+            currentPeriodIndex_.load(), targetPeriodIndex);
+        SwitchToPeriod(targetPeriodIndex);
     }
-    segmentDownloaders_.ForeachSnapshot([this, seekTimeMs, isSwitching](
+    segmentDownloaders_.ForeachSnapshot([this, seekTimeNs, isSwitching](
         const std::shared_ptr<DashSegmentDownloader> &segDownloader) {
-        SeekToSegment(segDownloader, seekTimeMs, isSwitching);
+        SeekToSegment(segDownloader, seekTimeNs, isSwitching);
     });
 }
 
@@ -1202,8 +1220,8 @@ void DashMediaDownloader::ReportEventStreamMetadata()
             auto metaData = std::make_shared<MediaAVCodec::AVTimedMetaData>();
             metaData->id = event->id_;
             metaData->classify = event->classify_;
-            metaData->start = static_cast<int64_t>(event->start_);
-            metaData->duration = static_cast<int64_t>(event->duration_);
+            metaData->start = static_cast<int64_t>(event->start_ / MS_2_NS);
+            metaData->duration = static_cast<int64_t>(event->duration_ / MS_2_NS);
             metaData->contents = event->contents_;
 
             MEDIA_LOG_I("ReportEventStreamMetadata: id=" PUBLIC_LOG_S ", schemeIdUri=" PUBLIC_LOG_S

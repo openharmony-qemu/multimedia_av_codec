@@ -30,6 +30,8 @@
 #include "network/network_typs.h"
 #include "common/media_core.h"
 #include "avcodec_trace.h"
+#include "safe_arithmetic.h"
+#include "utils/time_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -48,8 +50,7 @@ constexpr uint32_t DURATION_CHANGE_AMOUT_MILLISECONDS = 500;
 constexpr int SEEK_STATUS_RETRY_TIMES = 100;
 constexpr int SEEK_STATUS_SLEEP_TIME = 50;
 constexpr uint64_t CURRENT_BIT_RATE = 200 * 1024; // bps
-constexpr int32_t ONE_SECONDS = 1000;
-constexpr uint64_t ONE_USSECONDS = 1000 * 1000;
+constexpr int32_t ONE_SECONDS = static_cast<int32_t>(S_2_MS);
 constexpr int TRANSFER_SIZE_RATE_2 = 2;
 constexpr int TRANSFER_SIZE_RATE_3 = 3;
 constexpr int TRANSFER_SIZE_RATE_4 = 4;
@@ -196,7 +197,7 @@ void HlsSegmentManager::Init()
     downloader_->Init();
     playList_ = std::make_shared<BlockingQueue<PlayInfo>>("PlayList");
     auto weakDownloader = weak_from_this();
-    dataSave_ =  [weakDownloader] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) -> uint32_t {
+    dataSave_ = [weakDownloader] (uint8_t*&& data, uint32_t&& len, bool&& notBlock) -> uint32_t {
         auto shareDownloader = weakDownloader.lock();
         FALSE_RETURN_V_MSG(shareDownloader != nullptr, 0u, "dataSave_, Hls Media Downloader already destructed.");
         return shareDownloader->SaveData(std::forward<decltype(data)>(data), std::forward<decltype(len)>(len),
@@ -344,8 +345,15 @@ void HlsSegmentManager::ConfigureAndDownload(const PlayInfo& playInfo, bool isRe
         tsStreamIdInfo_[writeTsIndex_] = playInfo.streamId_;
     }
     if (!playInfo.rangeUrl_.empty() && !isRequestWholeFile) {
-        downloadRequest->SetRangePos(static_cast<int64_t>(playInfo.offset_),
-            static_cast<int64_t>(playInfo.offset_) + static_cast<int64_t>(playInfo.length_) - 1);
+        int64_t endPos = 0;
+        if (playInfo.length_ > 0) {
+            if (!SafeAdd(playInfo.offset_, playInfo.length_ - 1, endPos)) {
+                MEDIA_LOG_E("range pos overflow, offset " PUBLIC_LOG_D64 " length " PUBLIC_LOG_D64,
+                    playInfo.offset_, playInfo.length_);
+                return;
+            }
+        }
+        downloadRequest->SetRangePos(playInfo.offset_, endPos);
     }
     downloadRequest->SetRequestProtocolType(RequestProtocolType::HLS);
     downloadRequest->SetDownloadDoneCb(downloadDoneCallback);
@@ -651,6 +659,10 @@ Status HlsSegmentManager::ReadDelegate(unsigned char* buff, ReadDataInfo& readDa
     }
     auto canRead = CheckCanReadOneSeconds(readDataInfo.wantReadLength_);
     if (!canRead) {
+        if (downloadErrorState_) {
+            MEDIA_LOG_E("HLS read failed, download error state, type: %{public}d", type_);
+            return Status::ERROR_UNKNOWN;
+        }
         MEDIA_LOG_W("HLS read cannot read, pls again, read len: %{public}u, type: %{public}d",
             readDataInfo.wantReadLength_, type_);
         return Status::ERROR_AGAIN;
@@ -905,7 +917,7 @@ Status HlsSegmentManager::Read(unsigned char* buff, ReadDataInfo& readDataInfo)
     readTotalBytes_ += readDataInfo.realReadLength_;
     if (now > lastReadCheckTime_ && now - lastReadCheckTime_ > SAMPLE_INTERVAL) {
         readRecordDuringTime_ = now - lastReadCheckTime_;
-        double readDuration = static_cast<double>(readRecordDuringTime_) / SECOND_TO_MILLISECONDS;
+        double readDuration = static_cast<double>(readRecordDuringTime_) / S_2_MS;
         if (readDuration > ZERO_THRESHOLD) {
             double readSpeed = readTotalBytes_ * BYTES_TO_BIT / readDuration;    // bps
             readBitrate_ = readSpeed > 0 ? static_cast<uint64_t>(readSpeed) : readBitrate_;
@@ -1164,8 +1176,12 @@ void HlsSegmentManager::HandlePlayListChanged(const std::vector<PlayInfo>& playL
         {
             std::lock_guard<std::mutex> lock(infoIndexMapMutex_);
             if (InfoIndexMap_.urlMap.find(fragment.url_) == InfoIndexMap_.urlMap.end()) {
-                playerTmp.sumDuration_ = InfoIndexMap_.lastPlay.sumDuration_ +
-                    static_cast<uint64_t>(playerTmp.duration_) * ONE_USSECONDS;
+                // duration_ is already in nanoseconds; no HST_USECOND conversion needed.
+                uint64_t addRes = 0;
+                if (!SafeAdd(InfoIndexMap_.lastPlay.sumDuration_, playerTmp.duration_, addRes)) {
+                    addRes = InfoIndexMap_.lastPlay.sumDuration_;
+                }
+                playerTmp.sumDuration_ = addRes;
                 InfoIndexMap_.urlMap[fragment.url_] = playerTmp;
                 InfoIndexMap_.lastPlay = playerTmp;
             }
@@ -1225,7 +1241,7 @@ uint32_t HlsSegmentManager::SaveCacheBufferDataNotblock(uint8_t* data, uint32_t 
     ClearChunksOfFragment();
     HandleCachedDuration();
     writeBitrateCaculator_->StartClock();
-    uint64_t writeTime  = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLISECONDS;
+    uint64_t writeTime = writeBitrateCaculator_->GetWriteTime();
     if (writeTime > ONE_SECONDS) {
         writeBitrateCaculator_->ResetClock();
     }
@@ -1241,7 +1257,7 @@ void HlsSegmentManager::HandleSaveDataLoopContinue()
 {
     HandleCachedDuration();
     writeBitrateCaculator_->StartClock();
-    uint64_t writeTime = writeBitrateCaculator_->GetWriteTime() / SECOND_TO_MILLISECONDS;
+    uint64_t writeTime = writeBitrateCaculator_->GetWriteTime();
     if (writeTime > ONE_SECONDS) {
         writeBitrateCaculator_->ResetClock();
     }
@@ -1464,7 +1480,7 @@ double HlsSegmentManager::CalculateCurrentDownloadSpeed()
 {
     double downloadRate = 0;
     double tmpNumerator = static_cast<double>(downloadBits_);
-    double tmpDenominator = static_cast<double>(downloadDuringTime_) / SECOND_TO_MILLISECONDS;
+    double tmpDenominator = static_cast<double>(downloadDuringTime_) / S_2_MS;
     if (tmpDenominator > ZERO_THRESHOLD) {
         downloadRate = tmpNumerator / tmpDenominator;
         avgDownloadSpeed_ = downloadRate;
@@ -1605,22 +1621,28 @@ void HlsSegmentManager::SeekToTs(uint64_t seekTime, SeekMode mode)
 {
     MEDIA_LOG_I("SeekToTs: in, type: %{public}d", type_);
     writeTsIndex_ = 0;
-    double totalDuration = 0;
+    uint64_t totalDuration = 0;
     isDownloadStarted_ = false;
     playList_->Clear();
     int64_t loopStartTime = loopInterruptClock_.ElapsedSeconds();
     seekPlayList_ = SeekListHelper(playlistDownloader_->IsLive());
-    for (const auto &item : seekPlayList_) {
+    for (size_t index = 0; index < seekPlayList_.size(); index++) {
         if (CheckLoopTimeout(loopStartTime)) {
             break;
         }
-        double hstTime = item.duration_ * HST_SECOND;
-        totalDuration += hstTime / HST_NSECOND;
-        if (seekTime >=  static_cast<uint64_t>(totalDuration)) {
+        const auto &item = seekPlayList_[index];
+        uint64_t segDuration = item.duration_;
+        uint64_t newTotal = 0;
+        if (!SafeAdd(totalDuration, segDuration, newTotal)) {
+            newTotal = totalDuration;
+        }
+        totalDuration = newTotal;
+        if (seekTime >= totalDuration) {
             writeTsIndex_++;
             continue;
         }
-        if (RequestNewTs(seekTime, mode, totalDuration, hstTime, item) == -1) {
+        bool isLast = (index + 1 == seekPlayList_.size());
+        if (RequestNewTs(seekTime, mode, totalDuration, item, isLast) == -1) {
             seekFailedCount_ ++;
             MEDIA_LOG_D("Seek failed count: " PUBLIC_LOG_D32 ", type: %{public}d", seekFailedCount_, type_);
             continue;
@@ -1628,9 +1650,10 @@ void HlsSegmentManager::SeekToTs(uint64_t seekTime, SeekMode mode)
     }
 }
 
-int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
-    double hstTime, const PlayInfo& item)
+int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, uint64_t totalDuration,
+    const PlayInfo& item, bool isLast)
 {
+    uint64_t segDuration = item.duration_;
     PlayInfo playInfo;
     playInfo.url_ = item.url_;
     playInfo.rangeUrl_ = item.rangeUrl_;
@@ -1641,20 +1664,26 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
     playInfo.keyIndex_ = item.keyIndex_;
     playInfo.sequence_ = item.sequence_;
     if (mode == SeekMode::SEEK_PREVIOUS_SYNC) {
-        double lastTotalDuration = totalDuration - hstTime;
-        if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
-            seekStartTimePos_ = lastTotalDuration;
+        uint64_t lastTotalDuration = 0;
+        if (!SafeSub(totalDuration, segDuration, lastTotalDuration)) {
+            lastTotalDuration = 0;
+        }
+        if (lastTotalDuration <= seekTime) {
+            seekStartTimePos_ = static_cast<int64_t>(lastTotalDuration);
         }
         playInfo.startTimePos_ = 0;
     } else {
         int64_t startTimePos = 0;
-        double lastTotalDuration = totalDuration - hstTime;
-        if (static_cast<uint64_t>(lastTotalDuration) <= seekTime) {
+        uint64_t lastTotalDuration = 0;
+        if (!SafeSub(totalDuration, segDuration, lastTotalDuration)) {
+            lastTotalDuration = 0;
+        }
+        if (lastTotalDuration <= seekTime) {
             startTimePos = static_cast<int64_t>(seekTime) - static_cast<int64_t>(lastTotalDuration);
-            seekStartTimePos_ = lastTotalDuration;
-            if (startTimePos > (int64_t)(hstTime / HALF_DIVIDE) && (&item != &(seekPlayList_.back()))) { // 2
+            seekStartTimePos_ = static_cast<int64_t>(lastTotalDuration);
+            if (startTimePos > static_cast<int64_t>(segDuration / HALF_DIVIDE) && !isLast) {
                 writeTsIndex_++;
-                seekStartTimePos_ = totalDuration;
+                seekStartTimePos_ = static_cast<int64_t>(totalDuration);
                 MEDIA_LOG_I("writeTsIndex, RequestNewTs update writeTsIndex " PUBLIC_LOG_U32 ", type: %{public}d",
                     writeTsIndex_, type_);
                 return -1;
@@ -1667,7 +1696,7 @@ int64_t HlsSegmentManager::RequestNewTs(uint64_t seekTime, SeekMode mode, double
         playlistDownloader_->IsFragmentInCurrentPlayList(playInfo.url_, playInfo.rangeUrl_,
             playInfo.offset_, playInfo.length_) : false;
     if (!inCurrentPlaylist) {
-        seekStartTimePos_ = totalDuration;
+        seekStartTimePos_ = static_cast<int64_t>(totalDuration);
         return -1;
     }
     PushPlayInfo(playInfo);
@@ -1797,7 +1826,7 @@ void HlsSegmentManager::UpdateDownloadFinished(const std::string &url, const std
         }
         writeTsIndex_++;
         int64_t fragmentSize = downloadRequest->GetFileContentLength();
-        double duration = downloadRequest->GetDuration();
+        uint64_t duration = downloadRequest->GetDuration();
         CalculateBitRate(fragmentSize, duration);
         PutRequestIntoDownloader(playInfo);
     } else {
@@ -2063,7 +2092,7 @@ void HlsSegmentManager::GetPlaybackInfo(PlaybackInfo& playbackInfo)
     if (downloader_ != nullptr) {
         downloader_->GetIp(playbackInfo.serverIpAddress);
     }
-    double tmpDownloadTime = static_cast<double>(totalDownloadDuringTime_) / SECOND_TO_MILLISECONDS;
+    double tmpDownloadTime = static_cast<double>(totalDownloadDuringTime_) / S_2_MS;
     if (tmpDownloadTime > ZERO_THRESHOLD) {
         playbackInfo.averageDownloadRate = static_cast<int64_t>(totalBits_ / tmpDownloadTime);
     } else {
@@ -2136,15 +2165,14 @@ Status HlsSegmentManager::SetCurrentBitRate(int32_t bitRate, int32_t streamID)
     return Status::OK;
 }
 
-void HlsSegmentManager::CalculateBitRate(size_t fragmentSize, double duration)
+void HlsSegmentManager::CalculateBitRate(size_t fragmentSize, uint64_t duration)
 {
-    if (fragmentSize == 0 || duration < ZERO_THRESHOLD) {
+    if (fragmentSize == 0 || duration == 0) {
         return;
     }
-    double divisorFragmentSize = (static_cast<double>(fragmentSize) / static_cast<double>(ONE_SECONDS))
-                                    * static_cast<double>(BYTES_TO_BIT);
-    double dividendDuration = static_cast<double>(duration) / static_cast<double>(ONE_SECONDS);
-    uint32_t calculateBitRate = static_cast<uint32_t>(divisorFragmentSize / dividendDuration);
+    double bitRate = static_cast<double>(fragmentSize) * static_cast<double>(BYTES_TO_BIT)
+                        * static_cast<double>(S_2_NS) / static_cast<double>(duration);
+    uint32_t calculateBitRate = static_cast<uint32_t>(bitRate);
     uint32_t tmpBitRate = static_cast<uint32_t>(currentBitRate_);
     tmpBitRate = (calculateBitRate >> 1) + (tmpBitRate >> 1) + ((calculateBitRate | tmpBitRate) & 1);
     currentBitRate_ = static_cast<int32_t>(tmpBitRate);
@@ -2157,8 +2185,14 @@ void HlsSegmentManager::HandleCachedDuration()
     if (tmpBitRate <= 0 || !segEventCb_) {
         return;
     }
-    cachedDuration_ = (GetTotalTsBuffersize() *
-        BYTES_TO_BIT * SECOND_TO_MILLISECONDS) / static_cast<uint64_t>(tmpBitRate);
+    uint64_t totalSize = GetTotalTsBuffersize();
+    uint64_t mulRes = 0;
+    if (!SafeMul(totalSize, BYTES_TO_BIT * S_2_MS, mulRes)) {
+        MEDIA_LOG_W("HandleCachedDuration: SafeMul overflow, type: %{public}d", type_);
+        cachedDuration_ = lastDurationReacord_;
+        return;
+    }
+    cachedDuration_ = mulRes / static_cast<uint64_t>(tmpBitRate);
     if ((cachedDuration_ > lastDurationReacord_ &&
         cachedDuration_ - lastDurationReacord_ > DURATION_CHANGE_AMOUT_MILLISECONDS) ||
         (lastDurationReacord_ > cachedDuration_ &&
@@ -2227,7 +2261,8 @@ size_t HlsSegmentManager::GetSegmentOffset()
             std::lock_guard<std::mutex> lock(infoIndexMapMutex_);
             std::string url = InfoIndexMap_.writeMap[readTsIndex_.load()];
             uint64_t sumDuration = InfoIndexMap_.urlMap[url].sumDuration_;
-            uint64_t lastDuration = static_cast<uint64_t>(InfoIndexMap_.urlMap[url].duration_) * ONE_USSECONDS;
+            // duration_ is already in nanoseconds; no HST_USECOND conversion needed.
+            uint64_t lastDuration = static_cast<uint64_t>(InfoIndexMap_.urlMap[url].duration_);
             return sumDuration < lastDuration ? 0 : sumDuration - lastDuration;
         }
         return playlistDownloader_->GetSegmentOffset(readTsIndex_.load());

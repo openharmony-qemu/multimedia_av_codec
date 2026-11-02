@@ -44,7 +44,7 @@ public:
     void SetTimeBase(time_t server, time_t client);
     void GetBaseUrlList(std::list<std::string> &baseUrlList);
     std::string GetBaseUrl();
-    void GetDuration(uint32_t *duration);
+    void GetDuration(uint64_t *duration);
     DashList<DashPeriodInfo *> GetPeriods() const;
     void MakeBaseUrl(std::string &mpdUrlBase, std::string &urlSchem);
 

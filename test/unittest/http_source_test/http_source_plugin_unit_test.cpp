@@ -23,6 +23,7 @@
 #include "hls/hls_playlist_downloader.h"
 #include "http_probe_test_utils.h"
 #include "dash/dash_media_downloader.h"
+#include "time_utils.h"
 #include <chrono>
 #include <cstdlib>
 #include <fcntl.h>
@@ -811,9 +812,10 @@ HWTEST_F(HttpSourcePluginUnitTest, SeekToTime_003, TestSize.Level1)
 {
     auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
     mockDownloader->seekable_ = Seekable::SEEKABLE;
-    mockDownloader->duration_ = 500;
+    mockDownloader->duration_ = 500;  // us
     httpSourcePlugin->downloader_ = mockDownloader;
-    Status status = httpSourcePlugin->SeekToTime(1000, SeekMode::SEEK_NEXT_SYNC);
+    // SeekToTime receives ns; 600us > 500us duration → ERROR_INVALID_PARAMETER
+    Status status = httpSourcePlugin->SeekToTime(600 * US_2_NS, SeekMode::SEEK_NEXT_SYNC);
     EXPECT_EQ(status, Status::ERROR_INVALID_PARAMETER);
 }
 
@@ -859,9 +861,10 @@ HWTEST_F(HttpSourcePluginUnitTest, MediaSeekTimeByStreamId_003, TestSize.Level1)
 {
     auto mockDownloader = std::make_shared<MockMediaDownloaderForSeek>();
     mockDownloader->seekable_ = Seekable::SEEKABLE;
-    mockDownloader->duration_ = 500;
+    mockDownloader->duration_ = 500;  // us
     httpSourcePlugin->downloader_ = mockDownloader;
-    Status status = httpSourcePlugin->MediaSeekTimeByStreamId(1000, SeekMode::SEEK_NEXT_SYNC, 0);
+    // MediaSeekTimeByStreamId receives ns; 600us > 500us duration → ERROR_INVALID_PARAMETER
+    Status status = httpSourcePlugin->MediaSeekTimeByStreamId(600 * US_2_NS, SeekMode::SEEK_NEXT_SYNC, 0);
     EXPECT_EQ(status, Status::ERROR_INVALID_PARAMETER);
 }
 

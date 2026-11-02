@@ -16,6 +16,8 @@
 #include "dash_generic_node.h"
 #include "i_dash_mpd_node.h"
 #include "utils/string_utils.h"
+#include "utils/safe_arithmetic.h"
+#include <cstdint>
 #include <cstdlib>
 #include <limits>
 
@@ -99,18 +101,24 @@ void DashGenericNode::GetAttr(const std::string &attrName, int32_t &val)
     for (size_t i = 0; i < attrs_.size(); ++i) {
         if (attrs_[i] == attrName && !vals_[i].empty()) {
             int64_t tempVal = 0;
-            auto ret = StringUtil::SafeStoInt64(vals_[i], tempVal);
-            val = (ret && tempVal >= std::numeric_limits<int32_t>::min() &&
-                   tempVal <= std::numeric_limits<int32_t>::max()) ? static_cast<int32_t>(tempVal) : 0;
+            StringUtil::SafeStoInt64(vals_[i], tempVal);
+            int32_t casted = 0;
+            if (!SafeIntCast(tempVal, casted)) {
+                casted = 0;
+            }
+            val = casted;
             return;
         }
     }
     for (size_t i = 0; i < commonAttrs_.size(); ++i) {
         if (commonAttrs_[i] == attrName && !commonVals_[i].empty()) {
             int64_t tempVal = 0;
-            auto ret = StringUtil::SafeStoInt64(commonVals_[i], tempVal);
-            val = (ret && tempVal >= std::numeric_limits<int32_t>::min() &&
-                   tempVal <= std::numeric_limits<int32_t>::max()) ? static_cast<int32_t>(tempVal) : 0;
+            StringUtil::SafeStoInt64(commonVals_[i], tempVal);
+            int32_t casted = 0;
+            if (!SafeIntCast(tempVal, casted)) {
+                casted = 0;
+            }
+            val = casted;
             return;
         }
     }
@@ -141,18 +149,24 @@ void DashGenericNode::GetAttr(const std::string &attrName, uint32_t &val)
     for (size_t i = 0; i < attrs_.size(); ++i) {
         if (attrs_[i] == attrName && !vals_[i].empty()) {
             int64_t tempVal = 0;
-            auto ret = StringUtil::SafeStoInt64(vals_[i], tempVal);
-            val = (ret && tempVal >= 0 && tempVal <= std::numeric_limits<uint32_t>::max()) ?
-                  static_cast<uint32_t>(tempVal) : 0;
+            StringUtil::SafeStoInt64(vals_[i], tempVal);
+            uint32_t casted = 0;
+            if (!SafeIntCast(tempVal, casted)) {
+                casted = 0;
+            }
+            val = casted;
             return;
         }
     }
     for (size_t i = 0; i < commonAttrs_.size(); ++i) {
         if (commonAttrs_[i] == attrName && !commonVals_[i].empty()) {
             int64_t tempVal = 0;
-            auto ret = StringUtil::SafeStoInt64(commonVals_[i], tempVal);
-            val = (ret && tempVal >= 0 && tempVal <= std::numeric_limits<uint32_t>::max()) ?
-                  static_cast<uint32_t>(tempVal) : 0;
+            StringUtil::SafeStoInt64(commonVals_[i], tempVal);
+            uint32_t casted = 0;
+            if (!SafeIntCast(tempVal, casted)) {
+                casted = 0;
+            }
+            val = casted;
             return;
         }
     }

@@ -59,7 +59,7 @@ public:
     int32_t sapType_{0};
     int32_t referenceType_{0};
     uint32_t referencedSize_{0};
-    uint32_t duration_{0};
+    uint64_t duration_{0};  // timescale units (not converted)
     uint32_t timeScale_{1};
     uint32_t sapDeltaTime_{0};
     int64_t startPos_{0};

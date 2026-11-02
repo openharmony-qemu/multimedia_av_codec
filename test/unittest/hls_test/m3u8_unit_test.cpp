@@ -14,6 +14,7 @@
  */
 #include "m3u8_unit_test.h"
 #include "http_server_demo.h"
+#include "utils/time_utils.h"
 
 #include <atomic>
 #include <chrono>
@@ -228,35 +229,6 @@ HWTEST_F(M3u8UnitTest, UPDATE_FROM_TAGS_TEST_NULL_UPDATER, TestSize.Level1)
     EXPECT_EQ(m3u8.files_.size(), 0);
 }
 
-HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_NULL_KEY_AND_IV, TestSize.Level1)
-{
-    M3U8Fragment m3u8("http://example.com", 10.0, 1, false);
-    M3U8Fragment fragment(m3u8, nullptr, nullptr);
-    EXPECT_EQ(fragment.duration_, 10.0);
-    EXPECT_EQ(fragment.sequence_, 1);
-    EXPECT_EQ(fragment.discont_, false);
-    for (int i = 0; i < static_cast<int>(MAX_LOOP); i++) {
-        EXPECT_NE(fragment.iv_[i], -1);
-        EXPECT_NE(fragment.key_[i], -1);
-    }
-}
-
-HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR_WITH_VALID_KEY_AND_IV, TestSize.Level1)
-{
-    M3U8Fragment m3u8("http://example.com", 10.0, 1, false);
-    uint8_t key[MAX_LOOP] = {1, 2, 3, 4, 5};
-    uint8_t iv[MAX_LOOP] = {6, 7, 8, 9, 10};
-    M3U8Fragment fragment(m3u8, key, iv);
-    EXPECT_EQ(fragment.uri_, "http://example.com");
-    EXPECT_EQ(fragment.duration_, 10.0);
-    EXPECT_EQ(fragment.sequence_, 1);
-    EXPECT_EQ(fragment.discont_, false);
-    //
-    for (int i = 0; i < 5; i++) {
-        EXPECT_EQ(fragment.iv_[i], iv[i]);
-    }
-}
-
 HWTEST_F(M3u8UnitTest, TEST_CONSTRUCTOR, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "Test M3U8");
@@ -304,10 +276,10 @@ HWTEST_F(M3u8UnitTest, GET_EXT_INF_TEST, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
     auto tag = std::make_shared<ValuesListTag>(HlsTag::EXTINF, "3.5,");
-    double duration {0};
+    uint64_t duration {0};
     m3u8.GetExtInf(tag, duration);
-    // check name
-    EXPECT_DOUBLE_EQ(3.5, duration);
+    // check name (3.5 seconds = 3500000000 nanoseconds)
+    EXPECT_EQ(3ULL * S_2_NS + 500ULL * MS_2_NS, duration);
 }
 
 HWTEST_F(M3u8UnitTest, PARSE_KEY_METHOD_ATTRIBUTE, TestSize.Level1)
@@ -526,15 +498,15 @@ HWTEST_F(M3u8UnitTest, IS_LIVE_TEST, TestSize.Level1)
     EXPECT_FALSE(m3u8.IsLive());
 }
 
-// 测试 M3U8Fragment 构造函数
-HWTEST_F(M3u8UnitTest, M3U8FragmentConstructorTest, TestSize.Level1)
+// 测试 M3U8Segment 构造函数
+HWTEST_F(M3u8UnitTest, M3U8SegmentConstructorTest, TestSize.Level1)
 {
-    double testDuration = 10.0;
-    int testSequence = 1;
+    uint64_t testDuration = 10;
+    int64_t testSequence = 1;
     bool testDiscont = false;
-    M3U8Fragment fragment(testUri, testDuration, testSequence, testDiscont);
+    M3U8Segment fragment(testUri, testDuration, testSequence, testDiscont);
     ASSERT_EQ(fragment.uri_, testUri);
-    ASSERT_DOUBLE_EQ(fragment.duration_, testDuration);
+    ASSERT_EQ(fragment.duration_, testDuration);
     ASSERT_EQ(fragment.sequence_, testSequence);
     ASSERT_EQ(fragment.discont_, testDiscont);
 }
@@ -867,13 +839,13 @@ HWTEST_F(M3u8UnitTest, GetMimeType_002, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, ADDFILE_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    M3U8Fragment fragment("http://example.com", 10.0, 1, false);
+    M3U8Segment fragment("http://example.com", 10, 1, false);
     m3u8.minFragDuration_ = 1;
     m3u8.isDecryptAble_ = true;
     m3u8.method_ = std::make_shared<std::string>("NONE");
     m3u8.keyIndex_ = 1;
-    m3u8.AddFile(std::make_shared<M3U8Fragment>(fragment), 5);
-    EXPECT_EQ(m3u8.files_.front()->keyIndex_, UINT64_MAX);
+    m3u8.AddFile(fragment, 5);
+    EXPECT_EQ(m3u8.files_.front().keyIndex_, UINT64_MAX);
 }
 
 HWTEST_F(M3u8UnitTest, PREPAREDECRYPTIONKEYS_001, TestSize.Level1)
@@ -938,8 +910,8 @@ HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_ALL_ATTRIBUTES_001, TestSize.Level1)
     auto& dr = m3u8.dateRanges_.front();
     EXPECT_EQ(dr->id, "test-id");
     EXPECT_EQ(dr->classify, "test-class");
-    EXPECT_EQ(dr->start, 60000);
-    EXPECT_EQ(dr->duration, 60000);
+    EXPECT_EQ(dr->start, static_cast<int64_t>(60ULL * S_2_NS));
+    EXPECT_EQ(dr->duration, static_cast<int64_t>(60ULL * S_2_NS + 500ULL * MS_2_NS));
     EXPECT_EQ(dr->assetList, "http://example.com/assets");
 }
 
@@ -966,7 +938,7 @@ HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_PARSE_FAIL_001, TestSize.Level1)
     tag->AddAttribute(startDateAttr);
     m3u8.ParseDateRange(tag);
     EXPECT_EQ(m3u8.dateRanges_.size(), 1u);
-    EXPECT_EQ(m3u8.dateRanges_.front()->start, 60000);
+    EXPECT_EQ(m3u8.dateRanges_.front()->start, static_cast<int64_t>(60ULL * S_2_NS)); // 60s in nanoseconds
 }
 
 HWTEST_F(M3u8UnitTest, PARSE_DATE_RANGE_MULTIPLE_001, TestSize.Level1)
@@ -989,9 +961,9 @@ HWTEST_F(M3u8UnitTest, CALCULATE_DATE_TIME_OFFSET_001, TestSize.Level1)
     M3U8 m3u8("http://example.com/test.m3u8", "");
     EXPECT_EQ(m3u8.CalculateDateTimeOffset("", ""), 0);
     EXPECT_EQ(m3u8.CalculateDateTimeOffset("invalid", "invalid"), 0);
-    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:00:00", "2024-01-01T00:01:00"), 60000);
-    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:00:00", "2024-01-02T00:00:00"), 86400000);
-    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:01:00", "2024-01-01T00:00:00"), -60000);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:00:00", "2024-01-01T00:01:00"), 60000000000);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:00:00", "2024-01-02T00:00:00"), 86400000000000);
+    EXPECT_EQ(m3u8.CalculateDateTimeOffset("2024-01-01T00:01:00", "2024-01-01T00:00:00"), -60000000000);
 }
 
 HWTEST_F(M3u8UnitTest, InitTagUpdatersMap_TableDriven_002, TestSize.Level0)
@@ -1059,27 +1031,27 @@ HWTEST_F(M3u8UnitTest, UpdateTargetDuration_001, TestSize.Level0)
     std::shared_ptr<Tag> tag = std::make_shared<SingleValueTag>(HlsTag::EXTXTARGETDURATION, "10");
     M3U8Info info;
     m3u8.UpdateTargetDuration(tag, info);
-    EXPECT_DOUBLE_EQ(m3u8.targetDuration_, 10.0);
+    EXPECT_EQ(m3u8.targetDuration_, 10ULL * S_2_NS);
 }
 
 HWTEST_F(M3u8UnitTest, UpdateTargetDuration_NullTag, TestSize.Level0)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.targetDuration_ = 5.0;
+    m3u8.targetDuration_ = 5ULL * S_2_NS;
     std::shared_ptr<Tag> nullTag;
     M3U8Info info;
     m3u8.UpdateTargetDuration(nullTag, info);
-    EXPECT_DOUBLE_EQ(m3u8.targetDuration_, 5.0);
+    EXPECT_EQ(m3u8.targetDuration_, 5ULL * S_2_NS);
 }
 
 HWTEST_F(M3u8UnitTest, UpdateTargetDuration_WrongSection, TestSize.Level0)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.targetDuration_ = 5.0;
+    m3u8.targetDuration_ = 5ULL * S_2_NS;
     std::shared_ptr<Tag> tag = std::make_shared<AttributesTag>(HlsTag::EXTXKEY, "METHOD=AES-128");
     M3U8Info info;
     m3u8.UpdateTargetDuration(tag, info);
-    EXPECT_DOUBLE_EQ(m3u8.targetDuration_, 5.0);
+    EXPECT_EQ(m3u8.targetDuration_, 5ULL * S_2_NS);
 }
 
 HWTEST_F(M3u8UnitTest, UpdateMediaSequence_001, TestSize.Level0)
@@ -1130,17 +1102,17 @@ HWTEST_F(M3u8UnitTest, UpdateExtInf_001, TestSize.Level0)
     std::shared_ptr<Tag> tag = std::make_shared<ValuesListTag>(HlsTag::EXTINF, "3.5,");
     M3U8Info info;
     m3u8.UpdateExtInf(tag, info);
-    EXPECT_DOUBLE_EQ(info.duration, 3.5);
+    EXPECT_EQ(info.duration, 3ULL * S_2_NS + 500ULL * MS_2_NS);
 }
 
 HWTEST_F(M3u8UnitTest, UpdateExtInf_NullTag, TestSize.Level0)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
     M3U8Info info;
-    info.duration = 2.0;
+    info.duration = 2ULL * S_2_NS;
     std::shared_ptr<Tag> nullTag;
     m3u8.UpdateExtInf(nullTag, info);
-    EXPECT_DOUBLE_EQ(info.duration, 2.0);
+    EXPECT_EQ(info.duration, 2ULL * S_2_NS);
 }
 
 HWTEST_F(M3u8UnitTest, UpdateUri_001, TestSize.Level0)
@@ -1254,7 +1226,7 @@ HWTEST_F(M3u8UnitTest, UpdateStart_001, TestSize.Level0)
     std::shared_ptr<Tag> tag = std::make_shared<AttributesTag>(HlsTag::EXTXSTART, "TIME-OFFSET=10.5,PRECISE=YES");
     M3U8Info info;
     m3u8.UpdateStart(tag, info);
-    EXPECT_DOUBLE_EQ(m3u8.timeOffset_, 10.5);
+    EXPECT_EQ(m3u8.timeOffset_, static_cast<int64_t>(10ULL * S_2_NS + 500ULL * MS_2_NS));
     EXPECT_TRUE(m3u8.precise_);
     EXPECT_TRUE(m3u8.isStart_);
 }
@@ -1262,24 +1234,24 @@ HWTEST_F(M3u8UnitTest, UpdateStart_001, TestSize.Level0)
 HWTEST_F(M3u8UnitTest, UpdateStart_NullTag, TestSize.Level0)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.timeOffset_ = 8.0;
+    m3u8.timeOffset_ = static_cast<int64_t>(8ULL * S_2_NS);
     m3u8.isStart_ = true;
     std::shared_ptr<Tag> nullTag;
     M3U8Info info;
     m3u8.UpdateStart(nullTag, info);
-    EXPECT_DOUBLE_EQ(m3u8.timeOffset_, 8.0);
+    EXPECT_EQ(m3u8.timeOffset_, static_cast<int64_t>(8ULL * S_2_NS));
     EXPECT_TRUE(m3u8.isStart_);
 }
 
 HWTEST_F(M3u8UnitTest, UpdateStart_WrongSection, TestSize.Level0)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.timeOffset_ = 8.0;
+    m3u8.timeOffset_ = static_cast<int64_t>(8ULL * S_2_NS);
     m3u8.isStart_ = true;
     std::shared_ptr<Tag> tag = std::make_shared<SingleValueTag>(HlsTag::URI, "test.ts");
     M3U8Info info;
     m3u8.UpdateStart(tag, info);
-    EXPECT_DOUBLE_EQ(m3u8.timeOffset_, 8.0);
+    EXPECT_EQ(m3u8.timeOffset_, static_cast<int64_t>(8ULL * S_2_NS));
     EXPECT_TRUE(m3u8.isStart_);
 }
 
@@ -1435,14 +1407,14 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_PerFragment_IV_NoExplicit, TestSize.Level1)
     m3u8->isDecryptKeyReady_.store(true);
     M3U8Info info;
     info.uri = "http://example.com/seg1.ts";
-    info.duration = 10.0;
+    info.duration = 10ULL * S_2_NS;
     info.discontinuity = false;
-    size_t duration = 0;
+    uint64_t duration = 0;
     m3u8->ProcessInfo(info, duration);
     EXPECT_EQ(m3u8->sequence_, 2u);
     EXPECT_FALSE(info.uri == "http://example.com/seg1.ts");
-    EXPECT_EQ(info.duration, 0.0);
-    EXPECT_EQ(duration, static_cast<size_t>(10.0 * 1000.0 * 1000.0));
+    EXPECT_EQ(info.duration, 0ULL);
+    EXPECT_EQ(duration, 10ULL * S_2_NS);
     EXPECT_EQ(m3u8->files_.size(), 1u);
 }
 
@@ -1469,14 +1441,14 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_Explicit_IV, TestSize.Level1)
     m3u8->isDecryptKeyReady_.store(true);
     M3U8Info info;
     info.uri = "http://example.com/seg1.ts";
-    info.duration = 10.0;
+    info.duration = 10ULL * S_2_NS;
     info.discontinuity = false;
-    size_t duration = 0;
+    uint64_t duration = 0;
     m3u8->ProcessInfo(info, duration);
     EXPECT_EQ(m3u8->sequence_, 101u);
     EXPECT_FALSE(info.uri == "http://example.com/seg1.ts");
-    EXPECT_EQ(info.duration, 0.0);
-    EXPECT_EQ(duration, static_cast<size_t>(10.0 * 1000.0 * 1000.0));
+    EXPECT_EQ(info.duration, 0ULL);
+    EXPECT_EQ(duration, 10ULL * S_2_NS);
     EXPECT_EQ(m3u8->files_.size(), 1u);
 }
 
@@ -1492,14 +1464,14 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_NoDecrypt, TestSize.Level1)
     m3u8->sequence_ = 1;
     M3U8Info info;
     info.uri = "http://example.com/seg1.ts";
-    info.duration = 10.0;
+    info.duration = 10ULL * S_2_NS;
     info.discontinuity = false;
-    size_t duration = 0;
+    uint64_t duration = 0;
     m3u8->ProcessInfo(info, duration);
     EXPECT_EQ(m3u8->sequence_, 2u);
     EXPECT_FALSE(info.uri == "http://example.com/seg1.ts");
-    EXPECT_EQ(info.duration, 0.0);
-    EXPECT_EQ(duration, static_cast<size_t>(10.0 * 1000.0 * 1000.0));
+    EXPECT_EQ(info.duration, 0ULL);
+    EXPECT_EQ(duration, 10ULL * S_2_NS);
     EXPECT_EQ(m3u8->files_.size(), 1u);
     EXPECT_TRUE(m3u8->isFirstFragmentReady_.load());
 }
@@ -1547,9 +1519,9 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_Sequence_Normal_Increment, TestSize.Level1)
     m3u8->sequence_ = 1;
     M3U8Info info;
     info.uri = "http://example.com/seg1.ts";
-    info.duration = 10.0;
+    info.duration = 10ULL * S_2_NS;
     info.discontinuity = false;
-    size_t duration = 0;
+    uint64_t duration = 0;
     m3u8->ProcessInfo(info, duration);
     EXPECT_EQ(m3u8->sequence_, 2u);
     EXPECT_EQ(m3u8->files_.size(), 1u);
@@ -1567,9 +1539,9 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_Sequence_Overflow, TestSize.Level1)
     m3u8->sequence_ = std::numeric_limits<uint64_t>::max();
     M3U8Info info;
     info.uri = "http://example.com/seg1.ts";
-    info.duration = 10.0;
+    info.duration = 10ULL * S_2_NS;
     info.discontinuity = false;
-    size_t duration = 0;
+    uint64_t duration = 0;
     m3u8->ProcessInfo(info, duration);
     EXPECT_EQ(m3u8->sequence_, std::numeric_limits<uint64_t>::max());
     EXPECT_EQ(m3u8->files_.size(), 1u);
@@ -1587,11 +1559,11 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_Duration_Normal_Accumulation, TestSize.Level1
     m3u8->sequence_ = 1;
     M3U8Info info;
     info.uri = "http://example.com/seg1.ts";
-    info.duration = 10.0;
+    info.duration = 10ULL * S_2_NS;
     info.discontinuity = false;
-    size_t duration = 0;
+    uint64_t duration = 0;
     m3u8->ProcessInfo(info, duration);
-    EXPECT_EQ(duration, static_cast<size_t>(10.0 * 1000.0 * 1000.0));
+    EXPECT_EQ(duration, 10ULL * S_2_NS);
     EXPECT_EQ(m3u8->files_.size(), 1u);
 }
 
@@ -1607,11 +1579,13 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_Duration_Overflow, TestSize.Level1)
     m3u8->sequence_ = 1;
     M3U8Info info;
     info.uri = "http://example.com/seg1.ts";
-    info.duration = 10.0;
+    info.duration = 10ULL * S_2_NS;
     info.discontinuity = false;
-    size_t duration = std::numeric_limits<size_t>::max();
+    // SafeAdd(UINT64_MAX, fragmentDuration) overflows → ProcessInfo skips accumulation,
+    // leaving duration unchanged at its initial UINT64_MAX value.
+    uint64_t duration = std::numeric_limits<uint64_t>::max();
     m3u8->ProcessInfo(info, duration);
-    EXPECT_EQ(duration, std::numeric_limits<size_t>::max());
+    EXPECT_EQ(duration, std::numeric_limits<uint64_t>::max());
     EXPECT_EQ(m3u8->files_.size(), 1u);
 }
 
@@ -1773,7 +1747,7 @@ HWTEST_F(M3u8UnitTest, UpdateFromTags_VariousTags_001, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, UpdateFromTags_WithExistingFiles_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.files_.emplace_back(std::make_shared<M3U8Fragment>("http://x", 5.0, 1, false));
+    m3u8.files_.emplace_back("http://x", 5, 1, false);
     std::list<std::shared_ptr<Tag>> tags;
     m3u8.UpdateFromTags(tags);
     EXPECT_EQ(m3u8.files_.size(), 1u);
@@ -1847,7 +1821,7 @@ HWTEST_F(M3u8UnitTest, ParseStart_Valid_001, TestSize.Level1)
     auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXSTART, attr);
     std::shared_ptr<Tag> tagPtr = tag;
     playlist.ParseStart(tagPtr);
-    EXPECT_DOUBLE_EQ(playlist.timeOffset_, 15.0);
+    EXPECT_EQ(playlist.timeOffset_, static_cast<int64_t>(15ULL * S_2_NS));
     EXPECT_TRUE(playlist.precise_);
     EXPECT_TRUE(playlist.isStart_);
 }
@@ -1994,26 +1968,26 @@ HWTEST_F(M3u8UnitTest, ProcessAllTags_IFrameCase_001, TestSize.Level1)
 HWTEST_F(M3u8UnitTest, GetExtInf_WrongSection_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    double duration = 5.0;
+    uint64_t duration = 5;
     auto tag = std::make_shared<SingleValueTag>(HlsTag::URI, "test.ts");
     m3u8.GetExtInf(tag, duration);
-    EXPECT_DOUBLE_EQ(duration, 5.0);
+    EXPECT_EQ(duration, 5u);
 }
 
 HWTEST_F(M3u8UnitTest, GetDuration_WithFiles_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.files_.emplace_back(std::make_shared<M3U8Fragment>("http://x", 5.0, 1, false));
-    m3u8.files_.emplace_back(std::make_shared<M3U8Fragment>("http://y", 3.5, 2, false));
-    EXPECT_DOUBLE_EQ(m3u8.GetDuration(), 8.5);
+    m3u8.files_.emplace_back("http://x", 5, 1, false);
+    m3u8.files_.emplace_back("http://y", 3, 2, false);
+    EXPECT_EQ(m3u8.GetDuration(), 8u);
 }
 
 HWTEST_F(M3u8UnitTest, AddFile_MinFragUpdate_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
     m3u8.minFragDuration_ = 100;
-    M3U8Fragment frag("http://x", 5.0, 1, false);
-    m3u8.AddFile(std::make_shared<M3U8Fragment>(frag), 50);
+    M3U8Segment frag("http://x", 5, 1, false);
+    m3u8.AddFile(frag, 50);
     EXPECT_EQ(m3u8.minFragDuration_.load(), 50u);
     EXPECT_EQ(m3u8.segmentOffsets_.size(), 1u);
 }
@@ -2025,9 +1999,9 @@ HWTEST_F(M3u8UnitTest, AddFile_KeyIndexNonNone_001, TestSize.Level1)
     m3u8.method_ = std::make_shared<std::string>("AES-128");
     m3u8.keyIndex_ = 2;
     m3u8.totalKeyIndex_ = 1;
-    M3U8Fragment frag("http://x", 5.0, 1, false);
-    m3u8.AddFile(std::make_shared<M3U8Fragment>(frag), 50);
-    EXPECT_EQ(m3u8.files_.back()->keyIndex_, 3u);
+    M3U8Segment frag("http://x", 5, 1, false);
+    m3u8.AddFile(frag, 50);
+    EXPECT_EQ(m3u8.files_.back().keyIndex_, 3u);
 }
 
 HWTEST_F(M3u8UnitTest, ProcessInfo_FirstFragmentReady_001, TestSize.Level1)
@@ -2042,8 +2016,8 @@ HWTEST_F(M3u8UnitTest, ProcessInfo_FirstFragmentReady_001, TestSize.Level1)
     m3u8->keyInfos_[0] = keyInfo;
     M3U8Info info;
     info.uri = "http://example.com/seg.ts";
-    info.duration = 5.0;
-    size_t duration = 0;
+    info.duration = 5ULL * S_2_NS;
+    uint64_t duration = 0;
     m3u8->ProcessInfo(info, duration);
     EXPECT_EQ(m3u8->files_.size(), 1u);
     EXPECT_EQ(m3u8->sequence_, 2u);
@@ -2114,8 +2088,8 @@ HWTEST_F(M3u8UnitTest, ParseDateRange_ContentsAllAttrs_001, TestSize.Level1)
     auto& dr = m3u8.dateRanges_.front();
     EXPECT_EQ(dr->id, "id1");
     EXPECT_EQ(dr->classify, "cls");
-    EXPECT_EQ(dr->start, 60000);
-    EXPECT_EQ(dr->duration, 30000);
+    EXPECT_EQ(dr->start, static_cast<int64_t>(60ULL * S_2_NS)); // 60s in nanoseconds
+    EXPECT_EQ(dr->duration, static_cast<int64_t>(30ULL * S_2_NS));
     EXPECT_EQ(dr->assetList, "http://x");
     EXPECT_EQ(dr->contents.size(), 5u);
 }
@@ -2461,10 +2435,10 @@ HWTEST_F(M3u8UnitTest, ParseStart_Master_Empty_001, TestSize.Level1)
     playlist.StartParsing();
     auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXSTART, "");
     std::shared_ptr<Tag> tagPtr = tag;
-    playlist.timeOffset_ = 99.0;
+    playlist.timeOffset_ = static_cast<int64_t>(99ULL * S_2_NS);
     playlist.precise_ = true;
     playlist.ParseStart(tagPtr);
-    EXPECT_DOUBLE_EQ(playlist.timeOffset_, 99.0);
+    EXPECT_EQ(playlist.timeOffset_, static_cast<int64_t>(99ULL * S_2_NS));
     EXPECT_TRUE(playlist.precise_);
     ASSERT_TRUE(playlist.isStart_);
 }
@@ -2609,18 +2583,6 @@ HWTEST_F(M3u8UnitTest, SaveMapData_AllocateOnDemand_001, TestSize.Level1)
     ASSERT_EQ(m3u8.fmp4HeaderLen, 1048576u);
 }
 
-// ===== Additional branch coverage batch 2 =====
-HWTEST_F(M3u8UnitTest, M3U8Fragment_IvValidKeyNull_001, TestSize.Level1)
-{
-    M3U8Fragment m3u8("http://example.com", 10.0, 1, false);
-    uint8_t iv[MAX_LOOP] = {6, 7, 8, 9, 10};
-    M3U8Fragment fragment(m3u8, nullptr, iv);
-    EXPECT_EQ(fragment.duration_, 10.0);
-    for (int i = 0; i < 5; i++) {
-        ASSERT_EQ(fragment.iv_[i], 0);
-    }
-}
-
 HWTEST_F(M3u8UnitTest, UpdateSkip_NoSkippedSegments_001, TestSize.Level0)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
@@ -2636,11 +2598,11 @@ HWTEST_F(M3u8UnitTest, UpdateStart_NoPreciseNoTimeOffset_001, TestSize.Level0)
     M3U8 m3u8("http://example.com/test.m3u8", "");
     std::shared_ptr<Tag> tag = std::make_shared<AttributesTag>(HlsTag::EXTXSTART, "OTHER=VALUE");
     M3U8Info info;
-    m3u8.timeOffset_ = 5.0;
+    m3u8.timeOffset_ = static_cast<int64_t>(5ULL * S_2_NS);
     m3u8.precise_ = false;
     m3u8.isStart_ = false;
     m3u8.UpdateStart(tag, info);
-    EXPECT_DOUBLE_EQ(m3u8.timeOffset_, 5.0);
+    EXPECT_EQ(m3u8.timeOffset_, static_cast<int64_t>(5ULL * S_2_NS));
     EXPECT_FALSE(m3u8.precise_);
     ASSERT_TRUE(m3u8.isStart_);
 }
@@ -2725,10 +2687,9 @@ HWTEST_F(M3u8UnitTest, ParseStart_Master_NullTag_001, TestSize.Level1)
 {
     M3U8MasterPlaylist playlist("", "http://example.com");
     playlist.StartParsing();
-    playlist.timeOffset_ = 99.0;
     std::shared_ptr<Tag> nullTag;
     playlist.ParseStart(nullTag);
-    ASSERT_DOUBLE_EQ(playlist.timeOffset_, 99.0);
+    ASSERT_FALSE(playlist.isStart_);
 }
 
 HWTEST_F(M3u8UnitTest, GetDefaultMedieStream_NullStream_001, TestSize.Level1)
@@ -2781,9 +2742,9 @@ HWTEST_F(M3u8UnitTest, GetExtInf_NoDuration_001, TestSize.Level1)
 {
     M3U8 m3u8("http://example.com/test.m3u8", "");
     auto tag = std::make_shared<ValuesListTag>(HlsTag::EXTINF, "");
-    double duration = 5.0;
+    uint64_t duration = 5;
     m3u8.GetExtInf(tag, duration);
-    ASSERT_DOUBLE_EQ(duration, 0.0);
+    ASSERT_EQ(duration, 0u);
 }
 
 HWTEST_F(M3u8UnitTest, UpdateMediaSequence_WrongSection_001, TestSize.Level0)
@@ -3103,7 +3064,7 @@ HWTEST_F(M3u8UnitTest, ProcessAllTags_StartCase_001, TestSize.Level1)
     auto tag = std::make_shared<AttributesTag>(HlsTag::EXTXSTART, "TIME-OFFSET=10");
     tags.emplace_back(tag);
     playlist.ProcessAllTags(tags);
-    EXPECT_DOUBLE_EQ(playlist.timeOffset_, 10.0);
+    EXPECT_EQ(playlist.timeOffset_, static_cast<int64_t>(10ULL * S_2_NS));
     ASSERT_TRUE(playlist.isStart_);
 }
 

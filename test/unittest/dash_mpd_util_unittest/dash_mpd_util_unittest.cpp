@@ -14,6 +14,7 @@
  */
 
 #include "dash_mpd_util_unittest.h"
+#include "time_utils.h"
 
 namespace OHOS {
 namespace Media {
@@ -24,7 +25,8 @@ using namespace testing;
 using namespace testing::ext;
 static const int32_t NUM_0 = 0;
 static const int32_t ERROR = -1;
-static const uint32_t MS_OF_TWO_DAYS = 172800000u;
+// 2 days in nanoseconds: 2 * 24 * 60 * 60 * 1000 * 1000 * 1000
+static const uint64_t NS_OF_TWO_DAYS = 2ULL * D_2_H * H_2_M * M_2_S * S_2_MS * MS_2_US * US_2_NS;
 
 void DashMpdUtilUnitTest::SetUpTestCase(void) {}
 
@@ -332,6 +334,59 @@ HWTEST_F(DashMpdUtilUnitTest, DashSubstituteTmpltStr_016, TestSize.Level0)
 }
 
 /**
+ * @tc.name  : Test DashSubstituteTmpltStr self-reference detection
+ * @tc.number: DashSubstituteTmpltStr_017
+ * @tc.desc  : substitutionStr 含标识符时应直接返回 -1，防止无限递归替换 (HWSA26-075226070)
+ */
+HWTEST_F(DashMpdUtilUnitTest, DashSubstituteTmpltStr_017, TestSize.Level0)
+{
+    std::string segTmpltStr = "segment_$RepresentationID$.m4s";
+    std::string segTmpltIdentifier = "$RepresentationID";
+    std::string substitutionStr = "abc$RepresentationID$def";
+    int32_t ret = DashSubstituteTmpltStr(segTmpltStr, segTmpltIdentifier, substitutionStr);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
+ * @tc.name  : Test DashSubstituteTmpltStr length cap
+ * @tc.number: DashSubstituteTmpltStr_018
+ * @tc.desc  : 长 id × 多标识符导致替换后字符串超限应返回 -1 (HWSA26-022896047)
+ */
+HWTEST_F(DashMpdUtilUnitTest, DashSubstituteTmpltStr_018, TestSize.Level0)
+{
+    // 1MB 的 id 值 × 20 个 $RepresentationID$ → 替换后约 20MB，超过 10MB 上限
+    std::string id(1024 * 1024, 'a');
+    std::string segTmpltStr;
+    for (int i = 0; i < 20; i++) {
+        segTmpltStr += "$RepresentationID$";
+    }
+    std::string segTmpltIdentifier = "$RepresentationID";
+    std::string substitutionStr = id;
+    int32_t ret = DashSubstituteTmpltStr(segTmpltStr, segTmpltIdentifier, substitutionStr);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
+ * @tc.name  : Test DashSubstituteTmpltStr loop count cap
+ * @tc.number: DashSubstituteTmpltStr_019
+ * @tc.desc  : 模板含超多标识符应触发循环次数上限返回 -1
+ */
+HWTEST_F(DashMpdUtilUnitTest, DashSubstituteTmpltStr_019, TestSize.Level0)
+{
+    // 单次替换不增长字符串（substitutionStr 与标识符等长），但循环次数超 100000
+    std::string segTmpltStr;
+    constexpr int identCount = 200000;
+    segTmpltStr.reserve(identCount * 5);
+    for (int i = 0; i < identCount; i++) {
+        segTmpltStr += "$Num$";
+    }
+    std::string segTmpltIdentifier = "$Num";
+    std::string substitutionStr = "1"; // 替换 $Num$ -> 1，长度不增长
+    int32_t ret = DashSubstituteTmpltStr(segTmpltStr, segTmpltIdentifier, substitutionStr);
+    EXPECT_EQ(ret, -1);
+}
+
+/**
  * @tc.name  : Test DashStrToDuration
  * @tc.number: DashStrToDuration_001
  * @tc.desc  : Test case 'D'
@@ -339,10 +394,10 @@ HWTEST_F(DashMpdUtilUnitTest, DashSubstituteTmpltStr_016, TestSize.Level0)
 HWTEST_F(DashMpdUtilUnitTest, DashStrToDuration_001, TestSize.Level0)
 {
     std::string str = "P2D";
-    uint32_t duration = NUM_0;
+    uint64_t duration = NUM_0;
     int32_t ret = DashStrToDuration(str, duration);
     EXPECT_EQ(ret, NUM_0);
-    EXPECT_EQ(duration, MS_OF_TWO_DAYS);
+    EXPECT_EQ(duration, NS_OF_TWO_DAYS);
 }
 
 /**
@@ -353,7 +408,7 @@ HWTEST_F(DashMpdUtilUnitTest, DashStrToDuration_001, TestSize.Level0)
 HWTEST_F(DashMpdUtilUnitTest, DashStrToDuration_002, TestSize.Level0)
 {
     std::string str = "P2X";
-    uint32_t duration = NUM_0;
+    uint64_t duration = NUM_0;
     int32_t ret = DashStrToDuration(str, duration);
     EXPECT_EQ(ret, NUM_0);
     EXPECT_EQ(duration, NUM_0);

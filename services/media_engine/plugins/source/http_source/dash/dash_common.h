@@ -17,7 +17,10 @@
 #define HISTREAMER_DASH_COMMON_H
 
 #include <string>
+#include <vector>
+#include <cstdint>
 #include "av_common.h"
+#include "safe_arithmetic.h"
 
 namespace OHOS {
 namespace Media {
@@ -88,7 +91,7 @@ struct DashSegment {
     }
 
     int32_t streamId_;
-    unsigned int duration_;
+    uint64_t duration_;  // nanoseconds
     unsigned int bandwidth_;
     int64_t startNumberSeq_;
     int64_t numberSeq_;
@@ -140,77 +143,63 @@ struct DashInitSegment {
     InitSegmentState writeState_;
 };
 
+// Lazy expansion mode for DashStreamDescription.
+// DASH_LAZY_MODE_NONE = use mediaSegments_ (pre-expanded); others = use compact entries.
+enum DashLazyMode {
+    DASH_LAZY_MODE_NONE = 0,
+    DASH_LAZY_MODE_TIMELINE = 1,     // SegmentTemplate + SegmentTimeline
+    DASH_LAZY_MODE_DURATION = 2,     // SegmentTemplate + @duration
+    DASH_LAZY_MODE_SIDX = 3,         // SegmentBase (sidx box)
+    DASH_LAZY_MODE_SEGLIST = 4,      // SegmentList
+};
+
+// Compact timeline entry for SegmentTimeline lazy expansion.
+// Instead of expanding @r into individual DashSegment objects (which can OOM
+// with malicious @r values), we store one entry per <S> element and compute
+// segment URL/duration on demand.
+struct DashTimelineEntry {
+    uint64_t startTime;     // @t value (timescale units), start time of first segment in this entry
+    uint64_t duration;      // @d value (timescale units), duration of each segment
+    uint64_t segDurationNs; // @d converted to nanoseconds
+    int64_t repeatCount;    // @r + 1 (number of segments described by this entry, ≥1)
+    int64_t startSeq;       // $Number of the first segment in this entry
+};
+
+// Compact info for fixed-duration SegmentTemplate (no SegmentTimeline).
+// Segment count is computed from totalDuration / segDuration.
+struct DashDurationSegInfo {
+    std::string mediaUrlTemplate;  // URL template with $Time/$Number (after $RepresentationID/$Bandwidth substitution)
+    uint64_t segDurationNs = 0;    // segment duration in nanoseconds
+    int64_t baseDuration = 0;      // @duration in timescale units (for $Time computation)
+    int64_t startNumberSeq = 0;    // start number sequence
+    uint64_t totalDuration = 0;    // total duration in nanoseconds (for segment count)
+};
+
+// Compact entry for SegmentBase (sidx box) lazy expansion.
+// Instead of expanding each sidx subsegment into a DashSegment object, we store
+// one entry per subsegment and build the DashSegment on demand.
+struct DashSidxEntry {
+    uint64_t durationNs;    // segment duration in nanoseconds
+    int64_t numberSeq;      // $Number of this segment
+    int64_t startRange;     // byte range start
+    int64_t endRange;       // byte range end
+    std::string url;        // segment URL (from indexSegment_->url_)
+};
+
+// Compact entry for SegmentList lazy expansion.
+// Instead of expanding each <SegmentURL> into a DashSegment object, we store
+// one entry per <SegmentURL> and build the DashSegment on demand.
+struct DashSegListEntry {
+    std::string mediaUrl;   // <SegmentURL media="...">
+    std::string mediaRange; // <SegmentURL mediaRange="...">
+    uint64_t durationNs;    // segment duration in nanoseconds
+    int64_t numberSeq;      // $Number of this segment
+};
+
 struct DashStreamDescription {
-    DashStreamDescription()
-    {
-    }
-
-    DashStreamDescription(const DashStreamDescription& desc)
-    {
-        streamId_ = desc.streamId_;
-        periodIndex_ = desc.periodIndex_;
-        adptSetIndex_ = desc.adptSetIndex_;
-        representationIndex_ = desc.representationIndex_;
-        duration_ = desc.duration_;
-        width_ = desc.width_;
-        height_ = desc.height_;
-        bandwidth_ = desc.bandwidth_;
-        channels_ = desc.channels_;
-        startNumberSeq_ = desc.startNumberSeq_;
-        type_ = desc.type_;
-        segsState_ = desc.segsState_;
-        inUse_ = desc.inUse_;
-        videoType_ = desc.videoType_;
-        currentNumberSeq_ = desc.currentNumberSeq_;
-        lang_ = desc.lang_;
-        minBandwidth_ = desc.minBandwidth_;
-        maxBandwidth_ = desc.maxBandwidth_;
-        minWidth_ = desc.minWidth_;
-        maxWidth_ = desc.maxWidth_;
-        minHeight_ = desc.minHeight_;
-        maxHeight_ = desc.maxHeight_;
-        frameRate_ = desc.frameRate_;
-        minFrameRate_ = desc.minFrameRate_;
-        maxFrameRate_ = desc.maxFrameRate_;
-        mimeType_ = desc.mimeType_;
-        codecs_ = desc.codecs_;
-        periodStartTime_ = desc.periodStartTime_;
-    }
-
-    DashStreamDescription& operator=(const DashStreamDescription& desc)
-    {
-        if (this != &desc) {
-            streamId_ = desc.streamId_;
-            periodIndex_ = desc.periodIndex_;
-            adptSetIndex_ = desc.adptSetIndex_;
-            representationIndex_ = desc.representationIndex_;
-            duration_ = desc.duration_;
-            width_ = desc.width_;
-            height_ = desc.height_;
-            bandwidth_ = desc.bandwidth_;
-            channels_ = desc.channels_;
-            startNumberSeq_ = desc.startNumberSeq_;
-            type_ = desc.type_;
-            segsState_ = desc.segsState_;
-            inUse_ = desc.inUse_;
-            videoType_ = desc.videoType_;
-            currentNumberSeq_ = desc.currentNumberSeq_;
-            lang_ = desc.lang_;
-            minBandwidth_ = desc.minBandwidth_;
-            maxBandwidth_ = desc.maxBandwidth_;
-            minWidth_ = desc.minWidth_;
-            maxWidth_ = desc.maxWidth_;
-            minHeight_ = desc.minHeight_;
-            maxHeight_ = desc.maxHeight_;
-            frameRate_ = desc.frameRate_;
-            minFrameRate_ = desc.minFrameRate_;
-            maxFrameRate_ = desc.maxFrameRate_;
-            mimeType_ = desc.mimeType_;
-            codecs_ = desc.codecs_;
-            periodStartTime_ = desc.periodStartTime_;
-        }
-        return *this;
-    }
+    DashStreamDescription() = default;
+    DashStreamDescription(const DashStreamDescription&) = default;
+    DashStreamDescription& operator=(const DashStreamDescription&) = default;
 
     DashSegsState segsState_ = DASH_SEGS_STATE_NONE;
     bool inUse_ = false;
@@ -220,7 +209,7 @@ struct DashStreamDescription {
     unsigned int periodIndex_ = 0;
     unsigned int adptSetIndex_ = 0;
     unsigned int representationIndex_ = 0;
-    unsigned int duration_ = 0;
+    uint64_t duration_ = 0;  // nanoseconds
     unsigned int width_ = 0;
     unsigned int height_ = 0;
     unsigned int bandwidth_ = 0;
@@ -243,6 +232,137 @@ struct DashStreamDescription {
     std::shared_ptr<DashInitSegment> initSegment_ = nullptr;
     std::shared_ptr<DashIndexSegment> indexSegment_ = nullptr;
     std::vector<std::shared_ptr<DashSegment>> mediaSegments_;
+    DashLazyMode lazyMode_ = DASH_LAZY_MODE_NONE;  // NONE = mediaSegments_ used; otherwise compact entries below
+    std::vector<DashTimelineEntry> timelineEntries_;  // for SegmentTimeline (DASH_LAZY_MODE_TIMELINE)
+    DashDurationSegInfo durationSegInfo_;              // for fixed-duration SegmentTemplate (DASH_LAZY_MODE_DURATION)
+    std::vector<DashSidxEntry> sidxEntries_;           // for SegmentBase/sidx (DASH_LAZY_MODE_SIDX)
+    std::vector<DashSegListEntry> segListEntries_;     // for SegmentList (DASH_LAZY_MODE_SEGLIST)
+    // Get total number of media segments (lazy or expanded).
+    uint64_t GetMediaSegmentCount() const
+    {
+        switch (lazyMode_) {
+            case DASH_LAZY_MODE_NONE:
+                return mediaSegments_.size();
+            case DASH_LAZY_MODE_TIMELINE:
+                return GetTimelineSegmentCount();
+            case DASH_LAZY_MODE_DURATION:
+                if (durationSegInfo_.segDurationNs == 0 || durationSegInfo_.totalDuration == 0) {
+                    return 0;
+                }
+                return (durationSegInfo_.totalDuration - 1) / durationSegInfo_.segDurationNs + 1;
+            case DASH_LAZY_MODE_SIDX:
+                return sidxEntries_.size();
+            case DASH_LAZY_MODE_SEGLIST:
+                return segListEntries_.size();
+            default:
+                return 0;
+        }
+    }
+
+    // Sum repeat counts across timeline entries, saturating on overflow.
+    uint64_t GetTimelineSegmentCount() const
+    {
+        uint64_t count = 0;
+        for (const auto& entry : timelineEntries_) {
+            if (entry.repeatCount <= 0) {
+                continue;
+            }
+            uint64_t newCount;
+            if (!SafeAdd(count, static_cast<uint64_t>(entry.repeatCount), newCount)) {
+                return count;
+            }
+            count = newCount;
+        }
+        return count;
+    }
+
+    uint64_t GetMediaSegmentDuration(uint64_t index) const
+    {
+        switch (lazyMode_) {
+            case DASH_LAZY_MODE_NONE:
+                return (index < mediaSegments_.size() && mediaSegments_[index]) ? mediaSegments_[index]->duration_ : 0;
+            case DASH_LAZY_MODE_TIMELINE:
+                for (const auto& entry : timelineEntries_) {
+                    if (entry.repeatCount <= 0) {
+                        continue;
+                    }
+                    uint64_t cnt = static_cast<uint64_t>(entry.repeatCount);
+                    if (index < cnt) {
+                        return entry.segDurationNs;
+                    }
+                    index -= cnt;
+                }
+                return 0;
+            case DASH_LAZY_MODE_DURATION: {
+                uint64_t count = GetMediaSegmentCount();
+                if (durationSegInfo_.segDurationNs == 0 || index >= count) {
+                    return 0;
+                }
+                if (index == count - 1) {
+                    uint64_t remainder = durationSegInfo_.totalDuration % durationSegInfo_.segDurationNs;
+                    return remainder > 0 ? remainder : durationSegInfo_.segDurationNs;
+                }
+                return durationSegInfo_.segDurationNs;
+            }
+            case DASH_LAZY_MODE_SIDX:
+                return (index < sidxEntries_.size()) ? sidxEntries_[index].durationNs : 0;
+            case DASH_LAZY_MODE_SEGLIST:
+                return (index < segListEntries_.size()) ? segListEntries_[index].durationNs : 0;
+            default:
+                return 0;
+        }
+    }
+
+    int64_t GetMediaSegmentNumberSeq(uint64_t index) const
+    {
+        switch (lazyMode_) {
+            case DASH_LAZY_MODE_NONE:
+                if (index < mediaSegments_.size() && mediaSegments_[index]) {
+                    return mediaSegments_[index]->numberSeq_;
+                }
+                return -1;
+            case DASH_LAZY_MODE_TIMELINE:
+                return GetTimelineSegmentNumberSeq(index);
+            case DASH_LAZY_MODE_DURATION:
+                if (index >= GetMediaSegmentCount()) {
+                    return -1;
+                }
+                int64_t indexI;
+                int64_t result;
+                if (!SafeIntCast<uint64_t, int64_t>(index, indexI) ||
+                    !SafeAdd(durationSegInfo_.startNumberSeq, indexI, result)) {
+                    return -1;
+                }
+                return result;
+            case DASH_LAZY_MODE_SIDX:
+                return (index < sidxEntries_.size()) ? sidxEntries_[index].numberSeq : -1;
+            case DASH_LAZY_MODE_SEGLIST:
+                return (index < segListEntries_.size()) ? segListEntries_[index].numberSeq : -1;
+            default:
+                return -1;
+        }
+    }
+
+    // Locate segment number seq by walking timeline entries, subtracting each
+    // entry's repeat count from index; returns -1 if index is out of range.
+    int64_t GetTimelineSegmentNumberSeq(uint64_t index) const
+    {
+        for (const auto& entry : timelineEntries_) {
+            if (entry.repeatCount <= 0) {
+                continue;
+            }
+            uint64_t cnt = static_cast<uint64_t>(entry.repeatCount);
+            if (index < cnt) {
+                int64_t result;
+                if (!SafeAdd(entry.startSeq, static_cast<int64_t>(index), result)) {
+                    return -1;
+                }
+                return result;
+            }
+            index -= cnt;
+        }
+        return -1;
+    }
 };
 
 struct DashDrmInfo {

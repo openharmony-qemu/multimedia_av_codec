@@ -104,12 +104,12 @@ class DownloadRequest {
 public:
     DownloadRequest(const std::string& url, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
-    DownloadRequest(const std::string& url, double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
+    DownloadRequest(const std::string& url, uint64_t duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
                     bool requestWholeFile = false);
     DownloadRequest(DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
                     bool requestWholeFile = false);
-    DownloadRequest(double duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback, RequestInfo requestInfo,
-                    bool requestWholeFile = false);
+    DownloadRequest(uint64_t duration, DataSaveFunc saveData, StatusCallbackFunc statusCallback,
+                    RequestInfo requestInfo, bool requestWholeFile = false);
     DownloadRequest(uint64_t keyIndex, KeyDataSaveFunc keySaveData, StatusCallbackFunc statusCallback,
         RequestInfo requestInfo, bool requestWholeFile = false);
     ~DownloadRequest();
@@ -156,9 +156,10 @@ public:
     }
     bool IsClosed() const;
     void Close();
-    double GetDuration() const;
+    uint64_t GetDuration() const;
     void SetStartTimePos(int64_t startTimePos);
     void SetRangePos(int64_t startPos, int64_t endPos);
+    int64_t GetRangeLength() const;
     void SetDownloadDoneCb(DownloadDoneCbFunc downloadDoneCallback);
     int64_t GetNowTime();
     int64_t GetDownloadStartTime() const { return downloadStartTime_; }
@@ -179,7 +180,7 @@ public:
 private:
     void WaitHeaderUpdated() const;
     std::string url_;
-    double duration_ {0.0};
+    uint64_t duration_ {0};  // nanoseconds
     DataSaveFunc saveData_;
     KeyDataSaveFunc keySaveData_;
     StatusCallbackFunc statusCallback_;
@@ -275,6 +276,11 @@ private:
     static bool HandleTransferEncoding(HeaderInfo* info, char* key, char* next, Downloader* mediaDownloader);
     static void UpdateHeaderInfo(Downloader* mediaDownloader);
     static size_t DropRetryData(void* buffer, size_t dataLen, Downloader* mediaDownloader);
+    static bool HandleDropPartialWrite(void* buffer, size_t dataLen, int64_t writeOffSet,
+        Downloader* mediaDownloader, uint32_t& writeLen);
+    static void HandleDropFinished(Downloader* mediaDownloader, int64_t writeOffSet,
+        size_t dataLen);
+    static void HandleDropFailed(Downloader* mediaDownloader, uint32_t writeLen);
     static bool IsDropDataRetryRequest(Downloader* mediaDownloader);
     static void UpdateCurRequest(Downloader* mediaDownloader, HeaderInfo* header);
     static void HandleFileContentLen(HeaderInfo* header);

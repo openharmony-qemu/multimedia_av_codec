@@ -109,8 +109,8 @@ public:
     void SetReadBlockingFlag(bool isReadBlockingAllowed);
     void SeekToTs(uint64_t seekTime, SeekMode mode);
     void PutRequestIntoDownloader(const PlayInfo& playInfo);
-    int64_t RequestNewTs(uint64_t seekTime, SeekMode mode, double totalDuration,
-        double hstTime, const PlayInfo& item);
+    int64_t RequestNewTs(uint64_t seekTime, SeekMode mode, uint64_t totalDuration,
+        const PlayInfo& item, bool isLast);
     void UpdateDownloadFinished(const std::string &url, const std::string& location);
     void NotifyBitrateChange(uint32_t bitRate);
     bool IsCurrentTsFinished();
@@ -202,7 +202,7 @@ private:
     void ResetPlaylistCapacity(size_t size);
     void PlaylistBackup(const PlayInfo& fragment);
     void HandleCachedDuration();
-    void CalculateBitRate(size_t fragmentSize, double duration);
+    void CalculateBitRate(size_t fragmentSize, uint64_t duration);
     double CalculateCurrentDownloadSpeed();
     void HandleFfmpegReadback(uint64_t ffmpegOffset);
     void SeekToTsForRead(uint32_t currentTsIndex);

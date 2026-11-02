@@ -17,6 +17,7 @@
 #include <list>
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <limits>
 #include <securec.h>
 #include "media_cached_buffer.h"
@@ -24,6 +25,7 @@
 
 namespace OHOS {
 namespace Media {
+
 constexpr size_t CACHE_FRAGMENT_MAX_NUM_DEFAULT = 300; // Maximum number of fragment nodes
 constexpr size_t CACHE_FRAGMENT_MAX_NUM_LARGE = 10; // Maximum number of fragment nodes
 constexpr size_t CACHE_FRAGMENT_MIN_NUM_DEFAULT = 3; // Minimum number of fragment nodes
@@ -34,7 +36,6 @@ constexpr double TO_PERCENT = 100;
 constexpr int64_t MAX_TOTAL_READ_SIZE = 2000000;
 constexpr int64_t UP_LIMIT_MAX_TOTAL_READ_SIZE = 3000000;
 constexpr int64_t ACCESS_OFFSET_MAX_LENGTH = 2 * 1024;
-constexpr uint32_t CHUNK_SIZE = 16 * 1024;
 constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 19 * 1024 * 1024;
 constexpr double EPSILON = 1e-9;
 
@@ -92,14 +93,14 @@ bool CacheMediaChunkBufferImpl::Init(uint64_t totalBuffSize, uint32_t chunkSize)
     } else {
         lruCache_.ReCacheSize(CACHE_FRAGMENT_MAX_NUM_DEFAULT);
     }
-    if (totalBuffSize == 0 || chunkSize == 0 || totalBuffSize < chunkSize) {
+    if (totalBuffSize == 0 || chunkSize == 0 || totalBuffSize < chunkSize ||
+        totalBuffSize > MAX_CACHE_BUFFER_SIZE) {
         return false;
     }
-    double newFragmentInitChunkNum  = NEW_FRAGMENT_INIT_CHUNK_NUM;
+    double newFragmentInitChunkNum = NEW_FRAGMENT_INIT_CHUNK_NUM;
     uint64_t diff = (totalBuffSize + chunkSize) > 1 ? (totalBuffSize + chunkSize) - 1 : 0;
     int64_t chunkNum = static_cast<int64_t>(diff / chunkSize) + 1;
-    if ((chunkNum - static_cast<int64_t>(newFragmentInitChunkNum)) < 0 ||
-        chunkNum > MAX_CACHE_BUFFER_SIZE) {
+    if (chunkNum < static_cast<int64_t>(newFragmentInitChunkNum)) {
         return false;
     }
     if (newFragmentInitChunkNum > static_cast<double>(chunkNum) * NEW_FRAGMENT_NIT_DEFAULT_DENOMINATOR) {
@@ -140,7 +141,7 @@ bool CacheMediaChunkBufferImpl::AllocateAndInitChunks(int64_t chunkNum, size_t s
         return false;
     }
     int64_t totalSize = static_cast<int64_t>(sizePerChunk) * chunkNum;
-    if (totalSize <= 0 || totalSize > MAX_CACHE_BUFFER_SIZE * CHUNK_SIZE) {
+    if (totalSize <= 0) {
         return false;
     }
     bufferAddr_ = static_cast<uint8_t*>(malloc(totalSize));
@@ -334,7 +335,7 @@ bool CacheMediaChunkBufferImpl::WriteMergerPre(uint64_t offset, size_t writeSize
                 DumpInner(0);
                 return false;
             }
-            auto &chunkInfo  = *endPos;
+            auto &chunkInfo = *endPos;
             uint64_t newOffset = offset + static_cast<uint64_t>(writeSize);
             uint64_t dataLength = static_cast<uint64_t>(chunkInfo->dataLength);
             uint64_t moveLen = std::max(chunkInfo->offset + dataLength, newOffset) - newOffset;
@@ -927,25 +928,11 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
         }
     }
     auto newFragmentPos = fragmentCacheBuffer_.emplace(std::next(currFragmentIter), offset);
-    if (splitHead == nullptr) {
+    if (splitHead != nullptr) {
+        SplitChunkForFragment(newFragmentPos, currFragmentIter, chunkPos, splitHead, offset);
+    } else {
         newFragmentPos->chunks.splice(newFragmentPos->chunks.end(), currFragmentIter->chunks, chunkPos,
             currFragmentIter->chunks.end());
-    } else {
-        newFragmentPos->chunks.splice(newFragmentPos->chunks.end(), currFragmentIter->chunks, std::next(chunkPos),
-            currFragmentIter->chunks.end());
-        newFragmentPos->chunks.push_front(splitHead);
-        splitHead->offset = offset;
-        uint64_t diff = offset > chunkInfo->offset ? offset - chunkInfo->offset : 0;
-        if (chunkInfo->dataLength >= diff) {
-            splitHead->dataLength = chunkInfo->dataLength > static_cast<uint32_t>(diff) ?
-                chunkInfo->dataLength - static_cast<uint32_t>(diff) : 0;
-            chunkInfo->dataLength = static_cast<uint32_t>(diff);
-            errno_t res =
-                memcpy_s(splitHead->data, splitHead->chunkSize, chunkInfo->data + diff, splitHead->dataLength);
-            FALSE_LOG(res == EOK);
-        } else {
-            splitHead->dataLength = 0; // It can't happen. us_asan can check.
-        }
     }
     newFragmentPos->offsetBegin = offset;
     uint64_t diff = offset > currFragmentIter->offsetBegin ? offset - currFragmentIter->offsetBegin : 0;
@@ -965,6 +952,27 @@ ChunkIterator CacheMediaChunkBufferHlsImpl::SplitFragmentCacheBuffer(FragmentIte
     currFragmentIter = newFragmentPos;
     lruCache_.Refer(newFragmentPos->offsetBegin, newFragmentPos);
     return newFragmentPos->accessPos;
+}
+
+void CacheMediaChunkBufferHlsImpl::SplitChunkForFragment(FragmentIterator& newFragmentPos,
+    FragmentIterator& currFragmentIter, ChunkIterator& chunkPos, CacheChunk* splitHead, uint64_t offset)
+{
+    auto& chunkInfo = *chunkPos;
+    newFragmentPos->chunks.splice(newFragmentPos->chunks.end(), currFragmentIter->chunks, std::next(chunkPos),
+        currFragmentIter->chunks.end());
+    newFragmentPos->chunks.push_front(splitHead);
+    splitHead->offset = offset;
+    uint64_t diff = offset > chunkInfo->offset ? offset - chunkInfo->offset : 0;
+    if (chunkInfo->dataLength >= diff) {
+        splitHead->dataLength = chunkInfo->dataLength > static_cast<uint32_t>(diff) ?
+            chunkInfo->dataLength - static_cast<uint32_t>(diff) : 0;
+        chunkInfo->dataLength = static_cast<uint32_t>(diff);
+        errno_t res =
+            memcpy_s(splitHead->data, splitHead->chunkSize, chunkInfo->data + diff, splitHead->dataLength);
+        FALSE_LOG(res == EOK);
+    } else {
+        splitHead->dataLength = 0; // It can't happen. us_asan can check.
+    }
 }
 
 bool CacheMediaChunkBufferImpl::AddFragmentCacheBuffer(uint64_t offset, ChunkIterator& chunkPos)

@@ -40,6 +40,7 @@ private:
         uint32_t &currPos, int64_t &firstOffset);
     static std::shared_ptr<SubSegmentIndex> ReadOneSubSegmentIndex(char *bitStream, uint32_t streamSize,
         uint32_t timescale, int64_t &mediaSegOffset, uint32_t &currPos);
+    static bool CalcMediaSegOffset(int64_t firstOffset, int64_t sidxEndOffset, int64_t &mediaSegOffset);
 
 private:
     static constexpr uint32_t BASE_BOX_HEAD_SIZE = 8;

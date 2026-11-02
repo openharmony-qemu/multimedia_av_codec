@@ -231,7 +231,13 @@ int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_p
     int32_t receiveDataSize = static_cast<int32_t>(memory->GetSize());
     MediaAVCodec::AVCodecTrace trace("AppClient RespondData, uuid: " + std::to_string(uuid) +
         ", offset: " + std::to_string(offset) + ", receiveDataSize: " + std::to_string(receiveDataSize));
-    int32_t prevInFlight = dataInFlight_.fetch_sub(receiveDataSize);
+    int32_t prevInFlight = dataInFlight_.load();
+    while (prevInFlight > 0) {
+        int32_t next = (prevInFlight >= receiveDataSize) ? (prevInFlight - receiveDataSize) : 0;
+        if (dataInFlight_.compare_exchange_weak(prevInFlight, next)) {
+            break;
+        }
+    }
     if (len_.load() > 0 && prevInFlight <= receiveDataSize) {
         MEDIA_LOG_I("%{public}" PRIu64 " AppClient respondData complete, uuid: " PUBLIC_LOG_D64,
             avcodecUniqueId_, uuid);
