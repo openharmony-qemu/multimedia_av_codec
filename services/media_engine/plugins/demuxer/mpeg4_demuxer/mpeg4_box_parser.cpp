@@ -78,6 +78,9 @@ constexpr uint32_t FFMPEG_FPS_ANALYZE_FRAMECOUNT = 20;
 constexpr int32_t FFMPEG_COARSE_TIMEBASE_TIMESCALE = 2000;
 // demux.c doubles fps_analyze_framecount when the stream time base is coarser than 1/2000.
 constexpr uint32_t FFMPEG_COARSE_TIMEBASE_FPS_ANALYZE_MULTIPLIER = 2;
+// FFmpeg mov.c: r_frame_rate is set for one stts entry, or for two entries when the
+// second entry holds exactly one (trailing) sample.
+constexpr uint32_t PROBE_STTS_TRAILING_SAMPLE_ENTRY_COUNT = 2;
 // FFmpeg demux.c: when both duration terms are zero, the probe falls back to the
 // span between the first and last seen dts once this many frames were read.
 constexpr uint32_t FFMPEG_FPS_DTS_FALLBACK_FRAMES = 30;
@@ -6373,7 +6376,7 @@ public:
     int32_t Read(uint8_t numBits)
     {
         if (numBits == 0 || numBits > AAC_PROBE_MAX_READ_BITS || numBits > BitsLeft()) {
-            return AAC_PROBE_READ_FAILED;
+            return aacProbeReadFailed;
         }
         int32_t value = 0;
         for (uint8_t i = 0; i < numBits; ++i) {
@@ -6395,7 +6398,7 @@ public:
     }
 
 private:
-    static constexpr int32_t AAC_PROBE_READ_FAILED = -1;
+    static constexpr int32_t aacProbeReadFailed = -1;
     const uint8_t* data_;
     size_t totalBits_ = 0;
     size_t pos_ = 0;
@@ -6415,7 +6418,10 @@ double GetProbeAvgFrameRate(const AacProbeStream& stream)
     const auto& helper = stream.track->sampleHelper;
     const int64_t totalSamples = helper->GetRawSampleCount();
     const int64_t totalDuration = helper->GetRawTotalDuration();
-    if (totalSamples <= 0 || totalDuration <= 0) {
+    if (totalSamples <= 0) {
+        return 0;
+    }
+    if (totalDuration <= 0) {
         return 0;
     }
     return static_cast<double>(stream.track->timeScale) * totalSamples / totalDuration;
@@ -6436,7 +6442,8 @@ bool IsProbeStreamFpsDone(const AacProbeStream& stream)
     // so the fps analysis is done when avg_frame_rate is known and r_frame_rate is
     // set, or once fps_analyze_framecount frames with increasing dts were read.
     if (totalDuration > 0 && (sttsCount == 1 ||
-        (sttsCount == 2 && helper->GetSampleCountOfSttsEntry(1) == 1))) {
+        (sttsCount == PROBE_STTS_TRAILING_SAMPLE_ENTRY_COUNT &&
+            helper->GetSampleCountOfSttsEntry(1) == 1))) {
         return true;
     }
     const uint32_t analyzeFrameCount = stream.track->timeScale < FFMPEG_COARSE_TIMEBASE_TIMESCALE ?
@@ -6529,6 +6536,24 @@ bool ParseAacProbeIcsInfo(AacProbeBitReader& bitReader, uint32_t samplingIndex, 
     return maxSfb <= AAC_NUM_SWB_1024[samplingIndex];
 }
 
+bool ParseAacProbeBandIncrements(AacProbeBitReader& bitReader, int32_t incrBits, int32_t maxIncr,
+    int32_t maxSfb, int32_t& k)
+{
+    // One section may span several increments when sect_len_incr saturates (== maxIncr).
+    int32_t incr = 0;
+    do {
+        incr = bitReader.Read(incrBits);
+        if (incr < 0) {
+            return false;
+        }
+        k += incr;
+        if (k > maxSfb) {
+            return false;
+        }
+    } while (incr == maxIncr);
+    return true;
+}
+
 bool ParseAacProbeBandTypes(AacProbeBitReader& bitReader, int32_t maxSfb, int32_t windowSequence,
     int32_t numWindowGroups)
 {
@@ -6545,17 +6570,9 @@ bool ParseAacProbeBandTypes(AacProbeBitReader& bitReader, int32_t maxSfb, int32_
             if (sectionType < 0 || sectionType == AAC_SECTION_TYPE_ZERO_HCB) {
                 return false;
             }
-            int32_t incr = 0;
-            do {
-                incr = bitReader.Read(incrBits);
-                if (incr < 0) {
-                    return false;
-                }
-                k += incr;
-                if (k > maxSfb) {
-                    return false;
-                }
-            } while (incr == maxIncr);
+            if (!ParseAacProbeBandIncrements(bitReader, incrBits, maxIncr, maxSfb, k)) {
+                return false;
+            }
         }
     }
     return true;
