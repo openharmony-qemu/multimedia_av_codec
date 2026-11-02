@@ -6458,10 +6458,7 @@ double GetProbeAvgFrameRate(const AacProbeStream& stream)
     const auto& helper = stream.track->sampleHelper;
     const int64_t totalSamples = helper->GetRawSampleCount();
     const int64_t totalDuration = helper->GetRawTotalDuration();
-    if (totalSamples <= 0) {
-        return 0;
-    }
-    if (totalDuration <= 0) {
+    if (totalSamples <= 0 || totalDuration <= 0) {
         return 0;
     }
     return static_cast<double>(stream.track->timeScale) * totalSamples / totalDuration;
@@ -6766,34 +6763,45 @@ bool SkipAacProbePceMixdownTags(AacProbeBitReader& bitReader)
     return true;
 }
 
-bool SkipAacProbeProgramConfigElement(AacProbeBitReader& bitReader, size_t frameStartBitPos)
+struct AacProbePceCounts {
+    int32_t numFront = 0;
+    int32_t numSide = 0;
+    int32_t numBack = 0;
+    int32_t numLfe = 0;
+    int32_t numAssoc = 0;
+    int32_t numCc = 0;
+};
+
+bool SkipAacProbePceElementCounts(AacProbeBitReader& bitReader, AacProbePceCounts& counts)
 {
-    // Mirrors FFmpeg decode_pce (table 4.2): object_type/sampling_index, the element
-    // counts, optional mixdown tags, the channel maps, byte alignment relative to the
-    // raw-data-block start, and the comment field. Only overreads fail the element.
-    if (bitReader.Read(AAC_PCE_OBJECT_TYPE_BITS) < 0 ||
-        bitReader.Read(AAC_PCE_SAMPLING_INDEX_BITS) < 0) {
-        return false;
-    }
-    const int32_t numFront = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
-    const int32_t numSide = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
-    const int32_t numBack = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
-    const int32_t numLfe = bitReader.Read(AAC_PCE_NUM_LFE_BITS);
-    const int32_t numAssoc = bitReader.Read(AAC_PCE_NUM_ASSOC_BITS);
-    const int32_t numCc = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
-    if (numFront < 0 || numSide < 0 || numBack < 0 || numLfe < 0 || numAssoc < 0 || numCc < 0) {
-        return false;
-    }
-    if (!SkipAacProbePceMixdownTags(bitReader)) {
-        return false;
-    }
-    // Front/side/back entries carry an is_cpe flag plus a tag, lfe and associated
-    // data carry only a tag, coupling channels repeat the is_cpe/tag pattern.
+    // decode_pce element counts (table 4.2); any failed read invalidates the element.
+    counts.numFront = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
+    counts.numSide = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
+    counts.numBack = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
+    counts.numLfe = bitReader.Read(AAC_PCE_NUM_LFE_BITS);
+    counts.numAssoc = bitReader.Read(AAC_PCE_NUM_ASSOC_BITS);
+    counts.numCc = bitReader.Read(AAC_PCE_CHANNEL_COUNT_BITS);
+    return counts.numFront >= 0 && counts.numSide >= 0 && counts.numBack >= 0 &&
+        counts.numLfe >= 0 && counts.numAssoc >= 0 && counts.numCc >= 0;
+}
+
+bool SkipAacProbePceTaggedChannels(AacProbeBitReader& bitReader, int32_t numFront, int32_t numSide,
+    int32_t numBack)
+{
+    // Front/side/back entries carry an is_cpe flag plus a tag.
     for (int32_t i = 0; i < numFront + numSide + numBack; ++i) {
         if (bitReader.Read(AAC_SINGLE_BIT) < 0 || bitReader.Read(AAC_PCE_TAG_BITS) < 0) {
             return false;
         }
     }
+    return true;
+}
+
+bool SkipAacProbePceSimpleChannels(AacProbeBitReader& bitReader, int32_t numLfe, int32_t numAssoc,
+    int32_t numCc)
+{
+    // LFE and associated data carry only a tag; coupling channels repeat the
+    // is_cpe/tag pattern.
     for (int32_t i = 0; i < numLfe + numAssoc; ++i) {
         if (bitReader.Read(AAC_PCE_TAG_BITS) < 0) {
             return false;
@@ -6803,6 +6811,31 @@ bool SkipAacProbeProgramConfigElement(AacProbeBitReader& bitReader, size_t frame
         if (bitReader.Read(AAC_SINGLE_BIT) < 0 || bitReader.Read(AAC_PCE_TAG_BITS) < 0) {
             return false;
         }
+    }
+    return true;
+}
+
+bool SkipAacProbeProgramConfigElement(AacProbeBitReader& bitReader, size_t frameStartBitPos)
+{
+    // Mirrors FFmpeg decode_pce (table 4.2): object_type/sampling_index, the element
+    // counts, optional mixdown tags, the channel maps, byte alignment relative to the
+    // raw-data-block start, and the comment field. Only overreads fail the element.
+    if (bitReader.Read(AAC_PCE_OBJECT_TYPE_BITS) < 0 ||
+        bitReader.Read(AAC_PCE_SAMPLING_INDEX_BITS) < 0) {
+        return false;
+    }
+    AacProbePceCounts counts;
+    if (!SkipAacProbePceElementCounts(bitReader, counts)) {
+        return false;
+    }
+    if (!SkipAacProbePceMixdownTags(bitReader)) {
+        return false;
+    }
+    if (!SkipAacProbePceTaggedChannels(bitReader, counts.numFront, counts.numSide, counts.numBack)) {
+        return false;
+    }
+    if (!SkipAacProbePceSimpleChannels(bitReader, counts.numLfe, counts.numAssoc, counts.numCc)) {
+        return false;
     }
     if (!bitReader.AlignToByteRelative(frameStartBitPos)) {
         return false;
