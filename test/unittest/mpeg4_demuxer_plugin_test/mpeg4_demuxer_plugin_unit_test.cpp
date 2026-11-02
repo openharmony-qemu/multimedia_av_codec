@@ -186,7 +186,10 @@ constexpr uint8_t AAC_TEST_ELD_LONG_FRAME_CONFIG[] = {0xF8, 0xE6, 0x40};
 constexpr uint8_t AAC_TEST_SYNC_EXTENSION_SBR_CONFIG[] = {0x11, 0x90, 0x56, 0xE5, 0x80};
 constexpr uint8_t AAC_TEST_ELEMENT_CPE = 1;
 constexpr uint8_t AAC_TEST_ELEMENT_SCE = 0;
+constexpr uint8_t AAC_TEST_ELEMENT_CCE = 2;
 constexpr uint8_t AAC_TEST_ELEMENT_LFE = 3;
+constexpr uint8_t AAC_TEST_ELEMENT_DSE = 4;
+constexpr uint8_t AAC_TEST_ELEMENT_PCE = 5;
 constexpr uint8_t AAC_TEST_ELEMENT_FIL = 6;
 constexpr uint8_t AAC_TEST_ELEMENT_END = 7;
 constexpr uint8_t AAC_TEST_EXTENSION_SBR = 0x0D;
@@ -201,6 +204,15 @@ constexpr uint8_t AAC_TEST_FILL_COUNT = 1;
 constexpr uint8_t AAC_TEST_PAYLOAD_BITS = 8;
 constexpr uint8_t AAC_TEST_END_BITS = 3;
 constexpr uint8_t AAC_TEST_BITS_PER_BYTE = 8;
+constexpr uint8_t AAC_TEST_DSE_ALIGN_FLAG_BITS = 1;
+constexpr uint8_t AAC_TEST_DSE_COUNT_BITS = 8;
+constexpr uint8_t AAC_TEST_CCE_COUPLING_POINT_BITS = 1;
+constexpr uint8_t AAC_TEST_CCE_NUM_COUPLED_BITS = 3;
+constexpr uint8_t AAC_TEST_CCE_IS_CPE_BITS = 1;
+constexpr uint8_t AAC_TEST_CCE_ID_SELECT_BITS = 4;
+constexpr uint8_t AAC_TEST_CCE_CH_SELECT_BITS = 2;
+constexpr uint8_t AAC_TEST_CCE_SIGN_BITS = 1;
+constexpr uint8_t AAC_TEST_CCE_SCALE_BITS = 2;
 constexpr uint32_t SAMPLE_INDEX_TEST_COUNT = 3;
 constexpr uint32_t SAMPLE_INDEX_TEST_SECOND = 1;
 constexpr uint32_t SAMPLE_INDEX_TEST_THIRD = 2;
@@ -6708,6 +6720,60 @@ constexpr int32_t AAC_PROBE_TEST_SMALL_VIDEO_SAMPLE_SIZE = 100000;
 constexpr int32_t AAC_PROBE_TEST_LARGE_VIDEO_SAMPLE_SIZE = 2000000;
 constexpr int32_t AAC_PROBE_TEST_SAMPLES_PER_FRAME = 1024;
 constexpr uint32_t AAC_PROBE_TEST_TRACK_COUNT = 2;
+// bbcnews-original.mp4 video track: stts (159,0),(1,29),(2442,40) at a 1 kHz time base.
+// The FFmpeg probe reaches max_stream_analyze_duration (5 s) through the long zero-delta
+// run before the audio track is ever read, so the AAC frame size is not exported.
+constexpr uint32_t AAC_PROBE_TEST_R5_VIDEO_TIMESCALE = 1000;
+constexpr uint32_t AAC_PROBE_TEST_R5_VIDEO_SAMPLE_COUNT = 2602;
+constexpr int32_t AAC_PROBE_TEST_R5_VIDEO_SAMPLE_SIZE = 1000;
+constexpr int64_t AAC_PROBE_TEST_R5_AUDIO_OFFSET = 3000000;
+// ASC bytes with AOT=AAC-LC and samplingFrequencyIndex=4 (0x12 0x10), used by the
+// lightweight probe frame-structure check to pick the NUM_SWB table.
+constexpr uint8_t AAC_PROBE_TEST_ASC_SAMPLE_INDEX_4[] = {0x12, 0x10};
+constexpr size_t AAC_PROBE_TEST_ASC_SIZE = 2;
+constexpr uint8_t AAC_PROBE_TEST_COMMON_WINDOW_BITS = 1;
+constexpr uint8_t AAC_PROBE_TEST_ICS_RESERVED_BITS = 1;
+constexpr uint8_t AAC_PROBE_TEST_WINDOW_SEQUENCE_BITS = 2;
+constexpr uint8_t AAC_PROBE_TEST_WINDOW_SHAPE_BITS = 1;
+constexpr uint8_t AAC_PROBE_TEST_MAX_SFB_BITS = 6;
+constexpr uint8_t AAC_PROBE_TEST_PREDICTOR_PRESENT_BITS = 1;
+constexpr uint8_t AAC_PROBE_TEST_MS_MASK_PRESENT_BITS = 2;
+constexpr uint8_t AAC_PROBE_TEST_GLOBAL_GAIN_BITS = 8;
+constexpr uint8_t AAC_PROBE_TEST_SECTION_TYPE_BITS = 4;
+constexpr uint8_t AAC_PROBE_TEST_BAND_INCR_BITS = 5;
+constexpr uint32_t AAC_PROBE_TEST_MAX_SFB = 1;
+constexpr uint32_t AAC_PROBE_TEST_INVALID_MAX_SFB = 50;
+constexpr uint32_t AAC_PROBE_TEST_SECTION_TYPE = 1;
+constexpr uint32_t AAC_PROBE_TEST_BAND_INCR = 1;
+// EIGHT_SHORT_SEQUENCE = 2 in FFmpeg's enum WindowSequence (aac.h).
+constexpr uint8_t AAC_PROBE_TEST_SHORT_WINDOW_SEQUENCE = 2;
+constexpr uint8_t AAC_PROBE_TEST_MAX_SFB_SHORT_BITS = 4;
+constexpr uint32_t AAC_PROBE_TEST_SHORT_MAX_SFB = 10;
+constexpr uint8_t AAC_PROBE_TEST_GROUPING_BITS = 7;
+constexpr uint32_t AAC_PROBE_TEST_WINDOW_GROUP_COUNT = 2;
+constexpr uint8_t AAC_PROBE_TEST_MS_MASK_BITS = AAC_PROBE_TEST_WINDOW_GROUP_COUNT *
+    AAC_PROBE_TEST_SHORT_MAX_SFB;
+constexpr uint8_t AAC_PROBE_TEST_BAND_INCR_SHORT_BITS = 3;
+constexpr uint32_t AAC_PROBE_TEST_MAX_SHORT_INCR = 7;
+constexpr uint32_t AAC_PROBE_TEST_FINAL_SHORT_INCR = 3;
+// scale_factor_grouping 0111111: the first (MSB) zero opens the second window group and
+// the six set bits extend it, so FFmpeg decode_ics_info counts two window groups.
+constexpr uint32_t AAC_PROBE_TEST_GROUP_EXTEND_MASK = 0x3F;
+// DSE/PCE/CCE element payloads mirroring the parser-side probe checks (ISO/IEC 14496-3
+// table 4.x): the DSE count escape 255 -> +8 bits, and band type 12 that FFmpeg
+// decode_band_types rejects ("invalid band type").
+constexpr uint32_t AAC_PROBE_TEST_DSE_PAYLOAD_COUNT = 1;
+constexpr uint32_t AAC_PROBE_TEST_DSE_COUNT_ESCAPE = 255;
+constexpr uint32_t AAC_PROBE_TEST_DSE_ESCAPE_ADD_COUNT = 2;
+constexpr uint32_t AAC_PROBE_TEST_DSE_TRUNCATED_COUNT = 8;
+constexpr uint32_t AAC_PROBE_TEST_DSE_TRUNCATED_PAYLOAD_BYTES = 4;
+constexpr uint32_t AAC_PROBE_TEST_PCE_FRONT_COUNT = 1;
+constexpr uint32_t AAC_PROBE_TEST_PCE_BACK_COUNT = 1;
+constexpr uint32_t AAC_PROBE_TEST_PREDICTOR_PRESENT = 1;
+constexpr uint32_t AAC_PROBE_TEST_INVALID_SECTION_TYPE = 12;
+// Parser-side AAC_MAX_FRAME_VALIDATE_SIZE (16 KiB): a raw-data block beyond this cap is
+// rejected before any read so a corrupt stsz cannot force a multi-MB probe allocation.
+constexpr int32_t AAC_PROBE_TEST_OVERSIZE_SAMPLE_SIZE = 16 * 1024 + 1;
 
 std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper> BuildProbeTestSampleHelper(
     Plugins::MPEG4::TrackType trackType, const std::vector<int32_t>& sampleSizes,
@@ -6728,6 +6794,265 @@ std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper> BuildProbeTestSampleHelper(
         return nullptr;
     }
     return helper;
+}
+
+std::shared_ptr<Plugins::MPEG4::MPEG4SampleHelper> BuildProbeTestSampleHelperWithStts(
+    Plugins::MPEG4::TrackType trackType, const std::vector<int32_t>& sampleSizes,
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry>& sttsEntries,
+    int64_t baseOffset)
+{
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (helper == nullptr) {
+        return nullptr;
+    }
+    const uint32_t sampleCount = static_cast<uint32_t>(sampleSizes.size());
+    helper->trackType_ = trackType;
+    helper->sttsEntry_ = sttsEntries;
+    helper->stscEntry_ = {{0, sampleCount, 1}};
+    helper->sampleSizes_ = sampleSizes;
+    helper->sampleSizeCount_ = sampleCount;
+    helper->chunkOffsets_ = {baseOffset};
+    if (helper->FinalizeSampleTables() != Status::OK) {
+        return nullptr;
+    }
+    return helper;
+}
+
+std::vector<uint8_t> PackAacTestBits(const std::vector<uint8_t>& bits)
+{
+    std::vector<uint8_t> data((bits.size() + AAC_TEST_BITS_PER_BYTE - 1) / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        data[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    return data;
+}
+
+// Shared CPE core used by the probe frame builders: common_window=1 long window with
+// max_sfb/predictor/section type passed by the caller, ms_mask absent, one band section.
+void AppendAacProbeCpeBits(std::vector<uint8_t>& bits, uint32_t maxSfb, uint32_t predictorPresent,
+    uint32_t sectionType)
+{
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_CPE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, 1, AAC_PROBE_TEST_COMMON_WINDOW_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_ICS_RESERVED_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_WINDOW_SEQUENCE_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_WINDOW_SHAPE_BITS);
+    AppendAacTestBits(bits, maxSfb, AAC_PROBE_TEST_MAX_SFB_BITS);
+    AppendAacTestBits(bits, predictorPresent, AAC_PROBE_TEST_PREDICTOR_PRESENT_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_MS_MASK_PRESENT_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_GLOBAL_GAIN_BITS);
+    AppendAacTestBits(bits, sectionType, AAC_PROBE_TEST_SECTION_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_BAND_INCR, AAC_PROBE_TEST_BAND_INCR_BITS);
+}
+
+std::vector<uint8_t> BuildAacProbeCpeFrame(uint32_t maxSfb, uint32_t predictorPresent, uint32_t sectionType)
+{
+    std::vector<uint8_t> bits;
+    AppendAacProbeCpeBits(bits, maxSfb, predictorPresent, sectionType);
+    return PackAacTestBits(bits);
+}
+
+// A single CPE with a shared ICS window: element type/tag, common_window=1, reserved=0,
+// long window, max_sfb (1 valid / 50 invalid for samplingFrequencyIndex=4), predictor
+// absent, ms_mask_present=0, global_gain, then one band-type section.
+std::vector<uint8_t> BuildAacProbeCpeRawDataBlock(bool validMaxSfb)
+{
+    return BuildAacProbeCpeFrame(validMaxSfb ? AAC_PROBE_TEST_MAX_SFB : AAC_PROBE_TEST_INVALID_MAX_SFB,
+        0, AAC_PROBE_TEST_SECTION_TYPE);
+}
+
+// A DSE raw-data-block element followed by a valid CPE: element type/tag,
+// data_byte_align_flag=0, count (255 -> +8 escape when requested), count payload bytes,
+// then the valid CPE. Exercises SkipAacProbeDataStreamElement in ValidateAacProbeFrame.
+std::vector<uint8_t> BuildAacProbeDsePrefixedFrame(bool escapeCount)
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_DSE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_DSE_ALIGN_FLAG_BITS);
+    uint32_t payloadBytes = 0;
+    if (escapeCount) {
+        AppendAacTestBits(bits, AAC_PROBE_TEST_DSE_COUNT_ESCAPE, AAC_TEST_DSE_COUNT_BITS);
+        AppendAacTestBits(bits, AAC_PROBE_TEST_DSE_ESCAPE_ADD_COUNT, AAC_TEST_DSE_COUNT_BITS);
+        payloadBytes = AAC_PROBE_TEST_DSE_COUNT_ESCAPE + AAC_PROBE_TEST_DSE_ESCAPE_ADD_COUNT;
+    } else {
+        AppendAacTestBits(bits, AAC_PROBE_TEST_DSE_PAYLOAD_COUNT, AAC_TEST_DSE_COUNT_BITS);
+        payloadBytes = AAC_PROBE_TEST_DSE_PAYLOAD_COUNT;
+    }
+    for (uint32_t i = 0; i < payloadBytes; ++i) {
+        AppendAacTestBits(bits, 0, AAC_TEST_BITS_PER_BYTE);
+    }
+    AppendAacProbeCpeBits(bits, AAC_PROBE_TEST_MAX_SFB, 0, AAC_PROBE_TEST_SECTION_TYPE);
+    return PackAacTestBits(bits);
+}
+
+// A DSE element declaring more payload bytes than the packet provides, so the probe
+// BitsLeft check fails and the first sample is rejected.
+std::vector<uint8_t> BuildAacProbeTruncatedDseFrame()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_DSE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_DSE_ALIGN_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_DSE_TRUNCATED_COUNT, AAC_TEST_DSE_COUNT_BITS);
+    for (uint32_t i = 0; i < AAC_PROBE_TEST_DSE_TRUNCATED_PAYLOAD_BYTES; ++i) {
+        AppendAacTestBits(bits, 0, AAC_TEST_BITS_PER_BYTE);
+    }
+    return PackAacTestBits(bits);
+}
+
+// An unaligned FIL element followed by a DSE with data_byte_align_flag=1: the DSE
+// count ends off the byte boundary and AlignToByte() consumes the padding, then the
+// count payload and a valid CPE follow. Exercises both SkipAacProbeFillElement and
+// the DSE byte-alignment branch in ValidateAacProbeFrame.
+std::vector<uint8_t> BuildAacProbeDseAlignedFrame()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_FIL, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_FILL_COUNT, AAC_TEST_FILL_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_EXTENSION_OTHER, AAC_TEST_EXTENSION_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_PAYLOAD_BITS - AAC_TEST_EXTENSION_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_DSE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, 1, AAC_TEST_DSE_ALIGN_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_DSE_PAYLOAD_COUNT, AAC_TEST_DSE_COUNT_BITS);
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    AppendAacTestBits(bits, 0, AAC_TEST_BITS_PER_BYTE);
+    AppendAacProbeCpeBits(bits, AAC_PROBE_TEST_MAX_SFB, 0, AAC_PROBE_TEST_SECTION_TYPE);
+    return PackAacTestBits(bits);
+}
+
+// A PCE raw-data-block element (object type/sampling index, one front CPE, one back SCE,
+// a mono mixdown tag, empty comment) followed by a valid CPE. Exercises
+// SkipAacProbeProgramConfigElement including the relative byte alignment.
+std::vector<uint8_t> BuildAacProbePcePrefixedFrame()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_PCE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_AAC_LC_OBJECT_TYPE, AAC_TEST_PCE_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_PCE_FRONT_COUNT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_PCE_BACK_COUNT, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_LFE_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ASSOC_DATA_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, 1, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_CHANNEL_PAIR_ELEMENT, AAC_TEST_PCE_ZERO_VALUE);
+    AppendAacPceChannelElement(bits, AAC_TEST_PCE_SINGLE_CHANNEL_ELEMENT, AAC_TEST_PCE_SECONDARY_TAG);
+    // FFmpeg decode_pce aligns the comment field to a byte boundary relative to the
+    // raw-data-block start (payload_alignment), so the builder pads before comment_len.
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_COMMENT_COUNT_BITS);
+    AppendAacProbeCpeBits(bits, AAC_PROBE_TEST_MAX_SFB, 0, AAC_PROBE_TEST_SECTION_TYPE);
+    return PackAacTestBits(bits);
+}
+
+// A PCE element with zero channel counts and no comment field: the relative byte
+// alignment succeeds but the comment read runs out of bits and rejects the frame.
+std::vector<uint8_t> BuildAacProbeTruncatedPceFrame()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_PCE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_AAC_LC_OBJECT_TYPE, AAC_TEST_PCE_OBJECT_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_48KHZ_SAMPLE_RATE_INDEX, AAC_TEST_SAMPLING_FREQUENCY_INDEX_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_LFE_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ASSOC_DATA_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_ELEMENT_COUNT_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    AppendAacTestBits(bits, AAC_TEST_PCE_ZERO_VALUE, AAC_TEST_PCE_FLAG_BITS);
+    return PackAacTestBits(bits);
+}
+
+// A CCE raw-data-block element: coupling_point=0, num_coupled=1 (one CPE couple with
+// ch_select, one SCE couple), then a valid first-channel SCE (global_gain/ics/band types).
+std::vector<uint8_t> BuildAacProbeCceFrame()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_CCE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_COUPLING_POINT_BITS);
+    AppendAacTestBits(bits, 1, AAC_TEST_CCE_NUM_COUPLED_BITS);
+    AppendAacTestBits(bits, 1, AAC_TEST_CCE_IS_CPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_ID_SELECT_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_CH_SELECT_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_IS_CPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_ID_SELECT_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_COUPLING_POINT_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_SIGN_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_SCALE_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_GLOBAL_GAIN_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_ICS_RESERVED_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_WINDOW_SEQUENCE_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_WINDOW_SHAPE_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_MAX_SFB, AAC_PROBE_TEST_MAX_SFB_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_PREDICTOR_PRESENT_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_SECTION_TYPE, AAC_PROBE_TEST_SECTION_TYPE_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_BAND_INCR, AAC_PROBE_TEST_BAND_INCR_BITS);
+    return PackAacTestBits(bits);
+}
+
+// A CCE element with num_coupled=1 but only one per-couple entry: the second iteration
+// runs out of bits and the probe rejects the frame.
+std::vector<uint8_t> BuildAacProbeTruncatedCceFrame()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_CCE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_COUPLING_POINT_BITS);
+    AppendAacTestBits(bits, 1, AAC_TEST_CCE_NUM_COUPLED_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_IS_CPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_CCE_ID_SELECT_BITS);
+    return PackAacTestBits(bits);
+}
+
+// A CPE with a shared EIGHT_SHORT ICS window and two window groups (scale_factor_grouping
+// 0,1,1,1,1,1,1): the ms_mask is num_window_groups * max_sfb bits and the band-type
+// sections restart per group with a zero/escaping increment, matching the real frames of
+// the 44.1 kHz meta* resources that the previous single-run check wrongly rejected.
+std::vector<uint8_t> BuildAacProbeShortCpeRawDataBlock()
+{
+    std::vector<uint8_t> bits;
+    AppendAacTestBits(bits, AAC_TEST_ELEMENT_CPE, AAC_TEST_ELEMENT_TYPE_BITS);
+    AppendAacTestBits(bits, 0, AAC_TEST_INSTANCE_TAG_BITS);
+    AppendAacTestBits(bits, 1, AAC_PROBE_TEST_COMMON_WINDOW_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_ICS_RESERVED_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_SHORT_WINDOW_SEQUENCE, AAC_PROBE_TEST_WINDOW_SEQUENCE_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_WINDOW_SHAPE_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_SHORT_MAX_SFB, AAC_PROBE_TEST_MAX_SFB_SHORT_BITS);
+    AppendAacTestBits(bits, AAC_PROBE_TEST_GROUP_EXTEND_MASK, AAC_PROBE_TEST_GROUPING_BITS);
+    AppendAacTestBits(bits, 1, AAC_PROBE_TEST_MS_MASK_PRESENT_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_MS_MASK_BITS);
+    AppendAacTestBits(bits, 0, AAC_PROBE_TEST_GLOBAL_GAIN_BITS);
+    for (uint32_t group = 0; group < AAC_PROBE_TEST_WINDOW_GROUP_COUNT; ++group) {
+        AppendAacTestBits(bits, AAC_PROBE_TEST_SECTION_TYPE, AAC_PROBE_TEST_SECTION_TYPE_BITS);
+        AppendAacTestBits(bits, AAC_PROBE_TEST_MAX_SHORT_INCR, AAC_PROBE_TEST_BAND_INCR_SHORT_BITS);
+        AppendAacTestBits(bits, AAC_PROBE_TEST_FINAL_SHORT_INCR, AAC_PROBE_TEST_BAND_INCR_SHORT_BITS);
+    }
+    while (bits.size() % AAC_TEST_BITS_PER_BYTE != 0) {
+        bits.push_back(0);
+    }
+    std::vector<uint8_t> data(bits.size() / AAC_TEST_BITS_PER_BYTE, 0);
+    for (size_t index = 0; index < bits.size(); ++index) {
+        data[index / AAC_TEST_BITS_PER_BYTE] |= static_cast<uint8_t>(
+            bits[index] << (AAC_TEST_BITS_PER_BYTE - 1 - index % AAC_TEST_BITS_PER_BYTE));
+    }
+    return data;
 }
 
 std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareProbeTestTracks(
@@ -6753,6 +7078,29 @@ std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareProbeTestTracks(
     parser.mediaInfo_.tracks[1].Set<Tag::MIME_TYPE>(MimeType::AUDIO_AAC);
     parser.mediaInfo_.tracks[1].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(AAC_PROBE_TEST_SAMPLES_PER_FRAME);
     return audio;
+}
+
+bool RunAacProbeFrameValidation(const std::vector<uint8_t>& payload, int32_t sampleSize)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {sampleSize}, AAC_PROBE_TEST_AUDIO_DELTA, 0);
+    if (audioHelper == nullptr) {
+        return false;
+    }
+    auto audio = PrepareProbeTestTracks(parser, nullptr, audioHelper);
+    if (audio == nullptr) {
+        return false;
+    }
+    audio->codecParms.data = std::make_unique<uint8_t[]>(AAC_PROBE_TEST_ASC_SIZE);
+    std::copy(std::begin(AAC_PROBE_TEST_ASC_SAMPLE_INDEX_4),
+        std::end(AAC_PROBE_TEST_ASC_SAMPLE_INDEX_4), audio->codecParms.data.get());
+    audio->codecParms.extradataSize = static_cast<int64_t>(AAC_PROBE_TEST_ASC_SIZE);
+    parser.dataReader_ = CreateReaderForBytes(payload);
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    return parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame);
 }
 } // namespace
 
@@ -6875,6 +7223,273 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeFragmentedUnseek
     int32_t samplesPerFrame = 0;
     ASSERT_TRUE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
     EXPECT_EQ(samplesPerFrame, AAC_PROBE_TEST_SAMPLES_PER_FRAME);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeMaxAnalyzeDuration_RemovesSamplePerFrame_001
+ * @tc.desc: Verify the probe stops on max_stream_analyze_duration (5 s) inside a video-first
+ *           zero-duration stts run (bbcnews-original.mp4 shape) before the audio track is
+ *           reached, so audio_samples_per_frame is not exported.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeMaxAnalyzeDuration_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::SttsEntry> sttsEntries = {
+        {159, 0}, {1, 29}, {2442, 40}};
+    std::vector<int32_t> videoSizes(AAC_PROBE_TEST_R5_VIDEO_SAMPLE_COUNT,
+        AAC_PROBE_TEST_R5_VIDEO_SAMPLE_SIZE);
+    auto videoHelper = BuildProbeTestSampleHelperWithStts(Plugins::MPEG4::VIDEO_TYPE, videoSizes,
+        sttsEntries, 0);
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {AAC_PROBE_TEST_AUDIO_SAMPLE_SIZE}, AAC_PROBE_TEST_AUDIO_DELTA, AAC_PROBE_TEST_R5_AUDIO_OFFSET);
+    auto audio = PrepareProbeTestTracks(parser, videoHelper, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(videoHelper, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+    parser.firstTrack_->timeScale = AAC_PROBE_TEST_R5_VIDEO_TIMESCALE;
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    EXPECT_FALSE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeFirstSampleValid_KeepsSamplePerFrame_001
+ * @tc.desc: Verify the lightweight AAC frame-structure check accepts a structurally valid
+ *           first packet and keeps audio_samples_per_frame (R6/R8 shape).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeFirstSampleValid_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    std::vector<uint8_t> payload = BuildAacProbeCpeRawDataBlock(true);
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {static_cast<int32_t>(payload.size())}, AAC_PROBE_TEST_AUDIO_DELTA, 0);
+    auto audio = PrepareProbeTestTracks(parser, nullptr, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+    audio->codecParms.data = std::make_unique<uint8_t[]>(AAC_PROBE_TEST_ASC_SIZE);
+    std::copy(std::begin(AAC_PROBE_TEST_ASC_SAMPLE_INDEX_4),
+        std::end(AAC_PROBE_TEST_ASC_SAMPLE_INDEX_4), audio->codecParms.data.get());
+    audio->codecParms.extradataSize = static_cast<int64_t>(AAC_PROBE_TEST_ASC_SIZE);
+    parser.dataReader_ = CreateReaderForBytes(payload);
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(samplesPerFrame, AAC_PROBE_TEST_SAMPLES_PER_FRAME);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeFirstSampleInvalid_RemovesSamplePerFrame_001
+ * @tc.desc: Verify a structurally invalid first AAC packet (max_sfb beyond the sampling-rate
+ *           table) never reaches the probe decoder and drops audio_samples_per_frame (R7 shape).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeFirstSampleInvalid_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    std::vector<uint8_t> payload = BuildAacProbeCpeRawDataBlock(false);
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {static_cast<int32_t>(payload.size())}, AAC_PROBE_TEST_AUDIO_DELTA, 0);
+    auto audio = PrepareProbeTestTracks(parser, nullptr, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+    audio->codecParms.data = std::make_unique<uint8_t[]>(AAC_PROBE_TEST_ASC_SIZE);
+    std::copy(std::begin(AAC_PROBE_TEST_ASC_SAMPLE_INDEX_4),
+        std::end(AAC_PROBE_TEST_ASC_SAMPLE_INDEX_4), audio->codecParms.data.get());
+    audio->codecParms.extradataSize = static_cast<int64_t>(AAC_PROBE_TEST_ASC_SIZE);
+    parser.dataReader_ = CreateReaderForBytes(payload);
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    EXPECT_FALSE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeShortWindowGroups_KeepsSamplePerFrame_001
+ * @tc.desc: Verify a real EIGHT_SHORT CPE first packet (meta* resources shape: two window
+ *           groups, ms_mask over num_window_groups * max_sfb, band sections per group)
+ *           passes the probe check and keeps audio_samples_per_frame = 1024.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeShortWindowGroups_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    std::vector<uint8_t> payload = BuildAacProbeShortCpeRawDataBlock();
+    auto audioHelper = BuildProbeTestSampleHelper(Plugins::MPEG4::AUDIO_TYPE,
+        {static_cast<int32_t>(payload.size())}, AAC_PROBE_TEST_AUDIO_DELTA, 0);
+    auto audio = PrepareProbeTestTracks(parser, nullptr, audioHelper);
+    ASSERT_NE(audio, nullptr);
+    ASSERT_NE(audioHelper, nullptr);
+    audio->codecParms.data = std::make_unique<uint8_t[]>(AAC_PROBE_TEST_ASC_SIZE);
+    std::copy(std::begin(AAC_PROBE_TEST_ASC_SAMPLE_INDEX_4),
+        std::end(AAC_PROBE_TEST_ASC_SAMPLE_INDEX_4), audio->codecParms.data.get());
+    audio->codecParms.extradataSize = static_cast<int64_t>(AAC_PROBE_TEST_ASC_SIZE);
+    parser.dataReader_ = CreateReaderForBytes(payload);
+
+    parser.CalculateAacProbeSamplePerFrame();
+    parser.NormalizeAudioAttributes(audio);
+    int32_t samplesPerFrame = 0;
+    ASSERT_TRUE(parser.mediaInfo_.tracks[1].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame));
+    EXPECT_EQ(samplesPerFrame, AAC_PROBE_TEST_SAMPLES_PER_FRAME);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeDsePrefix_KeepsSamplePerFrame_001
+ * @tc.desc: Verify a DSE raw-data-block element before the first channel is skipped
+ *           (FFmpeg skip_data_stream_element) and a valid trailing CPE still keeps
+ *           audio_samples_per_frame.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeDsePrefix_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeDsePrefixedFrame(false);
+    EXPECT_TRUE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeDseEscapeCount_KeepsSamplePerFrame_001
+ * @tc.desc: Verify the DSE 255 -> +8 count escape path (FFmpeg skip_data_stream_element)
+ *           is accepted when enough payload bytes follow.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeDseEscapeCount_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeDsePrefixedFrame(true);
+    EXPECT_TRUE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeDseByteAlign_KeepsSamplePerFrame_001
+ * @tc.desc: Verify a DSE with data_byte_align_flag=1 after an unaligned FIL element
+ *           skips to the byte boundary and a valid trailing CPE keeps
+ *           audio_samples_per_frame.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeDseByteAlign_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeDseAlignedFrame();
+    EXPECT_TRUE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeDseTruncated_RemovesSamplePerFrame_001
+ * @tc.desc: Verify a DSE payload shorter than its count field fails the probe check
+ *           and drops audio_samples_per_frame.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeDseTruncated_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeTruncatedDseFrame();
+    EXPECT_FALSE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbePcePrefix_KeepsSamplePerFrame_001
+ * @tc.desc: Verify a PCE raw-data-block element (element counts, mixdown tag, channel
+ *           maps, relative byte alignment, comment) is skipped and a valid trailing CPE
+ *           keeps audio_samples_per_frame.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbePcePrefix_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbePcePrefixedFrame();
+    EXPECT_TRUE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbePceTruncated_RemovesSamplePerFrame_001
+ * @tc.desc: Verify a PCE element missing its comment field fails the probe check and
+ *           drops audio_samples_per_frame.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbePceTruncated_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeTruncatedPceFrame();
+    EXPECT_FALSE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeCceFirst_KeepsSamplePerFrame_001
+ * @tc.desc: Verify a CCE raw-data-block element parsed as the first audio element keeps
+ *           audio_samples_per_frame when its first coupled channel decodes cleanly.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeCceFirst_KeepsSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeCceFrame();
+    EXPECT_TRUE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeCceTruncated_RemovesSamplePerFrame_001
+ * @tc.desc: Verify a CCE whose per-couple entries are cut short fails the probe check
+ *           and drops audio_samples_per_frame.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeCceTruncated_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeTruncatedCceFrame();
+    EXPECT_FALSE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbePredictorPresent_RemovesSamplePerFrame_001
+ * @tc.desc: Verify a long-window CPE with predictor_data_present=1 is rejected like the
+ *           AAC-LC decoder ("Prediction is not allowed in AAC-LC") and drops
+ *           audio_samples_per_frame.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbePredictorPresent_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeCpeFrame(AAC_PROBE_TEST_MAX_SFB,
+        AAC_PROBE_TEST_PREDICTOR_PRESENT, AAC_PROBE_TEST_SECTION_TYPE);
+    EXPECT_FALSE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeInvalidSectionType_RemovesSamplePerFrame_001
+ * @tc.desc: Verify a band section with sect_band_type=12 (FFmpeg "invalid band type")
+ *           fails the probe check and drops audio_samples_per_frame.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeInvalidSectionType_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeCpeFrame(AAC_PROBE_TEST_MAX_SFB, 0,
+        AAC_PROBE_TEST_INVALID_SECTION_TYPE);
+    EXPECT_FALSE(RunAacProbeFrameValidation(payload, static_cast<int32_t>(payload.size())));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeOversizedSample_RemovesSamplePerFrame_001
+ * @tc.desc: Verify a first AAC sample larger than the 16 KiB validation cap is rejected
+ *           before any read so a corrupt stsz cannot force a multi-MB probe allocation.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeOversizedSample_RemovesSamplePerFrame_001,
+    TestSize.Level1)
+{
+    std::vector<uint8_t> payload = BuildAacProbeCpeRawDataBlock(true);
+    EXPECT_FALSE(RunAacProbeFrameValidation(payload, AAC_PROBE_TEST_OVERSIZE_SAMPLE_SIZE));
 }
 
 /**
