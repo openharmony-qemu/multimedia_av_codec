@@ -6331,8 +6331,12 @@ constexpr uint32_t AAC_ASC_MIN_SIZE = 2;
 constexpr uint32_t AAC_FIL_COUNT_ESCAPE = 15;
 constexpr uint32_t AAC_FIL_COUNT_ESCAPE_BASE = 14;
 constexpr uint32_t AAC_DSE_COUNT_ESCAPE = 255;
+constexpr uint32_t AAC_DSE_COUNT_BITS = 8;
 constexpr uint32_t AAC_EXTENSION_TYPE_BITS = 4;
 constexpr uint32_t AAC_GLOBAL_GAIN_BITS = 8;
+// A single AAC raw-data block never approaches the probe budget; this bounds the
+// per-sample validation buffer so a corrupt stsz cannot force a multi-MB allocation.
+constexpr int64_t AAC_MAX_FRAME_VALIDATE_SIZE = 16 * 1024;
 constexpr uint32_t AAC_ICS_RESERVED_BITS = 1;
 constexpr uint32_t AAC_WINDOW_SEQUENCE_BITS = 2;
 constexpr uint32_t AAC_WINDOW_SHAPE_BITS = 1;
@@ -6343,7 +6347,10 @@ constexpr uint32_t AAC_MAX_SFB_SHORT_BITS = 4;
 constexpr uint32_t AAC_MAX_SFB_LONG_BITS = 6;
 constexpr uint32_t AAC_SCALE_FACTOR_GROUPING_BITS = 7;
 constexpr uint32_t AAC_SECTION_TYPE_BITS = 4;
-constexpr uint32_t AAC_SECTION_TYPE_ZERO_HCB = 12;
+// FFmpeg decode_band_types rejects sect_band_type == 12 ("invalid band type");
+// all other 4-bit values, including ZERO_HCB(0), NOISE_HCB(13) and the two
+// INTENSITY codes, are accepted and consume the same sect_len_incr field.
+constexpr uint32_t AAC_SECTION_TYPE_INVALID = 12;
 constexpr uint32_t AAC_BAND_INCR_LONG_BITS = 5;
 constexpr uint32_t AAC_BAND_INCR_SHORT_BITS = 3;
 constexpr uint32_t AAC_MS_MASK_PRESENT_BITS = 2;
@@ -6395,6 +6402,12 @@ public:
         }
         pos_ += numBits;
         return true;
+    }
+
+    bool AlignToByte()
+    {
+        const size_t toSkip = (AAC_BITS_PER_BYTE - pos_ % AAC_BITS_PER_BYTE) % AAC_BITS_PER_BYTE;
+        return Skip(toSkip);
     }
 
 private:
@@ -6529,7 +6542,15 @@ bool ParseAacProbeIcsInfo(AacProbeBitReader& bitReader, uint32_t samplingIndex, 
         return maxSfb <= AAC_NUM_SWB_128[samplingIndex];
     }
     maxSfb = bitReader.Read(AAC_MAX_SFB_LONG_BITS);
-    if (maxSfb < 0 || bitReader.Read(AAC_SINGLE_BIT) < 0) {
+    if (maxSfb < 0) {
+        return false;
+    }
+    const int32_t predictorPresent = bitReader.Read(AAC_SINGLE_BIT);
+    // FFmpeg decode_ics_info reads predictor_data_present for long windows; AAC-LC
+    // rejects such frames ("Prediction is not allowed in AAC-LC"). The probe does
+    // not carry the object type, so a frame enabling prediction is treated as
+    // invalid, matching the AAC-LC behavior that dominates MP4 content.
+    if (predictorPresent < 0 || predictorPresent == 1) {
         return false;
     }
     numWindowGroups = 1;
@@ -6567,7 +6588,7 @@ bool ParseAacProbeBandTypes(AacProbeBitReader& bitReader, int32_t maxSfb, int32_
         int32_t k = 0;
         while (k < maxSfb) {
             const int32_t sectionType = bitReader.Read(AAC_SECTION_TYPE_BITS);
-            if (sectionType < 0 || sectionType == AAC_SECTION_TYPE_ZERO_HCB) {
+            if (sectionType < 0 || sectionType == AAC_SECTION_TYPE_INVALID) {
                 return false;
             }
             if (!ParseAacProbeBandIncrements(bitReader, incrBits, maxIncr, maxSfb, k)) {
@@ -6624,15 +6645,30 @@ bool SkipAacProbeFillElement(AacProbeBitReader& bitReader, int32_t elementId)
         AAC_EXTENSION_TYPE_BITS);
 }
 
-bool SkipAacProbeDataStreamElement(AacProbeBitReader& bitReader, int32_t elementId)
+bool SkipAacProbeDataStreamElement(AacProbeBitReader& bitReader)
 {
-    int32_t count = elementId;
+    // Mirrors FFmpeg skip_data_stream_element: element_id was already read, then
+    // data_byte_align_flag, count (255 -> +8), optional byte alignment, count bytes.
+    const int32_t byteAlign = bitReader.Read(AAC_SINGLE_BIT);
+    if (byteAlign < 0) {
+        return false;
+    }
+    int32_t count = bitReader.Read(AAC_DSE_COUNT_BITS);
+    if (count < 0) {
+        return false;
+    }
     if (count == AAC_DSE_COUNT_ESCAPE) {
-        const int32_t v = bitReader.Read(AAC_GLOBAL_GAIN_BITS);
+        const int32_t v = bitReader.Read(AAC_DSE_COUNT_BITS);
         if (v < 0) {
             return false;
         }
-        count = v;
+        count += v;
+    }
+    if (byteAlign == 1 && !bitReader.AlignToByte()) {
+        return false;
+    }
+    if (bitReader.BitsLeft() < static_cast<size_t>(count) * AAC_BITS_PER_BYTE) {
+        return false;
     }
     return bitReader.Skip(static_cast<size_t>(count) * AAC_BITS_PER_BYTE);
 }
@@ -6689,7 +6725,7 @@ bool ValidateAacProbeFrame(const uint8_t* data, size_t size, uint32_t samplingIn
             continue;
         }
         if (elementType == AAC_ELEMENT_DSE) {
-            if (!SkipAacProbeDataStreamElement(bitReader, elementId)) {
+            if (!SkipAacProbeDataStreamElement(bitReader)) {
                 return false;
             }
             continue;
@@ -6718,9 +6754,9 @@ bool ValidateAacProbeSample(AacProbeStream& stream,
         stream.view.size <= 0 || stream.view.pos < 0) {
         return true;
     }
-    // A single AAC raw-data block never approaches the probe budget; guard the
-    // allocation so a corrupt sample size cannot allocate an unbounded buffer.
-    if (static_cast<int64_t>(stream.view.size) > FFMPEG_AAC_PROBE_SIZE) {
+    // Cap the validation buffer so a corrupt sample size cannot force a multi-MB
+    // allocation; a raw-data block beyond this size is not a valid AAC frame.
+    if (static_cast<int64_t>(stream.view.size) > AAC_MAX_FRAME_VALIDATE_SIZE) {
         stream.aacFrameValid = false;
         return false;
     }
@@ -6734,10 +6770,12 @@ bool ValidateAacProbeSample(AacProbeStream& stream,
 
 int64_t AccumulateAacProbeReadSize(int64_t readSize, int32_t sampleSize)
 {
-    if (readSize <= FFMPEG_AAC_PROBE_SIZE - sampleSize) {
-        return readSize + sampleSize;
+    // A non-positive sample size only comes from a corrupt stsz and would let
+    // readSize regress below the probe budget; stop probing instead.
+    if (sampleSize <= 0 || readSize > FFMPEG_AAC_PROBE_SIZE - sampleSize) {
+        return FFMPEG_AAC_PROBE_SIZE;
     }
-    return FFMPEG_AAC_PROBE_SIZE;
+    return readSize + sampleSize;
 }
 
 void ReachAacProbeTrack(AacProbeStream& stream,
@@ -6753,7 +6791,9 @@ void ReachAacProbeTrack(AacProbeStream& stream,
     // later packet, mirroring try_decode_frame.
     if (stream.aacFrameValid || ValidateAacProbeSample(stream, dataReader)) {
         reachedFlags[stream.track->trackIndex] = 1;
-        pendingAacTracks--;
+        if (pendingAacTracks > 0) {
+            pendingAacTracks--;
+        }
     }
 }
 
