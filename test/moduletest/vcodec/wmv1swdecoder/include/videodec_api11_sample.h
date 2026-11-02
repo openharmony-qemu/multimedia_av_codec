@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include <cstdio>
+#include <cstdint>
 #include <unistd.h>
 #include <atomic>
 #include <fstream>
@@ -104,41 +105,46 @@ public:
     bool queryInputBufferEOS = false;
     // 解码内容校验开关，只在需要校验哈希的用例里置 true
     bool needMdCompare = false;
-    // 解码哈希基线（SHA512，64 字节按 16 进制逐字节存放），按“码流 + 像素格式”各一份。
-    // 数组留空时只打印实际哈希、不做比较；采集方式：打开 needMdCompare 跑一次，日志会打印
-    // computed hash，把 64 个字节按顺序粘到对应数组里即可，无需改代码。
-    const char *fileSourcesha256Nv12_720x480[64] = {"2b", "b8", "70", "6c", "aa", "e6", "0d", "7b",
-                                                    "92", "7d", "6f", "51", "fc", "f4", "60", "79",
-                                                    "6e", "16", "7b", "0b", "02", "7a", "56", "32",
-                                                    "63", "56", "c4", "7c", "b0", "39", "6e", "4c",
-                                                    "f6", "d0", "d4", "f6", "c1", "32", "0c", "c1",
-                                                    "e2", "6a", "a1", "25", "d7", "b1", "a4", "7d",
-                                                    "cb", "5e", "75", "d5", "67", "ed", "c9", "48",
-                                                    "16", "0b", "ac", "72", "09", "f8", "bd", "c2"};
-    const char *fileSourcesha256Nv12_176x144[64] = {"08", "e7", "77", "02", "a9", "d4", "a7", "4d",
-                                                    "be", "ff", "c1", "d8", "0d", "0f", "2f", "f6",
-                                                    "9d", "cf", "bb", "66", "4f", "b4", "63", "c1",
-                                                    "41", "ab", "49", "d8", "58", "96", "37", "16",
-                                                    "0d", "28", "5a", "52", "db", "98", "62", "c2",
-                                                    "82", "1f", "86", "2e", "8a", "49", "21", "21",
-                                                    "7e", "eb", "a8", "ef", "75", "cc", "03", "4d",
-                                                    "20", "ae", "4b", "a5", "60", "70", "e8", "3d"};
-    const char *fileSourcesha256Nv21_720x480[64] = {"01", "b1", "5c", "3d", "0e", "f7", "23", "52",
-                                                    "37", "48", "32", "7b", "b0", "00", "9c", "63",
-                                                    "fa", "2b", "2d", "48", "2d", "b4", "48", "23",
-                                                    "56", "dc", "1c", "c5", "b3", "3a", "a3", "2f",
-                                                    "da", "53", "8b", "e9", "44", "63", "1a", "b3",
-                                                    "2e", "ec", "dc", "77", "aa", "79", "b6", "1e",
-                                                    "e7", "f1", "e0", "48", "e6", "ab", "5c", "6b",
-                                                    "a2", "f4", "d2", "b3", "1a", "43", "51", "1c"};
-    const char *fileSourcesha256Yuvi420_640x480[64] = {"f4", "7d", "3b", "34", "5b", "2c", "84", "a1",
-                                                       "43", "5e", "65", "6f", "90", "c8", "90", "ed",
-                                                       "e7", "7d", "1f", "8a", "9c", "e1", "3b", "2d",
-                                                       "65", "a2", "8a", "73", "f9", "8c", "78", "f0",
-                                                       "d4", "a5", "5e", "9d", "cf", "22", "56", "ed",
-                                                       "80", "2e", "01", "11", "c7", "fe", "f9", "49",
-                                                       "7d", "b4", "53", "99", "e9", "81", "43", "e6",
-                                                       "f2", "73", "45", "90", "93", "20", "c5", "9f"};
+    static constexpr int32_t HASH_BYTES = 64;
+    // 解码哈希基线（SHA512，64 字节），按码流 + 像素格式各一份；全 0 表示尚未采集。
+    // 采集方式：打开 needMdCompare 跑一次，日志会打印 computed hash，
+    // 把 64 个字节按顺序填到对应数组里即可，无需改代码。
+    const uint8_t fileSourcesha256Nv12_720x480[HASH_BYTES] = {
+        0x2b, 0xb8, 0x70, 0x6c, 0xaa, 0xe6, 0x0d, 0x7b,
+        0x92, 0x7d, 0x6f, 0x51, 0xfc, 0xf4, 0x60, 0x79,
+        0x6e, 0x16, 0x7b, 0x0b, 0x02, 0x7a, 0x56, 0x32,
+        0x63, 0x56, 0xc4, 0x7c, 0xb0, 0x39, 0x6e, 0x4c,
+        0xf6, 0xd0, 0xd4, 0xf6, 0xc1, 0x32, 0x0c, 0xc1,
+        0xe2, 0x6a, 0xa1, 0x25, 0xd7, 0xb1, 0xa4, 0x7d,
+        0xcb, 0x5e, 0x75, 0xd5, 0x67, 0xed, 0xc9, 0x48,
+        0x16, 0x0b, 0xac, 0x72, 0x09, 0xf8, 0xbd, 0xc2};
+    const uint8_t fileSourcesha256Nv12_176x144[HASH_BYTES] = {
+        0x08, 0xe7, 0x77, 0x02, 0xa9, 0xd4, 0xa7, 0x4d,
+        0xbe, 0xff, 0xc1, 0xd8, 0x0d, 0x0f, 0x2f, 0xf6,
+        0x9d, 0xcf, 0xbb, 0x66, 0x4f, 0xb4, 0x63, 0xc1,
+        0x41, 0xab, 0x49, 0xd8, 0x58, 0x96, 0x37, 0x16,
+        0x0d, 0x28, 0x5a, 0x52, 0xdb, 0x98, 0x62, 0xc2,
+        0x82, 0x1f, 0x86, 0x2e, 0x8a, 0x49, 0x21, 0x21,
+        0x7e, 0xeb, 0xa8, 0xef, 0x75, 0xcc, 0x03, 0x4d,
+        0x20, 0xae, 0x4b, 0xa5, 0x60, 0x70, 0xe8, 0x3d};
+    const uint8_t fileSourcesha256Nv21_720x480[HASH_BYTES] = {
+        0x01, 0xb1, 0x5c, 0x3d, 0x0e, 0xf7, 0x23, 0x52,
+        0x37, 0x48, 0x32, 0x7b, 0xb0, 0x00, 0x9c, 0x63,
+        0xfa, 0x2b, 0x2d, 0x48, 0x2d, 0xb4, 0x48, 0x23,
+        0x56, 0xdc, 0x1c, 0xc5, 0xb3, 0x3a, 0xa3, 0x2f,
+        0xda, 0x53, 0x8b, 0xe9, 0x44, 0x63, 0x1a, 0xb3,
+        0x2e, 0xec, 0xdc, 0x77, 0xaa, 0x79, 0xb6, 0x1e,
+        0xe7, 0xf1, 0xe0, 0x48, 0xe6, 0xab, 0x5c, 0x6b,
+        0xa2, 0xf4, 0xd2, 0xb3, 0x1a, 0x43, 0x51, 0x1c};
+    const uint8_t fileSourcesha256Yuvi420_640x480[HASH_BYTES] = {
+        0xf4, 0x7d, 0x3b, 0x34, 0x5b, 0x2c, 0x84, 0xa1,
+        0x43, 0x5e, 0x65, 0x6f, 0x90, 0xc8, 0x90, 0xed,
+        0xe7, 0x7d, 0x1f, 0x8a, 0x9c, 0xe1, 0x3b, 0x2d,
+        0x65, 0xa2, 0x8a, 0x73, 0xf9, 0x8c, 0x78, 0xf0,
+        0xd4, 0xa5, 0x5e, 0x9d, 0xcf, 0x22, 0x56, 0xed,
+        0x80, 0x2e, 0x01, 0x11, 0xc7, 0xfe, 0xf9, 0x49,
+        0x7d, 0xb4, 0x53, 0x99, 0xe9, 0x81, 0x43, 0xe6,
+        0xf2, 0x73, 0x45, 0x90, 0x93, 0x20, 0xc5, 0x9f};
 
     int32_t Start();
     int32_t Stop();
@@ -178,8 +184,8 @@ public:
     void StopInloop();
     void Flush_buffer();
     void StopOutloop();
-    bool MdCompare(unsigned char *buffer, int len, const char *source[]);
-    bool IsBaselineEmpty(const char *source[], int len);
+    bool MdCompare(unsigned char *buffer, int len, const uint8_t source[]);
+    bool IsBaselineEmpty(const uint8_t source[], int len);
     void DumpHashValue(const char *pixName);
     void CheckDecodeHash();
     void FlushStatus();

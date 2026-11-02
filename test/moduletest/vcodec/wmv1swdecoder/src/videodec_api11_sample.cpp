@@ -24,11 +24,13 @@
 
 #include "openssl/crypto.h"
 #include "openssl/sha.h"
+
+#include "wmv1_stream_data.h"
+
 using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 namespace {
-constexpr int32_t HEX_BASE = 16;
 constexpr int32_t HASH_BYTES_PER_LINE = 16;
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t MICRO_IN_SECOND = 1000000L;
@@ -41,14 +43,6 @@ constexpr uint32_t MILLION = 1000000;
 constexpr uint32_t MAX_WIDTH = 4000;
 constexpr uint32_t MAX_HEIGHT = 3000;
 constexpr uint32_t MAX_NALU_SIZE = MAX_WIDTH * MAX_HEIGHT << 1;
-
-// WMV1(MS-MPEG4 V1) 裸流既没有 annexB 起始码，也没有 codec config，
-// 帧边界只能按容器解封装得到的逐帧字节数切分，具体数据见 wmv1_stream_data.inc
-static const unordered_map<std::string, WMV1_StreamData> WMV1_STREAM_DATA = {
-#include "wmv1_stream_data.inc"
-};
-
-
 
 SHA512_CTX g_c;
 unsigned char g_md[SHA512_DIGEST_LENGTH];
@@ -218,11 +212,10 @@ void VDecAPI11Sample::Flush_buffer()
     outLock.unlock();
 }
 
-bool VDecAPI11Sample::MdCompare(unsigned char buffer[], int len, const char *source[])
+bool VDecAPI11Sample::MdCompare(unsigned char buffer[], int len, const uint8_t source[])
 {
     for (int i = 0; i < len; i++) {
-        unsigned char expect = static_cast<unsigned char>(std::stoul(source[i], nullptr, HEX_BASE));
-        if (buffer[i] != expect) {
+        if (buffer[i] != source[i]) {
             cout << "hash mismatch at byte " << i << endl;
             return false;
         }
@@ -230,14 +223,14 @@ bool VDecAPI11Sample::MdCompare(unsigned char buffer[], int len, const char *sou
     return true;
 }
 
-bool VDecAPI11Sample::IsBaselineEmpty(const char *source[], int len)
+bool VDecAPI11Sample::IsBaselineEmpty(const uint8_t source[], int len)
 {
     for (int i = 0; i < len; i++) {
-        if (source[i] == nullptr || source[i][0] == '\0') {
-            return true;
+        if (source[i] != 0) {
+            return false;
         }
     }
-    return false;
+    return true;
 }
 
 void VDecAPI11Sample::DumpHashValue(const char *pixName)
@@ -257,7 +250,7 @@ void VDecAPI11Sample::CheckDecodeHash()
         const char *streamFile;
         int32_t pixelFormat;
         const char *pixName;
-        const char **baseline;
+        const uint8_t *baseline;
     };
     const HashBaseline baselines[] = {
         {"wmv1_720x480_25.wmv1", AV_PIXEL_FORMAT_NV12, "nv12", fileSourcesha256Nv12_720x480},
@@ -266,7 +259,7 @@ void VDecAPI11Sample::CheckDecodeHash()
         {"wmv1_640x480_25.wmv1", AV_PIXEL_FORMAT_YUVI420, "yuvi420", fileSourcesha256Yuvi420_640x480},
     };
     const std::string streamPath = INP_DIR;
-    const char **source = nullptr;
+    const uint8_t *source = nullptr;
     const char *pixName = "unknown";
     for (const auto &item : baselines) {
         if (defualtPixelFormat == item.pixelFormat && streamPath.find(item.streamFile) != std::string::npos) {

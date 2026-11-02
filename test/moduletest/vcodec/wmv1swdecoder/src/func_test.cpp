@@ -65,23 +65,23 @@ struct Wmv1StreamInfo {
 };
 
 // 720x480 25fps 作为默认码流
-static const Wmv1StreamInfo WMV1_STREAM_720x480_25 = {
+static const Wmv1StreamInfo WMV1_STREAM_720X480_25 = {
     "/data/test/media/wmv1_720x480_25.wmv1", 720, 480, 25, 250};
-static const Wmv1StreamInfo WMV1_STREAM_176x144_25 = {
+static const Wmv1StreamInfo WMV1_STREAM_176X144_25 = {
     "/data/test/media/wmv1_176x144_25.wmv1", 176, 144, 25, 250};
-static const Wmv1StreamInfo WMV1_STREAM_320x240_25 = {
+static const Wmv1StreamInfo WMV1_STREAM_320X240_25 = {
     "/data/test/media/wmv1_320x240_25.wmv1", 320, 240, 25, 250};
-static const Wmv1StreamInfo WMV1_STREAM_352x288_25 = {
+static const Wmv1StreamInfo WMV1_STREAM_352X288_25 = {
     "/data/test/media/wmv1_352x288_25.wmv1", 352, 288, 25, 250};
-static const Wmv1StreamInfo WMV1_STREAM_640x480_25 = {
+static const Wmv1StreamInfo WMV1_STREAM_640X480_25 = {
     "/data/test/media/wmv1_640x480_25.wmv1", 640, 480, 25, 250};
-static const Wmv1StreamInfo WMV1_STREAM_720x576_25 = {
+static const Wmv1StreamInfo WMV1_STREAM_720X576_25 = {
     "/data/test/media/wmv1_720x576_25.wmv1", 720, 576, 25, 250};
-static const Wmv1StreamInfo WMV1_STREAM_1280x720_25 = {
+static const Wmv1StreamInfo WMV1_STREAM_1280X720_25 = {
     "/data/test/media/wmv1_1280x720_25.wmv1", 1280, 720, 25, 250};
-static const Wmv1StreamInfo WMV1_STREAM_1280x720_60 = {
+static const Wmv1StreamInfo WMV1_STREAM_1280X720_60 = {
     "/data/test/media/wmv1_1280x720_60.wmv1", 1280, 720, 60, 600};
-static const Wmv1StreamInfo WMV1_STREAM_1920x1080_25 = {
+static const Wmv1StreamInfo WMV1_STREAM_1920X1080_25 = {
     "/data/test/media/wmv1_1920x1080_25.wmv1", 1920, 1080, 25, 250};
 
 void ApplyStream(const shared_ptr<VDecAPI11Sample> &sample, const Wmv1StreamInfo &stream)
@@ -126,7 +126,7 @@ namespace {
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0010, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     vDecSample->needMdCompare = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WMV1"));
@@ -135,7 +135,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0010, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -146,7 +146,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0010, TestSize.Level0)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0020, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
     vDecSample->needMdCompare = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WMV1"));
@@ -155,7 +155,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0020, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -166,7 +166,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0020, TestSize.Level0)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0030, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_YUVI420;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WMV1"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -174,7 +174,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0030, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -185,7 +185,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0030, TestSize.Level0)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0040, TestSize.Level0)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_RGBA;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WMV1"));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -193,7 +193,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0040, TestSize.Level0)
     ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -204,11 +204,11 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0040, TestSize.Level0)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0050, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -219,13 +219,13 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0050, TestSize.Level1)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0060, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->SF_OUTPUT = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -256,14 +256,14 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0070, TestSize.Level3)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0080, TestSize.Level3)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->SF_OUTPUT = true;
     vDecSample->outputYuvSurface = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -274,14 +274,14 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0080, TestSize.Level3)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0090, TestSize.Level3)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->SF_OUTPUT = true;
     vDecSample->outputYuvSurface = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -292,12 +292,12 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0090, TestSize.Level3)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0100, TestSize.Level3)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->SF_OUTPUT = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -308,7 +308,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0100, TestSize.Level3)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0110, TestSize.Level3)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->BEFORE_EOS_INPUT = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameWmv1));
     ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -317,7 +317,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0110, TestSize.Level3)
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
     ASSERT_TRUE(vDecSample->outFrameCount > 0);
-    ASSERT_TRUE(vDecSample->outFrameCount < WMV1_STREAM_720x480_25.frameCount);
+    ASSERT_TRUE(vDecSample->outFrameCount < WMV1_STREAM_720X480_25.frameCount);
 }
 
 /**
@@ -328,13 +328,13 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_0110, TestSize.Level3)
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0010, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_176x144_25);
+    ApplyStream(vDecSample, WMV1_STREAM_176X144_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     vDecSample->needMdCompare = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_176x144_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_176X144_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -345,12 +345,12 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0010, TestSize.Level
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0020, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_320x240_25);
+    ApplyStream(vDecSample, WMV1_STREAM_320X240_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_320x240_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_320X240_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -361,13 +361,13 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0020, TestSize.Level
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0030, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_352x288_25);
+    ApplyStream(vDecSample, WMV1_STREAM_352X288_25);
     vDecSample->SF_OUTPUT = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_352x288_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_352X288_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -378,13 +378,13 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0030, TestSize.Level
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0040, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_640x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_640X480_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_YUVI420;
     vDecSample->needMdCompare = true;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_640x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_640X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -395,12 +395,12 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0040, TestSize.Level
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0050, TestSize.Level1)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_720x576_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X576_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_720x576_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X576_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -411,12 +411,12 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0050, TestSize.Level
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0060, TestSize.Level2)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_1280x720_25);
+    ApplyStream(vDecSample, WMV1_STREAM_1280X720_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_1280x720_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_1280X720_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -427,12 +427,12 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0060, TestSize.Level
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0070, TestSize.Level2)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_1280x720_60);
+    ApplyStream(vDecSample, WMV1_STREAM_1280X720_60);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_1280x720_60.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_1280X720_60.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -443,12 +443,12 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0070, TestSize.Level
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0080, TestSize.Level2)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_1920x1080_25);
+    ApplyStream(vDecSample, WMV1_STREAM_1920X1080_25);
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_1920x1080_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_1920X1080_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -459,13 +459,13 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0080, TestSize.Level
 HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_WMV1_RESOLUTION_0090, TestSize.Level2)
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
-    ApplyStream(vDecSample, WMV1_STREAM_1920x1080_25);
+    ApplyStream(vDecSample, WMV1_STREAM_1920X1080_25);
     vDecSample->SF_OUTPUT = true;
     vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
     ASSERT_EQ(AV_ERR_OK, vDecSample->RunVideoDec_Surface(g_codecNameWmv1));
     vDecSample->WaitForEOS();
     ASSERT_EQ(0, vDecSample->errCount);
-    ASSERT_EQ(WMV1_STREAM_1920x1080_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_1920X1080_25.frameCount, vDecSample->outFrameCount);
 }
 
 /**
@@ -477,7 +477,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_001, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->autoSwitchSurface = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -499,7 +499,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_002, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->autoSwitchSurface = true;
         vDecSample->sleepOnFPS = true;
@@ -519,7 +519,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_003, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
@@ -539,7 +539,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_004, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->autoSwitchSurface = true;
         vDecSample->sleepOnFPS = true;
@@ -558,7 +558,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_005, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->autoSwitchSurface = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -579,7 +579,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_006, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->autoSwitchSurface = true;
         vDecSample->AFTER_EOS_DESTORY_CODEC = false;
@@ -599,7 +599,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_007, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
@@ -619,7 +619,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_008, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
@@ -639,7 +639,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_009, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
@@ -660,7 +660,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_010, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
@@ -682,7 +682,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_011, TestSize.Level1)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
@@ -703,7 +703,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_012, TestSize.Level1)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = false;
         vDecSample->autoSwitchSurface = false;
         vDecSample->CreateSurface();
@@ -723,7 +723,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level2)
 {
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->autoSwitchSurface = true;
         vDecSample->sleepOnFPS = true;
@@ -732,7 +732,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_013, TestSize.Level2)
         vDecSample->WaitForEOS();
 
         auto vDecSample_1 = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample_1, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample_1, WMV1_STREAM_720X480_25);
         vDecSample_1->SURFACE_OUTPUT = true;
         vDecSample_1->autoSwitchSurface = true;
         vDecSample_1->sleepOnFPS = true;
@@ -752,7 +752,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, API11_SURF_CHANGE_FUNC_014, TestSize.Level2)
     if (ONLY_FOR_FLAGSHIP_CHIP) {
         for (int i = 0; i < 2; i++) {
             auto vDecSample = make_shared<VDecAPI11Sample>();
-            ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+            ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
             vDecSample->SURFACE_OUTPUT = true;
             vDecSample->autoSwitchSurface = true;
             vDecSample->sleepOnFPS = true;
@@ -772,7 +772,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWWMV1_FUNC_0010, TestSize.Leve
 {
     if (cap_wmv1 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->enbleSyncMode = 1;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV12;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameWmv1));
@@ -780,7 +780,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWWMV1_FUNC_0010, TestSize.Leve
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(0, vDecSample->errCount);
-        ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+        ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
     }
 }
 
@@ -793,7 +793,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWWMV1_FUNC_0020, TestSize.Leve
 {
     if (cap_wmv1 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->enbleSyncMode = 1;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_NV21;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameWmv1));
@@ -801,7 +801,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWWMV1_FUNC_0020, TestSize.Leve
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(0, vDecSample->errCount);
-        ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+        ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
     }
 }
 
@@ -814,7 +814,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWWMV1_FUNC_0030, TestSize.Leve
 {
     if (cap_wmv1 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_1280x720_25);
+        ApplyStream(vDecSample, WMV1_STREAM_1280X720_25);
         vDecSample->SF_OUTPUT = true;
         vDecSample->enbleSyncMode = 1;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameWmv1));
@@ -823,7 +823,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWWMV1_FUNC_0030, TestSize.Leve
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(0, vDecSample->errCount);
-        ASSERT_EQ(WMV1_STREAM_1280x720_25.frameCount, vDecSample->outFrameCount);
+        ASSERT_EQ(WMV1_STREAM_1280X720_25.frameCount, vDecSample->outFrameCount);
     }
 }
 
@@ -836,7 +836,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWWMV1_FUNC_0040, TestSize.Leve
 {
     if (cap_wmv1 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->enbleSyncMode = 1;
         vDecSample->defualtPixelFormat = AV_PIXEL_FORMAT_RGBA;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder(g_codecNameWmv1));
@@ -844,7 +844,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SYNC_SWWMV1_FUNC_0040, TestSize.Leve
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartSyncVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(0, vDecSample->errCount);
-        ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+        ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
     }
 }
 
@@ -857,7 +857,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SWWMV1_BLANK_FRAME_0010, TestSize.Le
 {
     if (cap_wmv1 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->enbleBlankFrame = 1;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WMV1"));
         ASSERT_EQ(AV_ERR_OK, vDecSample->ConfigureVideoDecoder());
@@ -865,7 +865,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SWWMV1_BLANK_FRAME_0010, TestSize.Le
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(0, vDecSample->errCount);
-        ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+        ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
     }
 }
 
@@ -878,7 +878,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SWWMV1_BLANK_FRAME_0020, TestSize.Le
 {
     if (cap_wmv1 != nullptr) {
         auto vDecSample = make_shared<VDecAPI11Sample>();
-        ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+        ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
         vDecSample->SURFACE_OUTPUT = true;
         vDecSample->enbleBlankFrame = 1;
         ASSERT_EQ(AV_ERR_OK, vDecSample->CreateVideoDecoder("OH.Media.Codec.Decoder.Video.WMV1"));
@@ -888,7 +888,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_DECODE_SWWMV1_BLANK_FRAME_0020, TestSize.Le
         ASSERT_EQ(AV_ERR_OK, vDecSample->StartVideoDecoder());
         vDecSample->WaitForEOS();
         ASSERT_EQ(0, vDecSample->errCount);
-        ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+        ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
     }
 }
 
@@ -901,7 +901,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_GRAPH_0010, TestSize.Lev
 {
     auto vDecSample = make_shared<VDecAPI11Sample>();
     int32_t pixfmt[4] = {28, 24, 25, 12};
-    ApplyStream(vDecSample, WMV1_STREAM_720x480_25);
+    ApplyStream(vDecSample, WMV1_STREAM_720X480_25);
     vDecSample->isGetVideoSupportedPixelFormats = true;
     vDecSample->isGetFormatKey = true;
     vDecSample->avcodecMimeType = OH_AVCODEC_MIMETYPE_VIDEO_WMV1;
@@ -916,7 +916,7 @@ HWTEST_F(Wmv1SwdecFuncNdkTest, VIDEO_WMV1SWDEC_FUNCTION_GRAPH_0010, TestSize.Lev
     for (int i = 0; i < vDecSample->pixlFormatNum; i++) {
         ASSERT_EQ(vDecSample->pixlFormats[i], pixfmt[i]);
     }
-    ASSERT_EQ(WMV1_STREAM_720x480_25.frameCount, vDecSample->outFrameCount);
+    ASSERT_EQ(WMV1_STREAM_720X480_25.frameCount, vDecSample->outFrameCount);
 }
 
 }  // namespace
