@@ -17,7 +17,6 @@
 #include <cstdint>
 #include <cmath>
 #include <climits>
-#include <charconv>
 #include <limits>
 #include <mutex>
 #include <unistd.h>
@@ -667,13 +666,11 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, const M3U8Segme
     auto master = GetThreadSafeMaster();
     auto currentVariant = GetThreadSafeCurrentVariant();
     if (master && currentVariant && (master->isFmp4_.load() || master->isPureByteRange_.load())) {
+        // 预分配容量，避免 operator+ 链式拼接产生多个临时 string 堆分配
         std::string url;
         url.reserve(URL_FIXED_PREFIX_LEN + file.uri_.size());
-        char buf[URL_FIXED_PREFIX_LEN];
-        auto res = std::to_chars(buf, buf + sizeof(buf), playInfo.offset_);
-        url.append(buf, res.ptr).append("_");
-        res = std::to_chars(buf, buf + sizeof(buf), playInfo.length_);
-        url.append(buf, res.ptr).append("__").append(file.uri_);
+        url.append(std::to_string(playInfo.offset_)).append("_")
+            .append(std::to_string(playInfo.length_)).append("__").append(file.uri_);
         playInfo.url_ = std::move(url);
         playInfo.rangeUrl_ = file.uri_;
     } else {
