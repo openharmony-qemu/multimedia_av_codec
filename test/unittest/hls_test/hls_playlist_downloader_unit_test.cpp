@@ -14,6 +14,7 @@
  */
 #include "hls_playlist_downloader_unit_test.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "utils/time_utils.h"
 
 using namespace OHOS;
@@ -81,7 +82,7 @@ constexpr int32_t NUM2_TEST = 2;
 std::shared_ptr<HlsPlayListDownloaderTestable> CreateSetDefaultStreamIdDownloader(bool isSimple, bool parseSuccess,
     bool withDefaultVariant)
 {
-    const std::string testUriPath = "http://127.0.0.1:46666/";
+    const std::string testUriPath = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
     auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
     downloader->Init();
     downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", testUriPath);
@@ -154,7 +155,7 @@ void CheckHlsStreamInfo(const std::vector<StreamInfo> &streams)
     }
 }
 }
-const static std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
+const static std::string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 const static std::string M3U8_PATH_MASTER = "test_cbr/test_cbr.m3u8";
 const static std::string M3U8_PATH_MEDIA = "test_cbr/720_1M/video_720.m3u8";
 const static std::string M3U8_PATH_LIVE = "test_hls/testHlsLive.m3u8";
@@ -3210,14 +3211,14 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GetStartInfo_NegativeTimeOffset, TestSiz
 {
     auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
     downloader->Init();
-    const std::string testUriPath = "http://127.0.0.1:46666/";
+    const std::string testUriPath = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
     downloader->master_ = std::make_shared<M3U8MasterPlaylist>("", testUriPath);
     downloader->master_->isStart_ = true;
     downloader->master_->timeOffset_ = static_cast<int64_t>(-5000LL * S_2_NS);
     downloader->master_->duration_ = 10000ULL * S_2_NS;
     auto info = downloader->GetStartInfo();
-    EXPECT_TRUE(info.first > 0);
-    EXPECT_EQ(info.second, downloader->master_->precise_);
+    EXPECT_EQ(info.first, static_cast<int64_t>(5000LL * S_2_NS));
+    EXPECT_FALSE(info.second);
 }
 
 /**
@@ -3253,8 +3254,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_START_INFO_TIMEOFFSET_GT_DURATION, T
     downloader->master_->duration_ = 1ULL * S_2_NS;
     downloader->master_->timeOffset_ = static_cast<int64_t>(5000000ULL * S_2_NS);
     auto info = downloader->GetStartInfo();
-    EXPECT_TRUE(info.first > 0);
-    EXPECT_EQ(info.second, downloader->master_->precise_);
+    EXPECT_EQ(info.first, static_cast<int64_t>(1LL * S_2_NS));
+    EXPECT_FALSE(info.second);
 }
 
 /**
@@ -3274,8 +3275,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_START_INFO_DEFAULT_VARIANT_POS, Test
     downloader->master_->defaultVariant_ = variant;
     downloader->master_->duration_ = 10000ULL * S_2_NS;
     auto info = downloader->GetStartInfo();
-    EXPECT_TRUE(info.first > 0);
-    EXPECT_EQ(info.second, m3u8->precise_);
+    EXPECT_EQ(info.first, static_cast<int64_t>(5000LL * S_2_NS));
+    EXPECT_FALSE(info.second);
 }
 
 /**
@@ -3295,7 +3296,8 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, GET_START_INFO_DEFAULT_VARIANT_NEG, Test
     downloader->master_->defaultVariant_ = variant;
     downloader->master_->duration_ = 10000ULL * S_2_NS;
     auto info = downloader->GetStartInfo();
-    EXPECT_TRUE(info.first > 0);
+    EXPECT_EQ(info.first, static_cast<int64_t>(5000LL * S_2_NS));
+    EXPECT_FALSE(info.second);
 }
 
 /**
@@ -5785,4 +5787,112 @@ HWTEST_F(HlsPlayListDownloaderUnitTest, COLLECT_KEY_INFOS_AUDIO_NULL_M3U8, TestS
     EXPECT_TRUE(keyInfos.empty());
 }
 
+HWTEST_F(HlsPlayListDownloaderUnitTest, FEED_MANIFEST_PREPARSE_001, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // live media：2 个 #EXTINF，无 #EXT-X-ENDLIST，无 #EXT-X-MAP → PreParse 会触发
+    std::string liveMedia =
+        "#EXTM3U\n"
+        "#EXT-X-VERSION:3\n"
+        "#EXT-X-TARGETDURATION:6\n"
+        "#EXTINF:5.0,\n"
+        "seg0.ts\n"
+        "#EXTINF:5.0,\n"
+        "seg1.ts\n";
+    downloader->SetPlayListForTest(liveMedia);
+    downloader->PreParseManifest("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/spike/live.m3u8");
+
+    EXPECT_FALSE(cb->savedPlayList.empty());
+    if (!cb->savedPlayList.empty()) {
+        EXPECT_NE(cb->savedPlayList[0].url_.find("seg0.ts"), std::string::npos);
+    }
+    EXPECT_FALSE(downloader->IsParseFinished());  // pre-parse 保持 false
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, FEED_MANIFEST_PREPARSE_VOD_SKIP_002, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // VOD：含 #EXT-X-ENDLIST → PreParseManifest 在 ENDLIST 检查处早退
+    std::string vod =
+        "#EXTM3U\n"
+        "#EXT-X-TARGETDURATION:6\n"
+        "#EXTINF:5.0,\n"
+        "seg0.ts\n"
+        "#EXTINF:5.0,\n"
+        "seg1.ts\n"
+        "#EXT-X-ENDLIST\n";
+    downloader->SetPlayListForTest(vod);
+    downloader->PreParseManifest("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/spike/vod.m3u8");
+
+    EXPECT_TRUE(cb->savedPlayList.empty());
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, PREPARSE_BOUNDARY_XMAP_003, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // #EXT-X-MAP present (fMP4 init segment) -> PreParse early-exits (truncation risks init).
+    std::string fmp4 =
+        "#EXTM3U\n"
+        "#EXT-X-VERSION:6\n"
+        "#EXT-X-TARGETDURATION:6\n"
+        "#EXT-X-MAP:URI=\"init.mp4\"\n"
+        "#EXTINF:5.0,\n"
+        "seg0.ts\n"
+        "#EXTINF:5.0,\n"
+        "seg1.ts\n";
+    downloader->SetPlayListForTest(fmp4);
+    downloader->PreParseManifest("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/spike/fmp4.m3u8");
+    EXPECT_TRUE(cb->savedPlayList.empty()) << "X-MAP present -> PreParse must skip";
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, PREPARSE_BOUNDARY_SINGLE_EXTINF_004, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // Only 1 #EXTINF (< MIN_PRE_PARSE_NUM=2) -> find loop aborts -> no PreParse.
+    std::string single =
+        "#EXTM3U\n"
+        "#EXT-X-VERSION:3\n"
+        "#EXT-X-TARGETDURATION:6\n"
+        "#EXTINF:5.0,\n"
+        "seg0.ts\n";
+    downloader->SetPlayListForTest(single);
+    downloader->PreParseManifest("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/spike/single.m3u8");
+    EXPECT_TRUE(cb->savedPlayList.empty()) << "<2 #EXTINF -> PreParse must skip";
+}
+
+HWTEST_F(HlsPlayListDownloaderUnitTest, PREPARSE_BOUNDARY_MASTER_PLAYLIST_005, TestSize.Level1)
+{
+    auto downloader = std::make_shared<HlsPlayListDownloaderTestable>();
+    downloader->Init();
+    auto cb = std::make_shared<MockPlayListCallback>();
+    downloader->SetPlayListCallback(std::weak_ptr<PlayListChangeCallback>(cb));
+
+    // Master playlist (#EXT-X-STREAM-INF, no #EXTINF) -> no segments to pre-parse.
+    std::string master =
+        "#EXTM3U\n"
+        "#EXT-X-VERSION:6\n"
+        "#EXT-X-STREAM-INF:BANDWIDTH=1280000,RESOLUTION=720x480\n"
+        "720p.m3u8\n"
+        "#EXT-X-STREAM-INF:BANDWIDTH=2560000,RESOLUTION=1280x720\n"
+        "1080p.m3u8\n";
+    downloader->SetPlayListForTest(master);
+    downloader->PreParseManifest("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/spike/master.m3u8");
+    EXPECT_TRUE(cb->savedPlayList.empty()) << "master playlist (no #EXTINF) -> PreParse must skip";
+}
 }

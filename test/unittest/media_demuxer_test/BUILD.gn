@@ -82,6 +82,7 @@ ohos_unittest("media_demuxer_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   testonly = true
+  defines = [ "AVCODEC_TEST_HTTP_PORT=46680" ]
   configs = [
     ":media_demuxer_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",

@@ -17,6 +17,7 @@
 #include "gtest/gtest.h"
 #include "source_callback.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "sniffer_test_support.h"
 #include "monitor/download_monitor.h"
 
@@ -30,9 +31,8 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr size_t TEN = 10;
-constexpr int32_t ROUTING_TEST_PORT = 48668;
 constexpr size_t ROUTING_BODY_SIZE = 512;
-const std::string ROUTING_BASE = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT);
+const std::string ROUTING_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR;
 
 class MockSourceLoader : public Plugins::IMediaSourceLoader {
 public:
@@ -2140,10 +2140,10 @@ HWTEST_F(HttpSourcePluginUnitTest, CreateHlsDownloader_002, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_002, TestSize.Level1)
 {
     MediaAVCodec::HttpServerDemo server;
-    server.StartServer(ROUTING_TEST_PORT);
+    server.StartServer();
     MediaAVCodec::HttpServerDemo::RegisterContent("/probe", std::string(512, 'x'));
     ASSERT_NE(nullptr, plugin_);
-    std::string uri = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT) + "/probe";
+    std::string uri = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     plugin_->SetDownloaderBySource(source);
     ASSERT_NE(nullptr, plugin_->downloader_);
@@ -2159,13 +2159,13 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_002, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_003, TestSize.Level1)
 {
     MediaAVCodec::HttpServerDemo server;
-    server.StartServer(ROUTING_TEST_PORT);
+    server.StartServer();
     MediaAVCodec::HttpServerDemo::RegisterContent("/probe",
         "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\" mediaPresentationDuration=\"PT6S\">"
         "<Period><AdaptationSet mimeType=\"video/mp4\"><Representation id=\"v\" bandwidth=\"1000\">"
         "<BaseURL>media.mp4</BaseURL></Representation></AdaptationSet></Period></MPD>");
     ASSERT_NE(nullptr, plugin_);
-    std::string uri = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT) + "/probe";
+    std::string uri = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     ASSERT_EQ(plugin_->SetSource(source), Status::OK);
     ASSERT_NE(nullptr, plugin_->downloader_);
@@ -2189,12 +2189,12 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_003, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_004, TestSize.Level1)
 {
     MediaAVCodec::HttpServerDemo server;
-    server.StartServer(ROUTING_TEST_PORT);
+    server.StartServer();
     MediaAVCodec::HttpServerDemo::RegisterContent("/probe",
         "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\nseg.ts\n#EXT-X-ENDLIST\n");
     MediaAVCodec::HttpServerDemo::RegisterContent("/seg.ts", std::string(512, 's')); // Small opaque segment.
     ASSERT_NE(nullptr, plugin_);
-    std::string uri = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT) + "/probe";
+    std::string uri = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     ASSERT_EQ(plugin_->SetSource(source), Status::OK);
     ASSERT_NE(nullptr, plugin_->downloader_);
@@ -2233,11 +2233,11 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_005, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_006, TestSize.Level1)
 {
     MediaAVCodec::HttpServerDemo server;
-    server.StartServer(ROUTING_TEST_PORT);
+    server.StartServer();
     MediaAVCodec::HttpServerDemo::RegisterContent("/probe",
         "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\nseg.ts\n#EXT-X-ENDLIST\n");
     ASSERT_NE(nullptr, plugin_);
-    std::string uri = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT) + "/probe";
+    std::string uri = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     auto strategy = std::make_shared<PlayStrategy>();
     source->SetPlayStrategy(strategy);
@@ -2426,7 +2426,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_007, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_008, TestSize.Level1)
 {
     MediaAVCodec::HttpServerDemo server;
-    server.StartServer(ROUTING_TEST_PORT);
+    server.StartServer();
     MediaAVCodec::HttpServerDemo::RegisterContent("/probe", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);
     auto cb = std::make_shared<SourceCallback>();
@@ -2451,7 +2451,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_008, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_009, TestSize.Level1)
 {
     MediaAVCodec::HttpServerDemo server;
-    server.StartServer(ROUTING_TEST_PORT);
+    server.StartServer();
     MediaAVCodec::HttpServerDemo::RegisterContent("/probe", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);
     std::string uri = ROUTING_BASE + "/probe";
@@ -2476,7 +2476,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_009, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_010, TestSize.Level1)
 {
     MediaAVCodec::HttpServerDemo server;
-    server.StartServer(ROUTING_TEST_PORT);
+    server.StartServer();
     MediaAVCodec::HttpServerDemo::RegisterContent("/stream1.mp4", std::string(ROUTING_BODY_SIZE, 'x'));
     MediaAVCodec::HttpServerDemo::RegisterContent("/stream2.mp4", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);
@@ -2508,7 +2508,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_010, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_011, TestSize.Level1)
 {
     MediaAVCodec::HttpServerDemo server;
-    server.StartServer(ROUTING_TEST_PORT);
+    server.StartServer();
     MediaAVCodec::HttpServerDemo::RegisterContent("/probe", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);
     auto cb = std::make_shared<SourceCallback>();
@@ -2537,7 +2537,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_011, TestSize.Level1)
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_012, TestSize.Level1)
 {
     MediaAVCodec::HttpServerDemo server;
-    server.StartServer(ROUTING_TEST_PORT);
+    server.StartServer();
     MediaAVCodec::HttpServerDemo::RegisterContent("/stream1.mp4", std::string(ROUTING_BODY_SIZE, 'x'));
     MediaAVCodec::HttpServerDemo::RegisterContent("/stream2.mp4", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);

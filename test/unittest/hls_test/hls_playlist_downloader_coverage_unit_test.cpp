@@ -15,6 +15,7 @@
 
 #include "hls_playlist_downloader_coverage_unit_test.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <cstring>
@@ -36,7 +37,7 @@ public:
     }
 };
 
-const static std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
+const static std::string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 const static std::string M3U8_PATH_HLS = "test_hls/";
 const static std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "userAgent"},
@@ -741,7 +742,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_NULL
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
     downloader->downloader_ = nullptr;
-    downloader->DoOpen("http://127.0.0.1:46666/test.m3u8");
+    downloader->DoOpen("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test.m3u8");
     ASSERT_EQ(downloader->GetPlayListDownloadStatus(), false);
 }
 
@@ -972,7 +973,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_REAL
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
     downloader->downloader_ = nullptr;
-    downloader->DoOpen("http://127.0.0.1:46666/test_cb.m3u8");
+    downloader->DoOpen("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_cb.m3u8");
 
     auto req = downloader->downloadRequest_;
     ASSERT_NE(req, nullptr);
@@ -992,7 +993,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_REAL
     auto downloader2 = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader2->Init();
     downloader2->downloader_ = nullptr;
-    downloader2->DoOpen("http://127.0.0.1:46666/test_cb2.m3u8");
+    downloader2->DoOpen("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_cb2.m3u8");
     auto req2 = downloader2->downloadRequest_;
     ASSERT_NE(req2, nullptr);
     std::shared_ptr<Downloader> dl2 = nullptr;
@@ -1011,7 +1012,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_410_
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
     downloader->downloader_ = nullptr;
-    downloader->DoOpen("http://127.0.0.1:46666/test_410.m3u8");
+    downloader->DoOpen("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_410.m3u8");
 
     auto req = downloader->downloadRequest_;
     ASSERT_NE(req, nullptr);
@@ -1032,7 +1033,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_DONE
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
     downloader->downloader_ = nullptr;
-    downloader->DoOpen("http://127.0.0.1:46666/test_done.m3u8");
+    downloader->DoOpen("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_done.m3u8");
 
     auto req = downloader->downloadRequest_;
     ASSERT_NE(req, nullptr);
@@ -1052,7 +1053,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_RETR
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
     downloader->downloader_ = nullptr;
-    downloader->DoOpen("http://127.0.0.1:46666/test_retry_timeout.m3u8");
+    downloader->DoOpen("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_retry_timeout.m3u8");
 
     auto req = downloader->downloadRequest_;
     ASSERT_NE(req, nullptr);
@@ -1129,7 +1130,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_REAL
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
     downloader->downloader_ = nullptr;
-    downloader->DoOpen("http://127.0.0.1:46666/test_null_req_cb.m3u8");
+    downloader->DoOpen("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_null_req_cb.m3u8");
     auto req = downloader->downloadRequest_;
     ASSERT_NE(req, nullptr);
     std::shared_ptr<Downloader> dl = nullptr;
@@ -1149,7 +1150,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_REAL_STATUS_
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
     downloader->downloader_ = nullptr;
-    downloader->DoOpen("http://127.0.0.1:46666/test_destroy_status.m3u8");
+    downloader->DoOpen("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_destroy_status.m3u8");
     auto req = downloader->downloadRequest_;
     ASSERT_NE(req, nullptr);
     auto statusCb = req->statusCallback_;
@@ -1171,7 +1172,7 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DONE_CB_AFTE
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
     downloader->downloader_ = nullptr;
-    downloader->DoOpen("http://127.0.0.1:46666/test_destroy_done.m3u8");
+    downloader->DoOpen("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_destroy_done.m3u8");
     auto req = downloader->downloadRequest_;
     ASSERT_NE(req, nullptr);
     auto doneCb = req->downloadDoneCallback_;

@@ -15,14 +15,14 @@
 
 #include "dash_segment_downloader_unittest.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 
 namespace OHOS {
 namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-constexpr int32_t SERVERPORT = 47777;
-static const std::string AUDIO_SEGMENT_URL = "http://127.0.0.1:47777/test_dash/segment_base/media-audio-und-mp4a.mp4";
+static const std::string AUDIO_SEGMENT_URL = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_base/media-audio-und-mp4a.mp4";
 
 constexpr uint32_t DEFAULT_RING_BUFFER_SIZE = 1 * 1024 * 1024;
 constexpr uint32_t AUD_RING_BUFFER_SIZE = 400 * 1024;
@@ -38,7 +38,7 @@ std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
 void DashSegmentDownloaderUnitTest::SetUpTestCase(void)
 {
     g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-    g_server->StartServer(SERVERPORT);
+    g_server->StartServer();
     std::cout << "start" << std::endl;
 }
 
@@ -52,7 +52,7 @@ void DashSegmentDownloaderUnitTest::SetUp(void)
 {
     if (g_server == nullptr) {
         g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-        g_server->StartServer(SERVERPORT);
+        g_server->StartServer();
         std::cout << "start server" << std::endl;
     }
     segmentDownloader_ = std::make_shared<DashSegmentDownloader>(nullptr, ID_STREAM,

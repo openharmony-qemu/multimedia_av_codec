@@ -18,6 +18,7 @@
 #include "gtest/gtest.h"
 #include "http_source_plugin.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "monitor/download_monitor.h"
 #include "http/http_media_downloader.h"
 #include "hls/hls_media_downloader.h"
@@ -31,10 +32,9 @@ using namespace SnifferTest;
 using MediaAVCodec::HttpServerDemo;
 using MediaAVCodec::HttpResponseControl;
 namespace {
-constexpr int32_t TEST_PORT = 48669; // Dedicated to this integration suite.
 constexpr size_t SEGMENT_SIZE = 2048;
 constexpr size_t FLV_HEADER_SIZE = 13; // Nine-byte header plus PreviousTagSize0.
-const std::string BASE_URL = "http://127.0.0.1:" + std::to_string(TEST_PORT);
+const std::string BASE_URL = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR;
 
 bool HasForwardedHeaders(const std::string& request)
 {
@@ -102,7 +102,7 @@ public:
     static void SetUpTestCase()
     {
         server_ = std::make_unique<HttpServerDemo>();
-        server_->StartServer(TEST_PORT);
+        server_->StartServer();
     }
     static void TearDownTestCase()
     {

@@ -20,6 +20,7 @@
 #include "dash_mpd_util.h"
 #include "gtest/gtest.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "utils/time_utils.h"
 
 namespace OHOS {
@@ -27,14 +28,13 @@ namespace Media {
 namespace Plugins {
 namespace HttpPlugin {
 namespace {
-constexpr int32_t SERVERPORT = 47777;
-static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:47777/test_dash/segment_base/index.mpd";
-static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:47777/test_dash/segment_list/index.mpd";
-static const std::string MPD_SEGMENT_TEMPLATE = "http://127.0.0.1:47777/test_dash/segment_template/index.mpd";
-static const std::string MPD_SEGMENT_LIST_TIMELINE = "http://127.0.0.1:47777/test_dash/segment_list/index_timeline.mpd";
-static const std::string MPD_SEGMENT_TEMPLATE_ADPT = "http://127.0.0.1:47777/test_dash/segment_template/index_adpt.mpd";
-static const std::string URL_TEMPLATE_TIMELINE = "http://127.0.0.1:47777/test_dash/segment_template/index_timeline.mpd";
-static const std::string URL_SEGMENT_BASE_IN_PERIOD = "http://127.0.0.1:47777/test_dash/segment_base/index_period.mpd";
+static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_base/index.mpd";
+static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_list/index.mpd";
+static const std::string MPD_SEGMENT_TEMPLATE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_template/index.mpd";
+static const std::string MPD_SEGMENT_LIST_TIMELINE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_list/index_timeline.mpd";
+static const std::string MPD_SEGMENT_TEMPLATE_ADPT = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_template/index_adpt.mpd";
+static const std::string URL_TEMPLATE_TIMELINE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_template/index_timeline.mpd";
+static const std::string URL_SEGMENT_BASE_IN_PERIOD = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_base/index_period.mpd";
 constexpr unsigned int INIT_WIDTH = 1280;
 constexpr unsigned int INIT_HEIGHT = 720;
 }
@@ -132,7 +132,7 @@ public:
 void DashMpdDownloaderUnitTest::SetUpTestCase(void)
 {
     g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-    g_server->StartServer(SERVERPORT);
+    g_server->StartServer();
     std::cout << "start" << std::endl;
 
     g_mpdDownloader = std::make_shared<DashMpdDownloader>();
@@ -157,7 +157,7 @@ void DashMpdDownloaderUnitTest::SetUp(void)
 {
     if (g_server == nullptr) {
         g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-        g_server->StartServer(SERVERPORT);
+        g_server->StartServer();
         std::cout << "start server" << std::endl;
     }
 
@@ -207,7 +207,7 @@ HWTEST_F(DashMpdDownloaderUnitTest, TEST_PARSE_MANIFEST_EMPTY_CONTENT, TestSize.
 {
     auto downloader = std::make_shared<DashMpdDownloader>();
     downloader->Init();
-    std::string fakeUrl = "http://127.0.0.1:47777/test_dash/empty/index.mpd";
+    std::string fakeUrl = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/empty/index.mpd";
     downloader->UpdateDownloadFinished(fakeUrl);
     std::vector<StreamInfo> streams;
     Status status = downloader->GetStreamInfo(streams);

@@ -122,6 +122,7 @@ ohos_unittest("dash_mpd_parser_unit_test") {
 ohos_unittest("dash_media_downloader_unit_test") {
   module_out_path = module_output_path
   testonly = true
+  defines = [ "AVCODEC_TEST_HTTP_PORT=46683" ]
   configs = [
     ":dash_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
@@ -153,6 +154,7 @@ ohos_unittest("dash_media_downloader_unit_test") {
 ohos_unittest("dash_mpd_downloader_unit_test") {
   module_out_path = module_output_path
   testonly = true
+  defines = [ "AVCODEC_TEST_HTTP_PORT=46682" ]
   configs = [
     ":dash_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
@@ -184,6 +186,7 @@ ohos_unittest("dash_mpd_downloader_unit_test") {
 ohos_unittest("dash_segment_downloader_unit_test") {
   module_out_path = module_output_path
   testonly = true
+  defines = [ "AVCODEC_TEST_HTTP_PORT=46681" ]
   configs = [
     ":dash_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",

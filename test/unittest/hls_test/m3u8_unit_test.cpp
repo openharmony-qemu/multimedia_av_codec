@@ -14,6 +14,7 @@
  */
 #include "m3u8_unit_test.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "utils/time_utils.h"
 
 #include <atomic>
@@ -37,7 +38,7 @@ constexpr size_t TEST_AES_KEY_SIZE = 16;
 constexpr uint64_t TEST_SESSION_KEY_INDEX = 5; // Positive session ID, distinct from the first ordinary key.
 constexpr auto KEY_DOWNLOAD_TIMEOUT = std::chrono::seconds(3);
 constexpr auto KEY_DOWNLOAD_POLL_INTERVAL = std::chrono::milliseconds(10);
-const std::string KEY_TEST_BASE = "http://127.0.0.1:46666"; // HttpServerDemo's default loopback port.
+const std::string KEY_TEST_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR;
 const std::string KEY_WITH_CALLBACK_PATH = "/m3u8/key-with-callback.bin";
 const std::string SESSION_KEY_PATH = "/m3u8/session-key.bin";
 const std::string INTERRUPT_KEY_PATH = "/m3u8/interrupt-key.bin";

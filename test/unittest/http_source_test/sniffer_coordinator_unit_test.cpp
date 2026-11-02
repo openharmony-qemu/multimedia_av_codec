@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include "sniffer/sniffer_coordinator.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "http/http_media_downloader.h"
 #include "gtest/gtest.h"
 
@@ -37,7 +38,6 @@ using namespace OHOS::MediaAVCodec;
 using namespace testing::ext;
 namespace OHOS::Media::Plugins::HttpPlugin {
 namespace {
-constexpr int32_t PROBE_TEST_PORT = 46667;
 // The server gate holds for ten seconds; cancellation must finish before its three-second watchdog.
 constexpr int32_t HELD_TIMEOUT_MS = 200;
 constexpr int32_t SHORT_TIMEOUT_MS = 100;
@@ -51,7 +51,7 @@ constexpr size_t FRAGMENT_SIZE = 17;
 constexpr size_t APP_TRACE_CAPACITY = 128; // Bounded trace for this one short probe/formal exchange.
 constexpr size_t APP_TRACE_PREFIX_BYTES = 16;
 constexpr int HEX_DIGITS_PER_BYTE = 2;
-const std::string BASE = "http://127.0.0.1:" + std::to_string(PROBE_TEST_PORT);
+const std::string BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR;
 const std::string SHORT_HLS = "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\nseg.ts\n#EXT-X-ENDLIST\n";
 ProtocolProbeResult Probe(const std::string& text, bool eos = false)
 {
@@ -375,7 +375,7 @@ public:
     static void SetUpTestCase()
     {
         server = std::make_unique<HttpServerDemo>();
-        server->StartServer(PROBE_TEST_PORT);
+        server->StartServer();
     }
     static void TearDownTestCase() { server->StopServer(); server.reset(); }
     void TearDown() override { HttpServerDemo::ClearContent(); }
