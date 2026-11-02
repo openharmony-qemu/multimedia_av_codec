@@ -17,6 +17,7 @@
 #include <cstdint>
 #include <cmath>
 #include <climits>
+#include <charconv>
 #include <limits>
 #include <mutex>
 #include <unistd.h>
@@ -284,8 +285,8 @@ int64_t HlsPlayListDownloader::GetDuration()
     if (master->bLive_) {
         if (IsLiveTimeShiftSeekable()) {
             if (master->duration_ > static_cast<uint64_t>(std::numeric_limits<int64_t>::max())) {
-                MEDIA_LOG_W("GetDuration live duration overflow, clamped to INT64_MAX");
-                return -1 * std::numeric_limits<int64_t>::max();
+                MEDIA_LOG_W("GetDuration live duration overflow, unable to seek");
+                return -1;
             }
             return -1 * static_cast<int64_t>(master->duration_);
         }
@@ -306,18 +307,26 @@ std::pair<int64_t, bool> HlsPlayListDownloader::GetStartInfo()
     }
     int64_t duration = GetDuration();  // ns
     std::pair<int64_t, bool> startInfo{0, false};
+    auto applyStartOffset = [&duration](int64_t timeOffset) -> int64_t {
+        if (timeOffset < 0) {
+            int64_t sum = 0;
+            if (!SafeAdd(timeOffset, duration, sum) || sum < 0) {
+                return 0;
+            }
+            return sum;
+        }
+        return timeOffset > duration ? duration : timeOffset;
+    };
     if (master->isStart_) {
         int64_t timeOffset = master->timeOffset_;  // ns
         if (duration != -1) {
-            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
-                (timeOffset > duration ? duration : timeOffset);
+            startInfo.first = applyStartOffset(timeOffset);
             startInfo.second = master->precise_;
         }
     } else if (master->defaultVariant_ && master->defaultVariant_->m3u8_ && master->defaultVariant_->m3u8_->isStart_) {
         int64_t timeOffset = master->defaultVariant_->m3u8_->timeOffset_;  // ns
         if (duration != -1) {
-            startInfo.first = timeOffset < 0 ? std::max(timeOffset + duration, static_cast<int64_t>(0)) :
-                (timeOffset > duration ? duration : timeOffset);
+            startInfo.first = applyStartOffset(timeOffset);
             startInfo.second = master->defaultVariant_->m3u8_->precise_;
         }
     } else {
@@ -658,11 +667,13 @@ void HlsPlayListDownloader::CopyFragmentInfo(PlayInfo& playInfo, const M3U8Segme
     auto master = GetThreadSafeMaster();
     auto currentVariant = GetThreadSafeCurrentVariant();
     if (master && currentVariant && (master->isFmp4_.load() || master->isPureByteRange_.load())) {
-        // 预分配容量，避免 operator+ 链式拼接产生多个临时 string 堆分配
         std::string url;
         url.reserve(URL_FIXED_PREFIX_LEN + file.uri_.size());
-        url.append(std::to_string(playInfo.offset_)).append("_")
-            .append(std::to_string(playInfo.length_)).append("__").append(file.uri_);
+        char buf[URL_FIXED_PREFIX_LEN];
+        auto res = std::to_chars(buf, buf + sizeof(buf), playInfo.offset_);
+        url.append(buf, res.ptr).append("_");
+        res = std::to_chars(buf, buf + sizeof(buf), playInfo.length_);
+        url.append(buf, res.ptr).append("__").append(file.uri_);
         playInfo.url_ = std::move(url);
         playInfo.rangeUrl_ = file.uri_;
     } else {
