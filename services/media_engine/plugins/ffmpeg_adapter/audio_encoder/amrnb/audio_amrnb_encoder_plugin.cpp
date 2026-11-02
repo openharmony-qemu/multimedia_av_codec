@@ -218,7 +218,8 @@ Status AudioAmrNbEncoderPlugin::SetParameter(const std::shared_ptr<Meta> &parame
         AVCODEC_LOGE("parameter is nullptr");
         return Status::ERROR_INVALID_PARAMETER;
     }
-    std::lock_guard<std::mutex> lock(paramMutex_);
+    std::lock_guard<std::mutex> lock(avMutex_);
+    std::lock_guard<std::mutex> lock2(paramMutex_);
     if (!CheckChannel(parameter)) {
         return Status::ERROR_INVALID_PARAMETER;
     }

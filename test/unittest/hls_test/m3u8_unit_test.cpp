@@ -15,8 +15,12 @@
 #include "m3u8_unit_test.h"
 #include "http_server_demo.h"
 
+#include <atomic>
+#include <chrono>
 #include <new>
 #include <limits>
+#include <thread>
+#include <unordered_map>
 #define LOCAL true
 
 using namespace OHOS;
@@ -26,6 +30,119 @@ using namespace testing::ext;
 using namespace std;
 constexpr uint32_t MAX_LOOP = 16;
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server = nullptr;
+
+namespace {
+constexpr size_t TEST_AES_KEY_SIZE = 16;
+constexpr uint64_t TEST_SESSION_KEY_INDEX = 5; // Positive session ID, distinct from the first ordinary key.
+constexpr auto KEY_DOWNLOAD_TIMEOUT = std::chrono::seconds(3);
+constexpr auto KEY_DOWNLOAD_POLL_INTERVAL = std::chrono::milliseconds(10);
+const std::string KEY_TEST_BASE = "http://127.0.0.1:46666"; // HttpServerDemo's default loopback port.
+const std::string KEY_WITH_CALLBACK_PATH = "/m3u8/key-with-callback.bin";
+const std::string SESSION_KEY_PATH = "/m3u8/session-key.bin";
+const std::string INTERRUPT_KEY_PATH = "/m3u8/interrupt-key.bin";
+const std::string INTERRUPT_MAP_PATH = "/m3u8/interrupt-map.mp4";
+const std::string TEST_KEY_BYTES = "0123456789abcdef";
+const std::string TEST_SESSION_KEY_BYTES = "fedcba9876543210";
+const std::string TEST_MAP_BYTES = "local-map-header";
+
+class ScopedM3u8Download {
+public:
+    ScopedM3u8Download()
+        : failed_(std::make_shared<std::atomic<bool>>(false)), metrics_(std::make_shared<DownloadMetricsInfo>())
+    {
+        auto failed = failed_;
+        StatusCallbackFunc status = [failed](DownloadStatus, std::shared_ptr<Downloader>&,
+            std::shared_ptr<DownloadRequest>&) {
+            failed->store(true);
+        };
+        owner_ = std::make_shared<M3U8>(KEY_TEST_BASE, "", std::unordered_map<std::string, std::string> {}, status);
+        owner_->SetDownloadCallback(metrics_);
+    }
+
+    ScopedM3u8Download(const ScopedM3u8Download&) = delete;
+    ScopedM3u8Download& operator=(const ScopedM3u8Download&) = delete;
+
+    ~ScopedM3u8Download()
+    {
+        Stop();
+        owner_.reset();
+        MediaAVCodec::HttpServerDemo::ClearContent();
+    }
+
+    std::shared_ptr<M3U8> Owner() const
+    {
+        return owner_;
+    }
+
+    std::shared_ptr<DownloadMetricsInfo> Metrics() const
+    {
+        return metrics_;
+    }
+
+    bool HadError() const
+    {
+        return failed_->load();
+    }
+
+    void PrepareKey(const std::string& path)
+    {
+        MediaAVCodec::HttpServerDemo::RegisterContent(path, TEST_KEY_BYTES);
+        // Prepare the index and key table through the normal AES-128 tag path.
+        std::shared_ptr<Tag> tag = std::make_shared<AttributesTag>(HlsTag::EXTXKEY,
+            "METHOD=AES-128,URI=\"" + path + "\"");
+        owner_->PrepareDecrptionKeys(tag);
+    }
+
+    void PrepareSessionKey()
+    {
+        MediaAVCodec::HttpServerDemo::RegisterContent(SESSION_KEY_PATH, TEST_SESSION_KEY_BYTES);
+        owner_->keyUri_ = std::make_shared<std::string>(KEY_TEST_BASE + SESSION_KEY_PATH);
+        owner_->isSessionKey_ = true;
+        owner_->sessionKeyIndex_ = TEST_SESSION_KEY_INDEX;
+    }
+
+    bool WaitForKey() const
+    {
+        auto request = owner_->downloadRequest_;
+        if (request == nullptr) {
+            return false;
+        }
+        auto deadline = std::chrono::steady_clock::now() + KEY_DOWNLOAD_TIMEOUT;
+        while (std::chrono::steady_clock::now() < deadline) {
+            if (HadError()) {
+                return false;
+            }
+            if (owner_->isDecryptKeyReady_.load() && request->IsEos()) {
+                return true;
+            }
+            std::this_thread::sleep_for(KEY_DOWNLOAD_POLL_INTERVAL);
+        }
+        return false;
+    }
+
+    void Stop()
+    {
+        if (stopped_) {
+            return;
+        }
+        // Keep the M3U8 owner alive until both download jobs and their callbacks have stopped.
+        if (owner_->downloader_ != nullptr) {
+            owner_->downloader_->Stop(false);
+        }
+        if (owner_->downloaderHeader_ != nullptr) {
+            owner_->downloaderHeader_->Stop(false);
+        }
+        stopped_ = true;
+    }
+
+private:
+    std::shared_ptr<std::atomic<bool>> failed_;
+    std::shared_ptr<DownloadMetricsInfo> metrics_;
+    std::shared_ptr<M3U8> owner_;
+    bool stopped_ {false};
+};
+} // namespace
+
 void M3u8UnitTest::SetUpTestCase(void) {}
 
 void M3u8UnitTest::TearDownTestCase(void) {}
@@ -609,15 +726,17 @@ HWTEST_F(M3u8UnitTest, IS_NEAR_TO_INIT_RESOLUTION_001, TestSize.Level1)
 
 HWTEST_F(M3u8UnitTest, SetInterruptState_001, TestSize.Level1)
 {
-    std::string url = "http://example.com/test.m3u8";
-    auto m3u8 = std::make_shared<M3U8>(testUri, "");
-    m3u8->uri_ = url;
-    m3u8->keyUri_ = std::make_shared<std::string>(url);
-    m3u8->keyIndex_ = 1;
+    ScopedM3u8Download download;
+    download.PrepareKey(INTERRUPT_KEY_PATH);
+    MediaAVCodec::HttpServerDemo::RegisterContent(INTERRUPT_MAP_PATH, TEST_MAP_BYTES);
+    const std::string url = KEY_TEST_BASE + INTERRUPT_MAP_PATH;
+    auto m3u8 = download.Owner();
+    ASSERT_GT(m3u8->keyIndex_ + m3u8->totalKeyIndex_, 0u);
     m3u8->DownloadKey(true);
+    ASSERT_TRUE(download.WaitForKey());
     m3u8->DownloadMap(url, 0, 0);
-    EXPECT_NE(m3u8->downloadHeaderRequest_, nullptr);
-    EXPECT_NE(m3u8->downloadRequest_, nullptr);
+    ASSERT_NE(m3u8->downloadHeaderRequest_, nullptr);
+    ASSERT_NE(m3u8->downloadRequest_, nullptr);
     EXPECT_EQ(m3u8->downloadHeaderRequest_->startPos_, 0);
     std::shared_ptr<M3U8MasterPlaylist> master = std::make_shared<M3U8MasterPlaylist>("", url);
     master->StartParsing();
@@ -631,6 +750,8 @@ HWTEST_F(M3u8UnitTest, SetInterruptState_001, TestSize.Level1)
     master->defaultVariant_ = nullptr;
     master->SetInterruptState(true);
     EXPECT_EQ(master->defaultVariant_, nullptr);
+    download.Stop();
+    EXPECT_FALSE(download.HadError());
 }
 
 HWTEST_F(M3u8UnitTest, IsVideoStream_001, TestSize.Level1)
@@ -2708,12 +2829,21 @@ HWTEST_F(M3u8UnitTest, UpdateProgramDateTime_WrongSection_001, TestSize.Level0)
 
 HWTEST_F(M3u8UnitTest, DownloadKey_NotKey_001, TestSize.Level1)
 {
-    M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.keyUri_ = std::make_shared<std::string>("http://example.com/key.bin");
-    m3u8.sessionKeyIndex_ = 5;
-    m3u8.DownloadKey(false);
-    EXPECT_NE(m3u8.downloader_, nullptr);
-    ASSERT_EQ(m3u8.downloadRequest_->GetUrl(), "http://example.com/key.bin");
+    ScopedM3u8Download download;
+    download.PrepareSessionKey();
+    auto m3u8 = download.Owner();
+    m3u8->DownloadKey(false);
+    ASSERT_NE(m3u8->downloader_, nullptr);
+    ASSERT_NE(m3u8->downloadRequest_, nullptr);
+    EXPECT_EQ(m3u8->downloadRequest_->GetUrl(), KEY_TEST_BASE + SESSION_KEY_PATH);
+    EXPECT_EQ(m3u8->downloadRequest_->keyIndex_, TEST_SESSION_KEY_INDEX);
+    EXPECT_EQ(m3u8->downloadRequest_->GetRequestType(), RequestType::HLS_KEY);
+    ASSERT_TRUE(download.WaitForKey());
+    download.Stop();
+    EXPECT_FALSE(download.HadError());
+    ASSERT_EQ(m3u8->keyLen_, TEST_AES_KEY_SIZE);
+    EXPECT_EQ(std::string(reinterpret_cast<const char*>(m3u8->key_), m3u8->keyLen_), TEST_SESSION_KEY_BYTES);
+    EXPECT_TRUE(m3u8->isDecryptKeyReady_.load());
 }
 
 HWTEST_F(M3u8UnitTest, UpdateMasterPlaylist_DefineNoQuery_001, TestSize.Level1)
@@ -2798,13 +2928,33 @@ HWTEST_F(M3u8UnitTest, InitializeDownloadHeader_WithCallback_001, TestSize.Level
 
 HWTEST_F(M3u8UnitTest, DownloadKey_WithCallback_001, TestSize.Level1)
 {
-    M3U8 m3u8("http://example.com/test.m3u8", "");
-    m3u8.keyUri_ = std::make_shared<std::string>("http://example.com/key.bin");
-    auto callback = std::make_shared<DownloadMetricsInfo>();
-    m3u8.SetDownloadCallback(callback);
-    m3u8.DownloadKey(true);
-    EXPECT_NE(m3u8.downloader_, nullptr);
-    ASSERT_EQ(m3u8.downloadRequest_->GetUrl(), "http://example.com/key.bin");
+    ScopedM3u8Download download;
+    download.PrepareKey(KEY_WITH_CALLBACK_PATH);
+    auto m3u8 = download.Owner();
+    uint64_t index = m3u8->keyIndex_ + m3u8->totalKeyIndex_;
+    ASSERT_GT(index, 0u);
+    std::unordered_map<uint64_t, KeyInfo> keys;
+    m3u8->GetKeyInfos(keys);
+    ASSERT_NE(keys.find(index), keys.end());
+    m3u8->DownloadKey(true);
+    ASSERT_NE(m3u8->downloader_, nullptr);
+    ASSERT_NE(m3u8->downloadRequest_, nullptr);
+    EXPECT_EQ(m3u8->downloadRequest_->GetUrl(), KEY_TEST_BASE + KEY_WITH_CALLBACK_PATH);
+    EXPECT_EQ(m3u8->downloadRequest_->keyIndex_, index);
+    EXPECT_EQ(m3u8->downloadRequest_->GetRequestType(), RequestType::HLS_KEY);
+    EXPECT_EQ(m3u8->downloader_->downloadCallback_, download.Metrics());
+    ASSERT_TRUE(download.WaitForKey());
+    download.Stop();
+    EXPECT_FALSE(download.HadError());
+    EXPECT_EQ(download.Metrics()->GetTotalDownloadCount(), 1);
+    ASSERT_EQ(m3u8->keyLen_, TEST_AES_KEY_SIZE);
+    EXPECT_EQ(std::string(reinterpret_cast<const char*>(m3u8->key_), m3u8->keyLen_), TEST_KEY_BYTES);
+    EXPECT_TRUE(m3u8->isDecryptKeyReady_.load());
+    m3u8->GetKeyInfos(keys);
+    auto key = keys.find(index);
+    ASSERT_NE(key, keys.end());
+    ASSERT_EQ(key->second.keyLen_, TEST_AES_KEY_SIZE);
+    EXPECT_EQ(std::string(reinterpret_cast<const char*>(key->second.key_), key->second.keyLen_), TEST_KEY_BYTES);
 }
 
 HWTEST_F(M3u8UnitTest, ParseMediaStreamInfo_UnknownType_001, TestSize.Level1)

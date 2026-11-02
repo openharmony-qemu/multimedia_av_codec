@@ -64,12 +64,14 @@ void AppClient::MapToString(const std::map<std::string, std::string>& httpHeader
 
 Status AppClient::Init()
 {
+    forceClosed_.store(false);
     return Status::OK;
 }
 
 Status AppClient::Open(const std::string& url, const std::map<std::string, std::string>& httpHeader,
     int32_t timeoutMs)
 {
+    FALSE_RETURN_V(!forceClosed_.load(), Status::ERROR_INVALID_OPERATION);
     (void)url;
     (void)httpHeader;
     (void)timeoutMs;
@@ -79,6 +81,7 @@ Status AppClient::Open(const std::string& url, const std::map<std::string, std::
 Status AppClient::RequestData(long startPos, int len, const RequestInfo& requestInfo,
     HandleResponseCbFunc completedCb)
 {
+    FALSE_RETURN_V(!forceClosed_.load(), Status::ERROR_INVALID_OPERATION);
     MediaAVCodec::AVCodecTrace trace("AppClient RequestData, startPos: " +
         std::to_string(startPos) + ", len: " + std::to_string(len));
     (void)requestInfo;
@@ -102,10 +105,10 @@ Status AppClient::RequestData(long startPos, int len, const RequestInfo& request
         isResponseCompleted_.store(false);
         int32_t res = sourceLoader_->Read(uuid_.load(), static_cast<int64_t>(startPos), static_cast<int64_t>(len));
         FALSE_LOG_MSG(res == 0, "sourceLoader read fail.");
- 
-        responseCondition_.Wait(lock, [this] {
-            return isResponseCompleted_.load();
-        });
+        responseCondition_.Wait(lock, [this] { return isResponseCompleted_.load() || forceClosed_.load(); });
+        if (forceClosed_.load()) {
+            requestState_.store(LoadingRequestError::LOADING_ERROR_ACCESS_TIMEOUT);
+        }
         requestState = requestState_.load();
     }
     clientCode = static_cast<int32_t>(requestState) * (-1);
@@ -118,7 +121,9 @@ Status AppClient::RequestData(long startPos, int len, const RequestInfo& request
         MEDIA_LOG_I("%{public}" PRIu64 "AppClient RequestData fail, clientCode: " PUBLIC_LOG_D32
             " requestState_: " PUBLIC_LOG_D32, avcodecUniqueId_, clientCode, static_cast<int32_t>(requestState));
  
-        Task::SleepInTask(RETRY_SLEEP_TIME);
+        if (!forceClosed_.load()) {
+            Task::SleepInTask(RETRY_SLEEP_TIME);
+        }
         ret = Status::ERROR_CLIENT;
         completedCb(clientCode, serverCode, std::string(), ret);
     }
@@ -136,6 +141,8 @@ Status AppClient::Close(bool isAsync)
  
 Status AppClient::Deinit()
 {
+    forceClosed_.store(true);
+    Close(true);
     return Status::OK;
 }
  
@@ -163,6 +170,9 @@ void AppClient::SetLoader(std::shared_ptr<IMediaSourceLoader> sourceLoader)
 int32_t AppClient::RespondHeader(int64_t uuid, const std::map<std::string, std::string>& httpHeader,
     std::string redirectUrl)
 {
+    if (forceClosed_.load()) {
+        return 0;
+    }
     MediaAVCodec::AVCodecTrace trace("AppClient RespondHeader, uuid: " + std::to_string(uuid));
     FALSE_LOG_MSG(uuid > 0, "sourceLoader read fail.");
     std::map<std::string, std::string> httpHeaderTmp = httpHeader;
@@ -190,6 +200,9 @@ void AppClient::NotifyResponseDataEnd(LoadingRequestError state)
 
 int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_ptr<AVSharedMemory> memory)
 {
+    if (forceClosed_.load()) {
+        return BUFFER_FULL;
+    }
     FALSE_RETURN_V(memory != nullptr, 0);
     if (uuid != uuid_.load()) {
         MEDIA_LOG_E("%{public}" PRIu64 " AppClient respondData uuid invalid, uuid: " PUBLIC_LOG_D64,
@@ -232,6 +245,9 @@ int32_t AppClient::RespondData(int64_t uuid, int64_t offset, const std::shared_p
  
 int32_t AppClient::FinishLoading(int64_t uuid, LoadingRequestError state)
 {
+    if (forceClosed_.load()) {
+        return 0;
+    }
     FALSE_RETURN_V_MSG_E(uuid == uuid_.load(), 0, "FinishLoading uuid invalid.");
     MEDIA_LOG_I("%{public}" PRIu64 "AppClient FinishLoading uuid " PUBLIC_LOG_D64, avcodecUniqueId_, uuid);
     Task::SleepInTask(FINISHLOADING_SLEEP_TIME);

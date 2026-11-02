@@ -43,6 +43,7 @@ constexpr int64_t LOOP_TIMEOUT = 60; // s
 
 class MediaDownloader {
 public:
+    virtual uint64_t GetLogId() const { return 0; } // Zero means this implementation has no diagnostic ID.
     static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_STREAM_SOURCE, "HiStreamer" };
     virtual ~MediaDownloader() = default;
     virtual void Init() = 0;

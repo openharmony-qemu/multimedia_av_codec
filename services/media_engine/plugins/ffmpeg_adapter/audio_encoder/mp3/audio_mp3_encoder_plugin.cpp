@@ -374,13 +374,16 @@ Status AudioMp3EncoderPlugin::QueueOutputBuffer(std::shared_ptr<AVBuffer>& outpu
 Status AudioMp3EncoderPlugin::Reset()
 {
     AVCODEC_LOGD("Reset begins");
-    isFirstInputPts_ = true;
-    prevPts_ = 0;
-    ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
-    pcmCache_.clear();
-    maxInputBufferSize_ = -1;
-    enableCache_ = false;
-    isEnableFormatConvert_ = false;
+    {
+        std::lock_guard<std::mutex> lock(avMutex_);
+        isFirstInputPts_ = true;
+        prevPts_ = 0;
+        ptsMode_ = DEFAULT_ENCODE_PTS_MODE;
+        pcmCache_.clear();
+        maxInputBufferSize_ = -1;
+        enableCache_ = false;
+        isEnableFormatConvert_ = false;
+    }
     auto ret = Release();
     if (ret != Status::OK) {
         AVCODEC_LOGE("AudioMp3EncoderPlugin Reset Release error.");
@@ -421,7 +424,7 @@ Status AudioMp3EncoderPlugin::Release()
 
 Status AudioMp3EncoderPlugin::Flush()
 {
-    isFirstInputPts_ = true;
+    std::lock_guard<std::mutex> lock(avMutex_);
     prevPts_ = 0;
     pcmCache_.clear();
     return Status::OK;

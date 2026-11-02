@@ -406,7 +406,8 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_PARSE_URI_VA
     std::string uri = "fd://" + std::to_string(fd);
     ASSERT_EQ(downloader->ParseUriInfo(uri), true);
     ASSERT_EQ(downloader->fd_, fd);
-    ASSERT_EQ(downloader->fileSize_, static_cast<uint64_t>(strlen(content)));
+    ASSERT_EQ(downloader->size_, static_cast<uint64_t>(strlen(content)));
+    ASSERT_EQ(downloader->offset_, 0);
     close(fd);
     remove(path);
 }
@@ -460,8 +461,11 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_PARSE_URI_NE
     std::string uri = "fd://" + std::to_string(fd) + "?offset=0&size=-1";
     ASSERT_EQ(downloader->ParseUriInfo(uri), true);
     ASSERT_EQ(downloader->fd_, fd);
+    EXPECT_EQ(downloader->offset_, 0);
+    auto parsedSize = downloader->size_;
     close(fd);
     remove(path);
+    EXPECT_EQ(parsedSize, 0u);
 }
 
 /**
@@ -489,11 +493,11 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_DO_OPEN_NATI
 }
 
 /**
- * @tc.name: PLAYLIST_DOWNLOADER_GET_FILE_SIZE
- * @tc.desc: test GetFileSize with valid and invalid fd
+ * @tc.name: PLAYLIST_DOWNLOADER_PARSE_FD_RANGE_BOUNDS
+ * @tc.desc: test shared fd parsing with clamped ranges and invalid fd
  * @tc.type: FUNC
  */
-HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_GET_FILE_SIZE, TestSize.Level2)
+HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_PARSE_FD_RANGE_BOUNDS, TestSize.Level2)
 {
     const char* path = "/data/test/media/test_filesize.m3u8";
     int fd = open(path, O_CREAT | O_RDWR | O_TRUNC, 0644);
@@ -503,8 +507,15 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_GET_FILE_SIZ
 
     auto downloader = std::make_shared<HlsPlayListDownloader>(httpHeader, nullptr);
     downloader->Init();
-    ASSERT_EQ(downloader->GetFileSize(fd), 8u);
-    ASSERT_EQ(downloader->GetFileSize(-1), 0u);
+    auto uri = "fd://" + std::to_string(fd);
+    // An eight-byte file: offset 3 leaves five bytes; an offset beyond EOF clamps to eight and zero bytes.
+    EXPECT_TRUE(downloader->ParseUriInfo(uri + "?offset=3&size=99"));
+    EXPECT_EQ(downloader->offset_, 3);
+    EXPECT_EQ(downloader->size_, 5u);
+    EXPECT_TRUE(downloader->ParseUriInfo(uri + "?offset=99&size=8"));
+    EXPECT_EQ(downloader->offset_, 8);
+    EXPECT_EQ(downloader->size_, 0u);
+    EXPECT_FALSE(downloader->ParseUriInfo("fd://-1"));
     close(fd);
     remove(path);
 }
@@ -903,8 +914,11 @@ HWTEST_F(HlsPlayListDownloaderCoverageUnitTest, PLAYLIST_DOWNLOADER_PARSE_URI_IN
     std::string uri = "fd://" + std::to_string(fd) + "?offset=abc&size=xyz";
     ASSERT_EQ(downloader->ParseUriInfo(uri), true);
     ASSERT_EQ(downloader->fd_, fd);
+    EXPECT_EQ(downloader->offset_, 0);
+    auto parsedSize = downloader->size_;
     close(fd);
     remove(path);
+    EXPECT_EQ(parsedSize, 0u);
 }
 
 /**

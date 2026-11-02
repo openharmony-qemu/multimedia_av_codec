@@ -66,6 +66,13 @@ constexpr int32_t RANK_MAX = 100 + 1; // 适配自研优先
 constexpr int32_t READ_LEN = 8;
 constexpr int32_t MIN_ATOM_SIZE = 16;
 constexpr int64_t SNIFF_DATA_SIZE = 2048;
+constexpr uint32_t H264_MACROBLOCK_ALIGN_SIZE = 16;
+
+uint32_t AlignToH264MacroBlock(uint32_t value)
+{
+    return (value + H264_MACROBLOCK_ALIGN_SIZE - 1) / H264_MACROBLOCK_ALIGN_SIZE *
+        H264_MACROBLOCK_ALIGN_SIZE;
+}
 
 static const std::set<SeekMode>  g_seekMode = {
     SeekMode::SEEK_PREVIOUS_SYNC,
@@ -952,19 +959,19 @@ bool GetPacketDurationUs(const ReadSamplePacketContext& context, int64_t& durati
     } else {
         // The final packet has no next DTS, so close it against the effective stream duration.
         int64_t streamDuration = GetEffectiveStreamDurationTicks(track, trackTimeScale, context.movieTimeScale);
-        if (streamDuration < currentSample.dts && currentSample.duration != 0) {
+        if (streamDuration <= currentSample.dts) {
+            // FFmpeg mov_finalize_packet: a tail at or past the stream end keeps the native
+            // duration 0 (next_dts - dts <= 0). The caller (UpdatePacketDurationUs) backfills a
+            // 0 result from the AAC frame size (GetAacFrameDurationUs) or leaves it 0 for codecs
+            // without a backfill path (MP3 with a zero-length tail, PCM), matching FFmpeg
+            // compute_pkt_fields instead of borrowing the previous sample spacing. This also
+            // covers single-sample streams (sampleIndex == 0): FFmpeg closes that packet against
+            // the stream duration the same way. Codec-specific tail entries (MP3 frame duration,
+            // video tail, edit-list AAC entries) run before this branch and keep their values.
             durationUs = 0;
             return true;
         }
-        if (streamDuration <= currentSample.dts) {
-            FALSE_RETURN_V_NOLOG(sampleIndex != 0, false);
-            MPEG4SampleHelper::SampleIndexView previousSample;
-            FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
-            duration = currentSample.dts - previousSample.dts;
-            FALSE_RETURN_V_NOLOG(duration > 0, false);
-        } else {
-            duration = streamDuration - currentSample.dts;
-        }
+        duration = streamDuration - currentSample.dts;
     }
     if (duration > 0) {
         return RescaleTrackTimeToUsRoundNearest(duration, trackTimeScale, durationUs) == Status::OK;
@@ -1246,16 +1253,18 @@ bool GetTrailingZeroEditedAudioDurationUs(const ReadSampleEntryContext& context,
     if (!track->sampleHelper->HasTrailingZeroSttsDuration() || sampleIndex == 0) {
         return false;
     }
-    MPEG4SampleHelper::SampleIndexView previousSample;
-    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
-    // Trailing zero STTS entries borrow the previous packet spacing unless stream tail is shorter.
-    int64_t previousDuration = currentSample.dts - previousSample.dts;
-    FALSE_RETURN_V_NOLOG(previousDuration > 0, false);
+    // FFmpeg mov_finalize_packet closes the last packet against the stream end: duration =
+    // st->duration - dts when positive, otherwise native 0 (compute_pkt_fields may then backfill
+    // the AAC frame size). A trailing zero STTS delta does not borrow the previous spacing; fall
+    // through to the generic chain (GetPacketDurationUs / AAC frame-size backfill) when the stream
+    // end is at or before this dts; the backfill itself is gated by whether the probe reached the
+    // track (AUDIO_SAMPLE_PER_FRAME kept by NormalizeAudioAttributes), see UpdatePacketDurationUs.
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, packet.trackTimeScale, packet.movieTimeScale);
     int64_t tailDuration = streamDuration - currentSample.dts;
-    FALSE_RETURN_V_NOLOG(tailDuration <= 0 || tailDuration >= previousDuration,
-        RescaleTrackTimeToUsRoundNearest(tailDuration, packet.trackTimeScale, durationUs) == Status::OK);
-    return RescaleTrackTimeToUsRoundNearest(previousDuration, packet.trackTimeScale, durationUs) == Status::OK;
+    if (tailDuration <= 0) {
+        return false;
+    }
+    return RescaleTrackTimeToUsRoundNearest(tailDuration, packet.trackTimeScale, durationUs) == Status::OK;
 }
 
 bool GetSkipInfoEditedAudioDurationUs(
@@ -1277,6 +1286,11 @@ bool GetSkipInfoEditedAudioDurationUs(
     return RescaleTrackTimeToUsRoundNearest(duration, context.packet.trackTimeScale, durationUs) == Status::OK;
 }
 
+// Only resolves edit-list tails carrying skip/trailing-zero sample information. The plain edit-list
+// tail (no skip info) falls through to GetPacketDurationUs, which closes the last packet against
+// the stream duration (native 0 at the stream end); the caller (UpdatePacketDurationUs) then
+// backfills the AAC frame size when the native result is 0, matching FFmpeg mov_finalize_packet +
+// compute_pkt_fields. Kept as a named entry so the per-codec priority stays explicit.
 bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_t& durationUs)
 {
     const auto& track = context.track;
@@ -1296,17 +1310,12 @@ bool GetEditedAudioTailDurationUs(const ReadSamplePacketContext& context, int64_
     int64_t rawTotalDuration = track->sampleHelper->GetRawTotalDuration();
     int64_t rawTailDuration = rawTotalDuration - currentSample.dts;
     FALSE_RETURN_V_NOLOG(!(GetSkipInfoEditedAudioDurationUs(entryContext, rawTailDuration, durationUs)), true);
-    FALSE_RETURN_V_NOLOG(rawTailDuration <= 0, false);
-    int64_t duration = currentSample.duration;
-    if (context.sampleIndex > 0) {
-        MPEG4SampleHelper::SampleIndexView previousSample;
-        FALSE_RETURN_V_NOLOG(GetSampleView(track, context.sampleIndex - 1, previousSample), false);
-        int64_t previousDuration = currentSample.dts - previousSample.dts;
-        if (previousDuration > 0 && rawTailDuration < 0) {
-            duration = previousDuration;
-        }
-    }
-    return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
+    // FFmpeg mov_finalize_packet closes the last packet against the stream duration (native
+    // duration = st->duration - dts when positive, otherwise 0), and compute_pkt_fields only
+    // backfills the AAC frame duration when the native duration is <= 0. The generic chain
+    // (GetPacketDurationUs then GetAacFrameDurationUs) reproduces both cases, so an edit-list
+    // tail is not borrowed from the previous sample spacing or the stts delta.
+    return false;
 }
 
 bool GetTimedMetaTailDurationUs(
@@ -1325,6 +1334,17 @@ bool GetTimedMetaTailDurationUs(
     FALSE_RETURN_V_NOLOG(rawDuration <= 0 || track->duration <= 0 || rawDuration <= track->duration, false);
     durationUs = 0;
     return true;
+}
+
+bool HasImplausibleCodecFrameRate(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    // FFmpeg compute_frame_duration branch 4 accepts an SPS codec framerate only when
+    // frameRateDen * 1000 > frameRateNum; a bogus rate (e.g. HandBrake 1000000/1) leaves the
+    // duration undefined and also blocks the r_frame_rate branch (the H.264 parser is present).
+    return track != nullptr && track->codecFrameRateParsed &&
+        track->codecFrameRateNum > 0 && track->codecFrameRateDen > 0 &&
+        static_cast<uint64_t>(track->codecFrameRateDen) * CODEC_FRAME_RATE_PLAUSIBILITY_FACTOR <=
+            track->codecFrameRateNum;
 }
 
 bool GetNominalSttsFrameDurationUs(const std::shared_ptr<MPEG4AtomParser::Track>& track, int32_t trackTimeScale,
@@ -1367,20 +1387,29 @@ bool GetVideoTailDurationUs(const ReadSamplePacketContext& context, int64_t& dur
         return false;
     }
 
-    MPEG4SampleHelper::SampleIndexView previousSample;
-    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
     const auto& currentSample = context.currentSample;
     int64_t streamDuration = GetEffectiveStreamDurationTicks(track, context.trackTimeScale, context.movieTimeScale);
+    if (streamDuration > currentSample.dts) {
+        // FFmpeg mov_finalize_packet closes the last packet against the stream end: native
+        // duration = st->duration - dts.
+        return RescaleTrackTimeToUsRoundNearest(streamDuration - currentSample.dts,
+            context.trackTimeScale, durationUs) == Status::OK;
+    }
+    // Tail at/past the stream end: FFmpeg's native duration is 0 and compute_frame_duration
+    // backfills it from r_frame_rate / SPS codec framerate. An implausible SPS rate (e.g.
+    // HandBrake 1000000/1) keeps 0; otherwise the backfill equals the stream frame spacing for
+    // constant-rate tracks (and the H.264 parser repeat_pict quirk also yields the spacing), so
+    // the nominal STTS spacing matches FFmpeg without replicating the parser.
+    if (HasImplausibleCodecFrameRate(track)) {
+        durationUs = 0;
+        return true;
+    }
     if (GetNominalSttsFrameDurationUs(track, context.trackTimeScale, durationUs)) {
         return true;
     }
-    if (currentSample.duration != 0 && streamDuration > currentSample.dts) {
-        return false;
-    }
-    int64_t duration = currentSample.duration;
-    if (duration <= 0 || streamDuration <= currentSample.dts) {
-        duration = currentSample.dts - previousSample.dts;
-    }
+    MPEG4SampleHelper::SampleIndexView previousSample;
+    FALSE_RETURN_V_NOLOG(GetSampleView(track, sampleIndex - 1, previousSample), false);
+    int64_t duration = currentSample.dts - previousSample.dts;
     FALSE_RETURN_V_NOLOG(duration > 0, false);
     return RescaleTrackTimeToUsRoundNearest(duration, context.trackTimeScale, durationUs) == Status::OK;
 }
@@ -1768,6 +1797,14 @@ bool UpdatePacketDurationUs(const ReadSamplePacketContext& context, ReadSamplePa
         hasDuration = RescaleTrackTimeToUsRoundNearest(currentSample.duration, trackTimeScale, attr.durationUs) ==
             Status::OK;
     }
+    // FFmpeg mov_finalize_packet closes the last AAC packet against the stream end: when a
+    // trailing-zero STTS delta leaves the last sample's dts at or past st->duration, the native
+    // duration stays 0, then compute_pkt_fields backfills the AAC frame size (av_get_audio_frame_duration)
+    // only when the stream-info probe opened the AAC decoder (avctx->frame_size == 1024).
+    // NormalizeAudioAttributes mirrors that probe window: it removes AUDIO_SAMPLE_PER_FRAME for
+    // tracks the interleaved probe never reached (dog_tail.mp4 / line58.mp4 last frame 0), and
+    // keeps it for reached tracks (video_audio_one_frame_test.mp4 / single_rk.mp4 / H264_3_720x1280.mp4
+    // last frame 21333/23219), so GetAacFrameDurationUs itself is the probe gate here.
     if (attr.durationUs == 0 && GetAacFrameDurationUs(context, attr.durationUs)) {
         hasDuration = true;
     }
@@ -2515,9 +2552,29 @@ void MPEG4DemuxerPlugin::ParseAVCMetadataInfo(const MPEG4AtomParser::Track& trac
     uint32_t w = streamParsers_->GetPicWidInLumaSamples(trackIndex);
     uint32_t h = streamParsers_->GetPicHetInLumaSamples(trackIndex);
     double sar = streamParsers_->GetSar(trackIndex);
-    if (w > 0 && h > 0) {
-        format.Set<Tag::VIDEO_WIDTH>(w);
-        format.Set<Tag::VIDEO_HEIGHT>(h);
+    int32_t containerWidth = 0;
+    int32_t containerHeight = 0;
+    bool hasValidContainerWidth = format.Get<Tag::VIDEO_WIDTH>(containerWidth) && containerWidth > 0;
+    bool hasValidContainerHeight = format.Get<Tag::VIDEO_HEIGHT>(containerHeight) && containerHeight > 0;
+    // Aligned with FFmpeg h264 decoder init_dimensions (h264_slice.c): the container stsd dims
+    // are kept only when the SPS has no top/left crop, the container fits within the SPS cropped
+    // frame and shares its 16-px macroblock alignment. FFmpeg uses that FFALIGN consistency in
+    // place of an exact crop_right/crop_bottom match, so a container slightly smaller than the
+    // cropped frame (e.g. 2161 vs 2176) is intentionally kept; otherwise the SPS cropped dims
+    // overwrite both fields.
+    bool keepContainerDims = hasValidContainerWidth && hasValidContainerHeight && w > 0 && h > 0 &&
+        streamParsers_->GetSpsCropLeftOffset(trackIndex) == 0 &&
+        streamParsers_->GetSpsCropTopOffset(trackIndex) == 0 &&
+        AlignToH264MacroBlock(static_cast<uint32_t>(containerWidth)) == AlignToH264MacroBlock(w) &&
+        AlignToH264MacroBlock(static_cast<uint32_t>(containerHeight)) == AlignToH264MacroBlock(h) &&
+        static_cast<uint32_t>(containerWidth) <= w && static_cast<uint32_t>(containerHeight) <= h;
+    if (!keepContainerDims) {
+        if (w > 0) {
+            format.Set<Tag::VIDEO_WIDTH>(w);
+        }
+        if (h > 0) {
+            format.Set<Tag::VIDEO_HEIGHT>(h);
+        }
     }
     // Aligned with FFmpeg av_guess_sample_aspect_ratio: container-derived SAR (pasp /
     // tkhd-stsd difference) takes precedence; SPS VUI SAR is only a fallback when the
@@ -5007,6 +5064,29 @@ Status MPEG4DemuxerPlugin::WriteBufferAttr(const SampleReadInfo& sampleInfo,
     return Status::OK;
 }
 
+Status MPEG4DemuxerPlugin::ClampReadSizeToFileEnd(int64_t readPos, int32_t readSize, int32_t &clampedSize)
+{
+    clampedSize = readSize;
+    if (readSize <= 0) {
+        return Status::OK;
+    }
+    FALSE_RETURN_V_MSG_E(readPos >= 0, Status::ERROR_INVALID_PARAMETER, "Invalid read pos");
+    uint64_t fileSize = 0;
+    if (dataSource_ == nullptr || dataSource_->GetSize(fileSize) != Status::OK) {
+        return Status::OK;
+    }
+    uint64_t pos = static_cast<uint64_t>(readPos);
+    if (pos >= fileSize) {
+        return Status::END_OF_STREAM;
+    }
+    uint64_t available = fileSize - pos;
+    if (available >= static_cast<uint64_t>(readSize)) {
+        return Status::OK;
+    }
+    clampedSize = static_cast<int32_t>(available);
+    return Status::ERROR_NOT_ENOUGH_DATA;
+}
+
 Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shared_ptr<AVBuffer> outBuffer)
 {
     std::unique_lock<std::mutex> sLock(syncMutex_);
@@ -5030,6 +5110,21 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     int32_t readSize = std::min(remainSize, capacity);
     int64_t readPos = pos + track->currentSamplePos;
     bool capacityEnough = readSize >= remainSize;
+    // Aligned with FFmpeg mov demuxer: a sample that extends past EOF is delivered as the
+    // available short read (e.g. 6348 of 32768 bytes) instead of failing, and a sample whose
+    // chunk lies fully beyond EOF terminates with a proper EOS flag so the caller stops reading.
+    int32_t clampedSize = readSize;
+    ret = ClampReadSizeToFileEnd(readPos, readSize, clampedSize);
+    if (ret == Status::END_OF_STREAM) {
+        track->currentSamplePos = 0;
+        return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
+    }
+    FALSE_RETURN_V_MSG_E(ret == Status::OK || ret == Status::ERROR_NOT_ENOUGH_DATA, ret,
+        "Clamp sample read size to file end failed");
+    if (ret == Status::ERROR_NOT_ENOUGH_DATA) {
+        readSize = clampedSize;
+        capacityEnough = true;
+    }
     ret = CheckReadSampleDataState(readSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Invalid read state");
     if (readSize > 0) {
@@ -5040,19 +5135,27 @@ Status MPEG4DemuxerPlugin::GetSeekableSampleDirectly(uint32_t trackId, std::shar
     FALSE_RETURN_V(ret == Status::OK, ret);
     MEDIA_LOG_D("Convert size [" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32 "]",
         sampleSize, remainSize, readSize, track->currentSamplePos);
+    return FinalizeDirectSampleRead(sampleInfo, track, outBuffer, readSize, capacityEnough);
+}
+
+Status MPEG4DemuxerPlugin::FinalizeDirectSampleRead(const SampleReadInfo& sampleInfo,
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, std::shared_ptr<AVBuffer> outBuffer,
+    int32_t readSize, bool capacityEnough)
+{
+    FALSE_RETURN_V_MSG_E(track != nullptr, Status::ERROR_NULL_POINTER, "Track is nullptr");
     if (readSize > 0) {
-        DumpAVBufferData(outBuffer->memory_->GetAddr(), trackId, readSize, outBuffer->pts_);
+        DumpAVBufferData(outBuffer->memory_->GetAddr(), track->trackIndex, readSize, outBuffer->pts_);
     }
     if (!capacityEnough) {
         track->currentSamplePos += readSize;
         MEDIA_LOG_D("Buffer is not enough");
-    } else {
-        track->currentSamplePos = 0;
-        track->currentSampleIndex++;
-        ret = UpdateReadCursor(sampleInfo);
-        FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update read cursor after direct sample read failed");
+        return Status::OK;
     }
-    return ret;
+    track->currentSamplePos = 0;
+    track->currentSampleIndex++;
+    Status ret = UpdateReadCursor(sampleInfo);
+    FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Update read cursor after direct sample read failed");
+    return Status::OK;
 }
 
 Status MPEG4DemuxerPlugin::GetSampleForWebvtt(uint32_t trackId,
@@ -5089,6 +5192,9 @@ Status MPEG4DemuxerPlugin::GetSeekableSample(
     std::unique_lock<std::mutex> sLock(syncMutex_);
     ret = ReadSampleData(mpeg4Sample, sampleInfo);
     sLock.unlock();
+    if (ret == Status::END_OF_STREAM) {
+        return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
+    }
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
     return Status::OK;
 }
@@ -5117,6 +5223,9 @@ Status MPEG4DemuxerPlugin::GetUnseekableSample(
         FALSE_RETURN_V_MSG_E(sample != nullptr, Status::ERROR_NO_MEMORY, "Failed to allocate sample");
         ret = ReadSampleData(sample, sampleInfo);
         sLock.unlock();
+        if (ret == Status::END_OF_STREAM) {
+            return outBuffer != nullptr ? SetEosSample(outBuffer) : Status::END_OF_STREAM;
+        }
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "ReadSampleData failed");
         if (MpegAudioPacketParser::IsTrack(track)) {
             auto input = std::make_shared<MPEG4Sample>();

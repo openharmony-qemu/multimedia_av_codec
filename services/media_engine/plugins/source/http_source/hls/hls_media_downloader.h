@@ -46,6 +46,7 @@ namespace HttpPlugin {
 class HlsMediaDownloader : public MediaDownloader,
     public std::enable_shared_from_this<HlsMediaDownloader> {
 public:
+    uint64_t GetLogId() const override { return avcodecUniqueId_; }
     explicit HlsMediaDownloader(int expectBufferDuration, bool userDefinedDuration,
         const std::map<std::string, std::string>& httpHeader = std::map<std::string, std::string>(),
         std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);

@@ -265,6 +265,8 @@ private:
     Plugins::DemuxerMode demuxerMode_ {Plugins::DemuxerMode::FULL_PARSE};
     int32_t movieTimeScale_ = 1;
     MediaInfo mediaInfo_;
+    // Per-track flag: first AAC sample is reached by the FFmpeg probe window.
+    std::vector<uint8_t> aacProbeReachedFlags_;
     Seekable seekable_;
     std::shared_ptr<Meta> userFormat_ = nullptr;
     void InitParseTable();
@@ -296,6 +298,8 @@ private:
     void CalculateVideoDelay(std::shared_ptr<Track> track);
     void CalculateCodecFrameRate(std::shared_ptr<Track> track);
     void NormalizeAudioAttributes(std::shared_ptr<Track> track);
+    // FFmpeg probe-window emulation for AAC audio_samples_per_frame.
+    void CalculateAacProbeSamplePerFrame();
     AudioSampleFormat GetAv3aSampleFormat(int32_t bitsPerRawSample) const;
     AudioChannelLayout GetAv3aChannelLayout(int32_t channelCount, int32_t sampleRate) const;
     void CalculateMPEG4Attributes();
@@ -379,7 +383,10 @@ private:
     Status ParseTraditionalMetadata(MPEG4Atom currentAtom, std::string& key, ParseContext* parseCtx);
     Status ReadMetadataString(
         std::string& key, int64_t offset, uint64_t size, uint32_t dataType, ParseContext* parseCtx);
+    Status SetZeroLengthMetadataValue(
+        const std::string& key, uint32_t dataType, bool isTrackMetadata, bool isUserMetadata);
     Status SetMetadata(std::string& key, uint8_t* buffer, uint64_t size, uint32_t dataType);
+    void SetUserStringMetadata(const std::string& key, const uint8_t* buffer, uint64_t size);
     Status ParseDca3Entry(MPEG4Atom currentAtom, ParseContext* ctx);
     Status ParseColorParams(int64_t offset, uint64_t dataSize, const std::string& colorType, ParseContext* parseCtx);
     std::shared_ptr<Track> FindSidxTrack(uint32_t referenceId);

@@ -13,6 +13,7 @@
 
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
+import("//foundation/multimedia/av_codec/test/unittest/http_source_test.gni")
 
 module_output_path = "av_codec/player_framework/unittest"
 
@@ -69,13 +70,15 @@ ohos_unittest("audio_decoder_filter_callback_unittest") {
   ]
 
   if (av_codec_support_test) {
+    # NOSORT
     sources = [
       "$av_codec_root_dir//services/media_engine/plugins/source/data_stream_source_plugin.cpp",
       "$av_codec_root_dir//services/media_engine/plugins/source/file_fd_source_plugin.cpp",
       "$av_codec_root_dir//services/media_engine/plugins/source/file_source_plugin.cpp",
-      "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/http_media_utils.cpp",
-      "./audio_decoder_filter_callback_unittest.cpp",
     ]
+    sources += http_source_ut_http_media_utils_sources
+    # NOSORT
+    sources += [ "./audio_decoder_filter_callback_unittest.cpp" ]
   }
 
   deps = [

@@ -50,8 +50,10 @@ std::unordered_map<HDecoder*, HDecoder::DecoderInst> g_insts;
 std::mutex g_vpeLock;
 std::vector<std::string> g_aihdrSupportList{};
 std::vector<std::string> g_srSupportList{};
+std::vector<std::string> g_autoEffectSupportList{};
 bool g_isAihdrSupportListInit{false};
 bool g_isSrSupportListInit{false};
+bool g_isAutoEffectSupportListInit{false};
 #endif
 
 HDecoder::HDecoder(CodecHDI::CodecCompCapability caps, OMX_VIDEO_CODINGTYPE codingType)
@@ -131,6 +133,10 @@ int32_t HDecoder::OnConfigure(const Format &format)
         return ret;
     }
     ret = SetLowLatency(format);
+    if (ret != AVCS_ERR_OK) {
+        return ret;
+    }
+    ret = SetDecModeI(format);
     if (ret != AVCS_ERR_OK) {
         return ret;
     }
@@ -507,11 +513,43 @@ int32_t HDecoder::SetScaleMode()
     return AVCS_ERR_OK;
 }
 
+int32_t HDecoder::SetDecModeI(const Format &format)
+{
+    int32_t isDecModeI = 0;
+    if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ONLY_I_FRAME, isDecModeI) || isDecModeI != 1) {
+        HLOGD("I dec mode disabled");
+        return AVCS_ERR_OK;
+    }
+
+    CodecHDI::VideoFeature feature =
+        HCodecList::FindFeature(caps_.port.video.features,
+            static_cast<CodecHDI::VideoFeatureKey>(CODEC_VIDEO_FEATURE_ONLY_I_FRAME));
+    if (!feature.support) {
+        HLOGE("this device do not support I frame only dec");
+        return AVCS_ERR_UNSUPPORT;
+    }
+
+    OMX_CONFIG_BOOLEANTYPE param {};
+    InitOMXParam(param);
+    param.bEnabled = OMX_TRUE;
+    if (!SetParameter(OMX_IndexParamDecModeI, param)) {
+        HLOGW("set I dec mode failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    isDecModeI_ = isDecModeI;
+    HLOGI("set I dec mode succ");
+    return AVCS_ERR_OK;
+}
+
 void HDecoder::SetIsMvUpload(const Format &format)
 {
     int32_t isMvUpload = 0;
     if (!format.GetIntValue(OHOS::Media::Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, isMvUpload) || isMvUpload != 1) {
         HLOGD("isMvUpload disabled");
+        return;
+    }
+    if (isDecModeI_) {
+        HLOGW("isMvUpload shall be disabled under I-frame dec mode (no MV available)");
         return;
     }
 
@@ -536,6 +574,15 @@ int32_t HDecoder::SetVrrEnable(const Format &format)
         HLOGD("VRR disabled");
         return AVCS_ERR_OK;
     }
+
+    if (isDecModeI_) {
+        HLOGE("VRR not supported under I-frame dec mode (no MV available)");
+#ifdef USE_VIDEO_PROCESSING_ENGINE
+        vrrDynamicSwitch_ = false;
+#endif
+        return AVCS_ERR_UNSUPPORT;
+    }
+
 #ifdef USE_VIDEO_PROCESSING_ENGINE
     if (isVrrInitialized_) {
         vrrDynamicSwitch_ = true;
@@ -967,6 +1014,28 @@ bool HDecoder::SetUsageToVendor(uint64_t usage)
 }
 
 #ifdef USE_VIDEO_PROCESSING_ENGINE
+void HDecoder::InitVpeSupportList(const VpeVideoGetSupportedListByType& getSupportedListByTypeFunc)
+{
+    auto initList = [this, &getSupportedListByTypeFunc](
+        uint32_t type, std::vector<std::string>& list, bool& isInit, const char* errMsg) {
+        if (isInit) {
+            return;
+        }
+        if (!getSupportedListByTypeFunc(type, list)) {
+            HLOGE("%s", errMsg);
+        } else {
+            isInit = true;
+        }
+    };
+    initList(Media::VideoProcessingEngine::VIDEO_TYPE_AIHDR_ENHANCER, g_aihdrSupportList,
+        g_isAihdrSupportListInit, "get VPE list failed");
+    initList(Media::VideoProcessingEngine::VIDEO_TYPE_DETAIL_ENHANCER, g_srSupportList,
+        g_isSrSupportListInit, "get sr list failed");
+    initList(Media::VideoProcessingEngine::VIDEO_TYPE_AUTO_EFFECT_AISR, g_autoEffectSupportList,
+        g_isAutoEffectSupportListInit, "get auto effect list failed");
+    HLOGD("VPE init support list ok");
+}
+
 void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
 {
     SCOPED_TRACE();
@@ -975,7 +1044,7 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
         return;
     }
     HLOGD("VPE CombineUsage app=%s", caller_.app.processName.c_str());
-    if (!g_isAihdrSupportListInit || !g_isSrSupportListInit) {
+    if (!g_isAihdrSupportListInit || !g_isSrSupportListInit || !g_isAutoEffectSupportListInit) {
         shared_ptr<void> vpeHandle = shared_ptr<void>(dlopen("libvideoprocessingengine.z.so", RTLD_NOW), dlclose);
         if (vpeHandle == nullptr) {
             HLOGE("dlopen libvideoprocessingengine.z.so failed, dlerror: %s", dlerror());
@@ -987,24 +1056,7 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
             HLOGE("dlsym failed");
             return;
         }
-        if (!g_isAihdrSupportListInit) {
-            if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_AIHDR_ENHANCER,
-                g_aihdrSupportList)) {
-                HLOGE("get VPE list failed");
-            } else {
-                g_isAihdrSupportListInit = true;
-            }
-        }
-
-        if (!g_isSrSupportListInit) {
-            if (!getSupportedListByTypeFunc(Media::VideoProcessingEngine::VIDEO_TYPE_DETAIL_ENHANCER,
-                g_srSupportList)) {
-                HLOGE("get sr list failed");
-            } else {
-                g_isSrSupportListInit = true;
-            }
-        }
-        HLOGD("VPE init support list ok");
+        InitVpeSupportList(getSupportedListByTypeFunc);
     }
     if (std::find(g_aihdrSupportList.cbegin(), g_aihdrSupportList.cend(), caller_.app.processName) !=
         g_aihdrSupportList.cend()) {
@@ -1015,6 +1067,11 @@ void HDecoder::CombineConsumerUsageByVpe(uint64_t& consumerUsage)
         g_srSupportList.cend()) {
         consumerUsage |= (BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
         HLOGI("VPE sr update usage = 0x%" PRIx64 "", consumerUsage);
+    }
+    if (std::find(g_autoEffectSupportList.cbegin(), g_autoEffectSupportList.cend(), caller_.app.processName) !=
+        g_autoEffectSupportList.cend()) {
+        consumerUsage |= (BUFFER_USAGE_CPU_READ | BUFFER_USAGE_CPU_WRITE | BUFFER_USAGE_MEM_DMA);
+        HLOGI("VPE auto effect update usage = 0x%" PRIx64 "", consumerUsage);
     }
 }
 #endif

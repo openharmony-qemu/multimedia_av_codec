@@ -184,7 +184,6 @@ protected:
     void SaveHttpHeader(const std::map<std::string, std::string>& httpHeader);
     bool ParseUriInfo(const std::string& uri);
     bool SeekTo(uint64_t offset);
-    uint64_t GetFileSize(int32_t fd);
 
 protected:
     std::shared_ptr<Downloader> downloader_;
@@ -198,7 +197,6 @@ protected:
     int32_t fd_ {-1};
     int64_t offset_ {0};
     uint64_t size_ {0};
-    uint64_t fileSize_ {0};
     Seekable seekable_ {Seekable::SEEKABLE};
     uint64_t position_ {0};
     int64_t retryStartTime_ {0};

@@ -612,6 +612,7 @@ group("http_source_unit_test") {
       "unittest/http_source_test:media_cached_buffer_unit_test",
       "unittest/http_source_test:thread_safe_container_unit_test",
       "unittest/http_source_test:aes_decryptor_unit_test",
+      "unittest/http_source_test:sniffer_coordinator_unit_test",
     ]
   }
 }

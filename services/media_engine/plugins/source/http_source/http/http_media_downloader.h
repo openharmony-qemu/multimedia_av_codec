@@ -17,6 +17,7 @@
 #define HISTREAMER_HTTP_MEDIA_DOWNLOADER_H
 
 #include <string>
+#include <optional>
 #include <memory>
 #include <atomic>
 #include <mutex>
@@ -43,8 +44,10 @@ namespace HttpPlugin {
 class HttpMediaDownloader : public MediaDownloader,
     public std::enable_shared_from_this<HttpMediaDownloader> {
 public:
+    uint64_t GetLogId() const override { return avcodecUniqueId_; }
     explicit HttpMediaDownloader(std::string url, uint32_t expectBufferDuration,
-                                 std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr);
+                                 std::shared_ptr<MediaSourceLoaderCombinations> sourceLoader = nullptr,
+                                 std::optional<bool> isFlv = std::nullopt);
     ~HttpMediaDownloader() override;
     void Init() override;
     void SetSourceStatisticsDfx(std::shared_ptr<OHOS::MediaAVCodec::SourceStatisticsReportInfo> rpInfoPtr) override;
@@ -153,9 +156,6 @@ private:
     uint32_t SaveCacheBufferDataNotblock(uint8_t* data, uint32_t len);
     void AddParamForUrl(std::string& url, const std::string& key, const std::string& value);
     void ChooseStreamByResolution();
-    bool IsNearToInitResolution(const std::shared_ptr<PlayMediaStream> &choosedStream,
-        const std::shared_ptr<PlayMediaStream> &currentStream);
-    uint32_t GetResolutionDelta(uint32_t width, uint32_t height);
     bool CheckLoopTimeout(int64_t startLoopTime);
     void ReportBitRate();
     bool IsAutoSelectConditionOk();
@@ -195,6 +195,7 @@ private:
     std::atomic<int64_t> lastReportUsageTime_ {0};
     std::atomic<uint64_t> dataUsage_ {0};
     bool isRingBuffer_ {false};
+    bool isFlvContent_ {false};
     size_t readOffset_ {0};
     std::atomic<size_t> writeOffset_ {0};
     std::atomic<bool> canWrite_ {true};

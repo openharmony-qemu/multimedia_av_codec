@@ -16,6 +16,9 @@
 #include "http_source_plugin.h"
 #include "gtest/gtest.h"
 #include "source_callback.h"
+#include "http_server_demo.h"
+#include "sniffer_test_support.h"
+#include "monitor/download_monitor.h"
 
 using namespace std;
 using namespace testing::ext;
@@ -27,6 +30,9 @@ namespace Plugins {
 namespace HttpPlugin {
 namespace {
 constexpr size_t TEN = 10;
+constexpr int32_t ROUTING_TEST_PORT = 48668;
+constexpr size_t ROUTING_BODY_SIZE = 512;
+const std::string ROUTING_BASE = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT);
 
 class MockSourceLoader : public Plugins::IMediaSourceLoader {
 public:
@@ -222,19 +228,18 @@ void HttpSourcePluginUnitTest::TearDown(void)
 /**
  * @tc.name  : Test SetDownloaderBySource API
  * @tc.number: SetDownloaderBySource_001
- * @tc.desc  : Test source->GetSourceLoader() == nullptr and mimeType_== AVMimeTypes::APPLICATION_M3U8
+ * @tc.desc  : Null source loader → sniffer uses curl → unreachable URL → fail gracefully (no crash)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_001, TestSize.Level1)
 {
     ASSERT_NE(nullptr, plugin_);
-    std::string uri {"mock"};
-    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
+    // Port 1 is immediately refused → sniffer curl fails fast (3 retries, each instant) → no downloader.
+    std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>("http://127.0.0.1:1/mock");
     ASSERT_EQ(nullptr, source->sourceLoader_);
-    source->mimeType_ = AVMimeTypes::APPLICATION_M3U8;
     plugin_->SetDownloaderBySource(source);
     ASSERT_EQ(nullptr, plugin_->loaderCombinations_);
-    ASSERT_NE(nullptr, plugin_->downloader_);
-    ASSERT_EQ(std::string("mock"), plugin_->uri_);
+    ASSERT_EQ(nullptr, plugin_->downloader_) << "sniffer fails on unreachable URL → no downloader";
+
 }
 
 /**
@@ -244,6 +249,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_001, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported_001, TestSize.Level1)
 {
+    plugin_->protocolType_ = StreamProtocolType::HLS;
     ASSERT_NE(nullptr, plugin_);
     plugin_->mimeType_ = AVMimeTypes::APPLICATION_M3U8;
     ASSERT_EQ(true, plugin_->IsSeekToTimeSupported());
@@ -327,19 +333,6 @@ HWTEST_F(HttpSourcePluginUnitTest, GetHLSDiscontinuity_001, TestSize.Level1)
     ASSERT_EQ(false, plugin_->GetHLSDiscontinuity());
     plugin_->downloader_ = std::make_shared<MockMediaDownloader>();
     ASSERT_EQ(true, plugin_->GetHLSDiscontinuity());
-}
-
-/**
- * @tc.name  : Test CheckIsM3U8Uri API
- * @tc.number: CheckIsM3U8Uri_001
- * @tc.desc  : Test uri_.empty() == true
- */
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_001, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    std::string mockUri;
-    plugin_->uri_.swap(mockUri);
-    ASSERT_EQ(false, plugin_->CheckIsM3U8Uri());
 }
 
 /**
@@ -715,10 +708,11 @@ HWTEST_F(HttpSourcePluginUnitTest, SelectStream_002, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, Pause_001, TestSize.Level1)
 {
+    plugin_->protocolType_ = StreamProtocolType::HLS;
     ASSERT_NE(nullptr, plugin_);
     auto mock = std::make_shared<MockMediaDownloader>();
     plugin_->downloader_ = mock;
-    plugin_->uri_ = "http://test.com/test.m3u8";
+    plugin_->uri_ = "http://test.com/opaque";
     ASSERT_EQ(Status::OK, plugin_->Pause());
     ASSERT_TRUE(mock->pauseCalled_);
 }
@@ -758,10 +752,11 @@ HWTEST_F(HttpSourcePluginUnitTest, Pause_003, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, Resume_001, TestSize.Level1)
 {
+    plugin_->protocolType_ = StreamProtocolType::HLS;
     ASSERT_NE(nullptr, plugin_);
     auto mock = std::make_shared<MockMediaDownloader>();
     plugin_->downloader_ = mock;
-    plugin_->uri_ = "http://test.com/test.m3u8";
+    plugin_->uri_ = "http://test.com/opaque";
     ASSERT_EQ(Status::OK, plugin_->Resume());
     ASSERT_TRUE(mock->resumeCalled_);
 }
@@ -1963,6 +1958,7 @@ HWTEST_F(HttpSourcePluginUnitTest, GetMaskUrlByReadIndex_002, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, IsHls_001, TestSize.Level1)
 {
+    plugin_->protocolType_ = StreamProtocolType::HLS;
     ASSERT_NE(nullptr, plugin_);
     plugin_->mimeType_ = AVMimeTypes::APPLICATION_M3U8;
     ASSERT_TRUE(plugin_->IsHls());
@@ -1975,6 +1971,7 @@ HWTEST_F(HttpSourcePluginUnitTest, IsHls_001, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, IsHls_002, TestSize.Level1)
 {
+    plugin_->protocolType_ = StreamProtocolType::HLS;
     ASSERT_NE(nullptr, plugin_);
     plugin_->mimeType_ = "";
     plugin_->uri_ = "http://test.com/video.m3u8";
@@ -1988,6 +1985,7 @@ HWTEST_F(HttpSourcePluginUnitTest, IsHls_002, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, IsHls_003, TestSize.Level1)
 {
+    plugin_->protocolType_ = StreamProtocolType::HTTP;
     ASSERT_NE(nullptr, plugin_);
     plugin_->mimeType_ = "";
     plugin_->uri_ = "http://test.com/video.mp4";
@@ -2039,108 +2037,13 @@ HWTEST_F(HttpSourcePluginUnitTest, IsAllowedProtocol_004, TestSize.Level1)
 }
 
 /**
- * @tc.name  : Test CheckIsM3U8Uri API
- * @tc.number: CheckIsM3U8Uri_002
- * @tc.desc  : Test CheckIsM3U8Uri with .m3u8 suffix returns true
- */
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_002, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/video.m3u8";
-    ASSERT_TRUE(plugin_->CheckIsM3U8Uri());
-}
-
-/**
- * @tc.name  : Test CheckIsM3U8Uri API
- * @tc.number: CheckIsM3U8Uri_003
- * @tc.desc  : Test CheckIsM3U8Uri with .mp4 suffix and =m3u8 param returns true
- */
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_003, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/video.mp4?autotype=m3u8";
-    ASSERT_TRUE(plugin_->CheckIsM3U8Uri());
-}
-
-/**
- * @tc.name  : Test CheckIsM3U8Uri API
- * @tc.number: CheckIsM3U8Uri_004
- * @tc.desc  : Test CheckIsM3U8Uri with .mp4 suffix and no m3u8 param returns false
- */
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_004, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/video.mp4?foo=bar";
-    ASSERT_FALSE(plugin_->CheckIsM3U8Uri());
-}
-
-/**
- * @tc.name  : Test CheckIsM3U8Uri API
- * @tc.number: CheckIsM3U8Uri_005
- * @tc.desc  : Test CheckIsM3U8Uri with no dot but m3u8 in uri returns true
- */
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_005, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/aaa?doplaylistm3u8";
-    ASSERT_TRUE(plugin_->CheckIsM3U8Uri());
-}
-
-/**
- * @tc.name  : Test CheckIsM3U8Uri API
- * @tc.number: CheckIsM3U8Uri_006
- * @tc.desc  : Test CheckIsM3U8Uri with no dot and no m3u8 returns false
- */
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_006, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/abcdef";
-    ASSERT_FALSE(plugin_->CheckIsM3U8Uri());
-}
-
-/**
- * @tc.name  : Test CheckIsM3U8Uri API
- * @tc.number: CheckIsM3U8Uri_007
- * @tc.desc  : Test CheckIsM3U8Uri with no slash returns false
- */
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_007, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "justm3u8";
-    ASSERT_FALSE(plugin_->CheckIsM3U8Uri());
-}
-
-/**
- * @tc.name  : Test CheckIsM3U8Uri API
- * @tc.number: CheckIsM3U8Uri_008
- * @tc.desc  : Test CheckIsM3U8Uri with .mp4 suffix and empty param returns false
- */
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_008, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/video.mp4?";
-    ASSERT_FALSE(plugin_->CheckIsM3U8Uri());
-}
-
-/**
- * @tc.name  : Test CheckIsM3U8Uri API
- * @tc.number: CheckIsM3U8Uri_009
- * @tc.desc  : Test CheckIsM3U8Uri with hash anchor
- */
-HWTEST_F(HttpSourcePluginUnitTest, CheckIsM3U8Uri_009, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/video.m3u8#maxBufferSize=30000";
-    ASSERT_TRUE(plugin_->CheckIsM3U8Uri());
-}
-
-/**
  * @tc.name  : Test IsSeekToTimeSupported API
  * @tc.number: IsSeekToTimeSupported_002
  * @tc.desc  : Test IsSeekToTimeSupported with DASH uri returns true
  */
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported_002, TestSize.Level1)
 {
+    plugin_->protocolType_ = StreamProtocolType::DASH;
     ASSERT_NE(nullptr, plugin_);
     plugin_->mimeType_ = "";
     plugin_->uri_ = "http://test.com/video.mpd";
@@ -2154,6 +2057,7 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported_002, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported_003, TestSize.Level1)
 {
+    plugin_->protocolType_ = StreamProtocolType::HLS;
     ASSERT_NE(nullptr, plugin_);
     plugin_->mimeType_ = "";
     plugin_->uri_ = "http://test.com/video.m3u8";
@@ -2167,46 +2071,11 @@ HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported_003, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, IsSeekToTimeSupported_004, TestSize.Level1)
 {
+    plugin_->protocolType_ = StreamProtocolType::HTTP;
     ASSERT_NE(nullptr, plugin_);
     plugin_->mimeType_ = "";
     plugin_->uri_ = "http://test.com/video.mp4";
     ASSERT_FALSE(plugin_->IsSeekToTimeSupported());
-}
-
-/**
- * @tc.name  : Test IsDash API
- * @tc.number: IsDash_001
- * @tc.desc  : Test IsDash with .mpd suffix returns true
- */
-HWTEST_F(HttpSourcePluginUnitTest, IsDash_001, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/video.mpd";
-    ASSERT_TRUE(plugin_->IsDash());
-}
-
-/**
- * @tc.name  : Test IsDash API
- * @tc.number: IsDash_002
- * @tc.desc  : Test IsDash with type=mpd returns true
- */
-HWTEST_F(HttpSourcePluginUnitTest, IsDash_002, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/video?type=mpd";
-    ASSERT_TRUE(plugin_->IsDash());
-}
-
-/**
- * @tc.name  : Test IsDash API
- * @tc.number: IsDash_003
- * @tc.desc  : Test IsDash with non-DASH uri returns false
- */
-HWTEST_F(HttpSourcePluginUnitTest, IsDash_003, TestSize.Level1)
-{
-    ASSERT_NE(nullptr, plugin_);
-    plugin_->uri_ = "http://test.com/video.mp4";
-    ASSERT_FALSE(plugin_->IsDash());
 }
 
 /**
@@ -2270,12 +2139,16 @@ HWTEST_F(HttpSourcePluginUnitTest, CreateHlsDownloader_002, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_002, TestSize.Level1)
 {
+    MediaAVCodec::HttpServerDemo server;
+    server.StartServer(ROUTING_TEST_PORT);
+    MediaAVCodec::HttpServerDemo::RegisterContent("/probe", std::string(512, 'x'));
     ASSERT_NE(nullptr, plugin_);
-    std::string uri {"http://test.com/video.mp4"};
+    std::string uri = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT) + "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     plugin_->SetDownloaderBySource(source);
     ASSERT_NE(nullptr, plugin_->downloader_);
-    ASSERT_EQ("http://test.com/video.mp4", plugin_->uri_);
+    ASSERT_EQ(uri, plugin_->uri_);
+    MediaAVCodec::HttpServerDemo::ClearContent();
 }
 
 /**
@@ -2285,12 +2158,27 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_002, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_003, TestSize.Level1)
 {
+    MediaAVCodec::HttpServerDemo server;
+    server.StartServer(ROUTING_TEST_PORT);
+    MediaAVCodec::HttpServerDemo::RegisterContent("/probe",
+        "<MPD xmlns=\"urn:mpeg:dash:schema:mpd:2011\" type=\"static\" mediaPresentationDuration=\"PT6S\">"
+        "<Period><AdaptationSet mimeType=\"video/mp4\"><Representation id=\"v\" bandwidth=\"1000\">"
+        "<BaseURL>media.mp4</BaseURL></Representation></AdaptationSet></Period></MPD>");
     ASSERT_NE(nullptr, plugin_);
-    std::string uri {"http://test.com/video.mpd"};
+    std::string uri = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT) + "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
-    plugin_->SetDownloaderBySource(source);
+    ASSERT_EQ(plugin_->SetSource(source), Status::OK);
     ASSERT_NE(nullptr, plugin_->downloader_);
     ASSERT_FALSE(plugin_->delayReady_);
+    EXPECT_EQ(plugin_->protocolType_.load(), StreamProtocolType::DASH);
+    int64_t duration = 0;
+    constexpr int64_t EXPECTED_DURATION = 6000000000; // Six seconds in the downloader's nanosecond time base.
+    bool parsed = SnifferTest::WaitFor([&] {
+        return plugin_->GetDuration(duration) == Status::OK && duration == EXPECTED_DURATION;
+    });
+    plugin_->CloseUri(true);
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    EXPECT_TRUE(parsed);
 }
 
 /**
@@ -2300,12 +2188,26 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_003, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_004, TestSize.Level1)
 {
+    MediaAVCodec::HttpServerDemo server;
+    server.StartServer(ROUTING_TEST_PORT);
+    MediaAVCodec::HttpServerDemo::RegisterContent("/probe",
+        "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\nseg.ts\n#EXT-X-ENDLIST\n");
+    MediaAVCodec::HttpServerDemo::RegisterContent("/seg.ts", std::string(512, 's')); // Small opaque segment.
     ASSERT_NE(nullptr, plugin_);
-    std::string uri {"http://test.com/video.m3u8"};
+    std::string uri = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT) + "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
-    plugin_->SetDownloaderBySource(source);
+    ASSERT_EQ(plugin_->SetSource(source), Status::OK);
     ASSERT_NE(nullptr, plugin_->downloader_);
     ASSERT_FALSE(plugin_->delayReady_);
+    EXPECT_TRUE(plugin_->IsHls());
+    int64_t duration = 0;
+    constexpr int64_t EXPECTED_DURATION = 6000000000; // Six seconds in nanoseconds.
+    bool parsed = SnifferTest::WaitFor([&] {
+        return plugin_->GetDuration(duration) == Status::OK && duration == EXPECTED_DURATION;
+    });
+    plugin_->CloseUri(true);
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    EXPECT_TRUE(parsed);
 }
 
 /**
@@ -2330,16 +2232,20 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_005, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_006, TestSize.Level1)
 {
+    MediaAVCodec::HttpServerDemo server;
+    server.StartServer(ROUTING_TEST_PORT);
+    MediaAVCodec::HttpServerDemo::RegisterContent("/probe",
+        "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\nseg.ts\n#EXT-X-ENDLIST\n");
     ASSERT_NE(nullptr, plugin_);
-    std::string uri {"mock"};
+    std::string uri = "http://127.0.0.1:" + std::to_string(ROUTING_TEST_PORT) + "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
-    source->mimeType_ = AVMimeTypes::APPLICATION_M3U8;
     auto strategy = std::make_shared<PlayStrategy>();
     source->SetPlayStrategy(strategy);
     plugin_->SetDownloaderBySource(source);
     ASSERT_NE(nullptr, plugin_->downloader_);
     ASSERT_NE(nullptr, plugin_->playStrategy_);
-    ASSERT_EQ(std::string("mock"), plugin_->uri_);
+    ASSERT_EQ(uri, plugin_->uri_);
+    MediaAVCodec::HttpServerDemo::ClearContent();
 }
 
 /**
@@ -2376,18 +2282,20 @@ HWTEST_F(HttpSourcePluginUnitTest, InitSourceLoader_004, TestSize.Level1)
 }
 
 /**
- * @tc.name  : Test InitSourcePlugin with non-http source
+ * @tc.name  : Test InitSourcePlugin with a disallowed protocol
  * @tc.number: InitSourcePlugin_001
- * @tc.desc  : Test InitSourcePlugin with non-http source returns ERROR_NULL_POINTER
+ * @tc.desc  : Reject file:// before probing without creating a downloader or a pending network failure.
  */
 HWTEST_F(HttpSourcePluginUnitTest, InitSourcePlugin_001, TestSize.Level1)
 {
     ASSERT_NE(nullptr, plugin_);
-    std::string uri {"mock"};
+    const std::string uri = "file:///unused-for-protocol-rejection.m3u8";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     auto status = plugin_->InitSourcePlugin(source);
-    ASSERT_EQ(Status::ERROR_NULL_POINTER, status);
-    ASSERT_EQ(nullptr, plugin_->downloader_);
+    EXPECT_EQ(Status::ERROR_INVALID_OPERATION, status);
+    EXPECT_EQ(plugin_->GetDownloader(), nullptr);
+    EXPECT_EQ(plugin_->GetActiveSniffer(), nullptr);
+    EXPECT_EQ(plugin_->GetProbeFailure(), nullptr);
 }
 
 /**
@@ -2517,14 +2425,22 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_007, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_008, TestSize.Level1)
 {
+    MediaAVCodec::HttpServerDemo server;
+    server.StartServer(ROUTING_TEST_PORT);
+    MediaAVCodec::HttpServerDemo::RegisterContent("/probe", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);
     auto cb = std::make_shared<SourceCallback>();
     plugin_->callback_ = cb;
-    std::string uri {"http://test.com/video.mp4"};
+    std::string uri = ROUTING_BASE + "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     plugin_->SetDownloaderBySource(source);
     ASSERT_NE(nullptr, plugin_->downloader_);
-    ASSERT_EQ("http://test.com/video.mp4", plugin_->uri_);
+    EXPECT_EQ(uri, plugin_->uri_);
+    auto monitor = std::static_pointer_cast<DownloadMonitor>(plugin_->GetDownloader());
+    EXPECT_EQ(monitor->callback_.lock(), cb);
+    auto requests = MediaAVCodec::HttpServerDemo::GetRequests("/probe");
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    EXPECT_EQ(requests.size(), 1u);
 }
 
 /**
@@ -2534,8 +2450,11 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_008, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_009, TestSize.Level1)
 {
+    MediaAVCodec::HttpServerDemo server;
+    server.StartServer(ROUTING_TEST_PORT);
+    MediaAVCodec::HttpServerDemo::RegisterContent("/probe", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);
-    std::string uri {"http://test.com/video.mp4"};
+    std::string uri = ROUTING_BASE + "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     auto strategy = std::make_shared<PlayStrategy>();
     strategy->duration = 50;
@@ -2544,6 +2463,9 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_009, TestSize.Level1)
     ASSERT_NE(nullptr, plugin_->downloader_);
     ASSERT_NE(nullptr, plugin_->playStrategy_);
     ASSERT_EQ(50u, plugin_->playStrategy_->duration);
+    auto requests = MediaAVCodec::HttpServerDemo::GetRequests("/probe");
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    EXPECT_EQ(requests.size(), 1u);
 }
 
 /**
@@ -2553,20 +2475,29 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_009, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_010, TestSize.Level1)
 {
+    MediaAVCodec::HttpServerDemo server;
+    server.StartServer(ROUTING_TEST_PORT);
+    MediaAVCodec::HttpServerDemo::RegisterContent("/stream1.mp4", std::string(ROUTING_BODY_SIZE, 'x'));
+    MediaAVCodec::HttpServerDemo::RegisterContent("/stream2.mp4", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);
-    std::string uri {"http://test.com/video.mp4"};
+    std::string uri = ROUTING_BASE + "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     auto stream1 = std::make_shared<PlayMediaStream>();
     stream1->bitrate = 2000;
-    stream1->url = "http://test.com/stream1.mp4";
+    stream1->url = ROUTING_BASE + "/stream1.mp4";
     auto stream2 = std::make_shared<PlayMediaStream>();
     stream2->bitrate = 1000;
-    stream2->url = "http://test.com/stream2.mp4";
+    stream2->url = ROUTING_BASE + "/stream2.mp4";
     source->AddMediaStream(stream1);
     source->AddMediaStream(stream2);
     plugin_->SetDownloaderBySource(source);
     ASSERT_NE(nullptr, plugin_->downloader_);
-    ASSERT_EQ("http://test.com/stream2.mp4", plugin_->uri_);
+    EXPECT_EQ(stream2->url, plugin_->uri_);
+    EXPECT_TRUE(MediaAVCodec::HttpServerDemo::GetRequests("/stream1.mp4").empty());
+    EXPECT_TRUE(MediaAVCodec::HttpServerDemo::GetRequests("/probe").empty());
+    auto requests = MediaAVCodec::HttpServerDemo::GetRequests("/stream2.mp4");
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    EXPECT_EQ(requests.size(), 1u);
 }
 
 /**
@@ -2576,10 +2507,13 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_010, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_011, TestSize.Level1)
 {
+    MediaAVCodec::HttpServerDemo server;
+    server.StartServer(ROUTING_TEST_PORT);
+    MediaAVCodec::HttpServerDemo::RegisterContent("/probe", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);
     auto cb = std::make_shared<SourceCallback>();
     plugin_->callback_ = cb;
-    std::string uri {"http://test.com/video.mp4"};
+    std::string uri = ROUTING_BASE + "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     auto strategy = std::make_shared<PlayStrategy>();
     strategy->duration = 30;
@@ -2588,6 +2522,11 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_011, TestSize.Level1)
     ASSERT_NE(nullptr, plugin_->downloader_);
     ASSERT_NE(nullptr, plugin_->playStrategy_);
     ASSERT_EQ(30u, plugin_->playStrategy_->duration);
+    auto monitor = std::static_pointer_cast<DownloadMonitor>(plugin_->GetDownloader());
+    EXPECT_EQ(monitor->callback_.lock(), cb);
+    auto requests = MediaAVCodec::HttpServerDemo::GetRequests("/probe");
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    EXPECT_EQ(requests.size(), 1u);
 }
 
 /**
@@ -2597,24 +2536,33 @@ HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_011, TestSize.Level1)
  */
 HWTEST_F(HttpSourcePluginUnitTest, SetDownloaderBySource_012, TestSize.Level1)
 {
+    MediaAVCodec::HttpServerDemo server;
+    server.StartServer(ROUTING_TEST_PORT);
+    MediaAVCodec::HttpServerDemo::RegisterContent("/stream1.mp4", std::string(ROUTING_BODY_SIZE, 'x'));
+    MediaAVCodec::HttpServerDemo::RegisterContent("/stream2.mp4", std::string(ROUTING_BODY_SIZE, 'x'));
     ASSERT_NE(nullptr, plugin_);
-    std::string uri {"http://test.com/video.mp4"};
+    std::string uri = ROUTING_BASE + "/probe";
     std::shared_ptr<MediaSource> source = std::make_shared<MediaSource>(uri);
     auto stream1 = std::make_shared<PlayMediaStream>();
     stream1->bitrate = 1000;
     stream1->width = 1920;
     stream1->height = 1080;
-    stream1->url = "http://test.com/stream1.mp4";
+    stream1->url = ROUTING_BASE + "/stream1.mp4";
     auto stream2 = std::make_shared<PlayMediaStream>();
     stream2->bitrate = 1000;
     stream2->width = 1280;
     stream2->height = 720;
-    stream2->url = "http://test.com/stream2.mp4";
+    stream2->url = ROUTING_BASE + "/stream2.mp4";
     source->AddMediaStream(stream1);
     source->AddMediaStream(stream2);
     plugin_->SetDownloaderBySource(source);
     ASSERT_NE(nullptr, plugin_->downloader_);
-    ASSERT_EQ("http://test.com/stream2.mp4", plugin_->uri_);
+    EXPECT_EQ(stream2->url, plugin_->uri_);
+    EXPECT_TRUE(MediaAVCodec::HttpServerDemo::GetRequests("/stream1.mp4").empty());
+    EXPECT_TRUE(MediaAVCodec::HttpServerDemo::GetRequests("/probe").empty());
+    auto requests = MediaAVCodec::HttpServerDemo::GetRequests("/stream2.mp4");
+    MediaAVCodec::HttpServerDemo::ClearContent();
+    EXPECT_EQ(requests.size(), 1u);
 }
 }
 }

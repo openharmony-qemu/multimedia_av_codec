@@ -4,7 +4,7 @@
 ### 设计原则
 | 原则 | 描述 | 理由 |
 | -- | -- | -- |
-| 策略模式协议分发 | HttpSourcePlugin 基于 URL 字符串匹配（IsDash/CheckIsM3U8Uri）和 mimeType 判断协议类型，按策略创建对应 MediaDownloader 实例 | 新增协议只需新增 MediaDownloader 子类，不修改插件框架 |
+| 策略模式协议分发 | HttpSourcePlugin 独立读取少量内容识别协议，结束探测后创建对应 MediaDownloader 并 Open() 重新下载 | 新增协议只需新增 MediaDownloader 子类，不修改插件框架 |
 | 装饰器监控 | DownloadMonitor 装饰 MediaDownloader，透明添加重试和监控能力 | 监控逻辑与下载逻辑解耦，可独立演进 |
 | 缓冲策略抽象 | 双缓冲模式（RingBuffer/CacheMediaChunkBuffer）由各 MediaDownloader 按协议特性选择 | HTTP 单文件用 RingBuffer 高效寻址，HLS/DASH 分片用 CacheMediaChunkBuffer 灵活管理 |
 | 回调驱动 | 数据到达通过 DataSaveFunc 回调写入缓冲区，状态变更通过 Callback/StatusCallback 通知上层 | 解耦网络线程与播放线程，避免阻塞 |
@@ -19,12 +19,12 @@
 ┌──────────────▼───────────────────────────────────────┐
 │              HttpSourcePlugin                          │
 │  ┌─────────────────┐ ┌────────────────────────────┐  │
-│  │URL匹配路由      │ │StreamResourceParser        │  │
-│  │(IsDash/         │ │(子资源解析)                 │  │
-│  │ CheckIsM3U8Uri/ │ │                            │  │
-│  │ mimeType)       │ │                            │  │
+│  │内容嗅探路由      │ │StreamResourceParser        │  │
+│  │(Sniffer/         │ │(子资源解析)                 │  │
+│  │ Coordinator/ │ │                            │  │
+│  │ Probe)       │ │                            │  │
 │  └─────────────────┘ └────────────────────────────┘  │
-│  注：StreamProtocolSniffer 为独立嗅探工具，不参与内部路由  │
+│  注：探测资源独立清理，探测数据不交给正式下载器  │
 └──────────────┬───────────────────────────────────────┘
                │
 ┌──────────────▼───────────────────────────────────────┐
@@ -56,7 +56,7 @@
 ### 模块职责
 | 模块 | 类型 | 模块职责 | 其他 |
 | -- | -- | ---- | ---- |
-| http_source_plugin | 插件入口 | 实现 SourcePlugin 接口，URL特征匹配路由与 MediaDownloader 创建/切换 | 核心类：HttpSourcePlugin |
+| http_source_plugin | 插件入口 | 实现 SourcePlugin 接口，内容嗅探路由与 MediaDownloader 创建/切换 | 核心类：HttpSourcePlugin |
 | http | HTTP下载 | 普通 HTTP/HTTPS 单文件流式下载，双缓冲模式，CacheBuffer 模式下下载流控 | 核心类：HttpMediaDownloader |
 | hls | HLS下载 | HLS 协议全流程：Playlist 解析、分片调度、AES 解密、码率切换 | 核心类：HlsMediaDownloader、HlsSegmentManager |
 | dash | DASH下载 | DASH 协议全流程：MPD 解析、Period 切换、码率/轨切换 | 核心类：DashMediaDownloader、DashMpdDownloader、DashSegmentDownloader |
@@ -123,3 +123,12 @@
 | AES 密钥安全 | 密钥通过 HTTPS 下载，内存中不持久化明文密钥 |
 | DRM 信息上报 | HLS/DASH 的 DRM PSSH 信息通过回调上报给上层 DRM 模块 |
 | 符号导出控制 | -fvisibility=hidden + version_script 控制导出符号 |
+
+## 独立探测的边界
+
+- 探测初始目标为 256B，按需要增量识别，最多 16KiB；完整短清单不受 256B 门槛限制。
+- 探测请求使用总时间预算及取消标志，重试不重置预算；正常正式下载不启用探测控制。
+- 网络重定向由独立探测请求处理；正式 Open 保留原始选定地址和来源请求上下文。
+- 本地 APPLICATION_M3U8 + fd:// 通过共享 FD URI 校验和 pread 嗅探，不改变正式读取位置。
+- 正式请求不复用探测 Downloader、DownloadRequest、连接或字节。HTTP-FLV 正式会话从自己的头部开始。
+- 外层历史错误返回与上报不在本轮修改范围。

@@ -13,11 +13,10 @@
 
 import("//build/test.gni")
 import("//foundation/multimedia/av_codec/config.gni")
+import("//foundation/multimedia/av_codec/test/unittest/http_source_test.gni")
 
 module_output_path = "av_codec/stream_player_framework"
-source_utils_test_sources = [
-  "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils/storage_usage_util.cpp",
-]
+source_utils_test_sources = http_source_ut_storage_sources
 
 config("source_utils_unittest_cfg") {
   defines = [

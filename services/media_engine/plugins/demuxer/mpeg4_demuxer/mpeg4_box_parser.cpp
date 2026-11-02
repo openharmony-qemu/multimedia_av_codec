@@ -61,6 +61,13 @@ constexpr uint64_t MIN_FLOAT_SIZE = 4;
 constexpr int32_t BYTE_TO_BITS = 8;
 constexpr int32_t CREATION_TIME_OFFSET = 4;
 constexpr int32_t CONVERT_SCALE = 1 << 16;
+// FFmpeg avformat_find_stream_info stops probing when read_size reaches the default
+// probesize (5000000, options_table.h); ffmpeg_demuxer keeps that default for MP4.
+constexpr int64_t FFMPEG_AAC_PROBE_SIZE = 5000000;
+// AV_TIME_BASE: mov_find_next_sample orders per-track sample dts in microseconds.
+constexpr int64_t FFMPEG_AV_TIME_BASE_US = 1000000;
+// mov_find_next_sample: samples whose dts differ by no more than 1 s are ordered by pos.
+constexpr int64_t FFMPEG_MOV_TIEBREAK_DIFF_US = 1000000;
 constexpr uint16_t DISPLAY_MATRIX_ROWS = 3;
 constexpr uint16_t DISPLAY_MATRIX_COLS = 3;
 constexpr uint32_t DISPLAY_MATRIX_SIZE = 36;
@@ -85,7 +92,13 @@ constexpr uint64_t MAX_DATA_SIZE = 256;
 constexpr uint64_t MIN_COLOR_SIZE = 4;
 constexpr uint64_t MIN_COLOR_PARAM_SIZE = 6;
 constexpr uint64_t MIN_MVHD_SIZE = 32;
-constexpr uint64_t SUPPORT_DATA_TYPE = 4;
+constexpr uint32_t METADATA_TYPE_RESERVED = 0;
+constexpr uint32_t METADATA_TYPE_UTF8 = 1;
+constexpr uint32_t METADATA_TYPE_UTF8_SORT = 4;
+constexpr uint32_t METADATA_TYPE_SIGNED_INT = 21;
+constexpr uint32_t METADATA_TYPE_UNSIGNED_INT = 22;
+constexpr uint32_t METADATA_TYPE_FLOAT = 23;
+constexpr uint32_t METADATA_TYPE_SIGNED_INT_ALT = 67;
 Status ConvertTimeScaleRound(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result);
 Status ConvertTimeScaleRoundToTimeBase(int64_t multiplicand, int64_t multiplier, int64_t timeScale, int64_t* result);
 Status ConvertTrackTimeToUs(int64_t trackTime, int64_t trackTimeScale, int64_t* result);
@@ -1432,7 +1445,6 @@ Status MPEG4AtomParser::ParseFtyp(MPEG4Atom currentAtom, int32_t depth, ParseCon
     FALSE_RETURN_V_MSG_W(IsSupportedBrand(majorBrand),
         Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT, "Unsupported file: brand[%{public}s]", majorBrand.c_str());
     uint32_t compatibleBrandsCount = (currentAtom.dataSize - 8) / 4;
-    FALSE_RETURN_V_MSG_E(compatibleBrandsCount > 0, Status::ERROR_INVALID_DATA, "Invalid compatible brands number");
     // 一次性读取所有compatible brands数据
     bool hasGltfBrand = false;
     if (compatibleBrandsCount > 0) {
@@ -1868,13 +1880,16 @@ void MPEG4AtomParser::CalculateVideoDelay(std::shared_ptr<Track> track)
     if (track->sampleHelper->mimeType_ == MimeType::VIDEO_AVC) {
         if (!track->sampleHelper->cttsEntry_.empty()) {
             videoDelay = track->sampleHelper->EstimateVideoDelay();
-        } else if (track->codecParms.data != nullptr && track->codecParms.extradataSize > 0) {
+        }
+        if (track->codecParms.data != nullptr && track->codecParms.extradataSize > 0) {
             AvcParserImpl avcParser;
             int64_t sampleCount = GetEffectiveSampleCount(track->sampleHelper);
             if (avcParser.ParseMaxReorderPicFromAvcConfig(
                 track->codecParms.data.get(), track->codecParms.extradataSize) &&
                 sampleCount > static_cast<int64_t>(avcParser.GetMaxReorderPic() + 1)) {
-                videoDelay = avcParser.GetMaxReorderPic();
+                // FFmpeg seeds has_b_frames from MOV CTTS, then h264_slice.c applies FFMAX with
+                // SPS num_reorder_frames. Keep the larger value even when both sources are nonzero.
+                videoDelay = std::max(videoDelay, avcParser.GetMaxReorderPic());
             }
         }
     }
@@ -1935,7 +1950,16 @@ void MPEG4AtomParser::NormalizeAudioAttributes(std::shared_ptr<Track> track)
     }
     if (mime == MimeType::AUDIO_AAC) {
         int32_t samplesPerFrame = 0;
-        keepSamplePerFrame = mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
+        // FFmpeg only exports frame_size when the probe window reaches the AAC track
+        // (demux.c avformat_find_stream_info + mov_find_next_sample); mirror that.
+        // Fall back to the legacy export when the probe pass did not cover this track (flags empty
+        // or track index out of range), so a standalone NormalizeAudioAttributes call or an early
+        // probe exit never silently drops the AAC frame size.
+        bool probeReached = aacProbeReachedFlags_.empty() ||
+            track->trackIndex >= aacProbeReachedFlags_.size() ||
+            aacProbeReachedFlags_[track->trackIndex] != 0;
+        keepSamplePerFrame = probeReached &&
+            mediaInfo_.tracks[track->trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
             samplesPerFrame > 0;
     } else if (mime == MimeType::AUDIO_AVS3DA) {
         AudioSampleFormat sampleFormat = AudioSampleFormat::INVALID_WIDTH;
@@ -4776,11 +4800,11 @@ bool MPEG4AtomParser::SetMetadataValue(const std::string& key, const std::string
             resultStr = Converter::ConvertGBKToUTF8(trimmedValue);
         }
         resultStr = resultStr.length() > 0 ? resultStr : trimmedValue;
-        if (resultStr.length() > 0) {
-            mediaInfo_.general.SetData(it->second, resultStr);
-            if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
-                mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TITLE>(resultStr);
-            }
+        // FFmpeg av_dict_set preserves a recognized key whose value is an empty C string.
+        // TrimMetadataStringAtNul only applies C-string termination; it does not trim whitespace.
+        mediaInfo_.general.SetData(it->second, resultStr);
+        if (isTrackMetadata && it->second == Tag::MEDIA_TITLE && IsLastTrackValid()) {
+            mediaInfo_.tracks[lastTrack_->trackIndex].Set<Tag::MEDIA_TITLE>(resultStr);
         }
         return true;
     } else if (key == "location") {
@@ -4831,13 +4855,51 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
         }
         default: { // UTF-8 string
             FALSE_RETURN_V_MSG_D(
-                dataType <= 1 || dataType == SUPPORT_DATA_TYPE, Status::OK, "Unsupport meta %{public}d", dataType);
-            std::string stringValue = TrimMetadataStringAtNul(std::string(reinterpret_cast<char*>(buffer), size));
-            if (!stringValue.empty()) {
-                userFormat_->SetData(key, stringValue);
-            }
+                dataType <= 1 || dataType == METADATA_TYPE_UTF8_SORT,
+                Status::OK, "Unsupport meta %{public}d", dataType);
+            SetUserStringMetadata(key, buffer, size);
             break;
         }
+    }
+    return Status::OK;
+}
+
+void MPEG4AtomParser::SetUserStringMetadata(const std::string& key, const uint8_t* buffer, uint64_t size)
+{
+    std::string stringValue = TrimMetadataStringAtNul(std::string(reinterpret_cast<const char*>(buffer), size));
+    if (!stringValue.empty()) {
+        userFormat_->SetData(key, stringValue);
+    }
+}
+
+Status MPEG4AtomParser::SetZeroLengthMetadataValue(
+    const std::string& key, uint32_t dataType, bool isTrackMetadata, bool isUserMetadata)
+{
+    if (dataType == METADATA_TYPE_FLOAT) {
+        return Status::OK;
+    }
+    if (isUserMetadata) {
+        const bool isSignedInteger =
+            dataType == METADATA_TYPE_SIGNED_INT || dataType == METADATA_TYPE_SIGNED_INT_ALT;
+        const bool isUnsignedInteger = dataType == METADATA_TYPE_UNSIGNED_INT;
+        if (!isSignedInteger && !isUnsignedInteger) {
+            return Status::OK;
+        }
+        FALSE_RETURN_V_NOLOG(userFormat_ != nullptr, Status::ERROR_NO_MEMORY);
+        if (isSignedInteger) {
+            userFormat_->SetData(key, static_cast<int32_t>(0));
+        } else {
+            // FFmpeg labels type 22 as unknown in its OHOS prefix, so the upper layer exports "0".
+            userFormat_->SetData(key, std::string("0"));
+        }
+        return Status::OK;
+    }
+    const bool isText = dataType == METADATA_TYPE_RESERVED || dataType == METADATA_TYPE_UTF8 ||
+        dataType == METADATA_TYPE_UTF8_SORT;
+    const bool isInteger = dataType == METADATA_TYPE_SIGNED_INT || dataType == METADATA_TYPE_UNSIGNED_INT ||
+        dataType == METADATA_TYPE_SIGNED_INT_ALT;
+    if ((isText || isInteger) && !SetMetadataValue(key, isInteger ? "0" : "", isTrackMetadata)) {
+        MEDIA_LOG_D("Skip unsupported zero-length metadata key: " PUBLIC_LOG_S, key.c_str());
     }
     return Status::OK;
 }
@@ -4845,7 +4907,18 @@ Status MPEG4AtomParser::SetMetadata(std::string& key, uint8_t* buffer, uint64_t 
 Status MPEG4AtomParser::ReadMetadataString(
     std::string& key, int64_t offset, uint64_t size, uint32_t dataType, ParseContext* parseCtx)
 {
-    FALSE_RETURN_V_NOLOG(size > 0, Status::OK);
+    const bool isTrackMeta = parseCtx != nullptr && lastTrack_ != nullptr &&
+        lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
+        parseCtx->path[0] == static_cast<uint32_t>(FourccType("moov")) &&
+        parseCtx->path[1] == static_cast<uint32_t>(FourccType("trak")) &&
+        (parseCtx->path[2] == static_cast<uint32_t>(FourccType("udta")) ||
+         parseCtx->path[2] == static_cast<uint32_t>(FourccType("ilst")));
+    if (size == 0) {
+        const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
+        // Standard metadata keeps empty text and integer zero. FFmpegFormatHelper skips prefix-only
+        // user text/buffer values, exports integer zero, and ignores float/unsupported values.
+        return SetZeroLengthMetadataValue(key, dataType, isTrackMeta, isUserMeta);
+    }
     FALSE_RETURN_V_MSG_E(size <= std::min(MPEG4_MAX_BOX_DATA_SIZE, static_cast<uint64_t>(SIZE_MAX - 1)),
         Status::ERROR_INVALID_DATA, "Invalid metadata size");
     auto buffer = std::make_unique<uint8_t[]>(size + 1);
@@ -4854,12 +4927,6 @@ Status MPEG4AtomParser::ReadMetadataString(
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read metadata string data failed");
 
     buffer[size] = '\0';
-    const bool isTrackMeta = parseCtx != nullptr && lastTrack_ != nullptr &&
-        lastTrack_->codecParms.trackType == SUBTITLE_TYPE && parseCtx->path.size() >= 4 &&
-        parseCtx->path[0] == static_cast<uint32_t>(FourccType("moov")) &&
-        parseCtx->path[1] == static_cast<uint32_t>(FourccType("trak")) &&
-        (parseCtx->path[2] == static_cast<uint32_t>(FourccType("udta")) ||
-         parseCtx->path[2] == static_cast<uint32_t>(FourccType("ilst")));
     const bool isUserMeta = parseCtx != nullptr && parseCtx->isUserMeta;
     if (SetMetadataValue(key, std::string(reinterpret_cast<char*>(buffer.get()), size), isTrackMeta) && !isUserMeta) {
         return Status::OK;
@@ -6139,9 +6206,143 @@ auto MPEG4AtomParser::FindAtomParser(const MPEG4Atom& atom, ParseContext* ctx) -
 }
 
 
+namespace {
+struct AacProbeStream {
+    std::shared_ptr<MPEG4AtomParser::Track> track;
+    uint32_t sampleIndex = 0;
+    MPEG4SampleHelper::SampleIndexView view;
+    bool hasView = false;
+    int64_t dtsUs = 0;
+    bool isAac = false;
+};
+
+bool LoadAacProbeStreamView(AacProbeStream& stream)
+{
+    if (stream.hasView) {
+        return true;
+    }
+    if (stream.sampleIndex >= stream.track->sampleHelper->GetSampleCount()) {
+        return false;
+    }
+    if (stream.track->sampleHelper->GetSampleIndexView(stream.sampleIndex, stream.view) != Status::OK) {
+        stream.sampleIndex = UINT32_MAX;
+        return false;
+    }
+    stream.dtsUs = 0;
+    if (ConvertRoundedTimeScale(stream.view.dts, FFMPEG_AV_TIME_BASE_US, stream.track->timeScale,
+        &stream.dtsUs) != Status::OK) {
+        stream.sampleIndex = UINT32_MAX;
+        stream.hasView = false;
+        return false;
+    }
+    stream.hasView = true;
+    return true;
+}
+
+bool CollectAacProbeStreams(const std::shared_ptr<MPEG4AtomParser::Track>& firstTrack, const MediaInfo& mediaInfo,
+    std::vector<AacProbeStream>& streams, size_t& pendingAacTracks)
+{
+    for (auto track = firstTrack; track != nullptr; track = track->next) {
+        if (track->sampleHelper == nullptr || track->trackIndex >= mediaInfo.tracks.size() ||
+            track->timeScale <= 0 || track->sampleHelper->GetSampleCount() == 0) {
+            continue;
+        }
+        AacProbeStream stream;
+        stream.track = track;
+        std::string mime;
+        stream.isAac = mediaInfo.tracks[track->trackIndex].Get<Tag::MIME_TYPE>(mime) &&
+            mime == MimeType::AUDIO_AAC;
+        if (stream.isAac) {
+            pendingAacTracks++;
+        }
+        streams.push_back(stream);
+    }
+    return pendingAacTracks > 0;
+}
+
+bool IsAacProbeStreamBetter(const AacProbeStream& stream, const AacProbeStream& best, bool orderByPosOnly)
+{
+    if (orderByPosOnly) {
+        return stream.view.pos < best.view.pos;
+    }
+    const int64_t dtsDiff = stream.dtsUs > best.dtsUs ? stream.dtsUs - best.dtsUs : best.dtsUs - stream.dtsUs;
+    if (dtsDiff <= FFMPEG_MOV_TIEBREAK_DIFF_US) {
+        return stream.view.pos < best.view.pos;
+    }
+    return stream.dtsUs < best.dtsUs;
+}
+
+int32_t SelectNextAacProbeStream(std::vector<AacProbeStream>& streams, bool orderByPosOnly)
+{
+    int32_t bestStream = -1;
+    AacProbeStream best;
+    for (size_t i = 0; i < streams.size(); ++i) {
+        AacProbeStream& stream = streams[i];
+        if (!LoadAacProbeStreamView(stream)) {
+            continue;
+        }
+        if (bestStream < 0 || IsAacProbeStreamBetter(stream, best, orderByPosOnly)) {
+            bestStream = static_cast<int32_t>(i);
+            best = stream;
+        }
+    }
+    return bestStream;
+}
+} // namespace
+
+
+void MPEG4AtomParser::CalculateAacProbeSamplePerFrame()
+{
+    // Emulate the FFmpeg stream-info probe window (mov.c mov_find_next_sample +
+    // demux.c avformat_find_stream_info) for AAC tracks: the AAC decoder only sees
+    // the first audio packet if the cumulative size of packets read before it stays
+    // below the default probesize. mpeg4 has no AAC decoder, so the read-reachability
+    // part of the probe is replicated exactly; the value itself stays ASC-derived.
+    aacProbeReachedFlags_.assign(mediaInfo_.tracks.size(), 0);
+    // Unseekable fragmented inputs only parse the first moof during header init, so
+    // per-track sample counts are incomplete and the ffmpeg interleave model does not
+    // apply; keep the legacy ASC-exported value there instead of a false drop.
+    if (hasMoofBox_ && seekable_ != Seekable::SEEKABLE) {
+        std::fill(aacProbeReachedFlags_.begin(), aacProbeReachedFlags_.end(), 1);
+        return;
+    }
+    std::vector<AacProbeStream> streams;
+    size_t pendingAacTracks = 0;
+    if (!CollectAacProbeStreams(firstTrack_, mediaInfo_, streams, pendingAacTracks)) {
+        return;
+    }
+    // mov_find_next_sample falls back to pure file-offset order on non-seekable
+    // input (mov.c no_interleave); the hybrid dts/pos rule only applies to seekable files.
+    const bool orderByPosOnly = seekable_ != Seekable::SEEKABLE;
+    int64_t readSize = 0;
+    while (pendingAacTracks > 0) {
+        if (readSize >= FFMPEG_AAC_PROBE_SIZE) {
+            break;
+        }
+        const int32_t bestStream = SelectNextAacProbeStream(streams, orderByPosOnly);
+        if (bestStream < 0) {
+            break;
+        }
+        AacProbeStream& selected = streams[bestStream];
+        if (selected.isAac && selected.track->trackIndex < aacProbeReachedFlags_.size() &&
+            aacProbeReachedFlags_[selected.track->trackIndex] == 0) {
+            aacProbeReachedFlags_[selected.track->trackIndex] = 1;
+            pendingAacTracks--;
+        }
+        if (readSize <= FFMPEG_AAC_PROBE_SIZE - selected.view.size) {
+            readSize += selected.view.size;
+        } else {
+            readSize = FFMPEG_AAC_PROBE_SIZE;
+        }
+        selected.sampleIndex++;
+        selected.hasView = false;
+    }
+}
+
 void MPEG4AtomParser::CalculateMPEG4Attributes()
 {
     MEDIA_LOG_D("In");
+    CalculateAacProbeSamplePerFrame();
     mediaInfo_.general.Set<Tag::MEDIA_HAS_VIDEO>(false);
     mediaInfo_.general.Set<Tag::MEDIA_HAS_AUDIO>(false);
     mediaInfo_.general.Set<Tag::MEDIA_HAS_SUBTITLE>(false);

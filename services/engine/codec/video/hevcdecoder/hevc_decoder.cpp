@@ -641,11 +641,18 @@ void HevcDecoder::FillHdrInfo(sptr<SurfaceBuffer> surfaceBuffer)
 void HevcDecoder::FlushAllFrames()
 {
     int32_t ret = 0;
+    uint32_t droppedFrames = 0;
     std::unique_lock<std::mutex> runLock(decRunMutex_);
     while (ret == 0 && hevcDecoderFlushFrameFunc_ != nullptr) {
         ret = hevcDecoderFlushFrameFunc_(hevcSDecoder_, &hevcDecoderOutpusArgs_);
+        if (ret == 0) {
+            droppedFrames++;
+        }
     }
     runLock.unlock();
+    if (droppedFrames > 0) {
+        AVCODEC_LOGI("Num %{public}u Flush drop %{public}u decoded frames", decInstanceID_, droppedFrames);
+    }
 }
 
 void HevcDecoder::CalculateBufferSize(void)

@@ -251,6 +251,18 @@ uint32_t MultiStreamParserManager::GetPicHetInLumaSamples(uint32_t trackId)
     return streamMap_[trackId].parser->GetPicHetInLumaSamples();
 }
 
+uint32_t MultiStreamParserManager::GetSpsCropLeftOffset(uint32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), 0, "Stream parser is invalid");
+    return streamMap_[trackId].parser->GetSpsCropLeftOffset();
+}
+
+uint32_t MultiStreamParserManager::GetSpsCropTopOffset(uint32_t trackId)
+{
+    FALSE_RETURN_V_MSG_E(ParserIsInited(trackId), 0, "Stream parser is invalid");
+    return streamMap_[trackId].parser->GetSpsCropTopOffset();
+}
+
 void MultiStreamParserManager::ResetXPSSendStatus(uint32_t trackId)
 {
     FALSE_RETURN_MSG(ParserIsInited(trackId), "Stream parser is invalid");

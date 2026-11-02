@@ -85,6 +85,10 @@ public:
     virtual uint32_t GetChromaLocation() = 0;
     virtual uint32_t GetPicWidInLumaSamples() = 0;
     virtual uint32_t GetPicHetInLumaSamples() = 0;
+    // AVC-specific SPS crop offsets; the default 0 means "no crop" so non-AVC parsers (HEVC
+    // goes through MultiStreamParserManager without these getters) stay unchanged.
+    virtual uint32_t GetSpsCropLeftOffset() { return 0; }
+    virtual uint32_t GetSpsCropTopOffset() { return 0; }
     virtual std::vector<uint8_t> GetLogInfo() = 0;
     virtual uint32_t GetMaxReorderPic() = 0;
     virtual int32_t GetFirstFillerDataNalSize(const uint8_t *sample, int32_t size) = 0;
