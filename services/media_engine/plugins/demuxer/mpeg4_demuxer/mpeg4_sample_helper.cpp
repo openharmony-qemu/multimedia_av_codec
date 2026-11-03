@@ -742,6 +742,7 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
             // Aligned with FFmpeg mov_read_stts(): a zero-count entry contributes no samples and
             // is skipped instead of failing, so the track keeps parsing until the codec/sample
             // entry check (e.g. ulaw audio unsupported by the mpeg4 demuxer) can decide.
+            MEDIA_LOG_D("Ignore zero-count stts entry " PUBLIC_LOG_U32, i);
             continue;
         }
         sttsEntry_.emplace_back(SttsEntry{

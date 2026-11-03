@@ -1134,6 +1134,9 @@ void WriteU16(std::vector<uint8_t>& data, size_t offset, uint16_t value)
 
 std::vector<uint8_t> BuildMinimalMp4WithZeroCountSttsAndUlaw()
 {
+    // NOTE: the fixture omits mvhd/tkhd/mdhd/hdlr/etc. The parser reaches the stsd codec check
+    // without requiring those atoms, so the -25 assertion below depends on that parse order;
+    // if earlier moov completeness checks are added, this fixture must be completed with them.
     // stts with a single zero-count entry (FFmpeg tolerates it, strict mpeg4 must skip it).
     std::vector<uint8_t> sttsPayload;
     AppendU32(sttsPayload, 0); // version/flags
@@ -1144,8 +1147,12 @@ std::vector<uint8_t> BuildMinimalMp4WithZeroCountSttsAndUlaw()
     stts.insert(stts.end(), sttsPayload.begin(), sttsPayload.end());
     // stsd with a single 'ulaw' sample entry; ulaw is not in g_supportedAudioCodecsFourcc, so the
     // codec check must fail with ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT after stts is skipped.
+    // The sample entry only carries the size+fourcc header (reserved/data_reference_index and
+    // audio fields are omitted on purpose): the parser fails the codec check right after reading
+    // that header, so the deeper fields are never accessed.
+    constexpr uint32_t sampleEntryHeaderSize = 8; // size(4) + fourcc(4)
     std::vector<uint8_t> ulawEntry;
-    AppendU32(ulawEntry, 8);
+    AppendU32(ulawEntry, sampleEntryHeaderSize);
     AppendU32(ulawEntry, static_cast<uint32_t>(Plugins::MPEG4::FourccType("ulaw")));
     std::vector<uint8_t> stsdPayload;
     AppendU32(stsdPayload, 0); // version/flags
@@ -9381,6 +9388,25 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TimeToSample_ZeroCountEn
 
     ASSERT_EQ(helper.SetTimeToSampleParams(0, data.size()), Status::OK);
     EXPECT_EQ(helper.GetSttsEntryCount(), 0U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TimeToSample_ZeroCountEntryThenValidEntry_001
+ * @tc.desc: A zero-count stts entry followed by a valid entry is skipped without shifting the
+ *           valid entry's delta mapping (FFmpeg-aligned re-indexing).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TimeToSample_ZeroCountEntryThenValidEntry_001,
+    TestSize.Level1)
+{
+    auto data = BuildSttsData({{0U, 1U}, {3U, 2U}});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    ASSERT_EQ(helper.SetTimeToSampleParams(0, data.size()), Status::OK);
+    EXPECT_EQ(helper.GetSttsEntryCount(), 1U);
+    EXPECT_EQ(helper.GetSampleCountOfSttsEntry(0), 3U);
+    EXPECT_EQ(helper.GetSampleDeltaOfSttsEntry(0), 2U);
 }
 
 /**
