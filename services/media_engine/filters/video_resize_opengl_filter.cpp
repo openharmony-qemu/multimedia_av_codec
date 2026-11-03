@@ -26,6 +26,7 @@
 #include "surface/native_buffer.h"
 #include <unistd.h>
 #include <poll.h>
+#include <cinttypes>
 
 using OHOS::Media::Pipeline::GlInternal::SetTextureParams2D;
 using OHOS::Media::Pipeline::GlInternal::QUAD_INDICES;
@@ -403,7 +404,7 @@ void VideoResizeOpenGLFilter::RenderHdrFrame()
         return;
     }
     lastPts_.store(pts);
-    MEDIA_LOG_D("RenderHdrFrame pts %{public}lld", lastPts_.load());
+    MEDIA_LOG_D("RenderHdrFrame pts %{public}" PRId64, lastPts_.load());
 
     // 2. 从输入 buffer 读取 HDR 帧级元数据（仅 HDR2HDR 模式）
     ReadHdrMetadataFromBuffer(inBuffer);
