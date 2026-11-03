@@ -709,9 +709,14 @@ bool HlsSegmentManager::CheckTsEndOrEos(ReadDataInfo& readDataInfo)
         return true;
     }
     readDataInfo.isEos_ = CheckReadStatus();
+    bool curTsFinished;
+    {
+        AutoLock lock(tsInfoMutex_);
+        curTsFinished = tsStorageInfo_.find(readTsIndex_.load()) != tsStorageInfo_.end() &&
+            tsStorageInfo_[readTsIndex_.load()].second;
+    }
     if (readDataInfo.isEos_ && GetBufferSize() == 0 && readTsIndex_.load() + 1 >= backPlayList_.size() &&
-        tsStorageInfo_.find(readTsIndex_.load()) != tsStorageInfo_.end() &&
-        tsStorageInfo_[readTsIndex_.load()].second) {
+        curTsFinished) {
         readDataInfo.realReadLength_ = 0;
         MEDIA_LOG_I("HLS buffer is empty, eos, type: %{public}d", type_);
         return true;
@@ -762,16 +767,30 @@ bool HlsSegmentManager::ReadHeaderData(unsigned char* buff, ReadDataInfo& readDa
 
 void HlsSegmentManager::HandleSpliceEnd(unsigned char* buff, ReadDataInfo& readDataInfo)
 {
-    if (tsStorageInfo_.find(readTsIndex_.load()) == tsStorageInfo_.end() ||
-        !tsStorageInfo_[readTsIndex_.load()].second) {
-        return;
+    uint32_t curTsIndex = readTsIndex_.load();
+    uint32_t nextTsIndex = curTsIndex + 1;
+    uint64_t tsEndOffset;
+    bool nextRegistered;
+    {
+        AutoLock lock(tsInfoMutex_);
+        auto it = tsStorageInfo_.find(curTsIndex);
+        if (it == tsStorageInfo_.end() || !it->second) {
+            return;
+        }
+        tsEndOffset = SpliceOffset(curTsIndex, it->first);
+        nextRegistered = tsStorageInfo_.find(nextTsIndex) != tsStorageInfo_.end();
     }
-    uint64_t tsEndOffset = SpliceOffset(readTsIndex_.load(), tsStorageInfo_[readTsIndex_.load()].first);
     if (readOffset_ < tsEndOffset) {
         return;
     }
+    if (!nextRegistered) {
+        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HLS read reach splice end but next segment "
+            "%{public}u not registered yet, wait for writer, type: %{public}d", nextTsIndex, type_);
+        canWrite_ = true;
+        return;
+    }
     MEDIA_LOG_I("HLS read reach splice end, current: %{public}u, type: %{public}d, readTsIndex_: %{public}u",
-        readDataInfo.streamId_, type_, readTsIndex_.load());
+        readDataInfo.streamId_, type_, curTsIndex);
     isTsEnd_.store(true);
     notNeedReadBack_.store(true);
     if (playlistDownloader_->IsHlsFmp4()) {
@@ -783,8 +802,7 @@ void HlsSegmentManager::HandleSpliceEnd(unsigned char* buff, ReadDataInfo& readD
     readOffset_ = SpliceOffset(readTsIndex_.load(), 0);
     {
         AutoLock lock(tsInfoMutex_);
-        if (tsStreamIdInfo_.find(readTsIndex_.load()) != tsStreamIdInfo_.end() &&
-            readDataInfo.streamId_ > 0 &&
+        if (tsStreamIdInfo_.find(readTsIndex_.load()) != tsStreamIdInfo_.end() && readDataInfo.streamId_ > 0 &&
             readDataInfo.streamId_ != static_cast<int32_t>(tsStreamIdInfo_[readTsIndex_.load()])) {
             curStreamId_ = tsStreamIdInfo_[readTsIndex_.load()];
             isNeedResetOffset_.store(playlistDownloader_->IsHlsFmp4() ? true : isNeedResetOffset_.load());
@@ -2492,21 +2510,25 @@ void HlsSegmentManager::ClearChunksInLargeSegment()
 
 bool HlsSegmentManager::IsHlsEnd()
 {
+    bool readTsFinished;
+    {
+        AutoLock lock(tsInfoMutex_);
+        readTsFinished = tsStorageInfo_.find(readTsIndex_.load()) != tsStorageInfo_.end() &&
+            tsStorageInfo_[readTsIndex_.load()].second;
+    }
     if (playlistDownloader_ != nullptr && playlistDownloader_->IsLiveEnd()) {
         if (lastPlaychanged_.load() && playList_->Size() == 0 && readTsIndex_.load() == writeTsIndex_ &&
-            tsStorageInfo_[readTsIndex_.load()].second && GetBufferSize() == 0) {
+            readTsFinished && GetBufferSize() == 0) {
             return true;
         }
         return false;
     }
-    if (CheckReadStatus() && GetBufferSize() == 0 && readTsIndex_ + 1 == backPlayList_.size() &&
-        tsStorageInfo_.find(readTsIndex_) != tsStorageInfo_.end() &&
-        tsStorageInfo_[readTsIndex_].second) {
-            if (isEos_) {
-                MEDIA_LOG_I("HLS download done, type: %{public}d", type_);
-            }
-            return true;
+    if (CheckReadStatus() && GetBufferSize() == 0 && readTsIndex_ + 1 == backPlayList_.size() && readTsFinished) {
+        if (isEos_) {
+            MEDIA_LOG_I("HLS download done, type: %{public}d", type_);
         }
+        return true;
+    }
     return false;
 }
 
