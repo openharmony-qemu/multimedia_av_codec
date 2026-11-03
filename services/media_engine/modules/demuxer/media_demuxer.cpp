@@ -5164,6 +5164,18 @@ int32_t MediaDemuxer::GetCurrentAudioTrackId()
     return audioTrackId_;
 }
 
+void MediaDemuxer::UpdateAudioTrack(int32_t trackId)
+{
+    FALSE_RETURN_NOLOG(trackId != audioTrackId_);
+    MEDIA_LOG_I("UpdateAudioTrackId from " PUBLIC_LOG_D32 " to " PUBLIC_LOG_D32, audioTrackId_, trackId);
+    taskMap_.erase(audioTrackId_);
+    sampleConsumerTaskMap_.erase(audioTrackId_);
+    audioTrackId_ = trackId;
+
+    FALSE_RETURN_NOLOG(trackId != TRACK_ID_INVALID);
+    InitAudioTrack();
+}
+
 void MediaDemuxer::SetIsEnableReselectVideoTrack(bool isEnable)
 {
     isEnableReselectVideoTrack_  = isEnable;

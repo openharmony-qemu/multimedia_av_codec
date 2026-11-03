@@ -109,6 +109,8 @@ public:
 
     void UpdateTrackInfoSampleFormat(const std::string& mime, const std::shared_ptr<Meta> &meta);
 
+    void SetPlayerMode();
+
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
         const std::shared_ptr<FilterLinkCallback> &callback) override;
@@ -151,6 +153,7 @@ private:
     std::string appName_;
     std::mutex releaseMutex_;
     std::atomic<bool> isReleased_ {false};
+    bool isPlayerMode_ {false};
 
     std::mutex bufferStatusMutex_;
     uint32_t bufferStatus_{static_cast<uint32_t>(InOutPortBufferStatus::INIT)};

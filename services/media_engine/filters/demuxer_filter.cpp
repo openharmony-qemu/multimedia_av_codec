@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -329,6 +329,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
     bool hasInvalidAudio = false;
     bool hasAudioTrack = false;
     FALSE_RETURN_V_MSG(callback_ != nullptr, Status::OK, "callback is nullptr");
+    int32_t audioTrackId = MediaDemuxer::TRACK_ID_INVALID;
     for (size_t index = 0; index < trackInfos.size(); index++) {
         std::shared_ptr<Meta> meta = trackInfos[index];
         FALSE_RETURN_V_MSG_E(meta != nullptr, Status::ERROR_INVALID_PARAMETER, "meta is invalid, index: %zu", index);
@@ -362,19 +363,23 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         hasVideoFilter |= (streamType == StreamType::STREAMTYPE_ENCODED_VIDEO && isEnableReselectVideoTrack_);
         FALSE_CONTINUE_NOLOG(mediaType != Plugins::MediaType::AUDIO || !hasAudioTrack);
         ret = callback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED, streamType);
+        FALSE_CONTINUE_LOGI(!isPlayerMode_ || ret == Status::OK || streamType != StreamType::STREAMTYPE_ENCODED_AUDIO,
+            "Audio track link failed, trackId: " PUBLIC_LOG_D32 ", will try next audio track", trackIndex);
         FALSE_RETURN_V_MSG_E(ret == Status::OK || FaultDemuxerEventInfoWrite(streamType) != Status::OK, ret,
             "OnCallback Link Filter Fail.");
         if (mediaType == Plugins::MediaType::AUDIO) {
             hasAudioTrack = true;
+            audioTrackId = trackIndex;
         }
         successNodeCount++;
     }
+    FALSE_GOON_NOEXEC(isPlayerMode_, UpdateAudioTrack(audioTrackId));
     if (IsAVTrackInvalid(hasInvalidVideo, hasInvalidAudio, hasVideoFilter, hasAudioTrack)) {
         MEDIA_LOG_E("Only has invalid video or invalid audio track");
         receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR,
  	        static_cast<int32_t>(MSERR_NO_VALID_TRACK_FOUND), GetOriginalCodecName()});
     }
-    return ret;
+    return Status::OK;
 }
 
 bool DemuxerFilter::IsMimeInDolbyList(const std::string& mime)
@@ -868,9 +873,6 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     MEDIA_LOG_I("LinkNext NextFilter, mimeType " PUBLIC_LOG_S " filterType " PUBLIC_LOG_D32,
         mimeType.c_str(), nextFilter->GetFilterType());
 
-    nextFilter_ = nextFilter;
-    nextFiltersMap_[outType].push_back(nextFilter_);
-
     if (ptsManagedFileTypes.find(fileType_) != ptsManagedFileTypes.end()) {
         MEDIA_LOG_I("File type needs PTS management: " PUBLIC_LOG_D32, static_cast<int32_t>(fileType_));
         meta->SetData(Tag::MEDIA_FILE_TYPE, fileType_);
@@ -888,7 +890,12 @@ Status DemuxerFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, Stream
     }
     std::shared_ptr<FilterLinkCallback> filterLinkCallback
         = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());
-    return nextFilter->OnLinked(outType, meta, filterLinkCallback);
+    Status ret = nextFilter->OnLinked(outType, meta, filterLinkCallback);
+    FALSE_RETURN_V_NOLOG(!isPlayerMode_ || ret == Status::OK, ret);
+
+    nextFilter_ = nextFilter;
+    nextFiltersMap_[outType].push_back(nextFilter_);
+    return ret;
 }
 
 Status DemuxerFilter::GetBitRates(std::vector<uint32_t>& bitRates)
@@ -1175,6 +1182,12 @@ int32_t DemuxerFilter::GetCurrentAudioTrackId()
 {
     FALSE_RETURN_V_MSG_E(demuxer_ != nullptr, -1, "demuxer_ is nullptr");
     return demuxer_->GetCurrentAudioTrackId();
+}
+
+void DemuxerFilter::UpdateAudioTrack(int32_t trackId)
+{
+    FALSE_RETURN_MSG(demuxer_ != nullptr, "demuxer_ is nullptr");
+    demuxer_->UpdateAudioTrack(trackId);
 }
 
 void DemuxerFilter::SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart)
