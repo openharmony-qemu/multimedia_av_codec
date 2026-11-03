@@ -2416,7 +2416,7 @@ Status MPEG4DemuxerPlugin::GetSeekableVideoOrUnseekableFirstFrame(
         track->currentSampleIndex = GetFirstSyncSampleIndex(track);
     }
     Status ret = GetSampleBySeekableStatus(trackId, mpeg4Sample, nullptr);
-    if (seekable_ == Seekable::SEEKABLE) {
+    if (track != nullptr && seekable_ == Seekable::SEEKABLE) {
         // Restore the cursor immediately so early-return failure paths never leave the stss probe
         // index; ReadSample must start from the first sample, matching FFmpeg cached-packet order.
         track->currentSampleIndex = originalSampleIndex;
@@ -2430,7 +2430,7 @@ uint32_t MPEG4DemuxerPlugin::GetFirstSyncSampleIndex(
     if (track == nullptr || track->sampleHelper == nullptr) {
         return 0;
     }
-    const std::vector<uint32_t> syncSamples = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
+    const auto& syncSamples = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
     const uint32_t sampleCount = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
     // Aligned with FFmpeg ParseVideoFirstFramesFull / Mp4CheckKeyFrame: probe the first stss sync
     // sample; keyframe_absent (absent/empty stss) and an out-of-range first entry (dropped by
@@ -5418,7 +5418,9 @@ void MPEG4DemuxerPlugin::CheckResetXPSSendStatus(uint32_t trackIndex, std::share
         // state, which starts fresh before the first delivered packet: reset only at the first
         // sample read after initialization (sampleIndex 0); later samples keep the parser's own
         // XPS state machine (in-band SPS/PPS seen flags plus per-slice resets) instead of
-        // re-inserting XPS before every IDR.
+        // re-inserting XPS before every IDR. A seek that restarts reading at a non-zero sample
+        // intentionally does not reset here, mirroring FFmpegDemuxerPlugin::WriteBufferAttr
+        // (firstPkt->pos == firstFrame->pos), which likewise only resets at the sequence start.
         if (mpeg4Sample->sampleIndex == 0) {
             streamParsers_->ResetXPSSendStatus(trackIndex);
         }

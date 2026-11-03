@@ -6411,6 +6411,8 @@ public:
             value = (value << 1U) | ((byteValue >> bitShift) & AAC_SINGLE_BIT);
         }
         pos_ += numBits;
+        // numBits is capped at AAC_PROBE_MAX_READ_BITS (8), so value never exceeds 255 and the
+        // narrowing cast to int32_t is always well-defined (never touches the sign bit).
         return static_cast<int32_t>(value);
     }
 
