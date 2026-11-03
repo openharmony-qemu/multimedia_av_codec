@@ -738,7 +738,12 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     int64_t correctedDts = 0;
     for (uint32_t i = 0; i < numSttsEntries; ++i) {
         uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(SttsEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
+        if (sampleCount == 0) {
+            // Aligned with FFmpeg mov_read_stts(): a zero-count entry contributes no samples and
+            // is skipped instead of failing, so the track keeps parsing until the codec/sample
+            // entry check (e.g. ulaw audio unsupported by the mpeg4 demuxer) can decide.
+            continue;
+        }
         sttsEntry_.emplace_back(SttsEntry{
             .count = sampleCount,
             .delta = GetU32Value(data.get() + 4 + i * sizeof(SttsEntry))
