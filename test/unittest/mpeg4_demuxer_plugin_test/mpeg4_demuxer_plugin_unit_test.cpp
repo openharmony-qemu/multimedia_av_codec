@@ -2141,6 +2141,64 @@ std::shared_ptr<Plugins::MPEG4::MPEG4DemuxerPlugin> BuildAvcKeyHeuristicTestPlug
     return plugin;
 }
 
+std::shared_ptr<Plugins::MPEG4::MPEG4DemuxerPlugin> BuildAvcMultiNalSampleTestPlugin(
+    const std::vector<uint8_t>& spsNal, const std::vector<uint8_t>& sampleData,
+    const std::vector<int32_t>& sampleSizes,
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry>& stssIndexes)
+{
+    constexpr uint32_t testVideoTrackId = 0;
+    constexpr int32_t testTrackTimeScale = 90000;
+    constexpr uint32_t testSttsDelta = 3600;
+    const uint32_t testSampleCount = static_cast<uint32_t>(sampleSizes.size());
+    const std::vector<uint8_t> avcc = BuildAvcCTestConfig(spsNal);
+    auto source = CreateDataSourceForBytes(sampleData);
+    auto reader = std::make_shared<DemuxerDataReader>();
+    if (source == nullptr || reader == nullptr || reader->SetDataReader(source) != Status::OK) {
+        return nullptr;
+    }
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track == nullptr || helper == nullptr) {
+        return nullptr;
+    }
+    helper->trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper->mimeType_ = MimeType::VIDEO_AVC;
+    helper->sttsEntry_ = {{testSampleCount, testSttsDelta}};
+    helper->cttsEntry_ = {{testSampleCount, 0}};
+    helper->stscEntry_ = {{0, testSampleCount, 1}};
+    helper->stssEntry_ = stssIndexes;
+    helper->sampleSizes_ = sampleSizes;
+    helper->sampleSizeCount_ = testSampleCount;
+    helper->chunkOffsets_ = {0};
+    helper->dataReader_ = reader;
+    if (helper->FinalizeSampleTables() != Status::OK) {
+        return nullptr;
+    }
+    track->trackIndex = testVideoTrackId;
+    track->trackId = static_cast<int32_t>(testVideoTrackId);
+    track->timeScale = testTrackTimeScale;
+    track->codecParms.trackType = Plugins::MPEG4::VIDEO_TYPE;
+    track->codecParms.data = std::make_unique<uint8_t[]>(avcc.size());
+    std::copy(avcc.begin(), avcc.end(), track->codecParms.data.get());
+    track->codecParms.extradataSize = static_cast<int64_t>(avcc.size());
+    track->sampleHelper = helper;
+    auto plugin = std::make_shared<Plugins::MPEG4::MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ActivateVideoDurationTestTrack(*plugin, track, MimeType::VIDEO_AVC);
+    plugin->dataSource_ = source;
+    return plugin;
+}
+
+static void ExpectReadSampleAnnexb(Plugins::MPEG4::MPEG4DemuxerPlugin* plugin,
+    const std::vector<uint8_t>& expected)
+{
+    ASSERT_NE(plugin, nullptr);
+    AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
+    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), static_cast<int32_t>(expected.size()));
+    EXPECT_TRUE(std::equal(expected.begin(), expected.end(), output.mediaAVBuffer->memory_->GetAddr(),
+        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()));
+}
+
 std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> PrepareVideoCttsTestTrack(
     Plugins::MPEG4::MPEG4DemuxerPlugin& plugin, const std::vector<uint8_t>& sampleData)
 {
@@ -10230,6 +10288,179 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcEmptyPrefixThenIdrSyn
     ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
     constexpr uint32_t syncFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
     EXPECT_NE(output.mediaAVBuffer->flag_ & syncFlag, 0U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SeekableVideoFirstFrameUsesFirstStssSync_001
+ * @tc.desc: Verify seekable video init probes the first stss sync sample instead of sample 0,
+ *           aligned with FFmpeg ParseVideoFirstFramesFull, and rewinds the sample cursor.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekableVideoFirstFrameUsesFirstStssSync_001,
+    TestSize.Level1)
+{
+    const std::vector<uint8_t> sps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
+    const std::vector<uint8_t> sample0 = {0x61, 0xC0, 0xAA, 0xAA}; // P-slice, 4 bytes.
+    const std::vector<uint8_t> sample1 = {0x65, 0x88, 0xAA, 0xAA, 0xAA, 0xAA}; // IDR, 6 bytes.
+    auto plugin = BuildAvcKeyHeuristicTestPlugin(sps, {sample0, sample1}, {{1}});
+    ASSERT_NE(plugin, nullptr);
+    plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin->streamParsers_, nullptr);
+    ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::AVC), Status::OK);
+
+    ASSERT_EQ(plugin->ParseAVFirstFrameForTrack(0), Status::OK);
+    auto firstFrame = plugin->firstFrameMap_.find(0);
+    ASSERT_NE(firstFrame, plugin->firstFrameMap_.end());
+    ASSERT_NE(firstFrame->second, nullptr);
+    EXPECT_EQ(firstFrame->second->size, static_cast<int32_t>(BuildLengthPrefixedNal(sample1).size()));
+    EXPECT_EQ(plugin->firstTrack_->currentSampleIndex, 0U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SeekableVideoFirstFrameFallsBackToSampleZero_001
+ * @tc.desc: Verify an out-of-range stss first entry (dropped by FinalizeSampleTables) falls back
+ *           to sample 0 for the metadata probe, matching FFmpeg keyframe_absent video fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SeekableVideoFirstFrameFallsBackToSampleZero_001,
+    TestSize.Level1)
+{
+    const std::vector<uint8_t> sps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
+    const std::vector<uint8_t> sample0 = {0x61, 0xC0, 0xAA, 0xAA}; // P-slice, 4 bytes.
+    const std::vector<uint8_t> sample1 = {0x65, 0x88, 0xAA, 0xAA, 0xAA, 0xAA}; // IDR, 6 bytes.
+    auto plugin = BuildAvcKeyHeuristicTestPlugin(sps, {sample0, sample1}, {{5}});
+    ASSERT_NE(plugin, nullptr);
+    plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin->streamParsers_, nullptr);
+    ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::AVC), Status::OK);
+
+    ASSERT_EQ(plugin->ParseAVFirstFrameForTrack(0), Status::OK);
+    auto firstFrame = plugin->firstFrameMap_.find(0);
+    ASSERT_NE(firstFrame, plugin->firstFrameMap_.end());
+    ASSERT_NE(firstFrame->second, nullptr);
+    EXPECT_EQ(firstFrame->second->size, static_cast<int32_t>(BuildLengthPrefixedNal(sample0).size()));
+    EXPECT_EQ(plugin->firstTrack_->currentSampleIndex, 0U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_StssFirstIdrKeepsInBandSpsPps_001
+ * @tc.desc: Verify an stss-first IDR metadata probe does not re-insert SPS/PPS before the IDR when
+ *           the first read sample (sample 0) already carries in-band SPS/PPS, matching FFmpeg
+ *           h264_mp4toannexb which keeps the in-band parameter-set seen state per packet.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_StssFirstIdrKeepsInBandSpsPps_001, TestSize.Level1)
+{
+    constexpr uint32_t sample0Size = 19;
+    constexpr uint32_t sample1Size = 10;
+    const std::vector<uint8_t> sps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
+    // In-band PPS must be byte-identical to the avcC PPS (BuildAvcCTestConfig) so the parser state
+    // after sample 0 matches FFmpeg's bsf: the seen in-band parameter sets suppress XPS insertion.
+    const std::vector<uint8_t> pps = {0x68, 0xCE, 0x3C, 0x80};
+    const std::vector<uint8_t> idr = {0x65, 0x88, 0xAA, 0xAA, 0xAA, 0xAA};
+    std::vector<uint8_t> sampleData;
+    std::vector<uint8_t> spsPacket = BuildLengthPrefixedNal(sps);
+    std::vector<uint8_t> ppsPacket = BuildLengthPrefixedNal(pps);
+    std::vector<uint8_t> idrPacket = BuildLengthPrefixedNal(idr);
+    sampleData.insert(sampleData.end(), spsPacket.begin(), spsPacket.end());
+    sampleData.insert(sampleData.end(), ppsPacket.begin(), ppsPacket.end());
+    sampleData.insert(sampleData.end(), idrPacket.begin(), idrPacket.end());
+    // Only sample 1 (IDR) is a sync sample; the metadata probe must read sample 1.
+    auto plugin = BuildAvcMultiNalSampleTestPlugin(sps, sampleData, {sample0Size, sample1Size}, {{1}});
+    ASSERT_NE(plugin, nullptr);
+    plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin->streamParsers_, nullptr);
+    ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::AVC), Status::OK);
+
+    ASSERT_EQ(plugin->ParseAVFirstFrameForTrack(0), Status::OK);
+    auto firstFrame = plugin->firstFrameMap_.find(0);
+    ASSERT_NE(firstFrame, plugin->firstFrameMap_.end());
+    ASSERT_NE(firstFrame->second, nullptr);
+    EXPECT_EQ(firstFrame->second->size, static_cast<int32_t>(sample1Size));
+    EXPECT_EQ(plugin->firstTrack_->currentSampleIndex, 0U);
+
+    AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    // Sample 0: Annex-B SPS+PPS only; the XPS reset at the first read sample must not alter this.
+    ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
+    const std::vector<uint8_t> expectedSample0 = {
+        0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2,
+        0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80,
+    };
+    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), static_cast<int32_t>(expectedSample0.size()));
+    EXPECT_TRUE(std::equal(expectedSample0.begin(), expectedSample0.end(),
+        output.mediaAVBuffer->memory_->GetAddr(),
+        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()));
+
+    // Sample 1 (stss-first IDR): the in-band SPS/PPS seen state from sample 0 must suppress the
+    // XPS insertion; re-inserting avcC SPS/PPS here would add 24 bytes and regress line58.mp4.
+    ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
+    const std::vector<uint8_t> expectedSample1 = {
+        0x00, 0x00, 0x00, 0x01, 0x65, 0x88, 0xAA, 0xAA, 0xAA, 0xAA,
+    };
+    EXPECT_EQ(output.mediaAVBuffer->memory_->GetSize(), static_cast<int32_t>(expectedSample1.size()));
+    EXPECT_TRUE(std::equal(expectedSample1.begin(), expectedSample1.end(),
+        output.mediaAVBuffer->memory_->GetAddr(),
+        output.mediaAVBuffer->memory_->GetAddr() + output.mediaAVBuffer->memory_->GetSize()));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_NegativeDtsKeepsXpsSeenState_001
+ * @tc.desc: Verify with a valid first frame, non-positive DTS on later samples does not re-reset
+ *           the XPS send state: a PPS+slice sample (no in-band SPS) keeps the SPS seen state from
+ *           sample 0, so no out-of-band SPS is prepended (CVPA1_TOSHIBA_B_err_pic0-1-10-16), while
+ *           a later IDR after a slice still re-inserts SPS/PPS like FFmpeg h264_mp4toannexb.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_NegativeDtsKeepsXpsSeenState_001, TestSize.Level1)
+{
+    const std::vector<uint8_t> sps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
+    const std::vector<uint8_t> pps = {0x68, 0xCE, 0x3C, 0x80}; // avcC PPS.
+    const std::vector<uint8_t> idr = {0x65, 0x88, 0xAA, 0xAA, 0xAA, 0xAA};
+    const std::vector<uint8_t> slice = {0x61, 0xC0, 0xAA, 0xAA};
+    std::vector<uint8_t> sampleData;
+    std::vector<int32_t> sampleSizes;
+    BuildAvcSampleData({sps, pps, idr}, sampleData, sampleSizes, true);
+    BuildAvcSampleData({pps, slice}, sampleData, sampleSizes, true);
+    BuildAvcSampleData({idr}, sampleData, sampleSizes, true);
+    // Samples 0 and 2 are sync samples; the stss-first metadata probe reads sample 0.
+    auto plugin = BuildAvcMultiNalSampleTestPlugin(sps, sampleData, sampleSizes, {{0}, {2}});
+    ASSERT_NE(plugin, nullptr);
+    plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin->streamParsers_, nullptr);
+    ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::AVC), Status::OK);
+    // Negative DTS like an edit list at stream start (CVPA1_TOSHIBA_B_err_pic0-1-10-16).
+    // The default index is sparse (sampleIndexEntry_ empty); materialize the dense index first
+    // so the per-sample DTS override below targets real entries instead of an empty vector.
+    ASSERT_EQ(plugin->firstTrack_->sampleHelper->EnsureDenseIndex(), Status::OK);
+    plugin->firstTrack_->sampleHelper->sampleIndexEntry_[0].dts = -40000;
+    plugin->firstTrack_->sampleHelper->sampleIndexEntry_[1].dts = -20000;
+    plugin->firstTrack_->sampleHelper->sampleIndexEntry_[2].dts = 20000;
+
+    ASSERT_EQ(plugin->ParseAVFirstFrameForTrack(0), Status::OK);
+    auto firstFrame = plugin->firstFrameMap_.find(0);
+    ASSERT_NE(firstFrame, plugin->firstFrameMap_.end());
+    ASSERT_NE(firstFrame->second, nullptr);
+    EXPECT_EQ(firstFrame->second->size, static_cast<int32_t>(sampleSizes[0]));
+
+    // Sample 0 IDR keeps in-band SPS/PPS; the probe-state reset must not leak into later samples.
+    ExpectReadSampleAnnexb(plugin.get(), {
+        0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2,
+        0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80,
+        0x00, 0x00, 0x00, 0x01, 0x65, 0x88, 0xAA, 0xAA, 0xAA, 0xAA,
+    });
+    // Sample 1 (negative DTS): in-band SPS seen state from sample 0 suppresses XPS insertion;
+    // re-inserting avcC SPS here would add 13 bytes and regress CVPA1_TOSHIBA.
+    ExpectReadSampleAnnexb(plugin.get(), {
+        0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80,
+        0x00, 0x00, 0x00, 0x01, 0x61, 0xC0, 0xAA, 0xAA,
+    });
+    // Sample 2 (IDR after a slice): per-slice reset clears the seen state, so SPS/PPS are
+    // re-inserted before the IDR, matching FFmpeg h264_mp4toannexb.
+    ExpectReadSampleAnnexb(plugin.get(), {
+        0x00, 0x00, 0x00, 0x01, 0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2,
+        0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80,
+        0x00, 0x00, 0x00, 0x01, 0x65, 0x88, 0xAA, 0xAA, 0xAA, 0xAA,
+    });
 }
 
 /**

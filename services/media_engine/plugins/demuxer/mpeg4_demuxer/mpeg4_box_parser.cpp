@@ -6398,17 +6398,20 @@ public:
 
     int32_t Read(uint8_t numBits)
     {
-        if (numBits == 0 || numBits > AAC_PROBE_MAX_READ_BITS || numBits > BitsLeft()) {
+        if (numBits == 0 || static_cast<uint32_t>(numBits) > AAC_PROBE_MAX_READ_BITS ||
+            static_cast<size_t>(numBits) > BitsLeft()) {
             return AAC_PROBE_READ_FAILED;
         }
-        int32_t value = 0;
+        uint32_t value = 0;
         for (uint8_t i = 0; i < numBits; ++i) {
             const size_t bitPos = pos_ + i;
-            value = (value << 1) |
-                ((data_[bitPos / AAC_BITS_PER_BYTE] >> (AAC_BITS_PER_BYTE - 1 - bitPos % AAC_BITS_PER_BYTE)) & 1);
+            const uint32_t byteValue = static_cast<uint32_t>(data_[bitPos / AAC_BITS_PER_BYTE]);
+            const uint32_t bitOffset = static_cast<uint32_t>(bitPos % AAC_BITS_PER_BYTE);
+            const uint32_t bitShift = static_cast<uint32_t>(AAC_BITS_PER_BYTE - 1U) - bitOffset;
+            value = (value << 1U) | ((byteValue >> bitShift) & AAC_SINGLE_BIT);
         }
         pos_ += numBits;
-        return value;
+        return static_cast<int32_t>(value);
     }
 
     bool Skip(uint32_t numBits)

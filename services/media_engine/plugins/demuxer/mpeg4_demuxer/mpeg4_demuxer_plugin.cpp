@@ -2374,7 +2374,7 @@ Status MPEG4DemuxerPlugin::ParseAVFirstFrameForTrack(uint32_t trackId)
         }
     } else {
         // 保持视频及不可 seek 音频的原有首帧读取路径。
-        ret = GetSampleBySeekableStatus(trackId, mpeg4Sample, nullptr);
+        ret = GetSeekableVideoOrUnseekableFirstFrame(currentTrack, trackId, mpeg4Sample, originalSampleIndex);
         if (ret != Status::OK || mpeg4Sample->sample == nullptr || mpeg4Sample->sample->data == nullptr) {
             MEDIA_LOG_D("Failed to get first frame for track:" PUBLIC_LOG_U32, trackId);
             return Status::OK;
@@ -2404,6 +2404,41 @@ Status MPEG4DemuxerPlugin::ParseAVFirstFrameForTrack(uint32_t trackId)
         }
     }
     return Status::OK;
+}
+
+Status MPEG4DemuxerPlugin::GetSeekableVideoOrUnseekableFirstFrame(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
+    std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint32_t originalSampleIndex)
+{
+    if (track != nullptr && seekable_ == Seekable::SEEKABLE && IsVideoType(*track)) {
+        // Aligned with FFmpeg ParseVideoFirstFramesFull: the metadata-probe frame is the first stss
+        // sync sample; sample 0 is kept when stss is absent/empty or out of range.
+        track->currentSampleIndex = GetFirstSyncSampleIndex(track);
+    }
+    Status ret = GetSampleBySeekableStatus(trackId, mpeg4Sample, nullptr);
+    if (seekable_ == Seekable::SEEKABLE) {
+        // Restore the cursor immediately so early-return failure paths never leave the stss probe
+        // index; ReadSample must start from the first sample, matching FFmpeg cached-packet order.
+        track->currentSampleIndex = originalSampleIndex;
+    }
+    return ret;
+}
+
+uint32_t MPEG4DemuxerPlugin::GetFirstSyncSampleIndex(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track) const
+{
+    if (track == nullptr || track->sampleHelper == nullptr) {
+        return 0;
+    }
+    const std::vector<uint32_t> syncSamples = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
+    const uint32_t sampleCount = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
+    // Aligned with FFmpeg ParseVideoFirstFramesFull / Mp4CheckKeyFrame: probe the first stss sync
+    // sample; keyframe_absent (absent/empty stss) and an out-of-range first entry (dropped by
+    // FinalizeSampleTables) keep the first sample, matching mov_build_index video fallback.
+    if (syncSamples.empty() || syncSamples[0] >= sampleCount) {
+        return 0;
+    }
+    return syncSamples[0];
 }
 
 Status MPEG4DemuxerPlugin::ReadAudioMetadataProbeSample(
@@ -5352,7 +5387,7 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
 {
     FALSE_RETURN_V_MSG_E(outBuffer != nullptr, Status::ERROR_NULL_POINTER, "Buffer is nullptr");
     SetOutputBufferTiming(trackIndex, outBuffer, mpeg4Sample->sample);
-    CheckResetXPSSendStatus(trackIndex, mpeg4Sample->sample);
+    CheckResetXPSSendStatus(trackIndex, mpeg4Sample);
     FALSE_RETURN_V_MSG_E(outBuffer->memory_ != nullptr, Status::ERROR_NULL_POINTER, "Memory is nullptr");
     int32_t oldSize = mpeg4Sample->sample->size;
     AnnexbBufferConvertContext context;
@@ -5367,24 +5402,30 @@ Status MPEG4DemuxerPlugin::WriteBuffer(uint32_t trackIndex, std::shared_ptr<AVBu
     return WriteConvertedSampleToBuffer(trackIndex, outBuffer, mpeg4Sample, oldSize);
 }
 
-void MPEG4DemuxerPlugin::CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<Sample> sample)
+void MPEG4DemuxerPlugin::CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<MPEG4Sample> mpeg4Sample)
 {
-    if (sample == nullptr || streamParsers_ == nullptr) {
+    if (mpeg4Sample == nullptr || mpeg4Sample->sample == nullptr || streamParsers_ == nullptr) {
         return;
     }
+    const auto& sample = mpeg4Sample->sample;
     auto track = FindTrackById(trackIndex);
     if (track == nullptr || !IsVideoType(*track)) {
         return;
     }
     if (FirstFrameValid(trackIndex)) {
-        const auto& firstFrame = firstFrameMap_[trackIndex];
-        if (sample->pos >= 0 && firstFrame->pos >= 0) {
-            if (sample->pos == firstFrame->pos) {
-                streamParsers_->ResetXPSSendStatus(trackIndex);
-            }
-            return;
+        // The stss-first metadata probe consumes a later sync sample, so the firstFrame position
+        // no longer identifies the first packet of the read sequence. Match FFmpeg bsf/parser
+        // state, which starts fresh before the first delivered packet: reset only at the first
+        // sample read after initialization (sampleIndex 0); later samples keep the parser's own
+        // XPS state machine (in-band SPS/PPS seen flags plus per-slice resets) instead of
+        // re-inserting XPS before every IDR.
+        if (mpeg4Sample->sampleIndex == 0) {
+            streamParsers_->ResetXPSSendStatus(trackIndex);
         }
+        return;
     }
+    // Fallback when the first frame is unavailable (e.g. a limited pre-read skipped caching it):
+    // keep the legacy non-positive-DTS reset, mirroring FFmpegDemuxerPlugin::WriteBufferAttr.
     if (sample->dts != INT64_MIN && sample->dts <= 0) {
         streamParsers_->ResetXPSSendStatus(trackIndex);
     }
