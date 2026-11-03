@@ -6373,6 +6373,7 @@ constexpr uint32_t AAC_MS_MASK_PRESENT_INVALID = 3;
 constexpr uint32_t AAC_SINGLE_BIT = 1;
 constexpr uint32_t AAC_PROBE_MAX_READ_BITS = 8;
 constexpr int32_t AAC_PROBE_READ_FAILED = -1;
+static_assert(AAC_PROBE_MAX_READ_BITS <= 8, "AacProbeBitReader::Read narrowing cast relies on at most 8 bits");
 constexpr uint32_t AAC_ASC_SF_INDEX_MASK = 0x07;
 constexpr uint32_t AAC_ASC_SF_INDEX_SHIFT = 1;
 constexpr uint32_t AAC_ASC_SF_INDEX_HIGH_BIT_SHIFT = 7;

@@ -2092,6 +2092,7 @@ void BuildAvcSampleData(const std::vector<std::vector<uint8_t>>& nals, std::vect
 void BuildAvcMultiSampleData(const std::vector<std::vector<std::vector<uint8_t>>>& samples,
     std::vector<uint8_t>& sampleData, std::vector<int32_t>& sampleSizes)
 {
+    sampleSizes.clear();
     for (const auto& nals : samples) {
         size_t sampleStart = sampleData.size();
         for (const auto& nal : nals) {

@@ -2410,12 +2410,20 @@ Status MPEG4DemuxerPlugin::GetSeekableVideoOrUnseekableFirstFrame(
     const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
     std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint32_t originalSampleIndex)
 {
+    // Seekable video probes the first stss sync sample; the unseekable branch intentionally
+    // passes through GetSampleBySeekableStatus, whose GetUnseekableSample caches the read frame
+    // so the following ReadSample consumes it from the cache queue (no cursor restore needed).
     if (track != nullptr && seekable_ == Seekable::SEEKABLE && IsVideoType(*track)) {
         // Aligned with FFmpeg ParseVideoFirstFramesFull: the metadata-probe frame is the first stss
         // sync sample; sample 0 is kept when stss is absent/empty or out of range.
         track->currentSampleIndex = GetFirstSyncSampleIndex(track);
     }
+    // FindTrackById returns the same Track instance held by this function (shared_ptr from the
+    // track list), so the cursor set above is visible to GetSeekableSample's internal lookup.
     Status ret = GetSampleBySeekableStatus(trackId, mpeg4Sample, nullptr);
+    // GetSeekableSample reads the sample without advancing currentSampleIndex or the read cursor
+    // (those happen in FinalizeReadSample for delivered packets), so restoring the index alone
+    // fully rewinds the probe; ReadSampleData itself has no track-state side effects.
     if (track != nullptr && seekable_ == Seekable::SEEKABLE) {
         // Restore the cursor immediately so early-return failure paths never leave the stss probe
         // index; ReadSample must start from the first sample, matching FFmpeg cached-packet order.
@@ -2432,6 +2440,8 @@ uint32_t MPEG4DemuxerPlugin::GetFirstSyncSampleIndex(
     }
     const auto& syncSamples = track->sampleHelper->GetSyncSamplesIndexFromStssEntry();
     const uint32_t sampleCount = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
+    // stssEntry_ is already 0-based: ParseStss/AppendStssEntry store sampleNumber - 1, so the
+    // entries returned here are zero-based sample indexes aligned with currentSampleIndex.
     // Aligned with FFmpeg ParseVideoFirstFramesFull / Mp4CheckKeyFrame: probe the first stss sync
     // sample; keyframe_absent (absent/empty stss) and an out-of-range first entry (dropped by
     // FinalizeSampleTables) keep the first sample, matching mov_build_index video fallback.
@@ -5421,6 +5431,9 @@ void MPEG4DemuxerPlugin::CheckResetXPSSendStatus(uint32_t trackIndex, std::share
         // re-inserting XPS before every IDR. A seek that restarts reading at a non-zero sample
         // intentionally does not reset here, mirroring FFmpegDemuxerPlugin::WriteBufferAttr
         // (firstPkt->pos == firstFrame->pos), which likewise only resets at the sequence start.
+        // sampleIndex is always the real sample index: GetSeekableSample assigns it from the
+        // sample info, cached samples get it via AddMPEG4SampleToCacheQueue, and non-video tracks
+        // are filtered out above, so the default 0 never reaches this branch spuriously.
         if (mpeg4Sample->sampleIndex == 0) {
             streamParsers_->ResetXPSSendStatus(trackIndex);
         }
