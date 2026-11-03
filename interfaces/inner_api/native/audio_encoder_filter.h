@@ -161,8 +161,8 @@ private:
     };
 
     std::shared_ptr<AudioStandard::AudioSuite::AudioFormatConverter> channelConverter_;
-    AudioStandard::AudioSuite::AudioFormat converterInputFormat_;
-    AudioStandard::AudioSuite::AudioFormat converterOutputFormat_;
+    AudioStandard::AudioSuite::AudioConverterFormat  converterInputFormat_;
+    AudioStandard::AudioSuite::AudioConverterFormat  converterOutputFormat_;
 #endif
     std::atomic<bool> needChannelConvert_ {false};
     std::atomic<bool> needClipTimeFilter_ {false};
