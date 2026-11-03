@@ -2089,6 +2089,19 @@ void BuildAvcSampleData(const std::vector<std::vector<uint8_t>>& nals, std::vect
     }
 }
 
+void BuildAvcMultiSampleData(const std::vector<std::vector<std::vector<uint8_t>>>& samples,
+    std::vector<uint8_t>& sampleData, std::vector<int32_t>& sampleSizes)
+{
+    for (const auto& nals : samples) {
+        size_t sampleStart = sampleData.size();
+        for (const auto& nal : nals) {
+            std::vector<uint8_t> packet = BuildLengthPrefixedNal(nal);
+            sampleData.insert(sampleData.end(), packet.begin(), packet.end());
+        }
+        sampleSizes.push_back(static_cast<int32_t>(sampleData.size() - sampleStart));
+    }
+}
+
 void ActivateVideoDurationTestTrack(Plugins::MPEG4::MPEG4DemuxerPlugin& plugin,
     const std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track>& track, const std::string& mime);
 
@@ -10419,9 +10432,7 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_NegativeDtsKeepsXpsSeenS
     const std::vector<uint8_t> slice = {0x61, 0xC0, 0xAA, 0xAA};
     std::vector<uint8_t> sampleData;
     std::vector<int32_t> sampleSizes;
-    BuildAvcSampleData({sps, pps, idr}, sampleData, sampleSizes, true);
-    BuildAvcSampleData({pps, slice}, sampleData, sampleSizes, true);
-    BuildAvcSampleData({idr}, sampleData, sampleSizes, true);
+    BuildAvcMultiSampleData({{sps, pps, idr}, {pps, slice}, {idr}}, sampleData, sampleSizes);
     // Samples 0 and 2 are sync samples; the stss-first metadata probe reads sample 0.
     auto plugin = BuildAvcMultiNalSampleTestPlugin(sps, sampleData, sampleSizes, {{0}, {2}});
     ASSERT_NE(plugin, nullptr);
