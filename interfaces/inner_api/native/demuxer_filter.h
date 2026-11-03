@@ -134,6 +134,8 @@ public:
     Status PauseDemuxerReadLoop();
     void WaitForBufferingEnd();
     int32_t GetCurrentVideoTrackId();
+    int32_t GetCurrentAudioTrackId();
+    void UpdateAudioTrack(int32_t trackId);
     Status AddAdsMediaSource(const std::shared_ptr<MediaSource>& source, int64_t startMs, bool isLive,
         std::string& outId);
     Status RemoveAdsMediaSource(const std::string& id);
@@ -141,7 +143,6 @@ public:
     Status SkipCurrentAdsMediaSource();
     using SpeedChangeCallback = std::function<void(float speed)>;
     void SetSpeedChangeCallback(SpeedChangeCallback cb);
-    int32_t GetCurrentAudioTrackId();
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
     void SetIsNotPrepareBeforeStart(bool isNotPrepareBeforeStart);

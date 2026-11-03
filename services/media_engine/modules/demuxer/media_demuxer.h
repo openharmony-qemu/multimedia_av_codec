@@ -287,7 +287,11 @@ public:
     bool IsNeedSelectTrack(int32_t trackId);
     int32_t GetBuiltInSubtitleNum();
     bool IsBuiltInSubtitleTrackId(int32_t trackId);
+    void UpdateAudioTrack(int32_t trackId);
     void ResetForSeek(int64_t seekTime);
+
+    static constexpr int32_t TRACK_ID_INVALID = -1;
+
 private:
     class AVBufferQueueProducerListener;
     class TrackWrapper;
@@ -374,7 +378,6 @@ private:
     std::string audioMime_{};
     std::string originalCodecName_{};
 
-    static constexpr int32_t TRACK_ID_INVALID = -1;
     static constexpr int32_t DEFAULT_DECODE_FRAMERATE_UPPER_LIMIT = 120;
     static inline bool IsValidTrackId(const int32_t trackId) { return trackId >= 0; }
 

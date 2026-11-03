@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -455,7 +455,8 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
 
     ret = decoder_->Configure(meta);
     if (ret != Status::OK && ret != Status::ERROR_INVALID_STATE) {
-        MEDIA_LOG_I_SHORT("AudioDecoderFilter unsupport format");
+        MEDIA_LOG_E_SHORT("AudioDecoderFilter configure failed, mime %{public}s", mime.c_str());
+        FALSE_RETURN_V_NOLOG(!isPlayerMode_, Status::ERROR_UNSUPPORTED_FORMAT);
         if (eventReceiver_ != nullptr) {
             eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
                 static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), mime});
@@ -774,6 +775,11 @@ void AudioDecoderFilter::OnOutputFormatChanged(const Format& format)
     meta_->SetData(Tag::AUDIO_OUTPUT_CHANNELS, channels);
     meta_->SetData(Tag::AUDIO_SAMPLE_FORMAT, sampleFormat);
     nextFilter_->HandleFormatChange(meta_);
+}
+
+void AudioDecoderFilter::SetPlayerMode()
+{
+    isPlayerMode_ = true;
 }
 
 AudioDecoderCallback::AudioDecoderCallback(std::shared_ptr<AudioDecoderFilter> audioDecoderFilter)
