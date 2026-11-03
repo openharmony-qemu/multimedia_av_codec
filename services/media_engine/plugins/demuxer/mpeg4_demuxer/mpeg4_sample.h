@@ -52,7 +52,10 @@ struct MPEG4Sample {
     bool isAnnexb = false;
     bool isVttc = false;
     uint32_t trackId = UINT32_MAX;
-    uint32_t sampleIndex = 0;
+    // UINT32_MAX marks an unassigned sample index: every delivery path (GetSeekableSample,
+    // GetUnseekableSample, AddMPEG4SampleToCacheQueue, EOS samples) assigns a real index, so a
+    // default 0 could spuriously match CheckResetXPSSendStatus's sequence-start reset.
+    uint32_t sampleIndex = UINT32_MAX;
 };
 
 struct SampleIndexView {

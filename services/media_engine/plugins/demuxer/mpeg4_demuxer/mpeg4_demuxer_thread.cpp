@@ -579,7 +579,7 @@ Status MPEG4DemuxerPlugin::WriteSampleMemory(uint32_t trackIndex, std::shared_pt
     outBuffer->duration_ = mpeg4Sample->sample->duration;
     MEDIA_LOG_D("CurrentBuffer: [" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "/" PUBLIC_LOG_D64 "], track: "
         PUBLIC_LOG_U32, outBuffer->pts_, outBuffer->dts_, outBuffer->duration_, trackIndex);
-    CheckResetXPSSendStatus(trackIndex, mpeg4Sample->sample);
+    CheckResetXPSSendStatus(trackIndex, mpeg4Sample);
     int32_t oldSize = mpeg4Sample->sample->size;
     std::unique_ptr<uint8_t[]> directData;
     AnnexbBufferConvertContext context;

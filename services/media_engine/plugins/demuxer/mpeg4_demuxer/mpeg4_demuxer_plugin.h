@@ -214,6 +214,9 @@ private:
     void GetAVTrackIds();
     Status ParseAVFirstFrames();
     Status ParseAVFirstFrameForTrack(uint32_t trackId);
+    Status GetSeekableVideoOrUnseekableFirstFrame(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+        uint32_t trackId, std::shared_ptr<MPEG4Sample>& mpeg4Sample, uint32_t originalSampleIndex);
+    uint32_t GetFirstSyncSampleIndex(const std::shared_ptr<MPEG4AtomParser::Track>& track) const;
     Status ReadAudioMetadataProbeSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
         const std::shared_ptr<MPEG4Sample>& mpeg4Sample, bool& sampleReady);
     bool ProcessVideoFirstFrame(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
@@ -418,7 +421,7 @@ private:
         uint32_t trackIndex, std::shared_ptr<AVBuffer> outBuffer, std::shared_ptr<MPEG4Sample> mpeg4Sample);
     Status SkipPacketAfterPacketConvertError(uint32_t trackId, const std::shared_ptr<MPEG4Sample>& mpeg4Sample,
         bool popSample, bool restoreCacheInfo);
-    void CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<Sample> sample);
+    void CheckResetXPSSendStatus(uint32_t trackIndex, std::shared_ptr<MPEG4Sample> mpeg4Sample);
 
     friend class MpegAudioPacketParser;
 

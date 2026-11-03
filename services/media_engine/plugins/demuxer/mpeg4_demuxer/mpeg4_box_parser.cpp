@@ -6373,6 +6373,7 @@ constexpr uint32_t AAC_MS_MASK_PRESENT_INVALID = 3;
 constexpr uint32_t AAC_SINGLE_BIT = 1;
 constexpr uint32_t AAC_PROBE_MAX_READ_BITS = 8;
 constexpr int32_t AAC_PROBE_READ_FAILED = -1;
+static_assert(AAC_PROBE_MAX_READ_BITS <= 8, "AacProbeBitReader::Read narrowing cast relies on at most 8 bits");
 constexpr uint32_t AAC_ASC_SF_INDEX_MASK = 0x07;
 constexpr uint32_t AAC_ASC_SF_INDEX_SHIFT = 1;
 constexpr uint32_t AAC_ASC_SF_INDEX_HIGH_BIT_SHIFT = 7;
@@ -6398,17 +6399,22 @@ public:
 
     int32_t Read(uint8_t numBits)
     {
-        if (numBits == 0 || numBits > AAC_PROBE_MAX_READ_BITS || numBits > BitsLeft()) {
+        if (numBits == 0 || static_cast<uint32_t>(numBits) > AAC_PROBE_MAX_READ_BITS ||
+            static_cast<size_t>(numBits) > BitsLeft()) {
             return AAC_PROBE_READ_FAILED;
         }
-        int32_t value = 0;
+        uint32_t value = 0;
         for (uint8_t i = 0; i < numBits; ++i) {
             const size_t bitPos = pos_ + i;
-            value = (value << 1) |
-                ((data_[bitPos / AAC_BITS_PER_BYTE] >> (AAC_BITS_PER_BYTE - 1 - bitPos % AAC_BITS_PER_BYTE)) & 1);
+            const uint32_t byteValue = static_cast<uint32_t>(data_[bitPos / AAC_BITS_PER_BYTE]);
+            const uint32_t bitOffset = static_cast<uint32_t>(bitPos % AAC_BITS_PER_BYTE);
+            const uint32_t bitShift = static_cast<uint32_t>(AAC_BITS_PER_BYTE - 1U) - bitOffset;
+            value = (value << 1U) | ((byteValue >> bitShift) & AAC_SINGLE_BIT);
         }
         pos_ += numBits;
-        return value;
+        // numBits is capped at AAC_PROBE_MAX_READ_BITS (8), so value never exceeds 255 and the
+        // narrowing cast to int32_t is always well-defined (never touches the sign bit).
+        return static_cast<int32_t>(value);
     }
 
     bool Skip(uint32_t numBits)
