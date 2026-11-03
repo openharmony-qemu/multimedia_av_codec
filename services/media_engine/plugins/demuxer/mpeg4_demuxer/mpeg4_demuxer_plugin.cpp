@@ -2413,6 +2413,8 @@ Status MPEG4DemuxerPlugin::GetSeekableVideoOrUnseekableFirstFrame(
     // Seekable video probes the first stss sync sample; the unseekable branch intentionally
     // passes through GetSampleBySeekableStatus, whose GetUnseekableSample caches the read frame
     // so the following ReadSample consumes it from the cache queue (no cursor restore needed).
+    // Unseekable sources cannot jump to an stss sync sample, so probing sample 0 matches FFmpeg's
+    // sequential first-packet read for non-seekable streams.
     if (track != nullptr && seekable_ == Seekable::SEEKABLE && IsVideoType(*track)) {
         // Aligned with FFmpeg ParseVideoFirstFramesFull: the metadata-probe frame is the first stss
         // sync sample; sample 0 is kept when stss is absent/empty or out of range.
@@ -2423,7 +2425,8 @@ Status MPEG4DemuxerPlugin::GetSeekableVideoOrUnseekableFirstFrame(
     Status ret = GetSampleBySeekableStatus(trackId, mpeg4Sample, nullptr);
     // GetSeekableSample reads the sample without advancing currentSampleIndex or the read cursor
     // (those happen in FinalizeReadSample for delivered packets), so restoring the index alone
-    // fully rewinds the probe; ReadSampleData itself has no track-state side effects.
+    // fully rewinds the probe; ReadSampleData itself has no track-state side effects, and a
+    // non-OK probe result also leaves the cursor restored, so ReadSample resumes at sample 0.
     if (track != nullptr && seekable_ == Seekable::SEEKABLE) {
         // Restore the cursor immediately so early-return failure paths never leave the stss probe
         // index; ReadSample must start from the first sample, matching FFmpeg cached-packet order.
@@ -2639,6 +2642,9 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(MPEG4AtomParser::Track& track, const
     if (mime == "video/hevc" || mime == "video/avc") {
         if (streamParsers_ != nullptr && streamParsers_->ParserIsInited(trackIndex) &&
             FirstFrameValid(trackIndex)) {
+            // The probe frame may be the first stss sync sample rather than sample 0; it is used
+            // only to extract SPS/PPS metadata here (avcC remains the fallback), never as a
+            // timeline base or seek anchor, so the stss-first probe keeps this path valid.
             auto firstFrame = firstFrameMap_[trackIndex];
             uint8_t* dataPtr = firstFrame->data.get();
             int32_t dataSize = firstFrame->size;
@@ -5432,8 +5438,9 @@ void MPEG4DemuxerPlugin::CheckResetXPSSendStatus(uint32_t trackIndex, std::share
         // intentionally does not reset here, mirroring FFmpegDemuxerPlugin::WriteBufferAttr
         // (firstPkt->pos == firstFrame->pos), which likewise only resets at the sequence start.
         // sampleIndex is always the real sample index: GetSeekableSample assigns it from the
-        // sample info, cached samples get it via AddMPEG4SampleToCacheQueue, and non-video tracks
-        // are filtered out above, so the default 0 never reaches this branch spuriously.
+        // sample info, cached samples get it via AddMPEG4SampleToCacheQueue, EOS samples are
+        // intercepted before this point, and non-video tracks are filtered out above. The default
+        // is UINT32_MAX (mpeg4_sample.h), so an unassigned index can never spuriously match 0.
         if (mpeg4Sample->sampleIndex == 0) {
             streamParsers_->ResetXPSSendStatus(trackIndex);
         }
