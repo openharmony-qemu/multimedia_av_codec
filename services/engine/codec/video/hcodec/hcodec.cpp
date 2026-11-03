@@ -22,6 +22,7 @@
 #include "qos.h"
 // foundation/resourceschedule/resource_schedule_service/ressched/interfaces/innerkits/ressched_client/include
 #include "res_sched_client.h"
+#include "nlohmann/json.hpp"
 #include "hdf_base.h"
 #include "codec_omx_ext.h"
 #include "hcodec_list.h"
