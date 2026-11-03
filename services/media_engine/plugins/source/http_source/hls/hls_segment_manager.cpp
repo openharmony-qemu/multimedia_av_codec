@@ -774,10 +774,10 @@ void HlsSegmentManager::HandleSpliceEnd(unsigned char* buff, ReadDataInfo& readD
     {
         AutoLock lock(tsInfoMutex_);
         auto it = tsStorageInfo_.find(curTsIndex);
-        if (it == tsStorageInfo_.end() || !it->second) {
+        if (it == tsStorageInfo_.end() || !it->second.second) {
             return;
         }
-        tsEndOffset = SpliceOffset(curTsIndex, it->first);
+        tsEndOffset = SpliceOffset(curTsIndex, it->second.first);
         nextRegistered = tsStorageInfo_.find(nextTsIndex) != tsStorageInfo_.end();
     }
     if (readOffset_ < tsEndOffset) {
