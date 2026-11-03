@@ -332,6 +332,13 @@ void AudioSinkFilter::SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter
     audioSink_->SetSyncCenter(syncCenter);
 }
 
+void AudioSinkFilter::ReportEosToSyncCenter()
+{
+    MEDIA_LOG_I("AudioSinkFilter::ReportEosToSyncCenter");
+    FALSE_RETURN(audioSink_ != nullptr);
+    audioSink_->ReportEosToSyncCenter();
+}
+
 Status AudioSinkFilter::SetSpeed(float speed)
 {
     MEDIA_LOG_I("SetSpeed in, speed is " PUBLIC_LOG ".3f", speed);
@@ -373,6 +380,14 @@ Status AudioSinkFilter::ChangeTrack(std::shared_ptr<Meta>& meta)
 {
     MEDIA_LOG_I("AudioSinkFilter::ChangeTrack in");
     FALSE_RETURN_V(audioSink_ != nullptr, Status::ERROR_INVALID_STATE);
+    // Track-level meta lacks AUDIO_RENDER_INFO; copy from globalMeta_ for renderer config
+    // and preferred-output-device callback registration.
+    Plugins::AudioRenderInfo audioRenderInfo;
+    if (globalMeta_ != nullptr && meta != nullptr) {
+        if (globalMeta_->GetData(OHOS::Media::Tag::AUDIO_RENDER_INFO, audioRenderInfo)) {
+            meta->SetData(Tag::AUDIO_RENDER_INFO, audioRenderInfo);
+        }
+    }
     return audioSink_->ChangeTrack(meta, eventReceiver_);
 }
 

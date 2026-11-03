@@ -329,6 +329,7 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
     bool hasInvalidVideo = false;
     bool hasInvalidAudio = false;
     bool hasAudioTrack = false;
+    bool hasAudioMeta = false;
     FALSE_RETURN_V_MSG(callback_ != nullptr, Status::OK, "callback is nullptr");
     int32_t audioTrackId = MediaDemuxer::TRACK_ID_INVALID;
     for (size_t index = 0; index < trackInfos.size(); index++) {
@@ -348,6 +349,9 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
             continue;
         }
         FALSE_CONTINUE_NOLOG(!ShouldTrackSkipped(mediaType, mime, index));
+        if (mediaType == Plugins::MediaType::AUDIO) {
+            hasAudioMeta = true;
+        }
 
         StreamType streamType;
         FALSE_RETURN_V_NOLOG(FindStreamType(streamType, mediaType, mime, index, meta), Status::ERROR_INVALID_PARAMETER);
@@ -375,7 +379,16 @@ Status DemuxerFilter::HandleTrackInfos(const std::vector<std::shared_ptr<Meta>> 
         successNodeCount++;
     }
     FALSE_GOON_NOEXEC(isPlayerMode_, UpdateAudioTrack(audioTrackId));
-    if (IsAVTrackInvalid(hasInvalidVideo, hasInvalidAudio, hasVideoFilter, hasAudioTrack)) {
+    bool isAudioDisabled = !disabledMediaTracks_.empty() &&
+        disabledMediaTracks_.find(Plugins::MediaType::AUDIO) != disabledMediaTracks_.end();
+    bool audioExistsButUnlinked = hasAudioMeta && !hasAudioTrack && !isAudioDisabled;
+    if (isPlayerMode_ && successNodeCount > 0 && audioExistsButUnlinked) {
+        // Player mode: report warning so video-only playback can continue.
+        // successNodeCount == 0 is handled by caller DoPrepare.
+        MEDIA_LOG_E("Audio track exists but none linked successfully, degrade to video-only");
+        receiver_->OnEvent({"demuxer_filter", EventType::EVENT_WARN,
+            static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), GetOriginalCodecName()});
+    } else if (IsAVTrackInvalid(hasInvalidVideo, hasInvalidAudio, hasVideoFilter, hasAudioTrack)) {
         MEDIA_LOG_E("Only has invalid video or invalid audio track");
         receiver_->OnEvent({"demuxer_filter", EventType::EVENT_ERROR,
  	        static_cast<int32_t>(MSERR_NO_VALID_TRACK_FOUND), GetOriginalCodecName()});
@@ -391,6 +404,13 @@ bool DemuxerFilter::IsMimeInDolbyList(const std::string& mime)
         dolbyList_.assign(rawList.begin(), rawList.end());
     }
     return std::find(dolbyList_.begin(), dolbyList_.end(), mime) != dolbyList_.end();
+}
+
+bool DemuxerFilter::IsAudioSupportedOnDevice(const std::string& mime)
+{
+    MEDIA_LOG_I("IsAudioSupportedOnDevice mime: " PUBLIC_LOG_S, mime.c_str());
+    FALSE_RETURN_V_MSG(demuxer_ != nullptr, true, "demuxer_ is nullptr, assume supported");
+    return demuxer_->IsAudioSupport(mime);
 }
 
 void DemuxerFilter::OnNewTrackRender(uint64_t renderSeqNum)
@@ -461,6 +481,12 @@ void DemuxerFilter::UpdateTrackIdMap(StreamType streamType, int32_t index)
         std::vector<int32_t> vec = {index};
         track_id_map_.insert({streamType, vec});
     }
+}
+
+void DemuxerFilter::ClearTrackIdMap(StreamType streamType)
+{
+    AutoLock lock(mapMutex_);
+    track_id_map_.erase(streamType);
 }
 
 Status DemuxerFilter::PrepareBeforeStart()
@@ -977,6 +1003,12 @@ bool DemuxerFilter::FindStreamType(StreamType &streamType, MediaType mediaType, 
     return true;
 }
 
+bool DemuxerFilter::GetAudioStreamType(StreamType &streamType, const std::string& mime,
+    size_t index, std::shared_ptr<Meta> &meta)
+{
+    return FindStreamType(streamType, Plugins::MediaType::AUDIO, mime, index, meta);
+}
+
 bool DemuxerFilter::CheckIsBigendian(std::shared_ptr<Meta> &meta)
 {
     AudioSampleFormat sampleFormat = SAMPLE_U8;
@@ -1013,6 +1045,14 @@ Status DemuxerFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, Stre
 
 Status DemuxerFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
+    MEDIA_LOG_I("DemuxerFilter::UnLinkNext, outType: %{public}d", static_cast<int32_t>(outType));
+    FALSE_RETURN_V(nextFilter != nullptr, Status::ERROR_INVALID_OPERATION);
+    std::shared_ptr<FilterLinkCallback> filterLinkCallback
+        = std::make_shared<DemuxerFilterLinkCallback>(shared_from_this());
+    UnLinkNextInternal(nextFilter, outType, filterLinkCallback);
+    if (nextFilter_ == nextFilter) {
+        nextFilter_ = nullptr;
+    }
     return Status::OK;
 }
 

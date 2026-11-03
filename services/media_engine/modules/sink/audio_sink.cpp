@@ -210,6 +210,7 @@ bool AudioSink::IsInputBufferDataEnough(int32_t size, bool isAudioVivid)
 Status AudioSink::Init(std::shared_ptr<Meta>& meta, const std::shared_ptr<Pipeline::EventReceiver>& receiver)
 {
     state_ = Pipeline::FilterState::INITIALIZED;
+    hasYieldedSyncerPriority_.store(false);
     Status ret = InitAudioSinkPlugin(meta, receiver, plugin_);
     FALSE_RETURN_V(ret == Status::OK, ret);
     ret = InitAudioSinkInfo(meta);
@@ -678,6 +679,19 @@ void AudioSink::CalcMaxAmplitude(std::shared_ptr<AVBuffer> filledOutputBuffer)
     CheckUpdateState(reinterpret_cast<char *>(destBuffer), destLength, format);
 }
 
+void AudioSink::ReportEosToSyncCenter()
+{
+    MEDIA_LOG_I("ReportEosToSyncCenter: yield audio syncer priority");
+    // Set the guard before calling ReportEos so that any racing render-thread
+    // UpdateTimeAnchor call (e.g. the last frame during DoStop/Pause) is blocked
+    // from re-elevating currentSyncerPriority_ back to AUDIO_SINK.
+    hasYieldedSyncerPriority_.store(true);
+    auto syncCenter = syncCenter_.lock();
+    if (syncCenter) {
+        syncCenter->ReportEos(this);
+    }
+}
+
 bool AudioSink::DropApeBuffer(std::shared_ptr<AVBuffer> filledOutputBuffer)
 {
     if (!isApe_ || seekTimeUs_ == HST_TIME_NONE) {
@@ -995,6 +1009,11 @@ void AudioSink::AudioDataSynchroizer::Reset()
 
 bool AudioSink::IsTimeAnchorNeedUpdate()
 {
+    // If syncer priority has been yielded via ReportEosToSyncCenter, do not
+    // update the time anchor anymore — otherwise UpdateTimeAnchor would
+    // re-elevate currentSyncerPriority_ back to AUDIO_SINK after the audio
+    // pipeline is being torn down, freezing video progress.
+    FALSE_RETURN_V(!hasYieldedSyncerPriority_.load(), false);
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN_V(syncCenter != nullptr, false);
     int64_t lastAnchorClockTime = innerSynchroizer_->GetLastReportedClockTime();
@@ -1011,6 +1030,9 @@ bool AudioSink::IsTimeAnchorNeedUpdate()
     if (isAudioPass_) {
         int64_t currentRenderPTS = innerSynchroizer_->GetCurrentRenderPTS();
         int64_t currentRenderClockTime = innerSynchroizer_->GetCurrentRenderClockTime();
+        FALSE_RETURN_V_MSG(currentRenderPTS != 0 || !forceUpdateTimeAnchorNextTime_.load(), false,
+            "DolbyPassthrough skip zero-PTS anchor after flush/rebuild");
+
         Pipeline::IMediaSyncCenter::IMediaTime iPassMediaTime = {currentRenderPTS - firstPts_,
             lastBufferPTS - firstPts_, lastBufferDuration};
         syncCenter->UpdateTimeAnchor(currentRenderClockTime, 0, iPassMediaTime, this);
@@ -1458,6 +1480,9 @@ void AudioSink::AudioLagDetector::UpdateDrainTimeGroup(AudioDrainTimeGroup group
 
 bool AudioSink::UpdateTimeAnchorIfNeeded(const std::shared_ptr<OHOS::Media::AVBuffer>& buffer)
 {
+    // Guard against re-elevation of currentSyncerPriority_ after ReportEosToSyncCenter.
+    // See hasYieldedSyncerPriority_ comment in audio_sink.h.
+    FALSE_RETURN_V(!hasYieldedSyncerPriority_.load(), false);
     auto syncCenter = syncCenter_.lock();
     FALSE_RETURN_V(syncCenter != nullptr, false);
     int64_t nowCt = syncCenter->GetClockTimeNow();

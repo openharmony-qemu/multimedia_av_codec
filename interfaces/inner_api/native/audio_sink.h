@@ -121,6 +121,11 @@ public:
     void SetPCMProcessorMaxLen(int32_t maxProcessedPcmLen);
     void SetSeekFlag();
 
+    // Report EOS to sync center to yield audio syncer priority, allowing video to
+    // take over as the sync source. Used when audio becomes unavailable (e.g.
+    // switching to an unsupported audio track) without a full drain.
+    void ReportEosToSyncCenter();
+
 protected:
     std::atomic<OHOS::Media::Pipeline::FilterState> state_;
 private:
@@ -363,6 +368,10 @@ private:
     std::atomic<bool> isFirstFrameAfterSeek_ {true};
     std::atomic<uint64_t> lastRenderedChangeSeqNum_{0};
     bool isFirstPts_ = true;
+    // Set by ReportEosToSyncCenter to prevent racing render-thread UpdateTimeAnchor
+    // from re-elevating currentSyncerPriority_ to AUDIO_SINK after yield. Without this,
+    // GetMaxMediaProgress() freezes at the stale audio anchor and caps video progress.
+    std::atomic<bool> hasYieldedSyncerPriority_ {false};
 };
 }
 }

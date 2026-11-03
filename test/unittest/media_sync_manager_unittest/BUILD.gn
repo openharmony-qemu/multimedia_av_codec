@@ -55,6 +55,7 @@ ohos_unittest("media_sync_manager_unittest") {
 
   #if (av_codec_support_test) {
     sources = [
+      "./media_sync_manager_progress_unittest.cpp",
       "./media_sync_manager_unittest.cpp",
     ]
 

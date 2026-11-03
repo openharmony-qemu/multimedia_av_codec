@@ -75,7 +75,8 @@ HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_001, TestSize.Level1)
     audioDecoderCallback->OnError(MediaAVCodec::AVCodecErrorType::AVCODEC_ERROR_EXTEND_START, 111);
 
     EXPECT_EQ(audioDecoder->UpdateNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
-    EXPECT_EQ(audioDecoder->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED), Status::OK);
+    EXPECT_EQ(audioDecoder->UnLinkNext(nullptr, Pipeline::StreamType::STREAMTYPE_PACKED),
+        Status::ERROR_INVALID_OPERATION);
 }
 
 HWTEST_F(AudioDecoderFilterUnitTest, AudioDecoderFilter_002, TestSize.Level1)

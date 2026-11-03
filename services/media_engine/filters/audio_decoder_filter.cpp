@@ -376,6 +376,14 @@ Status AudioDecoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter,
 
 Status AudioDecoderFilter::UnLinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
+    MEDIA_LOG_I("AudioDecoderFilter::UnLinkNext, outType: %{public}d", static_cast<int32_t>(outType));
+    FALSE_RETURN_V(nextFilter != nullptr, Status::ERROR_INVALID_OPERATION);
+    std::shared_ptr<FilterLinkCallback> filterLinkCallback
+        = std::make_shared<AudioDecoderFilterLinkCallback>(shared_from_this());
+    UnLinkNextInternal(nextFilter, outType, filterLinkCallback);
+    if (nextFilter_ == nextFilter) {
+        nextFilter_ = nullptr;
+    }
     return Status::OK;
 }
 
@@ -395,12 +403,6 @@ Status AudioDecoderFilter::ChangePlugin(std::shared_ptr<Meta> meta)
     meta_ = meta;
     FALSE_RETURN_V_MSG(decoder_ != nullptr, Status::ERROR_NULL_POINTER, "decoder_ is nullptr");
     Status ret = decoder_->ChangePlugin(mime, false, meta);
-#if defined(TV_STANDARD)
-    if (ret != Status::OK && eventReceiver_ != nullptr) {
-        eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
-            static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), mime});
-    }
-#endif
     FALSE_RETURN_V_MSG(ret == Status::OK, ret, "ChangePlugin failed");
 
     if (IsAsyncMode()) {
@@ -443,6 +445,7 @@ Status AudioDecoderFilter::OnLinked(StreamType inType, const std::shared_ptr<Met
         ret = decoder_->Init(true, mime);
         if (ret != Status::OK && eventReceiver_ != nullptr) {
             MEDIA_LOG_I("decoder init fail.");
+            FALSE_RETURN_V_NOLOG(!isPlayerMode_, Status::ERROR_UNSUPPORTED_FORMAT);
             eventReceiver_->OnEvent({"audioDecoder", EventType::EVENT_ERROR,
                 static_cast<int32_t>(MSERR_UNSUPPORT_AUD_DEC_TYPE), ""});
         }

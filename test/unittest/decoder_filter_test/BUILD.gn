@@ -79,6 +79,7 @@ ohos_unittest("decoder_filter_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = decoder_filter_test_sources + [
+              "audio_decoder_filter_player_mode_unittest.cpp",
               "audio_decoder_filter_unit_test.cpp",
               "surface_encoder_filter_unit_test.cpp",
               "video_decoder_adapter_unit_test.cpp",

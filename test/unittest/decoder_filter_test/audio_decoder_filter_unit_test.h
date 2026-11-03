@@ -21,6 +21,7 @@
 
 #include "media_codec/media_codec.h"
 #include "filter/filter.h"
+#include "audio_decoder_filter.h"
 #include "plugin/plugin_time.h"
 #include "drm_i_keysession_service.h"
 #include "buffer/avbuffer_queue.h"

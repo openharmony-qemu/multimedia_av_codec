@@ -28,6 +28,7 @@
 #include "common/status.h"
 #include "common/media_core.h"
 #include "audio_info.h"
+#include "audio_routing_manager.h"
 #include "cpp_ext/algorithm_ext.h"
 #include "osal/utils/steady_clock.h"
 #include "plugin/plugin_time.h"
@@ -266,6 +267,22 @@ void AudioServerSinkPlugin::AudioServiceDiedCallbackImpl::OnAudioPolicyServiceDi
     MEDIA_LOG_I_T("OnAudioPolicyServiceDied end");
 }
 
+void AudioServerSinkPlugin::AudioPreferredOutputDeviceChangeCallbackImpl::OnPreferredOutputDeviceUpdated(
+    const std::vector<std::shared_ptr<OHOS::AudioStandard::AudioDeviceDescriptor>> &desc)
+{
+    MEDIA_LOG_I_T("OnPreferredOutputDeviceUpdated, device count: %{public}zu", desc.size());
+    if (playerEventReceiver_ != nullptr) {
+        MEDIA_LOG_I_T("OnPreferredOutputDeviceUpdated: send event to HiPlayer");
+        Event event {
+            .srcFilter = "AudioSink",
+            .type = EventType::EVENT_AUDIO_PREFERRED_OUTPUT_DEVICE_CHANGE,
+        };
+        playerEventReceiver_->OnEvent(event);
+    } else {
+        MEDIA_LOG_W_T("OnPreferredOutputDeviceUpdated: eventReceiver is nullptr");
+    }
+}
+
 AudioServerSinkPlugin::AudioServerSinkPlugin(std::string name)
     : Plugins::AudioSinkPlugin(std::move(name)), audioRenderer_(nullptr)
 {
@@ -369,6 +386,7 @@ void AudioServerSinkPlugin::ReleaseRender()
     std::unique_lock<std::mutex> lock(releaseRenderMutex_);
     OHOS::Media::AutoLock renderlock(renderMutex_);
     ScopedTimer timer("ReleaseRender", RELEASE_RENDER_WARNING_MS);
+    UnregisterPreferredOutputDeviceCallback();
     if (audioRenderer_ != nullptr && audioRenderer_->GetStatus() != AudioStandard::RendererState::RENDERER_RELEASED) {
         MEDIA_LOG_I_T("AudioRenderer::Release start");
         // ensure OnWriteData callback untied
@@ -378,6 +396,48 @@ void AudioServerSinkPlugin::ReleaseRender()
         MEDIA_LOG_I_T("AudioRenderer::Release end");
     }
     audioRenderer_.reset();
+}
+
+void AudioServerSinkPlugin::RegisterPreferredOutputDeviceCallback()
+{
+    if (preferredOutputDeviceCb_ != nullptr) {
+        MEDIA_LOG_I_T("RegisterPreferredOutputDeviceCallback: already registered, skip");
+        return;
+    }
+    auto routingManager = OHOS::AudioStandard::AudioRoutingManager::GetInstance();
+    if (routingManager == nullptr) {
+        MEDIA_LOG_E_T("RegisterPreferredOutputDeviceCallback: routingManager is nullptr");
+        return;
+    }
+    preferredOutputDeviceCb_ = std::make_shared<AudioPreferredOutputDeviceChangeCallbackImpl>(playerEventReceiver_);
+    int32_t ret = routingManager->SetPreferredOutputDeviceChangeCallback(
+        rendererOptions_.rendererInfo, preferredOutputDeviceCb_, appUid_);
+    if (ret != 0) {
+        MEDIA_LOG_E_T("RegisterPreferredOutputDeviceCallback failed, ret: %{public}d", ret);
+    } else {
+        MEDIA_LOG_I_T("RegisterPreferredOutputDeviceCallback success, uid: %{public}d, streamUsage: %{public}d",
+            appUid_, static_cast<int32_t>(rendererOptions_.rendererInfo.streamUsage));
+    }
+}
+
+void AudioServerSinkPlugin::UnregisterPreferredOutputDeviceCallback()
+{
+    if (preferredOutputDeviceCb_ == nullptr) {
+        return;
+    }
+    auto routingManager = OHOS::AudioStandard::AudioRoutingManager::GetInstance();
+    if (routingManager == nullptr) {
+        MEDIA_LOG_E_T("UnregisterPreferredOutputDeviceCallback: routingManager is nullptr");
+        return;
+    }
+    int32_t ret = routingManager->UnsetPreferredOutputDeviceChangeCallback(
+        preferredOutputDeviceCb_, rendererOptions_.rendererInfo, appUid_);
+    if (ret != 0) {
+        MEDIA_LOG_E_T("UnregisterPreferredOutputDeviceCallback failed, ret: %{public}d", ret);
+    } else {
+        MEDIA_LOG_I_T("UnregisterPreferredOutputDeviceCallback success, uid: %{public}d", appUid_);
+    }
+    preferredOutputDeviceCb_ = nullptr;
 }
 
 void AudioServerSinkPlugin::ReleaseFile()
@@ -424,6 +484,7 @@ Status AudioServerSinkPlugin::Prepare()
             audioServiceDiedCallback_ = std::make_shared<AudioServiceDiedCallbackImpl>(playerEventReceiver_);
             audioRenderer_->RegisterAudioPolicyServerDiedCb(getprocpid(), audioServiceDiedCallback_);
         }
+        RegisterPreferredOutputDeviceCallback();
     }
     MEDIA_LOG_I_T("Prepare <<");
     return Status::OK;
