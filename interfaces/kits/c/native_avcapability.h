@@ -141,6 +141,11 @@ typedef enum OH_AVCapabilityFeature {
      * @since 26.0.0
      */
     VIDEO_ENCODER_PREPROC_CROP = 10,
+    /**
+     * @brief Feature for codec supports open GOP encoding. It is only used in video encoder.
+     * @since 26.1.0
+     */
+    VIDEO_ENCODER_OPEN_GOP = 11,
 } OH_AVCapabilityFeature;
 
 /**

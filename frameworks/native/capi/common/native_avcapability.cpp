@@ -685,7 +685,7 @@ bool OH_AVCapability_IsFeatureSupported(OH_AVCapability *capability, OH_AVCapabi
         false, "Invalid parameter");
     bool isValid = (feature >= VIDEO_ENCODER_TEMPORAL_SCALABILITY && feature <= VIDEO_LOW_LATENCY) ||
         feature == VIDEO_ENCODER_B_FRAME || feature == VIDEO_DECODER_OUTPUT_IN_DECODING_ORDER ||
-        CheckVideoEncoderPreprocessingFeature(feature);
+        feature == VIDEO_ENCODER_OPEN_GOP || CheckVideoEncoderPreprocessingFeature(feature);
     CHECK_AND_RETURN_RET_LOG(isValid, false, "Varified feature failed: feature %{public}d is invalid", feature);
     std::shared_ptr<AVCodecInfo> codecInfo = std::make_shared<AVCodecInfo>(capability->capabilityData_);
     return codecInfo->IsFeatureSupported(static_cast<AVCapabilityFeature>(feature));
