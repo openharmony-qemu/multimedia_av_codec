@@ -103,12 +103,12 @@ public:
     int64_t syncOutputWaitTime = -1;
     bool queryOutputBufferEOS = false;
     bool queryInputBufferEOS = false;
-    // 解码内容校验开关，只在需要校验哈希的用例里置 true
+    // 解码哈希打印开关，只在需要核对哈希的用例里置 true；不匹配只打印、不判定失败
     bool needMdCompare = false;
     static constexpr int32_t HASH_BYTES = 64;
     // 解码哈希基线（SHA512，64 字节），按码流 + 像素格式各一份；全 0 表示尚未采集。
-    // 采集方式：打开 needMdCompare 跑一次，日志会打印 computed hash，
-    // 把 64 个字节按顺序填到对应数组里即可，无需改代码。
+    // 采集方式：打开 needMdCompare 跑一次，日志会打印 computed hash，把 64 个字节按顺序
+    // 填到对应数组里即可。基线跟设备和解码器版本绑定，所以只用于人工核对，不作为门禁。
     const uint8_t fileSourcesha256Nv12_720x480[HASH_BYTES] = {
         0x2b, 0xb8, 0x70, 0x6c, 0xaa, 0xe6, 0x0d, 0x7b,
         0x92, 0x7d, 0x6f, 0x51, 0xfc, 0xf4, 0x60, 0x79,
