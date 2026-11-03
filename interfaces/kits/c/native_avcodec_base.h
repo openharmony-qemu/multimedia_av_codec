@@ -1266,7 +1266,7 @@ extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_B_FRAME;
  * The value type is int32_t (0 or 1): 1 is enabled, 0 otherwise.
  *
  * @syscap SystemCapability.Multimedia.Media.CodecBase
- * @since <next>
+ * @since 26.1.0
  */
 extern const char *OH_MD_KEY_VIDEO_ENCODER_ENABLE_OPEN_GOP;
 
