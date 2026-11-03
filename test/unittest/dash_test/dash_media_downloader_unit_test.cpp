@@ -17,6 +17,7 @@
 #include <iostream>
 #include "dash_media_downloader.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 
 namespace OHOS {
 namespace Media {
@@ -24,11 +25,10 @@ namespace Plugins {
 namespace HttpPlugin {
 using namespace testing::ext;
 namespace {
-constexpr int32_t SERVERPORT = 47777;
-static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:47777/test_dash/segment_base/index.mpd";
-static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:47777/test_dash/segment_list/index.mpd";
-static const std::string MPD_SEGMENT_TEMPLATE = "http://127.0.0.1:47777/test_dash/segment_template/index.mpd";
-static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:47777/test_dash/segment_base/index_audio_subtitle.mpd";
+static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_base/index.mpd";
+static const std::string MPD_SEGMENT_LIST = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_list/index.mpd";
+static const std::string MPD_SEGMENT_TEMPLATE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_template/index.mpd";
+static const std::string MPD_MULTI_AUDIO_SUB = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_dash/segment_base/index_audio_subtitle.mpd";
 constexpr int32_t WAIT_FOR_SIDX_TIME = 100 * 1000; // wait sidx download and parse for 100ms
 constexpr uint32_t DEFAULT_WIDTH = 1280;
 constexpr uint32_t DEFAULT_HEIGHT = 720;
@@ -128,7 +128,7 @@ bool g_result = false;
 void DashMediaDownloaderUnitTest::SetUpTestCase(void)
 {
     g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-    g_server->StartServer(SERVERPORT);
+    g_server->StartServer();
     std::cout << "start" << std::endl;
 
     g_mediaDownloader = std::make_shared<DashMediaDownloader>(nullptr);
@@ -159,7 +159,7 @@ void DashMediaDownloaderUnitTest::SetUp(void)
 {
     if (g_server == nullptr) {
         g_server = std::make_unique<MediaAVCodec::HttpServerDemo>();
-        g_server->StartServer(SERVERPORT);
+        g_server->StartServer();
         std::cout << "start server" << std::endl;
     }
 }

@@ -16,6 +16,7 @@
 #include "http_source_plugin.h"
 #include "gtest/gtest.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "source_callback.h"
 #include "monitor/download_monitor.h"
 #include "http/http_media_downloader.h"
@@ -248,10 +249,10 @@ public:
 }
 
 const uint32_t TIME_WAIT = 500;
-const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
-static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:46666/segment_base/index.mpd";
-static const std::string M3U8_SEGMENT_BASE = "http://127.0.0.1:46666/test_hls/testHLSEncode.m3u8";
-const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/h264.flv";
+const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/dewu.mp4";
+static const std::string MPD_SEGMENT_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/segment_base/index.mpd";
+static const std::string M3U8_SEGMENT_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_hls/testHLSEncode.m3u8";
+const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/h264.flv";
 
 std::unique_ptr<MediaAVCodec::HttpServerDemo> g_server;
 class HttpSourcePluginUnitTest : public testing::Test {
@@ -1048,7 +1049,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SetSource_http_protocol_001, TestSize.Level1)
 
 HWTEST_F(HttpSourcePluginUnitTest, SetSource_http_protocol_002, TestSize.Level1)
 {
-    mediaSource = std::make_shared<MediaSource>("HTTP://127.0.0.1:46666/dewu.mp4");
+    mediaSource = std::make_shared<MediaSource>("HTTP://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/dewu.mp4");
     Status status = httpSourcePlugin->SetSource(mediaSource);
     EXPECT_NE(status, Status::ERROR_INVALID_OPERATION);
 }
@@ -1922,7 +1923,7 @@ HWTEST_F(HttpSourcePluginUnitTest, PROBE_THEN_OPEN_REDOWNLOADS_COMPLETE_BYTES, T
     response.content = std::string(bytes.size(), 'x');
     response.subsequentContent = bytes;
     MediaAVCodec::HttpServerDemo::RegisterResponse("/redownload.m3u8", response);
-    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:46666/redownload.m3u8");
+    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/redownload.m3u8");
     auto callback = std::make_shared<SourceCallback>();
     httpSourcePlugin->SetCallback(callback);
     httpSourcePlugin->SetSource(mediaSource);
@@ -1951,7 +1952,7 @@ HWTEST_F(HttpSourcePluginUnitTest, SmallHttpProbeAndFormalDownloadHaveSeparateRe
     auto callback = std::make_shared<SourceCallback>();
     ASSERT_EQ(httpSourcePlugin->SetCallback(callback), Status::OK);
     ASSERT_EQ(httpSourcePlugin->SetSource(std::make_shared<MediaSource>(
-        "http://127.0.0.1:46666/small-redownload")), Status::OK);
+        "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/small-redownload")), Status::OK);
     std::string collected;
     EXPECT_EQ(SnifferTest::ReadHttpToEos(httpSourcePlugin, collected), Status::END_OF_STREAM);
     EXPECT_EQ(collected, bytes);
@@ -1967,7 +1968,7 @@ HWTEST_F(HttpSourcePluginUnitTest, PROBE_SHORT_HLS_WITHOUT_SUFFIX, TestSize.Leve
     response.chunked = true;
     response.content = "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\nseg.ts\n#EXT-X-ENDLIST\n";
     MediaAVCodec::HttpServerDemo::RegisterResponse("/playlist", response);
-    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:46666/playlist");
+    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/playlist");
     httpSourcePlugin->SetSource(mediaSource);
     ASSERT_NE(httpSourcePlugin->GetDownloader(), nullptr);
     EXPECT_TRUE(httpSourcePlugin->IsHls());
@@ -1990,7 +1991,7 @@ HWTEST_F(HttpSourcePluginUnitTest, LOCAL_M3U8_USES_NATIVE_OPEN, TestSize.Level1)
     int fd = mkstemp(path);
     ASSERT_GE(fd, 0);
     const std::string playlist = "#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXTINF:6,\n"
-        "http://127.0.0.1:46666/local_seg.ts\n#EXT-X-ENDLIST\n";
+        "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/local_seg.ts\n#EXT-X-ENDLIST\n";
     std::string bytes = "prefix!" + playlist;
     EXPECT_EQ(write(fd, bytes.data(), bytes.size()), static_cast<ssize_t>(bytes.size()));
     // The manifest starts after the seven-byte "prefix!"; restrict the borrowed FD range to its bytes.
@@ -2024,7 +2025,7 @@ HWTEST_F(HttpSourcePluginUnitTest, FLV_CONTENT_WITHOUT_SUFFIX_SELECTS_RING_BUFFE
         std::string(512, 'y');
     response.chunked = true;
     MediaAVCodec::HttpServerDemo::RegisterResponse("/flv_stream", response);
-    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:46666/flv_stream");
+    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/flv_stream");
     httpSourcePlugin->SetSource(mediaSource);
     auto monitor = std::static_pointer_cast<DownloadMonitor>(httpSourcePlugin->GetDownloader());
     ASSERT_NE(monitor, nullptr);
@@ -2059,12 +2060,12 @@ HWTEST_F(HttpSourcePluginUnitTest, INITIAL_RESOLUTION_SELECTS_PROBED_RESOURCE_AN
     auto callback = std::make_shared<EventCallback>();
     // Compare 360p/720p at increasing bitrates; choose the exact 720p strategy match.
     auto low = std::make_shared<PlayMediaStream>();
-    low->url = "http://127.0.0.1:46666/low";
+    low->url = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/low";
     low->width = 640;
     low->height = 360;
     low->bitrate = 1000;
     auto high = std::make_shared<PlayMediaStream>();
-    high->url = "http://127.0.0.1:46666/high";
+    high->url = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/high";
     high->width = 1280;
     high->height = 720;
     high->bitrate = 2000;
@@ -2097,7 +2098,7 @@ HWTEST_F(HttpSourcePluginUnitTest, DASH_WITHOUT_XML_DECLARATION_REOPENS_COMPLETE
         "<Representation id=\"0\" bandwidth=\"1000\"><BaseURL>media.mp4</BaseURL>"
         "</Representation></AdaptationSet></Period></MPD>";
     MediaAVCodec::HttpServerDemo::RegisterContent("/manifest", mpd);
-    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:46666/manifest");
+    mediaSource = std::make_shared<MediaSource>("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/manifest");
     httpSourcePlugin->SetSource(mediaSource);
     EXPECT_FALSE(httpSourcePlugin->IsHls());
     EXPECT_TRUE(httpSourcePlugin->IsSeekToTimeSupported());

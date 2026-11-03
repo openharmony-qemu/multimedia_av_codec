@@ -16,12 +16,13 @@
 #include "http_server_demo.h"
 #include <chrono>
 #include <array>
+#include "test_http_port.h"
 #include "unittest_log.h"
 
 namespace OHOS {
 namespace MediaAVCodec {
 namespace {
-constexpr int32_t SERVERPORT = 46666;
+constexpr int32_t SERVERPORT = AVCODEC_TEST_HTTP_PORT;
 constexpr int32_t BUFFER_LNE = 4096;
 constexpr int32_t DEFAULT_LISTEN = 16;
 constexpr int32_t START_INDEX = 1;
@@ -94,13 +95,12 @@ void HttpServerDemo::StartServer(int32_t port)
     servaddr.sin_port = htons(port);
     int32_t reuseAddr = 1;
     setsockopt(listenFd_, SOL_SOCKET, SO_REUSEADDR, static_cast<void *>(&reuseAddr), sizeof(int32_t));
-    setsockopt(listenFd_, SOL_SOCKET, SO_REUSEPORT, static_cast<void *>(&reuseAddr), sizeof(int32_t));
     int32_t flags = fcntl(listenFd_, F_GETFL, 0);
     fcntl(listenFd_, F_SETFL, flags | O_NONBLOCK);
 
     int32_t ret = bind(listenFd_, reinterpret_cast<struct sockaddr *>(&servaddr), sizeof(servaddr));
     if (ret == -1) {
-        std::cout << "bind error" << std::endl;
+        std::cout << "bind error on port " << port << ", errno=" << errno << std::endl;
         return;
     }
     listen(listenFd_, DEFAULT_LISTEN);

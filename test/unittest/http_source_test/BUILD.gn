@@ -85,6 +85,7 @@ ohos_unittest("http_media_downloader_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   testonly = true
+  defines = [ "AVCODEC_TEST_HTTP_PORT=46670" ]
   configs = [
     ":hls_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
@@ -158,6 +159,7 @@ ohos_unittest("sniffer_coordinator_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   testonly = true
+  defines = [ "AVCODEC_TEST_HTTP_PORT=46667" ]
   configs = [
     ":hls_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
@@ -197,6 +199,7 @@ ohos_unittest("http_source_plugin_unit_test") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   testonly = true
+  defines = [ "AVCODEC_TEST_HTTP_PORT=48669" ]
   configs = [
     ":hls_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
@@ -234,6 +237,7 @@ ohos_unittest("http_source_plugin_unittest") {
   sanitize = av_codec_test_sanitize
   module_out_path = module_output_path
   testonly = true
+  defines = [ "AVCODEC_TEST_HTTP_PORT=48668" ]
   configs = [
     ":hls_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",

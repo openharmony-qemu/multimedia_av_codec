@@ -14,6 +14,7 @@
  */
 #include "hls_media_downloader_unit_test.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "source_callback.h"
 
 using namespace OHOS;
@@ -31,7 +32,7 @@ const std::map<std::string, std::string> httpHeader = {
     {"User-Agent", "ABC"},
     {"Referer", "DEF"},
 };
-const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
+const std::string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 const std::string M3U8_PATH_1 = "test_hls/testHLSEncode.m3u8";
 const std::string M3U8_PATH_2 = "test_hls/testHLSEncode_session_key.m3u8";
 const std::string M3U8_PATH_3 = "test_hls/testHLSEncode_session_key_01.m3u8";

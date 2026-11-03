@@ -66,6 +66,7 @@ config("dash_unittest_cfg") {
 ohos_unittest("dash_segment_downloader_unittest") {
   module_out_path = module_output_path
   testonly = true
+  defines = [ "AVCODEC_TEST_HTTP_PORT=46684" ]
   configs = [
     ":dash_unittest_cfg",
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",

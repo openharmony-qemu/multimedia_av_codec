@@ -23,6 +23,7 @@
 #include <chrono>
 #include "media_demuxer_unit_test.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "plugin/plugin_event.h"
 #include "demuxer/stream_demuxer.h"
 #include "interstitial_controller.h"
@@ -181,7 +182,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_001, TestSize.
 {
     string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     string srtPath = "H264_AAC_multi_track.mp4";
-    std::string uri = "http://127.0.0.1:46666/" + srtPath;
+    std::string uri = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/" + srtPath;
 
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
     auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
@@ -213,7 +214,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_002, TestSize.
 {
     string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     string srtPath = "H264_AAC_multi_track.mp4";
-    std::string uri = "http://127.0.0.1:46666/" + srtPath;
+    std::string uri = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/" + srtPath;
 
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
     auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
@@ -245,7 +246,7 @@ HWTEST_F(MediaDemuxerUnitTest, DemuxerPluginManager_SetDataSource_003, TestSize.
 {
     string pluginName = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
     string srtPath = "H264_AAC_multi_track.mp4";
-    std::string uri = "http://127.0.0.1:46666/" + srtPath;
+    std::string uri = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/" + srtPath;
     std::shared_ptr<DemuxerPluginManager> demuxerPluginManager = std::make_shared<DemuxerPluginManager>();
     auto cb = std::make_shared<SourceCallback>(demuxerPluginManager);
     std::shared_ptr<Source> source = std::make_shared<Source>();

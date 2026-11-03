@@ -15,6 +15,7 @@
 
 #include "http_media_downloader_unit_test.h"
 #include "http_server_demo.h"
+#include "test_http_port.h"
 #include "source_callback.h"
 
 #define LOCAL true
@@ -22,9 +23,9 @@ namespace OHOS::Media::Plugins::HttpPlugin {
 using namespace std;
 using namespace testing::ext;
 
-const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:46666/dewu.mp4";
-const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:46666/dewuNull.mp4";
-const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:46666/aigc_str.flv";
+const std::string MP4_SEGMENT_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/dewu.mp4";
+const std::string MP4_NULL_SEGMENT_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/dewuNull.mp4";
+const std::string FLV_SEGMENT_BASE = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/aigc_str.flv";
 namespace {
     constexpr uint64_t MAX_CACHE_BUFFER_SIZE = 4 * 1024 * 1024;
     constexpr uint64_t MAX_RING_BUFFER_SIZE = 4 * 1024 * 1024;
@@ -1705,11 +1706,11 @@ HWTEST_F(HttpMediaDownloaderUnitTest, FINITE_FLV_CONTENT_IS_NOT_LIVE, TestSize.L
     std::string bytes(reinterpret_cast<const char*>(header), sizeof(header));
     bytes.append(512, 'x'); // A small finite body that fits entirely in the 1 KiB read buffer below.
     MediaAVCodec::HttpServerDemo::RegisterContent("/finite_flv", bytes);
-    auto media = std::make_shared<HttpMediaDownloader>("http://127.0.0.1:46666/finite_flv", 1, nullptr, true);
+    auto media = std::make_shared<HttpMediaDownloader>("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/finite_flv", 1, nullptr, true);
     media->Init();
     media->SetStatusCallback([](DownloadStatus, std::shared_ptr<Downloader>&,
         std::shared_ptr<DownloadRequest>&) {});
-    ASSERT_TRUE(media->Open("http://127.0.0.1:46666/finite_flv", {}));
+    ASSERT_TRUE(media->Open("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/finite_flv", {}));
     uint8_t buffer[1024] {};
     ReadDataInfo info;
     info.wantReadLength_ = sizeof(buffer);
