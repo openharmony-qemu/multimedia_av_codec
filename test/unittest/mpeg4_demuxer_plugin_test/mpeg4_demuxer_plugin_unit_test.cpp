@@ -1132,6 +1132,58 @@ void WriteU16(std::vector<uint8_t>& data, size_t offset, uint16_t value)
     data[offset + 1] = static_cast<uint8_t>(value & 0xFF);
 }
 
+std::vector<uint8_t> BuildMinimalMp4WithZeroCountSttsAndUlaw()
+{
+    // NOTE: the fixture omits mvhd/tkhd/mdhd/hdlr/etc. The parser reaches the stsd codec check
+    // without requiring those atoms, so the -25 assertion below depends on that parse order;
+    // if earlier moov completeness checks are added, this fixture must be completed with them.
+    // stts with a single zero-count entry (FFmpeg tolerates it, strict mpeg4 must skip it).
+    std::vector<uint8_t> sttsPayload;
+    AppendU32(sttsPayload, 0); // version/flags
+    AppendU32(sttsPayload, 1); // entry count
+    AppendU32(sttsPayload, 0); // sampleCount == 0
+    AppendU32(sttsPayload, 1); // delta
+    auto stts = BuildAtomHeader(sttsPayload.size(), Plugins::MPEG4::FourccType("stts"), false);
+    stts.insert(stts.end(), sttsPayload.begin(), sttsPayload.end());
+    // stsd with a single 'ulaw' sample entry; ulaw is not in g_supportedAudioCodecsFourcc, so the
+    // codec check must fail with ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT after stts is skipped.
+    // The sample entry only carries the size+fourcc header (reserved/data_reference_index and
+    // audio fields are omitted on purpose): the parser fails the codec check right after reading
+    // that header, so the deeper fields are never accessed.
+    constexpr uint32_t sampleEntryHeaderSize = 8; // size(4) + fourcc(4)
+    std::vector<uint8_t> ulawEntry;
+    AppendU32(ulawEntry, sampleEntryHeaderSize);
+    AppendU32(ulawEntry, static_cast<uint32_t>(Plugins::MPEG4::FourccType("ulaw")));
+    std::vector<uint8_t> stsdPayload;
+    AppendU32(stsdPayload, 0); // version/flags
+    AppendU32(stsdPayload, 1); // entry count
+    stsdPayload.insert(stsdPayload.end(), ulawEntry.begin(), ulawEntry.end());
+    auto stsd = BuildAtomHeader(stsdPayload.size(), Plugins::MPEG4::FourccType("stsd"), false);
+    stsd.insert(stsd.end(), stsdPayload.begin(), stsdPayload.end());
+    std::vector<uint8_t> stblPayload;
+    stblPayload.insert(stblPayload.end(), stts.begin(), stts.end());
+    stblPayload.insert(stblPayload.end(), stsd.begin(), stsd.end());
+    auto stbl = BuildAtomHeader(stblPayload.size(), Plugins::MPEG4::FourccType("stbl"), false);
+    stbl.insert(stbl.end(), stblPayload.begin(), stblPayload.end());
+    auto minf = BuildAtomHeader(stbl.size(), Plugins::MPEG4::FourccType("minf"), false);
+    minf.insert(minf.end(), stbl.begin(), stbl.end());
+    auto mdia = BuildAtomHeader(minf.size(), Plugins::MPEG4::FourccType("mdia"), false);
+    mdia.insert(mdia.end(), minf.begin(), minf.end());
+    auto trak = BuildAtomHeader(mdia.size(), Plugins::MPEG4::FourccType("trak"), false);
+    trak.insert(trak.end(), mdia.begin(), mdia.end());
+    auto moov = BuildAtomHeader(trak.size(), Plugins::MPEG4::FourccType("moov"), false);
+    moov.insert(moov.end(), trak.begin(), trak.end());
+    std::vector<uint8_t> ftypPayload;
+    AppendU32(ftypPayload, 0x69736F6D); // "isom"
+    AppendU32(ftypPayload, 0); // minor version
+    auto ftyp = BuildAtomHeader(ftypPayload.size(), Plugins::MPEG4::FourccType("ftyp"), false);
+    ftyp.insert(ftyp.end(), ftypPayload.begin(), ftypPayload.end());
+    std::vector<uint8_t> file;
+    file.insert(file.end(), ftyp.begin(), ftyp.end());
+    file.insert(file.end(), moov.begin(), moov.end());
+    return file;
+}
+
 std::shared_ptr<DemuxerDataReader> CreateReaderForBytes(const std::vector<uint8_t>& data)
 {
     auto dataSource = std::make_shared<ShortReadDataSource>(data, std::max<size_t>(data.size(), 1));
@@ -5859,6 +5911,21 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetReadTimeoutForInit_Ti
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_SetDataSource_ZeroCountSttsUlawUnsupported_001
+ * @tc.desc: A moov whose stts carries sampleCount==0 must not fail at the stts table; parsing
+ *           continues to the sample entry where the unsupported 'ulaw' codec surfaces
+ *           ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT so the plugin manager falls back to ffmpeg.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetDataSource_ZeroCountSttsUlawUnsupported_001,
+    TestSize.Level1)
+{
+    auto dataSource = CreateDataSourceForBytes(BuildMinimalMp4WithZeroCountSttsAndUlaw());
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    EXPECT_EQ(plugin->SetDataSource(dataSource), Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_SetReadTimeoutForInit_TimeoutSuccess_001
  * @tc.desc: Verify MPEG4 demuxer init succeeds when read timeout is explicitly disabled
  * @tc.type: FUNC
@@ -9305,6 +9372,41 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TimeToSample_ClipNegativ
     ASSERT_EQ(helper.SetTimeToSampleParams(0, data.size()), Status::OK);
     EXPECT_EQ(helper.GetSttsEntryCount(), 3U);
     EXPECT_EQ(helper.GetSampleDeltaOfSttsEntry(1), 1U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TimeToSample_ZeroCountEntrySkipped_001
+ * @tc.desc: Aligned with FFmpeg mov_read_stts(): a zero-count stts entry contributes no samples
+ *           and is skipped instead of failing the whole moov parse.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TimeToSample_ZeroCountEntrySkipped_001, TestSize.Level1)
+{
+    auto data = BuildSttsData({{0U, 1U}});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    ASSERT_EQ(helper.SetTimeToSampleParams(0, data.size()), Status::OK);
+    EXPECT_EQ(helper.GetSttsEntryCount(), 0U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_TimeToSample_ZeroCountEntryThenValidEntry_001
+ * @tc.desc: A zero-count stts entry followed by a valid entry is skipped without shifting the
+ *           valid entry's delta mapping (FFmpeg-aligned re-indexing).
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TimeToSample_ZeroCountEntryThenValidEntry_001,
+    TestSize.Level1)
+{
+    auto data = BuildSttsData({{0U, 1U}, {3U, 2U}});
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+
+    ASSERT_EQ(helper.SetTimeToSampleParams(0, data.size()), Status::OK);
+    EXPECT_EQ(helper.GetSttsEntryCount(), 1U);
+    EXPECT_EQ(helper.GetSampleCountOfSttsEntry(0), 3U);
+    EXPECT_EQ(helper.GetSampleDeltaOfSttsEntry(0), 2U);
 }
 
 /**

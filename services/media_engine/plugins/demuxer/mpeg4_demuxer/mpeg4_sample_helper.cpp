@@ -712,9 +712,7 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
     uint8_t version = header[0];
     uint32_t flags = GetU32Value(header, sizeof(header)) & 0x00FFFFFF;
-    if ((version != 0 && version != 1) || flags != 0) {
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_NOLOG((version == 0 || version == 1) && flags == 0, Status::ERROR_INVALID_DATA);
 
     uint32_t numSttsEntries = GetU32Value(&header[4]);
     FALSE_RETURN_V_MSG_E(numSttsEntries <= MAX_TIMING_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
@@ -738,7 +736,13 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     int64_t correctedDts = 0;
     for (uint32_t i = 0; i < numSttsEntries; ++i) {
         uint32_t sampleCount = GetU32Value(data.get() + i * sizeof(SttsEntry));
-        FALSE_RETURN_V_MSG_E(sampleCount > 0, Status::ERROR_INVALID_DATA, "Invalid stts sample count");
+        if (sampleCount == 0) {
+            // Aligned with FFmpeg mov_read_stts(): a zero-count entry contributes no samples and
+            // is skipped instead of failing, so the track keeps parsing until the codec/sample
+            // entry check (e.g. ulaw audio unsupported by the mpeg4 demuxer) can decide.
+            MEDIA_LOG_D("Ignore zero-count stts entry " PUBLIC_LOG_U32, i);
+            continue;
+        }
         sttsEntry_.emplace_back(SttsEntry{
             .count = sampleCount,
             .delta = GetU32Value(data.get() + 4 + i * sizeof(SttsEntry))
@@ -793,9 +797,7 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
     uint8_t version = header[0];
     uint32_t flags = GetU32Value(header, sizeof(header)) & 0x00FFFFFF;
-    if ((version != 0 && version != 1) || flags != 0) {
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_NOLOG((version == 0 || version == 1) && flags == 0, Status::ERROR_INVALID_DATA);
 
     uint32_t numCttsEntries = GetU32Value(&header[4]);
     FALSE_RETURN_V_MSG_E(numCttsEntries <= MAX_TIMING_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
