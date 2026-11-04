@@ -782,7 +782,7 @@ void HlsSegmentManager::HandleSpliceEnd(unsigned char* buff, ReadDataInfo& readD
     }
     if (readOffset_ < tsEndOffset) {
         return;
-    }    
+    }
     MEDIA_LOG_I("HLS read reach splice end, current: %{public}u, type: %{public}d, readTsIndex_: %{public}u",
         readDataInfo.streamId_, type_, curTsIndex);
     isTsEnd_.store(true);
