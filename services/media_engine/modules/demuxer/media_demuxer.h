@@ -60,7 +60,7 @@ class InterstitialScheduler;
 using MediaSource = OHOS::Media::Plugins::MediaSource;
 using MediaSyncManager = OHOS::Media::Pipeline::MediaSyncManager;
 using FileType = OHOS::Media::Plugins::FileType;
-using funcPreReadSample = std::function<int64_t(int32_t trackId)>;
+using FuncPreReadSample = std::function<int64_t(int32_t trackId)>;
 using CachePressureCallback = std::function<void(uint32_t trackId, uint32_t cachedBytes)>;
 
 extern std::unordered_set<FileType> ptsManagedFileTypes;
@@ -283,6 +283,8 @@ public:
     Status SetPlayStrategy(const std::shared_ptr<PlayStrategy> playStrategy);
     bool IsCloudFd();
     void SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList> &codecList);
+    using CodecListCreator = std::function<std::shared_ptr<MediaAVCodec::AVCodecList>()>;
+    void SetCodecListCreator(CodecListCreator creator);
     void OnNewTrackRender(uint64_t renderSeqNum);
     bool IsNeedSelectTrack(int32_t trackId);
     int32_t GetBuiltInSubtitleNum();
@@ -623,7 +625,7 @@ private:
     std::unordered_map<uint32_t, uint32_t> trackMemoryUsages_; // Event parameter
     std::mutex memoryReportLimitMutex_ {};
     std::unordered_map<int32_t, uint32_t> memoryReportLimitCount_;
-    std::unordered_map<uint32_t, funcPreReadSample> funcBeforeReadSampleMap_;
+    std::unordered_map<uint32_t, FuncPreReadSample> funcBeforeReadSampleMap_;
 
     std::map<int32_t, std::shared_ptr<SampleQueue>> sampleQueueMap_;
     std::map<int32_t, bool> hlsSegmentEosMap_;
@@ -786,6 +788,7 @@ private:
     int64_t lastCheckAutoSelectTimeMs_ {0};
     uint32_t lastAutoSelectBitRate_ {0};
     std::shared_ptr<MediaAVCodec::AVCodecList> codecList_ {nullptr};
+    CodecListCreator codecListCreator_ {nullptr};
     std::unique_ptr<FilteredStreamMap> filteredStreamMap_;
     int64_t videoAudioBasePtsDiff = -1;
 

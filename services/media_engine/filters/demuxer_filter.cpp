@@ -178,8 +178,9 @@ void DemuxerFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     if (interruptMonitor_) {
         interruptMonitor_->RegisterListener(demuxer_);
     }
-    std::shared_ptr<MediaAVCodec::AVCodecList> codecList = MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
-    demuxer_->SetCodecList(codecList);
+    demuxer_->SetCodecListCreator([]() {
+        return MediaAVCodec::AVCodecListFactory::CreateAVCodecList();
+    });
 }
 
 Status DemuxerFilter::SetTranscoderMode()

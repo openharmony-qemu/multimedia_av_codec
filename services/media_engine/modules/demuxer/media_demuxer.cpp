@@ -3495,6 +3495,11 @@ void MediaDemuxer::SetCodecList(const std::shared_ptr<MediaAVCodec::AVCodecList>
     codecList_ = codecList;
 }
 
+void MediaDemuxer::SetCodecListCreator(CodecListCreator creator)
+{
+    codecListCreator_ = creator;
+}
+
 bool CheckStreamCodec(const std::string &codecs, StreamType type, std::shared_ptr<MediaAVCodec::AVCodecList> codecList)
 {
     bool isSupported = true;
@@ -6423,6 +6428,9 @@ void MediaDemuxer::ChooseDefaultStreams()
 
     std::vector<StreamInfo> streams;
     source_->GetStreamInfo(streams, true);
+    if (codecList_ == nullptr && codecListCreator_) {
+        codecList_ = codecListCreator_();
+    }
     streams = CollectValidStreams(streams, currentPlayType_, trackSelectionFilter_, codecList_);
 
     std::map<StreamType, std::vector<StreamInfo>> filteredStreamMap;
