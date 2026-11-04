@@ -31,53 +31,10 @@ media_test_sources += http_source_ut_media_sources
 media_test_sources +=
     [ "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp" ]
 config("hls_unittest_cfg") {
-  defines = [
-    "HST_ANY_WITH_NO_RTTI",
-    "MEDIA_OHOS",
-    "TESTING",
-  ]
-
-  cflags = [
-    "-Wno-sign-compare",
-    "-fno-exceptions",
-    "-fno-common",
-    "-fstack-protector-all",
-    "-Wshadow",
-    "-FPIC",
-    "-FS",
-    "-O2",
-    "-D_FORTIFY_SOURCE=2",
-    "-Wformat=2",
-    "-Wdate-time",
-    "-Dprivate=public",
-    "-Dprotected=public",
-  ]
-
-  cflags_cc = [
-    "-std=c++17",
-    "-fno-rtti",
-    "-Dprivate=public",
-    "-Dprotected=public",
-  ]
-
-  include_dirs = [
-    "$av_codec_root_dir/interfaces",
-    "$av_codec_root_dir/interfaces/inner_api/native",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/base64",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/xml",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/dash/include/mpd_parser",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/download/network_client",
-    "$av_codec_root_dir/test/unittest/common",
-    "$av_codec_root_dir/services/drm_decryptor",
-    "$av_codec_root_dir/services/media_engine/modules",
-    "$av_codec_root_dir/services/media_engine/plugins/source/http_source/utils",
-    "$av_codec_root_dir/services/media_engine/common",
-    "$av_codec_root_dir/services/media_engine/utils",
-  ]
+  defines = http_source_ut_hls_defines
+  cflags = http_source_ut_hls_cflags
+  cflags_cc = http_source_ut_hls_cflags_cc
+  include_dirs = http_source_ut_plugin_include_dirs
 }
 
 #################################################################################################################
@@ -94,27 +51,9 @@ ohos_unittest("http_media_downloader_unit_test") {
     "http_media_downloader_unit_test.cpp",
     "initial_stream_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = http_source_ut_deps
 
-  external_deps = [
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-    "c_utils:utils",
-    "certificate_manager:cert_manager_sdk",
-    "curl:curl_shared",
-    "googletest:gmock",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-  ]
+  external_deps = http_source_ut_plugin_external_deps + [ "googletest:gmock" ]
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -131,26 +70,9 @@ ohos_unittest("downloader_unit_test") {
     "downloader_lifecycle_unit_test.cpp",
     "downloader_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = http_source_ut_deps
 
-  external_deps = [
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-    "c_utils:utils",
-    "certificate_manager:cert_manager_sdk",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-  ]
+  external_deps = http_source_ut_plugin_external_deps
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -171,26 +93,9 @@ ohos_unittest("sniffer_coordinator_unit_test") {
     "sniffer_redirect_unit_test.cpp",
     "sniffer_retry_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = http_source_ut_deps
 
-  external_deps = [
-    "c_utils:utils",
-    "certificate_manager:cert_manager_sdk",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-  ]
+  external_deps = http_source_ut_plugin_external_deps
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -209,26 +114,9 @@ ohos_unittest("http_source_plugin_unit_test") {
     "http_source_probe_unit_test.cpp",
     "http_source_failure_unit_test.cpp",
   ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = http_source_ut_deps
 
-  external_deps = [
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-    "c_utils:utils",
-    "certificate_manager:cert_manager_sdk",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-  ]
+  external_deps = http_source_ut_plugin_external_deps
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -243,26 +131,9 @@ ohos_unittest("http_source_plugin_unittest") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "http_source_plugin_unittest.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = http_source_ut_deps
 
-  external_deps = [
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-    "c_utils:utils",
-    "certificate_manager:cert_manager_sdk",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-  ]
+  external_deps = http_source_ut_plugin_external_deps
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -276,26 +147,9 @@ ohos_unittest("app_client_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "app_client_unit_test.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = http_source_ut_deps
 
-  external_deps = [
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-    "c_utils:utils",
-    "certificate_manager:cert_manager_sdk",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-  ]
+  external_deps = http_source_ut_plugin_external_deps
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
@@ -309,7 +163,7 @@ ohos_unittest("media_cached_buffer_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = media_test_sources + [ "media_cached_buffer_unit_test.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = http_source_ut_deps
 
   external_deps = [
     "bundle_framework:appexecfwk_base",
@@ -341,7 +195,7 @@ ohos_unittest("thread_safe_container_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = [ "thread_safe_container_unit_test.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = http_source_ut_deps
 
   external_deps = [
     "c_utils:utils",
@@ -364,13 +218,7 @@ ohos_unittest("aes_decryptor_unit_test") {
   # NOSORT
   sources += [ "aes_decryptor_unit_test.cpp" ]
 
-  external_deps = [
-    "c_utils:utils",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "media_foundation:media_foundation",
-    "openssl:libcrypto_shared",
-  ]
+  external_deps = http_source_ut_aes_external_deps
 }
 
 ohos_unittest("stream_resource_parser_filter_unit_test") {
@@ -382,26 +230,9 @@ ohos_unittest("stream_resource_parser_filter_unit_test") {
     "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
   ]
   sources = hls_test_sources + [ "stream_resource_parser_filter_unit_test.cpp" ]
-  deps = [ "$av_codec_root_dir/services/dfx:av_codec_service_dfx" ]
+  deps = http_source_ut_deps
 
-  external_deps = [
-    "bundle_framework:appexecfwk_base",
-    "bundle_framework:appexecfwk_core",
-    "c_utils:utils",
-    "certificate_manager:cert_manager_sdk",
-    "curl:curl_shared",
-    "graphic_surface:surface",
-    "hilog:libhilog",
-    "hitrace:hitrace_meter",
-    "init:libbegetutil",
-    "ipc:ipc_single",
-    "libxml2:libxml2",
-    "media_foundation:media_foundation",
-    "netmanager_base:net_conn_manager_if",
-    "openssl:libcrypto_shared",
-    "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
-  ]
+  external_deps = http_source_ut_plugin_external_deps
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
