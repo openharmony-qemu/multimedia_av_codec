@@ -789,7 +789,6 @@ void HlsSegmentManager::HandleSpliceEnd(unsigned char* buff, ReadDataInfo& readD
     if (!nextRegistered) {
         MEDIA_LOG_I("HLS read reach splice end but next segment %{public}u not registered yet,"
             " wait for writer, type: %{public}d", nextTsIndex, type_);
-        canWrite_ = true;
         return;
     }
 
