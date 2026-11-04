@@ -290,10 +290,10 @@ void AudioCodecWorker::ProduceInputBuffer()
         }
     }
     inputCondition_.wait_for(lock, std::chrono::milliseconds(TIMEOUT_MS),
-                             [this] {
+                            [this] {
                                 std::lock_guard<std::mutex> avaLock(inAvaMutex_);
                                 return (!inBufAvaIndexQue_.empty() || !isRunning);
-                             });
+                            });
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "Worker produceInputBuffer exit");
 }
 
