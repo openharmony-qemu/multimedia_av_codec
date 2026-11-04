@@ -736,20 +736,20 @@ void AudioEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &outpu
 
         if (needChannelConvert_.load() && shouldJudgeChange.load()) {
             // 初始化转换器输入格式（使用 AudioStandard 命名空间的类型）
-            converterInputFormat_.rate = static_cast<AudioStandard::AudioSamplingRate>(inputAudio->sampleRate);
-            converterInputFormat_.audioChannelInfo.channelLayout =
+            converterInputFormat_.sampleRate = static_cast<int32_t>(inputAudio->sampleRate);
+            converterInputFormat_.channelLayout =
                 static_cast<AudioStandard::AudioChannelLayout>(inputAudio->channelLayout);
-            converterInputFormat_.format =
+            converterInputFormat_.sampleFormat =
                 static_cast<AudioStandard::AudioSampleFormat>(inputAudio->sampleFormat);
-            converterInputFormat_.audioChannelInfo.numChannels = static_cast<uint32_t>(inputAudio->channelCount);
+            converterInputFormat_.channelCount = static_cast<uint32_t>(inputAudio->channelCount);
 
             // 初始化转换器输出格式（单声道）
-            converterOutputFormat_.rate = static_cast<AudioStandard::AudioSamplingRate>(outputAudio->sampleRate);
-            converterOutputFormat_.audioChannelInfo.channelLayout =
+            converterOutputFormat_.sampleRate = static_cast<int32_t>(outputAudio->sampleRate);
+            converterOutputFormat_.channelLayout =
                 static_cast<AudioStandard::AudioChannelLayout>(outputAudio->channelLayout);
-            converterOutputFormat_.format =
+            converterOutputFormat_.sampleFormat =
                 static_cast<AudioStandard::AudioSampleFormat>(outputAudio->sampleFormat);
-            converterOutputFormat_.audioChannelInfo.numChannels = static_cast<uint32_t>(outputAudio->channelCount);
+            converterOutputFormat_.channelCount = static_cast<uint32_t>(outputAudio->channelCount);
 
             // 创建转换器
             channelConverter_ = AudioFormatConverter::Create(
