@@ -782,16 +782,17 @@ void HlsSegmentManager::HandleSpliceEnd(unsigned char* buff, ReadDataInfo& readD
     }
     if (readOffset_ < tsEndOffset) {
         return;
-    }
-    if (!nextRegistered) {
-        MEDIA_LOGI_LIMIT(SAVE_DATA_LOG_FREQUENCY, "HLS read reach splice end but next segment "
-            "%{public}u not registered yet, wait for writer, type: %{public}d", nextTsIndex, type_);
-        canWrite_ = true;
-        return;
-    }
+    }    
     MEDIA_LOG_I("HLS read reach splice end, current: %{public}u, type: %{public}d, readTsIndex_: %{public}u",
         readDataInfo.streamId_, type_, curTsIndex);
     isTsEnd_.store(true);
+    if (!nextRegistered) {
+        MEDIA_LOG_I("HLS read reach splice end but next segment %{public}u not registered yet,"
+            " wait for writer, type: %{public}d", nextTsIndex, type_);
+        canWrite_ = true;
+        return;
+    }
+
     notNeedReadBack_.store(true);
     if (playlistDownloader_->IsHlsFmp4()) {
         isNeedReadHeader_.store(true);
