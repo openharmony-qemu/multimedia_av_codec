@@ -79,6 +79,8 @@ private:
     std::mutex inAvaMutex_;
     std::mutex inputMutex_;
     std::mutex outputMutex_;
+    std::mutex cbMutex_;
+    std::mutex codecMutex_;
     std::condition_variable inputCondition_;
     std::condition_variable outputCondition_;
 

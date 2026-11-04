@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <memory>
+#include <mutex>
 #include <vector>
 
 #include "audio_common_info.h"
@@ -78,6 +79,7 @@ private:
     std::string_view name_;
     std::shared_ptr<Media::AVSharedMemoryBase> buffer_;
     std::shared_ptr<Media::AVSharedMemoryBase> metadata_;
+    mutable std::mutex bufferAttrMutex_;
     AVCodecBufferInfo info_;
     std::atomic<AVCodecBufferFlag> flag_;
 };

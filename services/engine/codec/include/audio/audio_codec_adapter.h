@@ -22,6 +22,8 @@
 #include "codecbase.h"
 #include "nocopyable.h"
 
+#include <mutex>
+
 namespace OHOS {
 namespace MediaAVCodec {
 class AudioCodecAdapter : public CodecBase, public NoCopyable {
@@ -62,6 +64,7 @@ private:
     std::shared_ptr<AVCodecCallback> callback_;
     std::shared_ptr<AudioBaseCodec> audioCodec;
     std::shared_ptr<AudioCodecWorker> worker_;
+    mutable std::mutex mtx_;
 
 private:
     int32_t doFlush();

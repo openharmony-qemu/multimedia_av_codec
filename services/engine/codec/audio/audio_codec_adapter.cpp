@@ -31,6 +31,7 @@ AudioCodecAdapter::AudioCodecAdapter(const std::string &name) : state_(CodecStat
 
 AudioCodecAdapter::~AudioCodecAdapter()
 {
+    std::lock_guard<std::mutex> lock(mtx_);
     if (worker_) {
         worker_->Release();
         worker_.reset();
@@ -49,6 +50,7 @@ AudioCodecAdapter::~AudioCodecAdapter()
 int32_t AudioCodecAdapter::SetCallback(const std::shared_ptr<AVCodecCallback> &callback)
 {
     AVCODEC_SYNC_TRACE;
+    std::lock_guard<std::mutex> lock(mtx_);
     if (state_ != CodecState::RELEASED && state_ != CodecState::INITIALIZED && state_ != CodecState::INITIALIZING) {
         AVCODEC_LOGE("SetCallback failed, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
@@ -63,6 +65,7 @@ int32_t AudioCodecAdapter::SetCallback(const std::shared_ptr<AVCodecCallback> &c
 
 int32_t AudioCodecAdapter::Init(Media::Meta &callerInfo)
 {
+    std::lock_guard<std::mutex> lock(mtx_);
     if (state_ != CodecState::RELEASED) {
         AVCODEC_LOGE("Init failed, state = %{public}s .", stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
@@ -82,6 +85,7 @@ int32_t AudioCodecAdapter::Init(Media::Meta &callerInfo)
 int32_t AudioCodecAdapter::Configure(const Format &format)
 {
     AVCODEC_SYNC_TRACE;
+    std::lock_guard<std::mutex> lock(mtx_);
     if (!format.ContainKey(MediaDescriptionKey::MD_KEY_CHANNEL_COUNT)) {
         AVCODEC_LOGE("Configure failed, missing channel count key in format.");
         return AVCodecServiceErrCode::AVCS_ERR_CONFIGURE_MISMATCH_CHANNEL_COUNT;
@@ -100,6 +104,7 @@ int32_t AudioCodecAdapter::Configure(const Format &format)
 int32_t AudioCodecAdapter::Start()
 {
     AVCODEC_LOGD("in");
+    std::lock_guard<std::mutex> lock(mtx_);
     CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
         "adapter start error, callback not initialized .");
 
@@ -127,6 +132,7 @@ int32_t AudioCodecAdapter::Stop()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("stop enter");
+    std::lock_guard<std::mutex> lock(mtx_);
     CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
         "Stop failed, call back not initialized.");
 
@@ -146,28 +152,37 @@ int32_t AudioCodecAdapter::Flush()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("adapter Flush enter");
-    CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
-        "adapter flush error, call back not initialized .");
+    std::shared_ptr<AVCodecCallback> cb;
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
+            "adapter flush error, call back not initialized .");
 
-    if (state_ == CodecState::FLUSHED) {
-        AVCODEC_LOGW("Flush, state is already flushed, state_=%{public}s .", stateToString(state_).data());
-        return AVCodecServiceErrCode::AVCS_ERR_OK;
+        if (state_ == CodecState::FLUSHED) {
+            AVCODEC_LOGW("Flush, state is already flushed, state_=%{public}s .", stateToString(state_).data());
+            return AVCodecServiceErrCode::AVCS_ERR_OK;
+        }
+        if (state_ != CodecState::RUNNING) {
+            AVCODEC_LOGE("Flush failed, state =%{public}s", stateToString(state_).data());
+            cb = callback_;
+        } else {
+            AVCODEC_LOGI("%{public}s to FLUSHING then FLUSHED", stateToString(state_).data());
+            state_ = CodecState::FLUSHING;
+            auto ret = doFlush();
+            return ret;
+        }
     }
-    if (state_ != CodecState::RUNNING) {
-        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE);
-        AVCODEC_LOGE("Flush failed, state =%{public}s", stateToString(state_).data());
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
+    if (cb != nullptr) {
+        cb->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE);
     }
-    AVCODEC_LOGI("%{public}s to FLUSHING then FLUSHED", stateToString(state_).data());
-    state_ = CodecState::FLUSHING;
-    auto ret = doFlush();
-    return ret;
+    return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
 }
 
 int32_t AudioCodecAdapter::Reset()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("adapter Reset enter");
+    std::lock_guard<std::mutex> lock(mtx_);
     int32_t status = AVCodecServiceErrCode::AVCS_ERR_OK;
     if (worker_) {
         worker_->Release();
@@ -189,6 +204,7 @@ int32_t AudioCodecAdapter::Release()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("adapter Release enter");
+    std::lock_guard<std::mutex> lock(mtx_);
     if (state_ == CodecState::RELEASED || state_ == CodecState::RELEASING) {
         AVCODEC_LOGW("adapter Release, state isnot completely correct, state =%{public}s .",
                      stateToString(state_).data());
@@ -228,6 +244,7 @@ int32_t AudioCodecAdapter::SetParameter(const Format &format)
 int32_t AudioCodecAdapter::GetOutputFormat(Format &format)
 {
     AVCODEC_SYNC_TRACE;
+    std::lock_guard<std::mutex> lock(mtx_);
     CHECK_AND_RETURN_RET_LOG(audioCodec != nullptr, AVCodecServiceErrCode::AVCS_ERR_NO_MEMORY,
         "Codec not init or nullptr");
 
@@ -243,6 +260,7 @@ int32_t AudioCodecAdapter::QueueInputBuffer(uint32_t index, const AVCodecBufferI
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter %{public}s queue buffer enter,index:%{public}u",
         name_.data(), index);
+    std::lock_guard<std::mutex> lock(mtx_);
     if (!audioCodec) {
         AVCODEC_LOGE("adapter QueueInputBuffer error, audio codec not initialized .");
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
@@ -294,6 +312,7 @@ int32_t AudioCodecAdapter::ReleaseOutputBuffer(uint32_t index)
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD_LIMIT(LOGD_FREQUENCY, "adapter %{public}s release buffer,index:%{public}u", name_.data(), index);
+    std::lock_guard<std::mutex> lock(mtx_);
     if (!callback_) {
         AVCODEC_LOGE("adapter release buffer error,index:%{public}u, call back not initialized .", index);
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
