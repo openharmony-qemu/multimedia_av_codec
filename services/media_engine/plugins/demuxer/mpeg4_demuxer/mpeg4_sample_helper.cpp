@@ -712,9 +712,7 @@ Status MPEG4SampleHelper::SetTimeToSampleParams(int64_t dataOffset, size_t dataS
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
     uint8_t version = header[0];
     uint32_t flags = GetU32Value(header, sizeof(header)) & 0x00FFFFFF;
-    if ((version != 0 && version != 1) || flags != 0) {
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_NOLOG((version == 0 || version == 1) && flags == 0, Status::ERROR_INVALID_DATA);
 
     uint32_t numSttsEntries = GetU32Value(&header[4]);
     FALSE_RETURN_V_MSG_E(numSttsEntries <= MAX_TIMING_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
@@ -799,9 +797,7 @@ Status MPEG4SampleHelper::SetCompositionTimeToSampleParams(int64_t dataOffset, s
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
     uint8_t version = header[0];
     uint32_t flags = GetU32Value(header, sizeof(header)) & 0x00FFFFFF;
-    if ((version != 0 && version != 1) || flags != 0) {
-        return Status::ERROR_INVALID_DATA;
-    }
+    FALSE_RETURN_V_NOLOG((version == 0 || version == 1) && flags == 0, Status::ERROR_INVALID_DATA);
 
     uint32_t numCttsEntries = GetU32Value(&header[4]);
     FALSE_RETURN_V_MSG_E(numCttsEntries <= MAX_TIMING_TABLE_ENTRY_COUNT, Status::ERROR_INVALID_DATA,
