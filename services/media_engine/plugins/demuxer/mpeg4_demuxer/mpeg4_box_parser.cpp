@@ -6290,7 +6290,13 @@ bool IsAacProbeStreamBetter(const AacProbeStream& stream, const AacProbeStream& 
     if (orderByPosOnly) {
         return stream.view.pos < best.view.pos;
     }
-    const int64_t dtsDiff = stream.dtsUs > best.dtsUs ? stream.dtsUs - best.dtsUs : best.dtsUs - stream.dtsUs;
+    // |dtsUs - best.dtsUs| can exceed INT64_MAX, so subtract larger from smaller and saturate.
+    const int64_t laterDts = stream.dtsUs > best.dtsUs ? stream.dtsUs : best.dtsUs;
+    const int64_t earlierDts = stream.dtsUs > best.dtsUs ? best.dtsUs : stream.dtsUs;
+    int64_t dtsDiff = 0;
+    if (__builtin_sub_overflow(laterDts, earlierDts, &dtsDiff)) {
+        dtsDiff = std::numeric_limits<int64_t>::max();
+    }
     if (dtsDiff <= FFMPEG_MOV_TIEBREAK_DIFF_US) {
         return stream.view.pos < best.view.pos;
     }
@@ -6535,7 +6541,9 @@ bool IsProbeDurationExhausted(const AacProbeStream& stream)
     }
     if (t == 0 && stream.nbFrames > FFMPEG_FPS_DTS_FALLBACK_FRAMES && stream.hasDts &&
         stream.lastDtsUs > stream.firstDtsUs) {
-        t = stream.lastDtsUs - stream.firstDtsUs;
+        if (__builtin_sub_overflow(stream.lastDtsUs, stream.firstDtsUs, &t) || t < 0) {
+            t = std::numeric_limits<int64_t>::max();
+        }
     }
     return t >= FFMPEG_MAX_STREAM_ANALYZE_DURATION_US;
 }
