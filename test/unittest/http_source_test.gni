@@ -14,191 +14,191 @@
 # Ordered implementation groups; leading underscores keep them private to this file.
 # Keep target-specific tests, mocks, server helpers and build settings in BUILD.gn.
 # These profiles intentionally preserve existing omissions and source order.
-_http_source_ut_root =
-    get_path_info("../../services/media_engine/plugins/source/http_source",
-                  "abspath")
+_http_source_ut_av_codec_root = "//foundation/multimedia/av_codec"
+_http_source_ut_http_source_root =
+    "//foundation/multimedia/av_codec/services/media_engine/plugins/source/http_source"
 
 # NOSORT
 _http_source_ut_http_media_utils_sources =
-    [ "$_http_source_ut_root/utils/http_media_utils.cpp" ]
+    [ "$_http_source_ut_http_source_root/utils/http_media_utils.cpp" ]
 
 # NOSORT
 _http_source_ut_base64_sources =
-    [ "$_http_source_ut_root/base64/base64_utils.cpp" ]
+    [ "$_http_source_ut_http_source_root/base64/base64_utils.cpp" ]
 
 # NOSORT
 _http_source_ut_mpd_downloader_sources =
-    [ "$_http_source_ut_root/dash/dash_mpd_downloader.cpp" ]
+    [ "$_http_source_ut_http_source_root/dash/dash_mpd_downloader.cpp" ]
 
 # NOSORT
 _http_source_ut_mpd_parser_without_generic_nodes_sources = [
-  "$_http_source_ut_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_manager_util.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_parser.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_util.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_period_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_representation_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/sidx_box_parser.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_manager_util.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_util.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_period_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_representation_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/sidx_box_parser.cpp",
 ]
 
 # NOSORT
 _http_source_ut_download_without_loading_request_sources = [
-  "$_http_source_ut_root/download/app_client.cpp",
-  "$_http_source_ut_root/download/downloader.cpp",
-  "$_http_source_ut_root/download/network_client/http_curl_client.cpp",
+  "$_http_source_ut_http_source_root/download/app_client.cpp",
+  "$_http_source_ut_http_source_root/download/downloader.cpp",
+  "$_http_source_ut_http_source_root/download/network_client/http_curl_client.cpp",
 ]
 
 # NOSORT
 _http_source_ut_xml_sources = [
-  "$_http_source_ut_root/xml/xml_element.cpp",
-  "$_http_source_ut_root/xml/xml_parser.cpp",
+  "$_http_source_ut_http_source_root/xml/xml_element.cpp",
+  "$_http_source_ut_http_source_root/xml/xml_parser.cpp",
 ]
 
 # NOSORT
 _http_source_ut_string_utils_sources =
-    [ "$_http_source_ut_root/utils/string_utils.cpp" ]
+    [ "$_http_source_ut_http_source_root/utils/string_utils.cpp" ]
 
 # NOSORT
 _http_source_ut_dash_downloaders_sources = [
-  "$_http_source_ut_root/dash/dash_media_downloader.cpp",
-  "$_http_source_ut_root/dash/dash_mpd_downloader.cpp",
-  "$_http_source_ut_root/dash/dash_segment_downloader.cpp",
+  "$_http_source_ut_http_source_root/dash/dash_media_downloader.cpp",
+  "$_http_source_ut_http_source_root/dash/dash_mpd_downloader.cpp",
+  "$_http_source_ut_http_source_root/dash/dash_segment_downloader.cpp",
 ]
 
 # NOSORT
 _http_source_ut_mpd_parser_sources = [
-  "$_http_source_ut_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_generic_node.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/i_dash_mpd_node.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_manager_util.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_parser.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_util.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_period_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_representation_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/sidx_box_parser.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_generic_node.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/i_dash_mpd_node.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_manager_util.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_util.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_period_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_representation_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/sidx_box_parser.cpp",
 ]
 
 # NOSORT
 _http_source_ut_download_callbacks_sources = [
-  "$_http_source_ut_root/download/app_client.cpp",
-  "$_http_source_ut_root/download/downloader.cpp",
+  "$_http_source_ut_http_source_root/download/app_client.cpp",
+  "$_http_source_ut_http_source_root/download/downloader.cpp",
 ]
 
 # NOSORT
 _http_source_ut_curl_sources =
-    [ "$_http_source_ut_root/download/network_client/http_curl_client.cpp" ]
+    [ "$_http_source_ut_http_source_root/download/network_client/http_curl_client.cpp" ]
 
 # NOSORT
 _http_source_ut_download_sources = [
-  "$_http_source_ut_root/download/app_client.cpp",
-  "$_http_source_ut_root/download/downloader.cpp",
-  "$_http_source_ut_root/download/media_source_loading_request.cpp",
-  "$_http_source_ut_root/download/network_client/http_curl_client.cpp",
+  "$_http_source_ut_http_source_root/download/app_client.cpp",
+  "$_http_source_ut_http_source_root/download/downloader.cpp",
+  "$_http_source_ut_http_source_root/download/media_source_loading_request.cpp",
+  "$_http_source_ut_http_source_root/download/network_client/http_curl_client.cpp",
 ]
 
 # NOSORT
 _http_source_ut_mpd_parser_mock_sources = [
-  "$_http_source_ut_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_manager_util.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_parser.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_util.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_period_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_representation_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/sidx_box_parser.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_generic_node.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_manager_util.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_util.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_period_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_representation_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/sidx_box_parser.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_generic_node.cpp",
 ]
 
 # NOSORT
 _http_source_ut_xml_parser_sources =
-    [ "$_http_source_ut_root/xml/xml_parser.cpp" ]
+    [ "$_http_source_ut_http_source_root/xml/xml_parser.cpp" ]
 
 # NOSORT
 _http_source_ut_hls_sources = [
-  "$_http_source_ut_root/hls/hls_media_downloader.cpp",
-  "$_http_source_ut_root/hls/hls_segment_manager.cpp",
-  "$_http_source_ut_root/hls/hls_playlist_downloader.cpp",
-  "$_http_source_ut_root/hls/hls_key_downloader.cpp",
-  "$_http_source_ut_root/hls/hls_tags.cpp",
-  "$_http_source_ut_root/hls/m3u8.cpp",
-  "$_http_source_ut_root/hls/playlist_downloader.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_media_downloader.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_segment_manager.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_playlist_downloader.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_key_downloader.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_tags.cpp",
+  "$_http_source_ut_http_source_root/hls/m3u8.cpp",
+  "$_http_source_ut_http_source_root/hls/playlist_downloader.cpp",
 ]
 
 # NOSORT
 _http_source_ut_http_sources =
-    [ "$_http_source_ut_root/http/http_media_downloader.cpp" ]
+    [ "$_http_source_ut_http_source_root/http/http_media_downloader.cpp" ]
 
 # NOSORT
 _http_source_ut_plugin_entry_sources = [
-  "$_http_source_ut_root/http_source_plugin.cpp",
-  "$_http_source_ut_root/http_source_plugin_stream_protocol_sniffer.cpp",
+  "$_http_source_ut_http_source_root/http_source_plugin.cpp",
+  "$_http_source_ut_http_source_root/http_source_plugin_stream_protocol_sniffer.cpp",
 ]
 
 # NOSORT
 _http_source_ut_coordinator_sources =
-    [ "$_http_source_ut_root/sniffer/sniffer_coordinator.cpp" ]
+    [ "$_http_source_ut_http_source_root/sniffer/sniffer_coordinator.cpp" ]
 
 # NOSORT
 _http_source_ut_aes_decryptor_sources =
-    [ "$_http_source_ut_root/utils/aes_decryptor.cpp" ]
+    [ "$_http_source_ut_http_source_root/utils/aes_decryptor.cpp" ]
 
 # NOSORT
 _http_source_ut_media_cached_buffer_sources =
-    [ "$_http_source_ut_root/utils/media_cached_buffer.cpp" ]
+    [ "$_http_source_ut_http_source_root/utils/media_cached_buffer.cpp" ]
 
 # NOSORT
 _http_source_ut_mpd_parser_plugin_order_sources = [
-  "$_http_source_ut_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_generic_node.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_manager_util.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_parser.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_mpd_util.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_period_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/dash_representation_manager.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/i_dash_mpd_node.cpp",
-  "$_http_source_ut_root/dash/mpd_parser/sidx_box_parser.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_adpt_set_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_generic_node.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_manager_util.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_parser.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_mpd_util.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_period_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/dash_representation_manager.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/i_dash_mpd_node.cpp",
+  "$_http_source_ut_http_source_root/dash/mpd_parser/sidx_box_parser.cpp",
 ]
 
 # NOSORT
 _http_source_ut_hls_key_first_sources = [
-  "$_http_source_ut_root/hls/hls_key_downloader.cpp",
-  "$_http_source_ut_root/hls/hls_media_downloader.cpp",
-  "$_http_source_ut_root/hls/hls_playlist_downloader.cpp",
-  "$_http_source_ut_root/hls/hls_segment_manager.cpp",
-  "$_http_source_ut_root/hls/hls_tags.cpp",
-  "$_http_source_ut_root/hls/m3u8.cpp",
-  "$_http_source_ut_root/hls/playlist_downloader.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_key_downloader.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_media_downloader.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_playlist_downloader.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_segment_manager.cpp",
+  "$_http_source_ut_http_source_root/hls/hls_tags.cpp",
+  "$_http_source_ut_http_source_root/hls/m3u8.cpp",
+  "$_http_source_ut_http_source_root/hls/playlist_downloader.cpp",
 ]
 
 # NOSORT
 _http_source_ut_plugin_entry_with_resource_parser_sources = [
-  "$_http_source_ut_root/http_source_plugin.cpp",
-  "$_http_source_ut_root/http_source_plugin_stream_resource_parser.cpp",
-  "$_http_source_ut_root/http_source_plugin_stream_protocol_sniffer.cpp",
+  "$_http_source_ut_http_source_root/http_source_plugin.cpp",
+  "$_http_source_ut_http_source_root/http_source_plugin_stream_resource_parser.cpp",
+  "$_http_source_ut_http_source_root/http_source_plugin_stream_protocol_sniffer.cpp",
 ]
 
 # NOSORT
 _http_source_ut_monitor_sources =
-    [ "$_http_source_ut_root/monitor/download_monitor.cpp" ]
+    [ "$_http_source_ut_http_source_root/monitor/download_monitor.cpp" ]
 
 # NOSORT
 _http_source_ut_sniffer_sources = [
-  "$_http_source_ut_root/sniffer/probe_failure_notifier.cpp",
-  "$_http_source_ut_root/sniffer/sniffer_coordinator.cpp",
+  "$_http_source_ut_http_source_root/sniffer/probe_failure_notifier.cpp",
+  "$_http_source_ut_http_source_root/sniffer/sniffer_coordinator.cpp",
 ]
 
 # NOSORT
 _http_source_ut_storage_usage_util_sources =
-    [ "$_http_source_ut_root/utils/storage_usage_util.cpp" ]
+    [ "$_http_source_ut_http_source_root/utils/storage_usage_util.cpp" ]
 
 # NOSORT
 _http_source_ut_download_without_curl_sources = [
-  "$_http_source_ut_root/download/app_client.cpp",
-  "$_http_source_ut_root/download/downloader.cpp",
-  "$_http_source_ut_root/download/media_source_loading_request.cpp",
+  "$_http_source_ut_http_source_root/download/app_client.cpp",
+  "$_http_source_ut_http_source_root/download/downloader.cpp",
+  "$_http_source_ut_http_source_root/download/media_source_loading_request.cpp",
 ]
 
 # Public profiles contain contiguous source runs. Split profiles let BUILD.gn
@@ -298,3 +298,319 @@ http_source_ut_media_sources =
 http_source_ut_aes_sources = _http_source_ut_aes_decryptor_sources
 
 http_source_ut_storage_sources = _http_source_ut_storage_usage_util_sources
+
+# ============================================================================
+# Build-flag profiles (cflags / defines / cflags_cc) for config() blocks.
+# Pattern-A tests share these; Pattern-B uses the av_codec_unittest_* set below.
+# ============================================================================
+
+# NOSORT
+_http_source_ut_cflags = [
+  "-D_FORTIFY_SOURCE=2",
+  "-Dprivate=public",
+  "-Dprotected=public",
+  "-FPIC",
+  "-FS",
+  "-O2",
+  "-Wdate-time",
+  "-Wformat=2",
+  "-Wno-sign-compare",
+  "-Wshadow",
+  "-fno-common",
+  "-fno-exceptions",
+  "-fstack-protector-all",
+]
+
+# NOSORT
+_http_source_ut_defines = [
+  "HST_ANY_WITH_NO_RTTI",
+  "MEDIA_OHOS",
+]
+
+_http_source_ut_defines_with_testing = _http_source_ut_defines + [ "TESTING" ]
+
+# NOSORT
+_http_source_ut_cflags_cc = [
+  "-fno-rtti",
+  "-std=c++17",
+]
+
+_http_source_ut_cflags_cc_with_private = _http_source_ut_cflags_cc + [
+  "-Dprivate=public",
+  "-Dprotected=public",
+]
+
+# ============================================================================
+# include_dirs profiles (path sets per test category; order normalized).
+# "." and "./mock" stay in BUILD.gn as target-local paths.
+# ============================================================================
+
+# NOSORT
+_http_source_ut_include_dirs = [
+  "$_http_source_ut_av_codec_root/interfaces",
+  "$_http_source_ut_av_codec_root/interfaces/inner_api/native",
+  "$_http_source_ut_av_codec_root/test/unittest/common",
+  "$_http_source_ut_http_source_root",
+  "$_http_source_ut_http_source_root/base64",
+  "$_http_source_ut_http_source_root/dash",
+  "$_http_source_ut_http_source_root/dash/include",
+  "$_http_source_ut_http_source_root/dash/include/mpd_parser",
+  "$_http_source_ut_http_source_root/download",
+  "$_http_source_ut_http_source_root/utils",
+  "$_http_source_ut_http_source_root/xml",
+]
+
+# NOSORT
+_http_source_ut_include_dirs_without_utils = [
+  "$_http_source_ut_av_codec_root/interfaces",
+  "$_http_source_ut_av_codec_root/interfaces/inner_api/native",
+  "$_http_source_ut_av_codec_root/test/unittest/common",
+  "$_http_source_ut_http_source_root",
+  "$_http_source_ut_http_source_root/base64",
+  "$_http_source_ut_http_source_root/dash",
+  "$_http_source_ut_http_source_root/dash/include",
+  "$_http_source_ut_http_source_root/dash/include/mpd_parser",
+  "$_http_source_ut_http_source_root/download",
+  "$_http_source_ut_http_source_root/xml",
+]
+
+# NOSORT
+_http_source_ut_hls_include_dirs = [
+  "$_http_source_ut_av_codec_root/interfaces",
+  "$_http_source_ut_av_codec_root/interfaces/inner_api/native",
+  "$_http_source_ut_av_codec_root/services/drm_decryptor",
+  "$_http_source_ut_av_codec_root/services/media_engine/modules",
+  "$_http_source_ut_av_codec_root/test/unittest/common",
+  "$_http_source_ut_http_source_root",
+  "$_http_source_ut_http_source_root/base64",
+  "$_http_source_ut_http_source_root/dash",
+  "$_http_source_ut_http_source_root/dash/include",
+  "$_http_source_ut_http_source_root/dash/include/mpd_parser",
+  "$_http_source_ut_http_source_root/utils",
+  "$_http_source_ut_http_source_root/xml",
+]
+
+# NOSORT
+_http_source_ut_plugin_include_dirs = [
+  "$_http_source_ut_av_codec_root/interfaces",
+  "$_http_source_ut_av_codec_root/interfaces/inner_api/native",
+  "$_http_source_ut_av_codec_root/services/drm_decryptor",
+  "$_http_source_ut_av_codec_root/services/media_engine/common",
+  "$_http_source_ut_av_codec_root/services/media_engine/modules",
+  "$_http_source_ut_av_codec_root/services/media_engine/utils",
+  "$_http_source_ut_av_codec_root/test/unittest/common",
+  "$_http_source_ut_http_source_root",
+  "$_http_source_ut_http_source_root/base64",
+  "$_http_source_ut_http_source_root/dash",
+  "$_http_source_ut_http_source_root/dash/include",
+  "$_http_source_ut_http_source_root/dash/include/mpd_parser",
+  "$_http_source_ut_http_source_root/download",
+  "$_http_source_ut_http_source_root/download/network_client",
+  "$_http_source_ut_http_source_root/utils",
+  "$_http_source_ut_http_source_root/xml",
+]
+
+# NOSORT
+_http_source_ut_storage_include_dirs = [
+  "$_http_source_ut_av_codec_root/interfaces",
+  "$_http_source_ut_av_codec_root/interfaces/inner_api/native",
+  "$_http_source_ut_av_codec_root/services/dfx",
+  "$_http_source_ut_av_codec_root/services/media_engine/modules",
+  "$_http_source_ut_http_source_root",
+  "$_http_source_ut_http_source_root/utils",
+]
+
+# ============================================================================
+# deps / external_deps building blocks.
+# ============================================================================
+
+# NOSORT
+_http_source_ut_deps =
+    [ "$_http_source_ut_av_codec_root/services/dfx:av_codec_service_dfx" ]
+
+# NOSORT
+_http_source_ut_core_external_deps = [
+  "c_utils:utils",
+  "certificate_manager:cert_manager_sdk",
+  "curl:curl_shared",
+  "graphic_surface:surface",
+  "hilog:libhilog",
+  "hitrace:hitrace_meter",
+  "init:libbegetutil",
+  "ipc:ipc_single",
+  "libxml2:libxml2",
+  "media_foundation:media_foundation",
+  "netmanager_base:net_conn_manager_if",
+  "openssl:libcrypto_shared",
+  "safwk:system_ability_fwk",
+  "samgr:samgr_proxy",
+]
+
+# NOSORT
+_http_source_ut_core_without_openssl_external_deps = [
+  "c_utils:utils",
+  "certificate_manager:cert_manager_sdk",
+  "curl:curl_shared",
+  "graphic_surface:surface",
+  "hilog:libhilog",
+  "hitrace:hitrace_meter",
+  "init:libbegetutil",
+  "ipc:ipc_single",
+  "libxml2:libxml2",
+  "media_foundation:media_foundation",
+  "netmanager_base:net_conn_manager_if",
+  "safwk:system_ability_fwk",
+  "samgr:samgr_proxy",
+]
+
+# NOSORT
+_http_source_ut_gmock_external_deps = [ "googletest:gmock" ]
+
+# NOSORT
+_http_source_ut_bundle_external_deps = [
+  "bundle_framework:appexecfwk_base",
+  "bundle_framework:appexecfwk_core",
+]
+
+# ============================================================================
+# Public config bundles: defines / cflags / cflags_cc.
+# dash group covers dash + dash_node; hls group covers hls + plugin + storage.
+# ============================================================================
+
+http_source_ut_dash_defines = _http_source_ut_defines
+http_source_ut_dash_cflags = _http_source_ut_cflags
+http_source_ut_dash_cflags_cc = _http_source_ut_cflags_cc
+
+http_source_ut_hls_defines = _http_source_ut_defines_with_testing
+http_source_ut_hls_cflags = _http_source_ut_cflags
+http_source_ut_hls_cflags_cc = _http_source_ut_cflags_cc_with_private
+
+# ============================================================================
+# Public include_dirs profiles.
+# ============================================================================
+
+http_source_ut_dash_include_dirs = _http_source_ut_include_dirs
+http_source_ut_dash_node_include_dirs = _http_source_ut_include_dirs_without_utils
+http_source_ut_hls_include_dirs = _http_source_ut_hls_include_dirs
+http_source_ut_plugin_include_dirs = _http_source_ut_plugin_include_dirs
+http_source_ut_storage_include_dirs = _http_source_ut_storage_include_dirs
+
+# ============================================================================
+# Public deps / external_deps profiles.
+# ============================================================================
+
+http_source_ut_deps = _http_source_ut_deps
+
+# S1: core14 (dash_test, dash_period_manager)
+http_source_ut_external_deps = _http_source_ut_core_external_deps
+
+# S2: core14 + gmock (dash mpd/manager/parser/downloader tests)
+http_source_ut_dash_external_deps =
+    _http_source_ut_core_external_deps + _http_source_ut_gmock_external_deps
+
+# S3: core13 (no openssl) + gmock (dash node tests)
+http_source_ut_dash_node_external_deps =
+    _http_source_ut_core_without_openssl_external_deps +
+    _http_source_ut_gmock_external_deps
+
+# S4: core14 + bundle (hls_test)
+http_source_ut_hls_external_deps =
+    _http_source_ut_core_external_deps + _http_source_ut_bundle_external_deps
+
+# S5: core14 + bundle (http_source_test plugin targets;
+# http_media_downloader adds gmock in BUILD.gn)
+http_source_ut_plugin_external_deps =
+    _http_source_ut_core_external_deps + _http_source_ut_bundle_external_deps
+
+# S6: minimal, no deps (aes_decryptor_unit_test)
+http_source_ut_aes_external_deps = [
+  "c_utils:utils",
+  "hilog:libhilog",
+  "hitrace:hitrace_meter",
+  "media_foundation:media_foundation",
+  "openssl:libcrypto_shared",
+]
+
+# S7: minimal (source_utils_test / storage_usage_util)
+http_source_ut_storage_external_deps = [
+  "c_utils:utils",
+  "hilog:libhilog",
+  "hitrace:hitrace_meter",
+  "media_foundation:media_foundation",
+]
+
+# ============================================================================
+# Pattern-B shared blocks (config-less targets borrowing http_media_utils_sources).
+# surface_encoder / codec_capability / audio_decoder_filter / plugins_source.
+# audio_decoder_filter pair adds audio_framework/sync_fence/hisysevent/
+# libhitracechain/init + conditional drm in BUILD.gn.
+# ============================================================================
+
+# NOSORT
+http_source_ut_av_codec_unittest_include_dirs = [
+  "$_http_source_ut_av_codec_root/interfaces/inner_api/native",
+  "$_http_source_ut_av_codec_root/interfaces/interfaces/inner_api/native",
+]
+
+# NOSORT
+http_source_ut_av_codec_unittest_include_dirs_extra = [
+  "./",
+  "$_http_source_ut_av_codec_root/interfaces",
+  "$_http_source_ut_av_codec_root/interfaces/inner_api/native",
+  "$_http_source_ut_av_codec_root/interfaces/kits/c",
+  "$_http_source_ut_av_codec_root/services/engine/base/include",
+  "$_http_source_ut_av_codec_root/services/engine/codec/include/audio",
+  "$_http_source_ut_av_codec_root/services/engine/common/include",
+  "$_http_source_ut_av_codec_root/services/engine/factory",
+  "$_http_source_ut_av_codec_root/services/media_engine/filters",
+  "$_http_source_ut_av_codec_root/services/media_engine/plugins/source",
+  "$_http_source_ut_av_codec_root/services/media_engine/plugins/source/http_source/utils",
+  "$_http_source_ut_av_codec_root/services/utils/include",
+]
+
+# NOSORT
+http_source_ut_av_codec_unittest_cflags = [
+  "-D_FORTIFY_SOURCE=2",
+  "-Dprivate=public",
+  "-Dprotected=public",
+  "-FPIC",
+  "-FS",
+  "-O2",
+  "-Wall",
+  "-Wdate-time",
+  "-Wformat=2",
+  "-Wshadow",
+  "-fno-common",
+  "-fno-exceptions",
+  "-fno-rtti",
+  "-fstack-protector-all",
+  "-std=c++17",
+]
+
+# NOSORT
+http_source_ut_av_codec_unittest_deps = [
+  "$_http_source_ut_av_codec_root/interfaces/inner_api/native:av_codec_client",
+  "$_http_source_ut_av_codec_root/interfaces/kits/c:capi_packages",
+  "$_http_source_ut_av_codec_root/services/engine/codec/audio:av_codec_audio_ffmpeg_codec",
+  "$_http_source_ut_av_codec_root/services/media_engine/filters:av_codec_media_engine_filters",
+  "$_http_source_ut_av_codec_root/services/media_engine/modules:av_codec_media_engine_modules",
+  "$_http_source_ut_av_codec_root/services/services:av_codec_service",
+  "$_http_source_ut_av_codec_root/services/utils:av_codec_service_utils",
+]
+
+# NOSORT
+http_source_ut_av_codec_unittest_external_deps = [
+  "bundle_framework:appexecfwk_base",
+  "bundle_framework:appexecfwk_core",
+  "c_utils:utils",
+  "ffmpeg:libohosffmpeg",
+  "googletest:gmock",
+  "graphic_surface:surface",
+  "hilog:libhilog",
+  "hitrace:hitrace_meter",
+  "ipc:ipc_single",
+  "media_foundation:media_foundation",
+  "media_foundation:native_media_core",
+  "safwk:system_ability_fwk",
+  "samgr:samgr_proxy",
+]
