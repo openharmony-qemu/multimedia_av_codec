@@ -14,7 +14,11 @@
  */
 
 #include <gtest/gtest.h>
+#include <atomic>
+#include <chrono>
+#include <future>
 #include <memory>
+#include <thread>
 #include <vector>
 #include "smart_fluency_decoding_manager.h"
 #include "smart_fluency_decoding.h"
@@ -722,4 +726,100 @@ HWTEST_F(SFDManagerTest, EnableMVOutput_AutoRatio_SetsTag_040, TestSize.Level1)
     int32_t val = 0;
     EXPECT_TRUE(mvFormat.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, val));
     EXPECT_EQ(val, 1);
+}
+
+/**
+ * @tc.name: ConfigureAndCleanResources_ConcurrentCallbacks_041
+ * @tc.desc: Exercise SFD publication and retirement while AFC and buffer callbacks are active.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, ConfigureAndCleanResources_ConcurrentCallbacks_041, TestSize.Level1)
+{
+    SmartFluencyDecodingManager manager("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_720P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_720P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
+    auto buffer = CreateMockBuffer(AVCODEC_BUFFER_FLAG_NONE, 16);
+    ASSERT_NE(buffer, nullptr);
+    std::atomic<bool> start{false};
+    std::atomic<bool> retained{true};
+    std::thread callbacks([&] {
+        while (!start.load()) {
+            std::this_thread::yield();
+        }
+        for (int32_t i = 0; i < 1000; ++i) {
+            manager.OnDecInfoUpdate(30.0, 1.0);
+            manager.OnInputBufferAvailable(0, buffer);
+            if (!manager.MakePreDecodeDecision(0) || !manager.MakePostDecodeDecision(0, buffer, false)) {
+                retained.store(false);
+            }
+            Format output;
+            manager.EnableMVOutput(output);
+            (void)manager.ShouldReportDfx();
+        }
+    });
+    start.store(true);
+    for (int32_t i = 0; i < 100; ++i) {
+        manager.Configure(format);
+        manager.Flush();
+        manager.CleanResources();
+    }
+    callbacks.join();
+    EXPECT_TRUE(retained.load());
+    manager.CleanResources();
+    Format output;
+    manager.EnableMVOutput(output);
+    int32_t enabled = 0;
+    EXPECT_FALSE(output.GetIntValue(Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, enabled));
+}
+
+/**
+ * @tc.name: CleanResources_DrainsReentrantCallback_042
+ * @tc.desc: Retiring SFD must not hold the manager lock while joining the drop worker.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SFDManagerTest, CleanResources_DrainsReentrantCallback_042, TestSize.Level1)
+{
+    auto manager = std::make_shared<SmartFluencyDecodingManager>("video/avc", AVCODEC_TYPE_VIDEO_DECODER);
+    Format format;
+    format.PutIntValue(Tag::VIDEO_WIDTH, WIDTH_720P);
+    format.PutIntValue(Tag::VIDEO_HEIGHT, HEIGHT_720P);
+    format.PutIntValue(Tag::VIDEO_DECODER_FRAME_RETENTION_MODE, 0);
+    manager->Configure(format);
+    ASSERT_NE(manager->sfd_, nullptr);
+    auto dispatcher = manager->sfd_->asyncDispatcher_.get();
+    ASSERT_NE(dispatcher, nullptr);
+    auto entered = std::make_shared<std::promise<void>>();
+    auto enteredFuture = entered->get_future();
+    auto resume = std::make_shared<std::promise<void>>();
+    auto resumeFuture = resume->get_future().share();
+    dispatcher->SubmitTask([manager, entered, resumeFuture] {
+        entered->set_value();
+        resumeFuture.wait();
+        manager->OnDecInfoUpdate(30.0, 1.0);
+    });
+    auto enteredStatus = enteredFuture.wait_for(std::chrono::seconds(2));
+    // Even after a startup timeout, let the cleaner own the manager until the worker is joined.
+    // Otherwise the callback could become its last owner and destroy its own dispatcher thread.
+    std::packaged_task<void()> cleanup([manager] { manager->CleanResources(); });
+    auto completed = cleanup.get_future();
+    std::thread cleaner(std::move(cleanup));
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+    // The blocked callback keeps the dispatcher alive while its destructor starts joining.
+    while (dispatcher->isWorking_.load() && std::chrono::steady_clock::now() < deadline) {
+        std::this_thread::yield();
+    }
+    bool stopped = !dispatcher->isWorking_.load();
+    resume->set_value();
+    auto status = completed.wait_for(std::chrono::seconds(2));
+    if (status != std::future_status::ready) {
+        // The thread owns the manager, so a failed deadlock check cannot leave dangling references.
+        cleaner.detach();
+        FAIL() << "CleanResources deadlocked with a reentrant drop callback";
+    }
+    cleaner.join();
+    EXPECT_EQ(enteredStatus, std::future_status::ready) << "Drop callback did not start in time";
+    EXPECT_TRUE(stopped);
+    EXPECT_EQ(manager->sfd_, nullptr);
 }

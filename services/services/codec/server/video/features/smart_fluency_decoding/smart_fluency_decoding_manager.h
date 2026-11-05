@@ -19,6 +19,7 @@
 #include "avcodec_dfx_component.h"
 #include <memory>
 #include <mutex>
+#include <shared_mutex>
 #include <vector>
 #include <unordered_map>
 #include <functional>
@@ -50,6 +51,8 @@ public:
     void OnDecInfoUpdate(double sourceFps, double speed);
 
 private:
+    // Requires exclusive ownership of sfdMutex_.
+    void ConfigureLocked(const Media::Format& format);
     void CacheCsdData(uint32_t index);
     void ExtractCsdData(const std::shared_ptr<AVBuffer>& buffer);
 #ifdef SFD_DEBUG
@@ -59,6 +62,8 @@ private:
 
     std::string codecMime_;
     AVCodecType codecType_;
+    // Acquire before csdMutex_/surfaceBufMutex_; keep held through calls into sfd_.
+    mutable std::shared_mutex sfdMutex_;
     std::unique_ptr<SmartFluencyDecodingBuilder> builder_{nullptr};
     std::unique_ptr<SmartFluencyDecoding> sfd_{nullptr};
     SmartFluencyDecoding::AsyncDropInputCallback inputCb_;
