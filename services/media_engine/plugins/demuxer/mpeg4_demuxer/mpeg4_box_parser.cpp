@@ -5848,7 +5848,11 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
             // casting a size beyond INT64_MAX to int64 would wrap negative and turn every
             // offset into EOF, while a non-OK GetSize (unknown size) skips this check and
             // parsing continues until the reader reports end of stream. Files smaller than
-            // DEFAULT_HEAD_SIZE stop here and are rejected by the moovFound_ check below.
+            // MP4_ATOM_HEADER_SIZE stop here and are rejected by the moovFound_ check below.
+            // The offset >= 0 guard keeps a negative (corrupt) offset out of this EOF
+            // tolerance: wrapping it to uint64 would satisfy offset >= dataSourceSize and
+            // break, silently masking the real parse error once moovFound_ is set. A negative
+            // offset instead falls through to the atom reader and fails with the real error.
             const uint64_t offset = static_cast<uint64_t>(ctx_.offset);
             if (offset >= dataSourceSize || dataSourceSize - offset <
                 static_cast<uint64_t>(DEFAULT_HEAD_SIZE)) {
