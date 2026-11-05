@@ -355,6 +355,7 @@ Status AudioOpusDecoderPlugin::QueueInputBuffer(const std::shared_ptr<AVBuffer> 
         pendingSkipInfo_.clear();
         if (bufferMeta_->GetData(Tag::BUFFER_SKIP_SAMPLES_INFO, pendingSkipInfo_)) {
             bufferMeta_->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO);
+            inputAvBuffer->meta_->Remove(Tag::BUFFER_SKIP_SAMPLES_INFO);
         }
         SafeCallInputBufferDone(dataCallback_, inputAvBuffer);
     }
