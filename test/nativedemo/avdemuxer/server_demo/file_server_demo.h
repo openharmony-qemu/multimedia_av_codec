@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <thread_pool.h>
+#include "http_server_demo.h"
 #include "nocopyable.h"
 
 namespace OHOS {
@@ -53,21 +54,7 @@ public:
     void StopServer();
 
 private:
-    void ServerLoopFunc();
-    static void FileReadFunc(int32_t connFd);
-
-    static void CloseFd(int32_t &connFd, int32_t &fileFd, bool connCond, bool fileCond);
-    static void GetRange(const std::string &recvStr, int32_t &startPos, int32_t &endPos);
-    static void GetKeepAlive(const std::string &recvStr, int32_t &keep);
-    static void GetFilePath(const std::string &recvStr, std::string &path);
-
-    static int32_t SendRequestSize(int32_t &connFd, int32_t &fileFd, const std::string &recvStr);
-    static int32_t SetKeepAlive(int32_t &connFd, int32_t &keepAlive, int32_t &keepIdle);
-
-    std::atomic<bool> isRunning_ = false;
-    std::unique_ptr<std::thread> serverLoop_ = nullptr;
-    std::unique_ptr<ThreadPool> threadPool_ = nullptr;
-    int32_t listenFd_ = 0;
+    HttpServerDemo httpServer_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

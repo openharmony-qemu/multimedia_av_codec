@@ -51,6 +51,7 @@ ohos_unittest("avsource_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/format_test/capi",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
   ]
 
   cflags = avsource_unittest_cflags
@@ -58,6 +59,7 @@ ohos_unittest("avsource_capi_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "./avsource_format_aiff_unit_test.cpp",
       "./avsource_format_unit_test.cpp",
       "./avsource_format_3g2_unit_test.cpp",
@@ -117,6 +119,7 @@ ohos_unittest("avsource_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/format_test/inner",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
   ]
 
   if (target_cpu == "arm64" || is_emulator) {
@@ -134,6 +137,7 @@ ohos_unittest("avsource_inner_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "./avsource_format_aiff_unit_test.cpp",
       "./avsource_format_3g2_unit_test.cpp",
       "./avsource_format_3gp_unit_test.cpp",

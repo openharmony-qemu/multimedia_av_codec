@@ -60,6 +60,7 @@ ohos_unittest("demuxer_unit_test") {
     "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/services/media_engine/modules/demuxer",
   ]
@@ -69,6 +70,7 @@ ohos_unittest("demuxer_unit_test") {
   if (av_codec_support_demuxer) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock_factory.cpp",
       "./demuxer_plugin_manager_unittest.cpp",

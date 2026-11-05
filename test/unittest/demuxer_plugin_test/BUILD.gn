@@ -37,6 +37,7 @@ demuxer_plugin_test_sources = [
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer/ffmpeg_reference_parser.cpp",
   "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer/ffmpeg_utils.cpp",
   "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+  "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
   "$av_codec_root_dir/test/unittest/common/statistics_event_reporter_mock.cpp",
 ]
 config("demuxer_plugin_test_unittest_cfg") {
@@ -84,6 +85,7 @@ config("demuxer_plugin_test_unittest_cfg") {
     "$av_codec_root_dir/services/media_engine/plugins/demuxer/ffmpeg_demuxer",
     "$av_codec_root_dir/services/media_engine/plugins/ffmpeg_adapter/common",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/test/nativedemo/include",
   ]
 }
