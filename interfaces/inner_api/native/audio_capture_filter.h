@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -68,6 +68,7 @@ public:
     void SetCallingInfo(int32_t appUid, int32_t appPid, const std::string &bundleName, uint64_t instanceId);
 private:
     void ReadLoop();
+    void CacheFirstAudioFrame(uint64_t bufferSize);
     Status PrepareAudioCapture();
     std::shared_ptr<Task> taskPtr_{nullptr};
     int32_t RelativeSleep(int64_t nanoTime);

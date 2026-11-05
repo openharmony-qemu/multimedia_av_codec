@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,6 +23,13 @@ using namespace OHOS;
 using namespace OHOS::Media;
 using namespace std;
 using namespace testing::ext;
+
+namespace {
+std::shared_ptr<uint8_t> MakeTestBuffer(int32_t size)
+{
+    return std::shared_ptr<uint8_t>(std::make_unique<uint8_t[]>(size));
+}
+}
 
 namespace OHOS {
 namespace Media {
@@ -506,12 +513,274 @@ HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetVideoFirstFramePts_00
     EXPECT_EQ(audioCaptureFilter_->firstVideoFramePts_.load(), 200);
 }
 
+/**
+ * @tc.name: AudioCaptureFilter_CalculateAVTime_001
+ * @tc.desc: CalculateAVTime firstAudioFramePts_ > firstVideoFramePts (audio later than video)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_CalculateAVTime_001, TestSize.Level1)
+{
+    audioCaptureFilter_->audioCaptureModule_ = std::make_shared<MockAudioCaptureModule>();
+    audioCaptureFilter_->hasCalculateAVTime_ = false;
+    audioCaptureFilter_->currentTime_ = 0;
+    audioCaptureFilter_->firstVideoFramePts_.store(0);
+    audioCaptureFilter_->firstAudioFramePts_.store(6000000000); // 6s, larger than video pts
+    audioCaptureFilter_->CalculateAVTime();
+    EXPECT_TRUE(audioCaptureFilter_->hasCalculateAVTime_);
+    EXPECT_EQ(audioCaptureFilter_->currentTime_, 6000000000);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_CalculateAVTime_002
+ * @tc.desc: CalculateAVTime firstAudioFramePts_ <= firstVideoFramePts (audio faster than video)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_CalculateAVTime_002, TestSize.Level1)
+{
+    audioCaptureFilter_->audioCaptureModule_ = std::make_shared<MockAudioCaptureModule>();
+    audioCaptureFilter_->hasCalculateAVTime_ = false;
+    audioCaptureFilter_->currentTime_ = 0;
+    audioCaptureFilter_->firstAudioFramePts_.store(0);
+    audioCaptureFilter_->firstVideoFramePts_.store(6000000000); // video later than audio pts
+    audioCaptureFilter_->CalculateAVTime();
+    EXPECT_TRUE(audioCaptureFilter_->hasCalculateAVTime_);
+    EXPECT_EQ(audioCaptureFilter_->currentTime_, 0);
+}
+
 HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SetWillMuteWhenInterrupted_001, TestSize.Level1)
 {
     ASSERT_NE(audioCaptureFilter_, nullptr);
     audioCaptureFilter_->audioCaptureModule_ = nullptr;
     Status result = audioCaptureFilter_->SetWillMuteWhenInterrupted(true);
     EXPECT_EQ(result, Status::ERROR_INVALID_OPERATION);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_RecordCachedData_NullGuard_0100
+ * @tc.desc: RecordCachedData L656 audioCaptureModule_==nullptr guard hits early return:
+ *           cachedAudioDataDeque_ unchanged (L670 erase not executed, queue keeps 2 pre-filled items,
+ *           front item ptr identity unchanged). Safety remediation null guard blocks L660-698 main path —
+ *           if guard missed, L670 erase would delete front item and front ptr would change.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_RecordCachedData_NullGuard_0100, TestSize.Level1)
+{
+    ASSERT_NE(audioCaptureFilter_, nullptr);
+    audioCaptureFilter_->audioCaptureModule_ = nullptr;
+    constexpr int32_t bufSize = 16;
+    auto data0 = MakeTestBuffer(bufSize);
+    auto data1 = MakeTestBuffer(bufSize);
+    uint8_t* expectedFront = data0.get();
+    {
+        std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+        audioCaptureFilter_->cachedAudioDataDeque_.push_back(data0);
+        audioCaptureFilter_->cachedAudioDataDeque_.push_back(data1);
+    }
+    audioCaptureFilter_->RecordCachedData(2);
+    std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+    EXPECT_EQ(static_cast<int32_t>(audioCaptureFilter_->cachedAudioDataDeque_.size()), 2);
+    EXPECT_EQ(audioCaptureFilter_->cachedAudioDataDeque_.front().get(), expectedFront);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_RecordCachedData_LockErasePath_0100
+ * @tc.desc: RecordCachedData L665-671 in-lock copy-out + erase path (safety remediation added lock_guard):
+ *           audioCaptureModule_ non-null + outputBufferQueue_ null (while loop condition false, skip L672-698
+ *           to avoid 20s sleep). Verify L670 erase uses std::min(recordFrameNum, size) for precise dequeue —
+ *           pre-fill 3 items, call RecordCachedData(2), expect 1 remaining = original 3rd item (ptr identity match),
+ *           proving std::min guard prevents out-of-bounds + erase path executes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_RecordCachedData_LockErasePath_0100, TestSize.Level1)
+{
+    ASSERT_NE(audioCaptureFilter_, nullptr);
+    audioCaptureFilter_->audioCaptureModule_ = std::make_shared<MockAudioCaptureModule>();
+    audioCaptureFilter_->outputBufferQueue_ = nullptr;  // while loop condition false, skip L672-698
+    constexpr int32_t bufSize = 16;
+    auto data0 = MakeTestBuffer(bufSize);
+    auto data1 = MakeTestBuffer(bufSize);
+    auto data2 = MakeTestBuffer(bufSize);
+    uint8_t* expectedRemain = data2.get();
+    {
+        std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+        audioCaptureFilter_->cachedAudioDataDeque_.push_back(data0);
+        audioCaptureFilter_->cachedAudioDataDeque_.push_back(data1);
+        audioCaptureFilter_->cachedAudioDataDeque_.push_back(data2);
+    }
+    audioCaptureFilter_->RecordCachedData(2);  // erase only first 2 items
+    std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+    ASSERT_EQ(static_cast<int32_t>(audioCaptureFilter_->cachedAudioDataDeque_.size()), 1);
+    EXPECT_EQ(audioCaptureFilter_->cachedAudioDataDeque_.front().get(), expectedRemain);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_DoPause_WithVideo_CachedData_0100
+ * @tc.desc: DoPause with withVideo_=true and cached audio data — covers L226 currentTime_==0 branch,
+ *           L245 cachedAudioDataDeque_ not empty, L249 RecordCachedData (erase cached data).
+ *           Scenario: pause during recording with video stream, currentTime_==0 (pause before first frame),
+ *           cached audio data present. AudioCaptureModule::Stop() is non-virtual; real impl returns OK when
+ *           audioCapturer_ is null. RecordCachedData skips while loop when outputBufferQueue_ is null,
+ *           but L670 erase still executes.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_DoPause_WithVideo_CachedData_0100, TestSize.Level1)
+{
+    audioCaptureFilter_->withVideo_ = true;
+    audioCaptureFilter_->audioCaptureModule_ = std::make_shared<MockAudioCaptureModule>();
+    audioCaptureFilter_->outputBufferQueue_ = nullptr;
+    audioCaptureFilter_->currentTime_ = 0;
+    audioCaptureFilter_->startTime_ = 0;
+    constexpr int32_t bufSize = 16;
+    auto data = MakeTestBuffer(bufSize);
+    {
+        std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+        audioCaptureFilter_->cachedAudioDataDeque_.push_back(data);
+    }
+    Status result = audioCaptureFilter_->DoPause();
+    // Real Stop() returns OK when audioCapturer_ is null
+    EXPECT_EQ(result, Status::OK);
+    // RecordCachedData L670 erase should clear cached data
+    std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+    EXPECT_EQ(static_cast<int32_t>(audioCaptureFilter_->cachedAudioDataDeque_.size()), 0);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_DoResume_WithModule_0100
+ * @tc.desc: DoResume with audioCaptureModule_ set — Start fails, returns ERROR_AUD_START_FAILED
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_DoResume_WithModule_0100, TestSize.Level1)
+{
+    auto mockModule = std::make_shared<MockAudioCaptureModule>();
+    audioCaptureFilter_->audioCaptureModule_ = mockModule;
+    audioCaptureFilter_->withVideo_ = false;
+    Status result = audioCaptureFilter_->DoResume();
+    // Real AudioCaptureModule::Start() returns ERROR_AUD_INIT_FAILED (audioCapturer_ is null),
+    // so DoResume hits L272 (ret != OK) and returns ERROR_AUD_START_FAILED
+    EXPECT_EQ(result, Status::ERROR_AUD_START_FAILED);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_DoResume_NullModule_0100
+ * @tc.desc: DoResume with audioCaptureModule_ nullptr — covers L269 false branch (audioCaptureModule_ == nullptr),
+ *           ret stays ERROR_INVALID_OPERATION, L272 true -> returns ERROR_AUD_START_FAILED
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_DoResume_NullModule_0100, TestSize.Level1)
+{
+    audioCaptureFilter_->audioCaptureModule_ = nullptr;
+    audioCaptureFilter_->withVideo_ = false;
+    Status result = audioCaptureFilter_->DoResume();
+    EXPECT_EQ(result, Status::ERROR_AUD_START_FAILED);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_DoStop_WithCachedData_0100
+ * @tc.desc: DoStop with cached audio data — covers L305 cachedAudioDataDeque_ not empty, L309 RecordCachedData
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_DoStop_WithCachedData_0100, TestSize.Level1)
+{
+    audioCaptureFilter_->audioCaptureModule_ = std::make_shared<MockAudioCaptureModule>();
+    audioCaptureFilter_->outputBufferQueue_ = nullptr;
+    constexpr int32_t bufSize = 16;
+    auto data = MakeTestBuffer(bufSize);
+    {
+        std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+        audioCaptureFilter_->cachedAudioDataDeque_.push_back(data);
+    }
+    Status result = audioCaptureFilter_->DoStop();
+    EXPECT_EQ(result, Status::OK);
+    std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+    // RecordCachedData should have consumed the cached data
+    EXPECT_EQ(static_cast<int32_t>(audioCaptureFilter_->cachedAudioDataDeque_.size()), 0);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_SendEos_WithCachedData_0100
+ * @tc.desc: SendEos with outputBufferQueue_ set and cached audio data
+ *           — covers L393 cachedAudioDataDeque_ not empty, L397 RecordCachedData
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_SendEos_WithCachedData_0100, TestSize.Level1)
+{
+    audioCaptureFilter_->audioCaptureModule_ = std::make_shared<MockAudioCaptureModule>();
+    sptr<AVBufferQueueProducer> mockQueue = new MockOutputBufferQueue();
+    audioCaptureFilter_->outputBufferQueue_ = mockQueue;
+    constexpr int32_t bufSize = 16;
+    auto data = MakeTestBuffer(bufSize);
+    {
+        std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+        audioCaptureFilter_->cachedAudioDataDeque_.push_back(data);
+    }
+    Status result = audioCaptureFilter_->SendEos();
+    EXPECT_EQ(result, Status::OK);
+    EXPECT_TRUE(audioCaptureFilter_->eos_);
+    std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+    EXPECT_EQ(static_cast<int32_t>(audioCaptureFilter_->cachedAudioDataDeque_.size()), 0);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_RecordOneAudioFrame_NullGuard_0100
+ * @tc.desc: RecordOneAudioFrame with audioCaptureModule_=nullptr — covers L616 cherry-pick guard
+ *           (FALSE_RETURN_MSG(audioCaptureModule_ != nullptr && outputBufferQueue_ != nullptr)).
+ *           Scenario: ReadLoop tries to record a frame before capture module init; guard returns early,
+ *           no buffer allocated, no data appended to cache queue.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_RecordOneAudioFrame_NullGuard_0100, TestSize.Level1)
+{
+    audioCaptureFilter_->audioCaptureModule_ = nullptr;
+    audioCaptureFilter_->outputBufferQueue_ = nullptr;
+    audioCaptureFilter_->RecordOneAudioFrame(16);
+    // Guard returns early: cache queue should not be appended
+    std::lock_guard<std::mutex> lock(audioCaptureFilter_->cachedAudioDataMutex_);
+    EXPECT_TRUE(audioCaptureFilter_->cachedAudioDataDeque_.empty());
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_DoStop_NullModule_0100
+ * @tc.desc: DoStop with audioCaptureModule_=nullptr — covers L292 false branch (ret stays OK),
+ *           L295 false (ret==OK), L305 cached not empty check.
+ *           Scenario: stop before capture module init, should safely return OK.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_DoStop_NullModule_0100, TestSize.Level1)
+{
+    audioCaptureFilter_->audioCaptureModule_ = nullptr;
+    audioCaptureFilter_->outputBufferQueue_ = nullptr;
+    Status result = audioCaptureFilter_->DoStop();
+    EXPECT_EQ(result, Status::OK);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_DoPause_NullModule_0100
+ * @tc.desc: DoPause with audioCaptureModule_=nullptr — covers L211 false branch,
+ *           ret stays ERROR_INVALID_OPERATION -> L214 true -> ret=ERROR_AUD_STOP_FAILED.
+ *           Scenario: pause before capture module init, Stop not called, ret keeps initial error value.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_DoPause_NullModule_0100, TestSize.Level1)
+{
+    audioCaptureFilter_->audioCaptureModule_ = nullptr;
+    audioCaptureFilter_->withVideo_ = false;
+    Status result = audioCaptureFilter_->DoPause();
+    EXPECT_EQ(result, Status::ERROR_AUD_STOP_FAILED);
+}
+
+/**
+ * @tc.name: AudioCaptureFilter_DoRelease_NullModule_0100
+ * @tc.desc: DoRelease with audioCaptureModule_=nullptr and taskPtr_=nullptr — covers
+ *           L326 false (taskPtr_ null), L329 false (audioCaptureModule_ null).
+ *           Scenario: release when both module and task are uncreated, should safely return OK.
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioCaptureFilterUnitTest, AudioCaptureFilter_DoRelease_NullModule_0100, TestSize.Level1)
+{
+    audioCaptureFilter_->audioCaptureModule_ = nullptr;
+    audioCaptureFilter_->taskPtr_ = nullptr;
+    Status result = audioCaptureFilter_->DoRelease();
+    EXPECT_EQ(result, Status::OK);
 }
 
 }  // namespace Pipeline

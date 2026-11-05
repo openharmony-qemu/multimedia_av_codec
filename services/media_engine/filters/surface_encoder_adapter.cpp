@@ -115,11 +115,7 @@ SurfaceEncoderAdapter::SurfaceEncoderAdapter()
 SurfaceEncoderAdapter::~SurfaceEncoderAdapter()
 {
     MEDIA_LOG_I("encoder adapter destroy");
-    isWatermarkMode_ = false;
-    if (codecServer_) {
-        codecServer_->Release();
-    }
-    codecServer_ = nullptr;
+    Release();
 }
 
 Status SurfaceEncoderAdapter::Init(const std::string &mime, bool isEncoder)
@@ -159,44 +155,57 @@ void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format,
 {
     MEDIA_LOG_I("ConfigureGeneralFormat");
     if (meta->Find(Tag::VIDEO_WIDTH) != meta->end()) {
-        int32_t videoWidth;
-        meta->Get<Tag::VIDEO_WIDTH>(videoWidth);
-        videoWidth_ = videoWidth;
-        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, videoWidth);
+        int32_t videoWidth = 0;
+        if (meta->Get<Tag::VIDEO_WIDTH>(videoWidth)) {
+            videoWidth_ = videoWidth;
+            format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, videoWidth);
+        }
     }
     if (meta->Find(Tag::VIDEO_HEIGHT) != meta->end()) {
-        int32_t videoHeight;
-        meta->Get<Tag::VIDEO_HEIGHT>(videoHeight);
-        videoHeight_ = videoHeight;
-        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
+        int32_t videoHeight = 0;
+        if (meta->Get<Tag::VIDEO_HEIGHT>(videoHeight)) {
+            videoHeight_ = videoHeight;
+            format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, videoHeight);
+        }
     }
     if (meta->Find(Tag::VIDEO_CAPTURE_RATE) != meta->end()) {
-        double videoCaptureRate;
-        meta->Get<Tag::VIDEO_CAPTURE_RATE>(videoCaptureRate);
-        format.PutDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_CAPTURE_RATE, videoCaptureRate);
+        double videoCaptureRate = 0.0;
+        if (meta->Get<Tag::VIDEO_CAPTURE_RATE>(videoCaptureRate)) {
+            format.PutDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_CAPTURE_RATE, videoCaptureRate);
+        }
     }
     if (meta->Find(Tag::MEDIA_BITRATE) != meta->end()) {
-        int64_t mediaBitrate;
-        meta->Get<Tag::MEDIA_BITRATE>(mediaBitrate);
-        format.PutLongValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, mediaBitrate);
+        int64_t mediaBitrate = 0;
+        if (meta->Get<Tag::MEDIA_BITRATE>(mediaBitrate)) {
+            format.PutLongValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, mediaBitrate);
+        }
     }
-    if (meta->Find(Tag::VIDEO_FRAME_RATE) != meta->end()) {
-        double videoFrameRate;
-        meta->Get<Tag::VIDEO_FRAME_RATE>(videoFrameRate);
-        FALSE_LOG_MSG(videoFrameRate > 0, "videoFrameRate get invalid");
-        videoFrameRate_ = static_cast<int32_t>(videoFrameRate);
-        MEDIA_LOG_I("videoFrameRate_: %{public}d", videoFrameRate_);
-        format.PutDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
-    }
+    ConfigureFrameRate(format, meta);
     if (meta->Find(Tag::MIME_TYPE) != meta->end()) {
         std::string mimeType;
         meta->Get<Tag::MIME_TYPE>(mimeType);
         format.PutStringValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType);
     }
     if (meta->Find(Tag::VIDEO_H265_PROFILE) != meta->end()) {
-        Plugins::HEVCProfile h265Profile;
-        meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile);
-        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
+        Plugins::HEVCProfile h265Profile = Plugins::HEVCProfile::HEVC_PROFILE_MAIN;
+        if (meta->Get<Tag::VIDEO_H265_PROFILE>(h265Profile)) {
+            format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, h265Profile);
+        }
+    }
+}
+
+void SurfaceEncoderAdapter::ConfigureFrameRate(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta)
+{
+    if (meta->Find(Tag::VIDEO_FRAME_RATE) != meta->end()) {
+        double videoFrameRate = 0.0;
+        if (meta->Get<Tag::VIDEO_FRAME_RATE>(videoFrameRate)) {
+            if (videoFrameRate <= 0) {
+                MEDIA_LOG_E("videoFrameRate get invalid");
+            }
+            videoFrameRate_.store(static_cast<int32_t>(videoFrameRate));
+        }
+        MEDIA_LOG_I("videoFrameRate_: %{public}d", videoFrameRate_.load());
+        format.PutDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_FRAME_RATE, videoFrameRate);
     }
 }
 
@@ -213,16 +222,21 @@ void SurfaceEncoderAdapter::ConfigureEnableFormat(MediaAVCodec::Format &format, 
 Status SurfaceEncoderAdapter::Configure(const std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("Configure");
+    if (!meta) {
+        SetFaultEvent("SurfaceEncoderAdapter::Configure, meta is null");
+        return Status::ERROR_NULL_POINTER;
+    }
+    if (!codecServer_) {
+        SetFaultEvent("SurfaceEncoderAdapter::Configure, CodecServer is null");
+        return Status::ERROR_UNKNOWN;
+    }
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Configure");
     MediaAVCodec::Format format = MediaAVCodec::Format();
     ConfigureGeneralFormat(format, meta);
     ConfigureAboutRGBA(format, meta);
     ConfigureAboutEnableTemporalScale(format, meta);
     ConfigureEnableFormat(format, meta);
-    if (!codecServer_) {
-        SetFaultEvent("SurfaceEncoderAdapter::Configure, CodecServer is null");
-        return Status::ERROR_UNKNOWN;
-    }
+
     int32_t ret = static_cast<int32_t>(Status::OK);
     // Register parameter callback for both transcoder and non-transcoder modes.
     // In transcoder mode, this enables per-frame VIDEO_REQUEST_I_FRAME and
@@ -334,6 +348,8 @@ Status SurfaceEncoderAdapter::SetStopTime()
 
 Status SurfaceEncoderAdapter::SetOutputBufferQueue(const sptr<AVBufferQueueProducer> &bufferQueueProducer)
 {
+    FALSE_RETURN_V_MSG(bufferQueueProducer != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "bufferQueueProducer is nullptr");
     MEDIA_LOG_I("SetOutputBufferQueue");
     outputBufferQueueProducer_ = bufferQueueProducer;
     return Status::OK;
@@ -343,6 +359,10 @@ Status SurfaceEncoderAdapter::SetEncoderAdapterCallback(
     const std::shared_ptr<EncoderAdapterCallback> &encoderAdapterCallback)
 {
     MEDIA_LOG_I("SetEncoderAdapterCallback");
+    if (encoderAdapterCallback == nullptr) {
+        SetFaultEvent("SurfaceEncoderAdapter::SetEncoderAdapterCallback, callback is null");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
     std::shared_ptr<MediaAVCodec::MediaCodecCallback> surfaceEncoderAdapterCallback =
         std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
     encoderAdapterCallback_ = encoderAdapterCallback;
@@ -422,17 +442,31 @@ Status SurfaceEncoderAdapter::Start()
         releaseBufferTask_->Start();
     }
     ret = codecServer_->Start();
-    isStart_ = true;
-    isStartKeyFramePts_ = true;
     if (ret == 0) {
+        isStartKeyFramePts_ = true;
         curState_ = ProcessStateCode::RECORDING;
         return Status::OK;
     } else {
+        StopReleaseBufferTask();
         SetFaultEvent("SurfaceEncoderAdapter::Start error", ret);
         MEDIA_LOG_E("CodecServer start failed");
         curState_ = ProcessStateCode::ERROR;
         return Status::ERROR_VID_ENC_START_FAILED;
     }
+}
+
+void SurfaceEncoderAdapter::StopReleaseBufferTask()
+{
+    if (!releaseBufferTask_) {
+        return;
+    }
+    {
+        std::lock_guard<std::mutex> lock(releaseBufferMutex_);
+        isThreadExit_ = true;
+    }
+    releaseBufferCondition_.notify_all();
+    releaseBufferTask_->Stop();
+    MEDIA_LOG_I("releaseBufferTask_ Stop");
 }
 
 Status SurfaceEncoderAdapter::Stop()
@@ -450,7 +484,9 @@ Status SurfaceEncoderAdapter::Stop()
     if (curState_ == ProcessStateCode::PAUSED && !isTransCoderMode) {
         stopTime_ = pauseTime_;
         // current frame is not the last frame before the pause time, wait for stop
-        if (currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / videoFrameRate_) && enableStabilization_) {
+        int32_t frameRate = videoFrameRate_.load();
+        if (frameRate > 0 && enableStabilization_ &&
+            currentKeyFramePts_ <= pauseTime_ - (SEC_TO_NS / frameRate)) {
             MEDIA_LOG_D("paused state -> stop, wait for stop.");
             HandleWaitforStop();
         }
@@ -466,19 +502,10 @@ Status SurfaceEncoderAdapter::Stop()
         AddStopPts();
     }
 
-    if (releaseBufferTask_) {
-        {
-            std::lock_guard<std::mutex> lock(releaseBufferMutex_);
-            isThreadExit_ = true;
-        }
-        releaseBufferCondition_.notify_all();
-        releaseBufferTask_->Stop();
-        MEDIA_LOG_I("releaseBufferTask_ Stop");
-    }
+    StopReleaseBufferTask();
     FALSE_RETURN_V_MSG(codecServer_, Status::OK, "codecServer_ is nullptr");
     MEDIA_LOG_I("CodecServer Stop start");
     int32_t ret = codecServer_->Stop();
-    isStart_ = false;
     if (ret == 0) {
         curState_ = ProcessStateCode::STOPPED;
         MEDIA_LOG_I("CodecServer Stop successfully");
@@ -519,7 +546,6 @@ Status SurfaceEncoderAdapter::Resume()
     MEDIA_LOG_I("Resume");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Resume");
     if (isTransCoderMode) {
-        isResume_ = true;
         return Status::OK;
     }
     std::lock_guard<std::mutex> lock(checkFramesMutex_);
@@ -587,10 +613,12 @@ Status SurfaceEncoderAdapter::Release()
 {
     MEDIA_LOG_I("Release");
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::Release");
+    StopReleaseBufferTask();
     if (!codecServer_) {
         return Status::OK;
     }
     int32_t ret = codecServer_->Release();
+    codecServer_ = nullptr;
     isWatermarkMode_ = false;
     if (ret == 0) {
         return Status::OK;
@@ -645,6 +673,8 @@ std::shared_ptr<Meta> SurfaceEncoderAdapter::GetOutputFormat()
 
 void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
+    FALSE_RETURN_MSG(buffer != nullptr, "buffer is nullptr");
+    FALSE_RETURN_MSG(buffer->memory_ != nullptr, "buffer->memory_ is nullptr");
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> emptyOutputBuffer;
     AVBufferConfig avBufferConfig;
@@ -656,14 +686,20 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
         MEDIA_LOG_I("RequestBuffer failed.");
         return;
     }
+    if (emptyOutputBuffer == nullptr) {
+        MEDIA_LOG_I("emptyOutputBuffer is nullptr");
+        return;
+    }
     std::shared_ptr<AVMemory> &bufferMem = emptyOutputBuffer->memory_;
     if (emptyOutputBuffer->memory_ == nullptr) {
         MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr");
         return;
     }
+    if (buffer->meta_ != nullptr && emptyOutputBuffer->meta_ != nullptr) {
+        *(emptyOutputBuffer->meta_) = *(buffer->meta_);
+    }
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
     bufferMem->SetSize(size);
-    *(emptyOutputBuffer->meta_) = *(buffer->meta_);
     emptyOutputBuffer->pts_ = buffer->pts_;
     emptyOutputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(emptyOutputBuffer, true);
@@ -699,7 +735,9 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     std::shared_ptr<AVMemory> &bufferMem = outputBuffer->memory_;
     FALSE_RETURN_MSG(outputBuffer->memory_ != nullptr, "outputBuffer->memory_ is nullptr");
     bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
-    *(outputBuffer->meta_) = *(buffer->meta_);
+    if (buffer->meta_ != nullptr && outputBuffer->meta_ != nullptr) {
+        *(outputBuffer->meta_) = *(buffer->meta_);
+    }
     outputBuffer->pts_ = buffer->pts_ / NS_PER_US;
     outputBuffer->flag_ = buffer->flag_;
     outputBufferQueueProducer_->PushBuffer(outputBuffer, true);
@@ -756,12 +794,13 @@ void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, con
     }
 
     if (meta->Find(Tag::VIDEO_ENCODE_BITRATE_MODE) != meta->end()) {
-        Plugins::VideoEncodeBitrateMode videoEncodeBitrateMode;
-        meta->Get<Tag::VIDEO_ENCODE_BITRATE_MODE>(videoEncodeBitrateMode);
-        MEDIA_LOG_I("ConfigureAboutRGBA BitrateMode(%{public}d)", static_cast<int32_t>(videoEncodeBitrateMode));
-        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, videoEncodeBitrateMode);
+        Plugins::VideoEncodeBitrateMode videoEncodeBitrateMode = Plugins::VideoEncodeBitrateMode::VBR;
+        if (meta->Get<Tag::VIDEO_ENCODE_BITRATE_MODE>(videoEncodeBitrateMode)) {
+            MEDIA_LOG_I("ConfigureAboutRGBA BitrateMode(%{public}d)", static_cast<int32_t>(videoEncodeBitrateMode));
+            format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE,
+                videoEncodeBitrateMode);
+        }
     }
-
     if (meta->Find(Tag::VIDEO_ENCODER_SQR_FACTOR) != meta->end()) {
         int32_t sqrFactor;
         meta->Get<Tag::VIDEO_ENCODER_SQR_FACTOR>(sqrFactor);
@@ -774,8 +813,11 @@ void SurfaceEncoderAdapter::ConfigureAboutEnableTemporalScale(MediaAVCodec::Form
     const std::shared_ptr<Meta> &meta)
 {
     if (meta->Find(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY) != meta->end()) {
-        bool enableTemporalScale;
-        meta->Get<Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY>(enableTemporalScale);
+        bool enableTemporalScale = false;
+        if (!meta->Get<Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY>(enableTemporalScale)) {
+            MEDIA_LOG_E("Get VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY failed");
+            return;
+        }
         if (!enableTemporalScale) {
             MEDIA_LOG_I("video encoder enableTemporalScale is false!");
             return;
@@ -820,6 +862,7 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     std::shared_ptr<Format> &parameter)
 {
     MediaAVCodec::AVCodecTrace trace("SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable");
+    FALSE_RETURN_MSG(codecServer_ != nullptr, "codecServer_ is nullptr.");
     if (isTransCoderMode) {
         HandleTranscoderMode(index, attribute, parameter);
         return;
@@ -839,8 +882,9 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     parameter->PutIntValue(Tag::VIDEO_ENCODER_PER_FRAME_DISCARD, isDroppedFrames);
     codecServer_->QueueInputParameter(index);
     recordVideoFrameCount_++;
-    FALSE_RETURN_MSG(videoFrameRate_ != 0, "videoFrameRate_ is 0, invalid value.");
-    if (stopTime_ != -1 && currentPts > stopTime_ - (SEC_TO_NS / videoFrameRate_)) {
+    int32_t frameRate = videoFrameRate_.load();
+    FALSE_RETURN_MSG(frameRate != 0, "videoFrameRate_ is 0, invalid value.");
+    if (stopTime_ != -1 && frameRate > 0 && currentPts > stopTime_ - (SEC_TO_NS / frameRate)) {
         MEDIA_LOG_I("currentPts > stopTime, send EOS.");
         int32_t ret = codecServer_->NotifyEos();
         if (ret != 0) {
@@ -1145,8 +1189,6 @@ void SurfaceEncoderAdapter::Clear()
     pauseTime_ = -1;
     resumeTime_ = -1;
     totalPauseTime_ = 0;
-    isStart_ = false;
-    isResume_ = false;
     isStartKeyFramePts_ = false;
     pauseResumeQueue_.clear();
     pauseResumePts_.clear();

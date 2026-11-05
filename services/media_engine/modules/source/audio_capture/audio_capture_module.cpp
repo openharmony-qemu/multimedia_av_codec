@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -419,6 +419,7 @@ Status AudioCaptureModule::SetAudioInterruptListener(const std::shared_ptr<Audio
 Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
     const std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> &callback)
 {
+    AutoLock lock(captureMutex_);
     if (audioCapturer_ == nullptr) {
         return Status::ERROR_AUD_INIT_FAILED;
     }
@@ -434,6 +435,7 @@ Status AudioCaptureModule::SetAudioCapturerInfoChangeCallback(
 
 Status AudioCaptureModule::SetWillMuteWhenInterrupted(bool muteWhenInterrupted)
 {
+    AutoLock lock(captureMutex_);
     FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_INVALID_OPERATION,
         "audioCapturer is nullptr, cannot SetWillMuteWhenInterrupted");
     int32_t ret = audioCapturer_->SetInterruptStrategy(muteWhenInterrupted ?
@@ -447,6 +449,7 @@ Status AudioCaptureModule::SetWillMuteWhenInterrupted(bool muteWhenInterrupted)
 
 Status AudioCaptureModule::GetCurrentCapturerChangeInfo(AudioStandard::AudioCapturerChangeInfo &changeInfo)
 {
+    AutoLock lock(captureMutex_);
     FALSE_RETURN_V_MSG_E(audioCapturer_ != nullptr, Status::ERROR_INVALID_OPERATION,
         "audioCapturer is nullptr, cannot get audio capturer change info");
     audioCapturer_->GetCurrentCapturerChangeInfo(changeInfo);

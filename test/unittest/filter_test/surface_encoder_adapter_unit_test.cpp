@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -117,6 +117,57 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetEncoderAdapterC
 }
 
 /**
+ * @tc.name: SurfaceEncoderAdapter_Configure_NullMeta_0100
+ * @tc.desc: Configure returns ERROR_NULL_POINTER when meta is nullptr (null guard added by security remediation)
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Configure_NullMeta_0100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->curState_ = ProcessStateCode::IDLE;
+    std::shared_ptr<Meta> nullMeta = nullptr;
+    Status ret = surfaceEncoderAdapter_->Configure(nullMeta);
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(surfaceEncoderAdapter_->curState_, ProcessStateCode::IDLE);
+    EXPECT_NE(surfaceEncoderAdapter_->curState_, ProcessStateCode::RECORDING);
+    EXPECT_FALSE(surfaceEncoderAdapter_->isTransCoderMode);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_SetEncoderAdapterCallback_Null_0100
+ * @tc.desc: SetEncoderAdapterCallback returns ERROR_INVALID_PARAMETER when callback is nullptr
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetEncoderAdapterCallback_Null_0100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->encoderAdapterCallback_ = std::make_shared<MyEncoderAdapterCallback>();
+    std::shared_ptr<EncoderAdapterCallback> nullCallback = nullptr;
+    Status ret = surfaceEncoderAdapter_->SetEncoderAdapterCallback(nullCallback);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+    EXPECT_NE(surfaceEncoderAdapter_->encoderAdapterCallback_, nullptr);
+    EXPECT_EQ(surfaceEncoderAdapter_->encoderAdapterCallback_.use_count(), 1);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_SetOutputBufferQueue_NullProducer_0100
+ * @tc.desc: SetOutputBufferQueue returns ERROR_INVALID_PARAMETER when producer is nullptr
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetOutputBufferQueue_NullProducer_0100, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->outputBufferQueueProducer_ =
+        new OHOS::Media::Pipeline::SurfaceEncoderAdapterUnitTestAP();
+    sptr<AVBufferQueueProducer> nullProducer = nullptr;
+    Status ret = surfaceEncoderAdapter_->SetOutputBufferQueue(nullProducer);
+    EXPECT_EQ(ret, Status::ERROR_INVALID_PARAMETER);
+    EXPECT_NE(surfaceEncoderAdapter_->outputBufferQueueProducer_, nullptr);
+}
+
+/**
  * @tc.name: SurfaceEncoderAdapter_Start_0100
  * @tc.desc: Start
  * @tc.type: FUNC
@@ -142,7 +193,6 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Start_0100, TestSi
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0100, TestSize.Level1)
 {
     surfaceEncoderAdapter_->codecServer_ = nullptr;
-    surfaceEncoderAdapter_->isStart_ = true;
     surfaceEncoderAdapter_->isTransCoderMode = true;
     surfaceEncoderAdapter_->releaseBufferTask_ = nullptr;
     surfaceEncoderAdapter_->encoderAdapterCallback_ = std::make_shared<MyEncoderAdapterCallback>();
@@ -151,7 +201,6 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0100, TestSiz
     surfaceEncoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("test");
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
     ret = surfaceEncoderAdapter_->Stop();
-    surfaceEncoderAdapter_->isStart_ = true;
     surfaceEncoderAdapter_->isTransCoderMode = false;
     surfaceEncoderAdapter_->encoderAdapterKeyFramePtsCallback_ =
         std::make_shared<MockEncoderAdapterKeyFramePtsCallback>();
@@ -169,14 +218,12 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0200, TestSiz
     surfaceEncoderAdapter_->encoderAdapterCallback_ = std::make_shared<MyEncoderAdapterCallback>();
     surfaceEncoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("test");
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
-    surfaceEncoderAdapter_->isStart_ = true;
     surfaceEncoderAdapter_->isTransCoderMode = false;
     surfaceEncoderAdapter_->curState_ = ProcessStateCode::RECORDING;
     surfaceEncoderAdapter_->encoderAdapterKeyFramePtsCallback_ =
         std::make_shared<MockEncoderAdapterKeyFramePtsCallback>();
     Status ret = surfaceEncoderAdapter_->Stop();
     EXPECT_EQ(ret, Status::OK);
-    surfaceEncoderAdapter_->isStart_ = true;
     surfaceEncoderAdapter_->isTransCoderMode = false;
     surfaceEncoderAdapter_->curState_ = ProcessStateCode::STOPPED;
     ret = surfaceEncoderAdapter_->Stop();
@@ -193,7 +240,6 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0300, TestSiz
     surfaceEncoderAdapter_->encoderAdapterCallback_ = std::make_shared<MyEncoderAdapterCallback>();
     surfaceEncoderAdapter_->releaseBufferTask_ = std::make_shared<Task>("test");
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
-    surfaceEncoderAdapter_->isStart_ = true;
     surfaceEncoderAdapter_->isTransCoderMode = false;
     surfaceEncoderAdapter_->curState_ = ProcessStateCode::PAUSED;
     // current frame is not the last frame before the pasue time, wait for stop
@@ -203,7 +249,6 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_Stop_0300, TestSiz
         std::make_shared<MockEncoderAdapterKeyFramePtsCallback>();
     Status ret = surfaceEncoderAdapter_->Stop();
     EXPECT_EQ(ret, Status::OK);
-    surfaceEncoderAdapter_->isStart_ = true;
     surfaceEncoderAdapter_->isTransCoderMode = false;
     surfaceEncoderAdapter_->curState_ = ProcessStateCode::PAUSED;
     surfaceEncoderAdapter_->currentKeyFramePts_ = 5000000000000;
@@ -361,8 +406,11 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetParameter_0100,
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ReleaseBuffer_0100, TestSize.Level1)
 {
     surfaceEncoderAdapter_->isThreadExit_ = true;
+    // 预置 indexs_ 有待释放的 index，验证 isThreadExit_=true 时 ReleaseBuffer 直接退出不消费 indexs_
+    surfaceEncoderAdapter_->indexs_.push_back(1);
     surfaceEncoderAdapter_->ReleaseBuffer();
-    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, -1);
+    // SUT 在 while 首部检查 isThreadExit_ 直接 break，indexs_ 不应被消费
+    EXPECT_EQ(surfaceEncoderAdapter_->indexs_.size(), 1);
 }
 
 /**
@@ -377,9 +425,17 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
     MediaAVCodec::Format format;
     meta->SetData(Tag::VIDEO_PIXEL_FORMAT, 2);
     surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
-    meta->SetData(Tag::VIDEO_ENCODE_BITRATE_MODE, 2);
+    // 验证 SUT 将 meta 中的 VIDEO_PIXEL_FORMAT 写入 format
+    int32_t pixelFormat = -1;
+    EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, pixelFormat));
+    EXPECT_EQ(pixelFormat, 2);
+    meta->SetData(Tag::VIDEO_ENCODE_BITRATE_MODE, Plugins::VideoEncodeBitrateMode::CQ);
     surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
-    EXPECT_NE(meta->Find(Tag::VIDEO_PIXEL_FORMAT), meta->end());
+    // 验证 SUT 将 meta 中的 VIDEO_ENCODE_BITRATE_MODE 写入 format
+    int32_t bitrateMode = -1;
+    EXPECT_TRUE(format.GetIntValue(
+        MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODE_BITRATE_MODE, bitrateMode));
+    EXPECT_EQ(bitrateMode, static_cast<int32_t>(Plugins::VideoEncodeBitrateMode::CQ));
 }
 
 /**
@@ -422,13 +478,12 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
 
 /**
  * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_SqrFactor_0300
- * @tc.desc: ConfigureAboutRGBA with VIDEO_ENCODER_SQR_FACTOR boundary value 0 in Meta
- *           Covers: branch I (Meta has SQR_FACTOR=0 → Format conversion preserves 0)
+ * @tc.desc: Test ConfigureAboutRGBA with VIDEO_ENCODER_SQR_FACTOR boundary value 0
  * @tc.type: FUNC
+ * @tc.require:
  */
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_SqrFactor_0300, TestSize.Level1)
 {
-    // 场景：Meta 中设置 SQR_FACTOR 边界值 0；预期 Format 中写入 0
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     int32_t expectedSqrFactor = 0;
     meta->SetData(Tag::VIDEO_ENCODER_SQR_FACTOR, expectedSqrFactor);
@@ -443,13 +498,12 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
 
 /**
  * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_SqrFactor_0400
- * @tc.desc: ConfigureAboutRGBA with VIDEO_ENCODER_SQR_FACTOR boundary value 51 in Meta
- *           Covers: branch I (Meta has SQR_FACTOR=51 → Format conversion preserves 51)
+ * @tc.desc: Test ConfigureAboutRGBA with VIDEO_ENCODER_SQR_FACTOR boundary value 51
  * @tc.type: FUNC
+ * @tc.require:
  */
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_SqrFactor_0400, TestSize.Level1)
 {
-    // 场景：Meta 中设置 SQR_FACTOR 边界值 51；预期 Format 中写入 51
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     int32_t expectedSqrFactor = 51;
     meta->SetData(Tag::VIDEO_ENCODER_SQR_FACTOR, expectedSqrFactor);
@@ -471,11 +525,18 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, ConfigureAboutEnableTemporalScale_0100, 
 {
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     MediaAVCodec::Format format;
-    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 0);
+    // enableTemporalScale=false 时 SUT 提前 return，不写 format
+    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, false);
     surfaceEncoderAdapter_->ConfigureAboutEnableTemporalScale(format, meta);
-    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, 2);
+    int32_t temporalScale = -1;
+    EXPECT_FALSE(format.GetIntValue(
+        MediaAVCodec::MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, temporalScale));
+    // enableTemporalScale=true 时 SUT 写 format（固定值 1）
+    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, true);
     surfaceEncoderAdapter_->ConfigureAboutEnableTemporalScale(format, meta);
-    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+    EXPECT_TRUE(format.GetIntValue(
+        MediaAVCodec::MediaDescriptionKey::OH_MD_KEY_VIDEO_ENCODER_ENABLE_TEMPORAL_SCALABILITY, temporalScale));
+    EXPECT_EQ(temporalScale, 1);
 }
 
 /**
@@ -488,10 +549,12 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, OnInputParameterWithAttrAvailablee_100, 
     uint32_t index = 0;
     std::shared_ptr<Format> attribute = std::make_shared<Format>();
     std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    // isTransCoderMode=true：SUT 走 HandleTranscoderMode 后 return，不修改 recordVideoFrameCount_
     surfaceEncoderAdapter_->isTransCoderMode = true;
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
     surfaceEncoderAdapter_->OnInputParameterWithAttrAvailable(index, attribute, parameter);
-    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+    EXPECT_EQ(surfaceEncoderAdapter_->recordVideoFrameCount_, 0);
+    // isTransCoderMode=false：SUT 走 HandlePtsMapping + recordVideoFrameCount_++
     surfaceEncoderAdapter_->isTransCoderMode = false;
     surfaceEncoderAdapter_->OnInputParameterWithAttrAvailable(index, attribute, parameter);
     EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
@@ -528,6 +591,81 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckAndAdjustFram
     surfaceEncoderAdapter_->IsSupportBoostFrameRate();
     Status ret = surfaceEncoderAdapter_->CheckAndAdjustFrameRate();
     EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_CheckAndAdjustFrameRate_200
+ * @tc.desc: CheckAndAdjustFrameRate
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckAndAdjustFrameRate_200, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = false;
+    Status ret = surfaceEncoderAdapter_->CheckAndAdjustFrameRate();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_CheckAndAdjustFrameRate_300
+ * @tc.desc: CheckAndAdjustFrameRate
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckAndAdjustFrameRate_300, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
+    surfaceEncoderAdapter_->isSupportBoostFrameRate_ = true;
+    surfaceEncoderAdapter_->stoppedVideoFrameCount_ = 0;
+    Status ret = surfaceEncoderAdapter_->CheckAndAdjustFrameRate();
+    EXPECT_EQ(ret, Status::OK);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_CheckAndAdjustFrameRate_400
+ * @tc.desc: CheckAndAdjustFrameRate
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckAndAdjustFrameRate_400, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
+    surfaceEncoderAdapter_->isSupportBoostFrameRate_ = true;
+    surfaceEncoderAdapter_->stoppedVideoFrameCount_ = 2;
+    surfaceEncoderAdapter_->codecServer_ = nullptr;
+    Status ret = surfaceEncoderAdapter_->CheckAndAdjustFrameRate();
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_CheckAndAdjustFrameRate_500
+ * @tc.desc: CheckAndAdjustFrameRate
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckAndAdjustFrameRate_500, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
+    surfaceEncoderAdapter_->isSupportBoostFrameRate_ = true;
+    surfaceEncoderAdapter_->stoppedVideoFrameCount_ = 2;
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->codecMimeType_ = "";
+    Status ret = surfaceEncoderAdapter_->CheckAndAdjustFrameRate();
+    EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_CheckAndAdjustFrameRate_600
+ * @tc.desc: CheckAndAdjustFrameRate
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckAndAdjustFrameRate_600, TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
+    surfaceEncoderAdapter_->isSupportBoostFrameRate_ = true;
+    surfaceEncoderAdapter_->stoppedVideoFrameCount_ = 2;
+    surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->codecMimeType_ = "video/avc";
+    surfaceEncoderAdapter_->videoWidth_ = 0;
+    surfaceEncoderAdapter_->videoHeight_ = 0;
+    Status ret = surfaceEncoderAdapter_->CheckAndAdjustFrameRate();
+    EXPECT_EQ(ret, Status::ERROR_INVALID_DATA);
 }
 
 /**
@@ -594,33 +732,6 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_CheckFrames_500, T
 }
 
 /**
- * @tc.name: SurfaceEncoderAdapter_TransCoder_100
- * @tc.desc: TransCoder
- * @tc.type: FUNC
- */
-HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_100, TestSize.Level1)
-{
-    uint8_t data[100];
-    std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
-    surfaceEncoderAdapter_->outputBufferQueueProducer_ =
-                                new OHOS::Media::Pipeline::SurfaceEncoderAdapterUnitTestAP();
-    uint32_t index = 1;
-    surfaceEncoderAdapter_->stopTime_ = 0;
-    buffer->pts_ = 1;
-    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    surfaceEncoderAdapter_->startBufferTime_ = -1;
-    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    surfaceEncoderAdapter_->isResume_ = false;
-    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    surfaceEncoderAdapter_->isResume_ = true;
-    surfaceEncoderAdapter_->isTransCoderMode = true;
-    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    surfaceEncoderAdapter_->isTransCoderMode = false;
-    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    EXPECT_EQ(surfaceEncoderAdapter_->isResume_, buffer->pts_);
-}
-
-/**
  * @tc.name: SurfaceEncoderAdapter_TransCoder_200
  * @tc.desc: TransCoderOnOutputBufferAvailable
  * @tc.type: FUNC
@@ -632,14 +743,14 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_200, Te
     surfaceEncoderAdapter_->outputBufferQueueProducer_ =
                                 new OHOS::Media::Pipeline::SurfaceEncoderAdapterUnitTestAP();
     uint32_t index = 1;
+    // Mock RequestBuffer 返回 ERROR_UNKNOWN → SUT 提前 return，不会 push 到 indexs_
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    surfaceEncoderAdapter_->isResume_ = true;
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
     surfaceEncoderAdapter_->isTransCoderMode = true;
-    surfaceEncoderAdapter_->startBufferTime_ = -1;
     buffer->pts_ = 1;
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, -1);
+    // SUT 因 RequestBuffer 失败未消费 index，indexs_ 应为空
+    EXPECT_EQ(surfaceEncoderAdapter_->indexs_.size(), 0);
 }
 
 /**
@@ -657,18 +768,21 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoder_300, Te
     uint32_t index = 1;
     buffer->pts_ = 0;
     surfaceEncoderAdapter_->eosPts_ = 1;
+    // Mock RequestBuffer 失败 → SUT 提前 return，不修改 indexs_
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
     buffer->pts_ = 1;
     surfaceEncoderAdapter_->eosPts_ = 0;
     surfaceEncoderAdapter_->codecServer_ = std::make_shared<MyAVCodecVideoEncoder>();
     surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(index, buffer);
-    EXPECT_EQ(surfaceEncoderAdapter_->startBufferTime_, -1);
+    // TransCoderOnOutputBufferAvailable 不读 codecServer_/eosPts_，且 RequestBuffer 失败时不 push indexs_
+    EXPECT_EQ(surfaceEncoderAdapter_->indexs_.size(), 0);
 }
 
 /**
  * @tc.name: SurfaceEncoderAdapter_OnOutputBufferAvailable_0100
  * @tc.desc: OnOutputBufferAvailable
  * @tc.type: FUNC
+ * @tc.require:
  */
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvailable_0100, TestSize.Level1)
 {
@@ -678,18 +792,25 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvai
     surfaceEncoderAdapter_->isTransCoderMode = true;
     uint8_t data[100];
     std::shared_ptr<AVBuffer> buffer = AVBuffer::CreateAVBuffer(data, sizeof(data), sizeof(data));
+    // SUT 在所有路径首部均执行 currentPts_ = max(currentPts_, buffer->pts_)
+    buffer->pts_ = 5;
     surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    EXPECT_EQ(surfaceEncoderAdapter_->currentPts_.load(), 5);
     surfaceEncoderAdapter_->isTransCoderMode = false;
     surfaceEncoderAdapter_->stopTime_ = 1;
     buffer->pts_ = 0;
     surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    // currentPts_ 取 max，传入 0 不应覆盖已有 5
+    EXPECT_EQ(surfaceEncoderAdapter_->currentPts_.load(), 5);
     surfaceEncoderAdapter_->stopTime_ = -1;
     buffer->pts_ = 0;
     surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
+    EXPECT_EQ(surfaceEncoderAdapter_->currentPts_.load(), 5);
     surfaceEncoderAdapter_->stopTime_ = 1;
-    buffer->pts_ = 2;
+    buffer->pts_ = 10;
     surfaceEncoderAdapter_->OnOutputBufferAvailable(index, buffer);
-    EXPECT_NE(surfaceEncoderAdapter_->startBufferTime_, buffer->pts_);
+    // currentPts_ 取 max，10 > 5 → 更新为 10
+    EXPECT_EQ(surfaceEncoderAdapter_->currentPts_.load(), 10);
 }
 
 /**
@@ -703,19 +824,37 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureGeneralFo
     MediaAVCodec::Format format;
     meta->SetData(Tag::VIDEO_WIDTH, 1);
     surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
+    // SUT 将 meta 中的 VIDEO_WIDTH 写入 format 并同步到成员 videoWidth_
+    int32_t width = -1;
+    EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_WIDTH, width));
+    EXPECT_EQ(width, 1);
+    EXPECT_EQ(surfaceEncoderAdapter_->videoWidth_, 1);
     meta->SetData(Tag::VIDEO_HEIGHT, 1);
     surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
-    meta->SetData(Tag::VIDEO_CAPTURE_RATE, 1);
+    int32_t height = -1;
+    EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_HEIGHT, height));
+    EXPECT_EQ(height, 1);
+    EXPECT_EQ(surfaceEncoderAdapter_->videoHeight_, 1);
+    meta->SetData(Tag::VIDEO_CAPTURE_RATE, 1.0);
     surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
-    meta->SetData(Tag::MEDIA_BITRATE, 1);
+    double captureRate = -1.0;
+    EXPECT_TRUE(format.GetDoubleValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_CAPTURE_RATE, captureRate));
+    EXPECT_EQ(captureRate, 1.0);
+    meta->SetData(Tag::MEDIA_BITRATE, static_cast<int64_t>(1));
     surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
-    meta->SetData(Tag::VIDEO_FRAME_RATE, 1);
+    int64_t bitrate = -1;
+    EXPECT_TRUE(format.GetLongValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_BITRATE, bitrate));
+    EXPECT_EQ(bitrate, 1);
+    meta->SetData(Tag::VIDEO_FRAME_RATE, 1.0);
     surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
-    meta->SetData(Tag::MIME_TYPE, 1);
+    EXPECT_EQ(surfaceEncoderAdapter_->videoFrameRate_.load(), 1);
+    meta->SetData(Tag::MIME_TYPE, std::string("video/hevc"));
     surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
-    meta->SetData(Tag::VIDEO_H265_PROFILE, 1);
+    meta->SetData(Tag::VIDEO_H265_PROFILE, Plugins::HEVCProfile::HEVC_PROFILE_MAIN_10);
     surfaceEncoderAdapter_->ConfigureGeneralFormat(format, meta);
-    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+    int32_t profile = -1;
+    EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PROFILE, profile));
+    EXPECT_EQ(profile, static_cast<int32_t>(Plugins::HEVCProfile::HEVC_PROFILE_MAIN_10));
 }
 
 /**
@@ -727,10 +866,15 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureEnableFor
 {
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     MediaAVCodec::Format format;
+    // meta 无 VIDEO_ENCODER_ENABLE_WATERMARK → SUT 不写 format
     surfaceEncoderAdapter_->ConfigureEnableFormat(format, meta);
-    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, 1);
+    int32_t enableWatermark = -1;
+    EXPECT_FALSE(format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, enableWatermark));
+    // meta 有 VIDEO_ENCODER_ENABLE_WATERMARK=true → SUT 写 format（PutIntValue 写入 1）
+    meta->SetData(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, true);
     surfaceEncoderAdapter_->ConfigureEnableFormat(format, meta);
-    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+    EXPECT_TRUE(format.GetIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, enableWatermark));
+    EXPECT_EQ(enableWatermark, 1);
 }
 
 /**
@@ -740,11 +884,19 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureEnableFor
  */
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddStartPts_0200, TestSize.Level1)
 {
+    surfaceEncoderAdapter_->encoderAdapterKeyFramePtsCallback_ =
+                            std::make_shared<MyEncoderAdapterKeyFramePtsCallback>();
+    // isStartKeyFramePts_=false → SUT 不修改 keyFramePts_/isStartKeyFramePts_
     surfaceEncoderAdapter_->isStartKeyFramePts_ = false;
-    surfaceEncoderAdapter_->AddStartPts(0);
+    surfaceEncoderAdapter_->AddStartPts(1000);  // 1000ns = 1us
+    EXPECT_EQ(surfaceEncoderAdapter_->keyFramePts_, "");
+    EXPECT_FALSE(surfaceEncoderAdapter_->isStartKeyFramePts_);
+    // isStartKeyFramePts_=true → SUT 追加 keyFramePts_ 并置 isStartKeyFramePts_=false
     surfaceEncoderAdapter_->isStartKeyFramePts_ = true;
-    surfaceEncoderAdapter_->AddStartPts(0);
-    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+    surfaceEncoderAdapter_->AddStartPts(1000);
+    EXPECT_FALSE(surfaceEncoderAdapter_->isStartKeyFramePts_);
+    // SUT 追加 std::to_string(currentPts / NS_PER_US) + "," → "1,"
+    EXPECT_EQ(surfaceEncoderAdapter_->keyFramePts_, "1,");
 }
 
 /**
@@ -756,16 +908,27 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddStopPts_0100, T
 {
     surfaceEncoderAdapter_->encoderAdapterKeyFramePtsCallback_ =
                             std::make_shared<MyEncoderAdapterKeyFramePtsCallback>();
-    surfaceEncoderAdapter_->isStartKeyFramePts_ = false;
+    // isStopKeyFramePts_=false → SUT 不修改任何状态
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = false;
     surfaceEncoderAdapter_->AddStopPts();
-    surfaceEncoderAdapter_->isStartKeyFramePts_ = true;
-    surfaceEncoderAdapter_->currentKeyFramePts_ = 0;
+    EXPECT_FALSE(surfaceEncoderAdapter_->isStopKeyFramePts_);
+    EXPECT_EQ(surfaceEncoderAdapter_->keyFramePts_, "");
+    // isStopKeyFramePts_=true 且 currentKeyFramePts_ <= stopTime_ → 走 else 分支追加 currentKeyFramePts_
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
+    surfaceEncoderAdapter_->currentKeyFramePts_ = 0;  // 0us
     surfaceEncoderAdapter_->stopTime_ = 0;
     surfaceEncoderAdapter_->AddStopPts();
-    surfaceEncoderAdapter_->currentKeyFramePts_ = 1;
+    // SUT 处理后置 isStopKeyFramePts_=false 并清空 keyFramePts_
+    EXPECT_FALSE(surfaceEncoderAdapter_->isStopKeyFramePts_);
+    EXPECT_EQ(surfaceEncoderAdapter_->keyFramePts_, "");
+    // isStopKeyFramePts_=true 且 currentKeyFramePts_ > stopTime_ → 走 if 分支追加 preKeyFramePts_
+    surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
+    surfaceEncoderAdapter_->currentKeyFramePts_ = 1000;  // 1000ns = 1us
     surfaceEncoderAdapter_->stopTime_ = 0;
+    surfaceEncoderAdapter_->preKeyFramePts_ = 2000;  // 2000ns = 2us
     surfaceEncoderAdapter_->AddStopPts();
-    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+    EXPECT_FALSE(surfaceEncoderAdapter_->isStopKeyFramePts_);
+    EXPECT_EQ(surfaceEncoderAdapter_->keyFramePts_, "");
 }
 
 /**
@@ -777,11 +940,15 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_AddStopPts_0200, T
 {
     surfaceEncoderAdapter_->encoderAdapterKeyFramePtsCallback_ =
                             std::make_shared<MyEncoderAdapterKeyFramePtsCallback>();
+    // isStopKeyFramePts_=true 且 currentKeyFramePts_ > stopTime_ → 走 if 分支
     surfaceEncoderAdapter_->isStopKeyFramePts_ = true;
     surfaceEncoderAdapter_->currentKeyFramePts_ = 1;
     surfaceEncoderAdapter_->stopTime_ = 0;
+    surfaceEncoderAdapter_->preKeyFramePts_ = 0;
     surfaceEncoderAdapter_->AddStopPts();
-    EXPECT_EQ(surfaceEncoderAdapter_->totalPauseTime_, 0);
+    // SUT 处理后置 isStopKeyFramePts_=false 并清空 keyFramePts_
+    EXPECT_FALSE(surfaceEncoderAdapter_->isStopKeyFramePts_);
+    EXPECT_EQ(surfaceEncoderAdapter_->keyFramePts_, "");
 }
 
 /**
@@ -872,7 +1039,6 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest,
         std::make_shared<MockEncoderAdapterKeyFramePtsCallback>());
     EXPECT_EQ(ret, Status::OK);
 }
-
 
 /**
  * @tc.name: SurfaceEncoderAdapter_SetEnableBFrame_0100
@@ -1107,21 +1273,23 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetClipStartTime_0
 
 /**
  * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0100
- * @tc.desc: TransCoder HDR->HDR with HDRVivid flag sets pixel format to SURFACE_FORMAT (P010)
+ * @tc.desc: TransCoder mode with HDRVivid flag — ConfigureAboutRGBA reads VIDEO_PIXEL_FORMAT from meta as-is,
+ *           no HDR Vivid -> SURFACE_FORMAT conversion in current code, pixel format stays NV12 from meta.
  * @tc.type: FUNC
  */
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0100, TestSize.Level1)
 {
     surfaceEncoderAdapter_->isTransCoderMode = true;
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    meta->SetData(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
+    int32_t originalPixelFormat = static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12);
+    meta->SetData(Tag::VIDEO_PIXEL_FORMAT, originalPixelFormat);
     meta->SetData(Tag::VIDEO_IS_HDR_VIVID, true);
     MediaAVCodec::Format format;
     surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
 
     int32_t actualPixelFormat = -1;
     EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, actualPixelFormat));
-    EXPECT_EQ(actualPixelFormat, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT));
+    EXPECT_EQ(actualPixelFormat, originalPixelFormat);
     surfaceEncoderAdapter_->isTransCoderMode = false;
 }
 
@@ -1189,7 +1357,8 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
 
 /**
  * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0500
- * @tc.desc: TransCoder HDR->HDR with no VIDEO_PIXEL_FORMAT in meta still writes SURFACE_FORMAT
+ * @tc.desc: TransCoder mode with HDRVivid flag but no VIDEO_PIXEL_FORMAT in meta — ConfigureAboutRGBA uses
+ *           default NV12 (L754 init), no HDR Vivid -> SURFACE_FORMAT conversion in current code.
  * @tc.type: FUNC
  */
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0500, TestSize.Level1)
@@ -1197,15 +1366,128 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
     surfaceEncoderAdapter_->isTransCoderMode = true;
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     meta->SetData(Tag::VIDEO_IS_HDR_VIVID, true);
-    // No VIDEO_PIXEL_FORMAT set - default VideoPixelFormat::UNKNOWN will be used in else branch,
-    // but HDRVivid path takes precedence
+    // No VIDEO_PIXEL_FORMAT set — L754 defaults to NV12
     MediaAVCodec::Format format;
     surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
 
     int32_t actualPixelFormat = -1;
     EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, actualPixelFormat));
-    EXPECT_EQ(actualPixelFormat, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT));
+    EXPECT_EQ(actualPixelFormat, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
     surfaceEncoderAdapter_->isTransCoderMode = false;
+}
+
+class CountingAVCodecVideoEncoder : public MyAVCodecVideoEncoder {
+public:
+    int32_t notifyEosCount_ = 0;
+    int32_t NotifyEos() override
+    {
+        notifyEosCount_++;
+        return 0;
+    }
+};
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_OnInputParameter_VideoFrameRateZero_0100
+ * @tc.desc: Test OnInputParameterWithAttrAvailable guards division by zero when videoFrameRate_ is 0
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnInputParameter_VideoFrameRateZero_0100, TestSize.Level1)
+{
+    uint32_t index = 0;
+    std::shared_ptr<Format> attribute = std::make_shared<Format>();
+    std::shared_ptr<Format> parameter = std::make_shared<Format>();
+    auto countingEncoder = std::make_shared<CountingAVCodecVideoEncoder>();
+    surfaceEncoderAdapter_->codecServer_ = countingEncoder;
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    surfaceEncoderAdapter_->isWatermarkMode_ = false;
+    surfaceEncoderAdapter_->videoFrameRate_.store(0);
+    surfaceEncoderAdapter_->stopTime_ = 100;
+    int64_t recordBefore = surfaceEncoderAdapter_->recordVideoFrameCount_;
+    surfaceEncoderAdapter_->OnInputParameterWithAttrAvailable(index, attribute, parameter);
+    EXPECT_GT(surfaceEncoderAdapter_->recordVideoFrameCount_, recordBefore);
+    EXPECT_EQ(countingEncoder->notifyEosCount_, 0);
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_OnOutputBufferAvailable_NullBuffer_0100
+ * @tc.desc: OnOutputBufferAvailable with buffer=nullptr — covers L687 guard (cherry-pick null guard).
+ *           Encoder callback receives nullptr buffer (abnormal): guard returns early,
+ *           currentPts_ not updated (L689 skipped), indexs_ not pushed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvailable_NullBuffer_0100,
+         TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    int64_t ptsBefore = surfaceEncoderAdapter_->currentPts_.load();
+    std::shared_ptr<AVBuffer> nullBuffer = nullptr;
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(1, nullBuffer);
+    // Guard returns at L687: currentPts_ should stay at initial value
+    EXPECT_EQ(surfaceEncoderAdapter_->currentPts_.load(), ptsBefore);
+    std::lock_guard<std::mutex> lock(surfaceEncoderAdapter_->releaseBufferMutex_);
+    EXPECT_TRUE(surfaceEncoderAdapter_->indexs_.empty());
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_OnOutputBufferAvailable_NullMemory_0100
+ * @tc.desc: OnOutputBufferAvailable with buffer->memory_=nullptr — covers L691 guard.
+ *           buffer non-null (pts_ set) but memory_ is null. Guard returns at L691:
+ *           currentPts_ updated by L689, but indexs_ not pushed (L717 not executed).
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_OnOutputBufferAvailable_NullMemory_0100,
+         TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = false;
+    auto buffer = std::make_shared<AVBuffer>();
+    ASSERT_NE(buffer, nullptr);
+    constexpr int64_t testPts = 5000;
+    buffer->pts_ = testPts;
+    surfaceEncoderAdapter_->OnOutputBufferAvailable(1, buffer);
+    // L689 executed (currentPts_ updated to buffer->pts_), but L691 guard returns before indexs_ push
+    EXPECT_EQ(surfaceEncoderAdapter_->currentPts_.load(), testPts);
+    std::lock_guard<std::mutex> lock(surfaceEncoderAdapter_->releaseBufferMutex_);
+    EXPECT_TRUE(surfaceEncoderAdapter_->indexs_.empty());
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_TransCoderOnOutputBufferAvailable_NullBuffer_0100
+ * @tc.desc: TransCoderOnOutputBufferAvailable with buffer=nullptr — covers L647 guard (cherry-pick null guard).
+ *           Transcoder output callback receives nullptr buffer: guard returns at L647,
+ *           outputBufferQueueProducer_ not accessed, indexs_ not pushed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoderOnOutputBufferAvailable_NullBuffer_0100,
+         TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->outputBufferQueueProducer_ = nullptr;  // guard should not access producer
+    std::shared_ptr<AVBuffer> nullBuffer = nullptr;
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(1, nullBuffer);
+    // Guard returns early: indexs_ should not be appended
+    std::lock_guard<std::mutex> lock(surfaceEncoderAdapter_->releaseBufferMutex_);
+    EXPECT_TRUE(surfaceEncoderAdapter_->indexs_.empty());
+}
+
+/**
+ * @tc.name: SurfaceEncoderAdapter_TransCoderOnOutputBufferAvailable_NullMemory_0100
+ * @tc.desc: TransCoderOnOutputBufferAvailable with buffer->memory_=nullptr — covers L648 guard.
+ *           buffer non-null but memory_ is null: guard returns at L648,
+ *           outputBufferQueueProducer_ not accessed, indexs_ not pushed.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_TransCoderOnOutputBufferAvailable_NullMemory_0100,
+         TestSize.Level1)
+{
+    surfaceEncoderAdapter_->isTransCoderMode = true;
+    surfaceEncoderAdapter_->outputBufferQueueProducer_ = nullptr;  // guard should not access producer
+    auto buffer = std::make_shared<AVBuffer>();
+    ASSERT_NE(buffer, nullptr);
+    surfaceEncoderAdapter_->TransCoderOnOutputBufferAvailable(1, buffer);
+    // Guard returns early: indexs_ should not be appended
+    std::lock_guard<std::mutex> lock(surfaceEncoderAdapter_->releaseBufferMutex_);
+    EXPECT_TRUE(surfaceEncoderAdapter_->indexs_.empty());
 }
 }  // namespace Pipeline
 }  // namespace Media

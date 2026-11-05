@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -89,6 +89,28 @@ HWTEST_F(AudioCaptureModuleUnitTest, DoDeinit_001, TestSize.Level1)
         .WillOnce(Return(true));
     audioCaptureModule_->audioCapturer_ = std::move(mockAudioCapturer_);
     EXPECT_EQ(audioCaptureModule_->DoDeinit(), Status::OK);
+}
+
+/**
+ * @tc.name  : Test DoDeinit
+ * @tc.number: DoDeinit_002
+ * @tc.desc  : Test DoDeinit audioCapturerInfoChangeCallback_ != nullptr
+ */
+HWTEST_F(AudioCaptureModuleUnitTest, DoDeinit_002, TestSize.Level1)
+{
+    EXPECT_CALL(*mockAudioCapturer_, GetStatus())
+        .WillOnce(Return(AudioStandard::CapturerState::CAPTURER_RUNNING));
+    EXPECT_CALL(*mockAudioCapturer_, Stop())
+        .WillOnce(Return(true));
+    EXPECT_CALL(*mockAudioCapturer_, Release())
+        .WillOnce(Return(true));
+    EXPECT_CALL(*mockAudioCapturer_, RemoveAudioCapturerInfoChangeCallback(_))
+        .WillOnce(Return(true));
+    audioCaptureModule_->audioCapturer_ = std::move(mockAudioCapturer_);
+    audioCaptureModule_->audioCapturerInfoChangeCallback_ =
+        std::make_shared<MockAudioCapturerInfoChangeCallback>();
+    EXPECT_EQ(audioCaptureModule_->DoDeinit(), Status::OK);
+    EXPECT_EQ(audioCaptureModule_->audioCapturer_, nullptr);
 }
 
 /**

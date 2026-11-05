@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -342,6 +342,7 @@ Status AudioEncoderFilter::DoRelease()
     }
 
     int32_t ret = mediaCodec_->Release();
+    mediaCodec_ = nullptr;
     if (ret != 0) {
         SetFaultEvent("AudioEncoderFilter::DoRelease error", ret);
         MEDIA_LOG_E("audioEncoder release fail");
@@ -647,7 +648,7 @@ Status AudioEncoderFilter::UpdateParameterToConfigure(const std::shared_ptr<Meta
         configureParameter_->GetData(Tag::MIME_TYPE, outputMime);
     }
     shouldJudgeChange = isPureAudioMode_.load() || (!isPureAudioMode_.load() && outputMime == "audio/mpeg");
-    if (isTranscoderMode_ && shouldJudgeChange.load()) {
+    if (isTranscoderMode_ && shouldJudgeChange.load() && meta != nullptr) {
         int32_t outputbuffersize = 0;
         if (meta->GetData(Tag::AUDIO_MAX_OUTPUT_SIZE, outputbuffersize)) {
             MEDIA_LOG_I("AUDIO_MAX_OUTPUT_SIZE is outputbuffersize: " PUBLIC_LOG_D32,
@@ -815,7 +816,8 @@ void AudioEncoderFilter::AddInternalBufferQueue()
 
     // 设置监听器（监听器会通知独立线程）
     sptr<IConsumerListener> intermediateListener_ = new IntermediateBufferAvailableListener(shared_from_this());
-    intermediateQueueConsumer_->SetBufferAvailableListener(intermediateListener_);
+    Status listenerRet = intermediateQueueConsumer_->SetBufferAvailableListener(intermediateListener_);
+    FALSE_RETURN_MSG(listenerRet == Status::OK, "SetBufferAvailableListener failed");
 
     // 获取 MediaCodec 的输入队列生产者（必须在启动处理线程前初始化）
     {
@@ -963,12 +965,15 @@ Status AudioEncoderFilter::ConvertAudioData(const std::shared_ptr<AVBuffer>& src
 
     MEDIA_LOG_I("is converting");
     uint32_t outputSize = static_cast<uint32_t>(dstBuffer->memory_->GetCapacity());
+    auto dstAddr = dstBuffer->memory_->GetAddr();
+    FALSE_RETURN_V_MSG_E(dstAddr != nullptr, Status::ERROR_INVALID_PARAMETER,
+        "ConvertAudioData: dst buffer addr is nullptr");
     auto callback = std::make_shared<ConverterInputCallback>(srcBuffer);
     channelConverter_->SetInputCallback(callback);
 
     uint32_t actualOutputSize = 0;
     int32_t convertRet = channelConverter_->Process(
-        dstBuffer->memory_->GetAddr(), outputSize, &actualOutputSize);
+        dstAddr, outputSize, &actualOutputSize);
     FALSE_RETURN_V_MSG_E(convertRet == 0,
         Status::ERROR_UNKNOWN, "Channel conversion failed, ret: %{public}d", convertRet);
 

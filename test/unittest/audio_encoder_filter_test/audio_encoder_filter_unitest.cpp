@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Huawei Device Co., Ltd.
+ * Copyright (C) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -177,6 +177,21 @@ public:
     }
 };
 
+class CountingFilterLinkCallback : public FilterLinkCallback {
+public:
+    int32_t linkedResultCount_ = 0;
+    sptr<AVBufferQueueProducer> lastQueue_ = nullptr;
+    std::shared_ptr<Meta> lastMeta_;
+    void OnLinkedResult(const sptr<AVBufferQueueProducer>& queue, std::shared_ptr<Meta>& meta) override
+    {
+        linkedResultCount_++;
+        lastQueue_ = queue;
+        lastMeta_ = meta;
+    }
+    void OnUnlinkedResult(std::shared_ptr<Meta>& meta) override { (void)meta; }
+    void OnUpdatedResult(std::shared_ptr<Meta>& meta) override { (void)meta; }
+};
+
 void AudioEncoderFilterUnitest::SetUpTestCase(void) {}
  
 void AudioEncoderFilterUnitest::TearDownTestCase(void) {}
@@ -319,7 +334,14 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoRelease_0100, TestSize.
     audioEncoderFilter_->mediaCodec_->state_ = CodecState::RUNNING;
     audioEncoderFilter_->mediaCodec_->codecPlugin_ = mockCodecPlugin;
     EXPECT_CALL(*mockCodecPlugin, Release()).WillOnce(Return(Status::ERROR_UNKNOWN));
-    EXPECT_NE(audioEncoderFilter_->DoRelease(), Status::OK);
+    EXPECT_EQ(audioEncoderFilter_->DoRelease(), Status::ERROR_FRAMEWORK_ERR);
+}
+
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_DoRelease_0200, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
+
     //ret = 0
     audioEncoderFilter_->mediaCodec_->state_ = CodecState::RELEASING;
     EXPECT_EQ(audioEncoderFilter_->DoRelease(), Status::OK);
@@ -683,6 +705,188 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_AddInternalBufferQueue_Nu
     // Destroy the filter - should not crash
     audioEncoderFilter_ = std::make_shared<AudioEncoderFilter>("testAudioEncoderFilter", FilterType::FILTERTYPE_AENC);
     EXPECT_NE(audioEncoderFilter_, nullptr);
+}
+
+
+/**
+ * @tc.name: AudioEncoderFilter_UpdateParameterToConfigure_MetaNull_0100
+ * @tc.desc: Test UpdateParameterToConfigure with null meta in transcoder mode,
+ *           should skip transcoder block and not set AUDIO_MAX_INPUT_BUFFER_SIZE
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_UpdateParameterToConfigure_MetaNull_0100, TestSize.Level1)
+{
+    auto mockCodecPlugin = std::make_shared<MockCodecPlugin>("video/avc");
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::INITIALIZED;
+    audioEncoderFilter_->mediaCodec_->codecPlugin_ = mockCodecPlugin;
+    EXPECT_CALL(*mockCodecPlugin, SetParameter(testing::_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockCodecPlugin, SetDataCallback(testing::_)).WillOnce(Return(Status::OK));
+
+    audioEncoderFilter_->isTranscoderMode_ = true;
+    audioEncoderFilter_->isPureAudioMode_.store(true);
+    audioEncoderFilter_->configureParameter_ = std::make_shared<Meta>();
+    audioEncoderFilter_->codecMimeType_ = "audio/mp4a-latm";
+
+    Status ret = audioEncoderFilter_->UpdateParameterToConfigure(nullptr);
+    EXPECT_EQ(ret, Status::OK);
+    int32_t maxInputBufferSize = -1;
+    bool hasField = audioEncoderFilter_->configureParameter_->GetData(Tag::AUDIO_MAX_INPUT_BUFFER_SIZE,
+        maxInputBufferSize);
+    EXPECT_FALSE(hasField);
+}
+
+/**
+ * @tc.name: AudioEncoderFilter_UpdateParameterToConfigure_MetaNotNull_0200
+ * @tc.desc: Test UpdateParameterToConfigure with non-null meta containing AUDIO_MAX_OUTPUT_SIZE,
+ *           should enter transcoder block and set AUDIO_MAX_INPUT_BUFFER_SIZE
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_UpdateParameterToConfigure_MetaNotNull_0200, TestSize.Level1)
+{
+    auto mockCodecPlugin = std::make_shared<MockCodecPlugin>("video/avc");
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
+    audioEncoderFilter_->mediaCodec_->state_ = CodecState::INITIALIZED;
+    audioEncoderFilter_->mediaCodec_->codecPlugin_ = mockCodecPlugin;
+    EXPECT_CALL(*mockCodecPlugin, SetParameter(testing::_)).WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockCodecPlugin, SetDataCallback(testing::_)).WillOnce(Return(Status::OK));
+
+    audioEncoderFilter_->isTranscoderMode_ = true;
+    audioEncoderFilter_->isPureAudioMode_.store(true);
+    audioEncoderFilter_->configureParameter_ = std::make_shared<Meta>();
+    audioEncoderFilter_->transcoderMeta_ = std::make_shared<Meta>();
+    audioEncoderFilter_->codecMimeType_ = "audio/mp4a-latm";
+
+    auto meta = std::make_shared<Meta>();
+    meta->SetData(Tag::AUDIO_MAX_OUTPUT_SIZE, 4096);
+
+    Status ret = audioEncoderFilter_->UpdateParameterToConfigure(meta);
+    EXPECT_EQ(ret, Status::OK);
+    int32_t maxInputBufferSize = -1;
+    bool hasField = audioEncoderFilter_->configureParameter_->GetData(Tag::AUDIO_MAX_INPUT_BUFFER_SIZE,
+        maxInputBufferSize);
+    EXPECT_TRUE(hasField);
+    EXPECT_GT(maxInputBufferSize, 0);
+}
+
+/**
+ * @tc.name: AudioEncoderFilter_OnLinkedResult_TransCoderGetInputQueueNull_0100
+ * @tc.desc: Test OnLinkedResult transcoder branch when GetInputBufferQueue returns nullptr,
+ *           should return early without invoking callback
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_TransCoderGetInputQueueNull_0100,
+         TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
+    ASSERT_EQ(audioEncoderFilter_->mediaCodec_->state_, CodecState::UNINITIALIZED);
+
+    auto countingCb = std::make_shared<CountingFilterLinkCallback>();
+    audioEncoderFilter_->onLinkedResultCallback_ = countingCb;
+
+    audioEncoderFilter_->isTranscoderMode_ = true;
+    audioEncoderFilter_->needChannelConvert_.store(false);
+    audioEncoderFilter_->shouldJudgeChange.store(false);
+    audioEncoderFilter_->transcoderMeta_ = std::make_shared<Meta>();
+
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    sptr<AVBufferQueueProducer> queue = nullptr;
+    audioEncoderFilter_->OnLinkedResult(queue, meta);
+
+    EXPECT_EQ(countingCb->linkedResultCount_, 0);
+    EXPECT_EQ(countingCb->lastMeta_, nullptr);
+    EXPECT_FALSE(audioEncoderFilter_->mediaCodec_->isBufferMode_);
+}
+
+/**
+ * @tc.name: AudioEncoderFilter_OnLinkedResult_TransCoderForwardsTranscoderMeta_0200
+ * @tc.desc: Test OnLinkedResult transcoder branch forwards transcoderMeta_ to callback
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_TransCoderForwardsTranscoderMeta_0200,
+         TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
+    mediaCodec->state_ = CodecState::PREPARED;
+    mediaCodec->isSurfaceMode_ = false;
+    auto inputQueue = AVBufferQueue::Create(8);
+    ASSERT_NE(inputQueue, nullptr);
+    sptr<AVBufferQueueProducer> inputProducer = inputQueue->GetProducer();
+    ASSERT_NE(inputProducer, nullptr);
+    mediaCodec->inputBufferQueueProducer_ = inputProducer;
+
+    auto countingCb = std::make_shared<CountingFilterLinkCallback>();
+    audioEncoderFilter_->onLinkedResultCallback_ = countingCb;
+
+    audioEncoderFilter_->isTranscoderMode_ = true;
+    audioEncoderFilter_->needChannelConvert_.store(false);
+    audioEncoderFilter_->shouldJudgeChange.store(false);
+    auto transcoderMeta = std::make_shared<Meta>();
+    transcoderMeta->Set<Tag::MIME_TYPE>(std::string("audio/transcoder"));
+    audioEncoderFilter_->transcoderMeta_ = transcoderMeta;
+
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->Set<Tag::MIME_TYPE>(std::string("audio/source"));
+    auto outputQueue = AVBufferQueue::Create(8);
+    sptr<AVBufferQueueProducer> queue = outputQueue->GetProducer();
+    audioEncoderFilter_->OnLinkedResult(queue, meta);
+
+    EXPECT_EQ(countingCb->linkedResultCount_, 1);
+    EXPECT_EQ(countingCb->lastMeta_, transcoderMeta);
+    std::string mimeType;
+    EXPECT_TRUE(countingCb->lastMeta_->Get<Tag::MIME_TYPE>(mimeType));
+    EXPECT_EQ(mimeType, "audio/transcoder");
+    EXPECT_TRUE(mediaCodec->isBufferMode_);
+}
+
+/**
+ * @tc.name: AudioEncoderFilter_OnLinkedResult_NonTransCoderForwardsMeta_0300
+ * @tc.desc: Test OnLinkedResult non-transcoder branch forwards caller meta to callback
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_NonTransCoderForwardsMeta_0300,
+         TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
+    mediaCodec->state_ = CodecState::PREPARED;
+    mediaCodec->isSurfaceMode_ = false;
+    auto inputQueue = AVBufferQueue::Create(8);
+    ASSERT_NE(inputQueue, nullptr);
+    sptr<AVBufferQueueProducer> inputProducer = inputQueue->GetProducer();
+    ASSERT_NE(inputProducer, nullptr);
+    mediaCodec->inputBufferQueueProducer_ = inputProducer;
+
+    auto countingCb = std::make_shared<CountingFilterLinkCallback>();
+    audioEncoderFilter_->onLinkedResultCallback_ = countingCb;
+
+    audioEncoderFilter_->isTranscoderMode_ = false;
+    auto transcoderMeta = std::make_shared<Meta>();
+    transcoderMeta->Set<Tag::MIME_TYPE>(std::string("audio/transcoder"));
+    audioEncoderFilter_->transcoderMeta_ = transcoderMeta;
+
+    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
+    meta->Set<Tag::MIME_TYPE>(std::string("audio/source"));
+    auto outputQueue = AVBufferQueue::Create(8);
+    sptr<AVBufferQueueProducer> queue = outputQueue->GetProducer();
+    audioEncoderFilter_->OnLinkedResult(queue, meta);
+
+    EXPECT_EQ(countingCb->linkedResultCount_, 1);
+    EXPECT_EQ(countingCb->lastMeta_, meta);
+    std::string mimeType;
+    EXPECT_TRUE(countingCb->lastMeta_->Get<Tag::MIME_TYPE>(mimeType));
+    EXPECT_EQ(mimeType, "audio/source");
+    EXPECT_NE(countingCb->lastMeta_, transcoderMeta);
+    EXPECT_TRUE(mediaCodec->isBufferMode_);
 }
 }
 }
