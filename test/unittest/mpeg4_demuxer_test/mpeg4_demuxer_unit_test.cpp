@@ -26,6 +26,7 @@
 #include "file_server_demo.h"
 #include "mpeg4_demuxer_unit_test.h"
 #include "syspara/parameters.h"
+#include "test_http_port.h"
 
 #define LOCAL true
 
@@ -38,7 +39,7 @@ using namespace std;
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
-static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 const int64_t SOURCE_OFFSET = 0;
 const int32_t WIDTH = 3840;
 const int32_t HEIGHT = 2160;

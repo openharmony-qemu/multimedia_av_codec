@@ -85,6 +85,7 @@ ohos_unittest("demuxer_unit_test") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "DEMUXER_CAPI_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46687",
   ]
   defines += av_codec_defines
   deps = [

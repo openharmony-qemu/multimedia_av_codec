@@ -120,6 +120,7 @@ ohos_unittest("demuxer_plugin_unit_test") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "USE_FF_DEMUXER",
+    "AVCODEC_TEST_HTTP_PORT=46686",
   ]
   external_deps = [
     "c_utils:utils",

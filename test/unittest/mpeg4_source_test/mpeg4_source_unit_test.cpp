@@ -31,6 +31,7 @@
 #include "native_avsource.h"
 #include "native_avcodec_base.h"
 #include "syspara/parameters.h"
+#include "test_http_port.h"
 
 #define LOCAL true
 #define URI false
@@ -43,7 +44,7 @@ using namespace std;
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
-static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 static const string TEST_TIMED_METADATA = "com.openharmony.timed_metadata.test";
 const int64_t SOURCE_OFFSET = 0;
 string g_mp4CameraPath = TEST_FILE_PATH + string("camera.mp4");

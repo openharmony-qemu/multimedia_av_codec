@@ -25,6 +25,7 @@
 #include "media_description.h"
 #include "file_server_demo.h"
 #include "mpeg4_demuxer_unit_test.h"
+#include "test_http_port.h"
 
 #define URI false
 
@@ -37,7 +38,7 @@ using namespace std;
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
-static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 static const string TEST_URI_PATH2 = "http://192.168.3.11:8080/share/";
 
 list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SYNC,

@@ -31,6 +31,7 @@
 #include "file_server_demo.h"
 #include <numeric>
 #include <vector>
+#include "test_http_port.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -46,7 +47,7 @@ list<SeekMode> seekModes = {SeekMode::SEEK_NEXT_SYNC, SeekMode::SEEK_PREVIOUS_SY
     SeekMode::SEEK_CLOSEST_SYNC};
 const int32_t DEFAULT_TIMEOUT = 100; // 100ms
 unique_ptr<FileServerDemo> server = nullptr;
-static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 static const string TEST_RELATIVE_PATH = "/data/test/media/";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 // FLV

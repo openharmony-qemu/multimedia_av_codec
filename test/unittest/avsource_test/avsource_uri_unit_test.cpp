@@ -24,6 +24,7 @@
 #include "media_description.h"
 #include "file_server_demo.h"
 #include "avsource_unit_test.h"
+#include "test_http_port.h"
 
 using namespace OHOS;
 using namespace OHOS::MediaAVCodec;
@@ -33,7 +34,7 @@ using namespace std;
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
-static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 string g_mp4Uri = TEST_URI_PATH + string("test_264_B_Gop25_4sec_cover.mp4");
 string g_mp4Uri3 = TEST_URI_PATH + string("test_mpeg2_B_Gop25_4sec.mp4");
 string g_mp4Uri5 = TEST_URI_PATH + string("test_suffix_mismatch.mp4");
@@ -128,7 +129,7 @@ HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithURI_1050, TestSize.Level1)
  */
 HWTEST_F(AVSourceUnitTest, AVSource_CreateSourceWithURI_1060, TestSize.Level1)
 {
-    string uri = "http://127.0.0.1:46666/asdffafafaf";
+    string uri = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/asdffafafaf";
     source_ = AVSourceMockFactory::CreateSourceWithURI(const_cast<char*>(uri.data()));
     ASSERT_EQ(source_, nullptr);
 }

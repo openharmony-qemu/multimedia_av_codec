@@ -20,6 +20,7 @@
 #include "file_server_demo.h"
 #include <thread>
 #include <iostream>
+#include "test_http_port.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -111,7 +112,7 @@ static const std::string DEMUXER_PLUGIN_NAME_DTS = "avdemux_dts";
 
 
 static const string TEST_FILE_PATH = "/data/test/media/";
-static const string TEST_NET_FILE_PATH = "http://127.0.0.1:46666/";
+static const string TEST_NET_FILE_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 static const string TEST_FILE_URI_MP4_1 = TEST_FILE_PATH + "01_video_audio.mp4";
 static const string TEST_NET_URI_MP4_1 = TEST_NET_FILE_PATH + "01_video_audio.mp4";
 static const string TEST_FILE_URI_MP4_2 = TEST_FILE_PATH + "demuxer_parser_hdr_1_hevc.mp4";

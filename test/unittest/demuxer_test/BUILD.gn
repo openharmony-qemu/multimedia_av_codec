@@ -105,6 +105,7 @@ ohos_unittest("demuxer_capi_unit_test") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "DEMUXER_CAPI_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46671",
   ]
   defines += av_codec_defines
   deps = [
@@ -203,6 +204,7 @@ ohos_unittest("demuxer_inner_unit_test") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "DEMUXER_INNER_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46672",
   ]
   deps = [
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -286,6 +288,7 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
     "AV_CODEC_PATH=${av_codec_path}",
     "DEMUXER_CAPI_UNIT_TEST",
     "DEMUXER_CAPI_BUFFER_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46673",
   ]
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
@@ -370,6 +373,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "DEMUXER_INNER_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46685",
   ]
   deps = [
     "$av_codec_root_dir/services/utils:av_codec_service_utils",

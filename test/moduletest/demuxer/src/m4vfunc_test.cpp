@@ -28,6 +28,7 @@
 #include <cmath>
 #include <thread>
 #include "file_server_demo.h"
+#include "test_http_port.h"
 
 using namespace OHOS::MediaAVCodec;
 using namespace std;
@@ -37,7 +38,7 @@ namespace Media {
 
 static unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
-static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 
 class DemuxerM4vFuncNdkTest : public testing::Test {
 public:
@@ -51,17 +52,17 @@ public:
     void TearDown(void);
 protected:
     const char *INP_DIR_1 = "/data/test/media/m4v_h264_high@level31_1280_720_aac_2.m4v";
-    const char *INP_URI_1 = "http://127.0.0.1:46666/m4v_h264_high@level31_1280_720_aac_2.m4v";
+    const char *INP_URI_1 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/m4v_h264_high@level31_1280_720_aac_2.m4v";
     const char *INP_DIR_2 = "/data/test/media/m4v_h264_high@level31_1280_720_aac_31.m4v";
-    const char *INP_URI_2 = "http://127.0.0.1:46666/m4v_h264_high@level31_1280_720_aac_31.m4v";
+    const char *INP_URI_2 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/m4v_h264_high@level31_1280_720_aac_31.m4v";
     const char *INP_DIR_3 = "/data/test/media/m4v_h264_high@level31_1280_720_aac_13.m4v";
-    const char *INP_URI_3 = "http://127.0.0.1:46666/m4v_h264_high@level31_1280_720_aac_13.m4v";
+    const char *INP_URI_3 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/m4v_h264_high@level31_1280_720_aac_13.m4v";
     const char *INP_DIR_4 = "/data/test/media/m4v_mpeg4_ac3_alac.m4v";
-    const char *INP_URI_4 = "http://127.0.0.1:46666/m4v_mpeg4_ac3_alac.m4v";
+    const char *INP_URI_4 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/m4v_mpeg4_ac3_alac.m4v";
     const char *INP_DIR_5 = "/data/test/media/m4v_hevc_aac.m4v";
-    const char *INP_URI_5 = "http://127.0.0.1:46666/m4v_hevc_aac.m4v";
+    const char *INP_URI_5 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/m4v_hevc_aac.m4v";
     const char *INP_DIR_6 = "/data/test/media/m4v_h264_alac.m4v";
-    const char *INP_URI_6 = "http://127.0.0.1:46666/m4v_h264_alac.m4v";
+    const char *INP_URI_6 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/m4v_h264_alac.m4v";
 };
 
 static int g_fd = -1;

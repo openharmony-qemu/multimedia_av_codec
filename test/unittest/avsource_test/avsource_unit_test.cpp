@@ -32,6 +32,7 @@
 #include "media_data_source.h"
 #include "native_avsource.h"
 #include "syspara/parameters.h"
+#include "test_http_port.h"
 
 #define LOCAL true
 #define URI false
@@ -44,7 +45,7 @@ using namespace std;
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
-static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 static const string TEST_TIMED_METADATA = "com.openharmony.timed_metadata.test";
 const int64_t SOURCE_OFFSET = 0;
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";

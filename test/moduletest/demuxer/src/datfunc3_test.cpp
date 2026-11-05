@@ -28,6 +28,7 @@
 #include "native_avformat.h"
 #include "native_avmemory.h"
 #include "native_avsource.h"
+#include "test_http_port.h"
 
 using namespace OHOS::MediaAVCodec;
 using namespace std;
@@ -43,33 +44,33 @@ public:
 
 protected:
     const char *INP_DIR_1 = "/data/test/media/audio/ac3.dat";
-    const char *INP_URI_1 = "http://127.0.0.1:46666/audio/ac3.dat";
+    const char *INP_URI_1 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/ac3.dat";
     const char *INP_DIR_2 = "/data/test/media/audio/eac3.dat";
-    const char *INP_URI_2 = "http://127.0.0.1:46666/audio/eac3.dat";
+    const char *INP_URI_2 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/eac3.dat";
     const char *INP_DIR_3 = "/data/test/media/audio/amr_nb_8000_1_amr.dat";
-    const char *INP_URI_3 = "http://127.0.0.1:46666/audio/amr_nb_8000_1_amr.dat";
+    const char *INP_URI_3 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/amr_nb_8000_1_amr.dat";
     const char *INP_DIR_4 = "/data/test/media/audio/AAC_48000_1_aac.dat";
-    const char *INP_URI_4 = "http://127.0.0.1:46666/audio/AAC_48000_1_aac.dat";
+    const char *INP_URI_4 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/AAC_48000_1_aac.dat";
     const char *INP_DIR_5 = "/data/test/media/audio/MP3_48000_1_mp3.dat";
-    const char *INP_URI_5 = "http://127.0.0.1:46666/audio/MP3_48000_1_mp3.dat";
+    const char *INP_URI_5 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/MP3_48000_1_mp3.dat";
     const char *INP_DIR_6 = "/data/test/media/audio/FLAC_48000_1_flac.dat";
-    const char *INP_URI_6 = "http://127.0.0.1:46666/audio/FLAC_48000_1_flac.dat";
+    const char *INP_URI_6 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/FLAC_48000_1_flac.dat";
     const char *INP_DIR_7 = "/data/test/media/audio/OGG_48000_1_ogg.dat";
-    const char *INP_URI_7 = "http://127.0.0.1:46666/audio/OGG_48000_1_ogg.dat";
+    const char *INP_URI_7 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/OGG_48000_1_ogg.dat";
     const char *INP_DIR_8 = "/data/test/media/audio/M4A_48000_1_m4a.dat";
-    const char *INP_URI_8 = "http://127.0.0.1:46666/audio/M4A_48000_1_m4a.dat";
+    const char *INP_URI_8 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/M4A_48000_1_m4a.dat";
     const char *INP_DIR_9 = "/data/test/media/audio/wav_48000_1_wav.dat";
-    const char *INP_URI_9 = "http://127.0.0.1:46666/audio/wav_48000_1_wav.dat";
+    const char *INP_URI_9 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/wav_48000_1_wav.dat";
     const char *INP_DIR_10 = "/data/test/media/audio/ape.dat";
-    const char *INP_URI_10 = "http://127.0.0.1:46666/audio/ape.dat";
+    const char *INP_URI_10 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/ape.dat";
     const char *INP_DIR_11 = "/data/test/media/audio/aac_wma.dat";
-    const char *INP_URI_11 = "http://127.0.0.1:46666/audio/aac_wma.dat";
+    const char *INP_URI_11 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/aac_wma.dat";
     const char *INP_DIR_12 = "/data/test/media/audio/dts.dat";
-    const char *INP_URI_12 = "http://127.0.0.1:46666/audio/dts.dat";
+    const char *INP_URI_12 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/dts.dat";
     const char *INP_DIR_13 = "/data/test/media/audio/alac_caf.dat";
-    const char *INP_URI_13 = "http://127.0.0.1:46666/audio/alac_caf.dat";
+    const char *INP_URI_13 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/alac_caf.dat";
     const char *INP_DIR_14 = "/data/test/media/audio/pcmS16be_44100_aiff.dat";
-    const char *INP_URI_14 = "http://127.0.0.1:46666/audio/pcmS16be_44100_aiff.dat";
+    const char *INP_URI_14 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/audio/pcmS16be_44100_aiff.dat";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;

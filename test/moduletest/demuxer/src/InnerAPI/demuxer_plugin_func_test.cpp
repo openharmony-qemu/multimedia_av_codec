@@ -18,6 +18,7 @@
 #include "stream_demuxer.h"
 #include "plugin/plugin_manager_v2.h"
 #include "file_server_demo.h"
+#include "test_http_port.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -114,7 +115,7 @@ static const std::string DEMUXER_PLUGIN_NAME_DTS = "avdemux_dts";
 
 
 static const string TEST_FILE_PATH = "/data/test/media/";
-static const string TEST_NET_FILE_PATH = "http://127.0.0.1:46666/";
+static const string TEST_NET_FILE_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 static const string TEST_FILE_URI_AAC = TEST_FILE_PATH + "audio/AAC_48000_1.aac";
 static const string TEST_FILE_URI_AMRNB = TEST_FILE_PATH + "audio/amr_nb_8000_1.amr";
 static const string TEST_FILE_URI_AMRWB = TEST_FILE_PATH + "audio/amr_wb_16000_1.amr";

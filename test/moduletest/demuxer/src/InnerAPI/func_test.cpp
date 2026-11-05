@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <string>
 #include <fcntl.h>
+#include "test_http_port.h"
 
 
 using namespace std;
@@ -1482,7 +1483,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0100, TestSize.Leve
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         auto demuxerSample = make_unique<InnerDemuxerSample>();
-        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/mp3_h264.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/mp3_h264.mp4", false), AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->getHdrMetadata, false);
         ASSERT_EQ(demuxerSample->ReadSample(373, 468), AVCS_ERR_OK);
     }
@@ -1513,7 +1514,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0200, TestSize.Leve
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         auto demuxerSample = make_unique<InnerDemuxerSample>();
-        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/demuxer_parser_hdr_1_hevc.mp4", false),
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/demuxer_parser_hdr_1_hevc.mp4", false),
             AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->getHdrMetadata, true);
         ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
@@ -1546,7 +1547,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0300, TestSize.Leve
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         auto demuxerSample = make_unique<InnerDemuxerSample>();
-        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/hlg.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/hlg.mp4", false), AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->getHdrMetadata, true);
         ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HLG));
         ASSERT_EQ(demuxerSample->ReadSample(80, 0), AVCS_ERR_OK);
@@ -1578,7 +1579,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0400, TestSize.Leve
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         auto demuxerSample = make_unique<InnerDemuxerSample>();
-        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/hlgHdrVivid.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/hlgHdrVivid.mp4", false), AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->getHdrMetadata, true);
         ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
         ASSERT_EQ(demuxerSample->ReadSample(66, 103), AVCS_ERR_OK);
@@ -1610,7 +1611,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0500, TestSize.Leve
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         auto demuxerSample = make_unique<InnerDemuxerSample>();
-        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/pqHdrvivid.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/pqHdrvivid.mp4", false), AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->getHdrMetadata, true);
         ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_VIVID));
         ASSERT_EQ(demuxerSample->ReadSample(3000, 0), AVCS_ERR_OK);
@@ -1642,7 +1643,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0600, TestSize.Leve
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         auto demuxerSample = make_unique<InnerDemuxerSample>();
-        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/dolbyvision.MOV", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/dolbyvision.MOV", false), AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->getHdrMetadata, true);
         ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::HDR_10));
         ASSERT_EQ(demuxerSample->ReadSample(324, 468), AVCS_ERR_OK);
@@ -1674,7 +1675,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0700, TestSize.Leve
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         auto demuxerSample = make_unique<InnerDemuxerSample>();
-        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/mp3_h265.mp4", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/mp3_h265.mp4", false), AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->getHdrMetadata, true);
         ASSERT_EQ(demuxerSample->hdrType, static_cast<int32_t>(Media::Plugins::HDRType::NONE));
         ASSERT_EQ(demuxerSample->ReadSample(372, 468), AVCS_ERR_OK);
@@ -1705,7 +1706,7 @@ HWTEST_F(DemuxerInnerFuncNdkTest, DEMUXER_HDR10_HLG_META_URI_0800, TestSize.Leve
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) == 0) {
         auto demuxerSample = make_unique<InnerDemuxerSample>();
-        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:46666/mp3_h265.mkv", false), AVCS_ERR_OK);
+        ASSERT_EQ(demuxerSample->InitWithFile("http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/mp3_h265.mkv", false), AVCS_ERR_OK);
         ASSERT_EQ(demuxerSample->getHdrMetadata, false);
         ASSERT_EQ(demuxerSample->ReadSample(372, 468), AVCS_ERR_OK);
     }

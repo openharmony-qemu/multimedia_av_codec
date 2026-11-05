@@ -45,6 +45,7 @@
 #include "mpeg4_sample_memory.h"
 #include "mpeg4_sample_helper.h"
 #include "rbsp_context.h"
+#include "test_http_port.h"
 
 using namespace OHOS;
 using namespace OHOS::Media;
@@ -72,7 +73,7 @@ const std::string TEST_MP4_PATH_VVC = "/data/test/media/vvc_1280_720_8.mp4";
 const std::string TEST_MP4_PATH_WEBVTT = "/data/test/media/webvtt.mp4";
 const std::string TEST_MP4_MULTIPLE_VIDEO_TRACKS = "/data/test/media/h264_double_video_audio.mp4";
 const std::string ZERO_STTS_HVC1_FIXTURE = "/data/test/media/zero_stts_hvc1_55_samples.mp4";
-const std::string TEST_URI_PATH = "http://127.0.0.1:46666/";
+const std::string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 const std::string TEST_RELATIVE_PATH = "/data/test/media/";
 const std::string TEST_DEMUXER_RESOURCE_DIR = "/data/test/media";
 const std::string FFMPEG_MP4_PLUGIN_NAME = "avdemux_mov,mp4,m4a,3gp,3g2,mj2";
