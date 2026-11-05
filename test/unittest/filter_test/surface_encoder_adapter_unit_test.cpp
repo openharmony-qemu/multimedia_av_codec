@@ -1273,23 +1273,21 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_SetClipStartTime_0
 
 /**
  * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0100
- * @tc.desc: TransCoder mode with HDRVivid flag — ConfigureAboutRGBA reads VIDEO_PIXEL_FORMAT from meta as-is,
- *           no HDR Vivid -> SURFACE_FORMAT conversion in current code, pixel format stays NV12 from meta.
+ * @tc.desc: TransCoder HDR->HDR with HDRVivid flag sets pixel format to SURFACE_FORMAT (P010)
  * @tc.type: FUNC
  */
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0100, TestSize.Level1)
 {
     surfaceEncoderAdapter_->isTransCoderMode = true;
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    int32_t originalPixelFormat = static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12);
-    meta->SetData(Tag::VIDEO_PIXEL_FORMAT, originalPixelFormat);
+    meta->SetData(Tag::VIDEO_PIXEL_FORMAT, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
     meta->SetData(Tag::VIDEO_IS_HDR_VIVID, true);
     MediaAVCodec::Format format;
     surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
 
     int32_t actualPixelFormat = -1;
     EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, actualPixelFormat));
-    EXPECT_EQ(actualPixelFormat, originalPixelFormat);
+    EXPECT_EQ(actualPixelFormat, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT));
     surfaceEncoderAdapter_->isTransCoderMode = false;
 }
 
@@ -1357,8 +1355,7 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
 
 /**
  * @tc.name: SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0500
- * @tc.desc: TransCoder mode with HDRVivid flag but no VIDEO_PIXEL_FORMAT in meta — ConfigureAboutRGBA uses
- *           default NV12 (L754 init), no HDR Vivid -> SURFACE_FORMAT conversion in current code.
+ * @tc.desc: TransCoder HDR->HDR with no VIDEO_PIXEL_FORMAT in meta still writes SURFACE_FORMAT
  * @tc.type: FUNC
  */
 HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA_HdrVivid_0500, TestSize.Level1)
@@ -1366,13 +1363,14 @@ HWTEST_F(SurfaceEncoderAdapterUnitTest, SurfaceEncoderAdapter_ConfigureAboutRGBA
     surfaceEncoderAdapter_->isTransCoderMode = true;
     std::shared_ptr<Meta> meta = std::make_shared<Meta>();
     meta->SetData(Tag::VIDEO_IS_HDR_VIVID, true);
-    // No VIDEO_PIXEL_FORMAT set — L754 defaults to NV12
+    // No VIDEO_PIXEL_FORMAT set - default VideoPixelFormat::UNKNOWN will be used in else branch,
+    // but HDRVivid path takes precedence
     MediaAVCodec::Format format;
     surfaceEncoderAdapter_->ConfigureAboutRGBA(format, meta);
 
     int32_t actualPixelFormat = -1;
     EXPECT_TRUE(format.GetIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_PIXEL_FORMAT, actualPixelFormat));
-    EXPECT_EQ(actualPixelFormat, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::NV12));
+    EXPECT_EQ(actualPixelFormat, static_cast<int32_t>(MediaAVCodec::VideoPixelFormat::SURFACE_FORMAT));
     surfaceEncoderAdapter_->isTransCoderMode = false;
 }
 

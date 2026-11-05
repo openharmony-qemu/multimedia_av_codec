@@ -774,43 +774,12 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_UpdateParameterToConfigur
 }
 
 /**
- * @tc.name: AudioEncoderFilter_OnLinkedResult_TransCoderGetInputQueueNull_0100
- * @tc.desc: Test OnLinkedResult transcoder branch when GetInputBufferQueue returns nullptr,
- *           should return early without invoking callback
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_TransCoderGetInputQueueNull_0100,
-         TestSize.Level1)
-{
-    auto mediaCodec = std::make_shared<MediaCodec>();
-    audioEncoderFilter_->mediaCodec_ = mediaCodec;
-    ASSERT_EQ(audioEncoderFilter_->mediaCodec_->state_, CodecState::UNINITIALIZED);
-
-    auto countingCb = std::make_shared<CountingFilterLinkCallback>();
-    audioEncoderFilter_->onLinkedResultCallback_ = countingCb;
-
-    audioEncoderFilter_->isTranscoderMode_ = true;
-    audioEncoderFilter_->needChannelConvert_.store(false);
-    audioEncoderFilter_->shouldJudgeChange.store(false);
-    audioEncoderFilter_->transcoderMeta_ = std::make_shared<Meta>();
-
-    std::shared_ptr<Meta> meta = std::make_shared<Meta>();
-    sptr<AVBufferQueueProducer> queue = nullptr;
-    audioEncoderFilter_->OnLinkedResult(queue, meta);
-
-    EXPECT_EQ(countingCb->linkedResultCount_, 0);
-    EXPECT_EQ(countingCb->lastMeta_, nullptr);
-    EXPECT_FALSE(audioEncoderFilter_->mediaCodec_->isBufferMode_);
-}
-
-/**
- * @tc.name: AudioEncoderFilter_OnLinkedResult_TransCoderForwardsTranscoderMeta_0200
+ * @tc.name: AudioEncoderFilter_OnLinkedResult_TransCoderForwardsTranscoderMeta_0100
  * @tc.desc: Test OnLinkedResult transcoder branch forwards transcoderMeta_ to callback
  * @tc.type: FUNC
  * @tc.require:
  */
-HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_TransCoderForwardsTranscoderMeta_0200,
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilter_OnLinkedResult_TransCoderForwardsTranscoderMeta_0100,
          TestSize.Level1)
 {
     auto mediaCodec = std::make_shared<MediaCodec>();

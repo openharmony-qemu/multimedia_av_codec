@@ -183,8 +183,9 @@ void SurfaceEncoderAdapter::ConfigureGeneralFormat(MediaAVCodec::Format &format,
     ConfigureFrameRate(format, meta);
     if (meta->Find(Tag::MIME_TYPE) != meta->end()) {
         std::string mimeType;
-        meta->Get<Tag::MIME_TYPE>(mimeType);
-        format.PutStringValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType);
+        if (meta->Get<Tag::MIME_TYPE>(mimeType)) {
+            format.PutStringValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_CODEC_MIME, mimeType);
+        }
     }
     if (meta->Find(Tag::VIDEO_H265_PROFILE) != meta->end()) {
         Plugins::HEVCProfile h265Profile = Plugins::HEVCProfile::HEVC_PROFILE_MAIN;
@@ -214,8 +215,9 @@ void SurfaceEncoderAdapter::ConfigureEnableFormat(MediaAVCodec::Format &format, 
     MEDIA_LOG_I("ConfigureEnableFormat");
     if (meta->Find(Tag::VIDEO_ENCODER_ENABLE_WATERMARK) != meta->end()) {
         bool enableWatermark = false;
-        meta->Get<Tag::VIDEO_ENCODER_ENABLE_WATERMARK>(enableWatermark);
-        format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, enableWatermark);
+        if (meta->Get<Tag::VIDEO_ENCODER_ENABLE_WATERMARK>(enableWatermark)) {
+            format.PutIntValue(Tag::VIDEO_ENCODER_ENABLE_WATERMARK, enableWatermark);
+        }
     }
 }
 
@@ -802,10 +804,11 @@ void SurfaceEncoderAdapter::ConfigureAboutRGBA(MediaAVCodec::Format &format, con
         }
     }
     if (meta->Find(Tag::VIDEO_ENCODER_SQR_FACTOR) != meta->end()) {
-        int32_t sqrFactor;
-        meta->Get<Tag::VIDEO_ENCODER_SQR_FACTOR>(sqrFactor);
-        MEDIA_LOG_I("ConfigureAboutRGBA set sqrFactor(%{public}d)", sqrFactor);
-        format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
+        int32_t sqrFactor = 0;
+        if (meta->Get<Tag::VIDEO_ENCODER_SQR_FACTOR>(sqrFactor)) {
+            MEDIA_LOG_I("ConfigureAboutRGBA set sqrFactor(%{public}d)", sqrFactor);
+            format.PutIntValue(MediaAVCodec::MediaDescriptionKey::MD_KEY_VIDEO_ENCODER_SQR_FACTOR, sqrFactor);
+        }
     }
 }
 
