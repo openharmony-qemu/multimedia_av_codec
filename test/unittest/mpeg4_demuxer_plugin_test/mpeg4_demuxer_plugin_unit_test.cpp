@@ -131,6 +131,7 @@ constexpr int32_t AAC_TEST_CORE_SAMPLE_RATE = 24000;
 constexpr int32_t AAC_TEST_CORE_SAMPLES_PER_FRAME = 1024;
 constexpr int32_t AAC_TEST_CHANNEL_COUNT = 2;
 constexpr int32_t AAC_SBR_SAMPLE_RATE_MULTIPLIER = 2;
+constexpr size_t MP4_ATOM_HEADER_SIZE = 8; // atom header: size(4) + fourcc(4)
 constexpr int32_t MULTI_TRACK_SYNC_TEST_INITIAL_SAMPLE_POS = 7;
 constexpr int64_t MULTI_TRACK_SYNC_TEST_SEEK_TIME = 100;
 constexpr uint32_t AAC_TEST_AUDIO_OBJECT_TYPE_AAC_LC = 2;
@@ -5973,11 +5974,30 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetDataSource_ZeroCountS
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParseHeader_TrailingBytesLessThanAtomHeader_001,
     TestSize.Level1)
 {
-    for (size_t trailingBytes = 1; trailingBytes < 8; ++trailingBytes) {
+    for (size_t trailingBytes = 0; trailingBytes < MP4_ATOM_HEADER_SIZE; ++trailingBytes) {
         AtomParserTestContext context(BuildMinimalMp4WithTrailingBytes(trailingBytes));
         EXPECT_EQ(context.parser.MPEG4ParseHeader(context.dataSource, Seekable::SEEKABLE, -1,
             Plugins::DemuxerMode::FULL_PARSE), Status::OK) << "trailingBytes=" << trailingBytes;
+        EXPECT_TRUE(context.parser.moovFound_) << "trailingBytes=" << trailingBytes;
     }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ParseHeader_TrailingAtomHeaderExceedsSource_001
+ * @tc.desc: A full 8-byte atom header remains but its declared size exceeds the source: this is a
+ *           genuinely truncated file and must fail init instead of being tolerated like trailing
+ *           garbage bytes that cannot form an atom header.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParseHeader_TrailingAtomHeaderExceedsSource_001,
+    TestSize.Level1)
+{
+    auto file = BuildMinimalMp4WithTrailingBytes(0);
+    auto truncatedHeader = BuildAtomHeader(MP4_ATOM_HEADER_SIZE, Plugins::MPEG4::FourccType("xxxx"), false);
+    file.insert(file.end(), truncatedHeader.begin(), truncatedHeader.end());
+    AtomParserTestContext context(file);
+    EXPECT_EQ(context.parser.MPEG4ParseHeader(context.dataSource, Seekable::SEEKABLE, -1,
+        Plugins::DemuxerMode::FULL_PARSE), Status::ERROR_INVALID_DATA);
 }
 
 /**

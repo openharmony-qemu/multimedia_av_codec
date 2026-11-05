@@ -5840,14 +5840,18 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     while ((seekable == Seekable::UNSEEKABLE && !(moovFound_ && hasMdatBox_)) ||
            (seekable == Seekable::SEEKABLE && !hasMoofBox_) ||
            (seekable == Seekable::SEEKABLE && hasMoofBox_)) {
-        if (sizeRet == Status::OK) {
+        if (sizeRet == Status::OK && ctx_.offset >= 0) {
             // FFmpeg's mov demuxer stops at EOF when fewer than a full atom header remains and
             // keeps the already parsed moov. Trailing bytes that cannot form an atom header
             // (e.g. an mp4 with 7 trailing invalid bytes) are ignored instead of failing init.
-            uint64_t offset = static_cast<uint64_t>(ctx_.offset);
-            if (ctx_.offset >= 0 &&
-                (offset >= dataSourceSize || dataSourceSize - offset <
-                    static_cast<uint64_t>(DEFAULT_HEAD_SIZE))) {
+            // GetSize returns an unsigned size, so the comparison deliberately stays unsigned:
+            // casting a size beyond INT64_MAX to int64 would wrap negative and turn every
+            // offset into EOF, while a non-OK GetSize (unknown size) skips this check and
+            // parsing continues until the reader reports end of stream. Files smaller than
+            // DEFAULT_HEAD_SIZE stop here and are rejected by the moovFound_ check below.
+            const uint64_t offset = static_cast<uint64_t>(ctx_.offset);
+            if (offset >= dataSourceSize || dataSourceSize - offset <
+                static_cast<uint64_t>(DEFAULT_HEAD_SIZE)) {
                 MEDIA_LOG_D("Reached end of data source at offset: " PUBLIC_LOG_D64, ctx_.offset);
                 break;
             }
