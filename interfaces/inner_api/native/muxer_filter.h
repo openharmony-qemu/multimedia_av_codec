@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -94,7 +94,7 @@ private:
 
     std::shared_ptr<MediaMuxer> mediaMuxer_;
 
-    int32_t preFilterCount_{0};
+    std::atomic<int32_t> preFilterCount_{0};
     std::atomic<int32_t> stopCount_{0};
     std::atomic<int32_t> eosCount_{0};
     std::map<int32_t, int64_t> bufferPtsMap_;
@@ -124,7 +124,7 @@ private:
     std::mutex eosMutex_;
     std::mutex bufferPtsMutex_;
 
-    bool isStarted{false};
+    std::atomic<bool> isStarted{false};
 
     int32_t maxDuration_ {INT32_MAX};
     std::atomic<bool> isReachMaxDuration_{false};

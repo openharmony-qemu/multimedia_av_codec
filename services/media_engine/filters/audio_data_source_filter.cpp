@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -252,6 +252,10 @@ Status AudioDataSourceFilter::SendEos()
         if (ret != Status::OK) {
             MEDIA_LOG_E("RequestBuffer fail, ret" PUBLIC_LOG_D32, ret);
             return ret;
+        }
+        if (buffer == nullptr) {
+            MEDIA_LOG_E("RequestBuffer returned OK but buffer is nullptr");
+            return Status::ERROR_NULL_POINTER;
         }
         buffer->flag_ |= BUFFER_FLAG_EOS;
         outputBufferQueue_->PushBuffer(buffer, false);

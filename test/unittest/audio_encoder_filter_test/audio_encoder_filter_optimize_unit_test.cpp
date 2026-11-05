@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Copyright (C) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -390,9 +390,20 @@ HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilterOpt_DoRelease_0100, TestSi
     audioEncoderFilter_->mediaCodec_->state_ = CodecState::RUNNING;
     audioEncoderFilter_->mediaCodec_->codecPlugin_ = mockCodecPlugin;
     EXPECT_CALL(*mockCodecPlugin, Release()).WillOnce(Return(Status::ERROR_UNKNOWN));
-    EXPECT_NE(audioEncoderFilter_->DoRelease(), Status::OK);
+    EXPECT_EQ(audioEncoderFilter_->DoRelease(), Status::ERROR_FRAMEWORK_ERR);
+}
 
-    audioEncoderFilter_->mediaCodec_->state_ = CodecState::RELEASING;
+/**
+ * @tc.name: AudioEncoderFilterOpt_DoRelease_0200
+ * @tc.desc: AudioEncoderFilte DoRelease
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AudioEncoderFilterUnitest, AudioEncoderFilterOpt_DoRelease_0200, TestSize.Level1)
+{
+    auto mediaCodec = std::make_shared<MediaCodec>();
+    mediaCodec->state_ = CodecState::RELEASING;
+    audioEncoderFilter_->mediaCodec_ = mediaCodec;
     EXPECT_EQ(audioEncoderFilter_->DoRelease(), Status::OK);
 }
 

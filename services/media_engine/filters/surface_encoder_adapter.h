@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,6 +16,7 @@
 #ifndef FILTERS_SURFACE_ENCODER_ADAPTER_H
 #define FILTERS_SURFACE_ENCODER_ADAPTER_H
 
+#include <atomic>
 #include <cstring>
 #include <shared_mutex>
 #include <deque>
@@ -115,7 +116,9 @@ public:
 
 private:
     void ReleaseBuffer();
+    void StopReleaseBufferTask();
     void ConfigureGeneralFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
+    void ConfigureFrameRate(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureAboutRGBA(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureEnableFormat(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
     void ConfigureSQRMode(MediaAVCodec::Format &format, const std::shared_ptr<Meta> &meta);
@@ -166,8 +169,6 @@ private:
 
     int64_t startBufferTime_{-1};
     int64_t lastBufferTime_{-1};
-    bool isStart_ = false;
-    bool isResume_ = false;
     std::string codecMimeType_;
     std::string bundleName_;
     uint64_t instanceId_{0};
@@ -180,7 +181,7 @@ private:
     bool isStopKeyFramePts_ = false;
     int64_t currentKeyFramePts_{-1};
     int64_t preKeyFramePts_{-1};
-    int32_t videoFrameRate_{-1};
+    std::atomic<int32_t> videoFrameRate_{-1};
     std::deque<std::pair<int64_t, StateCode>> pauseResumePts_;
     bool enableBFrame_ {false};
     bool hasReceivedEOS_ = false;

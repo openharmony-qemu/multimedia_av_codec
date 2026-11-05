@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,9 @@
 #ifndef FILTERS_SURFACE_ENCODER_FILTER_H
 #define FILTERS_SURFACE_ENCODER_FILTER_H
 
+#include <atomic>
 #include <cstring>
+#include <mutex>
 #include "filter/filter.h"
 #include "surface.h"
 #include "meta/meta.h"
@@ -82,6 +84,8 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
+    Status NotifyEosLocked(int64_t pts);
+
     std::string name_;
     FilterType filterType_ = FilterType::FILTERTYPE_VENC;
 
@@ -91,6 +95,7 @@ private:
     std::shared_ptr<FilterLinkCallback> onLinkedResultCallback_;
 
     std::shared_ptr<SurfaceEncoderAdapter> mediaCodec_;
+    std::mutex mediaCodecMutex_;
 
     std::string codecMimeType_;
     std::shared_ptr<Meta> configureParameter_;
@@ -100,7 +105,7 @@ private:
     std::atomic<bool> isUpdateCodecNeeded_ = false;
     sptr<Surface> surface_{nullptr};
     std::string bundleName_;
-    bool isTranscoderMode_ {false};
+    std::atomic<bool> isTranscoderMode_ {false};
     int64_t startTimeMs_ = -1;
     int64_t clipStartRelativeUs_ = -1;
     uint64_t instanceId_{0};

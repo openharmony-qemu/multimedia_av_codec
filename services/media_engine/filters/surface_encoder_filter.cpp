@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -153,10 +153,12 @@ void SurfaceEncoderFilter::OnError(MediaAVCodec::AVCodecErrorType errorType, int
 
 Status SurfaceEncoderFilter::SetCodecFormat(const std::shared_ptr<Meta> &format)
 {
+    FALSE_RETURN_V(format != nullptr, Status::ERROR_INVALID_PARAMETER);
     MEDIA_LOG_I("SetCodecFormat");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     std::string codecMimeType;
     FALSE_RETURN_V(format->Get<Tag::MIME_TYPE>(codecMimeType), Status::ERROR_INVALID_PARAMETER);
-    if (strcmp(codecMimeType.c_str(), codecMimeType_.c_str()) != 0) {
+    if (codecMimeType != codecMimeType_) {
         isUpdateCodecNeeded_ = true;
     }
     FALSE_RETURN_V(format->Get<Tag::MIME_TYPE>(codecMimeType_), Status::ERROR_INVALID_PARAMETER);
@@ -169,39 +171,52 @@ void SurfaceEncoderFilter::Init(const std::shared_ptr<EventReceiver> &receiver,
     MEDIA_LOG_I("Init");
     eventReceiver_ = receiver;
     filterCallback_ = callback;
-    if (!mediaCodec_ || isUpdateCodecNeeded_.load()) {
-        if (mediaCodec_) {
-            mediaCodec_->Release();
+    Status ret = Status::OK;
+    {
+        std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+        if (!mediaCodec_ || isUpdateCodecNeeded_.load()) {
+            if (mediaCodec_) {
+                mediaCodec_->Release();
+            }
+            mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
+            mediaCodec_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
+            ret = mediaCodec_->Init(codecMimeType_, true);
+            if (ret == Status::OK) {
+                std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
+                    std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
+                mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
+                std::shared_ptr<EncoderAdapterKeyFramePtsCallback> encoderAdapterKeyFramePtsCallback =
+                    std::make_shared<SurfaceEncoderAdapterKeyFramePtsCallback>(shared_from_this());
+                mediaCodec_->SetEncoderAdapterKeyFramePtsCallback(encoderAdapterKeyFramePtsCallback);
+            }
+            surface_ = nullptr;
+            isUpdateCodecNeeded_ = false;
         }
-        mediaCodec_ = std::make_shared<SurfaceEncoderAdapter>();
-        mediaCodec_->SetCallingInfo(appUid_, appPid_, bundleName_, instanceId_);
-        Status ret = mediaCodec_->Init(codecMimeType_, true);
-        if (ret == Status::OK) {
-            std::shared_ptr<EncoderAdapterCallback> encoderAdapterCallback =
-                std::make_shared<SurfaceEncoderAdapterCallback>(shared_from_this());
-            mediaCodec_->SetEncoderAdapterCallback(encoderAdapterCallback);
-            std::shared_ptr<EncoderAdapterKeyFramePtsCallback> encoderAdapterKeyFramePtsCallback =
-                std::make_shared<SurfaceEncoderAdapterKeyFramePtsCallback>(shared_from_this());
-            mediaCodec_->SetEncoderAdapterKeyFramePtsCallback(encoderAdapterKeyFramePtsCallback);
-        } else if (eventReceiver_ != nullptr) {
-            MEDIA_LOG_I("Init mediaCodec fail");
-            eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR,
-                static_cast<int32_t>(MSERR_UNKNOWN)});
-        }
-        surface_ = nullptr;
-        isUpdateCodecNeeded_ = false;
+    }
+    if (ret != Status::OK && eventReceiver_ != nullptr) {
+        MEDIA_LOG_I("Init mediaCodec fail");
+        eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR,
+            static_cast<int32_t>(MSERR_UNKNOWN)});
     }
 }
 
 Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("Configure");
-    if (mediaCodec_ == nullptr) {
-        return Status::ERROR_UNKNOWN;
+    if (parameter == nullptr) {
+        MEDIA_LOG_E("Configure parameter is nullptr");
+        return Status::ERROR_INVALID_PARAMETER;
+    }
+    Status ret = Status::ERROR_UNKNOWN;
+    {
+        std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+        if (mediaCodec_ == nullptr) {
+            return Status::ERROR_UNKNOWN;
+        }
+        ret = mediaCodec_->Configure(parameter);
     }
     configureParameter_ = parameter;
-    Status ret = mediaCodec_->Configure(parameter);
-    if (ret == Status::ERROR_VID_ENC_RESOLUTION_UNSUPPORTED && isTranscoderMode_ && eventReceiver_ != nullptr) {
+    if (ret == Status::ERROR_VID_ENC_RESOLUTION_UNSUPPORTED && isTranscoderMode_.load() && eventReceiver_ != nullptr) {
         eventReceiver_->OnEvent({"surface_encoder_filter", EventType::EVENT_ERROR,
             static_cast<int32_t>(MSERR_TARGET_RESOLUTION_OUT_OF_RANGE)});
     }
@@ -211,6 +226,7 @@ Status SurfaceEncoderFilter::Configure(const std::shared_ptr<Meta> &parameter)
 Status SurfaceEncoderFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBuffer)
 {
     MEDIA_LOG_I("SetWatermark");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     return mediaCodec_->SetWatermark(waterMarkBuffer);
 }
@@ -218,6 +234,7 @@ Status SurfaceEncoderFilter::SetWatermark(std::shared_ptr<AVBuffer> &waterMarkBu
 Status SurfaceEncoderFilter::SetVideoEnableBFrame(bool &enableBFrame)
 {
     MEDIA_LOG_I("SetVideoEnableBFrame");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     return mediaCodec_->SetVideoEnableBFrame(enableBFrame);
 }
@@ -225,6 +242,7 @@ Status SurfaceEncoderFilter::SetVideoEnableBFrame(bool &enableBFrame)
 Status SurfaceEncoderFilter::SetStopTime()
 {
     MEDIA_LOG_I("SetStopTime");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     return mediaCodec_->SetStopTime();
 }
@@ -232,6 +250,7 @@ Status SurfaceEncoderFilter::SetStopTime()
 Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 {
     MEDIA_LOG_I("SetInputSurface");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     mediaCodec_->SetInputSurface(surface);
     return Status::OK;
@@ -240,9 +259,12 @@ Status SurfaceEncoderFilter::SetInputSurface(sptr<Surface> surface)
 Status SurfaceEncoderFilter::SetTransCoderMode()
 {
     MEDIA_LOG_I("SetTransCoderMode");
-    FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
-    isTranscoderMode_ = true;
-    mediaCodec_->SetTransCoderMode();
+    {
+        std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+        FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
+        mediaCodec_->SetTransCoderMode();
+    }
+    isTranscoderMode_.store(true);
     return Status::OK;
 }
 
@@ -257,6 +279,7 @@ void SurfaceEncoderFilter::SetClipStartRelativeUs(int64_t clipStartRelativeUs)
 {
     MEDIA_LOG_I("SetClipStartRelativeUs: " PUBLIC_LOG_D64, clipStartRelativeUs);
     clipStartRelativeUs_ = clipStartRelativeUs;
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     if (mediaCodec_ != nullptr) {
         mediaCodec_->SetClipStartTime(clipStartRelativeUs);
     }
@@ -265,6 +288,7 @@ void SurfaceEncoderFilter::SetClipStartRelativeUs(int64_t clipStartRelativeUs)
 Status SurfaceEncoderFilter::SetWatermarkMode()
 {
     MEDIA_LOG_I("SetWatermarkMode");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     mediaCodec_->SetWatermarkMode();
     return Status::OK;
@@ -273,6 +297,7 @@ Status SurfaceEncoderFilter::SetWatermarkMode()
 Status SurfaceEncoderFilter::SetStabilizationMode(bool enableStabilization)
 {
     MEDIA_LOG_I("SetStabilizationMode");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     mediaCodec_->SetStabilizationMode(enableStabilization);
     return Status::OK;
@@ -281,6 +306,7 @@ Status SurfaceEncoderFilter::SetStabilizationMode(bool enableStabilization)
 void SurfaceEncoderFilter::SetTransCoderCapabilityCheckInfo(int32_t width, int32_t height)
 {
     MEDIA_LOG_I("SetTransCoderCapabilityCheckInfo width: %{public}d, height: %{public}d", width, height);
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     if (mediaCodec_ != nullptr) {
         mediaCodec_->SetTransCoderCapabilityCheckInfo(width, height);
     }
@@ -289,10 +315,8 @@ void SurfaceEncoderFilter::SetTransCoderCapabilityCheckInfo(int32_t width, int32
 sptr<Surface> SurfaceEncoderFilter::GetInputSurface()
 {
     MEDIA_LOG_I("GetInputSurface");
-    if (surface_) {
-        return surface_;
-    }
-    if (mediaCodec_ != nullptr) {
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+    if (surface_ == nullptr && mediaCodec_ != nullptr) {
         surface_ = mediaCodec_->GetInputSurface();
     }
     return surface_;
@@ -302,7 +326,12 @@ Status SurfaceEncoderFilter::DoPrepare()
 {
     FALSE_RETURN_V(filterCallback_ != nullptr, Status::ERROR_NULL_POINTER);
     MEDIA_LOG_I("Prepare");
-    if (isTranscoderMode_) {
+    bool isTranscoderMode = false;
+    {
+        std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+        isTranscoderMode = isTranscoderMode_.load();
+    }
+    if (isTranscoderMode) {
         MEDIA_LOG_I("TranscoderMode");
         return filterCallback_->OnCallback(shared_from_this(), FilterCallBackCommand::NEXT_FILTER_NEEDED,
             StreamType::STREAMTYPE_ENCODED_VIDEO);
@@ -315,6 +344,7 @@ Status SurfaceEncoderFilter::DoPrepare()
 Status SurfaceEncoderFilter::DoStart()
 {
     MEDIA_LOG_I("Start");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     return mediaCodec_->Start();
 }
@@ -322,6 +352,7 @@ Status SurfaceEncoderFilter::DoStart()
 Status SurfaceEncoderFilter::DoPause()
 {
     MEDIA_LOG_I("Pause");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     return mediaCodec_->Pause();
 }
@@ -329,6 +360,7 @@ Status SurfaceEncoderFilter::DoPause()
 Status SurfaceEncoderFilter::DoResume()
 {
     MEDIA_LOG_I("Resume");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     return mediaCodec_->Resume();
 }
@@ -336,26 +368,36 @@ Status SurfaceEncoderFilter::DoResume()
 Status SurfaceEncoderFilter::DoStop()
 {
     MEDIA_LOG_I("Stop enter");
-    if (mediaCodec_ == nullptr) {
+    std::shared_ptr<SurfaceEncoderAdapter> mediaCodec;
+    {
+        std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+        mediaCodec = mediaCodec_;
+    }
+    if (mediaCodec == nullptr) {
         return Status::OK;
     }
-    mediaCodec_->Stop();
-    return Status::OK;
+    return mediaCodec->Stop();
 }
 
 Status SurfaceEncoderFilter::Reset()
 {
     MEDIA_LOG_I("Reset");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     if (mediaCodec_ == nullptr) {
         return Status::OK;
     }
-    mediaCodec_->Reset();
+    Status ret = mediaCodec_->Reset();
+    if (ret != Status::OK) {
+        MEDIA_LOG_E("mediaCodec Reset failed, ret=%{public}d", static_cast<int32_t>(ret));
+        return ret;
+    }
     return Status::OK;
 }
 
 Status SurfaceEncoderFilter::DoFlush()
 {
     MEDIA_LOG_I("Flush");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     return mediaCodec_->Flush();
 }
@@ -363,6 +405,7 @@ Status SurfaceEncoderFilter::DoFlush()
 Status SurfaceEncoderFilter::DoRelease()
 {
     MEDIA_LOG_I("Release");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     if (mediaCodec_ == nullptr) {
         return Status::OK;
     }
@@ -372,6 +415,12 @@ Status SurfaceEncoderFilter::DoRelease()
 Status SurfaceEncoderFilter::NotifyEos(int64_t pts)
 {
     MEDIA_LOG_I("NotifyEos");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+    return NotifyEosLocked(pts);
+}
+
+Status SurfaceEncoderFilter::NotifyEosLocked(int64_t pts)
+{
     FALSE_RETURN_V_MSG(mediaCodec_ != nullptr, Status::ERROR_UNKNOWN, "mediaCodec_ is nullptr.");
     return mediaCodec_->NotifyEos(pts);
 }
@@ -379,6 +428,8 @@ Status SurfaceEncoderFilter::NotifyEos(int64_t pts)
 void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
 {
     MEDIA_LOG_I("SetParameter");
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+    FALSE_RETURN_MSG(parameter != nullptr, "SetParameter parameter is null");
     if (mediaCodec_ == nullptr) {
         return;
     }
@@ -389,7 +440,7 @@ void SurfaceEncoderFilter::SetParameter(const std::shared_ptr<Meta> &parameter)
         parameter->Get<Tag::USER_FRAME_PTS>(eosPts)) {
         if (isEos) {
             MEDIA_LOG_I("lastBuffer PTS: " PUBLIC_LOG_D64, eosPts);
-            NotifyEos(eosPts);
+            NotifyEosLocked(eosPts);
             return;
         }
     }
@@ -404,12 +455,17 @@ void SurfaceEncoderFilter::GetParameter(std::shared_ptr<Meta> &parameter)
 Status SurfaceEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
 {
     MEDIA_LOG_I("LinkNext");
-    nextFilter_ = nextFilter;
-    nextFiltersMap_[outType].push_back(nextFilter_);
+    FALSE_RETURN_V_MSG_E(nextFilter != nullptr, Status::ERROR_NULL_POINTER, "nextFilter is nullptr");
     std::shared_ptr<FilterLinkCallback> filterLinkCallback =
         std::make_shared<SurfaceEncoderFilterLinkCallback>(shared_from_this());
-    nextFilter->OnLinked(outType, configureParameter_, filterLinkCallback);
-    return Status::OK;
+    std::shared_ptr<Meta> parameter;
+    {
+        std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+        nextFilter_ = nextFilter;
+        nextFiltersMap_[outType].push_back(nextFilter_);
+        parameter = configureParameter_;
+    }
+    return nextFilter->OnLinked(outType, parameter, filterLinkCallback);
 }
 
 Status SurfaceEncoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
@@ -454,10 +510,13 @@ void SurfaceEncoderFilter::OnLinkedResult(const sptr<AVBufferQueueProducer> &out
     std::shared_ptr<Meta> &meta)
 {
     MEDIA_LOG_I("OnLinkedResult");
-    if (mediaCodec_ == nullptr) {
-        return;
+    {
+        std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+        if (mediaCodec_ == nullptr) {
+            return;
+        }
+        mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     }
-    mediaCodec_->SetOutputBufferQueue(outputBufferQueue);
     if (onLinkedResultCallback_) {
         onLinkedResultCallback_->OnLinkedResult(nullptr, meta);
     }
@@ -480,6 +539,7 @@ void SurfaceEncoderFilter::SetCallingInfo(int32_t appUid, int32_t appPid,
     appPid_ = appPid;
     bundleName_ = bundleName;
     instanceId_ = instanceId;
+    std::lock_guard<std::mutex> lock(mediaCodecMutex_);
     if (mediaCodec_) {
         mediaCodec_->SetCallingInfo(appUid, appPid, bundleName, instanceId);
     }
@@ -490,7 +550,12 @@ void SurfaceEncoderFilter::OnReportKeyFramePts(std::string KeyFramePts)
     MEDIA_LOG_I("OnReportKeyFramePts %{public}s enter", KeyFramePts.c_str());
     const std::shared_ptr<Meta> userMeta = std::make_shared<Meta>();
     userMeta->SetData("com.openharmony.recorder.timestamp", KeyFramePts);
-    std::shared_ptr<MuxerFilter> muxerFilter = std::static_pointer_cast<MuxerFilter>(nextFilter_);
+    std::shared_ptr<Filter> nextFilter;
+    {
+        std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+        nextFilter = nextFilter_;
+    }
+    std::shared_ptr<MuxerFilter> muxerFilter = std::static_pointer_cast<MuxerFilter>(nextFilter);
     if (muxerFilter != nullptr) {
         muxerFilter->SetUserMeta(userMeta);
         MEDIA_LOG_I("SetUserMeta %{public}s", KeyFramePts.c_str());
