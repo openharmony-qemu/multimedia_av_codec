@@ -212,7 +212,6 @@ int32_t AudioOpusEncoderPlugin::Release()
     std::lock_guard<std::mutex> lock(avMutext_);
     CHECK_AND_RETURN_RET_LOG(PluginCodecPtr != nullptr, AVCodecServiceErrCode::AVCS_ERR_OK,
         "AudioOpusEncoderPlugin Release dlopen or dlsym error");
-    std::lock_guard<std::mutex> lock(avMutext_);
     ret = PluginCodecPtr->Release();
     if (ret != 0) {
         return AVCodecServiceErrCode::AVCS_ERR_UNKNOWN;
