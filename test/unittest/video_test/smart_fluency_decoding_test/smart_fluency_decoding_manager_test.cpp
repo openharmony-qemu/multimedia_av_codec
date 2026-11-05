@@ -744,7 +744,7 @@ HWTEST_F(SFDManagerTest, ConfigureAndCleanResources_ConcurrentCallbacks_041, Tes
     ASSERT_NE(buffer, nullptr);
     std::atomic<bool> start{false};
     std::atomic<bool> retained{true};
-    std::thread callbacks([&] {
+    std::thread callbacks([&manager, &buffer, &start, &retained] {
         while (!start.load()) {
             std::this_thread::yield();
         }
