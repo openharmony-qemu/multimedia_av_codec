@@ -2673,7 +2673,7 @@ HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_basic_062407, TestSize.Level1)
     EXPECT_EQ(ret, Status::OK);
 }
 
-// Actual vivo.mp4 CRA/RASL timestamps: 100 us apart, well above conversion loss.
+// Samples spaced 100 us apart must not be skipped by a fixed timestamp offset.
 HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_CloselySpacedSamples, TestSize.Level1)
 {
     const std::vector<int64_t> timestamps = {355468, 355477, 355486, 355495};
@@ -2697,7 +2697,7 @@ HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_TruncatedMicroseconds, TestSize.Leve
 
 HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_ReverseConversionUndershoots, TestSize.Level1)
 {
-    // Actual first five test_old.mp4 index timestamps, including the negative leading sample.
+    // Cover reverse-conversion undershoot with a negative leading timestamp.
     const std::vector<int64_t> timestamps = {-48000, 0, 20001, 40001, 60002};
     auto plugin = CreateDtsLookupPlugin({1, 1200000}, timestamps);
     ASSERT_NE(plugin, nullptr);
