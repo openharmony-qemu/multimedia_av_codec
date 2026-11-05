@@ -1246,6 +1246,44 @@ struct AtomParserTestContext {
     }
 };
 
+std::vector<uint8_t> BuildMinimalMp4WithTrailingBytes(size_t trailingBytes)
+{
+    // ftyp + moov{mvhd} is enough for MPEG4ParseHeader to mark moovFound_ and then scan to EOF,
+    // where fewer than DEFAULT_HEAD_SIZE (8) trailing bytes must be tolerated like FFmpeg.
+    constexpr uint32_t identityMatrix[] = {0x00010000, 0, 0, 0, 0x00010000, 0, 0, 0, 0x40000000};
+    std::vector<uint8_t> mvhdPayload;
+    AppendU32(mvhdPayload, 0); // version/flags
+    AppendU32(mvhdPayload, 0); // creation time
+    AppendU32(mvhdPayload, 0); // modification time
+    AppendU32(mvhdPayload, 1000); // timescale
+    AppendU32(mvhdPayload, 0); // duration
+    AppendU32(mvhdPayload, 0x00010000); // rate
+    AppendU32(mvhdPayload, 0x01000000); // volume(2) + reserved(2)
+    AppendU32(mvhdPayload, 0); // reserved
+    AppendU32(mvhdPayload, 0); // reserved
+    for (uint32_t matrixValue : identityMatrix) {
+        AppendU32(mvhdPayload, matrixValue);
+    }
+    for (uint32_t i = 0; i < 6; ++i) {
+        AppendU32(mvhdPayload, 0); // pre_defined
+    }
+    AppendU32(mvhdPayload, 2); // next track id
+    auto mvhd = BuildAtomHeader(mvhdPayload.size(), Plugins::MPEG4::FourccType("mvhd"), false);
+    mvhd.insert(mvhd.end(), mvhdPayload.begin(), mvhdPayload.end());
+    auto moov = BuildAtomHeader(mvhd.size(), Plugins::MPEG4::FourccType("moov"), false);
+    moov.insert(moov.end(), mvhd.begin(), mvhd.end());
+    std::vector<uint8_t> ftypPayload;
+    AppendU32(ftypPayload, 0x69736F6D); // "isom"
+    AppendU32(ftypPayload, 0); // minor version
+    auto ftyp = BuildAtomHeader(ftypPayload.size(), Plugins::MPEG4::FourccType("ftyp"), false);
+    ftyp.insert(ftyp.end(), ftypPayload.begin(), ftypPayload.end());
+    std::vector<uint8_t> file;
+    file.insert(file.end(), ftyp.begin(), ftyp.end());
+    file.insert(file.end(), moov.begin(), moov.end());
+    file.insert(file.end(), trailingBytes, 0x00);
+    return file;
+}
+
 std::vector<uint8_t> BuildStszData(uint32_t defaultSampleSize, uint32_t sampleCount,
     const std::vector<uint32_t>& sampleSizes = {})
 {
@@ -5923,6 +5961,23 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetDataSource_ZeroCountS
     auto dataSource = CreateDataSourceForBytes(BuildMinimalMp4WithZeroCountSttsAndUlaw());
     auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
     EXPECT_EQ(plugin->SetDataSource(dataSource), Status::ERROR_MPEG4_DEMUXER_UNSUPPORTED_FORMAT);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ParseHeader_TrailingBytesLessThanAtomHeader_001
+ * @tc.desc: A seekable mp4 with fewer than 8 trailing bytes (e.g. "末尾多7个无效字节.mp4") must
+ *           init successfully: FFmpeg stops at EOF when a full atom header cannot be read and
+ *           keeps the parsed moov, so mpeg4 must not fail the whole init with ERROR_INVALID_DATA.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ParseHeader_TrailingBytesLessThanAtomHeader_001,
+    TestSize.Level1)
+{
+    for (size_t trailingBytes = 1; trailingBytes < 8; ++trailingBytes) {
+        AtomParserTestContext context(BuildMinimalMp4WithTrailingBytes(trailingBytes));
+        EXPECT_EQ(context.parser.MPEG4ParseHeader(context.dataSource, Seekable::SEEKABLE, -1,
+            Plugins::DemuxerMode::FULL_PARSE), Status::OK) << "trailingBytes=" << trailingBytes;
+    }
 }
 
 /**

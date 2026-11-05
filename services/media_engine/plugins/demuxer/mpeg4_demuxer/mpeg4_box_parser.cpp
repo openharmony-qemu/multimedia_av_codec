@@ -5840,9 +5840,17 @@ Status MPEG4AtomParser::MPEG4ParseHeader(const std::shared_ptr<DataSource>& sour
     while ((seekable == Seekable::UNSEEKABLE && !(moovFound_ && hasMdatBox_)) ||
            (seekable == Seekable::SEEKABLE && !hasMoofBox_) ||
            (seekable == Seekable::SEEKABLE && hasMoofBox_)) {
-        if (sizeRet == Status::OK && ctx_.offset >= static_cast<int64_t>(dataSourceSize)) {
-            MEDIA_LOG_D("Reached end of data source at offset: " PUBLIC_LOG_D64, ctx_.offset);
-            break;
+        if (sizeRet == Status::OK) {
+            // FFmpeg's mov demuxer stops at EOF when fewer than a full atom header remains and
+            // keeps the already parsed moov. Trailing bytes that cannot form an atom header
+            // (e.g. an mp4 with 7 trailing invalid bytes) are ignored instead of failing init.
+            uint64_t offset = static_cast<uint64_t>(ctx_.offset);
+            if (ctx_.offset >= 0 &&
+                (offset >= dataSourceSize || dataSourceSize - offset <
+                    static_cast<uint64_t>(DEFAULT_HEAD_SIZE))) {
+                MEDIA_LOG_D("Reached end of data source at offset: " PUBLIC_LOG_D64, ctx_.offset);
+                break;
+            }
         }
         int64_t originalOffset = ctx_.offset;
         int32_t depth = 0;
