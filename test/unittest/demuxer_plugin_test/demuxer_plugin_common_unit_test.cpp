@@ -87,6 +87,42 @@ constexpr uint8_t HEVC_IDR_NAL = 0x26;
 constexpr uint8_t AVC_NON_REF_SLICE_NAL = 0x01;
 constexpr uint8_t AVC_REF_SLICE_NAL = 0x41;
 
+std::shared_ptr<FFmpegDemuxerPlugin> CreateDtsLookupPlugin(AVRational timeBase,
+    const std::vector<int64_t> &timestamps)
+{
+    auto plugin = std::make_shared<FFmpegDemuxerPlugin>("avdemux_mp4");
+    AVFormatContext *context = avformat_alloc_context();
+    if (context == nullptr) {
+        return nullptr;
+    }
+    plugin->formatContext_ = std::shared_ptr<AVFormatContext>(context, avformat_free_context);
+    AVStream *stream = avformat_new_stream(context, nullptr);
+    if (stream == nullptr) {
+        return nullptr;
+    }
+    stream->time_base = timeBase;
+    plugin->parserRefIdx_ = stream->index;
+    for (size_t i = 0; i < timestamps.size(); ++i) {
+        if (av_add_index_entry(stream, static_cast<int64_t>(i), timestamps[i], 1, 0, AVINDEX_KEYFRAME) < 0) {
+            return nullptr;
+        }
+    }
+    return plugin;
+}
+
+void ExpectPacketDtsFrameIds(const std::shared_ptr<FFmpegDemuxerPlugin> &plugin,
+    const std::vector<int64_t> &timestamps)
+{
+    const AVRational timeBase = plugin->formatContext_->streams[0]->time_base;
+    for (uint32_t i = 0; i < timestamps.size(); ++i) {
+        // Match WriteBufferAttr: the input belongs to this sample, not an arbitrary seek time.
+        int64_t dtsUs = AvTime2Us(ConvertTimeFromFFmpeg(timestamps[i], timeBase));
+        uint32_t frameId = UINT32_MAX;
+        ASSERT_EQ(plugin->Dts2FrameId(dtsUs, frameId), Status::OK);
+        EXPECT_EQ(frameId, i);
+    }
+}
+
 AVPacket MakePacket(uint8_t *data, int32_t size, int32_t flags = 0)
 {
     AVPacket pkt {};
@@ -2635,6 +2671,129 @@ HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_basic_062407, TestSize.Level1)
     int64_t dtsUs = demuxerPlugin_->pts2DtsMap_.begin()->second;
     Status ret = demuxerPlugin_->Dts2FrameId(dtsUs, frameId);
     EXPECT_EQ(ret, Status::OK);
+}
+
+// Actual vivo.mp4 CRA/RASL timestamps: 100 us apart, well above conversion loss.
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_CloselySpacedSamples, TestSize.Level1)
+{
+    const std::vector<int64_t> timestamps = {355468, 355477, 355486, 355495};
+    auto plugin = CreateDtsLookupPlugin({1, 90000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    EXPECT_EQ(AvTime2Us(ConvertTimeFromFFmpeg(timestamps[0], {1, 90000})), 3949644);
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_TruncatedMicroseconds, TestSize.Level1)
+{
+    const std::vector<int64_t> timestamps = {0, 500, 1500};
+    auto plugin = CreateDtsLookupPlugin({1, 90000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    // Nanoseconds round up; truncating to us still reverse-rounds to the original tick.
+    EXPECT_EQ(ConvertTimeFromFFmpeg(500, {1, 90000}), 5555556);
+    EXPECT_EQ(AvTime2Us(5555556), 5555);
+    EXPECT_EQ(ConvertTimeToFFmpegByUs(5555, {1, 90000}), 500);
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_ReverseConversionUndershoots, TestSize.Level1)
+{
+    // Actual first five test_old.mp4 index timestamps, including the negative leading sample.
+    const std::vector<int64_t> timestamps = {-48000, 0, 20001, 40001, 60002};
+    auto plugin = CreateDtsLookupPlugin({1, 1200000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    EXPECT_EQ(ConvertTimeFromFFmpeg(20001, {1, 1200000}), 16667500);
+    EXPECT_EQ(AvTime2Us(16667500), 16667);
+    EXPECT_EQ(ConvertTimeToFFmpegByUs(16667, {1, 1200000}), 20000);
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_FirstSampleUndershoots, TestSize.Level1)
+{
+    // The backward candidate is absent; the forward candidate must recover the first sample.
+    const std::vector<int64_t> timestamps = {20001, 40001};
+    auto plugin = CreateDtsLookupPlugin({1, 1200000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_NegativeDtsTruncatesTowardZero, TestSize.Level1)
+{
+    const std::vector<int64_t> timestamps = {-4518, -1518, -1509, 1482};
+    auto plugin = CreateDtsLookupPlugin({1, 90000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    EXPECT_EQ(ConvertTimeFromFFmpeg(-1518, {1, 90000}), -16866667);
+    EXPECT_EQ(AvTime2Us(-16866667), -16866);
+    EXPECT_EQ(ConvertTimeToFFmpegByUs(-16866, {1, 90000}), -1518);
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_NegativeReverseConversionOvershoots, TestSize.Level1)
+{
+    const std::vector<int64_t> timestamps = {-40001, -20001, 0, 20001, 40001};
+    auto plugin = CreateDtsLookupPlugin({1, 1200000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    // Negative truncation moves toward zero; BACKWARD still identifies the original sample.
+    EXPECT_EQ(AvTime2Us(ConvertTimeFromFFmpeg(-20001, {1, 1200000})), -16667);
+    EXPECT_EQ(ConvertTimeToFFmpegByUs(-16667, {1, 1200000}), -20000);
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_MicrosecondAlignedSamples, TestSize.Level1)
+{
+    const std::vector<int64_t> timestamps = {-40000, -20000, 0, 20000, 40000};
+    auto plugin = CreateDtsLookupPlugin({1, 1000000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_MultipleTicksLostDuringConversion, TestSize.Level1)
+{
+    // Nanosecond ticks, but normal ~16.67 ms sample spacing: loss is not limited to one tick.
+    const std::vector<int64_t> timestamps = {-33334999, -16667999, 0, 16667999, 33334999};
+    auto plugin = CreateDtsLookupPlugin({1, 1000000000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    EXPECT_EQ(ConvertTimeFromFFmpeg(16667999, {1, 1000000000}), 16667999);
+    EXPECT_EQ(AvTime2Us(16667999), 16667);
+    EXPECT_EQ(ConvertTimeToFFmpegByUs(16667, {1, 1000000000}), 16667000);
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_NanosecondRoundingCrossesMicrosecond, TestSize.Level1)
+{
+    // Half-nanosecond rounding crosses an integer-us boundary; sample gaps remain ~16.67 ms.
+    const std::vector<int64_t> timestamps = {-66667999, -33333999, 0, 33333999, 66667999};
+    auto plugin = CreateDtsLookupPlugin({1, 2000000000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    EXPECT_EQ(ConvertTimeFromFFmpeg(33333999, {1, 2000000000}), 16667000);
+    EXPECT_EQ(ConvertTimeFromFFmpeg(-33333999, {1, 2000000000}), -16667000);
+    EXPECT_EQ(ConvertTimeToFFmpegByUs(-16667, {1, 2000000000}), -33334000);
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_AllIndexedSamples, TestSize.Level1)
+{
+    const std::vector<int64_t> timestamps = {0, 16667, 33334};
+    auto plugin = CreateDtsLookupPlugin({1, 1000000}, timestamps);
+    ASSERT_NE(plugin, nullptr);
+    auto stream = plugin->formatContext_->streams[0];
+    ASSERT_EQ(av_add_index_entry(stream, 1, timestamps[1], 1, 0, AVINDEX_DISCARD_FRAME), 1);
+    ASSERT_EQ(av_add_index_entry(stream, 2, timestamps[2], 1, 0, 0), 2);
+    // Frame identity includes indexed discard/non-key samples; this is not a keyframe seek.
+    ExpectPacketDtsFrameIds(plugin, timestamps);
+}
+
+HWTEST_F(DemuxerPluginUnitTest, Dts2FrameId_EmptyIndexAndInvalidInput, TestSize.Level1)
+{
+    auto plugin = CreateDtsLookupPlugin({1, 90000}, {});
+    ASSERT_NE(plugin, nullptr);
+    uint32_t frameId = UINT32_MAX;
+    EXPECT_EQ(plugin->Dts2FrameId(0, frameId), Status::ERROR_OUT_OF_RANGE);
+    EXPECT_EQ(frameId, UINT32_MAX);
+    EXPECT_EQ(plugin->Dts2FrameId(AV_NOPTS_VALUE, frameId), Status::ERROR_INVALID_PARAMETER);
+    plugin->formatContext_->streams[0]->time_base = {1, 0};
+    EXPECT_EQ(plugin->Dts2FrameId(0, frameId), Status::ERROR_INVALID_PARAMETER);
+    plugin->parserRefIdx_ = -1;
+    EXPECT_EQ(plugin->Dts2FrameId(0, frameId), Status::ERROR_INVALID_PARAMETER);
 }
 
 HWTEST_F(DemuxerPluginUnitTest, SeekMs2FrameId_with_minPts_offset_062408, TestSize.Level1)
