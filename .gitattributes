@@ -374,5 +374,6 @@ test/unittest/resources/demuxer_res/mpeg4_encoder.mp4 filter=lfs diff=lfs merge=
 test/unittest/resources/demuxer_res/native_mux_normal_av3a_h264_noCover.flv filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/mpeg4_unsupport_ogg.mp4 filter=lfs diff=lfs merge=lfs -text
 test/unittest/resources/demuxer_res/mpeg4_unsupport_dts.mp4 filter=lfs diff=lfs merge=lfs -text
+test/unittest/resources/demuxer_res/aac_probe_dts_overflow.mp4 filter=lfs diff=lfs merge=lfs -text
 /test/moduletest/resources/demuxer/mkv.mkv filter=lfs diff=lfs merge=lfs -text
 /test/unittest/resources/reference_parser_test/mp4/ippp_0.mp4 filter=lfs diff=lfs merge=lfs -text

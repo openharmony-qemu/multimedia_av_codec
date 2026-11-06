@@ -65,6 +65,8 @@ Status ConvertTimeScaleRoundToTimeBase(int64_t multiplicand, int64_t multiplier,
 
 namespace {
 const std::string TEST_MP4_PATH_H264_B = "/data/test/media/test_264_B_Gop25_4sec_cover.mp4";
+// Crafted AAC probe fixture: extreme dts pair that would overflow a signed dts difference.
+const std::string TEST_MP4_PATH_AAC_PROBE_DTS_OVERFLOW = "/data/test/media/aac_probe_dts_overflow.mp4";
 const std::string TEST_MP4_PATH_H265_B = "/data/test/media/test_265_B_Gop25_4sec.mp4";
 const std::string TEST_MP4_PATH_HEVC_AUX = "/data/test/media/muxer_auxl_265.mp4";
 const std::string TEST_MP4_PATH_HEVC_AVC_AAC = "/data/test/media/muxer_auxl_265_264_aac.mp4";
@@ -11111,4 +11113,24 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EofStraddlePartialReadAn
 }
 
 } // namespace Media
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacProbeDtsDiffOverflow_001
+ * @tc.desc: Regression: the AAC probe tie-break must not wrap on extreme dts. The fixture holds
+ *           two audio tracks with dtsUs ~ 9223372036854000000 and -1000000, whose difference
+ *           overflows a signed subtraction.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeDtsDiffOverflow_001, TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ASSERT_NE(plugin, nullptr);
+    int32_t fd = -1;
+    MediaInfo mediaInfo;
+
+    // Pre-fix code aborts here under a signed-integer-overflow sanitizer.
+    InitPlugin(TEST_MP4_PATH_AAC_PROBE_DTS_OVERFLOW, plugin, fd, mediaInfo);
+    EXPECT_GE(mediaInfo.tracks.size(), 1);
+}
+
 } // namespace OHOS
