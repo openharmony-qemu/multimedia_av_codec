@@ -17,6 +17,8 @@
 #include <cstdio>
 #include <atomic>
 #include <fstream>
+#include <map>
+#include <memory>
 #include <thread>
 #include <mutex>
 #include <queue>
@@ -178,6 +180,162 @@ HWTEST_F(HevcswdecInnerApiNdkTest, VIDEO_MEMORYRECYCLE_0500, TestSize.Level1)
         ASSERT_EQ(AVCS_ERR_OK, vDecSample->RunFcodecErrorVideoDecoder(g_codecName));
         vDecSample->WaitForEOS();
     }
+}
+
+} // namespace
+
+namespace {
+const char *HEVC_TAKEOVER_INPUT_DIR = "/data/test/media/720_1280_25_avcc.h265";
+const char *HEVC_TAKEOVER_CODEC_NAME = "OH.Media.Codec.Decoder.Video.HEVC";
+constexpr uint32_t HEVC_TAKEOVER_WIDTH = 1920;
+constexpr uint32_t HEVC_TAKEOVER_HEIGHT = 1080;
+constexpr double HEVC_TAKEOVER_FRAME_RATE = 30.0;
+constexpr uint32_t HEVC_TAKEOVER_INPUT_BUFFER_COUNT = 4;
+constexpr uint32_t HEVC_TAKEOVER_TIMEOUT_MS = 60000;
+
+/**
+ * Fixture of the hard-to-software switch input buffer takeover cases.Every case owns one
+ * in-process HEVC decoder and the same external input pool, so cases stay independent.
+ */
+class HevcSetInputBuffersTest : public testing::Test {
+public:
+    void SetUp() override
+    {
+        sample_ = make_shared<VDecNdkInnerSample>();
+        if (sample_ != nullptr) {
+            sample_->inputDir = HEVC_TAKEOVER_INPUT_DIR;
+            sample_->defaultWidth = HEVC_TAKEOVER_WIDTH;
+            sample_->defaultHeight = HEVC_TAKEOVER_HEIGHT;
+            sample_->defaultFrameRate = HEVC_TAKEOVER_FRAME_RATE;
+        }
+    }
+    void TearDown() override
+    {
+        if (sample_ != nullptr) {
+            sample_->ReleaseInFile();
+            sample_->Release();
+            sample_ = nullptr;
+        }
+    }
+
+protected:
+    std::shared_ptr<VDecNdkInnerSample> sample_;
+};
+
+/**
+ * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0100
+ * @tc.name      : SetInputBuffers rejected in INITIALIZED state
+ * @tc.desc      : hard-to-software switch input buffer takeover test
+ */
+HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_IN_INIT_STATE_0100, TestSize.Level1)
+{
+    if (sample_ == nullptr) {
+        return;
+    }
+
+    ASSERT_EQ(AVCS_ERR_OK, sample_->CreateHevcDecoderByNameAndInit(HEVC_TAKEOVER_CODEC_NAME));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->PrepareTakeoverInputPool());
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, sample_->SetTakeoverInputBuffers(sample_->takeoverPool_));
+}
+
+/**
+ * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0200
+ * @tc.name      : SetInputBuffers rejected for empty input pool
+ * @tc.desc      : hard-to-software switch input buffer takeover test
+ */
+HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_EMPTY_POOL_0200, TestSize.Level1)
+{
+    if (sample_ == nullptr) {
+        return;
+    }
+
+    ASSERT_EQ(AVCS_ERR_OK, sample_->CreateHevcDecoderByNameAndInit(HEVC_TAKEOVER_CODEC_NAME));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->ConfigureDecoder());
+    std::map<uint32_t, std::shared_ptr<OHOS::Media::AVBuffer>> emptyPool;
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, sample_->SetTakeoverInputBuffers(emptyPool));
+}
+
+/**
+ * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0300
+ * @tc.name      : SetInputBuffers rejected for non-continuous buffer indexes
+ * @tc.desc      : hard-to-software switch input buffer takeover test
+ */
+HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_INDEX_NOT_CONTINUOUS_0300, TestSize.Level1)
+{
+    if (sample_ == nullptr) {
+        return;
+    }
+
+    ASSERT_EQ(AVCS_ERR_OK, sample_->CreateHevcDecoderByNameAndInit(HEVC_TAKEOVER_CODEC_NAME));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->PrepareTakeoverInputPool());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->ConfigureDecoder());
+    std::map<uint32_t, std::shared_ptr<OHOS::Media::AVBuffer>> brokenPool;
+    brokenPool[0] = sample_->takeoverPool_[0];
+    brokenPool[2] = sample_->takeoverPool_[2];
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, sample_->SetTakeoverInputBuffers(brokenPool));
+}
+
+/**
+ * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0400
+ * @tc.name      : SetInputBuffers rejected in RUNNING state
+ * @tc.desc      : hard-to-software switch input buffer takeover test
+ */
+HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_IN_RUNNING_STATE_0400, TestSize.Level1)
+{
+    if (sample_ == nullptr) {
+        return;
+    }
+
+    ASSERT_EQ(AVCS_ERR_OK, sample_->CreateHevcDecoderByNameAndInit(HEVC_TAKEOVER_CODEC_NAME));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->PrepareTakeoverInputPool());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->ConfigureDecoder());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->SetCallback());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->SetTakeoverInputBuffers(sample_->takeoverPool_));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->Start());
+    ASSERT_EQ(AVCS_ERR_INVALID_STATE, sample_->SetTakeoverInputBuffers(sample_->takeoverPool_));
+}
+
+/**
+ * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0500
+ * @tc.name      : Pending takeover buffers returned with the same index/buffer/address
+ * @tc.desc      : hard-to-software switch input buffer takeover test
+ */
+HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_PENDING_RETURN_SAME_BINDING_0500, TestSize.Level1)
+{
+    if (sample_ == nullptr) {
+        return;
+    }
+
+    ASSERT_EQ(AVCS_ERR_OK, sample_->CreateHevcDecoderByNameAndInit(HEVC_TAKEOVER_CODEC_NAME));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->PrepareTakeoverInputPool());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->ConfigureDecoder());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->SetCallback());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->SetTakeoverInputBuffers(sample_->takeoverPool_));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->Start());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->WaitTakeoverPendingReturned(HEVC_TAKEOVER_TIMEOUT_MS));
+    ASSERT_EQ(HEVC_TAKEOVER_INPUT_BUFFER_COUNT, sample_->takeoverReturnedCount_);
+    ASSERT_EQ(true, sample_->takeoverAddrCheckPass_);
+}
+
+/**
+ * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0600
+ * @tc.name      : Takeover session keeps decoding from file until EOS
+ * @tc.desc      : hard-to-software switch input buffer takeover test
+ */
+HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_DECODE_UNTIL_EOS_0600, TestSize.Level1)
+{
+    if (sample_ == nullptr) {
+        return;
+    }
+
+    ASSERT_EQ(AVCS_ERR_OK, sample_->CreateHevcDecoderByNameAndInit(HEVC_TAKEOVER_CODEC_NAME));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->PrepareTakeoverInputPool());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->ConfigureDecoder());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->SetCallback());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->SetTakeoverInputBuffers(sample_->takeoverPool_));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->Start());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->FeedTakeoverUntilEos(HEVC_TAKEOVER_TIMEOUT_MS));
+    ASSERT_GE(sample_->takeoverOutCount_, 1u);
 }
 
 } // namespace

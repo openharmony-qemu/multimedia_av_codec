@@ -271,6 +271,32 @@ int32_t VideoDecoder::Configure(const Format &format)
     return AVCS_ERR_OK;
 }
 
+int32_t VideoDecoder::SetInputBuffers(const std::map<uint32_t, std::shared_ptr<AVBuffer>> &buffers)
+{
+    AVCODEC_SYNC_TRACE;
+    CHECK_AND_RETURN_RET_LOG((state_ == State::CONFIGURED), AVCS_ERR_INVALID_STATE,
+        "SetInputBuffers failed: only allowed between Configure and Start, state: %{public}d",
+        static_cast<int32_t>(state_.load()));
+    CHECK_AND_RETURN_RET_LOG(buffers.size() > 0, AVCS_ERR_INVALID_VAL, "SetInputBuffers failed: buffers is empty!");
+    uint32_t expectedIndex = 0;
+    for (auto &[index, buffer] : buffers) {
+        CHECK_AND_RETURN_RET_LOG(index == expectedIndex, AVCS_ERR_INVALID_VAL,
+            "SetInputBuffers failed: index %{public}u is not continuous, expect %{public}u", index, expectedIndex);
+        CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
+            "SetInputBuffers failed: index %{public}u buffer is null!", index);
+        expectedIndex++;
+    }
+
+    if (!externalInputBuffers_.empty()) {
+        AVCODEC_LOGW("SetInputBuffers called again, override previous buffers.");
+    }
+    externalInputBuffers_ = buffers;
+    hasPendingTakeover_ = true;
+    AVCODEC_LOGI("Num %{public}u SetInputBuffers success, takeover %{public}zu external input buffers",
+        decInstanceID_, buffers.size());
+    return AVCS_ERR_OK;
+}
+
 void VideoDecoder::InitBuffers()
 {
     inputAvailQue_->SetActive(true);
@@ -280,7 +306,16 @@ void VideoDecoder::InitBuffers()
         requestSurfaceBufferQue_->SetActive(true);
     }
     CHECK_AND_RETURN_LOG(buffers_[INDEX_INPUT].size() > 0, "Input buffers is null!");
-    if (buffers_[INDEX_INPUT].size() > 0) {
+    if (!externalInputBuffers_.empty() && hasPendingTakeover_) {
+        // 外部输入含数据的缓冲区，接管直接使用
+        for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
+            buffers_[INDEX_INPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
+            inputAvailQue_->Push(i);
+        }
+        hasPendingTakeover_ = false;
+        AVCODEC_LOGI("Num %{public}u takeover mode: %{public}zu pending input buffers pushed to decode",
+            decInstanceID_, buffers_[INDEX_INPUT].size());
+    } else if (buffers_[INDEX_INPUT].size() > 0) { // 正常路径
         for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
             buffers_[INDEX_INPUT][i]->owner_ = Owner::OWNED_BY_USER;
             callback_->OnInputBufferAvailable(i, buffers_[INDEX_INPUT][i]->avBuffer);
@@ -431,6 +466,8 @@ void VideoDecoder::ReleaseResource()
         std::lock_guard<std::mutex> sLock(surfaceMutex_);
         sInfo_.surface = nullptr;
     }
+    externalInputBuffers_.clear();
+    hasPendingTakeover_ = false;
     format_ = Format();
     DeleteDecoder();
 }
@@ -475,6 +512,25 @@ void VideoDecoder::CalculateBufferSize()
 
 int32_t VideoDecoder::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
 {
+    if (!externalInputBuffers_.empty()) {
+        // 接管模式：注册相同的索引/缓冲区，所有权归用户所有，不进行重新分配
+        buffers_[INDEX_INPUT].clear();
+        for (auto &[index, avBuffer] : externalInputBuffers_) {
+            std::shared_ptr<CodecBuffer> buf = std::make_shared<CodecBuffer>();
+            if (buf == nullptr) {
+                AVCODEC_LOGE("Create input codec buffer failed, index=%{public}u", index);
+                buffers_[INDEX_INPUT].clear();
+                return AVCS_ERR_NO_MEMORY;
+            }
+            buf->avBuffer = avBuffer;
+            buf->owner_ = Owner::OWNED_BY_USER;
+            buffers_[INDEX_INPUT].emplace_back(buf);
+            AVCODEC_LOGI("Takeover ext input buffer success: index=%{public}u, addr=%{public}p, size=%{public}d", index,
+                avBuffer->memory_->GetAddr(), avBuffer->memory_->GetCapacity());
+        }
+        return AVCS_ERR_OK;
+    }
+
     int32_t valBufferCnt = 0;
     for (int32_t i = 0; i < bufferCnt; i++) {
         std::shared_ptr<CodecBuffer> buf = std::make_shared<CodecBuffer>();
@@ -747,6 +803,8 @@ int32_t VideoDecoder::AllocateBuffers()
     }
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, inputBufferCnt_);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt_);
+    inputBufferCnt_ = static_cast<int32_t>(externalInputBuffers_.size()) > inputBufferCnt_ ?
+        static_cast<int32_t>(externalInputBuffers_.size()) : inputBufferCnt_;
     inputAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("inputAvailQue", inputBufferCnt_);
     codecAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("codecAvailQue", outputBufferCnt_);
     if (sInfo_.surface != nullptr) {

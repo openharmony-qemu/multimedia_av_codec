@@ -59,6 +59,7 @@ public:
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
     int32_t Configure(const Format &format) override;
+    int32_t SetInputBuffers(const std::map<uint32_t, std::shared_ptr<AVBuffer>> &buffers) override;
 
     virtual void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) = 0;
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
@@ -149,6 +150,9 @@ private:
     sptr<Surface> surface_ = nullptr;
     std::mutex renderBufferMapMutex_;
     std::atomic<bool> isBufferAllocated_ = false;
+    // Input pool taken over by hard-to-software switch. Keeps the same index/buffer/memory-addr bingding until Release
+    std::map<uint32_t, std::shared_ptr<AVBuffer>> externalInputBuffers_;
+    bool hasPendingTakeover_ = false;
 };
 
 } // namespace Codec
