@@ -69,7 +69,6 @@ private:
 private:
     int32_t doFlush();
     int32_t doStart();
-    int32_t doStop();
     int32_t doResume();
     int32_t doRelease();
     int32_t doInit();
