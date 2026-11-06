@@ -31,19 +31,24 @@ AudioCodecAdapter::AudioCodecAdapter(const std::string &name) : state_(CodecStat
 
 AudioCodecAdapter::~AudioCodecAdapter()
 {
-    std::lock_guard<std::mutex> lock(mtx_);
-    if (worker_) {
-        worker_->Release();
-        worker_.reset();
-        worker_ = nullptr;
+    std::shared_ptr<AudioCodecWorker> worker;
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (worker_) {
+            worker = std::move(worker_);
+            worker_ = nullptr;
+        }
+        callback_ = nullptr;
+        if (audioCodec) {
+            audioCodec->Release();
+            audioCodec.reset();
+            audioCodec = nullptr;
+        }
+        state_ = CodecState::RELEASED;
     }
-    callback_ = nullptr;
-    if (audioCodec) {
-        audioCodec->Release();
-        audioCodec.reset();
-        audioCodec = nullptr;
+    if (worker) {
+        worker->Release();
     }
-    state_ = CodecState::RELEASED;
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
 
@@ -132,20 +137,44 @@ int32_t AudioCodecAdapter::Stop()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("stop enter");
-    std::lock_guard<std::mutex> lock(mtx_);
-    CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
-        "Stop failed, call back not initialized.");
+    std::shared_ptr<AudioCodecWorker> worker;
+    int32_t status = AVCodecServiceErrCode::AVCS_ERR_OK;
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        CHECK_AND_RETURN_RET_LOG(callback_ != nullptr, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN,
+            "Stop failed, call back not initialized.");
 
-    if (state_ == CodecState::INITIALIZED || state_ == CodecState::RELEASED || state_ == CodecState::STOPPING ||
-        state_ == CodecState::RELEASING || state_ == CodecState::CONFIGURED) {
-        AVCODEC_LOGD("Stop, state_=%{public}s", stateToString(state_).data());
-        return AVCodecServiceErrCode::AVCS_ERR_OK;
+        if (state_ == CodecState::INITIALIZED || state_ == CodecState::RELEASED || state_ == CodecState::STOPPING ||
+            state_ == CodecState::RELEASING || state_ == CodecState::CONFIGURED) {
+            AVCODEC_LOGD("Stop, state_=%{public}s", stateToString(state_).data());
+            return AVCodecServiceErrCode::AVCS_ERR_OK;
+        }
+        if (state_ == CodecState::RELEASING || state_ != CodecState::STOPPING) {
+            AVCODEC_LOGE("Stop failed, state =%{public}s", stateToString(state_).data());
+            return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
+        }
+        state_ = CodecState::STOPPING;
+        if (worker_) {
+            worker = std::move(worker_);
+            worker_ = nullptr;
+        }
+        if (audioCodec) {
+            status = audioCodec->Flush();
+        }
     }
-    state_ = CodecState::STOPPING;
-    auto ret = doStop();
+    if (worker) {
+        worker->Stop();
+    }
+    if (status != AVCodecServiceErrCode::AVCS_ERR_OK) {
+        AVCODEC_LOGE("flush status=%{public}d", static_cast<int>(status));
+        return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
+    }
     AVCODEC_LOGI("%{public}s to INITIALIZED", stateToString(state_).data());
-    state_ = CodecState::CONFIGURED;
-    return ret;
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        state_ = CodecState::CONFIGURED;
+    }
+    return status;
 }
 
 int32_t AudioCodecAdapter::Flush()
@@ -182,20 +211,25 @@ int32_t AudioCodecAdapter::Reset()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("adapter Reset enter");
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::shared_ptr<AudioCodecWorker> worker;
     int32_t status = AVCodecServiceErrCode::AVCS_ERR_OK;
-    if (worker_) {
-        worker_->Release();
-        worker_.reset();
-        worker_ = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (worker_) {
+            worker = std::move(worker_);
+            worker_ = nullptr;
+        }
+        if (audioCodec) {
+            status = audioCodec->Reset();
+            AVCODEC_LOGI("%{public}s to INITIALIZED",  stateToString(state_).data());
+            state_ = CodecState::INITIALIZED;
+        } else {
+            auto ret = doInit();
+            CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret, "unknown error.");
+        }
     }
-    if (audioCodec) {
-        status = audioCodec->Reset();
-        AVCODEC_LOGI("%{public}s to INITIALIZED",  stateToString(state_).data());
-        state_ = CodecState::INITIALIZED;
-    } else {
-        auto ret = doInit();
-        CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret, "unknown error.");
+    if (worker) {
+        worker->Release();
     }
     return status;
 }
@@ -204,27 +238,41 @@ int32_t AudioCodecAdapter::Release()
 {
     AVCODEC_SYNC_TRACE;
     AVCODEC_LOGD("adapter Release enter");
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::shared_ptr<AudioCodecWorker> worker;
     if (state_ == CodecState::RELEASED || state_ == CodecState::RELEASING) {
         AVCODEC_LOGW("adapter Release, state isnot completely correct, state =%{public}s .",
                      stateToString(state_).data());
         return AVCodecServiceErrCode::AVCS_ERR_OK;
     }
 
-    if (state_ == CodecState::INITIALIZING) {
-        AVCODEC_LOGW("adapter Release, state isnot completely correct, state =%{public}s .",
-                     stateToString(state_).data());
-        state_ = CodecState::RELEASING;
-        return AVCodecServiceErrCode::AVCS_ERR_OK;
-    }
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
 
-    if (state_ == CodecState::STARTING || state_ == CodecState::RUNNING || state_ == CodecState::STOPPING) {
-        AVCODEC_LOGE("adapter Release, state is running, state =%{public}s .", stateToString(state_).data());
+        if (state_ == CodecState::INITIALIZING) {
+            AVCODEC_LOGW("adapter Release, state isnot completely correct, state =%{public}s .",
+                         stateToString(state_).data());
+            state_ = CodecState::RELEASING;
+            return AVCodecServiceErrCode::AVCS_ERR_OK;
+        }
+
+        if (state_ == CodecState::STARTING || state_ == CodecState::RUNNING || state_ == CodecState::STOPPING) {
+            AVCODEC_LOGE("adapter Release, state is running, state =%{public}s .", stateToString(state_).data());
+        }
+        AVCODEC_LOGI("%{public}s to RELEASING then RELEASED", stateToString(state_).data());
+        if (worker_) {
+            worker = std::move(worker_);
+            worker_ = nullptr;
+        }
+        state_ = CodecState::RELEASING;
+        auto ret = doRelease();
+        if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
+            return ret;
+        }
     }
-    AVCODEC_LOGI("%{public}s to RELEASING then RELEASED", stateToString(state_).data());
-    state_ = CodecState::RELEASING;
-    auto ret = doRelease();
-    return ret;
+    if (worker) {
+        worker->Release();
+    }
+    return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
 int32_t AudioCodecAdapter::NotifyEos()
@@ -407,27 +455,6 @@ int32_t AudioCodecAdapter::doResume()
     worker_->Resume();
     AVCODEC_LOGD("adapter doResume, state from %{public}s to RUNNING", stateToString(state_).data());
     state_ = CodecState::RUNNING;
-    return AVCodecServiceErrCode::AVCS_ERR_OK;
-}
-
-int32_t AudioCodecAdapter::doStop()
-{
-    AVCODEC_SYNC_TRACE;
-    if (state_ == CodecState::RELEASING) {
-        AVCODEC_LOGW("adapter doStop, state is already release, state_=%{public}s .", stateToString(state_).data());
-        return AVCodecServiceErrCode::AVCS_ERR_OK;
-    }
-
-    if (state_ != CodecState::STOPPING) {
-        AVCODEC_LOGE("doStop failed, state =%{public}s", stateToString(state_).data());
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
-    }
-    worker_->Stop();
-    int32_t status = audioCodec->Flush();
-    if (status != AVCodecServiceErrCode::AVCS_ERR_OK) {
-        AVCODEC_LOGE("flush status=%{public}d", static_cast<int>(status));
-        return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
-    }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
 
