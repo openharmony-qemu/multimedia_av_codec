@@ -182,6 +182,18 @@ public:
         }
     }
 
+    virtual int32_t GetInputBuffers(std::map<uint32_t, std::shared_ptr<AVBuffer>> &buffers)
+    {
+        (void)buffers;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
+    virtual int32_t SetInputBuffers(const std::map<uint32_t, std::shared_ptr<AVBuffer>> &buffers)
+    {
+        (void)buffers;
+        return AVCODEC_ERROR_EXTEND_START;
+    }
+
 private:
     StatisticsEventReporter statisticsEventReporter_;
 };
