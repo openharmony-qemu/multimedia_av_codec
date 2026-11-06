@@ -36,11 +36,10 @@ bool GraphicPixelFmtToVideoPixelFmt(GraphicPixelFormat graphicFmt, VideoPixelFor
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_1010102:
             outVideoFmt = VideoPixelFormat::RGBA1010102;
             return true;
+        // 10-bit formats (HEVC Main10 profile)
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010:
-            outVideoFmt = VideoPixelFormat::NV12;
-            return true;
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010:
-            outVideoFmt = VideoPixelFormat::NV21;
+            outVideoFmt = VideoPixelFormat::NV12;  // P010 maps to NV12 in codec context
             return true;
         default:
             return false;
