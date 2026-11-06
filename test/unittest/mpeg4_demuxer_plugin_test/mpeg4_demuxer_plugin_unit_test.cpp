@@ -1130,6 +1130,38 @@ int32_t CalculateAvcVideoDelayForTest(const std::vector<uint8_t>& config,
     return videoDelay;
 }
 
+// ctts entries [INT32_MAX, -1] make delta - minDelta exceed INT32_MAX: the reference parser must
+// widen the operands to int64 before subtracting, otherwise the normalized offset wraps to INT32_MIN.
+constexpr int64_t WIDE_CTTS_EXPECTED_MIN_PTS_US = 40000; // sample1: 512 ticks * 1e6 / 12800
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> BuildWideCttsOffsetTrack()
+{
+    constexpr int32_t wideCttsTimeScale = 12800;
+    constexpr uint32_t wideCttsSampleCount = 2;
+    constexpr uint32_t wideCttsSampleDelta = 512;
+    constexpr int32_t wideCttsMaxDelta = INT32_MAX;
+    constexpr int32_t wideCttsMinDelta = -1;
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    track->trackIndex = 0;
+    track->timeScale = wideCttsTimeScale;
+    track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    track->sampleHelper->sttsEntry_ = {{wideCttsSampleCount, wideCttsSampleDelta}};
+    track->sampleHelper->cttsEntry_ = {{1, wideCttsMaxDelta}, {1, wideCttsMinDelta}};
+    return track;
+}
+
+// All ctts entries carry zero sample count: the stts/ctts conversion loop processes no sample, so the
+// reference parser keeps absolutePTSOfIndexZero_ at INT64_MAX and the defensive state check must reject.
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> BuildZeroCountCttsTrack()
+{
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    track->trackIndex = 0;
+    track->timeScale = 12800;
+    track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    track->sampleHelper->sttsEntry_ = {{2, 512}};
+    track->sampleHelper->cttsEntry_ = {{0, INT32_MAX}, {0, -1}};
+    return track;
+}
+
 void WriteU16(std::vector<uint8_t>& data, size_t offset, uint16_t value)
 {
     data[offset] = static_cast<uint8_t>((value >> 8) & 0xFF);
@@ -9302,6 +9334,90 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_FrameId2SeekMs_0001, Tes
     int64_t seekMs = -1;
     mpeg4Plugin_->FrameId2SeekMs(frameId, seekMs);
     EXPECT_EQ(seekMs, 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetIndexByRelativePresentationTimeUs_0001
+ * @tc.desc: Oversized relative PTS and absolute PTS addition overflow return ERROR_INVALID_DATA
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIndexByRelativePresentationTimeUs_0001,
+    TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(plugin, nullptr);
+    plugin->firstTrack_ = BuildWideCttsOffsetTrack();
+    ASSERT_NE(plugin->firstTrack_, nullptr);
+
+    uint32_t index = UINT32_MAX;
+    EXPECT_EQ(plugin->GetIndexByRelativePresentationTimeUs(0, 0, index), Status::OK);
+    EXPECT_EQ(index, 0U);
+    EXPECT_EQ(plugin->absolutePTSOfIndexZero_, WIDE_CTTS_EXPECTED_MIN_PTS_US);
+
+    index = UINT32_MAX;
+    EXPECT_EQ(plugin->GetIndexByRelativePresentationTimeUs(0,
+        static_cast<uint64_t>(INT64_MAX) + 1U, index), Status::ERROR_INVALID_DATA);
+    EXPECT_EQ(index, UINT32_MAX);
+
+    index = UINT32_MAX;
+    EXPECT_EQ(plugin->GetIndexByRelativePresentationTimeUs(0,
+        static_cast<uint64_t>(INT64_MAX), index), Status::ERROR_INVALID_DATA);
+    EXPECT_EQ(index, UINT32_MAX);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_CttsOffsetNormalization_0001
+ * @tc.desc: CTTS offset normalization widens to int64, so delta - minDelta above INT32_MAX does not wrap
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_CttsOffsetNormalization_0001, TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(plugin, nullptr);
+    plugin->firstTrack_ = BuildWideCttsOffsetTrack();
+    ASSERT_NE(plugin->firstTrack_, nullptr);
+
+    EXPECT_EQ(plugin->GetPresentationTimeUsByMpeg4BoxParser(
+        MPEG4DemuxerPlugin::GET_FIRST_SAMPLE_PTS, 0, 0, 0), Status::OK);
+    // Before the widening fix, INT32_MAX - (-1) wrapped to INT32_MIN and the minimum PTS became negative.
+    EXPECT_EQ(plugin->absolutePTSOfIndexZero_, WIDE_CTTS_EXPECTED_MIN_PTS_US);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetIndexByRelativePresentationTimeUsInvalidBasePts_0001
+ * @tc.desc: Reject the invalid absolute PTS base state instead of using the INT64_MAX sentinel
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetIndexByRelativePresentationTimeUsInvalidBasePts_0001,
+    TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(plugin, nullptr);
+    plugin->firstTrack_ = BuildZeroCountCttsTrack();
+    ASSERT_NE(plugin->firstTrack_, nullptr);
+
+    uint32_t index = UINT32_MAX;
+    EXPECT_EQ(plugin->GetIndexByRelativePresentationTimeUs(0, 0, index), Status::ERROR_INVALID_DATA);
+    // No sample went through the stts/ctts conversion, so the base PTS keeps its sentinel value.
+    EXPECT_EQ(plugin->absolutePTSOfIndexZero_, INT64_MAX);
+    EXPECT_EQ(index, UINT32_MAX);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_GetRelativePresentationTimeUsByIndexEmptyHeap_0001
+ * @tc.desc: Reject the empty index-to-relative-pts heap instead of dereferencing it
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_GetRelativePresentationTimeUsByIndexEmptyHeap_0001,
+    TestSize.Level1)
+{
+    auto plugin = std::make_shared<MPEG4DemuxerPlugin>(MPEG4_PLUGIN_NAME);
+    ASSERT_NE(plugin, nullptr);
+    plugin->firstTrack_ = BuildZeroCountCttsTrack();
+    ASSERT_NE(plugin->firstTrack_, nullptr);
+
+    uint64_t relativePTS = 0;
+    EXPECT_EQ(plugin->GetRelativePresentationTimeUsByIndex(0, 0, relativePTS), Status::ERROR_INVALID_DATA);
 }
 
 /**
