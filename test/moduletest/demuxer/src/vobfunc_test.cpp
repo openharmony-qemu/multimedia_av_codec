@@ -28,6 +28,7 @@
 #include "native_avformat.h"
 #include "native_avmemory.h"
 #include "native_avsource.h"
+#include "test_http_port.h"
 
 using namespace OHOS::MediaAVCodec;
 using namespace std;
@@ -47,19 +48,19 @@ public:
 
 protected:
     const char *INP_DIR_1 = "/data/test/media/vob_mpeg2_main@level6_960_400_mp2_2.vob";
-    const char *INP_URI_1 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_960_400_mp2_2.vob";
+    const char *INP_URI_1 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/vob_mpeg2_main@level6_960_400_mp2_2.vob";
     const char *INP_DIR_2 = "/data/test/media/vob_mpeg2_main@level6_1280_720_mp2_31.vob";
-    const char *INP_URI_2 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_1280_720_mp2_31.vob";
+    const char *INP_URI_2 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/vob_mpeg2_main@level6_1280_720_mp2_31.vob";
     const char *INP_DIR_3 = "/data/test/media/vob_mpeg2_main@level6_1280_720_mp2_13.vob";
-    const char *INP_URI_3 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_1280_720_mp2_13.vob";
+    const char *INP_URI_3 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/vob_mpeg2_main@level6_1280_720_mp2_13.vob";
     const char *INP_DIR_4 = "/data/test/media/vob_mpeg1_main@level6_960_400_mp2_2.vob";
-    const char *INP_URI_4 = "http://127.0.0.1:46666/vob_mpeg1_main@level6_960_400_mp2_2.vob";
+    const char *INP_URI_4 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/vob_mpeg1_main@level6_960_400_mp2_2.vob";
     const char *INP_DIR_5 = "/data/test/media/vob_mpeg2_main@level6_960_400_mp3_2.vob";
-    const char *INP_URI_5 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_960_400_mp3_2.vob";
+    const char *INP_URI_5 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/vob_mpeg2_main@level6_960_400_mp3_2.vob";
     const char *INP_DIR_6 = "/data/test/media/vob_mpeg2_main@level6_960_400_ac3_2.vob";
-    const char *INP_URI_6 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_960_400_ac3_2.vob";
+    const char *INP_URI_6 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/vob_mpeg2_main@level6_960_400_ac3_2.vob";
     const char *INP_DIR_7 = "/data/test/media/vob_mpeg2_main@level6_960_400_pcm_2.vob";
-    const char *INP_URI_7 = "http://127.0.0.1:46666/vob_mpeg2_main@level6_960_400_pcm_2.vob";
+    const char *INP_URI_7 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/vob_mpeg2_main@level6_960_400_pcm_2.vob";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;

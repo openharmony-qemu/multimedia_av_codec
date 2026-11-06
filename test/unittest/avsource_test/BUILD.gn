@@ -51,6 +51,7 @@ ohos_unittest("avsource_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/format_test/capi",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
   ]
 
   cflags = avsource_unittest_cflags
@@ -58,6 +59,7 @@ ohos_unittest("avsource_capi_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "./avsource_format_aiff_unit_test.cpp",
       "./avsource_format_unit_test.cpp",
       "./avsource_format_3g2_unit_test.cpp",
@@ -83,7 +85,10 @@ ohos_unittest("avsource_capi_unit_test") {
   } else {
     av_codec_path = "\"/system/lib\""
   }
-  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
+  defines = [
+    "AV_CODEC_PATH=${av_codec_path}",
+    "AVCODEC_TEST_HTTP_PORT=46668",
+  ]
   defines += av_codec_defines
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
@@ -117,6 +122,7 @@ ohos_unittest("avsource_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/format_test/inner",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
   ]
 
   if (target_cpu == "arm64" || is_emulator) {
@@ -127,6 +133,7 @@ ohos_unittest("avsource_inner_unit_test") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "AVSOURCE_INNER_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46669",
   ]
 
   cflags = avsource_unittest_cflags
@@ -134,6 +141,7 @@ ohos_unittest("avsource_inner_unit_test") {
   if (av_codec_support_source) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "./avsource_format_aiff_unit_test.cpp",
       "./avsource_format_3g2_unit_test.cpp",
       "./avsource_format_3gp_unit_test.cpp",

@@ -27,6 +27,7 @@
 #include "media_description.h"
 #include "file_server_demo.h"
 #include "mpeg4_source_unit_test.h"
+#include "test_http_port.h"
 
 #define LOCAL true
 #define URI false
@@ -39,7 +40,7 @@ using namespace std;
 namespace {
 unique_ptr<FileServerDemo> server = nullptr;
 static const string TEST_FILE_PATH = "/data/test/media/";
-static const string TEST_URI_PATH = "http://127.0.0.1:46666/";
+static const string TEST_URI_PATH = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/";
 const std::string HEVC_LIB_PATH = std::string(AV_CODEC_PATH) + "/libav_codec_hevc_parser.z.so";
 const int64_t SOURCE_OFFSET = 0;
 string g_mp4Path = TEST_FILE_PATH + string("test_h264.mp4");

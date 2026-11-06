@@ -28,6 +28,7 @@
 #include "native_avformat.h"
 #include "native_avmemory.h"
 #include "native_avsource.h"
+#include "test_http_port.h"
 
 using namespace OHOS::MediaAVCodec;
 using namespace std;
@@ -43,35 +44,35 @@ public:
 
 protected:
     const char *INP_DIR_1 = "/data/test/media/aac_mpeg4_mp4.dat";
-    const char *INP_URI_1 = "http://127.0.0.1:46666/aac_mpeg4_mp4.dat";
+    const char *INP_URI_1 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/aac_mpeg4_mp4.dat";
     const char *INP_DIR_2 = "/data/test/media/mp3_h264_ts.dat";
-    const char *INP_URI_2 = "http://127.0.0.1:46666/mp3_h264_ts.dat";
+    const char *INP_URI_2 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/mp3_h264_ts.dat";
     const char *INP_DIR_3 = "/data/test/media/mkv.dat";
-    const char *INP_URI_3 = "http://127.0.0.1:46666/mkv.dat";
+    const char *INP_URI_3 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/mkv.dat";
     const char *INP_DIR_4 = "/data/test/media/av1_vorbis_webm.dat";
-    const char *INP_URI_4 = "http://127.0.0.1:46666/av1_vorbis_webm.dat";
+    const char *INP_URI_4 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/av1_vorbis_webm.dat";
     const char *INP_DIR_5 = "/data/test/media/avc_mp3_flv.dat";
-    const char *INP_URI_5 = "http://127.0.0.1:46666/avc_mp3_flv.dat";
+    const char *INP_URI_5 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/avc_mp3_flv.dat";
     const char *INP_DIR_6 = "/data/test/media/adpcm_yamaha_avi.dat";
-    const char *INP_URI_6 = "http://127.0.0.1:46666/adpcm_yamaha_avi.dat";
+    const char *INP_URI_6 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/adpcm_yamaha_avi.dat";
     const char *INP_DIR_7 = "/data/test/media/adpcm_yamaha_mov.dat";
-    const char *INP_URI_7 = "http://127.0.0.1:46666/adpcm_yamaha_mov.dat";
+    const char *INP_URI_7 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/adpcm_yamaha_mov.dat";
     const char *INP_DIR_8 = "/data/test/media/mpeg_h264_mp3_mpeg.dat";
-    const char *INP_URI_8 = "http://127.0.0.1:46666/mpeg_h264_mp3_mpeg.dat";
+    const char *INP_URI_8 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/mpeg_h264_mp3_mpeg.dat";
     const char *INP_DIR_9 = "/data/test/media/rv30_cook_rm.dat";
-    const char *INP_URI_9 = "http://127.0.0.1:46666/rv30_cook_rm.dat";
+    const char *INP_URI_9 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/rv30_cook_rm.dat";
     const char *INP_DIR_10 = "/data/test/media/rv40_cook_rmvb.dat";
-    const char *INP_URI_10 = "http://127.0.0.1:46666/rv40_cook_rmvb.dat";
+    const char *INP_URI_10 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/rv40_cook_rmvb.dat";
     const char *INP_DIR_11 = "/data/test/media/m4v_h264_alac_m4v.dat";
-    const char *INP_URI_11 = "http://127.0.0.1:46666/m4v_h264_alac_m4v.dat";
+    const char *INP_URI_11 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/m4v_h264_alac_m4v.dat";
     const char *INP_DIR_12 = "/data/test/media/wmv_h264_wmav1_wmv.dat";
-    const char *INP_URI_12 = "http://127.0.0.1:46666/wmv_h264_wmav1_wmv.dat";
+    const char *INP_URI_12 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_h264_wmav1_wmv.dat";
     const char *INP_DIR_13 = "/data/test/media/mpeg2_ac3_vob.dat";
-    const char *INP_URI_13 = "http://127.0.0.1:46666/mpeg2_ac3_vob.dat";
+    const char *INP_URI_13 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/mpeg2_ac3_vob.dat";
     const char *INP_DIR_14 = "/data/test/media/3g2_h263_aac_3g2.dat";
-    const char *INP_URI_14 = "http://127.0.0.1:46666/3g2_h263_aac_3g2.dat";
+    const char *INP_URI_14 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/3g2_h263_aac_3g2.dat";
     const char *INP_DIR_15 = "/data/test/media/3gp_h264_aac_3gp.dat";
-    const char *INP_URI_15 = "http://127.0.0.1:46666/3gp_h264_aac_3gp.dat";
+    const char *INP_URI_15 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/3gp_h264_aac_3gp.dat";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;

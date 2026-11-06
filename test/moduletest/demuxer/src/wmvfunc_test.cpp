@@ -28,6 +28,7 @@
 #include "native_avformat.h"
 #include "native_avmemory.h"
 #include "native_avsource.h"
+#include "test_http_port.h"
 
 using namespace OHOS::MediaAVCodec;
 using namespace std;
@@ -47,23 +48,23 @@ public:
 
 protected:
     const char *INP_DIR_1 = "/data/test/media/wmv_wmv3_main@level99_320_240_1.wmv";
-    const char *INP_URI_1 = "http://127.0.0.1:46666/wmv_wmv3_main@level99_320_240_1.wmv";
+    const char *INP_URI_1 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_wmv3_main@level99_320_240_1.wmv";
     const char *INP_DIR_2 = "/data/test/media/wmv_h264_main@level99_720_380_eac3_31.wmv";
-    const char *INP_URI_2 = "http://127.0.0.1:46666/wmv_h264_main@level99_720_380_eac3_31.wmv";
+    const char *INP_URI_2 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_h264_main@level99_720_380_eac3_31.wmv";
     const char *INP_DIR_3 = "/data/test/media/wmv_h264_main@level99_720_380_eac3_13.wmv";
-    const char *INP_URI_3 = "http://127.0.0.1:46666/wmv_h264_main@level99_720_380_eac3_13.wmv";
+    const char *INP_URI_3 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_h264_main@level99_720_380_eac3_13.wmv";
     const char *INP_DIR_4 = "/data/test/media/wmv_wmv3_wmapro.wmv";
-    const char *INP_URI_4 = "http://127.0.0.1:46666/wmv_wmv3_wmapro.wmv";
+    const char *INP_URI_4 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_wmv3_wmapro.wmv";
     const char *INP_DIR_5 = "/data/test/media/wmv_wmv2_wma.wmv";
-    const char *INP_URI_5 = "http://127.0.0.1:46666/wmv_wmv2_wma.wmv";
+    const char *INP_URI_5 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_wmv2_wma.wmv";
     const char *INP_DIR_6 = "/data/test/media/wmv_wmv2_main@level99_720_380_eac3_2.wmv";
-    const char *INP_URI_6 = "http://127.0.0.1:46666/wmv_wmv2_main@level99_720_380_eac3_2.wmv";
+    const char *INP_URI_6 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_wmv2_main@level99_720_380_eac3_2.wmv";
     const char *INP_DIR_7 = "/data/test/media/wmv_wmv1_main@level99_720_380_eac3_2.wmv";
-    const char *INP_URI_7 = "http://127.0.0.1:46666/wmv_wmv1_main@level99_720_380_eac3_2.wmv";
+    const char *INP_URI_7 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_wmv1_main@level99_720_380_eac3_2.wmv";
     const char *INP_DIR_8 = "/data/test/media/wmv_h264_wmav2.wmv";
-    const char *INP_URI_8 = "http://127.0.0.1:46666/wmv_h264_wmav2.wmv";
+    const char *INP_URI_8 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_h264_wmav2.wmv";
     const char *INP_DIR_9 = "/data/test/media/wmv_h264_wmav1.wmv";
-    const char *INP_URI_9 = "http://127.0.0.1:46666/wmv_h264_wmav1.wmv";
+    const char *INP_URI_9 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/wmv_h264_wmav1.wmv";
 };
 
 static unique_ptr<FileServerDemo> server = nullptr;

@@ -28,6 +28,7 @@
 #include "native_avformat.h"
 #include "native_avmemory.h"
 #include "native_avsource.h"
+#include "test_http_port.h"
 
 using namespace OHOS::MediaAVCodec;
 using namespace std;
@@ -47,17 +48,17 @@ public:
 
 protected:
     const char *INP_DIR_1 = "/data/test/media/3g2_mp4v_simple@level1_720_480_mp4a_2.3g2";
-    const char *INP_URI_1 = "http://127.0.0.1:46666/3g2_mp4v_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_URI_1 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/3g2_mp4v_simple@level1_720_480_mp4a_2.3g2";
     const char *INP_DIR_2 = "/data/test/media/3g2_mp4v_simple@level1_720_480_mp4a_31.3g2";
-    const char *INP_URI_2 = "http://127.0.0.1:46666/3g2_mp4v_simple@level1_720_480_mp4a_31.3g2";
+    const char *INP_URI_2 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/3g2_mp4v_simple@level1_720_480_mp4a_31.3g2";
     const char *INP_DIR_3 = "/data/test/media/3g2_mp4v_simple@level1_720_480_mp4a_13.3g2";
-    const char *INP_URI_3 = "http://127.0.0.1:46666/3g2_mp4v_simple@level1_720_480_mp4a_13.3g2";
+    const char *INP_URI_3 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/3g2_mp4v_simple@level1_720_480_mp4a_13.3g2";
     const char *INP_DIR_4 = "/data/test/media/3g2_h264_amrwb_simple@level1_720_480_mp4a_2.3g2";
-    const char *INP_URI_4 = "http://127.0.0.1:46666/3g2_h264_amrwb_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_URI_4 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/3g2_h264_amrwb_simple@level1_720_480_mp4a_2.3g2";
     const char *INP_DIR_5 = "/data/test/media/3g2_h264_amrnb_simple@level1_720_480_mp4a_2.3g2";
-    const char *INP_URI_5 = "http://127.0.0.1:46666/3g2_h264_amrnb_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_URI_5 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/3g2_h264_amrnb_simple@level1_720_480_mp4a_2.3g2";
     const char *INP_DIR_6 = "/data/test/media/3g2_h263_simple@level1_720_480_mp4a_2.3g2";
-    const char *INP_URI_6 = "http://127.0.0.1:46666/3g2_h263_simple@level1_720_480_mp4a_2.3g2";
+    const char *INP_URI_6 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/3g2_h263_simple@level1_720_480_mp4a_2.3g2";
     const char *INP_DIR_7 = "/data/test/media/3g2_h264_720_480_mp4a_31.3g2";
 };
 

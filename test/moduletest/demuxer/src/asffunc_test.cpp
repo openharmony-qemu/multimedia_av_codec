@@ -28,6 +28,7 @@
 #include "native_avformat.h"
 #include "native_avmemory.h"
 #include "native_avsource.h"
+#include "test_http_port.h"
 
 using namespace OHOS::MediaAVCodec;
 using namespace std;
@@ -43,9 +44,9 @@ public:
 
 protected:
     const char *INP_DIR_1 = "/data/test/media/test_msmpeg4_wma.asf";
-    const char *INP_URI_1 = "http://127.0.0.1:46666/test_msmpeg4_wma.asf";
+    const char *INP_URI_1 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_msmpeg4_wma.asf";
     const char *INP_DIR_2 = "/data/test/media/test_mpeg4_wma.asf";
-    const char *INP_URI_2 = "http://127.0.0.1:46666/test_mpeg4_wma.asf";
+    const char *INP_URI_2 = "http://127.0.0.1:" AVCODEC_TEST_HTTP_PORT_STR "/test_mpeg4_wma.asf";
     const char *INP_DIR_3 = "/data/test/media/h263_aac.asf";
     const char *INP_DIR_4 = "/data/test/media/h264_aac.asf";
     const char *INP_DIR_5 = "/data/test/media/h264_ac3.asf";

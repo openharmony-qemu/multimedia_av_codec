@@ -25,6 +25,7 @@ demuxer_moduletest_native_include_dirs = [
   "./src/InnerAPI/include",
   "$av_codec_root_dir/test/nativedemo/include",
   "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+  "$av_codec_root_dir/test/unittest/common",
 ]
 
 demuxer_moduletest_cflags = [
@@ -64,6 +65,7 @@ ohos_unittest("demuxer_native_module_test") {
       #"./src/reli2_test.cpp",
       #"./src/reli_test.cpp",
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "./src/InnerAPI/api_test.cpp",
       "./src/InnerAPI/func_test.cpp",
       "./src/InnerAPI/inner_demuxer_parser_sample.cpp",
@@ -144,7 +146,10 @@ ohos_unittest("demuxer_native_module_test") {
   } else {
     av_codec_path = "\"/system/lib\""
   }
-  defines = [ "AV_CODEC_PATH=${av_codec_path}" ]
+  defines = [
+    "AV_CODEC_PATH=${av_codec_path}",
+    "AVCODEC_TEST_HTTP_PORT=46695",
+  ]
   defines += av_codec_defines
   deps = [
     "$MEDIA_ROOT_DIR/interfaces/inner_api/native:av_codec_client",

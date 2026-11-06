@@ -61,6 +61,7 @@ ohos_unittest("demuxer_capi_unit_test") {
     "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/utils/include",
     "$av_codec_root_dir/services/media_engine/modules/demuxer",
   ]
@@ -70,6 +71,7 @@ ohos_unittest("demuxer_capi_unit_test") {
   if (av_codec_support_demuxer) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock_factory.cpp",
       "./capi/demuxer_capi_base_mock.cpp",
@@ -103,6 +105,7 @@ ohos_unittest("demuxer_capi_unit_test") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "DEMUXER_CAPI_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46671",
   ]
   defines += av_codec_defines
   deps = [
@@ -158,6 +161,7 @@ ohos_unittest("demuxer_inner_unit_test") {
     "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/inner",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/utils/include",
   ]
 
@@ -166,6 +170,7 @@ ohos_unittest("demuxer_inner_unit_test") {
   if (av_codec_support_demuxer) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock_factory.cpp",
       "./demuxer_aiff_unit_test.cpp",
@@ -199,6 +204,7 @@ ohos_unittest("demuxer_inner_unit_test") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "DEMUXER_INNER_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46672",
   ]
   deps = [
     "$av_codec_root_dir/services/utils:av_codec_service_utils",
@@ -238,6 +244,7 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
     "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/capi",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/utils/include",
   ]
 
@@ -246,6 +253,7 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
   if (av_codec_support_demuxer) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/capi/avsource_capi_mock_factory.cpp",
       "./capi/demuxer_capi_base_mock.cpp",
@@ -280,6 +288,7 @@ ohos_unittest("demuxer_capi_buffer_unit_test") {
     "AV_CODEC_PATH=${av_codec_path}",
     "DEMUXER_CAPI_UNIT_TEST",
     "DEMUXER_CAPI_BUFFER_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46673",
   ]
   deps = [
     "$av_codec_root_dir/interfaces/kits/c:capi_packages",
@@ -320,6 +329,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
     "$av_codec_root_dir/test/unittest/common/common_mock/avmemory/inner",
     "$av_codec_root_dir/test/nativedemo/include",
     "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo",
+    "$av_codec_root_dir/test/unittest/common",
     "$av_codec_root_dir/services/utils/include",
   ]
 
@@ -328,6 +338,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
   if (av_codec_support_demuxer) {
     sources = [
       "$av_codec_root_dir/test/nativedemo/avdemuxer/server_demo/file_server_demo.cpp",
+      "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock.cpp",
       "$av_codec_root_dir/test/unittest/avsource_test/inner/avsource_inner_mock_factory.cpp",
       "./demuxer_aiff_unit_test.cpp",
@@ -362,6 +373,7 @@ ohos_unittest("demuxer_inner_buffer_unit_test") {
   defines = [
     "AV_CODEC_PATH=${av_codec_path}",
     "DEMUXER_INNER_UNIT_TEST",
+    "AVCODEC_TEST_HTTP_PORT=46685",
   ]
   deps = [
     "$av_codec_root_dir/services/utils:av_codec_service_utils",

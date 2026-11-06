@@ -32,6 +32,7 @@ ohos_executable("av_codec_demo") {
     "./codeclist_demo",
     "./include",
     "./e2e_demo",
+    "$av_codec_root_dir/test/unittest/common",
   ]
 
   if (target_cpu == "arm64" || is_emulator) {
@@ -94,6 +95,7 @@ ohos_executable("av_codec_demo") {
     "./avdemuxer/inner_demo/inner_demuxer_demo.cpp",
     "./avdemuxer/inner_demo/inner_source_demo.cpp",
     "./avdemuxer/server_demo/file_server_demo.cpp",
+    "$av_codec_root_dir/test/unittest/common/http_server_demo.cpp",
     "./codeclist_demo/codeclist_demo.cpp",
     "./e2e_demo/avcodec_e2e_demo.cpp",
     "./e2e_demo/avcodec_e2e_demo_api10.cpp",
