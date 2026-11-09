@@ -167,7 +167,7 @@ struct OH_AVCodec *OH_AudioCodec_CreateByMime(const char *mime, bool isEncoder)
     CHECK_AND_RETURN_RET_LOG(strlen(mime) < MAX_LENGTH, nullptr, "input mime is too long!");
     ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioCodec_CreateByMime.Time", TIMES);
     std::shared_ptr<AVCodecAudioCodecImpl> audioCodec = std::make_shared<AVCodecAudioCodecImpl>();
-    CHECK_AND_RETURN_RET_LOG(audioCodec != nullptr, nullptr, "failed to AudioCodecFactory::CreateByMime");
+    CHECK_AND_RETURN_RET_LOG(audioCodec != nullptr, nullptr, "Create AVCodecAudioCodecImpl failed");
     AVCodecType type = AVCODEC_TYPE_AUDIO_DECODER;
     if (isEncoder) {
         type = AVCODEC_TYPE_AUDIO_ENCODER;
@@ -188,7 +188,7 @@ struct OH_AVCodec *OH_AudioCodec_CreateByName(const char *name)
     CHECK_AND_RETURN_RET_LOG(strlen(name) < MAX_LENGTH, nullptr, "input name is too long!");
     ApiMetricsReporter apiTimeReporter("AVCodecKit.OH_AudioCodec_CreateByName.Time", TIMES);
     std::shared_ptr<AVCodecAudioCodecImpl> audioCodec = std::make_shared<AVCodecAudioCodecImpl>();
-    CHECK_AND_RETURN_RET_LOG(audioCodec != nullptr, nullptr, "failed to AudioCodecFactory::CreateByMime");
+    CHECK_AND_RETURN_RET_LOG(audioCodec != nullptr, nullptr, "Create AVCodecAudioCodecImpl failed");
     std::string codecMimeName = name;
     std::string targetName = name;
     if (targetName.compare(AVCodecCodecName::AUDIO_DECODER_API9_AAC_NAME) == 0) {
