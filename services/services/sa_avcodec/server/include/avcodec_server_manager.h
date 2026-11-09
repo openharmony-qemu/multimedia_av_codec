@@ -43,6 +43,7 @@ public:
     void NotifyProcessStatus(const int32_t status);
     void SetCritical(const bool isKeyService);
     uint32_t GetInstanceCount();
+    std::vector<CodecInstance> GetAllInstanceInfo();
     std::vector<CodecInstance> GetInstanceInfoListByPid(pid_t pid);
     std::vector<CodecInstance> GetInstanceInfoListByActualPid(pid_t pid);
     std::optional<InstanceInfo> GetInstanceInfoByInstanceId(int32_t instanceId);

@@ -362,6 +362,17 @@ uint32_t AVCodecServerManager::GetInstanceCount()
     return codecStubMap_.size() + codecListStubMap_.size();
 }
 
+std::vector<CodecInstance> AVCodecServerManager::GetAllInstanceInfo()
+{
+    std::shared_lock<std::shared_mutex> lock(mutex_);
+    std::vector<CodecInstance> instanceInfoList;
+    instanceInfoList.reserve(codecStubMap_.size());
+    for (const auto &instance : codecStubMap_) {
+        instanceInfoList.emplace_back(instance.second);
+    }
+    return instanceInfoList;
+}
+
 std::vector<CodecInstance> AVCodecServerManager::GetInstanceInfoListByPid(pid_t pid)
 {
     std::shared_lock<std::shared_mutex> lock(mutex_);
