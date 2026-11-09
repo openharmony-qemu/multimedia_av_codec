@@ -85,6 +85,7 @@ SmartFluencyDecodingManager::SmartFluencyDecodingManager(const std::string& code
 void SmartFluencyDecodingManager::SetCallbacks(SmartFluencyDecoding::AsyncDropInputCallback inputCb,
                                                SmartFluencyDecoding::AsyncDropOutputCallback outputCb)
 {
+    std::unique_lock<std::shared_mutex> lock(sfdMutex_);
     inputCb_ = std::move(inputCb);
     outputCb_ = std::move(outputCb);
     if (sfd_ != nullptr) {
@@ -94,6 +95,12 @@ void SmartFluencyDecodingManager::SetCallbacks(SmartFluencyDecoding::AsyncDropIn
 }
 
 void SmartFluencyDecodingManager::Configure(const Media::Format& format)
+{
+    std::unique_lock<std::shared_mutex> lock(sfdMutex_);
+    ConfigureLocked(format);
+}
+
+void SmartFluencyDecodingManager::ConfigureLocked(const Media::Format& format)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(IsCodecSupported(codecMime_, codecType_),
         "Skip SFD configuration (not supported)");
@@ -139,6 +146,7 @@ void SmartFluencyDecodingManager::Configure(const Media::Format& format)
 void SmartFluencyDecodingManager::OnInputBufferAvailable(uint32_t index, const std::shared_ptr<AVBuffer>& buffer)
 {
     CHECK_AND_RETURN_LOG_WITH_TAG(buffer != nullptr, "buffer is null for index %{public}u", index);
+    std::shared_lock<std::shared_mutex> sfdLock(sfdMutex_);
     if (codecType_ == AVCODEC_TYPE_VIDEO_DECODER) {
         std::lock_guard<std::mutex> csdLock(csdMutex_);
         if (!isCsdCached_) {
@@ -153,8 +161,12 @@ void SmartFluencyDecodingManager::OnInputBufferAvailable(uint32_t index, const s
 bool SmartFluencyDecodingManager::MakePreDecodeDecision(uint32_t index)
 {
 #ifdef SFD_DEBUG
-    CheckAndTriggerDebugConfig();
+    {
+        std::unique_lock<std::shared_mutex> lock(sfdMutex_);
+        CheckAndTriggerDebugConfig();
+    }
 #endif
+    std::shared_lock<std::shared_mutex> sfdLock(sfdMutex_);
     CacheCsdData(index);
     if (sfd_) {
         bool decision = sfd_->MakePreDecodeDecision(index);
@@ -173,6 +185,7 @@ bool SmartFluencyDecodingManager::MakePostDecodeDecision(uint32_t index,
     const std::shared_ptr<AVBuffer>& buffer, bool isSurfaceMode)
 {
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(buffer != nullptr, true, "buffer is null for index %{public}u", index);
+    std::shared_lock<std::shared_mutex> sfdLock(sfdMutex_);
     uint64_t uniqueId = buffer->GetUniqueId();
     if (isSurfaceMode && codecType_ == AVCODEC_TYPE_VIDEO_DECODER && buffer->memory_ != nullptr) {
         std::lock_guard<std::mutex> lock(surfaceBufMutex_);
@@ -260,6 +273,7 @@ void SmartFluencyDecodingManager::OnOutputBufferUnbinded()
 
 void SmartFluencyDecodingManager::Flush()
 {
+    std::unique_lock<std::shared_mutex> lock(sfdMutex_);
     if (sfd_) {
         sfd_->Flush();
     }
@@ -267,6 +281,7 @@ void SmartFluencyDecodingManager::Flush()
 
 bool SmartFluencyDecodingManager::ShouldReportDfx() const
 {
+    std::shared_lock<std::shared_mutex> lock(sfdMutex_);
     if (sfd_ == nullptr) {
         return false;
     }
@@ -275,6 +290,7 @@ bool SmartFluencyDecodingManager::ShouldReportDfx() const
 
 void SmartFluencyDecodingManager::EnableMVOutput(Media::Format& format)
 {
+    std::shared_lock<std::shared_mutex> lock(sfdMutex_);
     if (sfd_ != nullptr) {
         format.PutIntValue(Media::Tag::VIDEO_DECODER_ENABLE_MV_UPLOAD, 1);
     }
@@ -295,6 +311,8 @@ bool SmartFluencyDecodingManager::IsCodecSupported(const std::string& codecMime,
 
 void SmartFluencyDecodingManager::CleanResources()
 {
+    std::unique_ptr<SmartFluencyDecoding> retiredSfd;
+    std::unique_lock<std::shared_mutex> sfdLock(sfdMutex_);
     {
         std::lock_guard<std::mutex> csdLock(csdMutex_);
         isCsdCached_ = false;
@@ -305,18 +323,20 @@ void SmartFluencyDecodingManager::CleanResources()
         std::lock_guard<std::mutex> lock(surfaceBufMutex_);
         surfaceBufMap_.clear();
     }
-    if (sfd_) {
-        sfd_ = nullptr;
-    }
+    retiredSfd = std::move(sfd_);
 #ifdef SFD_DEBUG
     inputFrameCount_ = 0;
     isDebugConfigInitialized_ = false;
 #endif
+    // Destruction joins the drop worker, whose callbacks can re-enter this manager.
+    sfdLock.unlock();
+    retiredSfd.reset();
     AVCODEC_LOGI_WITH_TAG("resources cleaned");
 }
 
 void SmartFluencyDecodingManager::OnDecInfoUpdate(double sourceFps, double speed)
 {
+    std::shared_lock<std::shared_mutex> lock(sfdMutex_);
     if (sfd_) {
         sfd_->OnDecInfoUpdate(sourceFps, speed);
     }
@@ -366,7 +386,7 @@ void SmartFluencyDecodingManager::CheckAndTriggerDebugConfig()
         AVCODEC_LOGI_WITH_TAG("SFD Debug: Trg at %{public}u. M:%{public}d, R:%{public}.3f, S:%{public}.3f",
             inputFrameCount_, newMode_, newRatio_, newDecSpeed_);
         Media::Format emptyFormat;
-        Configure(emptyFormat);
+        ConfigureLocked(emptyFormat);
     }
 }
 #endif
