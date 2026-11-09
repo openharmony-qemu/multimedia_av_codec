@@ -5033,13 +5033,14 @@ Status MPEG4DemuxerPlugin::HandleAnnexbBufferConversionResult(const std::shared_
     if (!convertRet && context.isAvc && context.outputDataSize > context.outputBufferSize) {
         return Status::OK;
     }
-    if (!context.isAvc) {
+    if (!convertRet && !context.isAvc) {
         // HEVC: never deliver the raw length-prefixed sample when the direct buffer conversion
-        // fails. Fall back to the parser's in-place conversion (dynamically sized buffer), which
-        // succeeds for valid samples and fails with ERROR_PACKET_CONVERT_FAILED for invalid ones
-        // (FFmpeg hevc_mp4toannexb returns AVERROR_INVALIDDATA instead of emitting the packet);
-        // returning OK here is not handled, so the caller always runs that conversion and never
-        // delivers the raw length-prefixed sample.
+        // fails. Fall back to the parser's in-place conversion (dynamically sized buffer), using
+        // the same libav_codec_hevc_parser as the FFmpeg demuxer plugin so lenient samples are
+        // delivered converted; unconvertible samples fail with ERROR_PACKET_CONVERT_FAILED.
+        // convertRet == true is already validated and returned above, so this branch is only
+        // reached on conversion failure. Returning OK here is not handled, so the caller always
+        // runs that conversion and never delivers the raw length-prefixed sample.
         return Status::OK;
     }
     FALSE_RETURN_V_MSG_E(context.outputDataSize <= context.outputBufferSize, Status::ERROR_PACKET_CONVERT_FAILED,

@@ -10843,26 +10843,27 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcOneAndFourByteLength
 }
 
 /**
- * @tc.name: Mpeg4DemuxerPlugin_HevcConvertFailNoOriginalSample_001
- * @tc.desc: Verify a HEVC sample that cannot be converted to Annex-B is skipped
- *           (ERROR_PACKET_CONVERT_FAILED) instead of silently delivering the raw length-prefixed
- *           sample, matching FFmpeg hevc_mp4toannexb AVERROR_INVALIDDATA
+ * @tc.name: Mpeg4DemuxerPlugin_HevcOversizedLengthPrefixDelivered_001
+ * @tc.desc: Verify a HEVC sample whose NAL length prefix exceeds the remaining bytes is still
+ *           converted leniently and delivered with the out-of-band VPS/SPS/PPS, matching the
+ *           FFmpeg demuxer plugin: it uses the same libav_codec_hevc_parser and delivers the
+ *           converted packet (hevc_mp4toannexb is not the conversion path used here)
  * @tc.type: FUNC
  */
-HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcConvertFailNoOriginalSample_001,
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcOversizedLengthPrefixDelivered_001,
     TestSize.Level1)
 {
     if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
         GTEST_SKIP() << "hevc parser library not found";
     }
     constexpr uint8_t hevcLengthSizeMinusOne = 1;
-    constexpr uint16_t invalidNalLength = 0xFFFF;
+    constexpr uint16_t oversizedNalLength = 0xFFFF;
     const std::vector<uint8_t> vps = {0x40, 0x01, 0xAA, 0xBB};
     const std::vector<uint8_t> sps = {0x42, 0x01, 0xCC, 0xDD};
     const std::vector<uint8_t> pps = {0x44, 0x01, 0xEE, 0xFF};
     const std::vector<uint8_t> hvcc = BuildHevcCTestConfig(vps, sps, pps, hevcLengthSizeMinusOne);
     std::vector<uint8_t> sampleData;
-    AppendU16(sampleData, invalidNalLength);
+    AppendU16(sampleData, oversizedNalLength);
     sampleData.insert(sampleData.end(), {0x26, 0x01, 0x11, 0x22});
     const std::vector<int32_t> sampleSizes = {static_cast<int32_t>(sampleData.size())};
     auto plugin = BuildHevcSampleTestPlugin(hvcc, sampleData, sampleSizes, {{0}});
@@ -10872,8 +10873,17 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcConvertFailNoOrigina
     ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::HEVC), Status::OK);
     ASSERT_EQ(plugin->ParseAVFirstFrameForTrack(0), Status::OK);
     ASSERT_TRUE(plugin->streamParsers_->ParserIsInited(0));
+    std::vector<uint8_t> expected;
+    for (const auto* nal : {&vps, &sps, &pps}) {
+        expected.insert(expected.end(), {0x00, 0x00, 0x00, 0x01});
+        expected.insert(expected.end(), nal->begin(), nal->end());
+    }
     AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
-    EXPECT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::ERROR_PACKET_CONVERT_FAILED);
+    ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
+    const int32_t outSize = output.mediaAVBuffer->memory_->GetSize();
+    EXPECT_GE(outSize, static_cast<int32_t>(expected.size()));
+    EXPECT_TRUE(std::equal(expected.begin(), expected.end(), output.mediaAVBuffer->memory_->GetAddr(),
+        output.mediaAVBuffer->memory_->GetAddr() + expected.size()));
 }
 
 /**
