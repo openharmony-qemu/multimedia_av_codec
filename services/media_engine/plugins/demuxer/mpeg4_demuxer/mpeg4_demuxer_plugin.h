@@ -219,6 +219,10 @@ private:
     uint32_t GetFirstSyncSampleIndex(const std::shared_ptr<MPEG4AtomParser::Track>& track) const;
     Status ReadAudioMetadataProbeSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
         const std::shared_ptr<MPEG4Sample>& mpeg4Sample, bool& sampleReady);
+    void ProbeAacInbandSbrWindow(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
+        uint32_t firstPlayableIndex, bool hasPlayableSample);
+    bool ProbeAacInbandSbrSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
+        uint32_t& probedBytes, bool& hasSbr);
     bool ProcessVideoFirstFrame(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
         const std::shared_ptr<MPEG4Sample>& mpeg4Sample);
     bool UpdateCodecConfigForSample(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex);

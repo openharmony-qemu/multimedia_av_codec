@@ -583,25 +583,8 @@ Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
         return Status::OK;
     }
 
-    std::vector<uint8_t> codecConfig;
-    AacSbrSignalState sbrSignalState = AacSbrSignalState::UNSPECIFIED;
-    if (mediaInfo.tracks[index_].Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig)) {
-        sbrSignalState = ParseAacSbrSignalState(codecConfig);
-    }
-    if (frameInfo.hasSbr && sbrSignalState != AacSbrSignalState::ABSENT) {
-        int32_t sampleRate = 0;
-        int32_t samplesPerFrame = 0;
-        if (mediaInfo.tracks[index_].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) && sampleRate > 0 &&
-            mediaInfo.tracks[index_].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) &&
-            samplesPerFrame == AAC_DEFAULT_SAMPLES_PER_FRAME &&
-            sampleRate <= std::numeric_limits<int32_t>::max() / AAC_SBR_SAMPLE_RATE_MULTIPLIER) {
-            sampleRate *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
-            samplesPerFrame *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
-            mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
-            mediaInfo.tracks[index_].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame);
-            MEDIA_LOG_I("AAC raw frame SBR extension detected, output sample rate=" PUBLIC_LOG_D32
-                ", samples per frame=" PUBLIC_LOG_D32, sampleRate, samplesPerFrame);
-        }
+    if (frameInfo.hasSbr) {
+        ApplyImplicitAacSbr(mediaInfo, index_);
     }
 
     int32_t parsedChannels = 0;
@@ -623,6 +606,39 @@ Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
     mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_LAYOUT>(layout);
     mediaInfo.tracks[index_].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout);
     return Status::OK;
+}
+
+bool MPEG4AudioParser::HasAacInbandSbr(const uint8_t* data, uint32_t size)
+{
+    AacRawDataBlockInfo frameInfo;
+    return DetectAacSbrFillElement(data, size, frameInfo) && frameInfo.hasSbr;
+}
+
+void MPEG4AudioParser::ApplyImplicitAacSbr(MediaInfo& mediaInfo, uint32_t trackIndex)
+{
+    if (static_cast<size_t>(trackIndex) >= mediaInfo.tracks.size()) {
+        return;
+    }
+    std::vector<uint8_t> codecConfig;
+    if (mediaInfo.tracks[trackIndex].Get<Tag::MEDIA_CODEC_CONFIG>(codecConfig) &&
+        ParseAacSbrSignalState(codecConfig) == AacSbrSignalState::ABSENT) {
+        // ASC explicitly signals "SBR not present" -> keep the signalled rate.
+        return;
+    }
+    int32_t sampleRate = 0;
+    int32_t samplesPerFrame = 0;
+    if (!mediaInfo.tracks[trackIndex].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate) || sampleRate <= 0 ||
+        !mediaInfo.tracks[trackIndex].Get<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame) ||
+        samplesPerFrame != AAC_DEFAULT_SAMPLES_PER_FRAME ||
+        sampleRate > std::numeric_limits<int32_t>::max() / AAC_SBR_SAMPLE_RATE_MULTIPLIER) {
+        return;
+    }
+    sampleRate *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
+    samplesPerFrame *= AAC_SBR_SAMPLE_RATE_MULTIPLIER;
+    mediaInfo.tracks[trackIndex].Set<Tag::AUDIO_SAMPLE_RATE>(sampleRate);
+    mediaInfo.tracks[trackIndex].Set<Tag::AUDIO_SAMPLE_PER_FRAME>(samplesPerFrame);
+    MEDIA_LOG_I("AAC raw frame SBR extension detected, output sample rate=" PUBLIC_LOG_D32
+        ", samples per frame=" PUBLIC_LOG_D32, sampleRate, samplesPerFrame);
 }
 } // namespace MPEG4
 } // namespace Plugins
