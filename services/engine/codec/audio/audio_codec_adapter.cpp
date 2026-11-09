@@ -39,15 +39,18 @@ AudioCodecAdapter::~AudioCodecAdapter()
             worker_ = nullptr;
         }
         callback_ = nullptr;
+        state_ = CodecState::RELEASED;
+    }
+    if (worker) {
+        worker->Release();
+    }
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
         if (audioCodec) {
             audioCodec->Release();
             audioCodec.reset();
             audioCodec = nullptr;
         }
-        state_ = CodecState::RELEASED;
-    }
-    if (worker) {
-        worker->Release();
     }
     (void)mallopt(M_FLUSH_THREAD_CACHE, 0);
 }
@@ -149,21 +152,20 @@ int32_t AudioCodecAdapter::Stop()
             AVCODEC_LOGD("Stop, state_=%{public}s", stateToString(state_).data());
             return AVCodecServiceErrCode::AVCS_ERR_OK;
         }
-        if (state_ == CodecState::RELEASING || state_ != CodecState::STOPPING) {
-            AVCODEC_LOGE("Stop failed, state =%{public}s", stateToString(state_).data());
-            return AVCodecServiceErrCode::AVCS_ERR_INVALID_STATE;
-        }
         state_ = CodecState::STOPPING;
         if (worker_) {
             worker = std::move(worker_);
             worker_ = nullptr;
         }
-        if (audioCodec) {
-            status = audioCodec->Flush();
-        }
     }
     if (worker) {
         worker->Stop();
+    }
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (audioCodec) {
+            status = audioCodec->Flush();
+        }
     }
     if (status != AVCodecServiceErrCode::AVCS_ERR_OK) {
         AVCODEC_LOGE("flush status=%{public}d", static_cast<int>(status));
@@ -219,6 +221,12 @@ int32_t AudioCodecAdapter::Reset()
             worker = std::move(worker_);
             worker_ = nullptr;
         }
+    }
+    if (worker) {
+        worker->Release();
+    }
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
         if (audioCodec) {
             status = audioCodec->Reset();
             AVCODEC_LOGI("%{public}s to INITIALIZED",  stateToString(state_).data());
@@ -227,9 +235,6 @@ int32_t AudioCodecAdapter::Reset()
             auto ret = doInit();
             CHECK_AND_RETURN_RET_LOG(ret == AVCodecServiceErrCode::AVCS_ERR_OK, ret, "unknown error.");
         }
-    }
-    if (worker) {
-        worker->Release();
     }
     return status;
 }
@@ -264,13 +269,16 @@ int32_t AudioCodecAdapter::Release()
             worker_ = nullptr;
         }
         state_ = CodecState::RELEASING;
+    }
+    if (worker) {
+        worker->Release();
+    }
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
         auto ret = doRelease();
         if (ret != AVCodecServiceErrCode::AVCS_ERR_OK) {
             return ret;
         }
-    }
-    if (worker) {
-        worker->Release();
     }
     return AVCodecServiceErrCode::AVCS_ERR_OK;
 }
