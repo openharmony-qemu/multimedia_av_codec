@@ -1505,7 +1505,11 @@ int32_t CountLengthPrefixedNalUnits(const std::shared_ptr<Sample>& sample, uint8
     while (offset + nalLengthSize <= sampleSize) {
         const uint32_t nalLength = ReadNalLength(data + offset, nalLengthSize);
         offset += nalLengthSize;
-        if (nalLength == 0 || nalLength > static_cast<uint64_t>(sampleSize - offset)) {
+        // A zero-length NAL (including trailing zero padding) is counted rather than stopping the
+        // scan so the Annex-B growth estimate never under-runs; if the converter skips zero-length
+        // NALs the buffer is only conservatively larger, which is safe. Truncated lengths (beyond
+        // the sample) terminate the count conservatively.
+        if (nalLength > static_cast<uint64_t>(sampleSize - offset)) {
             break;
         }
         ++nalCount;
@@ -4934,8 +4938,20 @@ bool MPEG4DemuxerPlugin::GetAnnexbOutputBufferSize(uint32_t trackId, const std::
     // replaces each prefix with a 4-byte start code, so the buffer grows by
     // (ANNEXB_START_CODE_SIZE - lengthSize) per NAL. FFmpeg's hevc_mp4toannexb grows the packet
     // accordingly (av_grow_packet) instead of assuming size + extradata.
+    // AVC shares the same prefix-to-start-code growth for lengthSize < 4, but its conversion-failure
+    // path already falls back to the in-place conversion (HandleAnnexbBufferConversionResult isAvc
+    // branch) and existing AVC output-comparison cases depend on the current estimate, so only HEVC
+    // gets the exact per-NAL growth here.
     const uint8_t nalLengthSize = GetHevcNalLengthSize(track);
-    if (nalLengthSize == 0 || nalLengthSize >= ANNEXB_START_CODE_SIZE) {
+    if (nalLengthSize == 0) {
+        MEDIA_LOG_W("Invalid HEVC hvcC length size, sample=" PUBLIC_LOG_D32, sample->size);
+        // Keep the legacy estimate (size + extradata) when the hvcC is too short to read the length
+        // size: samples with 4-byte prefixes still convert exactly, and any under-estimate is
+        // recovered by the in-place conversion fallback. Returning false here would turn a
+        // previously playable track into ERROR_INVALID_DATA.
+        return true;
+    }
+    if (nalLengthSize >= ANNEXB_START_CODE_SIZE) {
         return true;
     }
     const int32_t nalCount = CountLengthPrefixedNalUnits(sample, nalLengthSize);
@@ -5020,8 +5036,10 @@ Status MPEG4DemuxerPlugin::HandleAnnexbBufferConversionResult(const std::shared_
     if (!context.isAvc) {
         // HEVC: never deliver the raw length-prefixed sample when the direct buffer conversion
         // fails. Fall back to the parser's in-place conversion (dynamically sized buffer), which
-        // succeeds for valid samples; FFmpeg's hevc_mp4toannexb returns AVERROR_INVALIDDATA
-        // instead of emitting the un-converted packet.
+        // succeeds for valid samples and fails with ERROR_PACKET_CONVERT_FAILED for invalid ones
+        // (FFmpeg hevc_mp4toannexb returns AVERROR_INVALIDDATA instead of emitting the packet);
+        // returning OK here is not handled, so the caller always runs that conversion and never
+        // delivers the raw length-prefixed sample.
         return Status::OK;
     }
     FALSE_RETURN_V_MSG_E(context.outputDataSize <= context.outputBufferSize, Status::ERROR_PACKET_CONVERT_FAILED,

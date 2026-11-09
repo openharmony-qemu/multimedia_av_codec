@@ -2170,6 +2170,18 @@ std::vector<uint8_t> BuildLengthPrefixedNal(const std::vector<uint8_t>& nal)
     return sample;
 }
 
+std::vector<uint8_t> BuildLengthPrefixedNal(const std::vector<uint8_t>& nal, uint8_t lengthSize)
+{
+    std::vector<uint8_t> sample;
+    for (uint8_t i = 0; i < lengthSize; ++i) {
+        constexpr uint8_t bitsPerByte = 8;
+        const uint8_t shift = static_cast<uint8_t>((lengthSize - 1 - i) * bitsPerByte);
+        sample.push_back(static_cast<uint8_t>((nal.size() >> shift) & 0xFF));
+    }
+    sample.insert(sample.end(), nal.begin(), nal.end());
+    return sample;
+}
+
 void BuildAvcSampleData(const std::vector<std::vector<uint8_t>>& nals, std::vector<uint8_t>& sampleData,
     std::vector<int32_t>& sampleSizes, bool separateSamples)
 {
@@ -2325,8 +2337,7 @@ std::vector<uint8_t> BuildHevcCTestConfig(const std::vector<uint8_t>& vps,
         hevcReservedByte, hevcReservedByte, hevcReservedByte, hevcReservedByte, hevcReservedByte,
         hevcReservedByte, lengthSizeMinusOne, hevcNumArrays,
     };
-    const auto appendArray = [&config, hevcArrayHeaderNalTypeMask, hevcNumNalusPerArray](
-        uint8_t nalType, const std::vector<uint8_t>& nal) {
+    const auto appendArray = [&config](uint8_t nalType, const std::vector<uint8_t>& nal) {
         config.push_back(static_cast<uint8_t>(nalType & hevcArrayHeaderNalTypeMask));
         AppendU16(config, hevcNumNalusPerArray);
         AppendU16(config, static_cast<uint16_t>(nal.size()));
@@ -10754,8 +10765,8 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_NegativeDtsKeepsXpsSeenS
 /**
  * @tc.name: Mpeg4DemuxerPlugin_HevcTwoByteLengthPrefixAnnexbGrowth_001
  * @tc.desc: Verify HEVC samples with 2-byte NAL length prefixes (hvcC lengthSizeMinusOne=1) convert
- *           to Annex-B with a 4-byte start code per NAL plus out-of-band VPS/SPS/PPS, matching
- *           FFmpeg hevc_mp4toannexb; regression guard for the 877Kbps 320x240 playback failure
+ *           to Annex-B with a 4-byte start code per NAL plus out-of-band VPS/SPS/PPS, covering
+ *           multi-NAL samples; regression guard for the 877Kbps 320x240 playback failure
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcTwoByteLengthPrefixAnnexbGrowth_001,
@@ -10770,9 +10781,13 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcTwoByteLengthPrefixA
     const std::vector<uint8_t> vps = {0x40, 0x01, 0xAA, 0xBB};
     const std::vector<uint8_t> sps = {0x42, 0x01, 0xCC, 0xDD};
     const std::vector<uint8_t> pps = {0x44, 0x01, 0xEE, 0xFF};
+    // One sample with two NALs (IDR + trailing slice): each 2-byte length prefix grows by 2 bytes.
     const std::vector<uint8_t> idr = {0x26, 0x01, 0x11, 0x22, 0x33, 0x44};
+    const std::vector<uint8_t> trailing = {0x02, 0x01, 0x55, 0x66, 0x77, 0x88};
     const std::vector<uint8_t> hvcc = BuildHevcCTestConfig(vps, sps, pps, hevcLengthSizeMinusOne);
-    const std::vector<uint8_t> sampleData = BuildHevcLengthPrefixedNal(idr);
+    std::vector<uint8_t> sampleData = BuildHevcLengthPrefixedNal(idr);
+    const std::vector<uint8_t> trailingPrefixed = BuildHevcLengthPrefixedNal(trailing);
+    sampleData.insert(sampleData.end(), trailingPrefixed.begin(), trailingPrefixed.end());
     const std::vector<int32_t> sampleSizes = {static_cast<int32_t>(sampleData.size())};
     auto plugin = BuildHevcSampleTestPlugin(hvcc, sampleData, sampleSizes, {{0}});
     ASSERT_NE(plugin, nullptr);
@@ -10782,11 +10797,49 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcTwoByteLengthPrefixA
     ASSERT_EQ(plugin->ParseAVFirstFrameForTrack(0), Status::OK);
     ASSERT_TRUE(plugin->streamParsers_->ParserIsInited(0));
     std::vector<uint8_t> expected;
-    for (const auto* nal : {&vps, &sps, &pps, &idr}) {
+    for (const auto* nal : {&vps, &sps, &pps, &idr, &trailing}) {
         expected.insert(expected.end(), {0x00, 0x00, 0x00, 0x01});
         expected.insert(expected.end(), nal->begin(), nal->end());
     }
     ExpectReadSampleAnnexb(plugin.get(), expected);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_HevcOneAndFourByteLengthPrefixAnnexbGrowth_001
+ * @tc.desc: Verify 1-byte (lengthSizeMinusOne=0) and 4-byte (lengthSizeMinusOne=3) NAL length
+ *           prefixes convert to Annex-B correctly: +3 bytes per NAL for 1-byte prefixes and no
+ *           growth for 4-byte prefixes
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcOneAndFourByteLengthPrefixAnnexbGrowth_001,
+    TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        GTEST_SKIP() << "hevc parser library not found";
+    }
+    const std::vector<uint8_t> vps = {0x40, 0x01, 0xAA, 0xBB};
+    const std::vector<uint8_t> sps = {0x42, 0x01, 0xCC, 0xDD};
+    const std::vector<uint8_t> pps = {0x44, 0x01, 0xEE, 0xFF};
+    const std::vector<uint8_t> idr = {0x26, 0x01, 0x11, 0x22, 0x33, 0x44};
+    for (uint8_t lengthSizeMinusOne : {0, 3}) {
+        const uint8_t lengthSize = static_cast<uint8_t>(lengthSizeMinusOne + 1);
+        const std::vector<uint8_t> hvcc = BuildHevcCTestConfig(vps, sps, pps, lengthSizeMinusOne);
+        const std::vector<uint8_t> sampleData = BuildLengthPrefixedNal(idr, lengthSize);
+        const std::vector<int32_t> sampleSizes = {static_cast<int32_t>(sampleData.size())};
+        auto plugin = BuildHevcSampleTestPlugin(hvcc, sampleData, sampleSizes, {{0}});
+        ASSERT_NE(plugin, nullptr);
+        plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+        ASSERT_NE(plugin->streamParsers_, nullptr);
+        ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::HEVC), Status::OK);
+        ASSERT_EQ(plugin->ParseAVFirstFrameForTrack(0), Status::OK);
+        ASSERT_TRUE(plugin->streamParsers_->ParserIsInited(0));
+        std::vector<uint8_t> expected;
+        for (const auto* nal : {&vps, &sps, &pps, &idr}) {
+            expected.insert(expected.end(), {0x00, 0x00, 0x00, 0x01});
+            expected.insert(expected.end(), nal->begin(), nal->end());
+        }
+        ExpectReadSampleAnnexb(plugin.get(), expected);
+    }
 }
 
 /**
