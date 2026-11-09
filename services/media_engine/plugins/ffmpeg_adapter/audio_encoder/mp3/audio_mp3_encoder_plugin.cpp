@@ -310,6 +310,7 @@ Status AudioMp3EncoderPlugin::EncodeOneFrame(std::shared_ptr<AVBuffer>& outputBu
     }
     if (outputSize_ > 0) {
         WriteOutputBuffer(outputBuffer);
+        outputBuffer->flag_ &= (~static_cast<uint32_t>(BUFFER_FLAG_EOS));
         SafeCallOutputBufferDone(dataCallback_, outputBuffer);
         return Status::ERROR_AGAIN;
     }
@@ -327,6 +328,7 @@ Status AudioMp3EncoderPlugin::EncodeResidual(std::shared_ptr<AVBuffer>& outputBu
         return OutputEos(outputBuffer, "residual encode error");
     }
     WriteOutputBuffer(outputBuffer);
+    outputBuffer->flag_ &= (~static_cast<uint32_t>(BUFFER_FLAG_EOS));
     SafeCallOutputBufferDone(dataCallback_, outputBuffer);
     return Status::ERROR_AGAIN;
 }
