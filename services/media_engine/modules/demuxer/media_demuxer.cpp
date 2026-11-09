@@ -5292,7 +5292,9 @@ int64_t MediaDemuxer::SampleConsumerLoop(int32_t trackId)
         RETRY_DELAY_TIME_US, "SampleQueueMap " PUBLIC_LOG_D32 " is nullptr", trackId);
 
     auto& sampleQueue = sampleQueueMap_[trackId];
+    FALSE_RETURN_V_MSG_E(sampleQueue != nullptr, RETRY_DELAY_TIME_US, "sampleQueue is nullptr");
     auto& bufferQueue = bufferQueueMap_[trackId];
+    FALSE_RETURN_V_MSG_E(bufferQueue != nullptr, RETRY_DELAY_TIME_US, "bufferQueue is nullptr");
     Status status = Status::OK;
 
     do {
