@@ -257,10 +257,10 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_EMPTY_POOL_0200,
 
 /**
  * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0300
- * @tc.name      : SetInputBuffers rejected for non-continuous buffer indexes
+ * @tc.name      : SetInputBuffers rejected for buffer indexes ranging from 2 to 10
  * @tc.desc      : hard-to-software switch input buffer takeover test
  */
-HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_INDEX_NOT_CONTINUOUS_0300, TestSize.Level1)
+HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_INDEXES_NOT_RANGE_0300, TestSize.Level1)
 {
     if (sample_ == nullptr) {
         return;
@@ -270,7 +270,6 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_INDEX_NOT_CONTIN
     ASSERT_EQ(AVCS_ERR_OK, sample_->PrepareTakeoverInputPool());
     ASSERT_EQ(AVCS_ERR_OK, sample_->ConfigureDecoder());
     std::map<uint32_t, std::shared_ptr<OHOS::Media::AVBuffer>> brokenPool;
-    brokenPool[0] = sample_->takeoverPool_[0];
     brokenPool[2] = sample_->takeoverPool_[2];
     ASSERT_EQ(AVCS_ERR_INVALID_VAL, sample_->SetTakeoverInputBuffers(brokenPool));
 }

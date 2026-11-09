@@ -150,7 +150,7 @@ private:
     sptr<Surface> surface_ = nullptr;
     std::mutex renderBufferMapMutex_;
     std::atomic<bool> isBufferAllocated_ = false;
-    // Input pool taken over by hard-to-software switch. Keeps the same index/buffer/memory-addr bingding until Release
+    // Input pool taken over by hard-to-software switch. Keeps the same index/buffer/memory-addr binding until Release
     std::map<uint32_t, std::shared_ptr<AVBuffer>> externalInputBuffers_;
     bool hasPendingTakeover_ = false;
 };

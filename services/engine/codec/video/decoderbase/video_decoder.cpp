@@ -280,16 +280,21 @@ int32_t VideoDecoder::SetInputBuffers(const std::map<uint32_t, std::shared_ptr<A
     CHECK_AND_RETURN_RET_LOG(buffers.size() > 0, AVCS_ERR_INVALID_VAL, "SetInputBuffers failed: buffers is empty!");
     uint32_t expectedIndex = 0;
     for (auto &[index, buffer] : buffers) {
-        CHECK_AND_RETURN_RET_LOG(index == expectedIndex, AVCS_ERR_INVALID_VAL,
-            "SetInputBuffers failed: index %{public}u is not continuous, expect %{public}u", index, expectedIndex);
-        CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr, AVCS_ERR_INVALID_VAL,
-            "SetInputBuffers failed: index %{public}u buffer is null!", index);
+        CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr && buffer->memory_->GetAddr() !=
+            nullptr, AVCS_ERR_INVALID_VAL, "SetInputBuffers failed: index %{public}u buffer is null!", index);
+        CHECK_AND_RETURN_RET_LOG(buffer->memory_->GetOffset() == 0, AVCS_ERR_INVALID_VAL,
+            "SetInputBuffers failed: index %{public}u buffer offset is not 0!", index);
+        // 未必从0、1、2、3顺次递增，无需 buffer 索引检查
         expectedIndex++;
     }
 
+    CHECK_AND_RETURN_RET_LOG(expectedIndex >= DEFAULT_MIN_BUFFER_CNT && expectedIndex <= DEFAULT_MAX_BUFFER_CNT,
+        AVCS_ERR_INVALID_VAL, "SetInputBuffers failed: the valid buffer's num %{public}u!", expectedIndex);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, expectedIndex);
     if (!externalInputBuffers_.empty()) {
         AVCODEC_LOGW("SetInputBuffers called again, override previous buffers.");
     }
+
     externalInputBuffers_ = buffers;
     hasPendingTakeover_ = true;
     AVCODEC_LOGI("Num %{public}u SetInputBuffers success, takeover %{public}zu external input buffers",
@@ -803,8 +808,6 @@ int32_t VideoDecoder::AllocateBuffers()
     }
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, inputBufferCnt_);
     format_.GetIntValue(MediaDescriptionKey::MD_KEY_MAX_OUTPUT_BUFFER_COUNT, outputBufferCnt_);
-    inputBufferCnt_ = static_cast<int32_t>(externalInputBuffers_.size()) > inputBufferCnt_ ?
-        static_cast<int32_t>(externalInputBuffers_.size()) : inputBufferCnt_;
     inputAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("inputAvailQue", inputBufferCnt_);
     codecAvailQue_ = std::make_shared<BlockQueue<uint32_t>>("codecAvailQue", outputBufferCnt_);
     if (sInfo_.surface != nullptr) {

@@ -62,11 +62,11 @@ const string MIME_TYPE = "video/hevc";
 constexpr int64_t NANOS_IN_SECOND = 1000000000L;
 constexpr int64_t NANOS_IN_MICRO = 1000L;
 constexpr uint32_t FRAME_INTERVAL = 1;
-constexpr uint8_t H264_NALU_TYPE = 0x1f;
+constexpr uint8_t H265_NALU_TYPE = 0x7e;
 constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
-constexpr uint8_t SPS = 7;
-constexpr uint8_t PPS = 8;
+constexpr uint8_t SPS = 33;
+constexpr uint8_t PPS = 34;
 constexpr uint32_t TAKEOVER_INPUT_BUFFER_COUNT = 4;
 constexpr int32_t TAKEOVER_INPUT_BUFFER_CAPACITY = 1920 * 1080 * 3 / 2;
 constexpr int64_t TAKEOVER_PTS_INTERVAL_US = 33333; // 30 fps
@@ -591,8 +591,8 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     }
 
     (void)inFile_->read((char *)fileBuffer + START_CODE_SIZE, bufferSize);
-    if ((fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == SPS ||
-        (fileBuffer[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
+    if ((fileBuffer[START_CODE_SIZE] & H265_NALU_TYPE) == SPS ||
+        (fileBuffer[START_CODE_SIZE] & H265_NALU_TYPE) == PPS) {
         buffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
     } else {
         buffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
@@ -990,7 +990,7 @@ int32_t VDecNdkInnerSample::BuildTakeoverInputPool()
             cout << "Takeover: read NAL data failed, index = " << i << endl;
             return AVCS_ERR_UNKNOWN;
         }
-        if ((addr[START_CODE_SIZE] & H264_NALU_TYPE) == SPS || (addr[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
+        if ((addr[START_CODE_SIZE] & H265_NALU_TYPE) == SPS || (addr[START_CODE_SIZE] & H265_NALU_TYPE) == PPS) {
             avBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
         } else {
             avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
@@ -1122,7 +1122,7 @@ int32_t VDecNdkInnerSample::FeedTakeoverBuffer(std::shared_ptr<AVBuffer> buffer,
     if (inFile_->gcount() < static_cast<int64_t>(nalSize)) {
         return AVCS_ERR_UNKNOWN;
     }
-    if ((addr[START_CODE_SIZE] & H264_NALU_TYPE) == SPS || (addr[START_CODE_SIZE] & H264_NALU_TYPE) == PPS) {
+    if ((addr[START_CODE_SIZE] & H265_NALU_TYPE) == SPS || (addr[START_CODE_SIZE] & H265_NALU_TYPE) == PPS) {
         buffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
     } else {
         buffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
