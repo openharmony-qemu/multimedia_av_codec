@@ -1063,6 +1063,12 @@ void AppendU32(std::vector<uint8_t>& data, uint32_t value)
     data.emplace_back(static_cast<uint8_t>(value & 0xFF));
 }
 
+void AppendU16(std::vector<uint8_t>& data, uint16_t value)
+{
+    data.emplace_back(static_cast<uint8_t>((value >> 8) & 0xFF));
+    data.emplace_back(static_cast<uint8_t>(value & 0xFF));
+}
+
 void AppendU64(std::vector<uint8_t>& data, uint64_t value)
 {
     constexpr int32_t byteBitWidth = 8;
@@ -2292,6 +2298,96 @@ std::shared_ptr<Plugins::MPEG4::MPEG4DemuxerPlugin> BuildAvcMultiNalSampleTestPl
     track->sampleHelper = helper;
     auto plugin = std::make_shared<Plugins::MPEG4::MPEG4DemuxerPlugin>("avdemux_mpeg4");
     ActivateVideoDurationTestTrack(*plugin, track, MimeType::VIDEO_AVC);
+    plugin->dataSource_ = source;
+    return plugin;
+}
+
+// Minimal HEVCDecoderConfigurationRecord (ISO/IEC 14496-15): the fixed 23-byte header stores
+// lengthSizeMinusOne in the low 2 bits of byte 21 and numOfArrays at byte 22, the same layout
+// FFmpeg reads in hevc_mp4toannexb.c (length_size = (byte & 3) + 1).
+std::vector<uint8_t> BuildHevcCTestConfig(const std::vector<uint8_t>& vps,
+    const std::vector<uint8_t>& sps, const std::vector<uint8_t>& pps, uint8_t lengthSizeMinusOne)
+{
+    constexpr uint8_t hevcConfigVersion = 0x01;
+    constexpr uint8_t hevcProfileIdc = 0x01; // Main profile, no tier
+    constexpr uint8_t hevcLevelIdc = 0x00;
+    constexpr uint8_t hevcNumArrays = 0x03;
+    constexpr uint8_t hevcReservedByte = 0x00;
+    constexpr uint8_t hevcArrayHeaderNalTypeMask = 0x3F;
+    constexpr uint8_t hevcVpsNalType = 0x20; // HEVC_NAL_VPS = 32
+    constexpr uint8_t hevcSpsNalType = 0x21; // HEVC_NAL_SPS = 33
+    constexpr uint8_t hevcPpsNalType = 0x22; // HEVC_NAL_PPS = 34
+    constexpr uint16_t hevcNumNalusPerArray = 0x01;
+    std::vector<uint8_t> config = {
+        hevcConfigVersion, hevcProfileIdc, hevcReservedByte, hevcReservedByte, hevcReservedByte,
+        hevcReservedByte, hevcReservedByte, hevcReservedByte, hevcReservedByte, hevcReservedByte,
+        hevcReservedByte, hevcReservedByte, hevcLevelIdc, hevcReservedByte, hevcReservedByte,
+        hevcReservedByte, hevcReservedByte, hevcReservedByte, hevcReservedByte, hevcReservedByte,
+        hevcReservedByte, lengthSizeMinusOne, hevcNumArrays,
+    };
+    const auto appendArray = [&config, hevcArrayHeaderNalTypeMask, hevcNumNalusPerArray](
+        uint8_t nalType, const std::vector<uint8_t>& nal) {
+        config.push_back(static_cast<uint8_t>(nalType & hevcArrayHeaderNalTypeMask));
+        AppendU16(config, hevcNumNalusPerArray);
+        AppendU16(config, static_cast<uint16_t>(nal.size()));
+        config.insert(config.end(), nal.begin(), nal.end());
+    };
+    appendArray(hevcVpsNalType, vps);
+    appendArray(hevcSpsNalType, sps);
+    appendArray(hevcPpsNalType, pps);
+    return config;
+}
+
+std::vector<uint8_t> BuildHevcLengthPrefixedNal(const std::vector<uint8_t>& nal)
+{
+    std::vector<uint8_t> sample;
+    AppendU16(sample, static_cast<uint16_t>(nal.size()));
+    sample.insert(sample.end(), nal.begin(), nal.end());
+    return sample;
+}
+
+std::shared_ptr<Plugins::MPEG4::MPEG4DemuxerPlugin> BuildHevcSampleTestPlugin(
+    const std::vector<uint8_t>& hvcc, const std::vector<uint8_t>& sampleData,
+    const std::vector<int32_t>& sampleSizes,
+    const std::vector<Plugins::MPEG4::MPEG4SampleHelper::StssEntry>& stssIndexes)
+{
+    constexpr uint32_t testVideoTrackId = 0;
+    constexpr int32_t testTrackTimeScale = 90000;
+    constexpr uint32_t testSttsDelta = 3600;
+    const uint32_t testSampleCount = static_cast<uint32_t>(sampleSizes.size());
+    auto source = CreateDataSourceForBytes(sampleData);
+    auto reader = std::make_shared<DemuxerDataReader>();
+    if (source == nullptr || reader == nullptr || reader->SetDataReader(source) != Status::OK) {
+        return nullptr;
+    }
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    auto helper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track == nullptr || helper == nullptr) {
+        return nullptr;
+    }
+    helper->trackType_ = Plugins::MPEG4::VIDEO_TYPE;
+    helper->mimeType_ = MimeType::VIDEO_HEVC;
+    helper->sttsEntry_ = {{testSampleCount, testSttsDelta}};
+    helper->cttsEntry_ = {{testSampleCount, 0}};
+    helper->stscEntry_ = {{0, testSampleCount, 1}};
+    helper->stssEntry_ = stssIndexes;
+    helper->sampleSizes_ = sampleSizes;
+    helper->sampleSizeCount_ = testSampleCount;
+    helper->chunkOffsets_ = {0};
+    helper->dataReader_ = reader;
+    if (helper->FinalizeSampleTables() != Status::OK) {
+        return nullptr;
+    }
+    track->trackIndex = testVideoTrackId;
+    track->trackId = static_cast<int32_t>(testVideoTrackId);
+    track->timeScale = testTrackTimeScale;
+    track->codecParms.trackType = Plugins::MPEG4::VIDEO_TYPE;
+    track->codecParms.data = std::make_unique<uint8_t[]>(hvcc.size());
+    std::copy(hvcc.begin(), hvcc.end(), track->codecParms.data.get());
+    track->codecParms.extradataSize = static_cast<int64_t>(hvcc.size());
+    track->sampleHelper = helper;
+    auto plugin = std::make_shared<Plugins::MPEG4::MPEG4DemuxerPlugin>("avdemux_mpeg4");
+    ActivateVideoDurationTestTrack(*plugin, track, MimeType::VIDEO_HEVC);
     plugin->dataSource_ = source;
     return plugin;
 }
@@ -10653,6 +10749,78 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_NegativeDtsKeepsXpsSeenS
         0x00, 0x00, 0x00, 0x01, 0x68, 0xCE, 0x3C, 0x80,
         0x00, 0x00, 0x00, 0x01, 0x65, 0x88, 0xAA, 0xAA, 0xAA, 0xAA,
     });
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_HevcTwoByteLengthPrefixAnnexbGrowth_001
+ * @tc.desc: Verify HEVC samples with 2-byte NAL length prefixes (hvcC lengthSizeMinusOne=1) convert
+ *           to Annex-B with a 4-byte start code per NAL plus out-of-band VPS/SPS/PPS, matching
+ *           FFmpeg hevc_mp4toannexb; regression guard for the 877Kbps 320x240 playback failure
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcTwoByteLengthPrefixAnnexbGrowth_001,
+    TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        GTEST_SKIP() << "hevc parser library not found";
+    }
+    constexpr uint8_t hevcLengthSizeMinusOne = 1;
+    // Minimal NALs: 2-byte NAL headers (nal_unit_type << 1, layer/temporal id byte) plus payload;
+    // the HEVC parser re-frames NAL units and does not decode slice bitstreams.
+    const std::vector<uint8_t> vps = {0x40, 0x01, 0xAA, 0xBB};
+    const std::vector<uint8_t> sps = {0x42, 0x01, 0xCC, 0xDD};
+    const std::vector<uint8_t> pps = {0x44, 0x01, 0xEE, 0xFF};
+    const std::vector<uint8_t> idr = {0x26, 0x01, 0x11, 0x22, 0x33, 0x44};
+    const std::vector<uint8_t> hvcc = BuildHevcCTestConfig(vps, sps, pps, hevcLengthSizeMinusOne);
+    const std::vector<uint8_t> sampleData = BuildHevcLengthPrefixedNal(idr);
+    const std::vector<int32_t> sampleSizes = {static_cast<int32_t>(sampleData.size())};
+    auto plugin = BuildHevcSampleTestPlugin(hvcc, sampleData, sampleSizes, {{0}});
+    ASSERT_NE(plugin, nullptr);
+    plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin->streamParsers_, nullptr);
+    ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::HEVC), Status::OK);
+    ASSERT_EQ(plugin->ParseAVFirstFrameForTrack(0), Status::OK);
+    ASSERT_TRUE(plugin->streamParsers_->ParserIsInited(0));
+    std::vector<uint8_t> expected;
+    for (const auto* nal : {&vps, &sps, &pps, &idr}) {
+        expected.insert(expected.end(), {0x00, 0x00, 0x00, 0x01});
+        expected.insert(expected.end(), nal->begin(), nal->end());
+    }
+    ExpectReadSampleAnnexb(plugin.get(), expected);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_HevcConvertFailNoOriginalSample_001
+ * @tc.desc: Verify a HEVC sample that cannot be converted to Annex-B is skipped
+ *           (ERROR_PACKET_CONVERT_FAILED) instead of silently delivering the raw length-prefixed
+ *           sample, matching FFmpeg hevc_mp4toannexb AVERROR_INVALIDDATA
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_HevcConvertFailNoOriginalSample_001,
+    TestSize.Level1)
+{
+    if (access(HEVC_LIB_PATH.c_str(), F_OK) != 0) {
+        GTEST_SKIP() << "hevc parser library not found";
+    }
+    constexpr uint8_t hevcLengthSizeMinusOne = 1;
+    constexpr uint16_t invalidNalLength = 0xFFFF;
+    const std::vector<uint8_t> vps = {0x40, 0x01, 0xAA, 0xBB};
+    const std::vector<uint8_t> sps = {0x42, 0x01, 0xCC, 0xDD};
+    const std::vector<uint8_t> pps = {0x44, 0x01, 0xEE, 0xFF};
+    const std::vector<uint8_t> hvcc = BuildHevcCTestConfig(vps, sps, pps, hevcLengthSizeMinusOne);
+    std::vector<uint8_t> sampleData;
+    AppendU16(sampleData, invalidNalLength);
+    sampleData.insert(sampleData.end(), {0x26, 0x01, 0x11, 0x22});
+    const std::vector<int32_t> sampleSizes = {static_cast<int32_t>(sampleData.size())};
+    auto plugin = BuildHevcSampleTestPlugin(hvcc, sampleData, sampleSizes, {{0}});
+    ASSERT_NE(plugin, nullptr);
+    plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin->streamParsers_, nullptr);
+    ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::HEVC), Status::OK);
+    ASSERT_EQ(plugin->ParseAVFirstFrameForTrack(0), Status::OK);
+    ASSERT_TRUE(plugin->streamParsers_->ParserIsInited(0));
+    AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    EXPECT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::ERROR_PACKET_CONVERT_FAILED);
 }
 
 /**
