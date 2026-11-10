@@ -56,7 +56,6 @@ private:
 
 private:
     std::atomic<bool> isRunning_;
-    std::mutex availableMutex_;
     std::condition_variable availableCondition_;
     std::queue<uint32_t> inBufIndexQue_;
     std::vector<bool> inBufIndexExist;

@@ -103,6 +103,7 @@ bool AudioBufferInfo::SetBufferOwned()
 
 void AudioBufferInfo::SetEos(bool eos)
 {
+    std::lock_guard<std::mutex> lock(bufferAttrMutex_);
     isEos_ = eos;
     if (eos) {
         flag_ = AVCodecBufferFlag::AVCODEC_BUFFER_FLAG_EOS;
@@ -113,11 +114,13 @@ void AudioBufferInfo::SetEos(bool eos)
 
 void AudioBufferInfo::SetBufferAttr(const AVCodecBufferInfo &attr)
 {
+    std::lock_guard<std::mutex> lock(bufferAttrMutex_);
     info_ = attr;
 }
 
 AVCodecBufferInfo AudioBufferInfo::GetBufferAttr() const noexcept
 {
+    std::lock_guard<std::mutex> lock(bufferAttrMutex_);
     return info_;
 }
 
@@ -163,6 +166,7 @@ uint32_t AudioBufferInfo::GetBufferSize() const noexcept
 
 bool AudioBufferInfo::ResetBuffer()
 {
+    std::lock_guard<std::mutex> lock(bufferAttrMutex_);
     isEos_ = false;
     isFirstFrame_ = false;
     isUsing = false;

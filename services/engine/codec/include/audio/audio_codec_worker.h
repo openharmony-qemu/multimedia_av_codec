@@ -61,6 +61,8 @@ private:
     void Dispose();
     bool Begin();
     bool HandInputBuffer(int32_t &ret);
+    bool HandleOutputFrame(std::unique_lock<std::mutex> &lock, const std::shared_ptr<AudioBaseCodec> &codecPtr,
+                           bool isEos);
     void ReleaseOutputBuffer(const uint32_t &index, const int32_t &ret);
     void SetFirstAndEosStatus(std::shared_ptr<AudioBufferInfo> &outBuffer, bool isEos, uint32_t index);
     void ReleaseAllInBufferQueue();
@@ -79,6 +81,8 @@ private:
     std::mutex inAvaMutex_;
     std::mutex inputMutex_;
     std::mutex outputMutex_;
+    std::mutex cbMutex_;
+    std::mutex codecMutex_;
     std::condition_variable inputCondition_;
     std::condition_variable outputCondition_;
 
