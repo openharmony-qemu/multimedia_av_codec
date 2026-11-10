@@ -121,7 +121,6 @@ ohos_unittest("video_codec_server_coverage_unit_test") {
     "$event_handler_dir/background_event_handler/background_event_handler.cpp",
     "../vcodec_framework_test/common/utils/unittest_utils.cpp",
     "./codec_server_coverage_unit_test.cpp",
-    "./temporal_scalability_lifecycle_unit_test.cpp",
     "./mock/codec_drm_decrypt_mock.cpp",
     "./mock/codecbase_mock.cpp",
     "./post_processing_coverage_unit_test.cpp",

@@ -18,6 +18,7 @@
 #include <limits>
 #include <malloc.h>
 #include <map>
+#include <memory>
 #include <unistd.h>
 #include <vector>
 #include "avcodec_codec_name.h"
@@ -365,21 +366,6 @@ int32_t CodecServer::NotifyMemoryExchange(const bool /* exchangeFlag */)
     return AVCS_ERR_OK;
 }
 
-std::shared_ptr<TemporalScalability> CodecServer::GetTemporalScalability()
-{
-    std::lock_guard<std::mutex> lock(temporalScalabilityMutex_);
-    return temporalScalability_;
-}
-
-std::shared_ptr<TemporalScalability> CodecServer::ExchangeTemporalScalability(
-    std::shared_ptr<TemporalScalability> temporal)
-{
-    std::lock_guard<std::mutex> lock(temporalScalabilityMutex_);
-    temporalScalability_.swap(temporal);
-    // The caller releases the old reference after this lock has been dropped.
-    return temporal;
-}
-
 int32_t CodecServer::CodecScenarioInit(Format &config)
 {
     switch (scenario_) {
@@ -394,7 +380,7 @@ int32_t CodecServer::CodecScenarioInit(Format &config)
             } else {
                 temporal->SetTag(this->GetTag());
             }
-            (void)ExchangeTemporalScalability(std::move(temporal));
+            std::atomic_store(&temporalScalability_, std::move(temporal));
             config.RemoveKey(Tag::VIDEO_ENCODE_B_FRAME_GOP_MODE);
             OnInstanceAdvancedFeatureEvent("TemporalScalability", nullptr);
             break;
@@ -424,7 +410,7 @@ void CodecServer::StartInputParamTask()
     inputParamTask_->RegisterHandler([weakThis] {
         std::shared_ptr<CodecServer> cs = weakThis.lock();
         if (cs) {
-            auto temporal = cs->GetTemporalScalability();
+            auto temporal = std::atomic_load(&cs->temporalScalability_);
             if (temporal == nullptr) {
                 return;
             }
@@ -459,12 +445,8 @@ int32_t CodecServer::Start()
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == FLUSHED || status_ == CONFIGURED, AVCS_ERR_INVALID_STATE,
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    auto temporal = GetTemporalScalability();
-    if (temporal != nullptr) {
-        temporal->SetBlockQueueActive(true);
-        if (isCreateSurface_ && !isSetParameterCb_) {
-            StartInputParamTask();
-        }
+    if (std::atomic_load(&temporalScalability_) != nullptr && isCreateSurface_ && !isSetParameterCb_) {
+        StartInputParamTask();
     }
     int32_t ret = StartPostProcessing();
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(ret == AVCS_ERR_OK, ret, "Start post processing failed");
@@ -516,7 +498,7 @@ int32_t CodecServer::Stop()
                                       GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     
-    auto temporal = GetTemporalScalability();
+    auto temporal = std::atomic_load(&temporalScalability_);
     if (temporal != nullptr && inputParamTask_ != nullptr) {
         temporal->SetBlockQueueActive();
         inputParamTask_->Stop();
@@ -554,7 +536,7 @@ int32_t CodecServer::Flush()
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING || status_ == END_OF_STREAM, AVCS_ERR_INVALID_STATE,
                                       "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    auto temporal = GetTemporalScalability();
+    auto temporal = std::atomic_load(&temporalScalability_);
     if (temporal != nullptr && inputParamTask_ != nullptr) {
         temporal->SetBlockQueueActive();
         inputParamTask_->Stop();
@@ -584,7 +566,7 @@ int32_t CodecServer::NotifyEos()
         std::shared_lock<std::shared_mutex> lock(mutex_);
         CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING, AVCS_ERR_INVALID_STATE,
                                           "NotifyEos in invalid state");
-        temporal = GetTemporalScalability();
+        temporal = std::atomic_load(&temporalScalability_);
         waitForInput = temporal != nullptr && inputParamTask_ != nullptr;
     }
     // Do not hold mutex_ while waiting: Reset/Release must be able to cancel this wait.
@@ -598,7 +580,7 @@ int32_t CodecServer::NotifyEos()
         AVCODEC_LOGI_WITH_TAG("Done (Delegating to temporal scalability), ret=%{public}d", ret);
     }
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(temporal == GetTemporalScalability(), AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(temporal == std::atomic_load(&temporalScalability_), AVCS_ERR_INVALID_STATE,
                                       "Temporal scalability session changed during NotifyEos");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
@@ -618,7 +600,7 @@ int32_t CodecServer::Reset()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     drmDecryptor_ = nullptr;
-    auto retiredTemporal = ExchangeTemporalScalability(nullptr);
+    auto retiredTemporal = std::atomic_exchange(&temporalScalability_, std::shared_ptr<TemporalScalability>{});
     if (retiredTemporal != nullptr) {
         retiredTemporal->BeginShutdown();
     }
@@ -632,13 +614,13 @@ int32_t CodecServer::Reset()
     }
     CodecStatus newStatus = (ret == AVCS_ERR_OK ? INITIALIZED : ERROR);
     StatusChanged(newStatus);
-    int32_t retPostProcessing = ReleasePostProcessing();
-    if (retPostProcessing != AVCS_ERR_OK) {
+    ret = ReleasePostProcessing();
+    if (ret != AVCS_ERR_OK) {
         StatusChanged(ERROR);
     }
     CodecStopEventWrite(caller_.pid, caller_.uid, instanceId_);
     lastErrMsg_.clear();
-    if (ret == AVCS_ERR_OK && retPostProcessing == AVCS_ERR_OK) {
+    if (ret == AVCS_ERR_OK) {
         isSurfaceMode_ = false;
         isModeConfirmed_ = false;
         pushBlankBufferOnShutdown_ = false;
@@ -648,7 +630,7 @@ int32_t CodecServer::Reset()
     if (framerateCalculator_) {
         framerateCalculator_->OnStopped();
     }
-    return ret != AVCS_ERR_OK ? ret : retPostProcessing;
+    return ret;
 }
 
 int32_t CodecServer::Release()
@@ -657,7 +639,7 @@ int32_t CodecServer::Release()
     std::lock_guard<std::shared_mutex> lock(mutex_);
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
     drmDecryptor_ = nullptr;
-    auto retiredTemporal = ExchangeTemporalScalability(nullptr);
+    auto retiredTemporal = std::atomic_exchange(&temporalScalability_, std::shared_ptr<TemporalScalability>{});
     if (retiredTemporal != nullptr) {
         retiredTemporal->BeginShutdown();
     }
@@ -831,7 +813,7 @@ int32_t CodecServer::QueueInputBufferIn(uint32_t index)
         status_ == RUNNING || ((isSetParameterCb_ || inputParamTask_ != nullptr) && status_ == END_OF_STREAM),
         AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s", GetStatusDescription(status_).data());
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(codecBase_ != nullptr, AVCS_ERR_NO_MEMORY, "Codecbase is nullptr");
-    auto temporal = GetTemporalScalability();
+    auto temporal = std::atomic_load(&temporalScalability_);
     if (temporal != nullptr) {
         temporal->ConfigureLTR(index);
     }
@@ -1325,7 +1307,8 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
-    auto temporal = GetTemporalScalability();
+    // Retain the object through the callback while Reset/Release can detach it.
+    auto temporal = std::atomic_load(&temporalScalability_);
     if (temporal != nullptr) {
         temporal->StoreAVBuffer(index, buffer);
     }
@@ -1384,7 +1367,7 @@ void CodecServer::OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuff
         std::lock_guard<std::mutex> outPtslock(outPtsMutex_);
         outPtsMap_[index] = buffer->pts_;
     }
-    auto temporal = GetTemporalScalability();
+    auto temporal = std::atomic_load(&temporalScalability_);
     if (temporal != nullptr && !(buffer->flag_ == AVCODEC_BUFFER_FLAG_CODEC_DATA)) {
         temporal->SetDisposableFlag(buffer);
     }

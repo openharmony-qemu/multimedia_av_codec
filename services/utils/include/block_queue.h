@@ -137,9 +137,7 @@ public:
             if (cleanData) {
                 ClearUnprotected();
             }
-            // Both producers and consumers wait on isActive_. Closing must wake both sides.
-            condFull_.notify_all();
-            condEmpty_.notify_all();
+            condEmpty_.notify_one();
         }
     }
 

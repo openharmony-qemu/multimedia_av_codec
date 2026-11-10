@@ -127,12 +127,9 @@ bool TemporalScalability::GetFirstBufferIndex(uint32_t &index)
     return true;
 }
 
-void TemporalScalability::SetBlockQueueActive(bool active)
+void TemporalScalability::SetBlockQueueActive()
 {
-    std::lock_guard<std::shared_mutex> eosLock(eosMutex_);
-    if (!closing_) {
-        inputIndexQueue_->SetActive(active, false);
-    }
+    inputIndexQueue_->SetActive(false, false);
 }
 
 void TemporalScalability::BeginShutdown()
@@ -141,7 +138,8 @@ void TemporalScalability::BeginShutdown()
     {
         std::lock_guard<std::shared_mutex> eosLock(eosMutex_);
         closing_ = true;
-        inputIndexQueue_->SetActive(false, false);
+        // Terminal shutdown can discard queued indices. Clearing a full queue wakes its producer.
+        inputIndexQueue_->SetActive(false, true);
     }
     eosCondition_.notify_all();
 }
@@ -328,10 +326,7 @@ int32_t TemporalScalability::NotifyEosWhenComplete()
 {
     AVCODEC_LOGI_WITH_TAG("Start");
     std::unique_lock<std::shared_mutex> eosLock(eosMutex_);
-    if (closing_) {
-        return AVCS_ERR_INVALID_STATE;
-    }
-    if (eosRequested_.load()) {
+    if (closing_ || eosRequested_.load()) {
         return AVCS_ERR_INVALID_STATE;
     }
     eosRequested_.store(true);
