@@ -24,11 +24,16 @@ class HCodecLoader : public VideoCodecLoader {
 public:
     static std::shared_ptr<CodecBase> CreateByName(const std::string &name);
     static int32_t GetCapabilityList(std::vector<CapabilityData> &caps);
+    static int32_t QueryIfDecoderSupportThisXPS(const std::string &mime,
+        const std::shared_ptr<Media::AVBuffer>& xps, bool& isSupport);
 
 private:
     HCodecLoader();
     ~HCodecLoader() = default;
     static HCodecLoader &GetInstance();
+    using QueryFuncType = int32_t (*)(const std::string &mime,
+    const std::shared_ptr<Media::AVBuffer>& xps, bool& isSupport);
+    QueryFuncType queryFunc_ = nullptr;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS

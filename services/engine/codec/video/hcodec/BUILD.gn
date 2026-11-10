@@ -71,7 +71,9 @@ ohos_shared_library("hcodec") {
 
   external_deps = [
     "c_utils:utils",
+    "drivers_interface_codec:video_parcel_headers",
     "drivers_interface_codec:libcodec_proxy_4.0",
+    "drivers_interface_codec:libcodec_proxy_4.1",
     "drivers_interface_display:libdisplay_commontype_proxy_2.2",
     "graphic_surface:surface",
     "graphic_surface:sync_fence",

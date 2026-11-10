@@ -18,6 +18,7 @@
 
 #include "codeclistbase.h"
 #include "avcodec_errors.h"
+#include "buffer/avbuffer.h"
 #include "codec_hdi.h"
 
 namespace OHOS::MediaAVCodec {
@@ -27,6 +28,9 @@ public:
     int32_t GetCapabilityList(std::vector<CapabilityData>& caps) override;
     static CodecHDI::VideoFeature FindFeature(const std::vector<CodecHDI::VideoFeature> &features,
                                               const enum CodecHDI::VideoFeatureKey &key);
+    static int32_t QueryIfDecoderSupportThisXPS(
+        const std::string &mime, const std::shared_ptr<Media::AVBuffer>& xps, bool& isSupport);
+
 private:
     CapabilityData HdiCapToUserCap(const CodecHDI::CodecCompCapability& hdiCap);
     std::vector<int32_t> GetSupportedBitrateMode(const CodecHDI::CodecVideoPortCap& hdiVideoCap);
