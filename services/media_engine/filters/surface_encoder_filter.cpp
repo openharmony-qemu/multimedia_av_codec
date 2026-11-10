@@ -376,10 +376,7 @@ Status SurfaceEncoderFilter::DoStop()
     if (mediaCodec == nullptr) {
         return Status::OK;
     }
-    Status ret = mediaCodec->Stop();
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("mediaCodec DoStop failed, ret=%{public}d", static_cast<int32_t>(ret));
-    }
+    mediaCodec->Stop();
     return Status::OK;
 }
 
@@ -390,10 +387,7 @@ Status SurfaceEncoderFilter::Reset()
     if (mediaCodec_ == nullptr) {
         return Status::OK;
     }
-    Status ret = mediaCodec_->Reset();
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("mediaCodec Reset failed, ret=%{public}d", static_cast<int32_t>(ret));
-    }
+    mediaCodec_->Reset();
     return Status::OK;
 }
 
