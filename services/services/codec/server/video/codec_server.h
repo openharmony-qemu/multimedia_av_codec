@@ -17,6 +17,7 @@
 #define CODEC_SERVER_H
 
 #include <atomic>
+#include <mutex>
 #include <shared_mutex>
 #include <unordered_map>
 #include "avcodec_sysevent.h"
@@ -134,6 +135,8 @@ private:
     void ReportResolutionInfo(const Format &config);
     int32_t CodecScenarioInit(Format &config);
     void StartInputParamTask();
+    std::shared_ptr<TemporalScalability> GetTemporalScalability();
+    std::shared_ptr<TemporalScalability> ExchangeTemporalScalability(std::shared_ptr<TemporalScalability> temporal);
     const std::string &GetStatusDescription(OHOS::MediaAVCodec::CodecServer::CodecStatus status);
     void StatusChanged(CodecStatus newStatus, bool printLog = true);
     void SetFreeStatus(bool isFree);
@@ -171,6 +174,8 @@ private:
     bool isCreateSurface_ = false;
     bool isSetParameterCb_ = false;
     bool isLpp_ = false;
+    // Only protect reference acquisition/exchange; never call the object or engine under this lock.
+    std::mutex temporalScalabilityMutex_;
     std::shared_ptr<TemporalScalability> temporalScalability_ = nullptr;
     std::shared_ptr<CodecDrmDecrypt> drmDecryptor_ = nullptr;
     std::unordered_map<uint32_t, DrmDecryptVideoBuf> decryptVideoBufs_;
