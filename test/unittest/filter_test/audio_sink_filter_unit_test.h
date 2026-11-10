@@ -19,6 +19,7 @@
 #include "gtest/gtest.h"
 #include "media_sync_manager.h"
 #include "audio_sink.h"
+#include "audio_sink_filter.h"
 #include "plugin/plugin_info.h"
 #include "filter/filter.h"
 

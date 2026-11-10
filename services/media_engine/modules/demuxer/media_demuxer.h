@@ -278,6 +278,8 @@ public:
     bool IsWatchDevice();
     bool IsBuffering();
     void SetHiplayerCallback(const std::shared_ptr<Pipeline::FilterCallback> &callback);
+    bool IsMimeInDolbyList(const std::string& mime);
+    bool IsAudioSupport(const std::string& mime);
     void SetTrackSelectionFilter(const TrackSelectionFilter &filter);
     void SetIsTriggerAutoMode(bool isAutoSelect);
     Status SetPlayStrategy(const std::shared_ptr<PlayStrategy> playStrategy);
@@ -596,7 +598,7 @@ private:
     Status PushBufferBySlices(int32_t trackId, std::shared_ptr<SampleQueue>& sampleQueue,
         std::shared_ptr<AVBuffer>& dstBuffer, sptr<AVBufferQueueProducer>& bufferQueue);
     void ReportMediaChangedFailedEvent();
-    void PushCodecCheckBuffer(int32_t trackId);
+    void PushCodecCheckBuffer(int32_t trackId, bool isStreamSwitch = false);
     void CheckCodecChange(const std::shared_ptr<SampleQueue> &sampleQueue, int32_t trackId, bool& needRelease);
     void CheckCodecChange(const std::shared_ptr<AVBuffer>& buffer, int32_t trackId, bool& needRelease);
     Status PauseConsumerTaskByTrackId(int32_t trackId);
@@ -769,6 +771,7 @@ private:
     std::recursive_mutex streamMapMutex_ {};
     std::map<int32_t, uint32_t> frameCountNeedDrop_;
     std::shared_ptr<Pipeline::FilterCallback> hiplayerCallback_;
+    std::vector<std::string> dolbyList_ {};
     std::atomic<bool> isAutoSelect_ {true};
     std::atomic<bool> isForceAutoSelect_ {false};
     std::atomic<uint32_t> curDownloadBitRate_ {0};

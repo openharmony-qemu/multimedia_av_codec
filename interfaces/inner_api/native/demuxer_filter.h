@@ -160,12 +160,23 @@ public:
     Status NotifyResumeUnMute();
     std::shared_ptr<Meta> GetGlobalInfo();
     bool IsMimeInDolbyList(const std::string& mime);
+    bool IsAudioSupportedOnDevice(const std::string& mime);
+    bool GetAudioStreamType(StreamType &streamType, const std::string& mime,
+        size_t index, std::shared_ptr<Meta> &meta);
     void OnNewTrackRender(uint64_t renderSeqNum);
     bool IsBuffering();
     void SetTrackSelectionFilter(TrackSelectionFilter &filter);
     Status SetPlayStrategy(std::shared_ptr<PlayStrategy> playStrategy);
     bool IsNeedSelectTrack(int32_t trackId);
     int32_t GetBuiltInSubtitleNum();
+    void UpdateTrackIdMap(StreamType streamType, int32_t index);
+    // Clear stale track_id_map_ entries for the given stream type. Needed before
+    // UpdateTrackIdMap during audio pipeline rebuild: the initial pipeline
+    // construction populates entries for all audio tracks, and FindTrackId
+    // consumes them via pop_front. If a track was muted (never linked), its
+    // entry remains stale and would be consumed first on the next rebuild,
+    // causing LinkNext to use the wrong track's metadata.
+    void ClearTrackIdMap(StreamType streamType);
 
 protected:
     Status OnLinked(StreamType inType, const std::shared_ptr<Meta> &meta,
@@ -181,7 +192,6 @@ private:
     bool FindStreamType(StreamType &streamType, Plugins::MediaType mediaType, std::string mime,
         size_t index, std::shared_ptr<Meta> &meta);
     bool ShouldTrackSkipped(Plugins::MediaType mediaType, std::string mime, size_t index);
-    void UpdateTrackIdMap(StreamType streamType, int32_t index);
     Status FaultDemuxerEventInfoWrite(StreamType& streamType);
     bool IsVideoMime(const std::string& mime);
     bool IsAudioMime(const std::string& mime);

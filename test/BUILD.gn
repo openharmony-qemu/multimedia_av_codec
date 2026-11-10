@@ -113,6 +113,7 @@ group("av_codec_unit_test") {
         "unittest/filter_test:filter_unit_test",
         "unittest/media_demuxer_ext_test:media_demuxer_ext_unit_test",
         "unittest/media_demuxer_test:media_demuxer_unit_test",
+        "unittest/media_demuxer_test:media_demuxer_audio_support_test",
         "unittest/media_engine/filters:media_engine_filter_unit_test",
         "unittest/media_sink_test:av_audio_sink_unit_test",
         "unittest/media_synchronous_sink_unittest:media_synchronous_sink_unittest",

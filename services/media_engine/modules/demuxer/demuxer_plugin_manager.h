@@ -66,7 +66,7 @@ class MediaStreamInfo {
 public:
     int32_t streamID = -1;
     bool activated = false;
-    StreamType type;
+    Plugins::StreamType type;
     uint64_t sniffSize;
     uint32_t bitRate;
     std::string pluginName = "";
@@ -100,7 +100,7 @@ public:
     void DeleteTempTrackMapInfo(int32_t oldTrackId);
 
     int32_t GetInnerTrackIDByTrackID(int32_t trackId);
-    StreamType GetStreamTypeByTrackID(int32_t trackId);
+    Plugins::StreamType GetStreamTypeByTrackID(int32_t trackId);
     int32_t GetStreamIDByTrackID(int32_t trackId);
     int32_t GetStreamIDByTrackType(TrackType type);
     int32_t GetStreamDemuxerNewStreamID(TrackType trackType, std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
@@ -136,7 +136,7 @@ public:
         bool& isRebooted);
     Status StartAllPlugin(std::shared_ptr<BaseStreamDemuxer> streamDemuxer);
     Status StopAllPlugin();
-    Status UpdateDefaultStreamID(Plugins::MediaInfo& mediaInfo, StreamType type, int32_t newStreamID);
+    Status UpdateDefaultStreamID(Plugins::MediaInfo& mediaInfo, Plugins::StreamType type, int32_t newStreamID);
     Status SingleStreamSeekTo(int64_t seekTime, Plugins::SeekMode mode, int32_t streamID, int64_t& realSeekTime);
 
     std::shared_ptr<Meta> GetUserMeta();

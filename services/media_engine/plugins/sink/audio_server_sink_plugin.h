@@ -22,6 +22,7 @@
 
 #include "audio_info.h"
 #include "audio_renderer.h"
+#include "audio_routing_manager.h"
 #include "osal/task/mutex.h"
 #include "meta/audio_types.h"
 #include "plugin/audio_sink_plugin.h"
@@ -208,7 +209,19 @@ private:
         std::condition_variable freezeCond_;
         std::atomic<bool> isInterruptNeeded_ {false};
     };
+    class AudioPreferredOutputDeviceChangeCallbackImpl
+        : public OHOS::AudioStandard::AudioPreferredOutputDeviceChangeCallback {
+    public:
+        explicit AudioPreferredOutputDeviceChangeCallbackImpl(
+            const std::shared_ptr<Pipeline::EventReceiver> &receiver) : playerEventReceiver_(receiver) {}
+        void OnPreferredOutputDeviceUpdated(const std::vector<std::shared_ptr<
+            OHOS::AudioStandard::AudioDeviceDescriptor>> &desc) override;
+    private:
+        std::shared_ptr<Pipeline::EventReceiver> playerEventReceiver_;
+    };
     void ReleaseRender();
+    void RegisterPreferredOutputDeviceCallback();
+    void UnregisterPreferredOutputDeviceCallback();
     __attribute__((no_sanitize("cfi"))) void ReleaseFile();
     bool StopRender();
     bool AssignSampleRateIfSupported(uint32_t sampleRate);
@@ -255,6 +268,7 @@ private:
     std::shared_ptr<AudioRendererCallbackImpl> audioRendererCallback_{nullptr};
     std::shared_ptr<OHOS::AudioStandard::AudioRendererFirstFrameWritingCallback> audioFirstFrameCallback_{nullptr};
     std::shared_ptr<OHOS::AudioStandard::AudioRendererPolicyServiceDiedCallback> audioServiceDiedCallback_{nullptr};
+    std::shared_ptr<AudioPreferredOutputDeviceChangeCallbackImpl> preferredOutputDeviceCb_{nullptr};
     AudioStandard::AudioRendererParams rendererParams_{};
     int64_t sourceDuraionMs_{-1};
 

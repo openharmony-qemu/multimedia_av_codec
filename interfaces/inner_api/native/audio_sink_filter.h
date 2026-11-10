@@ -77,6 +77,10 @@ public:
 
     void SetSyncCenter(std::shared_ptr<MediaSyncManager> syncCenter);
 
+    // Report EOS to sync center so video takes over as sync source.
+    // Called when audio becomes unavailable (e.g. unsupported track switch).
+    void ReportEosToSyncCenter();
+
     Status SetSpeed(float speed);
 
     int32_t SetVolumeWithRamp(float targetVolume, int32_t duration);

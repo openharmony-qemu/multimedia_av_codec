@@ -110,3 +110,37 @@ ohos_unittest("media_demuxer_unit_test") {
   resource_config_file =
       "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
 }
+
+#################################################################################################################
+ohos_unittest("media_demuxer_audio_support_test") {
+  module_out_path = module_output_path
+  testonly = true
+  configs = [
+    ":media_demuxer_unittest_cfg",
+    "$av_codec_root_dir/services/dfx:av_codec_service_log_dfx_public_config",
+  ]
+  sources = media_demuxer_test_sources + [
+    "media_demuxer_audio_support_unittest.cpp",
+  ]
+  deps = [
+    "$av_codec_root_dir/services/dfx:av_codec_service_dfx",
+    "$av_codec_root_dir/services/engine/codeclist:av_codec_engine_codeclist",
+    "$av_codec_root_dir/services/engine:av_codec_engine_package",
+  ]
+
+  external_deps = [
+    "c_utils:utils",
+    "graphic_surface:surface",
+    "hilog:libhilog",
+    "hitrace:hitrace_meter",
+    "hisysevent:libhisysevent",
+    "init:libbegetutil",
+    "ipc:ipc_single",
+    "media_foundation:media_foundation",
+    "netmanager_base:net_conn_manager_if",
+    "openssl:libcrypto_shared",
+    "safwk:system_ability_fwk",
+  ]
+  resource_config_file =
+      "$av_codec_root_dir/test/unittest/resources/ohos_test.xml"
+}

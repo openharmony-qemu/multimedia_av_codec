@@ -55,6 +55,7 @@ ohos_unittest("audio_server_sink_plugin_unittest") {
   if (av_codec_support_test) {
     sources = [
       "./audio_server_sink_plugin_unittest.cpp",
+      "./preferred_output_device_callback_unittest.cpp",
     ]
 
     sources += [

@@ -1336,10 +1336,19 @@ Status MediaDemuxer::SetOutputBufferQueue(int32_t trackId, const sptr<AVBufferQu
         static_cast<size_t>(trackId) < mediaMetaData_.trackMetas.size(),
         Status::ERROR_INVALID_PARAMETER, "Invalid track");
     MEDIA_LOG_I("Set bufferQueue for track " PUBLIC_LOG_D32, trackId);
-    FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running");
     FALSE_RETURN_V_MSG_E(producer != nullptr, Status::ERROR_INVALID_PARAMETER, "BufferQueue is nullptr");
-    if (bufferQueueMap_.find(trackId) != bufferQueueMap_.end()) {
-        MEDIA_LOG_W("Has been set already");
+    bool isReplace = bufferQueueMap_.find(trackId) != bufferQueueMap_.end();
+    if (isReplace) {
+        // Audio pipeline rebuild case: the old audio task has already been stopped by DoSelectTrack,
+        // so it is safe to replace the stale bufferQueue with the new one even if isThreadExit_ is false.
+        MEDIA_LOG_I("Replace existing bufferQueue for track " PUBLIC_LOG_D32, trackId);
+        bufferQueueMap_.erase(trackId);
+        bufferMap_.erase(trackId);
+        if (GetEnableSampleQueueFlag() && sampleQueueMap_.find(trackId) != sampleQueueMap_.end()) {
+            sampleQueueMap_.erase(trackId);
+        }
+    } else {
+        FALSE_RETURN_V_MSG_E(isThreadExit_, Status::ERROR_WRONG_STATE, "Process is running");
     }
     if (IsSubtitleTrackId(trackId)) {
         subtitleTrackId_ = trackId;
@@ -3416,7 +3425,7 @@ bool MediaDemuxer::SelectTrackChangeStream(int32_t trackId)
             static_cast<int32_t>(type), trackId, newTrackId);
         if (type == TrackType::TRACK_AUDIO) {
             audioTrackId_ = newTrackId;
-            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE, newTrackId});
+            eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_AUDIO_TRACK_CHANGE_REPORT, newTrackId});
             shouldCheckAudioFramePts_ = true;
         } else if (type == TrackType::TRACK_VIDEO) {
             videoTrackId_ = newTrackId;
@@ -3426,6 +3435,7 @@ bool MediaDemuxer::SelectTrackChangeStream(int32_t trackId)
             eventReceiver_->OnEvent({"media_demuxer", EventType::EVENT_SUBTITLE_TRACK_CHANGE, newTrackId});
             shouldCheckSubtitleFramePts_ = true;
         }
+        PushCodecCheckBuffer(newTrackId, true);
 
         {
             std::lock_guard<std::mutex> lock(isSelectTrackMutex_);
@@ -3481,7 +3491,7 @@ bool MediaDemuxer::SelectBitRateChangeStream(int32_t trackId)
         PushCodecCheckBuffer(videoTrackId_);
         InnerSelectTrack(videoTrackId_);
         if (IsValidTrackId(audioTrackId_)) {
-            PushCodecCheckBuffer(audioTrackId_);
+            PushCodecCheckBuffer(audioTrackId_, true);
             InnerSelectTrack(audioTrackId_);
         }
         MEDIA_LOG_I("Out");
@@ -6538,6 +6548,43 @@ void MediaDemuxer::SetHiplayerCallback(const std::shared_ptr<Pipeline::FilterCal
     hiplayerCallback_ = callback;
 }
 
+bool MediaDemuxer::IsMimeInDolbyList(const std::string& mime)
+{
+    FALSE_RETURN_V_MSG(hiplayerCallback_ != nullptr, false, "hiplayerCallback_ is nullptr");
+    if (dolbyList_.empty()) {
+        auto rawList = hiplayerCallback_->GetDolbyListCallback();
+        dolbyList_.assign(rawList.begin(), rawList.end());
+    }
+    return std::find(dolbyList_.begin(), dolbyList_.end(), mime) != dolbyList_.end();
+}
+
+bool MediaDemuxer::IsAudioSupport(const std::string& mime)
+{
+    if (IsMimeInDolbyList(mime) && hiplayerCallback_ != nullptr &&
+        hiplayerCallback_->IsAudioPassthroughCallback(mime.c_str())) {
+        MEDIA_LOG_I("dolby is supported");
+        return true;
+    }
+    if (mime == "audio/raw") {
+        MEDIA_LOG_I("raw is supported");
+        return true;
+    }
+    if (codecList_ == nullptr && codecListCreator_) {
+        codecList_ = codecListCreator_();
+    }
+    if (codecList_ != nullptr) {
+        MediaAVCodec::CapabilityData *capabilityData =
+            codecList_->GetCapability(mime, false, MediaAVCodec::AVCodecCategory::AVCODEC_NONE);
+        if (capabilityData == nullptr) {
+            MEDIA_LOG_W("not supported. mimeType: " PUBLIC_LOG_S, mime.c_str());
+            return false;
+        }
+        return true;
+    }
+    MEDIA_LOG_W("codecList_ is nullptr, assume supported. mimeType: " PUBLIC_LOG_S, mime.c_str());
+    return true;
+}
+
 bool MediaDemuxer::IsCloudFd()
 {
     FALSE_RETURN_V_MSG_E(source_ != nullptr, false, "source_ is nullptr");
@@ -7128,7 +7175,7 @@ void MediaDemuxer::OnNewTrackRender(uint64_t renderSeqNum)
     }
 }
 
-void MediaDemuxer::PushCodecCheckBuffer(int32_t trackId)
+void MediaDemuxer::PushCodecCheckBuffer(int32_t trackId, bool isStreamSwitch)
 {
     FALSE_RETURN_NOLOG(demuxerPluginManager_ != nullptr && demuxerPluginManager_->IsDash());
     FALSE_RETURN_NOLOG(IsValidTrackId(trackId) && (trackId == videoTrackId_ || trackId == audioTrackId_));
@@ -7150,6 +7197,7 @@ void MediaDemuxer::PushCodecCheckBuffer(int32_t trackId)
     FALSE_RETURN(meta != nullptr);
     buffer->meta_ = std::make_shared<Meta>(*meta);
     buffer->meta_->SetData(Tag::CHECK_CODEC_CHANGE, true);
+    buffer->meta_->SetData(Tag::IS_STREAM_SWITCH, isStreamSwitch);
     if (buffer->memory_ == nullptr) {
         auto tmpBuffer = AVBuffer::CreateAVBuffer(buffer->GetConfig());
         buffer->memory_ = tmpBuffer->memory_;

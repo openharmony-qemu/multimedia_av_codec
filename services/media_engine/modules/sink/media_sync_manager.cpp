@@ -329,6 +329,10 @@ int64_t MediaSyncManager::GetMaxMediaProgress()
         currentAnchorMediaTime_ + lastAudioBufferDuration_);
     FALSE_RETURN_V_NOLOG(currentSyncerPriority_ != IMediaSynchronizer::VIDEO_SINK,
         lastVideoBufferPts_);
+    // When no syncer has priority (NONE), e.g. after audio yields via ReportEos,
+    // return INT64_MAX so BoundMediaProgress does not cap video progress to the
+    // stale anchor. Video will re-establish the clock via UpdateTimeAnchor.
+    FALSE_RETURN_V_NOLOG(currentSyncerPriority_ != IMediaSynchronizer::NONE, INT64_MAX);
     return std::max(currentAnchorMediaTime_, lastReportMediaTime_.load());
 }
 
