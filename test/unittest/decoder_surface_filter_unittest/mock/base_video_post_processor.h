@@ -45,6 +45,7 @@ enum VideoPostProcessorType {
     CAMERA_INSERT_FRAME,
     CAMERA_MP_PWP, // moving photo playing with processing
     SIDE_OUTPUT,
+    ALPHA_VIDEO,
 };
 
 class BaseVideoPostProcessor {
