@@ -65,6 +65,7 @@ constexpr uint32_t FRAME_INTERVAL = 1;
 constexpr uint8_t H265_NALU_TYPE = 0x7e;
 constexpr uint32_t START_CODE_SIZE = 4;
 constexpr uint8_t START_CODE[START_CODE_SIZE] = {0, 0, 0, 1};
+constexpr uint8_t VPS = 32;
 constexpr uint8_t SPS = 33;
 constexpr uint8_t PPS = 34;
 constexpr uint32_t TAKEOVER_INPUT_BUFFER_COUNT = 4;
@@ -84,10 +85,15 @@ void clearIntqueue(std::queue<uint32_t> &q)
 
 uint32_t ReadNalSizeBigEndian(const char ch[START_CODE_SIZE])
 {
-    return ((static_cast<uint32_t>(ch[3]) & 0xff)) |
-           ((static_cast<uint32_t>(ch[2]) & 0xff) << EIGHT) |
+    return ((static_cast<uint32_t>(ch[3]) & 0xff)) |                // 3 低8位
+           ((static_cast<uint32_t>(ch[2]) & 0xff) << EIGHT) |       // 2 低16位
            ((static_cast<uint32_t>(ch[1]) & 0xff) << SIXTEEN) |
            ((static_cast<uint32_t>(ch[0]) & 0xff) << TWENTY_FOUR);
+}
+
+uint8_t ReadH265NalUnitType(const uint8_t ch)
+{
+    return (ch & H265_NALU_TYPE) >> 1;
 }
 
 } // namespace
@@ -591,12 +597,10 @@ int32_t VDecNdkInnerSample::SendData(uint32_t bufferSize, uint32_t index, std::s
     }
 
     (void)inFile_->read((char *)fileBuffer + START_CODE_SIZE, bufferSize);
-    if ((fileBuffer[START_CODE_SIZE] & H265_NALU_TYPE) == SPS ||
-        (fileBuffer[START_CODE_SIZE] & H265_NALU_TYPE) == PPS) {
-        buffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
-    } else {
-        buffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
-    }
+
+    uint8_t nalUnitType = ReadH265NalUnitType(fileBuffer[START_CODE_SIZE]);
+    buffer->flag_ = (nalUnitType == VPS || nalUnitType == SPS || nalUnitType == PPS) ?
+        AVCODEC_BUFFER_FLAG_CODEC_DATA : AVCODEC_BUFFER_FLAG_NONE;
 
     int32_t size = buffer->memory_->GetCapacity();
     if (size < static_cast<int32_t>(bufferSize + START_CODE_SIZE)) {
@@ -969,10 +973,32 @@ int32_t VDecNdkInnerSample::QueueTakeoverInputBuffers(void)
     return AVCS_ERR_OK;
 }
 
+int32_t VDecNdkInnerSample::AllocateInputBuffer(std::shared_ptr<AVBuffer>& avBuffer, uint32_t index)
+{
+    std::shared_ptr<AVAllocator> allocator = AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
+    if (allocator == nullptr) {
+        cout << "Takeover: create allocator failed" << endl;
+        return AVCS_ERR_NO_MEMORY;
+    }
+
+    avBuffer = AVBuffer::CreateAVBuffer(allocator, TAKEOVER_INPUT_BUFFER_CAPACITY);
+    if (avBuffer == nullptr || avBuffer->memory_ == nullptr) {
+        cout << "Takeover: create avBuffer failed, index = " << index << endl;
+        return AVCS_ERR_NO_MEMORY;
+    }
+    uint8_t *addr = avBuffer->memory_->GetAddr();
+    if (addr == nullptr) {
+        cout << "Takeover: AVBuffer addr is null, index = " << index << endl;
+        return AVCS_ERR_NO_MEMORY;
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t VDecNdkInnerSample::BuildTakeoverInputPool()
 {
     takeoverPool_.clear();
     for (uint32_t i = 0; i < TAKEOVER_INPUT_BUFFER_COUNT; i++) {
+        uint32_t extIndex = takeoverInputIndexes_[i];
         char lenBuf[START_CODE_SIZE] = {0};
         (void)inFile_->read(lenBuf, START_CODE_SIZE);
         if (inFile_->eof() || inFile_->gcount() < static_cast<int64_t>(START_CODE_SIZE)) {
@@ -980,26 +1006,16 @@ int32_t VDecNdkInnerSample::BuildTakeoverInputPool()
             return AVCS_ERR_UNKNOWN;
         }
         uint32_t nalSize = ReadNalSizeBigEndian(lenBuf);
-        if (nalSize == 0 || nalSize + START_CODE_SIZE > static_cast<uint32_t>(TAKEOVER_INPUT_BUFFER_CAPACITY)) {
+        if (nalSize == 0 || nalSize  > (static_cast<uint32_t>(TAKEOVER_INPUT_BUFFER_CAPACITY) - START_CODE_SIZE)) {
             cout << "Takeover: abnormal NAL size " << nalSize << endl;
             return AVCS_ERR_UNKNOWN;
         }
-        std::shared_ptr<AVAllocator> allocator =
-            AVAllocatorFactory::CreateSharedAllocator(MemoryFlag::MEMORY_READ_WRITE);
-        if (allocator == nullptr) {
-            cout << "Takeover: create allocator failed" << endl;
-            return AVCS_ERR_NO_MEMORY;
-        }
-        std::shared_ptr<AVBuffer> avBuffer = AVBuffer::CreateAVBuffer(allocator, TAKEOVER_INPUT_BUFFER_CAPACITY);
-        if (avBuffer == nullptr || avBuffer->memory_ == nullptr) {
-            cout << "Takeover: create avBuffer failed, index = " << i << endl;
+
+        std::shared_ptr<AVBuffer> avBuffer = nullptr;
+        if (AllocateInputBuffer(avBuffer, i) != AVCS_ERR_OK) {
             return AVCS_ERR_NO_MEMORY;
         }
         uint8_t *addr = avBuffer->memory_->GetAddr();
-        if (addr == nullptr) {
-            cout << "Takeover: AVBuffer addr is null, index = " << i << endl;
-            return AVCS_ERR_NO_MEMORY;
-        }
         if (memcpy_s(addr, TAKEOVER_INPUT_BUFFER_CAPACITY, START_CODE, START_CODE_SIZE) != EOK) {
             cout << "Takeover: memcpy start code failed, index = " << i << endl;
             return AVCS_ERR_UNKNOWN;
@@ -1009,22 +1025,25 @@ int32_t VDecNdkInnerSample::BuildTakeoverInputPool()
             cout << "Takeover: read NAL data failed, index = " << i << endl;
             return AVCS_ERR_UNKNOWN;
         }
-        if ((addr[START_CODE_SIZE] & H265_NALU_TYPE) == SPS || (addr[START_CODE_SIZE] & H265_NALU_TYPE) == PPS) {
-            avBuffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
-        } else {
-            avBuffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
-        }
+
+        uint8_t nalUnitType = ReadH265NalUnitType(addr[START_CODE_SIZE]);
+        avBuffer->flag_ = (nalUnitType == VPS || nalUnitType == SPS || nalUnitType == PPS) ?
+            AVCODEC_BUFFER_FLAG_CODEC_DATA : AVCODEC_BUFFER_FLAG_NONE;
         avBuffer->pts_ = static_cast<int64_t>(i) * TAKEOVER_PTS_INTERVAL_US;
         avBuffer->memory_->SetOffset(0);
         avBuffer->memory_->SetSize(nalSize + START_CODE_SIZE);
-        takeoverPool_[i] = avBuffer;
-        cout << "Takeover: build external buffer index = " << i << ", nalSize = " << nalSize << endl;
+        takeoverPool_[extIndex] = avBuffer;
+        cout << "Takeover: build external buffer index = " << extIndex << ", nalSize = " << nalSize << endl;
     }
     return AVCS_ERR_OK;
 }
 
 int32_t VDecNdkInnerSample::PrepareTakeoverInputPool()
 {
+    if (takeoverInputIndexes_.size() != TAKEOVER_INPUT_BUFFER_COUNT) {
+        cout << "Takeover: invalid takeover input index count = " << takeoverInputIndexes_.size() << endl;
+        return AVCS_ERR_INVALID_OPERATION;
+    }
     takeoverPool_.clear();
     takeoverSnapshot_.clear();
     takeoverReturnedCount_ = 0;
@@ -1130,7 +1149,7 @@ int32_t VDecNdkInnerSample::FeedTakeoverBuffer(std::shared_ptr<AVBuffer> buffer,
         return vdec_->QueueInputBuffer(index) == AVCS_ERR_OK ? TAKEOVER_FEED_EOS : AVCS_ERR_UNKNOWN;
     }
     uint32_t nalSize = ReadNalSizeBigEndian(lenBuf);
-    if (nalSize == 0 || nalSize + START_CODE_SIZE > static_cast<uint32_t>(TAKEOVER_INPUT_BUFFER_CAPACITY)) {
+    if (nalSize == 0 || nalSize > (static_cast<uint32_t>(TAKEOVER_INPUT_BUFFER_CAPACITY) - START_CODE_SIZE)) {
         cout << "Takeover: abnormal NAL size " << nalSize << ", stop feeding" << endl;
         return AVCS_ERR_UNKNOWN;
     }
@@ -1144,17 +1163,50 @@ int32_t VDecNdkInnerSample::FeedTakeoverBuffer(std::shared_ptr<AVBuffer> buffer,
     if (inFile_->gcount() < static_cast<int64_t>(nalSize)) {
         return AVCS_ERR_UNKNOWN;
     }
-    if ((addr[START_CODE_SIZE] & H265_NALU_TYPE) == SPS || (addr[START_CODE_SIZE] & H265_NALU_TYPE) == PPS) {
-        buffer->flag_ = AVCODEC_BUFFER_FLAG_CODEC_DATA;
-    } else {
-        buffer->flag_ = AVCODEC_BUFFER_FLAG_NONE;
-    }
+
+    uint8_t nalUnitType = ReadH265NalUnitType(addr[START_CODE_SIZE]);
+    buffer->flag_ = (nalUnitType == VPS || nalUnitType == SPS || nalUnitType == PPS) ?
+        AVCODEC_BUFFER_FLAG_CODEC_DATA : AVCODEC_BUFFER_FLAG_NONE;
     buffer->pts_ = GetSystemTimeUs();
     buffer->memory_->SetOffset(0);
     buffer->memory_->SetSize(nalSize + START_CODE_SIZE);
     if (vdec_->QueueInputBuffer(index) != AVCS_ERR_OK) {
         cout << "Takeover: queue input buffer failed, index = " << index << endl;
         return AVCS_ERR_UNKNOWN;
+    }
+    return AVCS_ERR_OK;
+}
+
+int32_t VDecNdkInnerSample::WaitInputBuffThenFeedAFrame(bool& eosSubmitted)
+{
+    uint32_t index = 0;
+    std::shared_ptr<AVBuffer> buffer = nullptr;
+    bool hasInput = false;
+    {
+        unique_lock<mutex> lock(signal_->inMutex_);
+        hasInput = signal_->inCond_.wait_for(lock, std::chrono::milliseconds(TAKEOVER_POLL_INTERVAL_MS),
+            [&]() { return !signal_->inIdxQueue_.empty(); });
+        if (hasInput) {
+            index = signal_->inIdxQueue_.front();
+            buffer = signal_->inBufferQueue_.front();
+            signal_->inIdxQueue_.pop();
+            signal_->inBufferQueue_.pop();
+        }
+    }
+
+    if (hasInput) {
+        if (!CheckTakeoverReturned(index, buffer)) {
+            takeoverAddrCheckPass_ = false;
+            return AVCS_ERR_INVALID_VAL;
+        }
+        if (!eosSubmitted) {
+            int32_t ret = FeedTakeoverBuffer(buffer, index);
+            if (ret == TAKEOVER_FEED_EOS) {
+                eosSubmitted = true;
+            } else if (ret != AVCS_ERR_OK) {
+                return ret;
+            }
+        }
     }
     return AVCS_ERR_OK;
 }
@@ -1168,33 +1220,10 @@ int32_t VDecNdkInnerSample::FeedTakeoverUntilEos(int32_t timeoutMs)
     bool eosSubmitted = false;
     auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(timeoutMs);
     while (!eosDone && !cb_->HasError() && std::chrono::steady_clock::now() < deadline) {
-        uint32_t index = 0;
-        std::shared_ptr<AVBuffer> buffer = nullptr;
-        bool hasInput = false;
-        {
-            unique_lock<mutex> lock(signal_->inMutex_);
-            hasInput = signal_->inCond_.wait_for(lock, std::chrono::milliseconds(TAKEOVER_POLL_INTERVAL_MS),
-                [&]() { return !signal_->inIdxQueue_.empty(); });
-            if (hasInput) {
-                index = signal_->inIdxQueue_.front();
-                buffer = signal_->inBufferQueue_.front();
-                signal_->inIdxQueue_.pop();
-                signal_->inBufferQueue_.pop();
-            }
-        }
-        if (hasInput) {
-            if (!CheckTakeoverReturned(index, buffer)) {
-                takeoverAddrCheckPass_ = false;
-                break;
-            }
-            if (!eosSubmitted) {
-                int32_t ret = FeedTakeoverBuffer(buffer, index);
-                if (ret == TAKEOVER_FEED_EOS) {
-                    eosSubmitted = true;
-                } else if (ret != AVCS_ERR_OK) {
-                    break;
-                }
-            }
+        int32_t ret = WaitInputBuffThenFeedAFrame(eosSubmitted);
+        if (ret != AVCS_ERR_OK) {
+            cout << "Takeover: WaitInputBuffThenFeedAFrame failed, ret = " << ret << endl;
+            break;
         }
         while (!eosDone) {
             uint32_t outIndex = 0;

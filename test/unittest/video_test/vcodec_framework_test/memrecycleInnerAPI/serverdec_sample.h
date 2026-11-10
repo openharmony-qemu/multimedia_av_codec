@@ -27,6 +27,7 @@
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "securec.h"
 #include "avcodec_video_decoder.h"
 #include "nocopyable.h"
@@ -149,6 +150,8 @@ public:
     bool enableRandomEos = false;
     // External input pool takeover results, asserted by the test cases.
     std::map<uint32_t, std::shared_ptr<AVBuffer>> takeoverPool_;
+    // Count is fixed to 4, values are decided by the caller(e.g. {2,5,7,9}); keep ascending to preserve NAL order
+    std::vector<uint32_t> takeoverInputIndexes_ {0, 1, 2, 3};
     uint32_t takeoverReturnedCount_ = 0;
     uint32_t takeoverOutCount_ = 0;
     bool takeoverAddrCheckPass_ = true;
@@ -170,6 +173,8 @@ private:
     int32_t BuildTakeoverInputPool();
     int32_t FeedTakeoverBuffer(std::shared_ptr<AVBuffer> buffer, uint32_t index);
     bool CheckTakeoverReturned(uint32_t index, const std::shared_ptr<AVBuffer> &buffer);
+    int32_t WaitInputBuffThenFeedAFrame(bool& eosSubmitted);
+    int32_t AllocateInputBuffer(std::shared_ptr<AVBuffer>& avBuffer, uint32_t index);
     std::map<uint32_t, std::shared_ptr<AVBuffer>> takeoverSnapshot_;
 };
 } // namespace MediaAVCodec

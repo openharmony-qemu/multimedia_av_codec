@@ -302,7 +302,7 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_IN_RUNNING_STATE
 
 /**
  * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0500
- * @tc.name      : Takeover buffers queue by user returned with the same index/buffer/address
+ * @tc.name      : Takeover buffers with non-conitiguous business indexes returned with the same binding
  * @tc.desc      : hard-to-software switch input buffer takeover test
  */
 HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_PENDING_RETURN_SAME_BINDING_0500, TestSize.Level1)
@@ -312,12 +312,14 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_PENDING_RETURN_SAME_BIN
     }
 
     ASSERT_EQ(AVCS_ERR_OK, sample_->CreateHevcDecoderByNameAndInit(HEVC_TAKEOVER_CODEC_NAME));
+    // 硬解回调的 index 不保证从 0 连续，用 {2,5,7,9} 验证输入索引适配层
+    sample_->takeoverInputIndexes_ = {2, 5, 7, 9};
     ASSERT_EQ(AVCS_ERR_OK, sample_->PrepareTakeoverInputPool());
     ASSERT_EQ(AVCS_ERR_OK, sample_->ConfigureDecoder());
     ASSERT_EQ(AVCS_ERR_OK, sample_->SetCallback());
     ASSERT_EQ(AVCS_ERR_OK, sample_->SetTakeoverInputBuffers(sample_->takeoverPool_));
     ASSERT_EQ(AVCS_ERR_OK, sample_->Start());
-    // 首 Start 软解不重复上报，业务侧直接把持有的接管池入队后解码归还
+    // 首 Start 软解不重复上报，业务侧按自己的 index 把持有的接管池入队后解码归还
     ASSERT_EQ(AVCS_ERR_OK, sample_->QueueTakeoverInputBuffers());
     ASSERT_EQ(AVCS_ERR_OK, sample_->WaitTakeoverPendingReturned(HEVC_TAKEOVER_TIMEOUT_MS));
     ASSERT_EQ(HEVC_TAKEOVER_INPUT_BUFFER_COUNT, sample_->takeoverReturnedCount_);
@@ -345,6 +347,32 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_DECODE_UNTIL_EOS_0600, 
     ASSERT_EQ(AVCS_ERR_OK, sample_->QueueTakeoverInputBuffers());
     ASSERT_EQ(AVCS_ERR_OK, sample_->FeedTakeoverUntilEos(HEVC_TAKEOVER_TIMEOUT_MS));
     ASSERT_GE(sample_->takeoverOutCount_, 1u);
+}
+
+/**
+ * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0700
+ * @tc.name      : Non-contiguous takeover indexes decode from file until EOS with binding kept
+ * @tc.desc      : hard-to-software switch input buffer takeover test
+ */
+HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_NON_CONTIGUOUS_INDEX_DECODE_UNTIL_EOS_0700, TestSize.Level1)
+{
+    if (sample_ == nullptr) {
+        return;
+    }
+
+    ASSERT_EQ(AVCS_ERR_OK, sample_->CreateHevcDecoderByNameAndInit(HEVC_TAKEOVER_CODEC_NAME));
+    // 硬解回调的 index 不保证从 0 连续，用 {2,5,7,9} 覆盖“适配层 + 续流到 EOS"闭环
+    sample_->takeoverInputIndexes_ = {2, 5, 7, 9};
+    ASSERT_EQ(AVCS_ERR_OK, sample_->PrepareTakeoverInputPool());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->ConfigureDecoder());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->SetCallback());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->SetTakeoverInputBuffers(sample_->takeoverPool_));
+    ASSERT_EQ(AVCS_ERR_OK, sample_->Start());
+    // 先原样入队业务持有的接管池（首块含 XPS），再继续从文件续流至 EOS
+    ASSERT_EQ(AVCS_ERR_OK, sample_->QueueTakeoverInputBuffers());
+    ASSERT_EQ(AVCS_ERR_OK, sample_->FeedTakeoverUntilEos(HEVC_TAKEOVER_TIMEOUT_MS));
+    ASSERT_GE(sample_->takeoverOutCount_, 1u);
+    ASSERT_EQ(true, sample_->takeoverAddrCheckPass_);
 }
 
 } // namespace

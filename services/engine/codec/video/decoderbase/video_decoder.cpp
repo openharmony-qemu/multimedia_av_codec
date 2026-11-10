@@ -278,19 +278,19 @@ int32_t VideoDecoder::SetInputBuffers(const std::map<uint32_t, std::shared_ptr<A
         "SetInputBuffers failed: only allowed between Configure and Start, state: %{public}d",
         static_cast<int32_t>(state_.load()));
     CHECK_AND_RETURN_RET_LOG(buffers.size() > 0, AVCS_ERR_INVALID_VAL, "SetInputBuffers failed: buffers is empty!");
-    uint32_t expectedIndex = 0;
+    uint32_t externalIdxCount = 0;
     for (auto &[index, buffer] : buffers) {
         CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr && buffer->memory_->GetAddr() !=
             nullptr, AVCS_ERR_INVALID_VAL, "SetInputBuffers failed: index %{public}u buffer is null!", index);
         CHECK_AND_RETURN_RET_LOG(buffer->memory_->GetOffset() == 0, AVCS_ERR_INVALID_VAL,
             "SetInputBuffers failed: index %{public}u buffer offset is not 0!", index);
         // 未必从0、1、2、3顺次递增，无需 buffer 索引检查
-        expectedIndex++;
+        externalIdxCount++;
     }
 
-    CHECK_AND_RETURN_RET_LOG(expectedIndex >= DEFAULT_MIN_BUFFER_CNT && expectedIndex <= DEFAULT_MAX_BUFFER_CNT,
-        AVCS_ERR_INVALID_VAL, "SetInputBuffers failed: the valid buffer's num %{public}u!", expectedIndex);
-    format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, expectedIndex);
+    CHECK_AND_RETURN_RET_LOG(externalIdxCount >= DEFAULT_MIN_BUFFER_CNT && externalIdxCount <= DEFAULT_MAX_BUFFER_CNT,
+        AVCS_ERR_INVALID_VAL, "SetInputBuffers failed: the valid buffer's num %{public}u!", externalIdxCount);
+    format_.PutIntValue(MediaDescriptionKey::MD_KEY_MAX_INPUT_BUFFER_COUNT, externalIdxCount);
     if (!externalInputBuffers_.empty()) {
         AVCODEC_LOGW("SetInputBuffers called again, override previous buffers.");
     }
@@ -300,6 +300,35 @@ int32_t VideoDecoder::SetInputBuffers(const std::map<uint32_t, std::shared_ptr<A
     AVCODEC_LOGI("Num %{public}u SetInputBuffers success, takeover %{public}zu external input buffers",
         decInstanceID_, buffers.size());
     return AVCS_ERR_OK;
+}
+
+uint32_t VideoDecoder::GetExternalInputIndex(uint32_t slot) const
+{
+    if (inputSlotToIndex_.empty()) {
+        return slot;
+    }
+    auto it = inputSlotToIndex_.find(slot);
+    return it == inputSlotToIndex_.end() ? slot : it->second;
+}
+
+bool VideoDecoder::GetInternalInputSlot(uint32_t index, uint32_t &slot) const
+{
+    if (inputIndexToSlot_.empty()) {
+        slot = index;
+        return true;
+    }
+    auto it = inputIndexToSlot_.find(index);
+    if (it == inputIndexToSlot_.end()) {
+        return false;
+    }
+    slot = it->second;
+    return true;
+}
+
+void VideoDecoder::ClearInputIndexMap()
+{
+    inputIndexToSlot_.clear();
+    inputSlotToIndex_.clear();
 }
 
 void VideoDecoder::InitBuffers()
@@ -312,17 +341,18 @@ void VideoDecoder::InitBuffers()
     }
     CHECK_AND_RETURN_LOG(buffers_[INDEX_INPUT].size() > 0, "Input buffers is null!");
     if (!externalInputBuffers_.empty() && hasPendingTakeover_) {
-        // 接管首 Start：业务侧已持有硬解回调的输入 buffer （含首块 XPS 数据），软解不再重复上报
+        // 接管首 Start：业务侧已持有硬解回调的输入 buffer （含首块 XPS 数据），软解不再重复上报;
         // 业务 QueueInputBuffer 入队后才进入解码， SendFrame 解码完成后按原 index/buffer 归还。
         hasPendingTakeover_ = false;
         AVCODEC_LOGI("Num %{public}u takeover mode: %{public}zu external input buffers kept by user, skip re-delivery",
             decInstanceID_, buffers_[INDEX_INPUT].size());
-    } else if (buffers_[INDEX_INPUT].size() > 0) { // 正常路径
+    } else { // 正常路径
         for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
+            uint32_t externalIndex = GetExternalInputIndex(i);
             buffers_[INDEX_INPUT][i]->owner_ = Owner::OWNED_BY_USER;
-            callback_->OnInputBufferAvailable(i, buffers_[INDEX_INPUT][i]->avBuffer);
+            callback_->OnInputBufferAvailable(externalIndex, buffers_[INDEX_INPUT][i]->avBuffer);
             AVCODEC_LOGI("%{public}s OnInputBufferAvailable frame index = %{public}u, owner = %{public}d",
-                         decName_.c_str(), i, buffers_[INDEX_INPUT][i]->owner_.load());
+                         decName_.c_str(), externalIndex, buffers_[INDEX_INPUT][i]->owner_.load());
         }
     }
     CHECK_AND_RETURN_LOG(buffers_[INDEX_OUTPUT].size() > 0, "Output buffers is null!");
@@ -470,6 +500,7 @@ void VideoDecoder::ReleaseResource()
     }
     externalInputBuffers_.clear();
     hasPendingTakeover_ = false;
+    ClearInputIndexMap();
     format_ = Format();
     DeleteDecoder();
 }
@@ -515,20 +546,27 @@ void VideoDecoder::CalculateBufferSize()
 int32_t VideoDecoder::AllocateInputBuffer(int32_t bufferCnt, int32_t inBufferSize)
 {
     if (!externalInputBuffers_.empty()) {
-        // 接管模式：注册相同的索引/缓冲区，所有权归用户所有，不进行重新分配
+        // 接管模式：注册相同的索引/缓冲区，所有权归用户所有，不进行重新分配。业务 index(map key) 范围不确定，内部按 map
+        // 升序分配 slot 0~n-1 并建立双向映射；保证下发/入队/归还全程使用业务 index，且 index->buffer->memory地址绑定不变
         buffers_[INDEX_INPUT].clear();
+        ClearInputIndexMap();
+        uint32_t slot = 0;
         for (auto &[index, avBuffer] : externalInputBuffers_) {
             std::shared_ptr<CodecBuffer> buf = std::make_shared<CodecBuffer>();
             if (buf == nullptr) {
                 AVCODEC_LOGE("Create input codec buffer failed, index=%{public}u", index);
                 buffers_[INDEX_INPUT].clear();
+                ClearInputIndexMap();
                 return AVCS_ERR_NO_MEMORY;
             }
             buf->avBuffer = avBuffer;
             buf->owner_ = Owner::OWNED_BY_USER;
             buffers_[INDEX_INPUT].emplace_back(buf);
-            AVCODEC_LOGI("Takeover ext input buffer success: index=%{public}u, addr=%{public}p, size=%{public}d", index,
-                avBuffer->memory_->GetAddr(), avBuffer->memory_->GetCapacity());
+            inputIndexToSlot_[index] = slot;
+            inputSlotToIndex_[slot] = index;
+            AVCODEC_LOGI("Takeover ext input buffer success: index=%{public}u, slot=%{public}u, addr=%{public}p, size="
+                "%{public}d", index, slot, avBuffer->memory_->GetAddr(), avBuffer->memory_->GetCapacity());
+            slot++;
         }
         return AVCS_ERR_OK;
     }
@@ -903,6 +941,7 @@ void VideoDecoder::ReleaseBuffers()
 
     inputAvailQue_->Clear();
     buffers_[INDEX_INPUT].clear();
+    ClearInputIndexMap();
     inputBufferCnt_ = 0;
 
     std::unique_lock<std::mutex> oLock(outputMutex_);
@@ -942,15 +981,16 @@ int32_t VideoDecoder::QueueInputBuffer(uint32_t index)
     AVCODEC_SYNC_TRACE;
     CHECK_AND_RETURN_RET_LOG(state_ == State::RUNNING, AVCS_ERR_INVALID_STATE,
                              "Queue input buffer failed: not in Running state");
-    CHECK_AND_RETURN_RET_LOG(index < buffers_[INDEX_INPUT].size(), AVCS_ERR_INVALID_VAL,
-                             "Queue input buffer failed with bad index, index=%{public}u, buffer_size=%{public}zu",
-                             index, buffers_[INDEX_INPUT].size());
-    std::shared_ptr<CodecBuffer> inputBuffer = buffers_[INDEX_INPUT][index];
+    uint32_t slot = 0;
+    CHECK_AND_RETURN_RET_LOG(GetInternalInputSlot(index, slot) && slot < buffers_[INDEX_INPUT].size(),
+        AVCS_ERR_INVALID_VAL, "Queue input buffer failed with bad index, index=%{public}u, buffer_size=%{public}zu",
+        index, buffers_[INDEX_INPUT].size());
+    std::shared_ptr<CodecBuffer> inputBuffer = buffers_[INDEX_INPUT][slot];
     CHECK_AND_RETURN_RET_LOG(inputBuffer->owner_ == Owner::OWNED_BY_USER, AVCS_ERR_INVALID_OPERATION,
                              "Queue input buffer failed: buffer with index=%{public}u is not available", index);
 
     inputBuffer->owner_ = Owner::OWNED_BY_CODEC;
-    inputAvailQue_->Push(index);
+    inputAvailQue_->Push(slot);
     return AVCS_ERR_OK;
 }
 

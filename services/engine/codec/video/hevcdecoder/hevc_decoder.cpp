@@ -369,7 +369,7 @@ void HevcDecoder::SendFrame()
 
     inputAvailQue_->Pop();
     inputBuffer->owner_ = Owner::OWNED_BY_USER;
-    callback_->OnInputBufferAvailable(index, inputAVBuffer);
+    callback_->OnInputBufferAvailable(GetExternalInputIndex(index), inputAVBuffer);
 }
 
 int32_t HevcDecoder::DecodeFrameOnce()
