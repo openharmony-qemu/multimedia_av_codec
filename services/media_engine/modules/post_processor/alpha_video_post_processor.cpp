@@ -127,6 +127,14 @@ void main()
 
 // 全屏 quad: position(x,y,z) + texCoord(u,v), texCoord∈[0,1]² 覆盖整屏归一化坐标;
 // 颜色半/alpha 半由片段着色器按模式在 vTexCoord 上重映射, 故四顶点 texCoord 取满 [0,1]²
+// 顶点属性 location 与顶点着色器 attribute 声明顺序对应: position=0, texCoord=1
+constexpr GLuint ALPHA_ATTR_POSITION = 0;
+constexpr GLuint ALPHA_ATTR_TEXCOORD = 1;
+constexpr GLint ALPHA_POSITION_SIZE = 3;  // vec3(x, y, z)
+constexpr GLint ALPHA_TEXCOORD_SIZE = 2;  // vec2(u, v)
+// 每顶点紧凑排布 5 个 float, texCoord 起始于第 3 个 float(position 之后)
+constexpr GLsizei ALPHA_VERTEX_STRIDE = (ALPHA_POSITION_SIZE + ALPHA_TEXCOORD_SIZE) * sizeof(float);
+constexpr GLsizei ALPHA_TEXCOORD_OFFSET = ALPHA_POSITION_SIZE * sizeof(float);
 const GLfloat ALPHA_VERTICES[] = {
     -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
     -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
@@ -134,6 +142,9 @@ const GLfloat ALPHA_VERTICES[] = {
      1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
 };
 const GLuint ALPHA_INDICES[] = { 0, 1, 2, 0, 2, 3 };
+constexpr GLsizei ALPHA_INDEX_COUNT = sizeof(ALPHA_INDICES) / sizeof(ALPHA_INDICES[0]);
+// matTransform 为 4x4 列主序矩阵, 元素共 16 个
+constexpr int ALPHA_MAT4_ELEMENT_COUNT = 4 * 4;
 
 } // namespace
 
@@ -446,17 +457,18 @@ bool AlphaVideoPostProcessor::CreateGLResources()
     glBindVertexArray(vertexArrayObject_);
     glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject_);
     glBufferData(GL_ARRAY_BUFFER, sizeof(ALPHA_VERTICES), ALPHA_VERTICES, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void *>(0));
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float),
-        reinterpret_cast<void *>(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(ALPHA_ATTR_POSITION, ALPHA_POSITION_SIZE, GL_FLOAT, GL_FALSE,
+        ALPHA_VERTEX_STRIDE, nullptr);
+    glEnableVertexAttribArray(ALPHA_ATTR_POSITION);
+    glVertexAttribPointer(ALPHA_ATTR_TEXCOORD, ALPHA_TEXCOORD_SIZE, GL_FLOAT, GL_FALSE,
+        ALPHA_VERTEX_STRIDE, reinterpret_cast<void *>(ALPHA_TEXCOORD_OFFSET));
+    glEnableVertexAttribArray(ALPHA_ATTR_TEXCOORD);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0); // 基线行为: DrawImage 每帧重绑 VAO(功耗回归后回退)
     shaderProgram_->Use();
     shaderProgram_->SetInt("texture", 0);
     // 一次性设置: matrix_ 为 FlipV 阵(仅翻 Y, 修正 OES 纹理上下颠倒, 对齐 demo kMatrixFlipV), 避免每帧重复上传
-    shaderProgram_->SetMatrix4v("matTransform", matrix_, 16, false);
+    shaderProgram_->SetMatrix4v("matTransform", matrix_, ALPHA_MAT4_ELEMENT_COUNT, false);
     // 初始合成模式(默认左彩右透明); 运行时切换由 SetTransparentVideoLayoutMode 置 modeDirty_, DrawImage 上 uniform
     shaderProgram_->SetInt("uCompositeMode", compositeMode_.load(std::memory_order_acquire));
     // 不透明直出着色器(SetPostProcessorOn(false) 时走此分支)改为 DrawImage 懒编译(起播时延优化):
@@ -615,7 +627,7 @@ void AlphaVideoPostProcessor::DrawImage()
                 "opaque program invalid");
             opaqueShaderProgram_->Use();
             opaqueShaderProgram_->SetInt("texture", 0);
-            opaqueShaderProgram_->SetMatrix4v("matTransform", matrix_, 16, false);
+            opaqueShaderProgram_->SetMatrix4v("matTransform", matrix_, ALPHA_MAT4_ELEMENT_COUNT, false);
             opaqueShaderProgram_->SetInt("uCompositeMode", compositeMode_.load(std::memory_order_acquire));
         }
         opaqueShaderProgram_->Use();
@@ -623,7 +635,7 @@ void AlphaVideoPostProcessor::DrawImage()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_EXTERNAL_OES, nativeImageTexId_);
     glBindVertexArray(vertexArrayObject_);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, ALPHA_INDICES);
+    glDrawElements(GL_TRIANGLES, ALPHA_INDEX_COUNT, GL_UNSIGNED_INT, ALPHA_INDICES);
     glBindVertexArray(0);
 }
 
