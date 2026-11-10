@@ -1727,6 +1727,7 @@ Status DecoderSurfaceFilter::InitPostProcessor()
     postProcessor_->SetEventReceiver(eventReceiver_);
     postProcessor_->SetVideoWindowSize(postProcessorTargetWidth_, postProcessorTargetHeight_);
     postProcessor_->SetPostProcessorOn(isPostProcessorOn_);
+    postProcessor_->SetTransparentVideoLayoutMode(alphaVideoMode_);
     postProcessor_->SetParameter(configFormat_);
     if (fdsanFd_) {
         postProcessor_->SetFd(fdsanFd_->Get());
@@ -1772,6 +1773,16 @@ Status DecoderSurfaceFilter::SetPostProcessorOn(bool isPostProcessorOn)
     FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
 
     postProcessor_->SetPostProcessorOn(isPostProcessorOn);
+    return Status::OK;
+}
+
+Status DecoderSurfaceFilter::SetTransparentVideoLayoutMode(int32_t mode)
+{
+    MEDIA_LOG_I("DecoderSurfaceFilter SetTransparentVideoLayoutMode in, mode: %{public}d", mode);
+    alphaVideoMode_ = mode; // 后处理器未创建时缓存, 创建时(InitPostProcessor)下发; 已创建则即时转发
+    FALSE_RETURN_V(isPostProcessorSupported_, Status::ERROR_UNSUPPORTED_FORMAT);
+    FALSE_RETURN_V(postProcessor_ != nullptr, Status::OK);
+    postProcessor_->SetTransparentVideoLayoutMode(mode);
     return Status::OK;
 }
 

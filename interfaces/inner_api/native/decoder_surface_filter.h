@@ -129,6 +129,7 @@ public:
     void SetPostProcessorType(VideoPostProcessorType type);
     Status SetPostProcessorOn(bool isSuperResolutionOn);
     Status SetVideoWindowSize(int32_t width, int32_t height);
+    Status SetTransparentVideoLayoutMode(int32_t mode);
     void NotifyAudioComplete();
     Status SetSpeed(float speed);
     Status SetPostProcessorFd(int32_t postProcessorFd);
@@ -286,6 +287,7 @@ private:
     bool isPostProcessorOn_ {false};
     bool isPostProcessorSupported_ {true};
     VideoPostProcessorType postProcessorType_ { VideoPostProcessorType::NONE };
+    int32_t alphaVideoMode_ {-1};
     std::shared_ptr<BaseVideoPostProcessor> postProcessor_;
     std::atomic<bool> enableCameraPostprocessing_ {false};
     bool isCameraPostProcessorSupported_ {true};
