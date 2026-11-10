@@ -7792,7 +7792,10 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeDseTruncated_Rem
  * @tc.name: Mpeg4DemuxerPlugin_AacProbePcePrefix_KeepsSamplePerFrame_001
  * @tc.desc: Verify a PCE raw-data-block element (element counts, mixdown tag, channel
  *           maps, relative byte alignment, comment) is skipped and a valid trailing CPE
- *           keeps audio_samples_per_frame.
+ *           keeps audio_samples_per_frame. The PCE relative byte alignment always finds
+ *           the bit position already past the raw-data-block start, which must use the
+ *           signed modulo-8 arithmetic of FFmpeg relative_align_get_bits and never the
+ *           unsigned subtraction (UBSan sub-overflow crash guard).
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbePcePrefix_KeepsSamplePerFrame_001,
