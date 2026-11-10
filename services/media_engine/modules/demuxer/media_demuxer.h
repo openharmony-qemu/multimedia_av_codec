@@ -267,6 +267,7 @@ public:
     Status StopBufferring(bool isAppBackground);
     
     void SetMediaMuted(OHOS::Media::MediaType mediaType, bool isMuted);
+    void SetDisableMedia(OHOS::Media::MediaType disableMedia);
     void HandleDecoderErrorFrame(int64_t pts);
     inline bool IsVideoMuted() const
     {
@@ -567,6 +568,8 @@ private:
     void HandleSignificantBitrateChange(uint32_t prevBitRate, uint32_t newBitRate);
     int64_t GetCurrentTimeMs();
     void UpdateTrackMap();
+    void UpdateDisableVideoTrackMap();
+    void UpdateDisableAudioTrackMap();
     bool IsNeedPreDownload() const;
     void UpdateSegmentOffset(int32_t trackId);
     void UpdateSegmentOffset(int32_t oldTrackId, int32_t newTrackId);
@@ -672,6 +675,7 @@ private:
     uint32_t targetBitRate_ = 0;
     std::string dumpPrefix_ = "";
     std::unordered_set<Plugins::MediaType> disabledMediaTracks_ {};
+    OHOS::Media::MediaType disableMedia_ = OHOS::Media::MediaType::MEDIA_TYPE_MAX_COUNT;
 
     std::unique_ptr<Task> parserRefInfoTask_;
     bool isFirstParser_ = true;

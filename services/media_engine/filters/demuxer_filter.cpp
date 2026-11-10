@@ -717,6 +717,13 @@ void DemuxerFilter::SetDumpFlag(bool isDump)
     }
 }
 
+void DemuxerFilter::SetDisableMedia(OHOS::Media::MediaType disableMedia)
+{
+    if (demuxer_ != nullptr) {
+        demuxer_->SetDisableMedia(disableMedia);
+    }
+}
+
 std::map<int32_t, sptr<AVBufferQueueProducer>> DemuxerFilter::GetBufferQueueProducerMap()
 {
     return demuxer_->GetBufferQueueProducerMap();

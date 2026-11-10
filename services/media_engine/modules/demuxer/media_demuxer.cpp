@@ -357,7 +357,6 @@ Status MediaDemuxer::StartReferenceParser(int64_t startTimeMs, bool isForward)
     return ret;
 }
 
-
 void MediaDemuxer::TryReclaimParserTask()
 {
     std::lock_guard<std::mutex> lock(parserTaskMutex_);
@@ -635,6 +634,11 @@ void MediaDemuxer::SetDumpInfo(bool isDump, uint64_t instanceId)
     }
     dumpPrefix_ = std::to_string(tid);
     isDump_ = isDump;
+}
+
+void MediaDemuxer::SetDisableMedia(OHOS::Media::MediaType disableMedia)
+{
+    disableMedia_ = disableMedia;
 }
 
 bool MediaDemuxer::GetDuration(int64_t& durationMs)
@@ -6677,20 +6681,67 @@ void MediaDemuxer::SetTrackSeekNeedDrop(int32_t trackId, bool needDrop)
     afterSeekNeedDrop_[trackId] = needDrop;
 }
 
+void MediaDemuxer::UpdateDisableVideoTrackMap()
+{
+    // Audio is disabled, only  fix video track mapping
+    // Find the first video track in trackInfoMap_ and map videoTrackId_ to it
+    Plugins::MediaInfo mediaInfo = demuxerPluginManager_->GetMediaInfo();
+    int32_t trackCount = static_cast<int32_t>(mediaInfo.tracks.size());
+    for (int32_t index = 0; index < trackCount; index ++) {
+        std::string mimeType;
+        if (mediaInfo.tracks[index].Get<Tag::MIME_TYPE>(mimeType) &&
+            mimeType.find("video") == 0) {
+            MEDIA_LOG_I("UpdateTrackMap find first video track, trackId: " PUBLIC_LOG_D32, index);
+            int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackIdByTrackId(index);
+            demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, index, innerTrackId);
+            InnerSelectTrack(videoTrackId_);
+            break;
+        }
+    }
+}
+
+void MediaDemuxer::UpdateDisableAudioTrackMap()
+{
+    // Video is disabled, only  fix audio track mapping
+    // Find the first audio track in trackInfoMap_ and map audioTrackId_ to it
+    Plugins::MediaInfo mediaInfo = demuxerPluginManager_->GetMediaInfo();
+    int32_t trackCount = static_cast<int32_t>(mediaInfo.tracks.size());
+    for (int32_t index = 0; index < trackCount; index ++) {
+        std::string mimeType;
+        if (mediaInfo.tracks[index].Get<Tag::MIME_TYPE>(mimeType) &&
+            mimeType.find("audio") == 0) {
+            MEDIA_LOG_I("UpdateTrackMap find first audio track, trackId: " PUBLIC_LOG_D32, index);
+            int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackIdByTrackId(index);
+            demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, index, innerTrackId);
+            InnerSelectTrack(audioTrackId_);
+            break;
+        }
+    }
+}
+
 void MediaDemuxer::UpdateTrackMap()
 {
     FALSE_RETURN_NOLOG(demuxerPluginManager_ != nullptr);
-    FALSE_RETURN_NOLOG(IsValidTrackId(videoTrackId_) && IsValidTrackId(audioTrackId_));
 
     // Update track map in track type change case
     int32_t streamId = demuxerPluginManager_->GetTmpStreamIDByTrackID(videoTrackId_);
-    if (demuxerPluginManager_->GetTmpTrackTypeByTrackID(videoTrackId_) != TRACK_VIDEO) {
-        demuxerPluginManager_->UpdateTempTrackMapByStreamId(videoTrackId_, streamId, TRACK_VIDEO);
-        InnerSelectTrack(videoTrackId_);
+    if (IsValidTrackId(videoTrackId_) &&
+        demuxerPluginManager_->GetTmpTrackTypeByTrackID(videoTrackId_) != TRACK_VIDEO) {
+        if (disableMedia_ == OHOS::Media::MediaType::MEDIA_TYPE_AUD) {
+            UpdateDisableVideoTrackMap();
+        } else {
+            demuxerPluginManager_->UpdateTempTrackMapByStreamId(videoTrackId_, streamId, TRACK_VIDEO);
+            InnerSelectTrack(videoTrackId_);
+        }
     }
-    if (demuxerPluginManager_->GetTmpTrackTypeByTrackID(audioTrackId_) != TRACK_AUDIO) {
-        demuxerPluginManager_->UpdateTempTrackMapByStreamId(audioTrackId_, streamId, TRACK_AUDIO);
-        InnerSelectTrack(audioTrackId_);
+    if (IsValidTrackId(audioTrackId_) &&
+        demuxerPluginManager_->GetTmpTrackTypeByTrackID(audioTrackId_) != TRACK_AUDIO) {
+        if (disableMedia_ == OHOS::Media::MediaType::MEDIA_TYPE_VID) {
+            UpdateDisableAudioTrackMap();
+        } else {
+            demuxerPluginManager_->UpdateTempTrackMapByStreamId(audioTrackId_, streamId, TRACK_AUDIO);
+            InnerSelectTrack(audioTrackId_);
+        }
     }
 }
 
