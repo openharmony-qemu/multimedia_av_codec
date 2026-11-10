@@ -6687,7 +6687,7 @@ void MediaDemuxer::UpdateDisableVideoTrackMap()
     // Find the first video track in trackInfoMap_ and map videoTrackId_ to it
     Plugins::MediaInfo mediaInfo = demuxerPluginManager_->GetMediaInfo();
     int32_t trackCount = static_cast<int32_t>(mediaInfo.tracks.size());
-    for (int32_t index = 0; index < trackCount; index ++) {
+    for (int32_t index = 0; index < trackCount; index++) {
         std::string mimeType;
         if (mediaInfo.tracks[index].Get<Tag::MIME_TYPE>(mimeType) &&
             mimeType.find("video") == 0) {
@@ -6706,7 +6706,7 @@ void MediaDemuxer::UpdateDisableAudioTrackMap()
     // Find the first audio track in trackInfoMap_ and map audioTrackId_ to it
     Plugins::MediaInfo mediaInfo = demuxerPluginManager_->GetMediaInfo();
     int32_t trackCount = static_cast<int32_t>(mediaInfo.tracks.size());
-    for (int32_t index = 0; index < trackCount; index ++) {
+    for (int32_t index = 0; index < trackCount; index++) {
         std::string mimeType;
         if (mediaInfo.tracks[index].Get<Tag::MIME_TYPE>(mimeType) &&
             mimeType.find("audio") == 0) {
