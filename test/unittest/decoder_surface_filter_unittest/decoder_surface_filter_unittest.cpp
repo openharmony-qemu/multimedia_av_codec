@@ -1028,6 +1028,87 @@ HWTEST_F(DecoderSurfaceFilterUnittest, HandleCodecChange_004, TestSize.Level0)
     decoderSurfaceFilter_->HandleCodecChange(index, isHandled);
     EXPECT_EQ(isHandled, true);
 }
+
+/**
+ * @tc.name: Test SetTransparentVideoLayoutMode when postProcessor not supported
+ * @tc.number: SetTransparentVideoLayoutMode_001
+ * @tc.desc: isPostProcessorSupported_ = false, should cache alphaVideoMode_ and return ERROR_UNSUPPORTED_FORMAT
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, SetTransparentVideoLayoutMode_001, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    decoderSurfaceFilter_->isPostProcessorSupported_ = false;
+    int32_t mode = 0; // SIDE_BY_SIDE_LAYOUT_HORIZONTAL
+    Status ret = decoderSurfaceFilter_->SetTransparentVideoLayoutMode(mode);
+    EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
+    EXPECT_EQ(decoderSurfaceFilter_->alphaVideoMode_, mode);
+}
+ 
+/**
+ * @tc.name: Test SetTransparentVideoLayoutMode when postProcessor_ is nullptr
+ * @tc.number: SetTransparentVideoLayoutMode_002
+ * @tc.desc: isPostProcessorSupported_ = true, postProcessor_ = nullptr, should cache mode and return OK
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, SetTransparentVideoLayoutMode_002, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    decoderSurfaceFilter_->isPostProcessorSupported_ = true;
+    decoderSurfaceFilter_->postProcessor_ = nullptr;
+    int32_t mode = 1; // SIDE_BY_SIDE_LAYOUT_VERTICAL
+    Status ret = decoderSurfaceFilter_->SetTransparentVideoLayoutMode(mode);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->alphaVideoMode_, mode);
+}
+ 
+/**
+ * @tc.name: Test SetTransparentVideoLayoutMode when postProcessor_ exists
+ * @tc.number: SetTransparentVideoLayoutMode_003
+ * @tc.desc: isPostProcessorSupported_ = true, postProcessor_ != nullptr, should forward mode to postProcessor
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, SetTransparentVideoLayoutMode_003, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    decoderSurfaceFilter_->isPostProcessorSupported_ = true;
+    auto mockProcessor = std::make_shared<BaseVideoPostProcessor>();
+    ASSERT_NE(mockProcessor, nullptr);
+    decoderSurfaceFilter_->postProcessor_ = mockProcessor;
+    int32_t mode = 2; // SIDE_BY_SIDE_LAYOUT_HORIZONTAL_REVERSE
+    EXPECT_CALL(*mockProcessor, SetTransparentVideoLayoutMode(mode)).WillOnce(Return(Status::OK));
+    Status ret = decoderSurfaceFilter_->SetTransparentVideoLayoutMode(mode);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->alphaVideoMode_, mode);
+    decoderSurfaceFilter_->postProcessor_ = nullptr;
+}
+ 
+/**
+ * @tc.name: Test SetTransparentVideoLayoutMode with VERTICAL_REVERSE mode
+ * @tc.number: SetTransparentVideoLayoutMode_004
+ * @tc.desc: Test mode = 3 (VERTICAL_REVERSE), postProcessor_ = nullptr, should cache and return OK
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, SetTransparentVideoLayoutMode_004, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    decoderSurfaceFilter_->isPostProcessorSupported_ = true;
+    decoderSurfaceFilter_->postProcessor_ = nullptr;
+    int32_t mode = 3; // SIDE_BY_SIDE_LAYOUT_VERTICAL_REVERSE
+    Status ret = decoderSurfaceFilter_->SetTransparentVideoLayoutMode(mode);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(decoderSurfaceFilter_->alphaVideoMode_, mode);
+}
+ 
+/**
+ * @tc.name: Test SetTransparentVideoLayoutMode with default mode -1
+ * @tc.number: SetTransparentVideoLayoutMode_005
+ * @tc.desc: Test mode = -1 (not set), should cache and return based on support flag
+ */
+HWTEST_F(DecoderSurfaceFilterUnittest, SetTransparentVideoLayoutMode_005, TestSize.Level0)
+{
+    ASSERT_NE(decoderSurfaceFilter_, nullptr);
+    decoderSurfaceFilter_->isPostProcessorSupported_ = false;
+    Status ret = decoderSurfaceFilter_->SetTransparentVideoLayoutMode(-1);
+    EXPECT_EQ(ret, Status::ERROR_UNSUPPORTED_FORMAT);
+    EXPECT_EQ(decoderSurfaceFilter_->alphaVideoMode_, -1);
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
