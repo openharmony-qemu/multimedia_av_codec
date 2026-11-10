@@ -138,8 +138,8 @@ constexpr GLsizei ALPHA_TEXCOORD_OFFSET = ALPHA_POSITION_SIZE * sizeof(float);
 const GLfloat ALPHA_VERTICES[] = {
     -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
     -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
-     1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-     1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
+    1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+    1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
 };
 const GLuint ALPHA_INDICES[] = { 0, 1, 2, 0, 2, 3 };
 constexpr GLsizei ALPHA_INDEX_COUNT = sizeof(ALPHA_INDICES) / sizeof(ALPHA_INDICES[0]);
