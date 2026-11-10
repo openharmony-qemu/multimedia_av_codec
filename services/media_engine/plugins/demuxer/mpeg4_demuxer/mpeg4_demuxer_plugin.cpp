@@ -373,6 +373,14 @@ constexpr uint8_t AVC_NAL_LENGTH_SIZE_MASK = 0x03;
 constexpr uint8_t AVC_NAL_TYPE_MASK = 0x1F;
 constexpr uint8_t AVC_IDR_NAL_TYPE = 5;
 constexpr uint8_t AVC_SLICE_NAL_TYPE = 1;
+constexpr uint8_t AVC_SEI_NAL_TYPE = 6;
+// FFmpeg h264_sei.c: SEI payload type 6 signals an open-GOP recovery point.
+constexpr uint8_t AVC_SEI_RECOVERY_POINT_TYPE = 6;
+// FFmpeg h264_sei.c bounds recovery_frame_cnt below (1 << MAX_LOG2_MAX_FRAME_NUM), 1<<16 for H.264.
+constexpr uint32_t AVC_MAX_RECOVERY_FRAME_CNT = 1 << 16;
+constexpr uint8_t AVC_SEI_CONTINUATION_BYTE = 0xFF;
+// SEI type/size fields use 0xFF continuation; cap the parse loop to avoid unbounded accumulation.
+constexpr uint8_t AVC_SEI_TYPE_MAX_BYTES = 4;
 // AVC Prefix NALs can carry Annex-B units in malformed NALFF samples.
 constexpr uint8_t AVC_PREFIX_NAL_TYPE = 14;
 constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
@@ -1636,6 +1644,129 @@ bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     return false;
 }
 
+bool ReadAvcExpGolombUe(const uint8_t* data, size_t size, size_t& bitPos, uint32_t& value)
+{
+    if (data == nullptr || size == 0 || bitPos >= size * BITS_PER_BYTE) {
+        return false;
+    }
+    size_t pos = bitPos;
+    uint32_t leadingZeros = 0;
+    while (pos < size * BITS_PER_BYTE &&
+        ((data[pos / BITS_PER_BYTE] >> ((BITS_PER_BYTE - 1) - pos % BITS_PER_BYTE)) & 1U) == 0U) {
+        ++leadingZeros;
+        ++pos;
+    }
+    if (leadingZeros >= std::numeric_limits<uint32_t>::digits || pos >= size * BITS_PER_BYTE) {
+        return false;
+    }
+    ++pos; // Skip the terminating 1 bit.
+    uint64_t decoded = 1;
+    for (uint32_t i = 0; i < leadingZeros; ++i) {
+        if (pos >= size * BITS_PER_BYTE) {
+            return false;
+        }
+        decoded = (decoded << 1) | ((data[pos / BITS_PER_BYTE] >> ((BITS_PER_BYTE - 1) - pos % BITS_PER_BYTE)) & 1U);
+        ++pos;
+    }
+    if (decoded > std::numeric_limits<uint32_t>::max()) {
+        return false;
+    }
+    value = static_cast<uint32_t>(decoded - 1);
+    bitPos = pos;
+    return true;
+}
+
+bool AvcSeiPayloadContainsRecoveryPoint(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    int64_t payloadOffset, uint32_t payloadSize)
+{
+    if (track == nullptr || payloadOffset < 0 || payloadSize == 0) {
+        return false;
+    }
+    const uint32_t readSize = std::min(payloadSize, AVC_SLICE_HEADER_SCAN_SIZE);
+    uint8_t seiBuffer[AVC_SLICE_HEADER_SCAN_SIZE] = {0};
+    FALSE_RETURN_V_NOLOG(track->sampleHelper->dataReader_->ReadUintData(payloadOffset, seiBuffer, readSize) ==
+        Status::OK, false);
+    size_t pos = 0;
+    uint32_t payloadType = 0;
+    for (uint8_t i = 0; i < AVC_SEI_TYPE_MAX_BYTES && pos < readSize; ++i) {
+        const uint8_t typeByte = seiBuffer[pos++];
+        payloadType += typeByte;
+        if (typeByte != AVC_SEI_CONTINUATION_BYTE) {
+            break;
+        }
+        if (i + 1 == AVC_SEI_TYPE_MAX_BYTES) {
+            return false;
+        }
+    }
+    if (pos >= readSize) {
+        return false;
+    }
+    uint32_t payloadLength = 0;
+    for (uint8_t i = 0; i < AVC_SEI_TYPE_MAX_BYTES && pos < readSize; ++i) {
+        const uint8_t sizeByte = seiBuffer[pos++];
+        payloadLength += sizeByte;
+        if (sizeByte != AVC_SEI_CONTINUATION_BYTE) {
+            break;
+        }
+        if (i + 1 == AVC_SEI_TYPE_MAX_BYTES) {
+            return false;
+        }
+    }
+    if (payloadType != AVC_SEI_RECOVERY_POINT_TYPE || payloadLength == 0 ||
+        payloadLength > readSize - pos) {
+        return false;
+    }
+    size_t bitPos = pos * BITS_PER_BYTE;
+    uint32_t recoveryFrameCnt = 0;
+    return ReadAvcExpGolombUe(seiBuffer, readSize, bitPos, recoveryFrameCnt) &&
+        recoveryFrameCnt < AVC_MAX_RECOVERY_FRAME_CNT;
+}
+
+bool AvcSampleContainsRecoveryPointSei(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    const MPEG4SampleHelper::SampleIndexView& sample)
+{
+    if (track == nullptr || track->sampleHelper == nullptr || track->sampleHelper->dataReader_ == nullptr ||
+        track->sampleHelper->mimeType_ != MimeType::VIDEO_AVC || sample.pos < 0 || sample.size <= 0 ||
+        sample.size > MAX_AVC_IDR_SCAN_SIZE) {
+        return false;
+    }
+    uint8_t nalLengthSize = GetAvcNalLengthSize(track);
+    FALSE_RETURN_V_NOLOG(nalLengthSize != 0 && sample.size >= nalLengthSize, false);
+    int64_t sampleEnd = 0;
+    FALSE_RETURN_V_NOLOG(SafeAddInt64(sample.pos, sample.size, sampleEnd), false);
+    // FFmpeg h264_parser.c marks a sample as key when a recovery_point SEI (payload type 6,
+    // recovery_frame_cnt in [0, 1<<16)) precedes a slice in the same access unit; open-GOP
+    // sources rely on this for random access even though the frame is not an IDR.
+    bool sawRecoveryPointSei = false;
+    int64_t offset = sample.pos;
+    uint8_t lengthData[AVC_MAX_NAL_LENGTH_SIZE] = {0};
+    uint8_t nalHeader = 0;
+    while (offset <= sampleEnd - nalLengthSize) {
+        FALSE_RETURN_V_NOLOG(
+            track->sampleHelper->dataReader_->ReadUintData(offset, lengthData, nalLengthSize) == Status::OK, false);
+        const uint32_t nalLength = ReadNalLength(lengthData, nalLengthSize);
+        FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, nalLengthSize, offset), false);
+        FALSE_RETURN_V_NOLOG(nalLength != 0 && nalLength <= static_cast<uint64_t>(sampleEnd - offset), false);
+        FALSE_RETURN_V_NOLOG(
+            track->sampleHelper->dataReader_->ReadUintData(offset, &nalHeader, sizeof(nalHeader)) == Status::OK,
+            false);
+        const uint8_t nalType = nalHeader & AVC_NAL_TYPE_MASK;
+        if (nalType == AVC_SLICE_NAL_TYPE || nalType == AVC_IDR_NAL_TYPE) {
+            return sawRecoveryPointSei;
+        }
+        if (nalType == AVC_SEI_NAL_TYPE && nalLength > sizeof(nalHeader)) {
+            int64_t payloadOffset = 0;
+            FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, static_cast<int64_t>(sizeof(nalHeader)), payloadOffset), false);
+            if (AvcSeiPayloadContainsRecoveryPoint(track, payloadOffset,
+                static_cast<uint32_t>(nalLength - sizeof(nalHeader)))) {
+                sawRecoveryPointSei = true;
+            }
+        }
+        FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, static_cast<int64_t>(nalLength), offset), false);
+    }
+    return false;
+}
+
 bool ShouldApplyMovEditTimelineOffset(const std::shared_ptr<MPEG4AtomParser::Track>& track);
 
 bool IsAvcVideoTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
@@ -1653,7 +1784,9 @@ bool ShouldMarkAvcSampleKey(const std::shared_ptr<MPEG4AtomParser::Track>& track
     if (!IsAvcVideoTrack(track)) {
         return false;
     }
-    return AvcSampleContainsIdr(track, currentSample) || AvcSampleContainsLowRefISlice(track, currentSample);
+    return AvcSampleContainsIdr(track, currentSample) ||
+        AvcSampleContainsLowRefISlice(track, currentSample) ||
+        AvcSampleContainsRecoveryPointSei(track, currentSample);
 }
 
 uint32_t GetSkipSamplesFromInfo(const std::vector<uint8_t>& skipSamplesInfo)

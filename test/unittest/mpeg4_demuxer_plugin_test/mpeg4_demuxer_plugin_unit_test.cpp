@@ -10730,6 +10730,41 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcEmptyPrefixThenIdrSyn
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcRecoveryPointSeiSyncFlag_001
+ * @tc.desc: Verify a recovery_point SEI (payload type 6) before a slice marks a sync frame like
+ *           FFmpeg h264_parser.c, while a non-recovery SEI or a SEI after the slice does not
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcRecoveryPointSeiSyncFlag_001, TestSize.Level1)
+{
+    // SEI NAL (type 6): recovery_point (payload type 6) with recovery_frame_cnt ue(0) = "1" -> 0x80.
+    const std::vector<uint8_t> recoverySei = {0x06, 0x06, 0x01, 0x80};
+    // SEI NAL carrying a non-recovery message (pic_timing, payload type 1).
+    const std::vector<uint8_t> otherSei = {0x06, 0x01, 0x00};
+    // Non-IDR P-slice so only the SEI heuristic can mark the sample as key.
+    const std::vector<uint8_t> pSlice = {0x61, 0xC0, 0xAA, 0xAA};
+    const std::vector<uint8_t> sps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
+    std::vector<uint8_t> sampleData;
+    std::vector<int32_t> sampleSizes;
+    BuildAvcMultiSampleData({{recoverySei, pSlice}, {otherSei, pSlice}, {pSlice, recoverySei}},
+        sampleData, sampleSizes);
+    auto plugin = BuildAvcMultiNalSampleTestPlugin(sps, sampleData, sampleSizes, {});
+    ASSERT_NE(plugin, nullptr);
+    plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin->streamParsers_, nullptr);
+    ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::AVC), Status::OK);
+
+    constexpr uint32_t syncFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
+    const std::array<bool, 3> expectedSync = {true, false, false};
+    AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    for (uint32_t index = 0; index < expectedSync.size(); ++index) {
+        ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ((output.mediaAVBuffer->flag_ & syncFlag) != 0, expectedSync[index]) <<
+            "sample index " << index << " sync flag mismatch";
+    }
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_SeekableVideoFirstFrameUsesFirstStssSync_001
  * @tc.desc: Verify seekable video init probes the first stss sync sample instead of sample 0,
  *           aligned with FFmpeg ParseVideoFirstFramesFull, and rewinds the sample cursor.
