@@ -377,6 +377,13 @@ constexpr uint8_t AVC_SLICE_NAL_TYPE = 1;
 constexpr uint8_t AVC_PREFIX_NAL_TYPE = 14;
 constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
 constexpr uint8_t AVC_MAX_NAL_LENGTH_SIZE = 4;
+// HEVC hvcC stores lengthSizeMinusOne in the low 2 bits of byte 21 (numOfArrays at byte 22),
+// the same bit layout FFmpeg reads in hevc_mp4toannexb.c: length_size = (byte & 3) + 1.
+constexpr uint8_t HEVC_NAL_LENGTH_SIZE_OFFSET = 21;
+constexpr uint8_t HEVC_NAL_LENGTH_SIZE_MASK = 0x03;
+constexpr uint8_t HEVC_MIN_NAL_LENGTH_SIZE = 1;
+constexpr uint8_t HEVC_MAX_NAL_LENGTH_SIZE = 4;
+constexpr uint8_t ANNEXB_START_CODE_SIZE = 4;
 constexpr size_t AVC_ANNEXB_SCAN_BUFFER_SIZE = 4 * 1024;
 constexpr uint8_t AVC_ANNEXB_START_CODE_ZERO_COUNT = 2;
 constexpr uint8_t BITS_PER_BYTE = 8;
@@ -1473,6 +1480,42 @@ uint8_t GetAvcNalLengthSize(const std::shared_ptr<MPEG4AtomParser::Track>& track
         track->codecParms.extradataSize > AVC_NAL_LENGTH_SIZE_OFFSET, 0);
     uint8_t nalLengthSize = (track->codecParms.data[AVC_NAL_LENGTH_SIZE_OFFSET] & AVC_NAL_LENGTH_SIZE_MASK) + 1;
     return nalLengthSize >= AVC_MIN_NAL_LENGTH_SIZE && nalLengthSize <= AVC_MAX_NAL_LENGTH_SIZE ? nalLengthSize : 0;
+}
+
+uint8_t GetHevcNalLengthSize(const std::shared_ptr<MPEG4AtomParser::Track>& track)
+{
+    FALSE_RETURN_V_NOLOG(track != nullptr && track->codecParms.data != nullptr &&
+        track->codecParms.extradataSize > HEVC_NAL_LENGTH_SIZE_OFFSET, 0);
+    uint8_t nalLengthSize =
+        (track->codecParms.data[HEVC_NAL_LENGTH_SIZE_OFFSET] & HEVC_NAL_LENGTH_SIZE_MASK) + 1;
+    return nalLengthSize >= HEVC_MIN_NAL_LENGTH_SIZE && nalLengthSize <= HEVC_MAX_NAL_LENGTH_SIZE
+        ? nalLengthSize : 0;
+}
+
+int32_t CountLengthPrefixedNalUnits(const std::shared_ptr<Sample>& sample, uint8_t nalLengthSize)
+{
+    if (sample == nullptr || sample->data == nullptr || sample->size <= 0 ||
+        nalLengthSize < HEVC_MIN_NAL_LENGTH_SIZE || nalLengthSize > HEVC_MAX_NAL_LENGTH_SIZE) {
+        return 0;
+    }
+    const int64_t sampleSize = sample->size;
+    const uint8_t* data = sample->data.get();
+    int64_t offset = 0;
+    int32_t nalCount = 0;
+    while (offset + nalLengthSize <= sampleSize) {
+        const uint32_t nalLength = ReadNalLength(data + offset, nalLengthSize);
+        offset += nalLengthSize;
+        // A zero-length NAL (including trailing zero padding) is counted rather than stopping the
+        // scan so the Annex-B growth estimate never under-runs; if the converter skips zero-length
+        // NALs the buffer is only conservatively larger, which is safe. Truncated lengths (beyond
+        // the sample) terminate the count conservatively.
+        if (nalLength > static_cast<uint64_t>(sampleSize - offset)) {
+            break;
+        }
+        ++nalCount;
+        offset += static_cast<int64_t>(nalLength);
+    }
+    return nalCount;
 }
 
 void EnsureAvcKeyHeuristicParsed(const std::shared_ptr<MPEG4AtomParser::Track>& track)
@@ -4872,7 +4915,7 @@ bool MPEG4DemuxerPlugin::GetAnnexbOutputBufferSize(uint32_t trackId, const std::
         return false;
     }
     auto track = FindTrackById(trackId);
-    if (track == nullptr) {
+    if (track == nullptr || track->sampleHelper == nullptr) {
         return false;
     }
     int32_t codecConfigSize = 0;
@@ -4888,6 +4931,37 @@ bool MPEG4DemuxerPlugin::GetAnnexbOutputBufferSize(uint32_t trackId, const std::
         return false;
     }
     outputBufferSize = sample->size + codecConfigSize;
+    if (track->sampleHelper->mimeType_ != MimeType::VIDEO_HEVC) {
+        return true;
+    }
+    // HEVC samples use lengthSizeMinusOne-byte NAL length prefixes. Converting to Annex-B
+    // replaces each prefix with a 4-byte start code, so the buffer grows by
+    // (ANNEXB_START_CODE_SIZE - lengthSize) per NAL. FFmpeg's hevc_mp4toannexb grows the packet
+    // accordingly (av_grow_packet) instead of assuming size + extradata.
+    // AVC shares the same prefix-to-start-code growth for lengthSize < 4, but its conversion-failure
+    // path already falls back to the in-place conversion (HandleAnnexbBufferConversionResult isAvc
+    // branch) and existing AVC output-comparison cases depend on the current estimate, so only HEVC
+    // gets the exact per-NAL growth here.
+    const uint8_t nalLengthSize = GetHevcNalLengthSize(track);
+    if (nalLengthSize == 0) {
+        MEDIA_LOG_W("Invalid HEVC hvcC length size, sample=" PUBLIC_LOG_D32, sample->size);
+        // Keep the legacy estimate (size + extradata) when the hvcC is too short to read the length
+        // size: samples with 4-byte prefixes still convert exactly, and any under-estimate is
+        // recovered by the in-place conversion fallback. Returning false here would turn a
+        // previously playable track into ERROR_INVALID_DATA.
+        return true;
+    }
+    if (nalLengthSize >= ANNEXB_START_CODE_SIZE) {
+        return true;
+    }
+    const int32_t nalCount = CountLengthPrefixedNalUnits(sample, nalLengthSize);
+    const int64_t growth = static_cast<int64_t>(nalCount) * (ANNEXB_START_CODE_SIZE - nalLengthSize);
+    if (growth > INT32_MAX - outputBufferSize) {
+        MEDIA_LOG_E("Annexb output buffer size overflow, sample=" PUBLIC_LOG_D32 ", nal=" PUBLIC_LOG_D32,
+            sample->size, nalCount);
+        return false;
+    }
+    outputBufferSize += static_cast<int32_t>(growth);
     return true;
 }
 
@@ -4959,6 +5033,16 @@ Status MPEG4DemuxerPlugin::HandleAnnexbBufferConversionResult(const std::shared_
     if (!convertRet && context.isAvc && context.outputDataSize > context.outputBufferSize) {
         return Status::OK;
     }
+    if (!convertRet && !context.isAvc) {
+        // HEVC: never deliver the raw length-prefixed sample when the direct buffer conversion
+        // fails. Fall back to the parser's in-place conversion (dynamically sized buffer), using
+        // the same libav_codec_hevc_parser as the FFmpeg demuxer plugin so lenient samples are
+        // delivered converted; unconvertible samples fail with ERROR_PACKET_CONVERT_FAILED.
+        // convertRet == true is already validated and returned above, so this branch is only
+        // reached on conversion failure. Returning OK here is not handled, so the caller always
+        // runs that conversion and never delivers the raw length-prefixed sample.
+        return Status::OK;
+    }
     FALSE_RETURN_V_MSG_E(context.outputDataSize <= context.outputBufferSize, Status::ERROR_PACKET_CONVERT_FAILED,
         "Invalid annexb output size:" PUBLIC_LOG_D32 "/" PUBLIC_LOG_D32,
         context.outputDataSize, context.outputBufferSize);
@@ -5009,7 +5093,9 @@ Status MPEG4DemuxerPlugin::ConvertSampleToAnnexb(std::shared_ptr<MPEG4Sample> ds
         uint8_t* dataPtr = srcSample->data.get();
         PacketConvertInfo convertInfo {nullptr, 0, false};
         bool convertRet = streamParsers_->ConvertPacketToAnnexb(trackIndex, &dataPtr, srcSample->size, convertInfo);
-        if (mime == MimeType::VIDEO_AVC) { // only avc will return ERROR_PACKET_CONVERT_FAILED
+        if (mime == MimeType::VIDEO_AVC || mime == MimeType::VIDEO_HEVC) {
+            // FFmpeg's hevc_mp4toannexb returns AVERROR_INVALIDDATA instead of emitting the
+            // un-converted length-prefixed packet; keep HEVC in the same error path as AVC.
             FALSE_RETURN_V_MSG_E(convertRet, Status::ERROR_PACKET_CONVERT_FAILED, "Convert packet to annexb failed");
         }
         if (dataPtr != srcSample->data.get()) {
