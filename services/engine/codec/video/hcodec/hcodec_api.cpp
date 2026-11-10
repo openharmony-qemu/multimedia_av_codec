@@ -31,5 +31,11 @@ void CreateHCodecByName(const std::string& name, std::shared_ptr<CodecBase>& cod
 {
     codec = HCodec::Create(name);
 }
+
+int32_t QueryIfDecoderSupportThisXPS(const std::string &mime,
+    const std::shared_ptr<Media::AVBuffer>& xps, bool& isSupport)
+{
+    return HCodecList::QueryIfDecoderSupportThisXPS(mime, xps, isSupport);
+}
 }
 }

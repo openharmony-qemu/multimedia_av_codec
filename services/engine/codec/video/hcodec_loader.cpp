@@ -39,6 +39,19 @@ int32_t HCodecLoader::GetCapabilityList(std::vector<CapabilityData> &caps)
     return loader.GetCaps(caps);
 }
 
+int32_t HCodecLoader::QueryIfDecoderSupportThisXPS(const std::string &mime,
+    const std::shared_ptr<Media::AVBuffer>& xps, bool& isSupport)
+{
+    HCodecLoader &loader = GetInstance();
+    CHECK_AND_RETURN_RET_LOG(loader.Init() == AVCS_ERR_OK, AVCS_ERR_UNKNOWN, "loader init error");
+    if (loader.queryFunc_ == nullptr) {
+        loader.queryFunc_ = reinterpret_cast<QueryFuncType>(
+            dlsym(loader.codecHandle_.get(), "QueryIfDecoderSupportThisXPS"));
+    }
+    CHECK_AND_RETURN_RET_LOG(loader.queryFunc_ != nullptr, AVCS_ERR_UNKNOWN, "dlsym failed");
+    return loader.queryFunc_(mime, xps, isSupport);
+}
+
 HCodecLoader::HCodecLoader() : VideoCodecLoader(HCODEC_LIB_PATH, HCODEC_CREATE_FUNC_NAME, HCODEC_GETCAPS_FUNC_NAME) {}
 
 HCodecLoader &HCodecLoader::GetInstance()

@@ -27,6 +27,7 @@
 #include "avcodec_info.h"
 #include "codec_omx_ext.h"
 #include "meta/meta.h"
+#include "v4_1/icodec_component_manager.h"
 
 namespace OHOS::MediaAVCodec {
 using namespace std;
@@ -34,8 +35,9 @@ using namespace CodecHDI;
 using namespace OHOS::HDI::ServiceManager::V1_0;
 
 static mutex g_mtx;
-static sptr<ICodecComponentManager> g_compMgrIpc;
-static sptr<ICodecComponentManager> g_compMgrPassthru;
+static sptr<OHOS::HDI::Codec::V4_0::ICodecComponentManager> g_compMgrIpc;
+static sptr<OHOS::HDI::Codec::V4_0::ICodecComponentManager> g_compMgrPassthru;
+static sptr<OHOS::HDI::Codec::V4_1::ICodecComponentManager> g_compMgrPassthru41;
 
 static mutex g_deviceCapsMtx;
 static bool g_deviceCapsInited = false;
@@ -101,6 +103,37 @@ sptr<ICodecComponentManager> GetManager(bool getCap, bool supportPassthrough, bo
     return mng;
 }
 
+int32_t HCodecList::QueryIfDecoderSupportThisXPS(
+    const std::string &mime, const std::shared_ptr<Media::AVBuffer>& xps, bool& isSupport)
+{
+    if (xps == nullptr || xps->memory_ == nullptr) {
+        LOGW("null buffer");
+        return AVCS_ERR_INVALID_VAL;
+    }
+    sptr<OHOS::HDI::Codec::V4_1::ICodecComponentManager> mnger;
+    {
+        lock_guard<mutex> lk(g_mtx);
+        if (g_compMgrPassthru41 == nullptr) {
+            LOGI("need to get 4.1");
+            g_compMgrPassthru41 = OHOS::HDI::Codec::V4_1::ICodecComponentManager::Get(true);
+        }
+        mnger = g_compMgrPassthru41;
+    }
+    if (mnger == nullptr) {
+        LOGW("null manager");
+        return AVCS_ERR_UNKNOWN;
+    }
+    sptr<HDI::Codec::ParcelableBuffer> buf = HDI::Codec::ParcelableBuffer::CreateStreamBuffer(
+        xps->memory_->GetFileDescriptor(), xps->memory_->GetSize(), false);
+    if (buf == nullptr) {
+        LOGW("CreateStreamBuffer failed");
+        return AVCS_ERR_UNKNOWN;
+    }
+    int ret = mnger->QueryIfDecoderSupportThisXPS(mime, buf, isSupport);
+    LOGI("query return %d", ret);
+    return ret == HDF_SUCCESS ? AVCS_ERR_OK : AVCS_ERR_UNKNOWN;
+}
+ 
 static bool IsSupportedVideoCodec(const CodecCompCapability &hdiCap)
 {
     if (hdiCap.role == MEDIA_ROLETYPE_VIDEO_AVC || hdiCap.role == MEDIA_ROLETYPE_VIDEO_HEVC ||
