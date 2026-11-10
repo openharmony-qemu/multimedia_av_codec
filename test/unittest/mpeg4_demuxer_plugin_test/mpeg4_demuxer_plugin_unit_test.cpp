@@ -8032,6 +8032,39 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeKeep
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_ExportDropsZeroChannelKeys_001
+ * @tc.desc: Verify the export layer drops 0-valued channel keys, matching FFmpeg
+ *           ParseAudioTrackInfo which only exports channels when nb_channels > 0.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ExportDropsZeroChannelKeys_001, TestSize.Level1)
+{
+    MediaInfo mediaInfo;
+    mediaInfo.tracks.resize(1);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(0);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(0);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_SAMPLE_RATE>(AAC_TEST_CORE_SAMPLE_RATE);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+
+    Plugins::MPEG4::RemoveZeroChannelKeys(mediaInfo.tracks[0]);
+    int32_t channels = -1;
+    int32_t outputChannels = -1;
+    int32_t sampleRate = 0;
+    ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
+    EXPECT_EQ(sampleRate, AAC_TEST_CORE_SAMPLE_RATE);
+
+    MediaInfo stereo = MakeAacFrameMediaInfo();
+    stereo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_CHANNEL_COUNT);
+    Plugins::MPEG4::RemoveZeroChannelKeys(stereo.tracks[0]);
+    ASSERT_TRUE(stereo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(stereo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_CHANNEL_COUNT);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_AacExplicitSbrAbsent_001
  * @tc.desc: Verify an explicit ASC SBR-absent signal prevents in-band SBR metadata promotion.
  * @tc.type: FUNC

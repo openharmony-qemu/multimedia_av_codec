@@ -155,6 +155,8 @@ bool ShouldClearAudioDiscardForSkipPacket(
 
 uint32_t GetSkipSamplesFromInfo(const std::vector<uint8_t>& skipSamplesInfo);
 
+void RemoveZeroChannelKeys(Meta& meta);
+
 } // namespace MPEG4
 } // namespace Plugins
 } // namespace Media

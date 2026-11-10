@@ -1697,6 +1697,17 @@ bool ShouldClearAudioDiscardForSkipPacket(
     return sampleIndex > 0;
 }
 
+void RemoveZeroChannelKeys(Meta& meta)
+{
+    // Aligned with FFmpeg ParseAudioTrackInfo: channel keys are exported only when
+    // ch_layout.nb_channels > 0, so drop 0-valued keys instead of exporting a misleading 0.
+    int32_t channelCount = 0;
+    if (meta.Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount) && channelCount <= 0) {
+        meta.Remove(Tag::AUDIO_CHANNEL_COUNT);
+        meta.Remove(Tag::AUDIO_OUTPUT_CHANNELS);
+    }
+}
+
 uint32_t GetPacketSampleFlag(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
     const MPEG4SampleHelper::SampleIndexView& currentSample, bool hasPlayableVideoTrack)
 {
@@ -2340,8 +2351,12 @@ Status MPEG4DemuxerPlugin::HasCodecParameters()
             "Get mime type failed");
         bool flag = !HaveValidParser(mime) || (HaveValidParser(mime) && streamParsers_ != nullptr);
         if (IsAudioType(*track)) {
-            FALSE_RETURN_V_MSG_E(format.Get<Tag::AUDIO_CHANNEL_COUNT>(param), Status::ERROR_INVALID_DATA,
-                "unspecified channel_count");
+            // FFmpeg ParseAudioTrackInfo exports channel_count only when ch_layout.nb_channels > 0;
+            // a sample entry declaring channelcount == 0 leaves the key absent, so do not require
+            // it here either; AUDIO_SAMPLE_RATE stays mandatory.
+            bool channelCountRequired = track->audioSampleEntryChannelCount > 0;
+            FALSE_RETURN_V_MSG_E(!channelCountRequired || format.Get<Tag::AUDIO_CHANNEL_COUNT>(param),
+                Status::ERROR_INVALID_DATA, "unspecified channel_count");
             FALSE_RETURN_V_MSG_E(format.Get<Tag::AUDIO_SAMPLE_RATE>(param), Status::ERROR_INVALID_DATA,
                 "unspecified sample_rate");
         } else if (IsVideoType(*track)) {
@@ -2718,6 +2733,9 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(MPEG4AtomParser::Track& track, const
     }
     if (HaveValidParser(mime)) {
         ConvertCsdToAnnexb(track, meta, trackIndex, !videoMetadataParsedFromFirstFrame);
+    }
+    if (IsAudioType(track)) {
+        RemoveZeroChannelKeys(meta);
     }
     mediaInfo_.tracks[trackIndex] = meta;
     DemuxerLogCompressor::StringifyMeta(meta, trackIndex);
