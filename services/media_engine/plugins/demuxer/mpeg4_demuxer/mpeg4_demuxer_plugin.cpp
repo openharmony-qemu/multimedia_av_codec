@@ -1832,11 +1832,14 @@ bool ShouldClearAudioDiscardForSkipPacket(
 
 void RemoveZeroChannelKeys(Meta& meta)
 {
-    // Aligned with FFmpeg ParseAudioTrackInfo: channel metadata is exported only when
-    // ch_layout.nb_channels > 0. AUDIO_OUTPUT_CHANNELS is dropped independently when it is
-    // 0 (the channel count may be absent or positive), and a declared count <= 0 also drops
-    // the leftover layouts, which FFmpeg derives from nb_channels and never exports for a
-    // zero-count track, avoiding a "no channel count but STEREO layout" contradiction.
+    // Aligned with FFmpeg ParseAudioTrackInfo: the count keys are exported only when
+    // ch_layout.nb_channels > 0, while the layout keys are exported unconditionally.
+    // For a zero-count track FFmpeg still derives the layout (mask lookup with a
+    // GetDefaultChannelLayout(channels) fallback, e.g. MONO for channels=0) and keeps it, so
+    // a declared count <= 0 drops only the count keys and keeps the existing layout keys.
+    // AUDIO_OUTPUT_CHANNELS is dropped independently when it is 0 (the channel count may be
+    // absent or positive); a declared count <= 0 drops it too because FFmpeg exports neither
+    // count key for a zero-count track.
     int32_t channelCount = 0;
     const bool hasChannelCount = meta.Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount);
     int32_t outputChannels = 0;
@@ -1847,8 +1850,6 @@ void RemoveZeroChannelKeys(Meta& meta)
     if (hasChannelCount && channelCount <= 0) {
         meta.Remove(Tag::AUDIO_CHANNEL_COUNT);
         meta.Remove(Tag::AUDIO_OUTPUT_CHANNELS);
-        meta.Remove(Tag::AUDIO_CHANNEL_LAYOUT);
-        meta.Remove(Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT);
     }
 }
 

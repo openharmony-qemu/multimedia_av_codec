@@ -8036,8 +8036,9 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeKeep
 
 /**
  * @tc.name: Mpeg4DemuxerPlugin_ExportDropsZeroChannelKeys_001
- * @tc.desc: Verify the export layer drops 0-valued channel keys, matching FFmpeg
- *           ParseAudioTrackInfo which only exports channels when nb_channels > 0.
+ * @tc.desc: Verify the export layer drops 0-valued count keys but keeps the layout keys,
+ *           matching FFmpeg ParseAudioTrackInfo which exports count keys only when
+ *           nb_channels > 0 while exporting the layout unconditionally.
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ExportDropsZeroChannelKeys_001, TestSize.Level1)
@@ -8057,8 +8058,12 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ExportDropsZeroChannelKe
     AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
     ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
     ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
-    ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
-    ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout));
+    // FFmpeg keeps the layout for a zero-count track (mask lookup falls back to
+    // GetDefaultChannelLayout(channels), e.g. MONO for channels=0); only the count keys drop.
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
     ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
     EXPECT_EQ(sampleRate, AAC_TEST_CORE_SAMPLE_RATE);
 
