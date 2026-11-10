@@ -25,6 +25,7 @@
 #include "avcodec_sysevent.h"
 #include "surface/native_buffer.h"
 #include <unistd.h>
+#include <cinttypes>
 
 using OHOS::Media::Pipeline::GlInternal::SetTextureParams2D;
 using OHOS::Media::Pipeline::GlInternal::QUAD_INDICES;
@@ -355,7 +356,7 @@ void OpenGLVideoFilterBase::UpdateVideoFrame()
     FALSE_RETURN_MSG(nativeImage_ != nullptr, "nativeImage_ is nullptr");
     OH_NativeImage_UpdateSurfaceImage(nativeImage_);
     lastPts_.store(OH_NativeImage_GetTimestamp(nativeImage_));
-    MEDIA_LOG_D("UpdateVideoFrame pts %{public}lld", lastPts_.load());
+    MEDIA_LOG_D("UpdateVideoFrame pts %{public}" PRId64, lastPts_.load());
 }
 
 bool OpenGLVideoFilterBase::CreateGLResources()
