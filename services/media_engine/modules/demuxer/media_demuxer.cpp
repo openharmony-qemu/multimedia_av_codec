@@ -6692,7 +6692,7 @@ void MediaDemuxer::UpdateDisableVideoTrackMap()
         if (mediaInfo.tracks[index].Get<Tag::MIME_TYPE>(mimeType) &&
             mimeType.find("video") == 0) {
             MEDIA_LOG_I("UpdateTrackMap find first video track, trackId: " PUBLIC_LOG_D32, index);
-            int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackIdByTrackId(index);
+            int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackIDByTrackID(index);
             demuxerPluginManager_->UpdateTempTrackMapInfo(videoTrackId_, index, innerTrackId);
             InnerSelectTrack(videoTrackId_);
             break;
@@ -6711,7 +6711,7 @@ void MediaDemuxer::UpdateDisableAudioTrackMap()
         if (mediaInfo.tracks[index].Get<Tag::MIME_TYPE>(mimeType) &&
             mimeType.find("audio") == 0) {
             MEDIA_LOG_I("UpdateTrackMap find first audio track, trackId: " PUBLIC_LOG_D32, index);
-            int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackIdByTrackId(index);
+            int32_t innerTrackId = demuxerPluginManager_->GetInnerTrackIDByTrackID(index);
             demuxerPluginManager_->UpdateTempTrackMapInfo(audioTrackId_, index, innerTrackId);
             InnerSelectTrack(audioTrackId_);
             break;
