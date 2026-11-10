@@ -1699,12 +1699,23 @@ bool ShouldClearAudioDiscardForSkipPacket(
 
 void RemoveZeroChannelKeys(Meta& meta)
 {
-    // Aligned with FFmpeg ParseAudioTrackInfo: channel keys are exported only when
-    // ch_layout.nb_channels > 0, so drop 0-valued keys instead of exporting a misleading 0.
+    // Aligned with FFmpeg ParseAudioTrackInfo: channel metadata is exported only when
+    // ch_layout.nb_channels > 0. AUDIO_OUTPUT_CHANNELS is dropped independently when it is
+    // 0 (the channel count may be absent or positive), and a declared count <= 0 also drops
+    // the leftover layouts, which FFmpeg derives from nb_channels and never exports for a
+    // zero-count track, avoiding a "no channel count but STEREO layout" contradiction.
     int32_t channelCount = 0;
-    if (meta.Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount) && channelCount <= 0) {
+    const bool hasChannelCount = meta.Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount);
+    int32_t outputChannels = 0;
+    const bool hasOutputChannels = meta.Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels);
+    if (hasOutputChannels && outputChannels <= 0) {
+        meta.Remove(Tag::AUDIO_OUTPUT_CHANNELS);
+    }
+    if (hasChannelCount && channelCount <= 0) {
         meta.Remove(Tag::AUDIO_CHANNEL_COUNT);
         meta.Remove(Tag::AUDIO_OUTPUT_CHANNELS);
+        meta.Remove(Tag::AUDIO_CHANNEL_LAYOUT);
+        meta.Remove(Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT);
     }
 }
 

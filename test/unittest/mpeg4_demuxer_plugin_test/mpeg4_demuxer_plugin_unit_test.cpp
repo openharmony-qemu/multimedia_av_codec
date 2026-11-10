@@ -8048,15 +8048,26 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ExportDropsZeroChannelKe
     mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(0);
     mediaInfo.tracks[0].Set<Tag::AUDIO_SAMPLE_RATE>(AAC_TEST_CORE_SAMPLE_RATE);
     mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
 
     Plugins::MPEG4::RemoveZeroChannelKeys(mediaInfo.tracks[0]);
     int32_t channels = -1;
     int32_t outputChannels = -1;
     int32_t sampleRate = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
     ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
     ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout));
     ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
     EXPECT_EQ(sampleRate, AAC_TEST_CORE_SAMPLE_RATE);
+
+    // A zero output-channel key is dropped independently, while a positive count is kept.
+    MediaInfo zeroOutput = MakeAacFrameMediaInfo();
+    zeroOutput.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(0);
+    Plugins::MPEG4::RemoveZeroChannelKeys(zeroOutput.tracks[0]);
+    ASSERT_TRUE(zeroOutput.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_FALSE(zeroOutput.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
 
     MediaInfo stereo = MakeAacFrameMediaInfo();
     stereo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_CHANNEL_COUNT);
