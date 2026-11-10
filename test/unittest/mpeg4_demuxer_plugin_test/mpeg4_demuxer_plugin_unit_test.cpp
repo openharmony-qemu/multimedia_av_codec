@@ -501,6 +501,42 @@ void PrepareSparseSampleHelper(Plugins::MPEG4::MPEG4SampleHelper& helper, uint32
     ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
 }
 
+constexpr uint32_t AUDIO_EDIT_TEST_SAMPLE_COUNT = 3;
+constexpr uint32_t AUDIO_EDIT_TEST_SAMPLE_DURATION = 1024;
+constexpr uint32_t AUDIO_EDIT_TEST_DURATION = 15604;
+constexpr int32_t AUDIO_EDIT_TEST_TIME_SCALE = 44100;
+constexpr uint32_t AUDIO_EDIT_TEST_STRADDLE_MEDIA_TIME = 495;
+constexpr uint32_t AUDIO_EDIT_TEST_BOUNDARY_MEDIA_TIME = 1024;
+constexpr uint32_t AUDIO_EDIT_TEST_OUTSIDE_MEDIA_TIME = 2048;
+
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> BuildAudioEditTrack(uint32_t mediaTime)
+{
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    if (track == nullptr) {
+        return nullptr;
+    }
+    track->codecParms.trackType = Plugins::MPEG4::AUDIO_TYPE;
+    track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track->sampleHelper == nullptr) {
+        return nullptr;
+    }
+    auto& helper = *track->sampleHelper;
+    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper.mimeType_ = MimeType::AUDIO_AAC;
+    helper.sttsEntry_ = {{AUDIO_EDIT_TEST_SAMPLE_COUNT, AUDIO_EDIT_TEST_SAMPLE_DURATION}};
+    helper.stscEntry_ = {{0, AUDIO_EDIT_TEST_SAMPLE_COUNT, 1}};
+    helper.sampleSizes_.assign(AUDIO_EDIT_TEST_SAMPLE_COUNT, 1);
+    helper.sampleSizeCount_ = AUDIO_EDIT_TEST_SAMPLE_COUNT;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{mediaTime, AUDIO_EDIT_TEST_DURATION, 1, 0}},
+        AUDIO_EDIT_TEST_TIME_SCALE, AUDIO_EDIT_TEST_TIME_SCALE);
+    if (helper.FinalizeSampleTables() != Status::OK || helper.EnsureDenseIndex() != Status::OK ||
+        !helper.HasAppliedEditList()) {
+        return nullptr;
+    }
+    return track;
+}
+
 void VerifySampleIndexProperties(Plugins::MPEG4::MPEG4SampleHelper& helper)
 {
     EXPECT_EQ(helper.GetSampleCount(), SAMPLE_INDEX_TEST_COUNT);
@@ -4275,6 +4311,37 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AudioStraddleEditFirstFrameSkipPacket_001
+ * @tc.desc: Verify the first audio frame straddling the edit-list start clears DISCARD
+ *           through skip_samples, matching FFmpeg mov_fix_index; fully-outside and
+ *           exact-boundary frames keep DISCARD.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AudioStraddleEditFirstFrameSkipPacket_001, TestSize.Level1)
+{
+    auto straddleTrack = BuildAudioEditTrack(AUDIO_EDIT_TEST_STRADDLE_MEDIA_TIME);
+    ASSERT_NE(straddleTrack, nullptr);
+    const auto* straddleSkipInfo = straddleTrack->sampleHelper->GetSkipSamplesInfo(0);
+    ASSERT_NE(straddleSkipInfo, nullptr);
+    EXPECT_EQ(Plugins::MPEG4::GetSkipSamplesFromInfo(*straddleSkipInfo), AUDIO_EDIT_TEST_STRADDLE_MEDIA_TIME);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    ASSERT_EQ(straddleTrack->sampleHelper->GetSampleIndexView(0, view), Status::OK);
+    EXPECT_EQ(view.duration, AUDIO_EDIT_TEST_SAMPLE_DURATION);
+    EXPECT_TRUE(Plugins::MPEG4::ShouldClearAudioDiscardForSkipPacket(straddleTrack, 0, view, false));
+
+    auto boundaryTrack = BuildAudioEditTrack(AUDIO_EDIT_TEST_BOUNDARY_MEDIA_TIME);
+    ASSERT_NE(boundaryTrack, nullptr);
+    ASSERT_EQ(boundaryTrack->sampleHelper->GetSampleIndexView(0, view), Status::OK);
+    EXPECT_FALSE(Plugins::MPEG4::ShouldClearAudioDiscardForSkipPacket(boundaryTrack, 0, view, false));
+
+    auto outsideTrack = BuildAudioEditTrack(AUDIO_EDIT_TEST_OUTSIDE_MEDIA_TIME);
+    ASSERT_NE(outsideTrack, nullptr);
+    EXPECT_EQ(outsideTrack->sampleHelper->GetSkipSamplesInfo(0), nullptr);
+    ASSERT_EQ(outsideTrack->sampleHelper->GetSampleIndexView(0, view), Status::OK);
+    EXPECT_FALSE(Plugins::MPEG4::ShouldClearAudioDiscardForSkipPacket(outsideTrack, 0, view, false));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_FindPrevClosestIndexSameDts_001
  * @tc.desc: Verify the earliest eligible sync sample is selected for an equal-DTS group.
  * @tc.type: FUNC
@@ -7938,6 +8005,30 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeMono
     ASSERT_TRUE(missing.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
     EXPECT_EQ(channels, AAC_TEST_MONO_CHANNEL_COUNT);
     EXPECT_EQ(layout, AudioChannelLayout::MONO);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbeKeepsZeroDeclared_001
+ * @tc.desc: Verify a raw AAC frame never fills a channel count explicitly declared as
+ *           zero (container channelcount=0 and invalid ASC), matching FFmpeg which does
+ *           not export channels when the AAC decoder cannot initialize.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeKeepsZeroDeclared_001, TestSize.Level1)
+{
+    auto data = BuildAacSceRawDataBlock();
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(0);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(0);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t channels = -1;
+    int32_t outputChannels = -1;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    EXPECT_EQ(channels, 0);
+    EXPECT_EQ(outputChannels, 0);
 }
 
 /**

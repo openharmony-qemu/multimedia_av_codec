@@ -1683,6 +1683,14 @@ bool ShouldClearAudioDiscardForSkipPacket(
         IsSingleEditShortTailAudio(track) && !hasPlayableVideoTrack) {
         return true;
     }
+    if (sampleIndex == 0 && skipSamples < static_cast<uint64_t>(currentSample.duration)) {
+        // FFmpeg mov_fix_index keeps an audio frame that straddles the edit-list
+        // start (curr_cts < media_time < curr_cts + frame_duration) with skip_samples
+        // side data instead of marking it DISCARD; the index build records such a
+        // first frame with skipSamplesInfo whose skip count is below the frame
+        // duration, so the DISCARD set by GetPacketSampleFlag must be cleared here.
+        return true;
+    }
     if (skipSamples >= static_cast<uint64_t>(currentSample.duration)) {
         return false;
     }
