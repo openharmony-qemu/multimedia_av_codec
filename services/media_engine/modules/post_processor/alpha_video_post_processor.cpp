@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -516,6 +516,8 @@ void AlphaVideoPostProcessor::AdjustOutputGeometryToFrame()
         frameW <= 0 || frameH <= 0) {
         MEDIA_LOG_W("query input frame geometry failed, keep view %{public}dx%{public}d", viewWidth_, viewHeight_);
         return; // 回退来源: 输入面窗口几何(解码器通常不设, 常失败)
+    } else {
+        MEDIA_LOG_I("AdjustOutputGeometryToFrame query ok");
     }
     int32_t mode = compositeMode_.load(std::memory_order_relaxed);
     // 打包方向按接口数值奇偶: 偶数(0左彩右透明/2左透明右彩)=左右打包, 宽减半;
@@ -734,6 +736,8 @@ void AlphaVideoPostProcessor::DecideFrameAction(bool &doConsume, bool &doDraw, b
     } else if (eosPending_.load() && availableFrameCnt_.load() == 0 &&
                frameState_.load() == static_cast<int>(FrameState::IDLE)) {
         doEos = true; // 有效帧全消费+上屏完, 回传 EOS
+    } else {
+        MEDIA_LOG_I("DecideFrameAction OK");
     }
 }
 
@@ -747,6 +751,8 @@ void AlphaVideoPostProcessor::DealFrame(bool doConsume, bool doDraw, bool doEos,
         DrawAndSwap();
     } else if (doEos) {
         ReportEos();
+    } else {
+        MEDIA_LOG_I("DealFrame OK");
     }
 }
 
