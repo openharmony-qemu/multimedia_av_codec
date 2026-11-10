@@ -943,6 +943,7 @@ int32_t VDecNdkInnerSample::CreateHevcDecoderByNameAndInit(const std::string &co
     }
     return AVCS_ERR_OK;
 }
+
 int32_t VDecNdkInnerSample::ConfigureDecoder()
 {
     if (vdec_ == nullptr) {
@@ -950,6 +951,24 @@ int32_t VDecNdkInnerSample::ConfigureDecoder()
     }
     return Configure();
 }
+
+int32_t VDecNdkInnerSample::QueueTakeoverInputBuffers(void)
+{
+    if (vdec_ == nullptr || takeoverPool_.empty()) {
+        return AVCS_ERR_INVALID_OPERATION;
+    }
+
+    // 接管首 Start 软解不重复上报，业务侧直接把持有的接管池入队（内容原样保留，含首块 XPS)
+    for (auto &item : takeoverPool_) {
+        int32_t ret = vdec_->QueueInputBuffer(item.first);
+        if (ret != AVCS_ERR_OK) {
+            cout << "Takeover: queue takeover input buffer failed, index = " << item.first << " ret = " << ret << endl;
+            return ret;
+        }
+    }
+    return AVCS_ERR_OK;
+}
+
 int32_t VDecNdkInnerSample::BuildTakeoverInputPool()
 {
     takeoverPool_.clear();
@@ -1003,6 +1022,7 @@ int32_t VDecNdkInnerSample::BuildTakeoverInputPool()
     }
     return AVCS_ERR_OK;
 }
+
 int32_t VDecNdkInnerSample::PrepareTakeoverInputPool()
 {
     takeoverPool_.clear();
@@ -1028,6 +1048,7 @@ int32_t VDecNdkInnerSample::PrepareTakeoverInputPool()
     takeoverSnapshot_ = takeoverPool_;
     return AVCS_ERR_OK;
 }
+
 int32_t VDecNdkInnerSample::SetTakeoverInputBuffers(std::map<uint32_t, std::shared_ptr<AVBuffer>> &pool)
 {
     if (vdec_ == nullptr) {
@@ -1050,6 +1071,7 @@ bool VDecNdkInnerSample::CheckTakeoverReturned(uint32_t index, const std::shared
     }
     return true;
 }
+
 int32_t VDecNdkInnerSample::WaitTakeoverPendingReturned(int32_t timeoutMs)
 {
     if (vdec_ == nullptr || cb_ == nullptr || signal_ == nullptr) {

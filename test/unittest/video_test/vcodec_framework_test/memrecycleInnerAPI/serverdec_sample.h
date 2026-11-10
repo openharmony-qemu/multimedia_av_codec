@@ -122,6 +122,7 @@ public:
     int32_t PrepareTakeoverInputPool();
     int32_t SetTakeoverInputBuffers(std::map<uint32_t, std::shared_ptr<AVBuffer>> &pool);
     int32_t WaitTakeoverPendingReturned(int32_t timeoutMs);
+    int32_t QueueTakeoverInputBuffers(void);
     int32_t FeedTakeoverUntilEos(int32_t timeoutMs);
 
     const char *inputDir = "/data/test/media/720_1280_25_avcc.h265";

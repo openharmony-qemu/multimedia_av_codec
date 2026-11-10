@@ -191,7 +191,7 @@ constexpr uint32_t HEVC_TAKEOVER_WIDTH = 1920;
 constexpr uint32_t HEVC_TAKEOVER_HEIGHT = 1080;
 constexpr double HEVC_TAKEOVER_FRAME_RATE = 30.0;
 constexpr uint32_t HEVC_TAKEOVER_INPUT_BUFFER_COUNT = 4;
-constexpr uint32_t HEVC_TAKEOVER_TIMEOUT_MS = 60000;
+constexpr int32_t HEVC_TAKEOVER_TIMEOUT_MS = 60000;
 
 /**
  * Fixture of the hard-to-software switch input buffer takeover cases.Every case owns one
@@ -257,10 +257,10 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_EMPTY_POOL_0200,
 
 /**
  * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0300
- * @tc.name      : SetInputBuffers rejected for buffer indexes ranging from 2 to 10
+ * @tc.name      : SetInputBuffers rejected for buffer count out of range
  * @tc.desc      : hard-to-software switch input buffer takeover test
  */
-HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_INDEXES_NOT_RANGE_0300, TestSize.Level1)
+HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_BUFFER_COUNT_NOT_IN_RANGE_0300, TestSize.Level1)
 {
     if (sample_ == nullptr) {
         return;
@@ -269,9 +269,15 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_INDEXES_NOT_RANG
     ASSERT_EQ(AVCS_ERR_OK, sample_->CreateHevcDecoderByNameAndInit(HEVC_TAKEOVER_CODEC_NAME));
     ASSERT_EQ(AVCS_ERR_OK, sample_->PrepareTakeoverInputPool());
     ASSERT_EQ(AVCS_ERR_OK, sample_->ConfigureDecoder());
-    std::map<uint32_t, std::shared_ptr<OHOS::Media::AVBuffer>> brokenPool;
-    brokenPool[2] = sample_->takeoverPool_[2];
-    ASSERT_EQ(AVCS_ERR_INVALID_VAL, sample_->SetTakeoverInputBuffers(brokenPool));
+    std::map<uint32_t, std::shared_ptr<OHOS::Media::AVBuffer>> tooFewPool;
+    tooFewPool[0] = sample_->takeoverPool_[0];
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, sample_->SetTakeoverInputBuffers(tooFewPool));
+
+    std::map<uint32_t, std::shared_ptr<OHOS::Media::AVBuffer>> tooManyPool;
+    for (uint32_t i = 0; i < 11; i++) {
+        tooManyPool[i] = sample_->takeoverPool_[i % HEVC_TAKEOVER_INPUT_BUFFER_COUNT];
+    }
+    ASSERT_EQ(AVCS_ERR_INVALID_VAL, sample_->SetTakeoverInputBuffers(tooManyPool));
 }
 
 /**
@@ -296,7 +302,7 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_REJECT_IN_RUNNING_STATE
 
 /**
  * @tc.number    : VIDEO_SET_INPUT_BUFFERS_0500
- * @tc.name      : Pending takeover buffers returned with the same index/buffer/address
+ * @tc.name      : Takeover buffers queue by user returned with the same index/buffer/address
  * @tc.desc      : hard-to-software switch input buffer takeover test
  */
 HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_PENDING_RETURN_SAME_BINDING_0500, TestSize.Level1)
@@ -311,6 +317,8 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_PENDING_RETURN_SAME_BIN
     ASSERT_EQ(AVCS_ERR_OK, sample_->SetCallback());
     ASSERT_EQ(AVCS_ERR_OK, sample_->SetTakeoverInputBuffers(sample_->takeoverPool_));
     ASSERT_EQ(AVCS_ERR_OK, sample_->Start());
+    // 首 Start 软解不重复上报，业务侧直接把持有的接管池入队后解码归还
+    ASSERT_EQ(AVCS_ERR_OK, sample_->QueueTakeoverInputBuffers());
     ASSERT_EQ(AVCS_ERR_OK, sample_->WaitTakeoverPendingReturned(HEVC_TAKEOVER_TIMEOUT_MS));
     ASSERT_EQ(HEVC_TAKEOVER_INPUT_BUFFER_COUNT, sample_->takeoverReturnedCount_);
     ASSERT_EQ(true, sample_->takeoverAddrCheckPass_);
@@ -333,6 +341,8 @@ HWTEST_F(HevcSetInputBuffersTest, HEVC_SET_INPUT_BUFFERS_DECODE_UNTIL_EOS_0600, 
     ASSERT_EQ(AVCS_ERR_OK, sample_->SetCallback());
     ASSERT_EQ(AVCS_ERR_OK, sample_->SetTakeoverInputBuffers(sample_->takeoverPool_));
     ASSERT_EQ(AVCS_ERR_OK, sample_->Start());
+    // 先原样入队业务持有的接管池（首块含 XPS），再继续从文件续流至 EOS
+    ASSERT_EQ(AVCS_ERR_OK, sample_->QueueTakeoverInputBuffers());
     ASSERT_EQ(AVCS_ERR_OK, sample_->FeedTakeoverUntilEos(HEVC_TAKEOVER_TIMEOUT_MS));
     ASSERT_GE(sample_->takeoverOutCount_, 1u);
 }

@@ -312,13 +312,10 @@ void VideoDecoder::InitBuffers()
     }
     CHECK_AND_RETURN_LOG(buffers_[INDEX_INPUT].size() > 0, "Input buffers is null!");
     if (!externalInputBuffers_.empty() && hasPendingTakeover_) {
-        // 外部输入含数据的缓冲区，接管直接使用
-        for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
-            buffers_[INDEX_INPUT][i]->owner_ = Owner::OWNED_BY_CODEC;
-            inputAvailQue_->Push(i);
-        }
+        // 接管首 Start：业务侧已持有硬解回调的输入 buffer （含首块 XPS 数据），软解不再重复上报
+        // 业务 QueueInputBuffer 入队后才进入解码， SendFrame 解码完成后按原 index/buffer 归还。
         hasPendingTakeover_ = false;
-        AVCODEC_LOGI("Num %{public}u takeover mode: %{public}zu pending input buffers pushed to decode",
+        AVCODEC_LOGI("Num %{public}u takeover mode: %{public}zu external input buffers kept by user, skip re-delivery",
             decInstanceID_, buffers_[INDEX_INPUT].size());
     } else if (buffers_[INDEX_INPUT].size() > 0) { // 正常路径
         for (uint32_t i = 0; i < buffers_[INDEX_INPUT].size(); i++) {
