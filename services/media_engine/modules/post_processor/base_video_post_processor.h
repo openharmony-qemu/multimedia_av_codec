@@ -43,6 +43,15 @@ enum VideoPostProcessorType {
     CAMERA_INSERT_FRAME,
     CAMERA_MP_PWP,
     SIDE_OUTPUT,
+    ALPHA_VIDEO,
+};
+
+// alpha 合成模式(颜色半/alpha 半在打包帧中的排布), 决定着色器如何取颜色与 alpha 采样坐标
+enum AlphaVideoCompositeMode {
+    ALPHA_VIDEO_LEFT_COLOR_RIGHT_ALPHA = 0, // 左彩右透明(默认, 现状)
+    ALPHA_VIDEO_LEFT_ALPHA_RIGHT_COLOR,      // 左透明右彩
+    ALPHA_VIDEO_TOP_COLOR_BOTTOM_ALPHA,      // 上彩下透明
+    ALPHA_VIDEO_TOP_ALPHA_BOTTOM_COLOR,      // 上透明下彩
 };
 
 class BaseVideoPostProcessor {
@@ -76,6 +85,12 @@ public:
     virtual Status SetParameter(const Format &format) = 0;
     virtual Status SetPostProcessorOn(bool isPostProcessorOn) = 0;
     virtual Status SetVideoWindowSize(int32_t width, int32_t height) = 0;
+
+    virtual Status SetTransparentVideoLayoutMode(int32_t mode)
+    {
+        (void)mode;
+        return Status::OK;
+    }
 
     virtual Status StartSeekContinous()
     {

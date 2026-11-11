@@ -45,6 +45,7 @@ enum VideoPostProcessorType {
     CAMERA_INSERT_FRAME,
     CAMERA_MP_PWP, // moving photo playing with processing
     SIDE_OUTPUT,
+    ALPHA_VIDEO,
 };
 
 class BaseVideoPostProcessor {
@@ -69,6 +70,7 @@ public:
     MOCK_METHOD(Status, SetParameter, (const Format &format), ());
     MOCK_METHOD(Status, SetPostProcessorOn, (bool isPostProcessorOn), ());
     MOCK_METHOD(Status, SetVideoWindowSize, (int32_t width, int32_t height), ());
+    MOCK_METHOD(Status, SetTransparentVideoLayoutMode, (int32_t mode), ());
 
     MOCK_METHOD(Status, StartSeekContinous, (), ());
     MOCK_METHOD(Status, StopSeekContinous, (), ());

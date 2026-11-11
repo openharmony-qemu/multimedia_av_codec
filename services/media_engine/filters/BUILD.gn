@@ -94,6 +94,7 @@ ohos_shared_library("av_codec_media_engine_filters") {
     "water_mark_filter.cpp",
     "egl_render_context.cpp",
     "shader_porgram.cpp",
+    "$av_codec_root_dir/services/media_engine/modules/post_processor/alpha_video_post_processor.cpp",
   ]
 
   deps = [
