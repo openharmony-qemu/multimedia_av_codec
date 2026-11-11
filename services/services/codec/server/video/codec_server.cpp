@@ -567,7 +567,6 @@ int32_t CodecServer::NotifyEos()
         temporal = std::atomic_load(&temporalScalability_);
         waitForInput = temporal != nullptr && inputParamTask_ != nullptr;
     }
-    // Do not hold mutex_ while waiting: Reset/Release must be able to cancel this wait.
     if (waitForInput) {
         AVCODEC_LOGI_WITH_TAG("Delegating to temporal scalability");
         int32_t ret = temporal->NotifyEosWhenComplete();
@@ -1306,7 +1305,6 @@ void CodecServer::OnOutputFormatChanged(const Format &format)
 void CodecServer::OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer)
 {
     std::shared_lock<std::shared_mutex> lock(cbMutex_);
-    // Retain the object through the callback while Reset/Release can detach it.
     auto temporal = std::atomic_load(&temporalScalability_);
     if (temporal != nullptr) {
         temporal->StoreAVBuffer(index, buffer);
