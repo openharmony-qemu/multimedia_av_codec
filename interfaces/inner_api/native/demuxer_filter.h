@@ -123,6 +123,7 @@ public:
     Status OptimizeDecodeSlow(bool isDecodeOptimizationEnabled);
     Status SetSpeed(float speed);
     void SetDumpFlag(bool isdump);
+    void SetDisableMedia(OHOS::Media::MediaType disableMedia);
     void OnDumpInfo(int32_t fd);
     void SetCallerInfo(uint64_t instanceId, const std::string& appName);
     bool IsVideoEos();
