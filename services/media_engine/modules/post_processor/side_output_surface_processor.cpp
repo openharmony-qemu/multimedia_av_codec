@@ -87,9 +87,11 @@ Status SideOutputSurfaceProcessor::Init()
         while (isRunning_.load()) {
             if (!WaitTrigger()) {
                 MEDIA_LOG_I("continue-----------");
+                TryReportEos();
                 continue;
             }
             ProcessBuffers();
+            TryReportEos();
         }
     });
     isInitialized_.store(true);
@@ -111,6 +113,7 @@ Status SideOutputSurfaceProcessor::Flush()
         }
     }
 
+    eosPending_ = false;
     ClearBufferQueues();
 
     return Status::OK;
@@ -122,6 +125,7 @@ Status SideOutputSurfaceProcessor::Stop()
     std::lock_guard<std::mutex> lock(lock_);
     state_.store(ProcessorState::STOPPING);
     isPaused_.store(true);
+    eosPending_ = false;
     cvTrigger_.notify_one();
     return Status::OK;
 }
@@ -242,9 +246,14 @@ Status SideOutputSurfaceProcessor::SetOutputSurface(sptr<Surface> surface)
         return GSERROR_OK;
     });
     FALSE_RETURN_V_MSG(err == GSERROR_OK, Status::ERROR_INVALID_OPERATION, "RegisterReleaseListener failed");
-    surface->SetQueueSize(BUFFER_QUEUE_SIZE);
-    surface->Connect();
-    surface->CleanCache();
+    GSError queueErr = surface->SetQueueSize(BUFFER_QUEUE_SIZE);
+    FALSE_RETURN_V_MSG(queueErr == GSERROR_OK, Status::ERROR_INVALID_OPERATION, "SetQueueSize failed");
+    GSError connErr = surface->Connect();
+    FALSE_RETURN_V_MSG(connErr == GSERROR_OK, Status::ERROR_INVALID_OPERATION, "Connect failed");
+    GSError cleanErr = surface->CleanCache();
+    if (cleanErr != GSERROR_OK) {
+        MEDIA_LOG_W("CleanCache falied: %{public}d", cleanErr);
+    }
 
     producerSurface_ = surface;
     return Status::OK;
@@ -296,6 +305,9 @@ Status SideOutputSurfaceProcessor::SetVideoWindowSize(int32_t width, int32_t hei
 Status SideOutputSurfaceProcessor::NotifyEos(int64_t eosPts)
 {
     MEDIA_LOG_I("SideOutputSurfaceProcessor NotifyEos eosPts: " PUBLIC_LOG_D64, eosPts);
+    eosPts_ = eosPts;
+    eosPending_ = true;
+    cvTrigger_.notify_one();
     return Status::OK;
 }
 
@@ -503,6 +515,10 @@ bool SideOutputSurfaceProcessor::GetConsumerAndProducerBuffer(SurfaceBufferInfo&
 bool SideOutputSurfaceProcessor::HandleBufferSizeMismatch(SurfaceBufferInfo& srcBufferInfo,
     SurfaceBufferInfo& dstBufferInfo)
 {
+    if (srcBufferInfo.buffer == nullptr || dstBufferInfo.buffer == nullptr) {
+        MEDIA_LOG_E("Buffer is null in HandleBufferSizeMismatch");
+        return false;
+    }
     MEDIA_LOG_E("Buffer size mismatch: src=%{public}u > dst=%{public}u",
         srcBufferInfo.buffer->GetSize(), dstBufferInfo.buffer->GetSize());
     sptr<Surface> consumerSurface;
@@ -576,6 +592,7 @@ sptr<SurfaceBuffer> SideOutputSurfaceProcessor::HandleRenderBufferOverflow()
 
 void SideOutputSurfaceProcessor::OutputBuffer(const SurfaceBufferInfo& bufferInfo)
 {
+    FALSE_RETURN_MSG(bufferInfo.buffer != nullptr, "bufferInfo.buffer is nullptr");
     sptr<SurfaceBuffer> bufferToCancel;
     {
         std::lock_guard<std::mutex> bufferLock(bufferLock_);
@@ -724,6 +741,46 @@ void SideOutputSurfaceProcessor::ProcessBuffers()
     cvDone_.notify_all();
 }
 
+void SideOutputSurfaceProcessor::TryReportEos()
+{
+    if (!isRunning_.load() || isPaused_.load() || state_.load() == ProcessorState::STOPPING) {
+        return;
+    }
+    if (!eosPending_.load()) {
+        return;
+    }
+    bool allConsumed = false;
+    {
+        std::lock(consumerBufferLock_, bufferLock_);
+        std::lock_guard<std::mutex> consumerBufferGuard(consumerBufferLock_, std::adopt_lock);
+        std::lock_guard<std::mutex> bufferGuard(bufferLock_, std::adopt_lock);
+        allConsumed = consumerBufferQueue_.empty() && renderBufferQueue_.empty();
+    }
+    if (allConsumed) {
+        ReportEos();
+    }
+}
+
+void SideOutputSurfaceProcessor::ReportEos()
+{
+    MEDIA_LOG_I("ReportEos, pts: " PUBLIC_LOG_D64, eosPts_.load());
+    eosPending_ = false;
+    std::shared_ptr<PostProcessorCallback> callback;
+    {
+        std::lock_guard<std::mutex> lock(lock_);
+        callback = callback_;
+    }
+    if (callback == nullptr) {
+        MEDIA_LOG_W("ReportEos without callback");
+        return;
+    }
+    auto buffer = AVBuffer::CreateAVBuffer();
+    FALSE_RETURN_MSG(buffer != nullptr, "ReportEos: create AVBuffer failed");
+    buffer->pts_ = eosPts_.load();
+    buffer->flag_ |= static_cast<uint32_t>(Plugins::AVBufferFlag::EOS);
+    callback->OnOutputBufferAvailable(outIndex_.fetch_add(1), buffer);
+}
+
 bool SideOutputSurfaceProcessor::WaitTrigger()
 {
     FALSE_RETURN_V_MSG(isRunning_.load(), false, "WaitTrigger died.");
@@ -744,7 +801,8 @@ bool SideOutputSurfaceProcessor::WaitTrigger()
             "renderBQ: %{public}zu pendingBuf: %{public}d",
             isRunning_.load(), state_.load() == ProcessorState::STOPPING, consumerSize, producerSize,
             renderBufferQueue_.size(), pendingSideSrcBuffer_ != nullptr);
-        return !isRunning_.load() || state_.load() == ProcessorState::STOPPING || consumerSize > 0;
+        return !isRunning_.load() || state_.load() == ProcessorState::STOPPING || consumerSize > 0
+            || (eosPending_.load() && renderBufferQueue_.empty());
         })) {
         MEDIA_LOG_I("Video processing timeout.");
         return false;
@@ -869,11 +927,11 @@ void SideOutputSurfaceProcessor::HandleSampleTask()
         return;
     }
 
-    int32_t copyResult = CopyBufferToSideSurface(srcBuffer, srcTimestamp);
+    bool copyResult = CopyBufferToSideSurface(srcBuffer, srcTimestamp);
 
     {
         std::lock_guard<std::mutex> lock(sampleMutex_);
-        sampleResult_ = copyResult;
+        sampleResult_ = copyResult ? 0 : 1;
         sampleDone_ = true;
         sampleDoneCond_.notify_all();
     }
