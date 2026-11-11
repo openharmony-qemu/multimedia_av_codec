@@ -376,7 +376,8 @@ Status SurfaceEncoderFilter::DoStop()
     if (mediaCodec == nullptr) {
         return Status::OK;
     }
-    return mediaCodec->Stop();
+    mediaCodec->Stop();
+    return Status::OK;
 }
 
 Status SurfaceEncoderFilter::Reset()
@@ -386,11 +387,7 @@ Status SurfaceEncoderFilter::Reset()
     if (mediaCodec_ == nullptr) {
         return Status::OK;
     }
-    Status ret = mediaCodec_->Reset();
-    if (ret != Status::OK) {
-        MEDIA_LOG_E("mediaCodec Reset failed, ret=%{public}d", static_cast<int32_t>(ret));
-        return ret;
-    }
+    mediaCodec_->Reset();
     return Status::OK;
 }
 
@@ -465,7 +462,8 @@ Status SurfaceEncoderFilter::LinkNext(const std::shared_ptr<Filter> &nextFilter,
         nextFiltersMap_[outType].push_back(nextFilter_);
         parameter = configureParameter_;
     }
-    return nextFilter->OnLinked(outType, parameter, filterLinkCallback);
+    nextFilter->OnLinked(outType, parameter, filterLinkCallback);
+    return Status::OK;
 }
 
 Status SurfaceEncoderFilter::UpdateNext(const std::shared_ptr<Filter> &nextFilter, StreamType outType)
