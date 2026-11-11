@@ -80,6 +80,8 @@ private:
     Status FlushBufferToProducer(SurfaceBufferInfo& bufferInfo, int64_t renderTimestamp);
     void ProcessBuffers();
     bool WaitTrigger();
+    void TryReportEos();
+    void ReportEos();
     void ClearBufferQueues();
     void PushBufferToConsumer(SurfaceBufferInfo& bufferInfo);
     void DealNotRenderBuffer(SurfaceBufferInfo& bufferInfo);
@@ -119,6 +121,9 @@ private:
 
     std::atomic<bool> isBufferQueueReady_ {false};
     std::atomic<bool> needPrepareBuffers_ {false};
+    std::atomic<bool> eosPending_ {false};
+    std::atomic<int64_t> eosPts_ {0};
+    std::atomic<uint32_t> outIndex_ {0};
 
     BufferRequestConfig requestCfg_{};
 
