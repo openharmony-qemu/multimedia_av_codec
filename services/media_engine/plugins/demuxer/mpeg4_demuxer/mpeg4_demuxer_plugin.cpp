@@ -381,6 +381,9 @@ constexpr uint32_t AVC_MAX_RECOVERY_FRAME_CNT = 1 << 16;
 constexpr uint8_t AVC_SEI_CONTINUATION_BYTE = 0xFF;
 // SEI type/size fields use 0xFF continuation; cap the parse loop to avoid unbounded accumulation.
 constexpr uint8_t AVC_SEI_TYPE_MAX_BYTES = 4;
+// A SEI message needs at least a type byte and a size byte before its payload; FFmpeg
+// ff_h264_sei_decode stops when fewer than two bytes remain (rbsp trailing bits).
+constexpr size_t AVC_SEI_MIN_MESSAGE_BYTES = 2;
 // AVC Prefix NALs can carry Annex-B units in malformed NALFF samples.
 constexpr uint8_t AVC_PREFIX_NAL_TYPE = 14;
 constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
@@ -1675,6 +1678,43 @@ bool ReadAvcExpGolombUe(const uint8_t* data, size_t size, size_t& bitPos, uint32
     return true;
 }
 
+// Parses one sei_message header at *pos inside the scan window: [0xFF-continuation type][0xFF
+// continuation size], advancing *pos past the header. Returns false when the window is truncated.
+bool ReadAvcSeiMessageHeader(const uint8_t* data, size_t size, size_t& pos,
+    uint32_t& payloadType, uint32_t& payloadLength)
+{
+    payloadType = 0;
+    bool typeDone = false;
+    for (uint8_t i = 0; i < AVC_SEI_TYPE_MAX_BYTES && pos < size; ++i) {
+        const uint8_t typeByte = data[pos++];
+        payloadType += typeByte;
+        if (typeByte != AVC_SEI_CONTINUATION_BYTE) {
+            typeDone = true;
+            break;
+        }
+        if (i + 1 == AVC_SEI_TYPE_MAX_BYTES) {
+            return false;
+        }
+    }
+    if (!typeDone || pos >= size) {
+        return false;
+    }
+    payloadLength = 0;
+    bool sizeDone = false;
+    for (uint8_t i = 0; i < AVC_SEI_TYPE_MAX_BYTES && pos < size; ++i) {
+        const uint8_t sizeByte = data[pos++];
+        payloadLength += sizeByte;
+        if (sizeByte != AVC_SEI_CONTINUATION_BYTE) {
+            sizeDone = true;
+            break;
+        }
+        if (i + 1 == AVC_SEI_TYPE_MAX_BYTES) {
+            return false;
+        }
+    }
+    return sizeDone;
+}
+
 bool AvcSeiPayloadContainsRecoveryPoint(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     int64_t payloadOffset, uint32_t payloadSize)
 {
@@ -1685,40 +1725,31 @@ bool AvcSeiPayloadContainsRecoveryPoint(const std::shared_ptr<MPEG4AtomParser::T
     uint8_t seiBuffer[AVC_SLICE_HEADER_SCAN_SIZE] = {0};
     FALSE_RETURN_V_NOLOG(track->sampleHelper->dataReader_->ReadUintData(payloadOffset, seiBuffer, readSize) ==
         Status::OK, false);
+    // FFmpeg ff_h264_sei_decode iterates every sei_message in a SEI NAL until fewer than two
+    // bytes remain or the trailing bits are reached; the recovery_point message may follow
+    // other messages such as pic_timing, so scan the whole window instead of only the first one.
     size_t pos = 0;
-    uint32_t payloadType = 0;
-    for (uint8_t i = 0; i < AVC_SEI_TYPE_MAX_BYTES && pos < readSize; ++i) {
-        const uint8_t typeByte = seiBuffer[pos++];
-        payloadType += typeByte;
-        if (typeByte != AVC_SEI_CONTINUATION_BYTE) {
-            break;
-        }
-        if (i + 1 == AVC_SEI_TYPE_MAX_BYTES) {
+    while (readSize - pos >= AVC_SEI_MIN_MESSAGE_BYTES &&
+        !(seiBuffer[pos] == 0x00 && seiBuffer[pos + 1] == 0x00)) {
+        uint32_t payloadType = 0;
+        uint32_t payloadLength = 0;
+        if (!ReadAvcSeiMessageHeader(seiBuffer, readSize, pos, payloadType, payloadLength) ||
+            payloadLength > readSize - pos) {
             return false;
         }
-    }
-    if (pos >= readSize) {
-        return false;
-    }
-    uint32_t payloadLength = 0;
-    for (uint8_t i = 0; i < AVC_SEI_TYPE_MAX_BYTES && pos < readSize; ++i) {
-        const uint8_t sizeByte = seiBuffer[pos++];
-        payloadLength += sizeByte;
-        if (sizeByte != AVC_SEI_CONTINUATION_BYTE) {
-            break;
-        }
-        if (i + 1 == AVC_SEI_TYPE_MAX_BYTES) {
+        if (payloadType == AVC_SEI_RECOVERY_POINT_TYPE && payloadLength > 0) {
+            size_t bitPos = pos * BITS_PER_BYTE;
+            uint32_t recoveryFrameCnt = 0;
+            if (ReadAvcExpGolombUe(seiBuffer, readSize, bitPos, recoveryFrameCnt) &&
+                recoveryFrameCnt < AVC_MAX_RECOVERY_FRAME_CNT) {
+                return true;
+            }
+            // Like FFmpeg decode_recovery_point, an invalid/out-of-range count aborts the scan.
             return false;
         }
+        pos += payloadLength;
     }
-    if (payloadType != AVC_SEI_RECOVERY_POINT_TYPE || payloadLength == 0 ||
-        payloadLength > readSize - pos) {
-        return false;
-    }
-    size_t bitPos = pos * BITS_PER_BYTE;
-    uint32_t recoveryFrameCnt = 0;
-    return ReadAvcExpGolombUe(seiBuffer, readSize, bitPos, recoveryFrameCnt) &&
-        recoveryFrameCnt < AVC_MAX_RECOVERY_FRAME_CNT;
+    return false;
 }
 
 bool AvcSampleContainsRecoveryPointSei(const std::shared_ptr<MPEG4AtomParser::Track>& track,
