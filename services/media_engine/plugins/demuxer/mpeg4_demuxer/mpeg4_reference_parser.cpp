@@ -617,6 +617,8 @@ Status MPEG4DemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t t
     uint32_t sampleCount = GetSampleCount(trackIndex);
     FALSE_RETURN_V_MSG_E(sampleCount <= REFERENCE_PARSER_PTS_LIST_UPPER_LIMIT, Status::ERROR_INVALID_DATA,
         "Sample count exceeds limit");
+    FALSE_RETURN_V_MSG_E(relativePresentationTimeUs <= static_cast<uint64_t>(INT64_MAX),
+        Status::ERROR_INVALID_DATA, "Relative PTS is out of range");
     
     ResetParametersOfPTSAndIndexConversion();
     // Obtain the absolute pts of the first sample
@@ -624,7 +626,12 @@ Status MPEG4DemuxerPlugin::GetIndexByRelativePresentationTimeUs(const uint32_t t
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN,
         "Failed to get the absolute pts of the first sample");
-    int64_t absolutePTS = static_cast<int64_t>(relativePresentationTimeUs) + absolutePTSOfIndexZero_;
+    FALSE_RETURN_V_MSG_E(absolutePTSOfIndexZero_ != INT64_MAX, Status::ERROR_INVALID_DATA,
+        "Absolute PTS index zero is invalid");
+
+    int64_t absolutePTS = 0;
+    FALSE_RETURN_V_MSG_E(!__builtin_add_overflow(static_cast<int64_t>(relativePresentationTimeUs),
+        absolutePTSOfIndexZero_, &absolutePTS), Status::ERROR_INVALID_DATA, "Absolute PTS overflow");
 
     ret = GetPresentationTimeUsByMpeg4BoxParser(IndexAndPTSConversionMode::RELATIVEPTS_TO_INDEX, trackIndex,
         absolutePTS, index);
@@ -667,6 +674,9 @@ Status MPEG4DemuxerPlugin::GetRelativePresentationTimeUsByIndex(const uint32_t t
         static_cast<int64_t>(relativePresentationTimeUs), index);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, Status::ERROR_UNKNOWN, "Failed to get pts");
 
+    // The heap keeps min(converted samples, index + 1): reject an unconverted or under-converted index.
+    FALSE_RETURN_V_MSG_E(index2RelativePTSHeap_.size() == static_cast<size_t>(index) + 1,
+        Status::ERROR_INVALID_DATA, "Index to relative pts conversion failed");
     FALSE_RETURN_V_MSG_E(index2RelativePTSHeap_.top() >= absolutePTSOfIndexZero_,
                          Status::ERROR_INVALID_DATA, "Calculation results less than 0");
     int64_t relativePts = index2RelativePTSHeap_.top() - absolutePTSOfIndexZero_;
@@ -780,7 +790,8 @@ Status MPEG4DemuxerPlugin::ConvertPTSAndIndexBySttsAndCtts(const std::shared_ptr
         sampleCountOfCurrentCttsEntry--;
         
         int64_t sampleOffsetOfCurrentCttsEntry = static_cast<int64_t>(
-            track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex) - minSampleOffsetOfCttsEntry);
+            track->sampleHelper->GetSampleOffsetOfCttsEntry(cttsEntryIndex)) -
+            static_cast<int64_t>(minSampleOffsetOfCttsEntry);
         FALSE_RETURN_V_MSG_E(UpdatePTSBySttsAndCtts(pts, dts, timeScale, sampleOffsetOfCurrentCttsEntry) ==
             Status::OK, Status::ERROR_INVALID_DATA,  "dts overflow");
         ProcessConversionByMode(mode, pts, absolutePTS, sampleIndex);
