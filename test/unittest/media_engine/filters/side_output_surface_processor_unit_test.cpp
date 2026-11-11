@@ -1942,6 +1942,300 @@ HWTEST_F(SideOutputSurfaceProcessorUnitTest, ProcessBuffer_SizeMismatchNullSurfa
     EXPECT_FALSE(result);
 }
 
+/**
+ * @tc.name: SideOutputSurfaceProcessor_NotifyEos_001
+ * @tc.desc: test NotifyEos sets eosPts_ and eosPending_
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, NotifyEos_Normal, TestSize.Level1)
+{
+    Status ret = processor_->NotifyEos(1000);
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(processor_->eosPts_.load(), 1000);
+    EXPECT_TRUE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_TryReportEos_001
+ * @tc.desc: test TryReportEos when isRunning_ is false
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, TryReportEos_NotRunning, TestSize.Level1)
+{
+    EXPECT_FALSE(processor_->isRunning_.load());
+    processor_->eosPending_ = true;
+
+    processor_->TryReportEos();
+    EXPECT_TRUE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_TryReportEos_002
+ * @tc.desc: test TryReportEos when isPaused_ is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, TryReportEos_Paused, TestSize.Level1)
+{
+    processor_->isRunning_ = true;
+    processor_->isPaused_ = true;
+    processor_->eosPending_ = true;
+
+    processor_->TryReportEos();
+    EXPECT_TRUE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_TryReportEos_003
+ * @tc.desc: test TryReportEos when state is STOPPING
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, TryReportEos_Stopping, TestSize.Level1)
+{
+    processor_->isRunning_ = true;
+    processor_->isPaused_ = false;
+    processor_->state_ = TestableSideOutputSurfaceProcessor::ProcessorState::STOPPING;
+    processor_->eosPending_ = true;
+
+    processor_->TryReportEos();
+    EXPECT_TRUE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_TryReportEos_004
+ * @tc.desc: test TryReportEos when eosPending_ is false
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, TryReportEos_NoEosPending, TestSize.Level1)
+{
+    processor_->isRunning_ = true;
+    processor_->SetCallback(callback_);
+    processor_->eosPending_ = false;
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(_, _, _)).Times(0);
+
+    processor_->TryReportEos();
+    EXPECT_FALSE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_TryReportEos_005
+ * @tc.desc: test TryReportEos when consumerBufferQueue_ is not empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, TryReportEos_ConsumerQueueNotEmpty, TestSize.Level1)
+{
+    processor_->isRunning_ = true;
+    processor_->SetCallback(callback_);
+    processor_->eosPending_ = true;
+
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    processor_->consumerBufferQueue_.push(bufferInfo);
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(_, _, _)).Times(0);
+
+    processor_->TryReportEos();
+    EXPECT_TRUE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_TryReportEos_006
+ * @tc.desc: test TryReportEos when renderBufferQueue_ is not empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, TryReportEos_RenderQueueNotEmpty, TestSize.Level1)
+{
+    processor_->isRunning_ = true;
+    processor_->SetCallback(callback_);
+    processor_->eosPending_ = true;
+
+    sptr<MockSurfaceBuffer> mockBuffer = new MockSurfaceBuffer();
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo bufferInfo;
+    bufferInfo.buffer = mockBuffer;
+    processor_->renderBufferQueue_[1] = bufferInfo;
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(_, _, _)).Times(0);
+
+    processor_->TryReportEos();
+    EXPECT_TRUE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_TryReportEos_007
+ * @tc.desc: test TryReportEos when all buffers consumed, eos reported
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, TryReportEos_AllConsumed, TestSize.Level1)
+{
+    processor_->isRunning_ = true;
+    processor_->SetCallback(callback_);
+    processor_->eosPts_ = 5000;
+    processor_->eosPending_ = true;
+
+    std::shared_ptr<AVBuffer> recvBuffer;
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(0, _, false)).WillOnce(SaveArg<1>(&recvBuffer));
+
+    processor_->TryReportEos();
+    EXPECT_FALSE(processor_->eosPending_.load());
+    ASSERT_NE(recvBuffer, nullptr);
+    EXPECT_EQ(recvBuffer->pts_, 5000);
+    EXPECT_NE(recvBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS), 0);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_ReportEos_001
+ * @tc.desc: test ReportEos when callback_ is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ReportEos_NullCallback, TestSize.Level1)
+{
+    processor_->callback_ = nullptr;
+    processor_->eosPts_ = 1000;
+    processor_->eosPending_ = true;
+
+    processor_->ReportEos();
+    EXPECT_FALSE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_ReportEos_002
+ * @tc.desc: test ReportEos with callback, verify pts/flag/index
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, ReportEos_WithCallback, TestSize.Level1)
+{
+    processor_->SetCallback(callback_);
+    processor_->eosPts_ = 5000;
+    processor_->eosPending_ = true;
+
+    std::shared_ptr<AVBuffer> recvBuffer1;
+    std::shared_ptr<AVBuffer> recvBuffer2;
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(0, _, false)).WillOnce(SaveArg<1>(&recvBuffer1));
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(1, _, false)).WillOnce(SaveArg<1>(&recvBuffer2));
+
+    processor_->ReportEos();
+    EXPECT_FALSE(processor_->eosPending_.load());
+    ASSERT_NE(recvBuffer1, nullptr);
+    EXPECT_EQ(recvBuffer1->pts_, 5000);
+    EXPECT_NE(recvBuffer1->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS), 0);
+
+    processor_->ReportEos();
+    ASSERT_NE(recvBuffer2, nullptr);
+    EXPECT_NE(recvBuffer2->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS), 0);
+    EXPECT_EQ(processor_->outIndex_.load(), static_cast<uint32_t>(2));
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_Flush_005
+ * @tc.desc: test Flush clears eosPending_
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Flush_ClearsEosPending, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    processor_->eosPending_ = true;
+    ret = processor_->Flush();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_FALSE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_Stop_002
+ * @tc.desc: test Stop clears eosPending_
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, Stop_ClearsEosPending, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+
+    processor_->eosPending_ = true;
+    ret = processor_->Stop();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_FALSE(processor_->eosPending_.load());
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_NotifyEos_002
+ * @tc.desc: test worker reports eos automatically after NotifyEos when all queues empty
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, NotifyEos_WorkerAutoReports, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+    ret = processor_->Start();
+    EXPECT_EQ(ret, Status::OK);
+    processor_->SetCallback(callback_);
+
+    std::shared_ptr<AVBuffer> recvBuffer;
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(0, _, false)).WillOnce(SaveArg<1>(&recvBuffer));
+
+    ret = processor_->NotifyEos(5000);
+    EXPECT_EQ(ret, Status::OK);
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+    EXPECT_FALSE(processor_->eosPending_.load());
+    ASSERT_NE(recvBuffer, nullptr);
+    EXPECT_EQ(recvBuffer->pts_, 5000);
+    EXPECT_NE(recvBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS), 0);
+}
+
+/**
+ * @tc.name: SideOutputSurfaceProcessor_NotifyEos_003
+ * @tc.desc: test worker holds eos when renderBufferQueue_ is not empty after processing
+ * @tc.type: FUNC
+ */
+HWTEST_F(SideOutputSurfaceProcessorUnitTest, NotifyEos_WorkerHoldsEosWhenRenderQueueNotEmpty, TestSize.Level1)
+{
+    Status ret = processor_->Init();
+    EXPECT_EQ(ret, Status::OK);
+    ret = processor_->Start();
+    EXPECT_EQ(ret, Status::OK);
+    processor_->SetCallback(callback_);
+
+    sptr<MockSurfaceBuffer> srcMockBuffer = CreateMockBufferWithMemory(1024);
+    EXPECT_CALL(*srcMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*srcMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*srcMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+
+    sptr<MockSurfaceBuffer> dstMockBuffer = CreateMockBufferWithMemory(2048);
+    EXPECT_CALL(*dstMockBuffer, GetWidth()).WillRepeatedly(Return(1920));
+    EXPECT_CALL(*dstMockBuffer, GetHeight()).WillRepeatedly(Return(1080));
+    EXPECT_CALL(*dstMockBuffer, GetFormat()).WillRepeatedly(Return(1));
+    EXPECT_CALL(*dstMockBuffer, GetSeqNum()).WillRepeatedly(Return(100));
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo srcBufferInfo;
+    srcBufferInfo.buffer = srcMockBuffer;
+    srcBufferInfo.timestamp = 1000;
+    processor_->consumerBufferQueue_.push(srcBufferInfo);
+
+    TestableSideOutputSurfaceProcessor::SurfaceBufferInfo dstBufferInfo;
+    dstBufferInfo.buffer = dstMockBuffer;
+    dstBufferInfo.timestamp = 0;
+    processor_->producerBufferQueue_.push(dstBufferInfo);
+
+    processor_->consumerSurface_ = mockSurface_;
+    processor_->producerSurface_ = mockSurface_;
+    EXPECT_CALL(*mockSurface_, ReleaseBuffer(_, -1)).WillRepeatedly(Return(GSERROR_OK));
+    EXPECT_CALL(*mockSurface_, UnregisterConsumerListener()).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, UnRegisterReleaseListener()).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, CleanCache(_)).Times(AnyNumber());
+    EXPECT_CALL(*mockSurface_, Disconnect()).Times(AnyNumber());
+
+    std::shared_ptr<AVBuffer> recvBuffer;
+    EXPECT_CALL(*callback_, OnOutputBufferAvailable(100, _, false)).WillOnce(SaveArg<1>(&recvBuffer));
+
+    ret = processor_->NotifyEos(1000);
+    EXPECT_EQ(ret, Status::OK);
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+    EXPECT_TRUE(processor_->eosPending_.load());
+    ASSERT_NE(recvBuffer, nullptr);
+    EXPECT_EQ(recvBuffer->flag_ & static_cast<uint32_t>(Plugins::AVBufferFlag::EOS), 0);
+    EXPECT_EQ(recvBuffer->pts_, 1000);
+    EXPECT_EQ(processor_->renderBufferQueue_.size(), static_cast<size_t>(1));
+}
 }  // namespace Pipeline
 }  // namespace Media
 }  // namespace OHOS
