@@ -134,11 +134,9 @@ void TemporalScalability::SetBlockQueueActive()
 
 void TemporalScalability::BeginShutdown()
 {
-    // StoreAVBuffer may hold inputBufMutex_ while blocked in Push. Wake it without that lock.
     {
         std::lock_guard<std::shared_mutex> eosLock(eosMutex_);
         closing_ = true;
-        // Terminal shutdown can discard queued indices. Clearing a full queue wakes its producer.
         inputIndexQueue_->SetActive(false, true);
     }
     eosCondition_.notify_all();

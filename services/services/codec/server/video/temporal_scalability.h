@@ -44,7 +44,6 @@ public:
     void ConfigureLTR(uint32_t index);
     void SetDisposableFlag(std::shared_ptr<Media::AVBuffer> buffer);
     void SetBlockQueueActive();
-    // Terminal cancellation for Reset/Release; Stop/Flush may reuse this object.
     void BeginShutdown();
     int32_t NotifyEosWhenComplete();
 
@@ -81,7 +80,7 @@ private:
     void FixLTRParameter();
     std::shared_mutex eosMutex_;
     std::condition_variable_any eosCondition_;
-    bool closing_ = false; // Protected by eosMutex_.
+    bool closing_ = false;
     std::atomic<bool> eosRequested_ = false;
     std::atomic<bool> lastBufferProcessed_ = false;
 };
