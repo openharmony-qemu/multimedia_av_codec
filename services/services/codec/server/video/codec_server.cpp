@@ -564,8 +564,6 @@ int32_t CodecServer::NotifyEos()
     bool waitForInput = false;
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
-        CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING, AVCS_ERR_INVALID_STATE,
-                                          "NotifyEos in invalid state");
         temporal = std::atomic_load(&temporalScalability_);
         waitForInput = temporal != nullptr && inputParamTask_ != nullptr;
     }
@@ -580,7 +578,8 @@ int32_t CodecServer::NotifyEos()
         AVCODEC_LOGI_WITH_TAG("Done (Delegating to temporal scalability), ret=%{public}d", ret);
     }
     std::lock_guard<std::shared_mutex> lock(mutex_);
-    CHECK_AND_RETURN_RET_LOG_WITH_TAG(temporal == std::atomic_load(&temporalScalability_), AVCS_ERR_INVALID_STATE,
+    CHECK_AND_RETURN_RET_LOG_WITH_TAG(temporal == nullptr || temporal == std::atomic_load(&temporalScalability_),
+                                      AVCS_ERR_INVALID_STATE,
                                       "Temporal scalability session changed during NotifyEos");
     CHECK_AND_RETURN_RET_LOG_WITH_TAG(status_ == RUNNING, AVCS_ERR_INVALID_STATE, "In invalid state, %{public}s",
                                       GetStatusDescription(status_).data());
@@ -603,10 +602,10 @@ int32_t CodecServer::Reset()
     auto retiredTemporal = std::atomic_exchange(&temporalScalability_, std::shared_ptr<TemporalScalability>{});
     if (retiredTemporal != nullptr) {
         retiredTemporal->BeginShutdown();
-    }
-    if (inputParamTask_ != nullptr) {
-        inputParamTask_->Stop();
-        inputParamTask_ = nullptr;
+        if (inputParamTask_ != nullptr) {
+            inputParamTask_->Stop();
+            inputParamTask_ = nullptr;
+        }
     }
     int32_t ret = codecBase_->Reset();
     if (sfdManager_) {
@@ -642,10 +641,10 @@ int32_t CodecServer::Release()
     auto retiredTemporal = std::atomic_exchange(&temporalScalability_, std::shared_ptr<TemporalScalability>{});
     if (retiredTemporal != nullptr) {
         retiredTemporal->BeginShutdown();
-    }
-    if (inputParamTask_ != nullptr) {
-        inputParamTask_->Stop();
-        inputParamTask_ = nullptr;
+        if (inputParamTask_ != nullptr) {
+            inputParamTask_->Stop();
+            inputParamTask_ = nullptr;
+        }
     }
     int32_t ret = codecBase_->Release();
     Media::Meta statisticsMeta;
