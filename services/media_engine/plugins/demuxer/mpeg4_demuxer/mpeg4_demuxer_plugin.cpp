@@ -1668,9 +1668,8 @@ bool ReadAvcExpGolombUe(const uint8_t* data, size_t size, size_t& bitPos, uint32
         decoded = (decoded << 1) | ((data[pos / BITS_PER_BYTE] >> ((BITS_PER_BYTE - 1) - pos % BITS_PER_BYTE)) & 1U);
         ++pos;
     }
-    if (decoded > std::numeric_limits<uint32_t>::max()) {
-        return false;
-    }
+    // leadingZeros < 32 is enforced above (>= 32 returns false), so decoded <= 2^32 - 1 and
+    // decoded - 1 always fits in uint32_t; the cast below needs no overflow guard.
     value = static_cast<uint32_t>(decoded - 1);
     bitPos = pos;
     return true;
