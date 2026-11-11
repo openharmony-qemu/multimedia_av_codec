@@ -172,6 +172,9 @@ public:
     using SideOutputSurfaceProcessor::isInitialized_;
     using SideOutputSurfaceProcessor::isProcessing_;
     using SideOutputSurfaceProcessor::isBufferQueueReady_;
+    using SideOutputSurfaceProcessor::eosPending_;
+    using SideOutputSurfaceProcessor::eosPts_;
+    using SideOutputSurfaceProcessor::outIndex_;
     using SideOutputSurfaceProcessor::requestCfg_;
     using SideOutputSurfaceProcessor::callback_;
     using SideOutputSurfaceProcessor::eventReceiver_;
@@ -193,6 +196,8 @@ public:
     using SideOutputSurfaceProcessor::FlushBufferToProducer;
     using SideOutputSurfaceProcessor::ProcessBuffers;
     using SideOutputSurfaceProcessor::WaitTrigger;
+    using SideOutputSurfaceProcessor::TryReportEos;
+    using SideOutputSurfaceProcessor::ReportEos;
     using SideOutputSurfaceProcessor::ClearBufferQueues;
     using SideOutputSurfaceProcessor::PushBufferToConsumer;
     using SideOutputSurfaceProcessor::DealNotRenderBuffer;
