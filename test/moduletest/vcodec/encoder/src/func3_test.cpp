@@ -635,7 +635,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0010, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -657,7 +656,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0020, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -679,7 +677,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0030, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -701,7 +698,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0040, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -723,7 +719,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0050, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -745,7 +740,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0060, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -766,7 +760,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0070, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -787,7 +780,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0080, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -808,7 +800,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0090, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -829,7 +820,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0100, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -850,7 +840,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0110, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -871,7 +860,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0120, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -892,7 +880,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0130, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -913,7 +900,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0140, TestSize.Level1)
         ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
         ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
         ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
-        cout << "pid--" << getprocpid() << "--uid--" << getuid() << endl;
     }
 }
 
@@ -935,7 +921,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0150, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -947,7 +932,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0150, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
@@ -973,7 +957,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0160, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -985,7 +968,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0160, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
@@ -1010,7 +992,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0170, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -1023,7 +1004,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0170, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
@@ -1049,7 +1029,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0180, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -1062,7 +1041,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0180, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Stop());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
@@ -1088,7 +1066,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0190, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -1100,7 +1077,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0190, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
@@ -1125,7 +1101,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0200, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -1138,7 +1113,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0200, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
@@ -1164,7 +1138,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0210, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -1177,7 +1150,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0210, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Reset());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
@@ -1203,7 +1175,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0220, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -1215,7 +1186,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0220, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
@@ -1240,7 +1210,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0230, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->SetVideoEncoderCallback());
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -1253,7 +1222,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0230, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
@@ -1279,7 +1247,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0240, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
-            cout << "pid1--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         std::thread Thread2([this]() {
             auto vEncSample = make_shared<VEncAPI11Sample>();
@@ -1292,7 +1259,6 @@ HWTEST_F(HwEncFunc3NdkTest, VIDEO_ENCODE_INFO_0240, TestSize.Level1)
             ASSERT_EQ(AV_ERR_OK, vEncSample->ConfigureVideoEncoder());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Start());
             ASSERT_EQ(AV_ERR_OK, vEncSample->Release());
-            cout << "pid2--" << getprocpid() << "--uid--" << getuid() << endl;
         });
         Thread1.join();
         Thread2.join();
