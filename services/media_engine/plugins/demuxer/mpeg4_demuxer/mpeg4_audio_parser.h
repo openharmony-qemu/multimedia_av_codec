@@ -29,6 +29,10 @@ public:
     AudioChannelLayout FindValidChannelLayout(uint64_t layoutMask);
     AudioChannelLayout GetDefaultChannelLayout(int32_t channels);
     Status ParseAudioFrame(uint8_t* data, uint32_t size, std::string mime, uint32_t trackIndex, MediaInfo& mediaInfo);
+    // True when the access unit carries an in-band SBR extension payload (implicit HE-AAC).
+    static bool HasAacInbandSbr(const uint8_t* data, uint32_t size);
+    // Applies the implicit-SBR 2x projection; idempotent and skipped when the ASC signals no SBR.
+    void ApplyImplicitAacSbr(MediaInfo& mediaInfo, uint32_t trackIndex);
 
 private:
     uint8_t* audioData_ = nullptr;

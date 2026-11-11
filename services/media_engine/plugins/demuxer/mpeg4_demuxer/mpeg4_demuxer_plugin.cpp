@@ -2413,6 +2413,8 @@ Status MPEG4DemuxerPlugin::ParseAVFirstFrameForTrack(uint32_t trackId)
         ret = ReadAudioMetadataProbeSample(currentTrack, trackId, mpeg4Sample, sampleReady);
         FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read AAC metadata probe sample failed");
         if (!sampleReady) {
+            // No playable sample: the implicit-SBR decision still belongs to the leading access units.
+            ProbeAacInbandSbrWindow(currentTrack, trackId, 0, false);
             return Status::OK;
         }
     } else {
@@ -2437,6 +2439,7 @@ Status MPEG4DemuxerPlugin::ParseAVFirstFrameForTrack(uint32_t trackId)
             MEDIA_LOG_D("Parse audio failed in track:" PUBLIC_LOG_U32, trackId);
             return Status::OK;
         }
+        ProbeAacInbandSbrWindow(currentTrack, trackId, mpeg4Sample->sampleIndex, true);
     }
     if (seekable_ == Seekable::SEEKABLE) {
         currentTrack->currentSampleIndex = originalSampleIndex;
@@ -2544,6 +2547,75 @@ Status MPEG4DemuxerPlugin::ReadAudioMetadataProbeSample(
     }
     sampleReady = true;
     return Status::OK;
+}
+
+bool MPEG4DemuxerPlugin::ProbeAacInbandSbrSample(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
+    uint32_t& probedBytes, bool& hasSbr)
+{
+    hasSbr = false;
+    MPEG4SampleHelper::SampleIndexView sampleView;
+    if (!GetSampleView(track, sampleIndex, sampleView) || sampleView.size <= 0 || sampleView.pos < 0) {
+        return false;
+    }
+    constexpr uint32_t maxProbeBytes = 64 * 1024;
+    const uint32_t sampleSize = static_cast<uint32_t>(sampleView.size);
+    if (sampleSize > maxProbeBytes - probedBytes) {
+        return false;
+    }
+    auto probeSample = std::make_shared<Sample>();
+    if (probeSample == nullptr) {
+        return false;
+    }
+    probeSample->size = sampleView.size;
+    if (CheckReadSampleDataState(sampleView.size) != Status::OK ||
+        ReadSampleDataToBuffer(probeSample, static_cast<uint64_t>(sampleView.pos), sampleView.size) != Status::OK ||
+        probeSample->data == nullptr) {
+        MEDIA_LOG_D("Read AAC SBR probe sample failed in track:" PUBLIC_LOG_U32
+            ", index:" PUBLIC_LOG_U32, track->trackIndex, sampleIndex);
+        return false;
+    }
+    probedBytes += sampleSize;
+    hasSbr = MPEG4AudioParser::HasAacInbandSbr(probeSample->data.get(), sampleSize);
+    return true;
+}
+
+void MPEG4DemuxerPlugin::ProbeAacInbandSbrWindow(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t trackId,
+    uint32_t firstPlayableIndex, bool hasPlayableSample)
+{
+    if (seekable_ != Seekable::SEEKABLE || track == nullptr || track->sampleHelper == nullptr ||
+        track->sampleHelper->mimeType_ != MimeType::AUDIO_AAC) {
+        return;
+    }
+    // Scan the pre-roll access units (plus the first playable one) like FFmpeg's stream-info probe.
+    constexpr uint32_t maxProbeSampleCount = 4;
+    const uint32_t sampleCount = static_cast<uint32_t>(track->sampleHelper->GetSampleCount());
+    if (sampleCount == 0) {
+        return;
+    }
+    uint32_t windowEnd = hasPlayableSample ? firstPlayableIndex : maxProbeSampleCount - 1;
+    if (windowEnd >= sampleCount) {
+        windowEnd = sampleCount - 1;
+    }
+    auto audioParser = std::make_shared<MPEG4AudioParser>();
+    if (audioParser == nullptr) {
+        return;
+    }
+    uint32_t probedBytes = 0;
+    for (uint32_t index = 0; index <= windowEnd && index < maxProbeSampleCount; ++index) {
+        bool hasSbr = false;
+        if (!ProbeAacInbandSbrSample(track, index, probedBytes, hasSbr)) {
+            return;
+        }
+        if (!hasSbr) {
+            continue;
+        }
+        MEDIA_LOG_I("AAC leading access unit carries in-band SBR, track:" PUBLIC_LOG_U32
+            ", probe index:" PUBLIC_LOG_U32, trackId, index);
+        audioParser->ApplyImplicitAacSbr(mediaInfo_, trackId);
+        return;
+    }
 }
 
 bool MPEG4DemuxerPlugin::ProcessVideoFirstFrame(const std::shared_ptr<MPEG4AtomParser::Track>& track,
