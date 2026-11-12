@@ -62,8 +62,10 @@ void ScanSignedFloatTokens(const std::string& str,
     std::array<std::string, MAX_LOCATION_FLOAT_COUNT>& tokens, uint32_t& count)
 {
     count = 0;
-    for (size_t i = 0; i < str.size() && count < MAX_LOCATION_FLOAT_COUNT; ++i) {
+    size_t i = 0;
+    while (i < str.size() && count < tokens.size()) {
         if (str[i] != '+' && str[i] != '-') {
+            ++i;
             continue;
         }
         size_t intStart = i + 1;
@@ -72,6 +74,7 @@ void ScanSignedFloatTokens(const std::string& str,
             ++j;
         }
         if (j == intStart || j >= str.size() || str[j] != '.') {
+            ++i;
             continue;
         }
         size_t fracStart = j + 1;
@@ -80,10 +83,27 @@ void ScanSignedFloatTokens(const std::string& str,
             ++k;
         }
         if (k == fracStart) {
+            ++i;
             continue;
         }
         tokens[count++] = str.substr(i, k - i);
-        i = k - 1; // 匹配串末尾已扫描，下一轮从 k 继续
+        i = k;
+    }
+}
+
+void SetLocationMeta(Meta& format, const std::array<std::string, MAX_LOCATION_FLOAT_COUNT>& tokens,
+    uint32_t count)
+{
+    constexpr uint32_t latitudeIndex = 0;
+    constexpr uint32_t longitudeIndex = 1;
+    constexpr uint32_t altitudeIndex = 2;
+    constexpr uint32_t minLocationCount = 2;
+    // Callers guarantee count >= minLocationCount before calling; count is capped by
+    // tokens.size(), so tokens[altitudeIndex] is only read when count exceeds the base pair.
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LATITUDE, tokens[latitudeIndex], ConvertValueType::FLOAT);
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, tokens[longitudeIndex], ConvertValueType::FLOAT);
+    if (count > minLocationCount) {
+        SetToFormatIfConvertSuccess(format, Tag::MEDIA_ALTITUDE, tokens[altitudeIndex], ConvertValueType::FLOAT);
     }
 }
 

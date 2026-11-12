@@ -39,6 +39,8 @@ void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::string v
 constexpr uint32_t MAX_LOCATION_FLOAT_COUNT = 3; // 纬度、经度、海拔最多 3 个
 void ScanSignedFloatTokens(const std::string& str,
     std::array<std::string, MAX_LOCATION_FLOAT_COUNT>& tokens, uint32_t& count);
+void SetLocationMeta(Meta& format, const std::array<std::string, MAX_LOCATION_FLOAT_COUNT>& tokens,
+    uint32_t count);
 
 template <typename T>
 bool ConvertString(const std::string &str, T &result)

@@ -553,11 +553,7 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
         MEDIA_LOG_D("Info format error");
         return;
     }
-    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LATITUDE, numbers[0], ConvertValueType::FLOAT);
-    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, numbers[1], ConvertValueType::FLOAT);
-    if (cnt > VALID_LOCATION_LEN) {
-        SetToFormatIfConvertSuccess(format, Tag::MEDIA_ALTITUDE, numbers[2], ConvertValueType::FLOAT);
-    }
+    SetLocationMeta(format, numbers, cnt);
 }
 
 void FFmpegFormatHelper::ParseUserMeta(const AVFormatContext& avFormatContext, std::shared_ptr<Meta> format)

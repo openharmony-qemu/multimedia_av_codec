@@ -4477,12 +4477,7 @@ void MPEG4AtomParser::ParseLocationString(const std::string& locationStr)
 
     const uint32_t minLocationNum = 2; // 至少需要两个数字：纬度和经度
     FALSE_RETURN_MSG_D(cnt >= minLocationNum, "Info format error");
-    SetToFormatIfConvertSuccess(mediaInfo_.general, Tag::MEDIA_LATITUDE, numbers[0], ConvertValueType::FLOAT);
-    SetToFormatIfConvertSuccess(mediaInfo_.general, Tag::MEDIA_LONGITUDE, numbers[1], ConvertValueType::FLOAT);
-    if (cnt > minLocationNum) {
-        SetToFormatIfConvertSuccess(
-            mediaInfo_.general, Tag::MEDIA_ALTITUDE, numbers[2], ConvertValueType::FLOAT);
-    }
+    SetLocationMeta(mediaInfo_.general, numbers, cnt);
 }
 
 std::string GetCoverMimeType(uint32_t dataType)
