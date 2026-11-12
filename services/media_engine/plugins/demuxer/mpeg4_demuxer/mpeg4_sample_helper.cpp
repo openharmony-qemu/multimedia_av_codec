@@ -31,6 +31,8 @@ namespace Plugins {
 namespace MPEG4 {
 constexpr uint32_t DEFAULT_FIELD_SIZE = 32;
 constexpr int64_t MAX_TRUN_SAMPLES = 1000000; //需要确定讨论
+constexpr uint32_t TRUN_HEADER_SIZE = 8; // version/flags + sample_count
+constexpr uint64_t MAX_TRUN_PAYLOAD_BYTES = 8 + static_cast<uint64_t>(MAX_TRUN_SAMPLES) * 16; // 16B per sample
 constexpr uint32_t MAX_TIMING_TABLE_ENTRY_COUNT = 4 * 1024 * 1024;
 constexpr uint32_t MAX_TIMING_TABLE_SAMPLE_COUNT = 4 * 1024 * 1024;
 constexpr uint32_t MAX_SAMPLE_TABLE_ENTRY_COUNT = MAX_TIMING_TABLE_SAMPLE_COUNT;
@@ -1561,7 +1563,7 @@ Status MPEG4SampleHelper::ReadTrunRunData(int64_t dataOffset, int64_t dataSize, 
     constexpr uint32_t trunSampleCountOffset = 4;
     constexpr uint32_t trunFlagFirstShift = 0x10;
     constexpr uint32_t trunFlagSecondShift = 0x08;
-    uint8_t header[8];
+    uint8_t header[TRUN_HEADER_SIZE];
     auto ret = dataReader_->ReadUintData(dataOffset, header, sizeof(header));
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read header failed");
     FALSE_RETURN_V_MSG_E(header[trunVersionIndex] == 0, Status::ERROR_INVALID_DATA, "trun invalid version");
@@ -1572,12 +1574,13 @@ Status MPEG4SampleHelper::ReadTrunRunData(int64_t dataOffset, int64_t dataSize, 
         Status::ERROR_INVALID_DATA);
 
     numSamples = GetU32Value(&header[trunSampleCountOffset]);
-    FALSE_RETURN_V_MSG_E(dataSize > sizeof(header) &&
-        static_cast<uint64_t>(dataSize - sizeof(header)) <= static_cast<uint64_t>(std::numeric_limits<size_t>::max()),
+    // Payload is bounded by the fields trun can carry and MAX_TRUN_SAMPLES.
+    FALSE_RETURN_V_MSG_E(dataSize > static_cast<int64_t>(TRUN_HEADER_SIZE) &&
+        static_cast<uint64_t>(dataSize) - TRUN_HEADER_SIZE <= MAX_TRUN_PAYLOAD_BYTES,
         Status::ERROR_INVALID_BUFFER_SIZE, "Invalid trun payload size");
-    size_t payloadSize = static_cast<size_t>(dataSize - sizeof(header));
+    size_t payloadSize = static_cast<size_t>(dataSize - static_cast<int64_t>(TRUN_HEADER_SIZE));
     data = std::make_unique<uint8_t[]>(payloadSize);
-    ret = dataReader_->ReadUintData(dataOffset + sizeof(uint64_t), data.get(), payloadSize);
+    ret = dataReader_->ReadUintData(dataOffset + static_cast<int64_t>(TRUN_HEADER_SIZE), data.get(), payloadSize);
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read data failed");
     return Status::OK;
 }
@@ -1586,9 +1589,9 @@ bool MPEG4SampleHelper::IsValidTrunSampleData(int64_t dataSize, uint32_t bufferO
     uint32_t numSamples) const
 {
     if (byteLength != 0) {
-        constexpr int64_t trunHeaderSize = sizeof(uint64_t);
-        FALSE_RETURN_V_NOLOG(dataSize >= trunHeaderSize, false);
-        int64_t dataBytes = dataSize - trunHeaderSize;
+        // Header-only runs are rejected by ReadTrunRunData; keep the same strict bound here.
+        FALSE_RETURN_V_NOLOG(dataSize > static_cast<int64_t>(TRUN_HEADER_SIZE), false);
+        int64_t dataBytes = dataSize - static_cast<int64_t>(TRUN_HEADER_SIZE);
         int64_t safeBufferOffset = static_cast<int64_t>(bufferOffset);
         FALSE_RETURN_V_NOLOG(dataBytes >= safeBufferOffset, false);
         return (dataBytes - safeBufferOffset) / static_cast<int64_t>(byteLength) >= static_cast<int64_t>(numSamples);
@@ -1611,7 +1614,7 @@ Status MPEG4SampleHelper::SetTrackFragmentRunParams(int64_t dataOffset, int64_t 
     FALSE_RETURN_V_MSG_E(ret == Status::OK, ret, "Read trun run data failed");
 
     SampleInfo sampleInfo;
-    size_t payloadSize = static_cast<size_t>(dataSize - sizeof(uint64_t));
+    size_t payloadSize = static_cast<size_t>(dataSize - static_cast<int64_t>(TRUN_HEADER_SIZE));
     TrunSampleInitContext initContext = {trunFlag, data.get(), payloadSize, 0, 0};
     ret = InitSampleInfo(sampleInfo, initContext);
     FALSE_RETURN_V_NOLOG(ret == Status::OK, ret);

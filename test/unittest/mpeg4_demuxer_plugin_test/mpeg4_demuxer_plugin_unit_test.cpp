@@ -9711,6 +9711,43 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TrunAcceptsCompleteOptio
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_TrunRejectsInvalidPayloadSize_001
+ * @tc.desc: Verify negative or header-only trun data size is rejected by the signed-domain payload size guard
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_TrunRejectsInvalidPayloadSize_001, TestSize.Level1)
+{
+    constexpr size_t expectedPayloadSize = sizeof(uint32_t);
+    auto data = BuildTrunData(0, 1, expectedPayloadSize);
+    Plugins::MPEG4::MPEG4SampleHelper helper;
+    helper.dataReader_ = CreateReaderForBytes(data);
+    uint32_t trunFlag = 0;
+    uint32_t numSamples = 0;
+    std::unique_ptr<uint8_t[]> trunPayload;
+
+    EXPECT_EQ(helper.ReadTrunRunData(0, -1, trunFlag, numSamples, trunPayload),
+        Status::ERROR_INVALID_BUFFER_SIZE);
+    EXPECT_EQ(trunPayload.get(), nullptr);
+    EXPECT_EQ(helper.ReadTrunRunData(0, static_cast<int64_t>(sizeof(uint64_t)), trunFlag, numSamples, trunPayload),
+        Status::ERROR_INVALID_BUFFER_SIZE);
+    EXPECT_EQ(trunPayload.get(), nullptr);
+    // Upper bound: 8-byte header + 8 fixed bytes + 16 bytes for each of MAX_TRUN_SAMPLES samples.
+    constexpr int64_t trunMaxDataSize = 8 + 8 + 1000000LL * 16;
+    EXPECT_EQ(helper.ReadTrunRunData(0, trunMaxDataSize + 1, trunFlag, numSamples, trunPayload),
+        Status::ERROR_INVALID_BUFFER_SIZE);
+    EXPECT_EQ(trunPayload.get(), nullptr);
+    EXPECT_EQ(helper.ReadTrunRunData(0, std::numeric_limits<int64_t>::max(), trunFlag, numSamples, trunPayload),
+        Status::ERROR_INVALID_BUFFER_SIZE);
+    EXPECT_EQ(trunPayload.get(), nullptr);
+
+    EXPECT_EQ(helper.ReadTrunRunData(0, static_cast<int64_t>(data.size()), trunFlag, numSamples, trunPayload),
+        Status::OK);
+    ASSERT_NE(trunPayload.get(), nullptr);
+    EXPECT_EQ(numSamples, 1U);
+    EXPECT_EQ(trunPayload[expectedPayloadSize - 1], 0U);
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_TimeToSample_ClipNegativeDelta_001
  * @tc.desc: Verify oversized stts delta is clipped like FFmpeg's MOV demuxer correction path
  * @tc.type: FUNC
