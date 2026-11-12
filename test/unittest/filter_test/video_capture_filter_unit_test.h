@@ -132,9 +132,11 @@ public:
     {
         (void)inType;
         (void)meta;
-        (void)callback;
+        capturedCallback_ = callback;
         return onLinked_;
     }
+
+    std::shared_ptr<FilterLinkCallback> capturedCallback_;
 
 protected:
     Status onLinked_;
