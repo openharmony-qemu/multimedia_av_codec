@@ -373,6 +373,17 @@ constexpr uint8_t AVC_NAL_LENGTH_SIZE_MASK = 0x03;
 constexpr uint8_t AVC_NAL_TYPE_MASK = 0x1F;
 constexpr uint8_t AVC_IDR_NAL_TYPE = 5;
 constexpr uint8_t AVC_SLICE_NAL_TYPE = 1;
+constexpr uint8_t AVC_SEI_NAL_TYPE = 6;
+// FFmpeg h264_sei.c: SEI payload type 6 signals an open-GOP recovery point.
+constexpr uint8_t AVC_SEI_RECOVERY_POINT_TYPE = 6;
+// FFmpeg h264_sei.c bounds recovery_frame_cnt below (1 << MAX_LOG2_MAX_FRAME_NUM), 1<<16 for H.264.
+constexpr uint32_t AVC_MAX_RECOVERY_FRAME_CNT = 1 << 16;
+constexpr uint8_t AVC_SEI_CONTINUATION_BYTE = 0xFF;
+// SEI type/size fields use 0xFF continuation; cap the parse loop to avoid unbounded accumulation.
+constexpr uint8_t AVC_SEI_TYPE_MAX_BYTES = 4;
+// A SEI message needs at least a type byte and a size byte before its payload; FFmpeg
+// ff_h264_sei_decode stops when fewer than two bytes remain (rbsp trailing bits).
+constexpr size_t AVC_SEI_MIN_MESSAGE_BYTES = 2;
 // AVC Prefix NALs can carry Annex-B units in malformed NALFF samples.
 constexpr uint8_t AVC_PREFIX_NAL_TYPE = 14;
 constexpr uint8_t AVC_MIN_NAL_LENGTH_SIZE = 1;
@@ -1636,6 +1647,156 @@ bool AvcSampleContainsIdr(const std::shared_ptr<MPEG4AtomParser::Track>& track,
     return false;
 }
 
+bool ReadAvcExpGolombUe(const uint8_t* data, size_t size, size_t& bitPos, uint32_t& value)
+{
+    if (data == nullptr || size == 0 || bitPos >= size * BITS_PER_BYTE) {
+        return false;
+    }
+    size_t pos = bitPos;
+    uint32_t leadingZeros = 0;
+    while (pos < size * BITS_PER_BYTE &&
+        ((data[pos / BITS_PER_BYTE] >> ((BITS_PER_BYTE - 1) - pos % BITS_PER_BYTE)) & 1U) == 0U) {
+        ++leadingZeros;
+        ++pos;
+    }
+    if (leadingZeros >= std::numeric_limits<uint32_t>::digits || pos >= size * BITS_PER_BYTE) {
+        return false;
+    }
+    ++pos; // Skip the terminating 1 bit.
+    uint64_t decoded = 1;
+    for (uint32_t i = 0; i < leadingZeros; ++i) {
+        if (pos >= size * BITS_PER_BYTE) {
+            return false;
+        }
+        decoded = (decoded << 1) | ((data[pos / BITS_PER_BYTE] >> ((BITS_PER_BYTE - 1) - pos % BITS_PER_BYTE)) & 1U);
+        ++pos;
+    }
+    // leadingZeros < 32 is enforced above (>= 32 returns false), so decoded <= 2^32 - 1 and
+    // decoded - 1 always fits in uint32_t; the cast below needs no overflow guard.
+    value = static_cast<uint32_t>(decoded - 1);
+    bitPos = pos;
+    return true;
+}
+
+// Parses one sei_message header at *pos inside the scan window: [0xFF-continuation type][0xFF
+// continuation size], advancing *pos past the header. Returns false when the window is truncated.
+bool ReadAvcSeiMessageHeader(const uint8_t* data, size_t size, size_t& pos,
+    uint32_t& payloadType, uint32_t& payloadLength)
+{
+    payloadType = 0;
+    bool typeDone = false;
+    for (uint8_t i = 0; i < AVC_SEI_TYPE_MAX_BYTES && pos < size; ++i) {
+        const uint8_t typeByte = data[pos++];
+        payloadType += typeByte;
+        if (typeByte != AVC_SEI_CONTINUATION_BYTE) {
+            typeDone = true;
+            break;
+        }
+        if (i + 1 == AVC_SEI_TYPE_MAX_BYTES) {
+            return false;
+        }
+    }
+    if (!typeDone || pos >= size) {
+        return false;
+    }
+    payloadLength = 0;
+    bool sizeDone = false;
+    for (uint8_t i = 0; i < AVC_SEI_TYPE_MAX_BYTES && pos < size; ++i) {
+        const uint8_t sizeByte = data[pos++];
+        payloadLength += sizeByte;
+        if (sizeByte != AVC_SEI_CONTINUATION_BYTE) {
+            sizeDone = true;
+            break;
+        }
+        if (i + 1 == AVC_SEI_TYPE_MAX_BYTES) {
+            return false;
+        }
+    }
+    return sizeDone;
+}
+
+bool AvcSeiPayloadContainsRecoveryPoint(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    int64_t payloadOffset, uint32_t payloadSize)
+{
+    if (track == nullptr || payloadOffset < 0 || payloadSize == 0) {
+        return false;
+    }
+    const uint32_t readSize = std::min(payloadSize, AVC_SLICE_HEADER_SCAN_SIZE);
+    uint8_t seiBuffer[AVC_SLICE_HEADER_SCAN_SIZE] = {0};
+    FALSE_RETURN_V_NOLOG(track->sampleHelper->dataReader_->ReadUintData(payloadOffset, seiBuffer, readSize) ==
+        Status::OK, false);
+    // FFmpeg ff_h264_sei_decode iterates every sei_message in a SEI NAL until fewer than two
+    // bytes remain or the trailing bits are reached; the recovery_point message may follow
+    // other messages such as pic_timing, so scan the whole window instead of only the first one.
+    size_t pos = 0;
+    while (readSize - pos >= AVC_SEI_MIN_MESSAGE_BYTES &&
+        !(seiBuffer[pos] == 0x00 && seiBuffer[pos + 1] == 0x00)) {
+        uint32_t payloadType = 0;
+        uint32_t payloadLength = 0;
+        if (!ReadAvcSeiMessageHeader(seiBuffer, readSize, pos, payloadType, payloadLength) ||
+            payloadLength > readSize - pos) {
+            return false;
+        }
+        if (payloadType == AVC_SEI_RECOVERY_POINT_TYPE && payloadLength > 0) {
+            size_t bitPos = pos * BITS_PER_BYTE;
+            uint32_t recoveryFrameCnt = 0;
+            if (ReadAvcExpGolombUe(seiBuffer, readSize, bitPos, recoveryFrameCnt) &&
+                recoveryFrameCnt < AVC_MAX_RECOVERY_FRAME_CNT) {
+                return true;
+            }
+            // Like FFmpeg decode_recovery_point, an invalid/out-of-range count aborts the scan.
+            return false;
+        }
+        pos += payloadLength;
+    }
+    return false;
+}
+
+bool AvcSampleContainsRecoveryPointSei(const std::shared_ptr<MPEG4AtomParser::Track>& track,
+    const MPEG4SampleHelper::SampleIndexView& sample)
+{
+    if (track == nullptr || track->sampleHelper == nullptr || track->sampleHelper->dataReader_ == nullptr ||
+        track->sampleHelper->mimeType_ != MimeType::VIDEO_AVC || sample.pos < 0 || sample.size <= 0 ||
+        sample.size > MAX_AVC_IDR_SCAN_SIZE) {
+        return false;
+    }
+    uint8_t nalLengthSize = GetAvcNalLengthSize(track);
+    FALSE_RETURN_V_NOLOG(nalLengthSize != 0 && sample.size >= nalLengthSize, false);
+    int64_t sampleEnd = 0;
+    FALSE_RETURN_V_NOLOG(SafeAddInt64(sample.pos, sample.size, sampleEnd), false);
+    // FFmpeg h264_parser.c marks a sample as key when a recovery_point SEI (payload type 6,
+    // recovery_frame_cnt in [0, 1<<16)) precedes a slice in the same access unit; open-GOP
+    // sources rely on this for random access even though the frame is not an IDR.
+    bool sawRecoveryPointSei = false;
+    int64_t offset = sample.pos;
+    uint8_t lengthData[AVC_MAX_NAL_LENGTH_SIZE] = {0};
+    uint8_t nalHeader = 0;
+    while (offset <= sampleEnd - nalLengthSize) {
+        FALSE_RETURN_V_NOLOG(
+            track->sampleHelper->dataReader_->ReadUintData(offset, lengthData, nalLengthSize) == Status::OK, false);
+        const uint32_t nalLength = ReadNalLength(lengthData, nalLengthSize);
+        FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, nalLengthSize, offset), false);
+        FALSE_RETURN_V_NOLOG(nalLength != 0 && nalLength <= static_cast<uint64_t>(sampleEnd - offset), false);
+        FALSE_RETURN_V_NOLOG(
+            track->sampleHelper->dataReader_->ReadUintData(offset, &nalHeader, sizeof(nalHeader)) == Status::OK,
+            false);
+        const uint8_t nalType = nalHeader & AVC_NAL_TYPE_MASK;
+        if (nalType == AVC_SLICE_NAL_TYPE || nalType == AVC_IDR_NAL_TYPE) {
+            return sawRecoveryPointSei;
+        }
+        if (nalType == AVC_SEI_NAL_TYPE && nalLength > sizeof(nalHeader)) {
+            int64_t payloadOffset = 0;
+            FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, static_cast<int64_t>(sizeof(nalHeader)), payloadOffset), false);
+            if (AvcSeiPayloadContainsRecoveryPoint(track, payloadOffset,
+                static_cast<uint32_t>(nalLength - sizeof(nalHeader)))) {
+                sawRecoveryPointSei = true;
+            }
+        }
+        FALSE_RETURN_V_NOLOG(SafeAddInt64(offset, static_cast<int64_t>(nalLength), offset), false);
+    }
+    return false;
+}
+
 bool ShouldApplyMovEditTimelineOffset(const std::shared_ptr<MPEG4AtomParser::Track>& track);
 
 bool IsAvcVideoTrack(const std::shared_ptr<MPEG4AtomParser::Track>& track)
@@ -1653,7 +1814,9 @@ bool ShouldMarkAvcSampleKey(const std::shared_ptr<MPEG4AtomParser::Track>& track
     if (!IsAvcVideoTrack(track)) {
         return false;
     }
-    return AvcSampleContainsIdr(track, currentSample) || AvcSampleContainsLowRefISlice(track, currentSample);
+    return AvcSampleContainsIdr(track, currentSample) ||
+        AvcSampleContainsLowRefISlice(track, currentSample) ||
+        AvcSampleContainsRecoveryPointSei(track, currentSample);
 }
 
 uint32_t GetSkipSamplesFromInfo(const std::vector<uint8_t>& skipSamplesInfo)
@@ -1683,10 +1846,41 @@ bool ShouldClearAudioDiscardForSkipPacket(
         IsSingleEditShortTailAudio(track) && !hasPlayableVideoTrack) {
         return true;
     }
+    if (sampleIndex == 0 && skipSamples < static_cast<uint64_t>(currentSample.duration)) {
+        // FFmpeg mov_fix_index keeps an audio frame that straddles the edit-list
+        // start (curr_cts < media_time < curr_cts + frame_duration) with skip_samples
+        // side data instead of marking it DISCARD; the index build records such a
+        // first frame with skipSamplesInfo whose skip count is below the frame
+        // duration, so the DISCARD set by GetPacketSampleFlag must be cleared here.
+        return true;
+    }
     if (skipSamples >= static_cast<uint64_t>(currentSample.duration)) {
         return false;
     }
     return sampleIndex > 0;
+}
+
+void RemoveZeroChannelKeys(Meta& meta)
+{
+    // Aligned with FFmpeg ParseAudioTrackInfo: the count keys are exported only when
+    // ch_layout.nb_channels > 0, while the layout keys are exported unconditionally.
+    // For a zero-count track FFmpeg still derives the layout (mask lookup with a
+    // GetDefaultChannelLayout(channels) fallback, e.g. MONO for channels=0) and keeps it, so
+    // a declared count <= 0 drops only the count keys and keeps the existing layout keys.
+    // AUDIO_OUTPUT_CHANNELS is dropped independently when it is 0 (the channel count may be
+    // absent or positive); a declared count <= 0 drops it too because FFmpeg exports neither
+    // count key for a zero-count track.
+    int32_t channelCount = 0;
+    const bool hasChannelCount = meta.Get<Tag::AUDIO_CHANNEL_COUNT>(channelCount);
+    int32_t outputChannels = 0;
+    const bool hasOutputChannels = meta.Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels);
+    if (hasOutputChannels && outputChannels <= 0) {
+        meta.Remove(Tag::AUDIO_OUTPUT_CHANNELS);
+    }
+    if (hasChannelCount && channelCount <= 0) {
+        meta.Remove(Tag::AUDIO_CHANNEL_COUNT);
+        meta.Remove(Tag::AUDIO_OUTPUT_CHANNELS);
+    }
 }
 
 uint32_t GetPacketSampleFlag(const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
@@ -2332,8 +2526,12 @@ Status MPEG4DemuxerPlugin::HasCodecParameters()
             "Get mime type failed");
         bool flag = !HaveValidParser(mime) || (HaveValidParser(mime) && streamParsers_ != nullptr);
         if (IsAudioType(*track)) {
-            FALSE_RETURN_V_MSG_E(format.Get<Tag::AUDIO_CHANNEL_COUNT>(param), Status::ERROR_INVALID_DATA,
-                "unspecified channel_count");
+            // FFmpeg ParseAudioTrackInfo exports channel_count only when ch_layout.nb_channels > 0;
+            // a sample entry declaring channelcount == 0 leaves the key absent, so do not require
+            // it here either; AUDIO_SAMPLE_RATE stays mandatory.
+            bool channelCountRequired = track->audioSampleEntryChannelCount > 0;
+            FALSE_RETURN_V_MSG_E(!channelCountRequired || format.Get<Tag::AUDIO_CHANNEL_COUNT>(param),
+                Status::ERROR_INVALID_DATA, "unspecified channel_count");
             FALSE_RETURN_V_MSG_E(format.Get<Tag::AUDIO_SAMPLE_RATE>(param), Status::ERROR_INVALID_DATA,
                 "unspecified sample_rate");
         } else if (IsVideoType(*track)) {
@@ -2782,6 +2980,9 @@ void MPEG4DemuxerPlugin::GetSingleTrackInfo(MPEG4AtomParser::Track& track, const
     }
     if (HaveValidParser(mime)) {
         ConvertCsdToAnnexb(track, meta, trackIndex, !videoMetadataParsedFromFirstFrame);
+    }
+    if (IsAudioType(track)) {
+        RemoveZeroChannelKeys(meta);
     }
     mediaInfo_.tracks[trackIndex] = meta;
     DemuxerLogCompressor::StringifyMeta(meta, trackIndex);

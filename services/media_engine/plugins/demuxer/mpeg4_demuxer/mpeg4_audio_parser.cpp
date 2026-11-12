@@ -588,6 +588,7 @@ Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
     }
 
     int32_t parsedChannels = 0;
+    const bool hasDeclaredChannels = mediaInfo.tracks[index_].Get<Tag::AUDIO_CHANNEL_COUNT>(parsedChannels);
     // FFmpeg's stream-info probing overrides container/ASC channel metadata with
     // the exact value decoded from a real frame (avcodec_parameters_from_context
     // copies the decoder ch_layout unconditionally). This demuxer has no AAC
@@ -597,8 +598,13 @@ Status MPEG4AudioParser::ParseAacAudio(MediaInfo& mediaInfo)
     // (e.g. ASC says mono, frame is CPE stereo) raises the declared count, while
     // a declared count above the lower bound is kept because the probe cannot
     // disprove it (e.g. a multi-CPE 5.1 frame whose first element looks stereo).
-    if (mediaInfo.tracks[index_].Get<Tag::AUDIO_CHANNEL_COUNT>(parsedChannels) && parsedChannels > 0 &&
-        channels <= parsedChannels) {
+    // A declared count of zero (container channelcount=0 and no usable ASC) is invalid
+    // evidence: FFmpeg's AAC decoder cannot initialize and ParseAudioTrackInfo never
+    // exports channels, so a raw-frame lower bound must not invent one either.
+    if (hasDeclaredChannels && parsedChannels <= 0) {
+        return Status::OK;
+    }
+    if (hasDeclaredChannels && channels <= parsedChannels) {
         return Status::OK;
     }
     mediaInfo.tracks[index_].Set<Tag::AUDIO_CHANNEL_COUNT>(channels);

@@ -148,6 +148,15 @@ enum class AVReadPacketStopState : uint32_t {
 };
 
 } // namespace detail
+
+bool ShouldClearAudioDiscardForSkipPacket(
+    const std::shared_ptr<MPEG4AtomParser::Track>& track, uint32_t sampleIndex,
+    const MPEG4SampleHelper::SampleIndexView& currentSample, bool hasPlayableVideoTrack);
+
+uint32_t GetSkipSamplesFromInfo(const std::vector<uint8_t>& skipSamplesInfo);
+
+void RemoveZeroChannelKeys(Meta& meta);
+
 } // namespace MPEG4
 } // namespace Plugins
 } // namespace Media

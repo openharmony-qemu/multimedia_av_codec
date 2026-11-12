@@ -501,6 +501,42 @@ void PrepareSparseSampleHelper(Plugins::MPEG4::MPEG4SampleHelper& helper, uint32
     ASSERT_EQ(helper.FinalizeSampleTables(), Status::OK);
 }
 
+constexpr uint32_t AUDIO_EDIT_TEST_SAMPLE_COUNT = 3;
+constexpr uint32_t AUDIO_EDIT_TEST_SAMPLE_DURATION = 1024;
+constexpr uint32_t AUDIO_EDIT_TEST_DURATION = 15604;
+constexpr int32_t AUDIO_EDIT_TEST_TIME_SCALE = 44100;
+constexpr uint32_t AUDIO_EDIT_TEST_STRADDLE_MEDIA_TIME = 495;
+constexpr uint32_t AUDIO_EDIT_TEST_BOUNDARY_MEDIA_TIME = 1024;
+constexpr uint32_t AUDIO_EDIT_TEST_OUTSIDE_MEDIA_TIME = 2048;
+
+std::shared_ptr<Plugins::MPEG4::MPEG4AtomParser::Track> BuildAudioEditTrack(uint32_t mediaTime)
+{
+    auto track = std::make_shared<Plugins::MPEG4::MPEG4AtomParser::Track>();
+    if (track == nullptr) {
+        return nullptr;
+    }
+    track->codecParms.trackType = Plugins::MPEG4::AUDIO_TYPE;
+    track->sampleHelper = std::make_shared<Plugins::MPEG4::MPEG4SampleHelper>();
+    if (track->sampleHelper == nullptr) {
+        return nullptr;
+    }
+    auto& helper = *track->sampleHelper;
+    helper.trackType_ = Plugins::MPEG4::AUDIO_TYPE;
+    helper.mimeType_ = MimeType::AUDIO_AAC;
+    helper.sttsEntry_ = {{AUDIO_EDIT_TEST_SAMPLE_COUNT, AUDIO_EDIT_TEST_SAMPLE_DURATION}};
+    helper.stscEntry_ = {{0, AUDIO_EDIT_TEST_SAMPLE_COUNT, 1}};
+    helper.sampleSizes_.assign(AUDIO_EDIT_TEST_SAMPLE_COUNT, 1);
+    helper.sampleSizeCount_ = AUDIO_EDIT_TEST_SAMPLE_COUNT;
+    helper.chunkOffsets_ = {0};
+    helper.SetEditListParams({{mediaTime, AUDIO_EDIT_TEST_DURATION, 1, 0}},
+        AUDIO_EDIT_TEST_TIME_SCALE, AUDIO_EDIT_TEST_TIME_SCALE);
+    if (helper.FinalizeSampleTables() != Status::OK || helper.EnsureDenseIndex() != Status::OK ||
+        !helper.HasAppliedEditList()) {
+        return nullptr;
+    }
+    return track;
+}
+
 void VerifySampleIndexProperties(Plugins::MPEG4::MPEG4SampleHelper& helper)
 {
     EXPECT_EQ(helper.GetSampleCount(), SAMPLE_INDEX_TEST_COUNT);
@@ -4307,6 +4343,37 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest,
 }
 
 /**
+ * @tc.name: Mpeg4DemuxerPlugin_AudioStraddleEditFirstFrameSkipPacket_001
+ * @tc.desc: Verify the first audio frame straddling the edit-list start clears DISCARD
+ *           through skip_samples, matching FFmpeg mov_fix_index; fully-outside and
+ *           exact-boundary frames keep DISCARD.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AudioStraddleEditFirstFrameSkipPacket_001, TestSize.Level1)
+{
+    auto straddleTrack = BuildAudioEditTrack(AUDIO_EDIT_TEST_STRADDLE_MEDIA_TIME);
+    ASSERT_NE(straddleTrack, nullptr);
+    const auto* straddleSkipInfo = straddleTrack->sampleHelper->GetSkipSamplesInfo(0);
+    ASSERT_NE(straddleSkipInfo, nullptr);
+    EXPECT_EQ(Plugins::MPEG4::GetSkipSamplesFromInfo(*straddleSkipInfo), AUDIO_EDIT_TEST_STRADDLE_MEDIA_TIME);
+    Plugins::MPEG4::MPEG4SampleHelper::SampleIndexView view;
+    ASSERT_EQ(straddleTrack->sampleHelper->GetSampleIndexView(0, view), Status::OK);
+    EXPECT_EQ(view.duration, AUDIO_EDIT_TEST_SAMPLE_DURATION);
+    EXPECT_TRUE(Plugins::MPEG4::ShouldClearAudioDiscardForSkipPacket(straddleTrack, 0, view, false));
+
+    auto boundaryTrack = BuildAudioEditTrack(AUDIO_EDIT_TEST_BOUNDARY_MEDIA_TIME);
+    ASSERT_NE(boundaryTrack, nullptr);
+    ASSERT_EQ(boundaryTrack->sampleHelper->GetSampleIndexView(0, view), Status::OK);
+    EXPECT_FALSE(Plugins::MPEG4::ShouldClearAudioDiscardForSkipPacket(boundaryTrack, 0, view, false));
+
+    auto outsideTrack = BuildAudioEditTrack(AUDIO_EDIT_TEST_OUTSIDE_MEDIA_TIME);
+    ASSERT_NE(outsideTrack, nullptr);
+    EXPECT_EQ(outsideTrack->sampleHelper->GetSkipSamplesInfo(0), nullptr);
+    ASSERT_EQ(outsideTrack->sampleHelper->GetSampleIndexView(0, view), Status::OK);
+    EXPECT_FALSE(Plugins::MPEG4::ShouldClearAudioDiscardForSkipPacket(outsideTrack, 0, view, false));
+}
+
+/**
  * @tc.name: Mpeg4DemuxerPlugin_FindPrevClosestIndexSameDts_001
  * @tc.desc: Verify the earliest eligible sync sample is selected for an equal-DTS group.
  * @tc.type: FUNC
@@ -7808,7 +7875,10 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbeDseTruncated_Rem
  * @tc.name: Mpeg4DemuxerPlugin_AacProbePcePrefix_KeepsSamplePerFrame_001
  * @tc.desc: Verify a PCE raw-data-block element (element counts, mixdown tag, channel
  *           maps, relative byte alignment, comment) is skipped and a valid trailing CPE
- *           keeps audio_samples_per_frame.
+ *           keeps audio_samples_per_frame. The PCE relative byte alignment always finds
+ *           the bit position already past the raw-data-block start, which must use the
+ *           signed modulo-8 arithmetic of FFmpeg relative_align_get_bits and never the
+ *           unsigned subtraction (UBSan sub-overflow crash guard).
  * @tc.type: FUNC
  */
 HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacProbePcePrefix_KeepsSamplePerFrame_001,
@@ -8021,6 +8091,79 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeMono
     ASSERT_TRUE(missing.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
     EXPECT_EQ(channels, AAC_TEST_MONO_CHANNEL_COUNT);
     EXPECT_EQ(layout, AudioChannelLayout::MONO);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AacFrameChannelProbeKeepsZeroDeclared_001
+ * @tc.desc: Verify a raw AAC frame never fills a channel count explicitly declared as
+ *           zero (container channelcount=0 and invalid ASC), matching FFmpeg which does
+ *           not export channels when the AAC decoder cannot initialize.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AacFrameChannelProbeKeepsZeroDeclared_001, TestSize.Level1)
+{
+    auto data = BuildAacSceRawDataBlock();
+    MediaInfo mediaInfo = MakeAacFrameMediaInfo();
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(0);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(0);
+    Plugins::MPEG4::MPEG4AudioParser parser;
+
+    EXPECT_EQ(parser.ParseAudioFrame(data.data(), data.size(), MimeType::AUDIO_AAC, 0, mediaInfo), Status::OK);
+    int32_t channels = -1;
+    int32_t outputChannels = -1;
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    EXPECT_EQ(channels, 0);
+    EXPECT_EQ(outputChannels, 0);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ExportDropsZeroChannelKeys_001
+ * @tc.desc: Verify the export layer drops 0-valued count keys but keeps the layout keys,
+ *           matching FFmpeg ParseAudioTrackInfo which exports count keys only when
+ *           nb_channels > 0 while exporting the layout unconditionally.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ExportDropsZeroChannelKeys_001, TestSize.Level1)
+{
+    MediaInfo mediaInfo;
+    mediaInfo.tracks.resize(1);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_COUNT>(0);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(0);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_SAMPLE_RATE>(AAC_TEST_CORE_SAMPLE_RATE);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+    mediaInfo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(AudioChannelLayout::STEREO);
+
+    Plugins::MPEG4::RemoveZeroChannelKeys(mediaInfo.tracks[0]);
+    int32_t channels = -1;
+    int32_t outputChannels = -1;
+    int32_t sampleRate = 0;
+    AudioChannelLayout layout = AudioChannelLayout::UNKNOWN;
+    ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_FALSE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    // FFmpeg keeps the layout for a zero-count track (mask lookup falls back to
+    // GetDefaultChannelLayout(channels), e.g. MONO for channels=0); only the count keys drop.
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNEL_LAYOUT>(layout));
+    EXPECT_EQ(layout, AudioChannelLayout::STEREO);
+    ASSERT_TRUE(mediaInfo.tracks[0].Get<Tag::AUDIO_SAMPLE_RATE>(sampleRate));
+    EXPECT_EQ(sampleRate, AAC_TEST_CORE_SAMPLE_RATE);
+
+    // A zero output-channel key is dropped independently, while a positive count is kept.
+    MediaInfo zeroOutput = MakeAacFrameMediaInfo();
+    zeroOutput.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(0);
+    Plugins::MPEG4::RemoveZeroChannelKeys(zeroOutput.tracks[0]);
+    ASSERT_TRUE(zeroOutput.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_FALSE(zeroOutput.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+
+    MediaInfo stereo = MakeAacFrameMediaInfo();
+    stereo.tracks[0].Set<Tag::AUDIO_OUTPUT_CHANNELS>(AAC_TEST_CHANNEL_COUNT);
+    Plugins::MPEG4::RemoveZeroChannelKeys(stereo.tracks[0]);
+    ASSERT_TRUE(stereo.tracks[0].Get<Tag::AUDIO_CHANNEL_COUNT>(channels));
+    ASSERT_TRUE(stereo.tracks[0].Get<Tag::AUDIO_OUTPUT_CHANNELS>(outputChannels));
+    EXPECT_EQ(channels, AAC_TEST_CHANNEL_COUNT);
+    EXPECT_EQ(outputChannels, AAC_TEST_CHANNEL_COUNT);
 }
 
 /**
@@ -10793,6 +10936,79 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcEmptyPrefixThenIdrSyn
     ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
     constexpr uint32_t syncFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
     EXPECT_NE(output.mediaAVBuffer->flag_ & syncFlag, 0U);
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcRecoveryPointSeiSyncFlag_001
+ * @tc.desc: Verify a recovery_point SEI (payload type 6) before a slice marks a sync frame like
+ *           FFmpeg h264_parser.c, while a non-recovery SEI or a SEI after the slice does not
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcRecoveryPointSeiSyncFlag_001, TestSize.Level1)
+{
+    // SEI NAL (type 6): recovery_point (payload type 6) with recovery_frame_cnt ue(0) = "1" -> 0x80.
+    const std::vector<uint8_t> recoverySei = {0x06, 0x06, 0x01, 0x80};
+    // SEI NAL carrying a non-recovery message (pic_timing, payload type 1).
+    const std::vector<uint8_t> otherSei = {0x06, 0x01, 0x00};
+    // Non-IDR P-slice so only the SEI heuristic can mark the sample as key.
+    const std::vector<uint8_t> pSlice = {0x61, 0xC0, 0xAA, 0xAA};
+    const std::vector<uint8_t> sps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
+    std::vector<uint8_t> sampleData;
+    std::vector<int32_t> sampleSizes;
+    BuildAvcMultiSampleData({{recoverySei, pSlice}, {otherSei, pSlice}, {pSlice, recoverySei}},
+        sampleData, sampleSizes);
+    auto plugin = BuildAvcMultiNalSampleTestPlugin(sps, sampleData, sampleSizes, {});
+    ASSERT_NE(plugin, nullptr);
+    plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin->streamParsers_, nullptr);
+    ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::AVC), Status::OK);
+
+    constexpr uint32_t syncFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
+    const std::array<bool, 3> expectedSync = {true, false, false};
+    AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    for (uint32_t index = 0; index < expectedSync.size(); ++index) {
+        ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ((output.mediaAVBuffer->flag_ & syncFlag) != 0, expectedSync[index]) <<
+            "sample index " << index << " sync flag mismatch";
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AvcRecoveryPointSeiMultiMessage_001
+ * @tc.desc: Verify a recovery_point SEI that follows another sei_message inside the same SEI NAL
+ *           still marks the sample as a sync frame, matching FFmpeg ff_h264_sei_decode which
+ *           iterates every sei_message instead of only the first one
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AvcRecoveryPointSeiMultiMessage_001, TestSize.Level1)
+{
+    // One SEI NAL carrying pic_timing (type 1, size 0) followed by recovery_point (type 6,
+    // size 1, payload 0x80 = ue(0)); recovery_point is not the first message, so only the
+    // multi-message scan can mark this sample as key.
+    const std::vector<uint8_t> recoveryAfterOtherSei = {0x06, 0x01, 0x00, 0x06, 0x01, 0x80};
+    // One SEI NAL with two non-recovery messages (pic_timing x2) must not mark the sample.
+    const std::vector<uint8_t> noRecoveryMultiSei = {0x06, 0x01, 0x00, 0x01, 0x00};
+    // Non-IDR P-slice so only the SEI heuristic can mark the sample as key.
+    const std::vector<uint8_t> pSlice = {0x61, 0xC0, 0xAA, 0xAA};
+    const std::vector<uint8_t> sps = {0x67, 0x42, 0xC0, 0x1E, 0xF4, 0x31, 0xB2};
+    std::vector<uint8_t> sampleData;
+    std::vector<int32_t> sampleSizes;
+    BuildAvcMultiSampleData({{recoveryAfterOtherSei, pSlice}, {noRecoveryMultiSei, pSlice}},
+        sampleData, sampleSizes);
+    auto plugin = BuildAvcMultiNalSampleTestPlugin(sps, sampleData, sampleSizes, {});
+    ASSERT_NE(plugin, nullptr);
+    plugin->streamParsers_ = std::make_shared<MultiStreamParserManager>();
+    ASSERT_NE(plugin->streamParsers_, nullptr);
+    ASSERT_EQ(plugin->streamParsers_->Create(0, VideoStreamType::AVC), Status::OK);
+
+    constexpr uint32_t syncFlag = static_cast<uint32_t>(Plugins::MPEG4::Sample::SampleFlag::SYNC_FRAME);
+    const std::array<bool, 2> expectedSync = {true, false};
+    AVBufferWrapper output(MPEG4_DEMUXER_PLUGIN_TEST_DEFAULT_BUFFER_SIZE);
+    for (uint32_t index = 0; index < expectedSync.size(); ++index) {
+        ASSERT_EQ(plugin->ReadSample(0, output.mediaAVBuffer), Status::OK);
+        EXPECT_EQ((output.mediaAVBuffer->flag_ & syncFlag) != 0, expectedSync[index]) <<
+            "sample index " << index << " sync flag mismatch";
+    }
 }
 
 /**

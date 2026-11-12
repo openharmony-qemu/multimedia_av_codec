@@ -6460,9 +6460,24 @@ public:
     }
 
     // FFmpeg relative_align_get_bits: skip to the byte phase of referencePosition.
+    // The reference is the raw-data-block start, so the current position is usually
+    // already past it; FFmpeg computes (ref - count) & 7 with signed ints, where a
+    // negative delta still maps to the next byte phase via modulo-8 bit arithmetic.
+    // Convert explicitly instead of relying on a signed-to-unsigned cast: when the
+    // position is already past the reference, the negative delta is normalized with
+    // (8 - diff % 8) % 8, so all arithmetic and the bitwise mask stay on unsigned.
     bool AlignToByteRelative(size_t referencePosition)
     {
-        const size_t toSkip = (referencePosition - pos_) & (AAC_BITS_PER_BYTE - 1);
+        if (referencePosition > totalBits_ || pos_ > totalBits_) {
+            return false;
+        }
+        size_t toSkip = 0;
+        if (referencePosition >= pos_) {
+            toSkip = (referencePosition - pos_) & (AAC_BITS_PER_BYTE - 1);
+        } else {
+            toSkip = (AAC_BITS_PER_BYTE - (pos_ - referencePosition) % AAC_BITS_PER_BYTE) %
+                AAC_BITS_PER_BYTE;
+        }
         return Skip(toSkip);
     }
 
