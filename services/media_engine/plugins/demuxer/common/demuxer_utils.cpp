@@ -58,6 +58,35 @@ bool IsHeifFormat(const char* majorBrand)
     return false;
 }
 
+void ScanSignedFloatTokens(const std::string& str,
+    std::array<std::string, MAX_LOCATION_FLOAT_COUNT>& tokens, uint32_t& count)
+{
+    count = 0;
+    for (size_t i = 0; i < str.size() && count < MAX_LOCATION_FLOAT_COUNT; ++i) {
+        if (str[i] != '+' && str[i] != '-') {
+            continue;
+        }
+        size_t intStart = i + 1;
+        size_t j = intStart;
+        while (j < str.size() && str[j] >= '0' && str[j] <= '9') {
+            ++j;
+        }
+        if (j == intStart || j >= str.size() || str[j] != '.') {
+            continue;
+        }
+        size_t fracStart = j + 1;
+        size_t k = fracStart;
+        while (k < str.size() && str[k] >= '0' && str[k] <= '9') {
+            ++k;
+        }
+        if (k == fracStart) {
+            continue;
+        }
+        tokens[count++] = str.substr(i, k - i);
+        i = k - 1; // 匹配串末尾已扫描，下一轮从 k 继续
+    }
+}
+
 bool StringConverterFloat(const std::string &str, float &result)
 {
     char *end = nullptr;

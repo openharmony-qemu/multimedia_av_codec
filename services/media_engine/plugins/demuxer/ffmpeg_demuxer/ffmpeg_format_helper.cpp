@@ -16,8 +16,8 @@
 #define HST_LOG_TAG "FfmpegFormatHelper"
 
 #include <algorithm>
+#include <array>
 #include <charconv>
-#include <regex>
 #include <sstream>
 #include "converter.h"
 #include "demuxer_utils.h"
@@ -545,20 +545,18 @@ void FFmpegFormatHelper::ParseLocationInfo(const AVFormatContext& avFormatContex
     }
     MEDIA_LOG_D("Get location string successfully: %{private}s", valPtr->value);
     std::string locationStr = std::string(valPtr->value);
-    std::regex pattern(R"([\+\-]\d+\.\d+)");
-    std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
-    std::sregex_iterator end;
-
-    uint32_t cnt = static_cast<uint32_t>(std::distance(numbers, end));
+    std::array<std::string, MAX_LOCATION_FLOAT_COUNT> numbers {};
+    uint32_t cnt = 0;
+    ScanSignedFloatTokens(locationStr, numbers, cnt);
     // at least contain latitude and longitude
     if (cnt < VALID_LOCATION_LEN) {
         MEDIA_LOG_D("Info format error");
         return;
     }
-    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LATITUDE, numbers->str(), ConvertValueType::FLOAT);
-    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, (++numbers)->str(), ConvertValueType::FLOAT);
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LATITUDE, numbers[0], ConvertValueType::FLOAT);
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, numbers[1], ConvertValueType::FLOAT);
     if (cnt > VALID_LOCATION_LEN) {
-        SetToFormatIfConvertSuccess(format, Tag::MEDIA_ALTITUDE, (++numbers)->str(), ConvertValueType::FLOAT);
+        SetToFormatIfConvertSuccess(format, Tag::MEDIA_ALTITUDE, numbers[2], ConvertValueType::FLOAT);
     }
 }
 

@@ -16,7 +16,9 @@
 #ifndef DEMUXER_UTILS_H
 #define DEMUXER_UTILS_H
 
+#include <array>
 #include <charconv>
+#include <cstdint>
 #include <string>
 #include "meta/meta.h"
 #include "meta/meta_key.h"
@@ -34,6 +36,9 @@ enum ConvertValueType {
 bool StartWith(const char* name, const char* chars);
 bool IsHeifFormat(const char* majorBrand);
 void SetToFormatIfConvertSuccess(Meta& format, const TagType& tag, std::string valueStr, ConvertValueType valueType);
+constexpr uint32_t MAX_LOCATION_FLOAT_COUNT = 3; // 纬度、经度、海拔最多 3 个
+void ScanSignedFloatTokens(const std::string& str,
+    std::array<std::string, MAX_LOCATION_FLOAT_COUNT>& tokens, uint32_t& count);
 
 template <typename T>
 bool ConvertString(const std::string &str, T &result)
