@@ -59,6 +59,7 @@ public:
     int32_t NotifyMemoryRecycle() override;
     int32_t NotifyMemoryWriteBack() override;
     int32_t Configure(const Format &format) override;
+    int32_t SetInputBuffers(const std::map<uint32_t, std::shared_ptr<AVBuffer>> &buffers) override;
 
     virtual void ConfigurelWidthAndHeight(const Format &format, const std::string_view &formatKey, bool isWidth) = 0;
     void ConfigureDefaultVal(const Format &format, const std::string_view &formatKey, int32_t minVal = 0,
@@ -118,6 +119,10 @@ protected:
     void CallCallBack(AVCodecErrorType errType, AVCodecServiceErrCode serEcode) override;
     int32_t inputBufferSize_ = 0;
     std::atomic<bool> isValidHdrSttMd_ = false;
+    // Hard-to-software switch adapt external input index and internal buffer slot.
+    uint32_t GetExternalInputIndex(uint32_t slot) const;
+    bool GetInternalInputSlot(uint32_t index, uint32_t &slot) const;
+    void ClearInputIndexMap();
 
 private:
     virtual int32_t Initialize() = 0;
@@ -149,6 +154,11 @@ private:
     sptr<Surface> surface_ = nullptr;
     std::mutex renderBufferMapMutex_;
     std::atomic<bool> isBufferAllocated_ = false;
+    // Input pool taken over by hard-to-software switch. Keeps the same index/buffer/memory-addr binding until Release
+    std::map<uint32_t, std::shared_ptr<AVBuffer>> externalInputBuffers_;
+    bool hasPendingTakeover_ = false;
+    std::map<uint32_t, uint32_t> inputIndexToSlot_;
+    std::map<uint32_t, uint32_t> inputSlotToIndex_;
 };
 
 } // namespace Codec

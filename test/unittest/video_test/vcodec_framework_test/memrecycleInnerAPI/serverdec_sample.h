@@ -21,11 +21,13 @@
 #include <unistd.h>
 #include <atomic>
 #include <fstream>
+#include <map>
 #include <thread>
 #include <mutex>
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "securec.h"
 #include "avcodec_video_decoder.h"
 #include "nocopyable.h"
@@ -64,8 +66,10 @@ public:
     void OnInputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
     void OnOutputBufferAvailable(uint32_t index, std::shared_ptr<AVBuffer> buffer) override;
 
+    bool HasError() const { return hasError_.load(); }
 private:
     std::shared_ptr<VDecInnerSignal> innersignal_;
+    std::atomic<bool> hasError_{false};
 };
 
 class VDecNdkInnerSample : public NoCopyable {
@@ -113,6 +117,15 @@ public:
     void CreateSurface();
     bool MdCompare(unsigned char *buffer, int len, const char *source[]);
 
+    // External input pool takeover atom operation for the hard-to-software switch input buffer case.
+    int32_t CreateHevcDecoderByNameAndInit(const std::string &codeName);
+    int32_t ConfigureDecoder();
+    int32_t PrepareTakeoverInputPool();
+    int32_t SetTakeoverInputBuffers(std::map<uint32_t, std::shared_ptr<AVBuffer>> &pool);
+    int32_t WaitTakeoverPendingReturned(int32_t timeoutMs);
+    int32_t QueueTakeoverInputBuffers(void);
+    int32_t FeedTakeoverUntilEos(int32_t timeoutMs);
+
     const char *inputDir = "/data/test/media/720_1280_25_avcc.h265";
     const char *outputDir = "/data/test/media/VDecTest.yuv";
     sptr<Surface> cs[2] = {};
@@ -135,6 +148,13 @@ public:
     bool sleepOnFPS = false;
     bool repeatRun = false;
     bool enableRandomEos = false;
+    // External input pool takeover results, asserted by the test cases.
+    std::map<uint32_t, std::shared_ptr<AVBuffer>> takeoverPool_;
+    // Count is fixed to 4, values are decided by the caller(e.g. {2,5,7,9}); keep ascending to preserve NAL order
+    std::vector<uint32_t> takeoverInputIndexes_ {0, 1, 2, 3};
+    uint32_t takeoverReturnedCount_ = 0;
+    uint32_t takeoverOutCount_ = 0;
+    bool takeoverAddrCheckPass_ = true;
     const char *fileSourcesha256[64] = {"27", "6D", "A2", "D4", "18", "21", "A5", "CD", "50", "F6", "DD", "CA", "46",
                                         "32", "C3", "FE", "58", "FC", "BC", "51", "FD", "70", "C7", "D4", "E7", "4D",
                                         "5C", "76", "E7", "71", "8A", "B3", "C0", "51", "84", "0A", "FA", "AF", "FA",
@@ -149,6 +169,13 @@ private:
     std::shared_ptr<CodecBase> vdec_;
     std::shared_ptr<VDecInnerSignal> signal_;
     std::shared_ptr<VDecInnerCallback> cb_;
+
+    int32_t BuildTakeoverInputPool();
+    int32_t FeedTakeoverBuffer(std::shared_ptr<AVBuffer> buffer, uint32_t index);
+    bool CheckTakeoverReturned(uint32_t index, const std::shared_ptr<AVBuffer> &buffer);
+    int32_t WaitInputBuffThenFeedAFrame(bool& eosSubmitted);
+    int32_t AllocateInputBuffer(std::shared_ptr<AVBuffer>& avBuffer, uint32_t index);
+    std::map<uint32_t, std::shared_ptr<AVBuffer>> takeoverSnapshot_;
 };
 } // namespace MediaAVCodec
 } // namespace OHOS
