@@ -22,7 +22,6 @@
 #include <iomanip>
 #include <limits>
 #include <numeric>
-#include <regex>
 #include <set>
 #include <array>
 #include "avc_parser_impl.h"
@@ -4472,19 +4471,13 @@ Status MPEG4AtomParser::ParseUdta(MPEG4Atom currentAtom, int32_t depth, ParseCon
 
 void MPEG4AtomParser::ParseLocationString(const std::string& locationStr)
 {
-    std::regex pattern(R"([+-]\d+\.\d+)");
-    std::sregex_iterator numbers(locationStr.cbegin(), locationStr.cend(), pattern);
-    std::sregex_iterator end;
+    std::array<std::string, MAX_LOCATION_FLOAT_COUNT> numbers {};
+    uint32_t cnt = 0;
+    ScanSignedFloatTokens(locationStr, numbers, cnt);
 
     const uint32_t minLocationNum = 2; // 至少需要两个数字：纬度和经度
-    auto cnt = static_cast<uint32_t>(std::distance(numbers, end));
     FALSE_RETURN_MSG_D(cnt >= minLocationNum, "Info format error");
-    SetToFormatIfConvertSuccess(mediaInfo_.general, Tag::MEDIA_LATITUDE, numbers->str(), ConvertValueType::FLOAT);
-    SetToFormatIfConvertSuccess(mediaInfo_.general, Tag::MEDIA_LONGITUDE, (++numbers)->str(), ConvertValueType::FLOAT);
-    if (cnt > minLocationNum) {
-        SetToFormatIfConvertSuccess(
-            mediaInfo_.general, Tag::MEDIA_ALTITUDE, (++numbers)->str(), ConvertValueType::FLOAT);
-    }
+    SetLocationMeta(mediaInfo_.general, numbers, cnt);
 }
 
 std::string GetCoverMimeType(uint32_t dataType)

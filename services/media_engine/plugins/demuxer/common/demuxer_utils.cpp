@@ -58,6 +58,55 @@ bool IsHeifFormat(const char* majorBrand)
     return false;
 }
 
+void ScanSignedFloatTokens(const std::string& str,
+    std::array<std::string, MAX_LOCATION_FLOAT_COUNT>& tokens, uint32_t& count)
+{
+    count = 0;
+    size_t i = 0;
+    while (i < str.size() && count < tokens.size()) {
+        if (str[i] != '+' && str[i] != '-') {
+            ++i;
+            continue;
+        }
+        size_t intStart = i + 1;
+        size_t j = intStart;
+        while (j < str.size() && str[j] >= '0' && str[j] <= '9') {
+            ++j;
+        }
+        if (j == intStart || j >= str.size() || str[j] != '.') {
+            ++i;
+            continue;
+        }
+        size_t fracStart = j + 1;
+        size_t k = fracStart;
+        while (k < str.size() && str[k] >= '0' && str[k] <= '9') {
+            ++k;
+        }
+        if (k == fracStart) {
+            ++i;
+            continue;
+        }
+        tokens[count++] = str.substr(i, k - i);
+        i = k;
+    }
+}
+
+void SetLocationMeta(Meta& format, const std::array<std::string, MAX_LOCATION_FLOAT_COUNT>& tokens,
+    uint32_t count)
+{
+    constexpr uint32_t latitudeIndex = 0;
+    constexpr uint32_t longitudeIndex = 1;
+    constexpr uint32_t altitudeIndex = 2;
+    constexpr uint32_t minLocationCount = 2;
+    // Callers guarantee count >= minLocationCount before calling; count is capped by
+    // tokens.size(), so tokens[altitudeIndex] is only read when count exceeds the base pair.
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LATITUDE, tokens[latitudeIndex], ConvertValueType::FLOAT);
+    SetToFormatIfConvertSuccess(format, Tag::MEDIA_LONGITUDE, tokens[longitudeIndex], ConvertValueType::FLOAT);
+    if (count > minLocationCount) {
+        SetToFormatIfConvertSuccess(format, Tag::MEDIA_ALTITUDE, tokens[altitudeIndex], ConvertValueType::FLOAT);
+    }
+}
+
 bool StringConverterFloat(const std::string &str, float &result)
 {
     char *end = nullptr;

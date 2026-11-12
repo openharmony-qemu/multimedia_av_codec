@@ -29,12 +29,14 @@
 #include <limits>
 #include <mutex>
 #include <numeric>
+#include <regex>
 #include <sstream>
 #include <sys/stat.h>
 #include <tuple>
 #include <unistd.h>
 
 #include "demuxer_data_reader.h"
+#include "demuxer_utils.h"
 #include "demuxer/type_finder.h"
 #include "plugin/cached_plugin_package.h"
 #include "plugin/plugin_list.h"
@@ -11753,6 +11755,144 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_EofStraddlePartialReadAn
     AVBufferWrapper eosAgain(EOF_STRADDLE_BUFFER_CAPACITY);
     ASSERT_EQ(plugin.ReadSample(0, eosAgain.mediaAVBuffer), Status::OK);
     EXPECT_NE((eosAgain.mediaAVBuffer->flag_ & static_cast<uint32_t>(AVBufferFlag::EOS)), 0U);
+}
+
+namespace {
+void ExpectScanMatchesRegex(const std::string& input)
+{
+    std::regex pattern(R"([+-]\d+\.\d+)");
+    std::vector<std::string> regexMatches;
+    for (std::sregex_iterator iter(input.cbegin(), input.cend(), pattern), endIter;
+        iter != endIter; ++iter) {
+        regexMatches.push_back(iter->str());
+    }
+
+    std::array<std::string, MAX_LOCATION_FLOAT_COUNT> tokens{};
+    uint32_t count = 0;
+    ScanSignedFloatTokens(input, tokens, count);
+
+    const uint32_t expectedCount = std::min(static_cast<uint32_t>(regexMatches.size()),
+        MAX_LOCATION_FLOAT_COUNT);
+    EXPECT_EQ(count, expectedCount);
+    for (uint32_t idx = 0; idx < expectedCount; ++idx) {
+        EXPECT_EQ(tokens[idx], regexMatches[idx]);
+    }
+}
+} // namespace
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ScanSignedFloatTokensMatchesRegex_001
+ * @tc.desc: Verify ScanSignedFloatTokens yields the same tokens and count as the original regex
+ *           [+\-]\d+\.\d+ for valid, whitespace, sign-cluster and truncated location strings.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ScanSignedFloatTokensMatchesRegex_001, TestSize.Level1)
+{
+    const std::vector<std::string> inputs = {
+        "+120.201302+30.188101/",
+        "+30.188101+120.201302+12.34/",
+        "-0.5+3.25/",
+        "abc+1.2xyz",
+        "  +1.2  -3.4  ",
+        "+1.2\t-3.4\n",
+        "++1.2",
+        "--1.2",
+        "+-1.2",
+        "-+1.2",
+        "+1.2.3",
+        "+1.2.3.4",
+        "+12+3.4",
+        "+1.2e-3",
+        "+1.",
+        "+.5",
+        ".5",
+        "1.2",
+        "+ 1.2",
+        "+1 .2",
+        "+1. 2",
+        "+a-3.4",
+        "+1a.2",
+        "+1..2",
+        "+1.2..",
+        "+1.2-",
+        "+1.2+3.4+5.6+7.8",
+        "+0.0-0.0+0.0-0.0+0.0",
+        "+999999.999999",
+        "+1234567890.1234567890",
+        "",
+        "+",
+        "-",
+        "abc",
+        "++++1.2",
+    };
+    for (const auto& input : inputs) {
+        ExpectScanMatchesRegex(input);
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_ScanSignedFloatTokensCountCap_001
+ * @tc.desc: Verify extraction caps at three matches when the regex finds more, keeping the
+ *           lat/lon/altitude count thresholds aligned with the regex result.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_ScanSignedFloatTokensCountCap_001, TestSize.Level1)
+{
+    const std::vector<std::string> inputs = {
+        "+1.2+3.4+5.6+7.8+9.0",
+        "+0.0-0.0+0.0-0.0+0.0-0.0+0.0",
+        "+1.2+3.4+5.6",
+        "+1.2+3.4",
+        "+1.2",
+        "no location here",
+    };
+    for (const auto& input : inputs) {
+        ExpectScanMatchesRegex(input);
+    }
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetLocationMetaLatitudeLongitude_001
+ * @tc.desc: Verify two location tokens set latitude and longitude only, and skip altitude.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetLocationMetaLatitudeLongitude_001, TestSize.Level1)
+{
+    constexpr uint32_t twoTokens = 2;
+    constexpr float latitudeValue = 30.188101f;
+    constexpr float longitudeValue = 120.201302f;
+    std::array<std::string, MAX_LOCATION_FLOAT_COUNT> tokens = {"+30.188101", "+120.201302", "+12.34"};
+    Meta format;
+
+    SetLocationMeta(format, tokens, twoTokens);
+
+    float latitude = 0.0f;
+    float longitude = 0.0f;
+    float altitude = 0.0f;
+    ASSERT_TRUE(format.Get<Tag::MEDIA_LATITUDE>(latitude));
+    ASSERT_TRUE(format.Get<Tag::MEDIA_LONGITUDE>(longitude));
+    EXPECT_FLOAT_EQ(latitude, latitudeValue);
+    EXPECT_FLOAT_EQ(longitude, longitudeValue);
+    EXPECT_FALSE(format.Get<Tag::MEDIA_ALTITUDE>(altitude));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_SetLocationMetaAltitude_001
+ * @tc.desc: Verify three location tokens additionally set altitude.
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_SetLocationMetaAltitude_001, TestSize.Level1)
+{
+    constexpr uint32_t threeTokens = 3;
+    constexpr float altitudeValue = 12.34f;
+    std::array<std::string, MAX_LOCATION_FLOAT_COUNT> tokens = {"+30.188101", "+120.201302", "+12.34"};
+    Meta format;
+
+    SetLocationMeta(format, tokens, threeTokens);
+
+    float altitude = 0.0f;
+    ASSERT_TRUE(format.Get<Tag::MEDIA_ALTITUDE>(altitude));
+    EXPECT_FLOAT_EQ(altitude, altitudeValue);
 }
 
 } // namespace Media
