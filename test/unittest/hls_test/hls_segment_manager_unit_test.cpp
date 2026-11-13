@@ -2863,6 +2863,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, HandleSpliceEnd_002, TestSize.Level1)
     hlsSegmentManager_->tsStorageInfo_.clear();
     hlsSegmentManager_->readTsIndex_ = 0;
     hlsSegmentManager_->isFirstFrameArrived_ = true;
+    hlsSegmentManager_->isTsEnd_ = false;
     hlsSegmentManager_->tsStorageInfo_[0] = {100, true};
     hlsSegmentManager_->readOffset_ = 100;
     hlsSegmentManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
@@ -2870,7 +2871,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, HandleSpliceEnd_002, TestSize.Level1)
     unsigned char buff[16] = {0};
     ReadDataInfo readDataInfo;
     hlsSegmentManager_->HandleSpliceEnd(buff, readDataInfo);
-    EXPECT_TRUE(hlsSegmentManager_->isTsEnd_.load());
+    EXPECT_FALSE(hlsSegmentManager_->isTsEnd_.load());
 }
 
 /**
@@ -2921,6 +2922,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, HandleSpliceEnd_005, TestSize.Level1)
     hlsSegmentManager_->tsStorageInfo_.clear();
     hlsSegmentManager_->readTsIndex_ = 0;
     hlsSegmentManager_->isFirstFrameArrived_ = true;
+    hlsSegmentManager_->isTsEnd_ = false;
     hlsSegmentManager_->tsStorageInfo_[0] = {100, true};
     hlsSegmentManager_->readOffset_ = 100;
     hlsSegmentManager_->cacheMediaBuffer_ = std::make_shared<CacheMediaChunkBufferHlsImpl>();
@@ -2928,7 +2930,7 @@ HWTEST_F(HlsSegmentManagerUnitTest, HandleSpliceEnd_005, TestSize.Level1)
     unsigned char buff[16] = {0};
     ReadDataInfo readDataInfo;
     hlsSegmentManager_->HandleSpliceEnd(buff, readDataInfo);
-    EXPECT_TRUE(hlsSegmentManager_->isTsEnd_.load());
+    EXPECT_FALSE(hlsSegmentManager_->isTsEnd_.load());
     EXPECT_EQ(hlsSegmentManager_->readTsIndex_.load(), 0u);
 }
 
