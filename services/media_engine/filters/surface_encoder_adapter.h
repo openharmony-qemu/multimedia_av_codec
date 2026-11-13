@@ -17,7 +17,9 @@
 #define FILTERS_SURFACE_ENCODER_ADAPTER_H
 
 #include <atomic>
+#include <cstdint>
 #include <cstring>
+#include <limits>
 #include <shared_mutex>
 #include <deque>
 #include <utility>
@@ -169,6 +171,7 @@ private:
 
     int64_t startBufferTime_{-1};
     int64_t lastBufferTime_{-1};
+    int64_t lastWriteMappingTime_{INT64_MIN}; // 最后一个实际写入帧的 mappingTime, 单调下限保护用
     std::string codecMimeType_;
     std::string bundleName_;
     uint64_t instanceId_{0};

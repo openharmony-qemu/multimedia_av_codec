@@ -35,6 +35,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, LOG_DOMAIN_RECORDER, "
 constexpr uint32_t TIME_OUT_MS = 1000;
 constexpr uint32_t NS_PER_US = 1000;
 constexpr int64_t SEC_TO_NS = 1000000000;
+constexpr int64_t PTS_CLAMP_STEP_NS = SEC_TO_NS / 1000; // PTS 单调钳位步长
 constexpr uint32_t STOP_TIME_OUT_MS = 2000;
 constexpr uint32_t MAX_STOPPED_FRAMES_FOR_BOOST = 2;
 constexpr uint32_t MAX_SQR_FACTOR = 51;
@@ -539,6 +540,7 @@ Status SurfaceEncoderAdapter::Pause()
         pauseResumePts_.push_back({pauseTime_, StateCode::PAUSE});
         pauseResumePts_.push_back({std::numeric_limits<int64_t>::max(), StateCode::RESUME});
     }
+    checkFramesPauseTime_ = 0; // 重置 checkFramesPauseTime_: 防止跨 pause/resume 周期累积负值。
     curState_ = ProcessStateCode::PAUSED;
     return Status::OK;
 }
@@ -908,6 +910,14 @@ void SurfaceEncoderAdapter::HandlePtsMapping(int64_t currentPts, bool isDroppedF
             startBufferTime_ = currentPts;
         }
         int64_t mappingTime = adjustPts - startBufferTime_;
+        if (lastWriteMappingTime_ != INT64_MIN && mappingTime <= lastWriteMappingTime_) {
+            MEDIA_LOG_W("HandlePtsMapping clamped: mappingTime:" PUBLIC_LOG_D64 " currentPts:" PUBLIC_LOG_D64
+                " adjustPts:" PUBLIC_LOG_D64 " lastWriteMappingTime_:" PUBLIC_LOG_D64
+                " checkFramesPauseTime_:" PUBLIC_LOG_D64,
+                mappingTime, currentPts, adjustPts, lastWriteMappingTime_, checkFramesPauseTime_);
+            mappingTime = lastWriteMappingTime_ + PTS_CLAMP_STEP_NS;
+        }
+        lastWriteMappingTime_ = mappingTime;
         MEDIA_LOG_D("HandlePtsMapping mappingTime: " PUBLIC_LOG_D64, mappingTime);
         if (mappingTime < 0) {
             MEDIA_LOG_W("mappingTime is invalid, mappingTime: " PUBLIC_LOG_D64 " currentPts: " PUBLIC_LOG_D64
@@ -995,6 +1005,9 @@ bool SurfaceEncoderAdapter::CheckFrames(int64_t currentPts, int64_t &checkFrames
         }
         // resumetime之后第一帧与resumetime的差
         checkFramesPauseTime = checkFramesPauseTime - (currentPts - pauseResumeQueue_[0].first);
+        MEDIA_LOG_I("CheckFrames RESUME branch: currentPts:" PUBLIC_LOG_D64
+            " resumeTime:" PUBLIC_LOG_D64 " checkFramesPauseTime:" PUBLIC_LOG_D64,
+            currentPts, pauseResumeQueue_[0].first, checkFramesPauseTime);
     }
     pauseResumeQueue_.pop_front();
     return CheckFrames(currentPts, checkFramesPauseTime);
@@ -1188,6 +1201,7 @@ void SurfaceEncoderAdapter::Clear()
 {
     MEDIA_LOG_I("SurfaceEncoderAdapter::Clear enter");
     startBufferTime_ = -1;
+    lastWriteMappingTime_ = INT64_MIN;
     stopTime_ = -1;
     pauseTime_ = -1;
     resumeTime_ = -1;
