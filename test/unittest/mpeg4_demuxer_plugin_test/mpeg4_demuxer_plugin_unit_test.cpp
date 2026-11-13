@@ -930,6 +930,63 @@ public:
     }
 };
 
+/**
+ * Serves a real prefix followed by synthesized filler, so a source can claim a size far
+ * beyond its in-memory bytes (a trailing blob larger than the 64 MiB payload limit).
+ */
+class SynthesizedTailDataSource final : public DataSource {
+public:
+    SynthesizedTailDataSource(std::vector<uint8_t> prefix, uint64_t totalSize)
+        : prefix_(std::move(prefix)),
+          totalSize_(std::max<uint64_t>(totalSize, static_cast<uint64_t>(prefix_.size()))) {}
+
+    Status ReadAt(int64_t offset, std::shared_ptr<Buffer>& buffer, size_t expectedLen) override
+    {
+        if (offset < 0 || buffer == nullptr || buffer->GetMemory() == nullptr ||
+            static_cast<uint64_t>(offset) >= totalSize_) {
+            return Status::END_OF_STREAM;
+        }
+        const uint64_t readOffset = static_cast<uint64_t>(offset);
+        const size_t available = static_cast<size_t>(totalSize_ - readOffset);
+        const size_t copySize = std::min(expectedLen, available);
+        std::vector<uint8_t> chunk(copySize, tailFillerByte);
+        for (size_t index = 0; index < copySize; ++index) {
+            const uint64_t position = readOffset + index;
+            if (position < prefix_.size()) {
+                chunk[index] = prefix_[static_cast<size_t>(position)];
+            }
+        }
+        const size_t writeSize = buffer->GetMemory()->Write(chunk.data(), copySize, 0);
+        return writeSize > 0 ? Status::OK : Status::ERROR_UNKNOWN;
+    }
+
+    Status GetSize(uint64_t& size) override
+    {
+        size = totalSize_;
+        return Status::OK;
+    }
+
+    Seekable GetSeekable() override
+    {
+        return Seekable::SEEKABLE;
+    }
+
+    int32_t GetStreamID() override
+    {
+        return 0;
+    }
+
+    bool IsDash() override
+    {
+        return false;
+    }
+
+private:
+    static constexpr uint8_t tailFillerByte = 0x5A;
+    std::vector<uint8_t> prefix_;
+    uint64_t totalSize_ = 0;
+};
+
 class SequentialReadDataSource final : public DataSource {
 public:
     explicit SequentialReadDataSource(std::vector<uint8_t> data) : data_(std::move(data)) {}
@@ -10332,6 +10389,42 @@ HWTEST_F(Mpeg4DemuxerPluginUnitTest, Mpeg4DemuxerPlugin_AtomPayloadLimit_ExemptM
     EXPECT_EQ(parser.MPEG4ParseAtom(0, &ctx), Status::OK);
     EXPECT_TRUE(parser.hasMdatBox_);
     EXPECT_EQ(ctx.offset, static_cast<int64_t>(maxPayloadSize + 1 + normalHeaderSize));
+}
+
+/**
+ * @tc.name: Mpeg4DemuxerPlugin_AtomPayloadLimit_TrimmedTrailingAtomExceedsLimit_001
+ * @tc.desc: Verify a trailing unknown atom trimmed to EOF skips the 64 MiB limit, like FFmpeg tolerates appended junk
+ * @tc.type: FUNC
+ */
+HWTEST_F(Mpeg4DemuxerPluginUnitTest,
+    Mpeg4DemuxerPlugin_AtomPayloadLimit_TrimmedTrailingAtomExceedsLimit_001, TestSize.Level1)
+{
+    constexpr uint64_t maxPayloadSize = 64ULL * 1024 * 1024;
+    constexpr uint64_t normalHeaderSize = 8;
+    // Payload left after trimming stays above the limit, which the pre-fix parser rejected.
+    constexpr uint64_t tailPayloadSize = maxPayloadSize + normalHeaderSize;
+    // A complete ftyp+moov sets moovFound_; a following mdat sets hasMdatBox_, the precondition of trimming.
+    auto prefix = BuildMinimalMp4WithTrailingBytes(0);
+    const auto mdatHeader =
+        BuildAtomHeader(normalHeaderSize, static_cast<uint32_t>(Plugins::MPEG4::FourccType("mdat")), false);
+    prefix.insert(prefix.end(), mdatHeader.begin(), mdatHeader.end());
+    prefix.insert(prefix.end(), normalHeaderSize, 0);
+    // Trailing unknown atom: its declared size exceeds the source, so the parser trims it to the source end.
+    const auto trailingHeader = BuildAtomHeader(tailPayloadSize + normalHeaderSize,
+        static_cast<uint32_t>(Plugins::MPEG4::FourccType("zzzz")), false);
+    prefix.insert(prefix.end(), trailingHeader.begin(), trailingHeader.end());
+
+    auto dataSource = std::make_shared<SynthesizedTailDataSource>(prefix, prefix.size() + tailPayloadSize);
+    auto reader = std::make_shared<DemuxerDataReader>();
+    ASSERT_EQ(reader->SetDataReader(dataSource), Status::OK);
+    Plugins::MPEG4::MPEG4AtomParser parser;
+    parser.dataReader_ = reader;
+    parser.dataSource_ = dataSource;
+
+    EXPECT_EQ(parser.MPEG4ParseHeader(dataSource, Seekable::SEEKABLE, -1, Plugins::DemuxerMode::FULL_PARSE),
+        Status::OK);
+    EXPECT_TRUE(parser.moovFound_);
+    EXPECT_TRUE(parser.hasMdatBox_);
 }
 
 /**

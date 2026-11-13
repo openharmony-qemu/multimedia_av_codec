@@ -206,6 +206,7 @@ private:
         uint64_t dataSize = 0;
         int64_t dataOffset = 0;
         uint64_t headerSize = 0;
+        bool trailingTrimmed = false; // Size clamped to the end of source as trailing garbage.
     };
 
     struct ParseContext {
