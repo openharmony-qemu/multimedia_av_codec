@@ -53,9 +53,10 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_Init_001, TestSize
     auto testEventReceiver = std::make_shared<TestEventReceiver>();
     auto testFilterCallback = std::make_shared<TestFilterCallback>();
     audioDataSourceFilter_->Init(testEventReceiver, testFilterCallback);
-    std::shared_ptr<Task> taskPtr_ = std::make_shared<Task>("test");
+    EXPECT_EQ(audioDataSourceFilter_->receiver_, testEventReceiver);
     audioDataSourceFilter_->Init(testEventReceiver, testFilterCallback);
     ASSERT_NE(audioDataSourceFilter_->taskPtr_, nullptr);
+    EXPECT_EQ(audioDataSourceFilter_->callback_, testFilterCallback);
 }
 
 /**
@@ -122,11 +123,11 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_DoResume_001, Test
  */
 HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_DoStop_001, TestSize.Level1)
 {
-    std::shared_ptr<Task> taskPtr_ = std::make_shared<Task>("test");
     Status ret = audioDataSourceFilter_->DoStop();
-    taskPtr_ = nullptr;
+    EXPECT_EQ(ret, Status::OK);
     audioDataSourceFilter_->nextFilter_ = std::make_shared<TestFilter>();
     ret = audioDataSourceFilter_->DoStop();
+    EXPECT_EQ(ret, Status::OK);
     audioDataSourceFilter_->nextFilter_ = nullptr;
     ret = audioDataSourceFilter_->DoStop();
     EXPECT_EQ(ret, Status::OK);
@@ -200,6 +201,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_001, Test
     EXPECT_CALL(*mockAudioDataSource, GetSize(testing::_)).Times(0);
     audioDataSourceFilter_->dataReady_ = true;
     audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
 }
 
 /**
@@ -219,6 +221,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_002, Test
     EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_)).Times(0);
     audioDataSourceFilter_->dataReady_ = true;
     audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
 }
 
 /**
@@ -237,6 +240,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_003, Test
     EXPECT_CALL(*mockAudioDataSource, ReadAt(testing::_, testing::_)).Times(0);
     audioDataSourceFilter_->dataReady_ = true;
     audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
 }
 
 /**
@@ -259,6 +263,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_004, Test
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(0);
     audioDataSourceFilter_->dataReady_ = true;
     audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
 }
 
 /**
@@ -282,6 +287,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_005, Test
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(1);
     audioDataSourceFilter_->dataReady_ = true;
     audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
 }
 
 /**
@@ -310,6 +316,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_006, Test
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(testing::AtLeast(1));
     audioDataSourceFilter_->dataReady_ = true;
     audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
 }
 
 /**
@@ -353,6 +360,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_008, Test
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(1);
     audioDataSourceFilter_->dataReady_ = true;
     audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
 }
 
 /**
@@ -377,6 +385,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_009, Test
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(testing::AtLeast(1));
     audioDataSourceFilter_->dataReady_ = true;
     audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
 }
 
 /**
@@ -404,6 +413,7 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_010, Test
     EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, false)).WillRepeatedly(Return(Status::OK));
     audioDataSourceFilter_->dataReady_ = true;
     audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
 }
 
 /**
@@ -459,7 +469,9 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_OnLinkedResult_001
     audioDataSourceFilter_->SetParameter(meta);
     EXPECT_EQ(audioDataSourceFilter_->outputBufferQueue_, queue);
     audioDataSourceFilter_->OnUnlinkedResult(meta);
+    EXPECT_EQ(audioDataSourceFilter_->outputBufferQueue_, queue);
     audioDataSourceFilter_->OnUpdatedResult(meta);
+    EXPECT_EQ(audioDataSourceFilter_->outputBufferQueue_, queue);
 }
 
 HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_002, TestSize.Level1)
@@ -600,6 +612,132 @@ HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_009, TestSize.Leve
 
     // 3. Verify the result
     EXPECT_EQ(audioDataSourceFilter_->audioDataSource_, audioSource);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_DoStart_002
+ * @tc.desc: DoStart with taskPtr_ set, covers taskPtr_->Start() branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_DoStart_002, TestSize.Level1)
+{
+    audioDataSourceFilter_->taskPtr_ = std::make_shared<Task>("DataReader");
+    audioDataSourceFilter_->stopped_ = true;
+    Status ret = audioDataSourceFilter_->DoStart();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(audioDataSourceFilter_->stopped_.load(), false);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_DoPause_002
+ * @tc.desc: DoPause with taskPtr_ set, covers taskPtr_->Pause() branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_DoPause_002, TestSize.Level1)
+{
+    audioDataSourceFilter_->taskPtr_ = std::make_shared<Task>("DataReader");
+    audioDataSourceFilter_->stopped_ = false;
+    Status ret = audioDataSourceFilter_->DoPause();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(audioDataSourceFilter_->stopped_.load(), true);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_DoResume_002
+ * @tc.desc: DoResume with taskPtr_ set, covers taskPtr_->Start() branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_DoResume_002, TestSize.Level1)
+{
+    audioDataSourceFilter_->taskPtr_ = std::make_shared<Task>("DataReader");
+    audioDataSourceFilter_->stopped_ = true;
+    audioDataSourceFilter_->dataReady_ = true;
+    Status ret = audioDataSourceFilter_->DoResume();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(audioDataSourceFilter_->stopped_.load(), false);
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, false);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_DoStop_002
+ * @tc.desc: DoStop with taskPtr_ set, covers taskPtr_->Stop() branch
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_DoStop_002, TestSize.Level1)
+{
+    audioDataSourceFilter_->taskPtr_ = std::make_shared<Task>("DataReader");
+    audioDataSourceFilter_->stopped_ = false;
+    Status ret = audioDataSourceFilter_->DoStop();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(audioDataSourceFilter_->stopped_.load(), true);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_DoRelease_002
+ * @tc.desc: DoRelease with taskPtr_ and audioDataSource_ set, covers Stop and SetListener(nullptr)
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_DoRelease_002, TestSize.Level1)
+{
+    audioDataSourceFilter_->taskPtr_ = std::make_shared<Task>("DataReader");
+    std::shared_ptr<MockAudioDataSource> mockAudioDataSource = std::make_shared<MockAudioDataSource>();
+    audioDataSourceFilter_->audioDataSource_ = mockAudioDataSource;
+    EXPECT_CALL(*mockAudioDataSource, SetListener(testing::_)).Times(1);
+    Status ret = audioDataSourceFilter_->DoRelease();
+    EXPECT_EQ(ret, Status::OK);
+    EXPECT_EQ(audioDataSourceFilter_->audioDataSource_, nullptr);
+    EXPECT_EQ(audioDataSourceFilter_->taskPtr_, nullptr);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_SetAudioDataSource_002
+ * @tc.desc: SetAudioDataSource replaces existing source and then sets nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_SetAudioDataSource_002, TestSize.Level1)
+{
+    std::shared_ptr<MockAudioDataSource> firstSource = std::make_shared<MockAudioDataSource>();
+    audioDataSourceFilter_->audioDataSource_ = firstSource;
+    EXPECT_CALL(*firstSource, SetListener(testing::_)).Times(1);
+
+    std::shared_ptr<MockAudioDataSource> secondSource = std::make_shared<MockAudioDataSource>();
+    EXPECT_CALL(*secondSource, SetListener(testing::_)).Times(2);
+    audioDataSourceFilter_->SetAudioDataSource(secondSource);
+    EXPECT_EQ(audioDataSourceFilter_->audioDataSource_, secondSource);
+
+    audioDataSourceFilter_->SetAudioDataSource(nullptr);
+    EXPECT_EQ(audioDataSourceFilter_->audioDataSource_, nullptr);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_SendEos_003
+ * @tc.desc: SendEos when RequestBuffer returns OK but buffer is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_SendEos_003, TestSize.Level1)
+{
+    sptr<MockAVBufferQueueProducer> mockAVBufferQueueProducer = new OHOS::Media::Pipeline::MockAVBufferQueueProducer();
+    audioDataSourceFilter_->outputBufferQueue_ = mockAVBufferQueueProducer;
+    EXPECT_CALL(*mockAVBufferQueueProducer, RequestBuffer(testing::_, testing::_, testing::_))
+        .WillOnce(Return(Status::OK));
+    EXPECT_CALL(*mockAVBufferQueueProducer, PushBuffer(testing::_, testing::_)).Times(0);
+    audioDataSourceFilter_->eos_ = false;
+    Status ret = audioDataSourceFilter_->SendEos();
+    EXPECT_EQ(ret, Status::ERROR_NULL_POINTER);
+    EXPECT_EQ(audioDataSourceFilter_->eos_.load(), false);
+}
+
+/**
+ * @tc.name: AudioDataSourceFilter_ReadLoop_011
+ * @tc.desc: ProcessLoop returns early when stopped_ is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(AudioDataSourceFilterUnitTest, AudioDataSourceFilter_ReadLoop_011, TestSize.Level1)
+{
+    audioDataSourceFilter_->stopped_ = true;
+    audioDataSourceFilter_->dataReady_ = true;
+    audioDataSourceFilter_->ProcessLoop();
+    EXPECT_EQ(audioDataSourceFilter_->dataReady_, true);
 }
 }  // namespace Pipeline
 }  // namespace Media

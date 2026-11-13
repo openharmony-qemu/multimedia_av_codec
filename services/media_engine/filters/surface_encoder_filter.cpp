@@ -278,8 +278,8 @@ Status SurfaceEncoderFilter::SetTimeRange(int64_t startTimeMs, int64_t endTimeMs
 void SurfaceEncoderFilter::SetClipStartRelativeUs(int64_t clipStartRelativeUs)
 {
     MEDIA_LOG_I("SetClipStartRelativeUs: " PUBLIC_LOG_D64, clipStartRelativeUs);
-    clipStartRelativeUs_ = clipStartRelativeUs;
     std::lock_guard<std::mutex> lock(mediaCodecMutex_);
+    clipStartRelativeUs_ = clipStartRelativeUs;
     if (mediaCodec_ != nullptr) {
         mediaCodec_->SetClipStartTime(clipStartRelativeUs);
     }

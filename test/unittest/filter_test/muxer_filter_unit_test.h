@@ -49,6 +49,9 @@ public:
     MOCK_METHOD(Status, Start, (), (override));
     MOCK_METHOD(Status, Stop, (), (override));
     MOCK_METHOD(Status, SetParameter, (const std::shared_ptr<Meta> &param), (override));
+    MOCK_METHOD(Status, AddTrack, (int32_t &trackIndex, const std::shared_ptr<Meta> &trackDesc), (override));
+    MOCK_METHOD(sptr<AVBufferQueueProducer>, GetInputBufferQueue, (uint32_t trackIndex), (override));
+    MOCK_METHOD(Status, SetUserMeta, (const std::shared_ptr<Meta> &userMeta), (override));
 };
 
 class MyFilterLinkCallback : public FilterLinkCallback {
@@ -74,6 +77,17 @@ public:
     void OnEvent(const Event& event)
     {
         return;
+    }
+};
+class RecordingEventReceiver : public EventReceiver {
+public:
+    ~RecordingEventReceiver() = default;
+    int32_t eventCount_ = 0;
+    EventType lastEventType_ = static_cast<EventType>(-1);
+    void OnEvent(const Event& event) override
+    {
+        eventCount_++;
+        lastEventType_ = event.type;
     }
 };
 class MyAVBufferQueueProducer : public IRemoteStub<AVBufferQueueProducer> {
