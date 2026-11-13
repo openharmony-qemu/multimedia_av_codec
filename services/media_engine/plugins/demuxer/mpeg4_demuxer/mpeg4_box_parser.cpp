@@ -6099,6 +6099,7 @@ Status MPEG4AtomParser::HandleAtomSourceRange(MPEG4Atom& atom, const std::string
             FALSE_RETURN_V_MSG_E(remainingSize >= atomInfoSize, Status::ERROR_INVALID_DATA,
                 "Invalid trailing unknown atom size");
             atom.effectiveSize = remainingSize;
+            atom.trailingTrimmed = true;
             MEDIA_LOG_W("Trim trailing unknown atom: offset " PUBLIC_LOG_D64 ", type " PUBLIC_LOG_S
                 ", source size " PUBLIC_LOG_U64, ctx->offset, typeStr.c_str(), dataSourceSize);
         } else if (atomExceedsSource) {
@@ -6176,7 +6177,10 @@ Status MPEG4AtomParser::MPEG4ParseAtom(int32_t depth, ParseContext* ctx)
     FALSE_RETURN_V_MSG_E(atom.effectiveSize >= static_cast<uint64_t>(ctx->dataOffset - ctx->offset),
         Status::ERROR_INVALID_DATA, "Invalid atom effective size");
     atom.dataSize = atom.effectiveSize - static_cast<uint64_t>(ctx->dataOffset - ctx->offset);
-    if (atom.type != MDAT_ATOM_TYPE && atom.dataSize > MAX_NON_MDAT_ATOM_PAYLOAD_SIZE) {
+    // A trailing unknown atom trimmed to the source end is skipped by length without reading
+    // its payload, so the non-mdat payload limit does not apply to it.
+    if (!atom.trailingTrimmed && atom.type != MDAT_ATOM_TYPE &&
+        atom.dataSize > MAX_NON_MDAT_ATOM_PAYLOAD_SIZE) {
         MEDIA_LOG_E("Non-mdat atom payload too large: type " PUBLIC_LOG_S ", payload " PUBLIC_LOG_U64
             ", max " PUBLIC_LOG_U64, atomTypeStr.c_str(), atom.dataSize, MAX_NON_MDAT_ATOM_PAYLOAD_SIZE);
         return Status::ERROR_INVALID_DATA;
