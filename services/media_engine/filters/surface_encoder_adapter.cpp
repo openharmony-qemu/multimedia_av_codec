@@ -597,7 +597,9 @@ void SurfaceEncoderAdapter::TransCoderOnOutputBufferAvailable(uint32_t index, st
         MEDIA_LOG_I("emptyOutputBuffer->memory_ is nullptr");
         return;
     }
-    bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
+    if (size > 0) {
+        bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
+    }
     bufferMem->SetSize(size);
     *(emptyOutputBuffer->meta_) = *(buffer->meta_);
     emptyOutputBuffer->pts_ = buffer->pts_;
@@ -622,7 +624,6 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
         TransCoderOnOutputBufferAvailable(index, buffer);
         return;
     }
-    FALSE_RETURN_MSG(buffer->memory_ != nullptr, "buffer->memory_ is nullptr, OnOutputBufferAvailable failed");
     int32_t size = buffer->memory_->GetSize();
     std::shared_ptr<AVBuffer> outputBuffer;
     AVBufferConfig avBufferConfig;
@@ -634,7 +635,10 @@ void SurfaceEncoderAdapter::OnOutputBufferAvailable(uint32_t index, std::shared_
     FALSE_RETURN_MSG(outputBuffer != nullptr, "outputBuffer is nullptr.");
     std::shared_ptr<AVMemory> &bufferMem = outputBuffer->memory_;
     FALSE_RETURN_MSG(outputBuffer->memory_ != nullptr, "outputBuffer->memory_ is nullptr");
-    bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
+    if (size > 0) {
+        bufferMem->Write(buffer->memory_->GetAddr(), size, 0);
+    }
+    bufferMem->SetSize(size);
     *(outputBuffer->meta_) = *(buffer->meta_);
     outputBuffer->pts_ = buffer->pts_ / NS_PER_US;
     outputBuffer->flag_ = buffer->flag_;
@@ -752,6 +756,12 @@ void SurfaceEncoderAdapter::OnInputParameterWithAttrAvailable(uint32_t index, st
     if (isWatermarkMode_ && currentPts <= 0) {
         MEDIA_LOG_W("OnInputParameterWithAttrAvailable currentPts = " PUBLIC_LOG_D64, currentPts);
         return;
+    }
+    if (currentPts <= 0) {
+        GetCurrentTime(currentPts);
+        if (lastBufferTime_ > 0 && currentPts <= lastBufferTime_) {
+            currentPts = lastBufferTime_ + NS_PER_US;
+        }
     }
     bool isDroppedFrames = CheckFrames(currentPts, checkFramesPauseTime_);
     MEDIA_LOG_D("currentPts: " PUBLIC_LOG_D64 " checkFramesPauseTime_: " PUBLIC_LOG_D64

@@ -287,6 +287,20 @@ sptr<AVBufferQueueConsumer> AudioSink::GetBufferQueueConsumer()
 
 Status AudioSink::SetParameter(const std::shared_ptr<Meta>& meta)
 {
+    if (meta != nullptr) {
+        auto item = meta->begin();
+        if (item != meta->end() && item->first == "ohos.qemu.audio.source_provenance_v1") {
+            auto next = item;
+            ++next;
+            if (next == meta->end()) {
+                std::string descriptor;
+                FALSE_RETURN_V(meta->GetData("ohos.qemu.audio.source_provenance_v1", descriptor), Status::ERROR_MISMATCHED_TYPE);
+                FALSE_RETURN_V(plugin_ != nullptr, Status::ERROR_NULL_POINTER);
+                return plugin_->SetParameter(meta);
+            }
+        }
+    }
+
     globalMeta_ = meta;
     UpdateMediaTimeRange(meta);
     FALSE_RETURN_V(meta != nullptr, Status::ERROR_NULL_POINTER);
@@ -769,9 +783,37 @@ bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, 
 {
     FALSE_RETURN_V_MSG(bufferDesc.buffer != nullptr, false, "Audio bufferDesc is nullptr");
     FALSE_RETURN_V_MSG(buffer != nullptr && buffer->memory_ != nullptr, false, "AVBuffer is nullptr");
-    auto ret = memcpy_s(bufferDesc.buffer + bufferDesc.dataLength, cacheBufferSize,
-        buffer->memory_->GetAddr() + currentQueuedBufferOffset_, cacheBufferSize);
+    auto memory = buffer->memory_;
+    auto source = memory->GetAddr();
+    const int32_t capacity = memory->GetCapacity();
+    const int32_t offset = memory->GetOffset();
+    const int32_t used = memory->GetSize();
+    FALSE_RETURN_V_MSG(source != nullptr && capacity >= 0 && offset >= 0 && used >= 0 &&
+        offset <= capacity && used <= capacity - offset && currentQueuedBufferOffset_ >= 0 &&
+        currentQueuedBufferOffset_ <= used, false, "Audio source memory range is invalid");
+    FALSE_RETURN_V_MSG(cacheBufferSize > 0 && cacheBufferSize <= size &&
+        cacheBufferSize == static_cast<size_t>(used - currentQueuedBufferOffset_) &&
+        bufferDesc.dataLength <= bufferDesc.bufLength &&
+        cacheBufferSize <= bufferDesc.bufLength - bufferDesc.dataLength &&
+        availDataSize_.load() >= cacheBufferSize, false, "Audio copy exceeds available data or output range");
+
+    // This helper also carries compressed pass-through frames, which do not
+    // require AudioVivid metadata. Validate vivid metadata before consuming PCM.
+    std::vector<uint8_t> metaData;
+    if (!isAudioPass_) {
+        FALSE_RETURN_V_MSG(buffer->meta_ != nullptr && bufferDesc.metaBuffer != nullptr &&
+            bufferDesc.metaLength > 0 && buffer->meta_->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData) &&
+            metaData.size() == bufferDesc.metaLength, false, "AudioVivid metadata is missing or has the wrong size");
+        const auto metaRet = memcpy_s(bufferDesc.metaBuffer, bufferDesc.metaLength,
+            metaData.data(), metaData.size());
+        FALSE_RETURN_V_MSG(metaRet == 0, false, "copy AudioVivid metadata failed");
+    }
+    const auto ret = memcpy_s(bufferDesc.buffer + bufferDesc.dataLength,
+        bufferDesc.bufLength - bufferDesc.dataLength,
+        source + offset + currentQueuedBufferOffset_, cacheBufferSize);
     FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
+
+    // No length, PTS, queue counter or source cursor is published on failure.
     bufferPts = (bufferPts == HST_TIME_NONE) ? buffer->pts_ : bufferPts;
     if (isAudioPass_ && bufferPts >= 0) {
         bufferDesc.syncFramePts = static_cast<uint64_t>(bufferPts);
@@ -780,17 +822,6 @@ bool AudioSink::CopyAudioVividBufferData(AudioStandard::BufferDesc &bufferDesc, 
     size -= cacheBufferSize;
     availDataSize_.fetch_sub(cacheBufferSize);
     currentQueuedBufferOffset_ = 0;
-    auto meta = buffer->meta_;
-    std::vector<uint8_t> metaData;
-    meta->GetData(Tag::OH_MD_KEY_AUDIO_VIVID_METADATA, metaData);
-    if (metaData.size() == bufferDesc.metaLength && bufferDesc.metaLength > 0) {
-        ret = memcpy_s(bufferDesc.metaBuffer, bufferDesc.metaLength,
-            metaData.data(), bufferDesc.metaLength);
-        FALSE_RETURN_V_MSG(ret == 0, false, "copy from cache buffer may fail.");
-    } else {
-        MEDIA_LOG_E("CopyAudioVividBufferData error: size: " PUBLIC_LOG_ZU " metaLength:" PUBLIC_LOG_ZU,
-            metaData.size(), bufferDesc.metaLength);
-    }
     return true;
 }
 

@@ -18,6 +18,7 @@
 
 #include <string>
 #include <memory>
+#include <mutex>
 #include "audio_capturer.h"
 #include "common/status.h"
 #include "meta/meta.h"
@@ -69,10 +70,14 @@ private:
     bool AssignChannelNumIfSupported(const int32_t value);
     bool AssignSampleFmtIfSupported(const Plugins::AudioSampleFormat value);
 
-    void TrackMaxAmplitude(int16_t *data, int32_t size);
+    void TrackMaxAmplitude(const uint8_t *data, int32_t size);
 
+    // Control operations may stop a blocked read; they never wait for readMutex_ while holding captureMutex_.
+    std::mutex controlMutex_;
+    std::mutex readMutex_;
+    uint64_t readGeneration_ {0};
     Mutex captureMutex_ {};
-    std::unique_ptr<OHOS::AudioStandard::AudioCapturer> audioCapturer_ {nullptr};
+    std::shared_ptr<OHOS::AudioStandard::AudioCapturer> audioCapturer_ {nullptr};
     std::shared_ptr<AudioStandard::AudioCapturerInfoChangeCallback> audioCapturerInfoChangeCallback_{nullptr};
     AudioStandard::AudioCapturerOptions options_{};
     std::shared_ptr<AudioCaptureModuleCallback> audioCaptureModuleCallback_ {nullptr};

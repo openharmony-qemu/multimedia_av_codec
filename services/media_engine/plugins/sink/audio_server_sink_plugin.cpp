@@ -157,6 +157,11 @@ constexpr int32_t MS_IN_SECOND = 1000;
 namespace OHOS {
 namespace Media {
 namespace Plugins {
+static void EmitProvenance505(const std::string &row)
+{
+    MEDIA_LOG_I("AUDIO_PROVENANCE505 %{public}s", row.c_str());
+}
+
 using namespace OHOS::Media::Plugins;
 
 AudioServerSinkPlugin::AudioRendererCallbackImpl::AudioRendererCallbackImpl(
@@ -269,6 +274,7 @@ void AudioServerSinkPlugin::AudioServiceDiedCallbackImpl::OnAudioPolicyServiceDi
 AudioServerSinkPlugin::AudioServerSinkPlugin(std::string name)
     : Plugins::AudioSinkPlugin(std::move(name)), audioRenderer_(nullptr)
 {
+    provenance505_.SetEmitter(EmitProvenance505);
     SetUpParamsSetterMap();
     SetAudioDumpBySysParam();
 }
@@ -366,6 +372,7 @@ AudioSampleFormat AudioServerSinkPlugin::GetSampleFormat()
 
 void AudioServerSinkPlugin::ReleaseRender()
 {
+    provenance505_.Reset("renderer_release");
     std::unique_lock<std::mutex> lock(releaseRenderMutex_);
     OHOS::Media::AutoLock renderlock(renderMutex_);
     ScopedTimer timer("ReleaseRender", RELEASE_RENDER_WARNING_MS);
@@ -658,6 +665,13 @@ void AudioServerSinkPlugin::SetUpParamsSetterMap()
     SetUpAudioRenderSetFlagSetter();
     SetUpAudioInterruptModeSetter();
     SetUpAudioRenderSourceDurationSetter();
+    paramsSetterMap_[Qap505::KEY] = [this](const ValueType &para) {
+        Qap505::Observe([&] {
+            if (Any::IsSameTypeWith<std::string>(para)) { BindSourceProvenance505(AnyCast<std::string>(para)); }
+            else { BindSourceProvenance505(""); }
+        });
+        return Status::OK; // Observation state never changes business return semantics.
+    };
 }
 
 void AudioServerSinkPlugin::SetUpMimeTypeSetter()
@@ -968,12 +982,25 @@ Status AudioServerSinkPlugin::GetLatency(uint64_t &hstTime)
     return Status::OK;
 }
 
+void AudioServerSinkPlugin::BindSourceProvenance505(const std::string &descriptor)
+{
+    uint32_t session = 0; int32_t status = -1;
+    if (audioRenderer_) { status = audioRenderer_->GetAudioStreamId(session); }
+    provenance505_.Bind(descriptor, status, session);
+}
+
+void AudioServerSinkPlugin::DropCachedProvenance505(const char *reason)
+{
+    for (const auto &entry : cachedBuffers_) { provenance505_.Event("drop", entry.provenance, reason); }
+    cachedBuffers_.clear();
+}
+
 Status AudioServerSinkPlugin::DrainCacheData(bool render)
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::DrainCacheData " + std::to_string(render));
     if (!render) {
         MEDIA_LOG_D("Drop cache buffer because render=false");
-        cachedBuffers_.clear();
+        DropCachedProvenance505("clear");
         return Status::OK;
     }
     if (cachedBuffers_.empty()) {
@@ -985,7 +1012,7 @@ Status AudioServerSinkPlugin::DrainCacheData(bool render)
         && rendererState != AudioStandard::RendererState::RENDERER_STOPPED,
         Status::ERROR_AGAIN, "audioRenderer_ is still paused or stopped, try again later");
     if (rendererState != AudioStandard::RendererState::RENDERER_RUNNING) {
-        cachedBuffers_.clear();
+        DropCachedProvenance505("clear");
         MEDIA_LOG_W("Drop cache buffer because audioRenderer_ state invalid");
         return Status::ERROR_UNKNOWN;
     }
@@ -994,20 +1021,21 @@ Status AudioServerSinkPlugin::DrainCacheData(bool render)
         uint8_t* destBuffer = currBuffer.data();
         size_t destLength = currBuffer.size();
         bool shouldDrop = false;
-        size_t remained = WriteAudioBuffer(destBuffer, destLength, shouldDrop);
+        size_t remained = WriteAudioBuffer(destBuffer, destLength, shouldDrop, currBuffer.provenance);
         if (remained == 0) { // write ok
             cachedBuffers_.pop_front();
             continue;
         }
         if (shouldDrop) { // write error and drop buffer
-            cachedBuffers_.clear();
+            DropCachedProvenance505("clear");
             MEDIA_LOG_W("Drop cache buffer, error happens during drain");
             return Status::ERROR_UNKNOWN;
         }
         if (remained < destLength) { // some data written, then audioRender paused again, update cache
             std::vector<uint8_t> tmpBuffer(destBuffer + destLength - remained, destBuffer + destLength);
             cachedBuffers_.pop_front();
-            cachedBuffers_.emplace_front(std::move(tmpBuffer));
+            cachedBuffers_.emplace_front(std::move(tmpBuffer), currBuffer.provenance.Subspan(destLength - remained));
+            provenance505_.Event("cache_split", cachedBuffers_.front().provenance, "partial_drain");
         } // else no data written, no need to update front cache
         MEDIA_LOG_W("Audiorender pause again during drain cache buffers");
         return Status::ERROR_AGAIN;
@@ -1016,20 +1044,22 @@ Status AudioServerSinkPlugin::DrainCacheData(bool render)
     return Status::OK;
 }
 
-void AudioServerSinkPlugin::CacheData(uint8_t* inputBuffer, size_t bufferSize)
+void AudioServerSinkPlugin::CacheData(uint8_t* inputBuffer, size_t bufferSize, const Qap505::Slice &provenance)
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::CacheData " + std::to_string(bufferSize));
     std::vector<uint8_t> tmpBuffer(inputBuffer, inputBuffer + bufferSize);
-    cachedBuffers_.emplace_back(std::move(tmpBuffer));
+    cachedBuffers_.emplace_back(std::move(tmpBuffer), provenance);
+    provenance505_.Event("cache", cachedBuffers_.back().provenance, "queued");
     MEDIA_LOG_I("Cache one audio buffer, data size is " PUBLIC_LOG_U64, bufferSize);
     while (cachedBuffers_.size() > DEFAULT_BUFFER_NUM) {
         auto dropSize = cachedBuffers_.front().size();
+        provenance505_.Event("drop", cachedBuffers_.front().provenance, "cache_limit");
         MEDIA_LOG_W("Drop one cached buffer size " PUBLIC_LOG_U64 " because max cache size reached.", dropSize);
         cachedBuffers_.pop_front();
     }
 }
 
-size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop)
+size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t bufferSize, bool& shouldDrop, const Qap505::Slice &provenance)
 {
     MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::WriteAudioBuffer-size:" + std::to_string(bufferSize));
     uint8_t* destBuffer = inputBuffer;
@@ -1037,7 +1067,16 @@ size_t AudioServerSinkPlugin::WriteAudioBuffer(uint8_t* inputBuffer, size_t buff
     while (destLength > 0) {
         MediaAVCodec::AVCodecTrace trace("AudioServerSinkPlugin::WriteAudioBuffer: " + std::to_string(destLength));
         auto systemTimeBeforeWriteMs = Plugins::GetCurrentMillisecond();
+        uint32_t provenanceSession505 = 0;
+        int32_t provenanceQuery505 = -1;
+        Qap505::Observe([&] {
+            if (provenance.snapshot) { provenanceQuery505 = audioRenderer_->GetAudioStreamId(provenanceSession505); }
+        });
         int32_t ret = audioRenderer_->Write(destBuffer, destLength);
+        uint32_t provenanceFrameBytes505 = rendererParams_.sampleFormat == AudioStandard::AudioSampleFormat::SAMPLE_S16LE ?
+            static_cast<uint32_t>(rendererParams_.channelCount) * 2 : 0;
+        provenance505_.Write(provenance.Subspan(static_cast<uint64_t>(destBuffer - inputBuffer)), destLength, ret,
+            provenanceFrameBytes505, provenanceQuery505, provenanceSession505);
         writeDuration_ = std::max(Plugins::GetCurrentMillisecond() - systemTimeBeforeWriteMs, writeDuration_);
         if (ret < 0) {
             AudioStandard::RendererState rendererState = (audioRenderer_ != nullptr) ?
@@ -1089,30 +1128,38 @@ Status AudioServerSinkPlugin::Write(const std::shared_ptr<OHOS::Media::AVBuffer>
     auto destBuffer = const_cast<uint8_t *>(srcBuffer);
     auto srcLength = mem->GetSize();
     size_t destLength = static_cast<size_t>(srcLength);
+    const auto provenance = provenance505_.Input(destBuffer, destLength);
     while (isForcePaused_ && seekable_ == Seekable::SEEKABLE && !isInterruptNeeded_.load()) {
         std::unique_lock<std::mutex> lock(mutex_);
         writeCond_.wait_for(
             lock, std::chrono::milliseconds(WRITE_WAIT_TIME), [&] { return isInterruptNeeded_.load(); });
     }
-    FALSE_RETURN_V_MSG(!isInterruptNeeded_.load(), Status::OK, "Write isInterrupt");
+    const bool interrupted505 = isInterruptNeeded_.load();
+    if (interrupted505) { provenance505_.Event("drop", provenance, "interrupt"); }
+    FALSE_RETURN_V_MSG(!interrupted505, Status::OK, "Write isInterrupt");
     if (audioRenderer_ == nullptr) {
+        provenance505_.Event("drop", provenance, "missing_renderer");
         DrainCacheData(false);
         return Status::ERROR_NULL_POINTER;
     }
     auto drainCacheRet = DrainCacheData(true);
     if (drainCacheRet != Status::OK) {
         if (drainCacheRet == Status::ERROR_AGAIN) {
-            CacheData(destBuffer, destLength);
+            CacheData(destBuffer, destLength, provenance);
+        } else {
+            provenance505_.Event("drop", provenance, "cache_drain_failed");
         }
         return Status::ERROR_UNKNOWN;
     }
     bool shouldDrop = false;
-    size_t remained = WriteAudioBuffer(destBuffer, destLength, shouldDrop);
+    size_t remained = WriteAudioBuffer(destBuffer, destLength, shouldDrop, provenance);
     if (remained == 0) {
         return Status::OK;
     }
     if (!shouldDrop) {
-        CacheData(destBuffer + destLength - remained, remained);
+        CacheData(destBuffer + destLength - remained, remained, provenance.Subspan(destLength - remained));
+    } else {
+        provenance505_.Event("drop", provenance.Subspan(destLength - remained), "write_error");
     }
     return Status::ERROR_UNKNOWN;
 }
@@ -1132,6 +1179,7 @@ int32_t AudioServerSinkPlugin::WriteAudioVivid(const std::shared_ptr<OHOS::Media
 
 Status AudioServerSinkPlugin::Flush()
 {
+    provenance505_.Reset("flush");
     MEDIA_LOG_D_SHORT("Flush entered.");
     DrainCacheData(false);
     if (audioRenderer_ == nullptr) {
@@ -1153,7 +1201,7 @@ Status AudioServerSinkPlugin::Drain()
         return Status::ERROR_WRONG_STATE;
     }
     DrainCacheData(true); // try to drain
-    cachedBuffers_.clear(); // force clear cached data, no matter drain success or not
+    DropCachedProvenance505("clear"); // force clear cached data, no matter drain success or not
     if (!audioRenderer_->Drain()) {
         uint64_t latency = 0;
         audioRenderer_->GetLatency(latency);

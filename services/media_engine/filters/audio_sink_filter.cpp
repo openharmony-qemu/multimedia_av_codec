@@ -270,6 +270,21 @@ int32_t AudioSinkFilter::SetVolumeWithRamp(float targetVolume, int32_t duration)
 
 void AudioSinkFilter::SetParameter(const std::shared_ptr<Meta>& meta)
 {
+    if (meta != nullptr) {
+        auto item = meta->begin();
+        if (item != meta->end() && item->first == "ohos.qemu.audio.source_provenance_v1") {
+            auto next = item;
+            ++next;
+            if (next == meta->end()) {
+                std::string descriptor;
+                if (meta->GetData("ohos.qemu.audio.source_provenance_v1", descriptor) && audioSink_) {
+                    audioSink_->SetParameter(meta);
+                }
+                return;
+            }
+        }
+    }
+
     globalMeta_ = meta;
     audioSink_->SetParameter(meta);
 }

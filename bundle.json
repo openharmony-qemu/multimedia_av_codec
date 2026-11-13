@@ -129,6 +129,7 @@
             "//foundation/multimedia/av_codec/interfaces/inner_api/native:av_codec_suspend_client"
           ],
           "service_group": [
+            "//foundation/multimedia/av_codec/qemu_avc:backend",
             "//foundation/multimedia/av_codec/services:av_codec_services_package",
             "//foundation/multimedia/av_codec/services/etc:av_codec_service_etc"
           ]

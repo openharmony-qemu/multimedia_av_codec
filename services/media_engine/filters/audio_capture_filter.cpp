@@ -176,8 +176,10 @@ Status AudioCaptureFilter::DoPrepare()
 
 Status AudioCaptureFilter::DoStart()
 {
+    std::lock_guard<std::mutex> lifecycleLock(lifecycleMutex_);
     MEDIA_LOG_I("Start");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Start");
+    FALSE_RETURN_V_MSG_E(taskPtr_ != nullptr, Status::ERROR_INVALID_OPERATION, "audio reader task is null");
     eos_ = false;
     currentTime_ = 0;
     recordAudioFrameCount_ = 0;
@@ -193,26 +195,30 @@ Status AudioCaptureFilter::DoStart()
     }
     FALSE_RETURN_V_MSG_E(res == Status::OK, res, "audioCaptureModule start failed");
     // start task secondly
-    if (taskPtr_) {
-        taskPtr_->Start();
+    taskPtr_->Start();
+    if (!taskPtr_->IsTaskRunning()) {
+        audioCaptureModule_->Stop();
+        return Status::ERROR_AUD_START_FAILED;
     }
     return res;
 }
 
 Status AudioCaptureFilter::DoPause()
 {
+    std::lock_guard<std::mutex> lifecycleLock(lifecycleMutex_);
     MEDIA_LOG_I("Pause");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Pause");
-    if (taskPtr_) {
-        taskPtr_->Pause();
-    }
     Status ret = Status::ERROR_INVALID_OPERATION;
     if (audioCaptureModule_) {
         ret = audioCaptureModule_->Stop();
     }
     if (ret != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule stop fail");
-        ret = Status::ERROR_AUD_STOP_FAILED;
+        return Status::ERROR_AUD_STOP_FAILED;
+    }
+    // Stop wakes a blocking Read before Pause waits for its job to finish.
+    if (taskPtr_) {
+        taskPtr_->Pause();
     }
 
     GetCurrentTime(pauseTime_);
@@ -243,30 +249,35 @@ Status AudioCaptureFilter::DoPause()
 
 Status AudioCaptureFilter::DoResume()
 {
+    std::lock_guard<std::mutex> lifecycleLock(lifecycleMutex_);
     MEDIA_LOG_I("Resume");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Resume");
+    FALSE_RETURN_V_MSG_E(taskPtr_ != nullptr, Status::ERROR_INVALID_OPERATION, "audio reader task is null");
     currentTime_ = 0;
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
     hasCalculateAVTime_ = false;
     GetCurrentTime(startTime_);
     MEDIA_LOG_I("[audio] resumeTime: " PUBLIC_LOG_D64, startTime_);
-    if (taskPtr_) {
-        taskPtr_->Start();
-    }
     Status ret = Status::ERROR_INVALID_OPERATION;
     if (audioCaptureModule_) {
         ret = audioCaptureModule_->Start();
     }
     if (ret != Status::OK) {
         MEDIA_LOG_E("audioCapturer start failed");
-        ret = Status::ERROR_AUD_START_FAILED;
+        return Status::ERROR_AUD_START_FAILED;
+    }
+    taskPtr_->Start();
+    if (!taskPtr_->IsTaskRunning()) {
+        audioCaptureModule_->Stop();
+        return Status::ERROR_AUD_START_FAILED;
     }
     return ret;
 }
 
 Status AudioCaptureFilter::DoStop()
 {
+    std::lock_guard<std::mutex> lifecycleLock(lifecycleMutex_);
     MEDIA_LOG_I("Stop");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Stop");
     // stop task firstly
@@ -280,6 +291,10 @@ Status AudioCaptureFilter::DoStop()
     }
     if (ret != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule stop fail");
+        return ret;
+    }
+    if (taskPtr_) {
+        taskPtr_->Stop();
     }
     firstAudioFramePts_.store(-1);
     firstVideoFramePts_.store(-1);
@@ -300,13 +315,23 @@ Status AudioCaptureFilter::DoFlush()
 
 Status AudioCaptureFilter::DoRelease()
 {
+    std::lock_guard<std::mutex> lifecycleLock(lifecycleMutex_);
     MEDIA_LOG_I("Release");
     MediaAVCodec::AVCodecTrace trace("AudioCaptureFilter::Release");
+    if (audioCaptureModule_) {
+        auto ret = audioCaptureModule_->Stop();
+        if (ret != Status::OK) {
+            return ret;
+        }
+    }
     if (taskPtr_) {
         taskPtr_->Stop();
     }
     if (audioCaptureModule_) {
-        audioCaptureModule_->Deinit();
+        auto ret = audioCaptureModule_->Deinit();
+        if (ret != Status::OK) {
+            return ret;
+        }
     }
     audioCaptureModule_ = nullptr;
     taskPtr_ = nullptr;
@@ -566,6 +591,7 @@ void AudioCaptureFilter::RecordOneAudioFrame(uint64_t bufferSize)
 {
     FALSE_RETURN_MSG(audioCaptureModule_ != nullptr && outputBufferQueue_ != nullptr,
         "audioCaptureModule_ or outputBufferQueue_ is nullptr, cannot RecordOneAudioFrame");
+    FALSE_RETURN_MSG(bufferSize > 0 && bufferSize < MAX_CAPTURE_BUFFER_SIZE, "invalid audio buffer size");
     std::shared_ptr<AVBuffer> buffer;
     AVBufferConfig avBufferConfig;
     avBufferConfig.size = static_cast<int32_t>(bufferSize);
@@ -574,11 +600,13 @@ void AudioCaptureFilter::RecordOneAudioFrame(uint64_t bufferSize)
     if (ret != Status::OK || buffer == nullptr
         || buffer->memory_ == nullptr || buffer->memory_->GetCapacity() <= 0) {
         MEDIA_LOG_E("AudioCaptureFilter RequestBuffer fail");
+        if (buffer != nullptr) {
+            outputBufferQueue_->PushBuffer(buffer, false);
+        }
         RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
         return;
     }
-    std::shared_ptr<AVMemory> bufData = buffer->memory_;
-    ret = audioCaptureModule_->Read(bufData->GetAddr(), bufferSize);
+    ret = audioCaptureModule_->Read(buffer, static_cast<size_t>(bufferSize));
     if (ret != Status::OK) {
         MEDIA_LOG_E("audioCaptureModule read return fail");
         outputBufferQueue_->PushBuffer(buffer, false);
@@ -590,7 +618,6 @@ void AudioCaptureFilter::RecordOneAudioFrame(uint64_t bufferSize)
         FillLostFrame(lostCount);
         RecordCachedData(lostCount);
     }
-    buffer->memory_->SetSize(bufferSize);
     ret = outputBufferQueue_->PushBuffer(buffer, true);
     if (ret != Status::OK) {
         MEDIA_LOG_E("PushBuffer fail");
@@ -609,7 +636,10 @@ void AudioCaptureFilter::RecordCachedData(int32_t recordFrameNum)
         return;
     }
     uint64_t bufferSize = 0;
-    audioCaptureModule_->GetSize(bufferSize);
+    if (audioCaptureModule_->GetSize(bufferSize) != Status::OK || bufferSize == 0 ||
+        bufferSize >= MAX_CAPTURE_BUFFER_SIZE || recordFrameNum <= 0) {
+        return;
+    }
 
     std::deque<std::shared_ptr<uint8_t>> tempDataDeque;
     {
@@ -632,10 +662,22 @@ void AudioCaptureFilter::RecordCachedData(int32_t recordFrameNum)
         if (ret != Status::OK || buffer == nullptr
             || buffer->memory_ == nullptr || buffer->memory_->GetCapacity() <= 0) {
             MEDIA_LOG_E("AudioCaptureFilter RequestBuffer fail");
+            if (buffer != nullptr) {
+                outputBufferQueue_->PushBuffer(buffer, false);
+            }
             RelativeSleep(AUDIO_CAPTURE_READ_FAILED_WAIT_TIME);
             continue;
         }
-        buffer->memory_->Write(tmpData.get(), static_cast<int32_t>(bufferSize), 0);
+        auto memory = buffer->memory_;
+        const int32_t offset = memory->GetOffset();
+        const int32_t capacity = memory->GetCapacity();
+        if (tmpData == nullptr || offset < 0 || offset > capacity ||
+            bufferSize > static_cast<uint64_t>(capacity - offset) ||
+            memory->Write(tmpData.get(), static_cast<int32_t>(bufferSize), offset) != static_cast<int32_t>(bufferSize) ||
+            memory->SetSize(static_cast<int32_t>(bufferSize)) != Status::OK) {
+            outputBufferQueue_->PushBuffer(buffer, false);
+            continue;
+        }
         ret = outputBufferQueue_->PushBuffer(buffer, true);
         if (ret != Status::OK) {
             MEDIA_LOG_E("PushBuffer fail");

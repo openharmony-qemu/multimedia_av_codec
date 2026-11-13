@@ -69,6 +69,8 @@ public:
 private:
     void ReadLoop();
     Status PrepareAudioCapture();
+    // Worker jobs do not acquire this control-operation lock.
+    std::mutex lifecycleMutex_;
     std::shared_ptr<Task> taskPtr_{nullptr};
     int32_t RelativeSleep(int64_t nanoTime);
     void GetCurrentTime(int64_t &currentTime);

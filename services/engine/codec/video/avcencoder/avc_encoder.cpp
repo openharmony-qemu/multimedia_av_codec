@@ -1308,16 +1308,26 @@ void AvcEncoder::NotifyUserToFillBuffer(uint32_t index, std::shared_ptr<AVBuffer
 
 int32_t AvcEncoder::CheckBufferSize(int32_t bufferSize, int32_t stride, int32_t height, VideoPixelFormat pixelFormat)
 {
-    int32_t expect = 0;
+    if (bufferSize <= 0 || stride <= 0 || height <= 0 || height % EVEN_NUMBER_DIVISOR != 0) {
+        return AVCS_ERR_UNSUPPORT_SOURCE;
+    }
+    const int64_t rowBytes = stride;
+    int64_t expect = 0;
     switch (pixelFormat) {
         case VideoPixelFormat::RGBA: {
-            expect = stride * height;                //  rgba origin stride already * 4
+            if (stride % RGBA_COLINC != 0) {
+                return AVCS_ERR_UNSUPPORT_SOURCE;
+            }
+            expect = rowBytes * height;
             break;
         }
         case VideoPixelFormat::YUVI420:
         case VideoPixelFormat::NV12:
         case VideoPixelFormat::NV21: {
-            expect = stride * height * 3 / 2;        //  * 3 / 2: yuv size
+            if (stride % EVEN_NUMBER_DIVISOR != 0) {
+                return AVCS_ERR_UNSUPPORT_SOURCE;
+            }
+            expect = rowBytes * height + rowBytes * (height / EVEN_NUMBER_DIVISOR);
             break;
         }
         default:
@@ -1325,7 +1335,7 @@ int32_t AvcEncoder::CheckBufferSize(int32_t bufferSize, int32_t stride, int32_t 
                 bufferSize, stride, height, static_cast<int32_t>(pixelFormat));
             return AVCS_ERR_UNSUPPORT_SOURCE;
     }
-    if (bufferSize >= expect && expect > 0) {
+    if (bufferSize >= expect) {
         return AVCS_ERR_OK;
     }
     return AVCS_ERR_UNSUPPORT_SOURCE;
@@ -1448,11 +1458,7 @@ int32_t AvcEncoder::RgbaToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
 {
     int32_t width = inFrame.width;
     int32_t height = inFrame.height;
-    int32_t stride = inFrame.stride;
-
-    if (inputSurface_ != nullptr) {
-        stride = inFrame.stride / RGBA_COLINC;   // surface buffer rgba stride has * 4
-    }
+    int32_t stride = inFrame.stride / RGBA_COLINC; // InputFrame strides are bytes in both modes.
 
     uint8_t *dstData = convertBuffer_->memory_->GetAddr();
     int32_t dstSize = convertBuffer_->memory_->GetCapacity();
@@ -1489,34 +1495,66 @@ int32_t AvcEncoder::RgbaToAvcEncoderInArgs(InputFrame &inFrame, AVC_ENC_INARGS &
 
 int32_t AvcEncoder::GetSurfaceBufferUvOffset(sptr<SurfaceBuffer> &surfaceBuffer, VideoPixelFormat format)
 {
-    int32_t uvOffset = 0;
-    if (!((format == VideoPixelFormat::YUVI420) ||
-        (format == VideoPixelFormat::NV12) ||
-        (format == VideoPixelFormat::NV21))) {
-        return uvOffset;
+    if (format != VideoPixelFormat::YUVI420 && format != VideoPixelFormat::NV12 &&
+        format != VideoPixelFormat::NV21) {
+        return 0;
     }
 
     OH_NativeBuffer_Planes *planes = nullptr;
-    GSError retVal = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
-    if (retVal != GSERROR_OK || planes == nullptr) {
-        AVCODEC_LOGE(" GetPlanesInfo failed, retVal:%{public}d", retVal);
-        return uvOffset;
+    GSError ret = surfaceBuffer->GetPlanesInfo(reinterpret_cast<void**>(&planes));
+    if (ret != GSERROR_OK) {
+        // QEMU's fixed gralloc has no GetImageLayout; validate its contiguous fallback below.
+        return 0;
     }
-    CHECK_AND_RETURN_RET_LOG(planes->planeCount > 1, uvOffset, "Get surface uvinfo failed");
-    if (format == VideoPixelFormat::NV21) {
-        uvOffset = static_cast<int32_t>(planes->planes[2].offset);     // 2: nv21 v offset
+    CHECK_AND_RETURN_RET_LOG(planes != nullptr, -1, "Missing surface plane info");
+    const uint32_t count = planes->planeCount;
+    const bool planar = format == VideoPixelFormat::YUVI420;
+    CHECK_AND_RETURN_RET_LOG((planar && count == 3) || (!planar && (count == 2 || count == 3)),
+        -1, "Unsupported surface plane count");
+    const int32_t stride = surfaceBuffer->GetStride();
+    CHECK_AND_RETURN_RET_LOG(stride > 0 && surfaceBuffer->GetHeight() > 0,
+        -1, "Invalid surface geometry");
+    const uint64_t lumaSize = static_cast<uint64_t>(stride) * surfaceBuffer->GetHeight();
+    CHECK_AND_RETURN_RET_LOG(planes->planes[0].offset == 0 &&
+        planes->planes[0].rowStride == static_cast<uint32_t>(stride) &&
+        planes->planes[0].columnStride == 1, -1, "Unsupported surface luma layout");
+
+    // NV12/NV21 can describe two physical planes or separate Y/U/V component views.
+    const uint32_t chroma = (!planar && count == 3 && format == VideoPixelFormat::NV21) ? 2 : 1;
+    const auto &uv = planes->planes[chroma];
+    const uint32_t chromaStride = planar ? static_cast<uint32_t>(stride / EVEN_NUMBER_DIVISOR) : stride;
+    CHECK_AND_RETURN_RET_LOG(uv.offset >= lumaSize && uv.offset <= INT32_MAX &&
+        uv.rowStride == chromaStride, -1, "Unsupported surface chroma layout");
+    if (planar) {
+        const uint64_t chromaSize = static_cast<uint64_t>(chromaStride) *
+            (surfaceBuffer->GetHeight() / EVEN_NUMBER_DIVISOR);
+        CHECK_AND_RETURN_RET_LOG(uv.columnStride == 1 && planes->planes[2].columnStride == 1 &&
+            planes->planes[2].rowStride == chromaStride &&
+            planes->planes[2].offset == uv.offset + chromaSize, -1, "Unsupported planar V layout");
+    } else if (count == 3) {
+        const auto &other = planes->planes[chroma == 1 ? 2 : 1];
+        CHECK_AND_RETURN_RET_LOG(uv.columnStride == 2 && other.columnStride == 2 &&
+            other.rowStride == chromaStride && other.offset == uv.offset + 1,
+            -1, "Unsupported interleaved component views");
     } else {
-        uvOffset = static_cast<int32_t>(planes->planes[1].offset);     // 1: nv21 yuv420 u offset
+        CHECK_AND_RETURN_RET_LOG(uv.columnStride == 1 || uv.columnStride == 2,
+            -1, "Unsupported interleaved chroma step");
     }
-    return uvOffset;
+    return static_cast<int32_t>(uv.offset);
 }
 
 int32_t AvcEncoder::GetInputFrameFromAVBuffer(std::shared_ptr<AVBuffer> &buffer, InputFrame &inFrame)
 {
+    CHECK_AND_RETURN_RET_LOG(buffer != nullptr && buffer->memory_ != nullptr,
+        AVCS_ERR_INVALID_DATA, "Missing input memory");
+    CHECK_AND_RETURN_RET_LOG(encWidth_ >= VIDEO_MIN_SIZE && encWidth_ <= VIDEO_MAX_WIDTH_SIZE &&
+        encHeight_ >= VIDEO_MIN_SIZE && encHeight_ <= VIDEO_MAX_HEIGHT_SIZE,
+        AVCS_ERR_INVALID_DATA, "Invalid configured encoder dimensions");
     inFrame.format = srcPixelFmt_;
     inFrame.width = encWidth_;
     inFrame.height = encHeight_;
-    inFrame.stride = encWidth_;
+    inFrame.stride = srcPixelFmt_ == VideoPixelFormat::RGBA ? encWidth_ * RGBA_COLINC : encWidth_;
+    inFrame.uvOffset = 0;
     inFrame.size = buffer->memory_->GetSize();
     inFrame.buffer = buffer->memory_->GetAddr();
     if (inputSurface_ != nullptr) {
@@ -1525,23 +1563,45 @@ int32_t AvcEncoder::GetInputFrameFromAVBuffer(std::shared_ptr<AVBuffer> &buffer,
         inFrame.format =
             TranslateVideoPixelFormat(static_cast<GraphicPixelFormat>(surfaceBuffer->GetFormat()));
         inFrame.width = surfaceBuffer->GetWidth();
-        CHECK_AND_RETURN_RET_LOG((inFrame.width >= VIDEO_MIN_SIZE) && (inFrame.width <= VIDEO_MAX_WIDTH_SIZE),
-            AVCS_ERR_INVALID_DATA, "Get surface width failed!");
         inFrame.height = surfaceBuffer->GetHeight();
-        CHECK_AND_RETURN_RET_LOG((inFrame.height >= VIDEO_MIN_SIZE) && (inFrame.height <= VIDEO_MAX_HEIGHT_SIZE),
-            AVCS_ERR_INVALID_DATA, "Get surface height failed!");
+        CHECK_AND_RETURN_RET_LOG(inFrame.width == encWidth_ && inFrame.height == encHeight_,
+            AVCS_ERR_INVALID_DATA, "Surface dimensions differ from configured encoder");
         inFrame.stride = surfaceBuffer->GetStride();
-        CHECK_AND_RETURN_RET_LOG(inFrame.stride >= inFrame.width, AVCS_ERR_INVALID_DATA,
-            "Get surface stride failed!");
-        inFrame.size = static_cast<int32_t>(surfaceBuffer->GetSize());
+        const uint32_t surfaceSize = surfaceBuffer->GetSize();
+        CHECK_AND_RETURN_RET_LOG(surfaceSize <= INT32_MAX, AVCS_ERR_INVALID_DATA, "Surface size overflow");
+        inFrame.size = static_cast<int32_t>(surfaceSize);
         inFrame.buffer = reinterpret_cast<uint8_t *>(surfaceBuffer->GetVirAddr());
-        CHECK_AND_RETURN_RET_LOG(inFrame.buffer != nullptr, AVCS_ERR_INVALID_DATA,
-            "Get surface buffer failed!");
         inFrame.uvOffset = GetSurfaceBufferUvOffset(surfaceBuffer, inFrame.format);
+        CHECK_AND_RETURN_RET_LOG(inFrame.uvOffset >= 0, AVCS_ERR_INVALID_DATA, "Invalid surface plane layout");
+    } else {
+        const int32_t offset = buffer->memory_->GetOffset();
+        const int32_t capacity = buffer->memory_->GetCapacity();
+        CHECK_AND_RETURN_RET_LOG(offset >= 0 && offset <= capacity && inFrame.size >= 0 &&
+            inFrame.size <= capacity - offset, AVCS_ERR_INVALID_DATA, "Input range exceeds memory");
+        CHECK_AND_RETURN_RET_LOG(inFrame.buffer != nullptr, AVCS_ERR_INVALID_DATA, "Missing input address");
+        inFrame.buffer += offset;
     }
+    CHECK_AND_RETURN_RET_LOG(inFrame.buffer != nullptr && inFrame.width >= VIDEO_MIN_SIZE &&
+        inFrame.width <= VIDEO_MAX_WIDTH_SIZE && inFrame.height >= VIDEO_MIN_SIZE &&
+        inFrame.height <= VIDEO_MAX_HEIGHT_SIZE && inFrame.width % EVEN_NUMBER_DIVISOR == 0 &&
+        inFrame.height % EVEN_NUMBER_DIVISOR == 0, AVCS_ERR_INVALID_DATA, "Invalid input geometry");
+    const bool rgba = inFrame.format == VideoPixelFormat::RGBA;
+    CHECK_AND_RETURN_RET_LOG(rgba || inFrame.format == VideoPixelFormat::YUVI420 ||
+        inFrame.format == VideoPixelFormat::NV12 || inFrame.format == VideoPixelFormat::NV21,
+        AVCS_ERR_INVALID_DATA, "Unsupported input pixel format");
+    const int32_t alignment = rgba ? RGBA_COLINC : EVEN_NUMBER_DIVISOR;
+    const int32_t minStride = rgba ? inFrame.width * RGBA_COLINC : inFrame.width;
+    CHECK_AND_RETURN_RET_LOG(inFrame.stride >= minStride && inFrame.stride % alignment == 0,
+        AVCS_ERR_INVALID_DATA, "Invalid input byte stride");
+    const int64_t lumaSize = static_cast<int64_t>(inFrame.stride) * inFrame.height;
+    CHECK_AND_RETURN_RET_LOG(lumaSize <= INT32_MAX, AVCS_ERR_INVALID_DATA, "Input luma size overflow");
     if (inFrame.uvOffset == 0) {
-        inFrame.uvOffset = inFrame.stride * inFrame.height;
+        inFrame.uvOffset = static_cast<int32_t>(lumaSize);
     }
+    const int64_t required = rgba ? lumaSize : static_cast<int64_t>(inFrame.uvOffset) +
+        static_cast<int64_t>(inFrame.stride) * (inFrame.height / EVEN_NUMBER_DIVISOR);
+    CHECK_AND_RETURN_RET_LOG(inFrame.uvOffset >= lumaSize && required <= inFrame.size,
+        AVCS_ERR_INVALID_DATA, "Input planes exceed available bytes");
     inFrame.pts = buffer->pts_;
     return AVCS_ERR_OK;
 }
@@ -1600,6 +1660,10 @@ int32_t AvcEncoder::EncoderAvcFrame(AVC_ENC_INARGS &inArgs, AVC_ENC_OUTARGS &out
     sLock.unlock();
 
     if (isSendEos_) {
+        CHECK_AND_RETURN_RET_LOG(ret == 0, AVCS_ERR_VID_ENC_FAILED,
+            "Cannot encode AVC EOS: %{public}u", ret);
+        outputAVBuffer->memory_->SetSize(outArgs.bytes);
+        outputAVBuffer->pts_ = static_cast<int64_t>(outArgs.timestamp);
         outputAVBuffer->flag_ = AVCODEC_BUFFER_FLAG_EOS;
     } else if (ret == 0) {
         outputAVBuffer->memory_->SetSize(outArgs.bytes);
@@ -1692,7 +1756,11 @@ void AvcEncoder::EncoderAvcTailer()
     AVC_ENC_INARGS eosInArgs;
     FillAvcEncoderInDefaultArgs(eosInArgs);
     int32_t ret = EncoderAvcFrame(eosInArgs, avcEncOutputArgs_);
-    CHECK_AND_RETURN_LOG(ret == AVCS_ERR_OK, "Avc Encoder tailer error: %{public}d", ret);
+    if (ret != AVCS_ERR_OK) {
+        AVCODEC_LOGE("Avc Encoder tailer error: %{public}d", ret);
+        callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
+        state_ = State::ERROR;
+    }
 }
 
 std::shared_ptr<AVBuffer> AvcEncoder::GetAvBuffer(const std::shared_ptr<FBuffer> &inputBuffer)
@@ -1731,6 +1799,7 @@ void AvcEncoder::SendFrame()
         std::unique_lock<std::mutex> sendLock(sendMutex_);
         isSendEos_ = true;
         EncoderAvcTailer();
+        CHECK_AND_RETURN_LOG(state_ != State::ERROR, "AVC EOS encoding failed");
         state_ = State::EOS;
         sendCv_.wait_for(sendLock, std::chrono::milliseconds(DEFAULT_ENCODE_WAIT_TIME));
         AVCODEC_LOGI("Send eos end");
@@ -1742,6 +1811,11 @@ void AvcEncoder::SendFrame()
     ret = FillAvcEncoderInArgs(inputAVBuffer, avcEncInputArgs_);
     if (ret != AVCS_ERR_OK) {
         AVCODEC_LOGE("convert buffer to encodec error: %{public}d", ret);
+        if (inputSurface_ != nullptr) {
+            ReleaseSurfaceBufferByAVBuffer(inputAVBuffer);
+            inputBuffer->surfaceBuffer_ = nullptr;
+            inputBuffer->fence_ = nullptr;
+        }
         callback_->OnError(AVCodecErrorType::AVCODEC_ERROR_INTERNAL, AVCodecServiceErrCode::AVCS_ERR_UNKNOWN);
         state_ = State::ERROR;
         return;

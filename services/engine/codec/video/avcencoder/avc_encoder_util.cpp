@@ -79,11 +79,9 @@ VideoPixelFormat TranslateVideoPixelFormat(GraphicPixelFormat surfaceFormat)
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_RGBA_8888: {
             return VideoPixelFormat::RGBA;
         }
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_P010:
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCBCR_420_SP: {
             return VideoPixelFormat::NV12;
         }
-        case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_P010:
         case GraphicPixelFormat::GRAPHIC_PIXEL_FMT_YCRCB_420_SP: {
             return VideoPixelFormat::NV21;
         }

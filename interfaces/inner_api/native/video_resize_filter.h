@@ -16,11 +16,14 @@
 #ifndef FILTERS_VIDEO_RESIZE_FILTER_H
 #define FILTERS_VIDEO_RESIZE_FILTER_H
 
+#include <condition_variable>
 #include <cstring>
+#include <mutex>
 #include "filter/filter.h"
 #include "osal/task/task.h"
 #include "common/status.h"
 #include "common/log.h"
+#include "surface.h"
 
 namespace OHOS {
 namespace Media {
@@ -73,7 +76,11 @@ protected:
     Status OnUnLinked(StreamType inType, const std::shared_ptr<FilterLinkCallback>& callback) override;
 
 private:
+    bool IsSoftwareMode() const;
     void ReleaseBuffer();
+    void ReleaseSoftwareBuffers();
+    void ResizeBuffer(sptr<SurfaceBuffer> &srcBuffer, int64_t pts);
+    void DrainInputBuffers();
     void ReleaseOutputBuffer(std::vector<uint32_t> &indexs);
     std::string name_;
     FilterType filterType_;
@@ -91,11 +98,22 @@ private:
     std::string codecMimeType_;
     std::shared_ptr<Meta> configureParameter_;
 
+    sptr<Surface> inputConsumerSurface_;
+    sptr<Surface> inputProducerSurface_;
+    sptr<IBufferConsumerListener> inputConsumerListener_;
+    sptr<Surface> outputSurface_;
+    int32_t outputWidth_ {0};
+    int32_t outputHeight_ {0};
+
     std::shared_ptr<Filter> nextFilter_;
 
     std::mutex releaseBufferMutex_;
     std::condition_variable releaseBufferCondition_;
     std::shared_ptr<Task> releaseBufferTask_{nullptr};
+    uint32_t pendingInputBuffers_ {0};
+    bool eosReceived_ {false};
+    bool eosNotified_ {false};
+    bool isPaused_ {false};
     std::vector<uint32_t> indexs_;
     uint32_t eosBufferIndex_ {UINT32_MAX};
     int64_t eosPts_ {UINT32_MAX};
