@@ -97,18 +97,20 @@ void TemporalScalability::ValidateTemporalGopParam(Format &format)
 void TemporalScalability::StoreAVBuffer(uint32_t index, shared_ptr<AVBuffer> buffer)
 {
     lock_guard<shared_mutex> inputBufLock(inputBufMutex_);
-    inputIndexQueue_->Push(index);
+    if (!inputIndexQueue_->Push(index)) {
+        return;
+    }
     inputBufferMap_.emplace(index, buffer);
 }
 
 void TemporalScalability::CheckInputQueEmpty()
 {
+    std::lock_guard<std::shared_mutex> eosLock(eosMutex_);
     if (eosRequested_.load() && !lastBufferProcessed_.load()) {
         bool wasEmpty = inputIndexQueue_->Empty();
         AVCODEC_LOGD_WITH_TAG("queue empty? %{public}d, EOS requested? %{public}d", wasEmpty, eosRequested_.load());
         if (wasEmpty) {
             lastBufferProcessed_.store(true);
-            std::lock_guard<std::shared_mutex> eosLock(eosMutex_);
             AVCODEC_LOGI_WITH_TAG("Last buffer processed, notifying EOS condition");
             eosCondition_.notify_all();
         }
@@ -128,6 +130,16 @@ bool TemporalScalability::GetFirstBufferIndex(uint32_t &index)
 void TemporalScalability::SetBlockQueueActive()
 {
     inputIndexQueue_->SetActive(false, false);
+}
+
+void TemporalScalability::BeginShutdown()
+{
+    {
+        std::lock_guard<std::shared_mutex> eosLock(eosMutex_);
+        closing_ = true;
+        inputIndexQueue_->SetActive(false, true);
+    }
+    eosCondition_.notify_all();
 }
 
 void TemporalScalability::SetDisposableFlag(shared_ptr<Media::AVBuffer> buffer)
@@ -311,18 +323,21 @@ void TemporalScalability::ConfigureLTR(uint32_t index)
 int32_t TemporalScalability::NotifyEosWhenComplete()
 {
     AVCODEC_LOGI_WITH_TAG("Start");
+    std::unique_lock<std::shared_mutex> eosLock(eosMutex_);
+    if (closing_ || eosRequested_.load()) {
+        return AVCS_ERR_INVALID_STATE;
+    }
     eosRequested_.store(true);
     lastBufferProcessed_.store(false);
 
-    {
-        std::unique_lock<std::shared_mutex> eosLock(eosMutex_);
-        AVCODEC_LOGI_WITH_TAG("Waiting for buffers to complete...");
-        eosCondition_.wait(eosLock, [this] { return lastBufferProcessed_.load(); });
-        AVCODEC_LOGI_WITH_TAG("All buffers completed, queue is empty");
-    }
+    AVCODEC_LOGI_WITH_TAG("Waiting for buffers to complete...");
+    eosCondition_.wait(eosLock, [this] { return closing_ || lastBufferProcessed_.load(); });
 
     eosRequested_.store(false);
     lastBufferProcessed_.store(false);
+    if (closing_) {
+        return AVCS_ERR_INVALID_STATE;
+    }
     AVCODEC_LOGI_WITH_TAG("Done, returning AVCS_ERR_OK");
     return AVCS_ERR_OK;
 }
